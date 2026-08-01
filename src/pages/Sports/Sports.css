@@ -618,6 +618,11 @@
 @media (max-width: 1024px) {
   .sports-page-inner {
     flex-direction: column;
+    padding: 0 var(--space-3);
+  }
+
+  .sports-page {
+    padding: var(--space-3) 0 calc(var(--space-16) + env(safe-area-inset-bottom, 0px));
   }
 
   .sports-right {

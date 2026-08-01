@@ -197,6 +197,12 @@
   position: relative;
 }
 
+.header-my-bets-icon {
+  display: none;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
 .header-my-bets-btn:hover,
 .header-my-bets-btn.active {
   border-color: var(--color-primary);
@@ -228,5 +234,26 @@
 
   .header-my-bets-label {
     display: none;
+  }
+
+  .header-my-bets-icon {
+    display: flex;
+  }
+
+  .header-my-bets-btn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    justify-content: center;
+    border-radius: var(--radius-md);
+  }
+
+  .header-my-bets-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 16px;
+    height: 16px;
+    font-size: 0.6rem;
   }
 }

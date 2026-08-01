@@ -9,8 +9,8 @@
     justify-content: center;
     gap: 8px;
     position: fixed;
-    bottom: 20px;
-    right: 20px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    right: 16px;
     z-index: 1200;
     padding: 14px 22px;
     background: var(--color-primary);

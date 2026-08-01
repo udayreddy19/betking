@@ -38,3 +38,15 @@
 .filter-chips-row {
   margin-bottom: var(--space-3);
 }
+
+@media (max-width: 768px) {
+  .filter-chips {
+    flex-wrap: nowrap;
+    scroll-snap-type: x proximity;
+  }
+
+  .filter-chip {
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-xs);
+  }
+}

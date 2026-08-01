@@ -98,6 +98,13 @@
   color: var(--color-primary);
 }
 
+.section-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
 /* Sports Action on Home */
 .home-sports-action {
   margin-bottom: var(--space-8);
@@ -122,6 +129,8 @@
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
   transition: all var(--transition-fast);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .home-match-state-tab:hover {
@@ -225,12 +234,99 @@
   .hero-banner {
     flex-direction: column;
     text-align: center;
-    padding: var(--space-8) var(--space-6);
+    padding: var(--space-6) var(--space-4);
+    min-height: auto;
+    margin-bottom: var(--space-4);
+    border-radius: var(--radius-lg);
   }
+
+  .hero-content {
+    max-width: none;
+  }
+
+  .hero-content h1 {
+    font-size: var(--text-xl);
+    margin-bottom: var(--space-1);
+  }
+
+  .hero-content .hero-amount {
+    font-size: var(--text-2xl);
+    margin-bottom: var(--space-3);
+  }
+
+  .hero-cta {
+    padding: var(--space-2) var(--space-6);
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-2);
+  }
+
+  .hero-promo-code {
+    font-size: var(--text-xs);
+  }
+
   .hero-visual {
-    font-size: 5rem;
+    font-size: 3rem;
+    line-height: 1;
+    margin-top: var(--space-2);
   }
+
+  .section-header {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+  }
+
+  .section-header h2 {
+    font-size: var(--text-lg);
+    flex: 1;
+    min-width: 0;
+  }
+
+  .home-sports-action {
+    margin-bottom: var(--space-6);
+  }
+
+  .home-match-state-tabs {
+    flex-wrap: nowrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+  }
+
+  .home-match-state-tab {
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-xs);
+  }
+
   .match-cards-scroll > * {
     flex: 0 0 85%;
+    min-width: 260px;
+  }
+
+  .match-cards-scroll {
+    margin-left: calc(-1 * var(--container-padding, var(--space-4)));
+    margin-right: calc(-1 * var(--container-padding, var(--space-4)));
+    padding-left: var(--container-padding, var(--space-4));
+    padding-right: var(--container-padding, var(--space-4));
+    scroll-padding-left: var(--container-padding, var(--space-4));
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-visual {
+    display: none;
+  }
+
+  .hero-banner {
+    padding: var(--space-5) var(--space-4);
+  }
+
+  .carousel-view-all {
+    font-size: var(--text-xs);
+  }
+
+  .carousel-nav-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.7rem;
   }
 }

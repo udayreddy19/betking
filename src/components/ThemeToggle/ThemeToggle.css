@@ -21,3 +21,11 @@
 [data-theme="dark"] .theme-toggle {
   background: var(--color-surface);
 }
+
+@media (max-width: 768px) {
+  .theme-toggle {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
+}

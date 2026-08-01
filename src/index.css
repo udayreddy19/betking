@@ -328,3 +328,48 @@ input, select, textarea {
   display: flex;
   flex-direction: column;
 }
+
+/* ── Responsive layout ── */
+:root {
+  --container-padding: var(--space-6);
+}
+
+.scroll-row-bleed {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+}
+
+.scroll-row-bleed::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --header-height: 56px;
+    --container-padding: var(--space-4);
+  }
+
+  .container {
+    padding-left: var(--container-padding);
+    padding-right: var(--container-padding);
+  }
+
+  .app-main {
+    padding: var(--space-4) 0 calc(var(--space-16) + env(safe-area-inset-bottom, 0px));
+  }
+
+  .scroll-row-bleed {
+    margin-left: calc(-1 * var(--container-padding));
+    margin-right: calc(-1 * var(--container-padding));
+    padding-left: var(--container-padding);
+    padding-right: var(--container-padding);
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --container-padding: var(--space-3);
+  }
+}

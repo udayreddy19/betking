@@ -4,6 +4,7 @@ import { FiChevronRight, FiChevronLeft } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 import FilterChips from '../../components/FilterChips/FilterChips';
 import MatchCard from '../../components/MatchCard/MatchCard';
+import '../../components/GameCarousel/GameCarousel.css';
 import { sportsCategories, WELCOME_BONUS } from '../../data/mockData';
 import { useLiveSports } from '../../context/LiveSportsContext';
 import { filterMatches } from '../../utils/matchFilters';
@@ -64,7 +65,7 @@ export default function Home() {
       <div className="home-sports-action" id="sports-action-section">
         <div className="section-header">
           <h2>Sports action</h2>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          <div className="section-header-actions">
             <button type="button" className="carousel-view-all" onClick={() => navigate('/sports')}>
               View All
             </button>
@@ -77,10 +78,10 @@ export default function Home() {
           items={sportsCategories}
           activeId={activeSport}
           onSelect={handleSportChange}
-          className="filter-chips-row"
+          className="filter-chips-row scroll-row-bleed"
         />
 
-        <div className="home-match-state-tabs">
+        <div className="home-match-state-tabs scroll-row-bleed">
           {MATCH_STATE_TABS.map(tab => (
             <button
               key={tab.id}

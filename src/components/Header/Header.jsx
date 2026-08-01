@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { HiOutlineMenu } from 'react-icons/hi';
+import { HiOutlineMenu, HiOutlineClipboardList } from 'react-icons/hi';
 import { IoGiftOutline } from 'react-icons/io5';
 import { FiChevronDown } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
@@ -80,6 +80,7 @@ export default function Header() {
             aria-expanded={isMyBetsOpen}
             aria-haspopup="dialog"
           >
+            <HiOutlineClipboardList className="header-my-bets-icon" aria-hidden="true" />
             <span className="header-my-bets-label">My bets</span>
             {myBetsCount > 0 && <span className="header-my-bets-badge">{myBetsCount}</span>}
           </button>
@@ -116,7 +117,8 @@ export default function Header() {
                 Log in
               </button>
               <button className="header-join-btn" onClick={() => navigate('/register')} id="join-btn">
-                Join now
+                <span className="header-join-label-full">Join now</span>
+                <span className="header-join-label-short">Join</span>
               </button>
             </div>
           )}
