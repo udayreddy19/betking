@@ -14,7 +14,7 @@ export default function DepositModal() {
   // Form states
   const [amount, setAmount] = useState('1000');
   const [giftCardCode, setGiftCardCode] = useState('');
-  const [upiId, setUpiId] = useState('udayreddy@upi');
+  const [upiId, setUpiId] = useState('john@upi');
   const [upiMode, setUpiMode] = useState('id'); // 'id' | 'qr'
   const [razorpayKey, setRazorpayKey] = useState(import.meta.env.VITE_RAZORPAY_KEY_ID || '');
   const [isLoading, setIsLoading] = useState(false);
@@ -84,7 +84,7 @@ export default function DepositModal() {
           amount: depositAmt * 100, // Amount in paise
           currency: 'INR',
           name: 'BetKing Gaming',
-          description: 'Account Deposit (Real Payment)',
+          description: 'Account Deposit (UPI Push Collect)',
           order_id: order?.id, // Real Order ID from server if available
           handler: function (response) {
             console.log('Razorpay Real Payment Successful:', response);
@@ -95,6 +95,26 @@ export default function DepositModal() {
             name: user?.displayName || 'Uday Reddy',
             email: user?.username ? `${user.username}@betking.com` : 'uday@example.com',
             contact: '9876543210',
+            vpa: upiId.trim() || 'udayreddy@okicici',
+          },
+          config: {
+            display: {
+              blocks: {
+                upi: {
+                  name: 'Pay via UPI VPA Collect',
+                  instruments: [
+                    {
+                      method: 'upi',
+                      flows: ['collect']
+                    }
+                  ]
+                }
+              },
+              sequence: ['block.upi'],
+              preferences: {
+                show_default_blocks: false
+              }
+            }
           },
           notes: {
             userId: user?.username || 'udayreddy12',
@@ -155,7 +175,7 @@ export default function DepositModal() {
 
       <div className="deposit-overlay" onClick={handleClose} id="deposit-modal">
         <div className="deposit-card" onClick={e => e.stopPropagation()}>
-          
+
           {/* Header */}
           <div className="deposit-header">
             <div className="deposit-header-left">
@@ -168,8 +188,8 @@ export default function DepositModal() {
                 {isSuccess
                   ? 'Deposit Complete'
                   : selectedMethod
-                  ? selectedMethod.name
-                  : 'Deposit Funds'}
+                    ? selectedMethod.name
+                    : 'Deposit Funds'}
               </h2>
             </div>
             <button className="deposit-close" onClick={handleClose}>
