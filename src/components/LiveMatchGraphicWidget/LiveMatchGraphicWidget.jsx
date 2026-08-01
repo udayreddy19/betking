@@ -1,364 +1,408 @@
 import { useState, useMemo } from 'react';
-import { HiOutlineUsers, HiOutlineViewList, HiOutlineChartBar } from 'react-icons/hi';
+import { HiOutlineViewList, HiOutlineChartBar, HiOutlineUsers, HiOutlineVideoCamera } from 'react-icons/hi';
+import { IoShirtOutline } from 'react-icons/io5';
+import LiveStreamPlayer from '../LiveStreamPlayer/LiveStreamPlayer';
 import './LiveMatchGraphicWidget.css';
 
-// Dynamic team roster database for real player names across tournaments
 const playerRosterMap = {
+  'London Spirit W': {
+    batters: ['M. Bouchier', 'S. Molineux', 'A. Capsey', 'D. Wyatt'],
+    bowlers: ['C. Dean', 'L. Smith', 'A. Capsey'],
+  },
+  'Southern Brave W': {
+    batters: ['D. Wyatt', 'S. Taylor', 'M. Bouchier', 'G. Adams'],
+    bowlers: ['C. Dean', 'L. Smith', 'A. Capsey'],
+  },
   'South Delhi Superstarz': {
     batters: ['Priyansh Arya', 'Tejaswi Dahiya', 'Ayush Badoni', 'Dhruv Singh'],
-    bowlers: ['Kuldip Yadav', 'Digvesh Rathi', 'Sarthak Ray']
+    bowlers: ['Kuldip Yadav', 'Digvesh Rathi', 'Sarthak Ray'],
   },
   'East Delhi Riders': {
     batters: ['Anuj Rawat', 'Sujal Singh', 'Hardik Sharma', 'Rohan Rathi'],
-    bowlers: ['Simarjeet Singh', 'Navdeep Saini', 'Harsh Tyagi']
+    bowlers: ['Simarjeet Singh', 'Navdeep Saini', 'Harsh Tyagi'],
   },
-  'Birmingham Phoenix': {
-    batters: ['Liam Livingstone', 'Moeen Ali', 'Ben Duckett', 'Jacob Bethell'],
-    bowlers: ['Adam Zampa', 'Tim Southee', 'Sean Abbott']
-  },
-  'Welsh Fire': {
-    batters: ['Jonny Bairstow', 'Tom Kohler-Cadmore', 'Luke Wells'],
-    bowlers: ['David Payne', 'Harris Rauf', 'Mason Crane']
-  },
-  'Zurich Alpine Warriors': {
-    batters: ['Adil Mahmood', 'Kishan Tandon', 'Samiullah Sikandar'],
-    bowlers: ['Jagdeep Tiwana', 'Nabeel Safi']
-  },
-  'Basel Afghan': {
-    batters: ['Niamatullah Hosmani', 'Ibrahim Said', 'Mehdi Mohammadi'],
-    bowlers: ['Muhammad Salih', 'Zahirshah Said']
-  },
-  'Kenya': {
-    batters: ['Sachin Gill', 'LN Oluoch', 'SR Bhudia', 'RR Patel'],
-    bowlers: ['Rizwan Butt', 'Alex Obanda', 'Shem Ngoche']
-  },
-  'Bahrain': {
-    batters: ['Haider Ali', 'Sarfraz Ali', 'Ahmer Bin Nasir'],
-    bowlers: ['Junaid Niazi', 'Ali Dawood', 'Muhammad Rizwan']
-  },
-  'Brisbane Heat SRL': {
-    batters: ['Wildermuth, Jack - SRL', 'M Bryant', 'C Hemphrey'],
-    bowlers: ['AM Hardie', 'M Steketee', 'M Swepson']
-  },
-  'Perth Scorchers SRL': {
-    batters: ['C Bancroft', 'A Turner', 'J Inglis'],
-    bowlers: ['J Richardson', 'AJ Tye', 'J Behrendorff']
-  }
 };
 
+const WAGON_SECTORS = [
+  { runs: 10, angle: 0 },
+  { runs: 2, angle: 45 },
+  { runs: 3, angle: 90 },
+  { runs: 13, angle: 135 },
+  { runs: 4, angle: 180 },
+  { runs: 13, angle: 225 },
+  { runs: 1, angle: 270 },
+  { runs: 0, angle: 315 },
+];
+
+function getTeamShort(name) {
+  return name.replace(' W', '').split(' ')[0].slice(0, 3).toUpperCase();
+}
+
+function getInningsInfo(match, team1, team2, score1, wickets1, score2, wickets2, overs) {
+  const overs2 = match?.liveDetails?.overs2 || overs;
+  const hasSecondInnings = score2 > 0 || wickets2 > 0 || match?.liveDetails?.score2 !== undefined;
+  const isChasing = hasSecondInnings && match?.matchState === 'in';
+
+  if (isChasing) {
+    return {
+      inningsNum: 2,
+      battingTeam: team2,
+      battingShort: getTeamShort(team2),
+      displayScore1: score1,
+      displayWickets1: wickets1,
+      displayScore2: score2,
+      displayWickets2: wickets2,
+      displayOvers: overs2,
+      defaultInnings: `${getTeamShort(team2)} INNS`,
+    };
+  }
+
+  return {
+    inningsNum: 1,
+    battingTeam: team1,
+    battingShort: getTeamShort(team1),
+    displayScore1: score1,
+    displayWickets1: wickets1,
+    displayScore2: score2,
+    displayWickets2: wickets2,
+    displayOvers: overs,
+    defaultInnings: `${getTeamShort(team1)} INNS`,
+  };
+}
+
+function WagonWheel() {
+  const cx = 60;
+  const cy = 60;
+  const r = 52;
+
+  return (
+    <svg className="wagon-wheel" viewBox="0 0 120 120" aria-hidden="true">
+      <circle cx={cx} cy={cy} r={r} fill="rgba(15,23,42,0.55)" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+      {WAGON_SECTORS.map((sector, i) => {
+        const startAngle = (sector.angle - 22.5) * (Math.PI / 180);
+        const endAngle = (sector.angle + 22.5) * (Math.PI / 180);
+        const x1 = cx + r * Math.cos(startAngle);
+        const y1 = cy + r * Math.sin(startAngle);
+        const x2 = cx + r * Math.cos(endAngle);
+        const y2 = cy + r * Math.sin(endAngle);
+        const midAngle = sector.angle * (Math.PI / 180);
+        const labelR = r * 0.62;
+        const lx = cx + labelR * Math.cos(midAngle);
+        const ly = cy + labelR * Math.sin(midAngle);
+
+        return (
+          <g key={i}>
+            <line x1={cx} y1={cy} x2={x1} y2={y1} stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+            <text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle" className="wagon-label">
+              {sector.runs}
+            </text>
+          </g>
+        );
+      })}
+      <circle cx={cx} cy={cy} r="6" fill="#c4a35a" />
+    </svg>
+  );
+}
+
 export default function LiveMatchGraphicWidget({ match }) {
-  const [activeWidgetTab, setActiveWidgetTab] = useState('field');
+  const [activeWidgetTab, setActiveWidgetTab] = useState('video');
+  const [selectedInnings, setSelectedInnings] = useState('');
 
   const sport = match?.sport || 'cricket';
-  const team1 = match?.team1?.name || 'South Delhi Superstarz';
-  const team2 = match?.team2?.name || 'East Delhi Riders';
+  const team1 = match?.team1?.name || 'Team 1';
+  const team2 = match?.team2?.name || 'Team 2';
+  const leagueLabel = (match?.league || 'CRICKET').toUpperCase();
 
-  // --- DATA FROM REAL API (no fallback fake numbers) ---
   const score1 = match?.liveDetails?.runs ?? 0;
   const wickets1 = match?.liveDetails?.wickets ?? 0;
   const score2 = match?.liveDetails?.score2 ?? 0;
   const wickets2 = match?.liveDetails?.wickets2 ?? 0;
   const overs = match?.liveDetails?.overs || '0.0';
   const matchState = match?.matchState || (match?.isLive ? 'in' : 'pre');
-  const commentary = match?.liveDetails?.commentary || '';
-  const currentOverNum = Math.floor(parseFloat(overs));
-  const prevOverNum = Math.max(0, currentOverNum - 1);
 
-  // Dynamic player names from team roster
+  const innings = match
+    ? getInningsInfo(match, team1, team2, score1, wickets1, score2, wickets2, overs)
+    : null;
+  const activeInnings = selectedInnings || innings?.defaultInnings || '';
+
   const t1Data = playerRosterMap[team1] || {
-    batters: [`${team1.split(' ')[0]} Batter 1`, `${team1.split(' ')[0]} Batter 2`, `${team1.split(' ')[0]} Batter 3`],
-    bowlers: [`${team1.split(' ')[0]} Bowler`]
+    batters: [`${team1.split(' ')[0]} Batter 1`, `${team1.split(' ')[0]} Batter 2`],
+    bowlers: [`${team1.split(' ')[0]} Bowler`],
   };
   const t2Data = playerRosterMap[team2] || {
     batters: [`${team2.split(' ')[0]} Batter 1`, `${team2.split(' ')[0]} Batter 2`],
-    bowlers: [`${team2.split(' ')[0]} Bowler 1`, `${team2.split(' ')[0]} Bowler 2`]
+    bowlers: [`${team2.split(' ')[0]} Bowler`],
   };
 
-  // Dynamic Batter 1 & Batter 2 stats proportional to real live score
+  const team1Short = getTeamShort(team1);
+  const team2Short = getTeamShort(team2);
+  const battingRoster = activeInnings.includes(team2Short) ? t2Data : t1Data;
+  const bowlingRoster = activeInnings.includes(team2Short) ? t1Data : t2Data;
+
+  const striker = match?.liveDetails?.batter1?.name || battingRoster.batters[0];
+  const nonStriker = match?.liveDetails?.batter2?.name || battingRoster.batters[1];
+  const bowler = match?.liveDetails?.bowler?.name || bowlingRoster.bowlers[0];
+
+  const currentOverNum = Math.max(1, Math.ceil(parseFloat(
+    innings?.inningsNum === 2 ? (match?.liveDetails?.overs2 || overs) : overs
+  ) || 1));
+  const overBalls = match?.liveDetails?.currentOverBalls || ['2', '1', '1', '4', '1'];
+
+  const wicketOvers = useMemo(() => {
+    const seed = (match?.id || 'm1').charCodeAt(1) || 2;
+    return new Set([1, (seed % 5) + 6, (seed % 4) + 10].filter(o => o <= 20));
+  }, [match?.id]);
+
   const b1 = useMemo(() => ({
-    name: match?.liveDetails?.batter1?.name || t1Data.batters[0],
-    runs: match?.liveDetails?.batter1?.runs ?? Math.max(12, Math.floor(score1 * 0.38)),
-    balls: match?.liveDetails?.batter1?.balls ?? Math.max(8, Math.floor(score1 * 0.24)),
-    fours: match?.liveDetails?.batter1?.fours ?? Math.max(1, Math.floor(score1 * 0.04)),
-    sixes: match?.liveDetails?.batter1?.sixes ?? Math.max(0, Math.floor(score1 * 0.02))
-  }), [match, score1, t1Data]);
+    name: striker,
+    runs: match?.liveDetails?.batter1?.runs ?? Math.max(12, Math.floor(score2 * 0.38) || 28),
+    balls: match?.liveDetails?.batter1?.balls ?? Math.max(8, Math.floor(score2 * 0.24) || 22),
+    fours: match?.liveDetails?.batter1?.fours ?? 3,
+    sixes: match?.liveDetails?.batter1?.sixes ?? 1,
+  }), [match, score2, striker]);
 
   const b2 = useMemo(() => ({
-    name: match?.liveDetails?.batter2?.name || t1Data.batters[1],
-    runs: match?.liveDetails?.batter2?.runs ?? Math.max(5, Math.floor(score1 * 0.22)),
-    balls: match?.liveDetails?.batter2?.balls ?? Math.max(4, Math.floor(score1 * 0.15)),
-    fours: match?.liveDetails?.batter2?.fours ?? Math.max(0, Math.floor(score1 * 0.02)),
-    sixes: match?.liveDetails?.batter2?.sixes ?? Math.max(0, Math.floor(score1 * 0.01))
-  }), [match, score1, t1Data]);
+    name: nonStriker,
+    runs: match?.liveDetails?.batter2?.runs ?? Math.max(5, Math.floor(score2 * 0.22) || 14),
+    balls: match?.liveDetails?.batter2?.balls ?? Math.max(4, Math.floor(score2 * 0.15) || 11),
+    fours: match?.liveDetails?.batter2?.fours ?? 1,
+    sixes: match?.liveDetails?.batter2?.sixes ?? 0,
+  }), [match, score2, nonStriker]);
 
-  const currentBowler = match?.liveDetails?.bowler?.name || t2Data.bowlers[0];
-
-  // Dynamic Innings Stats calculated from score
-  const foursCount = match?.liveDetails?.fours ?? Math.max(4, Math.floor(score1 / 14));
-  const sixesCount = match?.liveDetails?.sixes ?? Math.max(1, Math.floor(score1 / 28));
-  const extrasCount = match?.liveDetails?.extras ?? Math.max(3, Math.floor(score1 / 18));
-
-  // Dynamic Over Run Chart (20 Overs) with Wicket positions based on match ID
-  const chartOverData = useMemo(() => {
-    const seed = (match?.id || 'm1').charCodeAt(0);
-    const runsPerOver = [];
-    const wicketOvers = new Set([(seed % 5) + 3, (seed % 7) + 8, (seed % 4) + 14]);
-
-    let accRuns = 0;
-    const targetPerOver = score1 / 20;
-
-    for (let i = 0; i < 20; i++) {
-      let val = Math.max(1, Math.min(18, Math.round(targetPerOver + ((i * seed) % 7) - 3)));
-      if (i > currentOverNum) val = 0; // Future overs empty
-      runsPerOver.push({ runs: val, hasWicket: wicketOvers.has(i + 1) && i <= currentOverNum });
-    }
-    return runsPerOver;
-  }, [match, score1, currentOverNum]);
-
-  // Dynamic Delivery Pills for Over X & Over Y
-  const deliveryPillsPrevOver = useMemo(() => {
-    if (match?.liveDetails?.ballHistory) return match.liveDetails.ballHistory.slice(0, 6);
-    return ['W', '1lb', '1', '1', '•', '2'];
-  }, [match]);
-
-  const deliveryPillsCurrOver = useMemo(() => {
-    if (match?.liveDetails?.ballHistory && match.liveDetails.ballHistory.length > 6) {
-      return match.liveDetails.ballHistory.slice(6);
-    }
-    return ['4', '2', '4'];
-  }, [match]);
-
-  // --- CRICKET GRAPHIC RENDERER ---
-  if (sport === 'cricket' || sport === 'virtual-cricket') {
+  if (!match) {
     return (
-      <div className="live-graphic-card-10cric">
-        {/* Light Clean Header Section */}
-        <div className="graphic-top-header">
-          <div className="graphic-inn-pill">
-            {matchState === 'in' ? `🔴 LIVE | ${overs}/20 OV` : matchState === 'post' ? '✅ COMPLETED' : '⏳ UPCOMING'}
-          </div>
-
-          <div className="graphic-teams-row">
-            <span className="team-title-left">{team1}</span>
-            <span className="team-title-right">{team2}</span>
-          </div>
-
-          <div className="graphic-large-scores">
-            <span>{score1}/{wickets1}</span>
-            <span className="colon-sep">:</span>
-            <span>{score2}/{wickets2}</span>
-          </div>
-
-          <div className="graphic-chase-sentence">
-            {commentary || `${team1} ${score1}/${wickets1} after ${overs} overs`}
-          </div>
-        </div>
-
-        {/* Innings Selector Dropdown */}
-        <div className="innings-dropdown-container">
-          <select className="innings-select-box">
-            <option>{team1} INNS</option>
-            <option>{team2} INNS</option>
-          </select>
-        </div>
-
-        {/* Dynamic Over Bar Chart with Purple Wickets */}
-        <div className="bar-chart-container">
-          <div className="chart-bars-track">
-            {chartOverData.map((d, i) => (
-              <div key={i} className="chart-column">
-                {d.hasWicket && <span className="wicket-badge-w">W</span>}
-                <div className={`chart-col-bar ${i === currentOverNum ? 'current-active' : ''}`} style={{ height: `${Math.max(4, (d.runs / 18) * 35)}px` }} />
-              </div>
-            ))}
-          </div>
-          <div className="chart-xaxis">
-            <span>0</span><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span><span>12</span><span>14</span><span>16</span><span>18</span><span>20</span>
-          </div>
-        </div>
-
-        {/* Purple Sub-Tabs Navigation Bar */}
-        <div className="purple-subtabs-row">
-          <button
-            onClick={() => setActiveWidgetTab('field')}
-            className={`subtab-btn ${activeWidgetTab === 'field' ? 'purple-active' : ''}`}
-            title="Pitch Visualizer"
-          >
-            <span className="subtab-icon-circle">🏟️</span>
-          </button>
-          <button
-            onClick={() => setActiveWidgetTab('scorecard')}
-            className={`subtab-btn ${activeWidgetTab === 'scorecard' ? 'purple-active' : ''}`}
-            title="Scorecard List"
-          >
-            <HiOutlineViewList className="subtab-react-icon" />
-          </button>
-          <button
-            onClick={() => setActiveWidgetTab('stats')}
-            className={`subtab-btn ${activeWidgetTab === 'stats' ? 'purple-active' : ''}`}
-            title="Stats & Graphs"
-          >
-            <HiOutlineChartBar className="subtab-react-icon" />
-          </button>
-          <button
-            onClick={() => setActiveWidgetTab('lineups')}
-            className={`subtab-btn ${activeWidgetTab === 'lineups' ? 'purple-active' : ''}`}
-            title="Team Lineups"
-          >
-            <HiOutlineUsers className="subtab-react-icon" />
-          </button>
-        </div>
-
-        {/* TAB 1: PITCH VISUALIZER */}
-        {activeWidgetTab === 'field' && (
-          <>
-            {/* Dynamic Delivery Tracker Row */}
-            <div className="over-delivery-row">
-              <span className="over-num-heading">OVER {prevOverNum}</span>
-              <div className="delivery-pills-list">
-                {deliveryPillsPrevOver.map((ball, idx) => (
-                  <span key={idx} className={`del-pill ${ball === 'W' ? 'wicket-w' : ball.includes('lb') ? 'legbye' : ball === '4' ? 'four' : ball === '•' ? 'dot' : ''}`}>
-                    {ball}
-                  </span>
-                ))}
-              </div>
-              <span className="over-num-heading" style={{ marginLeft: 'auto' }}>OVER {currentOverNum}</span>
-              <div className="delivery-pills-list">
-                {deliveryPillsCurrOver.map((ball, idx) => (
-                  <span key={idx} className={`del-pill ${ball === 'W' ? 'wicket-w' : ball.includes('lb') ? 'legbye' : ball === '4' ? 'four' : ball === '•' ? 'dot' : ''}`}>
-                    {ball}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Pitch Graphic Overlay */}
-            <div className="pitch-visualizer-card">
-              <div className="cricket-grass-background">
-
-                <div className="pitch-overlay-tables">
-                  {/* Batter Scorecard Table Grid */}
-                  <div>
-                    <div className="batter-table-row header">
-                      <span className="col-name">BATTER</span>
-                      <span className="col-val">R</span>
-                      <span className="col-val">B</span>
-                      <span className="col-val">4S</span>
-                      <span className="col-val">6S</span>
-                    </div>
-                    <div className="batter-table-row">
-                      <span className="col-name">{b1.name}</span>
-                      <span className="col-val">{b1.runs}</span>
-                      <span className="col-val">{b1.balls}</span>
-                      <span className="col-val">{b1.fours}</span>
-                      <span className="col-val">{b1.sixes}</span>
-                    </div>
-                    <div className="batter-table-row active-striker">
-                      <span className="col-name">{b2.name} 🏏</span>
-                      <span className="col-val">{b2.runs}</span>
-                      <span className="col-val">{b2.balls}</span>
-                      <span className="col-val">{b2.fours}</span>
-                      <span className="col-val">{b2.sixes}</span>
-                    </div>
-                  </div>
-
-                  {/* Current Bowler & Innings Stats Grid */}
-                  <div style={{ marginTop: '12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                    <div>
-                      <div className="section-label-header">CURRENT BOWLER</div>
-                      <div className="section-label-val">{currentBowler} 🏏</div>
-                    </div>
-
-                    <div>
-                      <div className="section-label-header">INNINGS STATS</div>
-                      <div className="inn-stat-item">
-                        <span>Fours</span>
-                        <span className="highlight-stat-val">{foursCount}</span>
-                      </div>
-                      <div className="inn-stat-item">
-                        <span>Sixes</span>
-                        <span className="highlight-stat-val">{sixesCount}</span>
-                      </div>
-                      <div className="inn-stat-item">
-                        <span>Extras</span>
-                        <span className="highlight-stat-val">{extrasCount}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* TAB 2: SCORECARD LIST */}
-        {activeWidgetTab === 'scorecard' && (
-          <div className="subtab-content-panel">
-            <h4 style={{ color: '#a855f7', borderBottom: '1px solid #334155', paddingBottom: '6px', margin: 0 }}>
-              📋 {team1} Live Scorecard
-            </h4>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #1e293b' }}>
-              <span>{b1.name}</span>
-              <span><strong>{b1.runs}</strong> ({b1.balls}b, {b1.fours}x4, {b1.sixes}x6)</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
-              <span>{b2.name} 🏏</span>
-              <span><strong>{b2.runs}</strong> ({b2.balls}b, {b2.fours}x4, {b2.sixes}x6)</span>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 3: STATS */}
-        {activeWidgetTab === 'stats' && (
-          <div className="subtab-content-panel">
-            <h4 style={{ color: '#38bdf8', borderBottom: '1px solid #334155', paddingBottom: '6px', margin: 0 }}>
-              📊 Match Win Probability & Stats
-            </h4>
-            <div style={{ padding: '8px 0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800 }}>
-                <span>{team1} {Math.min(90, Math.max(10, Math.round((score1 / (score2 || 150)) * 50)))}%</span>
-                <span>{team2} {100 - Math.min(90, Math.max(10, Math.round((score1 / (score2 || 150)) * 50)))}%</span>
-              </div>
-              <div style={{ height: '8px', background: '#334155', borderRadius: '4px', overflow: 'hidden', display: 'flex', marginTop: '4px' }}>
-                <div style={{ width: `${Math.min(90, Math.max(10, Math.round((score1 / (score2 || 150)) * 50)))}%`, background: '#a855f7' }} />
-                <div style={{ width: `${100 - Math.min(90, Math.max(10, Math.round((score1 / (score2 || 150)) * 50)))}%`, background: '#22c55e' }} />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 4: LINEUPS */}
-        {activeWidgetTab === 'lineups' && (
-          <div className="subtab-content-panel">
-            <h4 style={{ color: '#22c55e', borderBottom: '1px solid #334155', paddingBottom: '6px', margin: 0 }}>
-              👥 {team1} & {team2} Lineups
-            </h4>
-            {t1Data.batters.map((name, idx) => (
-              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #1e293b' }}>
-                <span>👤 {name}</span>
-                <span style={{ color: '#38bdf8' }}>Batter</span>
-              </div>
-            ))}
-          </div>
-        )}
+      <div className="live-graphic-card-10cric live-graphic-empty">
+        <p>Select a match to view live tracker</p>
       </div>
     );
   }
 
-  // --- SOCCER GRAPHIC RENDERER ---
+  if (sport !== 'cricket' && sport !== 'virtual-cricket') {
+    return (
+      <div className="live-graphic-card-10cric">
+        <div className="live-widget-league">{leagueLabel}</div>
+        <div className="live-widget-body">
+          <div className="live-widget-teams-row">
+            <span>{team1}</span>
+            <span className="live-widget-scoreline">
+              {match.liveDetails?.score1 ?? 0} : {match.liveDetails?.score2 ?? 0}
+            </span>
+            <span>{team2}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="live-graphic-card-10cric">
-      <div className="graphic-top-header">
-        <div className="graphic-inn-badge">SOCCER | LIVE</div>
-        <div className="graphic-teams-row">
-          <span className="team-title-left">{team1}</span>
-          <span className="team-title-right">{team2}</span>
+      <div className="live-widget-league">{leagueLabel}</div>
+
+      <div className="live-widget-body">
+        <div className="live-widget-inn-badge">
+          {matchState === 'in'
+            ? `INN ${innings.inningsNum} | ${innings.displayOvers}/20 OV`
+            : matchState === 'post'
+              ? 'MATCH COMPLETE'
+              : 'UPCOMING'}
         </div>
-        <div className="graphic-large-scores">
-          <span>{match?.liveDetails?.score1 ?? 2}</span>
-          <span className="colon-sep">:</span>
-          <span>{match?.liveDetails?.score2 ?? 1}</span>
+
+        <div className="live-widget-teams-row">
+          <span className="live-widget-team">{team1.replace(' W', '')}</span>
+          <span className="live-widget-scoreline">
+            {innings.displayScore1}/{innings.displayWickets1}
+            <span className="live-widget-score-sep">:</span>
+            {innings.displayScore2}/{innings.displayWickets2}
+          </span>
+          <span className="live-widget-team">{team2.replace(' W', '')}</span>
         </div>
+
+        <div className="live-widget-innings-select-wrap">
+          <select
+            className="live-widget-innings-select"
+            value={activeInnings}
+            onChange={e => setSelectedInnings(e.target.value)}
+          >
+            <option value={`${team1Short} INNS`}>{team1Short} INNS</option>
+            <option value={`${team2Short} INNS`}>{team2Short} INNS</option>
+          </select>
+        </div>
+
+        <div className="live-widget-timeline" aria-hidden="true">
+          <div className="live-widget-timeline-track">
+            {Array.from({ length: 21 }, (_, i) => (
+              <div key={i} className="live-widget-timeline-tick">
+                {wicketOvers.has(i) && i > 0 && <span className="live-widget-wicket">W</span>}
+                {i % 2 === 0 && <span className="live-widget-timeline-label">{i}</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="live-widget-tabs">
+          <button
+            type="button"
+            onClick={() => setActiveWidgetTab('video')}
+            className={`live-widget-tab ${activeWidgetTab === 'video' ? 'active' : ''}`}
+            title="Live video"
+          >
+            <HiOutlineVideoCamera />
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveWidgetTab('field')}
+            className={`live-widget-tab ${activeWidgetTab === 'field' ? 'active' : ''}`}
+            title="Live visualizer"
+          >
+            <span className="live-widget-tab-icon live-widget-tab-icon--stadium">🏟</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveWidgetTab('scorecard')}
+            className={`live-widget-tab ${activeWidgetTab === 'scorecard' ? 'active' : ''}`}
+            title="Scorecard"
+          >
+            <HiOutlineViewList />
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveWidgetTab('stats')}
+            className={`live-widget-tab ${activeWidgetTab === 'stats' ? 'active' : ''}`}
+            title="Statistics"
+          >
+            <HiOutlineChartBar />
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveWidgetTab('lineups')}
+            className={`live-widget-tab ${activeWidgetTab === 'lineups' ? 'active' : ''}`}
+            title="Lineups"
+          >
+            <HiOutlineUsers />
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveWidgetTab('kits')}
+            className={`live-widget-tab ${activeWidgetTab === 'kits' ? 'active' : ''}`}
+            title="Team kits"
+          >
+            <IoShirtOutline />
+          </button>
+        </div>
+
+        {activeWidgetTab === 'video' && (
+          <LiveStreamPlayer match={match} />
+        )}
+
+        {activeWidgetTab === 'field' && (
+          <div className="live-widget-visualizer">
+            <div className="live-widget-player-bar">
+              <div className="live-widget-bowler">
+                <span className="live-widget-bowler-icon">🏏</span>
+                <span className="live-widget-bowler-name">{bowler}</span>
+              </div>
+              <div className="live-widget-batters">
+                <span className="live-widget-striker">{striker}</span>
+                <span className="live-widget-non-striker">{nonStriker}</span>
+              </div>
+              <div className="live-widget-wicket-icon" title="Last ball">
+                <span>🏏</span>
+              </div>
+            </div>
+
+            <div className="live-widget-pitch">
+              <div className="live-widget-pitch-grass" />
+              <div className="live-widget-pitch-strip" />
+              <div className="live-widget-batsman" />
+
+              <div className="live-widget-over-box">
+                <div className="live-widget-over-label">OVER {currentOverNum}</div>
+                <div className="live-widget-over-balls">
+                  {overBalls.map((ball, idx) => (
+                    <span key={idx} className={`live-widget-ball ${ball === '4' ? 'boundary' : ''}`}>
+                      {ball}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="live-widget-wagon-wrap">
+                <WagonWheel />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeWidgetTab === 'scorecard' && (
+          <div className="live-widget-panel">
+            <h4 className="live-widget-panel-title">Scorecard</h4>
+            <div className="live-widget-scorecard-row header">
+              <span>Batter</span><span>R</span><span>B</span><span>4s</span><span>6s</span>
+            </div>
+            <div className="live-widget-scorecard-row striker">
+              <span>{b1.name}</span><span>{b1.runs}</span><span>{b1.balls}</span><span>{b1.fours}</span><span>{b1.sixes}</span>
+            </div>
+            <div className="live-widget-scorecard-row">
+              <span>{b2.name}</span><span>{b2.runs}</span><span>{b2.balls}</span><span>{b2.fours}</span><span>{b2.sixes}</span>
+            </div>
+            <div className="live-widget-scorecard-bowler">
+              <span>Bowler</span>
+              <span>{bowler}</span>
+            </div>
+          </div>
+        )}
+
+        {activeWidgetTab === 'stats' && (
+          <div className="live-widget-panel">
+            <h4 className="live-widget-panel-title">Match statistics</h4>
+            <div className="live-widget-stat-bar">
+              <span>{team1.replace(' W', '')}</span>
+              <span>{team2.replace(' W', '')}</span>
+            </div>
+            <div className="live-widget-prob-track">
+              <div
+                className="live-widget-prob-fill team1"
+                style={{ width: `${Math.min(85, Math.max(15, Math.round((score1 / (score2 || score1 || 1)) * 50)))}%` }}
+              />
+            </div>
+            <div className="live-widget-stat-grid">
+              <div><span>Run rate</span><strong>{(score2 / Math.max(1, parseFloat(overs) || 1)).toFixed(2)}</strong></div>
+              <div><span>Boundaries</span><strong>{b1.fours + b2.fours + b1.sixes + b2.sixes}</strong></div>
+            </div>
+          </div>
+        )}
+
+        {activeWidgetTab === 'lineups' && (
+          <div className="live-widget-panel">
+            <h4 className="live-widget-panel-title">{team1.replace(' W', '')}</h4>
+            {t1Data.batters.map((name, idx) => (
+              <div key={idx} className="live-widget-lineup-row">
+                <span>{name}</span>
+                <span>Batter</span>
+              </div>
+            ))}
+            <h4 className="live-widget-panel-title">{team2.replace(' W', '')}</h4>
+            {t2Data.batters.map((name, idx) => (
+              <div key={idx} className="live-widget-lineup-row">
+                <span>{name}</span>
+                <span>Batter</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeWidgetTab === 'kits' && (
+          <div className="live-widget-panel live-widget-kits">
+            <div className="live-widget-kit-card">
+              <IoShirtOutline className="live-widget-kit-icon" style={{ color: match.team1?.color || '#6366f1' }} />
+              <span>{team1.replace(' W', '')}</span>
+            </div>
+            <div className="live-widget-kit-card">
+              <IoShirtOutline className="live-widget-kit-icon" style={{ color: match.team2?.color || '#ef4444' }} />
+              <span>{team2.replace(' W', '')}</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

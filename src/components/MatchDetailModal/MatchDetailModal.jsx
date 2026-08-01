@@ -66,7 +66,8 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
 
     e?.stopPropagation?.();
     if (!canBet) return;
-    addBet(match, selection, odds, selectionName, { singlePerMatch: true, skipMobileOpen: true });
+    const marketName = typeof arg1 === 'string' && !arg1?.stopPropagation ? arg1 : 'Match Winner';
+    addBet(match, selection, odds, selectionName, { singlePerMatch: true, skipMobileOpen: true, marketName });
   };
 
   const propOddsBtnClass = (marketName, label) => {

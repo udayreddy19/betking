@@ -135,11 +135,87 @@
 }
 
 .betslip-bet {
-  background: var(--color-bg-alt);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
   border-radius: var(--radius-md);
   padding: var(--space-3);
   margin-bottom: var(--space-3);
   animation: fadeInUp 200ms ease;
+}
+
+.betslip-bet-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
+.betslip-bet-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.betslip-bet-sport-icon {
+  font-size: 0.9rem;
+}
+
+.betslip-bet-time {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.betslip-bet-market {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+  margin-bottom: var(--space-2);
+}
+
+.betslip-bet-selection-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.betslip-bet-stake-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px dashed var(--color-border-light);
+}
+
+.betslip-bet-stake-row label {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+.betslip-bet-stake-row input {
+  width: 100px;
+  padding: var(--space-1) var(--space-2);
+  background: var(--color-bg);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  text-align: right;
+  font-weight: var(--font-semibold);
+}
+
+.betslip-bet-type-badge {
+  font-size: 0.65rem;
+  font-weight: var(--font-bold);
+  background: var(--color-primary);
+  color: white;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.betslip-footer-summary {
+  margin-bottom: var(--space-3);
 }
 .betslip-bet-header {
   display: flex;
