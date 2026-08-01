@@ -97,25 +97,6 @@ export default function DepositModal() {
             contact: '9876543210',
             vpa: upiId.trim() || 'udayreddy@okicici',
           },
-          config: {
-            display: {
-              blocks: {
-                upi: {
-                  name: 'Pay via UPI VPA Collect',
-                  instruments: [
-                    {
-                      method: 'upi',
-                      flows: ['collect']
-                    }
-                  ]
-                }
-              },
-              sequence: ['block.upi'],
-              preferences: {
-                show_default_blocks: false
-              }
-            }
-          },
           notes: {
             userId: user?.username || 'udayreddy12',
           },

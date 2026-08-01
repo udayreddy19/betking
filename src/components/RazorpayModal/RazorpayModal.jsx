@@ -12,7 +12,7 @@ export default function RazorpayModal({ isOpen, onClose, amount, onSuccess, user
   const [cardName, setCardName] = useState(user?.displayName || 'Uday Reddy');
 
   // UPI State
-  const [upiId, setUpiId] = useState('udayreddy@okicici');
+  const [upiId, setUpiId] = useState('john@okicici');
 
   // Netbanking State
   const [selectedBank, setSelectedBank] = useState('SBI');
