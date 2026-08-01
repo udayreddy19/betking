@@ -9,19 +9,14 @@ const teamRosters = {
   'Bangladesh Em...': ['Towhid Hridoy', 'Tanzid Hasan', 'Parvez Hossain', 'Shamim Hossain'],
   'West Delhi Lions': ['Hiten Dalal', 'Nitish Rana', 'Himmat Singh', 'Shivam Gupta'],
   'New Delhi Tigers': ['Kshitiz Sharma', 'Himanshu Chauhan', 'Vaibhav Kandpal', 'Prince Yadav'],
-  'Hermes-Dvs': ['Daniel Doyle', 'Ashley Pringle', 'Ralph Elenbaas', 'Sebastiaan Braat'],
-  'Rotterdam Cric...': ['Bas de Leede', 'Vikramjit Singh', 'Logan van Beek', 'Max O\'Dowd'],
-  'Kenya': ['Rakep Patel', 'Collins Obuya', 'Alex Obanda', 'Shem Ngoche'],
-  'Bahrain': ['Haider Ali', 'Sarfraz Ali', 'Sathaiya Veerapathiran', 'Junaid Niazi'],
+  'Kenya': ['SR Bhudia', 'RR Patel', 'Rakep Patel', 'Alex Obanda'],
+  'Bahrain': ['Haider Ali', 'Sarfraz Ali', 'Rizwan Butt', 'Junaid Niazi'],
   'Manchester City': ['Erling Haaland', 'Kevin De Bruyne', 'Phil Foden', 'Julian Alvarez'],
   'Arsenal': ['Bukayo Saka', 'Martin Odegaard', 'Gabriel Jesus', 'Kai Havertz'],
   'Real Madrid': ['Vinicius Jr', 'Jude Bellingham', 'Rodrygo', 'Kylian Mbappe'],
   'Barcelona': ['Robert Lewandowski', 'Lamine Yamal', 'Raphinha', 'Pedri'],
   'LA Lakers': ['LeBron James', 'Anthony Davis', 'Austin Reaves', 'D\'Angelo Russell'],
-  'Boston Celtics': ['Jayson Tatum', 'Jaylen Brown', 'Kristaps Porzingis', 'Derrick White'],
-  'Inter Miami': ['Lionel Messi', 'Luis Suarez', 'Sergio Busquets', 'Jordi Alba'],
-  'Colombo Strikers': ['Thisara Perera', 'Nuwan Thushara', 'Dunith Wellalage', 'Chamika Karunaratne'],
-  'Galle Gladiators': ['Bhanuka Rajapaksa', 'Isuru Udana', 'Kusal Mendis', 'Tabraiz Shamsi']
+  'Boston Celtics': ['Jayson Tatum', 'Jaylen Brown', 'Kristaps Porzingis', 'Derrick White']
 };
 
 export default function MatchDetailModal({ match, isOpen, onClose }) {
@@ -34,16 +29,17 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
   const team2Name = match.team2.name;
   const sport = match.sport || 'cricket';
 
-  // Get dynamic player names for both teams
+  // Dynamic player names
   const team1Players = teamRosters[team1Name] || [`${match.team1.shortName} Opener`, `${match.team1.shortName} Captain`, `${match.team1.shortName} Batter 3`, `${match.team1.shortName} All-Rounder`];
   const team2Players = teamRosters[team2Name] || [`${match.team2.shortName} Opener`, `${match.team2.shortName} Captain`, `${match.team2.shortName} Batter 3`, `${match.team2.shortName} All-Rounder`];
 
   // Innings detection for Cricket
-  // In our live simulation: if team2 has a completed score (e.g. Bangladesh 132/4) and team1 is currently batting (e.g. SA 38/3), we are in 2nd Innings!
   const isSecondInnings = sport === 'cricket' && match.isLive && match.liveDetails && match.liveDetails.score2 !== undefined && match.liveDetails.runs !== undefined;
-
-  // Half time detection for Soccer
-  const isSecondHalf = sport === 'soccer' && match.isLive && (match.liveDetails?.minute || 0) > 45;
+  const targetScore = (match.liveDetails?.score2 || 148) + 1;
+  const currentScore = match.liveDetails?.runs || 71;
+  const wicketsLost = match.liveDetails?.wickets || 3;
+  const reqRuns = Math.max(0, targetScore - currentScore);
+  const oversDone = match.liveDetails?.overs || '8.3';
 
   const handleOddsClick = (marketName, selection, odds) => {
     const customMatch = {
@@ -67,17 +63,16 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
           </button>
         </div>
 
-        {/* Live Score Scoreboard Banner */}
+        {/* 10CRIC Style Live Scoreboard Header */}
         <div className="match-detail-scoreboard">
           <div className="scoreboard-team">
             <span className="scoreboard-jersey" style={{ color: match.team1.color }}>👕</span>
             <h4>{team1Name}</h4>
             {match.isLive && match.liveDetails && (
               <div className="scoreboard-score">
-                {sport === 'cricket' && `${match.liveDetails.runs || 38}/${match.liveDetails.wickets || 3}`}
+                {sport === 'cricket' && `${currentScore}/${wicketsLost}`}
                 {sport === 'soccer' && (match.liveDetails.score1 ?? 2)}
                 {sport === 'basketball' && (match.liveDetails.score1 ?? 94)}
-                {sport !== 'cricket' && sport !== 'soccer' && sport !== 'basketball' && (match.liveDetails.score1 ?? 1)}
               </div>
             )}
           </div>
@@ -87,9 +82,8 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
               <div className="scoreboard-live-badge">
                 <span className="live-pulse" />
                 LIVE {
-                  sport === 'cricket' ? (isSecondInnings ? `(2nd Inn - ${match.liveDetails?.overs || '1.2'} Ov)` : `(1st Inn - ${match.liveDetails?.overs || '14.2'} Ov)`) :
-                  sport === 'soccer' ? `(${match.liveDetails?.minute || '74'}' ${isSecondHalf ? '2nd Half' : '1st Half'})` :
-                  sport === 'basketball' ? `(${match.liveDetails?.quarter || '4th Qtr'})` : '(In Play)'
+                  sport === 'cricket' ? (isSecondInnings ? `(INN 2 | ${oversDone}/20 OV)` : `(INN 1 | ${oversDone}/20 OV)`) :
+                  sport === 'soccer' ? `(${match.liveDetails?.minute || '74'}' In Play)` : '(In Play)'
                 }
               </div>
             ) : (
@@ -103,24 +97,74 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
             <h4>{team2Name}</h4>
             {match.isLive && match.liveDetails && (
               <div className="scoreboard-score">
-                {sport === 'cricket' && `${match.liveDetails.score2 || 132}/${match.liveDetails.wickets2 || 4}`}
+                {sport === 'cricket' && `${match.liveDetails.score2 || 148}/${match.liveDetails.wickets2 || 5}`}
                 {sport === 'soccer' && (match.liveDetails.score2 ?? 1)}
                 {sport === 'basketball' && (match.liveDetails.score2 ?? 88)}
-                {sport !== 'cricket' && sport !== 'soccer' && sport !== 'basketball' && (match.liveDetails.score2 ?? 0)}
               </div>
             )}
           </div>
         </div>
 
-        {match.isLive && match.liveDetails?.commentary && (
-          <div className="match-detail-commentary">
-            ⚡ {match.liveDetails.commentary}
+        {/* 10CRIC Live Cricket Scorecard & Match Center Bar */}
+        {sport === 'cricket' && match.isLive && (
+          <div className="cricket-live-center">
+            <div className="cricket-chase-pill">
+              {isSecondInnings
+                ? `⚡ ${team1Name} (${currentScore}/${wicketsLost}) require ${reqRuns} runs from 69 balls.`
+                : `⚡ 1st Innings in progress: ${team1Name} ${currentScore}/${wicketsLost} (${oversDone}/20 Ov)`}
+            </div>
+
+            {/* Live Batter & Bowler Table */}
+            <div className="cricket-live-tables">
+              <div className="cricket-table-box">
+                <div className="cricket-table-title">BATTER</div>
+                <table className="cricket-mini-table">
+                  <thead>
+                    <tr>
+                      <th>NAME</th>
+                      <th>R</th>
+                      <th>B</th>
+                      <th>4S</th>
+                      <th>6S</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>{team1Players[0] || 'SR Bhudia'} *</td>
+                      <td>{Math.floor(currentScore * 0.3)}</td>
+                      <td>18</td>
+                      <td>3</td>
+                      <td>1</td>
+                    </tr>
+                    <tr>
+                      <td>{team1Players[1] || 'RR Patel'}</td>
+                      <td>{Math.floor(currentScore * 0.2)}</td>
+                      <td>12</td>
+                      <td>2</td>
+                      <td>0</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="cricket-table-box">
+                <div className="cricket-table-title">CURRENT BOWLER & STATS</div>
+                <div className="bowler-stat-row">
+                  <span>Bowler: <strong>{team2Players[2] || 'Rizwan Butt'}</strong></span>
+                </div>
+                <div className="innings-stats-grid">
+                  <div><span>Fours:</span> <strong>9</strong></div>
+                  <div><span>Sixes:</span> <strong>3</strong></div>
+                  <div><span>Extras:</span> <strong>8</strong></div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
         {/* Market Category Filter Tabs */}
         <div className="market-tabs">
-          {['all', 'main', 'props', 'totals', 'specials'].map(cat => (
+          {['all', 'main', 'overs-deliveries', 'player-props', 'specials'].map(cat => (
             <button
               key={cat}
               className={`market-tab ${activeMarketCategory === cat ? 'active' : ''}`}
@@ -128,21 +172,21 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
             >
               {cat === 'all' && 'All Markets'}
               {cat === 'main' && 'Main / Winner'}
-              {cat === 'props' && (sport === 'cricket' ? 'Player Props' : 'Game Props')}
-              {cat === 'totals' && 'Over / Under Totals'}
+              {cat === 'overs-deliveries' && (sport === 'cricket' ? 'Overs & Deliveries' : 'Interval Markets')}
+              {cat === 'player-props' && 'Player Props'}
               {cat === 'specials' && 'Specials'}
             </button>
           ))}
         </div>
 
-        {/* Markets Content List - Minute Detail & Innings Aware */}
+        {/* Markets Content List - 10CRIC Style */}
         <div className="market-content">
 
           {/* 1. Main Winner Market */}
           {(activeMarketCategory === 'all' || activeMarketCategory === 'main') && (
             <div className="market-box">
               <div className="market-title">
-                <span>{sport === 'soccer' ? 'Full Time 1X2' : 'Match Winner (incl. Super Over)'}</span>
+                <span>Winner (incl. super over)</span>
                 <span className="market-cashout">CASHOUT AVAILABLE</span>
               </div>
               <div className={`market-odds-grid ${match.odds.draw !== undefined ? 'three-col' : 'two-col'}`}>
@@ -164,173 +208,162 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
             </div>
           )}
 
-          {/* CRICKET SPECIFIC MARKETS */}
+          {/* CRICKET SPECIFIC 10CRIC MARKETS */}
           {(sport === 'cricket' || sport === 'virtual-cricket') && (
             <>
-              {/* 2nd Innings Active Markets (when 1st innings is finished) */}
-              {isSecondInnings ? (
+              {/* Over-by-Over & Ball-by-Ball Delivery Markets */}
+              {(activeMarketCategory === 'all' || activeMarketCategory === 'overs-deliveries') && (
                 <>
-                  {/* Settled 1st Innings Banner */}
-                  <div className="market-box settled-box">
-                    <div className="market-title" style={{ color: '#94a3b8' }}>
-                      <span><IoLockClosed style={{ marginRight: '4px' }} /> 1st Innings Markets</span>
-                      <span className="settled-badge">SETTLED (1st Inn: {team2Name} {match.liveDetails.score2}/{match.liveDetails.wickets2 || 4})</span>
+                  <div className="market-box">
+                    <div className="market-title"><span>{isSecondInnings ? '2nd' : '1st'} innings over 10 - {team1Name} total</span></div>
+                    <div className="market-odds-grid two-col">
+                      <button className="market-odds-btn" onClick={() => handleOddsClick('Over 10 Total', 'Over 6.5', 2.06)}>
+                        <span className="market-label">Over 6.5</span>
+                        <span className="market-val">2.06</span>
+                      </button>
+                      <button className="market-odds-btn" onClick={() => handleOddsClick('Over 10 Total', 'Under 6.5', 1.63)}>
+                        <span className="market-label">Under 6.5</span>
+                        <span className="market-val">1.63</span>
+                      </button>
+                      <button className="market-odds-btn" onClick={() => handleOddsClick('Over 10 Total', 'Over 7.5', 2.66)}>
+                        <span className="market-label">Over 7.5</span>
+                        <span className="market-val">2.66</span>
+                      </button>
+                      <button className="market-odds-btn" onClick={() => handleOddsClick('Over 10 Total', 'Under 7.5', 1.38)}>
+                        <span className="market-label">Under 7.5</span>
+                        <span className="market-val">1.38</span>
+                      </button>
                     </div>
                   </div>
 
-                  {/* Active 2nd Innings Markets */}
-                  {(activeMarketCategory === 'all' || activeMarketCategory === 'props') && (
-                    <div className="market-box">
-                      <div className="market-title"><span>2nd Innings - Next Wicket Dismissal Method</span></div>
-                      <div className="market-odds-grid multi-col">
-                        {[
-                          { label: 'Fielder Catch', val: 1.52 },
-                          { label: 'Bowled', val: 3.80 },
-                          { label: 'Keeper Catch', val: 6.50 },
-                          { label: 'LBW', val: 9.50 },
-                          { label: 'Run Out', val: 12.00 },
-                          { label: 'Stumped', val: 18.00 }
-                        ].map(item => (
-                          <button key={item.label} className="market-odds-btn" onClick={() => handleOddsClick('2nd Inn Wicket Method', item.label, item.val)}>
-                            <span className="market-label">{item.label}</span>
-                            <span className="market-val">{item.val.toFixed(2)}</span>
-                          </button>
-                        ))}
-                      </div>
+                  <div className="market-box">
+                    <div className="market-title"><span>{isSecondInnings ? '2nd' : '1st'} innings over 11 - {team1Name} total</span></div>
+                    <div className="market-odds-grid two-col">
+                      <button className="market-odds-btn" onClick={() => handleOddsClick('Over 11 Total', 'Over 6.5', 2.00)}>
+                        <span className="market-label">Over 6.5</span>
+                        <span className="market-val">2.00</span>
+                      </button>
+                      <button className="market-odds-btn" onClick={() => handleOddsClick('Over 11 Total', 'Under 6.5', 1.66)}>
+                        <span className="market-label">Under 6.5</span>
+                        <span className="market-val">1.66</span>
+                      </button>
                     </div>
-                  )}
+                  </div>
 
-                  {(activeMarketCategory === 'all' || activeMarketCategory === 'totals') && (
-                    <div className="market-box">
-                      <div className="market-title"><span>2nd Innings - Active Batsmen Total Runs</span></div>
-                      {team1Players.slice(0, 3).map((player, idx) => {
-                        const line = (18.5 + idx * 6).toFixed(1);
-                        return (
-                          <div key={player} className="market-subgroup">
-                            <div className="market-subtitle">2nd innings - {player} total runs</div>
-                            <div className="market-odds-grid two-col">
-                              <button className="market-odds-btn" onClick={() => handleOddsClick(`${player} 2nd Inn Runs`, `Over ${line}`, 1.83)}>
-                                <span className="market-label">Over {line}</span>
-                                <span className="market-val">1.83</span>
-                              </button>
-                              <button className="market-odds-btn" onClick={() => handleOddsClick(`${player} 2nd Inn Runs`, `Under ${line}`, 1.83)}>
-                                <span className="market-label">Under {line}</span>
-                                <span className="market-val">1.83</span>
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
+                  <div className="market-box">
+                    <div className="market-title"><span>{isSecondInnings ? '2nd' : '1st'} innings overs 0 to 12 - {team1Name} total</span></div>
+                    <div className="market-odds-grid two-col">
+                      <button className="market-odds-btn" onClick={() => handleOddsClick('Overs 0-12 Total', 'Over 92.5', 1.80)}>
+                        <span className="market-label">Over 92.5</span>
+                        <span className="market-val">1.80</span>
+                      </button>
+                      <button className="market-odds-btn" onClick={() => handleOddsClick('Overs 0-12 Total', 'Under 92.5', 1.80)}>
+                        <span className="market-label">Under 92.5</span>
+                        <span className="market-val">1.80</span>
+                      </button>
                     </div>
-                  )}
-                </>
-              ) : (
-                /* 1st Innings Active Markets */
-                <>
-                  {(activeMarketCategory === 'all' || activeMarketCategory === 'props') && (
-                    <div className="market-box">
-                      <div className="market-title"><span>1st Innings - 1st Dismissal Method</span></div>
-                      <div className="market-odds-grid multi-col">
-                        {[
-                          { label: 'Fielder Catch', val: 1.46 },
-                          { label: 'Bowled', val: 4.30 },
-                          { label: 'Keeper Catch', val: 7.00 },
-                          { label: 'LBW', val: 11.00 },
-                          { label: 'Run Out', val: 10.00 },
-                          { label: 'Stumped', val: 21.00 }
-                        ].map(item => (
-                          <button key={item.label} className="market-odds-btn" onClick={() => handleOddsClick('1st Dismissal', item.label, item.val)}>
-                            <span className="market-label">{item.label}</span>
-                            <span className="market-val">{item.val.toFixed(2)}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  </div>
 
-                  {(activeMarketCategory === 'all' || activeMarketCategory === 'totals') && (
-                    <div className="market-box">
-                      <div className="market-title"><span>1st Innings - Player Total Runs ({team1Name})</span></div>
-                      {team1Players.map((player, idx) => {
-                        const line = (16.5 + idx * 5).toFixed(1);
-                        return (
-                          <div key={player} className="market-subgroup">
-                            <div className="market-subtitle">1st innings - {player} total runs</div>
-                            <div className="market-odds-grid two-col">
-                              <button className="market-odds-btn" onClick={() => handleOddsClick(`${player} Total Runs`, `Over ${line}`, 1.83)}>
-                                <span className="market-label">Over {line}</span>
-                                <span className="market-val">1.83</span>
-                              </button>
-                              <button className="market-odds-btn" onClick={() => handleOddsClick(`${player} Total Runs`, `Under ${line}`, 1.83)}>
-                                <span className="market-label">Under {line}</span>
-                                <span className="market-val">1.83</span>
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
+                  {/* Ball-by-Ball Delivery Odds */}
+                  <div className="market-box">
+                    <div className="market-title"><span>{isSecondInnings ? '2nd' : '1st'} innings over 9 - 5th delivery {team1Name} total</span></div>
+                    <div className="market-odds-grid multi-col">
+                      <button className="market-odds-btn" onClick={() => handleOddsClick('Over 9 Ball 5', 'Over 0.5', 1.42)}>
+                        <span className="market-label">Over 0.5</span>
+                        <span className="market-val">1.42</span>
+                      </button>
+                      <button className="market-odds-btn" onClick={() => handleOddsClick('Over 9 Ball 5', 'Under 0.5', 2.28)}>
+                        <span className="market-label">Under 0.5</span>
+                        <span className="market-val">2.28</span>
+                      </button>
+                      <button className="market-odds-btn" onClick={() => handleOddsClick('Over 9 Ball 5', 'Over 1.5', 4.00)}>
+                        <span className="market-label">Over 1.5</span>
+                        <span className="market-val">4.00</span>
+                      </button>
+                      <button className="market-odds-btn" onClick={() => handleOddsClick('Over 9 Ball 5', 'Over 3.5', 6.00)}>
+                        <span className="market-label">Over 3.5</span>
+                        <span className="market-val">6.00</span>
+                      </button>
                     </div>
-                  )}
+                  </div>
                 </>
               )}
 
-              {/* Player 50s & Player 100s with REAL Player Names */}
-              {(activeMarketCategory === 'all' || activeMarketCategory === 'props') && (
+              {/* Player Props */}
+              {(activeMarketCategory === 'all' || activeMarketCategory === 'player-props') && (
                 <div className="market-box">
-                  <div className="market-title"><span>Player To Score 50 ({team1Name} & {team2Name})</span></div>
-                  {[...team1Players.slice(0, 2), ...team2Players.slice(0, 2)].map(player => (
-                    <div key={player} className="market-subgroup">
-                      <div className="market-subtitle">{player} to score 50 in match</div>
-                      <div className="market-odds-grid two-col">
-                        <button className="market-odds-btn" onClick={() => handleOddsClick(`${player} to Score 50`, 'Yes', 3.40)}>
-                          <span className="market-label">{player} - Yes</span>
-                          <span className="market-val">3.40</span>
-                        </button>
-                        <button className="market-odds-btn" onClick={() => handleOddsClick(`${player} to Score 50`, 'No', 1.26)}>
-                          <span className="market-label">{player} - No</span>
-                          <span className="market-val">1.26</span>
-                        </button>
+                  <div className="market-title"><span>Player Performance Props</span></div>
+                  {team1Players.slice(0, 2).map((player, idx) => {
+                    const line = (17.5 + idx * 8).toFixed(1);
+                    return (
+                      <div key={player} className="market-subgroup">
+                        <div className="market-subtitle">{player} total runs</div>
+                        <div className="market-odds-grid two-col">
+                          <button className="market-odds-btn" onClick={() => handleOddsClick(`${player} Total Runs`, `Over ${line}`, 1.83)}>
+                            <span className="market-label">Over {line}</span>
+                            <span className="market-val">1.83</span>
+                          </button>
+                          <button className="market-odds-btn" onClick={() => handleOddsClick(`${player} Total Runs`, `Under ${line}`, 1.83)}>
+                            <span className="market-label">Under {line}</span>
+                            <span className="market-val">1.83</span>
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
+              )}
+
+              {/* Dismissal Method & Odd/Even Specials */}
+              {(activeMarketCategory === 'all' || activeMarketCategory === 'specials') && (
+                <>
+                  <div className="market-box">
+                    <div className="market-title"><span>{team1Name} total at 4th dismissal</span></div>
+                    <div className="market-odds-grid two-col">
+                      <button className="market-odds-btn" onClick={() => handleOddsClick('4th Dismissal Total', 'Over 89.5', 1.82)}>
+                        <span className="market-label">Over 89.5</span>
+                        <span className="market-val">1.82</span>
+                      </button>
+                      <button className="market-odds-btn" onClick={() => handleOddsClick('4th Dismissal Total', 'Under 89.5', 1.82)}>
+                        <span className="market-label">Under 89.5</span>
+                        <span className="market-val">1.82</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="market-box">
+                    <div className="market-title"><span>Over 10 Total Runs - Odd/Even</span></div>
+                    <div className="market-odds-grid two-col">
+                      <button className="market-odds-btn" onClick={() => handleOddsClick('Over 10 Odd/Even', 'Odd', 1.82)}>
+                        <span className="market-label">Odd</span>
+                        <span className="market-val">1.82</span>
+                      </button>
+                      <button className="market-odds-btn" onClick={() => handleOddsClick('Over 10 Odd/Even', 'Even', 1.82)}>
+                        <span className="market-label">Even</span>
+                        <span className="market-val">1.82</span>
+                      </button>
+                    </div>
+                  </div>
+                </>
               )}
             </>
           )}
 
-          {/* SOCCER SPECIFIC MARKETS WITH REAL PLAYERS */}
-          {(sport === 'soccer' || sport === 'esoccer') && (
-            <>
-              {isSecondHalf && (
-                <div className="market-box settled-box">
-                  <div className="market-title" style={{ color: '#94a3b8' }}>
-                    <span><IoLockClosed style={{ marginRight: '4px' }} /> 1st Half Markets</span>
-                    <span className="settled-badge">SETTLED (1st Half Complete)</span>
-                  </div>
-                </div>
-              )}
-
-              {(activeMarketCategory === 'all' || activeMarketCategory === 'props') && (
-                <div className="market-box">
-                  <div className="market-title"><span>Anytime Goalscorer</span></div>
-                  {[...team1Players.slice(0, 2), ...team2Players.slice(0, 2)].map(player => (
-                    <div key={player} className="market-subgroup">
-                      <div className="market-subtitle">{player} to score anytime</div>
-                      <div className="market-odds-grid two-col">
-                        <button className="market-odds-btn" onClick={() => handleOddsClick(`${player} Goalscorer`, 'Yes', 2.40)}>
-                          <span className="market-label">{player} to Score</span>
-                          <span className="market-val">2.40</span>
-                        </button>
-                        <button className="market-odds-btn" onClick={() => handleOddsClick(`${player} Goalscorer`, 'First Goal', 5.50)}>
-                          <span className="market-label">{player} First Goal</span>
-                          <span className="market-val">5.50</span>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
+          {/* SOCCER / BASKETBALL MARKETS */}
+          {sport !== 'cricket' && sport !== 'virtual-cricket' && (
+            <div className="market-box">
+              <div className="market-title"><span>Match Props</span></div>
+              <div className="market-odds-grid two-col">
+                <button className="market-odds-btn" onClick={() => handleOddsClick('Both Teams to Score', 'Yes', 1.80)}>
+                  <span className="market-label">Both Teams Score: Yes</span>
+                  <span className="market-val">1.80</span>
+                </button>
+                <button className="market-odds-btn" onClick={() => handleOddsClick('Both Teams to Score', 'No', 2.00)}>
+                  <span className="market-label">Both Teams Score: No</span>
+                  <span className="market-val">2.00</span>
+                </button>
+              </div>
+            </div>
           )}
 
         </div>

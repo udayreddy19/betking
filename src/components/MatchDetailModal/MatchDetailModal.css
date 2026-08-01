@@ -274,3 +274,78 @@
   padding: 2px 8px;
   border-radius: 4px;
 }
+
+/* 10CRIC Live Match Center Widget Styles */
+.cricket-live-center {
+  background: #091322;
+  border-bottom: 1px solid #1e293b;
+  padding: var(--space-3) var(--space-4);
+}
+
+.cricket-chase-pill {
+  background: linear-gradient(90deg, #1e1b4b 0%, #312e81 100%);
+  color: #fbbf24;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: var(--space-3);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.cricket-live-tables {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.cricket-table-box {
+  background: #131f37;
+  border: 1px solid #1e293b;
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+
+.cricket-table-title {
+  color: #94a3b8;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.cricket-mini-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.7rem;
+}
+
+.cricket-mini-table th {
+  color: #64748b;
+  text-align: left;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #1e293b;
+}
+
+.cricket-mini-table td {
+  color: #e2e8f0;
+  padding: 4px 0;
+  font-weight: 600;
+}
+
+.bowler-stat-row {
+  font-size: 0.75rem;
+  color: #e2e8f0;
+  margin-bottom: 6px;
+}
+
+.innings-stats-grid {
+  display: flex;
+  gap: 12px;
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.innings-stats-grid strong {
+  color: #38bdf8;
+}
