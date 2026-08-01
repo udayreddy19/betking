@@ -3,6 +3,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { BetSlipProvider } from './context/BetSlipContext';
 import { LiveSportsProvider } from './context/LiveSportsContext';
 import { AuthProvider } from './context/AuthContext';
+import { CasinoProvider } from './context/CasinoContext';
 
 import Header from './components/Header/Header';
 import Footer from './components/Footer/Footer';
@@ -12,6 +13,7 @@ import DepositModal from './components/DepositModal/DepositModal';
 import Toast from './components/Toast/Toast';
 import MobileBetSlip from './components/MobileBetSlip/MobileBetSlip';
 import GlobalBetBar from './components/GlobalBetBar/GlobalBetBar';
+import GamePlayModal from './components/GamePlayModal/GamePlayModal';
 
 
 import Home from './pages/Home/Home';
@@ -36,6 +38,7 @@ function AppLayout() {
       <LoginModal />
       <DepositModal />
       <Toast />
+      <GamePlayModal />
       <MobileBetSlip />
       <GlobalBetBar />
       <main className="app-main">
@@ -66,11 +69,13 @@ export default function App() {
     <ThemeProvider>
       <BrowserRouter>
         <AuthProvider>
-          <LiveSportsProvider>
-            <BetSlipProvider>
-              <AppLayout />
-            </BetSlipProvider>
-          </LiveSportsProvider>
+          <CasinoProvider>
+            <LiveSportsProvider>
+              <BetSlipProvider>
+                <AppLayout />
+              </BetSlipProvider>
+            </LiveSportsProvider>
+          </CasinoProvider>
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>

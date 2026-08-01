@@ -1,13 +1,37 @@
 import { IoInformationCircle } from 'react-icons/io5';
 import { FiPlay } from 'react-icons/fi';
+import { useCasino } from '../../context/CasinoContext';
 import './GameCard.css';
 
 export default function GameCard({ game }) {
+  const { openGame } = useCasino();
+
+  const handlePlay = () => {
+    openGame(game);
+  };
+
+  const handleInfo = (e) => {
+    e.stopPropagation();
+    openGame(game);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handlePlay();
+    }
+  };
+
   return (
     <div
       className={`game-card ${game.isLive ? 'game-card--live' : ''}`}
       id={`game-${game.id}`}
       style={{ background: game.gradient }}
+      role="button"
+      tabIndex={0}
+      onClick={handlePlay}
+      onKeyDown={handleKeyDown}
+      aria-label={`Play ${game.name}`}
     >
       {game.image && (
         <img className="game-card-image" src={game.image} alt="" loading="lazy" />
@@ -24,9 +48,14 @@ export default function GameCard({ game }) {
         <span className="game-card-title">{game.name}</span>
       </div>
 
-      <div className="game-card-info" aria-label={`${game.name} info`}>
+      <button
+        type="button"
+        className="game-card-info"
+        aria-label={`${game.name} info`}
+        onClick={handleInfo}
+      >
         <IoInformationCircle />
-      </div>
+      </button>
 
       <div className="game-card-play" aria-hidden="true">
         <FiPlay />

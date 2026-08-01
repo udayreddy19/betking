@@ -1,0 +1,95 @@
+import { useState, useEffect } from 'react';
+import { FiArrowLeft, FiX, FiExternalLink, FiRefreshCw } from 'react-icons/fi';
+import './GamePlayer.css';
+
+export default function GamePlayer({ game, onExit, onClose }) {
+  const [launchUrl, setLaunchUrl] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const loadGame = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/casino/launch?gameId=${encodeURIComponent(game.id)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not load game');
+      setLaunchUrl(data.url);
+    } catch (err) {
+      setError(err.message || 'Failed to launch game');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadGame();
+  }, [game.id]);
+
+  const openExternal = () => {
+    if (launchUrl) window.open(launchUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  return (
+    <div className="game-player">
+      <header className="game-player-header">
+        <button type="button" className="game-player-back" onClick={onExit} aria-label="Back">
+          <FiArrowLeft />
+        </button>
+        <div className="game-player-title">
+          <span>{game.icon}</span>
+          <span>{game.name}</span>
+          {game.isLive && <span className="game-player-live-tag">LIVE</span>}
+        </div>
+        <div className="game-player-actions">
+          {launchUrl && (
+            <button type="button" className="game-player-icon-btn" onClick={openExternal} aria-label="Open in new tab">
+              <FiExternalLink />
+            </button>
+          )}
+          <button type="button" className="game-player-icon-btn" onClick={loadGame} aria-label="Reload game">
+            <FiRefreshCw />
+          </button>
+          <button type="button" className="game-player-close" onClick={onClose} aria-label="Close game">
+            <FiX />
+          </button>
+        </div>
+      </header>
+
+      <div className="game-player-frame-wrap">
+        {loading && (
+          <div className="game-player-status">
+            <div className="game-player-spinner" />
+            <p>Loading {game.name}…</p>
+          </div>
+        )}
+
+        {error && !loading && (
+          <div className="game-player-status game-player-status--error">
+            <p>{error}</p>
+            <button type="button" className="game-player-action-btn" onClick={loadGame}>
+              Try again
+            </button>
+          </div>
+        )}
+
+        {launchUrl && !error && (
+          <iframe
+            className="game-player-frame"
+            src={launchUrl}
+            title={game.name}
+            allow="autoplay; fullscreen; encrypted-media; clipboard-write"
+            allowFullScreen
+            onLoad={() => setLoading(false)}
+          />
+        )}
+      </div>
+
+      <footer className="game-player-footer">
+        <span>{game.provider}</span>
+        {game.isLive && <span className="game-player-footer-live">● Live dealer stream</span>}
+        {game.rtp && <span>RTP {game.rtp}</span>}
+      </footer>
+    </div>
+  );
+}

@@ -14,6 +14,11 @@
   box-shadow: var(--shadow-card-hover);
 }
 
+.game-card:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .game-card-image {
   position: absolute;
   inset: 0;
@@ -126,22 +131,35 @@
   position: absolute;
   top: var(--space-2);
   right: var(--space-2);
-  width: 22px;
-  height: 22px;
-  background: rgba(0, 0, 0, 0.3);
+  width: 28px;
+  height: 28px;
+  background: rgba(0, 0, 0, 0.35);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 0.7rem;
+  font-size: 0.85rem;
   opacity: 0;
   transition: opacity var(--transition-fast);
   z-index: 3;
+  cursor: pointer;
 }
 
-.game-card:hover .game-card-info {
+.game-card:hover .game-card-info,
+.game-card:focus-within .game-card-info {
   opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .game-card-info {
+    opacity: 1;
+  }
+
+  .game-card-play {
+    opacity: 0.85;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
 }
 
 .game-card-play {
