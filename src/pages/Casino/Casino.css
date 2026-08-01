@@ -1,6 +1,23 @@
 .casino-page {
   animation: fadeIn 300ms ease;
 }
+
+.casino-hero {
+  margin-bottom: var(--space-4);
+}
+
+.casino-hero h1 {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-extrabold);
+  color: var(--color-text);
+  margin-bottom: var(--space-1);
+}
+
+.casino-hero p {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
 .casino-categories {
   display: flex;
   align-items: center;

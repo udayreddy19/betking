@@ -1,6 +1,23 @@
 .live-casino-page {
   animation: fadeIn 300ms ease;
 }
+
+.live-casino-hero {
+  margin-bottom: var(--space-4);
+}
+
+.live-casino-hero h1 {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-extrabold);
+  color: var(--color-text);
+  margin-bottom: var(--space-1);
+}
+
+.live-casino-hero p {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
 .live-casino-categories {
   display: flex;
   align-items: center;

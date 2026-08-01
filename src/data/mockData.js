@@ -583,68 +583,7 @@ export const liveCasinoCategories = [
   { id: 'game-shows', name: 'Game Shows', icon: '🎪' },
 ];
 
-export const casinoGames = [
-  {
-    id: 'g1',
-    name: 'Aviator',
-    category: 'crash-games top-slots',
-    provider: 'Spribe',
-    image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80',
-    isHot: true,
-    isNew: false,
-    rtp: '97.0%',
-  },
-  {
-    id: 'g2',
-    name: 'Crazy Time',
-    category: 'live-casino top-slots',
-    provider: 'Evolution',
-    image: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?auto=format&fit=crop&w=600&q=80',
-    isHot: true,
-    isNew: false,
-    rtp: '96.08%',
-  },
-  {
-    id: 'g3',
-    name: 'Gates of Olympus',
-    category: 'slots top-slots',
-    provider: 'Pragmatic Play',
-    image: 'https://images.unsplash.com/photo-1511193311914-0346f16efe90?auto=format&fit=crop&w=600&q=80',
-    isHot: true,
-    isNew: false,
-    rtp: '96.50%',
-  },
-  {
-    id: 'g4',
-    name: 'Lightning Roulette',
-    category: 'live-casino top-slots',
-    provider: 'Evolution',
-    image: 'https://images.unsplash.com/photo-1606167668584-78701c57f13d?auto=format&fit=crop&w=600&q=80',
-    isHot: false,
-    isNew: true,
-    rtp: '97.30%',
-  },
-  {
-    id: 'g5',
-    name: 'Sweet Bonanza',
-    category: 'slots top-slots',
-    provider: 'Pragmatic Play',
-    image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=600&q=80',
-    isHot: true,
-    isNew: false,
-    rtp: '96.48%',
-  },
-  {
-    id: 'g6',
-    name: 'Infinite Blackjack',
-    category: 'table-games top-slots',
-    provider: 'Evolution',
-    image: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?auto=format&fit=crop&w=600&q=80',
-    isHot: false,
-    isNew: false,
-    rtp: '99.47%',
-  },
-];
+export { casinoGames, liveCasinoGames } from './casinoGamesData.js';
 
 export const promotions = [
   {
