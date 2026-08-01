@@ -2,41 +2,64 @@ import { useState } from 'react';
 import { HiOutlineUsers, HiOutlineViewList, HiOutlineChartBar } from 'react-icons/hi';
 import './LiveMatchGraphicWidget.css';
 
+const defaultFallbackMatch = {
+  sport: 'cricket',
+  team1: { name: 'Brisbane Heat SRL', shortName: 'BIR' },
+  team2: { name: 'Perth Scorchers SRL', shortName: 'PER' },
+  liveDetails: {
+    runs: 95,
+    wickets: 3,
+    score2: 179,
+    wickets2: 4,
+    overs: '12.3',
+    ballHistory: ['W', '1lb', '1', '1', '•', '2', '1', '•', '4', '2', '4'],
+    batter1: { name: 'Wildermuth, Jack - SRL', runs: 34, balls: 32, fours: 3, sixes: 0 },
+    batter2: { name: 'M Bryant', runs: 14, balls: 8, fours: 2, sixes: 0 },
+    bowler: { name: 'AM Hardie', overs: '12.3-0-22-1' },
+    fours: 8,
+    sixes: 0,
+    extras: 17,
+    commentary: 'Brisbane Heat SRL are 95/3 after 12.3 overs chasing 179'
+  }
+};
+
 export default function LiveMatchGraphicWidget({ match }) {
   const [activeWidgetTab, setActiveWidgetTab] = useState('field');
 
-  if (!match) return null;
-
-  const sport = match.sport || 'cricket';
-  const team1 = match.team1?.name || 'Brisbane Heat SRL';
-  const team2 = match.team2?.name || 'Perth Scorchers SRL';
+  const currentMatch = match || defaultFallbackMatch;
+  const sport = currentMatch.sport || 'cricket';
+  const team1 = currentMatch.team1?.name || 'Brisbane Heat SRL';
+  const team2 = currentMatch.team2?.name || 'Perth Scorchers SRL';
 
   // --- CRICKET GRAPHIC RENDERER ---
   if (sport === 'cricket' || sport === 'virtual-cricket') {
-    const score1 = match.liveDetails?.runs ?? 95;
-    const wickets1 = match.liveDetails?.wickets ?? 3;
-    const score2 = match.liveDetails?.score2 ?? 179;
-    const wickets2 = match.liveDetails?.wickets2 ?? 4;
-    const overs = match.liveDetails?.overs || '12.3';
+    const score1 = currentMatch.liveDetails?.runs ?? 95;
+    const wickets1 = currentMatch.liveDetails?.wickets ?? 3;
+    const score2 = currentMatch.liveDetails?.score2 ?? 179;
+    const wickets2 = currentMatch.liveDetails?.wickets2 ?? 4;
+    const overs = currentMatch.liveDetails?.overs || '12.3';
     const reqRuns = Math.max(0, score2 - score1);
 
-    const b1 = match.liveDetails?.batter1 || { name: 'Wildermuth, Jack - SRL', runs: 34, balls: 32, fours: 3, sixes: 0 };
-    const b2 = match.liveDetails?.batter2 || { name: 'M Bryant', runs: 14, balls: 8, fours: 2, sixes: 0 };
+    const b1 = currentMatch.liveDetails?.batter1 || { name: 'Wildermuth, Jack - SRL', runs: 34, balls: 32, fours: 3, sixes: 0 };
+    const b2 = currentMatch.liveDetails?.batter2 || { name: 'M Bryant', runs: 14, balls: 8, fours: 2, sixes: 0 };
 
     return (
       <div className="live-graphic-card-10cric">
-        {/* Light Header Section */}
+        {/* Light Clean Header Section */}
         <div className="graphic-top-header">
           <div className="graphic-inn-pill">INN 2 | {overs}/20 OV</div>
+
           <div className="graphic-teams-row">
             <span className="team-title-left">{team1}</span>
             <span className="team-title-right">{team2}</span>
           </div>
+
           <div className="graphic-large-scores">
             <span>{score1}/{wickets1}</span>
             <span className="colon-sep">:</span>
             <span>{score2}/{wickets2}</span>
           </div>
+
           <div className="graphic-chase-sentence">
             {team1} are {score1}/{wickets1} after {overs} overs chasing {score2}
           </div>
@@ -58,7 +81,7 @@ export default function LiveMatchGraphicWidget({ match }) {
               return (
                 <div key={i} className="chart-column">
                   {hasWicket && <span className="wicket-badge-w">W</span>}
-                  <div className={`chart-col-bar ${i === 12 ? 'current-active' : ''}`} style={{ height: `${(runs / 16) * 35}px` }} />
+                  <div className={`chart-col-bar ${i === 12 ? 'current-active' : ''}`} style={{ height: `${Math.max(6, (runs / 16) * 35)}px` }} />
                 </div>
               );
             })}
@@ -68,7 +91,7 @@ export default function LiveMatchGraphicWidget({ match }) {
           </div>
         </div>
 
-        {/* Purple Sub-Tabs Bar */}
+        {/* Purple Sub-Tabs Navigation Bar */}
         <div className="purple-subtabs-row">
           <button
             onClick={() => setActiveWidgetTab('field')}
@@ -145,7 +168,7 @@ export default function LiveMatchGraphicWidget({ match }) {
                       <span>CURRENT BOWLER</span>
                     </div>
                     <div className="table-data-row">
-                      <span>AM Hardie 🏏</span>
+                      <span>{currentMatch.liveDetails?.bowler?.name || 'AM Hardie'} 🏏</span>
                     </div>
                   </div>
 
@@ -154,13 +177,13 @@ export default function LiveMatchGraphicWidget({ match }) {
                       <span>INNINGS STATS</span>
                     </div>
                     <div className="table-data-row">
-                      <span>Fours</span><span className="highlight-stat-val">8</span>
+                      <span>Fours</span><span className="highlight-stat-val">{currentMatch.liveDetails?.fours || 8}</span>
                     </div>
                     <div className="table-data-row">
-                      <span>Sixes</span><span className="highlight-stat-val">0</span>
+                      <span>Sixes</span><span className="highlight-stat-val">{currentMatch.liveDetails?.sixes || 0}</span>
                     </div>
                     <div className="table-data-row">
-                      <span>Extras</span><span className="highlight-stat-val">17</span>
+                      <span>Extras</span><span className="highlight-stat-val">{currentMatch.liveDetails?.extras || 17}</span>
                     </div>
                   </div>
                 </div>
@@ -172,14 +195,14 @@ export default function LiveMatchGraphicWidget({ match }) {
         {/* TAB 2: SCORECARD LIST */}
         {activeWidgetTab === 'scorecard' && (
           <div className="subtab-content-panel">
-            <h4 style={{ color: '#a855f7', borderBottom: '1px solid #334155', paddingBottom: '6px' }}>
+            <h4 style={{ color: '#a855f7', borderBottom: '1px solid #334155', paddingBottom: '6px', margin: 0 }}>
               📋 {team1} Live Scorecard
             </h4>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #1e293b' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #1e293b' }}>
               <span>{b1.name}</span>
               <span><strong>{b1.runs}</strong> ({b1.balls}b, {b1.fours}x4, {b1.sixes}x6)</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
               <span>{b2.name} 🏏</span>
               <span><strong>{b2.runs}</strong> ({b2.balls}b, {b2.fours}x4, {b2.sixes}x6)</span>
             </div>
@@ -189,7 +212,7 @@ export default function LiveMatchGraphicWidget({ match }) {
         {/* TAB 3: STATS */}
         {activeWidgetTab === 'stats' && (
           <div className="subtab-content-panel">
-            <h4 style={{ color: '#38bdf8', borderBottom: '1px solid #334155', paddingBottom: '6px' }}>
+            <h4 style={{ color: '#38bdf8', borderBottom: '1px solid #334155', paddingBottom: '6px', margin: 0 }}>
               📊 Match Win Probability & Stats
             </h4>
             <div style={{ padding: '8px 0' }}>
@@ -208,7 +231,7 @@ export default function LiveMatchGraphicWidget({ match }) {
         {/* TAB 4: LINEUPS */}
         {activeWidgetTab === 'lineups' && (
           <div className="subtab-content-panel">
-            <h4 style={{ color: '#22c55e', borderBottom: '1px solid #334155', paddingBottom: '6px' }}>
+            <h4 style={{ color: '#22c55e', borderBottom: '1px solid #334155', paddingBottom: '6px', margin: 0 }}>
               👥 Playing XI Lineups
             </h4>
             <p style={{ color: '#94a3b8' }}>Confirmed XI rosters at toss</p>
@@ -228,9 +251,9 @@ export default function LiveMatchGraphicWidget({ match }) {
           <span className="team-title-right">{team2}</span>
         </div>
         <div className="graphic-large-scores">
-          <span>{match.liveDetails?.score1 ?? 2}</span>
+          <span>{currentMatch.liveDetails?.score1 ?? 2}</span>
           <span className="colon-sep">:</span>
-          <span>{match.liveDetails?.score2 ?? 1}</span>
+          <span>{currentMatch.liveDetails?.score2 ?? 1}</span>
         </div>
       </div>
     </div>
