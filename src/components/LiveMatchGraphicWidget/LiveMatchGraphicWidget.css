@@ -160,25 +160,43 @@
 
 .live-widget-tabs {
   display: flex;
-  justify-content: space-around;
+  justify-content: flex-start;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
   border-bottom: 2px solid var(--color-border-light);
   background: var(--color-surface);
+  padding: 0 4px;
+}
+
+.live-widget-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .live-widget-tab {
   flex: 1;
+  min-width: 52px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 10px 4px;
+  gap: 2px;
+  padding: 8px 4px 6px;
   background: transparent;
   border: none;
   border-bottom: 3px solid transparent;
   color: var(--color-text-muted);
-  font-size: 1.15rem;
+  font-size: 1rem;
   cursor: pointer;
   transition: all 0.15s ease;
   margin-bottom: -2px;
+}
+
+.live-widget-tab-label {
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .live-widget-tab.active {

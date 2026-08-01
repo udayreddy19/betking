@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { FiSearch } from 'react-icons/fi';
 import PromoBanner from '../../components/PromoBanner/PromoBanner';
 import GameCarousel from '../../components/GameCarousel/GameCarousel';
@@ -6,7 +7,14 @@ import { casinoGames, casinoCategories, promotions } from '../../data/mockData';
 import './Casino.css';
 
 export default function Casino() {
-  const [activeCategory, setActiveCategory] = useState('all');
+  const [searchParams] = useSearchParams();
+  const initialCategory = searchParams.get('cat') || 'all';
+  const [activeCategory, setActiveCategory] = useState(initialCategory);
+
+  useEffect(() => {
+    const cat = searchParams.get('cat');
+    if (cat) setActiveCategory(cat);
+  }, [searchParams]);
 
   const filteredGames = useMemo(() => {
     if (activeCategory === 'all') return casinoGames;

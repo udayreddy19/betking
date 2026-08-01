@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import { HiOutlineViewList, HiOutlineChartBar, HiOutlineUsers, HiOutlineVideoCamera } from 'react-icons/hi';
 import { IoShirtOutline } from 'react-icons/io5';
 import LiveStreamPlayer from '../LiveStreamPlayer/LiveStreamPlayer';
+import PlayerStatsPanel from '../PlayerStatsPanel/PlayerStatsPanel';
+import { useMatchPlayers } from '../../hooks/useMatchPlayers';
 import './LiveMatchGraphicWidget.css';
 
 const playerRosterMap = {
@@ -12,6 +14,14 @@ const playerRosterMap = {
   'Southern Brave W': {
     batters: ['D. Wyatt', 'S. Taylor', 'M. Bouchier', 'G. Adams'],
     bowlers: ['C. Dean', 'L. Smith', 'A. Capsey'],
+  },
+  'Birmingham Phoenix': {
+    batters: ['J. Root', 'J. Cox', 'L. Livingstone', 'W. Smeed'],
+    bowlers: ['A. Zampa', 'T. Southee', 'S. Mahmood'],
+  },
+  'Welsh Fire': {
+    batters: ['J. Bairstow', 'T. Kohler-Cadmore', 'D. Payne', 'L. Wells'],
+    bowlers: ['S. Mahmood', 'D. Payne', 'M. Crane'],
   },
   'South Delhi Superstarz': {
     batters: ['Priyansh Arya', 'Tejaswi Dahiya', 'Ayush Badoni', 'Dhruv Singh'],
@@ -105,8 +115,9 @@ function WagonWheel() {
 }
 
 export default function LiveMatchGraphicWidget({ match }) {
-  const [activeWidgetTab, setActiveWidgetTab] = useState('video');
+  const [activeWidgetTab, setActiveWidgetTab] = useState('field');
   const [selectedInnings, setSelectedInnings] = useState('');
+  const { players, source, loading: playersLoading, refreshing: playersRefreshing, error: playersError } = useMatchPlayers(match);
 
   const sport = match?.sport || 'cricket';
   const team1 = match?.team1?.name || 'Team 1';
@@ -239,54 +250,66 @@ export default function LiveMatchGraphicWidget({ match }) {
           </div>
         </div>
 
-        <div className="live-widget-tabs">
+        <div className="live-widget-tabs" role="tablist">
           <button
             type="button"
+            role="tab"
+            aria-selected={activeWidgetTab === 'video'}
             onClick={() => setActiveWidgetTab('video')}
             className={`live-widget-tab ${activeWidgetTab === 'video' ? 'active' : ''}`}
-            title="Live video"
           >
             <HiOutlineVideoCamera />
+            <span className="live-widget-tab-label">Video</span>
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={activeWidgetTab === 'field'}
             onClick={() => setActiveWidgetTab('field')}
             className={`live-widget-tab ${activeWidgetTab === 'field' ? 'active' : ''}`}
-            title="Live visualizer"
           >
             <span className="live-widget-tab-icon live-widget-tab-icon--stadium">🏟</span>
+            <span className="live-widget-tab-label">Field</span>
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={activeWidgetTab === 'scorecard'}
             onClick={() => setActiveWidgetTab('scorecard')}
             className={`live-widget-tab ${activeWidgetTab === 'scorecard' ? 'active' : ''}`}
-            title="Scorecard"
           >
             <HiOutlineViewList />
+            <span className="live-widget-tab-label">Score</span>
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={activeWidgetTab === 'stats'}
             onClick={() => setActiveWidgetTab('stats')}
             className={`live-widget-tab ${activeWidgetTab === 'stats' ? 'active' : ''}`}
-            title="Statistics"
           >
             <HiOutlineChartBar />
+            <span className="live-widget-tab-label">Stats</span>
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={activeWidgetTab === 'lineups'}
             onClick={() => setActiveWidgetTab('lineups')}
             className={`live-widget-tab ${activeWidgetTab === 'lineups' ? 'active' : ''}`}
-            title="Lineups"
           >
             <HiOutlineUsers />
+            <span className="live-widget-tab-label">Players</span>
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={activeWidgetTab === 'kits'}
             onClick={() => setActiveWidgetTab('kits')}
             className={`live-widget-tab ${activeWidgetTab === 'kits' ? 'active' : ''}`}
-            title="Team kits"
           >
             <IoShirtOutline />
+            <span className="live-widget-tab-label">Kits</span>
           </button>
         </div>
 
@@ -373,22 +396,15 @@ export default function LiveMatchGraphicWidget({ match }) {
         )}
 
         {activeWidgetTab === 'lineups' && (
-          <div className="live-widget-panel">
-            <h4 className="live-widget-panel-title">{team1.replace(' W', '')}</h4>
-            {t1Data.batters.map((name, idx) => (
-              <div key={idx} className="live-widget-lineup-row">
-                <span>{name}</span>
-                <span>Batter</span>
-              </div>
-            ))}
-            <h4 className="live-widget-panel-title">{team2.replace(' W', '')}</h4>
-            {t2Data.batters.map((name, idx) => (
-              <div key={idx} className="live-widget-lineup-row">
-                <span>{name}</span>
-                <span>Batter</span>
-              </div>
-            ))}
-          </div>
+          <PlayerStatsPanel
+            players={players}
+            source={source}
+            loading={playersLoading}
+            refreshing={playersRefreshing}
+            error={playersError}
+            team1={team1}
+            team2={team2}
+          />
         )}
 
         {activeWidgetTab === 'kits' && (

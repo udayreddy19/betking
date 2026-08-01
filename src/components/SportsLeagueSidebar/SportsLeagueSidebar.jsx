@@ -15,7 +15,7 @@ export default function SportsLeagueSidebar({ activeSport, activeLeague, onSelec
   return (
     <aside className="sports-league-sidebar">
       <div className="sports-league-section">
-        <h3 className="sports-league-heading">Featured</h3>
+        <h3 className="sports-league-heading">Top Leagues</h3>
         <ul className="sports-league-list">
           {sportLeagues.map(league => (
             <li key={league.id}>
@@ -24,7 +24,8 @@ export default function SportsLeagueSidebar({ activeSport, activeLeague, onSelec
                 className={`sports-league-item ${activeLeague === league.id ? 'active' : ''}`}
                 onClick={() => onSelectLeague(league.id)}
               >
-                {league.name}
+                <span className="sports-league-item-icon">{league.icon || '🏆'}</span>
+                <span className="sports-league-item-label">{league.name}</span>
               </button>
             </li>
           ))}

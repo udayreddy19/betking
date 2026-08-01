@@ -34,7 +34,7 @@ export const heroCategories = [
     description: 'Ball-by-Ball Live Scores & In-Play Odds Fluctuations',
     badge: 'LIVE NOW',
     borderColor: '#ef4444',
-    link: '/sports'
+    link: '/live-betting'
   },
   {
     id: 'casino',
@@ -100,14 +100,14 @@ export const leagues = [
 ];
 
 export const featuredLeagues = [
-  { id: 'hundred-m', name: 'The Hundred', sport: 'cricket', matchLeagues: ['The Hundred Men'] },
-  { id: 'hundred-w', name: 'The Hundred, Women', sport: 'cricket', matchLeagues: ['The Hundred Women'] },
-  { id: 'one-day', name: 'One-Day Cup', sport: 'cricket', matchLeagues: ['One-Day Cup'] },
-  { id: 'ipl-srl', name: 'IPL SRL', sport: 'cricket', matchLeagues: ['IPL 2026', 'IPL SRL'] },
-  { id: 'ken-bah', name: 'Kenya vs Bahrain T20', sport: 'cricket', matchLeagues: ['T20 Series Kenya vs Bahrain'] },
-  { id: 'lpl', name: 'Lanka Premier League', sport: 'cricket', matchLeagues: ['Lanka Premier League', 'T20 Lanka Premier League'] },
-  { id: 'epl', name: 'Premier League', sport: 'soccer', matchLeagues: ['Premier League'] },
-  { id: 'laliga', name: 'La Liga', sport: 'soccer', matchLeagues: ['La Liga'] },
+  { id: 'lpl', name: 'T20 Lanka Premier League', sport: 'cricket', icon: '🔥', matchLeagues: ['Lanka Premier League', 'T20 Lanka Premier League'] },
+  { id: 'hundred-m', name: 'The Hundred', sport: 'cricket', icon: '🔥', matchLeagues: ['The Hundred Men'], breadcrumb: 'England - The Hundred' },
+  { id: 'one-day', name: 'One-Day Cup', sport: 'cricket', icon: '🔥', matchLeagues: ['One-Day Cup'] },
+  { id: 'ipl-srl', name: 'IPL SRL', sport: 'cricket', icon: '🔥', matchLeagues: ['IPL 2026', 'IPL SRL'] },
+  { id: 'hundred-w', name: 'The Hundred, Women', sport: 'cricket', icon: '🔥', matchLeagues: ['The Hundred Women'], breadcrumb: 'England - The Hundred, Women' },
+  { id: 'ken-bah', name: 'Kenya vs Bahrain T20', sport: 'cricket', icon: '🔥', matchLeagues: ['T20 Series Kenya vs Bahrain'] },
+  { id: 'epl', name: 'Premier League', sport: 'soccer', icon: '⚽', matchLeagues: ['Premier League'] },
+  { id: 'laliga', name: 'La Liga', sport: 'soccer', icon: '⚽', matchLeagues: ['La Liga'] },
 ];
 
 export const leagueGroups = [
@@ -143,9 +143,21 @@ export const matches = [
     isLive: true,
     matchState: 'in',
     team1: { name: 'Birmingham Phoenix', shortName: 'BIR', color: '#22c55e' },
-    team2: { name: 'Welsh Fire', shortName: 'WEL', color: '#e5e7eb' },
+    team2: { name: 'Welsh Fire', shortName: 'WEL', color: '#dc2626' },
     odds: { team1: 1.68, team2: 2.24 },
-    liveDetails: { runs: 145, wickets: 3, overs: '19.4', score2: 144, wickets2: 3, overs2: '20.0', commentary: 'Birmingham Phoenix win by 7 wickets' },
+    liveDetails: {
+      runs: 137,
+      wickets: 9,
+      overs: '20.0',
+      score2: 112,
+      wickets2: 2,
+      overs2: '15.5',
+      commentary: 'Welsh Fire need 26 runs from 27 balls',
+      batter1: { name: 'J. Root', runs: 42, balls: 28, fours: 4, sixes: 1 },
+      batter2: { name: 'J. Cox', runs: 18, balls: 14, fours: 2, sixes: 0 },
+      bowler: { name: 'S. Mahmood' },
+      currentOverBalls: ['1', '1', '4', '•', '1'],
+    },
     liveStream: {
       provider: 'youtube-channel',
       channelId: 'UCPDAFa3eTpUhugfKPuvxPww',
@@ -153,6 +165,7 @@ export const matches = [
       label: 'The Hundred Live (YouTube)',
       channelUrl: 'https://www.youtube.com/@thehundred',
     },
+    cricbuzz: { matchId: '144805' },
   },
   {
     id: 'm2',
@@ -185,6 +198,7 @@ export const matches = [
       label: 'The Hundred Live (YouTube)',
       channelUrl: 'https://www.youtube.com/@thehundred',
     },
+    cricbuzz: { matchId: '145187' },
   },
   {
     id: 'm3',
@@ -197,7 +211,8 @@ export const matches = [
     team1: { name: 'Kenya', shortName: 'KEN', color: '#22c55e' },
     team2: { name: 'Bahrain', shortName: 'BAH', color: '#ef4444' },
     odds: { team1: 1.99, team2: 1.70 },
-    liveDetails: { runs: 105, wickets: 4, overs: '14.2', score2: 148, wickets2: 5, overs2: '20.0', commentary: 'Kenya require 44 runs from 34 balls' }
+    liveDetails: { runs: 105, wickets: 4, overs: '14.2', score2: 148, wickets2: 5, overs2: '20.0', commentary: 'Kenya require 44 runs from 34 balls' },
+    cricbuzz: { matchId: '169457' },
   },
   {
     id: 'm4',
@@ -210,7 +225,8 @@ export const matches = [
     team1: { name: 'Colombo Stars', shortName: 'COL', color: '#e5e7eb' },
     team2: { name: 'Galle Gladiators', shortName: 'GAL', color: '#e5e7eb' },
     odds: { team1: 1.49, team2: 2.38 },
-    liveDetails: { runs: 168, wickets: 6, overs: '18.5', score2: 165, wickets2: 7, overs2: '20.0', commentary: 'Colombo Stars chasing 166' }
+    liveDetails: { runs: 168, wickets: 6, overs: '18.5', score2: 165, wickets2: 7, overs2: '20.0', commentary: 'Colombo Stars chasing 166' },
+    cricbuzz: { matchId: '157138' },
   },
   {
     id: 'm5',

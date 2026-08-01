@@ -55,10 +55,16 @@ export default function Header() {
 
           {isLoggedIn ? (
             <>
-              <div className="header-balance" id="header-balance">
-                <span className="balance-icon">₹</span>
-                <span>₹{user.balance.toLocaleString('en-IN')}</span>
-                <FiChevronDown className="balance-chevron" />
+              <div className="header-wallet-group">
+                <div className="header-coins" title="Bonus coins">
+                  <span className="header-coins-icon">🎁</span>
+                  <span>{user.coins ?? 58}</span>
+                </div>
+                <div className="header-balance" id="header-balance">
+                  <span className="balance-icon">₹</span>
+                  <span>₹{user.balance.toLocaleString('en-IN')}</span>
+                  <FiChevronDown className="balance-chevron" />
+                </div>
               </div>
               <button className="header-deposit-btn" onClick={openDepositModal} id="deposit-btn">
                 Deposit

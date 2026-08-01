@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { IoClose, IoCheckmarkCircle } from 'react-icons/io5';
 import { BiWallet, BiMoneyWithdraw, BiHistory, BiTransfer, BiGift } from 'react-icons/bi';
 import { useAuth } from '../../context/AuthContext';
+import { useBetSlip } from '../../context/BetSlipContext';
 import './FinancialModals.css';
 
 export default function FinancialModals({ modalType, onClose }) {
-  const { user, updateUserBalance } = useAuth();
+  const { user, updateUserBalance, showToast } = useAuth();
+  const { placedBets } = useBetSlip();
 
   // Withdraw state
   const [upiId, setUpiId] = useState('');
@@ -13,19 +15,18 @@ export default function FinancialModals({ modalType, onClose }) {
   const [withdrawStatus, setWithdrawStatus] = useState(null); // 'processing' | 'success'
 
   // Cancel W/D state
-  const [pendingWithdrawals, setPendingWithdrawals] = useState([
-    { id: 'WD-94821', amount: 1500, upi: 'udayreddy@upi', date: 'Today 14:20', status: 'Pending Razorpay Transfer' }
-  ]);
+  const [pendingWithdrawals, setPendingWithdrawals] = useState([]);
 
-  if (!modalType) return null;
+  if (!modalType || !user) return null;
 
-  // Razorpay Payout Execution
+  const notify = (msg) => showToast(msg);
+
   const handleRazorpayWithdraw = (e) => {
     e.preventDefault();
-    if (!upiId.trim()) return alert('Please enter a valid UPI ID');
+    if (!upiId.trim()) return notify('Please enter a valid UPI ID');
     const amt = parseFloat(withdrawAmount);
-    if (isNaN(amt) || amt < 500) return alert('Minimum withdrawal is ₹500');
-    if (amt > user.balance) return alert('Insufficient balance');
+    if (isNaN(amt) || amt < 500) return notify('Minimum withdrawal is ₹500');
+    if (amt > user.balance) return notify('Insufficient balance');
 
     setWithdrawStatus('processing');
 
@@ -43,7 +44,7 @@ export default function FinancialModals({ modalType, onClose }) {
   const handleCancelWithdrawal = (id, amount) => {
     setPendingWithdrawals(prev => prev.filter(w => w.id !== id));
     updateUserBalance(amount);
-    alert(`Withdrawal ${id} cancelled. ₹${amount} refunded to your balance!`);
+    notify(`Withdrawal ${id} cancelled. ₹${amount} refunded to your balance!`);
   };
 
   return (
@@ -185,18 +186,25 @@ export default function FinancialModals({ modalType, onClose }) {
         {modalType === 'bets-history' && (
           <div className="fin-modal-body">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#64748b' }}>
-                  <span>BET #BK-99120</span>
-                  <span style={{ color: '#16a34a', fontWeight: 800 }}>WON</span>
+              {placedBets.length === 0 ? (
+                <p className="fin-muted" style={{ textAlign: 'center', padding: '20px' }}>No placed bets yet. Place a bet from the Sports page.</p>
+              ) : placedBets.map(bet => (
+                <div key={bet.id} style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#64748b' }}>
+                    <span>{bet.type?.toUpperCase()} · {new Date(bet.placedAt).toLocaleString('en-IN')}</span>
+                    <span style={{ color: '#2563eb', fontWeight: 800 }}>PENDING</span>
+                  </div>
+                  {bet.legs?.map(leg => (
+                    <div key={leg.id} style={{ fontSize: '0.8rem', marginTop: '4px' }}>
+                      {leg.selectionName} @ {Number(leg.odds).toFixed(2)} — {leg.matchName}
+                    </div>
+                  ))}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '0.8rem' }}>
+                    <span>Stake: ₹{bet.stake?.toFixed(2)}</span>
+                    <span style={{ fontWeight: 900, color: '#16a34a' }}>Return: ₹{bet.potentialReturn?.toFixed(2)}</span>
+                  </div>
                 </div>
-                <div style={{ fontWeight: 800, marginTop: '4px' }}>Kenya vs Bahrain</div>
-                <div style={{ fontSize: '0.8rem', color: '#2563eb' }}>Winner: Kenya @ 2.88</div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '0.8rem' }}>
-                  <span>Stake: ₹1,000</span>
-                  <span style={{ fontWeight: 900, color: '#16a34a' }}>Payout: ₹2,880</span>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         )}
@@ -207,7 +215,7 @@ export default function FinancialModals({ modalType, onClose }) {
             <div style={{ background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', color: 'white', padding: '16px', borderRadius: '10px', marginBottom: '12px' }}>
               <div style={{ fontWeight: 800, fontSize: '1rem' }}>150% Sports Welcome Bonus</div>
               <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>Code: WELCOME150</div>
-              <button onClick={() => alert('Bonus WELCOME150 activated!')} style={{ background: 'white', color: '#7e22ce', border: 'none', padding: '6px 14px', borderRadius: '6px', fontWeight: 800, marginTop: '10px', cursor: 'pointer' }}>
+              <button onClick={() => notify('Bonus WELCOME150 activated!')} style={{ background: 'white', color: '#7e22ce', border: 'none', padding: '6px 14px', borderRadius: '6px', fontWeight: 800, marginTop: '10px', cursor: 'pointer' }}>
                 Claim ₹30,000 Bonus
               </button>
             </div>
@@ -223,7 +231,7 @@ export default function FinancialModals({ modalType, onClose }) {
                 <div style={{ fontSize: '0.75rem', color: '#b45309' }}>Cost: 50 Coins (You have {user.coins} Coins)</div>
               </div>
               <button
-                onClick={() => alert('Redeemed ₹500 Free Bet Voucher!')}
+                onClick={() => notify('Redeemed ₹500 Free Bet Voucher!')}
                 style={{ background: '#f59e0b', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: 800, cursor: 'pointer' }}
               >
                 Redeem

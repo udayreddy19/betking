@@ -7,6 +7,7 @@ import { BiWallet, BiMoneyWithdraw, BiHistory, BiTransfer, BiGift } from 'react-
 import { MdOutlineCancel, MdOutlineStorefront } from 'react-icons/md';
 import { RiLogoutBoxRLine } from 'react-icons/ri';
 import { useAuth } from '../../context/AuthContext';
+import { useBetSlip } from '../../context/BetSlipContext';
 import { useTheme } from '../../context/ThemeContext';
 import { HiOutlineMoon, HiOutlineSun } from 'react-icons/hi';
 import FinancialModals from '../FinancialModals/FinancialModals';
@@ -14,6 +15,7 @@ import './Sidebar.css';
 
 export default function Sidebar() {
   const { user, isLoggedIn, isSidebarOpen, closeSidebar, logout, openLoginModal, openDepositModal } = useAuth();
+  const { setActiveTab, openMyBets } = useBetSlip();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [activeFinModal, setActiveFinModal] = useState(null);
@@ -112,7 +114,7 @@ export default function Sidebar() {
                     <span className="action-label">Cancel W/D</span>
                   </button>
 
-                  <button className="sidebar-action" onClick={() => { closeSidebar(); navigate('/sports'); }}>
+                  <button className="sidebar-action" onClick={() => { closeSidebar(); navigate('/sports'); setActiveTab('mybets'); openMyBets(); }}>
                     <span className="action-icon-wrap"><HiOutlineDocumentText className="action-icon" /></span>
                     <span className="action-label">My Bets</span>
                   </button>

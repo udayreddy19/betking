@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiChevronRight, FiChevronLeft } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
@@ -27,6 +27,12 @@ export default function Home() {
   const navigate = useNavigate();
   const [activeSport, setActiveSport] = useState('cricket');
   const [activeStateTab, setActiveStateTab] = useState('all');
+  const matchScrollRef = useRef(null);
+
+  const scrollMatches = (direction) => {
+    if (!matchScrollRef.current) return;
+    matchScrollRef.current.scrollBy({ left: direction === 'left' ? -320 : 320, behavior: 'smooth' });
+  };
 
   const liveGames = casinoGames.filter(g => g.category?.includes('live') || g.category?.includes('table'));
   const crashGames = casinoGames.filter(g => g.category?.includes('crash') || g.isNew);
@@ -72,8 +78,8 @@ export default function Home() {
             <button type="button" className="carousel-view-all" onClick={() => navigate('/sports')}>
               View All
             </button>
-            <button type="button" className="carousel-nav-btn"><FiChevronLeft /></button>
-            <button type="button" className="carousel-nav-btn"><FiChevronRight /></button>
+            <button type="button" className="carousel-nav-btn" onClick={() => scrollMatches('left')}><FiChevronLeft /></button>
+            <button type="button" className="carousel-nav-btn" onClick={() => scrollMatches('right')}><FiChevronRight /></button>
           </div>
         </div>
 
@@ -98,7 +104,7 @@ export default function Home() {
           ))}
         </div>
 
-        <div className="match-cards-scroll" key={`${activeSport}-${activeStateTab}`}>
+        <div className="match-cards-scroll" ref={matchScrollRef} key={`${activeSport}-${activeStateTab}`}>
           {filteredMatches.length > 0 ? (
             filteredMatches.map(match => (
               <MatchCard key={match.id} match={match} />

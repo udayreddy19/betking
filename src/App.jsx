@@ -10,7 +10,6 @@ import Sidebar from './components/Sidebar/Sidebar';
 import LoginModal from './components/LoginModal/LoginModal';
 import DepositModal from './components/DepositModal/DepositModal';
 import Toast from './components/Toast/Toast';
-import ThemeToggle from './components/ThemeToggle/ThemeToggle';
 import MobileBetSlip from './components/MobileBetSlip/MobileBetSlip';
 import GlobalBetBar from './components/GlobalBetBar/GlobalBetBar';
 
@@ -20,6 +19,8 @@ import Sports from './pages/Sports/Sports';
 import Casino from './pages/Casino/Casino';
 import LiveCasino from './pages/LiveCasino/LiveCasino';
 import Register from './pages/Register/Register';
+import Profile from './pages/Profile/Profile';
+import Fantasy from './pages/Fantasy/Fantasy';
 import Promotions from './pages/Promotions/Promotions';
 import Terms from './pages/Legal/Terms';
 import Privacy from './pages/Legal/Privacy';
@@ -37,14 +38,15 @@ function AppLayout() {
       <Toast />
       <MobileBetSlip />
       <GlobalBetBar />
-      <main style={{ minHeight: 'calc(100vh - var(--header-height) - 300px)', padding: 'var(--space-6) 0' }}>
+      <main className="app-main">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/live-betting" element={<Sports />} />
           <Route path="/sports" element={<Sports />} />
           <Route path="/casino" element={<Casino />} />
           <Route path="/live-casino" element={<LiveCasino />} />
-          <Route path="/fantasy" element={<Sports />} />
+          <Route path="/fantasy" element={<Fantasy />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="/register" element={<Register />} />
           <Route path="/promotions" element={<Promotions />} />
           <Route path="/terms" element={<Terms />} />

@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import './LoginModal.css';
 
 export default function LoginModal() {
-  const { isLoginModalOpen, closeLoginModal, login } = useAuth();
+  const { isLoginModalOpen, closeLoginModal, login, showToast } = useAuth();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -87,7 +87,7 @@ export default function LoginModal() {
             Log in
           </button>
           <div className="modal-links">
-            <button type="button" onClick={() => {}}>Forgot password?</button>
+            <button type="button" onClick={() => showToast('Password reset is not available in this demo. Use demo@betking.com / demo1234 or register a new account.')}>Forgot password?</button>
             <button type="button" onClick={handleRegister}>Create account</button>
           </div>
         </form>

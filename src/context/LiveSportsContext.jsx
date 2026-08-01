@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { matches as defaultMatches } from '../data/mockData';
 import { getStableMatchOdds, safeNum } from '../utils/odds';
 import { mergeApiAndDefaultMatches } from '../utils/matchFilters';
+import { getSeriesIdForLeague } from '../data/playerDatabase';
 
 const LiveSportsContext = createContext(null);
 
@@ -15,8 +16,10 @@ export function LiveSportsProvider({ children }) {
       try {
         // ── ESPN API endpoints (CORS-safe, free, no key needed) ──
         const endpoints = [
-          { url: 'https://site.api.espn.com/apis/site/v2/sports/cricket/8048/scoreboard', sport: 'cricket' },
-          { url: 'https://site.api.espn.com/apis/site/v2/sports/cricket/15414/scoreboard', sport: 'cricket' },
+          { url: 'https://site.api.espn.com/apis/site/v2/sports/cricket/8048/scoreboard', sport: 'cricket', seriesId: '8048' },
+          { url: 'https://site.api.espn.com/apis/site/v2/sports/cricket/15414/scoreboard', sport: 'cricket', seriesId: '15414' },
+          { url: 'https://site.api.espn.com/apis/site/v2/sports/cricket/19601/scoreboard', sport: 'cricket', seriesId: '19601' },
+          { url: 'https://site.api.espn.com/apis/site/v2/sports/cricket/21376/scoreboard', sport: 'cricket', seriesId: '21376' },
           { url: 'https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard', sport: 'soccer' },
           { url: 'https://site.api.espn.com/apis/site/v2/sports/soccer/esp.1/scoreboard', sport: 'soccer' },
           { url: 'https://site.api.espn.com/apis/site/v2/sports/soccer/ger.1/scoreboard', sport: 'soccer' },
@@ -33,7 +36,8 @@ export function LiveSportsProvider({ children }) {
           const data = await res.value.json();
           const events = data.events || [];
           if (endpoints[i].sport === 'cricket') {
-            cricketEvents.push(...events);
+            const seriesId = endpoints[i].seriesId || null;
+            cricketEvents.push(...events.map(evt => ({ evt, seriesId })));
           } else {
             soccerEvents.push(...events);
           }
@@ -44,7 +48,7 @@ export function LiveSportsProvider({ children }) {
         let matchIdx = 0;
 
         // Map cricket events
-        cricketEvents.forEach((evt) => {
+        cricketEvents.forEach(({ evt, seriesId: endpointSeriesId }) => {
           const comp = evt.competitions?.[0];
           const competitors = comp?.competitors || [];
           if (competitors.length < 2) return;
@@ -116,6 +120,10 @@ export function LiveSportsProvider({ children }) {
             team1: { name: homeName, shortName: homeShort, color: '#22c55e' },
             team2: { name: awayName, shortName: awayShort, color: '#e5e7eb' },
             odds,
+            espn: {
+              seriesId: endpointSeriesId || getSeriesIdForLeague(leagueName) || '8048',
+              eventId: String(evt.id),
+            },
             liveDetails: {
               runs: hRuns,
               wickets: hWickets,

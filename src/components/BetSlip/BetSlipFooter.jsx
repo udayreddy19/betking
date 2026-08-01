@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { useAuth } from '../../context/AuthContext';
 import './BetSlipFooter.css';
@@ -9,51 +10,61 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
     bets, betCount, stake, setStake, totalOdds, potentialReturn, placeBets, clearAll,
     betType, totalStakeAmount,
   } = useBetSlip();
-  const { user, isLoggedIn, deductFunds, showToast, openLoginModal } = useAuth();
+  const { user, isLoggedIn, deductFunds, updateUserBalance, showToast, openLoginModal } = useAuth();
+  const [isPlacing, setIsPlacing] = useState(false);
 
   if (betCount === 0) return null;
 
-  const handlePlaceBet = () => {
+  const handlePlaceBet = async () => {
+    if (isPlacing) return;
+
     if (!isLoggedIn) {
-      showToast('Please log in to place a bet.');
+      showToast('Please log in to place a bet.', 'info');
       openLoginModal();
       return;
     }
 
     const amountToDeduct = betType === 'multi' ? parseFloat(stake) : totalStakeAmount;
     if (!amountToDeduct || amountToDeduct <= 0) {
-      showToast('Enter a valid stake amount.');
+      showToast('Enter a valid stake amount.', 'error');
       return;
     }
     if (user.balance < amountToDeduct) {
-      showToast('Insufficient balance. Please deposit funds.');
+      showToast('Insufficient balance. Please deposit funds.', 'error');
       return;
     }
 
-    const deducted = deductFunds(amountToDeduct);
-    if (!deducted) {
-      showToast('Insufficient balance. Please deposit funds.');
-      return;
-    }
+    setIsPlacing(true);
+    try {
+      const deducted = deductFunds(amountToDeduct);
+      if (!deducted) {
+        showToast('Insufficient balance. Please deposit funds.', 'error');
+        return;
+      }
 
-    const result = placeBets();
-    if (result.success) {
+      const result = placeBets();
+      if (!result.success) {
+        updateUserBalance(amountToDeduct);
+        showToast(result.error || 'Could not place bet.', 'error');
+        return;
+      }
+
       const ret = betType === 'multi'
         ? result.placed.potentialReturn
         : result.placed.reduce((s, p) => s + p.potentialReturn, 0);
       showToast(
         betType === 'multi'
           ? `Multi bet placed! Potential return ₹${ret.toFixed(2)}`
-          : `${result.placed.length} single bet(s) placed! Potential return ₹${ret.toFixed(2)}`
+          : `${result.placed.length} single bet(s) placed! Potential return ₹${ret.toFixed(2)}`,
+        'success'
       );
       onPlaced?.();
-    } else {
-      showToast(result.error || 'Could not place bet.');
+    } finally {
+      setIsPlacing(false);
     }
   };
 
   const isModal = variant === 'modal';
-  const activeBet = bets[bets.length - 1];
   const placeLabel = betType === 'multi'
     ? 'Place Multi Bet'
     : `Place ${betCount} Single Bet${betCount > 1 ? 's' : ''}`;
@@ -61,13 +72,17 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
   if (isModal) {
     return (
       <div className="betslip-footer-panel betslip-footer-panel--modal betslip-footer-panel--modal-compact">
+        <div className="betslip-modal-bets-list">
+          {bets.map(bet => (
+            <div key={bet.id} className="betslip-modal-bet-row">
+              <span className="betslip-modal-selection-name">{bet.selectionName}</span>
+              <span className="betslip-modal-selection-odds">@ {Number(bet.odds).toFixed(2)}</span>
+            </div>
+          ))}
+        </div>
         <div className="betslip-modal-row">
-          <div className="betslip-modal-selection">
-            <span className="betslip-modal-selection-name">{activeBet?.selectionName}</span>
-            <span className="betslip-modal-selection-odds">@ {Number(activeBet?.odds).toFixed(2)}</span>
-          </div>
           <button type="button" className="betslip-modal-clear" onClick={clearAll}>
-            Clear
+            Clear all
           </button>
         </div>
 
@@ -95,12 +110,12 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
             aria-label="Stake amount"
           />
           <button
-            className="betslip-place-btn betslip-modal-place-btn"
-            disabled={!stake || parseFloat(stake) <= 0}
+            className={`betslip-place-btn betslip-modal-place-btn ${isPlacing ? 'is-placing' : ''}`}
+            disabled={!stake || parseFloat(stake) <= 0 || isPlacing}
             type="button"
             onClick={handlePlaceBet}
           >
-            Place Bet
+            {isPlacing ? 'Placing…' : 'Place Bet'}
           </button>
         </div>
 
@@ -157,12 +172,12 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
       </div>
 
       <button
-        className="betslip-place-btn"
-        disabled={betType === 'multi' ? (!stake || parseFloat(stake) <= 0) : totalStakeAmount <= 0}
+        className={`betslip-place-btn ${isPlacing ? 'is-placing' : ''}`}
+        disabled={(betType === 'multi' ? (!stake || parseFloat(stake) <= 0) : totalStakeAmount <= 0) || isPlacing}
         type="button"
         onClick={handlePlaceBet}
       >
-        {placeLabel}
+        {isPlacing ? 'Placing bet…' : placeLabel}
       </button>
     </div>
   );

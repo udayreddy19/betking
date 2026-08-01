@@ -1,10 +1,28 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { STARTING_BALANCE } from '../data/mockData';
 
 const AuthContext = createContext(null);
 
 const USERS_KEY = 'betking_users';
 const SESSION_KEY = 'betking_session';
+const SEED_USER = {
+  email: 'demo@betking.com',
+  password: 'demo1234',
+  displayName: 'Demo User',
+  balance: STARTING_BALANCE,
+  loyaltyLevel: 1,
+  loyaltyRank: 'Rookie',
+  xpToNext: 1000,
+  notifications: 0,
+  coins: 58,
+};
+
+function ensureSeedUser() {
+  const users = getStoredUsers();
+  if (!users.some(u => u.email === SEED_USER.email)) {
+    saveStoredUsers([...users, SEED_USER]);
+  }
+}
 
 function getStoredUsers() {
   try {
@@ -62,7 +80,19 @@ export function AuthProvider({ children }) {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState(null);
+  const [toast, setToast] = useState(null);
+  const toastTimerRef = useRef(null);
+
+  const dismissToast = useCallback(() => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast(null);
+  }, []);
+
+  const showToast = useCallback((msg, variant = 'success') => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ message: msg, variant });
+    toastTimerRef.current = setTimeout(() => setToast(null), 4500);
+  }, []);
 
   const setUser = useCallback((next) => {
     setUserState(prev => {
@@ -74,19 +104,13 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    ensureSeedUser();
     try {
       const saved = localStorage.getItem(SESSION_KEY);
       if (saved) setUserState(JSON.parse(saved));
     } catch {
       localStorage.removeItem(SESSION_KEY);
     }
-  }, []);
-
-  const showToast = useCallback((msg) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 4000);
   }, []);
 
   const register = useCallback(({ email, password, displayName }) => {
@@ -134,7 +158,7 @@ export function AuthProvider({ children }) {
   const logout = useCallback(() => {
     setUser(null);
     setIsSidebarOpen(false);
-    showToast('You have been logged out.');
+    showToast('You have been logged out.', 'info');
   }, [setUser, showToast]);
 
   const addFunds = useCallback((amount, method = 'Deposit') => {
@@ -155,6 +179,18 @@ export function AuthProvider({ children }) {
     return success;
   }, [setUser]);
 
+  const updateUserBalance = useCallback((delta) => {
+    let success = false;
+    setUser(prev => {
+      if (!prev) return prev;
+      const nextBalance = prev.balance + delta;
+      if (nextBalance < 0) return prev;
+      success = true;
+      return { ...prev, balance: nextBalance };
+    });
+    return success;
+  }, [setUser]);
+
   const openLoginModal = useCallback(() => setIsLoginModalOpen(true), []);
   const closeLoginModal = useCallback(() => setIsLoginModalOpen(false), []);
   const openDepositModal = useCallback(() => setIsDepositModalOpen(true), []);
@@ -171,8 +207,10 @@ export function AuthProvider({ children }) {
       logout,
       addFunds,
       deductFunds,
-      toastMessage,
+      updateUserBalance,
+      toast,
       showToast,
+      dismissToast,
       isLoginModalOpen,
       openLoginModal,
       closeLoginModal,

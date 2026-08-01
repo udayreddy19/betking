@@ -1,11 +1,13 @@
 import { useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import GameCard from '../GameCard/GameCard';
 import { casinoGames } from '../../data/mockData';
 import './GameCarousel.css';
 
-export default function GameCarousel({ title, games, viewAllLink, layout = 'scroll' }) {
+export default function GameCarousel({ title, games, viewAllLink, viewAllPath = '/casino', layout = 'scroll' }) {
   const scrollRef = useRef(null);
+  const navigate = useNavigate();
   const displayGames = (games && games.length > 0) ? games : casinoGames;
 
   const scroll = (direction) => {
@@ -21,7 +23,7 @@ export default function GameCarousel({ title, games, viewAllLink, layout = 'scro
         <h2>{title}</h2>
         <div className="game-carousel-actions">
           {viewAllLink && (
-            <button className="carousel-view-all">
+            <button type="button" className="carousel-view-all" onClick={() => navigate(viewAllPath)}>
               All <FiChevronRight />
             </button>
           )}

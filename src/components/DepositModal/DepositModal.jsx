@@ -67,7 +67,7 @@ export default function DepositModal() {
         const orderRes = await fetch('/api/create-razorpay-order', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount: depositAmt, userId: user?.username || 'udayreddy12' }),
+          body: JSON.stringify({ amount: depositAmt, userId: user?.email || 'guest' }),
         });
         if (orderRes.ok) {
           order = await orderRes.json();

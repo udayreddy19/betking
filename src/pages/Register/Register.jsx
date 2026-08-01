@@ -7,7 +7,7 @@ import './Register.css';
 
 export default function Register() {
   const navigate = useNavigate();
-  const { openLoginModal, register } = useAuth();
+  const { openLoginModal, register, login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [agreed, setAgreed] = useState(true);
   const [registered, setRegistered] = useState(false);
@@ -24,7 +24,8 @@ export default function Register() {
       setError(result.error);
       return;
     }
-    setRegistered(true);
+    login(email, password);
+    navigate('/sports');
   };
 
   const handleLoginClick = () => {

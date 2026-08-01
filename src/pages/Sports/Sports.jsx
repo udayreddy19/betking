@@ -1,13 +1,16 @@
 import { useState, useMemo, useEffect } from 'react';
-import { FiSearch } from 'react-icons/fi';
+import { Link } from 'react-router-dom';
+import { FiSearch, FiHome } from 'react-icons/fi';
 import { HiOutlineChevronDown, HiOutlineChevronUp } from 'react-icons/hi';
 import FilterChips from '../../components/FilterChips/FilterChips';
 import BetSlip from '../../components/BetSlip/BetSlip';
 import LiveMatchGraphicWidget from '../../components/LiveMatchGraphicWidget/LiveMatchGraphicWidget';
 import SportsLeagueSidebar from '../../components/SportsLeagueSidebar/SportsLeagueSidebar';
+import MatchDetailModal from '../../components/MatchDetailModal/MatchDetailModal';
 import { sportsCategories, featuredLeagues } from '../../data/mockData';
 import { useLiveSports } from '../../context/LiveSportsContext';
 import { useBetSlip } from '../../context/BetSlipContext';
+import { useAuth } from '../../context/AuthContext';
 import { isMatchBettable } from '../../utils/matchBetting';
 import { filterMatches } from '../../utils/matchFilters';
 import './Sports.css';
@@ -17,10 +20,7 @@ const MARKET_CATEGORIES = [
   { id: 'main', label: 'Main' },
   { id: 'over', label: 'Over' },
   { id: 'delivery', label: 'Delivery' },
-  { id: 'group', label: 'Group' },
-  { id: 'player', label: 'Player' },
   { id: 'partnership', label: 'Partnership' },
-  { id: 'combo', label: 'Combo' },
 ];
 
 function filterByLeague(matchList, activeLeague) {
@@ -59,21 +59,35 @@ function getMatchScores(match) {
   return { team1Score, team2Score, statusLabel, state };
 }
 
+function MarketsSuspended() {
+  return (
+    <div className="sports-market-suspended">
+      <span>🔒</span>
+      <p>Markets closed for this match</p>
+    </div>
+  );
+}
+
 export default function Sports() {
-  const { matches } = useLiveSports();
+  const { matches, tickerMessage } = useLiveSports();
   const { addBet, isBetSelected } = useBetSlip();
+  const { showToast } = useAuth();
   const [activeSport, setActiveSport] = useState('cricket');
-  const [activeLeague, setActiveLeague] = useState('hundred-w');
+  const [activeLeague, setActiveLeague] = useState('hundred-m');
   const [activeMarketCat, setActiveMarketCat] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMatchId, setSelectedMatchId] = useState(null);
+  const [modalMatch, setModalMatch] = useState(null);
   const [expandedMarkets, setExpandedMarkets] = useState({
-    winner: true, tie: true, over10: true, delivery: false, group: false, player: false, partnership: false, combo: false,
+    winner: true, tie: true, over10: true, delivery: false, partnership: false,
   });
 
   const sportMatches = useMemo(
-    () => filterByLeague(filterMatches(matches, { sport: activeSport, stateTab: 'all' }), activeLeague),
-    [matches, activeSport, activeLeague]
+    () => filterByLeague(
+      filterMatches(matches, { sport: activeSport, stateTab: 'all', searchQuery }),
+      activeLeague
+    ),
+    [matches, activeSport, activeLeague, searchQuery]
   );
 
   const activeMatch = useMemo(() => {
@@ -118,8 +132,15 @@ export default function Sports() {
     : (activeMatch?.time || 'Scheduled');
 
   const activeLeagueMeta = featuredLeagues.find(l => l.id === activeLeague);
-  const breadcrumbLeague = activeLeagueMeta?.name || activeMatch?.league || 'All Leagues';
+  const breadcrumbLeague = activeLeagueMeta?.breadcrumb || activeLeagueMeta?.name || activeMatch?.league || 'All Leagues';
   const sportLabel = sportsCategories.find(s => s.id === activeSport)?.name || 'Cricket';
+  const leagueChips = featuredLeagues.filter(l => l.sport === activeSport);
+  const canBetActive = activeMatch ? isMatchBettable(activeMatch) : false;
+  const liveStatusClass = tickerMessage?.includes('⚠️')
+    ? 'error'
+    : tickerMessage?.includes('Connecting')
+      ? 'loading'
+      : 'live';
 
   const placeBet = (selection, odds, selectionName, marketName) => {
     if (!activeMatch) return;
@@ -127,7 +148,12 @@ export default function Sports() {
   };
 
   return (
-    <div className="sports-page container" id="sports-page">
+    <div className="sports-page" id="sports-page">
+      <button type="button" className="sports-chat-fab" aria-label="Live chat" onClick={() => showToast('Live chat support coming soon!', 'info')}>
+        💬
+      </button>
+
+      <div className="sports-page-inner">
       <SportsLeagueSidebar
         activeSport={activeSport}
         activeLeague={activeLeague}
@@ -137,6 +163,10 @@ export default function Sports() {
       <div className="sports-center">
         {activeMatch && (
           <nav className="sports-breadcrumbs" aria-label="Breadcrumb">
+            <Link to="/" className="sports-breadcrumb-home" aria-label="Home">
+              <FiHome />
+            </Link>
+            <span className="sports-breadcrumb-sep">›</span>
             <span>{sportLabel}</span>
             <span className="sports-breadcrumb-sep">›</span>
             <span>{breadcrumbLeague}</span>
@@ -154,8 +184,60 @@ export default function Sports() {
           className="filter-chips-row sports-sport-chips"
         />
 
+        {leagueChips.length > 0 && (
+          <div className="sports-league-chips">
+            {leagueChips.map(league => (
+              <button
+                key={league.id}
+                type="button"
+                className={`sports-league-chip ${activeLeague === league.id ? 'active' : ''}`}
+                onClick={() => handleLeagueChange(league.id)}
+              >
+                {league.icon && <span className="sports-league-chip-icon">{league.icon}</span>}
+                {league.name}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className={`sports-live-status sports-live-status--${liveStatusClass}`} role="status">
+          <span className="sports-live-status-dot" />
+          {tickerMessage || 'Syncing live scores…'}
+        </div>
+
+        <div className="sports-search sports-search--mobile">
+          <div className="sports-search-wrapper">
+            <FiSearch className="sports-search-icon" />
+            <input
+              className="sports-search-input"
+              placeholder="Search teams or leagues"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              aria-label="Search matches"
+            />
+            {searchQuery && (
+              <button type="button" className="sports-search-clear" onClick={() => setSearchQuery('')}>
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+
         <div className="sports-match-ticker">
-          {sportMatches.slice(0, 10).map(m => {
+          {sportMatches.length === 0 ? (
+            <div className="sports-ticker-empty">
+              <p>No matches found{searchQuery ? ` for "${searchQuery}"` : ''}.</p>
+              {(searchQuery || activeLeague) && (
+                <button
+                  type="button"
+                  className="sports-empty-action"
+                  onClick={() => { setSearchQuery(''); handleLeagueChange(leagueChips[0]?.id || null); }}
+                >
+                  Clear filters
+                </button>
+              )}
+            </div>
+          ) : sportMatches.slice(0, 10).map(m => {
             const isSelected = activeMatch?.id === m.id;
             const { team1Score, team2Score, statusLabel, state } = getMatchScores(m);
             return (
@@ -181,7 +263,11 @@ export default function Sports() {
 
         {activeMatch ? (
           <>
-            <div className="sports-match-banner">
+            <div className="sports-mobile-live-widget">
+              <LiveMatchGraphicWidget match={activeMatch} />
+            </div>
+
+            <div className="sports-match-banner" role="button" tabIndex={0} onClick={() => setModalMatch(activeMatch)} onKeyDown={e => e.key === 'Enter' && setModalMatch(activeMatch)}>
               <div className="sports-match-banner-time">{matchTimeLabel}</div>
               <div className="sports-match-banner-teams">
                 <span className="sports-match-banner-team">{activeMatch.team1.name}</span>
@@ -213,7 +299,8 @@ export default function Sports() {
                   <span>Winner (incl. super over)</span>
                   {expandedMarkets.winner ? <HiOutlineChevronUp /> : <HiOutlineChevronDown />}
                 </button>
-                {expandedMarkets.winner && isMatchBettable(activeMatch) && (
+                {expandedMarkets.winner && (
+                  canBetActive ? (
                   <div className="sports-market-odds-grid">
                     <button
                       type="button"
@@ -242,6 +329,7 @@ export default function Sports() {
                       <span className="odds-val">{Number(activeMatch.odds.team2).toFixed(2)}</span>
                     </button>
                   </div>
+                  ) : <MarketsSuspended />
                 )}
               </div>
             )}
@@ -256,7 +344,8 @@ export default function Sports() {
                   <span>Will there be a tie</span>
                   {expandedMarkets.tie ? <HiOutlineChevronUp /> : <HiOutlineChevronDown />}
                 </button>
-                {expandedMarkets.tie && isMatchBettable(activeMatch) && (
+                {expandedMarkets.tie && (
+                  canBetActive ? (
                   <div className="sports-market-odds-grid">
                     <button
                       type="button"
@@ -275,6 +364,7 @@ export default function Sports() {
                       <span className="odds-val">1.05</span>
                     </button>
                   </div>
+                  ) : <MarketsSuspended />
                 )}
               </div>
             )}
@@ -285,7 +375,8 @@ export default function Sports() {
                   <span>1st innings over 12 - {activeMatch.team1.name} total</span>
                   {expandedMarkets.over10 ? <HiOutlineChevronUp /> : <HiOutlineChevronDown />}
                 </button>
-                {expandedMarkets.over10 && isMatchBettable(activeMatch) && (
+                {expandedMarkets.over10 && (
+                  canBetActive ? (
                   <div className="sports-market-odds-grid">
                     <button type="button" className={oddsBtnClass('Over 12 Total:Over 6.5')} onClick={() => placeBet('Over 12 Total:Over 6.5', 2.06, 'Over 6.5', '1st innings over 12 total')}>
                       <span>Over 6.5</span><span className="odds-val">2.06</span>
@@ -294,6 +385,7 @@ export default function Sports() {
                       <span>Under 6.5</span><span className="odds-val">1.63</span>
                     </button>
                   </div>
+                  ) : <MarketsSuspended />
                 )}
               </div>
             )}
@@ -304,7 +396,8 @@ export default function Sports() {
                   <span>1st innings over 12 - 5th delivery {activeMatch.team2.name} total</span>
                   {expandedMarkets.delivery ? <HiOutlineChevronUp /> : <HiOutlineChevronDown />}
                 </button>
-                {expandedMarkets.delivery && isMatchBettable(activeMatch) && (
+                {expandedMarkets.delivery && (
+                  canBetActive ? (
                   <div className="sports-market-odds-grid">
                     <button type="button" className={oddsBtnClass('Delivery:Over 0.5')} onClick={() => placeBet('Delivery:Over 0.5', 1.45, 'Over 0.5', '5th delivery total')}>
                       <span>Over 0.5</span><span className="odds-val">1.45</span>
@@ -313,44 +406,7 @@ export default function Sports() {
                       <span>Under 0.5</span><span className="odds-val">2.30</span>
                     </button>
                   </div>
-                )}
-              </div>
-            )}
-
-            {showCategory('group') && (
-              <div className="sports-market-panel">
-                <button type="button" className="sports-market-panel-header" onClick={() => toggleMarket('group')}>
-                  <span>Group winner - {activeMatch.team1.name}</span>
-                  {expandedMarkets.group ? <HiOutlineChevronUp /> : <HiOutlineChevronDown />}
-                </button>
-                {expandedMarkets.group && isMatchBettable(activeMatch) && (
-                  <div className="sports-market-odds-grid">
-                    <button type="button" className={oddsBtnClass('Group:Top Batter')} onClick={() => placeBet('Group:Top Batter', 3.40, 'Top Batter', 'Group winner')}>
-                      <span>Top Batter</span><span className="odds-val">3.40</span>
-                    </button>
-                    <button type="button" className={oddsBtnClass('Group:Top Bowler')} onClick={() => placeBet('Group:Top Bowler', 4.20, 'Top Bowler', 'Group winner')}>
-                      <span>Top Bowler</span><span className="odds-val">4.20</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {showCategory('player') && (
-              <div className="sports-market-panel">
-                <button type="button" className="sports-market-panel-header" onClick={() => toggleMarket('player')}>
-                  <span>Player total runs</span>
-                  {expandedMarkets.player ? <HiOutlineChevronUp /> : <HiOutlineChevronDown />}
-                </button>
-                {expandedMarkets.player && isMatchBettable(activeMatch) && (
-                  <div className="sports-market-odds-grid">
-                    <button type="button" className={oddsBtnClass('Player:Over 25.5')} onClick={() => placeBet('Player:Over 25.5', 1.83, 'Over 25.5', 'Player total runs')}>
-                      <span>Over 25.5</span><span className="odds-val">1.83</span>
-                    </button>
-                    <button type="button" className={oddsBtnClass('Player:Under 25.5')} onClick={() => placeBet('Player:Under 25.5', 1.83, 'Under 25.5', 'Player total runs')}>
-                      <span>Under 25.5</span><span className="odds-val">1.83</span>
-                    </button>
-                  </div>
+                  ) : <MarketsSuspended />
                 )}
               </div>
             )}
@@ -361,7 +417,8 @@ export default function Sports() {
                   <span>1st innings - 1st partnership total</span>
                   {expandedMarkets.partnership ? <HiOutlineChevronUp /> : <HiOutlineChevronDown />}
                 </button>
-                {expandedMarkets.partnership && isMatchBettable(activeMatch) && (
+                {expandedMarkets.partnership && (
+                  canBetActive ? (
                   <div className="sports-market-odds-grid">
                     <button type="button" className={oddsBtnClass('Partnership:Over 45.5')} onClick={() => placeBet('Partnership:Over 45.5', 1.90, 'Over 45.5', '1st partnership total')}>
                       <span>Over 45.5</span><span className="odds-val">1.90</span>
@@ -370,28 +427,11 @@ export default function Sports() {
                       <span>Under 45.5</span><span className="odds-val">1.90</span>
                     </button>
                   </div>
+                  ) : <MarketsSuspended />
                 )}
               </div>
             )}
 
-            {showCategory('combo') && (
-              <div className="sports-market-panel">
-                <button type="button" className="sports-market-panel-header" onClick={() => toggleMarket('combo')}>
-                  <span>Match winner & total runs combo</span>
-                  {expandedMarkets.combo ? <HiOutlineChevronUp /> : <HiOutlineChevronDown />}
-                </button>
-                {expandedMarkets.combo && isMatchBettable(activeMatch) && (
-                  <div className="sports-market-odds-grid">
-                    <button type="button" className={oddsBtnClass('Combo:Team1 & Over 300')} onClick={() => placeBet('Combo:Team1 & Over 300', 5.50, `${activeMatch.team1.name} & Over 300`, 'Winner & total combo')}>
-                      <span>{activeMatch.team1.name} & Over 300</span><span className="odds-val">5.50</span>
-                    </button>
-                    <button type="button" className={oddsBtnClass('Combo:Team2 & Over 300')} onClick={() => placeBet('Combo:Team2 & Over 300', 3.80, `${activeMatch.team2.name} & Over 300`, 'Winner & total combo')}>
-                      <span>{activeMatch.team2.name} & Over 300</span><span className="odds-val">3.80</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
           </>
         ) : (
           <div className="sports-empty">
@@ -402,8 +442,10 @@ export default function Sports() {
       </div>
 
       <aside className="sports-right">
-        <LiveMatchGraphicWidget match={activeMatch} />
-        <div className="sports-search">
+        <div className="sports-desktop-live-widget">
+          <LiveMatchGraphicWidget match={activeMatch} />
+        </div>
+        <div className="sports-search sports-search--desktop">
           <div className="sports-search-wrapper">
             <FiSearch className="sports-search-icon" />
             <input
@@ -417,6 +459,13 @@ export default function Sports() {
         </div>
         <BetSlip />
       </aside>
+      </div>
+
+      <MatchDetailModal
+        match={modalMatch}
+        isOpen={!!modalMatch}
+        onClose={() => setModalMatch(null)}
+      />
     </div>
   );
 }

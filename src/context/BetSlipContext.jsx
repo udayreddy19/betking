@@ -1,7 +1,16 @@
-import { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 
 const BetSlipContext = createContext(null);
+const PLACED_BETS_KEY = 'betking_placed_bets';
+
+function loadPlacedBets() {
+  try {
+    return JSON.parse(localStorage.getItem(PLACED_BETS_KEY) || '[]');
+  } catch {
+    return [];
+  }
+}
 
 function getSelectionName(match, selection, customName) {
   if (customName) return customName;
@@ -16,12 +25,21 @@ function getSelectionName(match, selection, customName) {
 export function BetSlipProvider({ children }) {
   const { showToast } = useAuth();
   const [bets, setBets] = useState([]);
-  const [placedBets, setPlacedBets] = useState([]);
+  const [placedBets, setPlacedBets] = useState(loadPlacedBets);
   const [activeTab, setActiveTab] = useState('betslip');
   const [stake, setStake] = useState('');
   const [betType, setBetType] = useState('multi');
   const [singlesStakes, setSinglesStakes] = useState({});
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem(PLACED_BETS_KEY, JSON.stringify(placedBets));
+  }, [placedBets]);
+
+  const openMyBets = useCallback(() => {
+    setActiveTab('mybets');
+    setIsMobileOpen(true);
+  }, []);
 
   const addBet = useCallback((match, selection, odds, selectionName, options = {}) => {
     let added = true;
@@ -29,7 +47,7 @@ export function BetSlipProvider({ children }) {
       const existing = prev.find(b => b.matchId === match.id && b.selection === selection);
       if (existing) {
         added = false;
-        showToast('Removed from betslip');
+        showToast('Removed from betslip', 'info');
         setSinglesStakes(s => {
           const next = { ...s };
           delete next[existing.id];
@@ -50,7 +68,7 @@ export function BetSlipProvider({ children }) {
 
       const label = getSelectionName(match, selection, selectionName);
       const betId = `${match.id}-${selection}`;
-      showToast(`Added to betslip: ${label} @ ${Number(odds).toFixed(2)}`);
+      showToast(`Added to betslip: ${label} @ ${Number(odds).toFixed(2)}`, 'success');
 
       if (typeof window !== 'undefined' && window.innerWidth <= 1024 && !options.skipMobileOpen) {
         setIsMobileOpen(true);
@@ -210,6 +228,7 @@ export function BetSlipProvider({ children }) {
       isMobileOpen,
       setIsMobileOpen,
       openMobileBetslip: () => setIsMobileOpen(true),
+      openMyBets,
     }}>
       {children}
     </BetSlipContext.Provider>
