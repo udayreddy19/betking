@@ -138,17 +138,8 @@ export default function DepositModal() {
     const depositAmt = parseFloat(amount);
     if (isNaN(depositAmt) || depositAmt <= 0) return;
 
-    if (selectedMethod?.type === 'razorpay') {
-      openRazorpayRealPayment(depositAmt);
-      return;
-    }
-
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      addFunds(depositAmt, selectedMethod?.name || 'Deposit');
-      setIsSuccess(true);
-    }, 1200);
+    // All UPI & Wallet payments trigger Razorpay Gateway flow
+    openRazorpayRealPayment(depositAmt);
   };
 
   return (
@@ -186,39 +177,25 @@ export default function DepositModal() {
             </button>
           </div>
 
-          {/* Category Tabs (if on main list view) */}
+          {/* Razorpay Banner for UPI & Wallets */}
           {!selectedMethod && !isSuccess && (
-            <div className="deposit-tabs">
-              <button
-                className={`deposit-tab ${activeCategory === 'all' ? 'active' : ''}`}
-                onClick={() => setActiveCategory('all')}
-              >
-                All Methods
-              </button>
-              <button
-                className={`deposit-tab ${activeCategory === 'razorpay' ? 'active' : ''}`}
-                onClick={() => setActiveCategory('razorpay')}
-              >
-                💳 Razorpay
-              </button>
-              <button
-                className={`deposit-tab ${activeCategory === 'giftcard' ? 'active' : ''}`}
-                onClick={() => setActiveCategory('giftcard')}
-              >
-                🎁 Gift Card
-              </button>
-              <button
-                className={`deposit-tab ${activeCategory === 'upi' ? 'active' : ''}`}
-                onClick={() => setActiveCategory('upi')}
-              >
-                📱 UPI & Wallets
-              </button>
-              <button
-                className={`deposit-tab ${activeCategory === 'crypto' ? 'active' : ''}`}
-                onClick={() => setActiveCategory('crypto')}
-              >
-                ₿ Crypto
-              </button>
+            <div style={{
+              background: 'linear-gradient(135deg, #0c2340 0%, #1e3a8a 100%)',
+              color: 'white',
+              padding: 'var(--space-3) var(--space-4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              fontSize: 'var(--text-xs)',
+              fontWeight: 600
+            }}>
+              <span>📱 Instant UPI & Wallets</span>
+              <span style={{
+                background: 'rgba(255,255,255,0.15)',
+                padding: '2px 8px',
+                borderRadius: '12px',
+                fontSize: '0.7rem'
+              }}>Powered by Razorpay</span>
             </div>
           )}
 
