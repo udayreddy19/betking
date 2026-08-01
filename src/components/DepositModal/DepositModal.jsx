@@ -307,46 +307,20 @@ export default function DepositModal() {
                 {/* UPI Specific Fields */}
                 {selectedMethod.type === 'upi' && (
                   <>
-                    <div className="deposit-tabs" style={{ margin: '0 0 var(--space-4) 0' }}>
-                      <button
-                        type="button"
-                        className={`deposit-tab ${upiMode === 'id' ? 'active' : ''}`}
-                        onClick={() => setUpiMode('id')}
-                      >
-                        Enter UPI VPA ID
-                      </button>
-                      <button
-                        type="button"
-                        className={`deposit-tab ${upiMode === 'qr' ? 'active' : ''}`}
-                        onClick={() => setUpiMode('qr')}
-                      >
-                        Scan QR Code
-                      </button>
+                    <div className="deposit-form-group">
+                      <label>Enter Your UPI VPA ID</label>
+                      <input
+                        type="text"
+                        className="deposit-form-input"
+                        placeholder="e.g. username@upi / mobile@paytm / mobile@ybl"
+                        value={upiId}
+                        onChange={e => setUpiId(e.target.value)}
+                        required
+                      />
+                      <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
+                        Razorpay will send a live <strong>UPI Collect Request</strong> to your mobile app (GPay / PhonePe / Paytm / BHIM).
+                      </p>
                     </div>
-
-                    {upiMode === 'id' ? (
-                      <div className="deposit-form-group">
-                        <label>Your UPI ID / VPA</label>
-                        <input
-                          type="text"
-                          className="deposit-form-input"
-                          placeholder="username@upi / mobile@paytm"
-                          value={upiId}
-                          onChange={e => setUpiId(e.target.value)}
-                          required
-                        />
-                      </div>
-                    ) : (
-                      <div className="qr-container">
-                        <div className="qr-box">
-                          <IoQrCodeOutline className="qr-icon" />
-                          <span style={{ fontSize: '0.65rem', fontWeight: 'bold' }}>SCAN TO PAY ₹{amount}</span>
-                        </div>
-                        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', marginBottom: '8px' }}>
-                          Scan using GPay, PhonePe, Paytm, BHIM, or Amazon Pay
-                        </p>
-                      </div>
-                    )}
 
                     {/* App quick launch bar */}
                     <div className="upi-apps">
@@ -364,7 +338,7 @@ export default function DepositModal() {
                       </div>
                       <div className="upi-app-btn">
                         <div className="upi-app-icon" style={{ background: '#ff9900' }}>a</div>
-                        <span>Amazon</span>
+                        <span>BHIM</span>
                       </div>
                     </div>
                   </>
