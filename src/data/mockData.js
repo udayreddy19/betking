@@ -1,11 +1,56 @@
 // Mock data for the BetKing betting app
 
 export const heroCategories = [
-  { id: 'sports', name: 'Sports', icon: '🏆', link: '/sports' },
-  { id: 'live-betting', name: 'Live Betting', icon: '🔴', link: '/live-betting' },
-  { id: 'casino', name: 'Casino', icon: '🎰', link: '/casino' },
-  { id: 'live-casino', name: 'Live Casino', icon: '🎲', link: '/live-casino' },
-  { id: 'crash-games', name: 'Crash Games', icon: '🚀', link: '/casino?cat=crash-games' },
+  {
+    id: 'sports',
+    name: 'SPORTS',
+    icon: '🏆',
+    description: 'Bet on 35+ Sports & Top Global Leagues with Best Odds',
+    badge: 'TOP ODDS',
+    bgGradient: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+    borderColor: '#3b82f6',
+    link: '/sports'
+  },
+  {
+    id: 'live-betting',
+    name: 'LIVE BETTING',
+    icon: '🔴',
+    description: 'Ball-by-Ball Live Scores & In-Play Odds Fluctuations',
+    badge: 'LIVE NOW',
+    bgGradient: 'linear-gradient(135deg, #991b1b 0%, #450a0a 100%)',
+    borderColor: '#ef4444',
+    link: '/sports'
+  },
+  {
+    id: 'casino',
+    name: 'CASINO',
+    icon: '🎰',
+    description: '2,000+ Slots, Megaways & Huge Jackpot Games',
+    badge: 'HOT GAMES',
+    bgGradient: 'linear-gradient(135deg, #78350f 0%, #451a03 100%)',
+    borderColor: '#f59e0b',
+    link: '/casino'
+  },
+  {
+    id: 'live-casino',
+    name: 'LIVE CASINO',
+    icon: '🎲',
+    description: 'Real Live Dealers, Roulette, Blackjack & Baccarat Tables',
+    badge: '24/7 TABLES',
+    bgGradient: 'linear-gradient(135deg, #581c87 0%, #2e1065 100%)',
+    borderColor: '#a855f7',
+    link: '/live-casino'
+  },
+  {
+    id: 'crash-games',
+    name: 'CRASH GAMES',
+    icon: '🚀',
+    description: 'Aviator, Spribe Multipliers & Instant Cashout',
+    badge: 'HIGH WIN',
+    bgGradient: 'linear-gradient(135deg, #0e7490 0%, #164e63 100%)',
+    borderColor: '#06b6d4',
+    link: '/casino?cat=crash-games'
+  }
 ];
 
 export const sportsCategories = [
@@ -192,25 +237,25 @@ export const promotions = [
     category: 'sports',
     tag: 'NEW CUSTOMERS',
     code: 'WELCOME150',
-    image: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=800&q=80',
+    bgColor: 'linear-gradient(135deg, #1e1b4b 0%, #311b92 100%)',
     description: 'Get started on BetKing with a massive 150% bonus on your first deposit up to ₹30,000!',
   },
   {
     id: 'p2',
     title: 'Weekly Sports Cashback up to ₹10,000',
     category: 'sports',
-    tag: 'WEEKLY',
+    tag: 'WEEKLY CASHBACK',
     code: 'CASHBACK10',
-    image: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=800&q=80',
+    bgColor: 'linear-gradient(135deg, #064e3b 0%, #047857 100%)',
     description: 'Get 10% cashback on your net sports losses every Monday up to ₹10,000.',
   },
   {
     id: 'p3',
     title: '100% Casino Welcome Pack up to ₹70,000 + 50 Free Spins',
     category: 'casino',
-    tag: 'CASINO',
+    tag: 'CASINO PACK',
     code: 'CASINO100',
-    image: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?auto=format&fit=crop&w=800&q=80',
+    bgColor: 'linear-gradient(135deg, #701a75 0%, #a21caf 100%)',
     description: 'Double your casino stack up to ₹70,000 and get 50 Free Spins on Aviator!',
   },
 ];
