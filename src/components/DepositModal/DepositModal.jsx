@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { IoClose, IoChevronBack, IoQrCodeOutline } from 'react-icons/io5';
-import { FiArrowRight, FiShield } from 'react-icons/fi';
+import { IoClose, IoChevronBack, IoQrCodeOutline, IoKeyOutline } from 'react-icons/io5';
+import { FiArrowRight, FiShield, FiAlertCircle } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 import { paymentMethods } from '../../data/mockData';
 import './DepositModal.css';
@@ -15,9 +15,11 @@ export default function DepositModal() {
   const [giftCardCode, setGiftCardCode] = useState('');
   const [upiId, setUpiId] = useState('udayreddy@upi');
   const [upiMode, setUpiMode] = useState('id'); // 'id' | 'qr'
+  const [razorpayKey, setRazorpayKey] = useState(import.meta.env.VITE_RAZORPAY_KEY_ID || '');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [razorpayActive, setRazorpayActive] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   if (!isDepositModalOpen) return null;
 
@@ -26,6 +28,7 @@ export default function DepositModal() {
     setIsSuccess(false);
     setIsLoading(false);
     setRazorpayActive(false);
+    setErrorMsg('');
     closeDepositModal();
   };
 
@@ -41,6 +44,7 @@ export default function DepositModal() {
   const handleMethodSelect = (method) => {
     setSelectedMethod(method);
     setIsSuccess(false);
+    setErrorMsg('');
     if (method.id === 'amazon_gift') {
       setGiftCardCode('');
       setAmount('1000');
@@ -50,41 +54,58 @@ export default function DepositModal() {
   };
 
   const openRazorpayCheckout = (depositAmt) => {
+    setErrorMsg('');
     setRazorpayActive(true);
 
-    // If Razorpay SDK is loaded on window:
-    if (window.Razorpay) {
-      const options = {
-        key: 'rzp_test_demo1234567890', // Test Key ID
-        amount: depositAmt * 100, // Amount in paise
-        currency: 'INR',
-        name: 'BetKing Gaming',
-        description: 'Account Deposit',
-        image: 'https://cdn-icons-png.flaticon.com/512/2171/2171078.png',
-        handler: function (response) {
+    const activeKey = razorpayKey.trim() || import.meta.env.VITE_RAZORPAY_KEY_ID;
+
+    // Check if user has provided a valid rzp_test_ / rzp_live_ key format
+    if (window.Razorpay && activeKey && (activeKey.startsWith('rzp_test_') || activeKey.startsWith('rzp_live_'))) {
+      try {
+        const options = {
+          key: activeKey,
+          amount: depositAmt * 100, // Amount in paise
+          currency: 'INR',
+          name: 'BetKing Gaming',
+          description: 'Account Deposit',
+          image: 'https://cdn-icons-png.flaticon.com/512/2171/2171078.png',
+          handler: function (response) {
+            setRazorpayActive(false);
+            addFunds(depositAmt, 'Razorpay Gateway');
+            setIsSuccess(true);
+          },
+          prefill: {
+            name: user?.displayName || 'Uday Reddy',
+            email: user?.username ? `${user.username}@betking.com` : 'uday@example.com',
+            contact: '9876543210',
+          },
+          theme: {
+            color: '#7c3aed',
+          },
+          modal: {
+            ondismiss: function () {
+              setRazorpayActive(false);
+            }
+          }
+        };
+        const rzp = new window.Razorpay(options);
+        rzp.on('payment.failed', function (response) {
           setRazorpayActive(false);
-          addFunds(depositAmt, 'Razorpay Gateway');
-          setIsSuccess(true);
-        },
-        prefill: {
-          name: user?.displayName || 'Uday Reddy',
-          email: user?.username ? `${user.username}@betking.com` : 'uday@example.com',
-          contact: '9876543210',
-        },
-        theme: {
-          color: '#7c3aed',
-        },
-      };
-      const rzp = new window.Razorpay(options);
-      rzp.open();
-    } else {
-      // Simulation of Razorpay Checkout popup loader
-      setTimeout(() => {
-        setRazorpayActive(false);
-        addFunds(depositAmt, 'Razorpay Gateway');
-        setIsSuccess(true);
-      }, 1800);
+          setErrorMsg(response.error.description || 'Razorpay payment failed. Try test mode.');
+        });
+        rzp.open();
+        return;
+      } catch (err) {
+        console.error('Razorpay Error:', err);
+      }
     }
+
+    // Interactive Demo / Test Checkout Handler (When Key ID is not set or in Sandbox mode)
+    setTimeout(() => {
+      setRazorpayActive(false);
+      addFunds(depositAmt, 'Razorpay Gateway (Test Mode)');
+      setIsSuccess(true);
+    }, 1500);
   };
 
   const handleDepositSubmit = (e) => {
@@ -168,6 +189,17 @@ export default function DepositModal() {
 
         {/* Body Content */}
         <div className="deposit-body">
+          {errorMsg && (
+            <div style={{
+              background: '#fef2f2', border: '1px solid #fecaca', color: '#ef4444',
+              padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-xs)',
+              marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)'
+            }}>
+              <FiAlertCircle style={{ flexShrink: 0 }} />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
           {isSuccess ? (
             /* Success Screen */
             <div className="deposit-success">
@@ -208,22 +240,38 @@ export default function DepositModal() {
                 />
               </div>
 
-              {/* Razorpay Gateway Information */}
+              {/* Razorpay Gateway Information & Key Configuration */}
               {selectedMethod.type === 'razorpay' && (
-                <div style={{
-                  background: 'linear-gradient(135deg, #0c2340 0%, #1e3a8a 100%)',
-                  color: 'white',
-                  borderRadius: 'var(--radius-lg)',
-                  padding: 'var(--space-4)',
-                  marginBottom: 'var(--space-4)',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-2)', fontWeight: 'bold', fontSize: 'var(--text-sm)' }}>
-                    <FiShield style={{ color: '#38bdf8' }} /> Razorpay Secure Checkout
+                <>
+                  <div style={{
+                    background: 'linear-gradient(135deg, #0c2340 0%, #1e3a8a 100%)',
+                    color: 'white',
+                    borderRadius: 'var(--radius-lg)',
+                    padding: 'var(--space-4)',
+                    marginBottom: 'var(--space-4)',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-2)', fontWeight: 'bold', fontSize: 'var(--text-sm)' }}>
+                      <FiShield style={{ color: '#38bdf8' }} /> Razorpay Secure Checkout
+                    </div>
+                    <p style={{ fontSize: 'var(--text-xs)', opacity: 0.85, lineHeight: 1.5 }}>
+                      Supports Cards, NetBanking, UPI, Paytm & EMI.
+                    </p>
                   </div>
-                  <p style={{ fontSize: 'var(--text-xs)', opacity: 0.85, lineHeight: 1.5 }}>
-                    Supports Cards (Visa/Mastercard/RuPay), NetBanking (50+ banks), UPI (GPay/PhonePe), Paytm, and EMI options.
-                  </p>
-                </div>
+
+                  <div className="deposit-form-group">
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}>
+                      <IoKeyOutline /> Optional: Razorpay Key ID (Leave blank to test in Sandbox)
+                    </label>
+                    <input
+                      type="text"
+                      className="deposit-form-input"
+                      placeholder="rzp_test_... or rzp_live_..."
+                      value={razorpayKey}
+                      onChange={e => setRazorpayKey(e.target.value)}
+                      style={{ fontSize: 'var(--text-xs)', fontFamily: 'monospace' }}
+                    />
+                  </div>
+                </>
               )}
 
               {/* Amazon Gift Card Specific Fields */}
@@ -318,7 +366,7 @@ export default function DepositModal() {
                 style={selectedMethod.type === 'razorpay' ? { background: '#0c2340' } : {}}
               >
                 {isLoading || razorpayActive ? (
-                  'Launching Razorpay Secure Gateway...'
+                  'Launching Secure Checkout...'
                 ) : (
                   <>
                     Pay ₹{parseFloat(amount || 0).toLocaleString()} via {selectedMethod.name}
