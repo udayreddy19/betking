@@ -38,7 +38,7 @@ export default function Footer() {
         <hr className="footer-divider" />
 
         <div className="footer-bottom">
-          <p>© 2026 BetKing Demo. All rights reserved.</p>
+          <p>© 2026 BetKing. All rights reserved.</p>
           <div className="footer-payments">
             <div className="footer-payment-icon" style={{ background: '#22c55e', color: '#fff', fontWeight: 'bold' }}>UPI</div>
             <div className="footer-payment-icon" style={{ background: '#4285f4', color: '#fff', fontWeight: 'bold' }}>GPay</div>
@@ -50,8 +50,8 @@ export default function Footer() {
         <div className="footer-responsible">
           <div className="footer-age-badge">18+</div>
           <p>
-            BetKing Demo promotes responsible gaming. Gambling can be addictive. Play responsibly.
-            Must be 18+ to use this demo. No real money is involved — virtual balance only.
+            BetKing promotes responsible gaming. Gambling can be addictive. Play responsibly.
+            Must be 18+ to register and play.
           </p>
         </div>
       </div>

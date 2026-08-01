@@ -12,6 +12,7 @@ import DepositModal from './components/DepositModal/DepositModal';
 import Toast from './components/Toast/Toast';
 import ThemeToggle from './components/ThemeToggle/ThemeToggle';
 import MobileBetSlip from './components/MobileBetSlip/MobileBetSlip';
+import GlobalBetBar from './components/GlobalBetBar/GlobalBetBar';
 
 
 import Home from './pages/Home/Home';
@@ -35,6 +36,7 @@ function AppLayout() {
       <DepositModal />
       <Toast />
       <MobileBetSlip />
+      <GlobalBetBar />
       <main style={{ minHeight: 'calc(100vh - var(--header-height) - 300px)', padding: 'var(--space-6) 0' }}>
         <Routes>
           <Route path="/" element={<Home />} />

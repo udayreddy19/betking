@@ -70,7 +70,7 @@ export default function FinancialModals({ modalType, onClose }) {
               <div style={{ textAlign: 'center', padding: '20px 0' }}>
                 <IoCheckmarkCircle style={{ color: '#22c55e', fontSize: '3.5rem', marginBottom: '10px' }} />
                 <h3 style={{ margin: 0, fontWeight: 800 }}>Payout Sent via Razorpay!</h3>
-                <p style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '6px' }}>
+                <p className="fin-muted" style={{ fontSize: '0.85rem', marginTop: '6px' }}>
                   ₹{withdrawAmount} sent instantly to <strong>{upiId}</strong>. Ref ID: RZP_WD_{Math.floor(Math.random() * 900000 + 100000)}
                 </p>
                 <button
@@ -83,9 +83,9 @@ export default function FinancialModals({ modalType, onClose }) {
               </div>
             ) : (
               <form onSubmit={handleRazorpayWithdraw}>
-                <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', marginBottom: '16px', border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Available Balance</div>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0f172a' }}>₹{user.balance.toLocaleString()}</div>
+                <div className="fin-balance-box">
+                  <div className="fin-balance-label">Available Balance</div>
+                  <div className="fin-balance-amount">₹{user.balance.toLocaleString()}</div>
                 </div>
 
                 <div style={{ marginBottom: '14px' }}>
@@ -117,7 +117,7 @@ export default function FinancialModals({ modalType, onClose }) {
                         type="button"
                         key={val}
                         onClick={() => setWithdrawAmount(val)}
-                        style={{ padding: '4px 10px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600 }}
+                        className="fin-chip-btn"
                       >
                         +₹{val}
                       </button>
@@ -138,10 +138,10 @@ export default function FinancialModals({ modalType, onClose }) {
           <div className="fin-modal-body">
             {pendingWithdrawals.length > 0 ? (
               pendingWithdrawals.map(w => (
-                <div key={w.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '12px', borderRadius: '8px', marginBottom: '10px', border: '1px solid #e2e8f0' }}>
+                <div key={w.id} className="fin-list-item">
                   <div>
                     <div style={{ fontWeight: 800, fontSize: '0.9rem' }}>{w.id} · ₹{w.amount}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{w.upi} · {w.date}</div>
+                    <div className="fin-muted" style={{ fontSize: '0.75rem' }}>{w.upi} · {w.date}</div>
                     <div style={{ fontSize: '0.7rem', color: '#eab308', fontWeight: 700, marginTop: '2px' }}>{w.status}</div>
                   </div>
                   <button
@@ -153,7 +153,7 @@ export default function FinancialModals({ modalType, onClose }) {
                 </div>
               ))
             ) : (
-              <p style={{ textAlign: 'center', color: '#64748b', padding: '20px' }}>No pending withdrawal requests found.</p>
+              <p className="fin-muted" style={{ textAlign: 'center', padding: '20px' }}>No pending withdrawal requests found.</p>
             )}
           </div>
         )}

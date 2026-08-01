@@ -83,6 +83,7 @@
 .section-header h2 {
   font-size: var(--text-xl);
   font-weight: var(--font-extrabold);
+  color: var(--color-text);
 }
 .section-header .view-all {
   display: flex;
@@ -115,6 +116,42 @@
   flex-shrink: 0;
   min-width: 300px;
   flex: 0 0 calc(25% - var(--space-3));
+}
+
+.no-matches-empty {
+  flex: 1;
+  min-width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-10) var(--space-6);
+  background: var(--color-surface);
+  border: 1.5px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+.no-matches-icon {
+  font-size: 2.5rem;
+}
+.no-matches-empty p {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-text-secondary);
+}
+.no-matches-cta {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--color-primary);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--color-primary);
+  transition: all var(--transition-fast);
+}
+.no-matches-cta:hover {
+  background: var(--color-primary);
+  color: #ffffff;
 }
 
 /* Promo Carousel (logged in) */

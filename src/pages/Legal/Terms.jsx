@@ -5,20 +5,21 @@ export default function Terms() {
   return (
     <div className="legal-page container">
       <h1>Terms & Conditions</h1>
-      <p className="legal-demo-notice">Demo application — no real-money wagering.</p>
       <section>
-        <h2>1. Demo platform</h2>
+        <h2>1. Platform</h2>
         <p>
-          BetKing (demo) is an educational portfolio project. Virtual balances and bets have no monetary value.
+          BetKing provides sports betting, casino, and related gaming services. By using this site you agree to these terms.
         </p>
       </section>
       <section>
         <h2>2. Eligibility</h2>
-        <p>You must be 18 years or older to use this demo.</p>
+        <p>You must be 18 years or older and legally permitted to gamble in your jurisdiction.</p>
       </section>
       <section>
         <h2>3. Account</h2>
-        <p>Demo accounts use virtual funds only. No KYC or real payments are required for test play.</p>
+        <p>
+          You are responsible for keeping your login credentials secure. We may require identity verification for withdrawals and compliance.
+        </p>
       </section>
       <p><Link to="/">← Back to home</Link></p>
     </div>

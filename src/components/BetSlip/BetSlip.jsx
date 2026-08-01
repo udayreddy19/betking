@@ -1,47 +1,13 @@
 import { IoClose, IoSettingsOutline } from 'react-icons/io5';
 import { useBetSlip } from '../../context/BetSlipContext';
-import { useAuth } from '../../context/AuthContext';
+import BetSlipFooter from './BetSlipFooter';
 import './BetSlip.css';
-
-const QUICK_STAKES = [100, 500, 1000];
 
 export default function BetSlip() {
   const {
     bets, removeBet, clearAll, activeTab, setActiveTab,
-    stake, setStake, totalOdds, potentialReturn, betCount,
-    placedBets, placeBets, myBetsCount,
+    betCount, placedBets, myBetsCount,
   } = useBetSlip();
-  const { user, isLoggedIn, deductFunds, showToast, openLoginModal } = useAuth();
-
-  const handlePlaceBet = () => {
-    const stakeAmount = parseFloat(stake);
-    if (!isLoggedIn) {
-      showToast('Please log in to place a bet.');
-      openLoginModal();
-      return;
-    }
-    if (!stakeAmount || stakeAmount <= 0) {
-      showToast('Enter a valid stake amount.');
-      return;
-    }
-    if (user.balance < stakeAmount) {
-      showToast('Insufficient balance. Please deposit funds.');
-      return;
-    }
-
-    const deducted = deductFunds(stakeAmount);
-    if (!deducted) {
-      showToast('Insufficient balance. Please deposit funds.');
-      return;
-    }
-
-    const result = placeBets(stakeAmount);
-    if (result.success) {
-      showToast(`Bet placed! Potential return ₹${result.placed.potentialReturn.toFixed(2)}`);
-    } else {
-      showToast(result.error || 'Could not place bet.');
-    }
-  };
 
   return (
     <div className="betslip" id="betslip">
@@ -124,50 +90,7 @@ export default function BetSlip() {
         )}
       </div>
 
-      {activeTab === 'betslip' && betCount > 0 && (
-        <div className="betslip-footer">
-          <div className="betslip-quick-stakes">
-            {QUICK_STAKES.map(amount => (
-              <button
-                key={amount}
-                type="button"
-                className="betslip-quick-stake-btn"
-                onClick={() => setStake(String(amount))}
-              >
-                ₹{amount}
-              </button>
-            ))}
-          </div>
-          <div className="betslip-stake">
-            <label htmlFor="stake-input">Stake (₹)</label>
-            <input
-              type="number"
-              placeholder="0.00"
-              value={stake}
-              onChange={e => setStake(e.target.value)}
-              min="0"
-              id="stake-input"
-            />
-          </div>
-          <div className="betslip-summary">
-            <span className="label">Total Odds</span>
-            <span className="value">{totalOdds}</span>
-          </div>
-          <div className="betslip-summary">
-            <span className="label">Potential Return</span>
-            <span className="value">₹{potentialReturn}</span>
-          </div>
-          <button
-            className="betslip-place-btn"
-            disabled={!stake || parseFloat(stake) <= 0}
-            id="place-bet-btn"
-            type="button"
-            onClick={handlePlaceBet}
-          >
-            Place Bet
-          </button>
-        </div>
-      )}
+      {activeTab === 'betslip' && <BetSlipFooter />}
     </div>
   );
 }

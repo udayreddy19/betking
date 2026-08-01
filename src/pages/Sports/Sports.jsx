@@ -23,16 +23,6 @@ export default function Sports() {
   const [expandedMarket, setExpandedMarket] = useState(true);
   const [expandedDeliveryMarket, setExpandedDeliveryMarket] = useState(true);
 
-  // Always look up from live matches array so scores stay current
-  const activeLiveMatch = (selectedMatchId && matches.find(m => m.id === selectedMatchId))
-    || matches.find(m => m.isLive && m.sport === activeSport)
-    || matches[0];
-
-  const sportLeagues = useMemo(() =>
-    leagues.filter(l => l.sport === activeSport),
-    [activeSport]
-  );
-
   const filteredMatches = useMemo(() => {
     let result = matches;
 
@@ -57,6 +47,18 @@ export default function Sports() {
 
     return result;
   }, [matches, activeSport, activeTab, searchQuery]);
+
+  const sportCarouselMatches = useMemo(
+    () => matches.filter(m => m.sport === activeSport),
+    [matches, activeSport]
+  );
+
+  const activeLiveMatch = (selectedMatchId && matches.find(m => m.id === selectedMatchId))
+    || sportCarouselMatches.find(m => m.matchState === 'in' || m.isLive)
+    || sportCarouselMatches[0]
+    || null;
+
+  const activeSportName = sportsCategories.find(s => s.id === activeSport)?.name || 'sport';
 
   return (
     <div className="sports-page container" id="sports-page" style={{ display: 'flex', gap: '20px' }}>
@@ -104,7 +106,7 @@ export default function Sports() {
 
         {/* 10CRIC Horizontal Live Matches Quick Selection Carousel */}
         <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '16px' }}>
-          {matches.slice(0, 8).map(m => {
+          {sportCarouselMatches.slice(0, 8).map(m => {
             const isSelected = activeLiveMatch?.id === m.id;
             const isCricket = m.sport === 'cricket' || m.sport === 'virtual-cricket';
             const isSoccer = m.sport === 'soccer' || m.sport === 'esoccer';
@@ -257,9 +259,18 @@ export default function Sports() {
         </div>
 
         <div className="sports-match-grid">
-          {filteredMatches.map(match => (
-            <MatchCard key={match.id} match={match} />
-          ))}
+          {filteredMatches.length > 0 ? (
+            filteredMatches.map(match => (
+              <MatchCard key={match.id} match={match} />
+            ))
+          ) : (
+            <div className="sports-empty">
+              <span style={{ fontSize: '2rem', display: 'block', marginBottom: '8px' }}>
+                {sportsCategories.find(s => s.id === activeSport)?.icon || '🏆'}
+              </span>
+              <h3>No {activeTab === 'live' ? 'live' : ''} {activeSportName} matches found</h3>
+            </div>
+          )}
         </div>
       </div>
 

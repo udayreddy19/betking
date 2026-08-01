@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import './LoginModal.css';
 
 export default function LoginModal() {
-  const { isLoginModalOpen, closeLoginModal, login, demoCredentials } = useAuth();
+  const { isLoginModalOpen, closeLoginModal, login } = useAuth();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -23,7 +23,7 @@ export default function LoginModal() {
     }
     const success = login(username, password);
     if (!success) {
-      setError(`Invalid username or password. Try ${demoCredentials.username} / ${demoCredentials.password}`);
+      setError('Invalid email or password. Please try again or create an account.');
     }
   };
 
@@ -50,12 +50,12 @@ export default function LoginModal() {
 
         <form className="modal-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label" htmlFor="login-username">Username</label>
+            <label className="form-label" htmlFor="login-username">Email</label>
             <input
               className="form-input"
               id="login-username"
-              type="text"
-              placeholder="Enter your username"
+              type="email"
+              placeholder="Enter your email"
               value={username}
               onChange={e => setUsername(e.target.value)}
               autoComplete="username"

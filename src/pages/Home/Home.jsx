@@ -8,6 +8,8 @@ import GameCarousel from '../../components/GameCarousel/GameCarousel';
 import FilterChips from '../../components/FilterChips/FilterChips';
 import MatchCard from '../../components/MatchCard/MatchCard';
 import { casinoGames, promotions, sportsCategories, WELCOME_BONUS } from '../../data/mockData';
+
+const sportNameById = Object.fromEntries(sportsCategories.map(s => [s.id, s.name]));
 import { useLiveSports } from '../../context/LiveSportsContext';
 import './Home.css';
 
@@ -69,9 +71,13 @@ export default function Home() {
               <MatchCard key={match.id} match={match} />
             ))
           ) : (
-            (matches || []).slice(0, 4).map(match => (
-              <MatchCard key={match.id} match={match} />
-            ))
+            <div className="no-matches-empty">
+              <span className="no-matches-icon">{sportsCategories.find(s => s.id === activeSport)?.icon || '🏆'}</span>
+              <p>No live {sportNameById[activeSport] || 'sport'} events right now</p>
+              <button type="button" className="no-matches-cta" onClick={() => navigate('/sports')}>
+                Browse all sports
+              </button>
+            </div>
           )}
         </div>
       </div>

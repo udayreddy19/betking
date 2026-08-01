@@ -15,6 +15,20 @@
   margin-bottom: var(--space-8);
   line-height: 1.2;
 }
+.register-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-4);
+}
+[data-theme="dark"] .register-error {
+  background: #450a0a;
+  border-color: #991b1b;
+  color: #fecaca;
+}
 .register-form {
   display: flex;
   flex-direction: column;

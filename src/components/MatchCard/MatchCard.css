@@ -169,8 +169,8 @@
 }
 
 .upcoming-badge {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
   padding: 2px 8px;
   border-radius: var(--radius-full);
   font-size: 0.65rem;
@@ -180,16 +180,16 @@
 
 .match-card-score-inline {
   margin-left: 8px;
-  color: #10b981;
+  color: var(--color-success);
   font-weight: var(--font-bold);
 }
 
 .match-card-commentary {
   font-size: 0.7rem;
-  color: #94a3b8;
+  color: var(--color-text-muted);
   font-style: italic;
   padding: 2px 8px;
-  background: rgba(15, 23, 42, 0.4);
+  background: var(--color-bg);
   border-radius: 4px;
   margin-bottom: 8px;
   white-space: nowrap;
@@ -212,7 +212,7 @@
   text-align: center;
   margin-top: 8px;
   font-size: 0.7rem;
-  color: #7c3aed;
+  color: var(--color-primary);
   font-weight: 700;
   display: flex;
   align-items: center;

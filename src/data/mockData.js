@@ -7,7 +7,7 @@ export const WELCOME_BONUS = {
   code: 'WELCOME150',
 };
 
-export const DEMO_STARTING_BALANCE = 10000;
+export const STARTING_BALANCE = 10000;
 
 export const heroCategories = [
   {
@@ -177,7 +177,150 @@ export const matches = [
     team2: { name: 'Barcelona', shortName: 'FCB', color: '#a50044' },
     odds: { team1: 2.50, draw: 3.30, team2: 2.70 },
     liveDetails: { score1: 0, score2: 0, minute: "Scheduled", commentary: 'Upcoming match' }
-  }
+  },
+  {
+    id: 'm7',
+    league: 'NBA',
+    sport: 'basketball',
+    sportColor: '#f59e0b',
+    time: 'Live',
+    isLive: true,
+    matchState: 'in',
+    team1: { name: 'LA Lakers', shortName: 'LAL', color: '#552583' },
+    team2: { name: 'Boston Celtics', shortName: 'BOS', color: '#007a33' },
+    odds: { team1: 1.85, team2: 1.95 },
+    liveDetails: { score1: 98, score2: 94, minute: "Q4 3:42", commentary: 'Lakers lead by 4' }
+  },
+  {
+    id: 'm8',
+    league: 'EuroLeague',
+    sport: 'basketball',
+    sportColor: '#f59e0b',
+    time: 'Today 23:00',
+    isLive: false,
+    matchState: 'pre',
+    team1: { name: 'Real Madrid', shortName: 'RMA', color: '#ffffff' },
+    team2: { name: 'Barcelona', shortName: 'FCB', color: '#a50044' },
+    odds: { team1: 1.72, team2: 2.10 },
+    liveDetails: { score1: 0, score2: 0, minute: 'Scheduled', commentary: 'Upcoming tip-off' }
+  },
+  {
+    id: 'm9',
+    league: 'Wimbledon',
+    sport: 'tennis',
+    sportColor: '#14b8a6',
+    time: 'Live',
+    isLive: true,
+    matchState: 'in',
+    team1: { name: 'Djokovic', shortName: 'DJO', color: '#1e40af' },
+    team2: { name: 'Alcaraz', shortName: 'ALC', color: '#dc2626' },
+    odds: { team1: 1.55, team2: 2.45 },
+    liveDetails: { score1: 2, score2: 1, minute: 'Set 4', commentary: 'Djokovic serving' }
+  },
+  {
+    id: 'm10',
+    league: 'ATP 500',
+    sport: 'tennis',
+    sportColor: '#14b8a6',
+    time: 'Today 19:30',
+    isLive: false,
+    matchState: 'pre',
+    team1: { name: 'Sinner', shortName: 'SIN', color: '#0ea5e9' },
+    team2: { name: 'Medvedev', shortName: 'MED', color: '#6366f1' },
+    odds: { team1: 1.68, team2: 2.20 },
+    liveDetails: { score1: 0, score2: 0, minute: 'Scheduled', commentary: 'Centre court' }
+  },
+  {
+    id: 'm11',
+    league: 'WTT Finals',
+    sport: 'table-tennis',
+    sportColor: '#6366f1',
+    time: 'Live',
+    isLive: true,
+    matchState: 'in',
+    team1: { name: 'Fan Zhendong', shortName: 'FAN', color: '#ef4444' },
+    team2: { name: 'Ma Long', shortName: 'MAL', color: '#f59e0b' },
+    odds: { team1: 1.90, team2: 1.90 },
+    liveDetails: { score1: 2, score2: 1, minute: 'Game 4', commentary: 'Fan leads 2-1 in sets' }
+  },
+  {
+    id: 'm12',
+    league: 'Pro Kabaddi League',
+    sport: 'kabaddi',
+    sportColor: '#ec4899',
+    time: 'Live',
+    isLive: true,
+    matchState: 'in',
+    team1: { name: 'Patna Pirates', shortName: 'PAT', color: '#22c55e' },
+    team2: { name: 'Bengal Warriors', shortName: 'BEN', color: '#f97316' },
+    odds: { team1: 1.75, team2: 2.05 },
+    liveDetails: { score1: 32, score2: 28, minute: '2nd Half', commentary: 'Patna lead by 4 points' }
+  },
+  {
+    id: 'm13',
+    league: 'eSoccer GT League',
+    sport: 'esoccer',
+    sportColor: '#8b5cf6',
+    time: 'Live',
+    isLive: true,
+    matchState: 'in',
+    team1: { name: 'Man City (E)', shortName: 'MCI', color: '#6cb4ee' },
+    team2: { name: 'Liverpool (E)', shortName: 'LIV', color: '#ef4444' },
+    odds: { team1: 2.05, draw: 3.50, team2: 3.10 },
+    liveDetails: { score1: 1, score2: 1, minute: "62' 2nd Half", commentary: 'Virtual match in play' }
+  },
+  {
+    id: 'm14',
+    league: 'eSoccer Battle',
+    sport: 'esoccer',
+    sportColor: '#8b5cf6',
+    time: 'Today 21:00',
+    isLive: false,
+    matchState: 'pre',
+    team1: { name: 'PSG (E)', shortName: 'PSG', color: '#1e3a8a' },
+    team2: { name: 'Bayern (E)', shortName: 'BAY', color: '#dc2626' },
+    odds: { team1: 2.20, draw: 3.40, team2: 2.90 },
+    liveDetails: { score1: 0, score2: 0, minute: 'Scheduled', commentary: '8-min virtual match' }
+  },
+  {
+    id: 'm15',
+    league: 'Virtual Fast Cricket',
+    sport: 'virtual-cricket',
+    sportColor: '#06b6d4',
+    time: 'Live',
+    isLive: true,
+    matchState: 'in',
+    team1: { name: 'Mumbai V', shortName: 'MUM', color: '#3b82f6' },
+    team2: { name: 'Delhi V', shortName: 'DEL', color: '#ef4444' },
+    odds: { team1: 1.62, team2: 2.30 },
+    liveDetails: { runs: 89, wickets: 2, overs: '8.4', score2: 0, wickets2: 0, overs2: '0.0', commentary: 'Mumbai V batting' }
+  },
+  {
+    id: 'm16',
+    league: 'FIVB Nations League',
+    sport: 'volleyball',
+    sportColor: '#eab308',
+    time: 'Live',
+    isLive: true,
+    matchState: 'in',
+    team1: { name: 'Brazil', shortName: 'BRA', color: '#facc15' },
+    team2: { name: 'Poland', shortName: 'POL', color: '#dc2626' },
+    odds: { team1: 1.58, team2: 2.35 },
+    liveDetails: { score1: 2, score2: 1, minute: 'Set 4', commentary: 'Brazil lead 2-1 in sets' }
+  },
+  {
+    id: 'm17',
+    league: 'NFL Preseason',
+    sport: 'american-football',
+    sportColor: '#b45309',
+    time: 'Today 05:30',
+    isLive: false,
+    matchState: 'pre',
+    team1: { name: 'Kansas City Chiefs', shortName: 'KC', color: '#ef4444' },
+    team2: { name: 'Buffalo Bills', shortName: 'BUF', color: '#1d4ed8' },
+    odds: { team1: 1.88, team2: 1.92 },
+    liveDetails: { score1: 0, score2: 0, minute: 'Scheduled', commentary: 'Kickoff tonight' }
+  },
 ];
 
 export const casinoCategories = [

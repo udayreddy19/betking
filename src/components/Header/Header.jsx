@@ -48,7 +48,6 @@ export default function Header() {
         </div>
 
         <div className="header-right">
-          <span className="header-test-mode" title="Virtual balance only — no real money">Test Mode</span>
           <ThemeToggle />
           <button className="header-bonuses-btn" id="bonuses-btn" aria-label="Bonuses" onClick={() => navigate('/promotions')}>
             <IoGiftOutline />

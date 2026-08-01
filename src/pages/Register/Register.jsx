@@ -7,13 +7,23 @@ import './Register.css';
 
 export default function Register() {
   const navigate = useNavigate();
-  const { openLoginModal } = useAuth();
+  const { openLoginModal, register } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [agreed, setAgreed] = useState(true);
   const [registered, setRegistered] = useState(false);
+  const [error, setError] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setError('');
+    const result = register({ email, password, displayName });
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
     setRegistered(true);
   };
 
@@ -53,6 +63,8 @@ export default function Register() {
       <div className="register-form-section">
         <h1>Register in one easy step</h1>
 
+        {error && <div className="register-error">{error}</div>}
+
         <form className="register-form" onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label" htmlFor="reg-email">Email</label>
@@ -61,6 +73,8 @@ export default function Register() {
               id="reg-email"
               type="email"
               placeholder="youremail@domain.com"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
               required
             />
           </div>
@@ -73,6 +87,8 @@ export default function Register() {
                 id="reg-password"
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
                 required
                 style={{ paddingRight: '3rem' }}
               />
@@ -98,6 +114,8 @@ export default function Register() {
               id="reg-name"
               type="text"
               placeholder="As per your Aadhaar card"
+              value={displayName}
+              onChange={e => setDisplayName(e.target.value)}
               required
             />
           </div>

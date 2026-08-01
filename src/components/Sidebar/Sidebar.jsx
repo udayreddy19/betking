@@ -96,40 +96,44 @@ export default function Sidebar() {
 
               {/* Actions Grid */}
               <div className="sidebar-actions">
-                <button className="sidebar-action" onClick={() => { closeSidebar(); openDepositModal(); }}>
-                  <BiWallet className="action-icon" />
-                  Deposit
-                </button>
+                <div className="sidebar-actions-row">
+                  <button className="sidebar-action" onClick={() => { closeSidebar(); openDepositModal(); }}>
+                    <span className="action-icon-wrap"><BiWallet className="action-icon" /></span>
+                    <span className="action-label">Deposit</span>
+                  </button>
 
-                <button className="sidebar-action" onClick={() => openFinModal('withdraw')}>
-                  <BiMoneyWithdraw className="action-icon" />
-                  Withdraw
-                </button>
+                  <button className="sidebar-action" onClick={() => openFinModal('withdraw')}>
+                    <span className="action-icon-wrap"><BiMoneyWithdraw className="action-icon" /></span>
+                    <span className="action-label">Withdraw</span>
+                  </button>
 
-                <button className="sidebar-action" onClick={() => openFinModal('cancel-wd')}>
-                  <MdOutlineCancel className="action-icon" />
-                  Cancel W/D
-                </button>
+                  <button className="sidebar-action" onClick={() => openFinModal('cancel-wd')}>
+                    <span className="action-icon-wrap"><MdOutlineCancel className="action-icon" /></span>
+                    <span className="action-label">Cancel W/D</span>
+                  </button>
 
-                <button className="sidebar-action" onClick={() => { closeSidebar(); navigate('/sports'); }}>
-                  <HiOutlineDocumentText className="action-icon" />
-                  My Bets
-                </button>
+                  <button className="sidebar-action" onClick={() => { closeSidebar(); navigate('/sports'); }}>
+                    <span className="action-icon-wrap"><HiOutlineDocumentText className="action-icon" /></span>
+                    <span className="action-label">My Bets</span>
+                  </button>
+                </div>
 
-                <button className="sidebar-action" onClick={() => openFinModal('bets-history')}>
-                  <BiHistory className="action-icon" />
-                  Bets History
-                </button>
+                <div className="sidebar-actions-row sidebar-actions-row--three">
+                  <button className="sidebar-action" onClick={() => openFinModal('bets-history')}>
+                    <span className="action-icon-wrap"><BiHistory className="action-icon" /></span>
+                    <span className="action-label">Bets History</span>
+                  </button>
 
-                <button className="sidebar-action" onClick={() => openFinModal('transactions')}>
-                  <BiTransfer className="action-icon" />
-                  Transactions
-                </button>
+                  <button className="sidebar-action" onClick={() => openFinModal('transactions')}>
+                    <span className="action-icon-wrap"><BiTransfer className="action-icon" /></span>
+                    <span className="action-label">Transactions</span>
+                  </button>
 
-                <button className="sidebar-action" onClick={() => openFinModal('bonuses')}>
-                  <BiGift className="action-icon" />
-                  My Bonuses
-                </button>
+                  <button className="sidebar-action" onClick={() => openFinModal('bonuses')}>
+                    <span className="action-icon-wrap"><BiGift className="action-icon" /></span>
+                    <span className="action-label">My Bonuses</span>
+                  </button>
+                </div>
               </div>
 
               {/* Marketplace Link */}

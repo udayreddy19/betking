@@ -28,9 +28,9 @@
   background: var(--color-primary-bg);
 }
 .filter-chip.active {
-  background: var(--color-text);
-  color: var(--color-text-inverse);
-  border-color: var(--color-text);
+  background: var(--color-primary);
+  color: #ffffff;
+  border-color: var(--color-primary);
 }
 .filter-chip .chip-icon {
   font-size: 1rem;

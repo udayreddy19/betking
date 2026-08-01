@@ -83,12 +83,15 @@
   gap: var(--space-4);
 }
 .sports-empty {
+  grid-column: 1 / -1;
   text-align: center;
   padding: var(--space-12);
   color: var(--color-text-muted);
 }
 .sports-empty h3 {
   font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--color-text-secondary);
   margin-bottom: var(--space-2);
 }
 

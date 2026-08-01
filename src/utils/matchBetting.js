@@ -1,4 +1,4 @@
-/** Whether odds can be selected for this match (demo: live + upcoming). */
+/** Whether odds can be selected for this match (live + upcoming). */
 export function isMatchBettable(match) {
   const state = match?.matchState || (match?.isLive ? 'in' : 'pre');
   return state === 'in' || state === 'pre';

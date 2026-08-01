@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { IoClose } from 'react-icons/io5';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { isMatchBettable, isMatchLive } from '../../utils/matchBetting';
+import BetSlipFooter from '../BetSlip/BetSlipFooter';
 import './MatchDetailModal.css';
 
 // Roster database for realistic player names across sports
@@ -127,6 +128,8 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
           </div>
         </div>
 
+        {/* Scrollable body: live stats, market tabs, and markets */}
+        <div className="match-detail-scroll">
         {/* 10CRIC Live Cricket Scorecard & Match Center Bar */}
         {sport === 'cricket' && isLiveNow && (
           <div className="cricket-live-center">
@@ -410,6 +413,10 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
           )}
 
         </div>
+
+        </div>
+
+        <BetSlipFooter variant="modal" onPlaced={onClose} />
       </div>
     </div>
   );

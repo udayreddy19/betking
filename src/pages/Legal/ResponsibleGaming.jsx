@@ -5,7 +5,6 @@ export default function ResponsibleGaming() {
   return (
     <div className="legal-page container">
       <h1>Responsible Gaming</h1>
-      <p className="legal-demo-notice">This is a demo — real gambling carries financial and addiction risks.</p>
       <section>
         <h2>Play responsibly</h2>
         <ul>
