@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { BetSlipProvider } from './context/BetSlipContext';
 import { LiveSportsProvider } from './context/LiveSportsContext';
+import { AuthProvider } from './context/AuthContext';
 
 import Header from './components/Header/Header';
 import Footer from './components/Footer/Footer';
@@ -10,6 +11,8 @@ import LoginModal from './components/LoginModal/LoginModal';
 import DepositModal from './components/DepositModal/DepositModal';
 import Toast from './components/Toast/Toast';
 import ThemeToggle from './components/ThemeToggle/ThemeToggle';
+import MobileBetSlip from './components/MobileBetSlip/MobileBetSlip';
+
 
 import Home from './pages/Home/Home';
 import Sports from './pages/Sports/Sports';
