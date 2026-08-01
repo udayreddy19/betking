@@ -1,48 +1,133 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { HiOutlineUsers, HiOutlineViewList, HiOutlineChartBar } from 'react-icons/hi';
 import './LiveMatchGraphicWidget.css';
 
-const defaultFallbackMatch = {
-  sport: 'cricket',
-  team1: { name: 'Brisbane Heat SRL', shortName: 'BIR' },
-  team2: { name: 'Perth Scorchers SRL', shortName: 'PER' },
-  liveDetails: {
-    runs: 95,
-    wickets: 3,
-    score2: 179,
-    wickets2: 4,
-    overs: '12.3',
-    ballHistory: ['W', '1lb', '1', '1', '•', '2', '1', '•', '4', '2', '4'],
-    batter1: { name: 'Wildermuth, Jack - SRL', runs: 34, balls: 32, fours: 3, sixes: 0 },
-    batter2: { name: 'M Bryant', runs: 14, balls: 8, fours: 2, sixes: 0 },
-    bowler: { name: 'AM Hardie', overs: '12.3-0-22-1' },
-    fours: 8,
-    sixes: 0,
-    extras: 17,
-    commentary: 'Brisbane Heat SRL are 95/3 after 12.3 overs chasing 179'
+// Dynamic team roster database for real player names across tournaments
+const playerRosterMap = {
+  'South Delhi Superstarz': {
+    batters: ['Priyansh Arya', 'Tejaswi Dahiya', 'Ayush Badoni', 'Dhruv Singh'],
+    bowlers: ['Kuldip Yadav', 'Digvesh Rathi', 'Sarthak Ray']
+  },
+  'East Delhi Riders': {
+    batters: ['Anuj Rawat', 'Sujal Singh', 'Hardik Sharma', 'Rohan Rathi'],
+    bowlers: ['Simarjeet Singh', 'Navdeep Saini', 'Harsh Tyagi']
+  },
+  'Birmingham Phoenix': {
+    batters: ['Liam Livingstone', 'Moeen Ali', 'Ben Duckett', 'Jacob Bethell'],
+    bowlers: ['Adam Zampa', 'Tim Southee', 'Sean Abbott']
+  },
+  'Welsh Fire': {
+    batters: ['Jonny Bairstow', 'Tom Kohler-Cadmore', 'Luke Wells'],
+    bowlers: ['David Payne', 'Harris Rauf', 'Mason Crane']
+  },
+  'Zurich Alpine Warriors': {
+    batters: ['Adil Mahmood', 'Kishan Tandon', 'Samiullah Sikandar'],
+    bowlers: ['Jagdeep Tiwana', 'Nabeel Safi']
+  },
+  'Basel Afghan': {
+    batters: ['Niamatullah Hosmani', 'Ibrahim Said', 'Mehdi Mohammadi'],
+    bowlers: ['Muhammad Salih', 'Zahirshah Said']
+  },
+  'Kenya': {
+    batters: ['Sachin Gill', 'LN Oluoch', 'SR Bhudia', 'RR Patel'],
+    bowlers: ['Rizwan Butt', 'Alex Obanda', 'Shem Ngoche']
+  },
+  'Bahrain': {
+    batters: ['Haider Ali', 'Sarfraz Ali', 'Ahmer Bin Nasir'],
+    bowlers: ['Junaid Niazi', 'Ali Dawood', 'Muhammad Rizwan']
+  },
+  'Brisbane Heat SRL': {
+    batters: ['Wildermuth, Jack - SRL', 'M Bryant', 'C Hemphrey'],
+    bowlers: ['AM Hardie', 'M Steketee', 'M Swepson']
+  },
+  'Perth Scorchers SRL': {
+    batters: ['C Bancroft', 'A Turner', 'J Inglis'],
+    bowlers: ['J Richardson', 'AJ Tye', 'J Behrendorff']
   }
 };
 
 export default function LiveMatchGraphicWidget({ match }) {
   const [activeWidgetTab, setActiveWidgetTab] = useState('field');
 
-  const currentMatch = match || defaultFallbackMatch;
-  const sport = currentMatch.sport || 'cricket';
-  const team1 = currentMatch.team1?.name || 'Brisbane Heat SRL';
-  const team2 = currentMatch.team2?.name || 'Perth Scorchers SRL';
+  const sport = match?.sport || 'cricket';
+  const team1 = match?.team1?.name || 'South Delhi Superstarz';
+  const team2 = match?.team2?.name || 'East Delhi Riders';
+
+  // --- DYNAMIC DATA COMPUTATION ACCORDING TO SELECTED MATCH ---
+  const score1 = match?.liveDetails?.runs ?? 161;
+  const wickets1 = match?.liveDetails?.wickets ?? 5;
+  const score2 = match?.liveDetails?.score2 ?? 155;
+  const wickets2 = match?.liveDetails?.wickets2 ?? 8;
+  const overs = match?.liveDetails?.overs || '18.1';
+  const currentOverNum = Math.floor(parseFloat(overs));
+  const prevOverNum = Math.max(1, currentOverNum - 1);
+
+  // Dynamic player names from team roster
+  const t1Data = playerRosterMap[team1] || {
+    batters: [`${team1.split(' ')[0]} Batter 1`, `${team1.split(' ')[0]} Batter 2`, `${team1.split(' ')[0]} Batter 3`],
+    bowlers: [`${team1.split(' ')[0]} Bowler`]
+  };
+  const t2Data = playerRosterMap[team2] || {
+    batters: [`${team2.split(' ')[0]} Batter 1`, `${team2.split(' ')[0]} Batter 2`],
+    bowlers: [`${team2.split(' ')[0]} Bowler 1`, `${team2.split(' ')[0]} Bowler 2`]
+  };
+
+  // Dynamic Batter 1 & Batter 2 stats proportional to real live score
+  const b1 = useMemo(() => ({
+    name: match?.liveDetails?.batter1?.name || t1Data.batters[0],
+    runs: match?.liveDetails?.batter1?.runs ?? Math.max(12, Math.floor(score1 * 0.38)),
+    balls: match?.liveDetails?.batter1?.balls ?? Math.max(8, Math.floor(score1 * 0.24)),
+    fours: match?.liveDetails?.batter1?.fours ?? Math.max(1, Math.floor(score1 * 0.04)),
+    sixes: match?.liveDetails?.batter1?.sixes ?? Math.max(0, Math.floor(score1 * 0.02))
+  }), [match, score1, t1Data]);
+
+  const b2 = useMemo(() => ({
+    name: match?.liveDetails?.batter2?.name || t1Data.batters[1],
+    runs: match?.liveDetails?.batter2?.runs ?? Math.max(5, Math.floor(score1 * 0.22)),
+    balls: match?.liveDetails?.batter2?.balls ?? Math.max(4, Math.floor(score1 * 0.15)),
+    fours: match?.liveDetails?.batter2?.fours ?? Math.max(0, Math.floor(score1 * 0.02)),
+    sixes: match?.liveDetails?.batter2?.sixes ?? Math.max(0, Math.floor(score1 * 0.01))
+  }), [match, score1, t1Data]);
+
+  const currentBowler = match?.liveDetails?.bowler?.name || t2Data.bowlers[0];
+
+  // Dynamic Innings Stats calculated from score
+  const foursCount = match?.liveDetails?.fours ?? Math.max(4, Math.floor(score1 / 14));
+  const sixesCount = match?.liveDetails?.sixes ?? Math.max(1, Math.floor(score1 / 28));
+  const extrasCount = match?.liveDetails?.extras ?? Math.max(3, Math.floor(score1 / 18));
+
+  // Dynamic Over Run Chart (20 Overs) with Wicket positions based on match ID
+  const chartOverData = useMemo(() => {
+    const seed = (match?.id || 'm1').charCodeAt(0);
+    const runsPerOver = [];
+    const wicketOvers = new Set([(seed % 5) + 3, (seed % 7) + 8, (seed % 4) + 14]);
+
+    let accRuns = 0;
+    const targetPerOver = score1 / 20;
+
+    for (let i = 0; i < 20; i++) {
+      let val = Math.max(1, Math.min(18, Math.round(targetPerOver + ((i * seed) % 7) - 3)));
+      if (i > currentOverNum) val = 0; // Future overs empty
+      runsPerOver.push({ runs: val, hasWicket: wicketOvers.has(i + 1) && i <= currentOverNum });
+    }
+    return runsPerOver;
+  }, [match, score1, currentOverNum]);
+
+  // Dynamic Delivery Pills for Over X & Over Y
+  const deliveryPillsPrevOver = useMemo(() => {
+    if (match?.liveDetails?.ballHistory) return match.liveDetails.ballHistory.slice(0, 6);
+    return ['W', '1lb', '1', '1', '•', '2'];
+  }, [match]);
+
+  const deliveryPillsCurrOver = useMemo(() => {
+    if (match?.liveDetails?.ballHistory && match.liveDetails.ballHistory.length > 6) {
+      return match.liveDetails.ballHistory.slice(6);
+    }
+    return ['4', '2', '4'];
+  }, [match]);
 
   // --- CRICKET GRAPHIC RENDERER ---
   if (sport === 'cricket' || sport === 'virtual-cricket') {
-    const score1 = currentMatch.liveDetails?.runs ?? 95;
-    const wickets1 = currentMatch.liveDetails?.wickets ?? 3;
-    const score2 = currentMatch.liveDetails?.score2 ?? 179;
-    const wickets2 = currentMatch.liveDetails?.wickets2 ?? 4;
-    const overs = currentMatch.liveDetails?.overs || '12.3';
-    const reqRuns = Math.max(0, score2 - score1);
-
-    const b1 = currentMatch.liveDetails?.batter1 || { name: 'Wildermuth, Jack - SRL', runs: 34, balls: 32, fours: 3, sixes: 0 };
-    const b2 = currentMatch.liveDetails?.batter2 || { name: 'M Bryant', runs: 14, balls: 8, fours: 2, sixes: 0 };
-
     return (
       <div className="live-graphic-card-10cric">
         {/* Light Clean Header Section */}
@@ -73,18 +158,15 @@ export default function LiveMatchGraphicWidget({ match }) {
           </select>
         </div>
 
-        {/* Over Bar Chart with Purple Wickets */}
+        {/* Dynamic Over Bar Chart with Purple Wickets */}
         <div className="bar-chart-container">
           <div className="chart-bars-track">
-            {[2, 4, 3, 5, 8, 12, 6, 9, 14, 4, 11, 7, 9, 15, 6, 12, 9, 10, 8, 5].map((runs, i) => {
-              const hasWicket = [5, 9, 11].includes(i);
-              return (
-                <div key={i} className="chart-column">
-                  {hasWicket && <span className="wicket-badge-w">W</span>}
-                  <div className={`chart-col-bar ${i === 12 ? 'current-active' : ''}`} style={{ height: `${Math.max(6, (runs / 16) * 35)}px` }} />
-                </div>
-              );
-            })}
+            {chartOverData.map((d, i) => (
+              <div key={i} className="chart-column">
+                {d.hasWicket && <span className="wicket-badge-w">W</span>}
+                <div className={`chart-col-bar ${i === currentOverNum ? 'current-active' : ''}`} style={{ height: `${Math.max(4, (d.runs / 18) * 35)}px` }} />
+              </div>
+            ))}
           </div>
           <div className="chart-xaxis">
             <span>0</span><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span><span>12</span><span>14</span><span>16</span><span>18</span><span>20</span>
@@ -126,64 +208,77 @@ export default function LiveMatchGraphicWidget({ match }) {
         {/* TAB 1: PITCH VISUALIZER */}
         {activeWidgetTab === 'field' && (
           <>
-            {/* Delivery Tracker Row (OVER 12 & OVER 13) */}
+            {/* Dynamic Delivery Tracker Row */}
             <div className="over-delivery-row">
-              <span className="over-num-heading">OVER 12</span>
+              <span className="over-num-heading">OVER {prevOverNum}</span>
               <div className="delivery-pills-list">
-                <span className="del-pill wicket-w">W</span>
-                <span className="del-pill legbye">1lb</span>
-                <span className="del-pill">1</span>
-                <span className="del-pill">1</span>
-                <span className="del-pill dot">•</span>
-                <span className="del-pill">2</span>
-                <span className="del-pill">1</span>
-                <span className="del-pill dot">•</span>
+                {deliveryPillsPrevOver.map((ball, idx) => (
+                  <span key={idx} className={`del-pill ${ball === 'W' ? 'wicket-w' : ball.includes('lb') ? 'legbye' : ball === '4' ? 'four' : ball === '•' ? 'dot' : ''}`}>
+                    {ball}
+                  </span>
+                ))}
               </div>
-              <span className="over-num-heading" style={{ marginLeft: 'auto' }}>OVER 13</span>
+              <span className="over-num-heading" style={{ marginLeft: 'auto' }}>OVER {currentOverNum}</span>
               <div className="delivery-pills-list">
-                <span className="del-pill four">4</span>
-                <span className="del-pill">2</span>
-                <span className="del-pill four">4</span>
+                {deliveryPillsCurrOver.map((ball, idx) => (
+                  <span key={idx} className={`del-pill ${ball === 'W' ? 'wicket-w' : ball.includes('lb') ? 'legbye' : ball === '4' ? 'four' : ball === '•' ? 'dot' : ''}`}>
+                    {ball}
+                  </span>
+                ))}
               </div>
             </div>
 
             {/* Pitch Graphic Overlay */}
             <div className="pitch-visualizer-card">
               <div className="cricket-grass-background">
-                <div className="pitch-stumps-graphic" />
 
                 <div className="pitch-overlay-tables">
-                  <div className="pitch-stats-column">
-                    <div className="table-header-row">
-                      <span>BATTER</span><span>R</span><span>B</span><span>4S</span><span>6S</span>
+                  {/* Batter Scorecard Table Grid */}
+                  <div>
+                    <div className="batter-table-row header">
+                      <span className="col-name">BATTER</span>
+                      <span className="col-val">R</span>
+                      <span className="col-val">B</span>
+                      <span className="col-val">4S</span>
+                      <span className="col-val">6S</span>
                     </div>
-                    <div className="table-data-row">
-                      <span>{b1.name}</span><span>{b1.runs}</span><span>{b1.balls}</span><span>{b1.fours}</span><span>{b1.sixes}</span>
+                    <div className="batter-table-row">
+                      <span className="col-name">{b1.name}</span>
+                      <span className="col-val">{b1.runs}</span>
+                      <span className="col-val">{b1.balls}</span>
+                      <span className="col-val">{b1.fours}</span>
+                      <span className="col-val">{b1.sixes}</span>
                     </div>
-                    <div className="table-data-row active-striker">
-                      <span>{b2.name} 🏏</span><span>{b2.runs}</span><span>{b2.balls}</span><span>{b2.fours}</span><span>{b2.sixes}</span>
-                    </div>
-
-                    <div className="table-header-row" style={{ marginTop: '12px' }}>
-                      <span>CURRENT BOWLER</span>
-                    </div>
-                    <div className="table-data-row">
-                      <span>{currentMatch.liveDetails?.bowler?.name || 'AM Hardie'} 🏏</span>
+                    <div className="batter-table-row active-striker">
+                      <span className="col-name">{b2.name} 🏏</span>
+                      <span className="col-val">{b2.runs}</span>
+                      <span className="col-val">{b2.balls}</span>
+                      <span className="col-val">{b2.fours}</span>
+                      <span className="col-val">{b2.sixes}</span>
                     </div>
                   </div>
 
-                  <div className="pitch-stats-column">
-                    <div className="table-header-row">
-                      <span>INNINGS STATS</span>
+                  {/* Current Bowler & Innings Stats Grid */}
+                  <div style={{ marginTop: '12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div>
+                      <div className="section-label-header">CURRENT BOWLER</div>
+                      <div className="section-label-val">{currentBowler} 🏏</div>
                     </div>
-                    <div className="table-data-row">
-                      <span>Fours</span><span className="highlight-stat-val">{currentMatch.liveDetails?.fours || 8}</span>
-                    </div>
-                    <div className="table-data-row">
-                      <span>Sixes</span><span className="highlight-stat-val">{currentMatch.liveDetails?.sixes || 0}</span>
-                    </div>
-                    <div className="table-data-row">
-                      <span>Extras</span><span className="highlight-stat-val">{currentMatch.liveDetails?.extras || 17}</span>
+
+                    <div>
+                      <div className="section-label-header">INNINGS STATS</div>
+                      <div className="inn-stat-item">
+                        <span>Fours</span>
+                        <span className="highlight-stat-val">{foursCount}</span>
+                      </div>
+                      <div className="inn-stat-item">
+                        <span>Sixes</span>
+                        <span className="highlight-stat-val">{sixesCount}</span>
+                      </div>
+                      <div className="inn-stat-item">
+                        <span>Extras</span>
+                        <span className="highlight-stat-val">{extrasCount}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -217,12 +312,12 @@ export default function LiveMatchGraphicWidget({ match }) {
             </h4>
             <div style={{ padding: '8px 0' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800 }}>
-                <span>{team1} 58%</span>
-                <span>{team2} 42%</span>
+                <span>{team1} {Math.min(90, Math.max(10, Math.round((score1 / (score2 || 150)) * 50)))}%</span>
+                <span>{team2} {100 - Math.min(90, Math.max(10, Math.round((score1 / (score2 || 150)) * 50)))}%</span>
               </div>
               <div style={{ height: '8px', background: '#334155', borderRadius: '4px', overflow: 'hidden', display: 'flex', marginTop: '4px' }}>
-                <div style={{ width: '58%', background: '#a855f7' }} />
-                <div style={{ width: '42%', background: '#22c55e' }} />
+                <div style={{ width: `${Math.min(90, Math.max(10, Math.round((score1 / (score2 || 150)) * 50)))}%`, background: '#a855f7' }} />
+                <div style={{ width: `${100 - Math.min(90, Math.max(10, Math.round((score1 / (score2 || 150)) * 50)))}%`, background: '#22c55e' }} />
               </div>
             </div>
           </div>
@@ -232,9 +327,14 @@ export default function LiveMatchGraphicWidget({ match }) {
         {activeWidgetTab === 'lineups' && (
           <div className="subtab-content-panel">
             <h4 style={{ color: '#22c55e', borderBottom: '1px solid #334155', paddingBottom: '6px', margin: 0 }}>
-              👥 Playing XI Lineups
+              👥 {team1} & {team2} Lineups
             </h4>
-            <p style={{ color: '#94a3b8' }}>Confirmed XI rosters at toss</p>
+            {t1Data.batters.map((name, idx) => (
+              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #1e293b' }}>
+                <span>👤 {name}</span>
+                <span style={{ color: '#38bdf8' }}>Batter</span>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -251,9 +351,9 @@ export default function LiveMatchGraphicWidget({ match }) {
           <span className="team-title-right">{team2}</span>
         </div>
         <div className="graphic-large-scores">
-          <span>{currentMatch.liveDetails?.score1 ?? 2}</span>
+          <span>{match?.liveDetails?.score1 ?? 2}</span>
           <span className="colon-sep">:</span>
-          <span>{currentMatch.liveDetails?.score2 ?? 1}</span>
+          <span>{match?.liveDetails?.score2 ?? 1}</span>
         </div>
       </div>
     </div>

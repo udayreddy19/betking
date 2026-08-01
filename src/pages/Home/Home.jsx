@@ -17,8 +17,6 @@ export default function Home() {
   const navigate = useNavigate();
   const [activeSport, setActiveSport] = useState('cricket');
 
-  // Safe category filtering to prevent blank screen crashes
-  const topGames = casinoGames.filter(g => g.isHot || g.category?.includes('slots') || g.category?.includes('top'));
   const liveGames = casinoGames.filter(g => g.category?.includes('live') || g.category?.includes('table'));
   const crashGames = casinoGames.filter(g => g.category?.includes('crash') || g.isNew);
   const filteredMatches = matches ? matches.filter(m => m.sport === activeSport) : [];
@@ -44,9 +42,6 @@ export default function Home() {
 
       {/* Category Grid */}
       <CategoryGrid />
-
-      {/* Top Games */}
-      <GameCarousel title="Top Games" games={topGames.length > 0 ? topGames : casinoGames} viewAllLink />
 
       {/* Sports Action */}
       <div className="home-sports-action" id="sports-action-section">
