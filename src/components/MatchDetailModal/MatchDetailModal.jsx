@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { IoClose, IoLockClosed } from 'react-icons/io5';
+import { IoClose } from 'react-icons/io5';
 import { useBetSlip } from '../../context/BetSlipContext';
+import { isMatchBettable, isMatchLive } from '../../utils/matchBetting';
 import './MatchDetailModal.css';
 
 // Roster database for realistic player names across sports
@@ -20,10 +21,13 @@ const teamRosters = {
 };
 
 export default function MatchDetailModal({ match, isOpen, onClose }) {
-  const { addBet } = useBetSlip();
+  const { addBet, isBetSelected } = useBetSlip();
   const [activeMarketCategory, setActiveMarketCategory] = useState('all');
 
   if (!isOpen || !match) return null;
+
+  const canBet = isMatchBettable(match);
+  const isLiveNow = isMatchLive(match);
 
   const team1Name = match.team1.name;
   const team2Name = match.team2.name;
@@ -34,20 +38,38 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
   const team2Players = teamRosters[team2Name] || [`${match.team2.shortName} Opener`, `${match.team2.shortName} Captain`, `${match.team2.shortName} Batter 3`, `${match.team2.shortName} All-Rounder`];
 
   // Innings detection for Cricket
-  const isSecondInnings = sport === 'cricket' && match.isLive && match.liveDetails && match.liveDetails.score2 !== undefined && match.liveDetails.runs !== undefined;
+  const isSecondInnings = sport === 'cricket' && isLiveNow && match.liveDetails && match.liveDetails.score2 !== undefined && match.liveDetails.runs !== undefined;
   const targetScore = (match.liveDetails?.score2 || 0) + 1;
   const currentScore = match.liveDetails?.runs || 0;
   const wicketsLost = match.liveDetails?.wickets || 0;
   const reqRuns = Math.max(0, targetScore - currentScore);
   const oversDone = match.liveDetails?.overs || '0.0';
 
-  const handleOddsClick = (marketName, selection, odds) => {
-    const customMatch = {
-      ...match,
-      id: `${match.id}_${marketName}_${selection}`
-    };
-    addBet(customMatch, `${marketName}: ${selection}`, odds);
+  const handleOddsClick = (arg1, arg2, arg3, arg4) => {
+    let e;
+    let selection;
+    let odds;
+    let selectionName;
+
+    if (arg1?.stopPropagation) {
+      e = arg1;
+      selection = arg2;
+      odds = arg3;
+      selectionName = arg4;
+    } else {
+      // Legacy prop-market calls: (marketName, label, odds)
+      selection = `${arg1}:${arg2}`;
+      odds = arg3;
+      selectionName = String(arg2);
+    }
+
+    e?.stopPropagation?.();
+    if (!canBet) return;
+    addBet(match, selection, odds, selectionName);
   };
+
+  const oddsBtnClass = (selection) =>
+    `market-odds-btn ${isBetSelected(match.id, selection) ? 'selected' : ''}`;
 
   return (
     <div className="match-detail-overlay" onClick={onClose}>
@@ -68,7 +90,7 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
           <div className="scoreboard-team">
             <span className="scoreboard-jersey" style={{ color: match.team1.color }}>👕</span>
             <h4>{team1Name}</h4>
-            {match.isLive && match.liveDetails && (
+            {isLiveNow && match.liveDetails && (
               <div className="scoreboard-score">
                 {sport === 'cricket' && `${currentScore}/${wicketsLost}`}
                 {sport === 'soccer' && (match.liveDetails.score1 ?? 2)}
@@ -78,7 +100,7 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
           </div>
 
           <div className="scoreboard-vs">
-            {match.isLive ? (
+            {isLiveNow ? (
               <div className="scoreboard-live-badge">
                 <span className="live-pulse" />
                 LIVE {
@@ -95,7 +117,7 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
           <div className="scoreboard-team">
             <span className="scoreboard-jersey" style={{ color: match.team2.color }}>👕</span>
             <h4>{team2Name}</h4>
-            {match.isLive && match.liveDetails && (
+            {isLiveNow && match.liveDetails && (
               <div className="scoreboard-score">
                 {sport === 'cricket' && `${match.liveDetails.score2 || 148}/${match.liveDetails.wickets2 || 5}`}
                 {sport === 'soccer' && (match.liveDetails.score2 ?? 1)}
@@ -106,7 +128,7 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
         </div>
 
         {/* 10CRIC Live Cricket Scorecard & Match Center Bar */}
-        {sport === 'cricket' && match.isLive && (
+        {sport === 'cricket' && isLiveNow && (
           <div className="cricket-live-center">
             <div className="cricket-chase-pill">
               {isSecondInnings
@@ -179,6 +201,12 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
           ))}
         </div>
 
+        {!canBet && (
+          <div className="match-detail-suspended">
+            Markets are closed for this match.
+          </div>
+        )}
+
         {/* Markets Content List - 10CRIC Style */}
         <div className="market-content">
 
@@ -190,17 +218,32 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
                 <span className="market-cashout">CASHOUT AVAILABLE</span>
               </div>
               <div className={`market-odds-grid ${match.odds.draw !== undefined ? 'three-col' : 'two-col'}`}>
-                <button className="market-odds-btn" onClick={() => handleOddsClick('Match Winner', team1Name, match.odds.team1)}>
+                <button
+                  type="button"
+                  className={oddsBtnClass('1')}
+                  disabled={!canBet}
+                  onClick={(e) => handleOddsClick(e, '1', match.odds.team1)}
+                >
                   <span className="market-label">{team1Name}</span>
                   <span className="market-val">{Number(match.odds.team1).toFixed(2)}</span>
                 </button>
                 {match.odds.draw !== undefined && (
-                  <button className="market-odds-btn" onClick={() => handleOddsClick('Match Winner', 'Draw', match.odds.draw)}>
+                  <button
+                    type="button"
+                    className={oddsBtnClass('X')}
+                    disabled={!canBet}
+                    onClick={(e) => handleOddsClick(e, 'X', match.odds.draw)}
+                  >
                     <span className="market-label">Draw</span>
                     <span className="market-val">{Number(match.odds.draw).toFixed(2)}</span>
                   </button>
                 )}
-                <button className="market-odds-btn" onClick={() => handleOddsClick('Match Winner', team2Name, match.odds.team2)}>
+                <button
+                  type="button"
+                  className={oddsBtnClass('2')}
+                  disabled={!canBet}
+                  onClick={(e) => handleOddsClick(e, '2', match.odds.team2)}
+                >
                   <span className="market-label">{team2Name}</span>
                   <span className="market-val">{Number(match.odds.team2).toFixed(2)}</span>
                 </button>

@@ -168,6 +168,16 @@
   font-weight: var(--font-bold);
 }
 
+.upcoming-badge {
+  background: #dbeafe;
+  color: #1d4ed8;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.65rem;
+  font-weight: var(--font-bold);
+  margin-right: 6px;
+}
+
 .match-card-score-inline {
   margin-left: 8px;
   color: #10b981;

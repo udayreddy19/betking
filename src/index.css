@@ -111,6 +111,55 @@
   --z-overlay: 400;
   --z-modal: 500;
   --z-toast: 600;
+
+  /* Panels (sports widgets, scorecards) */
+  --color-panel: #ffffff;
+  --color-panel-muted: #f8fafc;
+  --color-ink: #0f172a;
+  --color-ink-muted: #64748b;
+  --color-graphic-border: #e2e8f0;
+  --color-graphic-pill: #f1f5f9;
+}
+
+[data-theme="dark"] {
+  --color-bg: #0b1120;
+  --color-bg-alt: #111827;
+  --color-surface: #1e293b;
+  --color-surface-hover: #334155;
+
+  --color-primary-bg: #2e1065;
+
+  --color-text: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #64748b;
+  --color-text-inverse: #0f172a;
+
+  --color-border: #334155;
+  --color-border-light: #1e293b;
+
+  --gradient-hero: linear-gradient(135deg, #312e81 0%, #1e1b4b 50%, #4c1d95 100%);
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.35);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.45);
+
+  --color-panel: #1e293b;
+  --color-panel-muted: #0f172a;
+  --color-ink: #f1f5f9;
+  --color-ink-muted: #94a3b8;
+  --color-graphic-border: #334155;
+  --color-graphic-pill: #0f172a;
+}
+
+html {
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 /* Reset */
@@ -137,6 +186,7 @@ body {
   line-height: 1.6;
   min-height: 100vh;
   overflow-x: hidden;
+  transition: background-color var(--transition-base), color var(--transition-base);
 }
 
 a {

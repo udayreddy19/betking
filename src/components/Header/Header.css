@@ -6,6 +6,7 @@
   border-bottom: 1px solid var(--color-border-light);
   box-shadow: var(--shadow-sm);
   height: var(--header-height);
+  transition: background-color var(--transition-base), border-color var(--transition-base);
 }
 
 .header-inner {
@@ -93,9 +94,36 @@
   background: var(--color-bg);
   color: var(--color-primary);
 }
+.header-logo .logo-icon-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-text);
+  color: var(--color-text-inverse);
+  font-weight: 900;
+  font-size: 0.85rem;
+}
+
+.header-logo .logo-text {
+  font-weight: 900;
+  color: var(--color-text);
+  letter-spacing: -0.5px;
+}
+
 .header-nav-link.active {
   background: var(--color-text);
   color: var(--color-text-inverse);
+}
+
+[data-theme="dark"] .header-nav-link.active {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+[data-theme="dark"] .header-test-mode {
+  background: #422006;
+  color: #fcd34d;
+  border-color: #854d0e;
 }
 
 .header-right {

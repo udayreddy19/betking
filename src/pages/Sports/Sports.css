@@ -97,3 +97,99 @@
     flex-direction: column;
   }
 }
+
+.sports-match-banner {
+  background: linear-gradient(180deg, var(--color-panel-muted) 0%, var(--color-bg) 100%);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  margin-bottom: 20px;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.sports-match-banner-time {
+  font-size: 0.85rem;
+  color: var(--color-ink-muted);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.sports-match-banner-teams {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+}
+
+.sports-match-banner-team {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--color-ink);
+}
+
+.sports-match-banner-vs {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 2px solid #fbbf24;
+  color: #d97706;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 0.8rem;
+}
+
+.sports-market-panel {
+  background: var(--color-panel);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  border: 1px solid var(--color-graphic-border);
+  color: var(--color-text);
+}
+
+.sports-market-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.sports-market-odds-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.sports-market-odds-btn {
+  background: var(--color-panel-muted);
+  border: 1px solid var(--color-graphic-border);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--color-text);
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.sports-market-odds-btn:hover {
+  border-color: var(--color-primary-light);
+  background: var(--color-primary-bg);
+}
+
+.sports-market-odds-btn .odds-val {
+  color: var(--color-info);
+  font-weight: 900;
+}
+
+[data-theme="dark"] .sports-market-odds-btn .odds-val {
+  color: var(--color-primary-light);
+}
+

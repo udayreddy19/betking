@@ -208,12 +208,14 @@ export function LiveSportsProvider({ children }) {
           });
         });
 
-        // Merge: use API matches if available, keep default for sports with no API data
+        // Merge API data with demo bettable matches so users can always place bets
         if (apiMatches.length > 0) {
-          // Keep any default matches whose sport isn't covered by API
           const coveredSports = new Set(apiMatches.map(m => m.sport));
           const uncoveredDefaults = defaultMatches.filter(m => !coveredSports.has(m.sport));
-          setMatches([...apiMatches, ...uncoveredDefaults]);
+          const demoBettable = defaultMatches.filter(m => m.matchState === 'in' || m.matchState === 'pre');
+          const apiPairKeys = new Set(apiMatches.map(m => `${m.team1.name}|${m.team2.name}`));
+          const uniqueDemo = demoBettable.filter(m => !apiPairKeys.has(`${m.team1.name}|${m.team2.name}`));
+          setMatches([...uniqueDemo, ...apiMatches, ...uncoveredDefaults]);
         }
 
         setTickerMessage(

@@ -1,9 +1,9 @@
 .live-graphic-card-10cric {
-  background: #ffffff;
+  background: var(--color-panel);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e2e8f0;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--color-graphic-border);
   margin-bottom: 16px;
   font-family: system-ui, -apple-system, sans-serif;
 }
@@ -12,19 +12,19 @@
 .graphic-top-header {
   padding: 16px;
   text-align: center;
-  background: #ffffff;
+  background: var(--color-panel);
 }
 
 .graphic-inn-pill {
   display: inline-block;
-  background: #f1f5f9;
-  color: #64748b;
+  background: var(--color-graphic-pill);
+  color: var(--color-ink-muted);
   font-size: 0.65rem;
   font-weight: 800;
   padding: 2px 8px;
   border-radius: 4px;
   margin-bottom: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-graphic-border);
 }
 
 .graphic-teams-row {
@@ -33,13 +33,13 @@
   align-items: center;
   font-size: 1.1rem;
   font-weight: 900;
-  color: #0f172a;
+  color: var(--color-ink);
 }
 
 .graphic-large-scores {
   font-size: 1.6rem;
   font-weight: 900;
-  color: #0f172a;
+  color: var(--color-ink);
   margin: 4px 0;
   display: flex;
   justify-content: center;
@@ -47,12 +47,12 @@
 }
 
 .colon-sep {
-  color: #94a3b8;
+  color: var(--color-text-muted);
 }
 
 .graphic-chase-sentence {
   font-size: 0.8rem;
-  color: #0f172a;
+  color: var(--color-ink);
   font-weight: 700;
   margin-top: 4px;
 }
@@ -65,9 +65,9 @@
 }
 
 .innings-select-box {
-  background: #ffffff;
-  color: #0f172a;
-  border: 1px solid #cbd5e1;
+  background: var(--color-panel);
+  color: var(--color-ink);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 4px 12px;
   font-size: 0.75rem;
@@ -78,8 +78,8 @@
 /* Bar Chart */
 .bar-chart-container {
   padding: 8px 16px;
-  background: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--color-panel);
+  border-bottom: 1px solid var(--color-graphic-border);
 }
 
 .chart-bars-track {
@@ -109,7 +109,7 @@
 
 .chart-col-bar {
   width: 100%;
-  background: #e2e8f0;
+  background: var(--color-graphic-border);
   border-radius: 2px 2px 0 0;
 }
 
@@ -121,7 +121,7 @@
   display: flex;
   justify-content: space-between;
   font-size: 0.65rem;
-  color: #94a3b8;
+  color: var(--color-text-muted);
   margin-top: 4px;
 }
 
@@ -129,7 +129,7 @@
 .purple-subtabs-row {
   display: flex;
   justify-content: space-around;
-  background: #ffffff;
+  background: var(--color-panel);
   border-bottom: 2px solid #e2e8f0;
 }
 
@@ -152,7 +152,7 @@
 
 .subtab-react-icon {
   font-size: 1.2rem;
-  color: #64748b;
+  color: var(--color-ink-muted);
 }
 
 .subtab-btn.purple-active .subtab-react-icon {
@@ -172,7 +172,7 @@
 
 .over-num-heading {
   font-weight: 800;
-  color: #94a3b8;
+  color: var(--color-text-muted);
 }
 
 .delivery-pills-list {
@@ -195,8 +195,8 @@
 }
 
 .del-pill.wicket-w {
-  background: white;
-  color: #0f172a;
+  background: var(--color-panel);
+  color: var(--color-ink);
 }
 
 .del-pill.four {
@@ -205,7 +205,7 @@
 
 .del-pill.dot {
   background: #475569;
-  color: #94a3b8;
+  color: var(--color-text-muted);
 }
 
 .del-pill.legbye {

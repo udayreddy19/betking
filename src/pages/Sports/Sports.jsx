@@ -10,7 +10,7 @@ import LiveMatchGraphicWidget from '../../components/LiveMatchGraphicWidget/Live
 import { promotions, sportsCategories, leagues } from '../../data/mockData';
 import { useLiveSports } from '../../context/LiveSportsContext';
 import { useBetSlip } from '../../context/BetSlipContext';
-import './Sports.css';
+import { isMatchBettable } from '../../utils/matchBetting';
 
 export default function Sports() {
   const { matches, tickerMessage } = useLiveSports();
@@ -168,112 +168,79 @@ export default function Sports() {
 
         {/* Center Banner for Selected Match */}
         {activeLiveMatch && (
-          <div style={{
-            background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)',
-            borderRadius: '12px',
-            padding: '24px',
-            textAlign: 'center',
-            marginBottom: '20px',
-            border: '1px solid #cbd5e1',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-          }}>
-            <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600, marginBottom: '8px' }}>
+          <div className="sports-match-banner">
+            <div className="sports-match-banner-time">
               15:30 · 01 August 2026
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '30px' }}>
-              <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>{activeLiveMatch.team1.name}</span>
-              <span style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '50%',
-                border: '2px solid #fbbf24',
-                color: '#d97706',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 900,
-                fontSize: '0.8rem'
-              }}>VS</span>
-              <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>{activeLiveMatch.team2.name}</span>
+            <div className="sports-match-banner-teams">
+              <span className="sports-match-banner-team">{activeLiveMatch.team1.name}</span>
+              <span className="sports-match-banner-vs">VS</span>
+              <span className="sports-match-banner-team">{activeLiveMatch.team2.name}</span>
             </div>
           </div>
         )}
 
         {/* Expandable Betting Markets Accordion */}
-        <div style={{ background: 'white', borderRadius: '12px', padding: '16px', marginBottom: '20px', border: '1px solid #e2e8f0' }}>
+        <div className="sports-market-panel">
           <div
+            className="sports-market-panel-header"
             onClick={() => setExpandedMarket(!expandedMarket)}
-            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontWeight: 800, fontSize: '0.95rem' }}
           >
             <span>Winner (incl. super over)</span>
             {expandedMarket ? <HiOutlineChevronUp /> : <HiOutlineChevronDown />}
           </div>
 
-          {expandedMarket && activeLiveMatch && activeLiveMatch.matchState === 'in' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px' }}>
+          {expandedMarket && activeLiveMatch && isMatchBettable(activeLiveMatch) && (
+            <div className="sports-market-odds-grid">
               <button
+                type="button"
+                className="sports-market-odds-btn"
                 onClick={() => addBet(activeLiveMatch, '1', activeLiveMatch.odds.team1)}
-                style={{
-                  background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  padding: '12px',
-                  display: 'flex',
-                  justify: 'space-between',
-                  cursor: 'pointer',
-                  fontWeight: 700
-                }}
               >
                 <span>{activeLiveMatch.team1.name}</span>
-                <span style={{ color: '#2563eb', fontWeight: 900 }}>{activeLiveMatch.odds.team1 || 2.88}</span>
+                <span className="odds-val">{activeLiveMatch.odds.team1 || 2.88}</span>
               </button>
 
               <button
+                type="button"
+                className="sports-market-odds-btn"
                 onClick={() => addBet(activeLiveMatch, '2', activeLiveMatch.odds.team2)}
-                style={{
-                  background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  padding: '12px',
-                  display: 'flex',
-                  justify: 'space-between',
-                  cursor: 'pointer',
-                  fontWeight: 700
-                }}
               >
                 <span>{activeLiveMatch.team2.name}</span>
-                <span style={{ color: '#2563eb', fontWeight: 900 }}>{activeLiveMatch.odds.team2 || 1.34}</span>
+                <span className="odds-val">{activeLiveMatch.odds.team2 || 1.34}</span>
               </button>
             </div>
           )}
         </div>
 
         {/* 1st innings over 19 delivery market */}
-        <div style={{ background: 'white', borderRadius: '12px', padding: '16px', marginBottom: '20px', border: '1px solid #e2e8f0' }}>
+        <div className="sports-market-panel">
           <div
+            className="sports-market-panel-header"
             onClick={() => setExpandedDeliveryMarket(!expandedDeliveryMarket)}
-            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontWeight: 800, fontSize: '0.95rem' }}
           >
             <span>1st innings over 19 - 3rd delivery {activeLiveMatch?.team1.name} total</span>
             {expandedDeliveryMarket ? <HiOutlineChevronUp /> : <HiOutlineChevronDown />}
           </div>
 
-          {expandedDeliveryMarket && activeLiveMatch && activeLiveMatch.matchState === 'in' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px' }}>
+          {expandedDeliveryMarket && activeLiveMatch && isMatchBettable(activeLiveMatch) && (
+            <div className="sports-market-odds-grid">
               <button
+                type="button"
+                className="sports-market-odds-btn"
                 onClick={() => addBet(activeLiveMatch, 'over', 1.45)}
-                style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px', display: 'flex', justifyContent: 'space-between', cursor: 'pointer', fontWeight: 700 }}
               >
                 <span>Over 0.5</span>
-                <span style={{ color: '#2563eb', fontWeight: 900 }}>1.45</span>
+                <span className="odds-val">1.45</span>
               </button>
 
               <button
+                type="button"
+                className="sports-market-odds-btn"
                 onClick={() => addBet(activeLiveMatch, 'under', 2.30)}
-                style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px', display: 'flex', justifyContent: 'space-between', cursor: 'pointer', fontWeight: 700 }}
               >
                 <span>Under 0.5</span>
-                <span style={{ color: '#2563eb', fontWeight: 900 }}>2.30</span>
+                <span className="odds-val">2.30</span>
               </button>
             </div>
           )}

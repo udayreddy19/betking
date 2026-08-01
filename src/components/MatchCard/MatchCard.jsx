@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useBetSlip } from '../../context/BetSlipContext';
 import MatchDetailModal from '../MatchDetailModal/MatchDetailModal';
+import { isMatchBettable, isMatchLive, isMatchFinished } from '../../utils/matchBetting';
 import './MatchCard.css';
 
 const sportIcons = {
@@ -32,10 +33,9 @@ export default function MatchCard({ match }) {
   const { addBet, isBetSelected } = useBetSlip();
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-  const matchState = match.matchState || (match.isLive ? 'in' : 'pre');
-  const isLiveNow = matchState === 'in';
-  const isFinished = matchState === 'post';
-  const canBet = isLiveNow;
+  const isLiveNow = isMatchLive(match);
+  const isFinished = isMatchFinished(match);
+  const canBet = isMatchBettable(match);
 
   const handleOddsClick = (e, selection, odds) => {
     e.stopPropagation();
@@ -96,7 +96,10 @@ export default function MatchCard({ match }) {
               )}
             </>
           ) : (
-            match.time
+            <>
+              <span className="upcoming-badge">UPCOMING</span>
+              {match.time}
+            </>
           )}
         </div>
 
@@ -119,7 +122,7 @@ export default function MatchCard({ match }) {
         )}
 
         {canBet ? (
-          <div className="match-card-odds">
+          <div className="match-card-odds" onClick={(e) => e.stopPropagation()}>
             <button
               className={`odds-btn ${isBetSelected(match.id, '1') ? 'selected' : ''}`}
               onClick={(e) => handleOddsClick(e, '1', match.odds.team1)}
@@ -145,7 +148,7 @@ export default function MatchCard({ match }) {
             </button>
           </div>
         ) : (
-          <div className="match-card-odds-suspended">
+          <div className="match-card-odds-suspended" onClick={(e) => e.stopPropagation()}>
             {isFinished ? 'Markets closed — match finished' : 'Markets not open yet'}
           </div>
         )}

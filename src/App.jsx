@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { BetSlipProvider } from './context/BetSlipContext';
 import { LiveSportsProvider } from './context/LiveSportsContext';
 
@@ -9,6 +9,7 @@ import Sidebar from './components/Sidebar/Sidebar';
 import LoginModal from './components/LoginModal/LoginModal';
 import DepositModal from './components/DepositModal/DepositModal';
 import Toast from './components/Toast/Toast';
+import ThemeToggle from './components/ThemeToggle/ThemeToggle';
 
 import Home from './pages/Home/Home';
 import Sports from './pages/Sports/Sports';
@@ -30,6 +31,7 @@ function AppLayout() {
       <LoginModal />
       <DepositModal />
       <Toast />
+      <MobileBetSlip />
       <main style={{ minHeight: 'calc(100vh - var(--header-height) - 300px)', padding: 'var(--space-6) 0' }}>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -54,14 +56,16 @@ function AppLayout() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <LiveSportsProvider>
-          <BetSlipProvider>
-            <AppLayout />
-          </BetSlipProvider>
-        </LiveSportsProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <LiveSportsProvider>
+            <BetSlipProvider>
+              <AppLayout />
+            </BetSlipProvider>
+          </LiveSportsProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }

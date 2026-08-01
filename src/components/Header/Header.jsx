@@ -3,6 +3,7 @@ import { HiOutlineMenu } from 'react-icons/hi';
 import { IoGiftOutline } from 'react-icons/io5';
 import { FiChevronDown } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
+import ThemeToggle from '../ThemeToggle/ThemeToggle';
 import './Header.css';
 
 const navLinks = [
@@ -28,19 +29,8 @@ export default function Header() {
           </button>
 
           <NavLink to="/" className="header-logo" id="header-logo">
-            <span className="logo-icon" style={{
-              background: 'black',
-              color: 'white',
-              borderRadius: '50%',
-              width: '32px',
-              height: '32px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 900,
-              fontSize: '0.85rem'
-            }}>10</span>
-            <span style={{ fontWeight: 900, color: 'black', letterSpacing: '-0.5px' }}>CRIC</span>
+            <span className="logo-icon logo-icon-circle">10</span>
+            <span className="logo-text">CRIC</span>
           </NavLink>
 
           <nav className="header-nav" id="main-nav">
@@ -59,6 +49,7 @@ export default function Header() {
 
         <div className="header-right">
           <span className="header-test-mode" title="Virtual balance only — no real money">Test Mode</span>
+          <ThemeToggle />
           <button className="header-bonuses-btn" id="bonuses-btn" aria-label="Bonuses" onClick={() => navigate('/promotions')}>
             <IoGiftOutline />
           </button>

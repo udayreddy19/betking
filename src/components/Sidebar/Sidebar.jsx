@@ -7,11 +7,14 @@ import { BiWallet, BiMoneyWithdraw, BiHistory, BiTransfer, BiGift } from 'react-
 import { MdOutlineCancel, MdOutlineStorefront } from 'react-icons/md';
 import { RiLogoutBoxRLine } from 'react-icons/ri';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
+import { HiOutlineMoon, HiOutlineSun } from 'react-icons/hi';
 import FinancialModals from '../FinancialModals/FinancialModals';
 import './Sidebar.css';
 
 export default function Sidebar() {
   const { user, isLoggedIn, isSidebarOpen, closeSidebar, logout, openLoginModal, openDepositModal } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [activeFinModal, setActiveFinModal] = useState(null);
 
@@ -148,6 +151,13 @@ export default function Sidebar() {
               </button>
             </div>
 
+            <div className="sidebar-theme">
+              <button type="button" className="sidebar-theme-btn" onClick={toggleTheme}>
+                {theme === 'dark' ? <HiOutlineSun /> : <HiOutlineMoon />}
+                <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+              </button>
+            </div>
+
             <div className="sidebar-logout">
               <button className="sidebar-logout-btn" onClick={handleLogout} id="logout-btn">
                 <RiLogoutBoxRLine className="logout-icon" />
@@ -162,6 +172,10 @@ export default function Sidebar() {
             <p>Log in or create an account to start betting</p>
             <button className="sidebar-guest-btn primary" onClick={handleLogin}>Log in</button>
             <button className="sidebar-guest-btn outline" onClick={handleRegister}>Create Account</button>
+            <button type="button" className="sidebar-theme-btn guest" onClick={toggleTheme}>
+              {theme === 'dark' ? <HiOutlineSun /> : <HiOutlineMoon />}
+              <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+            </button>
           </div>
         )}
       </aside>

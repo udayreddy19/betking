@@ -1,8 +1,10 @@
 import { createContext, useContext, useState, useCallback } from 'react';
+import { useAuth } from './AuthContext';
 
 const BetSlipContext = createContext(null);
 
-function getSelectionName(match, selection) {
+function getSelectionName(match, selection, customName) {
+  if (customName) return customName;
   if (selection === '1') return match.team1.name;
   if (selection === '2') return match.team2.name;
   if (selection === 'X') return 'Draw';
@@ -12,18 +14,32 @@ function getSelectionName(match, selection) {
 }
 
 export function BetSlipProvider({ children }) {
+  const { showToast } = useAuth();
   const [bets, setBets] = useState([]);
   const [placedBets, setPlacedBets] = useState([]);
   const [activeTab, setActiveTab] = useState('betslip');
   const [stake, setStake] = useState('');
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  const addBet = useCallback((match, selection, odds) => {
+  const addBet = useCallback((match, selection, odds, selectionName) => {
+    let added = true;
     setBets(prev => {
       const existing = prev.find(b => b.matchId === match.id && b.selection === selection);
       if (existing) {
+        added = false;
+        showToast('Removed from betslip');
         return prev.filter(b => b.id !== existing.id);
       }
-      const filtered = prev.filter(b => b.matchId !== match.id);
+
+      const isMainMarket = ['1', '2', 'X'].includes(selection);
+      const filtered = isMainMarket
+        ? prev.filter(b => !(b.matchId === match.id && ['1', '2', 'X'].includes(b.selection)))
+        : prev;
+
+      const label = getSelectionName(match, selection, selectionName);
+      showToast(`Added to betslip: ${label} @ ${Number(odds).toFixed(2)}`);
+      setIsMobileOpen(true);
+
       return [...filtered, {
         id: `${match.id}-${selection}`,
         matchId: match.id,
@@ -31,12 +47,13 @@ export function BetSlipProvider({ children }) {
         league: match.league,
         sport: match.sport,
         selection,
-        selectionName: getSelectionName(match, selection),
+        selectionName: label,
         odds: Number(odds),
         timestamp: Date.now(),
       }];
     });
-  }, []);
+    return added;
+  }, [showToast]);
 
   const removeBet = useCallback((betId) => {
     setBets(prev => prev.filter(b => b.id !== betId));
@@ -73,6 +90,7 @@ export function BetSlipProvider({ children }) {
     setBets([]);
     setStake('');
     setActiveTab('mybets');
+    setIsMobileOpen(true);
 
     return { success: true, placed };
   }, [bets]);
@@ -97,6 +115,9 @@ export function BetSlipProvider({ children }) {
       potentialReturn,
       betCount: bets.length,
       myBetsCount: placedBets.length,
+      isMobileOpen,
+      setIsMobileOpen,
+      openMobileBetslip: () => setIsMobileOpen(true),
     }}>
       {children}
     </BetSlipContext.Provider>
