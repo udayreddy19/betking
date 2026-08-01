@@ -14,12 +14,12 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid deposit amount' });
   }
 
-  const key_id = process.env.VITE_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID;
-  const key_secret = process.env.RAZORPAY_KEY_SECRET;
+  const key_id = process.env.VITE_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || 'rzp_live_TKUn3mSbuhuzFx';
+  const key_secret = process.env.RAZORPAY_KEY_SECRET || 'PmCgXVE0oIKPeQxRfXZgUFt2';
 
   if (!key_id || !key_secret) {
     return res.status(500).json({
-      error: 'Razorpay API Keys not configured on Vercel server. Please set VITE_RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in Vercel Environment Variables.'
+      error: 'Razorpay API Keys not configured on server.'
     });
   }
 
