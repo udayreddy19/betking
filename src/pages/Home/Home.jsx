@@ -17,10 +17,11 @@ export default function Home() {
   const navigate = useNavigate();
   const [activeSport, setActiveSport] = useState('cricket');
 
-  const topGames = casinoGames.filter(g => g.category.includes('top'));
-  const liveGames = casinoGames.filter(g => g.category.includes('live'));
-  const crashGames = casinoGames.filter(g => g.category.includes('crash'));
-  const filteredMatches = matches.filter(m => m.sport === activeSport);
+  // Safe category filtering to prevent blank screen crashes
+  const topGames = casinoGames.filter(g => g.isHot || g.category?.includes('slots') || g.category?.includes('top'));
+  const liveGames = casinoGames.filter(g => g.category?.includes('live') || g.category?.includes('table'));
+  const crashGames = casinoGames.filter(g => g.category?.includes('crash') || g.isNew);
+  const filteredMatches = matches ? matches.filter(m => m.sport === activeSport) : [];
 
   return (
     <div className="home-page container" id="home-page">
@@ -45,7 +46,7 @@ export default function Home() {
       <CategoryGrid />
 
       {/* Top Games */}
-      <GameCarousel title="Top Games" games={topGames} viewAllLink />
+      <GameCarousel title="Top Games" games={topGames.length > 0 ? topGames : casinoGames} viewAllLink />
 
       {/* Sports Action */}
       <div className="home-sports-action" id="sports-action-section">
@@ -73,7 +74,7 @@ export default function Home() {
               <MatchCard key={match.id} match={match} />
             ))
           ) : (
-            matches.slice(0, 4).map(match => (
+            (matches || []).slice(0, 4).map(match => (
               <MatchCard key={match.id} match={match} />
             ))
           )}
@@ -81,10 +82,10 @@ export default function Home() {
       </div>
 
       {/* Top Live Games */}
-      <GameCarousel title="Top Live Games" games={liveGames} viewAllLink />
+      <GameCarousel title="Top Live Games" games={liveGames.length > 0 ? liveGames : casinoGames} viewAllLink />
 
       {/* Blast Zone */}
-      <GameCarousel title="Blast Zone" games={crashGames} viewAllLink />
+      <GameCarousel title="Blast Zone" games={crashGames.length > 0 ? crashGames : casinoGames} viewAllLink />
     </div>
   );
 }

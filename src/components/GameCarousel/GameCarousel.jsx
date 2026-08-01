@@ -1,10 +1,12 @@
 import { useRef } from 'react';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import GameCard from '../GameCard/GameCard';
+import { casinoGames } from '../../data/mockData';
 import './GameCarousel.css';
 
 export default function GameCarousel({ title, games, viewAllLink, layout = 'scroll' }) {
   const scrollRef = useRef(null);
+  const displayGames = (games && games.length > 0) ? games : casinoGames;
 
   const scroll = (direction) => {
     if (scrollRef.current) {
@@ -37,13 +39,13 @@ export default function GameCarousel({ title, games, viewAllLink, layout = 'scro
       </div>
       {layout === 'scroll' ? (
         <div className="game-carousel-scroll" ref={scrollRef}>
-          {games.map(game => (
+          {displayGames.map(game => (
             <GameCard key={game.id} game={game} />
           ))}
         </div>
       ) : (
         <div className="game-grid">
-          {games.map(game => (
+          {displayGames.map(game => (
             <GameCard key={game.id} game={game} />
           ))}
         </div>
