@@ -6,6 +6,7 @@ import PromoBanner from '../../components/PromoBanner/PromoBanner';
 import FilterChips from '../../components/FilterChips/FilterChips';
 import MatchCard from '../../components/MatchCard/MatchCard';
 import BetSlip from '../../components/BetSlip/BetSlip';
+import LiveMatchGraphicWidget from '../../components/LiveMatchGraphicWidget/LiveMatchGraphicWidget';
 import { promotions, sportsCategories, leagues } from '../../data/mockData';
 import { useLiveSports } from '../../context/LiveSportsContext';
 import './Sports.css';
@@ -16,6 +17,9 @@ export default function Sports() {
   const [activeLeague, setActiveLeague] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedGraphicMatch, setSelectedGraphicMatch] = useState(null);
+
+  const activeLiveMatch = selectedGraphicMatch || matches.find(m => m.isLive && m.sport === activeSport) || matches[0];
 
   const sportLeagues = useMemo(() =>
     leagues.filter(l => l.sport === activeSport),
@@ -86,6 +90,40 @@ export default function Sports() {
           </span>
         </div>
 
+        {/* 10CRIC Horizontal Live Matches Quick Selection Chips Bar */}
+        <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '12px' }}>
+          {matches.slice(0, 6).map(m => {
+            const isSelected = activeLiveMatch?.id === m.id;
+            return (
+              <div
+                key={m.id}
+                onClick={() => setSelectedGraphicMatch(m)}
+                style={{
+                  background: isSelected ? '#fbbf24' : '#1e293b',
+                  color: isSelected ? '#0f172a' : 'white',
+                  padding: '8px 14px',
+                  borderRadius: '10px',
+                  minWidth: '150px',
+                  cursor: 'pointer',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  border: isSelected ? '2px solid #f59e0b' : '1px solid #334155',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>{m.team1.shortName || m.team1.name.slice(0, 8)}</span>
+                  <span>{m.isLive ? `${m.liveDetails?.runs || 72}/${m.liveDetails?.wickets || 3}` : 'VS'}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                  <span>{m.team2.shortName || m.team2.name.slice(0, 8)}</span>
+                  <span>{m.isLive ? `${m.liveDetails?.score2 || 148}/${m.liveDetails?.wickets2 || 5}` : m.time}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
         <div className="sports-filters">
           <FilterChips
             items={sportsCategories}
@@ -116,6 +154,9 @@ export default function Sports() {
             />
           </div>
         </div>
+
+        {/* 10CRIC Live Match Score Graphic Center Widget */}
+        <LiveMatchGraphicWidget match={activeLiveMatch} />
 
         <div className="sports-tabs">
           <button
