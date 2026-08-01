@@ -165,7 +165,6 @@ export const matches = [
       label: 'The Hundred Live (YouTube)',
       channelUrl: 'https://www.youtube.com/@thehundred',
     },
-    cricbuzz: { matchId: '144805' },
   },
   {
     id: 'm2',
@@ -198,7 +197,6 @@ export const matches = [
       label: 'The Hundred Live (YouTube)',
       channelUrl: 'https://www.youtube.com/@thehundred',
     },
-    cricbuzz: { matchId: '145187' },
   },
   {
     id: 'm3',
@@ -211,8 +209,7 @@ export const matches = [
     team1: { name: 'Kenya', shortName: 'KEN', color: '#22c55e' },
     team2: { name: 'Bahrain', shortName: 'BAH', color: '#ef4444' },
     odds: { team1: 1.99, team2: 1.70 },
-    liveDetails: { runs: 105, wickets: 4, overs: '14.2', score2: 148, wickets2: 5, overs2: '20.0', commentary: 'Kenya require 44 runs from 34 balls' },
-    cricbuzz: { matchId: '169457' },
+    liveDetails: { runs: 105, wickets: 4, overs: '14.2', score2: 148, wickets2: 5, overs2: '20.0', commentary: 'Kenya require 44 runs from 34 balls' }
   },
   {
     id: 'm4',
@@ -225,8 +222,7 @@ export const matches = [
     team1: { name: 'Colombo Stars', shortName: 'COL', color: '#e5e7eb' },
     team2: { name: 'Galle Gladiators', shortName: 'GAL', color: '#e5e7eb' },
     odds: { team1: 1.49, team2: 2.38 },
-    liveDetails: { runs: 168, wickets: 6, overs: '18.5', score2: 165, wickets2: 7, overs2: '20.0', commentary: 'Colombo Stars chasing 166' },
-    cricbuzz: { matchId: '157138' },
+    liveDetails: { runs: 168, wickets: 6, overs: '18.5', score2: 165, wickets2: 7, overs2: '20.0', commentary: 'Colombo Stars chasing 166' }
   },
   {
     id: 'm5',

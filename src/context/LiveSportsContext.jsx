@@ -2,7 +2,6 @@ import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { matches as defaultMatches } from '../data/mockData';
 import { getStableMatchOdds, safeNum } from '../utils/odds';
 import { mergeApiAndDefaultMatches } from '../utils/matchFilters';
-import { getSeriesIdForLeague } from '../data/playerDatabase';
 
 const LiveSportsContext = createContext(null);
 
@@ -36,8 +35,7 @@ export function LiveSportsProvider({ children }) {
           const data = await res.value.json();
           const events = data.events || [];
           if (endpoints[i].sport === 'cricket') {
-            const seriesId = endpoints[i].seriesId || null;
-            cricketEvents.push(...events.map(evt => ({ evt, seriesId })));
+            cricketEvents.push(...events);
           } else {
             soccerEvents.push(...events);
           }
@@ -48,7 +46,7 @@ export function LiveSportsProvider({ children }) {
         let matchIdx = 0;
 
         // Map cricket events
-        cricketEvents.forEach(({ evt, seriesId: endpointSeriesId }) => {
+        cricketEvents.forEach((evt) => {
           const comp = evt.competitions?.[0];
           const competitors = comp?.competitors || [];
           if (competitors.length < 2) return;
@@ -120,10 +118,6 @@ export function LiveSportsProvider({ children }) {
             team1: { name: homeName, shortName: homeShort, color: '#22c55e' },
             team2: { name: awayName, shortName: awayShort, color: '#e5e7eb' },
             odds,
-            espn: {
-              seriesId: endpointSeriesId || getSeriesIdForLeague(leagueName) || '8048',
-              eventId: String(evt.id),
-            },
             liveDetails: {
               runs: hRuns,
               wickets: hWickets,

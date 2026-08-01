@@ -2,8 +2,6 @@ import { useState, useMemo } from 'react';
 import { HiOutlineViewList, HiOutlineChartBar, HiOutlineUsers, HiOutlineVideoCamera } from 'react-icons/hi';
 import { IoShirtOutline } from 'react-icons/io5';
 import LiveStreamPlayer from '../LiveStreamPlayer/LiveStreamPlayer';
-import PlayerStatsPanel from '../PlayerStatsPanel/PlayerStatsPanel';
-import { useMatchPlayers } from '../../hooks/useMatchPlayers';
 import './LiveMatchGraphicWidget.css';
 
 const playerRosterMap = {
@@ -117,7 +115,6 @@ function WagonWheel() {
 export default function LiveMatchGraphicWidget({ match }) {
   const [activeWidgetTab, setActiveWidgetTab] = useState('field');
   const [selectedInnings, setSelectedInnings] = useState('');
-  const { players, source, loading: playersLoading, refreshing: playersRefreshing, error: playersError } = useMatchPlayers(match);
 
   const sport = match?.sport || 'cricket';
   const team1 = match?.team1?.name || 'Team 1';
@@ -299,7 +296,7 @@ export default function LiveMatchGraphicWidget({ match }) {
             className={`live-widget-tab ${activeWidgetTab === 'lineups' ? 'active' : ''}`}
           >
             <HiOutlineUsers />
-            <span className="live-widget-tab-label">Players</span>
+            <span className="live-widget-tab-label">Lineups</span>
           </button>
           <button
             type="button"
@@ -396,15 +393,22 @@ export default function LiveMatchGraphicWidget({ match }) {
         )}
 
         {activeWidgetTab === 'lineups' && (
-          <PlayerStatsPanel
-            players={players}
-            source={source}
-            loading={playersLoading}
-            refreshing={playersRefreshing}
-            error={playersError}
-            team1={team1}
-            team2={team2}
-          />
+          <div className="live-widget-panel">
+            <h4 className="live-widget-panel-title">{team1.replace(' W', '')}</h4>
+            {t1Data.batters.map((name, idx) => (
+              <div key={idx} className="live-widget-lineup-row">
+                <span>{name}</span>
+                <span>Batter</span>
+              </div>
+            ))}
+            <h4 className="live-widget-panel-title">{team2.replace(' W', '')}</h4>
+            {t2Data.batters.map((name, idx) => (
+              <div key={idx} className="live-widget-lineup-row">
+                <span>{name}</span>
+                <span>Batter</span>
+              </div>
+            ))}
+          </div>
         )}
 
         {activeWidgetTab === 'kits' && (

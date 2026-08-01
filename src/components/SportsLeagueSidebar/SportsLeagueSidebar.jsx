@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { HiChevronDown, HiChevronRight } from 'react-icons/hi';
 import { featuredLeagues, leagueGroups } from '../../data/mockData';
+import { resolveLeagueId, isSameLeague } from '../../utils/leagueNavigation';
 import './SportsLeagueSidebar.css';
 
 export default function SportsLeagueSidebar({ activeSport, activeLeague, onSelectLeague }) {
@@ -21,7 +22,7 @@ export default function SportsLeagueSidebar({ activeSport, activeLeague, onSelec
             <li key={league.id}>
               <button
                 type="button"
-                className={`sports-league-item ${activeLeague === league.id ? 'active' : ''}`}
+                className={`sports-league-item ${isSameLeague(activeLeague, league.id) ? 'active' : ''}`}
                 onClick={() => onSelectLeague(league.id)}
               >
                 <span className="sports-league-item-icon">{league.icon || '🏆'}</span>
@@ -51,8 +52,8 @@ export default function SportsLeagueSidebar({ activeSport, activeLeague, onSelec
                   <li key={name}>
                     <button
                       type="button"
-                      className={`sports-league-subitem ${activeLeague === name ? 'active' : ''}`}
-                      onClick={() => onSelectLeague(name)}
+                      className={`sports-league-subitem ${isSameLeague(activeLeague, name) ? 'active' : ''}`}
+                      onClick={() => onSelectLeague(resolveLeagueId(name) || name)}
                     >
                       {name}
                     </button>

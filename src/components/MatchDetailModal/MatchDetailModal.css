@@ -1,7 +1,7 @@
 .match-detail-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(15, 23, 42, 0.45);
   backdrop-filter: blur(4px);
   z-index: 1100;
   display: flex;
@@ -11,15 +11,15 @@
 }
 
 .match-detail-modal {
-  background: #0f172a;
-  border: 1px solid #334155;
-  border-radius: var(--radius-xl);
+  background: #f0f2f5;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
   width: 100%;
   max-width: 720px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15);
   overflow: hidden;
   animation: modalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
@@ -52,44 +52,56 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--space-4);
-  background: #1e293b;
-  border-bottom: 1px solid #334155;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .match-detail-league {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  color: #94a3b8;
+  color: #64748b;
   font-size: var(--text-xs);
   font-weight: 600;
 }
 
 .match-detail-sport-tag {
-  background: #3b82f6;
+  background: #5e35b1;
   color: white;
   font-size: 0.65rem;
   font-weight: 800;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
 }
 
 .match-detail-close {
-  background: transparent;
+  background: #f1f5f9;
   border: none;
-  color: #94a3b8;
+  color: #64748b;
   font-size: 1.3rem;
   cursor: pointer;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.match-detail-close:hover {
+  background: #e2e8f0;
+  color: #0f172a;
 }
 
 .match-detail-scoreboard {
-  background: linear-gradient(135deg, #0c1a30 0%, #1e3a8a 100%);
+  background: #ffffff;
   padding: var(--space-5);
   display: flex;
   align-items: center;
   justify-content: space-between;
   text-align: center;
-  border-bottom: 1px solid #1e293b;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .scoreboard-team {
@@ -105,14 +117,14 @@
 }
 
 .scoreboard-team h4 {
-  color: white;
+  color: #0f172a;
   margin: 0;
   font-size: var(--text-sm);
   font-weight: 700;
 }
 
 .scoreboard-score {
-  color: #38bdf8;
+  color: #5e35b1;
   font-size: var(--text-lg);
   font-weight: 900;
   font-family: monospace;
@@ -141,25 +153,29 @@
 .live-pulse {
   width: 6px;
   height: 6px;
-  background: var(--color-panel);
+  background: #ffffff;
   border-radius: 50%;
   animation: pulse 1.2s infinite;
 }
 
-.vs-label {
+.scoreboard-time {
   color: #64748b;
-  font-weight: 800;
-  font-size: var(--text-xs);
-}
-
-.match-detail-commentary {
-  background: #1e1b4b;
-  color: #a5b4fc;
-  padding: var(--space-2) var(--space-4);
   font-size: var(--text-xs);
   font-weight: 600;
-  font-style: italic;
-  border-bottom: 1px solid #312e81;
+}
+
+.vs-label {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid #fbbf24;
+  background: #fffbeb;
+  color: #b45309;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 0.7rem;
 }
 
 .market-tabs {
@@ -167,81 +183,79 @@
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
-  background: #0f172a;
-  border-bottom: 1px solid #1e293b;
+  background: #f0f2f5;
+  border-bottom: 1px solid #e2e8f0;
   overflow-x: auto;
-  overflow-y: visible;
   flex-shrink: 0;
   position: sticky;
   top: 0;
   z-index: 5;
-  scrollbar-width: thin;
-  scrollbar-color: #475569 transparent;
+  scrollbar-width: none;
 }
 
 .market-tabs::-webkit-scrollbar {
-  height: 4px;
-}
-
-.market-tabs::-webkit-scrollbar-thumb {
-  background: #475569;
-  border-radius: var(--radius-full);
+  display: none;
 }
 
 .market-tab {
-  background: #1e293b;
-  color: #94a3b8;
-  border: 1px solid #334155;
+  background: #ffffff;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
   padding: 8px 14px;
-  border-radius: 20px;
+  border-radius: 999px;
   font-size: var(--text-xs);
   font-weight: 600;
   line-height: 1.35;
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.market-tab:hover {
+  border-color: #c4b5fd;
+  color: #5e35b1;
 }
 
 .market-tab.active {
-  background: #7c3aed;
+  background: #5e35b1;
   color: white;
-  border-color: #7c3aed;
+  border-color: #5e35b1;
 }
 
 .market-content {
   padding: var(--space-4);
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-3);
   padding-bottom: var(--space-6);
 }
 
 .market-box {
-  background: #1e293b;
-  border: 1px solid #334155;
-  border-radius: var(--radius-md);
-  padding: var(--space-3);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: var(--space-4);
 }
 
 .market-title {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: white;
-  font-size: var(--text-xs);
-  font-weight: 700;
+  color: #0f172a;
+  font-size: var(--text-sm);
+  font-weight: 800;
   margin-bottom: var(--space-3);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .market-cashout {
-  background: #065f46;
-  color: #34d399;
+  background: #ecfdf5;
+  color: #047857;
   font-size: 0.6rem;
   font-weight: 800;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid #a7f3d0;
 }
 
 .market-subgroup {
@@ -249,18 +263,23 @@
 }
 
 .market-subtitle {
-  color: #94a3b8;
+  color: #64748b;
   font-size: 0.75rem;
+  font-weight: 600;
   margin-bottom: 6px;
 }
 
 .market-odds-grid {
   display: grid;
-  gap: 8px;
+  gap: var(--space-3);
 }
 
 .market-odds-grid.two-col {
   grid-template-columns: 1fr 1fr;
+}
+
+.market-odds-grid.three-col {
+  grid-template-columns: 1fr 1fr 1fr;
 }
 
 .market-odds-grid.multi-col {
@@ -268,26 +287,27 @@
 }
 
 .market-odds-btn {
-  background: #0f172a;
-  border: 1px solid #334155;
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 8px;
+  padding: 14px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: white;
+  color: #1e293b;
   cursor: pointer;
   transition: all 0.15s ease;
+  min-height: 52px;
+  font-weight: 600;
 }
 
-.market-odds-btn:hover {
-  border-color: #7c3aed;
-  background: #1e1b4b;
+.market-odds-btn:hover:not(:disabled) {
+  background: #e2e8f0;
 }
 
 .market-odds-btn.selected {
-  border-color: #7c3aed;
-  background: #4c1d95;
+  background: #ede9fe;
+  box-shadow: inset 0 0 0 2px #5e35b1;
 }
 
 .market-odds-btn:disabled {
@@ -298,58 +318,48 @@
 .match-detail-suspended {
   margin: var(--space-3) var(--space-4) 0;
   padding: var(--space-3) var(--space-4);
-  background: #1e293b;
-  border: 1px solid #475569;
-  border-radius: var(--radius-md);
-  color: #94a3b8;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  color: #64748b;
   font-size: var(--text-sm);
   text-align: center;
   flex-shrink: 0;
 }
 
 .market-label {
-  font-size: var(--text-xs);
-  color: #cbd5e1;
+  font-size: var(--text-sm);
+  color: #1e293b;
+  font-weight: 600;
 }
 
 .market-val {
-  font-size: var(--text-xs);
+  font-size: 1rem;
   font-weight: 800;
-  color: #f59e0b;
+  color: #0f172a;
 }
 
-.settled-box {
-  background: rgba(30, 41, 59, 0.4);
-  border: 1px dashed #475569;
-  opacity: 0.8;
+.market-odds-btn.selected .market-val {
+  color: #5e35b1;
 }
 
-.settled-badge {
-  background: #334155;
-  color: #94a3b8;
-  font-size: 0.6rem;
-  font-weight: 800;
-  padding: 2px 8px;
-  border-radius: 4px;
-}
-
-/* 10CRIC Live Match Center Widget Styles */
+/* Live cricket center — light panel */
 .cricket-live-center {
-  background: #091322;
-  border-bottom: 1px solid #1e293b;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
   padding: var(--space-3) var(--space-4);
   flex-shrink: 0;
 }
 
 .cricket-chase-pill {
-  background: linear-gradient(90deg, #1e1b4b 0%, #312e81 100%);
-  color: #fbbf24;
+  background: #fffbeb;
+  color: #b45309;
   font-size: 0.75rem;
   font-weight: 700;
-  padding: 6px 12px;
-  border-radius: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
   margin-bottom: var(--space-3);
-  border: 1px solid rgba(251, 191, 36, 0.3);
+  border: 1px solid #fde68a;
 }
 
 .cricket-live-tables {
@@ -359,18 +369,19 @@
 }
 
 .cricket-table-box {
-  background: #131f37;
-  border: 1px solid #1e293b;
-  border-radius: var(--radius-sm);
-  padding: 8px 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
 }
 
 .cricket-table-title {
-  color: #94a3b8;
+  color: #64748b;
   font-size: 0.65rem;
   font-weight: 800;
   letter-spacing: 0.5px;
   margin-bottom: 6px;
+  text-transform: uppercase;
 }
 
 .cricket-mini-table {
@@ -380,21 +391,21 @@
 }
 
 .cricket-mini-table th {
-  color: #64748b;
+  color: #94a3b8;
   text-align: left;
   padding-bottom: 4px;
-  border-bottom: 1px solid #1e293b;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .cricket-mini-table td {
-  color: #e2e8f0;
+  color: #0f172a;
   padding: 4px 0;
   font-weight: 600;
 }
 
 .bowler-stat-row {
   font-size: 0.75rem;
-  color: #e2e8f0;
+  color: #1e293b;
   margin-bottom: 6px;
 }
 
@@ -402,11 +413,11 @@
   display: flex;
   gap: 12px;
   font-size: 0.7rem;
-  color: #94a3b8;
+  color: #64748b;
 }
 
 .innings-stats-grid strong {
-  color: #38bdf8;
+  color: #5e35b1;
 }
 
 @media (max-width: 640px) {
@@ -417,7 +428,7 @@
 
   .match-detail-modal {
     max-height: 92vh;
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    border-radius: 16px 16px 0 0;
   }
 
   .cricket-live-tables {
@@ -426,7 +437,6 @@
 
   .market-tabs {
     padding: var(--space-3);
-    gap: var(--space-2);
   }
 
   .market-tab {

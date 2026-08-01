@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { FiSearch, FiHome } from 'react-icons/fi';
 import { HiOutlineChevronDown, HiOutlineChevronUp } from 'react-icons/hi';
 import FilterChips from '../../components/FilterChips/FilterChips';
@@ -13,6 +13,7 @@ import { useBetSlip } from '../../context/BetSlipContext';
 import { useAuth } from '../../context/AuthContext';
 import { isMatchBettable } from '../../utils/matchBetting';
 import { filterMatches } from '../../utils/matchFilters';
+import { resolveLeagueId, getLeagueMeta, isSameLeague } from '../../utils/leagueNavigation';
 import './Sports.css';
 
 const MARKET_CATEGORIES = [
@@ -25,11 +26,12 @@ const MARKET_CATEGORIES = [
 
 function filterByLeague(matchList, activeLeague) {
   if (!activeLeague) return matchList;
-  const featured = featuredLeagues.find(l => l.id === activeLeague);
+  const leagueId = resolveLeagueId(activeLeague);
+  const featured = getLeagueMeta(leagueId);
   if (featured) {
     return matchList.filter(m => featured.matchLeagues.includes(m.league));
   }
-  return matchList.filter(m => m.league === activeLeague);
+  return matchList.filter(m => m.league === activeLeague || m.league === leagueId);
 }
 
 function getMatchScores(match) {
@@ -72,8 +74,13 @@ export default function Sports() {
   const { matches, tickerMessage } = useLiveSports();
   const { addBet, isBetSelected } = useBetSlip();
   const { showToast } = useAuth();
-  const [activeSport, setActiveSport] = useState('cricket');
-  const [activeLeague, setActiveLeague] = useState('hundred-m');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const initialSport = searchParams.get('sport') || 'cricket';
+  const initialLeague = resolveLeagueId(searchParams.get('league')) || 'hundred-m';
+
+  const [activeSport, setActiveSport] = useState(initialSport);
+  const [activeLeague, setActiveLeague] = useState(initialLeague);
   const [activeMarketCat, setActiveMarketCat] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMatchId, setSelectedMatchId] = useState(null);
@@ -115,23 +122,51 @@ export default function Sports() {
     return `sports-market-odds-btn ${isBetSelected(activeMatch.id, selection) ? 'selected' : ''}`;
   };
 
-  const handleSportChange = (sportId) => {
+  const handleSportChange = useCallback((sportId) => {
     setActiveSport(sportId);
     const firstLeague = featuredLeagues.find(l => l.sport === sportId);
-    setActiveLeague(firstLeague?.id || null);
-    setSelectedMatchId(null);
-  };
-
-  const handleLeagueChange = (leagueId) => {
+    const leagueId = firstLeague?.id || null;
     setActiveLeague(leagueId);
     setSelectedMatchId(null);
-  };
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.set('sport', sportId);
+      if (leagueId) next.set('league', leagueId);
+      else next.delete('league');
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
+
+  const handleLeagueChange = useCallback((leagueId) => {
+    const resolved = resolveLeagueId(leagueId);
+    setActiveLeague(resolved);
+    setSelectedMatchId(null);
+    setSearchQuery('');
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.set('sport', activeSport);
+      if (resolved) next.set('league', resolved);
+      else next.delete('league');
+      return next;
+    }, { replace: true });
+    document.getElementById('sports-match-ticker')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [activeSport, setSearchParams]);
+
+  useEffect(() => {
+    const sport = searchParams.get('sport');
+    const league = searchParams.get('league');
+    if (sport && sport !== activeSport) setActiveSport(sport);
+    if (league) {
+      const resolved = resolveLeagueId(league);
+      if (resolved !== activeLeague) setActiveLeague(resolved);
+    }
+  }, [searchParams]);
 
   const matchTimeLabel = activeMatch?.time?.includes('Live')
     ? `19:00, 01 August 2026`
     : (activeMatch?.time || 'Scheduled');
 
-  const activeLeagueMeta = featuredLeagues.find(l => l.id === activeLeague);
+  const activeLeagueMeta = getLeagueMeta(activeLeague);
   const breadcrumbLeague = activeLeagueMeta?.breadcrumb || activeLeagueMeta?.name || activeMatch?.league || 'All Leagues';
   const sportLabel = sportsCategories.find(s => s.id === activeSport)?.name || 'Cricket';
   const leagueChips = featuredLeagues.filter(l => l.sport === activeSport);
@@ -167,9 +202,21 @@ export default function Sports() {
               <FiHome />
             </Link>
             <span className="sports-breadcrumb-sep">›</span>
-            <span>{sportLabel}</span>
+            <button
+              type="button"
+              className="sports-breadcrumb-link"
+              onClick={() => handleSportChange(activeSport)}
+            >
+              {sportLabel}
+            </button>
             <span className="sports-breadcrumb-sep">›</span>
-            <span>{breadcrumbLeague}</span>
+            <button
+              type="button"
+              className="sports-breadcrumb-link"
+              onClick={() => activeLeague && handleLeagueChange(activeLeague)}
+            >
+              {breadcrumbLeague}
+            </button>
             <span className="sports-breadcrumb-sep">›</span>
             <span className="sports-breadcrumb-current">
               {activeMatch.team1.name} vs. {activeMatch.team2.name}
@@ -190,7 +237,7 @@ export default function Sports() {
               <button
                 key={league.id}
                 type="button"
-                className={`sports-league-chip ${activeLeague === league.id ? 'active' : ''}`}
+                className={`sports-league-chip ${isSameLeague(activeLeague, league.id) ? 'active' : ''}`}
                 onClick={() => handleLeagueChange(league.id)}
               >
                 {league.icon && <span className="sports-league-chip-icon">{league.icon}</span>}
@@ -223,7 +270,7 @@ export default function Sports() {
           </div>
         </div>
 
-        <div className="sports-match-ticker">
+        <div className="sports-match-ticker" id="sports-match-ticker">
           {sportMatches.length === 0 ? (
             <div className="sports-ticker-empty">
               <p>No matches found{searchQuery ? ` for "${searchQuery}"` : ''}.</p>

@@ -2,9 +2,7 @@ import { useState, useEffect } from 'react';
 import { IoClose } from 'react-icons/io5';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { isMatchBettable, isMatchLive } from '../../utils/matchBetting';
-import { useMatchPlayers } from '../../hooks/useMatchPlayers';
 import BetSlipFooter from '../BetSlip/BetSlipFooter';
-import PlayerStatsPanel from '../PlayerStatsPanel/PlayerStatsPanel';
 import './MatchDetailModal.css';
 
 // Roster database for realistic player names across sports
@@ -26,7 +24,6 @@ const teamRosters = {
 export default function MatchDetailModal({ match, isOpen, onClose }) {
   const { addBet, isBetSelected, betCount } = useBetSlip();
   const [activeMarketCategory, setActiveMarketCategory] = useState('all');
-  const { players, source, loading: playersLoading, refreshing: playersRefreshing, error: playersError } = useMatchPlayers(isOpen ? match : null);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -49,13 +46,9 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
   const team2Name = match.team2.name;
   const sport = match.sport || 'cricket';
 
-  // Dynamic player names — prefer fetched roster, fall back to static list
-  const team1Players = players.filter(p => p.team === team1Name || p.team?.includes(team1Name.replace(' W', ''))).map(p => p.name);
-  const team2Players = players.filter(p => p.team === team2Name || p.team?.includes(team2Name.replace(' W', ''))).map(p => p.name);
-  const fallback1 = teamRosters[team1Name] || [`${match.team1.shortName} Opener`, `${match.team1.shortName} Captain`, `${match.team1.shortName} Batter 3`, `${match.team1.shortName} All-Rounder`];
-  const fallback2 = teamRosters[team2Name] || [`${match.team2.shortName} Opener`, `${match.team2.shortName} Captain`, `${match.team2.shortName} Batter 3`, `${match.team2.shortName} All-Rounder`];
-  const displayTeam1Players = team1Players.length > 0 ? team1Players : fallback1;
-  const displayTeam2Players = team2Players.length > 0 ? team2Players : fallback2;
+  // Dynamic player names
+  const team1Players = teamRosters[team1Name] || [`${match.team1.shortName} Opener`, `${match.team1.shortName} Captain`, `${match.team1.shortName} Batter 3`, `${match.team1.shortName} All-Rounder`];
+  const team2Players = teamRosters[team2Name] || [`${match.team2.shortName} Opener`, `${match.team2.shortName} Captain`, `${match.team2.shortName} Batter 3`, `${match.team2.shortName} All-Rounder`];
 
   // Innings detection for Cricket
   const isSecondInnings = sport === 'cricket' && isLiveNow && match.liveDetails && match.liveDetails.score2 !== undefined && match.liveDetails.runs !== undefined;
@@ -186,14 +179,14 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
                   </thead>
                   <tbody>
                     <tr>
-                      <td>{displayTeam1Players[0] || 'SR Bhudia'} *</td>
+                      <td>{team1Players[0] || 'SR Bhudia'} *</td>
                       <td>{Math.floor(currentScore * 0.3)}</td>
                       <td>18</td>
                       <td>3</td>
                       <td>1</td>
                     </tr>
                     <tr>
-                      <td>{displayTeam1Players[1] || 'RR Patel'}</td>
+                      <td>{team1Players[1] || 'RR Patel'}</td>
                       <td>{Math.floor(currentScore * 0.2)}</td>
                       <td>12</td>
                       <td>2</td>
@@ -206,7 +199,7 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
               <div className="cricket-table-box">
                 <div className="cricket-table-title">CURRENT BOWLER & STATS</div>
                 <div className="bowler-stat-row">
-                  <span>Bowler: <strong>{displayTeam2Players[2] || 'Rizwan Butt'}</strong></span>
+                  <span>Bowler: <strong>{team2Players[2] || 'Rizwan Butt'}</strong></span>
                 </div>
                 <div className="innings-stats-grid">
                   <div><span>Fours:</span> <strong>9</strong></div>
@@ -368,23 +361,9 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
 
               {/* Player Props */}
               {(activeMarketCategory === 'all' || activeMarketCategory === 'player-props') && (
-                <>
-                  <div className="market-box player-stats-market-box">
-                    <div className="market-title"><span>Player stats &amp; form</span></div>
-                    <PlayerStatsPanel
-                      players={players}
-                      source={source}
-                      loading={playersLoading}
-                      refreshing={playersRefreshing}
-                      error={playersError}
-                      team1={team1Name}
-                      team2={team2Name}
-                      className="player-stats-panel--inline"
-                    />
-                  </div>
-                  <div className="market-box">
-                    <div className="market-title"><span>Player Performance Props</span></div>
-                    {displayTeam1Players.slice(0, 2).map((player, idx) => {
+                <div className="market-box">
+                  <div className="market-title"><span>Player Performance Props</span></div>
+                  {team1Players.slice(0, 2).map((player, idx) => {
                     const line = (17.5 + idx * 8).toFixed(1);
                     return (
                       <div key={player} className="market-subgroup">
@@ -402,8 +381,7 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
                       </div>
                     );
                     })}
-                  </div>
-                </>
+                </div>
               )}
 
               {/* Dismissal Method & Odd/Even Specials */}
