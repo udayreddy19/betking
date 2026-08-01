@@ -16,14 +16,47 @@ const sportIcons = {
   'american-football': '🏈',
 };
 
+function TeamBadge({ team }) {
+  const initials = team.shortName || team.name.slice(0, 3).toUpperCase();
+  return (
+    <div
+      className="team-badge"
+      style={{ background: team.color === '#e5e7eb' ? '#334155' : team.color, color: '#fff' }}
+    >
+      {initials}
+    </div>
+  );
+}
+
 export default function MatchCard({ match }) {
   const { addBet, isBetSelected } = useBetSlip();
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
+  const matchState = match.matchState || (match.isLive ? 'in' : 'pre');
+  const isLiveNow = matchState === 'in';
+  const isFinished = matchState === 'post';
+  const canBet = isLiveNow;
+
   const handleOddsClick = (e, selection, odds) => {
     e.stopPropagation();
-    addBet(match, selection, odds);
+    if (!canBet) return;
+    addBet(match, selection, Number(odds));
   };
+
+  const openDetails = (e) => {
+    e?.stopPropagation?.();
+    setIsDetailOpen(true);
+  };
+
+  const cricketScore = match.liveDetails && match.sport === 'cricket'
+    && Number.isFinite(match.liveDetails.runs)
+    ? `${match.liveDetails.runs}/${match.liveDetails.wickets} (${match.liveDetails.overs || '0.0'})`
+    : null;
+
+  const soccerScore = match.liveDetails && match.sport === 'soccer'
+    && Number.isFinite(match.liveDetails.score1)
+    ? `${match.liveDetails.score1} - ${match.liveDetails.score2} (${match.liveDetails.minute || ''})`
+    : null;
 
   return (
     <>
@@ -33,7 +66,7 @@ export default function MatchCard({ match }) {
         onClose={() => setIsDetailOpen(false)}
       />
 
-      <div className="match-card" id={`match-${match.id}`} onClick={() => setIsDetailOpen(true)} style={{ cursor: 'pointer' }}>
+      <div className="match-card" id={`match-${match.id}`} onClick={openDetails} style={{ cursor: 'pointer' }}>
         <div className="match-card-header">
           <span className="match-card-league">
             <span className="league-flag">🌐</span>
@@ -44,17 +77,22 @@ export default function MatchCard({ match }) {
           </span>
         </div>
 
-        <div className={`match-card-time ${match.isLive ? 'live' : ''}`}>
-          {match.isLive ? (
+        <div className={`match-card-time ${isLiveNow ? 'live' : ''} ${isFinished ? 'finished' : ''}`}>
+          {isLiveNow ? (
             <>
               <span className="live-dot" />
               LIVE
-              {match.liveDetails && (
-                <span style={{ marginLeft: '8px', color: '#10b981', fontWeight: 'bold' }}>
-                  {match.sport === 'cricket' && `${match.liveDetails.runs}/${match.liveDetails.wickets} (${match.liveDetails.overs || '16.4'})`}
-                  {match.sport === 'soccer' && `${match.liveDetails.score1} - ${match.liveDetails.score2} (${match.liveDetails.minute || 45}')`}
-                  {match.sport === 'basketball' && `${match.liveDetails.score1} - ${match.liveDetails.score2}`}
+              {(cricketScore || soccerScore) && (
+                <span className="match-card-score-inline">
+                  {cricketScore || soccerScore}
                 </span>
+              )}
+            </>
+          ) : isFinished ? (
+            <>
+              <span className="result-badge">RESULT</span>
+              {match.liveDetails?.commentary && (
+                <span className="match-card-score-inline">{match.liveDetails.commentary}</span>
               )}
             </>
           ) : (
@@ -64,89 +102,58 @@ export default function MatchCard({ match }) {
 
         <div className="match-card-teams">
           <div className="match-card-team">
-            <div className="team-jersey" style={{ color: match.team1.color }}>
-              👕
-            </div>
+            <TeamBadge team={match.team1} />
             <span className="team-name">{match.team1.name}</span>
           </div>
           <span className="vs-text">VS</span>
           <div className="match-card-team">
-            <div className="team-jersey" style={{ color: match.team2.color }}>
-              👕
-            </div>
+            <TeamBadge team={match.team2} />
             <span className="team-name">{match.team2.name}</span>
           </div>
         </div>
 
-        {match.isLive && match.liveDetails?.commentary && (
-          <div style={{
-            fontSize: '0.7rem',
-            color: '#94a3b8',
-            fontStyle: 'italic',
-            padding: '2px 8px',
-            background: 'rgba(15, 23, 42, 0.4)',
-            borderRadius: '4px',
-            marginBottom: '8px',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis'
-          }}>
-            💬 {match.liveDetails.commentary}
+        {match.liveDetails?.commentary && (isLiveNow || isFinished) && (
+          <div className="match-card-commentary">
+            {match.liveDetails.commentary}
           </div>
         )}
 
-        <div className="match-card-odds">
-          <button
-            className={`odds-btn ${isBetSelected(match.id, '1') ? 'selected' : ''}`}
-            onClick={(e) => handleOddsClick(e, '1', match.odds.team1)}
-          >
-            <span className="odds-label">1</span>
-            <span className="odds-value">
-              {Number(match.odds.team1).toFixed(2)}
-              {match.oddsDirection?.team1 === 'up' && <span style={{ color: '#22c55e', marginLeft: '2px' }}>▲</span>}
-              {match.oddsDirection?.team1 === 'down' && <span style={{ color: '#ef4444', marginLeft: '2px' }}>▼</span>}
-            </span>
-          </button>
-          {match.odds.draw !== undefined && (
+        {canBet ? (
+          <div className="match-card-odds">
             <button
-              className={`odds-btn ${isBetSelected(match.id, 'X') ? 'selected' : ''}`}
-              onClick={(e) => handleOddsClick(e, 'X', match.odds.draw)}
+              className={`odds-btn ${isBetSelected(match.id, '1') ? 'selected' : ''}`}
+              onClick={(e) => handleOddsClick(e, '1', match.odds.team1)}
             >
-              <span className="odds-label">X</span>
-              <span className="odds-value">
-                {Number(match.odds.draw).toFixed(2)}
-                {match.oddsDirection?.draw === 'up' && <span style={{ color: '#22c55e', marginLeft: '2px' }}>▲</span>}
-                {match.oddsDirection?.draw === 'down' && <span style={{ color: '#ef4444', marginLeft: '2px' }}>▼</span>}
-              </span>
+              <span className="odds-label">1</span>
+              <span className="odds-value">{Number(match.odds.team1).toFixed(2)}</span>
             </button>
-          )}
-          <button
-            className={`odds-btn ${isBetSelected(match.id, '2') ? 'selected' : ''}`}
-            onClick={(e) => handleOddsClick(e, '2', match.odds.team2)}
-          >
-            <span className="odds-label">2</span>
-            <span className="odds-value">
-              {Number(match.odds.team2).toFixed(2)}
-              {match.oddsDirection?.team2 === 'up' && <span style={{ color: '#22c55e', marginLeft: '2px' }}>▲</span>}
-              {match.oddsDirection?.team2 === 'down' && <span style={{ color: '#ef4444', marginLeft: '2px' }}>▼</span>}
-            </span>
-          </button>
-        </div>
+            {match.odds.draw !== undefined && (
+              <button
+                className={`odds-btn ${isBetSelected(match.id, 'X') ? 'selected' : ''}`}
+                onClick={(e) => handleOddsClick(e, 'X', match.odds.draw)}
+              >
+                <span className="odds-label">X</span>
+                <span className="odds-value">{Number(match.odds.draw).toFixed(2)}</span>
+              </button>
+            )}
+            <button
+              className={`odds-btn ${isBetSelected(match.id, '2') ? 'selected' : ''}`}
+              onClick={(e) => handleOddsClick(e, '2', match.odds.team2)}
+            >
+              <span className="odds-label">2</span>
+              <span className="odds-value">{Number(match.odds.team2).toFixed(2)}</span>
+            </button>
+          </div>
+        ) : (
+          <div className="match-card-odds-suspended">
+            {isFinished ? 'Markets closed — match finished' : 'Markets not open yet'}
+          </div>
+        )}
 
-        <div style={{
-          textAlign: 'center',
-          marginTop: '8px',
-          fontSize: '0.7rem',
-          color: '#7c3aed',
-          fontWeight: 700,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '4px'
-        }}>
+        <button type="button" className="match-card-markets-link" onClick={openDetails}>
           <span>+28 More Markets (Player Runs, Dismissals, 50s)</span>
           <span>➔</span>
-        </div>
+        </button>
       </div>
     </>
   );

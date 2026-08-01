@@ -35,11 +35,11 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
 
   // Innings detection for Cricket
   const isSecondInnings = sport === 'cricket' && match.isLive && match.liveDetails && match.liveDetails.score2 !== undefined && match.liveDetails.runs !== undefined;
-  const targetScore = (match.liveDetails?.score2 || 148) + 1;
-  const currentScore = match.liveDetails?.runs || 71;
-  const wicketsLost = match.liveDetails?.wickets || 3;
+  const targetScore = (match.liveDetails?.score2 || 0) + 1;
+  const currentScore = match.liveDetails?.runs || 0;
+  const wicketsLost = match.liveDetails?.wickets || 0;
   const reqRuns = Math.max(0, targetScore - currentScore);
-  const oversDone = match.liveDetails?.overs || '8.3';
+  const oversDone = match.liveDetails?.overs || '0.0';
 
   const handleOddsClick = (marketName, selection, odds) => {
     const customMatch = {
@@ -192,17 +192,17 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
               <div className={`market-odds-grid ${match.odds.draw !== undefined ? 'three-col' : 'two-col'}`}>
                 <button className="market-odds-btn" onClick={() => handleOddsClick('Match Winner', team1Name, match.odds.team1)}>
                   <span className="market-label">{team1Name}</span>
-                  <span className="market-val">{match.odds.team1.toFixed(2)}</span>
+                  <span className="market-val">{Number(match.odds.team1).toFixed(2)}</span>
                 </button>
                 {match.odds.draw !== undefined && (
                   <button className="market-odds-btn" onClick={() => handleOddsClick('Match Winner', 'Draw', match.odds.draw)}>
                     <span className="market-label">Draw</span>
-                    <span className="market-val">{match.odds.draw.toFixed(2)}</span>
+                    <span className="market-val">{Number(match.odds.draw).toFixed(2)}</span>
                   </button>
                 )}
                 <button className="market-odds-btn" onClick={() => handleOddsClick('Match Winner', team2Name, match.odds.team2)}>
                   <span className="market-label">{team2Name}</span>
-                  <span className="market-val">{match.odds.team2.toFixed(2)}</span>
+                  <span className="market-val">{Number(match.odds.team2).toFixed(2)}</span>
                 </button>
               </div>
             </div>

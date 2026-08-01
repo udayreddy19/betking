@@ -1,5 +1,14 @@
 // Mock data for the BetKing betting app
 
+export const WELCOME_BONUS = {
+  percent: 150,
+  maxAmount: 30000,
+  displayShort: '150% up to ₹30,000',
+  code: 'WELCOME150',
+};
+
+export const DEMO_STARTING_BALANCE = 10000;
+
 export const heroCategories = [
   {
     id: 'sports',
@@ -98,6 +107,7 @@ export const matches = [
     sportColor: '#f97316',
     time: 'Live',
     isLive: true,
+    matchState: 'in',
     team1: { name: 'Birmingham Phoenix', shortName: 'BIR', color: '#22c55e' },
     team2: { name: 'Welsh Fire', shortName: 'WEL', color: '#e5e7eb' },
     odds: { team1: 1.68, team2: 2.24 },
@@ -110,6 +120,7 @@ export const matches = [
     sportColor: '#f97316',
     time: 'Live',
     isLive: true,
+    matchState: 'in',
     team1: { name: 'London Spirit W', shortName: 'LON(W)', color: '#e5e7eb' },
     team2: { name: 'Southern Brave W', shortName: 'SOU(W)', color: '#e5e7eb' },
     odds: { team1: 2.18, team2: 1.69 },
@@ -122,6 +133,7 @@ export const matches = [
     sportColor: '#f97316',
     time: 'Live',
     isLive: true,
+    matchState: 'in',
     team1: { name: 'Kenya', shortName: 'KEN', color: '#22c55e' },
     team2: { name: 'Bahrain', shortName: 'BAH', color: '#ef4444' },
     odds: { team1: 1.99, team2: 1.70 },
@@ -134,6 +146,7 @@ export const matches = [
     sportColor: '#f97316',
     time: 'Live',
     isLive: true,
+    matchState: 'in',
     team1: { name: 'Colombo Stars', shortName: 'COL', color: '#e5e7eb' },
     team2: { name: 'Galle Gladiators', shortName: 'GAL', color: '#e5e7eb' },
     odds: { team1: 1.49, team2: 2.38 },
@@ -146,6 +159,7 @@ export const matches = [
     sportColor: '#22c55e',
     time: 'Today 20:00',
     isLive: true,
+    matchState: 'in',
     team1: { name: 'Manchester City', shortName: 'MCI', color: '#6cb4ee' },
     team2: { name: 'Arsenal', shortName: 'ARS', color: '#ef4444' },
     odds: { team1: 2.10, draw: 3.40, team2: 3.20 },
@@ -158,6 +172,7 @@ export const matches = [
     sportColor: '#22c55e',
     time: 'Tomorrow 00:30',
     isLive: false,
+    matchState: 'pre',
     team1: { name: 'Real Madrid', shortName: 'RMA', color: '#ffffff' },
     team2: { name: 'Barcelona', shortName: 'FCB', color: '#a50044' },
     odds: { team1: 2.50, draw: 3.30, team2: 2.70 },

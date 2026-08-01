@@ -58,7 +58,8 @@ export default function Header() {
         </div>
 
         <div className="header-right">
-          <button className="header-bonuses-btn" id="bonuses-btn" aria-label="Bonuses">
+          <span className="header-test-mode" title="Virtual balance only — no real money">Test Mode</span>
+          <button className="header-bonuses-btn" id="bonuses-btn" aria-label="Bonuses" onClick={() => navigate('/promotions')}>
             <IoGiftOutline />
           </button>
 
@@ -66,7 +67,7 @@ export default function Header() {
             <>
               <div className="header-balance" id="header-balance">
                 <span className="balance-icon">₹</span>
-                <span>₹{user.balance}</span>
+                <span>₹{user.balance.toLocaleString('en-IN')}</span>
                 <FiChevronDown className="balance-chevron" />
               </div>
               <button className="header-deposit-btn" onClick={openDepositModal} id="deposit-btn">

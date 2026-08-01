@@ -41,9 +41,9 @@ export default function Sports() {
     }
 
     if (activeTab === 'live') {
-      result = result.filter(m => m.isLive);
+      result = result.filter(m => m.matchState === 'in' || (m.isLive && !m.matchState));
     } else if (activeTab === 'upcoming') {
-      result = result.filter(m => !m.isLive);
+      result = result.filter(m => m.matchState === 'pre' || (!m.isLive && m.matchState !== 'in'));
     }
 
     if (searchQuery) {
@@ -108,8 +108,8 @@ export default function Sports() {
             const isSelected = activeLiveMatch?.id === m.id;
             const isCricket = m.sport === 'cricket' || m.sport === 'virtual-cricket';
             const isSoccer = m.sport === 'soccer' || m.sport === 'esoccer';
-            const hasScore = m.isLive && m.liveDetails;
-            const state = m.matchState || (m.isLive ? 'in' : 'pre');
+            const hasScore = (m.isLive || m.matchState === 'post') && m.liveDetails;
+            const matchState = m.matchState || (m.isLive ? 'in' : 'pre');
 
             // Score display logic — only show real scores, never fallback numbers
             let team1Score = '';
@@ -119,11 +119,11 @@ export default function Sports() {
             if (hasScore && isCricket) {
               team1Score = `${m.liveDetails.runs}/${m.liveDetails.wickets}`;
               team2Score = `${m.liveDetails.score2}/${m.liveDetails.wickets2}`;
-              statusLabel = state === 'in' ? 'Live' : (state === 'post' ? 'Completed' : m.time);
+              statusLabel = matchState === 'in' ? 'Live' : (matchState === 'post' ? 'Completed' : m.time);
             } else if (hasScore && isSoccer) {
               team1Score = String(m.liveDetails.score1 ?? '');
               team2Score = String(m.liveDetails.score2 ?? '');
-              statusLabel = state === 'in' ? 'Live' : (state === 'post' ? 'FT' : m.time);
+              statusLabel = matchState === 'in' ? 'Live' : (matchState === 'post' ? 'FT' : m.time);
             } else {
               statusLabel = m.time || 'VS';
             }
@@ -154,7 +154,7 @@ export default function Sports() {
                   <span>{m.team2.shortName || m.team2.name.slice(0, 8)}</span>
                   <span style={{ fontSize: '0.8rem' }}>{team2Score || statusLabel}</span>
                 </div>
-                {state === 'in' && (
+                {matchState === 'in' && (
                   <div style={{
                     position: 'absolute', top: '4px', right: '8px',
                     background: '#ef4444', color: 'white', padding: '1px 6px',
@@ -209,17 +209,10 @@ export default function Sports() {
             {expandedMarket ? <HiOutlineChevronUp /> : <HiOutlineChevronDown />}
           </div>
 
-          {expandedMarket && activeLiveMatch && (
+          {expandedMarket && activeLiveMatch && activeLiveMatch.matchState === 'in' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px' }}>
               <button
-                onClick={() => addBet({
-                  id: `${activeLiveMatch.id}_t1`,
-                  matchId: activeLiveMatch.id,
-                  matchName: `${activeLiveMatch.team1.name} vs ${activeLiveMatch.team2.name}`,
-                  marketName: 'Winner (incl. super over)',
-                  selectionName: activeLiveMatch.team1.name,
-                  odds: activeLiveMatch.odds.team1 || 2.88
-                })}
+                onClick={() => addBet(activeLiveMatch, '1', activeLiveMatch.odds.team1)}
                 style={{
                   background: '#f8fafc',
                   border: '1px solid #e2e8f0',
@@ -236,14 +229,7 @@ export default function Sports() {
               </button>
 
               <button
-                onClick={() => addBet({
-                  id: `${activeLiveMatch.id}_t2`,
-                  matchId: activeLiveMatch.id,
-                  matchName: `${activeLiveMatch.team1.name} vs ${activeLiveMatch.team2.name}`,
-                  marketName: 'Winner (incl. super over)',
-                  selectionName: activeLiveMatch.team2.name,
-                  odds: activeLiveMatch.odds.team2 || 1.34
-                })}
+                onClick={() => addBet(activeLiveMatch, '2', activeLiveMatch.odds.team2)}
                 style={{
                   background: '#f8fafc',
                   border: '1px solid #e2e8f0',
@@ -272,17 +258,10 @@ export default function Sports() {
             {expandedDeliveryMarket ? <HiOutlineChevronUp /> : <HiOutlineChevronDown />}
           </div>
 
-          {expandedDeliveryMarket && activeLiveMatch && (
+          {expandedDeliveryMarket && activeLiveMatch && activeLiveMatch.matchState === 'in' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px' }}>
               <button
-                onClick={() => addBet({
-                  id: `${activeLiveMatch.id}_over19_del3_over`,
-                  matchId: activeLiveMatch.id,
-                  matchName: `${activeLiveMatch.team1.name} vs ${activeLiveMatch.team2.name}`,
-                  marketName: '1st innings over 19 - 3rd delivery total',
-                  selectionName: 'Over 0.5',
-                  odds: 1.45
-                })}
+                onClick={() => addBet(activeLiveMatch, 'over', 1.45)}
                 style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px', display: 'flex', justifyContent: 'space-between', cursor: 'pointer', fontWeight: 700 }}
               >
                 <span>Over 0.5</span>
@@ -290,14 +269,7 @@ export default function Sports() {
               </button>
 
               <button
-                onClick={() => addBet({
-                  id: `${activeLiveMatch.id}_over19_del3_under`,
-                  matchId: activeLiveMatch.id,
-                  matchName: `${activeLiveMatch.team1.name} vs ${activeLiveMatch.team2.name}`,
-                  marketName: '1st innings over 19 - 3rd delivery total',
-                  selectionName: 'Under 0.5',
-                  odds: 2.30
-                })}
+                onClick={() => addBet(activeLiveMatch, 'under', 2.30)}
                 style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px', display: 'flex', justifyContent: 'space-between', cursor: 'pointer', fontWeight: 700 }}
               >
                 <span>Under 0.5</span>

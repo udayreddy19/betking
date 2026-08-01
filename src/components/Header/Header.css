@@ -104,6 +104,25 @@
   gap: var(--space-3);
 }
 
+.header-test-mode {
+  font-size: 0.65rem;
+  font-weight: var(--font-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .header-test-mode {
+    display: none;
+  }
+}
+
 .header-bonuses-btn {
   display: flex;
   align-items: center;

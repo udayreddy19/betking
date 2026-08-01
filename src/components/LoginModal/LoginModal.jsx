@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import './LoginModal.css';
 
 export default function LoginModal() {
-  const { isLoginModalOpen, closeLoginModal, login } = useAuth();
+  const { isLoginModalOpen, closeLoginModal, login, demoCredentials } = useAuth();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -23,7 +23,7 @@ export default function LoginModal() {
     }
     const success = login(username, password);
     if (!success) {
-      setError('Invalid username or password. Try udayreddy12 / Udayreddy123@');
+      setError(`Invalid username or password. Try ${demoCredentials.username} / ${demoCredentials.password}`);
     }
   };
 

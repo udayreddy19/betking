@@ -9,14 +9,14 @@ export default function LiveCasino() {
   const [activeCategory, setActiveCategory] = useState('all');
 
   const liveGames = useMemo(() =>
-    casinoGames.filter(g => g.category.includes('live')),
+    casinoGames.filter(g => g.category.split(' ').includes('live-casino')),
     []
   );
 
   const gameGroups = useMemo(() => {
     if (activeCategory !== 'all') {
       const filtered = liveGames.filter(g =>
-        g.category.includes(activeCategory) ||
+        g.category.split(' ').includes(activeCategory) ||
         g.provider.toLowerCase().includes(activeCategory)
       );
       const catName = liveCasinoCategories.find(c => c.id === activeCategory)?.name || 'Games';
@@ -32,7 +32,7 @@ export default function LiveCasino() {
 
   return (
     <div className="live-casino-page container" id="live-casino-page">
-      <PromoBanner promos={[promotions[1], promotions[4], promotions[5]]} />
+      <PromoBanner promos={promotions} />
 
       <div className="live-casino-categories" id="lc-categories">
         <button className="lc-search-btn" aria-label="Search games">

@@ -7,7 +7,7 @@ import CategoryGrid from '../../components/CategoryGrid/CategoryGrid';
 import GameCarousel from '../../components/GameCarousel/GameCarousel';
 import FilterChips from '../../components/FilterChips/FilterChips';
 import MatchCard from '../../components/MatchCard/MatchCard';
-import { casinoGames, promotions, sportsCategories } from '../../data/mockData';
+import { casinoGames, promotions, sportsCategories, WELCOME_BONUS } from '../../data/mockData';
 import { useLiveSports } from '../../context/LiveSportsContext';
 import './Home.css';
 
@@ -25,16 +25,16 @@ export default function Home() {
     <div className="home-page container" id="home-page">
       {/* Hero / Promo Banner */}
       {isLoggedIn ? (
-        <PromoBanner promos={promotions.slice(0, 4)} />
+        <PromoBanner promos={promotions} />
       ) : (
         <div className="hero-banner" id="hero-banner">
           <div className="hero-content">
             <h1>Get your welcome bonus!</h1>
-            <div className="hero-amount">150% up to ₹20,000!</div>
+            <div className="hero-amount">{WELCOME_BONUS.displayShort}!</div>
             <button className="hero-cta" onClick={() => navigate('/register')}>
               Claim now
             </button>
-            <p className="hero-promo-code">Use code <strong>WELCOME150</strong></p>
+            <p className="hero-promo-code">Use code <strong>{WELCOME_BONUS.code}</strong></p>
           </div>
           <div className="hero-visual">🎰</div>
         </div>

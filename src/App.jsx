@@ -16,6 +16,11 @@ import Casino from './pages/Casino/Casino';
 import LiveCasino from './pages/LiveCasino/LiveCasino';
 import Register from './pages/Register/Register';
 import Promotions from './pages/Promotions/Promotions';
+import Terms from './pages/Legal/Terms';
+import Privacy from './pages/Legal/Privacy';
+import ResponsibleGaming from './pages/Legal/ResponsibleGaming';
+import Help from './pages/Legal/Help';
+import NotFound from './pages/Legal/NotFound';
 
 function AppLayout() {
   return (
@@ -35,7 +40,11 @@ function AppLayout() {
           <Route path="/fantasy" element={<Sports />} />
           <Route path="/register" element={<Register />} />
           <Route path="/promotions" element={<Promotions />} />
-          <Route path="*" element={<Home />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/responsible-gaming" element={<ResponsibleGaming />} />
+          <Route path="/help" element={<Help />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
       <Footer />

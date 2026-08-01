@@ -1,11 +1,13 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { matches as defaultMatches } from '../data/mockData';
+import { getStableMatchOdds, safeNum } from '../utils/odds';
 
 const LiveSportsContext = createContext(null);
 
 export function LiveSportsProvider({ children }) {
   const [matches, setMatches] = useState(defaultMatches);
   const [tickerMessage, setTickerMessage] = useState('🟢 Connecting to ESPN Live Feed...');
+  const oddsCacheRef = useRef(new Map());
 
   useEffect(() => {
     const fetchLiveScores = async () => {
@@ -57,8 +59,12 @@ export function LiveSportsProvider({ children }) {
           // Parse scores properly — ESPN cricket score format: "161/5" or just "161"
           const homeScore = home.score || '';
           const awayScore = away.score || '';
-          const [hRuns, hWickets] = homeScore.includes('/') ? homeScore.split('/').map(Number) : [parseInt(homeScore) || 0, 0];
-          const [aRuns, aWickets] = awayScore.includes('/') ? awayScore.split('/').map(Number) : [parseInt(awayScore) || 0, 0];
+          const [hRunsRaw, hWicketsRaw] = homeScore.includes('/') ? homeScore.split('/').map(Number) : [parseInt(homeScore, 10), 0];
+          const [aRunsRaw, aWicketsRaw] = awayScore.includes('/') ? awayScore.split('/').map(Number) : [parseInt(awayScore, 10), 0];
+          const hRuns = safeNum(hRunsRaw);
+          const hWickets = safeNum(hWicketsRaw);
+          const aRuns = safeNum(aRunsRaw);
+          const aWickets = safeNum(aWicketsRaw);
 
           // Extract overs from shortDetail — e.g. "In Progress - BIR 145/3 (19.4 Ov)"
           let overs = '0.0';
@@ -74,10 +80,14 @@ export function LiveSportsProvider({ children }) {
           const awayName = away.team?.displayName || 'Team B';
           const homeShort = home.team?.abbreviation || homeName.slice(0, 3).toUpperCase();
           const awayShort = away.team?.abbreviation || awayName.slice(0, 3).toUpperCase();
-          const leagueName = evt.season?.slug || 'Cricket';
+          const leagueName = comp?.name || evt.name || evt.shortName || 'Cricket';
 
           matchIdx++;
-          const matchId = `api_cric_${matchIdx}`;
+          const matchId = `api_cric_${evt.id || matchIdx}`;
+          if (!oddsCacheRef.current.has(matchId)) {
+            oddsCacheRef.current.set(matchId, getStableMatchOdds(matchId));
+          }
+          const odds = oddsCacheRef.current.get(matchId);
 
           // Time display
           let timeDisplay = 'Scheduled';
@@ -100,11 +110,11 @@ export function LiveSportsProvider({ children }) {
             sport: 'cricket',
             sportColor: '#f97316',
             time: timeDisplay,
-            isLive: isLive || isCompleted, // Show scores for live AND completed
-            matchState: state, // "pre", "in", "post"
+            isLive,
+            matchState: state,
             team1: { name: homeName, shortName: homeShort, color: '#22c55e' },
             team2: { name: awayName, shortName: awayShort, color: '#e5e7eb' },
-            odds: { team1: (1.5 + Math.random()).toFixed(2), team2: (1.5 + Math.random()).toFixed(2) },
+            odds,
             liveDetails: {
               runs: hRuns,
               wickets: hWickets,
@@ -172,20 +182,26 @@ export function LiveSportsProvider({ children }) {
           }
 
           matchIdx++;
+          const soccerMatchId = `api_soc_${evt.id || matchIdx}`;
+          if (!oddsCacheRef.current.has(soccerMatchId)) {
+            oddsCacheRef.current.set(soccerMatchId, getStableMatchOdds(soccerMatchId, { hasDraw: true }));
+          }
+          const soccerOdds = oddsCacheRef.current.get(soccerMatchId);
+
           apiMatches.push({
-            id: `api_soc_${matchIdx}`,
-            league: evt.season?.slug || 'Soccer',
+            id: soccerMatchId,
+            league: comp?.name || evt.name || 'Soccer',
             sport: 'soccer',
             sportColor: '#22c55e',
             time: timeDisplay,
-            isLive: isLive || isCompleted,
+            isLive,
             matchState: state,
             team1: { name: homeName, shortName: homeShort, color: '#6cb4ee' },
             team2: { name: awayName, shortName: awayShort, color: '#ef4444' },
-            odds: { team1: (1.5 + Math.random()).toFixed(2), draw: (2.5 + Math.random()).toFixed(2), team2: (1.5 + Math.random()).toFixed(2) },
+            odds: soccerOdds,
             liveDetails: {
-              score1: parseInt(home.score) || 0,
-              score2: parseInt(away.score) || 0,
+              score1: safeNum(parseInt(home.score, 10)),
+              score2: safeNum(parseInt(away.score, 10)),
               minute: isLive ? `${clock}' ${period >= 2 ? '2nd Half' : '1st Half'}` : (isCompleted ? 'Full Time' : 'Scheduled'),
               commentary: statusDetail
             }

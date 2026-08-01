@@ -10,7 +10,7 @@ export default function Casino() {
 
   const filteredGames = useMemo(() => {
     if (activeCategory === 'all') return casinoGames;
-    return casinoGames.filter(g => g.category.includes(activeCategory));
+    return casinoGames.filter(g => g.category.split(' ').includes(activeCategory));
   }, [activeCategory]);
 
   // Group games by category for "all" view
@@ -19,18 +19,17 @@ export default function Casino() {
       return [{ title: casinoCategories.find(c => c.id === activeCategory)?.name || 'Games', games: filteredGames }];
     }
     return [
-      { title: 'Top Games', games: casinoGames.filter(g => g.category.includes('top')) },
-      { title: 'New', games: casinoGames.filter(g => g.category.includes('new')) },
-      { title: 'Crash Games', games: casinoGames.filter(g => g.category.includes('crash')) },
-      { title: 'Indian Favourites', games: casinoGames.filter(g => g.category.includes('indian')) },
-      { title: 'Trending Games', games: casinoGames.filter(g => g.category.includes('trending')) },
-      { title: 'Slots', games: casinoGames.filter(g => g.category.includes('slots')) },
+      { title: 'Top Games', games: casinoGames.filter(g => g.category.split(' ').includes('top-slots')) },
+      { title: 'Crash Games', games: casinoGames.filter(g => g.category.split(' ').includes('crash-games')) },
+      { title: 'Slots', games: casinoGames.filter(g => g.category.split(' ').includes('slots')) },
+      { title: 'Live Casino', games: casinoGames.filter(g => g.category.split(' ').includes('live-casino')) },
+      { title: 'Table Games', games: casinoGames.filter(g => g.category.split(' ').includes('table-games')) },
     ];
   }, [activeCategory, filteredGames]);
 
   return (
     <div className="casino-page container" id="casino-page">
-      <PromoBanner promos={promotions.slice(3, 6)} />
+      <PromoBanner promos={promotions} />
 
       <div className="casino-categories" id="casino-categories">
         <button className="casino-search-btn" aria-label="Search games">

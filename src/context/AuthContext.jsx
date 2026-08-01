@@ -1,20 +1,21 @@
 import { createContext, useContext, useState, useCallback } from 'react';
+import { DEMO_STARTING_BALANCE } from '../data/mockData';
 
 const AuthContext = createContext(null);
 
 const DEMO_USER = {
-  username: 'udayreddy12',
-  password: 'Udayreddy123@',
-  displayName: 'Uday Reddy',
-  balance: 1000,
-  loyaltyLevel: 15,
-  loyaltyRank: 'Wicket Keeper',
-  xpToNext: 5630,
-  notifications: 1,
+  username: import.meta.env.VITE_DEMO_USERNAME || 'demo',
+  password: import.meta.env.VITE_DEMO_PASSWORD || 'demo1234',
+  displayName: 'Demo Player',
+  balance: DEMO_STARTING_BALANCE,
+  loyaltyLevel: 1,
+  loyaltyRank: 'Rookie',
+  xpToNext: 1000,
+  notifications: 0,
 };
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(DEMO_USER); // Default demo user logged in for immediate convenience
+  const [user, setUser] = useState(DEMO_USER);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -54,11 +55,20 @@ export function AuthProvider({ children }) {
   const addFunds = useCallback((amount, method = 'Deposit') => {
     setUser(prev => {
       if (!prev) return prev;
-      const newBal = prev.balance + amount;
-      return { ...prev, balance: newBal };
+      return { ...prev, balance: prev.balance + amount };
     });
-    showToast(`Successfully deposited ₹${amount.toLocaleString()} via ${method}!`);
+    showToast(`Successfully deposited ₹${amount.toLocaleString('en-IN')} via ${method}!`);
   }, [showToast]);
+
+  const deductFunds = useCallback((amount) => {
+    let success = false;
+    setUser(prev => {
+      if (!prev || prev.balance < amount) return prev;
+      success = true;
+      return { ...prev, balance: prev.balance - amount };
+    });
+    return success;
+  }, []);
 
   const openLoginModal = useCallback(() => setIsLoginModalOpen(true), []);
   const closeLoginModal = useCallback(() => setIsLoginModalOpen(false), []);
@@ -74,6 +84,7 @@ export function AuthProvider({ children }) {
       login,
       logout,
       addFunds,
+      deductFunds,
       toastMessage,
       showToast,
       isLoginModalOpen,
@@ -85,6 +96,7 @@ export function AuthProvider({ children }) {
       isSidebarOpen,
       toggleSidebar,
       closeSidebar,
+      demoCredentials: { username: DEMO_USER.username, password: DEMO_USER.password },
     }}>
       {children}
     </AuthContext.Provider>

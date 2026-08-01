@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
 import { useAuth } from '../../context/AuthContext';
+import { WELCOME_BONUS } from '../../data/mockData';
 import './Register.css';
 
 export default function Register() {
@@ -132,8 +133,8 @@ export default function Register() {
             <label htmlFor="reg-agree">
               By ticking this box, in order to register for this website, I confirm that
               I am over 18 years old and have read, understood and accepted the{' '}
-              <a href="#terms">Terms & Conditions</a>, <a href="#privacy">Privacy Policy</a>,{' '}
-              <a href="#rules">Betting Rules</a>, and <a href="#responsible">Responsible Gaming Policy</a>.
+              <Link to="/terms">Terms & Conditions</Link>, <Link to="/privacy">Privacy Policy</Link>,{' '}
+              <Link to="/help">Betting Rules</Link>, and <Link to="/responsible-gaming">Responsible Gaming Policy</Link>.
             </label>
           </div>
 
@@ -155,7 +156,7 @@ export default function Register() {
         <div className="register-hero-content">
           <span className="hero-emoji">👌</span>
           <h2>Join BetKing</h2>
-          <p>150% up to ₹20,000 Welcome Bonus</p>
+          <p>{WELCOME_BONUS.displayShort} Welcome Bonus</p>
         </div>
       </div>
     </div>
