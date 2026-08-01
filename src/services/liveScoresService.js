@@ -174,38 +174,69 @@ export async function fetchFanCodeScores() {
   };
 }
 
-export function mergeLiveScoreSources(primaryMatches = [], secondaryMatches = []) {
+export async function fetchCricbuzzScores() {
+  const response = await fetch('/api/cricbuzz/matches');
+  if (!response.ok) throw new Error(`Cricbuzz API failed (${response.status})`);
+  const data = await response.json();
+  return {
+    source: 'cricbuzz',
+    matches: data.matches || [],
+    series: data.series || [],
+    counts: data.counts || {},
+    fetchedAt: data.fetchedAt,
+  };
+}
+
+const SOURCE_PRIORITY = { cricbuzz: 4, fancode: 3, espn: 2, api: 1 };
+
+function pickPreferredMatch(existing, incoming) {
+  const existingPriority = SOURCE_PRIORITY[existing.source] || 0;
+  const incomingPriority = SOURCE_PRIORITY[incoming.source] || 0;
+
+  const existingHasScore = existing.sport === 'cricket'
+    ? (existing.liveDetails?.runs > 0 || existing.liveDetails?.score2 > 0)
+    : (existing.liveDetails?.score1 > 0 || existing.liveDetails?.score2 > 0);
+  const incomingHasScore = incoming.sport === 'cricket'
+    ? (incoming.liveDetails?.runs > 0 || incoming.liveDetails?.score2 > 0)
+    : (incoming.liveDetails?.score1 > 0 || incoming.liveDetails?.score2 > 0);
+
+  let preferred = incomingPriority >= existingPriority ? incoming : existing;
+  let fallback = preferred === incoming ? existing : incoming;
+
+  if (incomingHasScore && !existingHasScore) {
+    preferred = incoming;
+    fallback = existing;
+  } else if (existingHasScore && !incomingHasScore) {
+    preferred = existing;
+    fallback = incoming;
+  }
+
+  return {
+    ...fallback,
+    ...preferred,
+    liveDetails: {
+      ...fallback.liveDetails,
+      ...preferred.liveDetails,
+    },
+    isLive: preferred.isLive || fallback.isLive,
+    matchState: preferred.isLive ? preferred.matchState : fallback.matchState,
+    time: preferred.isLive ? preferred.time : (preferred.time || fallback.time),
+  };
+}
+
+export function mergeLiveScoreSources(...sourceLists) {
   const merged = new Map();
 
-  for (const match of [...secondaryMatches, ...primaryMatches]) {
-    const key = match.pairKey || [normalizeTeamName(match.team1?.name), normalizeTeamName(match.team2?.name)].sort().join('|');
-    const existing = merged.get(key);
-    if (!existing) {
-      merged.set(key, match);
-      continue;
+  for (const matches of sourceLists) {
+    for (const match of matches) {
+      const key = match.pairKey || [normalizeTeamName(match.team1?.name), normalizeTeamName(match.team2?.name)].sort().join('|');
+      const existing = merged.get(key);
+      if (!existing) {
+        merged.set(key, match);
+        continue;
+      }
+      merged.set(key, pickPreferredMatch(existing, match));
     }
-
-    const existingHasScore = existing.sport === 'cricket'
-      ? (existing.liveDetails?.runs > 0 || existing.liveDetails?.score2 > 0)
-      : (existing.liveDetails?.score1 > 0 || existing.liveDetails?.score2 > 0);
-    const nextHasScore = match.sport === 'cricket'
-      ? (match.liveDetails?.runs > 0 || match.liveDetails?.score2 > 0)
-      : (match.liveDetails?.score1 > 0 || match.liveDetails?.score2 > 0);
-
-    const preferred = match.source === 'fancode' && nextHasScore ? match : existing;
-    const fallback = preferred === match ? existing : match;
-
-    merged.set(key, {
-      ...fallback,
-      ...preferred,
-      liveDetails: {
-        ...fallback.liveDetails,
-        ...preferred.liveDetails,
-      },
-      isLive: preferred.isLive || fallback.isLive,
-      matchState: preferred.isLive ? preferred.matchState : fallback.matchState,
-      time: preferred.isLive ? preferred.time : fallback.time,
-    });
   }
 
   return [...merged.values()];

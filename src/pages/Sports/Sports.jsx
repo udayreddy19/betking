@@ -24,14 +24,30 @@ const MARKET_CATEGORIES = [
   { id: 'partnership', label: 'Partnership' },
 ];
 
-function filterByLeague(matchList, activeLeague) {
+function filterByLeague(matchList, activeLeague, cricketSeries = []) {
   if (!activeLeague) return matchList;
+
+  const dynamicSeries = cricketSeries.find(
+    (series) => series.id === activeLeague
+      || series.name === activeLeague
+      || `cb-series-${series.seriesId}` === activeLeague
+  );
+  if (dynamicSeries) {
+    return matchList.filter((match) =>
+      match.league === dynamicSeries.name
+      || match.seriesName === dynamicSeries.rawName
+      || match.cricbuzzSeriesId === dynamicSeries.seriesId
+    );
+  }
+
   const leagueId = resolveLeagueId(activeLeague);
   const featured = getLeagueMeta(leagueId);
   if (featured) {
-    return matchList.filter(m => featured.matchLeagues.includes(m.league));
+    return matchList.filter((match) =>
+      featured.matchLeagues.includes(match.league) || match.league === featured.name
+    );
   }
-  return matchList.filter(m => m.league === activeLeague || m.league === leagueId);
+  return matchList.filter((match) => match.league === activeLeague || match.league === leagueId);
 }
 
 function getMatchScores(match) {
@@ -71,7 +87,7 @@ function MarketsSuspended() {
 }
 
 export default function Sports() {
-  const { matches, tickerMessage } = useLiveSports();
+  const { matches, tickerMessage, cricketSeries } = useLiveSports();
   const { addBet, isBetSelected } = useBetSlip();
   const { showToast } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -94,9 +110,10 @@ export default function Sports() {
   const sportMatches = useMemo(
     () => filterByLeague(
       filterMatches(matches, { sport: activeSport, stateTab: 'all', searchQuery }),
-      activeLeague
+      activeLeague,
+      cricketSeries
     ),
-    [matches, activeSport, activeLeague, searchQuery]
+    [matches, activeSport, activeLeague, searchQuery, cricketSeries]
   );
 
   const activeMatch = useMemo(() => {
@@ -188,7 +205,7 @@ export default function Sports() {
     ? `19:00, 01 August 2026`
     : (activeMatch?.time || 'Scheduled');
 
-  const activeLeagueMeta = getLeagueMeta(activeLeague);
+  const activeLeagueMeta = getLeagueMeta(activeLeague, cricketSeries);
   const breadcrumbLeague = activeLeagueMeta?.breadcrumb || activeLeagueMeta?.name || activeMatch?.league || 'All Leagues';
   const sportLabel = sportsCategories.find(s => s.id === activeSport)?.name || 'Cricket';
   const leagueChips = featuredLeagues.filter(l => l.sport === activeSport);
@@ -214,6 +231,7 @@ export default function Sports() {
       <SportsLeagueSidebar
         activeSport={activeSport}
         activeLeague={activeLeague}
+        cricketSeries={cricketSeries}
         onSelectLeague={handleLeagueChange}
       />
 

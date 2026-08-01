@@ -100,36 +100,51 @@ export const leagues = [
 ];
 
 export const featuredLeagues = [
-  { id: 'lpl', name: 'T20 Lanka Premier League', sport: 'cricket', icon: '🔥', matchLeagues: ['Lanka Premier League', 'T20 Lanka Premier League'] },
-  { id: 'hundred-m', name: 'The Hundred', sport: 'cricket', icon: '🔥', matchLeagues: ['The Hundred Men'], breadcrumb: 'England - The Hundred' },
-  { id: 'one-day', name: 'One-Day Cup', sport: 'cricket', icon: '🔥', matchLeagues: ['One-Day Cup'] },
-  { id: 'ipl-srl', name: 'IPL SRL', sport: 'cricket', icon: '🔥', matchLeagues: ['IPL 2026', 'IPL SRL'] },
-  { id: 'hundred-w', name: 'The Hundred, Women', sport: 'cricket', icon: '🔥', matchLeagues: ['The Hundred Women'], breadcrumb: 'England - The Hundred, Women' },
-  { id: 'ken-bah', name: 'Kenya vs Bahrain T20', sport: 'cricket', icon: '🔥', matchLeagues: ['T20 Series Kenya vs Bahrain'] },
+  { id: 'hundred-m', name: 'The Hundred', sport: 'cricket', icon: '🔥', matchLeagues: ['The Hundred Men', "The Hundred Men's Competition 2026"], breadcrumb: 'England - The Hundred' },
+  { id: 'hundred-w', name: 'The Hundred, Women', sport: 'cricket', icon: '🔥', matchLeagues: ['The Hundred Women', "The Hundred Women's Competition 2026"], breadcrumb: 'England - The Hundred, Women' },
+  { id: 'lpl', name: 'Lanka Premier League', sport: 'cricket', icon: '🔥', matchLeagues: ['Lanka Premier League', 'LPL, 2026', 'T20 Lanka Premier League'] },
+  { id: 'dpl', name: 'Delhi Premier League', sport: 'cricket', icon: '🔥', matchLeagues: ['Delhi Premier League', 'DPL 2026'] },
+  { id: 'gsl', name: 'Global Super League', sport: 'cricket', icon: '🔥', matchLeagues: ['Global Super League', 'Global Super League 2026'] },
+  { id: 'one-day', name: 'One-Day Cup', sport: 'cricket', icon: '🔥', matchLeagues: ['One-Day Cup', 'England Domestic One-Day Cup'] },
+  { id: 'ken-bah', name: 'Kenya vs Bahrain', sport: 'cricket', icon: '🔥', matchLeagues: ['T20 Series Kenya vs Bahrain', 'Bahrain tour of Kenya, 2026'] },
+  { id: 'pak-wi', name: 'Pakistan tour of WI', sport: 'cricket', icon: '🔥', matchLeagues: ['West Indies v Pakistan, 2026', 'Pakistan tour of West Indies, 2026'] },
+  { id: 'ipl-srl', name: 'IPL SRL', sport: 'cricket', icon: '🔥', matchLeagues: ['IPL 2026', 'IPL SRL', 'Indian Premier League'] },
+  { id: 'cpl', name: 'Caribbean Premier League', sport: 'cricket', icon: '🔥', matchLeagues: ['Caribbean Premier League', 'Caribbean Premier League 2026'] },
+  { id: 'tnpl', name: 'Tamil Nadu Premier League', sport: 'cricket', icon: '🔥', matchLeagues: ['Tamil Nadu Premier League', 'Tamil Nadu Premier League 2026'] },
   { id: 'epl', name: 'Premier League', sport: 'soccer', icon: '⚽', matchLeagues: ['Premier League'] },
   { id: 'laliga', name: 'La Liga', sport: 'soccer', icon: '⚽', matchLeagues: ['La Liga'] },
 ];
 
 export const leagueGroups = [
   {
-    country: 'Australia',
-    flag: '🇦🇺',
-    leagues: ['Big Bash League', 'Sheffield Shield', 'WBBL'],
+    country: 'International',
+    flag: '🌍',
+    leagues: ['West Indies v Pakistan, 2026', 'India tour of Sri Lanka 2026', 'Bangladesh tour of Australia, 2026', 'Pakistan tour of England 2026'],
   },
   {
     country: 'England',
     flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
-    leagues: ['The Hundred Men', 'The Hundred Women', 'County Championship', 'One-Day Cup'],
+    leagues: ['The Hundred Men', 'The Hundred Women', 'One-Day Cup', 'County Championship'],
   },
   {
     country: 'India',
     flag: '🇮🇳',
-    leagues: ['IPL 2026', 'Ranji Trophy', 'Syed Mushtaq Ali'],
+    leagues: ['Delhi Premier League', 'Tamil Nadu Premier League', 'IPL 2026', 'Syed Mushtaq Ali Trophy Elite'],
   },
   {
-    country: 'International',
-    flag: '🌍',
-    leagues: ['T20 World Cup', 'ODI Series', 'Test Championship'],
+    country: 'Sri Lanka',
+    flag: '🇱🇰',
+    leagues: ['Lanka Premier League', 'Global Super League'],
+  },
+  {
+    country: 'Caribbean',
+    flag: '🏝️',
+    leagues: ['Caribbean Premier League', 'West Indies v Pakistan, 2026'],
+  },
+  {
+    country: 'Australia',
+    flag: '🇦🇺',
+    leagues: ['Big Bash League', 'Sheffield Shield', 'WBBL'],
   },
 ];
 

@@ -5,6 +5,7 @@ import { mergeApiAndDefaultMatches } from '../utils/matchFilters';
 import {
   fetchEspnLiveScores,
   fetchFanCodeScores,
+  fetchCricbuzzScores,
   mergeLiveScoreSources,
 } from '../services/liveScoresService';
 
@@ -23,19 +24,26 @@ function attachOdds(matches, oddsCache) {
 
 export function LiveSportsProvider({ children }) {
   const [matches, setMatches] = useState(defaultMatches);
-  const [tickerMessage, setTickerMessage] = useState('🟢 Connecting to FanCode live scores...');
+  const [cricketSeries, setCricketSeries] = useState([]);
+  const [tickerMessage, setTickerMessage] = useState('🟢 Syncing Cricbuzz live scores...');
   const oddsCacheRef = useRef(new Map());
 
   useEffect(() => {
     const fetchLiveScores = async () => {
+      let cricbuzzResult = { matches: [], series: [], counts: {} };
       let fancodeResult = { matches: [], counts: {} };
       let espnResult = { matches: [], counts: {} };
-      let fancodeError = null;
+
+      try {
+        cricbuzzResult = await fetchCricbuzzScores();
+        setCricketSeries(cricbuzzResult.series || []);
+      } catch (error) {
+        console.warn('Cricbuzz fetch error:', error);
+      }
 
       try {
         fancodeResult = await fetchFanCodeScores();
       } catch (error) {
-        fancodeError = error;
         console.warn('FanCode live score fetch error:', error);
       }
 
@@ -46,7 +54,7 @@ export function LiveSportsProvider({ children }) {
       }
 
       const mergedApiMatches = attachOdds(
-        mergeLiveScoreSources(fancodeResult.matches, espnResult.matches),
+        mergeLiveScoreSources(cricbuzzResult.matches, fancodeResult.matches, espnResult.matches),
         oddsCacheRef.current
       );
 
@@ -55,34 +63,36 @@ export function LiveSportsProvider({ children }) {
       }
 
       const liveCount = mergedApiMatches.filter((match) => match.isLive).length;
-      const fancodeLive = fancodeResult.counts?.live ?? mergedApiMatches.filter((m) => m.source === 'fancode' && m.isLive).length;
       const cricketCount = mergedApiMatches.filter((m) => m.sport === 'cricket').length;
       const soccerCount = mergedApiMatches.filter((m) => m.sport === 'soccer').length;
+      const cbTotal = cricbuzzResult.counts?.total || cricbuzzResult.matches.length;
 
-      if (fancodeError && mergedApiMatches.length === 0) {
-        setTickerMessage('⚠️ Live score feeds unavailable — showing cached data');
+      if (cbTotal > 0) {
+        setTickerMessage(
+          `🟢 CRICBUZZ LIVE — ${cbTotal} cricket matches (${cricbuzzResult.counts?.live || liveCount} live) · ${mergedApiMatches.length} total events`
+        );
         return;
       }
 
       if (fancodeResult.matches.length > 0) {
         setTickerMessage(
-          `🟢 LIVE FanCode ACTIVE — ${mergedApiMatches.length} events (${fancodeLive} live, ${cricketCount} cricket, ${soccerCount} soccer)`
+          `🟡 FanCode fallback — ${mergedApiMatches.length} events (${liveCount} live, ${cricketCount} cricket, ${soccerCount} soccer)`
         );
         return;
       }
 
       setTickerMessage(
-        `🟡 ESPN fallback — ${mergedApiMatches.length} events synced (${liveCount} live, ${cricketCount} cricket, ${soccerCount} soccer)`
+        `🟡 ESPN fallback — ${mergedApiMatches.length} events synced (${liveCount} live)`
       );
     };
 
     fetchLiveScores();
-    const interval = setInterval(fetchLiveScores, 15000);
+    const interval = setInterval(fetchLiveScores, 30000);
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <LiveSportsContext.Provider value={{ matches, tickerMessage }}>
+    <LiveSportsContext.Provider value={{ matches, cricketSeries, tickerMessage }}>
       {children}
     </LiveSportsContext.Provider>
   );
