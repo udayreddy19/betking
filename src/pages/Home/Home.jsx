@@ -2,11 +2,9 @@ import { useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiChevronRight, FiChevronLeft } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
-import CategoryGrid from '../../components/CategoryGrid/CategoryGrid';
-import GameCarousel from '../../components/GameCarousel/GameCarousel';
 import FilterChips from '../../components/FilterChips/FilterChips';
 import MatchCard from '../../components/MatchCard/MatchCard';
-import { casinoGames, sportsCategories, WELCOME_BONUS } from '../../data/mockData';
+import { sportsCategories, WELCOME_BONUS } from '../../data/mockData';
 import { useLiveSports } from '../../context/LiveSportsContext';
 import { filterMatches } from '../../utils/matchFilters';
 import './Home.css';
@@ -32,9 +30,6 @@ export default function Home() {
     if (!matchScrollRef.current) return;
     matchScrollRef.current.scrollBy({ left: direction === 'left' ? -320 : 320, behavior: 'smooth' });
   };
-
-  const liveGames = casinoGames.filter(g => g.category?.includes('live') || g.category?.includes('table'));
-  const crashGames = casinoGames.filter(g => g.category?.includes('crash') || g.isNew);
 
   const filteredMatches = useMemo(
     () => filterMatches(matches || [], { sport: activeSport, stateTab: activeStateTab }),
@@ -65,8 +60,6 @@ export default function Home() {
           <div className="hero-visual">🎰</div>
         </div>
       )}
-
-      <CategoryGrid />
 
       <div className="home-sports-action" id="sports-action-section">
         <div className="section-header">
@@ -117,9 +110,6 @@ export default function Home() {
           )}
         </div>
       </div>
-
-      <GameCarousel title="Top Live Games" games={liveGames.length > 0 ? liveGames : casinoGames} viewAllLink />
-      <GameCarousel title="Blast Zone" games={crashGames.length > 0 ? crashGames : casinoGames} viewAllLink />
     </div>
   );
 }
