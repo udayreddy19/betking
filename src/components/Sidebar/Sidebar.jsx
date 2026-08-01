@@ -1,16 +1,19 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IoClose } from 'react-icons/io5';
 import { FiChevronRight } from 'react-icons/fi';
 import { HiOutlineDocumentText, HiOutlineUser, HiOutlineTrophy, HiOutlineCube } from 'react-icons/hi2';
-import { BiWallet, BiMoneyWithdraw, BiHistory, BiTransfer, BiGift, BiBell } from 'react-icons/bi';
+import { BiWallet, BiMoneyWithdraw, BiHistory, BiTransfer, BiGift } from 'react-icons/bi';
 import { MdOutlineCancel, MdOutlineStorefront } from 'react-icons/md';
 import { RiLogoutBoxRLine } from 'react-icons/ri';
 import { useAuth } from '../../context/AuthContext';
+import FinancialModals from '../FinancialModals/FinancialModals';
 import './Sidebar.css';
 
 export default function Sidebar() {
   const { user, isLoggedIn, isSidebarOpen, closeSidebar, logout, openLoginModal, openDepositModal } = useAuth();
   const navigate = useNavigate();
+  const [activeFinModal, setActiveFinModal] = useState(null);
 
   const handleLogin = () => {
     closeSidebar();
@@ -25,6 +28,10 @@ export default function Sidebar() {
   const handleLogout = () => {
     logout();
     navigate('/');
+  };
+
+  const openFinModal = (type) => {
+    setActiveFinModal(type);
   };
 
   return (
@@ -42,26 +49,28 @@ export default function Sidebar() {
 
         {isLoggedIn ? (
           <>
+            {/* Top Navigation Tabs */}
             <div className="sidebar-tabs">
               <button className="sidebar-tab active">
                 <HiOutlineDocumentText className="tab-icon" />
                 Account
               </button>
-              <button className="sidebar-tab">
+              <button className="sidebar-tab" onClick={() => { closeSidebar(); navigate('/profile'); }}>
                 <HiOutlineUser className="tab-icon" />
                 Profile
               </button>
-              <button className="sidebar-tab">
+              <button className="sidebar-tab" onClick={() => { closeSidebar(); navigate('/sports'); }}>
                 <HiOutlineTrophy className="tab-icon" />
                 Sports
               </button>
-              <button className="sidebar-tab">
+              <button className="sidebar-tab" onClick={() => { closeSidebar(); navigate('/casino'); }}>
                 <HiOutlineCube className="tab-icon" />
                 Casino
               </button>
             </div>
 
             <div className="sidebar-content">
+              {/* Wicket Keeper Level Badge */}
               <div className="sidebar-loyalty">
                 <div className="loyalty-avatar">🏏</div>
                 <div className="loyalty-info">
@@ -71,7 +80,8 @@ export default function Sidebar() {
                 <div className="loyalty-ring" />
               </div>
 
-              <div className="sidebar-notifications">
+              {/* Notifications */}
+              <div className="sidebar-notifications" onClick={() => openFinModal('transactions')}>
                 <div className="notif-icon">🔔</div>
                 <div className="notif-info">
                   <h4>Notifications center</h4>
@@ -81,38 +91,46 @@ export default function Sidebar() {
                 <FiChevronRight className="notif-arrow" />
               </div>
 
+              {/* Actions Grid */}
               <div className="sidebar-actions">
-                <button className="sidebar-action" onClick={openDepositModal}>
+                <button className="sidebar-action" onClick={() => { closeSidebar(); openDepositModal(); }}>
                   <BiWallet className="action-icon" />
                   Deposit
                 </button>
-                <button className="sidebar-action">
+
+                <button className="sidebar-action" onClick={() => openFinModal('withdraw')}>
                   <BiMoneyWithdraw className="action-icon" />
                   Withdraw
                 </button>
-                <button className="sidebar-action">
+
+                <button className="sidebar-action" onClick={() => openFinModal('cancel-wd')}>
                   <MdOutlineCancel className="action-icon" />
                   Cancel W/D
                 </button>
+
                 <button className="sidebar-action" onClick={() => { closeSidebar(); navigate('/sports'); }}>
                   <HiOutlineDocumentText className="action-icon" />
                   My Bets
                 </button>
-                <button className="sidebar-action">
+
+                <button className="sidebar-action" onClick={() => openFinModal('bets-history')}>
                   <BiHistory className="action-icon" />
                   Bets History
                 </button>
-                <button className="sidebar-action">
+
+                <button className="sidebar-action" onClick={() => openFinModal('transactions')}>
                   <BiTransfer className="action-icon" />
                   Transactions
                 </button>
-                <button className="sidebar-action">
+
+                <button className="sidebar-action" onClick={() => openFinModal('bonuses')}>
                   <BiGift className="action-icon" />
                   My Bonuses
                 </button>
               </div>
 
-              <button className="sidebar-link">
+              {/* Marketplace Link */}
+              <button className="sidebar-link" onClick={() => openFinModal('marketplace')}>
                 <span className="link-left">
                   <MdOutlineStorefront className="link-icon" />
                   Marketplace
@@ -120,7 +138,8 @@ export default function Sidebar() {
                 <FiChevronRight className="link-arrow" />
               </button>
 
-              <button className="sidebar-link">
+              {/* Loyalty Benefits Link */}
+              <button className="sidebar-link" onClick={() => openFinModal('bonuses')}>
                 <span className="link-left">
                   <HiOutlineTrophy className="link-icon" />
                   Discover Loyalty Benefits
@@ -146,6 +165,9 @@ export default function Sidebar() {
           </div>
         )}
       </aside>
+
+      {/* Financial Modals for Withdrawals, Cancel W/D, Transactions, History, Bonuses, Marketplace */}
+      <FinancialModals modalType={activeFinModal} onClose={() => setActiveFinModal(null)} />
     </>
   );
 }
