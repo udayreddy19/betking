@@ -1,4 +1,5 @@
 import { getMatchState } from './matchBetting';
+import { getMatchPairKey } from './teamNames';
 
 export function normalizeSportId(sport) {
   return String(sport || '').toLowerCase().trim();
@@ -51,13 +52,36 @@ export function filterMatches(matches, { sport, stateTab = 'all', searchQuery = 
 export function mergeApiAndDefaultMatches(apiMatches, defaultMatches) {
   if (!apiMatches.length) return dedupeMatches(defaultMatches);
 
-  const apiSports = new Set(apiMatches.map(m => m.sport));
-  const apiPairKeys = new Set(apiMatches.map(m => `${m.team1.name}|${m.team2.name}`));
+  const apiByPair = new Map(apiMatches.map((match) => [getMatchPairKey(match), match]));
+  const apiSports = new Set(apiMatches.map((m) => m.sport));
+  const consumedPairs = new Set();
 
-  const preservedOtherSports = defaultMatches.filter(m => !apiSports.has(m.sport));
-  const preservedSameSport = defaultMatches.filter(
-    m => apiSports.has(m.sport) && !apiPairKeys.has(`${m.team1.name}|${m.team2.name}`)
+  const updatedDefaults = defaultMatches.map((match) => {
+    const pairKey = getMatchPairKey(match);
+    const apiMatch = apiByPair.get(pairKey);
+    if (!apiMatch) return match;
+
+    consumedPairs.add(pairKey);
+    return {
+      ...match,
+      league: apiMatch.league || match.league,
+      time: apiMatch.time || match.time,
+      isLive: apiMatch.isLive,
+      matchState: apiMatch.matchState,
+      liveDetails: {
+        ...match.liveDetails,
+        ...apiMatch.liveDetails,
+      },
+      fancodeMatchId: apiMatch.fancodeMatchId,
+      scoreSource: apiMatch.source || 'api',
+    };
+  });
+
+  const freshApiMatches = apiMatches.filter((match) => !consumedPairs.has(getMatchPairKey(match)));
+  const preservedOtherSports = updatedDefaults.filter((m) => !apiSports.has(m.sport));
+  const preservedSameSport = updatedDefaults.filter(
+    (m) => apiSports.has(m.sport) && !consumedPairs.has(getMatchPairKey(m))
   );
 
-  return dedupeMatches([...apiMatches, ...preservedSameSport, ...preservedOtherSports]);
+  return dedupeMatches([...freshApiMatches, ...preservedSameSport, ...preservedOtherSports]);
 }
