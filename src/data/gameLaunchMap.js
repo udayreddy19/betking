@@ -1,6 +1,6 @@
 const LOBBY_URL = 'https://betking-two.vercel.app/casino';
 
-/** @typedef {'spribe' | 'pragmatic' | 'tvbet'} LaunchProvider */
+/** @typedef {'spribe' | 'pragmatic' | 'tvbet' | 'spribe-turbo'} LaunchProvider */
 
 /**
  * @param {LaunchProvider} provider
@@ -17,6 +17,14 @@ export function buildLaunchRequest(provider, key, extra = {}) {
       provider,
       startUrl: `https://demo.spribe.io/launch/${key}?currency=${currency}&lang=EN&return_url=${lobby}`,
       followRedirects: true,
+    };
+  }
+
+  if (provider === 'spribe-turbo') {
+    return {
+      provider: 'spribe',
+      startUrl: `https://turbo.spribegaming.com/${key}?currency=${currency}&operator=demo&jurisdiction=CW&lang=EN&return_url=${lobby}`,
+      followRedirects: false,
     };
   }
 
@@ -43,7 +51,7 @@ export const GAME_LAUNCH_MAP = {
   // Crash
   g1: buildLaunchRequest('spribe', 'aviator'),
   g7: buildLaunchRequest('spribe', 'aviator'),
-  g8: buildLaunchRequest('spribe', 'spaceman'),
+  g8: buildLaunchRequest('pragmatic', '1301'),
   g9: buildLaunchRequest('spribe', 'mines'),
   g10: buildLaunchRequest('spribe', 'plinko'),
   g11: buildLaunchRequest('spribe', 'goal'),

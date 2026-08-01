@@ -19,8 +19,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    const origin = req.headers.origin || req.headers.referer || 'https://betking-two.vercel.app';
-    const lobbyUrl = `${origin.replace(/\/$/, '')}/casino`;
+    let lobbyUrl = 'https://betking-two.vercel.app/casino';
+    const ref = req.headers.referer || req.headers.origin;
+    if (ref) {
+      const base = new URL(ref);
+      lobbyUrl = `${base.origin}/casino`;
+    }
     const launch = await launchCasinoGame(gameId, { lobbyUrl });
     return res.status(200).json(launch);
   } catch (err) {

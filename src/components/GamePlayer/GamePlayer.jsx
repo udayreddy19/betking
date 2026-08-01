@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FiArrowLeft, FiX, FiExternalLink, FiRefreshCw } from 'react-icons/fi';
+import { resolveGameLaunchUrl } from '../../utils/gameLaunch';
 import './GamePlayer.css';
 
 export default function GamePlayer({ game, onExit, onClose }) {
@@ -7,24 +8,23 @@ export default function GamePlayer({ game, onExit, onClose }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const loadGame = async () => {
+  const loadGame = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setLaunchUrl(null);
     try {
-      const res = await fetch(`/api/casino/launch?gameId=${encodeURIComponent(game.id)}`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not load game');
-      setLaunchUrl(data.url);
+      const result = await resolveGameLaunchUrl(game.id);
+      setLaunchUrl(result.url);
     } catch (err) {
-      setError(err.message || 'Failed to launch game');
+      setError(err?.message || 'Failed to launch game. Please try again.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [game.id]);
 
   useEffect(() => {
     loadGame();
-  }, [game.id]);
+  }, [loadGame]);
 
   const openExternal = () => {
     if (launchUrl) window.open(launchUrl, '_blank', 'noopener,noreferrer');
