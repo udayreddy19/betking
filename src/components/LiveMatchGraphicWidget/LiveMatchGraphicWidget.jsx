@@ -1,6 +1,11 @@
+import { useState } from 'react';
+import { BiFootball, BiTennisBall, BiStats } from 'react-icons/bi';
+import { HiOutlineUsers, HiOutlineViewList, HiOutlineChartBar } from 'react-icons/hi';
 import './LiveMatchGraphicWidget.css';
 
 export default function LiveMatchGraphicWidget({ match }) {
+  const [activeWidgetTab, setActiveWidgetTab] = useState('field');
+
   if (!match) return null;
 
   const sport = match.sport || 'cricket';
@@ -9,52 +14,171 @@ export default function LiveMatchGraphicWidget({ match }) {
 
   // --- CRICKET GRAPHIC RENDERER ---
   if (sport === 'cricket' || sport === 'virtual-cricket') {
-    const score1 = match.liveDetails?.runs ?? 0;
-    const wickets1 = match.liveDetails?.wickets ?? 0;
-    const score2 = match.liveDetails?.score2 ?? 0;
-    const wickets2 = match.liveDetails?.wickets2 ?? 0;
-    const overs = match.liveDetails?.overs || '0.0';
+    const score1 = match.liveDetails?.runs ?? 130;
+    const wickets1 = match.liveDetails?.wickets ?? 7;
+    const score2 = match.liveDetails?.score2 ?? 148;
+    const wickets2 = match.liveDetails?.wickets2 ?? 5;
+    const overs = match.liveDetails?.overs || '18.1';
     const reqRuns = Math.max(0, (score2 + 1) - score1);
-    const ballHistory = match.liveDetails?.ballHistory || ['1', '2', '4', '•', '1', 'W'];
-    const b1 = match.liveDetails?.batter1 || { name: `${team1.split(' ')[0]} Batter`, runs: 0, balls: 0, fours: 0, sixes: 0 };
-    const b2 = match.liveDetails?.batter2 || { name: `${team1.split(' ')[0]} Non-Striker`, runs: 0, balls: 0, fours: 0, sixes: 0 };
+    const ballHistory = match.liveDetails?.ballHistory || ['4', '•', 'W', '2', '•', '2', '1', '1', '2'];
+    const b1 = match.liveDetails?.batter1 || { name: 'Sachin Gill', runs: 16, balls: 12, fours: 2, sixes: 0 };
+    const b2 = match.liveDetails?.batter2 || { name: 'LN Oluoch', runs: 5, balls: 4, fours: 0, sixes: 0 };
 
     return (
       <div className="live-graphic-card">
+        {/* Header */}
         <div className="graphic-scoreboard-header">
           <div className="graphic-team-name">{team1}</div>
-          <div className="graphic-inn-badge">LIVE | {overs} OV</div>
+          <div className="graphic-inn-badge">INN 2 | {overs}/20 OV</div>
           <div className="graphic-team-name">{team2}</div>
         </div>
 
+        {/* Scores */}
         <div className="graphic-scores-row">
           <span className="main-score">{score1}/{wickets1}</span>
           <span className="score-divider">:</span>
           <span className="main-score">{score2}/{wickets2}</span>
         </div>
 
+        {/* Chase requirement */}
         <div className="graphic-chase-text">
-          {score2 > 0 ? `${team1} (${score1}/${wickets1}) chasing target of ${score2 + 1}` : `Match status: ${match.liveDetails?.commentary || 'In Play'}`}
+          {score2 > 0 ? `${team1} (${score1}/${wickets1}) require ${reqRuns} runs from 11 balls.` : `Match Status: ${match.liveDetails?.commentary || 'In Play'}`}
         </div>
 
+        {/* Innings selector dropdown */}
+        <div style={{ display: 'flex', justifyContent: 'center', margin: '6px 0' }}>
+          <select style={{
+            background: '#1e293b',
+            color: '#e2e8f0',
+            border: '1px solid #334155',
+            borderRadius: '6px',
+            padding: '2px 8px',
+            fontSize: '0.7rem',
+            fontWeight: 700
+          }}>
+            <option>{team1} INNS</option>
+            <option>{team2} INNS</option>
+          </select>
+        </div>
+
+        {/* Over Run Rate Bar Chart with Wicket Markers */}
         <div className="graphic-chart-box">
           <div className="chart-bars">
-            {[4, 6, 2, 8, 12, 10, 5, 9, 14, 8, 11, 7, 3, 15, 6, 12, 9, 4, 10, 8].map((runs, i) => (
-              <div
-                key={i}
-                className={`chart-bar ${i === Math.floor(parseFloat(overs)) ? 'active-over' : ''}`}
-                style={{ height: `${Math.min(100, (runs / 16) * 100)}%` }}
-                title={`Over ${i + 1}: ${runs} runs`}
-              />
-            ))}
+            {[4, 6, 2, 8, 12, 10, 5, 9, 14, 8, 11, 7, 3, 15, 6, 12, 9, 14, 8, 6].map((runs, i) => {
+              const isWicketOver = [5, 6, 7, 15, 16, 17].includes(i);
+              return (
+                <div
+                  key={i}
+                  className={`chart-bar ${i === 18 ? 'active-over' : ''}`}
+                  style={{ height: `${Math.min(100, (runs / 16) * 100)}%`, position: 'relative' }}
+                  title={`Over ${i + 1}: ${runs} runs`}
+                >
+                  {isWicketOver && (
+                    <span style={{
+                      position: 'absolute',
+                      top: '-12px',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      background: '#a855f7',
+                      color: 'white',
+                      fontSize: '0.55rem',
+                      fontWeight: 900,
+                      borderRadius: '3px',
+                      padding: '0 2px'
+                    }}>W</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
           <div className="chart-axis-labels">
-            <span>0</span><span>4</span><span>8</span><span>12</span><span>16</span><span>20</span>
+            <span>0</span><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span><span>12</span><span>14</span><span>16</span><span>18</span><span>20</span>
           </div>
         </div>
 
+        {/* Sub-tabs Navigation */}
+        <div style={{
+          display: 'flex',
+          justify: 'space-around',
+          background: '#0f172a',
+          padding: '6px',
+          borderRadius: '8px',
+          margin: '8px 0',
+          border: '1px solid #1e293b'
+        }}>
+          <button
+            onClick={() => setActiveWidgetTab('field')}
+            style={{
+              background: activeWidgetTab === 'field' ? '#3b82f6' : 'transparent',
+              color: 'white',
+              border: 'none',
+              padding: '6px 12px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '1rem',
+              display: 'flex',
+              alignItems: 'center'
+            }}
+            title="Pitch Visualizer"
+          >
+            🏟️
+          </button>
+          <button
+            onClick={() => setActiveWidgetTab('scorecard')}
+            style={{
+              background: activeWidgetTab === 'scorecard' ? '#3b82f6' : 'transparent',
+              color: 'white',
+              border: 'none',
+              padding: '6px 12px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '1rem',
+              display: 'flex',
+              alignItems: 'center'
+            }}
+            title="Scorecard List"
+          >
+            <HiOutlineViewList />
+          </button>
+          <button
+            onClick={() => setActiveWidgetTab('stats')}
+            style={{
+              background: activeWidgetTab === 'stats' ? '#3b82f6' : 'transparent',
+              color: 'white',
+              border: 'none',
+              padding: '6px 12px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '1rem',
+              display: 'flex',
+              alignItems: 'center'
+            }}
+            title="Match Stats"
+          >
+            <HiOutlineChartBar />
+          </button>
+          <button
+            onClick={() => setActiveWidgetTab('lineups')}
+            style={{
+              background: activeWidgetTab === 'lineups' ? '#3b82f6' : 'transparent',
+              color: 'white',
+              border: 'none',
+              padding: '6px 12px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '1rem',
+              display: 'flex',
+              alignItems: 'center'
+            }}
+            title="Team Lineups"
+          >
+            <HiOutlineUsers />
+          </button>
+        </div>
+
+        {/* Ball-by-ball delivery tracker row */}
         <div className="ball-tracker-row">
-          <span className="over-label">OVER {Math.floor(parseFloat(overs))}</span>
+          <span className="over-label">OVER 18</span>
           <div className="ball-pills">
             {ballHistory.map((b, idx) => (
               <span key={idx} className={`ball-pill ${b === 'W' ? 'wicket' : b === '•' ? 'dot' : ''}`}>
@@ -62,8 +186,10 @@ export default function LiveMatchGraphicWidget({ match }) {
               </span>
             ))}
           </div>
+          <span className="over-label" style={{ marginLeft: 'auto' }}>OVER 19</span>
         </div>
 
+        {/* Pitch Graphic & Overlay */}
         <div className="field-visualizer">
           <div className="cricket-field-bg">
             <div className="pitch-strip">
@@ -91,10 +217,13 @@ export default function LiveMatchGraphicWidget({ match }) {
                   <span>CURRENT BOWLER</span><span>INNINGS STATS</span>
                 </div>
                 <div className="field-stat-row">
-                  <span>{match.liveDetails?.bowler?.name || 'Rizwan Butt'}</span><span className="stat-highlight">Fours: {match.liveDetails?.fours || 9}</span>
+                  <span>{match.liveDetails?.bowler?.name || 'Rizwan Butt'}</span><span className="stat-highlight">Fours: {match.liveDetails?.fours || 14}</span>
                 </div>
                 <div className="field-stat-row">
-                  <span>{match.liveDetails?.bowler?.overs || overs}-0-22-1</span><span className="stat-highlight">Sixes: {match.liveDetails?.sixes || 3}</span>
+                  <span>18.1-0-22-1</span><span className="stat-highlight">Sixes: {match.liveDetails?.sixes || 2}</span>
+                </div>
+                <div className="field-stat-row">
+                  <span style={{ color: '#94a3b8' }}>Extras: 8</span>
                 </div>
               </div>
             </div>
@@ -108,13 +237,13 @@ export default function LiveMatchGraphicWidget({ match }) {
   if (sport === 'soccer' || sport === 'esoccer') {
     const score1 = match.liveDetails?.score1 ?? 2;
     const score2 = match.liveDetails?.score2 ?? 1;
-    const minute = match.liveDetails?.minute || 74;
+    const minute = match.liveDetails?.minute || "74' 2nd Half";
 
     return (
       <div className="live-graphic-card">
         <div className="graphic-scoreboard-header">
           <div className="graphic-team-name">{team1}</div>
-          <div className="graphic-inn-badge">SOCCER | {minute}' 2ND HALF</div>
+          <div className="graphic-inn-badge">SOCCER | {minute}</div>
           <div className="graphic-team-name">{team2}</div>
         </div>
 
@@ -125,10 +254,10 @@ export default function LiveMatchGraphicWidget({ match }) {
         </div>
 
         <div className="graphic-chase-text" style={{ color: '#4ade80' }}>
-          ⚡ 74' - Dangerous attack on goal! High possession in opponent half.
+          ⚡ {minute} - Dangerous attack on goal! High possession in opponent penalty box.
         </div>
 
-        {/* Soccer Pitch Graphic */}
+        {/* Soccer Pitch Visualizer */}
         <div className="field-visualizer">
           <div className="soccer-pitch-bg">
             <div className="soccer-half-line" />
@@ -139,30 +268,14 @@ export default function LiveMatchGraphicWidget({ match }) {
 
             <div className="field-overlay-content">
               <div className="field-stats-col">
-                <div className="field-stat-header">
-                  <span>MATCH STATS</span><span>{team1}</span><span>{team2}</span>
-                </div>
-                <div className="field-stat-row">
-                  <span>Shots on Target</span><span className="stat-highlight">6</span><span>4</span>
-                </div>
-                <div className="field-stat-row">
-                  <span>Possession %</span><span className="stat-highlight">56%</span><span>44%</span>
-                </div>
-                <div className="field-stat-row">
-                  <span>Corner Kicks</span><span>7</span><span className="stat-highlight">3</span>
-                </div>
+                <div className="field-stat-header"><span>MATCH STATS</span><span>HOME</span><span>AWAY</span></div>
+                <div className="field-stat-row"><span>Shots on Target</span><span>6</span><span>4</span></div>
+                <div className="field-stat-row"><span>Possession %</span><span>56%</span><span>44%</span></div>
               </div>
-
               <div className="field-stats-col">
-                <div className="field-stat-header">
-                  <span>DISCIPLINE</span><span>{team1}</span><span>{team2}</span>
-                </div>
-                <div className="field-stat-row">
-                  <span>Yellow Cards</span><span>2</span><span>1</span>
-                </div>
-                <div className="field-stat-row">
-                  <span>Fouls Committed</span><span>9</span><span>12</span>
-                </div>
+                <div className="field-stat-header"><span>KEY EVENTS</span><span>TOTAL</span></div>
+                <div className="field-stat-row"><span>Corner Kicks</span><span className="stat-highlight">7 - 3</span></div>
+                <div className="field-stat-row"><span>Yellow Cards</span><span className="stat-highlight">2 - 1</span></div>
               </div>
             </div>
           </div>
@@ -175,12 +288,13 @@ export default function LiveMatchGraphicWidget({ match }) {
   if (sport === 'basketball') {
     const score1 = match.liveDetails?.score1 ?? 94;
     const score2 = match.liveDetails?.score2 ?? 88;
+    const quarter = match.liveDetails?.quarter || '4th Qtr';
 
     return (
       <div className="live-graphic-card">
         <div className="graphic-scoreboard-header">
           <div className="graphic-team-name">{team1}</div>
-          <div className="graphic-inn-badge">NBA | 4TH QTR 3:45</div>
+          <div className="graphic-inn-badge">NBA | {quarter}</div>
           <div className="graphic-team-name">{team2}</div>
         </div>
 
@@ -190,44 +304,23 @@ export default function LiveMatchGraphicWidget({ match }) {
           <span className="main-score">{score2}</span>
         </div>
 
-        <div className="graphic-chase-text" style={{ color: '#f59e0b' }}>
-          🏀 3-POINTER! Swish from downtown!
+        <div className="graphic-chase-text" style={{ color: '#fbbf24' }}>
+          🏀 {quarter} - 3-POINTER! Swish from downtown behind the arc!
         </div>
 
-        {/* Hardwood Basketball Court Graphic */}
         <div className="field-visualizer">
           <div className="basketball-court-bg">
             <div className="court-center-line" />
             <div className="court-center-circle" />
-            <div className="court-3pt-left" />
-            <div className="court-3pt-right" />
-
             <div className="field-overlay-content">
               <div className="field-stats-col">
-                <div className="field-stat-header">
-                  <span>TEAM STATS</span><span>{team1}</span><span>{team2}</span>
-                </div>
-                <div className="field-stat-row">
-                  <span>Field Goal %</span><span className="stat-highlight">49.2%</span><span>45.1%</span>
-                </div>
-                <div className="field-stat-row">
-                  <span>3-PT Made</span><span className="stat-highlight">14</span><span>10</span>
-                </div>
-                <div className="field-stat-row">
-                  <span>Rebounds</span><span>38</span><span>34</span>
-                </div>
+                <div className="field-stat-header"><span>GAME STATS</span><span>VALUE</span></div>
+                <div className="field-stat-row"><span>Field Goal %</span><span>49.2% vs 45.1%</span></div>
+                <div className="field-stat-row"><span>3-PT Made</span><span>14 vs 10</span></div>
               </div>
-
               <div className="field-stats-col">
-                <div className="field-stat-header">
-                  <span>GAME LEADERS</span>
-                </div>
-                <div className="field-stat-row active-batter">
-                  <span>LeBron James</span><span>28 PTS / 8 AST</span>
-                </div>
-                <div className="field-stat-row">
-                  <span>Jayson Tatum</span><span>24 PTS / 9 REB</span>
-                </div>
+                <div className="field-stat-header"><span>GAME LEADER</span><span>PTS</span></div>
+                <div className="field-stat-row"><span>LeBron James</span><span className="stat-highlight">28 PTS / 8 AST</span></div>
               </div>
             </div>
           </div>
@@ -236,56 +329,7 @@ export default function LiveMatchGraphicWidget({ match }) {
     );
   }
 
-  // --- TENNIS / TABLE TENNIS GRAPHIC RENDERER ---
-  if (sport === 'tennis' || sport === 'table-tennis') {
-    return (
-      <div className="live-graphic-card">
-        <div className="graphic-scoreboard-header">
-          <div className="graphic-team-name">{team1}</div>
-          <div className="graphic-inn-badge">SET 2 | 30-15</div>
-          <div className="graphic-team-name">{team2}</div>
-        </div>
-
-        <div className="graphic-scores-row">
-          <span className="main-score">6-4, 4-3</span>
-        </div>
-
-        <div className="graphic-chase-text" style={{ color: '#2dd4bf' }}>
-          🎾 ACE! Serve down the T line.
-        </div>
-
-        {/* Tennis Court Graphic */}
-        <div className="field-visualizer">
-          <div className="tennis-court-bg">
-            <div className="tennis-net-line" />
-            <div className="field-overlay-content">
-              <div className="field-stats-col">
-                <div className="field-stat-header">
-                  <span>MATCH STATS</span><span>P1</span><span>P2</span>
-                </div>
-                <div className="field-stat-row">
-                  <span>Aces</span><span className="stat-highlight">12</span><span>8</span>
-                </div>
-                <div className="field-stat-row">
-                  <span>1st Serve %</span><span className="stat-highlight">68%</span><span>61%</span>
-                </div>
-              </div>
-              <div className="field-stats-col">
-                <div className="field-stat-header">
-                  <span>BREAK POINTS</span>
-                </div>
-                <div className="field-stat-row">
-                  <span>Break Points Won</span><span>4/6</span><span>1/3</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // --- DEFAULT / KABADDI / OTHER SPORTS GRAPHIC ---
+  // --- DEFAULT TENNIS / OTHER SPORTS GRAPHIC RENDERER ---
   return (
     <div className="live-graphic-card">
       <div className="graphic-scoreboard-header">
@@ -293,26 +337,18 @@ export default function LiveMatchGraphicWidget({ match }) {
         <div className="graphic-inn-badge">{sport.toUpperCase()} | LIVE</div>
         <div className="graphic-team-name">{team2}</div>
       </div>
-
       <div className="graphic-scores-row">
-        <span className="main-score">{match.liveDetails?.score1 ?? 28}</span>
+        <span className="main-score">{match.liveDetails?.score1 ?? 1}</span>
         <span className="score-divider">:</span>
-        <span className="main-score">{match.liveDetails?.score2 ?? 24}</span>
+        <span className="main-score">{match.liveDetails?.score2 ?? 0}</span>
       </div>
-
       <div className="field-visualizer">
-        <div className="cricket-field-bg" style={{ background: '#312e81' }}>
+        <div className="tennis-court-bg">
+          <div className="tennis-net-line" />
           <div className="field-overlay-content">
             <div className="field-stats-col">
-              <div className="field-stat-header">
-                <span>LIVE MATCH ACTION</span>
-              </div>
-              <div className="field-stat-row active-batter">
-                <span>Raid / Attack Points</span><span>18</span>
-              </div>
-              <div className="field-stat-row">
-                <span>Tackle / Defence Points</span><span>10</span>
-              </div>
+              <div className="field-stat-header"><span>MATCH STATUS</span><span>LIVE</span></div>
+              <div className="field-stat-row"><span>Action</span><span className="stat-highlight">In Play</span></div>
             </div>
           </div>
         </div>
