@@ -3,6 +3,7 @@ import { IoClose, IoChevronBack, IoQrCodeOutline, IoKeyOutline } from 'react-ico
 import { FiArrowRight, FiShield, FiAlertCircle } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 import { paymentMethods } from '../../data/mockData';
+import RazorpayModal from '../RazorpayModal/RazorpayModal';
 import './DepositModal.css';
 
 export default function DepositModal() {
@@ -18,7 +19,7 @@ export default function DepositModal() {
   const [razorpayKey, setRazorpayKey] = useState(import.meta.env.VITE_RAZORPAY_KEY_ID || '');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [razorpayActive, setRazorpayActive] = useState(false);
+  const [isRzpModalOpen, setIsRzpModalOpen] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   if (!isDepositModalOpen) return null;
@@ -27,7 +28,7 @@ export default function DepositModal() {
     setSelectedMethod(null);
     setIsSuccess(false);
     setIsLoading(false);
-    setRazorpayActive(false);
+    setIsRzpModalOpen(false);
     setErrorMsg('');
     closeDepositModal();
   };
@@ -55,11 +56,10 @@ export default function DepositModal() {
 
   const openRazorpayCheckout = (depositAmt) => {
     setErrorMsg('');
-    setRazorpayActive(true);
 
     const activeKey = razorpayKey.trim() || import.meta.env.VITE_RAZORPAY_KEY_ID;
 
-    // Check if user has provided a valid rzp_test_ / rzp_live_ key format
+    // Check if user has provided a valid rzp_test_ / rzp_live_ key format for official Razorpay SDK
     if (window.Razorpay && activeKey && (activeKey.startsWith('rzp_test_') || activeKey.startsWith('rzp_live_'))) {
       try {
         const options = {
@@ -70,7 +70,6 @@ export default function DepositModal() {
           description: 'Account Deposit',
           image: 'https://cdn-icons-png.flaticon.com/512/2171/2171078.png',
           handler: function (response) {
-            setRazorpayActive(false);
             addFunds(depositAmt, 'Razorpay Gateway');
             setIsSuccess(true);
           },
@@ -82,16 +81,10 @@ export default function DepositModal() {
           theme: {
             color: '#7c3aed',
           },
-          modal: {
-            ondismiss: function () {
-              setRazorpayActive(false);
-            }
-          }
         };
         const rzp = new window.Razorpay(options);
         rzp.on('payment.failed', function (response) {
-          setRazorpayActive(false);
-          setErrorMsg(response.error.description || 'Razorpay payment failed. Try test mode.');
+          setErrorMsg(response.error.description || 'Razorpay payment failed.');
         });
         rzp.open();
         return;
@@ -100,12 +93,14 @@ export default function DepositModal() {
       }
     }
 
-    // Interactive Demo / Test Checkout Handler (When Key ID is not set or in Sandbox mode)
-    setTimeout(() => {
-      setRazorpayActive(false);
-      addFunds(depositAmt, 'Razorpay Gateway (Test Mode)');
-      setIsSuccess(true);
-    }, 1500);
+    // Launch interactive Razorpay Payment Modal popup!
+    setIsRzpModalOpen(true);
+  };
+
+  const handleRazorpayModalSuccess = (depositAmt) => {
+    setIsRzpModalOpen(false);
+    addFunds(parseFloat(depositAmt), 'Razorpay Gateway');
+    setIsSuccess(true);
   };
 
   const handleDepositSubmit = (e) => {
@@ -127,283 +122,294 @@ export default function DepositModal() {
   };
 
   return (
-    <div className="deposit-overlay" onClick={handleClose} id="deposit-modal">
-      <div className="deposit-card" onClick={e => e.stopPropagation()}>
-        
-        {/* Header */}
-        <div className="deposit-header">
-          <div className="deposit-header-left">
-            {selectedMethod && !isSuccess && (
-              <button className="deposit-back-btn" onClick={() => setSelectedMethod(null)}>
-                <IoChevronBack />
+    <>
+      {/* Interactive Razorpay Checkout Modal */}
+      <RazorpayModal
+        isOpen={isRzpModalOpen}
+        onClose={() => setIsRzpModalOpen(false)}
+        amount={amount}
+        onSuccess={handleRazorpayModalSuccess}
+        user={user}
+      />
+
+      <div className="deposit-overlay" onClick={handleClose} id="deposit-modal">
+        <div className="deposit-card" onClick={e => e.stopPropagation()}>
+          
+          {/* Header */}
+          <div className="deposit-header">
+            <div className="deposit-header-left">
+              {selectedMethod && !isSuccess && (
+                <button className="deposit-back-btn" onClick={() => setSelectedMethod(null)}>
+                  <IoChevronBack />
+                </button>
+              )}
+              <h2>
+                {isSuccess
+                  ? 'Deposit Complete'
+                  : selectedMethod
+                  ? selectedMethod.name
+                  : 'Deposit Funds'}
+              </h2>
+            </div>
+            <button className="deposit-close" onClick={handleClose}>
+              <IoClose />
+            </button>
+          </div>
+
+          {/* Category Tabs (if on main list view) */}
+          {!selectedMethod && !isSuccess && (
+            <div className="deposit-tabs">
+              <button
+                className={`deposit-tab ${activeCategory === 'all' ? 'active' : ''}`}
+                onClick={() => setActiveCategory('all')}
+              >
+                All Methods
               </button>
-            )}
-            <h2>
-              {isSuccess
-                ? 'Deposit Complete'
-                : selectedMethod
-                ? selectedMethod.name
-                : 'Deposit Funds'}
-            </h2>
-          </div>
-          <button className="deposit-close" onClick={handleClose}>
-            <IoClose />
-          </button>
-        </div>
-
-        {/* Category Tabs (if on main list view) */}
-        {!selectedMethod && !isSuccess && (
-          <div className="deposit-tabs">
-            <button
-              className={`deposit-tab ${activeCategory === 'all' ? 'active' : ''}`}
-              onClick={() => setActiveCategory('all')}
-            >
-              All Methods
-            </button>
-            <button
-              className={`deposit-tab ${activeCategory === 'razorpay' ? 'active' : ''}`}
-              onClick={() => setActiveCategory('razorpay')}
-            >
-              💳 Razorpay
-            </button>
-            <button
-              className={`deposit-tab ${activeCategory === 'giftcard' ? 'active' : ''}`}
-              onClick={() => setActiveCategory('giftcard')}
-            >
-              🎁 Gift Card
-            </button>
-            <button
-              className={`deposit-tab ${activeCategory === 'upi' ? 'active' : ''}`}
-              onClick={() => setActiveCategory('upi')}
-            >
-              📱 UPI & Wallets
-            </button>
-            <button
-              className={`deposit-tab ${activeCategory === 'crypto' ? 'active' : ''}`}
-              onClick={() => setActiveCategory('crypto')}
-            >
-              ₿ Crypto
-            </button>
-          </div>
-        )}
-
-        {/* Body Content */}
-        <div className="deposit-body">
-          {errorMsg && (
-            <div style={{
-              background: '#fef2f2', border: '1px solid #fecaca', color: '#ef4444',
-              padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-xs)',
-              marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)'
-            }}>
-              <FiAlertCircle style={{ flexShrink: 0 }} />
-              <span>{errorMsg}</span>
+              <button
+                className={`deposit-tab ${activeCategory === 'razorpay' ? 'active' : ''}`}
+                onClick={() => setActiveCategory('razorpay')}
+              >
+                💳 Razorpay
+              </button>
+              <button
+                className={`deposit-tab ${activeCategory === 'giftcard' ? 'active' : ''}`}
+                onClick={() => setActiveCategory('giftcard')}
+              >
+                🎁 Gift Card
+              </button>
+              <button
+                className={`deposit-tab ${activeCategory === 'upi' ? 'active' : ''}`}
+                onClick={() => setActiveCategory('upi')}
+              >
+                📱 UPI & Wallets
+              </button>
+              <button
+                className={`deposit-tab ${activeCategory === 'crypto' ? 'active' : ''}`}
+                onClick={() => setActiveCategory('crypto')}
+              >
+                ₿ Crypto
+              </button>
             </div>
           )}
 
-          {isSuccess ? (
-            /* Success Screen */
-            <div className="deposit-success">
-              <span className="deposit-success-icon">🎉</span>
-              <h3>₹{parseFloat(amount).toLocaleString()} Added!</h3>
-              <p>Your deposit via <strong>{selectedMethod?.name || 'Razorpay'}</strong> was successful and credited instantly to your BetKing balance.</p>
-              <button className="deposit-confirm-btn" onClick={handleClose}>
-                Done & Continue Betting
-              </button>
-            </div>
-          ) : selectedMethod ? (
-            /* Selected Payment Method Form View */
-            <form onSubmit={handleDepositSubmit}>
-              {/* Preset Amount Chips */}
-              <div className="deposit-form-group">
-                <label>Select Deposit Amount (₹)</label>
-                <div className="amount-presets">
-                  {['500', '1000', '2500', '5000', '10000'].map(val => (
-                    <button
-                      type="button"
-                      key={val}
-                      className={`amount-preset-btn ${amount === val ? 'active' : ''}`}
-                      onClick={() => setAmount(val)}
-                    >
-                      ₹{val}
-                    </button>
-                  ))}
-                </div>
-                <input
-                  type="number"
-                  className="deposit-form-input"
-                  value={amount}
-                  onChange={e => setAmount(e.target.value)}
-                  placeholder="Enter custom amount"
-                  min={selectedMethod.min}
-                  max={selectedMethod.max}
-                  required
-                />
+          {/* Body Content */}
+          <div className="deposit-body">
+            {errorMsg && (
+              <div style={{
+                background: '#fef2f2', border: '1px solid #fecaca', color: '#ef4444',
+                padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-xs)',
+                marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)'
+              }}>
+                <FiAlertCircle style={{ flexShrink: 0 }} />
+                <span>{errorMsg}</span>
               </div>
+            )}
 
-              {/* Razorpay Gateway Information & Key Configuration */}
-              {selectedMethod.type === 'razorpay' && (
-                <>
-                  <div style={{
-                    background: 'linear-gradient(135deg, #0c2340 0%, #1e3a8a 100%)',
-                    color: 'white',
-                    borderRadius: 'var(--radius-lg)',
-                    padding: 'var(--space-4)',
-                    marginBottom: 'var(--space-4)',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-2)', fontWeight: 'bold', fontSize: 'var(--text-sm)' }}>
-                      <FiShield style={{ color: '#38bdf8' }} /> Razorpay Secure Checkout
-                    </div>
-                    <p style={{ fontSize: 'var(--text-xs)', opacity: 0.85, lineHeight: 1.5 }}>
-                      Supports Cards, NetBanking, UPI, Paytm & EMI.
-                    </p>
-                  </div>
-
-                  <div className="deposit-form-group">
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}>
-                      <IoKeyOutline /> Optional: Razorpay Key ID (Leave blank to test in Sandbox)
-                    </label>
-                    <input
-                      type="text"
-                      className="deposit-form-input"
-                      placeholder="rzp_test_... or rzp_live_..."
-                      value={razorpayKey}
-                      onChange={e => setRazorpayKey(e.target.value)}
-                      style={{ fontSize: 'var(--text-xs)', fontFamily: 'monospace' }}
-                    />
-                  </div>
-                </>
-              )}
-
-              {/* Amazon Gift Card Specific Fields */}
-              {selectedMethod.type === 'giftcard' && (
+            {isSuccess ? (
+              /* Success Screen */
+              <div className="deposit-success">
+                <span className="deposit-success-icon">🎉</span>
+                <h3>₹{parseFloat(amount).toLocaleString()} Added!</h3>
+                <p>Your deposit via <strong>{selectedMethod?.name || 'Razorpay'}</strong> was successful and credited instantly to your BetKing balance.</p>
+                <button className="deposit-confirm-btn" onClick={handleClose}>
+                  Done & Continue Betting
+                </button>
+              </div>
+            ) : selectedMethod ? (
+              /* Selected Payment Method Form View */
+              <form onSubmit={handleDepositSubmit}>
+                {/* Preset Amount Chips */}
                 <div className="deposit-form-group">
-                  <label>Amazon Pay Gift Card Claim Code</label>
+                  <label>Select Deposit Amount (₹)</label>
+                  <div className="amount-presets">
+                    {['500', '1000', '2500', '5000', '10000'].map(val => (
+                      <button
+                        type="button"
+                        key={val}
+                        className={`amount-preset-btn ${amount === val ? 'active' : ''}`}
+                        onClick={() => setAmount(val)}
+                      >
+                        ₹{val}
+                      </button>
+                    ))}
+                  </div>
                   <input
-                    type="text"
+                    type="number"
                     className="deposit-form-input"
-                    placeholder="e.g. AG12-3456-7890-ABCD"
-                    value={giftCardCode}
-                    onChange={e => setGiftCardCode(e.target.value.toUpperCase())}
+                    value={amount}
+                    onChange={e => setAmount(e.target.value)}
+                    placeholder="Enter custom amount"
+                    min={selectedMethod.min}
+                    max={selectedMethod.max}
                     required
                   />
-                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
-                    Enter 14 or 15 digit claim code printed on your Amazon Gift Card.
-                  </p>
                 </div>
-              )}
 
-              {/* UPI Specific Fields */}
-              {selectedMethod.type === 'upi' && (
-                <>
-                  <div className="deposit-tabs" style={{ margin: '0 0 var(--space-4) 0' }}>
-                    <button
-                      type="button"
-                      className={`deposit-tab ${upiMode === 'id' ? 'active' : ''}`}
-                      onClick={() => setUpiMode('id')}
-                    >
-                      Enter UPI VPA ID
-                    </button>
-                    <button
-                      type="button"
-                      className={`deposit-tab ${upiMode === 'qr' ? 'active' : ''}`}
-                      onClick={() => setUpiMode('qr')}
-                    >
-                      Scan QR Code
-                    </button>
-                  </div>
+                {/* Razorpay Gateway Information & Key Configuration */}
+                {selectedMethod.type === 'razorpay' && (
+                  <>
+                    <div style={{
+                      background: 'linear-gradient(135deg, #0c2340 0%, #1e3a8a 100%)',
+                      color: 'white',
+                      borderRadius: 'var(--radius-lg)',
+                      padding: 'var(--space-4)',
+                      marginBottom: 'var(--space-4)',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-2)', fontWeight: 'bold', fontSize: 'var(--text-sm)' }}>
+                        <FiShield style={{ color: '#38bdf8' }} /> Razorpay Secure Gateway
+                      </div>
+                      <p style={{ fontSize: 'var(--text-xs)', opacity: 0.85, lineHeight: 1.5 }}>
+                        Clicking below will open the interactive Razorpay payment modal where you can select UPI, Card (Credit/Debit), NetBanking, or Wallet.
+                      </p>
+                    </div>
 
-                  {upiMode === 'id' ? (
                     <div className="deposit-form-group">
-                      <label>Your UPI ID / VPA</label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}>
+                        <IoKeyOutline /> Optional: Razorpay Key ID (For live API key)
+                      </label>
                       <input
                         type="text"
                         className="deposit-form-input"
-                        placeholder="username@upi / mobile@paytm"
-                        value={upiId}
-                        onChange={e => setUpiId(e.target.value)}
-                        required
+                        placeholder="rzp_test_... or rzp_live_..."
+                        value={razorpayKey}
+                        onChange={e => setRazorpayKey(e.target.value)}
+                        style={{ fontSize: 'var(--text-xs)', fontFamily: 'monospace' }}
                       />
                     </div>
-                  ) : (
-                    <div className="qr-container">
-                      <div className="qr-box">
-                        <IoQrCodeOutline className="qr-icon" />
-                        <span style={{ fontSize: '0.65rem', fontWeight: 'bold' }}>SCAN TO PAY ₹{amount}</span>
-                      </div>
-                      <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', marginBottom: '8px' }}>
-                        Scan using GPay, PhonePe, Paytm, BHIM, or Amazon Pay
-                      </p>
-                    </div>
-                  )}
-
-                  {/* App quick launch bar */}
-                  <div className="upi-apps">
-                    <div className="upi-app-btn">
-                      <div className="upi-app-icon" style={{ background: '#4285f4' }}>G</div>
-                      <span>GPay</span>
-                    </div>
-                    <div className="upi-app-btn">
-                      <div className="upi-app-icon" style={{ background: '#5f259f' }}>P</div>
-                      <span>PhonePe</span>
-                    </div>
-                    <div className="upi-app-btn">
-                      <div className="upi-app-icon" style={{ background: '#00baf2' }}>P</div>
-                      <span>Paytm</span>
-                    </div>
-                    <div className="upi-app-btn">
-                      <div className="upi-app-icon" style={{ background: '#ff9900' }}>a</div>
-                      <span>Amazon</span>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Submit CTA */}
-              <button
-                type="submit"
-                className="deposit-confirm-btn"
-                disabled={isLoading || razorpayActive}
-                style={selectedMethod.type === 'razorpay' ? { background: '#0c2340' } : {}}
-              >
-                {isLoading || razorpayActive ? (
-                  'Launching Secure Checkout...'
-                ) : (
-                  <>
-                    Pay ₹{parseFloat(amount || 0).toLocaleString()} via {selectedMethod.name}
-                    <FiArrowRight />
                   </>
                 )}
-              </button>
-            </form>
-          ) : (
-            /* Method Selection List View */
-            filteredMethods.map(method => (
-              <div
-                className="deposit-method"
-                key={method.id}
-                onClick={() => handleMethodSelect(method)}
-              >
-                <div
-                  className="deposit-method-icon"
-                  style={{ background: method.color || 'var(--color-text)' }}
-                >
-                  {method.icon}
-                </div>
-                <div className="deposit-method-info">
-                  <div className="deposit-method-title">
-                    <h4>{method.name}</h4>
-                    {method.badge && <span className="deposit-method-badge">{method.badge}</span>}
+
+                {/* Amazon Gift Card Specific Fields */}
+                {selectedMethod.type === 'giftcard' && (
+                  <div className="deposit-form-group">
+                    <label>Amazon Pay Gift Card Claim Code</label>
+                    <input
+                      type="text"
+                      className="deposit-form-input"
+                      placeholder="e.g. AG12-3456-7890-ABCD"
+                      value={giftCardCode}
+                      onChange={e => setGiftCardCode(e.target.value.toUpperCase())}
+                      required
+                    />
+                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
+                      Enter 14 or 15 digit claim code printed on your Amazon Gift Card.
+                    </p>
                   </div>
-                  <p>{method.description}</p>
+                )}
+
+                {/* UPI Specific Fields */}
+                {selectedMethod.type === 'upi' && (
+                  <>
+                    <div className="deposit-tabs" style={{ margin: '0 0 var(--space-4) 0' }}>
+                      <button
+                        type="button"
+                        className={`deposit-tab ${upiMode === 'id' ? 'active' : ''}`}
+                        onClick={() => setUpiMode('id')}
+                      >
+                        Enter UPI VPA ID
+                      </button>
+                      <button
+                        type="button"
+                        className={`deposit-tab ${upiMode === 'qr' ? 'active' : ''}`}
+                        onClick={() => setUpiMode('qr')}
+                      >
+                        Scan QR Code
+                      </button>
+                    </div>
+
+                    {upiMode === 'id' ? (
+                      <div className="deposit-form-group">
+                        <label>Your UPI ID / VPA</label>
+                        <input
+                          type="text"
+                          className="deposit-form-input"
+                          placeholder="username@upi / mobile@paytm"
+                          value={upiId}
+                          onChange={e => setUpiId(e.target.value)}
+                          required
+                        />
+                      </div>
+                    ) : (
+                      <div className="qr-container">
+                        <div className="qr-box">
+                          <IoQrCodeOutline className="qr-icon" />
+                          <span style={{ fontSize: '0.65rem', fontWeight: 'bold' }}>SCAN TO PAY ₹{amount}</span>
+                        </div>
+                        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', marginBottom: '8px' }}>
+                          Scan using GPay, PhonePe, Paytm, BHIM, or Amazon Pay
+                        </p>
+                      </div>
+                    )}
+
+                    {/* App quick launch bar */}
+                    <div className="upi-apps">
+                      <div className="upi-app-btn">
+                        <div className="upi-app-icon" style={{ background: '#4285f4' }}>G</div>
+                        <span>GPay</span>
+                      </div>
+                      <div className="upi-app-btn">
+                        <div className="upi-app-icon" style={{ background: '#5f259f' }}>P</div>
+                        <span>PhonePe</span>
+                      </div>
+                      <div className="upi-app-btn">
+                        <div className="upi-app-icon" style={{ background: '#00baf2' }}>P</div>
+                        <span>Paytm</span>
+                      </div>
+                      <div className="upi-app-btn">
+                        <div className="upi-app-icon" style={{ background: '#ff9900' }}>a</div>
+                        <span>Amazon</span>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Submit CTA */}
+                <button
+                  type="submit"
+                  className="deposit-confirm-btn"
+                  disabled={isLoading}
+                  style={selectedMethod.type === 'razorpay' ? { background: '#0c2340' } : {}}
+                >
+                  {isLoading ? (
+                    'Launching Checkout...'
+                  ) : (
+                    <>
+                      Pay ₹{parseFloat(amount || 0).toLocaleString()} via {selectedMethod.name}
+                      <FiArrowRight />
+                    </>
+                  )}
+                </button>
+              </form>
+            ) : (
+              /* Method Selection List View */
+              filteredMethods.map(method => (
+                <div
+                  className="deposit-method"
+                  key={method.id}
+                  onClick={() => handleMethodSelect(method)}
+                >
+                  <div
+                    className="deposit-method-icon"
+                    style={{ background: method.color || 'var(--color-text)' }}
+                  >
+                    {method.icon}
+                  </div>
+                  <div className="deposit-method-info">
+                    <div className="deposit-method-title">
+                      <h4>{method.name}</h4>
+                      {method.badge && <span className="deposit-method-badge">{method.badge}</span>}
+                    </div>
+                    <p>{method.description}</p>
+                  </div>
+                  <div className="deposit-method-arrow">
+                    <FiArrowRight />
+                  </div>
                 </div>
-                <div className="deposit-method-arrow">
-                  <FiArrowRight />
-                </div>
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -1,0 +1,213 @@
+.rzp-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: calc(var(--z-modal) + 10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 200ms ease;
+}
+
+.rzp-card {
+  width: 95%;
+  max-width: 480px;
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  animation: scaleIn 250ms ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #1a202c;
+}
+
+.rzp-header {
+  background: #0c2340;
+  color: #ffffff;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+}
+.rzp-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.rzp-logo {
+  width: 36px; height: 36px;
+  background: #7c3aed;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: white;
+}
+.rzp-title {
+  display: flex;
+  flex-direction: column;
+}
+.rzp-title h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+}
+.rzp-title p {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin: 0;
+}
+.rzp-amount {
+  text-align: right;
+}
+.rzp-amount-val {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #38bdf8;
+}
+.rzp-test-badge {
+  font-size: 0.6rem;
+  font-weight: 800;
+  background: #ef4444;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  margin-left: 6px;
+}
+.rzp-close {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px;
+}
+.rzp-close:hover { color: white; }
+
+.rzp-body {
+  display: flex;
+  min-height: 320px;
+}
+
+.rzp-sidebar {
+  width: 140px;
+  background: #f8fafc;
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+}
+.rzp-tab {
+  padding: 14px 12px;
+  border: none;
+  background: none;
+  text-align: left;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 150ms ease;
+  border-left: 3px solid transparent;
+}
+.rzp-tab:hover {
+  background: #f1f5f9;
+  color: #0c2340;
+}
+.rzp-tab.active {
+  background: #ffffff;
+  color: #0c2340;
+  font-weight: 700;
+  border-left-color: #0c2340;
+}
+
+.rzp-content {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.rzp-form-group {
+  margin-bottom: 14px;
+}
+.rzp-form-group label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.rzp-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #0f172a;
+  outline: none;
+  box-sizing: border-box;
+}
+.rzp-input:focus {
+  border-color: #0c2340;
+  box-shadow: 0 0 0 2px rgba(12, 35, 64, 0.1);
+}
+
+.rzp-row {
+  display: flex;
+  gap: 10px;
+}
+
+.rzp-pay-btn {
+  width: 100%;
+  padding: 12px;
+  background: #0c2340;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 150ms ease;
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.rzp-pay-btn:hover {
+  background: #1e3a8a;
+}
+.rzp-pay-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* OTP Modal overlay inside Razorpay */
+.rzp-otp-card {
+  padding: 24px;
+  text-align: center;
+}
+.rzp-otp-icon {
+  font-size: 3rem;
+  color: #0c2340;
+  margin-bottom: 12px;
+}
+.rzp-otp-input {
+  font-size: 1.4rem;
+  letter-spacing: 8px;
+  text-align: center;
+  font-weight: 800;
+  max-width: 180px;
+  margin: 16px auto;
+  padding: 8px;
+  border: 2px solid #0c2340;
+  border-radius: 8px;
+}
