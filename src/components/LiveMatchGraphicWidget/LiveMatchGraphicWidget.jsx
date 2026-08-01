@@ -9,21 +9,21 @@ export default function LiveMatchGraphicWidget({ match }) {
 
   // --- CRICKET GRAPHIC RENDERER ---
   if (sport === 'cricket' || sport === 'virtual-cricket') {
-    const score1 = match.liveDetails?.runs || 71;
-    const wickets1 = match.liveDetails?.wickets || 3;
-    const score2 = match.liveDetails?.score2 || 148;
-    const wickets2 = match.liveDetails?.wickets2 || 5;
-    const overs = match.liveDetails?.overs || '8.3';
+    const score1 = match.liveDetails?.runs ?? 0;
+    const wickets1 = match.liveDetails?.wickets ?? 0;
+    const score2 = match.liveDetails?.score2 ?? 0;
+    const wickets2 = match.liveDetails?.wickets2 ?? 0;
+    const overs = match.liveDetails?.overs || '0.0';
     const reqRuns = Math.max(0, (score2 + 1) - score1);
-    const ballHistory = match.liveDetails?.ballHistory || ['W', '1', '2', '2', '1', '1'];
-    const b1 = match.liveDetails?.batter1 || { name: 'SR Bhudia', runs: 14, balls: 11, fours: 2, sixes: 0 };
-    const b2 = match.liveDetails?.batter2 || { name: 'RR Patel', runs: 28, balls: 19, fours: 3, sixes: 1 };
+    const ballHistory = match.liveDetails?.ballHistory || ['1', '2', '4', '•', '1', 'W'];
+    const b1 = match.liveDetails?.batter1 || { name: `${team1.split(' ')[0]} Batter`, runs: 0, balls: 0, fours: 0, sixes: 0 };
+    const b2 = match.liveDetails?.batter2 || { name: `${team1.split(' ')[0]} Non-Striker`, runs: 0, balls: 0, fours: 0, sixes: 0 };
 
     return (
       <div className="live-graphic-card">
         <div className="graphic-scoreboard-header">
           <div className="graphic-team-name">{team1}</div>
-          <div className="graphic-inn-badge">INN 2 | {overs}/20 OV</div>
+          <div className="graphic-inn-badge">LIVE | {overs} OV</div>
           <div className="graphic-team-name">{team2}</div>
         </div>
 
@@ -34,7 +34,7 @@ export default function LiveMatchGraphicWidget({ match }) {
         </div>
 
         <div className="graphic-chase-text">
-          {team1} ({score1}/{wickets1}) require {reqRuns} runs from 67 balls.
+          {score2 > 0 ? `${team1} (${score1}/${wickets1}) chasing target of ${score2 + 1}` : `Match status: ${match.liveDetails?.commentary || 'In Play'}`}
         </div>
 
         <div className="graphic-chart-box">
