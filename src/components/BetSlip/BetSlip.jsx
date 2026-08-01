@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { IoClose, IoSettingsOutline } from 'react-icons/io5';
 import { useBetSlip } from '../../context/BetSlipContext';
 import BetSlipFooter from './BetSlipFooter';
@@ -8,29 +9,51 @@ export default function BetSlip() {
     bets, removeBet, clearAll, activeTab, setActiveTab,
     betCount, placedBets, myBetsCount,
   } = useBetSlip();
+  const [betType, setBetType] = useState('multi');
 
   return (
     <div className="betslip" id="betslip">
       <div className="betslip-header">
         <button
+          type="button"
           className={`betslip-tab ${activeTab === 'betslip' ? 'active' : ''}`}
           onClick={() => setActiveTab('betslip')}
         >
           Betslip <span className="tab-count">{betCount}</span>
         </button>
         <button
+          type="button"
           className={`betslip-tab ${activeTab === 'mybets' ? 'active' : ''}`}
           onClick={() => setActiveTab('mybets')}
         >
           My bets <span className="tab-count">{myBetsCount}</span>
         </button>
         {betCount > 0 && (
-          <button className="betslip-clear" onClick={clearAll}>Clear all</button>
+          <button type="button" className="betslip-clear" onClick={clearAll}>Clear all</button>
         )}
         <button className="betslip-settings" type="button" aria-label="Betslip settings">
           <IoSettingsOutline />
         </button>
       </div>
+
+      {activeTab === 'betslip' && betCount > 0 && (
+        <div className="betslip-type-toggle">
+          <button
+            type="button"
+            className={betType === 'singles' ? 'active' : ''}
+            onClick={() => setBetType('singles')}
+          >
+            Singles
+          </button>
+          <button
+            type="button"
+            className={betType === 'multi' ? 'active' : ''}
+            onClick={() => setBetType('multi')}
+          >
+            Multi
+          </button>
+        </div>
+      )}
 
       <div className="betslip-body">
         {activeTab === 'betslip' ? (

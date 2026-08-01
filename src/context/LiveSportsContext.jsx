@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { matches as defaultMatches } from '../data/mockData';
 import { getStableMatchOdds, safeNum } from '../utils/odds';
+import { mergeApiAndDefaultMatches } from '../utils/matchFilters';
 
 const LiveSportsContext = createContext(null);
 
@@ -208,14 +209,8 @@ export function LiveSportsProvider({ children }) {
           });
         });
 
-        // Merge API data with local fallback matches so all sports stay available
         if (apiMatches.length > 0) {
-          const coveredSports = new Set(apiMatches.map(m => m.sport));
-          const uncoveredDefaults = defaultMatches.filter(m => !coveredSports.has(m.sport));
-          const bettableDefaults = defaultMatches.filter(m => m.matchState === 'in' || m.matchState === 'pre');
-          const apiPairKeys = new Set(apiMatches.map(m => `${m.team1.name}|${m.team2.name}`));
-          const uniqueDefaults = bettableDefaults.filter(m => !apiPairKeys.has(`${m.team1.name}|${m.team2.name}`));
-          setMatches([...uniqueDefaults, ...apiMatches, ...uncoveredDefaults]);
+          setMatches(mergeApiAndDefaultMatches(apiMatches, defaultMatches));
         }
 
         setTickerMessage(

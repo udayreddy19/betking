@@ -99,6 +99,40 @@ export const leagues = [
   { id: 'laliga', name: 'La Liga', sport: 'soccer' },
 ];
 
+export const featuredLeagues = [
+  { id: 'hundred-m', name: 'The Hundred', sport: 'cricket', matchLeagues: ['The Hundred Men'] },
+  { id: 'hundred-w', name: 'The Hundred, Women', sport: 'cricket', matchLeagues: ['The Hundred Women'] },
+  { id: 'one-day', name: 'One-Day Cup', sport: 'cricket', matchLeagues: ['One-Day Cup'] },
+  { id: 'ipl-srl', name: 'IPL SRL', sport: 'cricket', matchLeagues: ['IPL 2026', 'IPL SRL'] },
+  { id: 'ken-bah', name: 'Kenya vs Bahrain T20', sport: 'cricket', matchLeagues: ['T20 Series Kenya vs Bahrain'] },
+  { id: 'lpl', name: 'Lanka Premier League', sport: 'cricket', matchLeagues: ['Lanka Premier League', 'T20 Lanka Premier League'] },
+  { id: 'epl', name: 'Premier League', sport: 'soccer', matchLeagues: ['Premier League'] },
+  { id: 'laliga', name: 'La Liga', sport: 'soccer', matchLeagues: ['La Liga'] },
+];
+
+export const leagueGroups = [
+  {
+    country: 'Australia',
+    flag: '🇦🇺',
+    leagues: ['Big Bash League', 'Sheffield Shield', 'WBBL'],
+  },
+  {
+    country: 'England',
+    flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+    leagues: ['The Hundred Men', 'The Hundred Women', 'County Championship', 'One-Day Cup'],
+  },
+  {
+    country: 'India',
+    flag: '🇮🇳',
+    leagues: ['IPL 2026', 'Ranji Trophy', 'Syed Mushtaq Ali'],
+  },
+  {
+    country: 'International',
+    flag: '🌍',
+    leagues: ['T20 World Cup', 'ODI Series', 'Test Championship'],
+  },
+];
+
 export const matches = [
   {
     id: 'm1',
@@ -320,6 +354,162 @@ export const matches = [
     team2: { name: 'Buffalo Bills', shortName: 'BUF', color: '#1d4ed8' },
     odds: { team1: 1.88, team2: 1.92 },
     liveDetails: { score1: 0, score2: 0, minute: 'Scheduled', commentary: 'Kickoff tonight' }
+  },
+  {
+    id: 'm18',
+    league: 'IPL 2026',
+    sport: 'cricket',
+    sportColor: '#f97316',
+    time: 'Completed',
+    isLive: false,
+    matchState: 'post',
+    team1: { name: 'Mumbai Indians', shortName: 'MI', color: '#3b82f6' },
+    team2: { name: 'Chennai Super Kings', shortName: 'CSK', color: '#facc15' },
+    odds: { team1: 1.72, team2: 2.10 },
+    liveDetails: { runs: 186, wickets: 4, overs: '20.0', score2: 182, wickets2: 8, overs2: '20.0', commentary: 'Mumbai Indians won by 4 runs' }
+  },
+  {
+    id: 'm19',
+    league: 'Serie A',
+    sport: 'soccer',
+    sportColor: '#22c55e',
+    time: 'FT',
+    isLive: false,
+    matchState: 'post',
+    team1: { name: 'Inter Milan', shortName: 'INT', color: '#1e3a8a' },
+    team2: { name: 'AC Milan', shortName: 'MIL', color: '#ef4444' },
+    odds: { team1: 2.05, draw: 3.20, team2: 3.40 },
+    liveDetails: { score1: 2, score2: 1, minute: 'Full Time', commentary: 'Inter Milan win 2-1' }
+  },
+  {
+    id: 'm20',
+    league: 'NBA',
+    sport: 'basketball',
+    sportColor: '#f59e0b',
+    time: 'FT',
+    isLive: false,
+    matchState: 'post',
+    team1: { name: 'Golden State Warriors', shortName: 'GSW', color: '#facc15' },
+    team2: { name: 'Phoenix Suns', shortName: 'PHX', color: '#ea580c' },
+    odds: { team1: 1.95, team2: 1.85 },
+    liveDetails: { score1: 112, score2: 108, minute: 'Final', commentary: 'Warriors win by 4' }
+  },
+  {
+    id: 'm21',
+    league: 'French Open',
+    sport: 'tennis',
+    sportColor: '#14b8a6',
+    time: 'Completed',
+    isLive: false,
+    matchState: 'post',
+    team1: { name: 'Nadal', shortName: 'NAD', color: '#dc2626' },
+    team2: { name: 'Federer', shortName: 'FED', color: '#ffffff' },
+    odds: { team1: 2.40, team2: 1.55 },
+    liveDetails: { score1: 3, score2: 2, minute: 'Match Over', commentary: 'Nadal wins in 5 sets' }
+  },
+  {
+    id: 'm22',
+    league: 'Asian Table Tennis',
+    sport: 'table-tennis',
+    sportColor: '#6366f1',
+    time: 'Tomorrow 18:00',
+    isLive: false,
+    matchState: 'pre',
+    team1: { name: 'Lin Gaoyuan', shortName: 'LIN', color: '#ef4444' },
+    team2: { name: 'Hugo Calderano', shortName: 'HUG', color: '#22c55e' },
+    odds: { team1: 1.75, team2: 2.05 },
+    liveDetails: { score1: 0, score2: 0, minute: 'Scheduled', commentary: 'Semi-final' }
+  },
+  {
+    id: 'm23',
+    league: 'Asian Table Tennis',
+    sport: 'table-tennis',
+    sportColor: '#6366f1',
+    time: 'Completed',
+    isLive: false,
+    matchState: 'post',
+    team1: { name: 'Sun Yingsha', shortName: 'SUN', color: '#f97316' },
+    team2: { name: 'Mima Ito', shortName: 'MIT', color: '#ec4899' },
+    odds: { team1: 1.62, team2: 2.25 },
+    liveDetails: { score1: 3, score2: 1, minute: 'Match Over', commentary: 'Sun Yingsha wins 3-1' }
+  },
+  {
+    id: 'm24',
+    league: 'Pro Kabaddi League',
+    sport: 'kabaddi',
+    sportColor: '#ec4899',
+    time: 'Tomorrow 20:00',
+    isLive: false,
+    matchState: 'pre',
+    team1: { name: 'Jaipur Pink Panthers', shortName: 'JAI', color: '#ec4899' },
+    team2: { name: 'Bengaluru Bulls', shortName: 'BEN', color: '#ef4444' },
+    odds: { team1: 1.88, team2: 1.92 },
+    liveDetails: { score1: 0, score2: 0, minute: 'Scheduled', commentary: 'Season opener' }
+  },
+  {
+    id: 'm25',
+    league: 'Pro Kabaddi League',
+    sport: 'kabaddi',
+    sportColor: '#ec4899',
+    time: 'Completed',
+    isLive: false,
+    matchState: 'post',
+    team1: { name: 'U Mumba', shortName: 'MUM', color: '#3b82f6' },
+    team2: { name: 'Telugu Titans', shortName: 'TEL', color: '#f59e0b' },
+    odds: { team1: 1.70, team2: 2.15 },
+    liveDetails: { score1: 38, score2: 35, minute: 'Full Time', commentary: 'U Mumba win by 3' }
+  },
+  {
+    id: 'm26',
+    league: 'eSoccer Champions',
+    sport: 'esoccer',
+    sportColor: '#8b5cf6',
+    time: 'Completed',
+    isLive: false,
+    matchState: 'post',
+    team1: { name: 'Real Madrid (E)', shortName: 'RMA', color: '#ffffff' },
+    team2: { name: 'Barcelona (E)', shortName: 'FCB', color: '#a50044' },
+    odds: { team1: 2.30, draw: 3.50, team2: 2.80 },
+    liveDetails: { score1: 3, score2: 2, minute: 'Full Time', commentary: 'Real Madrid (E) win' }
+  },
+  {
+    id: 'm27',
+    league: 'Virtual Fast Cricket',
+    sport: 'virtual-cricket',
+    sportColor: '#06b6d4',
+    time: 'Completed',
+    isLive: false,
+    matchState: 'post',
+    team1: { name: 'Chennai V', shortName: 'CHE', color: '#facc15' },
+    team2: { name: 'Kolkata V', shortName: 'KOL', color: '#7c3aed' },
+    odds: { team1: 1.80, team2: 2.00 },
+    liveDetails: { runs: 142, wickets: 8, overs: '20.0', score2: 138, wickets2: 10, overs2: '19.2', commentary: 'Chennai V won by 4 runs' }
+  },
+  {
+    id: 'm28',
+    league: 'CEV Volleyball',
+    sport: 'volleyball',
+    sportColor: '#eab308',
+    time: 'Tomorrow 17:30',
+    isLive: false,
+    matchState: 'pre',
+    team1: { name: 'Italy', shortName: 'ITA', color: '#22c55e' },
+    team2: { name: 'France', shortName: 'FRA', color: '#3b82f6' },
+    odds: { team1: 1.65, team2: 2.20 },
+    liveDetails: { score1: 0, score2: 0, minute: 'Scheduled', commentary: 'Quarter-final' }
+  },
+  {
+    id: 'm29',
+    league: 'NFL',
+    sport: 'american-football',
+    sportColor: '#b45309',
+    time: 'Completed',
+    isLive: false,
+    matchState: 'post',
+    team1: { name: 'San Francisco 49ers', shortName: 'SF', color: '#ef4444' },
+    team2: { name: 'Dallas Cowboys', shortName: 'DAL', color: '#1d4ed8' },
+    odds: { team1: 1.78, team2: 2.05 },
+    liveDetails: { score1: 27, score2: 24, minute: 'Final', commentary: '49ers win by 3' }
   },
 ];
 

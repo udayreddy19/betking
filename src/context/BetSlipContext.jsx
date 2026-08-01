@@ -21,7 +21,7 @@ export function BetSlipProvider({ children }) {
   const [stake, setStake] = useState('');
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  const addBet = useCallback((match, selection, odds, selectionName) => {
+  const addBet = useCallback((match, selection, odds, selectionName, options = {}) => {
     let added = true;
     setBets(prev => {
       const existing = prev.find(b => b.matchId === match.id && b.selection === selection);
@@ -31,14 +31,22 @@ export function BetSlipProvider({ children }) {
         return prev.filter(b => b.id !== existing.id);
       }
 
-      const isMainMarket = ['1', '2', 'X'].includes(selection);
-      const filtered = isMainMarket
-        ? prev.filter(b => !(b.matchId === match.id && ['1', '2', 'X'].includes(b.selection)))
-        : prev;
+      let filtered = prev;
+      if (options.singlePerMatch) {
+        filtered = prev.filter(b => b.matchId !== match.id);
+      } else {
+        const isMainMarket = ['1', '2', 'X'].includes(selection);
+        filtered = isMainMarket
+          ? prev.filter(b => !(b.matchId === match.id && ['1', '2', 'X'].includes(b.selection)))
+          : prev;
+      }
 
       const label = getSelectionName(match, selection, selectionName);
       showToast(`Added to betslip: ${label} @ ${Number(odds).toFixed(2)}`);
-      setIsMobileOpen(true);
+
+      if (typeof window !== 'undefined' && window.innerWidth <= 1024 && !options.skipMobileOpen) {
+        setIsMobileOpen(true);
+      }
 
       return [...filtered, {
         id: `${match.id}-${selection}`,

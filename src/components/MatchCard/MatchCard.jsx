@@ -17,6 +17,19 @@ const sportIcons = {
   'american-football': '🏈',
 };
 
+const extraMarketsBySport = {
+  cricket: 'Player Runs, Dismissals, 50s',
+  'virtual-cricket': 'Wickets, Boundaries, Sixes',
+  soccer: 'Corners, Cards, Goalscorers',
+  esoccer: 'Next Goal, Corners, Cards',
+  basketball: 'Points, Rebounds, Assists',
+  tennis: 'Set Winner, Total Games, Aces',
+  'table-tennis': 'Set Winner, Total Points, Handicap',
+  kabaddi: 'Total Points, Raid Points, Tackles',
+  volleyball: 'Set Winner, Total Points, Handicap',
+  'american-football': 'Touchdowns, Field Goals, Handicap',
+};
+
 function TeamBadge({ team }) {
   const initials = team.shortName || team.name.slice(0, 3).toUpperCase();
   return (
@@ -154,7 +167,7 @@ export default function MatchCard({ match }) {
         )}
 
         <button type="button" className="match-card-markets-link" onClick={openDetails}>
-          <span>+28 More Markets (Player Runs, Dismissals, 50s)</span>
+          <span>+28 More Markets ({extraMarketsBySport[match.sport] || 'Specials, Props'})</span>
           <span>➔</span>
         </button>
       </div>

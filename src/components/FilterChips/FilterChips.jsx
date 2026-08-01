@@ -5,6 +5,7 @@ export default function FilterChips({ items, activeId, onSelect, className = '' 
     <div className={`filter-chips ${className}`}>
       {items.map(item => (
         <button
+          type="button"
           key={item.id}
           className={`filter-chip ${activeId === item.id ? 'active' : ''}`}
           onClick={() => onSelect(item.id)}
