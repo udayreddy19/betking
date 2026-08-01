@@ -28,8 +28,19 @@ export default function Header() {
           </button>
 
           <NavLink to="/" className="header-logo" id="header-logo">
-            <span className="logo-icon">B</span>
-            <span>BetKing</span>
+            <span className="logo-icon" style={{
+              background: 'black',
+              color: 'white',
+              borderRadius: '50%',
+              width: '32px',
+              height: '32px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 900,
+              fontSize: '0.85rem'
+            }}>10</span>
+            <span style={{ fontWeight: 900, color: 'black', letterSpacing: '-0.5px' }}>CRIC</span>
           </NavLink>
 
           <nav className="header-nav" id="main-nav">
