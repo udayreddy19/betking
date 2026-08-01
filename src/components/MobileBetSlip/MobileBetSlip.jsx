@@ -4,8 +4,7 @@ import { IoClose } from 'react-icons/io5';
 import './MobileBetSlip.css';
 
 export default function MobileBetSlip() {
-  const { betCount, myBetsCount, isMobileOpen, setIsMobileOpen, openMobileBetslip } = useBetSlip();
-  const totalCount = betCount + myBetsCount;
+  const { betCount, isMobileOpen, setIsMobileOpen, openMobileBetslip } = useBetSlip();
 
   return (
     <>
@@ -35,7 +34,7 @@ export default function MobileBetSlip() {
         </div>
       )}
 
-      {totalCount > 0 && !isMobileOpen && (
+      {betCount > 0 && !isMobileOpen && (
         <div className="mobile-betslip-hint">Tap Betslip to view your selections</div>
       )}
     </>

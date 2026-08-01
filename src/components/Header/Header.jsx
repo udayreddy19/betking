@@ -3,7 +3,10 @@ import { HiOutlineMenu } from 'react-icons/hi';
 import { IoGiftOutline } from 'react-icons/io5';
 import { FiChevronDown } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
+import { useBetSlip } from '../../context/BetSlipContext';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
+import MyBetsPanel from '../MyBetsPanel/MyBetsPanel';
+import '../MyBetsPanel/MyBetsPanel.css';
 import './Header.css';
 
 const navLinks = [
@@ -17,6 +20,7 @@ const navLinks = [
 
 export default function Header() {
   const { user, isLoggedIn, openLoginModal, openDepositModal, toggleSidebar } = useAuth();
+  const { myBetsCount, isMyBetsOpen, toggleMyBets } = useBetSlip();
   const navigate = useNavigate();
 
   return (
@@ -49,6 +53,17 @@ export default function Header() {
 
         <div className="header-right">
           <ThemeToggle />
+          <button
+            type="button"
+            className={`header-my-bets-btn ${isMyBetsOpen ? 'active' : ''}`}
+            data-my-bets-trigger
+            onClick={toggleMyBets}
+            aria-expanded={isMyBetsOpen}
+            aria-haspopup="dialog"
+          >
+            <span className="header-my-bets-label">My bets</span>
+            {myBetsCount > 0 && <span className="header-my-bets-badge">{myBetsCount}</span>}
+          </button>
           <button className="header-bonuses-btn" id="bonuses-btn" aria-label="Bonuses" onClick={() => navigate('/promotions')}>
             <IoGiftOutline />
           </button>
@@ -82,6 +97,7 @@ export default function Header() {
           )}
         </div>
       </div>
+      <MyBetsPanel />
     </header>
   );
 }

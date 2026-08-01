@@ -26,19 +26,28 @@ export function BetSlipProvider({ children }) {
   const { showToast } = useAuth();
   const [bets, setBets] = useState([]);
   const [placedBets, setPlacedBets] = useState(loadPlacedBets);
-  const [activeTab, setActiveTab] = useState('betslip');
   const [stake, setStake] = useState('');
   const [betType, setBetType] = useState('multi');
   const [singlesStakes, setSinglesStakes] = useState({});
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isMyBetsOpen, setIsMyBetsOpen] = useState(false);
 
   useEffect(() => {
     localStorage.setItem(PLACED_BETS_KEY, JSON.stringify(placedBets));
   }, [placedBets]);
 
   const openMyBets = useCallback(() => {
-    setActiveTab('mybets');
-    setIsMobileOpen(true);
+    setIsMyBetsOpen(true);
+    setIsMobileOpen(false);
+  }, []);
+
+  const closeMyBets = useCallback(() => {
+    setIsMyBetsOpen(false);
+  }, []);
+
+  const toggleMyBets = useCallback(() => {
+    setIsMyBetsOpen((open) => !open);
+    setIsMobileOpen(false);
   }, []);
 
   const addBet = useCallback((match, selection, odds, selectionName, options = {}) => {
@@ -168,8 +177,8 @@ export function BetSlipProvider({ children }) {
       setBets([]);
       setStake('');
       setSinglesStakes({});
-      setActiveTab('mybets');
-      setIsMobileOpen(true);
+      setIsMyBetsOpen(true);
+      setIsMobileOpen(false);
       return { success: true, placed, totalDeducted: stakeAmount };
     }
 
@@ -198,8 +207,8 @@ export function BetSlipProvider({ children }) {
     setBets([]);
     setStake('');
     setSinglesStakes({});
-    setActiveTab('mybets');
-    setIsMobileOpen(true);
+    setIsMyBetsOpen(true);
+    setIsMobileOpen(false);
     return { success: true, placed: placements, totalDeducted };
   }, [bets, betType, stake, singlesStakes, multiOdds]);
 
@@ -212,8 +221,6 @@ export function BetSlipProvider({ children }) {
       clearAll,
       placeBets,
       isBetSelected,
-      activeTab,
-      setActiveTab,
       stake,
       setStake,
       betType,
@@ -228,7 +235,10 @@ export function BetSlipProvider({ children }) {
       isMobileOpen,
       setIsMobileOpen,
       openMobileBetslip: () => setIsMobileOpen(true),
+      isMyBetsOpen,
       openMyBets,
+      closeMyBets,
+      toggleMyBets,
     }}>
       {children}
     </BetSlipContext.Provider>

@@ -44,6 +44,29 @@
   color: var(--color-text);
   box-shadow: var(--shadow-sm);
 }
+.betslip-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: var(--font-bold);
+  color: var(--color-text);
+}
+
+.betslip-title .tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  background: var(--color-primary);
+  color: white;
+  border-radius: var(--radius-full);
+  font-size: 0.65rem;
+  font-weight: var(--font-bold);
+  padding: 0 var(--space-1);
+}
+
 .betslip-tab {
   display: flex;
   align-items: center;

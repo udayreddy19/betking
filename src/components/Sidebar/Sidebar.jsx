@@ -15,7 +15,7 @@ import './Sidebar.css';
 
 export default function Sidebar() {
   const { user, isLoggedIn, isSidebarOpen, closeSidebar, logout, openLoginModal, openDepositModal } = useAuth();
-  const { setActiveTab, openMyBets } = useBetSlip();
+  const { openMyBets } = useBetSlip();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [activeFinModal, setActiveFinModal] = useState(null);
@@ -114,7 +114,7 @@ export default function Sidebar() {
                     <span className="action-label">Cancel W/D</span>
                   </button>
 
-                  <button className="sidebar-action" onClick={() => { closeSidebar(); navigate('/sports'); setActiveTab('mybets'); openMyBets(); }}>
+                  <button className="sidebar-action" onClick={() => { closeSidebar(); openMyBets(); }}>
                     <span className="action-icon-wrap"><HiOutlineDocumentText className="action-icon" /></span>
                     <span className="action-label">My Bets</span>
                   </button>

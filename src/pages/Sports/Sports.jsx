@@ -78,12 +78,14 @@ export default function Sports() {
 
   const initialSport = searchParams.get('sport') || 'cricket';
   const initialLeague = resolveLeagueId(searchParams.get('league')) || 'hundred-m';
+  const initialMatchId = searchParams.get('match');
 
   const [activeSport, setActiveSport] = useState(initialSport);
   const [activeLeague, setActiveLeague] = useState(initialLeague);
+  const [viewMode, setViewMode] = useState(initialMatchId ? 'match' : 'league');
   const [activeMarketCat, setActiveMarketCat] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMatchId, setSelectedMatchId] = useState(null);
+  const [selectedMatchId, setSelectedMatchId] = useState(initialMatchId);
   const [modalMatch, setModalMatch] = useState(null);
   const [expandedMarkets, setExpandedMarkets] = useState({
     winner: true, tie: true, over10: true, delivery: false, partnership: false,
@@ -98,18 +100,40 @@ export default function Sports() {
   );
 
   const activeMatch = useMemo(() => {
-    if (selectedMatchId) {
-      const found = sportMatches.find(m => m.id === selectedMatchId);
-      if (found) return found;
-    }
-    return sportMatches.find(m => m.matchState === 'in') || sportMatches[0] || null;
-  }, [sportMatches, selectedMatchId]);
+    if (viewMode !== 'match' || !selectedMatchId) return null;
+    return sportMatches.find(m => m.id === selectedMatchId) || null;
+  }, [sportMatches, selectedMatchId, viewMode]);
 
-  useEffect(() => {
-    if (activeMatch && !sportMatches.find(m => m.id === selectedMatchId)) {
-      setSelectedMatchId(activeMatch.id);
-    }
-  }, [activeMatch, sportMatches, selectedMatchId]);
+  const selectMatch = useCallback((matchId) => {
+    setSelectedMatchId(matchId);
+    setViewMode('match');
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.set('sport', activeSport);
+      if (activeLeague) next.set('league', resolveLeagueId(activeLeague));
+      next.set('match', matchId);
+      return next;
+    }, { replace: true });
+  }, [activeSport, activeLeague, setSearchParams]);
+
+  const showLeagueOverview = useCallback((leagueId = activeLeague) => {
+    const resolved = resolveLeagueId(leagueId);
+    setActiveLeague(resolved);
+    setViewMode('league');
+    setSelectedMatchId(null);
+    setSearchQuery('');
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.set('sport', activeSport);
+      if (resolved) next.set('league', resolved);
+      else next.delete('league');
+      next.delete('match');
+      return next;
+    }, { replace: true });
+    requestAnimationFrame(() => {
+      document.getElementById('sports-match-ticker')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  }, [activeSport, activeLeague, setSearchParams]);
 
   const toggleMarket = (key) => {
     setExpandedMarkets(prev => ({ ...prev, [key]: !prev[key] }));
@@ -127,38 +151,36 @@ export default function Sports() {
     const firstLeague = featuredLeagues.find(l => l.sport === sportId);
     const leagueId = firstLeague?.id || null;
     setActiveLeague(leagueId);
+    setViewMode('league');
     setSelectedMatchId(null);
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
       next.set('sport', sportId);
       if (leagueId) next.set('league', leagueId);
       else next.delete('league');
+      next.delete('match');
       return next;
     }, { replace: true });
   }, [setSearchParams]);
 
   const handleLeagueChange = useCallback((leagueId) => {
-    const resolved = resolveLeagueId(leagueId);
-    setActiveLeague(resolved);
-    setSelectedMatchId(null);
-    setSearchQuery('');
-    setSearchParams(prev => {
-      const next = new URLSearchParams(prev);
-      next.set('sport', activeSport);
-      if (resolved) next.set('league', resolved);
-      else next.delete('league');
-      return next;
-    }, { replace: true });
-    document.getElementById('sports-match-ticker')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }, [activeSport, setSearchParams]);
+    showLeagueOverview(leagueId);
+  }, [showLeagueOverview]);
 
   useEffect(() => {
     const sport = searchParams.get('sport');
     const league = searchParams.get('league');
-    if (sport && sport !== activeSport) setActiveSport(sport);
-    if (league) {
-      const resolved = resolveLeagueId(league);
-      if (resolved !== activeLeague) setActiveLeague(resolved);
+    const match = searchParams.get('match');
+
+    if (sport) setActiveSport(sport);
+    if (league) setActiveLeague(resolveLeagueId(league));
+
+    if (match) {
+      setSelectedMatchId(match);
+      setViewMode('match');
+    } else {
+      setSelectedMatchId(null);
+      setViewMode('league');
     }
   }, [searchParams]);
 
@@ -196,33 +218,37 @@ export default function Sports() {
       />
 
       <div className="sports-center">
-        {activeMatch && (
-          <nav className="sports-breadcrumbs" aria-label="Breadcrumb">
-            <Link to="/" className="sports-breadcrumb-home" aria-label="Home">
-              <FiHome />
-            </Link>
-            <span className="sports-breadcrumb-sep">›</span>
-            <button
-              type="button"
-              className="sports-breadcrumb-link"
-              onClick={() => handleSportChange(activeSport)}
-            >
-              {sportLabel}
-            </button>
-            <span className="sports-breadcrumb-sep">›</span>
-            <button
-              type="button"
-              className="sports-breadcrumb-link"
-              onClick={() => activeLeague && handleLeagueChange(activeLeague)}
-            >
-              {breadcrumbLeague}
-            </button>
-            <span className="sports-breadcrumb-sep">›</span>
-            <span className="sports-breadcrumb-current">
-              {activeMatch.team1.name} vs. {activeMatch.team2.name}
-            </span>
-          </nav>
-        )}
+        <nav className="sports-breadcrumbs" aria-label="Breadcrumb">
+          <Link to="/" className="sports-breadcrumb-home" aria-label="Home">
+            <FiHome />
+          </Link>
+          <span className="sports-breadcrumb-sep">›</span>
+          <button
+            type="button"
+            className="sports-breadcrumb-link"
+            onClick={() => handleSportChange(activeSport)}
+          >
+            {sportLabel}
+          </button>
+          <span className="sports-breadcrumb-sep">›</span>
+          {viewMode === 'match' && activeMatch ? (
+            <>
+              <button
+                type="button"
+                className="sports-breadcrumb-link"
+                onClick={() => showLeagueOverview(activeLeague)}
+              >
+                {breadcrumbLeague}
+              </button>
+              <span className="sports-breadcrumb-sep">›</span>
+              <span className="sports-breadcrumb-current">
+                {activeMatch.team1.name} vs. {activeMatch.team2.name}
+              </span>
+            </>
+          ) : (
+            <span className="sports-breadcrumb-current">{breadcrumbLeague}</span>
+          )}
+        </nav>
 
         <FilterChips
           items={sportsCategories}
@@ -285,14 +311,13 @@ export default function Sports() {
               )}
             </div>
           ) : sportMatches.slice(0, 10).map(m => {
-            const isSelected = activeMatch?.id === m.id;
             const { team1Score, team2Score, statusLabel, state } = getMatchScores(m);
             return (
               <button
                 key={m.id}
                 type="button"
-                className={`sports-ticker-card ${isSelected ? 'selected' : ''}`}
-                onClick={() => setSelectedMatchId(m.id)}
+                className={`sports-ticker-card ${viewMode === 'match' && activeMatch?.id === m.id ? 'selected' : ''}`}
+                onClick={() => selectMatch(m.id)}
               >
                 <div className="sports-ticker-row">
                   <span>{m.team1.shortName || m.team1.name.slice(0, 8)}</span>
@@ -308,7 +333,42 @@ export default function Sports() {
           })}
         </div>
 
-        {activeMatch ? (
+        {viewMode === 'league' && sportMatches.length > 0 && (
+          <div className="sports-league-overview">
+            <h2 className="sports-league-overview-title">{breadcrumbLeague}</h2>
+            <p className="sports-league-overview-subtitle">Select a match to view markets and live scores</p>
+            <div className="sports-league-overview-list">
+              {sportMatches.map((m) => {
+                const { team1Score, team2Score, statusLabel, state } = getMatchScores(m);
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    className="sports-league-overview-card"
+                    onClick={() => selectMatch(m.id)}
+                  >
+                    <div className="sports-league-overview-card-top">
+                      <span className="sports-league-overview-time">{m.time}</span>
+                      {state === 'in' && <span className="sports-league-overview-live">LIVE</span>}
+                    </div>
+                    <div className="sports-league-overview-teams">
+                      <div className="sports-league-overview-team">
+                        <span>{m.team1.name}</span>
+                        <strong>{team1Score || '–'}</strong>
+                      </div>
+                      <div className="sports-league-overview-team">
+                        <span>{m.team2.name}</span>
+                        <strong>{team2Score || statusLabel}</strong>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {viewMode === 'match' && activeMatch ? (
           <>
             <div className="sports-mobile-live-widget">
               <LiveMatchGraphicWidget match={activeMatch} />
@@ -480,12 +540,20 @@ export default function Sports() {
             )}
 
           </>
-        ) : (
+        ) : viewMode === 'match' ? (
+          <div className="sports-empty">
+            <h3>Match not found</h3>
+            <p>This match is no longer available</p>
+            <button type="button" className="sports-empty-action" onClick={() => showLeagueOverview(activeLeague)}>
+              Back to {breadcrumbLeague}
+            </button>
+          </div>
+        ) : sportMatches.length === 0 ? (
           <div className="sports-empty">
             <h3>No matches in this league</h3>
             <p>Select another league or sport</p>
           </div>
-        )}
+        ) : null}
       </div>
 
       <aside className="sports-right">

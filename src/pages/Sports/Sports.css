@@ -183,6 +183,85 @@
   flex-shrink: 0;
 }
 
+.sports-league-overview {
+  margin-bottom: var(--space-4);
+}
+
+.sports-league-overview-title {
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+  color: var(--color-text);
+  margin-bottom: var(--space-1);
+}
+
+.sports-league-overview-subtitle {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-4);
+}
+
+.sports-league-overview-list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.sports-league-overview-card {
+  width: 100%;
+  text-align: left;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: var(--space-4);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.sports-league-overview-card:hover {
+  border-color: #5e35b1;
+  box-shadow: 0 4px 14px rgba(94, 53, 177, 0.08);
+}
+
+.sports-league-overview-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+
+.sports-league-overview-time {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-weight: var(--font-semibold);
+}
+
+.sports-league-overview-live {
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
+.sports-league-overview-teams {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.sports-league-overview-team {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+.sports-league-overview-team strong {
+  font-size: var(--text-base);
+  color: var(--color-text);
+}
+
 .sports-match-banner {
   background: #ffffff;
   border-radius: 12px;
