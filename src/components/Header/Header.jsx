@@ -1,12 +1,16 @@
+import { useState, useCallback } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { HiOutlineMenu } from 'react-icons/hi';
 import { IoGiftOutline } from 'react-icons/io5';
 import { FiChevronDown } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
+import { promotions } from '../../data/mockData';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
 import MyBetsPanel from '../MyBetsPanel/MyBetsPanel';
+import PromotionsPanel from '../PromotionsPanel/PromotionsPanel';
 import '../MyBetsPanel/MyBetsPanel.css';
+import '../PromotionsPanel/PromotionsPanel.css';
 import './Header.css';
 
 const navLinks = [
@@ -20,8 +24,23 @@ const navLinks = [
 
 export default function Header() {
   const { user, isLoggedIn, openLoginModal, openDepositModal, toggleSidebar } = useAuth();
-  const { myBetsCount, isMyBetsOpen, toggleMyBets } = useBetSlip();
+  const { myBetsCount, isMyBetsOpen, toggleMyBets, closeMyBets } = useBetSlip();
+  const [isPromosOpen, setIsPromosOpen] = useState(false);
   const navigate = useNavigate();
+
+  const togglePromos = useCallback(() => {
+    setIsPromosOpen((open) => {
+      if (!open) closeMyBets();
+      return !open;
+    });
+  }, [closeMyBets]);
+
+  const closePromos = useCallback(() => setIsPromosOpen(false), []);
+
+  const handleMyBetsToggle = useCallback(() => {
+    closePromos();
+    toggleMyBets();
+  }, [closePromos, toggleMyBets]);
 
   return (
     <header className="header" id="main-header">
@@ -57,15 +76,25 @@ export default function Header() {
             type="button"
             className={`header-my-bets-btn ${isMyBetsOpen ? 'active' : ''}`}
             data-my-bets-trigger
-            onClick={toggleMyBets}
+            onClick={handleMyBetsToggle}
             aria-expanded={isMyBetsOpen}
             aria-haspopup="dialog"
           >
             <span className="header-my-bets-label">My bets</span>
             {myBetsCount > 0 && <span className="header-my-bets-badge">{myBetsCount}</span>}
           </button>
-          <button className="header-bonuses-btn" id="bonuses-btn" aria-label="Bonuses" onClick={() => navigate('/promotions')}>
+          <button
+            type="button"
+            className={`header-bonuses-btn ${isPromosOpen ? 'active' : ''}`}
+            id="bonuses-btn"
+            data-promos-trigger
+            aria-label="Promotions"
+            aria-expanded={isPromosOpen}
+            aria-haspopup="dialog"
+            onClick={togglePromos}
+          >
             <IoGiftOutline />
+            <span className="header-bonuses-badge">{promotions.length}</span>
           </button>
 
           {isLoggedIn ? (
@@ -98,6 +127,7 @@ export default function Header() {
         </div>
       </div>
       <MyBetsPanel />
+      <PromotionsPanel isOpen={isPromosOpen} onClose={closePromos} />
     </header>
   );
 }

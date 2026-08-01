@@ -2,12 +2,11 @@ import { useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiChevronRight, FiChevronLeft } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
-import PromoBanner from '../../components/PromoBanner/PromoBanner';
 import CategoryGrid from '../../components/CategoryGrid/CategoryGrid';
 import GameCarousel from '../../components/GameCarousel/GameCarousel';
 import FilterChips from '../../components/FilterChips/FilterChips';
 import MatchCard from '../../components/MatchCard/MatchCard';
-import { casinoGames, promotions, sportsCategories, WELCOME_BONUS } from '../../data/mockData';
+import { casinoGames, sportsCategories, WELCOME_BONUS } from '../../data/mockData';
 import { useLiveSports } from '../../context/LiveSportsContext';
 import { filterMatches } from '../../utils/matchFilters';
 import './Home.css';
@@ -53,9 +52,7 @@ export default function Home() {
 
   return (
     <div className="home-page container" id="home-page">
-      {isLoggedIn ? (
-        <PromoBanner promos={promotions} />
-      ) : (
+      {!isLoggedIn && (
         <div className="hero-banner" id="hero-banner">
           <div className="hero-content">
             <h1>Get your welcome bonus!</h1>

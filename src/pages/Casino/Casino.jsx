@@ -1,9 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { FiSearch } from 'react-icons/fi';
-import PromoBanner from '../../components/PromoBanner/PromoBanner';
 import GameCarousel from '../../components/GameCarousel/GameCarousel';
-import { casinoGames, casinoCategories, promotions } from '../../data/mockData';
+import { casinoGames, casinoCategories } from '../../data/mockData';
 import './Casino.css';
 
 export default function Casino() {
@@ -37,8 +36,6 @@ export default function Casino() {
 
   return (
     <div className="casino-page container" id="casino-page">
-      <PromoBanner promos={promotions} />
-
       <div className="casino-categories" id="casino-categories">
         <button className="casino-search-btn" aria-label="Search games">
           <FiSearch />

@@ -160,6 +160,7 @@
   color: var(--color-primary);
   font-size: 1.2rem;
   transition: all var(--transition-fast);
+  position: relative;
 }
 .header-bonuses-btn:hover {
   background: var(--color-primary-bg);

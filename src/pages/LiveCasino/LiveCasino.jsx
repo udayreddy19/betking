@@ -1,8 +1,7 @@
 import { useState, useMemo } from 'react';
 import { FiSearch } from 'react-icons/fi';
-import PromoBanner from '../../components/PromoBanner/PromoBanner';
 import GameCarousel from '../../components/GameCarousel/GameCarousel';
-import { casinoGames, liveCasinoCategories, promotions } from '../../data/mockData';
+import { casinoGames, liveCasinoCategories } from '../../data/mockData';
 import './LiveCasino.css';
 
 export default function LiveCasino() {
@@ -32,8 +31,6 @@ export default function LiveCasino() {
 
   return (
     <div className="live-casino-page container" id="live-casino-page">
-      <PromoBanner promos={promotions} />
-
       <div className="live-casino-categories" id="lc-categories">
         <button className="lc-search-btn" aria-label="Search games">
           <FiSearch />
