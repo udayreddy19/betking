@@ -38,6 +38,13 @@ export default function MatchCard({ match }) {
           <>
             <span className="live-dot" />
             LIVE
+            {match.liveDetails && (
+              <span style={{ marginLeft: '8px', color: '#10b981', fontWeight: 'bold' }}>
+                {match.sport === 'cricket' && `${match.liveDetails.runs}/${match.liveDetails.wickets} (${match.liveDetails.overs || '16.4'})`}
+                {match.sport === 'soccer' && `${match.liveDetails.score1} - ${match.liveDetails.score2} (${match.liveDetails.minute || 45}')`}
+                {match.sport === 'basketball' && `${match.liveDetails.score1} - ${match.liveDetails.score2}`}
+              </span>
+            )}
           </>
         ) : (
           match.time
@@ -60,13 +67,34 @@ export default function MatchCard({ match }) {
         </div>
       </div>
 
+      {match.isLive && match.liveDetails?.commentary && (
+        <div style={{
+          fontSize: '0.7rem',
+          color: '#94a3b8',
+          fontStyle: 'italic',
+          padding: '2px 8px',
+          background: 'rgba(15, 23, 42, 0.4)',
+          borderRadius: '4px',
+          marginBottom: '8px',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis'
+        }}>
+          💬 {match.liveDetails.commentary}
+        </div>
+      )}
+
       <div className="match-card-odds">
         <button
           className={`odds-btn ${isBetSelected(match.id, '1') ? 'selected' : ''}`}
           onClick={() => handleOddsClick('1', match.odds.team1)}
         >
           <span className="odds-label">1</span>
-          <span className="odds-value">{match.odds.team1.toFixed(2)}</span>
+          <span className="odds-value">
+            {match.odds.team1.toFixed(2)}
+            {match.oddsDirection?.team1 === 'up' && <span style={{ color: '#22c55e', marginLeft: '2px' }}>▲</span>}
+            {match.oddsDirection?.team1 === 'down' && <span style={{ color: '#ef4444', marginLeft: '2px' }}>▼</span>}
+          </span>
         </button>
         {match.odds.draw !== undefined && (
           <button
@@ -74,7 +102,11 @@ export default function MatchCard({ match }) {
             onClick={() => handleOddsClick('X', match.odds.draw)}
           >
             <span className="odds-label">X</span>
-            <span className="odds-value">{match.odds.draw.toFixed(2)}</span>
+            <span className="odds-value">
+              {match.odds.draw.toFixed(2)}
+              {match.oddsDirection?.draw === 'up' && <span style={{ color: '#22c55e', marginLeft: '2px' }}>▲</span>}
+              {match.oddsDirection?.draw === 'down' && <span style={{ color: '#ef4444', marginLeft: '2px' }}>▼</span>}
+            </span>
           </button>
         )}
         <button
@@ -82,7 +114,11 @@ export default function MatchCard({ match }) {
           onClick={() => handleOddsClick('2', match.odds.team2)}
         >
           <span className="odds-label">2</span>
-          <span className="odds-value">{match.odds.team2.toFixed(2)}</span>
+          <span className="odds-value">
+            {match.odds.team2.toFixed(2)}
+            {match.oddsDirection?.team2 === 'up' && <span style={{ color: '#22c55e', marginLeft: '2px' }}>▲</span>}
+            {match.oddsDirection?.team2 === 'down' && <span style={{ color: '#ef4444', marginLeft: '2px' }}>▼</span>}
+          </span>
         </button>
       </div>
     </div>

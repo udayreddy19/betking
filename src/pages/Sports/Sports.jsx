@@ -6,10 +6,12 @@ import PromoBanner from '../../components/PromoBanner/PromoBanner';
 import FilterChips from '../../components/FilterChips/FilterChips';
 import MatchCard from '../../components/MatchCard/MatchCard';
 import BetSlip from '../../components/BetSlip/BetSlip';
-import { matches, promotions, sportsCategories, leagues } from '../../data/mockData';
+import { promotions, sportsCategories, leagues } from '../../data/mockData';
+import { useLiveSports } from '../../context/LiveSportsContext';
 import './Sports.css';
 
 export default function Sports() {
+  const { matches, tickerMessage } = useLiveSports();
   const [activeSport, setActiveSport] = useState('cricket');
   const [activeLeague, setActiveLeague] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
@@ -46,12 +48,43 @@ export default function Sports() {
     }
 
     return result;
-  }, [activeSport, activeTab, searchQuery]);
+  }, [matches, activeSport, activeTab, searchQuery]);
 
   return (
     <div className="sports-page container" id="sports-page">
       <div className="sports-main">
         <PromoBanner promos={promotions.slice(0, 3)} />
+
+        {/* Real-time Automated Live Betting Ticker */}
+        <div style={{
+          background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)',
+          color: '#38bdf8',
+          padding: 'var(--space-3) var(--space-4)',
+          borderRadius: 'var(--radius-md)',
+          margin: 'var(--space-4) 0',
+          fontSize: 'var(--text-xs)',
+          fontWeight: 600,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--space-3)',
+          border: '1px solid rgba(99, 102, 241, 0.4)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+        }}>
+          <span style={{
+            background: '#ef4444',
+            color: 'white',
+            padding: '2px 8px',
+            borderRadius: '12px',
+            fontSize: '0.65rem',
+            fontWeight: 800,
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            animation: 'pulse 1.5s infinite'
+          }}>AUTOMATED LIVE</span>
+          <span style={{ color: '#e0e7ff', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {tickerMessage}
+          </span>
+        </div>
 
         <div className="sports-filters">
           <FilterChips

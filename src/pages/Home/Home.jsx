@@ -7,11 +7,13 @@ import CategoryGrid from '../../components/CategoryGrid/CategoryGrid';
 import GameCarousel from '../../components/GameCarousel/GameCarousel';
 import FilterChips from '../../components/FilterChips/FilterChips';
 import MatchCard from '../../components/MatchCard/MatchCard';
-import { casinoGames, matches, promotions, sportsCategories } from '../../data/mockData';
+import { casinoGames, promotions, sportsCategories } from '../../data/mockData';
+import { useLiveSports } from '../../context/LiveSportsContext';
 import './Home.css';
 
 export default function Home() {
   const { isLoggedIn } = useAuth();
+  const { matches } = useLiveSports();
   const navigate = useNavigate();
   const [activeSport, setActiveSport] = useState('cricket');
 
