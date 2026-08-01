@@ -16,7 +16,7 @@ export default function DepositModal() {
   const [giftCardCode, setGiftCardCode] = useState('');
   const [upiId, setUpiId] = useState('udayreddy@upi');
   const [upiMode, setUpiMode] = useState('id'); // 'id' | 'qr'
-  const [razorpayKey, setRazorpayKey] = useState(import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_TKUn3mSbuhuzFx');
+  const [razorpayKey, setRazorpayKey] = useState(import.meta.env.VITE_RAZORPAY_KEY_ID || '');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isRzpModalOpen, setIsRzpModalOpen] = useState(false);
@@ -58,7 +58,7 @@ export default function DepositModal() {
     setErrorMsg('');
     setIsLoading(true);
 
-    const activeKey = razorpayKey.trim() || import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_TKUn3mSbuhuzFx';
+    const activeKey = razorpayKey.trim() || import.meta.env.VITE_RAZORPAY_KEY_ID;
 
     try {
       // 1. Call Backend Vercel Serverless Function to create real Razorpay Order
