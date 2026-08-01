@@ -523,3 +523,13 @@ export function filterLiveCasinoByType(games, typeId) {
   if (!typeId || typeId === 'all') return games;
   return games.filter((g) => g.liveType === typeId);
 }
+
+export function filterGamesBySearch(games, query) {
+  const q = query?.trim().toLowerCase();
+  if (!q) return games;
+  return games.filter(
+    (g) => g.name.toLowerCase().includes(q)
+      || g.provider?.toLowerCase().includes(q)
+      || g.category?.toLowerCase().includes(q)
+  );
+}

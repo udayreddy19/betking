@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { FiSearch, FiHome } from 'react-icons/fi';
 import { HiOutlineChevronDown, HiOutlineChevronUp } from 'react-icons/hi';
 import FilterChips from '../../components/FilterChips/FilterChips';
@@ -25,7 +25,7 @@ const MARKET_CATEGORIES = [
 ];
 
 function filterByLeague(matchList, activeLeague, cricketSeries = []) {
-  if (!activeLeague) return matchList;
+  if (!activeLeague || activeLeague === 'all') return matchList;
 
   const dynamicSeries = cricketSeries.find(
     (series) => series.id === activeLeague
@@ -87,13 +87,15 @@ function MarketsSuspended() {
 }
 
 export default function Sports() {
-  const { matches, tickerMessage, cricketSeries } = useLiveSports();
+  const { matches, tickerMessage, cricketSeries, scoresError, refreshScores, isScoresLoading } = useLiveSports();
   const { addBet, isBetSelected } = useBetSlip();
   const { showToast } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  const isLiveBettingPage = location.pathname === '/live-betting';
 
   const initialSport = searchParams.get('sport') || 'cricket';
-  const initialLeague = resolveLeagueId(searchParams.get('league')) || 'hundred-m';
+  const initialLeague = resolveLeagueId(searchParams.get('league')) || 'all';
   const initialMatchId = searchParams.get('match');
 
   const [activeSport, setActiveSport] = useState(initialSport);
@@ -107,14 +109,14 @@ export default function Sports() {
     winner: true, tie: true, over10: true, delivery: false, partnership: false,
   });
 
-  const sportMatches = useMemo(
-    () => filterByLeague(
-      filterMatches(matches, { sport: activeSport, stateTab: 'all', searchQuery }),
+  const sportMatches = useMemo(() => {
+    const stateTab = isLiveBettingPage ? 'live' : 'all';
+    return filterByLeague(
+      filterMatches(matches, { sport: activeSport, stateTab, searchQuery }),
       activeLeague,
       cricketSeries
-    ),
-    [matches, activeSport, activeLeague, searchQuery, cricketSeries]
-  );
+    );
+  }, [matches, activeSport, activeLeague, searchQuery, cricketSeries, isLiveBettingPage]);
 
   const activeMatch = useMemo(() => {
     if (viewMode !== 'match' || !selectedMatchId) return null;
@@ -201,9 +203,7 @@ export default function Sports() {
     }
   }, [searchParams]);
 
-  const matchTimeLabel = activeMatch?.time?.includes('Live')
-    ? `19:00, 01 August 2026`
-    : (activeMatch?.time || 'Scheduled');
+  const matchTimeLabel = activeMatch?.time || 'Scheduled';
 
   const activeLeagueMeta = getLeagueMeta(activeLeague, cricketSeries);
   const breadcrumbLeague = activeLeagueMeta?.breadcrumb || activeLeagueMeta?.name || activeMatch?.league || 'All Leagues';
@@ -236,6 +236,13 @@ export default function Sports() {
       />
 
       <div className="sports-center">
+        {isLiveBettingPage && (
+          <div className="sports-page-heading">
+            <h1>Live Betting</h1>
+            <p>In-play markets — bet while the action unfolds</p>
+          </div>
+        )}
+
         <nav className="sports-breadcrumbs" aria-label="Breadcrumb">
           <Link to="/" className="sports-breadcrumb-home" aria-label="Home">
             <FiHome />
@@ -295,6 +302,20 @@ export default function Sports() {
           <span className="sports-live-status-dot" />
           {tickerMessage || 'Syncing live scores…'}
         </div>
+
+        {scoresError && (
+          <div className="sports-scores-error" role="alert">
+            <span>{scoresError}</span>
+            <button
+              type="button"
+              className="sports-scores-retry"
+              onClick={refreshScores}
+              disabled={isScoresLoading}
+            >
+              {isScoresLoading ? 'Retrying…' : 'Retry'}
+            </button>
+          </div>
+        )}
 
         <div className="sports-search sports-search--mobile">
           <div className="sports-search-wrapper">

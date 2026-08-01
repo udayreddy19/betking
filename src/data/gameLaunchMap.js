@@ -50,7 +50,7 @@ export function buildLaunchRequest(provider, key, extra = {}) {
 export const GAME_LAUNCH_MAP = {
   // Crash
   g1: buildLaunchRequest('spribe', 'aviator'),
-  g7: buildLaunchRequest('spribe', 'aviator'),
+  g7: buildLaunchRequest('spribe-turbo', 'JetX'),
   g8: buildLaunchRequest('pragmatic', '1301'),
   g9: buildLaunchRequest('spribe', 'mines'),
   g10: buildLaunchRequest('spribe', 'plinko'),

@@ -14,6 +14,7 @@ import Toast from './components/Toast/Toast';
 import MobileBetSlip from './components/MobileBetSlip/MobileBetSlip';
 import GlobalBetBar from './components/GlobalBetBar/GlobalBetBar';
 import GamePlayModal from './components/GamePlayModal/GamePlayModal';
+import BetSettlementRunner from './components/BetSettlementRunner/BetSettlementRunner';
 
 
 import Home from './pages/Home/Home';
@@ -39,6 +40,7 @@ function AppLayout() {
       <DepositModal />
       <Toast />
       <GamePlayModal />
+      <BetSettlementRunner />
       <MobileBetSlip />
       <GlobalBetBar />
       <main className="app-main">

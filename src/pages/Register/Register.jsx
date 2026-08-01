@@ -7,57 +7,33 @@ import './Register.css';
 
 export default function Register() {
   const navigate = useNavigate();
-  const { openLoginModal, register, login } = useAuth();
+  const { openLoginModal, register, login, showToast } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [agreed, setAgreed] = useState(true);
-  const [registered, setRegistered] = useState(false);
   const [error, setError] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [phone, setPhone] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
-    const result = register({ email, password, displayName });
+    const result = register({ email, password, displayName, phone });
     if (!result.ok) {
       setError(result.error);
       return;
     }
     login(email, password);
+    if (result.welcomeCredit) {
+      showToast(`Welcome bonus of ₹${result.welcomeCredit.toLocaleString('en-IN')} credited!`, 'success');
+    }
     navigate('/sports');
   };
 
   const handleLoginClick = () => {
     openLoginModal();
   };
-
-  if (registered) {
-    return (
-      <div className="register-page" id="register-page">
-        <div className="register-form-section">
-          <div className="register-success">
-            <span className="success-icon">🎉</span>
-            <h2>Registration Successful!</h2>
-            <p>Welcome to BetKing. Your account has been created.</p>
-            <button className="success-btn" onClick={() => { navigate('/'); openLoginModal(); }}>
-              Log in now
-            </button>
-          </div>
-        </div>
-        <div className="register-hero-section">
-          <div className="register-hero-shapes">
-            <span /><span /><span />
-          </div>
-          <div className="register-hero-content">
-            <span className="hero-emoji">🎊</span>
-            <h2>Welcome aboard!</h2>
-            <p>Start your winning journey today</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="register-page" id="register-page">
@@ -137,6 +113,8 @@ export default function Register() {
                 id="reg-phone"
                 type="tel"
                 placeholder="1234-567890"
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
                 required
               />
             </div>

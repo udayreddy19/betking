@@ -212,6 +212,10 @@ export function BetSlipProvider({ children }) {
     return { success: true, placed: placements, totalDeducted };
   }, [bets, betType, stake, singlesStakes, multiOdds]);
 
+  const applySettledBets = useCallback((nextBets) => {
+    setPlacedBets(nextBets);
+  }, []);
+
   return (
     <BetSlipContext.Provider value={{
       bets,
@@ -220,6 +224,7 @@ export function BetSlipProvider({ children }) {
       removeBet,
       clearAll,
       placeBets,
+      applySettledBets,
       isBetSelected,
       stake,
       setStake,

@@ -6,7 +6,7 @@ import { promotions } from '../../data/mockData';
 import './PromotionsPanel.css';
 
 export default function PromotionsPanel({ isOpen, onClose }) {
-  const { isLoggedIn, openLoginModal, showToast } = useAuth();
+  const { isLoggedIn, openLoginModal, claimPromotion, isPromotionClaimed } = useAuth();
   const panelRef = useRef(null);
 
   useEffect(() => {
@@ -33,11 +33,10 @@ export default function PromotionsPanel({ isOpen, onClose }) {
 
   const handleClaim = (promo) => {
     if (!isLoggedIn) {
-      showToast('Please log in to claim this promotion.', 'info');
       openLoginModal();
       return;
     }
-    showToast(`${promo.title} claimed! Bonus will be credited on your next deposit.`, 'success');
+    claimPromotion(promo);
   };
 
   if (!isOpen) return null;
@@ -54,7 +53,9 @@ export default function PromotionsPanel({ isOpen, onClose }) {
         </div>
 
         <div className="promotions-panel-body">
-          {promotions.map((promo) => (
+          {promotions.map((promo) => {
+            const claimed = isPromotionClaimed(promo.id);
+            return (
             <article key={promo.id} className="promotions-panel-card" style={{ background: promo.bgColor || promo.gradient }}>
               <span className="promotions-panel-tag">{promo.tag || 'PROMOTION'}</span>
               <h4>{promo.title}</h4>
@@ -62,11 +63,17 @@ export default function PromotionsPanel({ isOpen, onClose }) {
               {promo.code && (
                 <div className="promotions-panel-code">Code: <strong>{promo.code}</strong></div>
               )}
-              <button type="button" className="promotions-panel-claim" onClick={() => handleClaim(promo)}>
-                Claim now
+              <button
+                type="button"
+                className="promotions-panel-claim"
+                onClick={() => handleClaim(promo)}
+                disabled={claimed}
+              >
+                {claimed ? 'Claimed' : 'Claim now'}
               </button>
             </article>
-          ))}
+            );
+          })}
         </div>
 
         <div className="promotions-panel-footer">

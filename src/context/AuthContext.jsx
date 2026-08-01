@@ -1,10 +1,11 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
-import { STARTING_BALANCE } from '../data/mockData';
+import { STARTING_BALANCE, WELCOME_BONUS } from '../data/mockData';
 
 const AuthContext = createContext(null);
 
 const USERS_KEY = 'betking_users';
 const SESSION_KEY = 'betking_session';
+const CLAIMED_PROMOS_KEY = 'betking_claimed_promos';
 const SEED_USER = {
   email: 'demo@betking.com',
   password: 'demo1234',
@@ -41,6 +42,7 @@ function toSessionUser(stored) {
     email: stored.email,
     username: stored.email,
     displayName: stored.displayName,
+    phone: stored.phone,
     balance: stored.balance,
     loyaltyLevel: stored.loyaltyLevel ?? 1,
     loyaltyRank: stored.loyaltyRank ?? 'Rookie',
@@ -65,6 +67,7 @@ function syncStoredUser(sessionUser) {
   users[idx] = {
     ...users[idx],
     displayName: sessionUser.displayName,
+    phone: sessionUser.phone ?? users[idx].phone,
     balance: sessionUser.balance,
     loyaltyLevel: sessionUser.loyaltyLevel,
     loyaltyRank: sessionUser.loyaltyRank,
@@ -73,6 +76,21 @@ function syncStoredUser(sessionUser) {
     coins: sessionUser.coins ?? users[idx].coins ?? 0,
   };
   saveStoredUsers(users);
+}
+
+function getClaimedPromos(email) {
+  try {
+    const all = JSON.parse(localStorage.getItem(CLAIMED_PROMOS_KEY) || '{}');
+    return all[email] || [];
+  } catch {
+    return [];
+  }
+}
+
+function saveClaimedPromo(email, promoId) {
+  const all = JSON.parse(localStorage.getItem(CLAIMED_PROMOS_KEY) || '{}');
+  all[email] = [...(all[email] || []), promoId];
+  localStorage.setItem(CLAIMED_PROMOS_KEY, JSON.stringify(all));
 }
 
 export function AuthProvider({ children }) {
@@ -113,7 +131,7 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const register = useCallback(({ email, password, displayName }) => {
+  const register = useCallback(({ email, password, displayName, phone }) => {
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail || !password || !displayName?.trim()) {
       return { ok: false, error: 'Please fill in all required fields.' };
@@ -124,21 +142,46 @@ export function AuthProvider({ children }) {
       return { ok: false, error: 'An account with this email already exists.' };
     }
 
+    const welcomeCredit = WELCOME_BONUS.registrationCredit || 0;
     const stored = {
       email: normalizedEmail,
       password,
       displayName: displayName.trim(),
-      balance: STARTING_BALANCE,
+      phone: phone?.trim() || '',
+      balance: STARTING_BALANCE + welcomeCredit,
       loyaltyLevel: 1,
       loyaltyRank: 'Rookie',
       xpToNext: 1000,
       notifications: 0,
       coins: 50,
+      welcomeBonusApplied: true,
     };
 
     saveStoredUsers([...users, stored]);
-    return { ok: true };
+    return { ok: true, welcomeCredit };
   }, []);
+
+  const claimPromotion = useCallback((promo) => {
+    if (!user) {
+      return { ok: false, error: 'Please log in to claim this promotion.' };
+    }
+
+    const claimed = getClaimedPromos(user.email);
+    if (claimed.includes(promo.id)) {
+      return { ok: false, error: 'You have already claimed this promotion.' };
+    }
+
+    const amount = promo.bonusAmount || 500;
+    saveClaimedPromo(user.email, promo.id);
+    setUser(prev => (prev ? { ...prev, balance: prev.balance + amount } : prev));
+    showToast(`₹${amount.toLocaleString('en-IN')} bonus credited to your balance!`, 'success');
+    return { ok: true, amount };
+  }, [user, setUser, showToast]);
+
+  const isPromotionClaimed = useCallback((promoId) => {
+    if (!user) return false;
+    return getClaimedPromos(user.email).includes(promoId);
+  }, [user]);
 
   const login = useCallback((email, password) => {
     const normalizedEmail = email.trim().toLowerCase();
@@ -203,6 +246,8 @@ export function AuthProvider({ children }) {
       user,
       isLoggedIn: !!user,
       register,
+      claimPromotion,
+      isPromotionClaimed,
       login,
       logout,
       addFunds,

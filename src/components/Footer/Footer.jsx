@@ -8,18 +8,18 @@ export default function Footer() {
         <div className="footer-grid">
           <div className="footer-section">
             <h4>Sports</h4>
-            <Link to="/sports">Cricket</Link>
-            <Link to="/sports">Soccer</Link>
-            <Link to="/sports">Tennis</Link>
-            <Link to="/sports">Basketball</Link>
-            <Link to="/sports">Kabaddi</Link>
+            <Link to="/sports?sport=cricket">Cricket</Link>
+            <Link to="/sports?sport=soccer">Soccer</Link>
+            <Link to="/sports?sport=tennis">Tennis</Link>
+            <Link to="/sports?sport=basketball">Basketball</Link>
+            <Link to="/sports?sport=kabaddi">Kabaddi</Link>
           </div>
           <div className="footer-section">
             <h4>Casino</h4>
-            <Link to="/casino">Slots</Link>
+            <Link to="/casino?cat=slots">Slots</Link>
             <Link to="/live-casino">Live Casino</Link>
-            <Link to="/casino">Table Games</Link>
-            <Link to="/casino">Crash Games</Link>
+            <Link to="/casino?cat=table-games">Table Games</Link>
+            <Link to="/casino?cat=crash-games">Crash Games</Link>
           </div>
           <div className="footer-section">
             <h4>Support</h4>

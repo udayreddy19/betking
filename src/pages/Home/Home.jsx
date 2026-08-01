@@ -4,8 +4,9 @@ import { FiChevronRight, FiChevronLeft } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 import FilterChips from '../../components/FilterChips/FilterChips';
 import MatchCard from '../../components/MatchCard/MatchCard';
+import GameCarousel from '../../components/GameCarousel/GameCarousel';
 import '../../components/GameCarousel/GameCarousel.css';
-import { sportsCategories, WELCOME_BONUS } from '../../data/mockData';
+import { sportsCategories, WELCOME_BONUS, casinoGames } from '../../data/mockData';
 import { useLiveSports } from '../../context/LiveSportsContext';
 import { filterMatches } from '../../utils/matchFilters';
 import './Home.css';
@@ -45,6 +46,11 @@ export default function Home() {
   const emptyLabel = activeStateTab === 'all'
     ? ''
     : `${activeStateTab} `;
+
+  const featuredCasinoGames = useMemo(
+    () => casinoGames.filter(g => g.isHot || g.isNew).slice(0, 12),
+    []
+  );
 
   return (
     <div className="home-page container" id="home-page">
@@ -110,6 +116,15 @@ export default function Home() {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="home-casino-section" id="home-casino-section">
+        <GameCarousel
+          title="Popular Casino Games"
+          games={featuredCasinoGames}
+          viewAllLink
+          viewAllPath="/casino"
+        />
       </div>
     </div>
   );

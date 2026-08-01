@@ -2,13 +2,16 @@ import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import GameCard from '../GameCard/GameCard';
-import { casinoGames } from '../../data/mockData';
 import './GameCarousel.css';
 
 export default function GameCarousel({ title, games, viewAllLink, viewAllPath = '/casino', layout = 'scroll' }) {
   const scrollRef = useRef(null);
   const navigate = useNavigate();
-  const displayGames = (games && games.length > 0) ? games : casinoGames;
+  const displayGames = games || [];
+
+  if (displayGames.length === 0) {
+    return null;
+  }
 
   const scroll = (direction) => {
     if (scrollRef.current) {

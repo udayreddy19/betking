@@ -5,6 +5,8 @@ export const WELCOME_BONUS = {
   maxAmount: 30000,
   displayShort: '150% up to ₹30,000',
   code: 'WELCOME150',
+  /** Flat demo credit applied on registration */
+  registrationCredit: 1500,
 };
 
 export const STARTING_BALANCE = 10000;
@@ -597,6 +599,7 @@ export const promotions = [
     bgColor: 'linear-gradient(135deg, #1e1b4b 0%, #311b92 100%)',
     image: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=800&q=80',
     description: 'Get started on BetKing with a massive 150% bonus on your first deposit up to ₹30,000!',
+    bonusAmount: 3000,
   },
   {
     id: 'p2',
@@ -609,6 +612,7 @@ export const promotions = [
     bgColor: 'linear-gradient(135deg, #064e3b 0%, #047857 100%)',
     image: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=800&q=80',
     description: 'Get 10% cashback on your net sports losses every Monday up to ₹10,000.',
+    bonusAmount: 1000,
   },
   {
     id: 'p3',
@@ -621,6 +625,7 @@ export const promotions = [
     bgColor: 'linear-gradient(135deg, #701a75 0%, #a21caf 100%)',
     image: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?auto=format&fit=crop&w=800&q=80',
     description: 'Double your casino stack up to ₹70,000 and get 50 Free Spins on Aviator!',
+    bonusAmount: 2000,
   },
 ];
 

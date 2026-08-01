@@ -51,9 +51,14 @@ export default function MyBetsPanel() {
             </div>
           ) : (
             placedBets.map((placed) => (
-              <div className="my-bets-card" key={placed.id}>
+              <div className={`my-bets-card my-bets-card--${placed.status || 'pending'}`} key={placed.id}>
                 <div className="my-bets-card-top">
-                  <span className="my-bets-type-badge">{placed.type === 'multi' ? 'MULTI' : 'SINGLE'}</span>
+                  <div className="my-bets-card-badges">
+                    <span className="my-bets-type-badge">{placed.type === 'multi' ? 'MULTI' : 'SINGLE'}</span>
+                    <span className={`my-bets-status-badge my-bets-status-badge--${placed.status || 'pending'}`}>
+                      {(placed.status || 'pending').toUpperCase()}
+                    </span>
+                  </div>
                   <span className="my-bets-time">
                     {new Date(placed.placedAt).toLocaleString('en-IN')}
                   </span>
@@ -84,6 +89,17 @@ export default function MyBetsPanel() {
                   <span className="label">Potential return</span>
                   <span className="value">₹{placed.potentialReturn.toFixed(2)}</span>
                 </div>
+                {placed.status === 'won' && placed.payout > 0 && (
+                  <div className="my-bets-summary my-bets-summary--won">
+                    <span className="label">Payout</span>
+                    <span className="value">₹{placed.payout.toFixed(2)}</span>
+                  </div>
+                )}
+                {placed.settledAt && (
+                  <div className="my-bets-settled-at">
+                    Settled {new Date(placed.settledAt).toLocaleString('en-IN')}
+                  </div>
+                )}
               </div>
             ))
           )}
