@@ -1,328 +1,283 @@
-.live-graphic-card {
-  background: #0b1528;
-  border: 1px solid #1e293b;
-  border-radius: var(--radius-md);
-  padding: var(--space-3);
-  margin-bottom: var(--space-4);
-  color: white;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+.live-graphic-card-10cric {
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+  margin-bottom: 16px;
+  font-family: system-ui, -apple-system, sans-serif;
 }
 
-.graphic-scoreboard-header {
+/* Light Header */
+.graphic-top-header {
+  padding: 16px;
+  text-align: center;
+  background: #ffffff;
+}
+
+.graphic-inn-pill {
+  display: inline-block;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.graphic-teams-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 4px;
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #0f172a;
 }
 
-.graphic-team-name {
-  font-size: 0.8rem;
-  font-weight: 800;
-  color: #f8fafc;
-}
-
-.graphic-inn-badge {
-  background: #1e293b;
-  color: #94a3b8;
-  font-size: 0.6rem;
-  font-weight: 800;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
-.graphic-scores-row {
+.graphic-large-scores {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 4px 0;
   display: flex;
   justify-content: center;
-  align-items: center;
   gap: 12px;
-  margin: 6px 0;
 }
 
-.main-score {
-  font-size: 1.4rem;
+.colon-sep {
+  color: #94a3b8;
+}
+
+.graphic-chase-sentence {
+  font-size: 0.8rem;
+  color: #0f172a;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+/* Innings Dropdown */
+.innings-dropdown-container {
+  display: flex;
+  justify-content: center;
+  padding-bottom: 10px;
+}
+
+.innings-select-box {
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Bar Chart */
+.bar-chart-container {
+  padding: 8px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.chart-bars-track {
+  height: 50px;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.chart-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.wicket-badge-w {
+  background: #a855f7;
+  color: white;
+  font-size: 0.55rem;
   font-weight: 900;
-  font-family: monospace;
-  color: #38bdf8;
+  padding: 1px 3px;
+  border-radius: 3px;
+  margin-bottom: 2px;
 }
 
-.score-divider {
+.chart-col-bar {
+  width: 100%;
+  background: #e2e8f0;
+  border-radius: 2px 2px 0 0;
+}
+
+.chart-col-bar.current-active {
+  background: #a855f7;
+}
+
+.chart-xaxis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+/* Purple Subtabs Row */
+.purple-subtabs-row {
+  display: flex;
+  justify-content: space-around;
+  background: #ffffff;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.subtab-btn {
+  background: transparent;
+  border: none;
+  padding: 10px 16px;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.subtab-btn.purple-active {
+  border-bottom-color: #a855f7;
+}
+
+.subtab-icon-circle {
+  font-size: 1.1rem;
+}
+
+.subtab-react-icon {
   font-size: 1.2rem;
   color: #64748b;
 }
 
-.graphic-chase-text {
-  text-align: center;
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: #fbbf24;
-  margin-bottom: 12px;
+.subtab-btn.purple-active .subtab-react-icon {
+  color: #a855f7;
 }
 
-/* Over Run Rate Bar Chart */
-.graphic-chart-box {
-  background: #0f172a;
-  border-radius: 6px;
-  padding: 8px;
-  margin-bottom: 12px;
-  border: 1px solid #1e293b;
-}
-
-.chart-bars {
-  height: 40px;
-  display: flex;
-  align-items: flex-end;
-  gap: 3px;
-}
-
-.chart-bar {
-  flex: 1;
-  background: #3b82f6;
-  border-radius: 2px 2px 0 0;
-  transition: height 0.3s ease;
-}
-
-.chart-bar.active-over {
-  background: #f59e0b;
-}
-
-.chart-axis-labels {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.6rem;
-  color: #64748b;
-  margin-top: 4px;
-}
-
-/* Ball Tracker Row */
-.ball-tracker-row {
+/* Delivery Pills Row */
+.over-delivery-row {
+  background: #1e293b;
+  color: white;
+  padding: 8px 12px;
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
-  font-size: 0.65rem;
+  font-size: 0.75rem;
+}
+
+.over-num-heading {
+  font-weight: 800;
   color: #94a3b8;
-  font-weight: 700;
 }
 
-.ball-pills {
+.delivery-pills-list {
   display: flex;
-  gap: 3px;
+  gap: 4px;
+  align-items: center;
 }
 
-.ball-pill {
-  width: 18px;
-  height: 18px;
-  background: #1e293b;
-  color: white;
+.del-pill {
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
+  background: #334155;
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.6rem;
-  font-weight: 800;
-}
-
-.ball-pill.wicket {
-  background: #ef4444;
-}
-
-.ball-pill.dot {
-  color: #64748b;
-}
-
-/* Green Field Pitch Visualizer */
-.field-visualizer {
-  border-radius: 8px;
-  overflow: hidden;
-  border: 2px solid #15803d;
-}
-
-.cricket-field-bg {
-  background: radial-gradient(circle at center, #15803d 0%, #166534 70%, #14532d 100%);
-  padding: 12px;
-  position: relative;
-  min-height: 160px;
-}
-
-.pitch-strip {
-  width: 36px;
-  height: 100px;
-  background: #ca8a04;
-  margin: 0 auto;
-  border-radius: 2px;
-  position: relative;
-  box-shadow: inset 0 0 4px rgba(0,0,0,0.5);
-}
-
-.pitch-crease {
-  position: absolute;
-  width: 100%;
-  height: 2px;
-  background: white;
-}
-
-.pitch-crease.top { top: 12px; }
-.pitch-crease.bottom { bottom: 12px; }
-
-.pitch-stumps {
-  position: absolute;
-  width: 12px;
-  height: 3px;
-  background: white;
-  left: 12px;
-}
-
-.pitch-stumps.top { top: 6px; }
-.pitch-stumps.bottom { bottom: 6px; }
-
-.pitch-ball-impact {
-  position: absolute;
-  width: 6px;
-  height: 6px;
-  background: #ef4444;
-  border-radius: 50%;
-  top: 45px;
-  left: 15px;
-  box-shadow: 0 0 8px #ef4444;
-  animation: pulse 1s infinite;
-}
-
-.field-overlay-content {
-  position: absolute;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(2px);
-  padding: 10px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.field-stats-col {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.field-stat-header {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.6rem;
-  font-weight: 800;
-  color: #38bdf8;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-  padding-bottom: 2px;
-}
-
-.field-stat-row {
-  display: flex;
-  justify-content: space-between;
   font-size: 0.65rem;
-  color: #f1f5f9;
+  font-weight: 800;
+}
+
+.del-pill.wicket-w {
+  background: white;
+  color: #0f172a;
+}
+
+.del-pill.four {
+  background: #22c55e;
+}
+
+.del-pill.dot {
+  background: #475569;
+  color: #94a3b8;
+}
+
+.del-pill.legbye {
+  background: #3b82f6;
+  border-radius: 10px;
+  padding: 0 4px;
+  width: auto;
+}
+
+/* Pitch Visualizer Graphic Background */
+.pitch-visualizer-card {
+  background: radial-gradient(circle at center, #15803d 0%, #166534 100%);
+  padding: 14px;
+  position: relative;
+  min-height: 180px;
+  color: white;
+}
+
+.pitch-stumps-graphic {
+  position: absolute;
+  left: 50%;
+  top: 20%;
+  bottom: 20%;
+  width: 20px;
+  border-left: 2px dashed rgba(255, 255, 255, 0.2);
+  border-right: 2px dashed rgba(255, 255, 255, 0.2);
+  transform: translateX(-50%);
+}
+
+.pitch-overlay-tables {
+  display: grid;
+  grid-templateColumns: 1fr 1fr;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.pitch-stats-column {
+  font-size: 0.75rem;
+}
+
+.table-header-row {
+  display: flex;
+  justify-content: space-between;
+  color: #93c5fd;
+  font-weight: 800;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 2px;
+  margin-bottom: 4px;
+}
+
+.table-data-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+  color: #ffffff;
   font-weight: 600;
 }
 
-.field-stat-row.active-batter {
-  color: #fbbf24;
+.table-data-row.active-striker {
+  color: #fef08a;
+  font-weight: 800;
 }
 
-.stat-highlight {
+.highlight-stat-val {
   color: #4ade80;
+  font-weight: 800;
 }
 
-/* Soccer Pitch Visualizer */
-.soccer-pitch-bg {
-  background: radial-gradient(circle at center, #16a34a 0%, #15803d 70%, #14532d 100%);
-  padding: 12px;
-  position: relative;
-  min-height: 160px;
-}
-
-.soccer-half-line {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: rgba(255, 255, 255, 0.4);
-}
-
-.soccer-center-circle {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 60px;
-  height: 60px;
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.soccer-box {
-  position: absolute;
-  top: 30px;
-  bottom: 30px;
-  width: 40px;
-  border: 2px solid rgba(255, 255, 255, 0.4);
-}
-
-.soccer-box.left { left: 0; border-left: none; }
-.soccer-box.right { right: 0; border-right: none; }
-
-.soccer-ball {
-  position: absolute;
-  left: 54%;
-  top: 48%;
-  width: 10px;
-  height: 10px;
-  background: white;
-  border-radius: 50%;
-  box-shadow: 0 0 8px white;
-  animation: pulse 1s infinite;
-}
-
-/* Basketball Court Visualizer */
-.basketball-court-bg {
-  background: radial-gradient(circle at center, #b45309 0%, #78350f 70%, #451a03 100%);
-  padding: 12px;
-  position: relative;
-  min-height: 160px;
-}
-
-.court-center-line {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: rgba(255, 255, 255, 0.4);
-}
-
-.court-center-circle {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 50px;
-  height: 50px;
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-}
-
-/* Tennis Court Visualizer */
-.tennis-court-bg {
-  background: radial-gradient(circle at center, #0f766e 0%, #115e59 70%, #134e4a 100%);
-  padding: 12px;
-  position: relative;
-  min-height: 160px;
-}
-
-.tennis-net-line {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: #f8fafc;
-  box-shadow: 0 0 6px white;
+.subtab-content-panel {
+  background: #0f172a;
+  color: white;
+  padding: 14px;
+  font-size: 0.8rem;
 }
