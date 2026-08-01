@@ -229,3 +229,100 @@
 .stat-highlight {
   color: #4ade80;
 }
+
+/* Soccer Pitch Visualizer */
+.soccer-pitch-bg {
+  background: radial-gradient(circle at center, #16a34a 0%, #15803d 70%, #14532d 100%);
+  padding: 12px;
+  position: relative;
+  min-height: 160px;
+}
+
+.soccer-half-line {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.soccer-center-circle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 60px;
+  height: 60px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.soccer-box {
+  position: absolute;
+  top: 30px;
+  bottom: 30px;
+  width: 40px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+}
+
+.soccer-box.left { left: 0; border-left: none; }
+.soccer-box.right { right: 0; border-right: none; }
+
+.soccer-ball {
+  position: absolute;
+  left: 54%;
+  top: 48%;
+  width: 10px;
+  height: 10px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 0 8px white;
+  animation: pulse 1s infinite;
+}
+
+/* Basketball Court Visualizer */
+.basketball-court-bg {
+  background: radial-gradient(circle at center, #b45309 0%, #78350f 70%, #451a03 100%);
+  padding: 12px;
+  position: relative;
+  min-height: 160px;
+}
+
+.court-center-line {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.court-center-circle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 50px;
+  height: 50px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Tennis Court Visualizer */
+.tennis-court-bg {
+  background: radial-gradient(circle at center, #0f766e 0%, #115e59 70%, #134e4a 100%);
+  padding: 12px;
+  position: relative;
+  min-height: 160px;
+}
+
+.tennis-net-line {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #f8fafc;
+  box-shadow: 0 0 6px white;
+}
