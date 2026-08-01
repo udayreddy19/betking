@@ -1,0 +1,88 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { FiChevronRight, FiChevronLeft } from 'react-icons/fi';
+import { useAuth } from '../../context/AuthContext';
+import PromoBanner from '../../components/PromoBanner/PromoBanner';
+import CategoryGrid from '../../components/CategoryGrid/CategoryGrid';
+import GameCarousel from '../../components/GameCarousel/GameCarousel';
+import FilterChips from '../../components/FilterChips/FilterChips';
+import MatchCard from '../../components/MatchCard/MatchCard';
+import { casinoGames, matches, promotions, sportsCategories } from '../../data/mockData';
+import './Home.css';
+
+export default function Home() {
+  const { isLoggedIn } = useAuth();
+  const navigate = useNavigate();
+  const [activeSport, setActiveSport] = useState('cricket');
+
+  const topGames = casinoGames.filter(g => g.category.includes('top'));
+  const liveGames = casinoGames.filter(g => g.category.includes('live'));
+  const crashGames = casinoGames.filter(g => g.category.includes('crash'));
+  const filteredMatches = matches.filter(m => m.sport === activeSport);
+
+  return (
+    <div className="home-page container" id="home-page">
+      {/* Hero / Promo Banner */}
+      {isLoggedIn ? (
+        <PromoBanner promos={promotions.slice(0, 4)} />
+      ) : (
+        <div className="hero-banner" id="hero-banner">
+          <div className="hero-content">
+            <h1>Get your welcome bonus!</h1>
+            <div className="hero-amount">150% up to ₹20,000!</div>
+            <button className="hero-cta" onClick={() => navigate('/register')}>
+              Claim now
+            </button>
+            <p className="hero-promo-code">Use code <strong>WELCOME150</strong></p>
+          </div>
+          <div className="hero-visual">🎰</div>
+        </div>
+      )}
+
+      {/* Category Grid */}
+      <CategoryGrid />
+
+      {/* Top Games */}
+      <GameCarousel title="Top Games" games={topGames} viewAllLink />
+
+      {/* Sports Action */}
+      <div className="home-sports-action" id="sports-action-section">
+        <div className="section-header">
+          <h2>Sports action</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <button className="carousel-view-all" onClick={() => navigate('/sports')}>
+              View All
+            </button>
+            <button className="carousel-nav-btn"><FiChevronLeft /></button>
+            <button className="carousel-nav-btn"><FiChevronRight /></button>
+          </div>
+        </div>
+
+        <FilterChips
+          items={sportsCategories}
+          activeId={activeSport}
+          onSelect={setActiveSport}
+          className="filter-chips-row"
+        />
+
+        <div className="match-cards-scroll">
+          {filteredMatches.length > 0 ? (
+            filteredMatches.map(match => (
+              <MatchCard key={match.id} match={match} />
+            ))
+          ) : (
+            matches.slice(0, 4).map(match => (
+              <MatchCard key={match.id} match={match} />
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Top Live Games */}
+      <GameCarousel title="Top Live Games" games={liveGames} viewAllLink />
+
+      {/* Blast Zone */}
+      <GameCarousel title="Blast Zone" games={crashGames} viewAllLink />
+    </div>
+  );
+}

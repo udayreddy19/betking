@@ -1,0 +1,51 @@
+.casino-page {
+  animation: fadeIn 300ms ease;
+}
+.casino-categories {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-bottom: var(--space-6);
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: var(--space-2) 0;
+}
+.casino-categories::-webkit-scrollbar { display: none; }
+.casino-search-btn {
+  width: 40px; height: 40px;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--color-text-secondary);
+  font-size: 1rem;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+.casino-search-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+.casino-cat-btn {
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+.casino-cat-btn:hover {
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+.casino-cat-btn.active {
+  background: var(--color-accent-gold-light);
+  color: var(--color-text);
+  font-weight: var(--font-bold);
+  border: 1.5px solid var(--color-accent-gold);
+}
+.casino-cat-btn .cat-icon {
+  margin-right: var(--space-1);
+}

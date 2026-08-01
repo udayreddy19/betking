@@ -1,0 +1,97 @@
+.promo-banner {
+  width: 100%;
+  margin-bottom: var(--space-6);
+}
+.promo-carousel {
+  display: flex;
+  gap: var(--space-4);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--space-2) 0;
+  scrollbar-width: none;
+}
+.promo-carousel::-webkit-scrollbar { display: none; }
+.promo-card {
+  flex: 0 0 calc(33.333% - var(--space-3));
+  min-width: 300px;
+  scroll-snap-align: start;
+  border-radius: var(--radius-xl);
+  padding: var(--space-6) var(--space-6);
+  color: white;
+  position: relative;
+  overflow: hidden;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+}
+.promo-card:hover {
+  transform: scale(1.02);
+}
+.promo-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: inherit;
+  z-index: 0;
+}
+.promo-card::after {
+  content: '';
+  position: absolute;
+  top: -50%; right: -30%;
+  width: 200px;
+  height: 200px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 50%;
+  z-index: 0;
+}
+.promo-card > * {
+  position: relative;
+  z-index: 1;
+}
+.promo-tag {
+  display: inline-block;
+  font-size: var(--text-xs);
+  font-weight: var(--font-bold);
+  background: rgba(255,255,255,0.2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  margin-bottom: var(--space-2);
+  width: fit-content;
+}
+.promo-card h3 {
+  font-size: var(--text-xl);
+  font-weight: var(--font-extrabold);
+  line-height: 1.2;
+  margin-bottom: var(--space-2);
+}
+.promo-card p {
+  font-size: var(--text-sm);
+  opacity: 0.85;
+}
+.promo-dots {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+.promo-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--color-border);
+  transition: all var(--transition-fast);
+}
+.promo-dot.active {
+  background: var(--color-primary);
+  width: 24px;
+  border-radius: var(--radius-full);
+}
+
+@media (max-width: 768px) {
+  .promo-card {
+    flex: 0 0 85%;
+  }
+}

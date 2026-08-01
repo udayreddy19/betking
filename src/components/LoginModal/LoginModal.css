@@ -1,0 +1,130 @@
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(4px);
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 200ms ease;
+}
+.modal-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  width: 90%;
+  max-width: 420px;
+  padding: var(--space-8);
+  box-shadow: var(--shadow-xl);
+  animation: scaleIn 250ms ease;
+  position: relative;
+}
+.modal-close {
+  position: absolute;
+  top: var(--space-4); right: var(--space-4);
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-full);
+  color: var(--color-text-muted);
+  font-size: 1.2rem;
+  transition: all var(--transition-fast);
+}
+.modal-close:hover { background: var(--color-bg); color: var(--color-text); }
+.modal-title {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  margin-bottom: var(--space-6);
+  color: var(--color-text);
+}
+.modal-form { display: flex; flex-direction: column; gap: var(--space-5); }
+.form-group { display: flex; flex-direction: column; gap: var(--space-2); }
+.form-label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+}
+.form-input-wrapper {
+  position: relative;
+}
+.form-input {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  transition: border-color var(--transition-fast);
+}
+.form-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(124,58,237,0.1);
+}
+.form-input::placeholder {
+  color: var(--color-text-muted);
+}
+.password-toggle {
+  position: absolute;
+  right: var(--space-3); top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  font-size: 1.1rem;
+  transition: color var(--transition-fast);
+}
+.password-toggle:hover { color: var(--color-text); }
+.modal-submit-btn {
+  padding: var(--space-3) var(--space-6);
+  background: var(--color-primary);
+  color: white;
+  border-radius: var(--radius-full);
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  transition: all var(--transition-fast);
+  box-shadow: 0 2px 10px rgba(124,58,237,0.3);
+  margin-top: var(--space-2);
+}
+.modal-submit-btn:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-1px);
+}
+.modal-links {
+  display: flex; justify-content: space-between;
+  font-size: var(--text-sm);
+}
+.modal-links a, .modal-links button {
+  color: var(--color-primary);
+  font-weight: var(--font-medium);
+  font-size: var(--text-sm);
+  transition: color var(--transition-fast);
+}
+.modal-links a:hover, .modal-links button:hover { color: var(--color-primary-dark); }
+.modal-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: var(--color-danger);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  text-align: center;
+  animation: fadeInDown 200ms ease;
+}
+.modal-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+.modal-logo .logo-icon {
+  width: 40px; height: 40px;
+  background: var(--color-text);
+  border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+  color: white;
+  font-weight: 900;
+  font-size: var(--text-lg);
+}
+.modal-logo span {
+  font-size: var(--text-xl);
+  font-weight: var(--font-extrabold);
+}

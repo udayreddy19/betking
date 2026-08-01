@@ -1,0 +1,77 @@
+.game-card {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  aspect-ratio: 3/4;
+  min-width: 180px;
+}
+.game-card:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: var(--shadow-card-hover);
+}
+.game-card-bg {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: rgba(255,255,255,0.9);
+  text-align: center;
+  line-height: 1.1;
+  padding: var(--space-4);
+  letter-spacing: -1px;
+  text-transform: uppercase;
+}
+.game-card-overlay {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: linear-gradient(transparent, rgba(0,0,0,0.6));
+  padding: var(--space-6) var(--space-3) var(--space-3);
+}
+.game-card-name {
+  font-size: var(--text-sm);
+  font-weight: var(--font-bold);
+  color: white;
+  margin-bottom: 2px;
+}
+.game-card-provider {
+  font-size: var(--text-xs);
+  color: rgba(255,255,255,0.7);
+}
+.game-card-info {
+  position: absolute;
+  top: var(--space-2); right: var(--space-2);
+  width: 22px; height: 22px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: white;
+  font-size: 0.7rem;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+.game-card:hover .game-card-info {
+  opacity: 1;
+}
+.game-card-play {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(0.8);
+  width: 56px; height: 56px;
+  background: rgba(255,255,255,0.9);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--color-text);
+  font-size: 1.3rem;
+  opacity: 0;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-lg);
+}
+.game-card:hover .game-card-play {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}

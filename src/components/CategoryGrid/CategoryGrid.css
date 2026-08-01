@@ -1,0 +1,67 @@
+.category-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+.category-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6) var(--space-5);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  position: relative;
+  overflow: hidden;
+  min-height: 140px;
+}
+.category-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-card-hover);
+}
+.category-card:first-child {
+  grid-row: span 2;
+}
+.category-card:nth-child(2) {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+.category-card h3 {
+  font-size: var(--text-sm);
+  font-weight: var(--font-extrabold);
+  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: var(--space-1);
+  z-index: 1;
+}
+.category-card p {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  z-index: 1;
+}
+.category-card-icon {
+  position: absolute;
+  bottom: var(--space-3);
+  right: var(--space-3);
+  font-size: 3.5rem;
+  opacity: 0.3;
+  transition: transform var(--transition-base);
+}
+.category-card:hover .category-card-icon {
+  transform: scale(1.15) rotate(-5deg);
+}
+
+@media (max-width: 768px) {
+  .category-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .category-card:first-child,
+  .category-card:nth-child(2) {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}

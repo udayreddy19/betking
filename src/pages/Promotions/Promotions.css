@@ -1,0 +1,91 @@
+.promotions-page {
+  animation: fadeIn 300ms ease;
+}
+.promotions-header {
+  margin-bottom: var(--space-6);
+}
+.promotions-header h1 {
+  font-size: var(--text-3xl);
+  font-weight: var(--font-extrabold);
+  margin-bottom: var(--space-2);
+}
+.promotions-header p {
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
+}
+.promotions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: var(--space-6);
+  margin-bottom: var(--space-8);
+}
+.promo-item {
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  transition: all var(--transition-base);
+  cursor: pointer;
+}
+.promo-item:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card-hover);
+}
+.promo-item-banner {
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  padding: var(--space-6);
+}
+.promo-item-banner::after {
+  content: '';
+  position: absolute;
+  top: -30%; right: -20%;
+  width: 200px; height: 200px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 50%;
+}
+.promo-item-banner h3 {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-extrabold);
+  color: white;
+  text-align: center;
+  z-index: 1;
+  position: relative;
+  line-height: 1.2;
+}
+.promo-item-body {
+  padding: var(--space-5);
+}
+.promo-item-body h4 {
+  font-size: var(--text-base);
+  font-weight: var(--font-bold);
+  margin-bottom: var(--space-2);
+}
+.promo-item-body p {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-4);
+}
+.promo-item-btn {
+  display: inline-block;
+  padding: var(--space-2) var(--space-5);
+  background: var(--color-primary);
+  color: white;
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  transition: all var(--transition-fast);
+}
+.promo-item-btn:hover {
+  background: var(--color-primary-dark);
+}
+
+@media (max-width: 768px) {
+  .promotions-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,66 @@
+.game-carousel {
+  margin-bottom: var(--space-8);
+}
+.game-carousel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+.game-carousel-header h2 {
+  font-size: var(--text-xl);
+  font-weight: var(--font-extrabold);
+  color: var(--color-text);
+}
+.game-carousel-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.carousel-view-all {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-text-secondary);
+  transition: color var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.carousel-view-all:hover {
+  color: var(--color-primary);
+}
+.carousel-nav-btn {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-border);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+  transition: all var(--transition-fast);
+}
+.carousel-nav-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-bg);
+}
+
+.game-carousel-scroll {
+  display: flex;
+  gap: var(--space-4);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--space-1) 0;
+  scrollbar-width: none;
+}
+.game-carousel-scroll::-webkit-scrollbar { display: none; }
+.game-carousel-scroll > * {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+}
+
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-4);
+}
