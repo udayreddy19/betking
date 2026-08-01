@@ -53,14 +53,16 @@ export default function LiveMatchGraphicWidget({ match }) {
   const team1 = match?.team1?.name || 'South Delhi Superstarz';
   const team2 = match?.team2?.name || 'East Delhi Riders';
 
-  // --- DYNAMIC DATA COMPUTATION ACCORDING TO SELECTED MATCH ---
-  const score1 = match?.liveDetails?.runs ?? 161;
-  const wickets1 = match?.liveDetails?.wickets ?? 5;
-  const score2 = match?.liveDetails?.score2 ?? 155;
-  const wickets2 = match?.liveDetails?.wickets2 ?? 8;
-  const overs = match?.liveDetails?.overs || '18.1';
+  // --- DATA FROM REAL API (no fallback fake numbers) ---
+  const score1 = match?.liveDetails?.runs ?? 0;
+  const wickets1 = match?.liveDetails?.wickets ?? 0;
+  const score2 = match?.liveDetails?.score2 ?? 0;
+  const wickets2 = match?.liveDetails?.wickets2 ?? 0;
+  const overs = match?.liveDetails?.overs || '0.0';
+  const matchState = match?.matchState || (match?.isLive ? 'in' : 'pre');
+  const commentary = match?.liveDetails?.commentary || '';
   const currentOverNum = Math.floor(parseFloat(overs));
-  const prevOverNum = Math.max(1, currentOverNum - 1);
+  const prevOverNum = Math.max(0, currentOverNum - 1);
 
   // Dynamic player names from team roster
   const t1Data = playerRosterMap[team1] || {
@@ -132,7 +134,9 @@ export default function LiveMatchGraphicWidget({ match }) {
       <div className="live-graphic-card-10cric">
         {/* Light Clean Header Section */}
         <div className="graphic-top-header">
-          <div className="graphic-inn-pill">INN 2 | {overs}/20 OV</div>
+          <div className="graphic-inn-pill">
+            {matchState === 'in' ? `🔴 LIVE | ${overs}/20 OV` : matchState === 'post' ? '✅ COMPLETED' : '⏳ UPCOMING'}
+          </div>
 
           <div className="graphic-teams-row">
             <span className="team-title-left">{team1}</span>
@@ -146,7 +150,7 @@ export default function LiveMatchGraphicWidget({ match }) {
           </div>
 
           <div className="graphic-chase-sentence">
-            {team1} are {score1}/{wickets1} after {overs} overs chasing {score2}
+            {commentary || `${team1} ${score1}/${wickets1} after ${overs} overs`}
           </div>
         </div>
 

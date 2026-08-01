@@ -19,11 +19,14 @@ export default function Sports() {
   const [activeLeague, setActiveLeague] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedGraphicMatch, setSelectedGraphicMatch] = useState(null);
+  const [selectedMatchId, setSelectedMatchId] = useState(null);
   const [expandedMarket, setExpandedMarket] = useState(true);
   const [expandedDeliveryMarket, setExpandedDeliveryMarket] = useState(true);
 
-  const activeLiveMatch = selectedGraphicMatch || matches.find(m => m.isLive && m.sport === activeSport) || matches[0];
+  // Always look up from live matches array so scores stay current
+  const activeLiveMatch = (selectedMatchId && matches.find(m => m.id === selectedMatchId))
+    || matches.find(m => m.isLive && m.sport === activeSport)
+    || matches[0];
 
   const sportLeagues = useMemo(() =>
     leagues.filter(l => l.sport === activeSport),
@@ -101,33 +104,63 @@ export default function Sports() {
 
         {/* 10CRIC Horizontal Live Matches Quick Selection Carousel */}
         <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '16px' }}>
-          {matches.slice(0, 6).map(m => {
+          {matches.slice(0, 8).map(m => {
             const isSelected = activeLiveMatch?.id === m.id;
+            const isCricket = m.sport === 'cricket' || m.sport === 'virtual-cricket';
+            const isSoccer = m.sport === 'soccer' || m.sport === 'esoccer';
+            const hasScore = m.isLive && m.liveDetails;
+            const state = m.matchState || (m.isLive ? 'in' : 'pre');
+
+            // Score display logic — only show real scores, never fallback numbers
+            let team1Score = '';
+            let team2Score = '';
+            let statusLabel = m.time || 'VS';
+
+            if (hasScore && isCricket) {
+              team1Score = `${m.liveDetails.runs}/${m.liveDetails.wickets}`;
+              team2Score = `${m.liveDetails.score2}/${m.liveDetails.wickets2}`;
+              statusLabel = state === 'in' ? 'Live' : (state === 'post' ? 'Completed' : m.time);
+            } else if (hasScore && isSoccer) {
+              team1Score = String(m.liveDetails.score1 ?? '');
+              team2Score = String(m.liveDetails.score2 ?? '');
+              statusLabel = state === 'in' ? 'Live' : (state === 'post' ? 'FT' : m.time);
+            } else {
+              statusLabel = m.time || 'VS';
+            }
+
             return (
               <div
                 key={m.id}
-                onClick={() => setSelectedGraphicMatch(m)}
+                onClick={() => setSelectedMatchId(m.id)}
                 style={{
                   background: isSelected ? '#fbbf24' : '#1e293b',
                   color: isSelected ? '#0f172a' : 'white',
                   padding: '10px 14px',
                   borderRadius: '10px',
-                  minWidth: '160px',
+                  minWidth: '155px',
                   cursor: 'pointer',
                   fontSize: '0.85rem',
                   fontWeight: 700,
                   border: isSelected ? '2px solid #f59e0b' : '1px solid #334155',
-                  transition: 'all 0.15s ease'
+                  transition: 'all 0.15s ease',
+                  position: 'relative'
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span>{m.team1.shortName || m.team1.name.slice(0, 8)}</span>
-                  <span>{m.isLive ? `${m.liveDetails?.runs || 130}/${m.liveDetails?.wickets || 7}` : 'VS'}</span>
+                  <span style={{ fontSize: '0.8rem' }}>{team1Score || 'VS'}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
                   <span>{m.team2.shortName || m.team2.name.slice(0, 8)}</span>
-                  <span>{m.isLive ? `${m.liveDetails?.score2 || 148}/${m.liveDetails?.wickets2 || 5}` : m.time}</span>
+                  <span style={{ fontSize: '0.8rem' }}>{team2Score || statusLabel}</span>
                 </div>
+                {state === 'in' && (
+                  <div style={{
+                    position: 'absolute', top: '4px', right: '8px',
+                    background: '#ef4444', color: 'white', padding: '1px 6px',
+                    borderRadius: '8px', fontSize: '0.55rem', fontWeight: 800
+                  }}>LIVE</div>
+                )}
               </div>
             );
           })}

@@ -102,7 +102,7 @@ export default function MatchCard({ match }) {
           >
             <span className="odds-label">1</span>
             <span className="odds-value">
-              {match.odds.team1.toFixed(2)}
+              {Number(match.odds.team1).toFixed(2)}
               {match.oddsDirection?.team1 === 'up' && <span style={{ color: '#22c55e', marginLeft: '2px' }}>▲</span>}
               {match.oddsDirection?.team1 === 'down' && <span style={{ color: '#ef4444', marginLeft: '2px' }}>▼</span>}
             </span>
@@ -114,7 +114,7 @@ export default function MatchCard({ match }) {
             >
               <span className="odds-label">X</span>
               <span className="odds-value">
-                {match.odds.draw.toFixed(2)}
+                {Number(match.odds.draw).toFixed(2)}
                 {match.oddsDirection?.draw === 'up' && <span style={{ color: '#22c55e', marginLeft: '2px' }}>▲</span>}
                 {match.oddsDirection?.draw === 'down' && <span style={{ color: '#ef4444', marginLeft: '2px' }}>▼</span>}
               </span>
@@ -126,7 +126,7 @@ export default function MatchCard({ match }) {
           >
             <span className="odds-label">2</span>
             <span className="odds-value">
-              {match.odds.team2.toFixed(2)}
+              {Number(match.odds.team2).toFixed(2)}
               {match.oddsDirection?.team2 === 'up' && <span style={{ color: '#22c55e', marginLeft: '2px' }}>▲</span>}
               {match.oddsDirection?.team2 === 'down' && <span style={{ color: '#ef4444', marginLeft: '2px' }}>▼</span>}
             </span>
