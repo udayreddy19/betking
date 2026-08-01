@@ -13,8 +13,11 @@ export default function LiveMatchGraphicWidget({ match }) {
     const wickets1 = match.liveDetails?.wickets || 3;
     const score2 = match.liveDetails?.score2 || 148;
     const wickets2 = match.liveDetails?.wickets2 || 5;
-    const overs = match.liveDetails?.overs || '8.5';
+    const overs = match.liveDetails?.overs || '8.3';
     const reqRuns = Math.max(0, (score2 + 1) - score1);
+    const ballHistory = match.liveDetails?.ballHistory || ['W', '1', '2', '2', '1', '1'];
+    const b1 = match.liveDetails?.batter1 || { name: 'SR Bhudia', runs: 14, balls: 11, fours: 2, sixes: 0 };
+    const b2 = match.liveDetails?.batter2 || { name: 'RR Patel', runs: 28, balls: 19, fours: 3, sixes: 1 };
 
     return (
       <div className="live-graphic-card">
@@ -39,7 +42,7 @@ export default function LiveMatchGraphicWidget({ match }) {
             {[4, 6, 2, 8, 12, 10, 5, 9, 14, 8, 11, 7, 3, 15, 6, 12, 9, 4, 10, 8].map((runs, i) => (
               <div
                 key={i}
-                className={`chart-bar ${i === 8 ? 'active-over' : ''}`}
+                className={`chart-bar ${i === Math.floor(parseFloat(overs)) ? 'active-over' : ''}`}
                 style={{ height: `${Math.min(100, (runs / 16) * 100)}%` }}
                 title={`Over ${i + 1}: ${runs} runs`}
               />
@@ -51,20 +54,13 @@ export default function LiveMatchGraphicWidget({ match }) {
         </div>
 
         <div className="ball-tracker-row">
-          <span className="over-label">OVER 8</span>
+          <span className="over-label">OVER {Math.floor(parseFloat(overs))}</span>
           <div className="ball-pills">
-            <span className="ball-pill wicket">W</span>
-            <span className="ball-pill">1</span>
-            <span className="ball-pill">2</span>
-            <span className="ball-pill">2</span>
-            <span className="ball-pill">1</span>
-            <span className="ball-pill">1</span>
-          </div>
-          <span className="over-label" style={{ marginLeft: 'auto' }}>OVER 9</span>
-          <div className="ball-pills">
-            <span className="ball-pill">1</span>
-            <span className="ball-pill dot">•</span>
-            <span className="ball-pill dot">•</span>
+            {ballHistory.map((b, idx) => (
+              <span key={idx} className={`ball-pill ${b === 'W' ? 'wicket' : b === '•' ? 'dot' : ''}`}>
+                {b}
+              </span>
+            ))}
           </div>
         </div>
 
@@ -84,10 +80,10 @@ export default function LiveMatchGraphicWidget({ match }) {
                   <span>BATTER</span><span>R</span><span>B</span><span>4S</span><span>6S</span>
                 </div>
                 <div className="field-stat-row active-batter">
-                  <span>SR Bhudia ✓</span><span>2</span><span>4</span><span>0</span><span>0</span>
+                  <span>{b1.name} ✓</span><span>{b1.runs}</span><span>{b1.balls}</span><span>{b1.fours}</span><span>{b1.sixes}</span>
                 </div>
                 <div className="field-stat-row">
-                  <span>RR Patel</span><span>7</span><span>8</span><span>0</span><span>0</span>
+                  <span>{b2.name}</span><span>{b2.runs}</span><span>{b2.balls}</span><span>{b2.fours}</span><span>{b2.sixes}</span>
                 </div>
               </div>
               <div className="field-stats-col">
@@ -95,10 +91,10 @@ export default function LiveMatchGraphicWidget({ match }) {
                   <span>CURRENT BOWLER</span><span>INNINGS STATS</span>
                 </div>
                 <div className="field-stat-row">
-                  <span>Rizwan Butt</span><span className="stat-highlight">Fours: 9</span>
+                  <span>{match.liveDetails?.bowler?.name || 'Rizwan Butt'}</span><span className="stat-highlight">Fours: {match.liveDetails?.fours || 9}</span>
                 </div>
                 <div className="field-stat-row">
-                  <span>3.2-0-18-1</span><span className="stat-highlight">Sixes: 1</span>
+                  <span>{match.liveDetails?.bowler?.overs || overs}-0-22-1</span><span className="stat-highlight">Sixes: {match.liveDetails?.sixes || 3}</span>
                 </div>
               </div>
             </div>
