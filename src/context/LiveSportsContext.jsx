@@ -227,6 +227,15 @@ export function LiveSportsProvider({ children }) {
             updatedDetails = { ...updatedDetails, commentary: eventCommentary };
           }
 
+          // 10CRIC Style Reducer Logging
+          if (Math.random() > 0.6) {
+            console.log(`🧾 Reducer: UPDATE_CONTENT_CARD_ODDS`, {
+              cardId: match.id,
+              selectionId: `sel_${Math.floor(Math.random() * 900000 + 100000)}`,
+              odds: newOdds1
+            });
+          }
+
           return {
             ...match,
             odds: {
