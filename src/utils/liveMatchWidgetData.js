@@ -1,6 +1,8 @@
 import { parseOvers, formatBallOutcome } from './liveFieldState';
 import { ballsRemaining } from './oversUtils';
 import { isCricketSecondInnings } from './cricketScores';
+import { getScorecardInningsForTeam } from './matchSquads';
+import { isPlaceholderPlayerName } from './cricketPlayers';
 
 function hashSeed(str) {
   let h = 0;
@@ -52,25 +54,73 @@ const DISMISSAL_TEMPLATES = [
   'run out ({fielder})',
 ];
 
-export function buildScorecardInnings(match, teamName, roster, fieldState, isBattingInnings, teamShortName = '') {
-  const apiInnings = match?.scorecardInnings;
-  if (Array.isArray(apiInnings) && apiInnings.length) {
-    const teamInnings = apiInnings.filter(
-      (inn) => inn.batTeamName === teamName
-        || (teamShortName && inn.batTeamShortName === teamShortName),
+function formatBatterStatus(player) {
+  if (!player.notOut) {
+    return player.dismissal || 'out';
+  }
+  if (/^batting$/i.test(player.dismissal || '')) {
+    return 'batting';
+  }
+  return 'NOT OUT';
+}
+
+function hasBatted(player) {
+  return (player.balls ?? 0) > 0
+    || (player.runs ?? 0) > 0
+    || (!player.notOut && player.dismissal && !/^(batting|not out)$/i.test(player.dismissal));
+}
+
+function mergeLiveBatterStats(players, liveDetails) {
+  const liveBatters = [liveDetails?.batter1, liveDetails?.batter2].filter(Boolean);
+  if (!liveBatters.length) return players;
+
+  return players.map((player) => {
+    const live = liveBatters.find(
+      (b) => b?.name && player.name && b.name.toLowerCase() === player.name.toLowerCase(),
     );
-    const latest = teamInnings[teamInnings.length - 1];
-    if (latest?.batters?.length) {
-      return latest.batters.map((b) => ({
+    if (!live) return player;
+    const balls = live.balls ?? player.balls;
+    const runs = live.runs ?? player.runs;
+    return {
+      ...player,
+      runs,
+      balls,
+      fours: live.fours ?? player.fours,
+      sixes: live.sixes ?? player.sixes,
+      sr: balls > 0 ? ((runs / balls) * 100).toFixed(2) : player.sr,
+      notOut: true,
+      dismissal: 'batting',
+      isStriker: !!live.isStriker,
+    };
+  });
+}
+
+export function buildScorecardInnings(match, teamName, roster, fieldState, isBattingInnings, teamShortName = '') {
+  const apiInnings = getScorecardInningsForTeam(match, teamName, teamShortName);
+  if (apiInnings?.batters?.length) {
+    const ld = match?.liveDetails || {};
+    let players = apiInnings.batters
+      .filter(hasBatted)
+      .map((b) => ({
         name: b.name,
         runs: b.runs,
         balls: b.balls,
         sr: b.sr,
-        dismissal: b.notOut ? 'NOT OUT' : (b.dismissal || 'out'),
+        dismissal: b.dismissal,
         notOut: b.notOut,
         isStriker: false,
+        statusLabel: formatBatterStatus(b),
+      }));
+
+    if (isBattingInnings) {
+      players = mergeLiveBatterStats(players, ld);
+      players = players.map((p) => ({
+        ...p,
+        statusLabel: formatBatterStatus(p),
       }));
     }
+
+    return players;
   }
 
   const matchId = match?.id || 'default';
@@ -101,6 +151,7 @@ export function buildScorecardInnings(match, teamName, roster, fieldState, isBat
       sr: balls > 0 ? ((runs / balls) * 100).toFixed(2) : '0.00',
       dismissal,
       notOut: false,
+      statusLabel: dismissal,
     });
   }
 
@@ -108,26 +159,32 @@ export function buildScorecardInnings(match, teamName, roster, fieldState, isBat
     const striker = fieldState.strikerIdx === 0 ? fieldState.batter1 : fieldState.batter2;
     const nonStriker = fieldState.strikerIdx === 0 ? fieldState.batter2 : fieldState.batter1;
 
-    players.push({
-      ...striker,
-      sr: striker.balls > 0 ? ((striker.runs / striker.balls) * 100).toFixed(2) : '0.00',
-      notOut: true,
-      isStriker: fieldState.strikerIdx === (outCount % 2 === 0 ? 0 : 1),
-    });
-    players.push({
-      ...nonStriker,
-      sr: nonStriker.balls > 0 ? ((nonStriker.runs / nonStriker.balls) * 100).toFixed(2) : '0.00',
-      notOut: true,
-      isStriker: fieldState.strikerIdx !== (outCount % 2 === 0 ? 0 : 1),
-    });
+    const addBatter = (batter, isStriker) => {
+      if (!batter?.name || isPlaceholderPlayerName(batter.name)) return;
+      if (players.some((p) => p.name.toLowerCase() === batter.name.toLowerCase())) return;
+      players.push({
+        ...batter,
+        sr: batter.balls > 0 ? ((batter.runs / batter.balls) * 100).toFixed(2) : '0.00',
+        notOut: true,
+        dismissal: 'batting',
+        statusLabel: 'batting',
+        isStriker,
+      });
+    };
+
+    addBatter(striker, fieldState.strikerIdx === (outCount % 2 === 0 ? 0 : 1));
+    addBatter(nonStriker, fieldState.strikerIdx !== (outCount % 2 === 0 ? 0 : 1));
   } else if (isBattingInnings) {
     players.push(
-      { name: batters[outCount % batters.length], runs: 15, balls: 11, sr: '136.36', notOut: true, isStriker: true },
-      { name: batters[(outCount + 1) % batters.length], runs: 8, balls: 9, sr: '88.89', notOut: true, isStriker: false },
+      { name: batters[outCount % batters.length], runs: 15, balls: 11, sr: '136.36', notOut: true, statusLabel: 'batting', isStriker: true },
+      { name: batters[(outCount + 1) % batters.length], runs: 8, balls: 9, sr: '88.89', notOut: true, statusLabel: 'batting', isStriker: false },
     );
   }
 
-  return players;
+  return players.map((p) => ({
+    ...p,
+    statusLabel: p.statusLabel || formatBatterStatus(p),
+  }));
 }
 
 function assignWicketsToOvers(matchId, totalWickets, overNums) {
@@ -214,38 +271,71 @@ export function buildOverHistoryRows(fieldState, matchId, match) {
   return rows;
 }
 
-export function buildStatsOvers(fieldState, match, battingScore, battingWickets) {
+export function buildStatsOvers(fieldState, match) {
+  const ld = match?.liveDetails || {};
+  const isChasing = isCricketSecondInnings(match, ld);
+  const oversStr = isChasing
+    ? (ld.overs2 || ld.chaseOvers || ld.overs || '0.0')
+    : (ld.overs || ld.firstOvers || '0.0');
+  const battingScore = isChasing ? (ld.score2 ?? 0) : (ld.runs ?? 0);
+  const battingWickets = isChasing ? (ld.wickets2 ?? 0) : (ld.wickets ?? 0);
   const matchId = match?.id || 'default';
-  const currentOver = fieldState?.overNum ?? parseOvers(match?.liveDetails?.overs2 || match?.liveDetails?.overs || '0.0').over;
+
+  const { over: currentOver, ball: ballsInCurrentOver } = parseOvers(oversStr);
+  const safeCurrentOver = Math.max(1, currentOver || 1);
+  const startOver = Math.max(1, safeCurrentOver - 3);
+  const overNums = [];
+  for (let o = startOver; o <= safeCurrentOver; o += 1) {
+    overNums.push(o);
+  }
+
+  const wicketByOver = assignWicketsToOvers(matchId, battingWickets, overNums);
   const rows = [];
+  let cumRuns = battingScore;
+  let cumWkts = battingWickets;
 
-  for (let o = currentOver; o >= Math.max(1, currentOver - 3); o -= 1) {
-    const balls = [];
-    let overRuns = 0;
-    let overWkts = 0;
-
-    for (let i = 0; i < 6; i += 1) {
-      const idx = (o - 1) * 6 + i;
-      const seed = hashSeed(`${matchId}-stat-${idx}`);
-      const options = ['•', '1', '1', '4', '2', 'W'];
-      const ball = o === currentOver && fieldState?.overBalls?.[i]
-        ? fieldState.overBalls[i]
-        : options[seed % options.length];
-
-      balls.push(ball);
-      if (ball === 'W') overWkts += 1;
-      else if (ball !== '•') overRuns += parseInt(ball, 10) || 0;
+  for (let o = safeCurrentOver; o >= startOver; o -= 1) {
+    let balls;
+    if (o === safeCurrentOver) {
+      const apiBalls = (ld.currentOverBalls || []).map((b) => formatBallOutcome(b));
+      if (apiBalls.length) {
+        balls = apiBalls;
+      } else if (fieldState?.overNum === o && fieldState?.overBalls?.length) {
+        balls = fieldState.overBalls;
+      } else if (ballsInCurrentOver > 0) {
+        balls = synthesizeOverBalls(matchId, o, wicketByOver.get(o) || 0).slice(0, ballsInCurrentOver);
+      } else {
+        balls = [];
+      }
+    } else {
+      balls = synthesizeOverBalls(matchId, o, wicketByOver.get(o) || 0);
     }
 
-    const cumRuns = Math.max(0, battingScore - (currentOver - o) * 8);
+    let overRuns = 0;
+    let overWkts = 0;
+    balls.forEach((b) => {
+      if (b === 'W') overWkts += 1;
+      else if (b !== '•') overRuns += parseInt(b, 10) || 0;
+    });
+
+    const wktLabel = overWkts === 1 ? 'wkt' : 'wkts';
     rows.push({
       overNum: o,
-      summary: `${cumRuns}/${battingWickets} (${overRuns} runs, ${overWkts} wkt)`,
+      summary: `${cumRuns}/${cumWkts} (${overRuns} runs, ${overWkts} ${wktLabel})`,
       balls,
     });
+
+    cumRuns = Math.max(0, cumRuns - overRuns);
+    cumWkts = Math.max(0, cumWkts - overWkts);
   }
 
   return rows;
+}
+
+export function formatInningsOversLabel(oversStr) {
+  const { over, ball } = parseOvers(oversStr || '0.0');
+  if (over === 0 && ball === 0) return '0';
+  return ball > 0 ? `${over}.${ball}` : String(over);
 }
 
 export function getWicketOvers(match, wickets, currentOver = 20) {

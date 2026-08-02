@@ -9,10 +9,11 @@ import {
   getTeamShortCode,
   getTeamDisplayName,
   getChaseText,
-  buildScorecardInnings,
   buildOverHistoryRows,
   buildStatsOvers,
+  buildScorecardInnings,
   getWicketOvers,
+  formatInningsOversLabel,
 } from '../../utils/liveMatchWidgetData';
 import {
   getSportStatusBadge,
@@ -258,7 +259,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
   const [activeWidgetTab, setActiveWidgetTab] = useState('field');
   const [selectedInnings, setSelectedInnings] = useState('');
   const [scorecardInnings, setScorecardInnings] = useState('');
-  const [expandedStatsInnings, setExpandedStatsInnings] = useState('batting');
+  const [expandedStatsInnings, setExpandedStatsInnings] = useState('team1');
 
   const sport = match?.sport || 'cricket';
   const team1 = match?.team1?.name || 'Team 1';
@@ -276,6 +277,11 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
   const innings = match
     ? getInningsInfo(match, team1, team2, score1, wickets1, score2, wickets2, overs)
     : null;
+
+  useEffect(() => {
+    setExpandedStatsInnings(innings?.inningsNum === 2 ? 'team2' : 'team1');
+  }, [match?.id, innings?.inningsNum]);
+
   const activeInnings = selectedInnings || innings?.defaultInnings || '';
 
   const t1Data = getRosterForTeam(team1);
@@ -350,11 +356,15 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
     return buildScorecardInnings(match, teamLabel, roster, isBatting ? fieldState : null, isBatting, shortLabel);
   }, [activeScorecardTab, match, team1, team2, t1Data, t2Data, fieldState, innings, team1Short, team2Short]);
 
-  const statsOvers = useMemo(() => {
-    const battingScore = innings?.inningsNum === 2 ? score2 : score1;
-    const battingWickets = innings?.inningsNum === 2 ? wickets2 : wickets1;
-    return buildStatsOvers(fieldState, match, battingScore, battingWickets);
-  }, [fieldState, match, innings, score1, score2, wickets1, wickets2]);
+  const resolvedScores = useMemo(
+    () => resolveCricketTeamScores(match, match?.liveDetails || {}),
+    [match],
+  );
+
+  const statsOvers = useMemo(
+    () => buildStatsOvers(fieldState, match),
+    [fieldState, match, match?.liveDetails?.overs, match?.liveDetails?.overs2, match?.liveDetails?.wickets, match?.liveDetails?.wickets2],
+  );
 
   const inningsFours = fieldState?.inningsFours ?? 0;
   const inningsSixes = fieldState?.inningsSixes ?? 0;
@@ -565,8 +575,8 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
                 <div key={`${player.name}-${idx}`} className="cric-scorecard-table__row">
                   <div className="cric-scorecard-table__batter">
                     <strong>{player.name}</strong>
-                    <span className={player.notOut ? 'cric-not-out' : 'cric-dismissal'}>
-                      {player.notOut ? 'NOT OUT' : player.dismissal}
+                    <span className={player.notOut ? (player.statusLabel === 'batting' ? 'cric-batting' : 'cric-not-out') : 'cric-dismissal'}>
+                      {player.statusLabel || (player.notOut ? 'NOT OUT' : player.dismissal)}
                     </span>
                   </div>
                   <span>{player.runs}</span>
@@ -585,28 +595,30 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
             <div className="cric-stats-innings">
               <button
                 type="button"
-                className={`cric-stats-innings__row ${expandedStatsInnings === 'bowling' ? 'expanded' : ''}`}
-                onClick={() => setExpandedStatsInnings(expandedStatsInnings === 'bowling' ? '' : 'bowling')}
+                className={`cric-stats-innings__row ${expandedStatsInnings === 'team1' ? 'expanded' : ''}`}
+                onClick={() => setExpandedStatsInnings(expandedStatsInnings === 'team1' ? '' : 'team1')}
               >
                 <span>{team1Display} 1st INNS</span>
-                <span className="cric-stats-innings__score">{score1}/{wickets1} (20 ov)</span>
-                <span className="cric-stats-innings__arrow">{expandedStatsInnings === 'bowling' ? '▲' : '▼'}</span>
+                <span className="cric-stats-innings__score">
+                  {resolvedScores.team1.runs}/{resolvedScores.team1.wickets} ({formatInningsOversLabel(resolvedScores.team1.overs)} ov)
+                </span>
+                <span className="cric-stats-innings__arrow">{expandedStatsInnings === 'team1' ? '▲' : '▼'}</span>
               </button>
 
               <button
                 type="button"
-                className={`cric-stats-innings__row ${expandedStatsInnings === 'batting' ? 'expanded' : ''}`}
-                onClick={() => setExpandedStatsInnings(expandedStatsInnings === 'batting' ? '' : 'batting')}
+                className={`cric-stats-innings__row ${expandedStatsInnings === 'team2' ? 'expanded' : ''}`}
+                onClick={() => setExpandedStatsInnings(expandedStatsInnings === 'team2' ? '' : 'team2')}
               >
                 <span>{team2Display} 1st INNS</span>
                 <span className="cric-stats-innings__score">
-                  {score2}/{wickets2} ({Math.ceil(parseFloat(innings.displayOvers) || 0)} ov)
+                  {resolvedScores.team2.runs}/{resolvedScores.team2.wickets} ({formatInningsOversLabel(resolvedScores.team2.overs)} ov)
                 </span>
-                <span className="cric-stats-innings__arrow">{expandedStatsInnings === 'batting' ? '▲' : '▼'}</span>
+                <span className="cric-stats-innings__arrow">{expandedStatsInnings === 'team2' ? '▲' : '▼'}</span>
               </button>
             </div>
 
-            {expandedStatsInnings === 'batting' && (
+            {expandedStatsInnings === 'team1' && innings?.inningsNum === 1 && (
               <div className="cric-stats-overs">
                 {statsOvers.map((row) => (
                   <div key={row.overNum} className="cric-stats-over-row">
@@ -620,6 +632,30 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
                   </div>
                 ))}
               </div>
+            )}
+
+            {expandedStatsInnings === 'team2' && innings?.inningsNum === 2 && (
+              <div className="cric-stats-overs">
+                {statsOvers.map((row) => (
+                  <div key={row.overNum} className="cric-stats-over-row">
+                    <span className="cric-stats-over-row__num">{row.overNum}</span>
+                    <span className="cric-stats-over-row__summary">{row.summary}</span>
+                    <div className="cric-stats-over-row__balls">
+                      {row.balls.map((ball, idx) => (
+                        <BallDot key={`${row.overNum}-${idx}`} ball={ball} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {expandedStatsInnings === 'team1' && innings?.inningsNum !== 1 && (
+              <p className="cric-stats-empty">Over-by-over stats appear when {team1Display} are batting.</p>
+            )}
+
+            {expandedStatsInnings === 'team2' && innings?.inningsNum !== 2 && (
+              <p className="cric-stats-empty">Over-by-over stats appear when {team2Display} are batting.</p>
             )}
           </div>
         )}

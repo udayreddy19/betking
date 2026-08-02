@@ -613,6 +613,19 @@
   font-weight: 700;
 }
 
+.cric-batting {
+  font-size: 0.65rem;
+  color: #059669;
+  font-weight: 700;
+  text-transform: lowercase;
+}
+
+.cric-stats-empty {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  padding: var(--space-3) 0;
+}
+
 .cric-stats-innings {
   border-bottom: 1px solid var(--color-graphic-border);
   margin-bottom: 0;
@@ -730,6 +743,10 @@
 [data-theme='dark'] .cric-innings-tab,
 [data-theme='dark'] .cric-dismissal {
   color: #94a3b8;
+}
+
+[data-theme='dark'] .cric-batting {
+  color: #34d399;
 }
 
 [data-theme='dark'] .cric-innings-tab.active {
