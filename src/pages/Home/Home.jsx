@@ -9,20 +9,18 @@ import { homePromoSlides } from '../../data/homePageData';
 import { useLiveSports } from '../../context/LiveSportsContext';
 import { useAuth } from '../../context/AuthContext';
 import { filterMatches } from '../../utils/matchFilters';
-import { getLeagueMeta, isSameLeague } from '../../utils/leagueNavigation';
+import { getLeagueMeta, isSameLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
 import './Home.css';
 
 function filterByLeague(matchList, leagueId) {
   if (!leagueId) return matchList;
   const meta = getLeagueMeta(leagueId);
   if (!meta) return matchList;
-  return matchList.filter(
-    (m) => meta.matchLeagues.includes(m.league) || m.league === meta.name
-  );
+  return matchList.filter((m) => matchBelongsToLeague(m, meta));
 }
 
 export default function Home() {
-  const { matches } = useLiveSports();
+  const { matches, isScoresLoading } = useLiveSports();
   const { showToast } = useAuth();
   const navigate = useNavigate();
   const [activeSport, setActiveSport] = useState('cricket');
@@ -36,7 +34,7 @@ export default function Home() {
   );
 
   const sportMatches = useMemo(() => {
-    const bySport = filterMatches(matches || [], { sport: activeSport, stateTab: 'all' });
+    const bySport = filterMatches(matches || [], { sport: activeSport, stateTab: 'bettable' });
     return activeLeague ? filterByLeague(bySport, activeLeague) : bySport;
   }, [matches, activeSport, activeLeague]);
 
@@ -136,6 +134,11 @@ export default function Home() {
             sportMatches.map((match) => (
               <MatchCard key={match.id} match={match} variant="home" />
             ))
+          ) : isScoresLoading ? (
+            <div className="no-matches-empty">
+              <span className="no-matches-icon">⏳</span>
+              <p>Loading matches…</p>
+            </div>
           ) : (
             <div className="no-matches-empty">
               <span className="no-matches-icon">{sportsCategories.find((s) => s.id === activeSport)?.icon || '🏆'}</span>

@@ -22,12 +22,11 @@ const UPCOMING_TIME_HINTS = [
   'season opener',
   'semi-final',
   'quarter-final',
+  'preview',
 ];
 
 export function getMatchState(match) {
   const explicit = match?.matchState;
-  if (explicit === 'post' || explicit === 'pre') return explicit;
-
   const time = String(match?.time || '').toLowerCase();
   const minute = String(match?.liveDetails?.minute || '').toLowerCase();
   const combined = `${time} ${minute}`;
@@ -40,12 +39,15 @@ export function getMatchState(match) {
     return 'post';
   }
 
+  if (explicit === 'post') return 'post';
+  if (explicit === 'pre') return 'pre';
+
   if (UPCOMING_TIME_HINTS.some((hint) => combined.includes(hint))) {
     return 'pre';
   }
 
-  // "Today 20:00" style kickoff — not live yet
-  if (/today \d{1,2}:\d{2}/.test(time) && !time.includes('live')) {
+  // "Today 20:00" or "02 Aug - 19:30" style kickoff — not live yet
+  if ((/today \d{1,2}:\d{2}/.test(time) || /\d{1,2} \w{3} - \d{1,2}:\d{2}/.test(time)) && !time.includes('live')) {
     return 'pre';
   }
 
@@ -79,11 +81,16 @@ export function isMockMatch(match) {
 
 /** True only for real in-play matches — excludes mocks and finished games. */
 export function isTrulyLiveMatch(match) {
+  return isDisplayableLiveMatch(match);
+}
+
+/** Live matches shown in Live Betting — API-backed in-play or verified live. */
+export function isDisplayableLiveMatch(match) {
   if (!match) return false;
   if (getMatchState(match) !== 'in') return false;
-  if (!match.isLive) return false;
-  if (isMockMatch(match) && !isApiBackedMatch(match)) return false;
-  return true;
+  if (isApiBackedMatch(match)) return true;
+  if (isMockMatch(match)) return false;
+  return !!match.isLive;
 }
 
 export function isMatchLive(match) {

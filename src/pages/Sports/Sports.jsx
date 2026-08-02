@@ -213,7 +213,7 @@ export default function Sports() {
   }, []);
 
   const sportMatches = useMemo(() => {
-    const stateTab = isLiveBettingPage ? 'live' : 'all';
+    const stateTab = isLiveBettingPage ? 'live' : 'bettable';
     const sportFilter = isLiveBettingPage ? null : activeSport;
     return filterByLeague(
       filterMatches(matches, { sport: sportFilter, stateTab, searchQuery }),

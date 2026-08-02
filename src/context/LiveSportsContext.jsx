@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { matches as defaultMatches } from '../data/mockData';
 import { getStableMatchOdds } from '../utils/odds';
-import { mergeApiAndDefaultMatches } from '../utils/matchFilters';
+import { normalizeApiMatches } from '../utils/matchFilters';
 import { fetchLiveScores } from '../services/liveScoresService';
 
 const LiveSportsContext = createContext(null);
@@ -12,7 +11,9 @@ function attachOdds(matches, oddsCache) {
     if (match.odds) return match;
     const cacheKey = match.id;
     if (!oddsCache.has(cacheKey)) {
-      oddsCache.set(cacheKey, getStableMatchOdds(cacheKey, { hasDraw: match.sport === 'soccer' }));
+      oddsCache.set(cacheKey, getStableMatchOdds(cacheKey, {
+        hasDraw: match.sport === 'soccer' || match.sport === 'esoccer',
+      }));
     }
     return { ...match, odds: oddsCache.get(cacheKey) };
   });
@@ -32,7 +33,7 @@ function summarizeMatches(matches) {
 }
 
 export function LiveSportsProvider({ children }) {
-  const [matches, setMatches] = useState(defaultMatches);
+  const [matches, setMatches] = useState([]);
   const [cricketSeries, setCricketSeries] = useState([]);
   const [tickerMessage, setTickerMessage] = useState('🟢 Syncing live scores...');
   const [scoresError, setScoresError] = useState(null);
@@ -48,15 +49,15 @@ export function LiveSportsProvider({ children }) {
     try {
       const data = await fetchLiveScores({ force });
       const apiMatches = attachOdds(data.matches || [], oddsCacheRef.current);
+      const normalized = normalizeApiMatches(apiMatches);
 
       setCricketSeries(data.series || []);
 
-      if (apiMatches.length > 0) {
-        const merged = mergeApiAndDefaultMatches(apiMatches, defaultMatches);
-        const summary = summarizeMatches(merged);
-        if (summary !== matchesSummaryRef.current) {
+      if (normalized.length > 0) {
+        const summary = summarizeMatches(normalized);
+        if (summary !== matchesSummaryRef.current || !hasLoadedRef.current) {
           matchesSummaryRef.current = summary;
-          setMatches(merged);
+          setMatches(normalized);
         }
         setScoresError(null);
 
@@ -81,14 +82,14 @@ export function LiveSportsProvider({ children }) {
           `${emoji} ${primarySource} LIVE — ${counts.total} events (${counts.live} live${sportParts.length ? ' · ' + sportParts.join(', ') : ''})`
         );
       } else {
-        setMatches((prev) => (prev.length > 0 ? prev : defaultMatches));
-        setScoresError('Live scores temporarily unavailable. Showing cached matches — tap Retry.');
-        setTickerMessage('⚠️ Live score sync failed — using cached data');
+        setMatches([]);
+        setScoresError('No live events from score providers right now — tap Retry.');
+        setTickerMessage('⚠️ No matches returned from API');
       }
     } catch (error) {
       console.warn('Live scores fetch error:', error);
-      setScoresError('Live scores temporarily unavailable. Showing cached matches — tap Retry.');
-      setTickerMessage('⚠️ Live score sync failed — using cached data');
+      setScoresError('Could not reach live score API — check connection and tap Retry.');
+      setTickerMessage('⚠️ Live score sync failed');
     }
 
     hasLoadedRef.current = true;
