@@ -15,6 +15,7 @@ import {
   MdOutlineCancel,
   MdOutlineStorefront,
   RiLogoutBoxRLine,
+  IoNotifications,
 } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
@@ -87,7 +88,7 @@ export default function Sidebar() {
             <div className="sidebar-content">
               {/* Wicket Keeper Level Badge */}
               <div className="sidebar-loyalty">
-                <div className="loyalty-avatar">🏏</div>
+                <HiOutlineTrophy className="loyalty-avatar-icon" aria-hidden />
                 <div className="loyalty-info">
                   <h4>{user.loyaltyRank}</h4>
                   <p>Level {user.loyaltyLevel} · {user.xpToNext.toLocaleString()} XP to Level {user.loyaltyLevel + 1}</p>
@@ -97,7 +98,7 @@ export default function Sidebar() {
 
               {/* Notifications */}
               <div className="sidebar-notifications" onClick={() => openFinModal('transactions')}>
-                <div className="notif-icon">🔔</div>
+                <IoNotifications className="notif-icon" />
                 <div className="notif-info">
                   <h4>Notifications center</h4>
                   <p>Updates will appear here</p>

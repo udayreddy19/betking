@@ -5,47 +5,9 @@ import { join } from 'node:path';
 const BASE = 'https://raw.githubusercontent.com/itshover/itshover/master/icons';
 const OUT = join(import.meta.dirname, '..', 'src', 'icons', 'itshover');
 
+/** Sport, league, and specialty UI icons — UI chrome stays on @animateicons/react */
 const ICONS = [
-  'home-icon',
-  'magnifier-icon',
-  'down-chevron',
-  'right-chevron',
-  'arrow-narrow-up-icon',
-  'arrow-narrow-left-icon',
-  'arrow-narrow-right-icon',
-  'arrow-back-icon',
-  'x-icon',
-  'file-description-icon',
-  'user-icon',
   'trophy-icon',
-  'layout-dashboard-icon',
-  'wallet-icon',
-  'currency-rupee-icon',
-  'history-circle-icon',
-  'refresh-icon',
-  'rosette-discount-icon',
-  'shopping-cart-icon',
-  'logout-icon',
-  'moon-icon',
-  'sparkles-icon',
-  'unordered-list-icon',
-  'chart-bar-icon',
-  'users-icon',
-  'info-circle-icon',
-  'eye-icon',
-  'eye-off-icon',
-  'external-link-icon',
-  'player-icon',
-  'gear-icon',
-  'filled-checked-icon',
-  'simple-checked-icon',
-  'qrcode-icon',
-  'lock-icon',
-  'shield-check',
-  'credit-card',
-  'layout-sidebar-right-icon',
-  'filled-bell-icon',
-  'trash-icon',
   'globe-icon',
   'world-icon',
   'target-icon',
@@ -55,10 +17,13 @@ const ICONS = [
   'gauge-icon',
   'stack-3-icon',
   'users-group-icon',
+  'filled-bell-icon',
+  'chart-bar-icon',
+  'users-icon',
 ];
 
-function tsxToJsx(content, fileName) {
-  let jsx = content
+function tsxToJsx(content) {
+  return content
     .replace(/^import type .*;\n?/gm, '')
     .replace(/import type \{[^}]+\} from ['"][^'"]+['"];\n?/g, '')
     .replace(/export interface [\s\S]*?\}\n\n?/g, '')
@@ -70,8 +35,6 @@ function tsxToJsx(content, fileName) {
     .replace(/: AnimatedIconProps/g, '')
     .replace(/from ['"]\.\/types['"]/g, "from './types.js'")
     .replace(/export default (\w+);/, 'export { $1 };');
-
-  return jsx;
 }
 
 async function fetchText(url) {
@@ -83,14 +46,6 @@ async function fetchText(url) {
 async function main() {
   await mkdir(OUT, { recursive: true });
 
-  const types = await fetchText(`${BASE}/types.ts`);
-  const typesJs = types
-    .replace(/^import type .*;\n?/gm, '')
-    .replace(/export type IconEasing[\s\S]*?;/m, '')
-    .replace(/export interface AnimatedIconProps extends Omit<[\s\S]*?\{/, 'export const AnimatedIconProps = {')
-    .replace(/export interface AnimatedIconHandle \{[\s\S]*?\}/m, '/** @typedef {{ startAnimation: () => void, stopAnimation: () => void }} AnimatedIconHandle */');
-
-  // Simpler types.js - hand-written is cleaner
   const typesJsContent = `/** @typedef {import('react').SVGProps<SVGSVGElement>} SVGProps */
 
 export const DEFAULT_STROKE_WIDTH = 2;
@@ -111,11 +66,10 @@ export function scaledStrokeWidth(strokeWidth, viewBoxSize) {
   for (const icon of ICONS) {
     const fileName = `${icon}.tsx`;
     const raw = await fetchText(`${BASE}/${fileName}`);
-    const jsx = tsxToJsx(raw, fileName);
-    const outName = icon.replace(/-([a-z])/g, (_, c) => c.toUpperCase()).replace(/-/g, '');
+    const jsx = tsxToJsx(raw);
     const outFile = `${icon}.jsx`;
     await writeFile(join(OUT, outFile), jsx);
-    const exportName = jsx.match(/const (\w+) = forwardRef/)?.[1] ?? outName;
+    const exportName = jsx.match(/const (\w+) = forwardRef/)?.[1] ?? icon;
     exports.push({ file: outFile.replace('.jsx', ''), exportName });
     console.log(`✓ ${outFile}`);
   }

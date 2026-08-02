@@ -12,8 +12,12 @@ export default defineConfig({
           if (id.includes('node_modules/react-router') || id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) {
             return 'vendor';
           }
-          if (id.includes('node_modules/motion')) {
-            return 'motion';
+          if (
+            id.includes('node_modules/@animateicons')
+            || id.includes('node_modules/motion')
+            || id.includes('/src/icons/itshover/')
+          ) {
+            return 'icons';
           }
         },
       },

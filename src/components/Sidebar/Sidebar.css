@@ -116,7 +116,8 @@
   align-items: center;
   gap: var(--space-4);
 }
-.loyalty-avatar {
+.loyalty-avatar,
+.loyalty-avatar-icon {
   width: 52px;
   height: 52px;
   border-radius: var(--radius-lg);
@@ -125,6 +126,11 @@
   align-items: center;
   justify-content: center;
   font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.loyalty-avatar-icon {
+  color: #fff;
 }
 .loyalty-info {
   flex: 1;

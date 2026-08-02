@@ -1,15 +1,30 @@
-import { TrophyIcon } from '../../icons/itshover/trophy-icon.jsx';
-import { GlobeIcon } from '../../icons/itshover/globe-icon.jsx';
-import { GaugeIcon } from '../../icons/itshover/gauge-icon.jsx';
-import { TargetIcon } from '../../icons/itshover/target-icon.jsx';
-import { UsersGroupIcon } from '../../icons/itshover/users-group-icon.jsx';
-import { GamepadIcon } from '../../icons/itshover/gamepad-icon.jsx';
-import { RocketIcon } from '../../icons/itshover/rocket-icon.jsx';
-import { Stack3Icon } from '../../icons/itshover/stack-3-icon.jsx';
-import { FlameIcon } from '../../icons/itshover/flame-icon.jsx';
-import { WorldIcon } from '../../icons/itshover/world-icon.jsx';
+import {
+  TrophyIcon,
+  GlobeIcon,
+  GaugeIcon,
+  TargetIcon,
+  UsersGroupIcon,
+  GamepadIcon,
+  RocketIcon,
+  Stack3Icon,
+  FlameIcon,
+  WorldIcon,
+} from '../../icons/itshover/index.js';
 
-const SPORT_ICON_MAP = {
+import {
+  SwordsIcon,
+  GlobeIcon as AnimateGlobeIcon,
+  ActivityIcon,
+  ZapIcon,
+  UsersIcon,
+  GamepadIcon as AnimateGamepadIcon,
+  RocketIcon as AnimateRocketIcon,
+  LayersIcon,
+  FlameIcon as AnimateFlameIcon,
+  StarIcon,
+} from '@animateicons/react/lucide';
+
+const ITSHOVER_SPORT_MAP = {
   cricket: TrophyIcon,
   soccer: GlobeIcon,
   basketball: GaugeIcon,
@@ -22,7 +37,7 @@ const SPORT_ICON_MAP = {
   'american-football': FlameIcon,
 };
 
-const LEAGUE_ICON_MAP = {
+const ITSHOVER_LEAGUE_MAP = {
   flame: FlameIcon,
   globe: GlobeIcon,
   world: WorldIcon,
@@ -31,17 +46,56 @@ const LEAGUE_ICON_MAP = {
   soccer: GlobeIcon,
 };
 
+const ANIMATE_FALLBACK_MAP = {
+  cricket: SwordsIcon,
+  soccer: AnimateGlobeIcon,
+  basketball: ActivityIcon,
+  tennis: ZapIcon,
+  'table-tennis': ZapIcon,
+  kabaddi: UsersIcon,
+  esoccer: AnimateGamepadIcon,
+  'virtual-cricket': AnimateRocketIcon,
+  volleyball: LayersIcon,
+  'american-football': AnimateFlameIcon,
+};
+
+const ANIMATE_LEAGUE_FALLBACK = {
+  flame: AnimateFlameIcon,
+  globe: AnimateGlobeIcon,
+  world: AnimateGlobeIcon,
+  trophy: StarIcon,
+  cricket: SwordsIcon,
+  soccer: AnimateGlobeIcon,
+};
+
+function resolveIcon(map, fallbackMap, key, defaultIcon) {
+  if (key && map[key]) return map[key];
+  if (key && fallbackMap[key]) return fallbackMap[key];
+  return defaultIcon;
+}
+
 export function getSportIcon(sport) {
-  return SPORT_ICON_MAP[sport] || TrophyIcon;
+  return resolveIcon(ITSHOVER_SPORT_MAP, ANIMATE_FALLBACK_MAP, sport, TrophyIcon);
 }
 
 export function getLeagueIcon(iconKey, sport) {
-  if (iconKey && LEAGUE_ICON_MAP[iconKey]) return LEAGUE_ICON_MAP[iconKey];
+  if (iconKey) {
+    const icon = resolveIcon(ITSHOVER_LEAGUE_MAP, ANIMATE_LEAGUE_FALLBACK, iconKey, null);
+    if (icon) return icon;
+  }
   if (sport) return getSportIcon(sport);
   return TrophyIcon;
 }
 
-export default function SportIcon({ sport, icon, className = '', color, size }) {
+export default function SportIcon({ sport, icon, className = '', color, size = 20 }) {
   const Icon = icon ? getLeagueIcon(icon, sport) : getSportIcon(sport);
-  return <Icon className={className} color={color} size={size} aria-hidden />;
+  return (
+    <Icon
+      className={`itshover-icon cursor-pointer ${className}`.trim()}
+      color={color}
+      size={size}
+      style={{ display: 'inline-flex', flexShrink: 0, lineHeight: 0 }}
+      aria-hidden
+    />
+  );
 }

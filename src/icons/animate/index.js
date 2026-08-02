@@ -1,0 +1,149 @@
+import {
+  SearchIcon,
+  HouseIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  XIcon,
+  ExternalLinkIcon,
+  RefreshCwIcon,
+  PlayIcon,
+  ShieldCheckIcon,
+  InfoIcon,
+  GiftIcon,
+  EyeIcon,
+  EyeOffIcon,
+  SettingsIcon,
+  CircleCheckIcon,
+  QrCodeIcon,
+  KeyIcon,
+  LockIcon,
+  MenuIcon,
+  ClipboardIcon,
+  FileTextIcon,
+  UserIcon,
+  LayoutDashboardIcon,
+  MoonIcon,
+  SunIcon,
+  LayoutListIcon,
+  ChartBarIcon,
+  UsersIcon,
+  WalletIcon,
+  IndianRupeeIcon,
+  ClockIcon,
+  RepeatIcon,
+  ShoppingCartIcon,
+  LogOutIcon,
+  BellRingIcon,
+  SwordsIcon,
+  ActivityIcon,
+  ZapIcon,
+  LayersIcon,
+  StarIcon,
+} from '@animateicons/react/lucide';
+
+import { withAnimatedIcon } from './animateIcon.jsx';
+
+// Base @animateicons/react exports
+export {
+  SearchIcon,
+  HouseIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  XIcon,
+  ExternalLinkIcon,
+  RefreshCwIcon,
+  PlayIcon,
+  ShieldCheckIcon,
+  InfoIcon,
+  GiftIcon,
+  EyeIcon,
+  EyeOffIcon,
+  SettingsIcon,
+  CircleCheckIcon,
+  QrCodeIcon,
+  KeyIcon,
+  LockIcon,
+  MenuIcon,
+  ClipboardIcon,
+  FileTextIcon,
+  UserIcon,
+  LayoutDashboardIcon,
+  MoonIcon,
+  SunIcon,
+  LayoutListIcon,
+  ChartBarIcon,
+  UsersIcon,
+  WalletIcon,
+  IndianRupeeIcon,
+  ClockIcon,
+  RepeatIcon,
+  ShoppingCartIcon,
+  LogOutIcon,
+  BellRingIcon,
+  SwordsIcon,
+  ActivityIcon,
+  ZapIcon,
+  LayersIcon,
+  StarIcon,
+};
+
+// Drop-in aliases (react-icons names used across the app)
+export const FiSearch = withAnimatedIcon(SearchIcon);
+export const FiHome = withAnimatedIcon(HouseIcon);
+export const FiChevronLeft = withAnimatedIcon(ChevronLeftIcon);
+export const FiChevronRight = withAnimatedIcon(ChevronRightIcon);
+export const FiChevronDown = withAnimatedIcon(ChevronDownIcon);
+export const HiOutlineChevronUp = withAnimatedIcon(ChevronUpIcon);
+export const HiOutlineChevronDown = withAnimatedIcon(ChevronDownIcon);
+export const HiChevronDown = withAnimatedIcon(ChevronDownIcon);
+export const HiChevronRight = withAnimatedIcon(ChevronRightIcon);
+export const FiArrowLeft = withAnimatedIcon(ChevronLeftIcon);
+export const FiArrowRight = withAnimatedIcon(ChevronRightIcon);
+export const FiX = withAnimatedIcon(XIcon);
+export const FiExternalLink = withAnimatedIcon(ExternalLinkIcon);
+export const FiRefreshCw = withAnimatedIcon(RefreshCwIcon);
+export const FiPlay = withAnimatedIcon(PlayIcon);
+export const FiShield = withAnimatedIcon(ShieldCheckIcon);
+export const FiAlertCircle = withAnimatedIcon(InfoIcon);
+
+export const IoClose = withAnimatedIcon(XIcon);
+export const IoGiftOutline = withAnimatedIcon(GiftIcon);
+export const IoInformationCircle = withAnimatedIcon(InfoIcon);
+export const IoEyeOutline = withAnimatedIcon(EyeIcon);
+export const IoEyeOffOutline = withAnimatedIcon(EyeOffIcon);
+export const IoPlay = withAnimatedIcon(PlayIcon);
+export const IoSettingsOutline = withAnimatedIcon(SettingsIcon);
+export const IoCheckmarkCircle = withAnimatedIcon(CircleCheckIcon);
+export const IoCloseCircle = withAnimatedIcon(XIcon);
+export const IoChevronBack = withAnimatedIcon(ChevronLeftIcon);
+export const IoQrCodeOutline = withAnimatedIcon(QrCodeIcon);
+export const IoKeyOutline = withAnimatedIcon(KeyIcon);
+export const IoShieldCheckmark = withAnimatedIcon(ShieldCheckIcon);
+export const IoLockClosed = withAnimatedIcon(LockIcon);
+
+export const HiOutlineMenu = withAnimatedIcon(MenuIcon);
+export const HiOutlineClipboardList = withAnimatedIcon(ClipboardIcon);
+export const HiOutlineDocumentText = withAnimatedIcon(FileTextIcon);
+export const HiOutlineUser = withAnimatedIcon(UserIcon);
+export const HiOutlineCube = withAnimatedIcon(LayoutDashboardIcon);
+export const HiOutlineMoon = withAnimatedIcon(MoonIcon);
+export const HiOutlineSun = withAnimatedIcon(SunIcon);
+export const HiOutlineViewList = withAnimatedIcon(LayoutListIcon);
+export const HiOutlineChartBar = withAnimatedIcon(ChartBarIcon);
+export const HiOutlineUsers = withAnimatedIcon(UsersIcon);
+export const HiOutlineExternalLink = withAnimatedIcon(ExternalLinkIcon);
+
+export const BiWallet = withAnimatedIcon(WalletIcon);
+export const BiMoneyWithdraw = withAnimatedIcon(IndianRupeeIcon);
+export const BiHistory = withAnimatedIcon(ClockIcon);
+export const BiTransfer = withAnimatedIcon(RepeatIcon);
+export const BiGift = withAnimatedIcon(GiftIcon);
+
+export const MdOutlineCancel = withAnimatedIcon(XIcon);
+export const MdOutlineStorefront = withAnimatedIcon(ShoppingCartIcon);
+
+export const RiLogoutBoxRLine = withAnimatedIcon(LogOutIcon);

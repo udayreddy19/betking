@@ -374,9 +374,25 @@ input, select, textarea {
   }
 }
 
-/* itshover animated icons — inherit size from parent like react-icons */
-svg.cursor-pointer {
+/* @animateicons/react — inline sizing for animated icon wrappers */
+.animated-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  vertical-align: middle;
+  line-height: 0;
+}
+
+/* itshover — inherit size from parent like react-icons */
+svg.cursor-pointer,
+.itshover-icon {
   width: 1em;
   height: 1em;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  line-height: 0;
 }
