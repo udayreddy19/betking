@@ -475,6 +475,14 @@
   border-color: #5e35b1;
 }
 
+.sports-league-chip-icon {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.95rem;
+  line-height: 0;
+  flex-shrink: 0;
+}
+
 .sports-live-status {
   display: flex;
   align-items: center;

@@ -39,6 +39,15 @@ export {
   LayoutSidebarRightIcon,
   FilledBellIcon,
   TrashIcon,
+  GlobeIcon,
+  WorldIcon,
+  TargetIcon,
+  GamepadIcon,
+  FlameIcon,
+  RocketIcon,
+  GaugeIcon,
+  Stack3Icon,
+  UsersGroupIcon,
 } from './itshover/index.js';
 
 // react-icons drop-in aliases

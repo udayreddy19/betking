@@ -1,21 +1,9 @@
 import { useState } from 'react';
 import { useBetSlip } from '../../context/BetSlipContext';
 import MatchDetailModal from '../MatchDetailModal/MatchDetailModal';
+import SportIcon from '../SportIcon/SportIcon';
 import { isMatchBettable, isMatchLive, isMatchFinished } from '../../utils/matchBetting';
 import './MatchCard.css';
-
-const sportIcons = {
-  cricket: '🏏',
-  soccer: '⚽',
-  basketball: '🏀',
-  tennis: '🎾',
-  'table-tennis': '🏓',
-  kabaddi: '🤼',
-  esoccer: '🎮',
-  'virtual-cricket': '🏏',
-  volleyball: '🏐',
-  'american-football': '🏈',
-};
 
 const sportLabels = {
   cricket: 'Cricket',
@@ -43,15 +31,12 @@ const extraMarketsBySport = {
   'american-football': 'Touchdowns, Field Goals, Handicap',
 };
 
-function leagueFlag(league) {
-  if (!league) return '🌐';
+function leagueIconKey(league) {
+  if (!league) return 'globe';
   const l = league.toLowerCase();
-  if (l.includes('hundred') || l.includes('england') || l.includes('one-day cup')) return '🏴󠁧󠁢󠁥󠁮󠁧󠁿';
-  if (l.includes('lanka') || l.includes('lpl')) return '🇱🇰';
-  if (l.includes('india') || l.includes('ipl') || l.includes('tamil')) return '🇮🇳';
-  if (l.includes('pakistan') || l.includes('west indies')) return '🏏';
-  if (l.includes('premier league') || l.includes('la liga')) return '⚽';
-  return '🌐';
+  if (l.includes('premier league') || l.includes('la liga')) return 'soccer';
+  if (l.includes('pakistan') || l.includes('west indies')) return 'cricket';
+  return 'world';
 }
 
 function TeamJersey({ team }) {
@@ -144,11 +129,12 @@ export default function MatchCard({ match, variant = 'default' }) {
       >
         <div className="match-card-header">
           <span className="match-card-league">
-            <span className="league-flag">{leagueFlag(match.league)}</span>
+            <SportIcon icon={leagueIconKey(match.league)} sport={match.sport} className="league-flag" />
             {match.league}
           </span>
           <span className={`match-card-sport-tag ${isHome ? 'match-card-sport-tag--home' : ''}`} style={isHome ? undefined : { background: match.sportColor }}>
-            {sportIcons[match.sport] || '🏅'} {isHome ? sportLabel : match.sport}
+            <SportIcon sport={match.sport} className="match-card-sport-icon" />
+            {isHome ? sportLabel : match.sport}
           </span>
         </div>
 

@@ -1,4 +1,5 @@
 import { IoClose, IoSettingsOutline } from '../../icons';
+import SportIcon from '../SportIcon/SportIcon';
 import { useBetSlip } from '../../context/BetSlipContext';
 import BetSlipFooter from './BetSlipFooter';
 import './BetSlip.css';
@@ -61,7 +62,7 @@ export default function BetSlip() {
             <div className="betslip-bet" key={bet.id}>
               <div className="betslip-bet-top">
                 <div className="betslip-bet-meta">
-                  <span className="betslip-bet-sport-icon">🏏</span>
+                  <SportIcon sport={bet.sport} className="betslip-bet-sport-icon" />
                   <span className="betslip-bet-time">{formatBetTime(bet.timestamp)}</span>
                 </div>
                 <button className="betslip-bet-remove" onClick={() => removeBet(bet.id)} type="button" aria-label="Remove bet">

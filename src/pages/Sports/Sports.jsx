@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { FiSearch, FiHome, HiOutlineChevronDown, HiOutlineChevronUp } from '../../icons';
 import FilterChips from '../../components/FilterChips/FilterChips';
+import SportIcon from '../../components/SportIcon/SportIcon';
 import BetSlip from '../../components/BetSlip/BetSlip';
 import LiveMatchGraphicWidget from '../../components/LiveMatchGraphicWidget/LiveMatchGraphicWidget';
 import SportsLeagueSidebar from '../../components/SportsLeagueSidebar/SportsLeagueSidebar';
@@ -438,7 +439,9 @@ export default function Sports() {
                 className={`sports-league-chip ${isSameLeague(activeLeague, league.id) ? 'active' : ''}`}
                 onClick={() => handleLeagueChange(league.id)}
               >
-                {league.icon && <span className="sports-league-chip-icon">{league.icon}</span>}
+                {league.icon && (
+                  <SportIcon sport={league.sport} icon={league.icon} className="sports-league-chip-icon" />
+                )}
                 {league.name}
               </button>
             ))}

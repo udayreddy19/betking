@@ -1,3 +1,4 @@
+import SportIcon from '../SportIcon/SportIcon';
 import './FilterChips.css';
 
 export default function FilterChips({ items, activeId, onSelect, className = '' }) {
@@ -11,7 +12,7 @@ export default function FilterChips({ items, activeId, onSelect, className = '' 
           onClick={() => onSelect(item.id)}
           id={`chip-${item.id}`}
         >
-          {item.icon && <span className="chip-icon">{item.icon}</span>}
+          <SportIcon sport={item.id} icon={item.icon} className="chip-icon" />
           {item.name}
         </button>
       ))}

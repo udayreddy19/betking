@@ -181,6 +181,9 @@
 
 .betslip-bet-sport-icon {
   font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
 }
 
 .betslip-bet-time {

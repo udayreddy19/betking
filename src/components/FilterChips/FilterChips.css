@@ -34,6 +34,9 @@
 }
 .filter-chip .chip-icon {
   font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
 }
 .filter-chips-row {
   margin-bottom: var(--space-3);

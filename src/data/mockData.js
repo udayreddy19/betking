@@ -54,16 +54,16 @@ export const heroCategories = [
 ];
 
 export const sportsCategories = [
-  { id: 'cricket', name: 'Cricket', icon: '🏏', color: '#f97316' },
-  { id: 'soccer', name: 'Soccer', icon: '⚽', color: '#22c55e' },
-  { id: 'basketball', name: 'Basketball', icon: '🏀', color: '#f59e0b' },
-  { id: 'tennis', name: 'Tennis', icon: '🎾', color: '#14b8a6' },
-  { id: 'table-tennis', name: 'Table Tennis', icon: '🏓', color: '#6366f1' },
-  { id: 'kabaddi', name: 'Kabaddi', icon: '🤼', color: '#ec4899' },
-  { id: 'esoccer', name: 'eSoccer', icon: '🎮', color: '#8b5cf6' },
-  { id: 'virtual-cricket', name: 'Virtual Fast Cricket', icon: '🏏', color: '#06b6d4' },
-  { id: 'volleyball', name: 'Volleyball', icon: '🏐', color: '#eab308' },
-  { id: 'american-football', name: 'American Football', icon: '🏈', color: '#b45309' },
+  { id: 'cricket', name: 'Cricket', color: '#f97316' },
+  { id: 'soccer', name: 'Soccer', color: '#22c55e' },
+  { id: 'basketball', name: 'Basketball', color: '#f59e0b' },
+  { id: 'tennis', name: 'Tennis', color: '#14b8a6' },
+  { id: 'table-tennis', name: 'Table Tennis', color: '#6366f1' },
+  { id: 'kabaddi', name: 'Kabaddi', color: '#ec4899' },
+  { id: 'esoccer', name: 'eSoccer', color: '#8b5cf6' },
+  { id: 'virtual-cricket', name: 'Virtual Fast Cricket', color: '#06b6d4' },
+  { id: 'volleyball', name: 'Volleyball', color: '#eab308' },
+  { id: 'american-football', name: 'American Football', color: '#b45309' },
 ];
 
 export const leagues = [
@@ -76,23 +76,23 @@ export const leagues = [
 ];
 
 export const featuredLeagues = [
-  { id: 'hundred-m', name: 'The Hundred', sport: 'cricket', icon: '🔥', matchLeagues: ['The Hundred Men', "The Hundred Men's Competition 2026", 'The Hundred'], breadcrumb: 'England - The Hundred' },
-  { id: 'hundred-w', name: 'The Hundred, Women', sport: 'cricket', icon: '🔥', matchLeagues: ['The Hundred Women', "The Hundred Women's Competition 2026"], breadcrumb: 'England - The Hundred, Women' },
-  { id: 'lpl', name: 'T20 Lanka Premier League', sport: 'cricket', icon: '🔥', matchLeagues: ['Lanka Premier League', 'LPL, 2026', 'T20 Lanka Premier League', 'Lanka Premier League, 2026'] },
-  { id: 'dpl', name: 'Delhi Premier League', sport: 'cricket', icon: '🔥', matchLeagues: ['Delhi Premier League', 'DPL 2026', 'Delhi Premier League, 2026'] },
-  { id: 'gsl', name: 'Global Super League', sport: 'cricket', icon: '🔥', matchLeagues: ['Global Super League', 'Global Super League 2026'] },
-  { id: 'one-day', name: 'One-Day Cup', sport: 'cricket', icon: '🔥', matchLeagues: ['One-Day Cup', 'England Domestic One-Day Cup'] },
-  { id: 'ken-bah', name: 'Kenya vs Bahrain', sport: 'cricket', icon: '🔥', matchLeagues: ['T20 Series Kenya vs Bahrain', 'Bahrain tour of Kenya, 2026'] },
-  { id: 'sl-pak-w', name: 'T20 Series Sri Lanka vs Pakistan, Women', sport: 'cricket', icon: '🔥', matchLeagues: ['T20 Series Sri Lanka vs Pakistan, Women', 'Pakistan Women tour of Sri Lanka', 'Pakistan Women tour of Sri Lanka, 2026'] },
-  { id: 'pak-wi', name: 'Test Series West Indies vs. Pakistan', sport: 'cricket', icon: '🔥', matchLeagues: ['West Indies v Pakistan, 2026', 'Pakistan tour of West Indies, 2026', 'Test Series West Indies vs. Pakistan'] },
-  { id: 'qcl', name: 'Quantum Cricket League', sport: 'cricket', icon: '🔥', matchLeagues: ['Quantum Cricket League', 'Global Super League', 'Global Super League 2026'] },
-  { id: 'ipl-srl', name: 'Indian Premier League SRL', sport: 'cricket', icon: '🔥', matchLeagues: ['IPL 2026', 'IPL SRL', 'Indian Premier League', 'Indian Premier League SRL'] },
-  { id: 't20-intl-srl', name: 'T20 International SRL', sport: 'cricket', icon: '🔥', matchLeagues: ['T20 International SRL', 'T20 International'] },
-  { id: 'tt-elite', name: 'TT Elite Series', sport: 'table-tennis', icon: '🔥', matchLeagues: ['TT Elite Series'] },
-  { id: 'cpl', name: 'Caribbean Premier League', sport: 'cricket', icon: '🔥', matchLeagues: ['Caribbean Premier League', 'Caribbean Premier League 2026'] },
-  { id: 'tnpl', name: 'Tamil Nadu Premier League', sport: 'cricket', icon: '🔥', matchLeagues: ['Tamil Nadu Premier League', 'Tamil Nadu Premier League 2026'] },
-  { id: 'epl', name: 'Premier League', sport: 'soccer', icon: '⚽', matchLeagues: ['Premier League'] },
-  { id: 'laliga', name: 'La Liga', sport: 'soccer', icon: '⚽', matchLeagues: ['La Liga'] },
+  { id: 'hundred-m', name: 'The Hundred', sport: 'cricket', icon: 'flame', matchLeagues: ['The Hundred Men', "The Hundred Men's Competition 2026", 'The Hundred'], breadcrumb: 'England - The Hundred' },
+  { id: 'hundred-w', name: 'The Hundred, Women', sport: 'cricket', icon: 'flame', matchLeagues: ['The Hundred Women', "The Hundred Women's Competition 2026"], breadcrumb: 'England - The Hundred, Women' },
+  { id: 'lpl', name: 'T20 Lanka Premier League', sport: 'cricket', icon: 'flame', matchLeagues: ['Lanka Premier League', 'LPL, 2026', 'T20 Lanka Premier League', 'Lanka Premier League, 2026'] },
+  { id: 'dpl', name: 'Delhi Premier League', sport: 'cricket', icon: 'flame', matchLeagues: ['Delhi Premier League', 'DPL 2026', 'Delhi Premier League, 2026'] },
+  { id: 'gsl', name: 'Global Super League', sport: 'cricket', icon: 'flame', matchLeagues: ['Global Super League', 'Global Super League 2026'] },
+  { id: 'one-day', name: 'One-Day Cup', sport: 'cricket', icon: 'flame', matchLeagues: ['One-Day Cup', 'England Domestic One-Day Cup'] },
+  { id: 'ken-bah', name: 'Kenya vs Bahrain', sport: 'cricket', icon: 'flame', matchLeagues: ['T20 Series Kenya vs Bahrain', 'Bahrain tour of Kenya, 2026'] },
+  { id: 'sl-pak-w', name: 'T20 Series Sri Lanka vs Pakistan, Women', sport: 'cricket', icon: 'flame', matchLeagues: ['T20 Series Sri Lanka vs Pakistan, Women', 'Pakistan Women tour of Sri Lanka', 'Pakistan Women tour of Sri Lanka, 2026'] },
+  { id: 'pak-wi', name: 'Test Series West Indies vs. Pakistan', sport: 'cricket', icon: 'flame', matchLeagues: ['West Indies v Pakistan, 2026', 'Pakistan tour of West Indies, 2026', 'Test Series West Indies vs. Pakistan'] },
+  { id: 'qcl', name: 'Quantum Cricket League', sport: 'cricket', icon: 'flame', matchLeagues: ['Quantum Cricket League', 'Global Super League', 'Global Super League 2026'] },
+  { id: 'ipl-srl', name: 'Indian Premier League SRL', sport: 'cricket', icon: 'flame', matchLeagues: ['IPL 2026', 'IPL SRL', 'Indian Premier League', 'Indian Premier League SRL'] },
+  { id: 't20-intl-srl', name: 'T20 International SRL', sport: 'cricket', icon: 'flame', matchLeagues: ['T20 International SRL', 'T20 International'] },
+  { id: 'tt-elite', name: 'TT Elite Series', sport: 'table-tennis', icon: 'flame', matchLeagues: ['TT Elite Series'] },
+  { id: 'cpl', name: 'Caribbean Premier League', sport: 'cricket', icon: 'flame', matchLeagues: ['Caribbean Premier League', 'Caribbean Premier League 2026'] },
+  { id: 'tnpl', name: 'Tamil Nadu Premier League', sport: 'cricket', icon: 'flame', matchLeagues: ['Tamil Nadu Premier League', 'Tamil Nadu Premier League 2026'] },
+  { id: 'epl', name: 'Premier League', sport: 'soccer', icon: 'globe', matchLeagues: ['Premier League'] },
+  { id: 'laliga', name: 'La Liga', sport: 'soccer', icon: 'globe', matchLeagues: ['La Liga'] },
 ];
 
 export const leagueGroups = [

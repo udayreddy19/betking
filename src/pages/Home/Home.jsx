@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiChevronLeft, FiChevronRight } from '../../icons';
 import FilterChips from '../../components/FilterChips/FilterChips';
+import SportIcon from '../../components/SportIcon/SportIcon';
 import MatchCard from '../../components/MatchCard/MatchCard';
 import HomeCategoryGrid from '../../components/HomeCategoryGrid/HomeCategoryGrid';
 import { sportsCategories, featuredLeagues } from '../../data/mockData';
@@ -141,7 +142,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="no-matches-empty">
-              <span className="no-matches-icon">{sportsCategories.find((s) => s.id === activeSport)?.icon || '🏆'}</span>
+              <SportIcon sport={activeSport} className="no-matches-icon" />
               <p>No {sportsCategories.find((s) => s.id === activeSport)?.name || 'sport'} matches right now</p>
               <button type="button" className="no-matches-cta" onClick={() => navigate('/sports')}>
                 Browse all sports

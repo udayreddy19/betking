@@ -34,6 +34,16 @@
 .match-card-league .league-flag {
   font-size: 0.9rem;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
+}
+
+.match-card-sport-icon {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.85rem;
+  line-height: 0;
 }
 .match-card-sport-tag {
   display: inline-flex;

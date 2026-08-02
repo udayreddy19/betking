@@ -46,6 +46,15 @@ const ICONS = [
   'layout-sidebar-right-icon',
   'filled-bell-icon',
   'trash-icon',
+  'globe-icon',
+  'world-icon',
+  'target-icon',
+  'gamepad-icon',
+  'flame-icon',
+  'rocket-icon',
+  'gauge-icon',
+  'stack-3-icon',
+  'users-group-icon',
 ];
 
 function tsxToJsx(content, fileName) {

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { HiChevronDown, HiChevronRight } from '../../icons';
+import SportIcon from '../SportIcon/SportIcon';
 import { featuredLeagues, leagueGroups } from '../../data/mockData';
 import { resolveLeagueId, isSameLeague } from '../../utils/leagueNavigation';
 import './SportsLeagueSidebar.css';
@@ -19,7 +20,7 @@ export default function SportsLeagueSidebar({ activeSport, activeLeague, cricket
       .map((series) => ({
         id: series.id,
         name: series.name,
-        icon: series.matchType === 'International' ? '🌍' : '🏏',
+        icon: series.matchType === 'International' ? 'world' : 'cricket',
       }));
   }, [activeSport, cricketSeries, sportLeagues]);
 
@@ -38,7 +39,7 @@ export default function SportsLeagueSidebar({ activeSport, activeLeague, cricket
               className={`sports-league-item ${activeLeague === 'all' ? 'active' : ''}`}
               onClick={() => onSelectLeague('all')}
             >
-              <span className="sports-league-item-icon">🏏</span>
+              <SportIcon sport={activeSport} className="sports-league-item-icon" />
               <span className="sports-league-item-label">All Leagues</span>
             </button>
           </li>
@@ -49,7 +50,7 @@ export default function SportsLeagueSidebar({ activeSport, activeLeague, cricket
                 className={`sports-league-item ${isSameLeague(activeLeague, league.id) ? 'active' : ''}`}
                 onClick={() => onSelectLeague(league.id)}
               >
-                <span className="sports-league-item-icon">{league.icon || '🏆'}</span>
+                <SportIcon sport={league.sport} icon={league.icon || 'trophy'} className="sports-league-item-icon" />
                 <span className="sports-league-item-label">{league.name}</span>
               </button>
             </li>
@@ -61,7 +62,7 @@ export default function SportsLeagueSidebar({ activeSport, activeLeague, cricket
                 className={`sports-league-item ${activeLeague === league.id ? 'active' : ''}`}
                 onClick={() => onSelectLeague(league.id)}
               >
-                <span className="sports-league-item-icon">{league.icon}</span>
+                <SportIcon sport={activeSport} icon={league.icon} className="sports-league-item-icon" />
                 <span className="sports-league-item-label">{league.name}</span>
               </button>
             </li>

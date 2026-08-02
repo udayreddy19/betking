@@ -49,6 +49,9 @@
 .sports-league-item-icon {
   font-size: 0.85rem;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
 }
 
 .sports-league-item-label {
