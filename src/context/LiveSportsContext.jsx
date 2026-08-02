@@ -4,6 +4,8 @@ import { normalizeApiMatches } from '../utils/matchFilters';
 import { fetchLiveScores } from '../services/liveScoresService';
 import { LIVE_SCORES_POLL_MS } from '../config/livePolling';
 
+const LiveSportsContext = createContext(null);
+
 function attachOdds(matches, oddsCache) {
   return matches.map((match) => {
     if (match.odds) return match;
