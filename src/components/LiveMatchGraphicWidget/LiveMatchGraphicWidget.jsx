@@ -21,6 +21,7 @@ import {
   getSportLeagueLabel,
 } from '../../utils/sportLiveWidgetData';
 import { isCricketTrackerLive, getMatchState } from '../../utils/matchBetting';
+import { isPlaceholderPlayerName, displayPlayerName } from '../../utils/cricketPlayers';
 import './LiveMatchGraphicWidget.css';
 
 function getTeamShort(name) {
@@ -297,23 +298,25 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
 
   const striker = fieldState
     ? (fieldState.strikerIdx === 0 ? fieldState.batter1.name : fieldState.batter2.name)
-    : (apiBatter1?.name || battingRoster.batters[0]);
+    : (apiBatter1?.name || '');
   const nonStriker = fieldState
     ? (fieldState.strikerIdx === 0 ? fieldState.batter2.name : fieldState.batter1.name)
-    : (apiBatter2?.name || battingRoster.batters[1]);
-  const bowler = fieldState?.bowler || apiBowler || bowlingRoster.bowlers[0];
+    : (apiBatter2?.name || '');
+  const bowler = fieldState?.bowler || apiBowler || '';
 
-  const b1 = apiBatter1?.name && !apiBatter1.name.includes('Batter')
-    ? { fours: 0, sixes: 0, ...apiBatter1 }
-    : (fieldState?.batter1?.name && !fieldState.batter1.name.includes('Batter'))
-      ? fieldState.batter1
-      : fieldState?.batter1 ?? { name: striker, runs: 0, balls: 0, fours: 0, sixes: 0 };
+  const resolveBatter = (apiBatter, fieldBatter, fallbackName) => {
+    if (apiBatter?.name && !isPlaceholderPlayerName(apiBatter.name)) {
+      return { fours: 0, sixes: 0, ...apiBatter };
+    }
+    if (fieldBatter?.name && !isPlaceholderPlayerName(fieldBatter.name)) {
+      return fieldBatter;
+    }
+    const name = displayPlayerName(fallbackName);
+    return { name, runs: 0, balls: 0, fours: 0, sixes: 0 };
+  };
 
-  const b2 = apiBatter2?.name && !apiBatter2.name.includes('Batter')
-    ? { fours: 0, sixes: 0, ...apiBatter2 }
-    : (fieldState?.batter2?.name && !fieldState.batter2.name.includes('Batter'))
-      ? fieldState.batter2
-      : fieldState?.batter2 ?? { name: nonStriker, runs: 0, balls: 0, fours: 0, sixes: 0 };
+  const b1 = resolveBatter(apiBatter1, fieldState?.batter1, striker);
+  const b2 = resolveBatter(apiBatter2, fieldState?.batter2, nonStriker);
 
   const chaseText = innings
     ? getChaseText(match, innings, team1, score1, score2, wickets2)
@@ -489,7 +492,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
 
                   <div className={`cric-field-table__row ${fieldState?.strikerIdx === 0 ? 'striker' : ''}`}>
                     <span className="cric-field-table__name">
-                      {b1.name}
+                      {displayPlayerName(b1.name)}
                       {fieldState?.strikerIdx === 0 && <span className="cric-bat-icon" aria-label="on strike">🏏</span>}
                     </span>
                     <span>{b1.runs}</span>
@@ -500,7 +503,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
 
                   <div className={`cric-field-table__row ${fieldState?.strikerIdx === 1 ? 'striker' : ''}`}>
                     <span className="cric-field-table__name">
-                      {b2.name}
+                      {displayPlayerName(b2.name)}
                       {fieldState?.strikerIdx === 1 && <span className="cric-bat-icon" aria-label="on strike">🏏</span>}
                     </span>
                     <span>{b2.runs}</span>
@@ -515,7 +518,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
                     <span className="cric-field-bowler__label">CURRENT BOWLER</span>
                     <span className="cric-field-bowler__name">
                       <span className="cric-ball-icon" aria-hidden="true">⚾</span>
-                      {bowler}
+                      {displayPlayerName(bowler)}
                     </span>
                   </div>
                   <div className="cric-field-extras">

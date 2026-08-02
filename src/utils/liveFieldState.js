@@ -1,4 +1,4 @@
-/** Derives and advances live cricket field-view state for the pitch widget. */
+import { isPlaceholderPlayerName } from './cricketPlayers';
 
 const RUN_SEQUENCE = [1, 0, 2, 1, 4, 1, 0, 1, 2, 6, 1, 1, 4, 0, 2, 1, 3, 1, 0, 4];
 const EXTRA_OUTCOMES = ['wd', '1wd', '2wd', 'lb', '1lb', '2lb', 'nb', '1nb', 'W'];
@@ -129,6 +129,12 @@ export function generateCurrentOverBalls(matchId, oversStr) {
   return { overNum: currentOverNum, balls };
 }
 
+function resolveBatterName(apiName, rosterName) {
+  if (!isPlaceholderPlayerName(apiName)) return apiName.trim();
+  if (!isPlaceholderPlayerName(rosterName)) return rosterName.trim();
+  return '';
+}
+
 export function buildRosterFallback(teamName) {
   const short = teamName.replace(/\s+W$/, '').split(' ')[0];
   return {
@@ -151,14 +157,14 @@ export function createFieldState(match, roster) {
 
   const strikerIdx = 0;
   const batter1 = {
-    name: ld.batter1?.name || roster.batters[strikerIdx],
+    name: resolveBatterName(ld.batter1?.name, roster.batters[strikerIdx]),
     runs: ld.batter1?.runs ?? 12 + (over % 5) * 3,
     balls: ld.batter1?.balls ?? 8 + startBall,
     fours: ld.batter1?.fours ?? 2,
     sixes: ld.batter1?.sixes ?? 0,
   };
   const batter2 = {
-    name: ld.batter2?.name || roster.batters[1],
+    name: resolveBatterName(ld.batter2?.name, roster.batters[1]),
     runs: ld.batter2?.runs ?? 8 + (over % 3) * 2,
     balls: ld.batter2?.balls ?? 6 + startBall,
     fours: ld.batter2?.fours ?? 1,
@@ -189,7 +195,7 @@ export function createFieldState(match, roster) {
     strikerIdx,
     batter1,
     batter2,
-    bowler: ld.bowler?.name || roster.bowlers[0],
+    bowler: resolveBatterName(ld.bowler?.name, roster.bowlers[0]),
     lastBallRun: lastRun,
     wagonAngle: runsToWagonAngle(lastRun),
     inningsFours: ld.fours ?? 8 + over,

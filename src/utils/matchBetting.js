@@ -32,6 +32,7 @@ const PRE_MATCH_HOLD_HINTS = [
   'wet outfield',
   'not started',
   'match starts',
+  'match starts at',
   'start delayed',
   'no play',
   'play suspended',
@@ -74,19 +75,16 @@ export function hasCricketPlayStarted(match) {
   if (isPreMatchHold(match)) return false;
 
   const ld = match.liveDetails || {};
+  const runs = ld.runs ?? ld.firstRuns;
+  const wickets = ld.wickets ?? ld.firstWickets;
+  const score2 = ld.score2 ?? ld.chaseRuns;
+  const wickets2 = ld.wickets2 ?? ld.chaseWickets;
+
+  if (runs > 0 || wickets > 0 || score2 > 0 || wickets2 > 0) return true;
+
   const overs = parseOversBallCount(ld.overs || ld.firstOvers);
   const overs2 = parseOversBallCount(ld.overs2 || ld.chaseOvers);
   if (overs > 0 || overs2 > 0) return true;
-
-  const runs = ld.runs ?? ld.firstRuns ?? 0;
-  const wickets = ld.wickets ?? ld.firstWickets ?? 0;
-  const score2 = ld.score2 ?? ld.chaseRuns ?? 0;
-  const wickets2 = ld.wickets2 ?? ld.chaseWickets ?? 0;
-  if (runs > 0 || wickets > 0 || score2 > 0 || wickets2 > 0) return true;
-
-  const b1balls = ld.batter1?.balls ?? 0;
-  const b2balls = ld.batter2?.balls ?? 0;
-  if (b1balls > 0 || b2balls > 0) return true;
 
   return false;
 }
