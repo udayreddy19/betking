@@ -187,6 +187,17 @@
   margin-bottom: var(--space-4);
 }
 
+.sports-live-section {
+  margin-bottom: var(--space-4);
+}
+
+.sports-section-heading {
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+  color: var(--color-text);
+  margin: 0 0 var(--space-3);
+}
+
 .sports-league-overview-title {
   font-size: var(--text-xl);
   font-weight: var(--font-bold);
