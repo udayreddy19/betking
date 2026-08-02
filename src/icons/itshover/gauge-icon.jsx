@@ -38,8 +38,6 @@ const GaugeIcon = forwardRef(
         strokeLinecap="round"
         strokeLinejoin="round"
         className={`cursor-pointer ${className}`}
-        onHoverStart={start}
-        onHoverEnd={stop}
       >
         <path d="M3.34 19a10 10 0 1 1 17.32 0" />
         <motion.path

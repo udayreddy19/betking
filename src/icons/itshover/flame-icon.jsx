@@ -49,8 +49,6 @@ const FlameIcon = forwardRef(
         strokeLinejoin="round"
         className={`cursor-pointer ${className}`}
         style={{ overflow: "visible" }}
-        onHoverStart={start}
-        onHoverEnd={stop}
       >
         <motion.g
           className="flame-group"

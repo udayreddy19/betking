@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   TrophyIcon,
   GlobeIcon,
@@ -10,6 +11,7 @@ import {
   FlameIcon,
   WorldIcon,
 } from '../../icons/itshover/index.js';
+import { withItshoverIcon } from '../../icons/itshoverIcon.jsx';
 
 import {
   SwordsIcon,
@@ -88,13 +90,14 @@ export function getLeagueIcon(iconKey, sport) {
 }
 
 export default function SportIcon({ sport, icon, className = '', color, size = 20 }) {
-  const Icon = icon ? getLeagueIcon(icon, sport) : getSportIcon(sport);
+  const IconComponent = icon ? getLeagueIcon(icon, sport) : getSportIcon(sport);
+  const WrappedIcon = useMemo(() => withItshoverIcon(IconComponent), [IconComponent]);
+
   return (
-    <Icon
-      className={`itshover-icon cursor-pointer ${className}`.trim()}
+    <WrappedIcon
+      className={className}
       color={color}
       size={size}
-      style={{ display: 'inline-flex', flexShrink: 0, lineHeight: 0 }}
       aria-hidden
     />
   );

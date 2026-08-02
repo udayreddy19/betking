@@ -77,8 +77,6 @@ const RocketIcon = forwardRef(
     return (
       <motion.svg
         ref={scope}
-        onHoverStart={handleHoverStart}
-        onHoverEnd={handleHoverEnd}
         xmlns="http://www.w3.org/2000/svg"
         width={size}
         height={size}
