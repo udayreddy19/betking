@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { HiOutlineViewList, HiOutlineChartBar, HiOutlineUsers } from 'react-icons/hi';
 import { useLiveFieldState } from '../../hooks/useLiveFieldState';
 import { useMatchDetail } from '../../hooks/useMatchDetail';
 import { getRosterForTeam } from '../../data/cricketRosters';
+import { getBallDisplayKind, getBallDisplayLabel } from '../../utils/liveFieldState';
 import {
   getTeamShortCode,
   getTeamDisplayName,
@@ -57,35 +58,51 @@ function getInningsInfo(match, team1, team2, score1, wickets1, score2, wickets2,
 }
 
 function BallDot({ ball, size = 'md' }) {
-  const label = ball === '•' || ball === '0' ? '' : ball;
-  let kind = 'dot';
-  if (ball === 'W') kind = 'wicket';
-  else if (ball === '4' || ball === '6') kind = 'boundary';
-  else if (label && label.includes('w')) kind = 'wide';
-  else if (label) kind = 'run';
+  const kind = getBallDisplayKind(ball);
+  const label = getBallDisplayLabel(ball);
+  const isCompact = kind === 'wide' || kind === 'legbye' || kind === 'noball';
 
   return (
-    <span className={`cric-ball cric-ball--${kind} cric-ball--${size}`} title={ball}>
+    <span
+      className={`cric-ball cric-ball--${kind} cric-ball--${size}${isCompact ? ' cric-ball--extra' : ''}`}
+      title={ball}
+    >
       {label}
     </span>
   );
 }
 
 function OverHistoryBar({ rows }) {
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ left: el.scrollWidth, behavior: 'smooth' });
+  }, [rows]);
+
   if (!rows.length) return null;
 
   return (
-    <div className="cric-over-history">
-      {rows.map((row) => (
-        <div key={row.overNum} className="cric-over-history__block">
-          <span className="cric-over-history__label">OVER {row.overNum}</span>
-          <div className="cric-over-history__balls">
-            {row.balls.map((ball, idx) => (
-              <BallDot key={`${row.overNum}-${idx}`} ball={ball} size="sm" />
-            ))}
+    <div className="cric-over-history-wrap">
+      <div className="cric-over-history" ref={scrollRef} role="region" aria-label="Ball-by-ball over history">
+        {rows.map((row) => (
+          <div
+            key={row.overNum}
+            className={`cric-over-history__block${row.isCurrent ? ' cric-over-history__block--current' : ''}`}
+          >
+            <span className="cric-over-history__label">OVER {row.overNum}</span>
+            <div className="cric-over-history__balls">
+              {row.balls.map((ball, idx) => (
+                <BallDot key={`${row.overNum}-${idx}`} ball={ball} size="sm" />
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
+      {rows.length > 2 && (
+        <span className="cric-over-history-hint" aria-hidden="true">← scroll →</span>
+      )}
     </div>
   );
 }

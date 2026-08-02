@@ -11,7 +11,7 @@ import { sportsCategories, featuredLeagues } from '../../data/mockData';
 import { useLiveSports } from '../../context/LiveSportsContext';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { useAuth } from '../../context/AuthContext';
-import { isMatchBettable } from '../../utils/matchBetting';
+import { isMatchBettable, isTrulyLiveMatch, getMatchState } from '../../utils/matchBetting';
 import { prefetchMatchDetail } from '../../services/matchDetailPoller';
 import { filterMatches } from '../../utils/matchFilters';
 import { resolveLeagueId, getLeagueMeta, isSameLeague } from '../../utils/leagueNavigation';
@@ -53,8 +53,8 @@ function filterByLeague(matchList, activeLeague, cricketSeries = []) {
 
 function getMatchScores(match) {
   const ld = match.liveDetails || {};
-  const isLive = match.isLive || match.matchState === 'in';
-  const isFinished = match.matchState === 'post';
+  const isLive = isTrulyLiveMatch(match);
+  const isFinished = getMatchState(match) === 'post';
 
   let team1Score = '';
   let team2Score = '';
@@ -153,7 +153,7 @@ export default function Sports() {
 
   useEffect(() => {
     sportMatches
-      .filter((m) => m.isLive)
+      .filter((m) => isTrulyLiveMatch(m))
       .forEach((m) => prefetchMatchDetail(m));
   }, [sportMatches]);
 

@@ -1,4 +1,4 @@
-import { getMatchState } from './matchBetting';
+import { getMatchState, isTrulyLiveMatch, isMockMatch, isApiBackedMatch } from './matchBetting';
 import { getMatchPairKey } from './teamNames';
 
 export function normalizeSportId(sport) {
@@ -23,9 +23,9 @@ export function filterMatchesBySport(matches, sportId) {
 export function filterMatchesByState(matches, stateTab = 'all') {
   if (stateTab === 'all') return matches;
 
-  return matches.filter(match => {
+  return matches.filter((match) => {
+    if (stateTab === 'live') return isTrulyLiveMatch(match);
     const state = getMatchState(match);
-    if (stateTab === 'live') return state === 'in';
     if (stateTab === 'upcoming') return state === 'pre';
     if (stateTab === 'completed') return state === 'post';
     return true;
@@ -49,6 +49,38 @@ export function filterMatches(matches, { sport, stateTab = 'all', searchQuery = 
   return result;
 }
 
+function normalizeLiveFlags(match) {
+  const state = getMatchState(match);
+  return {
+    ...match,
+    matchState: state,
+    isLive: state === 'in',
+  };
+}
+
+function demoteStaleMock(match, apiSports, consumedPairs) {
+  if (!isMockMatch(match) || isApiBackedMatch(match)) return match;
+  if (consumedPairs.has(getMatchPairKey(match))) return match;
+
+  const claimsLive = match.isLive || match.matchState === 'in';
+  const sportCoveredByApi = apiSports.has(match.sport);
+
+  if (!claimsLive && getMatchState(match) !== 'in') return match;
+
+  // Unpaired demo matches must not appear as live when real API data exists,
+  // or when they are hardcoded mock entries.
+  if (sportCoveredByApi || claimsLive) {
+    return {
+      ...match,
+      isLive: false,
+      matchState: 'pre',
+      time: match.time === 'Live' ? 'Demo' : match.time,
+    };
+  }
+
+  return match;
+}
+
 export function mergeApiAndDefaultMatches(apiMatches, defaultMatches) {
   if (!apiMatches.length) return dedupeMatches(defaultMatches);
 
@@ -59,11 +91,12 @@ export function mergeApiAndDefaultMatches(apiMatches, defaultMatches) {
   const updatedDefaults = defaultMatches.map((match) => {
     const pairKey = getMatchPairKey(match);
     const apiMatch = apiByPair.get(pairKey);
-    if (!apiMatch) return match;
+    if (!apiMatch) return demoteStaleMock(match, apiSports, consumedPairs);
 
     consumedPairs.add(pairKey);
-    return {
+    return normalizeLiveFlags({
       ...match,
+      isMock: false,
       league: apiMatch.league || match.league,
       time: apiMatch.time || match.time,
       isLive: apiMatch.isLive,
@@ -77,14 +110,19 @@ export function mergeApiAndDefaultMatches(apiMatches, defaultMatches) {
       espnEventId: apiMatch.espnEventId || match.espnEventId,
       espnPath: apiMatch.espnPath || match.espnPath,
       scoreSource: apiMatch.source || 'api',
-    };
+      source: apiMatch.source || match.source,
+    });
   });
 
-  const freshApiMatches = apiMatches.filter((match) => !consumedPairs.has(getMatchPairKey(match)));
-  const preservedOtherSports = updatedDefaults.filter((m) => !apiSports.has(m.sport));
-  const preservedSameSport = updatedDefaults.filter(
-    (m) => apiSports.has(m.sport) && !consumedPairs.has(getMatchPairKey(m))
-  );
+  const freshApiMatches = apiMatches
+    .filter((match) => !consumedPairs.has(getMatchPairKey(match)))
+    .map((m) => normalizeLiveFlags({ ...m, isMock: false, scoreSource: m.source || 'api' }));
+  const preservedOtherSports = updatedDefaults
+    .filter((m) => !apiSports.has(m.sport))
+    .map((m) => demoteStaleMock(m, apiSports, consumedPairs));
+  const preservedSameSport = updatedDefaults
+    .filter((m) => apiSports.has(m.sport) && !consumedPairs.has(getMatchPairKey(m)))
+    .map((m) => demoteStaleMock(m, apiSports, consumedPairs));
 
   return dedupeMatches([...freshApiMatches, ...preservedSameSport, ...preservedOtherSports]);
 }

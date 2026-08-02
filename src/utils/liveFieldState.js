@@ -1,6 +1,7 @@
 /** Derives and advances live cricket field-view state for the pitch widget. */
 
 const RUN_SEQUENCE = [1, 0, 2, 1, 4, 1, 0, 1, 2, 6, 1, 1, 4, 0, 2, 1, 3, 1, 0, 4];
+const EXTRA_OUTCOMES = ['wd', '1wd', '2wd', 'lb', '1lb', '2lb', 'nb', '1nb', 'W'];
 const WAGON_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315];
 
 export function parseOvers(oversStr) {
@@ -10,10 +11,51 @@ export function parseOvers(oversStr) {
   return { over, ball };
 }
 
+/** Format a ball outcome for display (runs, extras, wicket). */
+export function formatBallOutcome(outcome) {
+  if (outcome === 'W' || outcome === -1) return 'W';
+  if (outcome === 0 || outcome === '0' || outcome === '•') return '•';
+  if (typeof outcome === 'number') return String(outcome);
+
+  const s = String(outcome).toLowerCase().trim();
+  if (s === 'wd' || s === 'wide') return 'Wd';
+  if (s === 'lb' || s === 'legbye') return 'Lb';
+  if (s === 'nb' || s === 'noball') return 'Nb';
+  const wd = s.match(/^(\d+)wd$/);
+  if (wd) return `${wd[1]}Wd`;
+  const lb = s.match(/^(\d+)lb$/);
+  if (lb) return `${lb[1]}Lb`;
+  const nb = s.match(/^(\d+)nb$/);
+  if (nb) return `${nb[1]}Nb`;
+
+  return String(outcome);
+}
+
+/** @deprecated use formatBallOutcome */
 export function formatBall(run) {
-  if (run === 'W' || run === -1) return 'W';
-  if (run === 0 || run === '0' || run === '•') return '•';
-  return String(run);
+  return formatBallOutcome(run);
+}
+
+export function isNonLegalDelivery(label) {
+  const s = String(label).toLowerCase();
+  return s.includes('wd') || s.includes('nb') || s === 'wide' || s === 'noball';
+}
+
+export function getBallDisplayKind(ball) {
+  const raw = String(ball || '');
+  const b = raw.toLowerCase();
+  if (raw === 'W') return 'wicket';
+  if (raw === '•' || raw === '0' || !raw) return 'dot';
+  if (b.includes('wd')) return 'wide';
+  if (b.includes('lb')) return 'legbye';
+  if (b.includes('nb')) return 'noball';
+  if (raw === '4' || raw === '6') return 'boundary';
+  return 'run';
+}
+
+export function getBallDisplayLabel(ball) {
+  if (ball === '•' || ball === '0') return '';
+  return String(ball);
 }
 
 function hashSeed(str) {
@@ -25,9 +67,18 @@ function hashSeed(str) {
   return Math.abs(h);
 }
 
-function nextRun(matchId, ballIndex) {
+function nextBallOutcome(matchId, ballIndex) {
   const seed = hashSeed(`${matchId}-${ballIndex}`);
+  const roll = seed % 100;
+
+  if (roll < 4) return 'W';
+  if (roll < 7) return EXTRA_OUTCOMES[(seed >> 2) % EXTRA_OUTCOMES.length];
   return RUN_SEQUENCE[seed % RUN_SEQUENCE.length];
+}
+
+/** @deprecated use nextBallOutcome */
+function nextRun(matchId, ballIndex) {
+  return nextBallOutcome(matchId, ballIndex);
 }
 
 function runsToWagonAngle(runs) {
@@ -45,9 +96,17 @@ function getBattingTeamIndex(match) {
 
 export function generateOverBalls(matchId, overNum) {
   const balls = [];
-  for (let i = 0; i < 6; i += 1) {
-    balls.push(formatBall(nextRun(matchId, (overNum - 1) * 6 + i)));
+  let legal = 0;
+  let idx = 0;
+
+  while (legal < 6 && idx < 10) {
+    const outcome = nextBallOutcome(matchId, (overNum - 1) * 6 + idx);
+    const label = formatBallOutcome(outcome);
+    balls.push(label);
+    idx += 1;
+    if (!isNonLegalDelivery(label)) legal += 1;
   }
+
   return balls;
 }
 
@@ -55,9 +114,18 @@ export function generateCurrentOverBalls(matchId, oversStr) {
   const { over, ball } = parseOvers(oversStr);
   const currentOverNum = Math.max(1, over || 1);
   const balls = [];
-  for (let i = 0; i < ball; i += 1) {
-    balls.push(formatBall(nextRun(matchId, (currentOverNum - 1) * 6 + i)));
+
+  let legal = 0;
+  let idx = 0;
+  const targetLegal = ball;
+
+  while (legal < targetLegal && idx < 10) {
+    const outcome = nextBallOutcome(matchId, (currentOverNum - 1) * 6 + idx);
+    balls.push(formatBallOutcome(outcome));
+    idx += 1;
+    if (!isNonLegalDelivery(balls[balls.length - 1])) legal += 1;
   }
+
   return { overNum: currentOverNum, balls };
 }
 
@@ -99,7 +167,7 @@ export function createFieldState(match, roster) {
 
   const lastBall = ballsInOver.length > 0
     ? ballsInOver[ballsInOver.length - 1]
-    : formatBall(nextRun(matchId, 0));
+    : formatBallOutcome(nextBallOutcome(matchId, 0));
   const lastRun = lastBall === 'W' ? 0 : (lastBall === '•' ? 0 : parseInt(lastBall, 10) || 1);
 
   const recentOvers = [];
@@ -115,7 +183,7 @@ export function createFieldState(match, roster) {
   return {
     matchId,
     overNum,
-    overBalls: ballsInOver.length > 0 ? ballsInOver : (startBall === 0 ? [] : [formatBall(nextRun(matchId, 0))]),
+    overBalls: ballsInOver.length > 0 ? ballsInOver : (startBall === 0 ? [] : [formatBallOutcome(nextBallOutcome(matchId, 0))]),
     recentOvers,
     ballIndex: over * 6 + startBall,
     strikerIdx,
@@ -145,14 +213,9 @@ export function tickFieldState(state, match, roster) {
   if (!isLive) return state;
 
   const nextBallIndex = state.ballIndex + 1;
-  let run = nextRun(matchId, nextBallIndex);
+  const outcome = nextBallOutcome(matchId, nextBallIndex);
+  const ballLabel = formatBallOutcome(outcome);
 
-  // Occasional wicket (~6%)
-  if (hashSeed(`${matchId}-w-${nextBallIndex}`) % 17 === 0) {
-    run = 'W';
-  }
-
-  const ballLabel = formatBall(run);
   let overBalls = [...state.overBalls, ballLabel];
   let overNum = state.overNum;
   let strikerIdx = state.strikerIdx;
@@ -164,27 +227,31 @@ export function tickFieldState(state, match, roster) {
   let inningsSixes = state.inningsSixes ?? 0;
   let extras = state.extras ?? 0;
 
-  if (overBalls.length > 6) {
-    const completedBalls = state.overBalls;
-    let overRuns = 0;
-    let overWkts = 0;
-    completedBalls.forEach((b) => {
-      if (b === 'W') overWkts += 1;
-      else if (b !== '•') overRuns += parseInt(b, 10) || 0;
-    });
-    recentOvers = [...recentOvers.slice(-3), { overNum, balls: completedBalls, runs: overRuns, wickets: overWkts }];
-    overBalls = [ballLabel];
-    overNum += 1;
-    bowler = roster.bowlers[overNum % roster.bowlers.length] || bowler;
+  if (!isNonLegalDelivery(ballLabel)) {
+    const legalCount = overBalls.filter((b) => !isNonLegalDelivery(b)).length;
+    if (legalCount >= 6) {
+      let overRuns = 0;
+      let overWkts = 0;
+      overBalls.forEach((b) => {
+        if (b === 'W') overWkts += 1;
+        else if (b !== '•' && !isNonLegalDelivery(b)) overRuns += parseInt(b, 10) || 0;
+      });
+      recentOvers = [...recentOvers.slice(-3), { overNum, balls: [...overBalls], runs: overRuns, wickets: overWkts }];
+      overBalls = [];
+      overNum += 1;
+      bowler = roster.bowlers[overNum % roster.bowlers.length] || bowler;
+    }
+  } else {
+    extras += 1;
   }
 
-  if (run === 'W') {
+  if (outcome === 'W') {
     const outIdx = strikerIdx;
     const nextBatter = roster.batters[(outIdx + 2) % roster.batters.length] || `${roster.batters[0]}*`;
     if (outIdx === 0) batter1 = { name: nextBatter, runs: 0, balls: 0, fours: 0, sixes: 0 };
     else batter2 = { name: nextBatter, runs: 0, balls: 0, fours: 0, sixes: 0 };
-  } else {
-    const numericRun = typeof run === 'number' ? run : parseInt(run, 10) || 0;
+  } else if (!isNonLegalDelivery(ballLabel)) {
+    const numericRun = typeof outcome === 'number' ? outcome : parseInt(ballLabel, 10) || 0;
     const striker = strikerIdx === 0 ? batter1 : batter2;
     striker.runs += numericRun;
     striker.balls += 1;
@@ -200,7 +267,7 @@ export function tickFieldState(state, match, roster) {
     }
   }
 
-  const lastRun = run === 'W' ? 0 : (run === 0 ? 0 : (typeof run === 'number' ? run : parseInt(run, 10) || 0));
+  const lastRun = outcome === 'W' ? 0 : (outcome === 0 ? 0 : (typeof outcome === 'number' ? outcome : parseInt(ballLabel, 10) || 0));
 
   return {
     ...state,
@@ -259,7 +326,10 @@ export function syncFieldStateFromMatch(state, match, roster) {
 
   return {
     ...fresh,
-    overBalls: ld.currentOverBalls?.map(formatBall) || fresh.overBalls,
+    overBalls: (() => {
+      const apiBalls = (ld.currentOverBalls || []).map(formatBallOutcome);
+      return apiBalls.length ? apiBalls : fresh.overBalls;
+    })(),
     batter1: ld.batter1 ? { ...fresh.batter1, ...ld.batter1 } : fresh.batter1,
     batter2: ld.batter2 ? { ...fresh.batter2, ...ld.batter2 } : fresh.batter2,
     bowler: ld.bowler?.name || fresh.bowler,

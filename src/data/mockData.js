@@ -175,7 +175,7 @@ export const matches = [
       batter1: { name: 'J. Root', runs: 42, balls: 28, fours: 4, sixes: 1 },
       batter2: { name: 'J. Cox', runs: 18, balls: 14, fours: 2, sixes: 0 },
       bowler: { name: 'S. Mahmood' },
-      currentOverBalls: ['1', '1', '4', '•', '1'],
+      currentOverBalls: ['1', '1', 'Wd', '4', '•', '1'],
     },
     liveStream: {
       provider: 'youtube-channel',
@@ -207,7 +207,7 @@ export const matches = [
       batter1: { name: 'M. Bouchier', runs: 28, balls: 22, fours: 3, sixes: 1 },
       batter2: { name: 'S. Molineux', runs: 14, balls: 11, fours: 1, sixes: 0 },
       bowler: { name: 'C. Dean' },
-      currentOverBalls: ['2', '1', '1', '4', '1'],
+      currentOverBalls: ['2', '1', '1Lb', '4', '1', 'Nb'],
     },
     liveStream: {
       provider: 'youtube-channel',

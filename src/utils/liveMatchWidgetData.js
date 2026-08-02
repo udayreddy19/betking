@@ -1,4 +1,4 @@
-import { parseOvers, generateOverBalls, generateCurrentOverBalls } from './liveFieldState';
+import { parseOvers, generateOverBalls, generateCurrentOverBalls, formatBallOutcome } from './liveFieldState';
 import { ballsRemaining } from './oversUtils';
 
 function hashSeed(str) {
@@ -120,20 +120,22 @@ export function buildOverHistoryRows(fieldState, matchId, match) {
 
   const rows = [];
 
-  if (currentOver > 1) {
+  // All completed overs — scroll horizontally to browse history
+  for (let o = 1; o < currentOver; o += 1) {
     rows.push({
-      overNum: currentOver - 1,
-      balls: generateOverBalls(matchId, currentOver - 1),
+      overNum: o,
+      balls: generateOverBalls(matchId, o),
     });
   }
 
-  const currentBalls = fieldState?.overNum === currentOver && fieldState?.overBalls?.length
-    ? fieldState.overBalls
-    : apiBalls;
+  const apiCurrentBalls = (ld.currentOverBalls || []).map((b) => formatBallOutcome(b));
+  const currentBalls = apiCurrentBalls.length
+    ? apiCurrentBalls
+    : (fieldState?.overNum === currentOver && fieldState?.overBalls?.length
+      ? fieldState.overBalls
+      : apiBalls);
 
-  if (currentBalls.length > 0 || currentOver > 0) {
-    rows.push({ overNum: currentOver, balls: currentBalls });
-  }
+  rows.push({ overNum: currentOver, balls: currentBalls, isCurrent: true });
 
   return rows;
 }
