@@ -110,5 +110,6 @@ export function mergeCricketPlayersOnly(prev = {}, next = {}) {
     batter2: next.batter2 || prev.batter2,
     bowler: next.bowler || prev.bowler,
     commentary: next.commentary || prev.commentary,
+    currentOverBalls: next.currentOverBalls?.length ? next.currentOverBalls : prev.currentOverBalls,
   };
 }

@@ -1,9 +1,28 @@
 import { normalizeCricbuzzOvers } from './oversUtils';
 import { mergeCricketLiveDetails } from './cricketScoreMerge';
 import { flattenCricketTeamScores, resolveCricketTeamScores } from './cricketScores';
+import { isHundredMatch, hundredBallsToOvers } from './cricketFormat';
+
+function applyHundredBallNbr(match, ld) {
+  const isHundred = isHundredMatch(match)
+    || /hun/i.test(match?.matchHeader?.matchFormat || '');
+  if (!isHundred) return ld;
+
+  const next = { ...ld };
+  if (next.chaseRuns != null && next.chaseBallNbr != null && next.chaseBallNbr > 0) {
+    const overs = hundredBallsToOvers(next.chaseBallNbr);
+    next.chaseOvers = overs;
+    next.overs2 = overs;
+  } else if (next.chaseRuns == null && next.chaseBallNbr != null && next.chaseBallNbr > 0) {
+    const overs = hundredBallsToOvers(next.chaseBallNbr);
+    next.firstOvers = overs;
+    next.overs = overs;
+  }
+  return next;
+}
 
 function enrichCricketDetails(match, ld, base) {
-  const merged = { ...base, ...ld };
+  const merged = applyHundredBallNbr(match, { ...base, ...ld });
   const scores = resolveCricketTeamScores(match, merged);
   const flat = flattenCricketTeamScores(scores);
 
@@ -34,12 +53,18 @@ export function enrichMatchWithDetail(match, detail) {
   const ld = detail.liveDetails || {};
   const sport = match.sport;
   const baseLd = match.liveDetails || {};
+  const matchForScores = {
+    ...match,
+    seriesName: match.seriesName || detail.matchHeader?.seriesName,
+    league: match.league || detail.matchHeader?.seriesName,
+    matchHeader: detail.matchHeader || match.matchHeader,
+  };
 
   let liveDetails = baseLd;
   if (hasLive) {
     if (sport === 'cricket' || sport === 'virtual-cricket') {
-      const fromDetail = enrichCricketDetails(match, ld, {});
-      liveDetails = mergeCricketLiveDetails(baseLd, fromDetail, match);
+      const fromDetail = enrichCricketDetails(matchForScores, ld, {});
+      liveDetails = mergeCricketLiveDetails(baseLd, fromDetail, matchForScores);
     } else {
       liveDetails = { ...baseLd, ...ld };
     }
@@ -48,8 +73,11 @@ export function enrichMatchWithDetail(match, detail) {
   return {
     ...match,
     isLive: detail.isLive ?? match.isLive,
-    matchState: detail.matchState ?? match.matchState,
+    matchState: detail.matchState
+      ?? (detail.isLive ? 'in' : undefined)
+      ?? match.matchState,
     time: detail.time ?? match.time,
+    seriesName: matchForScores.seriesName,
     squads: detail.squads?.length ? detail.squads : match.squads,
     scorecardInnings: detail.scorecardInnings?.length ? detail.scorecardInnings : match.scorecardInnings,
     overHistory: detail.overHistory?.length ? detail.overHistory : match.overHistory,

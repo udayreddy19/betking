@@ -51,56 +51,64 @@ export function BetSlipProvider({ children }) {
   }, []);
 
   const addBet = useCallback((match, selection, odds, selectionName, options = {}) => {
-    let added = true;
-    setBets(prev => {
-      const existing = prev.find(b => b.matchId === match.id && b.selection === selection);
-      if (existing) {
-        added = false;
-        showToast('Removed from betslip', 'info');
-        setSinglesStakes(s => {
-          const next = { ...s };
-          delete next[existing.id];
-          return next;
-        });
-        return prev.filter(b => b.id !== existing.id);
-      }
+    const existing = bets.find(b => b.matchId === match.id && b.selection === selection);
 
-      let filtered = prev;
-      if (options.singlePerMatch) {
-        filtered = prev.filter(b => b.matchId !== match.id);
-      } else if (betType === 'multi') {
-        const isMainMarket = ['1', '2', 'X'].includes(selection);
-        filtered = isMainMarket
-          ? prev.filter(b => !(b.matchId === match.id && ['1', '2', 'X'].includes(b.selection)))
-          : prev;
-      }
+    if (existing) {
+      setBets(prev => prev.filter(b => b.id !== existing.id));
+      setSinglesStakes(s => {
+        const next = { ...s };
+        delete next[existing.id];
+        return next;
+      });
+      showToast('Removed from betslip', 'info');
+      return false;
+    }
 
-      const label = getSelectionName(match, selection, selectionName);
-      const betId = `${match.id}-${selection}`;
-      showToast(`Added to betslip: ${label} @ ${Number(odds).toFixed(2)}`, 'success');
+    let filtered = bets;
+    if (options.singlePerMatch) {
+      filtered = bets.filter(b => b.matchId !== match.id);
+    } else if (betType === 'multi') {
+      const isMainMarket = ['1', '2', 'X'].includes(selection);
+      filtered = isMainMarket
+        ? bets.filter(b => !(b.matchId === match.id && ['1', '2', 'X'].includes(b.selection)))
+        : bets;
+    }
 
-      if (typeof window !== 'undefined' && window.innerWidth <= 1024 && !options.skipMobileOpen) {
-        setIsMobileOpen(true);
-      }
+    const label = getSelectionName(match, selection, selectionName);
+    const betId = `${match.id}-${selection}`;
+    const removedIds = bets
+      .filter(b => !filtered.includes(b))
+      .map(b => b.id);
 
-      setSinglesStakes(s => ({ ...s, [betId]: s[betId] || stake || '100' }));
+    setBets([...filtered, {
+      id: betId,
+      matchId: match.id,
+      matchName: `${match.team1.name} vs ${match.team2.name}`,
+      league: match.league,
+      sport: match.sport,
+      selection,
+      selectionName: label,
+      marketName: options.marketName || 'Match Winner',
+      matchTime: options.matchTime || match.time || new Date().toISOString(),
+      odds: Number(odds),
+      timestamp: Date.now(),
+    }]);
 
-      return [...filtered, {
-        id: betId,
-        matchId: match.id,
-        matchName: `${match.team1.name} vs ${match.team2.name}`,
-        league: match.league,
-        sport: match.sport,
-        selection,
-        selectionName: label,
-        marketName: options.marketName || 'Match Winner',
-        matchTime: options.matchTime || match.time || new Date().toISOString(),
-        odds: Number(odds),
-        timestamp: Date.now(),
-      }];
+    setSinglesStakes(s => {
+      const next = { ...s };
+      for (const id of removedIds) delete next[id];
+      next[betId] = next[betId] || stake || '100';
+      return next;
     });
-    return added;
-  }, [showToast, betType, stake]);
+
+    showToast(`Added to betslip: ${label} @ ${Number(odds).toFixed(2)}`, 'success');
+
+    if (typeof window !== 'undefined' && window.innerWidth <= 1024 && !options.skipMobileOpen) {
+      setIsMobileOpen(true);
+    }
+
+    return true;
+  }, [bets, showToast, betType, stake]);
 
   const removeBet = useCallback((betId) => {
     setBets(prev => prev.filter(b => b.id !== betId));
@@ -120,6 +128,8 @@ export function BetSlipProvider({ children }) {
   const setSingleStake = useCallback((betId, value) => {
     setSinglesStakes(prev => ({ ...prev, [betId]: value }));
   }, []);
+
+  const openMobileBetslip = useCallback(() => setIsMobileOpen(true), []);
 
   const isBetSelected = useCallback((matchId, selection) => {
     return bets.some(b => b.matchId === matchId && b.selection === selection);
@@ -238,7 +248,7 @@ export function BetSlipProvider({ children }) {
     myBetsCount: placedBets.length,
     isMobileOpen,
     setIsMobileOpen,
-    openMobileBetslip: () => setIsMobileOpen(true),
+    openMobileBetslip,
     isMyBetsOpen,
     openMyBets,
     closeMyBets,
@@ -260,6 +270,7 @@ export function BetSlipProvider({ children }) {
     potentialReturn,
     totalStakeAmount,
     isMobileOpen,
+    openMobileBetslip,
     isMyBetsOpen,
     openMyBets,
     closeMyBets,

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 
 const CasinoContext = createContext(null);
 
@@ -24,15 +24,17 @@ export function CasinoProvider({ children }) {
     setIsPlaying(false);
   }, []);
 
+  const value = useMemo(() => ({
+    activeGame,
+    isPlaying,
+    openGame,
+    closeGame,
+    startPlaying,
+    stopPlaying,
+  }), [activeGame, isPlaying, openGame, closeGame, startPlaying, stopPlaying]);
+
   return (
-    <CasinoContext.Provider value={{
-      activeGame,
-      isPlaying,
-      openGame,
-      closeGame,
-      startPlaying,
-      stopPlaying,
-    }}>
+    <CasinoContext.Provider value={value}>
       {children}
     </CasinoContext.Provider>
   );

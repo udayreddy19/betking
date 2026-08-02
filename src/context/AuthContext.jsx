@@ -129,6 +129,10 @@ export function AuthProvider({ children }) {
     } catch {
       localStorage.removeItem(SESSION_KEY);
     }
+
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
   }, []);
 
   const register = useCallback(({ email, password, displayName, phone }) => {

@@ -114,6 +114,11 @@ export function getMatchState(match) {
     return 'post';
   }
 
+  // Innings break is still an in-progress match (must beat stale matchState: 'pre').
+  if (/innings\s*break/i.test(combined) || /innings\s*break/i.test(String(explicit || ''))) {
+    return 'in';
+  }
+
   if (explicit === 'post') return 'post';
   if (explicit === 'pre') return 'pre';
 

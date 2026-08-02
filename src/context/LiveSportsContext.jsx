@@ -30,6 +30,9 @@ function attachOdds(matches, oddsCache) {
 
 function matchDisplayKey(match) {
   const ld = match.liveDetails || {};
+  const b1 = ld.batter1 || {};
+  const b2 = ld.batter2 || {};
+  const bowl = ld.bowler || {};
   return [
     match.id,
     match.matchState,
@@ -46,8 +49,19 @@ function matchDisplayKey(match) {
     ld.firstWickets,
     ld.chaseWickets,
     ld.chaseBallNbr,
-    ld.batter1?.name,
-    ld.batter2?.name,
+    ld.requiredRunRate,
+    ld.remainingBalls,
+    b1.name,
+    b1.runs,
+    b1.balls,
+    b2.name,
+    b2.runs,
+    b2.balls,
+    bowl.name,
+    bowl.wickets,
+    bowl.runs,
+    bowl.overs,
+    (ld.currentOverBalls || []).join(','),
     ld.commentary,
   ].join(':');
 }
@@ -95,6 +109,7 @@ export function LiveSportsProvider({ children }) {
   const seriesSummaryRef = useRef('');
   const hasLoadedRef = useRef(false);
   const pollMsRef = useRef(LIVE_SCORES_POLL_MS);
+  const mountedRef = useRef(true);
 
   const refreshScores = useCallback(async (options = {}) => {
     const { force = false } = options;
@@ -103,6 +118,8 @@ export function LiveSportsProvider({ children }) {
 
     try {
       const data = await fetchLiveScores({ force });
+      if (!mountedRef.current) return;
+
       if (data.pollIntervalMs && data.pollIntervalMs > 0) {
         pollMsRef.current = data.pollIntervalMs;
       }
@@ -126,7 +143,7 @@ export function LiveSportsProvider({ children }) {
 
         setScoresError((prev) => (prev === null ? prev : null));
 
-        const { counts, sources } = data;
+        const { counts = {}, sources } = data;
         const okSources = Object.entries(sources || {})
           .filter(([, status]) => status === 'ok')
           .map(([name]) => name);
@@ -143,7 +160,9 @@ export function LiveSportsProvider({ children }) {
           .filter((s) => counts[s] > 0)
           .map((s) => `${counts[s]} ${s}`);
 
-        const nextTicker = `${emoji} ${primarySource} LIVE — ${counts.total} events (${counts.live} live${sportParts.length ? ' · ' + sportParts.join(', ') : ''})`;
+        const total = counts.total ?? normalized.length;
+        const live = counts.live ?? 0;
+        const nextTicker = `${emoji} ${primarySource} LIVE — ${total} events (${live} live${sportParts.length ? ' · ' + sportParts.join(', ') : ''})`;
         setTickerMessage((prev) => (prev === nextTicker ? prev : nextTicker));
       } else {
         matchesSummaryRef.current = '';
@@ -155,6 +174,7 @@ export function LiveSportsProvider({ children }) {
         setTickerMessage((prev) => (prev === '⚠️ No matches returned from API' ? prev : '⚠️ No matches returned from API'));
       }
     } catch (error) {
+      if (!mountedRef.current) return;
       console.warn('Live scores fetch error:', error);
       setScoresError((prev) => {
         const next = 'Could not reach live score API — check connection and tap Retry.';
@@ -163,13 +183,14 @@ export function LiveSportsProvider({ children }) {
       setTickerMessage((prev) => (prev === '⚠️ Live score sync failed' ? prev : '⚠️ Live score sync failed'));
     }
 
-    if (isInitialLoad) {
+    if (isInitialLoad && mountedRef.current) {
       hasLoadedRef.current = true;
       setIsScoresLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    mountedRef.current = true;
     let intervalId = null;
     let cancelled = false;
 
@@ -185,7 +206,9 @@ export function LiveSportsProvider({ children }) {
       }, ms);
     };
 
-    refreshScores().then(() => scheduleNext());
+    refreshScores().then(() => {
+      if (!cancelled) scheduleNext();
+    });
 
     const onVisibility = () => {
       if (!document.hidden) refreshScores();
@@ -194,6 +217,7 @@ export function LiveSportsProvider({ children }) {
 
     return () => {
       cancelled = true;
+      mountedRef.current = false;
       if (intervalId) clearTimeout(intervalId);
       document.removeEventListener('visibilitychange', onVisibility);
     };

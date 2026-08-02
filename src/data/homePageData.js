@@ -53,6 +53,14 @@ export const homeCategoryTiles = [
     image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
   },
   {
+    id: 'casino',
+    label: 'CASINO',
+    link: '/casino',
+    size: 'small',
+    bg: '#ecfdf5',
+    image: 'https://images.unsplash.com/photo-1596838132731-3301c3fd4311?auto=format&fit=crop&w=400&q=80',
+  },
+  {
     id: 'promos',
     label: 'PROMOS',
     link: '/promotions',

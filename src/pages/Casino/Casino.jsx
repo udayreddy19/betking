@@ -2,8 +2,12 @@ import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { FiSearch } from '../../icons';
 import GameCarousel from '../../components/GameCarousel/GameCarousel';
-import { casinoGames, casinoCategories } from '../../data/mockData';
-import { filterCasinoByCategory, filterGamesBySearch } from '../../data/casinoGamesData';
+import {
+  casinoGames,
+  casinoCategories,
+  filterCasinoByCategory,
+  filterGamesBySearch,
+} from '../../data/casinoGamesData';
 import './Casino.css';
 
 export default function Casino() {

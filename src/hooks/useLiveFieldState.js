@@ -63,12 +63,18 @@ export function useLiveFieldState(match) {
     match,
     match?.id,
     match?.overHistory,
+    match?.scorecardInnings,
     match?.liveDetails?.runs,
     match?.liveDetails?.wickets,
     match?.liveDetails?.overs,
+    match?.liveDetails?.score2,
+    match?.liveDetails?.chaseRuns,
+    match?.liveDetails?.firstRuns,
     match?.liveDetails?.batter1,
     match?.liveDetails?.batter2,
     match?.liveDetails?.bowler,
     match?.liveDetails?.currentOverBalls,
+    match?.liveDetails?.chaseTeamName,
+    match?.liveDetails?.firstTeamName,
   ]);
 }

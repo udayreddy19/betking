@@ -533,6 +533,23 @@ export const liveCasinoGames = casinoGames.filter(
   (g) => g.category.split(' ').includes('live-casino') || g.isLive
 );
 
+export const casinoCategories = [
+  { id: 'all', name: 'All Games', icon: '🎰' },
+  { id: 'slots', name: 'Slots', icon: '🎰' },
+  { id: 'live-casino', name: 'Live Casino', icon: '🎲' },
+  { id: 'crash-games', name: 'Crash Games', icon: '🚀' },
+  { id: 'table-games', name: 'Table Games', icon: '🃏' },
+  { id: 'jackpots', name: 'Jackpots', icon: '💰' },
+];
+
+export const liveCasinoCategories = [
+  { id: 'all', name: 'All Tables', icon: '🎲' },
+  { id: 'roulette', name: 'Roulette', icon: '🎡' },
+  { id: 'blackjack', name: 'Blackjack', icon: '🃏' },
+  { id: 'baccarat', name: 'Baccarat', icon: '🎴' },
+  { id: 'game-shows', name: 'Game Shows', icon: '🎪' },
+];
+
 export function filterCasinoByCategory(games, categoryId) {
   if (!categoryId || categoryId === 'all') return games;
   return games.filter((g) => g.category.split(' ').includes(categoryId));

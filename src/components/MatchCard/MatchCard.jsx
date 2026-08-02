@@ -6,6 +6,7 @@ import SportIcon from '../SportIcon/SportIcon';
 import HoverScale from '../motion/HoverScale';
 import LivePulse from '../ui/LivePulse';
 import { isMatchBettable, isMatchLive, isMatchFinished, hasCricketPlayStarted } from '../../utils/matchBetting';
+import { resolveCricketTeamScores } from '../../utils/cricketScores';
 import './MatchCard.css';
 
 const sportLabels = {
@@ -101,11 +102,13 @@ function MatchCard({ match, variant = 'default' }) {
 
   if (match.sport === 'cricket' || match.sport === 'virtual-cricket') {
     const showCricketScores = isFinished || (isLiveNow && hasCricketPlayStarted(match));
-    if (showCricketScores && Number.isFinite(ld.runs)) {
-      team1Score = `${ld.runs}/${ld.wickets ?? 0}`;
-    }
-    if (showCricketScores && Number.isFinite(ld.score2)) {
-      team2Score = `${ld.score2}/${ld.wickets2 ?? 0}`;
+    if (showCricketScores) {
+      const scores = resolveCricketTeamScores(match, ld);
+      const hasT1 = scores.team1.runs > 0 || scores.team1.wickets > 0 || scores.team1.balls > 0;
+      const hasT2 = scores.team2.runs > 0 || scores.team2.wickets > 0 || scores.team2.balls > 0;
+      if (hasT1) team1Score = `${scores.team1.runs}/${scores.team1.wickets}`;
+      if (hasT2) team2Score = `${scores.team2.runs}/${scores.team2.wickets}`;
+      else if (hasT1) team2Score = '0/0';
     }
     inlineScore = team1Score && team2Score ? `${team1Score} vs ${team2Score}` : team1Score;
   } else if (match.sport === 'soccer' || match.sport === 'esoccer') {

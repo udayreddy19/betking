@@ -4,6 +4,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { BetSlipProvider } from './context/BetSlipContext';
 import { LiveSportsProvider } from './context/LiveSportsContext';
 import { AuthProvider } from './context/AuthContext';
+import { CasinoProvider } from './context/CasinoContext';
 
 import Header from './components/Header/Header';
 import Footer from './components/Footer/Footer';
@@ -14,6 +15,7 @@ import Toast from './components/Toast/Toast';
 import MobileBetSlip from './components/MobileBetSlip/MobileBetSlip';
 import GlobalBetBar from './components/GlobalBetBar/GlobalBetBar';
 import BetSettlementRunner from './components/BetSettlementRunner/BetSettlementRunner';
+import GamePlayModal from './components/GamePlayModal/GamePlayModal';
 import PageTransition from './components/motion/PageTransition';
 import BackToTop from './components/ui/BackToTop';
 import './components/ui/ui.css';
@@ -30,6 +32,8 @@ import Help from './pages/Legal/Help';
 import NotFound from './pages/Legal/NotFound';
 
 const Sports = lazy(() => import('./pages/Sports/Sports'));
+const Casino = lazy(() => import('./pages/Casino/Casino'));
+const LiveCasino = lazy(() => import('./pages/LiveCasino/LiveCasino'));
 
 function PageLoader() {
   return (
@@ -48,6 +52,8 @@ function AnimatedRoutes() {
         <Route path="/" element={<Home />} />
         <Route path="/live-betting" element={<Sports />} />
         <Route path="/sports" element={<Sports />} />
+        <Route path="/casino" element={<Casino />} />
+        <Route path="/live-casino" element={<LiveCasino />} />
         <Route path="/fantasy" element={<Fantasy />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/register" element={<Register />} />
@@ -70,6 +76,7 @@ function AppLayout() {
       <LoginModal />
       <DepositModal />
       <Toast />
+      <GamePlayModal />
       <BetSettlementRunner />
       <MobileBetSlip />
       <GlobalBetBar />
@@ -89,11 +96,13 @@ export default function App() {
     <ThemeProvider>
       <BrowserRouter>
         <AuthProvider>
-          <LiveSportsProvider>
-            <BetSlipProvider>
-              <AppLayout />
-            </BetSlipProvider>
-          </LiveSportsProvider>
+          <CasinoProvider>
+            <LiveSportsProvider>
+              <BetSlipProvider>
+                <AppLayout />
+              </BetSlipProvider>
+            </LiveSportsProvider>
+          </CasinoProvider>
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>

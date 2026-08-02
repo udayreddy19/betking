@@ -19,6 +19,9 @@ function sleep(ms) {
 function detailFingerprint(detail) {
   if (!detail) return '';
   const ld = detail.liveDetails || {};
+  const b1 = ld.batter1 || {};
+  const b2 = ld.batter2 || {};
+  const bowl = ld.bowler || {};
   return [
     detail.isLive,
     detail.matchState,
@@ -34,14 +37,30 @@ function detailFingerprint(detail) {
     ld.firstWickets,
     ld.chaseWickets,
     ld.chaseBallNbr,
-    ld.batter1?.name,
-    ld.batter2?.name,
-    ld.bowler?.name,
+    ld.requiredRunRate,
+    ld.remainingBalls,
+    b1.name,
+    b1.runs,
+    b1.balls,
+    b1.fours,
+    b1.sixes,
+    b2.name,
+    b2.runs,
+    b2.balls,
+    b2.fours,
+    b2.sixes,
+    bowl.name,
+    bowl.wickets,
+    bowl.runs,
+    bowl.overs,
     ld.commentary,
     (ld.currentOverBalls || []).join(','),
     detail.squads?.length ?? 0,
+    detail.squads?.reduce((n, t) => n + (t.players?.length || 0), 0) ?? 0,
     detail.scorecardInnings?.length ?? 0,
+    detail.scorecardInnings?.reduce((n, inn) => n + (inn.batters?.length || 0), 0) ?? 0,
     detail.overHistory?.length ?? 0,
+    detail.overHistory?.[detail.overHistory.length - 1]?.overNum ?? '',
   ].join(':');
 }
 
@@ -116,10 +135,10 @@ function mergeDetails(prev, next, { isFull = false, match = null } = {}) {
     ...next,
     fetchedAt: next.fetchedAt || prev.fetchedAt,
     isLive: next.isLive ?? prev.isLive,
-    matchState: next.matchState ?? prev.matchState,
+    matchState: next.matchState ?? (next.isLive ? 'in' : undefined) ?? prev.matchState,
     time: next.time ?? prev.time,
-    squads: next.squads ?? prev.squads,
-    scorecardInnings: next.scorecardInnings ?? prev.scorecardInnings,
+    squads: next.squads?.length ? next.squads : prev.squads,
+    scorecardInnings: next.scorecardInnings?.length ? next.scorecardInnings : prev.scorecardInnings,
     overHistory: next.overHistory?.length ? next.overHistory : prev.overHistory,
     liveDetails: {
       ...liveDetails,
@@ -157,6 +176,23 @@ async function pollLoop(key) {
   if (end) end.running = false;
 }
 
+function canEvict(state, { allowPriority = false } = {}) {
+  if (!state || state.listeners.size > 0) return false;
+  if (state.priority && !allowPriority) return false;
+  return true;
+}
+
+/** Free a slot by dropping listener-less prefetch pollers first. */
+function evictIdlePoller({ allowPriority = false } = {}) {
+  for (const [key, state] of pollers) {
+    if (canEvict(state, { allowPriority })) {
+      pollers.delete(key);
+      return true;
+    }
+  }
+  return false;
+}
+
 function ensurePoller(match, { priority = false } = {}) {
   const key = getPollerKey(match);
   if (!key || !canPoll(match)) return;
@@ -164,7 +200,11 @@ function ensurePoller(match, { priority = false } = {}) {
   const isLive = match.matchState === 'in' || match.isLive;
 
   if (!pollers.has(key)) {
-    if (!priority && pollers.size >= MAX_POLLERS) return;
+    if (pollers.size >= MAX_POLLERS) {
+      const freed = evictIdlePoller({ allowPriority: false })
+        || (priority && evictIdlePoller({ allowPriority: true }));
+      if (!freed) return;
+    }
 
     pollers.set(key, {
       match,

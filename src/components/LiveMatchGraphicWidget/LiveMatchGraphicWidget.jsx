@@ -54,16 +54,24 @@ function getInningsInfo(match, team1, team2, resolved) {
     };
   }
 
+  let battingTeam = team1;
+  if (ld.firstTeamName) {
+    if (teamNameMatches(team2, ld.firstTeamName)) battingTeam = team2;
+    else if (teamNameMatches(team1, ld.firstTeamName)) battingTeam = team1;
+  } else if (team2Score.balls > team1Score.balls) {
+    battingTeam = team2;
+  }
+
   return {
     inningsNum: 1,
-    battingTeam: team1,
-    battingShort: getTeamShort(team1),
+    battingTeam,
+    battingShort: getTeamShort(battingTeam),
     displayScore1: team1Score.runs,
     displayWickets1: team1Score.wickets,
     displayScore2: team2Score.runs,
     displayWickets2: team2Score.wickets,
-    displayOvers: team1Score.overs || ld.overs || '0.0',
-    defaultInnings: `${getTeamDisplayName(team1)} INNS`,
+    displayOvers: (battingTeam === team2 ? team2Score.overs : team1Score.overs) || ld.overs || '0.0',
+    defaultInnings: `${getTeamDisplayName(battingTeam)} INNS`,
   };
 }
 

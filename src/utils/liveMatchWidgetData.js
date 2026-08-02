@@ -65,6 +65,7 @@ function formatBatterStatus(player) {
 function hasBatted(player) {
   return (player.balls ?? 0) > 0
     || (player.runs ?? 0) > 0
+    || /^batting$/i.test(player.dismissal || '')
     || (!player.notOut && player.dismissal && !/^(batting|not out)$/i.test(player.dismissal));
 }
 
@@ -120,6 +121,8 @@ export function buildScorecardInnings(match, teamName, _roster, _fieldState, isB
         name: b.name,
         runs: b.runs,
         balls: b.balls,
+        fours: b.fours ?? 0,
+        sixes: b.sixes ?? 0,
         sr: b.sr,
         dismissal: b.dismissal,
         notOut: b.notOut,

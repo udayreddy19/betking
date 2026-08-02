@@ -2,8 +2,12 @@ import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { FiSearch } from '../../icons';
 import GameCarousel from '../../components/GameCarousel/GameCarousel';
-import { liveCasinoGames, liveCasinoCategories } from '../../data/mockData';
-import { filterLiveCasinoByType, filterGamesBySearch } from '../../data/casinoGamesData';
+import {
+  liveCasinoGames,
+  liveCasinoCategories,
+  filterLiveCasinoByType,
+  filterGamesBySearch,
+} from '../../data/casinoGamesData';
 import './LiveCasino.css';
 
 export default function LiveCasino() {

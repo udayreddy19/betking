@@ -100,6 +100,10 @@ export default function Sidebar() {
                 <HiOutlineCube className="tab-icon" />
                 Live
               </button>
+              <button className="sidebar-tab" onClick={() => { closeSidebar(); navigate('/casino'); }}>
+                <MdOutlineStorefront className="tab-icon" />
+                Casino
+              </button>
             </div>
 
             <div className="sidebar-content">

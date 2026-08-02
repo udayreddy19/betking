@@ -11,6 +11,7 @@ import { useLiveMatches, useLiveSportsMeta } from '../../context/LiveSportsConte
 import { useBetSlip } from '../../context/BetSlipContext';
 import { useAuth } from '../../context/AuthContext';
 import { isMatchBettable, isTrulyLiveMatch, getMatchState } from '../../utils/matchBetting';
+import { resolveCricketTeamScores } from '../../utils/cricketScores';
 import { prefetchMatchDetail } from '../../services/matchDetailPoller';
 import { filterMatches } from '../../utils/matchFilters';
 import { resolveLeagueId, getLeagueMeta, isSameLeague, groupMatchesByLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
@@ -58,10 +59,11 @@ function getMatchScores(match) {
 
   if (isLive || isFinished) {
     if (match.sport === 'cricket' || match.sport === 'virtual-cricket') {
-      const r1 = ld.runs ?? 0;
-      const w1 = ld.wickets ?? 0;
-      const r2 = ld.score2 ?? 0;
-      const w2 = ld.wickets2 ?? 0;
+      const scores = resolveCricketTeamScores(match, ld);
+      const r1 = scores.team1.runs ?? 0;
+      const w1 = scores.team1.wickets ?? 0;
+      const r2 = scores.team2.runs ?? 0;
+      const w2 = scores.team2.wickets ?? 0;
       const hasScore = r1 > 0 || w1 > 0 || r2 > 0 || w2 > 0;
       team1Score = (r1 > 0 || w1 > 0) ? `${r1}/${w1}` : (ld.commentary || '');
       team2Score = (r2 > 0 || w2 > 0) ? `${r2}/${w2}` : (hasScore ? '0/0' : '');
@@ -264,7 +266,7 @@ export default function Sports() {
     liveMatches.slice(0, 3).forEach((match) => {
       if (seen.has(match.id)) return;
       seen.add(match.id);
-      prefetchMatchDetail(match, { priority: true });
+      prefetchMatchDetail(match);
     });
   }, [liveMatchPrefetchKey, liveMatches]);
 
@@ -367,11 +369,12 @@ export default function Sports() {
       : 'live';
 
   const placeBet = (selection, odds, selectionName, marketName) => {
-    if (!activeMatch) return;
+    if (!activeMatch || odds == null || Number.isNaN(Number(odds))) return;
     addBet(activeMatch, selection, odds, selectionName, { marketName });
   };
 
   const quickBet = (match, selection, odds, selectionName) => {
+    if (odds == null || Number.isNaN(Number(odds))) return;
     addBet(match, selection, odds, selectionName, { marketName: 'Match Winner' });
   };
 
@@ -681,12 +684,12 @@ export default function Sports() {
                     <button
                       type="button"
                       className={oddsBtnClass('1')}
-                      onClick={() => placeBet('1', activeMatch.odds.team1, activeMatch.team1.name, 'Winner (incl. super over)')}
+                      onClick={() => placeBet('1', activeMatch.odds?.team1, activeMatch.team1.name, 'Winner (incl. super over)')}
                     >
                       <span>{activeMatch.team1.name}</span>
-                      <span className="odds-val">{Number(activeMatch.odds.team1).toFixed(2)}</span>
+                      <span className="odds-val">{Number(activeMatch.odds?.team1 || 0).toFixed(2)}</span>
                     </button>
-                    {activeMatch.odds.draw !== undefined && (
+                    {activeMatch.odds?.draw !== undefined && (
                       <button
                         type="button"
                         className={oddsBtnClass('X')}
@@ -699,10 +702,10 @@ export default function Sports() {
                     <button
                       type="button"
                       className={oddsBtnClass('2')}
-                      onClick={() => placeBet('2', activeMatch.odds.team2, activeMatch.team2.name, 'Winner (incl. super over)')}
+                      onClick={() => placeBet('2', activeMatch.odds?.team2, activeMatch.team2.name, 'Winner (incl. super over)')}
                     >
                       <span>{activeMatch.team2.name}</span>
-                      <span className="odds-val">{Number(activeMatch.odds.team2).toFixed(2)}</span>
+                      <span className="odds-val">{Number(activeMatch.odds?.team2 || 0).toFixed(2)}</span>
                     </button>
                   </div>
                   ) : <MarketsSuspended />

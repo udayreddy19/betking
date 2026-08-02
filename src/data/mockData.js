@@ -546,6 +546,9 @@ export const matches = [
   },
 ];
 
+export { casinoGames, liveCasinoGames } from './casinoGamesData.js';
+export { casinoCategories, liveCasinoCategories } from './casinoGamesData.js';
+
 export const promotions = [
   {
     id: 'p1',
