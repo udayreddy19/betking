@@ -138,10 +138,11 @@ export default function Sports() {
 
   const sportMatches = useMemo(() => {
     const stateTab = isLiveBettingPage ? 'live' : 'all';
+    const sportFilter = isLiveBettingPage ? null : activeSport;
     return filterByLeague(
-      filterMatches(matches, { sport: activeSport, stateTab, searchQuery }),
-      activeLeague,
-      cricketSeries
+      filterMatches(matches, { sport: sportFilter, stateTab, searchQuery }),
+      isLiveBettingPage ? 'all' : activeLeague,
+      cricketSeries,
     );
   }, [matches, activeSport, activeLeague, searchQuery, cricketSeries, isLiveBettingPage]);
 
@@ -374,8 +375,16 @@ export default function Sports() {
         <div className="sports-match-ticker" id="sports-match-ticker">
           {sportMatches.length === 0 ? (
             <div className="sports-ticker-empty">
-              <p>No matches found{searchQuery ? ` for "${searchQuery}"` : ''}.</p>
-              {(searchQuery || activeLeague) && (
+              <p>
+                {isLiveBettingPage
+                  ? 'No live matches right now. Check back soon or browse upcoming events on Sports.'
+                  : `No matches found${searchQuery ? ` for "${searchQuery}"` : ''}.`}
+              </p>
+              {isLiveBettingPage ? (
+                <Link to="/sports" className="sports-empty-action">
+                  Browse all sports
+                </Link>
+              ) : (searchQuery || activeLeague) && (
                 <button
                   type="button"
                   className="sports-empty-action"
@@ -625,8 +634,17 @@ export default function Sports() {
           </div>
         ) : sportMatches.length === 0 ? (
           <div className="sports-empty">
-            <h3>No matches in this league</h3>
-            <p>Select another league or sport</p>
+            <h3>{isLiveBettingPage ? 'No live events' : 'No matches in this league'}</h3>
+            <p>
+              {isLiveBettingPage
+                ? 'There are no in-play matches at the moment.'
+                : 'Select another league or sport'}
+            </p>
+            {isLiveBettingPage && (
+              <Link to="/sports" className="sports-empty-action">
+                View upcoming matches
+              </Link>
+            )}
           </div>
         ) : null}
       </div>

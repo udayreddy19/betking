@@ -38,7 +38,6 @@ export function LiveSportsProvider({ children }) {
         setMatches(mergeApiAndDefaultMatches(apiMatches, defaultMatches));
         setScoresError(null);
 
-        // Build ticker message from source status
         const { counts, sources } = data;
         const okSources = Object.entries(sources || {})
           .filter(([, status]) => status === 'ok')
@@ -51,7 +50,6 @@ export function LiveSportsProvider({ children }) {
 
         const emoji = okSources.includes('cricbuzz') ? '🟢' : '🟡';
 
-        // Build dynamic sport breakdown
         const sportNames = ['cricket', 'soccer', 'basketball', 'tennis', 'american-football'];
         const sportParts = sportNames
           .filter((s) => counts[s] > 0)
@@ -61,6 +59,8 @@ export function LiveSportsProvider({ children }) {
           `${emoji} ${primarySource} LIVE — ${counts.total} events (${counts.live} live${sportParts.length ? ' · ' + sportParts.join(', ') : ''})`
         );
       } else {
+        // Keep demo/fallback matches when APIs return no events
+        setMatches((prev) => (prev.length > 0 ? prev : defaultMatches));
         setScoresError('Live scores temporarily unavailable. Showing cached matches — tap Retry.');
         setTickerMessage('⚠️ Live score sync failed — using cached data');
       }

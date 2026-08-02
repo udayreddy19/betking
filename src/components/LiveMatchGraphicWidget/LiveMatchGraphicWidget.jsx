@@ -203,7 +203,7 @@ function SportLivePanel({ match, team1, team2, team1Display, team2Display, match
 }
 
 export default function LiveMatchGraphicWidget({ match: rawMatch }) {
-  const { match } = useMatchDetail(rawMatch);
+  const match = useMatchDetail(rawMatch);
   const [activeWidgetTab, setActiveWidgetTab] = useState('field');
   const [selectedInnings, setSelectedInnings] = useState('');
   const [scorecardInnings, setScorecardInnings] = useState('');
