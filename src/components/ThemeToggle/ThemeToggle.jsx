@@ -1,4 +1,4 @@
-import { HiOutlineMoon, HiOutlineSun } from 'react-icons/hi';
+import { HiOutlineMoon, HiOutlineSun } from '../../icons';
 import { useTheme } from '../../context/ThemeContext';
 import './ThemeToggle.css';
 

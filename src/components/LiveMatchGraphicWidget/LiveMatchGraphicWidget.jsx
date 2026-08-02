@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { HiOutlineViewList, HiOutlineChartBar, HiOutlineUsers } from 'react-icons/hi';
+import { HiOutlineViewList, HiOutlineChartBar, HiOutlineUsers } from '../../icons';
 import { useLiveFieldState } from '../../hooks/useLiveFieldState';
 import { useMatchDetail } from '../../hooks/useMatchDetail';
 import { getRosterForTeam } from '../../data/cricketRosters';

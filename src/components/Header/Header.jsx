@@ -1,8 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { HiOutlineMenu, HiOutlineClipboardList } from 'react-icons/hi';
-import { IoGiftOutline } from 'react-icons/io5';
-import { FiChevronDown } from 'react-icons/fi';
+import { HiOutlineMenu, HiOutlineClipboardList, IoGiftOutline, FiChevronDown } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';

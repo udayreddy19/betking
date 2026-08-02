@@ -34,7 +34,7 @@ export const homeCategoryTiles = [
     link: '/live-betting',
     size: 'tall',
     bg: '#fde8e8',
-    image: 'https://images.unsplash.com/photo-1461896836934-ffe607ba7a38?auto=format&fit=crop&w=700&q=80',
+    image: 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=700&q=80',
   },
   {
     id: 'cricket',
@@ -42,7 +42,7 @@ export const homeCategoryTiles = [
     link: '/sports?sport=cricket',
     size: 'small',
     bg: '#fff7ed',
-    image: 'https://images.unsplash.com/photo-1531415071251-7e46b2c3a6c5?auto=format&fit=crop&w=400&q=80',
+    image: 'https://images.unsplash.com/photo-1459865264687-595d652de67e?auto=format&fit=crop&w=400&q=80',
   },
   {
     id: 'vip',
@@ -50,7 +50,7 @@ export const homeCategoryTiles = [
     link: '/profile',
     size: 'small',
     bg: '#fff8e6',
-    image: 'https://images.unsplash.com/photo-1626074353761-517a2e4f387a?auto=format&fit=crop&w=400&q=80',
+    image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
   },
   {
     id: 'promos',

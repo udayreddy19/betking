@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
-import { IoClose } from 'react-icons/io5';
-import { FiPlay } from 'react-icons/fi';
+import { IoClose, FiPlay } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import GamePlayer from '../GamePlayer/GamePlayer';
 import { useCasino } from '../../context/CasinoContext';

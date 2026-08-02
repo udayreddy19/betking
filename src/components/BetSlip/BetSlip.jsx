@@ -1,4 +1,4 @@
-import { IoClose, IoSettingsOutline } from 'react-icons/io5';
+import { IoClose, IoSettingsOutline } from '../../icons';
 import { useBetSlip } from '../../context/BetSlipContext';
 import BetSlipFooter from './BetSlipFooter';
 import './BetSlip.css';

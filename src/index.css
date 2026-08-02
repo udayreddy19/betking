@@ -373,3 +373,10 @@ input, select, textarea {
     --container-padding: var(--space-3);
   }
 }
+
+/* itshover animated icons — inherit size from parent like react-icons */
+svg.cursor-pointer {
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+}

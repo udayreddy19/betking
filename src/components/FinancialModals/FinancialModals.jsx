@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { IoClose, IoCheckmarkCircle } from 'react-icons/io5';
-import { BiWallet, BiMoneyWithdraw, BiHistory, BiTransfer, BiGift } from 'react-icons/bi';
+import { IoClose, IoCheckmarkCircle, BiWallet, BiMoneyWithdraw, BiHistory, BiTransfer, BiGift } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
 import './FinancialModals.css';

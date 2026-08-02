@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { IoClose } from 'react-icons/io5';
+import { IoClose } from '../../icons';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { isMatchBettable, isMatchLive } from '../../utils/matchBetting';
 import BetSlipFooter from '../BetSlip/BetSlipFooter';

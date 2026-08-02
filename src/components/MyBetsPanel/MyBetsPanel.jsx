@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { IoClose } from 'react-icons/io5';
+import { IoClose } from '../../icons';
 import { useBetSlip } from '../../context/BetSlipContext';
 import './MyBetsPanel.css';
 

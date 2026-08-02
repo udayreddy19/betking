@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { IoClose, IoShieldCheckmark, IoLockClosed } from 'react-icons/io5';
+import { IoClose, IoShieldCheckmark, IoLockClosed } from '../../icons';
 import './RazorpayModal.css';
 
 export default function RazorpayModal({ isOpen, onClose, amount, onSuccess, user }) {

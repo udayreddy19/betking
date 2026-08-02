@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { IoClose, IoChevronBack, IoQrCodeOutline, IoKeyOutline } from 'react-icons/io5';
-import { FiArrowRight, FiShield, FiAlertCircle } from 'react-icons/fi';
+import { IoClose, IoChevronBack, IoQrCodeOutline, IoKeyOutline, FiArrowRight, FiShield, FiAlertCircle } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { paymentMethods } from '../../data/mockData';
 import RazorpayModal from '../RazorpayModal/RazorpayModal';

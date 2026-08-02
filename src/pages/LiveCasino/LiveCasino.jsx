@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { FiSearch } from 'react-icons/fi';
+import { FiSearch } from '../../icons';
 import GameCarousel from '../../components/GameCarousel/GameCarousel';
 import { liveCasinoGames, liveCasinoCategories } from '../../data/mockData';
 import { filterLiveCasinoByType, filterGamesBySearch } from '../../data/casinoGamesData';

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { IoClose } from 'react-icons/io5';
+import { IoClose } from '../../icons';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { promotions } from '../../data/mockData';

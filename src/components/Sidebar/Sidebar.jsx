@@ -1,15 +1,25 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IoClose } from 'react-icons/io5';
-import { FiChevronRight } from 'react-icons/fi';
-import { HiOutlineDocumentText, HiOutlineUser, HiOutlineTrophy, HiOutlineCube } from 'react-icons/hi2';
-import { BiWallet, BiMoneyWithdraw, BiHistory, BiTransfer, BiGift } from 'react-icons/bi';
-import { MdOutlineCancel, MdOutlineStorefront } from 'react-icons/md';
-import { RiLogoutBoxRLine } from 'react-icons/ri';
+import {
+  IoClose,
+  FiChevronRight,
+  HiOutlineDocumentText,
+  HiOutlineUser,
+  HiOutlineTrophy,
+  HiOutlineCube,
+  BiWallet,
+  BiMoneyWithdraw,
+  BiHistory,
+  BiTransfer,
+  BiGift,
+  MdOutlineCancel,
+  MdOutlineStorefront,
+  RiLogoutBoxRLine,
+} from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { useTheme } from '../../context/ThemeContext';
-import { HiOutlineMoon, HiOutlineSun } from 'react-icons/hi';
+import { HiOutlineMoon, HiOutlineSun } from '../../icons';
 import FinancialModals from '../FinancialModals/FinancialModals';
 import './Sidebar.css';
 

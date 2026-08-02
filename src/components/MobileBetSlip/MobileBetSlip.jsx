@@ -1,6 +1,6 @@
 import { useBetSlip } from '../../context/BetSlipContext';
 import BetSlip from '../BetSlip/BetSlip';
-import { IoClose } from 'react-icons/io5';
+import { IoClose } from '../../icons';
 import './MobileBetSlip.css';
 
 export default function MobileBetSlip() {

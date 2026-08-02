@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { HiOutlineExternalLink } from 'react-icons/hi';
+import { HiOutlineExternalLink } from '../../icons';
 import { resolveMatchStream, getYouTubeEmbedUrl } from '../../utils/matchStreams';
 import './LiveStreamPlayer.css';
 

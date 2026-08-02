@@ -1,4 +1,4 @@
-import { IoInformationCircle } from 'react-icons/io5';
+import { IoInformationCircle } from '../../icons';
 import { useCasino } from '../../context/CasinoContext';
 import './HomeTopGameCard.css';
 

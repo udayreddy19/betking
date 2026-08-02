@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FiArrowLeft, FiX, FiExternalLink, FiRefreshCw } from 'react-icons/fi';
+import { FiArrowLeft, FiX, FiExternalLink, FiRefreshCw } from '../../icons';
 import { resolveGameLaunchUrl } from '../../utils/gameLaunch';
 import './GamePlayer.css';
 

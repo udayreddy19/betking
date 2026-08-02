@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Link, useSearchParams, useLocation } from 'react-router-dom';
-import { FiSearch, FiHome } from 'react-icons/fi';
-import { HiOutlineChevronDown, HiOutlineChevronUp } from 'react-icons/hi';
+import { FiSearch, FiHome, HiOutlineChevronDown, HiOutlineChevronUp } from '../../icons';
 import FilterChips from '../../components/FilterChips/FilterChips';
 import BetSlip from '../../components/BetSlip/BetSlip';
 import LiveMatchGraphicWidget from '../../components/LiveMatchGraphicWidget/LiveMatchGraphicWidget';

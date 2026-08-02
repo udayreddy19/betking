@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { HiChevronDown, HiChevronRight } from 'react-icons/hi';
+import { HiChevronDown, HiChevronRight } from '../../icons';
 import { featuredLeagues, leagueGroups } from '../../data/mockData';
 import { resolveLeagueId, isSameLeague } from '../../utils/leagueNavigation';
 import './SportsLeagueSidebar.css';

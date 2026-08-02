@@ -1,4 +1,4 @@
-import { IoCheckmarkCircle, IoCloseCircle, IoInformationCircle, IoClose } from 'react-icons/io5';
+import { IoCheckmarkCircle, IoCloseCircle, IoInformationCircle, IoClose } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import './Toast.css';
 
