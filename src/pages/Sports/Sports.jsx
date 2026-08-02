@@ -15,7 +15,6 @@ import { resolveCricketTeamScores } from '../../utils/cricketScores';
 import { prefetchMatchDetail } from '../../services/matchDetailPoller';
 import { filterMatches } from '../../utils/matchFilters';
 import { resolveLeagueId, getLeagueMeta, isSameLeague, groupMatchesByLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
-import { getIplSrlMatches } from '../../data/iplSrlMatches';
 import SrlLeaguePanel from '../../components/SrlLeaguePanel/SrlLeaguePanel';
 import './Sports.css';
 
@@ -229,12 +228,6 @@ export default function Sports() {
     );
 
     let list = filtered;
-    if (isIplSrlView && activeSport === 'cricket') {
-      const seeded = getIplSrlMatches();
-      const byId = new Map(seeded.map((m) => [m.id, m]));
-      for (const m of filtered) byId.set(m.id, m);
-      list = [...byId.values()];
-    }
 
     return [...list].sort((a, b) => {
       const liveA = getMatchState(a) === 'in' ? 0 : 1;
@@ -242,7 +235,7 @@ export default function Sports() {
       if (liveA !== liveB) return liveA - liveB;
       return String(a.time).localeCompare(String(b.time));
     });
-  }, [matches, activeSport, activeLeague, searchQuery, cricketSeries, isIplSrlView]);
+  }, [matches, activeSport, activeLeague, searchQuery, cricketSeries]);
 
   const liveMatches = useMemo(
     () => sportMatches.filter((m) => getMatchState(m) === 'in'),

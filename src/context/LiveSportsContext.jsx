@@ -10,6 +10,7 @@ import {
 import { getStableMatchOdds } from '../utils/odds';
 import { normalizeApiMatches } from '../utils/matchFilters';
 import { fetchLiveScores } from '../services/liveScoresService';
+import { getIplSrlMatches } from '../../lib/iplSrlSimulator.mjs';
 import { LIVE_SCORES_POLL_MS } from '../config/livePolling';
 
 const LiveMatchesContext = createContext([]);
@@ -26,6 +27,12 @@ function attachOdds(matches, oddsCache) {
     }
     return { ...match, odds: oddsCache.get(cacheKey) };
   });
+}
+
+function mergeSrlMatches(matches) {
+  const srl = getIplSrlMatches();
+  const rest = matches.filter((m) => !String(m.id || '').startsWith('srl_ipl_'));
+  return [...rest, ...srl];
 }
 
 function matchDisplayKey(match) {
@@ -134,11 +141,12 @@ export function LiveSportsProvider({ children }) {
       }
 
       if (normalized.length > 0) {
-        const nextSummary = summarizeMatches(normalized);
+        const withSrl = mergeSrlMatches(normalized);
+        const nextSummary = summarizeMatches(withSrl);
 
         if (nextSummary !== matchesSummaryRef.current) {
           matchesSummaryRef.current = nextSummary;
-          setMatches((prev) => mergeMatchesStable(prev, normalized));
+          setMatches((prev) => mergeMatchesStable(prev, withSrl));
         }
 
         setScoresError((prev) => (prev === null ? prev : null));
@@ -165,13 +173,21 @@ export function LiveSportsProvider({ children }) {
         const nextTicker = `${emoji} ${primarySource} LIVE — ${total} events (${live} live${sportParts.length ? ' · ' + sportParts.join(', ') : ''})`;
         setTickerMessage((prev) => (prev === nextTicker ? prev : nextTicker));
       } else {
-        matchesSummaryRef.current = '';
-        setMatches((prev) => (prev.length === 0 ? prev : []));
+        const withSrl = mergeSrlMatches([]);
+        matchesSummaryRef.current = summarizeMatches(withSrl);
+        setMatches(withSrl);
         setScoresError((prev) => {
-          const next = 'No live events from score providers right now — tap Retry.';
+          const next = withSrl.length
+            ? null
+            : 'No live events from score providers right now — tap Retry.';
           return prev === next ? prev : next;
         });
-        setTickerMessage((prev) => (prev === '⚠️ No matches returned from API' ? prev : '⚠️ No matches returned from API'));
+        setTickerMessage((prev) => {
+          const next = withSrl.length
+            ? `🟢 IPL SRL LIVE — ${withSrl.length} simulated fixtures`
+            : '⚠️ No matches returned from API';
+          return prev === next ? prev : next;
+        });
       }
     } catch (error) {
       if (!mountedRef.current) return;
@@ -222,6 +238,22 @@ export function LiveSportsProvider({ children }) {
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [refreshScores]);
+
+  useEffect(() => {
+    const tickSrl = () => {
+      if (document.hidden) return;
+      setMatches((prev) => {
+        const withSrl = mergeSrlMatches(prev);
+        const nextSummary = summarizeMatches(withSrl);
+        if (nextSummary === matchesSummaryRef.current) return prev;
+        matchesSummaryRef.current = nextSummary;
+        return mergeMatchesStable(prev, withSrl);
+      });
+    };
+
+    const srlInterval = setInterval(tickSrl, 3000);
+    return () => clearInterval(srlInterval);
+  }, []);
 
   const metaValue = useMemo(() => ({
     cricketSeries,

@@ -153,9 +153,12 @@ export function isApiBackedMatch(match) {
     || match.source === 'espn'
     || match.source === 'cricbuzz'
     || match.source === 'fancode'
+    || match.source === 'srl'
+    || match.scoreSource === 'sim'
     || match.scoreSource === 'api'
     || match.id?.startsWith('api_')
     || match.id?.startsWith('cb_')
+    || match.id?.startsWith('srl_ipl_')
   );
 }
 

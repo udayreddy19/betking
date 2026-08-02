@@ -107,6 +107,7 @@ function canPoll(match) {
   if (match.source === 'espn' || match.id.startsWith('api_')) return true;
   if (match.espnEventId && match.espnPath) return true;
   if (match.fancodeMatchId) return true;
+  if (match.source === 'srl' || match.id?.startsWith('srl_ipl_')) return true;
   return false;
 }
 
