@@ -253,16 +253,16 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
     : (apiBatter2?.name || battingRoster.batters[1]);
   const bowler = fieldState?.bowler || apiBowler || bowlingRoster.bowlers[0];
 
-  const b1 = (fieldState?.batter1?.name && !fieldState.batter1.name.includes('Batter'))
-    ? fieldState.batter1
-    : apiBatter1
-      ? { fours: 0, sixes: 0, ...apiBatter1 }
+  const b1 = apiBatter1?.name && !apiBatter1.name.includes('Batter')
+    ? { fours: 0, sixes: 0, ...apiBatter1 }
+    : (fieldState?.batter1?.name && !fieldState.batter1.name.includes('Batter'))
+      ? fieldState.batter1
       : fieldState?.batter1 ?? { name: striker, runs: 0, balls: 0, fours: 0, sixes: 0 };
 
-  const b2 = (fieldState?.batter2?.name && !fieldState.batter2.name.includes('Batter'))
-    ? fieldState.batter2
-    : apiBatter2
-      ? { fours: 0, sixes: 0, ...apiBatter2 }
+  const b2 = apiBatter2?.name && !apiBatter2.name.includes('Batter')
+    ? { fours: 0, sixes: 0, ...apiBatter2 }
+    : (fieldState?.batter2?.name && !fieldState.batter2.name.includes('Batter'))
+      ? fieldState.batter2
       : fieldState?.batter2 ?? { name: nonStriker, runs: 0, balls: 0, fours: 0, sixes: 0 };
 
   const chaseText = innings
@@ -275,8 +275,8 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
   }, [match, innings?.inningsNum, wickets1, wickets2]);
 
   const overHistoryRows = useMemo(
-    () => buildOverHistoryRows(fieldState, match?.id),
-    [fieldState, match?.id],
+    () => buildOverHistoryRows(fieldState, match?.id, match),
+    [fieldState, match?.id, match?.liveDetails?.overs, match?.liveDetails?.overs2, match?.liveDetails?.chaseOvers, match?.liveDetails?.score2, match?.liveDetails?.chaseRuns, match?.matchState],
   );
 
   const activeScorecardTab = scorecardInnings

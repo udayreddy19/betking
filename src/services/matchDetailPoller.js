@@ -2,6 +2,7 @@
  * Shared live match detail poller — all sports, continuous fetch, instant React sync.
  */
 import { enrichMatchWithDetail } from '../utils/matchDetailEnrich';
+import { mergeCricketLiveDetails, mergeCricketPlayersOnly } from '../utils/cricketScoreMerge';
 
 const LIVE_GAP_MS = 350;
 const IDLE_GAP_MS = 5000;
@@ -59,17 +60,34 @@ async function fetchDetail(match, fast) {
   return res.json();
 }
 
-function mergeDetails(prev, next) {
+function mergeDetails(prev, next, { isFull = false } = {}) {
   if (!prev) return next;
   if (!next) return prev;
+
+  const prevLd = prev.liveDetails || {};
+  const nextLd = next.liveDetails || {};
+  const isCricket = !!(nextLd.chaseRuns != null || nextLd.firstRuns != null || nextLd.runs != null);
+
+  let liveDetails;
+  if (isFull && isCricket) {
+    liveDetails = mergeCricketPlayersOnly(prevLd, nextLd);
+  } else if (isCricket) {
+    liveDetails = mergeCricketLiveDetails(prevLd, nextLd);
+  } else {
+    liveDetails = { ...prevLd, ...nextLd };
+  }
+
   return {
     ...next,
+    fetchedAt: next.fetchedAt || prev.fetchedAt,
+    isLive: next.isLive ?? prev.isLive,
+    matchState: next.matchState ?? prev.matchState,
+    time: next.time ?? prev.time,
     liveDetails: {
-      ...prev.liveDetails,
-      ...next.liveDetails,
-      batter1: next.liveDetails?.batter1 || prev.liveDetails?.batter1,
-      batter2: next.liveDetails?.batter2 || prev.liveDetails?.batter2,
-      bowler: next.liveDetails?.bowler || prev.liveDetails?.bowler,
+      ...liveDetails,
+      batter1: liveDetails.batter1 || prevLd.batter1,
+      batter2: liveDetails.batter2 || prevLd.batter2,
+      bowler: liveDetails.bowler || prevLd.bowler,
     },
   };
 }
@@ -90,14 +108,14 @@ async function pollLoop(key) {
 
     try {
       const fast = await fetchDetail(s.match, true);
-      if (fast) emit(key, mergeDetails(s.detail, fast));
+      if (fast) emit(key, mergeDetails(s.detail, fast, { isFull: false }));
 
       fullCounter += 1;
       const isCricket = s.match.sport === 'cricket' || s.match.sport === 'virtual-cricket';
       if (!isCricket || fullCounter >= 4) {
         fullCounter = 0;
         const full = await fetchDetail(s.match, false);
-        if (full) emit(key, mergeDetails(pollers.get(key)?.detail, full));
+        if (full) emit(key, mergeDetails(pollers.get(key)?.detail, full, { isFull: true }));
       }
     } catch (err) {
       console.warn('Match detail poll failed:', err);

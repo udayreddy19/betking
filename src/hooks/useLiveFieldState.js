@@ -9,6 +9,18 @@ import {
 
 const TICK_MS = 5000;
 
+function isApiBackedMatch(match) {
+  if (!match) return false;
+  return !!(
+    match.cricbuzzMatchId
+    || match.id?.startsWith('cb_')
+    || match.source === 'cricbuzz'
+    || match.source === 'espn'
+    || match.id?.startsWith('api_')
+    || match.fancodeMatchId
+  );
+}
+
 export function useLiveFieldState(match, roster) {
   const [fieldState, setFieldState] = useState(() => {
     if (!match) return null;
@@ -20,7 +32,9 @@ export function useLiveFieldState(match, roster) {
 
   rosterRef.current = roster;
 
-  // Sync when match or API scores change
+  const ld = match?.liveDetails;
+
+  // Sync when API scores / overs / batters change
   useEffect(() => {
     if (!match) {
       stateRef.current = null;
@@ -39,11 +53,30 @@ export function useLiveFieldState(match, roster) {
       stateRef.current = next;
       setFieldState(next);
     }
-  }, [match]);
+  }, [
+    match,
+    match?.id,
+    ld?.runs,
+    ld?.score2,
+    ld?.chaseRuns,
+    ld?.firstRuns,
+    ld?.overs,
+    ld?.overs2,
+    ld?.chaseOvers,
+    ld?.wickets,
+    ld?.wickets2,
+    ld?.batter1?.runs,
+    ld?.batter1?.balls,
+    ld?.batter2?.runs,
+    ld?.batter2?.balls,
+    ld?.batter1?.name,
+    ld?.batter2?.name,
+    ld?.bowler?.name,
+  ]);
 
-  // Auto-tick ball-by-ball while live
+  // Only simulate balls for mock matches — API-backed matches use real score sync
   useEffect(() => {
-    if (!match) return undefined;
+    if (!match || isApiBackedMatch(match)) return undefined;
 
     const isLive = match.matchState === 'in' || match.isLive;
     if (!isLive) return undefined;
@@ -58,7 +91,6 @@ export function useLiveFieldState(match, roster) {
       setFieldState({ ...next });
     };
 
-    // First ball shortly after opening the Field tab / selecting a live match
     const bootTimer = setTimeout(tick, 1200);
     const interval = setInterval(tick, TICK_MS);
 
@@ -66,7 +98,7 @@ export function useLiveFieldState(match, roster) {
       clearTimeout(bootTimer);
       clearInterval(interval);
     };
-  }, [match?.id, match?.matchState, match?.isLive]);
+  }, [match?.id, match?.matchState, match?.isLive, match?.cricbuzzMatchId, match?.source]);
 
   return fieldState;
 }

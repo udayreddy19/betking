@@ -43,6 +43,24 @@ function getBattingTeamIndex(match) {
   return 1;
 }
 
+export function generateOverBalls(matchId, overNum) {
+  const balls = [];
+  for (let i = 0; i < 6; i += 1) {
+    balls.push(formatBall(nextRun(matchId, (overNum - 1) * 6 + i)));
+  }
+  return balls;
+}
+
+export function generateCurrentOverBalls(matchId, oversStr) {
+  const { over, ball } = parseOvers(oversStr);
+  const currentOverNum = Math.max(1, over || 1);
+  const balls = [];
+  for (let i = 0; i < ball; i += 1) {
+    balls.push(formatBall(nextRun(matchId, (currentOverNum - 1) * 6 + i)));
+  }
+  return { overNum: currentOverNum, balls };
+}
+
 export function buildRosterFallback(teamName) {
   const short = teamName.replace(/\s+W$/, '').split(' ')[0];
   return {
@@ -54,15 +72,14 @@ export function buildRosterFallback(teamName) {
 export function createFieldState(match, roster) {
   const ld = match?.liveDetails || {};
   const matchId = match?.id || 'default';
-  const { over, ball } = parseOvers(
-    getBattingTeamIndex(match) === 2 ? (ld.overs2 || ld.overs) : ld.overs
-  );
+  const battingIdx = getBattingTeamIndex(match);
+  const oversStr = battingIdx === 2
+    ? (ld.overs2 || ld.chaseOvers || ld.overs || '0.0')
+    : (ld.overs || ld.firstOvers || '0.0');
 
-  const ballsInOver = [];
-  const startBall = Math.max(0, ball);
-  for (let i = 0; i < startBall; i += 1) {
-    ballsInOver.push(formatBall(nextRun(matchId, over * 6 + i)));
-  }
+  const { overNum, balls: ballsInOver } = generateCurrentOverBalls(matchId, oversStr);
+  const { over, ball } = parseOvers(oversStr);
+  const startBall = ball;
 
   const strikerIdx = 0;
   const batter1 = {
@@ -87,17 +104,18 @@ export function createFieldState(match, roster) {
 
   const recentOvers = [];
   if (over > 0) {
-    const prevBalls = [];
-    for (let i = 0; i < 6; i += 1) {
-      prevBalls.push(formatBall(nextRun(matchId, (over - 1) * 6 + i)));
-    }
-    recentOvers.push({ overNum: over, balls: prevBalls, runs: 7, wickets: 0 });
+    recentOvers.push({
+      overNum: over,
+      balls: generateOverBalls(matchId, over),
+      runs: 7,
+      wickets: 0,
+    });
   }
 
   return {
     matchId,
-    overNum: Math.max(1, over || 1),
-    overBalls: ballsInOver.length > 0 ? ballsInOver : [formatBall(nextRun(matchId, 0))],
+    overNum,
+    overBalls: ballsInOver.length > 0 ? ballsInOver : (startBall === 0 ? [] : [formatBall(nextRun(matchId, 0))]),
     recentOvers,
     ballIndex: over * 6 + startBall,
     strikerIdx,
@@ -109,9 +127,9 @@ export function createFieldState(match, roster) {
     inningsFours: ld.fours ?? 8 + over,
     inningsSixes: ld.sixes ?? 2 + (over % 3),
     extras: ld.extras ?? 2,
-    syncedRuns: ld.runs ?? 0,
-    syncedScore2: ld.score2 ?? 0,
-    syncedOvers: ld.overs || '0.0',
+    syncedRuns: ld.firstRuns ?? ld.runs ?? 0,
+    syncedScore2: ld.chaseRuns ?? ld.score2 ?? 0,
+    syncedOvers: oversStr,
     syncedWickets: ld.wickets ?? 0,
     lastTickAt: Date.now(),
   };
@@ -207,14 +225,23 @@ export function needsResync(state, match) {
   if (!state || !match) return true;
   if (state.matchId !== match.id) return true;
   const ld = match.liveDetails || {};
+  const battingIdx = getBattingTeamIndex(match);
+  const oversStr = battingIdx === 2
+    ? (ld.overs2 || ld.chaseOvers || ld.overs || '0.0')
+    : (ld.overs || ld.firstOvers || '0.0');
+  const chaseScore = ld.chaseRuns ?? ld.score2 ?? 0;
+  const firstScore = ld.firstRuns ?? ld.runs ?? 0;
+
   return (
-    state.syncedRuns !== (ld.runs ?? 0)
-    || state.syncedScore2 !== (ld.score2 ?? 0)
-    || state.syncedOvers !== (ld.overs || '0.0')
+    state.syncedRuns !== firstScore
+    || state.syncedScore2 !== chaseScore
+    || state.syncedOvers !== oversStr
     || state.syncedWickets !== (ld.wickets ?? 0)
     || (ld.batter1?.name && state.batter1?.name !== ld.batter1.name)
     || (ld.batter2?.name && state.batter2?.name !== ld.batter2.name)
     || (ld.bowler?.name && state.bowler !== ld.bowler.name)
+    || (ld.batter1?.runs != null && state.batter1?.runs !== ld.batter1.runs)
+    || (ld.batter2?.runs != null && state.batter2?.runs !== ld.batter2.runs)
   );
 }
 
@@ -224,7 +251,11 @@ export function syncFieldStateFromMatch(state, match, roster) {
 
   if (!state || state.matchId !== match.id) return fresh;
 
-  const oversChanged = state.syncedOvers !== (ld.overs || '0.0');
+  const battingIdx = getBattingTeamIndex(match);
+  const oversStr = battingIdx === 2
+    ? (ld.overs2 || ld.chaseOvers || ld.overs || '0.0')
+    : (ld.overs || ld.firstOvers || '0.0');
+  const oversChanged = state.syncedOvers !== oversStr;
 
   return {
     ...fresh,

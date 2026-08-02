@@ -1,4 +1,5 @@
 import { normalizeCricbuzzOvers } from './oversUtils';
+import { mergeCricketLiveDetails } from './cricketScoreMerge';
 
 function enrichCricketDetails(match, ld, base) {
   let runs = base.runs ?? 0;
@@ -52,10 +53,12 @@ export function enrichMatchWithDetail(match, detail) {
   const sport = match.sport;
   const baseLd = match.liveDetails || {};
 
-  let liveDetails = { ...baseLd, ...ld };
-
+  let liveDetails;
   if (sport === 'cricket' || sport === 'virtual-cricket') {
-    liveDetails = enrichCricketDetails(match, ld, baseLd);
+    const fromDetail = enrichCricketDetails(match, ld, {});
+    liveDetails = mergeCricketLiveDetails(baseLd, fromDetail);
+  } else {
+    liveDetails = { ...baseLd, ...ld };
   }
 
   return {

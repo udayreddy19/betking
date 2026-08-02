@@ -1,4 +1,4 @@
-import { parseOvers } from './liveFieldState';
+import { parseOvers, generateOverBalls, generateCurrentOverBalls } from './liveFieldState';
 import { ballsRemaining } from './oversUtils';
 
 function hashSeed(str) {
@@ -109,25 +109,31 @@ export function buildScorecardInnings(match, teamName, roster, fieldState, isBat
   return players;
 }
 
-export function buildOverHistoryRows(fieldState, matchId) {
-  if (!fieldState) return [];
+export function buildOverHistoryRows(fieldState, matchId, match) {
+  const ld = match?.liveDetails || {};
+  const isChasing = (ld.chaseRuns ?? ld.score2 ?? 0) > 0 && match?.matchState === 'in';
+  const oversStr = isChasing
+    ? (ld.overs2 || ld.chaseOvers || ld.overs || '0.0')
+    : (ld.overs || ld.firstOvers || '0.0');
+
+  const { overNum: currentOver, balls: apiBalls } = generateCurrentOverBalls(matchId, oversStr);
 
   const rows = [];
-  const currentOver = fieldState.overNum;
-  const currentBalls = fieldState.overBalls || [];
 
   if (currentOver > 1) {
-    const prevBalls = [];
-    for (let i = 0; i < 6; i += 1) {
-      const idx = (currentOver - 2) * 6 + i;
-      const seed = hashSeed(`${matchId}-ball-${idx}`);
-      const vals = ['1', '4', '1', '1', '1', '•'];
-      prevBalls.push(vals[seed % vals.length]);
-    }
-    rows.push({ overNum: currentOver - 1, balls: prevBalls });
+    rows.push({
+      overNum: currentOver - 1,
+      balls: generateOverBalls(matchId, currentOver - 1),
+    });
   }
 
-  rows.push({ overNum: currentOver, balls: currentBalls });
+  const currentBalls = fieldState?.overNum === currentOver && fieldState?.overBalls?.length
+    ? fieldState.overBalls
+    : apiBalls;
+
+  if (currentBalls.length > 0 || currentOver > 0) {
+    rows.push({ overNum: currentOver, balls: currentBalls });
+  }
 
   return rows;
 }
