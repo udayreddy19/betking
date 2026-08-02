@@ -7,6 +7,38 @@
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
+.live-widget-prematch-status {
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: var(--space-2) 0;
+  line-height: 1.45;
+}
+
+.live-widget-prematch-hint {
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.live-widget-body--prematch {
+  padding-bottom: var(--space-5);
+}
+
+.live-widget-inn-badge--prematch {
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+}
+
+.live-widget-scoreline--vs {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--color-text-muted);
+}
+
 .live-graphic-empty {
   padding: 24px;
   text-align: center;
@@ -655,6 +687,12 @@
 .cric-lineup-row span:last-child {
   color: #7c3aed;
   font-size: 0.72rem;
+}
+
+.cric-lineup-empty {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  padding: var(--space-2) 0 var(--space-3);
 }
 
 [data-theme='dark'] .live-graphic-card-10cric,

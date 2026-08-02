@@ -3,6 +3,7 @@ import { HiOutlineViewList, HiOutlineChartBar, HiOutlineUsers } from '../../icon
 import { useLiveFieldState } from '../../hooks/useLiveFieldState';
 import { useMatchDetail } from '../../hooks/useMatchDetail';
 import { getRosterForTeam } from '../../data/cricketRosters';
+import { resolveMatchSquads, formatPlayerRole } from '../../utils/matchSquads';
 import { getBallDisplayKind, getBallDisplayLabel } from '../../utils/liveFieldState';
 import {
   getTeamShortCode,
@@ -19,6 +20,7 @@ import {
   getPeriodRows,
   getSportLeagueLabel,
 } from '../../utils/sportLiveWidgetData';
+import { isCricketTrackerLive, getMatchState } from '../../utils/matchBetting';
 import './LiveMatchGraphicWidget.css';
 
 function getTeamShort(name) {
@@ -27,7 +29,11 @@ function getTeamShort(name) {
 
 function getInningsInfo(match, team1, team2, score1, wickets1, score2, wickets2, overs) {
   const overs2 = match?.liveDetails?.overs2 || overs;
-  const hasSecondInnings = score2 > 0 || wickets2 > 0 || match?.liveDetails?.score2 !== undefined;
+  const hasSecondInnings = (
+    score2 > 0
+    || wickets2 > 0
+    || (match?.liveDetails?.chaseRuns != null && match.liveDetails.chaseRuns > 0)
+  ) && match?.matchState === 'in';
   const isChasing = hasSecondInnings && match?.matchState === 'in';
 
   if (isChasing) {
@@ -219,6 +225,33 @@ function SportLivePanel({ match, team1, team2, team1Display, team2Display, match
   );
 }
 
+function PreMatchCricketPanel({ match, team1Display, team2Display, matchState }) {
+  const status = match?.liveDetails?.commentary || match?.time || 'Match has not started yet';
+
+  return (
+    <div className="live-graphic-card-10cric">
+      <div className="live-widget-body live-widget-body--prematch">
+        <div className="live-widget-inn-badge live-widget-inn-badge--prematch">
+          {matchState === 'post' ? 'MATCH COMPLETE' : 'UPCOMING'}
+        </div>
+
+        <div className="live-widget-teams-row">
+          <span className="live-widget-team">{team1Display}</span>
+          <span className="live-widget-scoreline live-widget-scoreline--vs">VS</span>
+          <span className="live-widget-team">{team2Display}</span>
+        </div>
+
+        <p className="live-widget-prematch-status">{status}</p>
+        <p className="live-widget-prematch-hint">
+          {matchState === 'post'
+            ? 'Final scorecard will appear here when available.'
+            : 'Live scores and ball-by-ball tracker will appear once play begins.'}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function LiveMatchGraphicWidget({ match: rawMatch }) {
   const match = useMatchDetail(rawMatch);
   const [activeWidgetTab, setActiveWidgetTab] = useState('field');
@@ -235,7 +268,9 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
   const score2 = match?.liveDetails?.score2 ?? 0;
   const wickets2 = match?.liveDetails?.wickets2 ?? 0;
   const overs = match?.liveDetails?.overs || '0.0';
-  const matchState = match?.matchState || (match?.isLive ? 'in' : 'pre');
+  const matchState = getMatchState(match);
+  const isCricketSport = sport === 'cricket' || sport === 'virtual-cricket';
+  const showCricketTracker = isCricketSport && isCricketTrackerLive(match);
 
   const innings = match
     ? getInningsInfo(match, team1, team2, score1, wickets1, score2, wickets2, overs)
@@ -254,9 +289,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
   const battingRoster = viewingTeam2Innings ? t2Data : t1Data;
   const bowlingRoster = viewingTeam2Innings ? t1Data : t2Data;
 
-  const isCricketSport = sport === 'cricket' || sport === 'virtual-cricket';
-  const isLiveMatch = matchState === 'in' || match?.isLive;
-  const fieldState = useLiveFieldState(isCricketSport && isLiveMatch ? match : null, battingRoster);
+  const fieldState = useLiveFieldState(isCricketSport && showCricketTracker ? match : null, battingRoster);
 
   const apiBatter1 = match?.liveDetails?.batter1;
   const apiBatter2 = match?.liveDetails?.batter2;
@@ -299,11 +332,18 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
   const activeScorecardTab = scorecardInnings
     || (innings?.inningsNum === 2 ? `${team2Short} 1ST` : `${team1Short} 1ST`);
 
+  const squads = useMemo(
+    () => resolveMatchSquads(match, team1, team2),
+    [match, team1, team2],
+  );
+
   const scorecardPlayers = useMemo(() => {
     const isTeam2Tab = activeScorecardTab.includes(team2Short);
     const roster = isTeam2Tab ? t2Data : t1Data;
+    const teamLabel = isTeam2Tab ? team2 : team1;
+    const shortLabel = isTeam2Tab ? team2Short : team1Short;
     const isBatting = (innings?.inningsNum === 2 && isTeam2Tab) || (innings?.inningsNum === 1 && !isTeam2Tab);
-    return buildScorecardInnings(match, isTeam2Tab ? team2 : team1, roster, isBatting ? fieldState : null, isBatting);
+    return buildScorecardInnings(match, teamLabel, roster, isBatting ? fieldState : null, isBatting, shortLabel);
   }, [activeScorecardTab, match, team1, team2, t1Data, t2Data, fieldState, innings, team1Short, team2Short]);
 
   const statsOvers = useMemo(() => {
@@ -312,9 +352,9 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
     return buildStatsOvers(fieldState, match, battingScore, battingWickets);
   }, [fieldState, match, innings, score1, score2, wickets1, wickets2]);
 
-  const inningsFours = fieldState?.inningsFours ?? 10;
-  const inningsSixes = fieldState?.inningsSixes ?? 3;
-  const inningsExtras = fieldState?.extras ?? 2;
+  const inningsFours = fieldState?.inningsFours ?? 0;
+  const inningsSixes = fieldState?.inningsSixes ?? 0;
+  const inningsExtras = fieldState?.extras ?? 0;
 
   if (!match) {
     return (
@@ -337,15 +377,22 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
     );
   }
 
+  if (!showCricketTracker) {
+    return (
+      <PreMatchCricketPanel
+        match={match}
+        team1Display={team1Display}
+        team2Display={team2Display}
+        matchState={matchState}
+      />
+    );
+  }
+
   return (
     <div className="live-graphic-card-10cric">
       <div className="live-widget-body">
         <div className="live-widget-inn-badge">
-          {matchState === 'in'
-            ? `INN ${innings.inningsNum} | ${innings.displayOvers}/20 OV`
-            : matchState === 'post'
-              ? 'MATCH COMPLETE'
-              : 'UPCOMING'}
+          {`INN ${innings.inningsNum} | ${innings.displayOvers}/20 OV`}
         </div>
 
         <div className="live-widget-teams-row">
@@ -575,20 +622,27 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
 
         {activeWidgetTab === 'lineups' && (
           <div className="cric-panel cric-panel--light">
-            <h4 className="cric-panel__title">{team1Display}</h4>
-            {t1Data.batters.map((name, idx) => (
-              <div key={idx} className="cric-lineup-row">
-                <span>{name}</span>
-                <span>Batter</span>
+            <h4 className="cric-panel__title">{squads.team1?.name || team1Display}</h4>
+            {(squads.team1?.players || []).map((player, idx) => (
+              <div key={`t1-${player.id || player.name}-${idx}`} className="cric-lineup-row">
+                <span>{player.name}</span>
+                <span>{formatPlayerRole(player)}</span>
               </div>
             ))}
-            <h4 className="cric-panel__title">{team2Display}</h4>
-            {t2Data.batters.map((name, idx) => (
-              <div key={idx} className="cric-lineup-row">
-                <span>{name}</span>
-                <span>Batter</span>
+            {(!squads.team1?.players?.length) && (
+              <p className="cric-lineup-empty">Squad not available yet</p>
+            )}
+
+            <h4 className="cric-panel__title">{squads.team2?.name || team2Display}</h4>
+            {(squads.team2?.players || []).map((player, idx) => (
+              <div key={`t2-${player.id || player.name}-${idx}`} className="cric-lineup-row">
+                <span>{player.name}</span>
+                <span>{formatPlayerRole(player)}</span>
               </div>
             ))}
+            {(!squads.team2?.players?.length) && (
+              <p className="cric-lineup-empty">Squad not available yet</p>
+            )}
           </div>
         )}
       </div>

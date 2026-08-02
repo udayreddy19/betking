@@ -25,11 +25,85 @@ const UPCOMING_TIME_HINTS = [
   'preview',
 ];
 
+const PRE_MATCH_HOLD_HINTS = [
+  'toss delayed',
+  'delayed due',
+  'rain delay',
+  'wet outfield',
+  'not started',
+  'match starts',
+  'start delayed',
+  'no play',
+  'play suspended',
+  'interrupted',
+];
+
+function parseOversBallCount(overs) {
+  const str = String(overs ?? '0');
+  const parts = str.split('.');
+  const whole = parseInt(parts[0], 10) || 0;
+  const ball = parseInt(parts[1], 10) || 0;
+  return whole * 6 + ball;
+}
+
+function getStatusText(match) {
+  const time = String(match?.time || '');
+  const commentary = String(match?.liveDetails?.commentary || '');
+  return `${time} ${commentary}`.toLowerCase();
+}
+
+/** Toss delayed, rain, scheduled kickoff — not in-play yet. */
+export function isPreMatchHold(match) {
+  if (!match) return false;
+  const combined = getStatusText(match);
+
+  if (PRE_MATCH_HOLD_HINTS.some((hint) => combined.includes(hint))) return true;
+  if (UPCOMING_TIME_HINTS.some((hint) => combined.includes(hint))) return true;
+
+  const time = String(match?.time || '').toLowerCase();
+  if ((/today \d{1,2}:\d{2}/.test(time) || /\d{1,2} \w{3} - \d{1,2}:\d{2}/.test(time) || /\d{1,2} \w{3},? ?\d{1,2}:\d{2}/.test(time)) && !time.includes('live')) {
+    return true;
+  }
+
+  return false;
+}
+
+/** True when at least one ball has been bowled or a wicket/run exists. */
+export function hasCricketPlayStarted(match) {
+  if (!match) return false;
+  if (isPreMatchHold(match)) return false;
+
+  const ld = match.liveDetails || {};
+  const overs = parseOversBallCount(ld.overs || ld.firstOvers);
+  const overs2 = parseOversBallCount(ld.overs2 || ld.chaseOvers);
+  if (overs > 0 || overs2 > 0) return true;
+
+  const runs = ld.runs ?? ld.firstRuns ?? 0;
+  const wickets = ld.wickets ?? ld.firstWickets ?? 0;
+  const score2 = ld.score2 ?? ld.chaseRuns ?? 0;
+  const wickets2 = ld.wickets2 ?? ld.chaseWickets ?? 0;
+  if (runs > 0 || wickets > 0 || score2 > 0 || wickets2 > 0) return true;
+
+  const b1balls = ld.batter1?.balls ?? 0;
+  const b2balls = ld.batter2?.balls ?? 0;
+  if (b1balls > 0 || b2balls > 0) return true;
+
+  return false;
+}
+
+/** Cricket live tracker / scorecard should only run after play starts. */
+export function isCricketTrackerLive(match) {
+  if (!match) return false;
+  if (getMatchState(match) !== 'in') return false;
+  return hasCricketPlayStarted(match);
+}
+
 export function getMatchState(match) {
   const explicit = match?.matchState;
   const time = String(match?.time || '').toLowerCase();
   const minute = String(match?.liveDetails?.minute || '').toLowerCase();
-  const combined = `${time} ${minute}`;
+  const commentary = String(match?.liveDetails?.commentary || '').toLowerCase();
+  const combined = `${time} ${minute} ${commentary}`;
 
   if (time === 'ft' || combined.includes('full time') || combined.includes('final')) {
     return 'post';
@@ -46,8 +120,12 @@ export function getMatchState(match) {
     return 'pre';
   }
 
-  // "Today 20:00" or "02 Aug - 19:30" style kickoff — not live yet
-  if ((/today \d{1,2}:\d{2}/.test(time) || /\d{1,2} \w{3} - \d{1,2}:\d{2}/.test(time)) && !time.includes('live')) {
+  if (PRE_MATCH_HOLD_HINTS.some((hint) => combined.includes(hint))) {
+    return 'pre';
+  }
+
+  // "Today 20:00", "02 Aug - 19:30", or "02 Aug, 08:00 am" — not live yet
+  if ((/today \d{1,2}:\d{2}/.test(time) || /\d{1,2} \w{3} - \d{1,2}:\d{2}/.test(time) || /\d{1,2} \w{3},? ?\d{1,2}:\d{2}/.test(time)) && !time.includes('live')) {
     return 'pre';
   }
 
@@ -88,6 +166,9 @@ export function isTrulyLiveMatch(match) {
 export function isDisplayableLiveMatch(match) {
   if (!match) return false;
   if (getMatchState(match) !== 'in') return false;
+  if (match.sport === 'cricket' || match.sport === 'virtual-cricket') {
+    if (!hasCricketPlayStarted(match)) return false;
+  }
   if (isApiBackedMatch(match)) return true;
   if (isMockMatch(match)) return false;
   return !!match.isLive;

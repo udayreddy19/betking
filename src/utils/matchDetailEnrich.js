@@ -66,6 +66,8 @@ export function enrichMatchWithDetail(match, detail) {
     isLive: detail.isLive ?? match.isLive,
     matchState: detail.matchState ?? match.matchState,
     time: detail.time ?? match.time,
+    squads: detail.squads ?? match.squads,
+    scorecardInnings: detail.scorecardInnings ?? match.scorecardInnings,
     liveDetails,
   };
 }

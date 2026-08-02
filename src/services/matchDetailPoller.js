@@ -83,6 +83,8 @@ function mergeDetails(prev, next, { isFull = false } = {}) {
     isLive: next.isLive ?? prev.isLive,
     matchState: next.matchState ?? prev.matchState,
     time: next.time ?? prev.time,
+    squads: next.squads ?? prev.squads,
+    scorecardInnings: next.scorecardInnings ?? prev.scorecardInnings,
     liveDetails: {
       ...liveDetails,
       batter1: liveDetails.batter1 || prevLd.batter1,
