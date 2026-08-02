@@ -7,14 +7,13 @@ import SportIcon from '../../components/SportIcon/SportIcon';
 import MatchCard from '../../components/MatchCard/MatchCard';
 import HomeCategoryGrid from '../../components/HomeCategoryGrid/HomeCategoryGrid';
 import FadeIn from '../../components/motion/FadeIn';
-import StaggerChildren, { StaggerItem } from '../../components/motion/StaggerChildren';
 import { MatchCardSkeleton } from '../../components/ui/Skeleton';
 import EmptyState from '../../components/ui/EmptyState';
 import Button from '../../components/ui/Button';
 import { useReducedMotion, motionDuration } from '../../components/motion/useReducedMotion';
 import { sportsCategories, featuredLeagues } from '../../data/mockData';
 import { homePromoSlides } from '../../data/homePageData';
-import { useLiveSports } from '../../context/LiveSportsContext';
+import { useLiveMatches, useLiveSportsMeta } from '../../context/LiveSportsContext';
 import { useAuth } from '../../context/AuthContext';
 import { filterMatches } from '../../utils/matchFilters';
 import { getLeagueMeta, isSameLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
@@ -28,7 +27,8 @@ function filterByLeague(matchList, leagueId) {
 }
 
 export default function Home() {
-  const { matches, isScoresLoading } = useLiveSports();
+  const matches = useLiveMatches();
+  const { isScoresLoading } = useLiveSportsMeta();
   const { showToast } = useAuth();
   const navigate = useNavigate();
   const reduced = useReducedMotion();
@@ -153,15 +153,13 @@ export default function Home() {
           </div>
         )}
 
-        <div className="match-cards-scroll scroll-row-bleed" ref={matchScrollRef} key={`${activeSport}-${activeLeague}`}>
+        <div className="match-cards-scroll scroll-row-bleed" ref={matchScrollRef}>
           {sportMatches.length > 0 ? (
-            <StaggerChildren className="match-cards-stagger">
+            <div className="match-cards-stagger">
               {sportMatches.map((match) => (
-                <StaggerItem key={match.id}>
-                  <MatchCard match={match} variant="home" />
-                </StaggerItem>
+                <MatchCard key={match.id} match={match} variant="home" />
               ))}
-            </StaggerChildren>
+            </div>
           ) : isScoresLoading ? (
             <div className="match-cards-loading">
               {[0, 1, 2].map((i) => <MatchCardSkeleton key={i} />)}
@@ -177,16 +175,14 @@ export default function Home() {
         </div>
       </section>
 
-      <motion.button
+      <button
         type="button"
         className="home-chat-fab"
         aria-label="Live chat"
         onClick={() => showToast('Live chat support coming soon!', 'info')}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
       >
         <FiMessageCircle size={24} />
-      </motion.button>
+      </button>
     </div>
   );
 }

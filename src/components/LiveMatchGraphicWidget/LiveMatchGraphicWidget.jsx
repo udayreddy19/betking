@@ -21,8 +21,7 @@ import {
   getSportLeagueLabel,
 } from '../../utils/sportLiveWidgetData';
 import { isCricketTrackerLive, getMatchState } from '../../utils/matchBetting';
-import { isCricketSecondInnings, resolveCricketTeamScores } from '../../utils/cricketScores';
-import { oversToBalls } from '../../utils/oversUtils';
+import { isCricketSecondInnings, resolveCricketTeamScores, teamNameMatches } from '../../utils/cricketScores';
 import { getMatchMaxOvers, normalizeMatchOvers } from '../../utils/cricketFormat';
 import { isPlaceholderPlayerName, displayPlayerName } from '../../utils/cricketPlayers';
 import './LiveMatchGraphicWidget.css';
@@ -31,11 +30,14 @@ function getTeamShort(name) {
   return getTeamShortCode(name);
 }
 
-function getInningsInfo(match, team1, team2, score1, wickets1, score2, wickets2, overs) {
+function getInningsInfo(match, team1, team2, resolved) {
   const ld = match?.liveDetails || {};
-  const resolved = resolveCricketTeamScores(match, ld);
   const isChasing = isCricketSecondInnings(match, ld);
-  const team2Batting = oversToBalls(resolved.team2.overs) > oversToBalls(resolved.team1.overs);
+  const team1Score = resolved.team1;
+  const team2Score = resolved.team2;
+  const team2Batting = team2Score.balls > team1Score.balls
+    || (team2Score.balls === team1Score.balls && isChasing && ld.chaseTeamName
+      && teamNameMatches(team2, ld.chaseTeamName));
 
   if (isChasing) {
     const battingTeam = team2Batting ? team2 : team1;
@@ -43,11 +45,11 @@ function getInningsInfo(match, team1, team2, score1, wickets1, score2, wickets2,
       inningsNum: 2,
       battingTeam,
       battingShort: getTeamShort(battingTeam),
-      displayScore1: score1,
-      displayWickets1: wickets1,
-      displayScore2: score2,
-      displayWickets2: wickets2,
-      displayOvers: team2Batting ? (ld.overs2 || resolved.team2.overs || overs) : (ld.overs || resolved.team1.overs || overs),
+      displayScore1: team1Score.runs,
+      displayWickets1: team1Score.wickets,
+      displayScore2: team2Score.runs,
+      displayWickets2: team2Score.wickets,
+      displayOvers: team2Batting ? team2Score.overs : team1Score.overs,
       defaultInnings: `${getTeamDisplayName(battingTeam)} INNS`,
     };
   }
@@ -56,11 +58,11 @@ function getInningsInfo(match, team1, team2, score1, wickets1, score2, wickets2,
     inningsNum: 1,
     battingTeam: team1,
     battingShort: getTeamShort(team1),
-    displayScore1: score1,
-    displayWickets1: wickets1,
-    displayScore2: score2,
-    displayWickets2: wickets2,
-    displayOvers: overs,
+    displayScore1: team1Score.runs,
+    displayWickets1: team1Score.wickets,
+    displayScore2: team2Score.runs,
+    displayWickets2: team2Score.wickets,
+    displayOvers: team1Score.overs || ld.overs || '0.0',
     defaultInnings: `${getTeamDisplayName(team1)} INNS`,
   };
 }
@@ -265,17 +267,22 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
   const team1 = match?.team1?.name || 'Team 1';
   const team2 = match?.team2?.name || 'Team 2';
 
-  const score1 = match?.liveDetails?.runs ?? 0;
-  const wickets1 = match?.liveDetails?.wickets ?? 0;
-  const score2 = match?.liveDetails?.score2 ?? 0;
-  const wickets2 = match?.liveDetails?.wickets2 ?? 0;
-  const overs = match?.liveDetails?.overs || '0.0';
+  const resolvedScores = useMemo(
+    () => resolveCricketTeamScores(match, match?.liveDetails || {}),
+    [match, match?.liveDetails],
+  );
+
+  const score1 = resolvedScores.team1.runs;
+  const wickets1 = resolvedScores.team1.wickets;
+  const score2 = resolvedScores.team2.runs;
+  const wickets2 = resolvedScores.team2.wickets;
+  const overs = resolvedScores.team1.overs || match?.liveDetails?.overs || '0.0';
   const matchState = getMatchState(match);
   const isCricketSport = sport === 'cricket' || sport === 'virtual-cricket';
   const showCricketTracker = isCricketSport && isCricketTrackerLive(match);
 
   const innings = match
-    ? getInningsInfo(match, team1, team2, score1, wickets1, score2, wickets2, overs)
+    ? getInningsInfo(match, team1, team2, resolvedScores)
     : null;
 
   useEffect(() => {
@@ -286,7 +293,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
 
   const squads = useMemo(
     () => resolveMatchSquads(match, team1, team2),
-    [match, team1, team2],
+    [match?.squads, match?.scorecardInnings, team1, team2],
   );
 
   const t1Data = useMemo(() => squadToRoster(squads.team1, squads.team2), [squads]);
@@ -350,12 +357,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
     const shortLabel = isTeam2Tab ? team2Short : team1Short;
     const isBatting = (innings?.inningsNum === 2 && isTeam2Tab) || (innings?.inningsNum === 1 && !isTeam2Tab);
     return buildScorecardInnings(match, teamLabel, roster, isBatting ? fieldState : null, isBatting, shortLabel);
-  }, [activeScorecardTab, match, team1, team2, t1Data, t2Data, fieldState, innings, team1Short, team2Short]);
-
-  const resolvedScores = useMemo(
-    () => resolveCricketTeamScores(match, match?.liveDetails || {}),
-    [match],
-  );
+  }, [activeScorecardTab, match?.scorecardInnings, match?.liveDetails, match?.overHistory, team1, team2, t1Data, t2Data, fieldState, innings, team1Short, team2Short]);
 
   const statsOvers = useMemo(
     () => buildStatsOvers(fieldState, match),

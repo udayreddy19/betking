@@ -7,8 +7,8 @@
   box-shadow: var(--shadow-sm);
   height: var(--header-height);
   transition: background-color var(--transition-base), border-color var(--transition-base);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .header--glass {
@@ -99,6 +99,16 @@
 }
 .header-nav-link:hover {
   color: var(--color-primary);
+}
+.header-nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: var(--space-3);
+  right: var(--space-3);
+  height: 2px;
+  background: var(--gradient-primary);
+  border-radius: var(--radius-full);
 }
 .header-nav-underline {
   position: absolute;

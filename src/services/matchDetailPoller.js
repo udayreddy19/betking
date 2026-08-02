@@ -16,9 +16,41 @@ function sleep(ms) {
   return new Promise((resolve) => { setTimeout(resolve, ms); });
 }
 
+function detailFingerprint(detail) {
+  if (!detail) return '';
+  const ld = detail.liveDetails || {};
+  return [
+    detail.isLive,
+    detail.matchState,
+    detail.time,
+    ld.runs,
+    ld.wickets,
+    ld.overs,
+    ld.score2,
+    ld.wickets2,
+    ld.overs2,
+    ld.firstRuns,
+    ld.chaseRuns,
+    ld.firstWickets,
+    ld.chaseWickets,
+    ld.chaseBallNbr,
+    ld.batter1?.name,
+    ld.batter2?.name,
+    ld.bowler?.name,
+    ld.commentary,
+    (ld.currentOverBalls || []).join(','),
+    detail.squads?.length ?? 0,
+    detail.scorecardInnings?.length ?? 0,
+    detail.overHistory?.length ?? 0,
+  ].join(':');
+}
+
 function emit(key, detail) {
   const state = pollers.get(key);
   if (!state) return;
+  if (state.detail && detailFingerprint(state.detail) === detailFingerprint(detail)) {
+    return;
+  }
   state.detail = detail;
   state.version += 1;
   state.listeners.forEach((fn) => fn());
@@ -70,7 +102,9 @@ function mergeDetails(prev, next, { isFull = false, match = null } = {}) {
   const isCricket = !!(nextLd.chaseRuns != null || nextLd.firstRuns != null || nextLd.runs != null);
 
   let liveDetails;
-  if (isFull && isCricket) {
+  const hasCommData = !!(nextLd.batter1 || nextLd.currentOverBalls?.length
+    || nextLd.chaseBallNbr != null || nextLd.firstRuns != null || nextLd.chaseRuns != null);
+  if (isFull && isCricket && !hasCommData) {
     liveDetails = mergeCricketPlayersOnly(prevLd, nextLd);
   } else if (isCricket) {
     liveDetails = mergeCricketLiveDetails(prevLd, nextLd, match);

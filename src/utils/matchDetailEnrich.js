@@ -26,18 +26,23 @@ function enrichCricketDetails(match, ld, base) {
 }
 
 export function enrichMatchWithDetail(match, detail) {
-  if (!match || !detail?.liveDetails) return match;
+  if (!match || !detail) return match;
+  const hasLive = detail.liveDetails && Object.keys(detail.liveDetails).length > 0;
+  const hasMeta = detail.squads?.length || detail.scorecardInnings?.length || detail.overHistory?.length;
+  if (!hasLive && !hasMeta) return match;
 
-  const ld = detail.liveDetails;
+  const ld = detail.liveDetails || {};
   const sport = match.sport;
   const baseLd = match.liveDetails || {};
 
-  let liveDetails;
-  if (sport === 'cricket' || sport === 'virtual-cricket') {
-    const fromDetail = enrichCricketDetails(match, ld, {});
-    liveDetails = mergeCricketLiveDetails(baseLd, fromDetail, match);
-  } else {
-    liveDetails = { ...baseLd, ...ld };
+  let liveDetails = baseLd;
+  if (hasLive) {
+    if (sport === 'cricket' || sport === 'virtual-cricket') {
+      const fromDetail = enrichCricketDetails(match, ld, {});
+      liveDetails = mergeCricketLiveDetails(baseLd, fromDetail, match);
+    } else {
+      liveDetails = { ...baseLd, ...ld };
+    }
   }
 
   return {
@@ -45,9 +50,9 @@ export function enrichMatchWithDetail(match, detail) {
     isLive: detail.isLive ?? match.isLive,
     matchState: detail.matchState ?? match.matchState,
     time: detail.time ?? match.time,
-    squads: detail.squads ?? match.squads,
-    scorecardInnings: detail.scorecardInnings ?? match.scorecardInnings,
-    overHistory: detail.overHistory ?? match.overHistory,
+    squads: detail.squads?.length ? detail.squads : match.squads,
+    scorecardInnings: detail.scorecardInnings?.length ? detail.scorecardInnings : match.scorecardInnings,
+    overHistory: detail.overHistory?.length ? detail.overHistory : match.overHistory,
     liveDetails,
   };
 }

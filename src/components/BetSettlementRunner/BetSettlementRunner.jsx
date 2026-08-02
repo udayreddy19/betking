@@ -1,12 +1,12 @@
 import { useEffect, useRef } from 'react';
-import { useLiveSports } from '../../context/LiveSportsContext';
+import { useLiveMatches } from '../../context/LiveSportsContext';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { useAuth } from '../../context/AuthContext';
 import { settleAllPlacedBets } from '../../utils/betSettlement';
 
 /** Settles pending bets when live score data marks matches complete. */
 export default function BetSettlementRunner() {
-  const { matches } = useLiveSports();
+  const matches = useLiveMatches();
   const { placedBets, applySettledBets } = useBetSlip();
   const { updateUserBalance, showToast, isLoggedIn } = useAuth();
   const creditedRef = useRef(new Set());

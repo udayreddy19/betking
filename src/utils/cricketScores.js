@@ -109,9 +109,11 @@ export function flattenCricketTeamScores(scores) {
 export function isCricketSecondInnings(match, ld = {}) {
   if (match?.matchState !== 'in') return false;
 
-  if (ld.chaseRuns != null && ld.firstRuns != null && ld.chaseTeamName && ld.firstTeamName) {
-    return true;
-  }
+  if ((ld.inningsId ?? 0) > 1) return true;
+
+  if (ld.chaseRuns != null && ld.firstRuns != null) return true;
+
+  if (ld.chaseTeamName && ld.firstTeamName) return true;
 
   const { team1, team2 } = resolveCricketTeamScores(match, ld);
   const team1Played = team1.runs > 0 || team1.wickets > 0 || team1.balls > 0;

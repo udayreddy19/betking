@@ -128,23 +128,16 @@ function MatchCard({ match, variant = 'default' }) {
       : (match.time || 'Scheduled');
 
   const TeamIcon = isHome ? TeamJersey : TeamBadge;
+  const cardClassName = `match-card ${isHome ? 'match-card--home' : ''} ${isLiveNow ? 'match-card--live' : ''}`;
+  const cardProps = {
+    className: cardClassName,
+    id: `match-${match.id}`,
+    onClick: openDetails,
+    style: { cursor: 'pointer' },
+  };
 
-  return (
+  const cardBody = (
     <>
-      {!isHome && (
-        <MatchDetailModal
-          match={match}
-          isOpen={isDetailOpen}
-          onClose={() => setIsDetailOpen(false)}
-        />
-      )}
-
-      <HoverScale
-        className={`match-card ${isHome ? 'match-card--home' : ''} ${isLiveNow ? 'match-card--live' : ''}`}
-        id={`match-${match.id}`}
-        onClick={openDetails}
-        style={{ cursor: 'pointer' }}
-      >
         <div className="match-card-header">
           <span className="match-card-league">
             <SportIcon icon={leagueIconKey(match.league)} sport={match.sport} className="league-flag" />
@@ -241,7 +234,24 @@ function MatchCard({ match, variant = 'default' }) {
             <span>➔</span>
           </button>
         )}
-      </HoverScale>
+    </>
+  );
+
+  return (
+    <>
+      {!isHome && (
+        <MatchDetailModal
+          match={match}
+          isOpen={isDetailOpen}
+          onClose={() => setIsDetailOpen(false)}
+        />
+      )}
+
+      {isHome ? (
+        <div {...cardProps}>{cardBody}</div>
+      ) : (
+        <HoverScale {...cardProps}>{cardBody}</HoverScale>
+      )}
     </>
   );
 }

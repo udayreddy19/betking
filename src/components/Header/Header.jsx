@@ -15,7 +15,6 @@ import ThemeToggle from '../ThemeToggle/ThemeToggle';
 import MyBetsPanel from '../MyBetsPanel/MyBetsPanel';
 import PromotionsPanel from '../PromotionsPanel/PromotionsPanel';
 import AnimatedCounter from '../ui/AnimatedCounter';
-import { useReducedMotion } from '../motion/useReducedMotion';
 import '../MyBetsPanel/MyBetsPanel.css';
 import '../PromotionsPanel/PromotionsPanel.css';
 import './Header.css';
@@ -35,26 +34,13 @@ const moreLinks = [
 ];
 
 function NavLinkItem({ link }) {
-  const reduced = useReducedMotion();
-
   return (
     <NavLink
       to={link.to}
       className={({ isActive }) => `header-nav-link ${isActive ? 'active' : ''}`}
       id={`nav-${link.to.slice(1)}`}
     >
-      {({ isActive }) => (
-        <>
-          {link.label}
-          {isActive && !reduced && (
-            <motion.span
-              className="header-nav-underline"
-              layoutId="header-nav-underline"
-              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-            />
-          )}
-        </>
-      )}
+      {link.label}
     </NavLink>
   );
 }

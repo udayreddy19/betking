@@ -41,5 +41,5 @@ export function useMatchDetail(match) {
       return enrichMatchWithDetail(base, detail);
     }
     return enrichFromPoller(base) || base;
-  }, [match, matchId, detailVersion, pollable]);
+  }, [match, matchId, detailVersion, pollable, match?.liveDetails?.runs, match?.liveDetails?.score2]);
 }

@@ -7,7 +7,7 @@ import BetSlip from '../../components/BetSlip/BetSlip';
 import LiveMatchGraphicWidget from '../../components/LiveMatchGraphicWidget/LiveMatchGraphicWidget';
 import SportsLeagueSidebar from '../../components/SportsLeagueSidebar/SportsLeagueSidebar';
 import { sportsCategories, featuredLeagues } from '../../data/mockData';
-import { useLiveSports } from '../../context/LiveSportsContext';
+import { useLiveMatches, useLiveSportsMeta } from '../../context/LiveSportsContext';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { useAuth } from '../../context/AuthContext';
 import { isMatchBettable, isTrulyLiveMatch, getMatchState } from '../../utils/matchBetting';
@@ -179,7 +179,8 @@ function MarketsSuspended() {
 }
 
 export default function Sports() {
-  const { matches, tickerMessage, cricketSeries, scoresError, refreshScores, isScoresLoading } = useLiveSports();
+  const matches = useLiveMatches();
+  const { tickerMessage, cricketSeries, scoresError, refreshScores, isScoresLoading } = useLiveSportsMeta();
   const { addBet, isBetSelected } = useBetSlip();
   const { showToast } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -249,11 +250,23 @@ export default function Sports() {
     return sportMatches.find(m => m.id === selectedMatchId) || null;
   }, [sportMatches, selectedMatchId, viewMode]);
 
+  const liveMatchPrefetchKey = useMemo(
+    () => liveMatches.slice(0, 3).map((match) => {
+      const ld = match.liveDetails || {};
+      return `${match.id}:${match.matchState}:${ld.runs ?? ''}:${ld.score1 ?? ''}:${ld.score2 ?? ''}`;
+    }).join('|'),
+    [liveMatches],
+  );
+
   useEffect(() => {
-    liveMatches
-      .slice(0, 3)
-      .forEach((m) => prefetchMatchDetail(m, { priority: true }));
-  }, [liveMatches]);
+    if (!liveMatchPrefetchKey) return;
+    const seen = new Set();
+    liveMatches.slice(0, 3).forEach((match) => {
+      if (seen.has(match.id)) return;
+      seen.add(match.id);
+      prefetchMatchDetail(match, { priority: true });
+    });
+  }, [liveMatchPrefetchKey, liveMatches]);
 
   const selectMatch = useCallback((matchId) => {
     setSelectedMatchId(matchId);

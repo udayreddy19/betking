@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { STARTING_BALANCE, WELCOME_BONUS } from '../data/mockData';
 
 const AuthContext = createContext(null);
@@ -241,31 +241,55 @@ export function AuthProvider({ children }) {
   const toggleSidebar = useCallback(() => setIsSidebarOpen(prev => !prev), []);
   const closeSidebar = useCallback(() => setIsSidebarOpen(false), []);
 
+  const value = useMemo(() => ({
+    user,
+    isLoggedIn: !!user,
+    register,
+    claimPromotion,
+    isPromotionClaimed,
+    login,
+    logout,
+    addFunds,
+    deductFunds,
+    updateUserBalance,
+    toast,
+    showToast,
+    dismissToast,
+    isLoginModalOpen,
+    openLoginModal,
+    closeLoginModal,
+    isDepositModalOpen,
+    openDepositModal,
+    closeDepositModal,
+    isSidebarOpen,
+    toggleSidebar,
+    closeSidebar,
+  }), [
+    user,
+    register,
+    claimPromotion,
+    isPromotionClaimed,
+    login,
+    logout,
+    addFunds,
+    deductFunds,
+    updateUserBalance,
+    toast,
+    showToast,
+    dismissToast,
+    isLoginModalOpen,
+    openLoginModal,
+    closeLoginModal,
+    isDepositModalOpen,
+    openDepositModal,
+    closeDepositModal,
+    isSidebarOpen,
+    toggleSidebar,
+    closeSidebar,
+  ]);
+
   return (
-    <AuthContext.Provider value={{
-      user,
-      isLoggedIn: !!user,
-      register,
-      claimPromotion,
-      isPromotionClaimed,
-      login,
-      logout,
-      addFunds,
-      deductFunds,
-      updateUserBalance,
-      toast,
-      showToast,
-      dismissToast,
-      isLoginModalOpen,
-      openLoginModal,
-      closeLoginModal,
-      isDepositModalOpen,
-      openDepositModal,
-      closeDepositModal,
-      isSidebarOpen,
-      toggleSidebar,
-      closeSidebar,
-    }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
