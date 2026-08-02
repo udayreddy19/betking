@@ -1,4 +1,5 @@
 import { normalizeCricbuzzOvers, oversToBalls } from './oversUtils';
+import { flattenCricketTeamScores, resolveCricketTeamScores } from './cricketScores';
 
 function pickHigherOvers(a, b) {
   if (!a) return b || '0.0';
@@ -63,6 +64,14 @@ export function mergeCricketLiveDetails(prev = {}, next = {}) {
   merged.batter2 = next.batter2 || prev.batter2;
   merged.bowler = next.bowler || prev.bowler;
   merged.commentary = next.commentary || prev.commentary;
+
+  const resolved = flattenCricketTeamScores(resolveCricketTeamScores(null, merged));
+  merged.runs = resolved.runs;
+  merged.wickets = resolved.wickets;
+  merged.overs = resolved.overs;
+  merged.score2 = resolved.score2;
+  merged.wickets2 = resolved.wickets2;
+  merged.overs2 = resolved.overs2;
 
   return merged;
 }

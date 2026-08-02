@@ -1,5 +1,6 @@
 import { parseOvers, generateOverBalls, generateCurrentOverBalls, formatBallOutcome } from './liveFieldState';
 import { ballsRemaining } from './oversUtils';
+import { isCricketSecondInnings } from './cricketScores';
 
 function hashSeed(str) {
   let h = 0;
@@ -24,8 +25,7 @@ export function getTeamDisplayName(name) {
 }
 
 export function getChaseText(match, innings, team1, score1, score2, wickets2) {
-  if (innings.inningsNum !== 2 || match?.matchState !== 'in') return null;
-  if (score2 === 0 && wickets2 === 0 && (match?.liveDetails?.overs2 || '0.0') === '0.0') return null;
+  if (!isCricketSecondInnings(match, match?.liveDetails) || innings.inningsNum !== 2) return null;
 
   const ld = match?.liveDetails || {};
   const chasingTeam = getTeamDisplayName(innings.battingTeam);

@@ -729,6 +729,26 @@
   color: #94a3b8;
 }
 
+[data-theme='dark'] .cric-innings-tab.active {
+  color: #c4b5fd;
+  border-bottom-color: #a78bfa;
+}
+
+[data-theme='dark'] .live-widget-tab {
+  color: #94a3b8;
+}
+
+[data-theme='dark'] .live-widget-tab.active {
+  color: #c4b5fd;
+  border-bottom-color: #a78bfa;
+}
+
+[data-theme='dark'] .live-widget-tab--text.active {
+  color: #f8fafc;
+  background: #4c1d95;
+  border-radius: 999px;
+}
+
 /* Non-cricket sport live panel */
 .live-widget-league-label {
   text-align: center;

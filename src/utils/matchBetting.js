@@ -127,8 +127,12 @@ export function getMatchState(match) {
     return 'pre';
   }
 
-  if (explicit === 'in') return 'in';
-  if (match?.isLive) return 'in';
+  if (explicit === 'in' || match?.isLive) {
+    if ((match?.sport === 'cricket' || match?.sport === 'virtual-cricket') && !hasCricketPlayStarted(match)) {
+      return 'pre';
+    }
+    return 'in';
+  }
   return 'pre';
 }
 

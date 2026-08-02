@@ -1,4 +1,6 @@
 import { isPlaceholderPlayerName } from './cricketPlayers';
+import { isCricketSecondInnings, resolveCricketTeamScores } from './cricketScores';
+import { oversToBalls } from './oversUtils';
 
 const RUN_SEQUENCE = [1, 0, 2, 1, 4, 1, 0, 1, 2, 6, 1, 1, 4, 0, 2, 1, 3, 1, 0, 4];
 const EXTRA_OUTCOMES = ['wd', '1wd', '2wd', 'lb', '1lb', '2lb', 'nb', '1nb', 'W'];
@@ -88,10 +90,16 @@ function runsToWagonAngle(runs) {
 
 function getBattingTeamIndex(match) {
   const ld = match?.liveDetails || {};
-  const { over: o2 } = parseOvers(ld.overs2);
-  const hasSecond = (ld.score2 ?? 0) > 0 || o2 > 0;
-  if (hasSecond && match?.matchState === 'in') return 2;
-  return 1;
+  if (match?.matchState !== 'in') return 1;
+
+  const { team1, team2 } = resolveCricketTeamScores(match, ld);
+  if (isCricketSecondInnings(match, ld)) {
+    return oversToBalls(team2.overs) > oversToBalls(team1.overs) ? 2 : 1;
+  }
+
+  if (team2.balls > 0 && team1.balls === 0) return 2;
+  if (team1.balls > 0) return 1;
+  return (ld.score2 ?? 0) > 0 ? 2 : 1;
 }
 
 export function generateOverBalls(matchId, overNum) {

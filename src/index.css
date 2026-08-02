@@ -14,6 +14,8 @@
 
   --color-accent-gold: #d4a853;
   --color-accent-gold-light: #fef3c7;
+  --color-selected-text: #0f172a;
+  --color-selected-tab: #fbbf24;
 
   --color-text: #1a1a2e;
   --color-text-secondary: #64748b;
@@ -185,6 +187,8 @@
   --color-match-card-home-start: #2e1065;
   --color-match-card-home-end: #1e293b;
   --color-match-card-home-border: #4c1d95;
+  --color-selected-text: #0f172a;
+  --color-selected-tab: #fbbf24;
 }
 
 html {

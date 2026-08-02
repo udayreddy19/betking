@@ -32,6 +32,12 @@
   color: #ffffff;
   border-color: var(--color-primary);
 }
+
+[data-theme='dark'] .filter-chip.active {
+  color: #ffffff;
+  background: var(--color-primary);
+  border-color: var(--color-primary-light);
+}
 .filter-chip .chip-icon {
   font-size: 1rem;
   display: inline-flex;

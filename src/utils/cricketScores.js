@@ -1,0 +1,114 @@
+import { normalizeCricbuzzOvers, oversToBalls } from './oversUtils';
+
+function normalizeTeamToken(name = '') {
+  return String(name)
+    .toLowerCase()
+    .replace(/\s+W$/, '')
+    .replace(/[^a-z0-9]/g, '')
+    .slice(0, 5);
+}
+
+export function teamNameMatches(teamName, token) {
+  if (!teamName || !token) return false;
+  const team = normalizeTeamToken(teamName);
+  const hint = normalizeTeamToken(token);
+  if (!team || !hint) return false;
+  return team.includes(hint) || hint.includes(team) || team.startsWith(hint) || hint.startsWith(team);
+}
+
+function scoreEntry(token, runs, wickets, overs) {
+  return {
+    token: token || '',
+    runs: runs ?? 0,
+    wickets: wickets ?? 0,
+    overs: normalizeCricbuzzOvers(overs ?? '0.0'),
+    balls: oversToBalls(overs ?? '0.0'),
+  };
+}
+
+function pickEntryForTeam(entries, teamName) {
+  return entries.find((entry) => entry.token && teamNameMatches(teamName, entry.token)) || null;
+}
+
+/**
+ * Map liveDetails fields onto team1/team2 regardless of chase/first naming.
+ */
+export function resolveCricketTeamScores(match, ld = {}) {
+  const team1Name = match?.team1?.name || '';
+  const team2Name = match?.team2?.name || '';
+
+  const entries = [];
+  if (ld.firstRuns != null || ld.firstTeamName) {
+    entries.push(scoreEntry(ld.firstTeamName, ld.firstRuns, ld.firstWickets, ld.firstOvers));
+  }
+  if (ld.chaseRuns != null || ld.chaseTeamName) {
+    entries.push(scoreEntry(ld.chaseTeamName, ld.chaseRuns, ld.chaseWickets, ld.chaseOvers));
+  }
+
+  if (entries.length === 0) {
+    return {
+      team1: scoreEntry(team1Name, ld.runs, ld.wickets, ld.overs),
+      team2: scoreEntry(team2Name, ld.score2, ld.wickets2, ld.overs2),
+    };
+  }
+
+  if (entries.length === 1) {
+    const entry = entries[0];
+    if (teamNameMatches(team1Name, entry.token)) {
+      return {
+        team1: { ...entry, token: team1Name },
+        team2: scoreEntry(team2Name, 0, 0, '0.0'),
+      };
+    }
+    if (teamNameMatches(team2Name, entry.token)) {
+      return {
+        team1: scoreEntry(team1Name, 0, 0, '0.0'),
+        team2: { ...entry, token: team2Name },
+      };
+    }
+    return {
+      team1: { ...entry, token: team1Name },
+      team2: scoreEntry(team2Name, 0, 0, '0.0'),
+    };
+  }
+
+  const team1Entry = pickEntryForTeam(entries, team1Name);
+  const team2Entry = pickEntryForTeam(entries, team2Name);
+  const used = new Set([team1Entry, team2Entry].filter(Boolean));
+
+  const remaining = entries.filter((entry) => !used.has(entry));
+  const fallbackTeam1 = team1Entry || remaining[0] || scoreEntry(team1Name, 0, 0, '0.0');
+  const fallbackTeam2 = team2Entry || remaining[1] || remaining[0] || scoreEntry(team2Name, 0, 0, '0.0');
+
+  if (fallbackTeam1 === fallbackTeam2 && entries.length > 1) {
+    return {
+      team1: { ...entries[0], token: team1Name },
+      team2: { ...entries[1], token: team2Name },
+    };
+  }
+
+  return {
+    team1: { ...fallbackTeam1, token: team1Name },
+    team2: { ...fallbackTeam2, token: team2Name },
+  };
+}
+
+export function flattenCricketTeamScores(scores) {
+  return {
+    runs: scores.team1.runs,
+    wickets: scores.team1.wickets,
+    overs: scores.team1.overs,
+    score2: scores.team2.runs,
+    wickets2: scores.team2.wickets,
+    overs2: scores.team2.overs,
+  };
+}
+
+export function isCricketSecondInnings(match, ld = {}) {
+  if (match?.matchState !== 'in') return false;
+
+  const { team1, team2 } = resolveCricketTeamScores(match, ld);
+  const team1Played = team1.runs > 0 || team1.wickets > 0 || team1.balls > 0;
+  const team2Played = team2.runs > 0 || team2.wickets > 0 || team2.balls > 0;
+  return team1Played && team2Played;
+}

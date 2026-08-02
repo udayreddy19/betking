@@ -21,6 +21,8 @@ import {
   getSportLeagueLabel,
 } from '../../utils/sportLiveWidgetData';
 import { isCricketTrackerLive, getMatchState } from '../../utils/matchBetting';
+import { isCricketSecondInnings, resolveCricketTeamScores } from '../../utils/cricketScores';
+import { oversToBalls } from '../../utils/oversUtils';
 import { isPlaceholderPlayerName, displayPlayerName } from '../../utils/cricketPlayers';
 import './LiveMatchGraphicWidget.css';
 
@@ -29,25 +31,23 @@ function getTeamShort(name) {
 }
 
 function getInningsInfo(match, team1, team2, score1, wickets1, score2, wickets2, overs) {
-  const overs2 = match?.liveDetails?.overs2 || overs;
-  const hasSecondInnings = (
-    score2 > 0
-    || wickets2 > 0
-    || (match?.liveDetails?.chaseRuns != null && match.liveDetails.chaseRuns > 0)
-  ) && match?.matchState === 'in';
-  const isChasing = hasSecondInnings && match?.matchState === 'in';
+  const ld = match?.liveDetails || {};
+  const resolved = resolveCricketTeamScores(match, ld);
+  const isChasing = isCricketSecondInnings(match, ld);
+  const team2Batting = oversToBalls(resolved.team2.overs) > oversToBalls(resolved.team1.overs);
 
   if (isChasing) {
+    const battingTeam = team2Batting ? team2 : team1;
     return {
       inningsNum: 2,
-      battingTeam: team2,
-      battingShort: getTeamShort(team2),
+      battingTeam,
+      battingShort: getTeamShort(battingTeam),
       displayScore1: score1,
       displayWickets1: wickets1,
       displayScore2: score2,
       displayWickets2: wickets2,
-      displayOvers: overs2,
-      defaultInnings: `${getTeamDisplayName(team2)} INNS`,
+      displayOvers: team2Batting ? (ld.overs2 || resolved.team2.overs || overs) : (ld.overs || resolved.team1.overs || overs),
+      defaultInnings: `${getTeamDisplayName(battingTeam)} INNS`,
     };
   }
 

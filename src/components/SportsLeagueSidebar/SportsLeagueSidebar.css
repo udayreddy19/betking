@@ -118,6 +118,16 @@
   font-weight: var(--font-bold);
 }
 
+[data-theme='dark'] .sports-league-item.active {
+  background: #fbbf24;
+  color: #0f172a;
+}
+
+[data-theme='dark'] .sports-league-subitem.active {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.12);
+}
+
 @media (max-width: 1200px) {
   .sports-league-sidebar {
     display: none;

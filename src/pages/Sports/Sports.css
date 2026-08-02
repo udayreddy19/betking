@@ -831,6 +831,23 @@
   border-color: var(--color-border);
 }
 
+[data-theme='dark'] .sports-market-cat.active {
+  color: #0f172a;
+  background: #fbbf24;
+}
+
+[data-theme='dark'] .sports-ticker-card.selected {
+  color: #0f172a;
+  background: #fbbf24;
+  border-color: #f59e0b;
+}
+
+[data-theme='dark'] .sports-sport-chips .filter-chip.active {
+  color: #ffffff;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
 @media (max-width: 1024px) {
   .sports-page-inner {
     flex-direction: column;

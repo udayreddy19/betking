@@ -54,11 +54,8 @@ export function LiveSportsProvider({ children }) {
       setCricketSeries(data.series || []);
 
       if (normalized.length > 0) {
-        const summary = summarizeMatches(normalized);
-        if (summary !== matchesSummaryRef.current || !hasLoadedRef.current) {
-          matchesSummaryRef.current = summary;
-          setMatches(normalized);
-        }
+        matchesSummaryRef.current = summarizeMatches(normalized);
+        setMatches(normalized);
         setScoresError(null);
 
         const { counts, sources } = data;

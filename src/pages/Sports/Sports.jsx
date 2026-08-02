@@ -334,7 +334,13 @@ export default function Sports() {
     }
   }, [searchParams]);
 
-  const matchTimeLabel = activeMatch?.time || 'Scheduled';
+  const matchTimeLabel = activeMatch
+    ? (getMatchState(activeMatch) === 'in'
+      ? 'Live'
+      : getMatchState(activeMatch) === 'post'
+        ? 'Finished'
+        : (activeMatch.time || 'Scheduled'))
+    : 'Scheduled';
 
   const activeLeagueMeta = getLeagueMeta(activeLeague, cricketSeries);
   const breadcrumbLeague = activeLeagueMeta?.breadcrumb || activeLeagueMeta?.name || activeMatch?.league || 'All Leagues';
