@@ -271,6 +271,22 @@ export const casinoGames = [
     gradient: 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)',
     rtp: '97.84%',
   }),
+  G('g33', 'Ganesha Fortune', {
+    icon: '🕉️',
+    category: 'slots top-slots',
+    provider: 'PGSoft',
+    gradient: 'linear-gradient(135deg, #1e3a8a 0%, #312e81 100%)',
+    isHot: true,
+    rtp: '96.72%',
+  }),
+  G('g34', 'Aviatrix', {
+    icon: '✈️',
+    category: 'crash-games top-slots',
+    provider: 'Aviatrix',
+    gradient: 'linear-gradient(135deg, #4c1d95 0%, #1e1b4b 100%)',
+    isHot: true,
+    rtp: '97.00%',
+  }),
 
   // ── Live casino — Roulette ──
   G('lc1', 'Immersive Roulette', {

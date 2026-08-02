@@ -166,6 +166,94 @@
   background: var(--color-primary-bg);
 }
 
+.header-loyalty-ring {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-bg);
+  border: 1.5px solid #c4b5fd;
+  font-size: var(--text-sm);
+  font-weight: var(--font-bold);
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
+.header-loyalty-icon {
+  font-size: 0.75rem;
+}
+
+.header-more {
+  position: relative;
+}
+
+.header-more-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.header-more-chevron {
+  font-size: 0.75rem;
+}
+
+.header-more-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 180px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-2);
+  z-index: calc(var(--z-sticky) + 2);
+}
+
+.header-more-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.header-more-item:hover {
+  background: var(--color-bg);
+  color: var(--color-primary);
+}
+
+.header-my-bets-btn--compact .header-my-bets-label {
+  display: none;
+}
+
+.header-wallet-group--guest .header-balance--static {
+  cursor: default;
+}
+
+.balance-wallet-icon {
+  font-size: 0.85rem;
+}
+
+.header-theme-toggle {
+  display: none;
+}
+
+@media (min-width: 1200px) {
+  .header-my-bets-btn--compact {
+    display: none;
+  }
+}
+
 .header-balance {
   display: flex;
   align-items: center;

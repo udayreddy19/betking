@@ -276,7 +276,23 @@
 
 .match-card--home .match-card-teams {
   margin-bottom: var(--space-3);
-  gap: var(--space-6);
+  gap: var(--space-8);
+  justify-content: center;
+}
+
+.match-card--home .match-card-team {
+  max-width: 90px;
+}
+
+.match-card--home .team-name {
+  font-size: 0.68rem;
+  max-width: 88px;
+  line-height: 1.2;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .team-jersey {
@@ -312,9 +328,10 @@
   background: #f1f5f9;
   border: 1px solid #e2e8f0;
   border-radius: var(--radius-sm);
-  padding: var(--space-2);
+  padding: 10px 12px;
   flex-direction: row;
   justify-content: space-between;
+  align-items: center;
 }
 
 .match-card-odds--home .odds-btn:hover {

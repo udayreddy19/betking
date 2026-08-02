@@ -1,20 +1,20 @@
-/** 10CRIC-style homepage content */
+/** 10CRIC-style homepage content — matched to screen recording Aug 2 2026 */
 
 export const homePromoSlides = [
   {
     id: 'crypto',
     title: '5% EXTRA',
     subtitle: 'CASH ON CRYPTO',
-    gradient: 'linear-gradient(135deg, #fef3c7 0%, #fce7f3 40%, #e0e7ff 100%)',
-    accent: '#7c3aed',
-    emoji: '₿',
+    gradient: 'linear-gradient(135deg, #fef9e7 0%, #fce7f3 45%, #dbeafe 100%)',
+    accent: '#c4b5fd',
+    emoji: '5%',
   },
   {
     id: 'welcome',
     title: '150% WELCOME',
     subtitle: 'BONUS UP TO ₹30,000',
     gradient: 'linear-gradient(135deg, #ede9fe 0%, #fce7f3 50%, #fef3c7 100%)',
-    accent: '#6d28d9',
+    accent: '#7c3aed',
     emoji: '🎁',
   },
 ];
@@ -25,23 +25,23 @@ export const homeCategoryTiles = [
     label: 'SPORTS',
     link: '/sports',
     size: 'large',
-    bg: '#e8f0fe',
-    image: 'https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&w=600&q=80',
+    bg: '#e8eef8',
+    image: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=700&q=80',
   },
   {
     id: 'live-casino',
     label: 'LIVE CASINO',
     link: '/live-casino',
     size: 'tall',
-    bg: '#e6f7f0',
-    image: 'https://images.unsplash.com/photo-1596838135731-f71d8ab1bf48?auto=format&fit=crop&w=600&q=80',
+    bg: '#e3f5ec',
+    image: 'https://images.unsplash.com/photo-1596838135731-f71d8ab1bf48?auto=format&fit=crop&w=700&q=80',
   },
   {
     id: 'instant',
     label: 'INSTANT',
     link: '/casino?cat=crash-games',
     size: 'small',
-    bg: '#f0f4ff',
+    bg: '#eef2ff',
     badge: 22,
     image: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=400&q=80',
   },
@@ -85,8 +85,88 @@ export const gameProviders = [
   { id: 'pragmatic', name: 'Pragmatic Play', color: '#ea580c', textColor: '#fff' },
 ];
 
-/** Game ids for "Top Games" row — matches 10CRIC order */
-export const topGameIds = ['g1', 'g3', 'g2', 'g4', 'g7', 'g8'];
+/** Top Games row — exact order & titles from recording */
+export const homeTopGames = [
+  {
+    gameId: 'g1',
+    displayName: 'Aviator',
+    provider: 'Spribe',
+    gradient: 'linear-gradient(180deg, #1a1a1a 0%, #7f1d1d 100%)',
+    image: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=400&q=80',
+  },
+  {
+    gameId: 'g33',
+    displayName: 'Ganesha Fortune',
+    provider: 'PGSoft',
+    gradient: 'linear-gradient(180deg, #1e3a8a 0%, #312e81 100%)',
+    image: 'https://images.unsplash.com/photo-1605647540924-852290f6b725?auto=format&fit=crop&w=400&q=80',
+  },
+  {
+    gameId: 'g2',
+    displayName: 'Crazy Time',
+    provider: 'Evolution',
+    gradient: 'linear-gradient(180deg, #ea580c 0%, #9a3412 100%)',
+    image: 'https://images.unsplash.com/photo-1596838135731-f71d8ab1bf48?auto=format&fit=crop&w=400&q=80',
+  },
+  {
+    gameId: 'g4',
+    displayName: 'Lightning Roulette',
+    provider: 'Evolution',
+    gradient: 'linear-gradient(180deg, #14532d 0%, #052e16 100%)',
+    image: 'https://images.unsplash.com/photo-1606166186982-7a0c4a8801c8?auto=format&fit=crop&w=400&q=80',
+  },
+  {
+    gameId: 'g7',
+    displayName: 'JetX',
+    provider: 'Smartsoft',
+    gradient: 'linear-gradient(180deg, #fbbf24 0%, #d97706 100%)',
+    image: 'https://images.unsplash.com/photo-1540962351504-03099e0a754b?auto=format&fit=crop&w=400&q=80',
+  },
+  {
+    gameId: 'g34',
+    displayName: 'Aviatrix',
+    provider: 'Aviatrix',
+    gradient: 'linear-gradient(180deg, #4c1d95 0%, #1e1b4b 100%)',
+    image: 'https://images.unsplash.com/photo-1540962351504-03099e0a754b?auto=format&fit=crop&w=400&q=80',
+  },
+];
 
-/** Live game ids for "Top Live Games" row — resolved at runtime from liveCasinoGames */
-export const topLiveGameCount = 6;
+/** Top Live Games row — exact titles from recording */
+export const homeLiveGames = [
+  {
+    gameId: 'g30',
+    displayName: 'Andar Bahar',
+    image: 'https://images.unsplash.com/photo-1606166186982-7a0c4a8801c8?auto=format&fit=crop&w=400&q=80',
+    gradient: 'linear-gradient(180deg, #7f1d1d 0%, #450a0a 100%)',
+  },
+  {
+    gameId: 'lc2',
+    displayName: 'Speed Auto Roulette',
+    image: 'https://images.unsplash.com/photo-1596838135731-f71d8ab1bf48?auto=format&fit=crop&w=400&q=80',
+    gradient: 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)',
+  },
+  {
+    gameId: 'g4',
+    displayName: 'Lightning Roulette',
+    image: 'https://images.unsplash.com/photo-1606166186982-7a0c4a8801c8?auto=format&fit=crop&w=400&q=80',
+    gradient: 'linear-gradient(180deg, #14532d 0%, #052e16 100%)',
+  },
+  {
+    gameId: 'lc9',
+    displayName: 'Super Speed Baccarat',
+    image: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=400&q=80',
+    gradient: 'linear-gradient(180deg, #991b1b 0%, #450a0a 100%)',
+  },
+  {
+    gameId: 'lc11',
+    displayName: 'Super Sic Bo',
+    image: 'https://images.unsplash.com/photo-1596838135731-f71d8ab1bf48?auto=format&fit=crop&w=400&q=80',
+    gradient: 'linear-gradient(180deg, #b45309 0%, #78350f 100%)',
+  },
+  {
+    gameId: 'lc1',
+    displayName: 'Immersive Roulette',
+    image: 'https://images.unsplash.com/photo-1606166186982-7a0c4a8801c8?auto=format&fit=crop&w=400&q=80',
+    gradient: 'linear-gradient(180deg, #1e1b4b 0%, #0f172a 100%)',
+  },
+];

@@ -2,23 +2,25 @@
   animation: fadeIn 300ms ease;
   position: relative;
   padding-bottom: var(--space-8);
+  background: #ffffff;
 }
 
 /* ── Promo banner (10CRIC crypto style) ── */
 .home-promo-banner {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  justify-content: center;
+  gap: var(--space-5);
   width: 100%;
   border: none;
-  border-radius: var(--radius-xl);
-  padding: var(--space-5) var(--space-6);
+  border-radius: 20px;
+  padding: var(--space-6) var(--space-8);
   margin-bottom: var(--space-5);
   cursor: pointer;
-  text-align: left;
+  text-align: center;
   position: relative;
   overflow: hidden;
-  min-height: 100px;
+  min-height: 120px;
   transition: transform var(--transition-fast);
 }
 
@@ -39,16 +41,18 @@
   position: relative;
   z-index: 1;
   flex-shrink: 0;
-  width: 72px;
-  height: 72px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
-  border: 3px solid;
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border: 3px solid #c4b5fd;
+  background: linear-gradient(135deg, #fde68a, #fbbf24);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.75rem;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  font-size: 1.5rem;
+  font-weight: var(--font-extrabold);
+  color: #78350f;
+  box-shadow: 0 4px 20px rgba(251, 191, 36, 0.4);
 }
 
 .home-promo-banner__text {
@@ -56,21 +60,24 @@
   z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
+  align-items: flex-start;
 }
 
 .home-promo-banner__title {
-  font-size: var(--text-2xl);
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
   font-weight: var(--font-extrabold);
   color: var(--color-text);
   letter-spacing: -0.02em;
+  line-height: 1;
 }
 
 .home-promo-banner__subtitle {
-  font-size: var(--text-lg);
+  font-size: clamp(1.1rem, 3vw, 1.75rem);
   font-weight: var(--font-extrabold);
   color: var(--color-text);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
+  line-height: 1.1;
 }
 
 .home-promo-banner__dots {
@@ -112,6 +119,10 @@
   font-size: var(--text-xl);
   font-weight: var(--font-extrabold);
   color: var(--color-text);
+}
+
+.section-header--simple {
+  margin-bottom: var(--space-2);
 }
 
 .section-header-actions {
