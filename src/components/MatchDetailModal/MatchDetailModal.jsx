@@ -3,6 +3,7 @@ import { IoClose } from '../../icons';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { isMatchBettable, isMatchLive } from '../../utils/matchBetting';
 import BetSlipFooter from '../BetSlip/BetSlipFooter';
+import TeamJersey from '../TeamJersey/TeamJersey';
 import './MatchDetailModal.css';
 
 // Roster database for realistic player names across sports
@@ -113,7 +114,7 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
         {/* 10CRIC Style Live Scoreboard Header */}
         <div className="match-detail-scoreboard">
           <div className="scoreboard-team">
-            <span className="scoreboard-jersey" style={{ color: match.team1.color }}>👕</span>
+            <TeamJersey team={match.team1} size={48} />
             <h4>{team1Name}</h4>
             {isLiveNow && match.liveDetails && (
               <div className="scoreboard-score">
@@ -140,7 +141,7 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
           </div>
 
           <div className="scoreboard-team">
-            <span className="scoreboard-jersey" style={{ color: match.team2.color }}>👕</span>
+            <TeamJersey team={match.team2} size={48} />
             <h4>{team2Name}</h4>
             {isLiveNow && match.liveDetails && (
               <div className="scoreboard-score">

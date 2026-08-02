@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useBetSlip } from '../../context/BetSlipContext';
 import MatchDetailModal from '../MatchDetailModal/MatchDetailModal';
 import SportIcon from '../SportIcon/SportIcon';
+import TeamJersey from '../TeamJersey/TeamJersey';
 import { isMatchBettable, isMatchLive, isMatchFinished, hasCricketPlayStarted } from '../../utils/matchBetting';
 import { resolveCricketTeamScores } from '../../utils/cricketScores';
 import './MatchCard.css';
@@ -39,28 +40,6 @@ function leagueIconKey(league) {
   if (l.includes('premier league') || l.includes('la liga')) return 'soccer';
   if (l.includes('pakistan') || l.includes('west indies')) return 'cricket';
   return 'world';
-}
-
-function TeamJersey({ team }) {
-  const color = team.color === '#e5e7eb' ? '#64748b' : team.color;
-  return (
-    <div className="team-jersey" style={{ '--jersey-color': color }}>
-      <div className="team-jersey-neck" />
-      <div className="team-jersey-body" />
-    </div>
-  );
-}
-
-function TeamBadge({ team }) {
-  const initials = team.shortName || team.name.slice(0, 3).toUpperCase();
-  return (
-    <div
-      className="team-badge"
-      style={{ background: team.color === '#e5e7eb' ? '#334155' : team.color, color: '#fff' }}
-    >
-      {initials}
-    </div>
-  );
 }
 
 export default function MatchCard({ match, variant = 'default' }) {
@@ -128,7 +107,7 @@ export default function MatchCard({ match, variant = 'default' }) {
       ? 'Finished'
       : (match.time || 'Scheduled');
 
-  const TeamIcon = isHome ? TeamJersey : TeamBadge;
+  const jerseySize = isHome ? 44 : 40;
 
   return (
     <>
@@ -183,7 +162,7 @@ export default function MatchCard({ match, variant = 'default' }) {
 
         <div className="match-card-teams">
           <div className="match-card-team">
-            <TeamIcon team={match.team1} />
+            <TeamJersey team={match.team1} size={jerseySize} />
             <span className="team-name">{match.team1.name}</span>
             {!isHome && (isLiveNow || isFinished) && team1Score && (
               <span className="team-score">{team1Score}</span>
@@ -191,7 +170,7 @@ export default function MatchCard({ match, variant = 'default' }) {
           </div>
           {!isHome && <span className="vs-text">VS</span>}
           <div className="match-card-team">
-            <TeamIcon team={match.team2} />
+            <TeamJersey team={match.team2} size={jerseySize} />
             <span className="team-name">{match.team2.name}</span>
             {!isHome && (isLiveNow || isFinished) && team2Score && (
               <span className="team-score">{team2Score}</span>
