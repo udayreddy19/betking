@@ -1,10 +1,17 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiChevronLeft, FiChevronRight } from '../../icons';
+import { AnimatePresence, motion } from 'motion/react';
+import { FiChevronLeft, FiChevronRight, FiMessageCircle } from '../../icons';
 import FilterChips from '../../components/FilterChips/FilterChips';
 import SportIcon from '../../components/SportIcon/SportIcon';
 import MatchCard from '../../components/MatchCard/MatchCard';
 import HomeCategoryGrid from '../../components/HomeCategoryGrid/HomeCategoryGrid';
+import FadeIn from '../../components/motion/FadeIn';
+import StaggerChildren, { StaggerItem } from '../../components/motion/StaggerChildren';
+import { MatchCardSkeleton } from '../../components/ui/Skeleton';
+import EmptyState from '../../components/ui/EmptyState';
+import Button from '../../components/ui/Button';
+import { useReducedMotion, motionDuration } from '../../components/motion/useReducedMotion';
 import { sportsCategories, featuredLeagues } from '../../data/mockData';
 import { homePromoSlides } from '../../data/homePageData';
 import { useLiveSports } from '../../context/LiveSportsContext';
@@ -24,6 +31,7 @@ export default function Home() {
   const { matches, isScoresLoading } = useLiveSports();
   const { showToast } = useAuth();
   const navigate = useNavigate();
+  const reduced = useReducedMotion();
   const [activeSport, setActiveSport] = useState('cricket');
   const [activeLeague, setActiveLeague] = useState(null);
   const [promoIndex, setPromoIndex] = useState(0);
@@ -60,42 +68,57 @@ export default function Home() {
 
   return (
     <div className="home-page container" id="home-page">
-      <button
-        type="button"
-        className="home-promo-banner"
-        style={{ background: promo.gradient }}
-        onClick={() => {
-          if (promo.id === 'welcome') navigate('/register');
-          else navigate('/promotions');
-        }}
-      >
-        <div className="home-promo-banner__coin">
-          <span>{promo.emoji}</span>
-        </div>
-        <div className="home-promo-banner__text">
-          <span className="home-promo-banner__title">{promo.title}</span>
-          <span className="home-promo-banner__subtitle">{promo.subtitle}</span>
-        </div>
-        <div className="home-promo-banner__dots">
-          {homePromoSlides.map((s, i) => (
-            <span
-              key={s.id}
-              className={`home-promo-dot ${i === promoIndex ? 'active' : ''}`}
-              onClick={(e) => { e.stopPropagation(); setPromoIndex(i); }}
-            />
-          ))}
-        </div>
-      </button>
+      <FadeIn className="home-promo-wrap">
+        <button
+          type="button"
+          className="home-promo-banner home-promo-banner--glass"
+          onClick={() => {
+            if (promo.id === 'welcome') navigate('/register');
+            else navigate('/promotions');
+          }}
+        >
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={promo.id}
+              className="home-promo-banner__inner"
+              style={{ background: promo.gradient }}
+              initial={{ opacity: 0, x: reduced ? 0 : 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: reduced ? 0 : -20 }}
+              transition={{ duration: motionDuration(reduced, 0.35) }}
+            >
+              <div className="home-promo-banner__coin">
+                <span>{promo.emoji}</span>
+              </div>
+              <div className="home-promo-banner__text">
+                <span className="home-promo-banner__title">{promo.title}</span>
+                <span className="home-promo-banner__subtitle">{promo.subtitle}</span>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+          <div className="home-promo-banner__dots">
+            {homePromoSlides.map((s, i) => (
+              <button
+                key={s.id}
+                type="button"
+                className={`home-promo-dot ${i === promoIndex ? 'active' : ''}`}
+                onClick={(e) => { e.stopPropagation(); setPromoIndex(i); }}
+                aria-label={`Promo slide ${i + 1}`}
+              />
+            ))}
+          </div>
+        </button>
+      </FadeIn>
 
       <HomeCategoryGrid />
 
       <section className="home-section home-sports-action" id="sports-action-section">
-        <div className="section-header">
+        <FadeIn className="section-header">
           <h2>Sports action</h2>
           <div className="section-header-actions">
-            <button type="button" className="carousel-view-all" onClick={() => navigate('/sports')}>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/sports')}>
               View All
-            </button>
+            </Button>
             <button type="button" className="carousel-nav-btn" onClick={() => scroll(matchScrollRef, 'left')} aria-label="Scroll left">
               <FiChevronLeft />
             </button>
@@ -103,7 +126,7 @@ export default function Home() {
               <FiChevronRight />
             </button>
           </div>
-        </div>
+        </FadeIn>
 
         <FilterChips
           items={sportsCategories}
@@ -132,34 +155,38 @@ export default function Home() {
 
         <div className="match-cards-scroll scroll-row-bleed" ref={matchScrollRef} key={`${activeSport}-${activeLeague}`}>
           {sportMatches.length > 0 ? (
-            sportMatches.map((match) => (
-              <MatchCard key={match.id} match={match} variant="home" />
-            ))
+            <StaggerChildren className="match-cards-stagger">
+              {sportMatches.map((match) => (
+                <StaggerItem key={match.id}>
+                  <MatchCard match={match} variant="home" />
+                </StaggerItem>
+              ))}
+            </StaggerChildren>
           ) : isScoresLoading ? (
-            <div className="no-matches-empty">
-              <span className="no-matches-icon">⏳</span>
-              <p>Loading matches…</p>
+            <div className="match-cards-loading">
+              {[0, 1, 2].map((i) => <MatchCardSkeleton key={i} />)}
             </div>
           ) : (
-            <div className="no-matches-empty">
-              <SportIcon sport={activeSport} className="no-matches-icon" />
-              <p>No {sportsCategories.find((s) => s.id === activeSport)?.name || 'sport'} matches right now</p>
-              <button type="button" className="no-matches-cta" onClick={() => navigate('/sports')}>
-                Browse all sports
-              </button>
-            </div>
+            <EmptyState
+              icon={<SportIcon sport={activeSport} className="no-matches-icon" size={32} />}
+              title={`No ${sportsCategories.find((s) => s.id === activeSport)?.name || 'sport'} matches right now`}
+              actionLabel="Browse all sports"
+              onAction={() => navigate('/sports')}
+            />
           )}
         </div>
       </section>
 
-      <button
+      <motion.button
         type="button"
         className="home-chat-fab"
         aria-label="Live chat"
         onClick={() => showToast('Live chat support coming soon!', 'info')}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
       >
-        💬
-      </button>
+        <FiMessageCircle size={24} />
+      </motion.button>
     </div>
   );
 }

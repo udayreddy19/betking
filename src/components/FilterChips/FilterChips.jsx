@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, memo } from 'react';
 import SportIcon from '../SportIcon/SportIcon';
 import './FilterChips.css';
 
-export default function FilterChips({ items, activeId, onSelect, className = '' }) {
+function FilterChips({ items, activeId, onSelect, className = '' }) {
   const [iconsReady, setIconsReady] = useState(false);
 
   useEffect(() => {
@@ -31,3 +31,5 @@ export default function FilterChips({ items, activeId, onSelect, className = '' 
     </div>
   );
 }
+
+export default memo(FilterChips);

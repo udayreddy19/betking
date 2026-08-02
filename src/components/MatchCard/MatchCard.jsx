@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBetSlip } from '../../context/BetSlipContext';
 import MatchDetailModal from '../MatchDetailModal/MatchDetailModal';
 import SportIcon from '../SportIcon/SportIcon';
+import HoverScale from '../motion/HoverScale';
+import LivePulse from '../ui/LivePulse';
 import { isMatchBettable, isMatchLive, isMatchFinished, hasCricketPlayStarted } from '../../utils/matchBetting';
 import './MatchCard.css';
 
@@ -62,7 +64,7 @@ function TeamBadge({ team }) {
   );
 }
 
-export default function MatchCard({ match, variant = 'default' }) {
+function MatchCard({ match, variant = 'default' }) {
   const { addBet, isBetSelected } = useBetSlip();
   const navigate = useNavigate();
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -137,8 +139,8 @@ export default function MatchCard({ match, variant = 'default' }) {
         />
       )}
 
-      <div
-        className={`match-card ${isHome ? 'match-card--home' : ''}`}
+      <HoverScale
+        className={`match-card ${isHome ? 'match-card--home' : ''} ${isLiveNow ? 'match-card--live' : ''}`}
         id={`match-${match.id}`}
         onClick={openDetails}
         style={{ cursor: 'pointer' }}
@@ -159,8 +161,7 @@ export default function MatchCard({ match, variant = 'default' }) {
             timeLabel
           ) : isLiveNow ? (
             <>
-              <span className="live-dot" />
-              LIVE
+              <LivePulse label="LIVE" />
               {inlineScore && <span className="match-card-score-inline">{inlineScore}</span>}
             </>
           ) : isFinished ? (
@@ -240,7 +241,9 @@ export default function MatchCard({ match, variant = 'default' }) {
             <span>➔</span>
           </button>
         )}
-      </div>
+      </HoverScale>
     </>
   );
 }
+
+export default memo(MatchCard);

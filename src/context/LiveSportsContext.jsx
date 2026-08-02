@@ -98,14 +98,22 @@ export function LiveSportsProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    const tick = () => {
-      if (document.hidden) return;
-      refreshScores();
+    let intervalId = null;
+    let cancelled = false;
+
+    const scheduleNext = () => {
+      if (cancelled) return;
+      const ms = pollMsRef.current || LIVE_SCORES_POLL_MS;
+      intervalId = setTimeout(async () => {
+        if (cancelled) return;
+        if (!document.hidden) {
+          await refreshScores();
+        }
+        scheduleNext();
+      }, ms);
     };
 
-    refreshScores();
-
-    const interval = setInterval(tick, LIVE_SCORES_POLL_MS);
+    refreshScores().then(() => scheduleNext());
 
     const onVisibility = () => {
       if (!document.hidden) refreshScores();
@@ -113,7 +121,8 @@ export function LiveSportsProvider({ children }) {
     document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
-      clearInterval(interval);
+      cancelled = true;
+      if (intervalId) clearTimeout(intervalId);
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [refreshScores]);

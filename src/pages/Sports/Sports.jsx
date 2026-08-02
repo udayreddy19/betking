@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Link, useSearchParams, useLocation } from 'react-router-dom';
-import { FiSearch, FiHome, HiOutlineChevronDown, HiOutlineChevronUp } from '../../icons';
+import { FiSearch, FiHome, HiOutlineChevronDown, HiOutlineChevronUp, FiMessageCircle } from '../../icons';
 import FilterChips from '../../components/FilterChips/FilterChips';
 import SportIcon from '../../components/SportIcon/SportIcon';
 import BetSlip from '../../components/BetSlip/BetSlip';
@@ -365,7 +365,7 @@ export default function Sports() {
   return (
     <div className="sports-page" id="sports-page">
       <button type="button" className="sports-chat-fab" aria-label="Live chat" onClick={() => showToast('Live chat support coming soon!', 'info')}>
-        💬
+        <FiMessageCircle size={24} />
       </button>
 
       <div className="sports-page-inner">

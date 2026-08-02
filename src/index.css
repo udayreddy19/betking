@@ -93,6 +93,12 @@
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   --shadow-card: 0 2px 8px rgba(124, 58, 237, 0.06);
   --shadow-card-hover: 0 8px 24px rgba(124, 58, 237, 0.12);
+  --shadow-glow-primary: 0 0 32px rgba(124, 58, 237, 0.18);
+
+  /* Glassmorphism */
+  --color-glass: rgba(255, 255, 255, 0.72);
+  --color-glass-border: rgba(255, 255, 255, 0.45);
+  --color-glass-strong: rgba(255, 255, 255, 0.88);
 
   /* Transitions */
   --transition-fast: 150ms ease;
@@ -164,6 +170,11 @@
   --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.35);
   --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.35);
   --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-glow-primary: 0 0 40px rgba(124, 58, 237, 0.25);
+
+  --color-glass: rgba(30, 41, 59, 0.78);
+  --color-glass-border: rgba(148, 163, 184, 0.2);
+  --color-glass-strong: rgba(30, 41, 59, 0.92);
 
   --color-panel: #1e293b;
   --color-panel-muted: #0f172a;

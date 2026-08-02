@@ -1,11 +1,21 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { HiOutlineMenu, HiOutlineClipboardList, IoGiftOutline, FiChevronDown } from '../../icons';
+import { motion } from 'motion/react';
+import {
+  HiOutlineMenu,
+  HiOutlineClipboardList,
+  IoGiftOutline,
+  FiChevronDown,
+  FiStar,
+  BiWallet,
+} from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
 import MyBetsPanel from '../MyBetsPanel/MyBetsPanel';
 import PromotionsPanel from '../PromotionsPanel/PromotionsPanel';
+import AnimatedCounter from '../ui/AnimatedCounter';
+import { useReducedMotion } from '../motion/useReducedMotion';
 import '../MyBetsPanel/MyBetsPanel.css';
 import '../PromotionsPanel/PromotionsPanel.css';
 import './Header.css';
@@ -24,7 +34,32 @@ const moreLinks = [
   { to: '/responsible-gaming', label: 'Responsible Gaming' },
 ];
 
-export default function Header() {
+function NavLinkItem({ link }) {
+  const reduced = useReducedMotion();
+
+  return (
+    <NavLink
+      to={link.to}
+      className={({ isActive }) => `header-nav-link ${isActive ? 'active' : ''}`}
+      id={`nav-${link.to.slice(1)}`}
+    >
+      {({ isActive }) => (
+        <>
+          {link.label}
+          {isActive && !reduced && (
+            <motion.span
+              className="header-nav-underline"
+              layoutId="header-nav-underline"
+              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+            />
+          )}
+        </>
+      )}
+    </NavLink>
+  );
+}
+
+function Header() {
   const { user, isLoggedIn, openLoginModal, openDepositModal, toggleSidebar } = useAuth();
   const { myBetsCount, isMyBetsOpen, toggleMyBets, closeMyBets } = useBetSlip();
   const [isPromosOpen, setIsPromosOpen] = useState(false);
@@ -59,7 +94,7 @@ export default function Header() {
   }, [closePromos, toggleMyBets]);
 
   return (
-    <header className="header" id="main-header">
+    <header className="header header--glass" id="main-header">
       <div className="header-inner">
         <div className="header-left">
           <button className="header-menu-btn" onClick={toggleSidebar} id="menu-toggle" aria-label="Menu">
@@ -73,15 +108,8 @@ export default function Header() {
           </NavLink>
 
           <nav className="header-nav" id="main-nav">
-            {navLinks.map(link => (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                className={({ isActive }) => `header-nav-link ${isActive ? 'active' : ''}`}
-                id={`nav-${link.to.slice(1)}`}
-              >
-                {link.label}
-              </NavLink>
+            {navLinks.map((link) => (
+              <NavLinkItem key={link.to} link={link} />
             ))}
             <div className="header-more" ref={moreRef}>
               <button
@@ -93,7 +121,12 @@ export default function Header() {
                 More <FiChevronDown className="header-more-chevron" />
               </button>
               {isMoreOpen && (
-                <div className="header-more-menu">
+                <motion.div
+                  className="header-more-menu"
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
                   {moreLinks.map((link) => (
                     <button
                       key={link.to}
@@ -104,7 +137,7 @@ export default function Header() {
                       {link.label}
                     </button>
                   ))}
-                </div>
+                </motion.div>
               )}
             </div>
           </nav>
@@ -141,12 +174,12 @@ export default function Header() {
             <>
               <div className="header-wallet-group">
                 <div className="header-loyalty-ring" title="Loyalty points">
-                  <span className="header-loyalty-icon">⭐</span>
-                  <span>{coins}</span>
+                  <FiStar className="header-loyalty-icon" size={16} />
+                  <AnimatedCounter value={coins} />
                 </div>
                 <button type="button" className="header-balance" id="header-balance" onClick={openDepositModal}>
-                  <span className="balance-wallet-icon">👛</span>
-                  <span>₹{balance.toLocaleString('en-IN')}</span>
+                  <BiWallet className="balance-wallet-icon" size={18} />
+                  <span>₹<AnimatedCounter value={balance} /></span>
                   <FiChevronDown className="balance-chevron" />
                 </button>
               </div>
@@ -158,11 +191,11 @@ export default function Header() {
             <div className="header-auth-buttons">
               <div className="header-wallet-group header-wallet-group--guest">
                 <div className="header-loyalty-ring">
-                  <span className="header-loyalty-icon">⭐</span>
+                  <FiStar className="header-loyalty-icon" size={16} />
                   <span>58</span>
                 </div>
                 <div className="header-balance header-balance--static">
-                  <span className="balance-wallet-icon">👛</span>
+                  <BiWallet className="balance-wallet-icon" size={18} />
                   <span>₹0</span>
                   <FiChevronDown className="balance-chevron" />
                 </div>
@@ -183,3 +216,5 @@ export default function Header() {
     </header>
   );
 }
+
+export default memo(Header);

@@ -41,6 +41,7 @@ import {
   ZapIcon,
   LayersIcon,
   StarIcon,
+  MessageCircleIcon,
 } from '@animateicons/react/lucide';
 
 import { withAnimatedIcon } from './animateIcon.jsx';
@@ -89,6 +90,7 @@ export {
   ZapIcon,
   LayersIcon,
   StarIcon,
+  MessageCircleIcon,
 };
 
 // Drop-in aliases (react-icons names used across the app)
@@ -97,6 +99,7 @@ export const FiHome = withAnimatedIcon(HouseIcon);
 export const FiChevronLeft = withAnimatedIcon(ChevronLeftIcon);
 export const FiChevronRight = withAnimatedIcon(ChevronRightIcon);
 export const FiChevronDown = withAnimatedIcon(ChevronDownIcon);
+export const FiChevronUp = withAnimatedIcon(ChevronUpIcon);
 export const HiOutlineChevronUp = withAnimatedIcon(ChevronUpIcon);
 export const HiOutlineChevronDown = withAnimatedIcon(ChevronDownIcon);
 export const HiChevronDown = withAnimatedIcon(ChevronDownIcon);
@@ -147,3 +150,5 @@ export const MdOutlineCancel = withAnimatedIcon(XIcon);
 export const MdOutlineStorefront = withAnimatedIcon(ShoppingCartIcon);
 
 export const RiLogoutBoxRLine = withAnimatedIcon(LogOutIcon);
+export const FiMessageCircle = withAnimatedIcon(MessageCircleIcon);
+export const FiStar = withAnimatedIcon(StarIcon);

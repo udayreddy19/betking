@@ -17,15 +17,17 @@ export function useMatchDetail(match) {
   const pollable = canPoll(match);
 
   useEffect(() => {
-    if (match && pollable) {
-      prefetchMatchDetail(match, { priority: true });
+    if (matchRef.current && pollable) {
+      prefetchMatchDetail(matchRef.current, { priority: true });
     }
   }, [matchId, pollable]);
 
   const detailVersion = useSyncExternalStore(
-    (onStoreChange) => (matchId && pollable
-      ? subscribeMatchDetailStore(matchId, onStoreChange, match)
-      : () => {}),
+    (onStoreChange) => {
+      if (!matchId || !pollable) return () => {};
+      const current = matchRef.current;
+      return subscribeMatchDetailStore(matchId, onStoreChange, current);
+    },
     () => (matchId ? getMatchDetailVersion(matchId) : 0),
     () => 0,
   );

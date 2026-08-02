@@ -155,6 +155,15 @@ export function prefetchMatchDetail(match, { priority = false } = {}) {
   ensurePoller(match, { priority });
 }
 
+function removeListener(key, listener) {
+  const state = pollers.get(key);
+  if (!state) return;
+  state.listeners.delete(listener);
+  if (state.listeners.size === 0) {
+    pollers.delete(key);
+  }
+}
+
 export function subscribeMatchDetailStore(matchId, listener, match) {
   if (!matchId) return () => {};
   if (match && canPoll(match)) {
@@ -163,7 +172,7 @@ export function subscribeMatchDetailStore(matchId, listener, match) {
   const state = pollers.get(matchId);
   if (!state) return () => {};
   state.listeners.add(listener);
-  return () => state.listeners.delete(listener);
+  return () => removeListener(matchId, listener);
 }
 
 export function getMatchDetailSnapshot(matchId) {
@@ -187,12 +196,7 @@ export function subscribeMatchDetail(match, listener) {
   state.listeners.add(wrapped);
   if (state.detail) listener(state.detail);
 
-  return () => {
-    state.listeners.delete(wrapped);
-    if (state.listeners.size === 0) {
-      pollers.delete(key);
-    }
-  };
+  return () => removeListener(key, wrapped);
 }
 
 export function enrichFromPoller(match) {
