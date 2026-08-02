@@ -61,7 +61,7 @@ async function fetchDetail(match, fast) {
   return res.json();
 }
 
-function mergeDetails(prev, next, { isFull = false } = {}) {
+function mergeDetails(prev, next, { isFull = false, match = null } = {}) {
   if (!prev) return next;
   if (!next) return prev;
 
@@ -73,7 +73,7 @@ function mergeDetails(prev, next, { isFull = false } = {}) {
   if (isFull && isCricket) {
     liveDetails = mergeCricketPlayersOnly(prevLd, nextLd);
   } else if (isCricket) {
-    liveDetails = mergeCricketLiveDetails(prevLd, nextLd);
+    liveDetails = mergeCricketLiveDetails(prevLd, nextLd, match);
   } else {
     liveDetails = { ...prevLd, ...nextLd };
   }
@@ -110,7 +110,7 @@ async function pollLoop(key) {
 
     try {
       const full = await fetchDetail(s.match, false);
-      if (full) emit(key, mergeDetails(pollers.get(key)?.detail, full, { isFull: true }));
+      if (full) emit(key, mergeDetails(pollers.get(key)?.detail, full, { isFull: true, match: s.match }));
     } catch (err) {
       console.warn('Match detail poll failed:', err);
     }

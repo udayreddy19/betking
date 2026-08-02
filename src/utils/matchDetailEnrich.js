@@ -35,7 +35,7 @@ export function enrichMatchWithDetail(match, detail) {
   let liveDetails;
   if (sport === 'cricket' || sport === 'virtual-cricket') {
     const fromDetail = enrichCricketDetails(match, ld, {});
-    liveDetails = mergeCricketLiveDetails(baseLd, fromDetail);
+    liveDetails = mergeCricketLiveDetails(baseLd, fromDetail, match);
   } else {
     liveDetails = { ...baseLd, ...ld };
   }

@@ -1,5 +1,5 @@
 import { normalizeCricbuzzOvers, oversToBalls } from './oversUtils';
-import { flattenCricketTeamScores, resolveCricketTeamScores } from './cricketScores';
+import { flattenCricketTeamScores, resolveCricketTeamScores, teamNameMatches } from './cricketScores';
 
 function pickHigherOvers(a, b) {
   if (!a) return b || '0.0';
@@ -17,7 +17,7 @@ function pickMonotonicInt(prev, next) {
  * Merge cricket liveDetails without regressing scores when a slower/stale
  * source (full HTML scrape, list API) arrives after a fast meta poll.
  */
-export function mergeCricketLiveDetails(prev = {}, next = {}) {
+export function mergeCricketLiveDetails(prev = {}, next = {}, match = null) {
   const merged = { ...prev, ...next };
 
   const prevChase = prev.chaseRuns ?? prev.score2;
@@ -57,6 +57,29 @@ export function mergeCricketLiveDetails(prev = {}, next = {}) {
     merged.wickets2 = pickMonotonicInt(prev.wickets2, next.wickets2);
   }
 
+  merged.firstTeamName = next.firstTeamName || prev.firstTeamName;
+  merged.chaseTeamName = next.chaseTeamName || prev.chaseTeamName;
+
+  if (match && merged.chaseTeamName) {
+    const chasingTeam1 = teamNameMatches(match.team1?.name || '', merged.chaseTeamName);
+    const slotRuns = chasingTeam1 ? merged.runs : merged.score2;
+    const slotWickets = chasingTeam1 ? merged.wickets : merged.wickets2;
+    const slotOvers = chasingTeam1 ? merged.overs : merged.overs2;
+    if (slotRuns != null) merged.chaseRuns = pickMonotonicInt(merged.chaseRuns, slotRuns);
+    if (slotWickets != null) merged.chaseWickets = pickMonotonicInt(merged.chaseWickets, slotWickets);
+    merged.chaseOvers = normalizeCricbuzzOvers(pickHigherOvers(merged.chaseOvers, slotOvers));
+  }
+
+  if (match && merged.firstTeamName && merged.chaseTeamName) {
+    const firstOnTeam1 = teamNameMatches(match.team1?.name || '', merged.firstTeamName);
+    const firstRuns = firstOnTeam1 ? merged.runs : merged.score2;
+    const firstWickets = firstOnTeam1 ? merged.wickets : merged.wickets2;
+    const firstOvers = firstOnTeam1 ? merged.overs : merged.overs2;
+    if (firstRuns != null) merged.firstRuns = pickMonotonicInt(merged.firstRuns, firstRuns);
+    if (firstWickets != null) merged.firstWickets = pickMonotonicInt(merged.firstWickets, firstWickets);
+    merged.firstOvers = normalizeCricbuzzOvers(pickHigherOvers(merged.firstOvers, firstOvers));
+  }
+
   if (!merged.overs) merged.overs = normalizeCricbuzzOvers(pickHigherOvers(prev.overs, next.overs));
   if (!merged.overs2) merged.overs2 = normalizeCricbuzzOvers(pickHigherOvers(prev.overs2, next.overs2));
 
@@ -66,7 +89,7 @@ export function mergeCricketLiveDetails(prev = {}, next = {}) {
   merged.commentary = next.commentary || prev.commentary;
   merged.currentOverBalls = next.currentOverBalls?.length ? next.currentOverBalls : prev.currentOverBalls;
 
-  const resolved = flattenCricketTeamScores(resolveCricketTeamScores(null, merged));
+  const resolved = flattenCricketTeamScores(resolveCricketTeamScores(match, merged));
   merged.runs = resolved.runs;
   merged.wickets = resolved.wickets;
   merged.overs = resolved.overs;

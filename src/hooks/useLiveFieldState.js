@@ -1,5 +1,27 @@
 import { useMemo } from 'react';
 import { isPlaceholderPlayerName } from '../utils/cricketPlayers';
+import { teamNameMatches } from '../utils/cricketScores';
+
+function aggregateBoundariesFromScorecard(match, battingTeamName) {
+  const innings = match?.scorecardInnings?.find(
+    (inn) => inn.batTeamName && battingTeamName && teamNameMatches(inn.batTeamName, battingTeamName),
+  );
+  if (!innings?.batters?.length) return null;
+
+  return innings.batters.reduce(
+    (acc, batter) => ({
+      fours: acc.fours + (batter.fours ?? 0),
+      sixes: acc.sixes + (batter.sixes ?? 0),
+    }),
+    { fours: 0, sixes: 0 },
+  );
+}
+
+function getBattingTeamName(match, ld) {
+  if (ld.chaseTeamName) return ld.chaseTeamName;
+  if (ld.firstTeamName) return ld.firstTeamName;
+  return match?.team1?.name || '';
+}
 
 /** Build field view state purely from API liveDetails — no simulation. */
 export function buildFieldStateFromApi(match) {
@@ -18,6 +40,7 @@ export function buildFieldStateFromApi(match) {
 
   const overHistory = match?.overHistory || [];
   const currentOver = overHistory.find((o) => o.isCurrent) || overHistory[overHistory.length - 1];
+  const boundaries = aggregateBoundariesFromScorecard(match, getBattingTeamName(match, ld));
 
   return {
     matchId: match?.id,
@@ -28,8 +51,8 @@ export function buildFieldStateFromApi(match) {
     batter1,
     batter2,
     bowler: ld.bowler?.name && !isPlaceholderPlayerName(ld.bowler.name) ? ld.bowler.name : '',
-    inningsFours: ld.fours ?? batter1.fours + batter2.fours,
-    inningsSixes: ld.sixes ?? batter1.sixes + batter2.sixes,
+    inningsFours: ld.fours ?? boundaries?.fours ?? (batter1.fours + batter2.fours),
+    inningsSixes: ld.sixes ?? boundaries?.sixes ?? (batter1.sixes + batter2.sixes),
     extras: ld.extras ?? 0,
     fromApi: true,
   };
