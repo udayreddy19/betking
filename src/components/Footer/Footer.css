@@ -1,6 +1,6 @@
 .footer {
-  background: var(--color-text);
-  color: var(--color-text-inverse);
+  background: var(--color-footer-bg);
+  color: var(--color-footer-text);
   padding: var(--space-12) 0 var(--space-6);
   margin-top: auto;
 }

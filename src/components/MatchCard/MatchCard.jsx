@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useBetSlip } from '../../context/BetSlipContext';
 import MatchDetailModal from '../MatchDetailModal/MatchDetailModal';
 import SportIcon from '../SportIcon/SportIcon';
@@ -63,6 +64,7 @@ function TeamBadge({ team }) {
 
 export default function MatchCard({ match, variant = 'default' }) {
   const { addBet, isBetSelected } = useBetSlip();
+  const navigate = useNavigate();
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const isHome = variant === 'home';
 
@@ -78,6 +80,15 @@ export default function MatchCard({ match, variant = 'default' }) {
 
   const openDetails = (e) => {
     e?.stopPropagation?.();
+    if (isHome) {
+      const params = new URLSearchParams({
+        sport: match.sport || 'cricket',
+        league: 'all',
+        match: match.id,
+      });
+      navigate(`/sports?${params.toString()}`);
+      return;
+    }
     setIsDetailOpen(true);
   };
 
@@ -115,11 +126,13 @@ export default function MatchCard({ match, variant = 'default' }) {
 
   return (
     <>
-      <MatchDetailModal
-        match={match}
-        isOpen={isDetailOpen}
-        onClose={() => setIsDetailOpen(false)}
-      />
+      {!isHome && (
+        <MatchDetailModal
+          match={match}
+          isOpen={isDetailOpen}
+          onClose={() => setIsDetailOpen(false)}
+        />
+      )}
 
       <div
         className={`match-card ${isHome ? 'match-card--home' : ''}`}

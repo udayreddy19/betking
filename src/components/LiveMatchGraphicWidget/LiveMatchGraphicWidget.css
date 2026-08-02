@@ -1,22 +1,22 @@
 .live-graphic-card-10cric {
-  background: #ffffff;
+  background: var(--color-panel);
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e8eaed;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-graphic-border);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .live-graphic-empty {
   padding: 24px;
   text-align: center;
-  color: #64748b;
+  color: var(--color-ink-muted);
   font-size: 0.85rem;
 }
 
 .live-widget-body {
   padding: 14px 16px 0;
-  background: #ffffff;
+  background: var(--color-panel);
 }
 
 .live-widget-inn-badge {
@@ -43,7 +43,7 @@
 .live-widget-team {
   font-size: 0.82rem;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--color-ink);
   line-height: 1.2;
 }
 
@@ -53,7 +53,7 @@
 .live-widget-scoreline {
   font-size: 1.4rem;
   font-weight: 800;
-  color: #1a1a1a;
+  color: var(--color-ink);
   white-space: nowrap;
   text-align: center;
 }
@@ -78,9 +78,9 @@
 }
 
 .live-widget-innings-select {
-  background: #ffffff;
-  color: #1a1a1a;
-  border: 1px solid #d1d5db;
+  background: var(--color-panel);
+  color: var(--color-ink);
+  border: 1px solid var(--color-border);
   border-radius: 4px;
   padding: 4px 28px 4px 10px;
   font-size: 0.72rem;
@@ -94,7 +94,7 @@
 
 .live-widget-timeline {
   padding: 0 2px 12px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-graphic-border);
 }
 
 .live-widget-timeline-track {
@@ -154,8 +154,8 @@
 .live-widget-tabs {
   display: flex;
   justify-content: stretch;
-  border-bottom: 1px solid #e5e7eb;
-  background: #ffffff;
+  border-bottom: 1px solid var(--color-graphic-border);
+  background: var(--color-panel);
 }
 
 .live-widget-tab {
@@ -491,14 +491,14 @@
 .cric-panel {
   margin: 0 -16px;
   padding: 14px 16px 16px;
-  background: #ffffff;
+  background: var(--color-panel);
   min-height: 200px;
 }
 
 .cric-panel__title {
   font-size: 0.72rem;
   font-weight: 800;
-  color: #1a1a1a;
+  color: var(--color-ink);
   letter-spacing: 0.04em;
   margin: 0 0 10px;
   text-transform: uppercase;
@@ -507,7 +507,7 @@
 .cric-innings-tabs {
   display: flex;
   gap: 0;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-graphic-border);
   margin-bottom: 0;
 }
 
@@ -564,7 +564,7 @@
 .cric-scorecard-table__batter strong {
   font-size: 0.8rem;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--color-ink);
 }
 
 .cric-dismissal {
@@ -579,7 +579,7 @@
 }
 
 .cric-stats-innings {
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-graphic-border);
   margin-bottom: 0;
 }
 
@@ -595,7 +595,7 @@
   border-bottom: 1px solid #f3f4f6;
   font-size: 0.78rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--color-ink);
   cursor: pointer;
   text-align: left;
 }
@@ -631,7 +631,7 @@
 
 .cric-stats-over-row__num {
   font-weight: 800;
-  color: #1a1a1a;
+  color: var(--color-ink);
 }
 
 .cric-stats-over-row__summary {
@@ -723,8 +723,8 @@
 }
 
 .sport-live-status-card {
-  background: #f8fafc;
-  border: 1px solid #e5e7eb;
+  background: var(--color-panel-muted);
+  border: 1px solid var(--color-graphic-border);
   border-radius: 6px;
   padding: 10px 14px;
   display: flex;
@@ -742,7 +742,7 @@
 
 .sport-live-status-card strong {
   font-size: 0.82rem;
-  color: #1a1a1a;
+  color: var(--color-ink);
 }
 
 .sport-live-score-grid {
@@ -752,8 +752,8 @@
 }
 
 .sport-live-score-cell {
-  background: #f8fafc;
-  border: 1px solid #e5e7eb;
+  background: var(--color-panel-muted);
+  border: 1px solid var(--color-graphic-border);
   border-radius: 6px;
   padding: 10px 12px;
   display: flex;
@@ -769,7 +769,7 @@
 
 .sport-live-score-cell strong {
   font-size: 1.25rem;
-  color: #1a1a1a;
+  color: var(--color-ink);
 }
 
 .sport-periods-panel {
@@ -796,13 +796,13 @@
   color: #6b7280;
   text-transform: uppercase;
   font-size: 0.65rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-graphic-border);
   padding-bottom: 8px;
   margin-bottom: 4px;
 }
 
 .sport-periods-table__row {
-  color: #1a1a1a;
+  color: var(--color-ink);
 }
 
 .sport-periods-table__label {

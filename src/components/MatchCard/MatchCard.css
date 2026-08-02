@@ -250,8 +250,8 @@
 
 /* ── 10CRIC home variant ── */
 .match-card--home {
-  background: linear-gradient(180deg, #f3f0ff 0%, #ffffff 35%);
-  border: 1px solid #e8e4f5;
+  background: linear-gradient(180deg, var(--color-match-card-home-start) 0%, var(--color-match-card-home-end) 35%);
+  border: 1px solid var(--color-match-card-home-border);
   box-shadow: none;
   padding: var(--space-3);
   min-width: 260px;
@@ -259,8 +259,8 @@
 }
 
 .match-card--home:hover {
-  border-color: #d8d0f5;
-  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.08);
+  border-color: var(--color-primary-light);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .match-card--home .match-card-header {
@@ -335,8 +335,8 @@
 }
 
 .match-card-odds--home .odds-btn {
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
+  background: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
   flex-direction: row;
@@ -345,8 +345,8 @@
 }
 
 .match-card-odds--home .odds-btn:hover {
-  background: #ede9fe;
-  border-color: #c4b5fd;
+  background: var(--color-primary-bg);
+  border-color: var(--color-primary-light);
 }
 
 .match-card-odds--home .odds-btn.selected {

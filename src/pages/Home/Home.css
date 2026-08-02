@@ -2,7 +2,7 @@
   animation: fadeIn 300ms ease;
   position: relative;
   padding-bottom: var(--space-8);
-  background: #ffffff;
+  background: var(--color-bg);
 }
 
 /* ── Promo banner (10CRIC crypto style) ── */

@@ -6,7 +6,6 @@ import SportIcon from '../../components/SportIcon/SportIcon';
 import BetSlip from '../../components/BetSlip/BetSlip';
 import LiveMatchGraphicWidget from '../../components/LiveMatchGraphicWidget/LiveMatchGraphicWidget';
 import SportsLeagueSidebar from '../../components/SportsLeagueSidebar/SportsLeagueSidebar';
-import MatchDetailModal from '../../components/MatchDetailModal/MatchDetailModal';
 import { sportsCategories, featuredLeagues } from '../../data/mockData';
 import { useLiveSports } from '../../context/LiveSportsContext';
 import { useBetSlip } from '../../context/BetSlipContext';
@@ -197,7 +196,6 @@ export default function Sports() {
   const [activeMarketCat, setActiveMarketCat] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMatchId, setSelectedMatchId] = useState(initialMatchId);
-  const [modalMatch, setModalMatch] = useState(null);
   const [expandedMarkets, setExpandedMarkets] = useState({
     winner: true, tie: true, over10: true, delivery: false, partnership: false,
   });
@@ -626,7 +624,7 @@ export default function Sports() {
               </div>
             )}
 
-            <div className="sports-match-banner" role="button" tabIndex={0} onClick={() => setModalMatch(activeMatch)} onKeyDown={e => e.key === 'Enter' && setModalMatch(activeMatch)}>
+            <div className="sports-match-banner">
               <div className="sports-match-banner-time">{matchTimeLabel}</div>
               <div className="sports-match-banner-teams">
                 <span className="sports-match-banner-team">{activeMatch.team1.name}</span>
@@ -838,12 +836,6 @@ export default function Sports() {
         <BetSlip />
       </aside>
       </div>
-
-      <MatchDetailModal
-        match={modalMatch}
-        isOpen={!!modalMatch}
-        onClose={() => setModalMatch(null)}
-      />
     </div>
   );
 }
