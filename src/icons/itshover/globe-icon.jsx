@@ -8,7 +8,7 @@ const GlobeIcon = forwardRef(
     ref,
   ) => {
     const [scope, animate] = useAnimate();
-    const animationControls = useRef<Array<ReturnType<typeof animate>>>([]);
+    const animationControls = useRef([]);
 
     const start = async () => {
       animationControls.current.forEach((control) => control.stop());

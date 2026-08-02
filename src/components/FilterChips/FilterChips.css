@@ -38,6 +38,11 @@
   align-items: center;
   line-height: 0;
 }
+
+.chip-icon--placeholder {
+  width: 1em;
+  height: 1em;
+}
 .filter-chips-row {
   margin-bottom: var(--space-3);
 }

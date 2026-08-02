@@ -123,7 +123,7 @@ export default function Home() {
                   isSameLeague(activeLeague, league.id) ? null : league.id
                 )}
               >
-                {league.icon && <span className="home-league-chip-icon">{league.icon}</span>}
+                <SportIcon sport={league.sport} icon={league.icon} className="home-league-chip-icon" />
                 {league.name}
               </button>
             ))}

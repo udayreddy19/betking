@@ -62,6 +62,7 @@ function tsxToJsx(content, fileName) {
     .replace(/^import type .*;\n?/gm, '')
     .replace(/import type \{[^}]+\} from ['"][^'"]+['"];\n?/g, '')
     .replace(/export interface [\s\S]*?\}\n\n?/g, '')
+    .replace(/useRef<[^>]+>/g, 'useRef')
     .replace(/forwardRef<[^>]+>/g, 'forwardRef')
     .replace(/useCallback<[^>]+>/g, 'useCallback')
     .replace(/useImperativeHandle<[^>]+>/g, 'useImperativeHandle')

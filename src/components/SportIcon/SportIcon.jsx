@@ -1,15 +1,13 @@
-import {
-  TrophyIcon,
-  GlobeIcon,
-  GaugeIcon,
-  TargetIcon,
-  UsersGroupIcon,
-  GamepadIcon,
-  RocketIcon,
-  Stack3Icon,
-  FlameIcon,
-  WorldIcon,
-} from '../../icons/itshover/index.js';
+import { TrophyIcon } from '../../icons/itshover/trophy-icon.jsx';
+import { GlobeIcon } from '../../icons/itshover/globe-icon.jsx';
+import { GaugeIcon } from '../../icons/itshover/gauge-icon.jsx';
+import { TargetIcon } from '../../icons/itshover/target-icon.jsx';
+import { UsersGroupIcon } from '../../icons/itshover/users-group-icon.jsx';
+import { GamepadIcon } from '../../icons/itshover/gamepad-icon.jsx';
+import { RocketIcon } from '../../icons/itshover/rocket-icon.jsx';
+import { Stack3Icon } from '../../icons/itshover/stack-3-icon.jsx';
+import { FlameIcon } from '../../icons/itshover/flame-icon.jsx';
+import { WorldIcon } from '../../icons/itshover/world-icon.jsx';
 
 const SPORT_ICON_MAP = {
   cricket: TrophyIcon,
@@ -45,5 +43,5 @@ export function getLeagueIcon(iconKey, sport) {
 
 export default function SportIcon({ sport, icon, className = '', color, size }) {
   const Icon = icon ? getLeagueIcon(icon, sport) : getSportIcon(sport);
-  return <Icon className={className} color={color} size={size} />;
+  return <Icon className={className} color={color} size={size} aria-hidden />;
 }
