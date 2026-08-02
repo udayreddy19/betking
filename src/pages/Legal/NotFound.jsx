@@ -9,7 +9,7 @@ export default function NotFound() {
       <div className="not-found-links">
         <Link to="/">Home</Link>
         <Link to="/sports">Sports</Link>
-        <Link to="/casino">Casino</Link>
+        <Link to="/live-betting">Live Betting</Link>
         <Link to="/help">Help</Link>
       </div>
     </div>

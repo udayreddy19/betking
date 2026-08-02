@@ -4,10 +4,11 @@
 import { enrichMatchWithDetail } from '../utils/matchDetailEnrich';
 import { mergeCricketLiveDetails, mergeCricketPlayersOnly } from '../utils/cricketScoreMerge';
 
-const LIVE_GAP_MS = 350;
-const IDLE_GAP_MS = 5000;
+const LIVE_GAP_MS = 2500;
+const IDLE_GAP_MS = 8000;
+const MAX_POLLERS = 3;
 
-/** @type {Map<string, { match: object, detail: object|null, version: number, listeners: Set<Function>, running: boolean, isLive: boolean }>} */
+/** @type {Map<string, { match: object, detail: object|null, version: number, listeners: Set<Function>, running: boolean, isLive: boolean, priority: boolean }>} */
 const pollers = new Map();
 
 function sleep(ms) {
@@ -41,7 +42,6 @@ function buildDetailUrl(match, fast) {
     sport: match.sport || '',
     source: match.source || '',
     fast: fast ? '1' : '0',
-    _: String(Date.now()),
   });
 
   if (match.league) params.set('league', match.league);
@@ -107,15 +107,17 @@ async function pollLoop(key) {
     const t0 = Date.now();
 
     try {
-      const fast = await fetchDetail(s.match, true);
-      if (fast) emit(key, mergeDetails(s.detail, fast, { isFull: false }));
-
-      fullCounter += 1;
       const isCricket = s.match.sport === 'cricket' || s.match.sport === 'virtual-cricket';
-      if (!isCricket || fullCounter >= 4) {
+      fullCounter += 1;
+      const useFull = !isCricket || fullCounter >= 4;
+
+      if (useFull) {
         fullCounter = 0;
         const full = await fetchDetail(s.match, false);
         if (full) emit(key, mergeDetails(pollers.get(key)?.detail, full, { isFull: true }));
+      } else {
+        const fast = await fetchDetail(s.match, true);
+        if (fast) emit(key, mergeDetails(s.detail, fast, { isFull: false }));
       }
     } catch (err) {
       console.warn('Match detail poll failed:', err);
@@ -129,13 +131,15 @@ async function pollLoop(key) {
   if (end) end.running = false;
 }
 
-function ensurePoller(match) {
+function ensurePoller(match, { priority = false } = {}) {
   const key = getPollerKey(match);
   if (!key || !canPoll(match)) return;
 
   const isLive = match.matchState === 'in' || match.isLive;
 
   if (!pollers.has(key)) {
+    if (!priority && pollers.size >= MAX_POLLERS) return;
+
     pollers.set(key, {
       match,
       detail: null,
@@ -143,22 +147,27 @@ function ensurePoller(match) {
       listeners: new Set(),
       running: false,
       isLive,
+      priority,
     });
     pollLoop(key);
   } else {
     const s = pollers.get(key);
     s.match = match;
     s.isLive = isLive;
+    if (priority) s.priority = true;
   }
 }
 
-export function prefetchMatchDetail(match) {
+export function prefetchMatchDetail(match, { priority = false } = {}) {
   if (!match || !(match.isLive || match.matchState === 'in')) return;
-  ensurePoller(match);
+  ensurePoller(match, { priority });
 }
 
-export function subscribeMatchDetailStore(matchId, listener) {
+export function subscribeMatchDetailStore(matchId, listener, match) {
   if (!matchId) return () => {};
+  if (match && canPoll(match)) {
+    ensurePoller(match, { priority: true });
+  }
   const state = pollers.get(matchId);
   if (!state) return () => {};
   state.listeners.add(listener);
@@ -177,7 +186,7 @@ export function subscribeMatchDetail(match, listener) {
   const key = getPollerKey(match);
   if (!key || !canPoll(match)) return () => {};
 
-  ensurePoller(match);
+  ensurePoller(match, { priority: true });
 
   const state = pollers.get(key);
   const wrapped = () => {

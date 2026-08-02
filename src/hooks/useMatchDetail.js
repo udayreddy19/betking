@@ -1,4 +1,4 @@
-import { useMemo, useRef, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import { enrichMatchWithDetail } from '../utils/matchDetailEnrich';
 import {
   prefetchMatchDetail,
@@ -17,13 +17,15 @@ export function useMatchDetail(match) {
   const pollable = canPoll(match);
   const isLive = match?.matchState === 'in' || match?.isLive;
 
-  if (match && pollable && isLive) {
-    prefetchMatchDetail(match);
-  }
+  useEffect(() => {
+    if (match && pollable && isLive) {
+      prefetchMatchDetail(match, { priority: true });
+    }
+  }, [matchId, pollable, isLive]);
 
   const detailVersion = useSyncExternalStore(
     (onStoreChange) => (matchId && pollable
-      ? subscribeMatchDetailStore(matchId, onStoreChange)
+      ? subscribeMatchDetailStore(matchId, onStoreChange, match)
       : () => {}),
     () => (matchId ? getMatchDetailVersion(matchId) : 0),
     () => 0,

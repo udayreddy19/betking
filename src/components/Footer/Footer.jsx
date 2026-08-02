@@ -15,11 +15,11 @@ export default function Footer() {
             <Link to="/sports?sport=kabaddi">Kabaddi</Link>
           </div>
           <div className="footer-section">
-            <h4>Casino</h4>
-            <Link to="/casino?cat=slots">Slots</Link>
-            <Link to="/live-casino">Live Casino</Link>
-            <Link to="/casino?cat=table-games">Table Games</Link>
-            <Link to="/casino?cat=crash-games">Crash Games</Link>
+            <h4>More</h4>
+            <Link to="/live-betting">Live Betting</Link>
+            <Link to="/fantasy">Fantasy</Link>
+            <Link to="/promotions">Promotions</Link>
+            <Link to="/profile">My Profile</Link>
           </div>
           <div className="footer-section">
             <h4>Support</h4>

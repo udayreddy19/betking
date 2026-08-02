@@ -14,7 +14,7 @@ import { useAuth } from '../../context/AuthContext';
 import { isMatchBettable, isTrulyLiveMatch, getMatchState } from '../../utils/matchBetting';
 import { prefetchMatchDetail } from '../../services/matchDetailPoller';
 import { filterMatches } from '../../utils/matchFilters';
-import { resolveLeagueId, getLeagueMeta, isSameLeague } from '../../utils/leagueNavigation';
+import { resolveLeagueId, getLeagueMeta, isSameLeague, groupMatchesByLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
 import './Sports.css';
 
 const MARKET_CATEGORIES = [
@@ -41,14 +41,12 @@ function filterByLeague(matchList, activeLeague, cricketSeries = []) {
     );
   }
 
-  const leagueId = resolveLeagueId(activeLeague);
-  const featured = getLeagueMeta(leagueId);
-  if (featured) {
-    return matchList.filter((match) =>
-      featured.matchLeagues.includes(match.league) || match.league === featured.name
-    );
+  const leagueMeta = getLeagueMeta(activeLeague, cricketSeries);
+  if (leagueMeta) {
+    return matchList.filter((match) => matchBelongsToLeague(match, leagueMeta));
   }
-  return matchList.filter((match) => match.league === activeLeague || match.league === leagueId);
+
+  return matchList.filter((match) => match.league === activeLeague || match.league === resolveLeagueId(activeLeague));
 }
 
 function getMatchScores(match) {
@@ -104,6 +102,74 @@ function getMatchScores(match) {
   return { team1Score, team2Score, isLive, isFinished };
 }
 
+function CricketGroupedMatches({ groups, onSelectMatch, getMatchScores, isBetSelected, onQuickBet }) {
+  return (
+    <div className="sports-cricket-groups">
+      {groups.map(({ league, matches }) => (
+        <section key={league} className="sports-cricket-group">
+          <h3 className="sports-cricket-group__title">{league}</h3>
+          {matches.map((m) => {
+            const { team1Score, team2Score, isLive, isFinished } = getMatchScores(m);
+            const showScores = isLive || isFinished;
+            return (
+              <div key={m.id} className="sports-cricket-row">
+                <button type="button" className="sports-cricket-row__main" onClick={() => onSelectMatch(m.id)}>
+                  <div className="sports-cricket-row__meta">
+                    <span className="sports-cricket-row__league">{league}</span>
+                    <span className="sports-cricket-row__time">{m.time}</span>
+                    {isLive && <span className="sports-cricket-row__live">LIVE</span>}
+                  </div>
+                  <div className="sports-cricket-row__teams">
+                    <div className="sports-cricket-row__team">
+                      <span>{m.team1.name}</span>
+                      {showScores && <strong>{team1Score || '–'}</strong>}
+                    </div>
+                    <div className="sports-cricket-row__team">
+                      <span>{m.team2.name}</span>
+                      {showScores && <strong>{team2Score || '–'}</strong>}
+                    </div>
+                  </div>
+                </button>
+                <div className="sports-cricket-row__odds">
+                  <button
+                    type="button"
+                    className={`sports-cricket-odds-btn ${isBetSelected(m.id, '1') ? 'selected' : ''}`}
+                    onClick={() => onQuickBet(m, '1', m.odds?.team1, m.team1.name)}
+                  >
+                    <span>1</span>
+                    <strong>{Number(m.odds?.team1 || 0).toFixed(2)}</strong>
+                  </button>
+                  {m.odds?.draw != null && (
+                    <button
+                      type="button"
+                      className={`sports-cricket-odds-btn ${isBetSelected(m.id, 'X') ? 'selected' : ''}`}
+                      onClick={() => onQuickBet(m, 'X', m.odds.draw, 'Draw')}
+                    >
+                      <span>X</span>
+                      <strong>{Number(m.odds.draw).toFixed(2)}</strong>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className={`sports-cricket-odds-btn ${isBetSelected(m.id, '2') ? 'selected' : ''}`}
+                    onClick={() => onQuickBet(m, '2', m.odds?.team2, m.team2.name)}
+                  >
+                    <span>2</span>
+                    <strong>{Number(m.odds?.team2 || 0).toFixed(2)}</strong>
+                  </button>
+                  <button type="button" className="sports-cricket-markets-btn" onClick={() => onSelectMatch(m.id)}>
+                    +{120 + (m.id?.length || 0) % 80}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </section>
+      ))}
+    </div>
+  );
+}
+
 function MarketsSuspended() {
   return (
     <div className="sports-market-suspended">
@@ -135,6 +201,16 @@ export default function Sports() {
   const [expandedMarkets, setExpandedMarkets] = useState({
     winner: true, tie: true, over10: true, delivery: false, partnership: false,
   });
+  const [isWideLayout, setIsWideLayout] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(min-width: 1025px)').matches,
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1025px)');
+    const onChange = () => setIsWideLayout(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
 
   const sportMatches = useMemo(() => {
     const stateTab = isLiveBettingPage ? 'live' : 'all';
@@ -146,16 +222,21 @@ export default function Sports() {
     );
   }, [matches, activeSport, activeLeague, searchQuery, cricketSeries, isLiveBettingPage]);
 
+  const cricketGroups = useMemo(() => {
+    if (activeSport !== 'cricket' || activeLeague !== 'all' || isLiveBettingPage) return [];
+    return groupMatchesByLeague(sportMatches);
+  }, [activeSport, activeLeague, sportMatches, isLiveBettingPage]);
+
   const activeMatch = useMemo(() => {
     if (viewMode !== 'match' || !selectedMatchId) return null;
     return sportMatches.find(m => m.id === selectedMatchId) || null;
   }, [sportMatches, selectedMatchId, viewMode]);
 
   useEffect(() => {
-    sportMatches
-      .filter((m) => isTrulyLiveMatch(m))
-      .forEach((m) => prefetchMatchDetail(m));
-  }, [sportMatches]);
+    if (activeMatch && isTrulyLiveMatch(activeMatch)) {
+      prefetchMatchDetail(activeMatch, { priority: true });
+    }
+  }, [activeMatch?.id]);
 
   const selectMatch = useCallback((matchId) => {
     setSelectedMatchId(matchId);
@@ -167,10 +248,9 @@ export default function Sports() {
       next.set('match', matchId);
       return next;
     }, { replace: true });
-    refreshScores();
     const found = sportMatches.find((m) => m.id === matchId);
-    if (found) prefetchMatchDetail(found);
-  }, [activeSport, activeLeague, setSearchParams, refreshScores, sportMatches]);
+    if (found) prefetchMatchDetail(found, { priority: true });
+  }, [activeSport, activeLeague, setSearchParams, sportMatches]);
 
   const showLeagueOverview = useCallback((leagueId = activeLeague) => {
     const resolved = resolveLeagueId(leagueId);
@@ -204,16 +284,13 @@ export default function Sports() {
 
   const handleSportChange = useCallback((sportId) => {
     setActiveSport(sportId);
-    const firstLeague = featuredLeagues.find(l => l.sport === sportId);
-    const leagueId = firstLeague?.id || null;
-    setActiveLeague(leagueId);
+    setActiveLeague('all');
     setViewMode('league');
     setSelectedMatchId(null);
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
       next.set('sport', sportId);
-      if (leagueId) next.set('league', leagueId);
-      else next.delete('league');
+      next.set('league', 'all');
       next.delete('match');
       return next;
     }, { replace: true });
@@ -256,6 +333,10 @@ export default function Sports() {
   const placeBet = (selection, odds, selectionName, marketName) => {
     if (!activeMatch) return;
     addBet(activeMatch, selection, odds, selectionName, { marketName });
+  };
+
+  const quickBet = (match, selection, odds, selectionName) => {
+    addBet(match, selection, odds, selectionName, { marketName: 'Match Winner' });
   };
 
   return (
@@ -321,6 +402,13 @@ export default function Sports() {
 
         {leagueChips.length > 0 && (
           <div className="sports-league-chips">
+            <button
+              type="button"
+              className={`sports-league-chip ${activeLeague === 'all' ? 'active' : ''}`}
+              onClick={() => handleLeagueChange('all')}
+            >
+              All Leagues
+            </button>
             {leagueChips.map(league => (
               <button
                 key={league.id}
@@ -346,7 +434,7 @@ export default function Sports() {
             <button
               type="button"
               className="sports-scores-retry"
-              onClick={refreshScores}
+              onClick={() => refreshScores({ force: true })}
               disabled={isScoresLoading}
             >
               {isScoresLoading ? 'Retrying…' : 'Retry'}
@@ -384,17 +472,17 @@ export default function Sports() {
                 <Link to="/sports" className="sports-empty-action">
                   Browse all sports
                 </Link>
-              ) : (searchQuery || activeLeague) && (
+              ) : (searchQuery || (activeLeague && activeLeague !== 'all')) && (
                 <button
                   type="button"
                   className="sports-empty-action"
-                  onClick={() => { setSearchQuery(''); handleLeagueChange(leagueChips[0]?.id || null); }}
+                  onClick={() => { setSearchQuery(''); handleLeagueChange('all'); }}
                 >
                   Clear filters
                 </button>
               )}
             </div>
-          ) : sportMatches.slice(0, 10).map(m => {
+          ) : sportMatches.slice(0, 24).map(m => {
             const { team1Score, team2Score, isLive } = getMatchScores(m);
             return (
               <button
@@ -417,7 +505,17 @@ export default function Sports() {
           })}
         </div>
 
-        {viewMode === 'league' && sportMatches.length > 0 && (
+        {viewMode === 'league' && cricketGroups.length > 0 && (
+          <CricketGroupedMatches
+            groups={cricketGroups}
+            onSelectMatch={selectMatch}
+            getMatchScores={getMatchScores}
+            isBetSelected={isBetSelected}
+            onQuickBet={quickBet}
+          />
+        )}
+
+        {viewMode === 'league' && sportMatches.length > 0 && cricketGroups.length === 0 && (
           <div className="sports-league-overview">
             <h2 className="sports-league-overview-title">{breadcrumbLeague}</h2>
             <p className="sports-league-overview-subtitle">Select a match to view markets and live scores</p>
@@ -454,9 +552,11 @@ export default function Sports() {
 
         {viewMode === 'match' && activeMatch ? (
           <>
-            <div className="sports-mobile-live-widget">
-              <LiveMatchGraphicWidget match={activeMatch} />
-            </div>
+            {!isWideLayout && (
+              <div className="sports-mobile-live-widget">
+                <LiveMatchGraphicWidget match={activeMatch} />
+              </div>
+            )}
 
             <div className="sports-match-banner" role="button" tabIndex={0} onClick={() => setModalMatch(activeMatch)} onKeyDown={e => e.key === 'Enter' && setModalMatch(activeMatch)}>
               <div className="sports-match-banner-time">{matchTimeLabel}</div>
@@ -650,9 +750,11 @@ export default function Sports() {
       </div>
 
       <aside className="sports-right">
-        <div className="sports-desktop-live-widget">
-          <LiveMatchGraphicWidget match={activeMatch} />
-        </div>
+        {isWideLayout && (
+          <div className="sports-desktop-live-widget">
+            <LiveMatchGraphicWidget match={activeMatch} />
+          </div>
+        )}
         <div className="sports-search sports-search--desktop">
           <div className="sports-search-wrapper">
             <FiSearch className="sports-search-icon" />

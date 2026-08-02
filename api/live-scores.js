@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const force = !!(req.query?._ || req.query?.refresh);
+    const force = req.query?.refresh === '1';
     const payload = await aggregateLiveScores({ force });
 
     res.setHeader('Cache-Control', 'no-store');

@@ -68,9 +68,9 @@ export default function Sidebar() {
                 <HiOutlineTrophy className="tab-icon" />
                 Sports
               </button>
-              <button className="sidebar-tab" onClick={() => { closeSidebar(); navigate('/casino'); }}>
+              <button className="sidebar-tab" onClick={() => { closeSidebar(); navigate('/live-betting'); }}>
                 <HiOutlineCube className="tab-icon" />
-                Casino
+                Live
               </button>
             </div>
 

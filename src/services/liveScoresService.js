@@ -12,10 +12,12 @@ export { normalizeTeamName };
 
 /**
  * Fetch live scores from the unified BetKing API.
+ * @param {{ force?: boolean }} [options] - Pass force:true only for manual retry.
  * Returns: { matches, series, counts, sources, fetchedAt, cached }
  */
-export async function fetchLiveScores() {
-  const response = await fetch(`/api/live-scores?_=${Date.now()}`, { cache: 'no-store' });
+export async function fetchLiveScores(options = {}) {
+  const url = options.force ? '/api/live-scores?refresh=1' : '/api/live-scores';
+  const response = await fetch(url, { cache: 'no-store' });
   if (!response.ok) {
     throw new Error(`Live scores API failed (${response.status})`);
   }

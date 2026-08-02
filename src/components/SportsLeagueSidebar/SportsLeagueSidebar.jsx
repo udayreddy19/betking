@@ -32,6 +32,16 @@ export default function SportsLeagueSidebar({ activeSport, activeLeague, cricket
       <div className="sports-league-section">
         <h3 className="sports-league-heading">Top Leagues</h3>
         <ul className="sports-league-list">
+          <li>
+            <button
+              type="button"
+              className={`sports-league-item ${activeLeague === 'all' ? 'active' : ''}`}
+              onClick={() => onSelectLeague('all')}
+            >
+              <span className="sports-league-item-icon">🏏</span>
+              <span className="sports-league-item-label">All Leagues</span>
+            </button>
+          </li>
           {sportLeagues.map((league) => (
             <li key={league.id}>
               <button

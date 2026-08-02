@@ -638,6 +638,139 @@
   margin-bottom: var(--space-2);
 }
 
+/* 10CRIC-style grouped cricket list */
+.sports-cricket-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.sports-cricket-group__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 var(--space-2);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.sports-cricket-row {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-2);
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  margin-bottom: var(--space-2);
+  overflow: hidden;
+}
+
+.sports-cricket-row__main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  text-align: left;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.sports-cricket-row__main:hover {
+  background: #f8fafc;
+}
+
+.sports-cricket-row__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.sports-cricket-row__live {
+  color: #ef4444;
+  font-weight: 700;
+  font-size: 0.7rem;
+}
+
+.sports-cricket-row__teams {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sports-cricket-row__team {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  gap: var(--space-2);
+}
+
+.sports-cricket-row__team strong {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+.sports-cricket-row__odds {
+  display: flex;
+  align-items: stretch;
+  border-left: 1px solid #e2e8f0;
+}
+
+.sports-cricket-odds-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-right: 1px solid #e2e8f0;
+  background: #f8fafc;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  transition: background 0.15s;
+}
+
+.sports-cricket-odds-btn strong {
+  font-size: 0.95rem;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.sports-cricket-odds-btn:hover {
+  background: #e2e8f0;
+}
+
+.sports-cricket-odds-btn.selected {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.sports-cricket-odds-btn.selected strong {
+  color: #1d4ed8;
+}
+
+.sports-cricket-markets-btn {
+  min-width: 48px;
+  padding: var(--space-2);
+  border: none;
+  background: #fff;
+  color: #3b82f6;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.sports-cricket-markets-btn:hover {
+  background: #eff6ff;
+}
+
 .sports-right .betslip {
   position: static;
   width: 100%;

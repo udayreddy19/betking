@@ -14,7 +14,7 @@ export function liveScoresApiPlugin() {
 
         try {
           const url = new URL(req.url, 'http://localhost');
-          const force = !!(url.searchParams.get('_') || url.searchParams.get('refresh'));
+          const force = url.searchParams.get('refresh') === '1';
           const payload = await aggregateLiveScores({ force });
           res.setHeader('Content-Type', 'application/json');
           res.end(JSON.stringify(payload));

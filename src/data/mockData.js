@@ -39,43 +39,17 @@ export const heroCategories = [
     link: '/live-betting'
   },
   {
-    id: 'casino',
-    name: 'CASINO',
-    icon: '🎰',
-    image: '🎰',
-    color: 'linear-gradient(135deg, #78350f 0%, #451a03 100%)',
-    gradient: 'linear-gradient(135deg, #78350f 0%, #451a03 100%)',
-    bgGradient: 'linear-gradient(135deg, #78350f 0%, #451a03 100%)',
-    description: '2,000+ Slots, Megaways & Huge Jackpot Games',
-    badge: 'HOT GAMES',
-    borderColor: '#f59e0b',
-    link: '/casino'
-  },
-  {
-    id: 'live-casino',
-    name: 'LIVE CASINO',
-    icon: '🎲',
-    image: '🎲',
-    color: 'linear-gradient(135deg, #581c87 0%, #2e1065 100%)',
-    gradient: 'linear-gradient(135deg, #581c87 0%, #2e1065 100%)',
-    bgGradient: 'linear-gradient(135deg, #581c87 0%, #2e1065 100%)',
-    description: 'Real Live Dealers, Roulette, Blackjack & Baccarat Tables',
-    badge: '24/7 TABLES',
-    borderColor: '#a855f7',
-    link: '/live-casino'
-  },
-  {
-    id: 'crash-games',
-    name: 'CRASH GAMES',
-    icon: '🚀',
-    image: '🚀',
+    id: 'fantasy',
+    name: 'FANTASY',
+    icon: '🎯',
+    image: '🎯',
     color: 'linear-gradient(135deg, #0e7490 0%, #164e63 100%)',
     gradient: 'linear-gradient(135deg, #0e7490 0%, #164e63 100%)',
     bgGradient: 'linear-gradient(135deg, #0e7490 0%, #164e63 100%)',
-    description: 'Aviator, Spribe Multipliers & Instant Cashout',
-    badge: 'HIGH WIN',
+    description: 'Build your dream team and compete for big prizes',
+    badge: 'NEW',
     borderColor: '#06b6d4',
-    link: '/casino?cat=crash-games'
+    link: '/fantasy'
   }
 ];
 
@@ -102,17 +76,19 @@ export const leagues = [
 ];
 
 export const featuredLeagues = [
-  { id: 'hundred-m', name: 'The Hundred', sport: 'cricket', icon: '🔥', matchLeagues: ['The Hundred Men', "The Hundred Men's Competition 2026"], breadcrumb: 'England - The Hundred' },
+  { id: 'hundred-m', name: 'The Hundred', sport: 'cricket', icon: '🔥', matchLeagues: ['The Hundred Men', "The Hundred Men's Competition 2026", 'The Hundred'], breadcrumb: 'England - The Hundred' },
   { id: 'hundred-w', name: 'The Hundred, Women', sport: 'cricket', icon: '🔥', matchLeagues: ['The Hundred Women', "The Hundred Women's Competition 2026"], breadcrumb: 'England - The Hundred, Women' },
-  { id: 'lpl', name: 'T20 Lanka Premier League', sport: 'cricket', icon: '🔥', matchLeagues: ['Lanka Premier League', 'LPL, 2026', 'T20 Lanka Premier League'] },
-  { id: 'dpl', name: 'Delhi Premier League', sport: 'cricket', icon: '🔥', matchLeagues: ['Delhi Premier League', 'DPL 2026'] },
+  { id: 'lpl', name: 'T20 Lanka Premier League', sport: 'cricket', icon: '🔥', matchLeagues: ['Lanka Premier League', 'LPL, 2026', 'T20 Lanka Premier League', 'Lanka Premier League, 2026'] },
+  { id: 'dpl', name: 'Delhi Premier League', sport: 'cricket', icon: '🔥', matchLeagues: ['Delhi Premier League', 'DPL 2026', 'Delhi Premier League, 2026'] },
   { id: 'gsl', name: 'Global Super League', sport: 'cricket', icon: '🔥', matchLeagues: ['Global Super League', 'Global Super League 2026'] },
   { id: 'one-day', name: 'One-Day Cup', sport: 'cricket', icon: '🔥', matchLeagues: ['One-Day Cup', 'England Domestic One-Day Cup'] },
   { id: 'ken-bah', name: 'Kenya vs Bahrain', sport: 'cricket', icon: '🔥', matchLeagues: ['T20 Series Kenya vs Bahrain', 'Bahrain tour of Kenya, 2026'] },
-  { id: 'pak-wi', name: 'Test Series West Indies vs. Pakistan', sport: 'cricket', icon: '🔥', matchLeagues: ['West Indies v Pakistan, 2026', 'Pakistan tour of West Indies, 2026'] },
+  { id: 'sl-pak-w', name: 'T20 Series Sri Lanka vs Pakistan, Women', sport: 'cricket', icon: '🔥', matchLeagues: ['T20 Series Sri Lanka vs Pakistan, Women', 'Pakistan Women tour of Sri Lanka', 'Pakistan Women tour of Sri Lanka, 2026'] },
+  { id: 'pak-wi', name: 'Test Series West Indies vs. Pakistan', sport: 'cricket', icon: '🔥', matchLeagues: ['West Indies v Pakistan, 2026', 'Pakistan tour of West Indies, 2026', 'Test Series West Indies vs. Pakistan'] },
+  { id: 'qcl', name: 'Quantum Cricket League', sport: 'cricket', icon: '🔥', matchLeagues: ['Quantum Cricket League', 'Global Super League', 'Global Super League 2026'] },
+  { id: 'ipl-srl', name: 'Indian Premier League SRL', sport: 'cricket', icon: '🔥', matchLeagues: ['IPL 2026', 'IPL SRL', 'Indian Premier League', 'Indian Premier League SRL'] },
+  { id: 't20-intl-srl', name: 'T20 International SRL', sport: 'cricket', icon: '🔥', matchLeagues: ['T20 International SRL', 'T20 International'] },
   { id: 'tt-elite', name: 'TT Elite Series', sport: 'table-tennis', icon: '🔥', matchLeagues: ['TT Elite Series'] },
-  { id: 'qcl', name: 'Quantum Cricket League', sport: 'cricket', icon: '🔥', matchLeagues: ['Quantum Cricket League'] },
-  { id: 'ipl-srl', name: 'IPL SRL', sport: 'cricket', icon: '🔥', matchLeagues: ['IPL 2026', 'IPL SRL', 'Indian Premier League'] },
   { id: 'cpl', name: 'Caribbean Premier League', sport: 'cricket', icon: '🔥', matchLeagues: ['Caribbean Premier League', 'Caribbean Premier League 2026'] },
   { id: 'tnpl', name: 'Tamil Nadu Premier League', sport: 'cricket', icon: '🔥', matchLeagues: ['Tamil Nadu Premier League', 'Tamil Nadu Premier League 2026'] },
   { id: 'epl', name: 'Premier League', sport: 'soccer', icon: '⚽', matchLeagues: ['Premier League'] },
@@ -569,25 +545,6 @@ export const matches = [
     liveDetails: { score1: 27, score2: 24, minute: 'Final', commentary: '49ers win by 3' }
   },
 ];
-
-export const casinoCategories = [
-  { id: 'all', name: 'All Games', icon: '🎰' },
-  { id: 'slots', name: 'Slots', icon: '🎰' },
-  { id: 'live-casino', name: 'Live Casino', icon: '🎲' },
-  { id: 'crash-games', name: 'Crash Games', icon: '🚀' },
-  { id: 'table-games', name: 'Table Games', icon: '🃏' },
-  { id: 'jackpots', name: 'Jackpots', icon: '💰' },
-];
-
-export const liveCasinoCategories = [
-  { id: 'all', name: 'All Tables', icon: '🎲' },
-  { id: 'roulette', name: 'Roulette', icon: '🎡' },
-  { id: 'blackjack', name: 'Blackjack', icon: '🃏' },
-  { id: 'baccarat', name: 'Baccarat', icon: '🎴' },
-  { id: 'game-shows', name: 'Game Shows', icon: '🎪' },
-];
-
-export { casinoGames, liveCasinoGames } from './casinoGamesData.js';
 
 export const promotions = [
   {

@@ -8,7 +8,7 @@ export default function Terms() {
       <section>
         <h2>1. Platform</h2>
         <p>
-          BetKing provides sports betting, casino, and related gaming services. By using this site you agree to these terms.
+          BetKing provides sports betting and related gaming services. By using this site you agree to these terms.
         </p>
       </section>
       <section>

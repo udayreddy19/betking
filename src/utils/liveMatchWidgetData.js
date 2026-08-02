@@ -119,9 +119,9 @@ export function buildOverHistoryRows(fieldState, matchId, match) {
   const { overNum: currentOver, balls: apiBalls } = generateCurrentOverBalls(matchId, oversStr);
 
   const rows = [];
+  const historyStart = Math.max(1, currentOver - 10);
 
-  // All completed overs — scroll horizontally to browse history
-  for (let o = 1; o < currentOver; o += 1) {
+  for (let o = historyStart; o < currentOver; o += 1) {
     rows.push({
       overNum: o,
       balls: generateOverBalls(matchId, o),

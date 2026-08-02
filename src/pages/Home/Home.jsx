@@ -4,15 +4,8 @@ import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import FilterChips from '../../components/FilterChips/FilterChips';
 import MatchCard from '../../components/MatchCard/MatchCard';
 import HomeCategoryGrid from '../../components/HomeCategoryGrid/HomeCategoryGrid';
-import ProviderRibbon from '../../components/ProviderRibbon/ProviderRibbon';
-import HomeTopGameCard from '../../components/HomeTopGameCard/HomeTopGameCard';
-import HomeLiveGameCard from '../../components/HomeLiveGameCard/HomeLiveGameCard';
-import { sportsCategories, featuredLeagues, casinoGames } from '../../data/mockData';
-import {
-  homePromoSlides,
-  homeTopGames,
-  homeLiveGames,
-} from '../../data/homePageData';
+import { sportsCategories, featuredLeagues } from '../../data/mockData';
+import { homePromoSlides } from '../../data/homePageData';
 import { useLiveSports } from '../../context/LiveSportsContext';
 import { useAuth } from '../../context/AuthContext';
 import { filterMatches } from '../../utils/matchFilters';
@@ -28,14 +21,6 @@ function filterByLeague(matchList, leagueId) {
   );
 }
 
-function resolveHomeGames(catalog, entries) {
-  return entries.map((entry) => {
-    const game = catalog.find((g) => g.id === entry.gameId);
-    if (!game) return null;
-    return { game, ...entry };
-  }).filter(Boolean);
-}
-
 export default function Home() {
   const { matches } = useLiveSports();
   const { showToast } = useAuth();
@@ -44,8 +29,6 @@ export default function Home() {
   const [activeLeague, setActiveLeague] = useState(null);
   const [promoIndex, setPromoIndex] = useState(0);
   const matchScrollRef = useRef(null);
-  const topGamesRef = useRef(null);
-  const liveGamesRef = useRef(null);
 
   const leagueChips = useMemo(
     () => featuredLeagues.filter((l) => l.sport === activeSport),
@@ -56,9 +39,6 @@ export default function Home() {
     const bySport = filterMatches(matches || [], { sport: activeSport, stateTab: 'all' });
     return activeLeague ? filterByLeague(bySport, activeLeague) : bySport;
   }, [matches, activeSport, activeLeague]);
-
-  const topGames = useMemo(() => resolveHomeGames(casinoGames, homeTopGames), []);
-  const topLiveGames = useMemo(() => resolveHomeGames(casinoGames, homeLiveGames), []);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -81,7 +61,6 @@ export default function Home() {
 
   return (
     <div className="home-page container" id="home-page">
-      {/* Promo banner */}
       <button
         type="button"
         className="home-promo-banner"
@@ -111,21 +90,6 @@ export default function Home() {
 
       <HomeCategoryGrid />
 
-      {/* Top Games */}
-      <section className="home-section" id="top-games-section">
-        <div className="section-header section-header--simple">
-          <h2>Top Games</h2>
-        </div>
-        <div className="home-games-scroll scroll-row-bleed" ref={topGamesRef}>
-          {topGames.map(({ game, ...display }) => (
-            <HomeTopGameCard key={game.id} game={game} {...display} />
-          ))}
-        </div>
-      </section>
-
-      <ProviderRibbon />
-
-      {/* Sports action */}
       <section className="home-section home-sports-action" id="sports-action-section">
         <div className="section-header">
           <h2>Sports action</h2>
@@ -181,18 +145,6 @@ export default function Home() {
               </button>
             </div>
           )}
-        </div>
-      </section>
-
-      {/* Top Live Games */}
-      <section className="home-section home-live-games" id="top-live-games-section">
-        <div className="section-header section-header--simple">
-          <h2>Top Live Games</h2>
-        </div>
-        <div className="home-live-games-scroll scroll-row-bleed" ref={liveGamesRef}>
-          {topLiveGames.map(({ game, ...display }) => (
-            <HomeLiveGameCard key={`${game.id}-${display.displayName}`} game={game} {...display} />
-          ))}
         </div>
       </section>
 

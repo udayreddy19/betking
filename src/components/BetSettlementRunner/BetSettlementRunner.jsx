@@ -13,6 +13,7 @@ export default function BetSettlementRunner() {
 
   useEffect(() => {
     if (!isLoggedIn || placedBets.length === 0) return;
+    if (!placedBets.some((b) => b.status === 'pending')) return;
 
     const { bets, changed } = settleAllPlacedBets(placedBets, matches);
     if (!changed) return;

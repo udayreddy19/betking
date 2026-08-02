@@ -15,8 +15,6 @@ import './Header.css';
 const navLinks = [
   { to: '/live-betting', label: 'Live Betting' },
   { to: '/sports', label: 'Sports' },
-  { to: '/casino', label: 'Casino' },
-  { to: '/live-casino', label: 'Live Casino' },
   { to: '/fantasy', label: 'Fantasy' },
   { to: '/promotions', label: 'Win Free' },
 ];

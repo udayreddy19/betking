@@ -1,10 +1,6 @@
 {
   "rewrites": [
     {
-      "source": "/api/casino/launch",
-      "destination": "/api/casino-launch"
-    },
-    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
