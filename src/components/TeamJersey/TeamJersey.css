@@ -6,7 +6,11 @@
   line-height: 0;
 }
 
-.team-jersey-kit__svg {
+.team-jersey-kit__img {
   display: block;
-  overflow: visible;
+  object-fit: contain;
+  object-position: center bottom;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }

@@ -145,3 +145,32 @@ export function getJerseyPalette(team) {
     accentLo: shadeHex(accent, -22),
   };
 }
+
+/** CSS filter to recolor the approved jersey mockup PNG per team. */
+export function getJerseyImageFilter(team) {
+  const { primary } = getJerseyPalette(team);
+  const rgb = hexToRgb(primary);
+  if (!rgb) return 'none';
+
+  const { h, s, l } = rgbToHsl(rgb.r, rgb.g, rgb.b);
+
+  // Reference mockup base: royal blue kit
+  const TEMPLATE_HUE = 214;
+  const TEMPLATE_SAT = 52;
+  const TEMPLATE_LIGHT = 46;
+
+  let hueRotate = h - TEMPLATE_HUE;
+  while (hueRotate > 180) hueRotate -= 360;
+  while (hueRotate < -180) hueRotate += 360;
+
+  const saturate = clamp(s / TEMPLATE_SAT, 0.7, 1.55);
+  const brightness = clamp(l / TEMPLATE_LIGHT, 0.78, 1.22);
+  const contrast = clamp(0.96 + (s - TEMPLATE_SAT) / 200, 0.92, 1.08);
+
+  return [
+    `hue-rotate(${hueRotate.toFixed(1)}deg)`,
+    `saturate(${saturate.toFixed(2)})`,
+    `brightness(${brightness.toFixed(2)})`,
+    `contrast(${contrast.toFixed(2)})`,
+  ].join(' ');
+}
