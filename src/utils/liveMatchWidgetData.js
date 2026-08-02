@@ -1,0 +1,174 @@
+import { parseOvers } from './liveFieldState';
+
+function hashSeed(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i += 1) {
+    h = ((h << 5) - h) + str.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h);
+}
+
+export function getTeamShortCode(name) {
+  const clean = name.replace(/\s+W$/, '').trim();
+  const words = clean.split(/\s+/);
+  if (words.length >= 2) {
+    return words.map((w) => w[0]).join('').toUpperCase().slice(0, 3);
+  }
+  return clean.slice(0, 3).toUpperCase();
+}
+
+export function getTeamDisplayName(name) {
+  return name.replace(/\s+W$/, '').trim();
+}
+
+export function getChaseText(match, innings, team1, score1, score2, wickets2) {
+  if (innings.inningsNum !== 2 || match?.matchState !== 'in') return null;
+
+  const chasingTeam = getTeamDisplayName(innings.battingTeam);
+  const target = score1 + 1;
+  const runsNeeded = Math.max(0, target - score2);
+  const { over, ball } = parseOvers(innings.displayOvers);
+  const ballsBowled = over * 6 + ball;
+  const totalBalls = 20 * 6;
+  const ballsRemaining = Math.max(0, totalBalls - ballsBowled);
+
+  return `${chasingTeam} (${score2}/${wickets2}) require ${runsNeeded} runs from ${ballsRemaining} balls.`;
+}
+
+const DISMISSAL_TEMPLATES = [
+  'LBW b {bowler}',
+  'c {fielder} b {bowler}',
+  'b {bowler}',
+  'st {keeper} b {bowler}',
+  'run out ({fielder})',
+];
+
+export function buildScorecardInnings(match, teamName, roster, fieldState, isBattingInnings) {
+  const matchId = match?.id || 'default';
+  const seed = hashSeed(`${matchId}-${teamName}`);
+  const bowlers = roster.bowlers || ['Bowler'];
+  const batters = roster.batters || ['Batter 1', 'Batter 2'];
+
+  const outCount = isBattingInnings
+    ? Math.min(2, Math.floor((match?.liveDetails?.wickets2 ?? match?.liveDetails?.wickets ?? 0)))
+    : Math.min(5, Math.floor((match?.liveDetails?.wickets ?? 0)));
+
+  const players = [];
+
+  for (let i = 0; i < outCount; i += 1) {
+    const name = batters[i % batters.length];
+    const runs = 5 + (seed + i * 7) % 28;
+    const balls = 8 + (seed + i * 3) % 18;
+    const bowler = bowlers[(seed + i) % bowlers.length];
+    const dismissal = DISMISSAL_TEMPLATES[(seed + i) % DISMISSAL_TEMPLATES.length]
+      .replace('{bowler}', bowler)
+      .replace('{fielder}', batters[(i + 1) % batters.length])
+      .replace('{keeper}', 'WK');
+
+    players.push({
+      name,
+      runs,
+      balls,
+      sr: balls > 0 ? ((runs / balls) * 100).toFixed(2) : '0.00',
+      dismissal,
+      notOut: false,
+    });
+  }
+
+  if (isBattingInnings && fieldState) {
+    const striker = fieldState.strikerIdx === 0 ? fieldState.batter1 : fieldState.batter2;
+    const nonStriker = fieldState.strikerIdx === 0 ? fieldState.batter2 : fieldState.batter1;
+
+    players.push({
+      ...striker,
+      sr: striker.balls > 0 ? ((striker.runs / striker.balls) * 100).toFixed(2) : '0.00',
+      notOut: true,
+      isStriker: fieldState.strikerIdx === (outCount % 2 === 0 ? 0 : 1),
+    });
+    players.push({
+      ...nonStriker,
+      sr: nonStriker.balls > 0 ? ((nonStriker.runs / nonStriker.balls) * 100).toFixed(2) : '0.00',
+      notOut: true,
+      isStriker: fieldState.strikerIdx !== (outCount % 2 === 0 ? 0 : 1),
+    });
+  } else if (isBattingInnings) {
+    players.push(
+      { name: batters[outCount % batters.length], runs: 15, balls: 11, sr: '136.36', notOut: true, isStriker: true },
+      { name: batters[(outCount + 1) % batters.length], runs: 8, balls: 9, sr: '88.89', notOut: true, isStriker: false },
+    );
+  }
+
+  return players;
+}
+
+export function buildOverHistoryRows(fieldState, matchId) {
+  if (!fieldState) return [];
+
+  const rows = [];
+  const currentOver = fieldState.overNum;
+  const currentBalls = fieldState.overBalls || [];
+
+  if (currentOver > 1) {
+    const prevBalls = [];
+    for (let i = 0; i < 6; i += 1) {
+      const idx = (currentOver - 2) * 6 + i;
+      const seed = hashSeed(`${matchId}-ball-${idx}`);
+      const vals = ['1', '4', '1', '1', '1', '•'];
+      prevBalls.push(vals[seed % vals.length]);
+    }
+    rows.push({ overNum: currentOver - 1, balls: prevBalls });
+  }
+
+  rows.push({ overNum: currentOver, balls: currentBalls });
+
+  return rows;
+}
+
+export function buildStatsOvers(fieldState, match, battingScore, battingWickets) {
+  const matchId = match?.id || 'default';
+  const currentOver = fieldState?.overNum ?? parseOvers(match?.liveDetails?.overs2 || match?.liveDetails?.overs || '0.0').over;
+  const rows = [];
+
+  for (let o = currentOver; o >= Math.max(1, currentOver - 3); o -= 1) {
+    const balls = [];
+    let overRuns = 0;
+    let overWkts = 0;
+
+    for (let i = 0; i < 6; i += 1) {
+      const idx = (o - 1) * 6 + i;
+      const seed = hashSeed(`${matchId}-stat-${idx}`);
+      const options = ['•', '1', '1', '4', '2', 'W'];
+      const ball = o === currentOver && fieldState?.overBalls?.[i]
+        ? fieldState.overBalls[i]
+        : options[seed % options.length];
+
+      balls.push(ball);
+      if (ball === 'W') overWkts += 1;
+      else if (ball !== '•') overRuns += parseInt(ball, 10) || 0;
+    }
+
+    const cumRuns = Math.max(0, battingScore - (currentOver - o) * 8);
+    rows.push({
+      overNum: o,
+      summary: `${cumRuns}/${battingWickets} (${overRuns} runs, ${overWkts} wkt)`,
+      balls,
+    });
+  }
+
+  return rows;
+}
+
+export function getWicketOvers(match, wickets) {
+  const matchId = match?.id || 'm1';
+  const seed = hashSeed(matchId);
+  const overs = new Set();
+  for (let w = 0; w < Math.min(wickets, 5); w += 1) {
+    overs.add(((seed + w * 3) % 18) + 1);
+  }
+  if (overs.size === 0 && wickets > 0) {
+    overs.add(2);
+    if (wickets > 1) overs.add(6);
+  }
+  return overs;
+}

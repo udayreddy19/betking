@@ -85,10 +85,20 @@ export function createFieldState(match, roster) {
     : formatBall(nextRun(matchId, 0));
   const lastRun = lastBall === 'W' ? 0 : (lastBall === '•' ? 0 : parseInt(lastBall, 10) || 1);
 
+  const recentOvers = [];
+  if (over > 0) {
+    const prevBalls = [];
+    for (let i = 0; i < 6; i += 1) {
+      prevBalls.push(formatBall(nextRun(matchId, (over - 1) * 6 + i)));
+    }
+    recentOvers.push({ overNum: over, balls: prevBalls, runs: 7, wickets: 0 });
+  }
+
   return {
     matchId,
     overNum: Math.max(1, over || 1),
     overBalls: ballsInOver.length > 0 ? ballsInOver : [formatBall(nextRun(matchId, 0))],
+    recentOvers,
     ballIndex: over * 6 + startBall,
     strikerIdx,
     batter1,
@@ -96,6 +106,9 @@ export function createFieldState(match, roster) {
     bowler: ld.bowler?.name || roster.bowlers[0],
     lastBallRun: lastRun,
     wagonAngle: runsToWagonAngle(lastRun),
+    inningsFours: ld.fours ?? 8 + over,
+    inningsSixes: ld.sixes ?? 2 + (over % 3),
+    extras: ld.extras ?? 2,
     syncedRuns: ld.runs ?? 0,
     syncedScore2: ld.score2 ?? 0,
     syncedOvers: ld.overs || '0.0',
@@ -128,8 +141,20 @@ export function tickFieldState(state, match, roster) {
   let batter1 = { ...state.batter1 };
   let batter2 = { ...state.batter2 };
   let bowler = state.bowler;
+  let recentOvers = [...(state.recentOvers || [])];
+  let inningsFours = state.inningsFours ?? 0;
+  let inningsSixes = state.inningsSixes ?? 0;
+  let extras = state.extras ?? 0;
 
   if (overBalls.length > 6) {
+    const completedBalls = state.overBalls;
+    let overRuns = 0;
+    let overWkts = 0;
+    completedBalls.forEach((b) => {
+      if (b === 'W') overWkts += 1;
+      else if (b !== '•') overRuns += parseInt(b, 10) || 0;
+    });
+    recentOvers = [...recentOvers.slice(-3), { overNum, balls: completedBalls, runs: overRuns, wickets: overWkts }];
     overBalls = [ballLabel];
     overNum += 1;
     bowler = roster.bowlers[overNum % roster.bowlers.length] || bowler;
@@ -147,6 +172,8 @@ export function tickFieldState(state, match, roster) {
     striker.balls += 1;
     if (numericRun === 4) striker.fours += 1;
     if (numericRun === 6) striker.sixes += 1;
+    if (numericRun === 4) inningsFours += 1;
+    if (numericRun === 6) inningsSixes += 1;
     if (strikerIdx === 0) batter1 = { ...striker };
     else batter2 = { ...striker };
 
@@ -161,6 +188,7 @@ export function tickFieldState(state, match, roster) {
     ...state,
     overNum,
     overBalls,
+    recentOvers,
     ballIndex: nextBallIndex,
     strikerIdx,
     batter1,
@@ -168,6 +196,9 @@ export function tickFieldState(state, match, roster) {
     bowler,
     lastBallRun: lastRun,
     wagonAngle: runsToWagonAngle(lastRun),
+    inningsFours,
+    inningsSixes,
+    extras,
     lastTickAt: Date.now(),
   };
 }
