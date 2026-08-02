@@ -19,15 +19,13 @@ import {
 } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
-import { useTheme } from '../../context/ThemeContext';
-import { HiOutlineMoon, HiOutlineSun } from '../../icons';
+import ThemeToggle from '../ThemeToggle/ThemeToggle';
 import FinancialModals from '../FinancialModals/FinancialModals';
 import './Sidebar.css';
 
 export default function Sidebar() {
   const { user, isLoggedIn, isSidebarOpen, closeSidebar, logout, openLoginModal, openDepositModal } = useAuth();
   const { openMyBets } = useBetSlip();
-  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [activeFinModal, setActiveFinModal] = useState(null);
 
@@ -169,10 +167,7 @@ export default function Sidebar() {
             </div>
 
             <div className="sidebar-theme">
-              <button type="button" className="sidebar-theme-btn" onClick={toggleTheme}>
-                {theme === 'dark' ? <HiOutlineSun /> : <HiOutlineMoon />}
-                <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
-              </button>
+              <ThemeToggle variant="sidebar" />
             </div>
 
             <div className="sidebar-logout">
@@ -189,10 +184,9 @@ export default function Sidebar() {
             <p>Log in or create an account to start betting</p>
             <button className="sidebar-guest-btn primary" onClick={handleLogin}>Log in</button>
             <button className="sidebar-guest-btn outline" onClick={handleRegister}>Create Account</button>
-            <button type="button" className="sidebar-theme-btn guest" onClick={toggleTheme}>
-              {theme === 'dark' ? <HiOutlineSun /> : <HiOutlineMoon />}
-              <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
-            </button>
+            <div className="sidebar-theme sidebar-theme--guest">
+              <ThemeToggle variant="sidebar" />
+            </div>
           </div>
         )}
       </aside>

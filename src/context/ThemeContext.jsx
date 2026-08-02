@@ -1,4 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { flushSync } from 'react-dom';
+import { runThemeTransition } from '../utils/themeTransition';
 
 const ThemeContext = createContext(null);
 const STORAGE_KEY = 'betking-theme';
@@ -17,27 +19,35 @@ function applyTheme(theme) {
 }
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(getInitialTheme);
+  const [theme, setThemeState] = useState(getInitialTheme);
 
   useEffect(() => {
     applyTheme(theme);
     localStorage.setItem(STORAGE_KEY, theme);
   }, [theme]);
 
-  const toggleTheme = useCallback(() => {
-    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
-  }, []);
+  const setTheme = useCallback((mode, event) => {
+    if (mode !== 'light' && mode !== 'dark') return;
+    if (mode === theme) return;
 
-  const setThemeMode = useCallback((mode) => {
-    if (mode === 'light' || mode === 'dark') setTheme(mode);
-  }, []);
+    runThemeTransition(() => {
+      flushSync(() => {
+        setThemeState(mode);
+        applyTheme(mode);
+      });
+    }, event);
+  }, [theme]);
+
+  const toggleTheme = useCallback((event) => {
+    setTheme(theme === 'light' ? 'dark' : 'light', event);
+  }, [theme, setTheme]);
 
   return (
     <ThemeContext.Provider value={{
       theme,
       isDark: theme === 'dark',
       toggleTheme,
-      setTheme: setThemeMode,
+      setTheme,
     }}>
       {children}
     </ThemeContext.Provider>
