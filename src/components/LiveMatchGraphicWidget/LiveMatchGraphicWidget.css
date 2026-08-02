@@ -894,3 +894,112 @@
   padding-top: 10px;
   font-weight: 800;
 }
+
+@media (max-width: 640px) {
+  .live-widget-body {
+    padding: 12px 12px 0;
+  }
+
+  .live-widget-teams-row {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .live-widget-team {
+    font-size: 0.72rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .live-widget-scoreline {
+    font-size: 1.05rem;
+  }
+
+  .live-widget-chase-text {
+    font-size: 0.68rem;
+    padding: 0 2px;
+    line-height: 1.45;
+    hyphens: auto;
+  }
+
+  .live-widget-timeline {
+    display: none;
+  }
+
+  .live-widget-innings-select {
+    max-width: 100%;
+    font-size: 0.68rem;
+  }
+
+  .cric-field-view {
+    margin: 0 -12px;
+  }
+
+  .cric-field-pitch {
+    min-height: 0;
+  }
+
+  .cric-field-pitch__bg {
+    display: none;
+  }
+
+  .cric-field-scorecard {
+    margin-top: 0;
+    padding: 12px 10px;
+    border-radius: 0;
+    background: rgba(20, 60, 30, 0.96);
+  }
+
+  .cric-field-table__head,
+  .cric-field-table__row {
+    font-size: 0.68rem;
+    grid-template-columns: minmax(0, 1.6fr) repeat(4, minmax(26px, 1fr));
+    gap: 2px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .cric-field-table__name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cric-field-footer {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .cric-field-extras {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+  .cric-over-history {
+    padding: 6px 10px 10px;
+  }
+
+  .cric-over-history-hint {
+    display: none;
+  }
+
+  .cric-panel {
+    padding: 12px 10px 16px;
+  }
+
+  .cric-scorecard-table__head,
+  .cric-scorecard-table__row {
+    font-size: 0.68rem;
+  }
+}
+
+@media (max-width: 1024px) {
+  .live-graphic-card-10cric {
+    border-radius: 10px;
+    margin-bottom: var(--space-2);
+  }
+}

@@ -384,7 +384,10 @@ export default function Sports() {
   };
 
   return (
-    <div className="sports-page" id="sports-page">
+    <div
+      className={`sports-page${viewMode === 'match' ? ' sports-page--match' : ''}`}
+      id="sports-page"
+    >
       <button type="button" className="sports-chat-fab" aria-label="Live chat" onClick={() => showToast('Live chat support coming soon!', 'info')}>
         <FiMessageCircle size={24} />
       </button>
@@ -409,6 +412,20 @@ export default function Sports() {
           </div>
         )}
 
+        {!isWideLayout && viewMode === 'match' && activeMatch ? (
+          <div className="sports-mobile-match-nav">
+            <button
+              type="button"
+              className="sports-mobile-match-back"
+              onClick={() => showLeagueOverview(activeLeague)}
+            >
+              ← {breadcrumbLeague}
+            </button>
+            <span className="sports-mobile-match-title">
+              {activeMatch.team1.shortName || activeMatch.team1.name} v {activeMatch.team2.shortName || activeMatch.team2.name}
+            </span>
+          </div>
+        ) : (
         <nav className="sports-breadcrumbs" aria-label="Breadcrumb">
           <Link to="/" className="sports-breadcrumb-home" aria-label="Home">
             <FiHome />
@@ -440,6 +457,7 @@ export default function Sports() {
             <span className="sports-breadcrumb-current">{breadcrumbLeague}</span>
           )}
         </nav>
+        )}
 
         <FilterChips
           items={sportsCategories}
@@ -449,7 +467,7 @@ export default function Sports() {
         />
 
         {leagueChips.length > 0 && (
-          <div className="sports-league-chips">
+          <div className="sports-league-chips sports-league-chips--browse">
             <button
               type="button"
               className={`sports-league-chip ${activeLeague === 'all' ? 'active' : ''}`}
@@ -473,7 +491,7 @@ export default function Sports() {
           </div>
         )}
 
-        <div className={`sports-live-status sports-live-status--${liveStatusClass}`} role="status">
+        <div className={`sports-live-status sports-live-status--${liveStatusClass} sports-live-status-bar`} role="status">
           <span className="sports-live-status-dot" />
           {tickerMessage || 'Syncing live scores…'}
         </div>
@@ -510,7 +528,7 @@ export default function Sports() {
           </div>
         </div>
 
-        <div className="sports-match-ticker" id="sports-match-ticker">
+        <div className="sports-match-ticker sports-match-ticker--browse" id="sports-match-ticker">
           {sportMatches.length === 0 ? (
             <div className="sports-ticker-empty">
               <p>
@@ -660,7 +678,7 @@ export default function Sports() {
               </div>
             )}
 
-            <div className="sports-match-banner">
+            <div className="sports-match-banner sports-match-banner--desktop-only">
               <div className="sports-match-banner-time">{matchTimeLabel}</div>
               <div className="sports-match-banner-teams">
                 <span className="sports-match-banner-team">{activeMatch.team1.name}</span>

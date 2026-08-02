@@ -1,9 +1,13 @@
-import { normalizeMatchOvers } from './cricketFormat';
+import {
+  getMatchFormatHint,
+  getMatchMaxBalls,
+  normalizeMatchOvers,
+  oversToBallsForMatch,
+} from './cricketFormat';
 import { formatBallOutcome } from './liveFieldState';
-import { isCricketSecondInnings } from './cricketScores';
+import { isCricketSecondInnings, resolveCricketTeamScores, teamNameMatches } from './cricketScores';
 import { getScorecardInningsForTeam } from './matchSquads';
 import { isPlaceholderPlayerName } from './cricketPlayers';
-import { getMatchMaxBalls, oversToBallsForMatch } from './cricketFormat';
 import { enrichLivePlayersFromScorecard } from './scorecardLivePlayers';
 
 export function getTeamShortCode(name) {
@@ -19,36 +23,46 @@ export function getTeamDisplayName(name) {
   return name.replace(/\s+W$/, '').trim();
 }
 
-export function getChaseText(match, innings, team1, score1, score2, wickets2) {
+export function getChaseText(match, innings, team1, team2) {
   if (!isCricketSecondInnings(match, match?.liveDetails) || innings.inningsNum !== 2) return null;
 
   const ld = match?.liveDetails || {};
+  const resolved = resolveCricketTeamScores(match, ld);
   const chasingTeam = getTeamDisplayName(innings.battingTeam);
+  const isTeam1Chasing = teamNameMatches(team1, innings.battingTeam);
 
-  const firstRuns = ld.firstRuns ?? score1;
-  const chaseRuns = ld.chaseRuns ?? score2;
-  const chaseWickets = ld.chaseWickets ?? wickets2;
+  const chaseScore = isTeam1Chasing ? resolved.team1 : resolved.team2;
+  const firstScore = isTeam1Chasing ? resolved.team2 : resolved.team1;
 
-  if (firstRuns == null || chaseRuns == null) return null;
+  const chaseRuns = chaseScore.runs ?? 0;
+  const chaseWickets = chaseScore.wickets ?? 0;
+  const firstRuns = firstScore.runs;
+
+  if (firstRuns == null) return null;
 
   const target = firstRuns + 1;
   if (chaseRuns >= target) return null;
 
   const runsNeeded = Math.max(0, target - chaseRuns);
+  const scoreLine = `${chasingTeam} (${chaseRuns}/${chaseWickets})`;
 
   const commentaryMatch = ld.commentary?.match(/need (\d+) runs? in (\d+) balls?/i);
-  if (commentaryMatch) {
-    const commBalls = parseInt(commentaryMatch[2], 10);
-    return `${chasingTeam} (${chaseRuns}/${chaseWickets}) require ${runsNeeded} runs from ${commBalls} balls.`;
+  if (commentaryMatch && parseInt(commentaryMatch[1], 10) === runsNeeded) {
+    return `${scoreLine} require ${runsNeeded} runs from ${commentaryMatch[2]} balls.`;
+  }
+
+  const isUnlimited = /test|first[- ]?class/i.test(getMatchFormatHint(match));
+  if (isUnlimited) {
+    return `${scoreLine} require ${runsNeeded} runs to win.`;
   }
 
   const maxBalls = getMatchMaxBalls(match);
   const ballsBowled = ld.chaseBallNbr != null
     ? ld.chaseBallNbr
-    : oversToBallsForMatch(ld.chaseOvers || innings.displayOvers, match);
+    : (chaseScore.balls ?? oversToBallsForMatch(chaseScore.overs, match));
   const ballsLeft = Math.max(0, maxBalls - ballsBowled);
 
-  return `${chasingTeam} (${chaseRuns}/${chaseWickets}) require ${runsNeeded} runs from ${ballsLeft} balls.`;
+  return `${scoreLine} require ${runsNeeded} runs from ${ballsLeft} balls.`;
 }
 
 function formatBatterStatus(player) {

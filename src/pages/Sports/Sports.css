@@ -3,6 +3,13 @@
   background: var(--color-bg);
   min-height: calc(100vh - var(--header-height));
   padding: var(--space-4) 0 var(--space-8);
+  overflow-x: hidden;
+}
+
+.sports-center {
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .sports-page-inner {
@@ -84,9 +91,12 @@
   text-decoration: underline;
 }
 
-.sports-center {
-  flex: 1;
-  min-width: 0;
+.sports-mobile-match-nav {
+  display: none;
+}
+
+.sports-match-banner--desktop-only {
+  display: block;
 }
 
 .sports-right {
@@ -871,6 +881,43 @@
 
   .sports-league-chips {
     display: flex;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+
+  .sports-league-chips::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sports-match-ticker {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+  }
+
+  .sports-ticker-card {
+    flex: 0 0 auto;
+    min-width: 132px;
+  }
+
+  .sports-breadcrumbs {
+    font-size: 0.72rem;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sports-mobile-live-widget {
+    display: block;
+    margin-bottom: var(--space-3);
+    overflow: hidden;
+  }
+
+  .sports-mobile-live-widget .live-graphic-card-10cric {
+    max-width: 100%;
   }
 
   .sports-search--mobile {
@@ -881,16 +928,110 @@
     display: none;
   }
 
-  .sports-mobile-live-widget {
-    display: block;
-  }
-
   .sports-desktop-live-widget {
     display: none;
   }
 
   .sports-chat-fab {
-    bottom: 80px;
+    display: none;
+  }
+
+  .sports-page-inner {
+    padding: 0 var(--space-3);
+  }
+
+  /* Match detail — focus on live widget + markets */
+  .sports-page--match .sports-breadcrumbs,
+  .sports-page--match .sports-match-ticker--browse,
+  .sports-page--match .sports-live-status-bar,
+  .sports-page--match .sports-league-chips--browse,
+  .sports-page--match .sports-search--mobile,
+  .sports-page--match .sports-sport-chips {
+    display: none;
+  }
+
+  .sports-page--match .sports-mobile-match-nav {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    margin-bottom: var(--space-3);
+  }
+
+  .sports-mobile-match-back {
+    border: none;
+    background: none;
+    padding: 0;
+    font-size: 0.72rem;
+    font-weight: var(--font-semibold);
+    color: var(--color-primary);
+    cursor: pointer;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sports-mobile-match-title {
+    font-size: 0.95rem;
+    font-weight: var(--font-extrabold);
+    color: var(--color-text);
+  }
+
+  .sports-match-banner--desktop-only {
+    display: none;
+  }
+
+  .sports-mobile-live-widget {
+    margin-bottom: var(--space-2);
+  }
+
+  .sports-market-cats {
+    margin-bottom: var(--space-3);
+  }
+
+  .sports-market-panel {
+    padding: var(--space-3);
+  }
+
+  .sports-market-panel-header {
+    font-size: 0.78rem;
+    gap: var(--space-2);
+  }
+
+  .sports-market-panel-header span {
+    text-align: left;
+    line-height: 1.35;
+  }
+
+  .sports-market-odds-btn {
+    padding: 10px 8px;
+    min-height: 52px;
+  }
+
+  .sports-market-odds-btn span:first-child {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+    font-size: 0.72rem;
+  }
+
+  .sports-market-odds-btn .odds-val {
+    font-size: 0.95rem;
+  }
+
+  .sports-sport-chips .filter-chip {
+    padding: var(--space-2) var(--space-3);
+    font-size: 0.72rem;
+  }
+
+  .sports-live-status-bar {
+    font-size: 0.65rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 

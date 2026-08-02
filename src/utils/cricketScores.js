@@ -40,11 +40,21 @@ export function resolveCricketTeamScores(match, ld = {}) {
   const team2Name = match?.team2?.name || '';
 
   const entries = [];
+  const isSecondInnings = (ld.inningsId ?? 0) > 1
+    || (ld.chaseRuns != null && ld.firstRuns != null)
+    || (ld.chaseTeamName && ld.firstTeamName);
+
   if (ld.firstRuns != null || ld.firstTeamName) {
     entries.push(scoreEntry(ld.firstTeamName, ld.firstRuns, ld.firstWickets, ld.firstOvers, match));
   }
-  if (ld.chaseRuns != null || ld.chaseTeamName) {
-    entries.push(scoreEntry(ld.chaseTeamName, ld.chaseRuns, ld.chaseWickets, ld.chaseOvers, match));
+  if (isSecondInnings) {
+    entries.push(scoreEntry(
+      ld.chaseTeamName,
+      ld.chaseRuns ?? ld.runs,
+      ld.chaseWickets ?? ld.wickets,
+      ld.chaseOvers ?? ld.overs,
+      match,
+    ));
   }
 
   if (entries.length === 0) {

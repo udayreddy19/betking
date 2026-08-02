@@ -60,7 +60,8 @@ export function getMatchMaxOvers(match) {
   const text = getMatchFormatHint(match);
   if (/t10/i.test(text)) return 10;
   if (/odi|one[- ]?day|list\s*a|50\s*over/i.test(text)) return 50;
-  if (/test|first[- ]?class|4[- ]?day/i.test(text)) return 90;
+  if (/test|first[- ]?class/i.test(text)) return null;
+  if (/4[- ]?day/i.test(text)) return 90;
   if (/t20|blast|ipl|bbl|cpl|sa20|ilt20|mlc/i.test(text)) return 20;
 
   // Infer from current overs when format metadata is missing
@@ -86,5 +87,7 @@ export function oversToBallsForMatch(oversStr, match) {
 
 export function getMatchMaxBalls(match) {
   if (isHundredMatch(match)) return HUNDRED_BALLS_PER_INNINGS;
-  return getMatchMaxOvers(match) * 6;
+  const overs = getMatchMaxOvers(match);
+  if (overs == null) return null;
+  return overs * 6;
 }

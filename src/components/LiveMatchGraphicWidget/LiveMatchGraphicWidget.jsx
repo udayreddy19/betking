@@ -55,7 +55,7 @@ function getInningsInfo(match, team1, team2, resolved) {
       displayWickets1: team1Score.wickets,
       displayScore2: team2Score.runs,
       displayWickets2: team2Score.wickets,
-      displayOvers: ld.chaseOvers || battingScore.overs || '0.0',
+      displayOvers: battingScore.overs || ld.chaseOvers || ld.overs || '0.0',
       defaultInnings: `${getTeamDisplayName(battingTeam)} INNS`,
     };
   }
@@ -351,7 +351,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
   const b2 = resolveBatter(apiBatter2, fieldState?.batter2, nonStriker);
 
   const chaseText = innings
-    ? getChaseText(match, innings, team1, score1, score2, wickets2)
+    ? getChaseText(match, innings, team1, team2)
     : null;
 
   const wicketOvers = useMemo(() => getWicketOvers(match), [match?.overHistory]);
@@ -384,6 +384,11 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
 
   const maxOvers = getMatchMaxOvers(match);
   const displayOversNormalized = normalizeMatchOvers(innings?.displayOvers || overs, match);
+  const isUnlimitedOvers = maxOvers == null;
+  const timelineOvers = maxOvers ?? Math.max(20, parseInt(String(displayOversNormalized).split('.')[0], 10) + 5);
+  const inningsBadge = isUnlimitedOvers
+    ? `INN ${innings.inningsNum} | ${displayOversNormalized} OV`
+    : `INN ${innings.inningsNum} | ${displayOversNormalized}/${maxOvers} OV`;
 
   if (!match) {
     return (
@@ -421,7 +426,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
     <div className="live-graphic-card-10cric">
       <div className="live-widget-body">
         <div className="live-widget-inn-badge">
-          {`INN ${innings.inningsNum} | ${displayOversNormalized}/${maxOvers} OV`}
+          {inningsBadge}
         </div>
 
         <div className="live-widget-teams-row">
@@ -451,10 +456,10 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
 
         <div className="live-widget-timeline" aria-hidden="true">
           <div className="live-widget-timeline-track">
-            {Array.from({ length: Math.min(maxOvers, 50) + 1 }, (_, i) => (
+            {Array.from({ length: Math.min(timelineOvers, 50) + 1 }, (_, i) => (
               <div key={i} className="live-widget-timeline-tick">
                 {wicketOvers.has(i) && i > 0 && <span className="live-widget-wicket">W</span>}
-                {i % Math.max(1, Math.floor(maxOvers / 10)) === 0 && (
+                {i % Math.max(1, Math.floor(timelineOvers / 10)) === 0 && (
                   <span className="live-widget-timeline-label">{i}</span>
                 )}
               </div>
