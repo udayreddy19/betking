@@ -4,7 +4,7 @@ import { useLiveFieldState } from '../../hooks/useLiveFieldState';
 import { useMatchDetail } from '../../hooks/useMatchDetail';
 import { getRosterForTeam } from '../../data/cricketRosters';
 import { resolveMatchSquads, formatPlayerRole } from '../../utils/matchSquads';
-import { getBallDisplayKind, getBallDisplayLabel } from '../../utils/liveFieldState';
+import { getBallDisplayKind, getBallDisplayLabel, parseOvers } from '../../utils/liveFieldState';
 import {
   getTeamShortCode,
   getTeamDisplayName,
@@ -324,8 +324,9 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
 
   const wicketOvers = useMemo(() => {
     const wkts = innings?.inningsNum === 2 ? wickets2 : wickets1;
-    return getWicketOvers(match, wkts);
-  }, [match, innings?.inningsNum, wickets1, wickets2]);
+    const currentOver = parseOvers(innings?.displayOvers || overs).over;
+    return getWicketOvers(match, wkts, currentOver);
+  }, [match, innings?.inningsNum, innings?.displayOvers, wickets1, wickets2, overs]);
 
   const overHistoryRows = useMemo(
     () => buildOverHistoryRows(fieldState, match?.id, match),

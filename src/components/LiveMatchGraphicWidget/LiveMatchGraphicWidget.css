@@ -406,20 +406,23 @@
   content: '';
   position: absolute;
   left: 50%;
-  top: 8%;
+  top: 42%;
   transform: translateX(-50%);
-  width: 22%;
-  height: 55%;
+  width: 18%;
+  height: 38%;
   background: linear-gradient(180deg, #c9a96e 0%, #b8956a 50%, #a6835c 100%);
   border-radius: 3px;
-  opacity: 0.85;
+  opacity: 0.55;
+  pointer-events: none;
 }
 
 .cric-field-scorecard {
   position: relative;
   z-index: 1;
   padding: 16px 14px 14px;
-  margin-top: 30%;
+  margin-top: 8%;
+  background: rgba(20, 60, 30, 0.82);
+  border-radius: 8px;
 }
 
 .cric-field-table__head,

@@ -168,13 +168,20 @@
 .sports-ticker-live {
   position: absolute;
   top: 4px;
-  right: 6px;
+  left: 6px;
+  right: auto;
   background: #ef4444;
   color: white;
   font-size: 0.5rem;
   font-weight: 800;
   padding: 1px 5px;
   border-radius: var(--radius-full);
+  line-height: 1.2;
+  z-index: 1;
+}
+
+.sports-ticker-card:has(.sports-ticker-live) {
+  padding-top: 16px;
 }
 
 .sports-ticker-empty {

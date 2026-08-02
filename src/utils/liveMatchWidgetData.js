@@ -1,4 +1,4 @@
-import { parseOvers, generateOverBalls, generateCurrentOverBalls, formatBallOutcome } from './liveFieldState';
+import { parseOvers, formatBallOutcome } from './liveFieldState';
 import { ballsRemaining } from './oversUtils';
 import { isCricketSecondInnings } from './cricketScores';
 
@@ -130,33 +130,86 @@ export function buildScorecardInnings(match, teamName, roster, fieldState, isBat
   return players;
 }
 
+function assignWicketsToOvers(matchId, totalWickets, overNums) {
+  const counts = new Map(overNums.map((o) => [o, 0]));
+  if (totalWickets <= 0 || overNums.length === 0) return counts;
+
+  let placed = 0;
+  let attempt = 0;
+  while (placed < totalWickets && attempt < 100) {
+    const over = overNums[hashSeed(`${matchId}-wkt-assign-${attempt}`) % overNums.length];
+    counts.set(over, (counts.get(over) || 0) + 1);
+    placed += 1;
+    attempt += 1;
+  }
+  return counts;
+}
+
+function synthesizeOverBalls(matchId, overNum, wicketCount) {
+  const balls = [];
+  const wicketSlots = new Set();
+  for (let w = 0; w < wicketCount; w += 1) {
+    wicketSlots.add(hashSeed(`${matchId}-${overNum}-wp-${w}`) % 6);
+  }
+
+  const runOptions = ['•', '1', '1', '2', '4', '0', '1', '3'];
+  for (let i = 0; i < 6; i += 1) {
+    if (wicketSlots.has(i)) {
+      balls.push('W');
+    } else {
+      balls.push(runOptions[hashSeed(`${matchId}-${overNum}-b-${i}`) % runOptions.length]);
+    }
+  }
+  return balls;
+}
+
 export function buildOverHistoryRows(fieldState, matchId, match) {
   const ld = match?.liveDetails || {};
-  const isChasing = (ld.chaseRuns ?? ld.score2 ?? 0) > 0 && match?.matchState === 'in';
+  const isChasing = isCricketSecondInnings(match, ld);
   const oversStr = isChasing
     ? (ld.overs2 || ld.chaseOvers || ld.overs || '0.0')
     : (ld.overs || ld.firstOvers || '0.0');
 
-  const { overNum: currentOver, balls: apiBalls } = generateCurrentOverBalls(matchId, oversStr);
+  const { over: currentOver, ball: ballsInCurrentOver } = parseOvers(oversStr);
+  const safeCurrentOver = Math.max(1, currentOver || 1);
+  const totalWickets = isChasing ? (ld.wickets2 ?? 0) : (ld.wickets ?? 0);
 
   const rows = [];
-  const historyStart = Math.max(1, currentOver - 10);
+  const historyStart = Math.max(1, safeCurrentOver - 10);
+  const completedOvers = [];
+  for (let o = historyStart; o < safeCurrentOver; o += 1) {
+    completedOvers.push(o);
+  }
 
-  for (let o = historyStart; o < currentOver; o += 1) {
+  const wicketByOver = assignWicketsToOvers(
+    matchId,
+    totalWickets,
+    [...completedOvers, safeCurrentOver],
+  );
+
+  for (const o of completedOvers) {
     rows.push({
       overNum: o,
-      balls: generateOverBalls(matchId, o),
+      balls: synthesizeOverBalls(matchId, o, wicketByOver.get(o) || 0),
     });
   }
 
   const apiCurrentBalls = (ld.currentOverBalls || []).map((b) => formatBallOutcome(b));
-  const currentBalls = apiCurrentBalls.length
+  let currentBalls = apiCurrentBalls.length
     ? apiCurrentBalls
-    : (fieldState?.overNum === currentOver && fieldState?.overBalls?.length
+    : (fieldState?.overNum === safeCurrentOver && fieldState?.overBalls?.length
       ? fieldState.overBalls
-      : apiBalls);
+      : []);
 
-  rows.push({ overNum: currentOver, balls: currentBalls, isCurrent: true });
+  if (!currentBalls.length && ballsInCurrentOver > 0) {
+    const wktsInCurrent = wicketByOver.get(safeCurrentOver) || 0;
+    const synth = synthesizeOverBalls(matchId, safeCurrentOver, wktsInCurrent);
+    currentBalls = synth.slice(0, ballsInCurrentOver);
+  } else if (!currentBalls.length) {
+    currentBalls = [];
+  }
+
+  rows.push({ overNum: safeCurrentOver, balls: currentBalls, isCurrent: true });
 
   return rows;
 }
@@ -195,16 +248,12 @@ export function buildStatsOvers(fieldState, match, battingScore, battingWickets)
   return rows;
 }
 
-export function getWicketOvers(match, wickets) {
+export function getWicketOvers(match, wickets, currentOver = 20) {
   const matchId = match?.id || 'm1';
-  const seed = hashSeed(matchId);
-  const overs = new Set();
-  for (let w = 0; w < Math.min(wickets, 5); w += 1) {
-    overs.add(((seed + w * 3) % 18) + 1);
-  }
-  if (overs.size === 0 && wickets > 0) {
-    overs.add(2);
-    if (wickets > 1) overs.add(6);
-  }
-  return overs;
+  const maxOver = Math.max(1, Math.min(currentOver, 20));
+  if (wickets <= 0 || maxOver <= 0) return new Set();
+
+  const overNums = Array.from({ length: maxOver }, (_, i) => i + 1);
+  const assignment = assignWicketsToOvers(matchId, wickets, overNums);
+  return new Set([...assignment.entries()].filter(([, count]) => count > 0).map(([over]) => over));
 }

@@ -63,8 +63,8 @@ function getMatchScores(match) {
       const r2 = ld.score2 ?? 0;
       const w2 = ld.wickets2 ?? 0;
       const hasScore = r1 > 0 || w1 > 0 || r2 > 0 || w2 > 0;
-      team1Score = w1 > 0 ? `${r1}/${w1}` : (r1 > 0 ? `${r1}` : (ld.commentary || ''));
-      team2Score = w2 > 0 ? `${r2}/${w2}` : (r2 > 0 ? `${r2}` : (hasScore ? '0' : ''));
+      team1Score = (r1 > 0 || w1 > 0) ? `${r1}/${w1}` : (ld.commentary || '');
+      team2Score = (r2 > 0 || w2 > 0) ? `${r2}/${w2}` : (hasScore ? '0/0' : '');
     } else if (match.sport === 'soccer' || match.sport === 'esoccer') {
       team1Score = String(ld.score1 ?? 0);
       team2Score = String(ld.score2 ?? 0);
