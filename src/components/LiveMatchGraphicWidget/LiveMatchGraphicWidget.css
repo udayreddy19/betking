@@ -629,3 +629,129 @@
 [data-theme='dark'] .cric-dismissal {
   color: #94a3b8;
 }
+
+/* Non-cricket sport live panel */
+.live-widget-league-label {
+  text-align: center;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.live-widget-inn-badge--sport {
+  background: #7c3aed;
+  color: #ffffff;
+}
+
+.live-widget-tabs--sport {
+  margin-top: 12px;
+}
+
+.live-widget-tab--text {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 6px 16px;
+  min-width: 72px;
+}
+
+.sport-live-panel {
+  padding: 12px 0 16px;
+}
+
+.sport-live-status-card {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.sport-live-status-card__label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+}
+
+.sport-live-status-card strong {
+  font-size: 0.82rem;
+  color: #1a1a1a;
+}
+
+.sport-live-score-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.sport-live-score-cell {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sport-live-score-cell span {
+  font-size: 0.72rem;
+  color: #4b5563;
+  font-weight: 600;
+}
+
+.sport-live-score-cell strong {
+  font-size: 1.25rem;
+  color: #1a1a1a;
+}
+
+.sport-periods-panel {
+  margin-bottom: 16px;
+}
+
+.sport-periods-table {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sport-periods-table__head,
+.sport-periods-table__row {
+  display: grid;
+  grid-template-columns: 64px 1fr 1fr;
+  gap: 8px;
+  padding: 6px 8px;
+  font-size: 0.75rem;
+}
+
+.sport-periods-table__head {
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+}
+
+.sport-periods-table__row {
+  color: #1a1a1a;
+}
+
+.sport-periods-table__label {
+  font-weight: 700;
+  color: #6b7280;
+}
+
+.sport-periods-table__row--total {
+  border-top: 1px solid #e5e7eb;
+  margin-top: 6px;
+  padding-top: 10px;
+  font-weight: 800;
+}

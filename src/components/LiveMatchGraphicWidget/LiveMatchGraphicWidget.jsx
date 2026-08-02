@@ -12,6 +12,12 @@ import {
   buildStatsOvers,
   getWicketOvers,
 } from '../../utils/liveMatchWidgetData';
+import {
+  getSportStatusBadge,
+  getSportScores,
+  getPeriodRows,
+  getSportLeagueLabel,
+} from '../../utils/sportLiveWidgetData';
 import './LiveMatchGraphicWidget.css';
 
 function getTeamShort(name) {
@@ -94,6 +100,108 @@ function FieldIcon() {
   );
 }
 
+function SportLivePanel({ match, team1, team2, team1Display, team2Display, matchState }) {
+  const [activeTab, setActiveTab] = useState('live');
+  const scores = getSportScores(match);
+  const statusBadge = getSportStatusBadge(match);
+  const periodRows = getPeriodRows(match);
+  const commentary = match?.liveDetails?.commentary;
+  const league = getSportLeagueLabel(match);
+  const hasPeriods = periodRows.length > 0;
+
+  return (
+    <div className="live-graphic-card-10cric">
+      <div className="live-widget-body">
+        <div className="live-widget-inn-badge live-widget-inn-badge--sport">
+          {matchState === 'in' ? statusBadge : statusBadge}
+        </div>
+
+        <p className="live-widget-league-label">{league}</p>
+
+        <div className="live-widget-teams-row">
+          <span className="live-widget-team">{team1Display}</span>
+          <span className="live-widget-scoreline">
+            {scores.score1}{scores.suffix1}
+            <span className="live-widget-score-sep">:</span>
+            {scores.score2}{scores.suffix2}
+          </span>
+          <span className="live-widget-team">{team2Display}</span>
+        </div>
+
+        {commentary && (
+          <p className="live-widget-chase-text">{commentary}</p>
+        )}
+
+        <div className="live-widget-tabs live-widget-tabs--sport" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'live'}
+            onClick={() => setActiveTab('live')}
+            className={`live-widget-tab live-widget-tab--text ${activeTab === 'live' ? 'active' : ''}`}
+          >
+            Live
+          </button>
+          {hasPeriods && (
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'periods'}
+              onClick={() => setActiveTab('periods')}
+              className={`live-widget-tab live-widget-tab--text ${activeTab === 'periods' ? 'active' : ''}`}
+            >
+              {match.sport === 'tennis' ? 'Sets' : 'Periods'}
+            </button>
+          )}
+        </div>
+
+        {activeTab === 'live' && (
+          <div className="sport-live-panel">
+            <div className="sport-live-status-card">
+              <span className="sport-live-status-card__label">Status</span>
+              <strong>{statusBadge}</strong>
+            </div>
+            <div className="sport-live-score-grid">
+              <div className="sport-live-score-cell">
+                <span>{team1}</span>
+                <strong>{scores.score1}{scores.suffix1}</strong>
+              </div>
+              <div className="sport-live-score-cell">
+                <span>{team2}</span>
+                <strong>{scores.score2}{scores.suffix2}</strong>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'periods' && hasPeriods && (
+          <div className="cric-panel cric-panel--light sport-periods-panel">
+            <div className="sport-periods-table">
+              <div className="sport-periods-table__head">
+                <span />
+                <span>{team1Display}</span>
+                <span>{team2Display}</span>
+              </div>
+              {periodRows.map((row) => (
+                <div key={row.label} className="sport-periods-table__row">
+                  <span className="sport-periods-table__label">{row.label}</span>
+                  <span>{row.score1}</span>
+                  <span>{row.score2}</span>
+                </div>
+              ))}
+              <div className="sport-periods-table__row sport-periods-table__row--total">
+                <span className="sport-periods-table__label">Total</span>
+                <span>{scores.score1}</span>
+                <span>{scores.score2}</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function LiveMatchGraphicWidget({ match: rawMatch }) {
   const { match } = useMatchDetail(rawMatch);
   const [activeWidgetTab, setActiveWidgetTab] = useState('field');
@@ -129,8 +237,9 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
   const battingRoster = viewingTeam2Innings ? t2Data : t1Data;
   const bowlingRoster = viewingTeam2Innings ? t1Data : t2Data;
 
+  const isCricketSport = sport === 'cricket' || sport === 'virtual-cricket';
   const isLiveMatch = matchState === 'in' || match?.isLive;
-  const fieldState = useLiveFieldState(isLiveMatch ? match : null, battingRoster);
+  const fieldState = useLiveFieldState(isCricketSport && isLiveMatch ? match : null, battingRoster);
 
   const apiBatter1 = match?.liveDetails?.batter1;
   const apiBatter2 = match?.liveDetails?.batter2;
@@ -200,17 +309,14 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
 
   if (sport !== 'cricket' && sport !== 'virtual-cricket') {
     return (
-      <div className="live-graphic-card-10cric">
-        <div className="live-widget-body">
-          <div className="live-widget-teams-row">
-            <span>{team1}</span>
-            <span className="live-widget-scoreline">
-              {match.liveDetails?.score1 ?? 0} : {match.liveDetails?.score2 ?? 0}
-            </span>
-            <span>{team2}</span>
-          </div>
-        </div>
-      </div>
+      <SportLivePanel
+        match={match}
+        team1={team1}
+        team2={team2}
+        team1Display={team1Display}
+        team2Display={team2Display}
+        matchState={matchState}
+      />
     );
   }
 

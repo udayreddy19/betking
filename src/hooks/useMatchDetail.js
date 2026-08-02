@@ -1,31 +1,42 @@
-import { useState, useEffect, useRef } from 'react';
+import { useMemo, useRef, useSyncExternalStore } from 'react';
 import { enrichMatchWithDetail } from '../utils/matchDetailEnrich';
-import { subscribeMatchDetail, enrichFromPoller } from '../services/matchDetailPoller';
+import {
+  prefetchMatchDetail,
+  subscribeMatchDetailStore,
+  getMatchDetailSnapshot,
+  getMatchDetailVersion,
+  enrichFromPoller,
+  canPoll,
+} from '../services/matchDetailPoller';
 
 export function useMatchDetail(match) {
   const matchRef = useRef(match);
   matchRef.current = match;
 
-  const [enrichedMatch, setEnrichedMatch] = useState(() => enrichFromPoller(match) || match);
+  const matchId = match?.id;
+  const pollable = canPoll(match);
+  const isLive = match?.matchState === 'in' || match?.isLive;
 
-  // Apply list-API score updates immediately
-  useEffect(() => {
-    setEnrichedMatch(enrichFromPoller(matchRef.current) || match);
-  }, [match]);
+  if (match && pollable && isLive) {
+    prefetchMatchDetail(match);
+  }
 
-  const matchId = match?.cricbuzzMatchId || (
-    match?.id?.startsWith('cb_') ? match.id.replace('cb_', '') : null
+  const detailVersion = useSyncExternalStore(
+    (onStoreChange) => (matchId && pollable
+      ? subscribeMatchDetailStore(matchId, onStoreChange)
+      : () => {}),
+    () => (matchId ? getMatchDetailVersion(matchId) : 0),
+    () => 0,
   );
 
-  // Subscribe to shared poller — won't restart when match object identity changes
-  useEffect(() => {
-    if (!match || !matchId) return undefined;
-    if (match.sport !== 'cricket' && match.sport !== 'virtual-cricket') return undefined;
+  return useMemo(() => {
+    const base = matchRef.current;
+    if (!base) return base;
 
-    return subscribeMatchDetail(match, (detail) => {
-      setEnrichedMatch(enrichMatchWithDetail(matchRef.current, detail));
-    });
-  }, [matchId, match?.sport, match?.matchState, match?.isLive]);
-
-  return { match: enrichedMatch };
+    const detail = matchId ? getMatchDetailSnapshot(matchId) : null;
+    if (detail) {
+      return enrichMatchWithDetail(base, detail);
+    }
+    return enrichFromPoller(base) || base;
+  }, [match, matchId, detailVersion, isLive, pollable]);
 }

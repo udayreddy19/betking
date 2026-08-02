@@ -152,7 +152,7 @@ export default function Sports() {
 
   useEffect(() => {
     sportMatches
-      .filter((m) => m.isLive && m.sport === 'cricket')
+      .filter((m) => m.isLive)
       .forEach((m) => prefetchMatchDetail(m));
   }, [sportMatches]);
 

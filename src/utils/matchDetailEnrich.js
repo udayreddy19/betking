@@ -1,16 +1,21 @@
 import { normalizeCricbuzzOvers } from './oversUtils';
 
-export function enrichMatchWithDetail(match, detail) {
-  if (!match || !detail?.liveDetails) return match;
+function enrichCricketDetails(match, ld, base) {
+  let runs = base.runs ?? 0;
+  let wickets = base.wickets ?? 0;
+  let overs = base.overs || '0.0';
+  let score2 = base.score2 ?? 0;
+  let wickets2 = base.wickets2 ?? 0;
+  let overs2 = base.overs2 || '0.0';
 
-  const ld = detail.liveDetails;
-
-  let runs = match.liveDetails?.runs ?? 0;
-  let wickets = match.liveDetails?.wickets ?? 0;
-  let overs = match.liveDetails?.overs || '0.0';
-  let score2 = match.liveDetails?.score2 ?? 0;
-  let wickets2 = match.liveDetails?.wickets2 ?? 0;
-  let overs2 = match.liveDetails?.overs2 || '0.0';
+  if (ld.runs != null && ld.chaseRuns == null && ld.firstRuns == null) {
+    runs = ld.runs;
+    wickets = ld.wickets ?? wickets;
+    overs = ld.overs || overs;
+    score2 = ld.score2 ?? score2;
+    wickets2 = ld.wickets2 ?? wickets2;
+    overs2 = ld.overs2 || overs2;
+  }
 
   if (ld.firstRuns != null) {
     runs = ld.firstRuns;
@@ -24,58 +29,40 @@ export function enrichMatchWithDetail(match, detail) {
     overs2 = ld.chaseOvers || overs2;
   }
 
-  if (ld.firstRuns != null && ld.chaseRuns != null) {
-    const team1Name = (match.team1?.name || '').toLowerCase();
-    const chaseName = (ld.chaseTeamName || '').toLowerCase();
-    const firstName = (ld.firstTeamName || '').toLowerCase();
+  return {
+    ...base,
+    runs,
+    wickets,
+    overs: normalizeCricbuzzOvers(overs),
+    score2,
+    wickets2,
+    overs2: normalizeCricbuzzOvers(overs2),
+    chaseBallNbr: ld.chaseBallNbr ?? base.chaseBallNbr,
+    batter1: ld.batter1 || base.batter1,
+    batter2: ld.batter2 || base.batter2,
+    bowler: ld.bowler || base.bowler,
+    commentary: ld.commentary || base.commentary,
+  };
+}
 
-    const team1IsChasing = chaseName && (
-      team1Name.includes(chaseName.replace(/w$/, '').trim())
-      || chaseName.includes(team1Name.replace(/ women$/, '').trim())
-    );
+export function enrichMatchWithDetail(match, detail) {
+  if (!match || !detail?.liveDetails) return match;
 
-    if (team1IsChasing) {
-      score2 = ld.chaseRuns;
-      wickets2 = ld.chaseWickets ?? 0;
-      overs2 = ld.chaseOvers || overs2;
-      runs = ld.firstRuns;
-      wickets = ld.firstWickets ?? 0;
-      overs = ld.firstOvers || overs;
-    } else if (firstName && (
-      team1Name.includes(firstName.replace(/w$/, '').trim())
-      || firstName.includes(team1Name.replace(/ women$/, '').trim())
-    )) {
-      runs = ld.firstRuns;
-      wickets = ld.firstWickets ?? 0;
-      overs = ld.firstOvers || overs;
-      score2 = ld.chaseRuns;
-      wickets2 = ld.chaseWickets ?? 0;
-      overs2 = ld.chaseOvers || overs2;
-    } else {
-      runs = ld.firstRuns;
-      wickets = ld.firstWickets ?? 0;
-      overs = ld.firstOvers || overs;
-      score2 = ld.chaseRuns;
-      wickets2 = ld.chaseWickets ?? 0;
-      overs2 = ld.chaseOvers || overs2;
-    }
+  const ld = detail.liveDetails;
+  const sport = match.sport;
+  const baseLd = match.liveDetails || {};
+
+  let liveDetails = { ...baseLd, ...ld };
+
+  if (sport === 'cricket' || sport === 'virtual-cricket') {
+    liveDetails = enrichCricketDetails(match, ld, baseLd);
   }
 
   return {
     ...match,
-    liveDetails: {
-      ...match.liveDetails,
-      runs,
-      wickets,
-      overs: normalizeCricbuzzOvers(overs),
-      score2,
-      wickets2,
-      overs2: normalizeCricbuzzOvers(overs2),
-      chaseBallNbr: ld.chaseBallNbr,
-      commentary: ld.commentary || match.liveDetails?.commentary,
-      batter1: ld.batter1 || match.liveDetails?.batter1,
-      batter2: ld.batter2 || match.liveDetails?.batter2,
-      bowler: ld.bowler || match.liveDetails?.bowler,
-    },
+    isLive: detail.isLive ?? match.isLive,
+    matchState: detail.matchState ?? match.matchState,
+    time: detail.time ?? match.time,
+    liveDetails,
   };
 }

@@ -74,6 +74,8 @@ export function mergeApiAndDefaultMatches(apiMatches, defaultMatches) {
       },
       cricbuzzMatchId: apiMatch.cricbuzzMatchId || match.cricbuzzMatchId,
       fancodeMatchId: apiMatch.fancodeMatchId || match.fancodeMatchId,
+      espnEventId: apiMatch.espnEventId || match.espnEventId,
+      espnPath: apiMatch.espnPath || match.espnPath,
       scoreSource: apiMatch.source || 'api',
     };
   });

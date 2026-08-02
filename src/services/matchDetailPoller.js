@@ -1,108 +1,187 @@
 /**
- * Shared live match detail poller — one interval per match, survives parent re-renders.
+ * Shared live match detail poller — all sports, continuous fetch, instant React sync.
  */
 import { enrichMatchWithDetail } from '../utils/matchDetailEnrich';
 
-const LIVE_POLL_MS = 2000;
-const IDLE_POLL_MS = 15000;
+const LIVE_GAP_MS = 350;
+const IDLE_GAP_MS = 5000;
 
-/** @type {Map<string, { detail: object|null, listeners: Set<Function>, timer: any, inflight: Promise<any>|null }>} */
+/** @type {Map<string, { match: object, detail: object|null, version: number, listeners: Set<Function>, running: boolean, isLive: boolean }>} */
 const pollers = new Map();
 
-async function fetchDetail(matchId) {
-  const res = await fetch(`/api/match-detail?id=${matchId}&_=${Date.now()}`, {
-    cache: 'no-store',
+function sleep(ms) {
+  return new Promise((resolve) => { setTimeout(resolve, ms); });
+}
+
+function emit(key, detail) {
+  const state = pollers.get(key);
+  if (!state) return;
+  state.detail = detail;
+  state.version += 1;
+  state.listeners.forEach((fn) => fn());
+}
+
+function getPollerKey(match) {
+  return match?.id || null;
+}
+
+function canPoll(match) {
+  if (!match?.id) return false;
+  if (match.cricbuzzMatchId || match.id.startsWith('cb_')) return true;
+  if (match.source === 'espn' || match.id.startsWith('api_')) return true;
+  if (match.espnEventId && match.espnPath) return true;
+  if (match.fancodeMatchId) return true;
+  return false;
+}
+
+function buildDetailUrl(match, fast) {
+  const params = new URLSearchParams({
+    matchId: match.id,
+    sport: match.sport || '',
+    source: match.source || '',
+    fast: fast ? '1' : '0',
+    _: String(Date.now()),
   });
+
+  if (match.league) params.set('league', match.league);
+  if (match.cricbuzzMatchId) params.set('cricbuzzMatchId', String(match.cricbuzzMatchId));
+  if (match.espnEventId) params.set('espnEventId', String(match.espnEventId));
+  if (match.espnPath) params.set('espnPath', match.espnPath);
+  if (match.fancodeMatchId) params.set('fancodeMatchId', String(match.fancodeMatchId));
+
+  return `/api/match-detail?${params}`;
+}
+
+async function fetchDetail(match, fast) {
+  const res = await fetch(buildDetailUrl(match, fast), { cache: 'no-store' });
+  if (res.status === 404) return null;
   if (!res.ok) throw new Error(`Match detail failed (${res.status})`);
   return res.json();
 }
 
-function getMatchId(match) {
-  if (!match) return null;
-  return match.cricbuzzMatchId || (match.id?.startsWith('cb_') ? match.id.replace('cb_', '') : null);
+function mergeDetails(prev, next) {
+  if (!prev) return next;
+  if (!next) return prev;
+  return {
+    ...next,
+    liveDetails: {
+      ...prev.liveDetails,
+      ...next.liveDetails,
+      batter1: next.liveDetails?.batter1 || prev.liveDetails?.batter1,
+      batter2: next.liveDetails?.batter2 || prev.liveDetails?.batter2,
+      bowler: next.liveDetails?.bowler || prev.liveDetails?.bowler,
+    },
+  };
 }
 
-function startPoller(matchId, isLive) {
-  if (pollers.has(matchId)) return;
+async function pollLoop(key) {
+  const state = pollers.get(key);
+  if (!state || state.running) return;
+  state.running = true;
 
-  const state = {
-    detail: null,
-    listeners: new Set(),
-    timer: null,
-    inflight: null,
-    isLive,
-  };
-  pollers.set(matchId, state);
+  let fullCounter = 0;
 
-  const poll = async () => {
-    const s = pollers.get(matchId);
-    if (!s) return;
+  while (pollers.has(key)) {
+    const s = pollers.get(key);
+    if (!s?.match) break;
 
-    if (!s.inflight) {
-      s.inflight = fetchDetail(matchId)
-        .then((detail) => {
-          s.detail = detail;
-          s.listeners.forEach((fn) => fn(detail));
-        })
-        .catch((err) => console.warn('Match detail poll failed:', err))
-        .finally(() => {
-          s.inflight = null;
-        });
+    const gap = s.isLive ? LIVE_GAP_MS : IDLE_GAP_MS;
+    const t0 = Date.now();
+
+    try {
+      const fast = await fetchDetail(s.match, true);
+      if (fast) emit(key, mergeDetails(s.detail, fast));
+
+      fullCounter += 1;
+      const isCricket = s.match.sport === 'cricket' || s.match.sport === 'virtual-cricket';
+      if (!isCricket || fullCounter >= 4) {
+        fullCounter = 0;
+        const full = await fetchDetail(s.match, false);
+        if (full) emit(key, mergeDetails(pollers.get(key)?.detail, full));
+      }
+    } catch (err) {
+      console.warn('Match detail poll failed:', err);
     }
 
-    await s.inflight;
-  };
+    const elapsed = Date.now() - t0;
+    await sleep(Math.max(0, gap - elapsed));
+  }
 
-  poll();
-  const pollMs = isLive ? LIVE_POLL_MS : IDLE_POLL_MS;
-  state.timer = setInterval(poll, pollMs);
+  const end = pollers.get(key);
+  if (end) end.running = false;
 }
 
-function stopPoller(matchId) {
-  const s = pollers.get(matchId);
-  if (!s) return;
-  clearInterval(s.timer);
-  pollers.delete(matchId);
+function ensurePoller(match) {
+  const key = getPollerKey(match);
+  if (!key || !canPoll(match)) return;
+
+  const isLive = match.matchState === 'in' || match.isLive;
+
+  if (!pollers.has(key)) {
+    pollers.set(key, {
+      match,
+      detail: null,
+      version: 0,
+      listeners: new Set(),
+      running: false,
+      isLive,
+    });
+    pollLoop(key);
+  } else {
+    const s = pollers.get(key);
+    s.match = match;
+    s.isLive = isLive;
+  }
 }
 
 export function prefetchMatchDetail(match) {
-  const matchId = getMatchId(match);
-  if (!matchId) return;
-  if (match.sport !== 'cricket' && match.sport !== 'virtual-cricket') return;
-  const isLive = match.matchState === 'in' || match.isLive;
-  if (!pollers.has(matchId)) {
-    startPoller(matchId, isLive);
-  }
+  if (!match || !(match.isLive || match.matchState === 'in')) return;
+  ensurePoller(match);
+}
+
+export function subscribeMatchDetailStore(matchId, listener) {
+  if (!matchId) return () => {};
+  const state = pollers.get(matchId);
+  if (!state) return () => {};
+  state.listeners.add(listener);
+  return () => state.listeners.delete(listener);
+}
+
+export function getMatchDetailSnapshot(matchId) {
+  return pollers.get(matchId)?.detail ?? null;
+}
+
+export function getMatchDetailVersion(matchId) {
+  return pollers.get(matchId)?.version ?? 0;
 }
 
 export function subscribeMatchDetail(match, listener) {
-  const matchId = getMatchId(match);
-  if (!matchId) return () => {};
+  const key = getPollerKey(match);
+  if (!key || !canPoll(match)) return () => {};
 
-  const isLive = match?.matchState === 'in' || match?.isLive;
-  if (!pollers.has(matchId)) {
-    startPoller(matchId, isLive);
-  }
+  ensurePoller(match);
 
-  const state = pollers.get(matchId);
-  state.listeners.add(listener);
-
-  if (state.detail) {
-    listener(state.detail);
-  }
+  const state = pollers.get(key);
+  const wrapped = () => {
+    if (state.detail) listener(state.detail);
+  };
+  state.listeners.add(wrapped);
+  if (state.detail) listener(state.detail);
 
   return () => {
-    state.listeners.delete(listener);
+    state.listeners.delete(wrapped);
     if (state.listeners.size === 0) {
-      stopPoller(matchId);
+      pollers.delete(key);
     }
   };
 }
 
 export function enrichFromPoller(match) {
-  const matchId = getMatchId(match);
-  if (!matchId) return match;
-  const state = pollers.get(matchId);
-  if (!state?.detail) return match;
-  return enrichMatchWithDetail(match, state.detail);
+  const key = getPollerKey(match);
+  if (!key) return match;
+  const detail = pollers.get(key)?.detail;
+  if (!detail) return match;
+  return enrichMatchWithDetail(match, detail);
 }
+
+export { canPoll };

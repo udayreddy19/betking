@@ -1,16 +1,5 @@
 import { aggregateLiveScores } from '../lib/aggregator.mjs';
-import { fetchCricbuzzMatchDetailCached } from '../lib/cricbuzzMatchDetail.mjs';
-
-const detailCache = new Map();
-const DETAIL_TTL_MS = 1000;
-
-async function getMatchDetail(matchId) {
-  const cached = detailCache.get(matchId);
-  if (cached && Date.now() - cached.at < DETAIL_TTL_MS) return cached.data;
-  const detail = await fetchCricbuzzMatchDetailCached(matchId);
-  detailCache.set(matchId, { data: detail, at: Date.now() });
-  return detail;
-}
+import { fetchMatchDetail } from '../lib/matchDetailFetcher.mjs';
 
 export function liveScoresApiPlugin() {
   return {
@@ -49,7 +38,7 @@ export function liveScoresApiPlugin() {
 
         try {
           const url = new URL(req.url, 'http://localhost');
-          const matchId = url.searchParams.get('id') || url.searchParams.get('matchId');
+          const matchId = url.searchParams.get('matchId') || url.searchParams.get('id');
           if (!matchId) {
             res.statusCode = 400;
             res.setHeader('Content-Type', 'application/json');
@@ -57,7 +46,29 @@ export function liveScoresApiPlugin() {
             return;
           }
 
-          const detail = await getMatchDetail(matchId);
+          const match = {
+            id: matchId,
+            sport: url.searchParams.get('sport') || 'cricket',
+            source: url.searchParams.get('source') || '',
+            league: url.searchParams.get('league') || '',
+            cricbuzzMatchId: url.searchParams.get('cricbuzzMatchId')
+              ? Number(url.searchParams.get('cricbuzzMatchId'))
+              : undefined,
+            espnEventId: url.searchParams.get('espnEventId') || undefined,
+            espnPath: url.searchParams.get('espnPath') || undefined,
+            fancodeMatchId: url.searchParams.get('fancodeMatchId') || undefined,
+          };
+
+          const fast = url.searchParams.get('fast') === '1';
+          const detail = await fetchMatchDetail(match, { fast });
+
+          if (!detail) {
+            res.statusCode = 404;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: 'No detail source for this match' }));
+            return;
+          }
+
           res.setHeader('Content-Type', 'application/json');
           res.end(JSON.stringify(detail));
         } catch (error) {
