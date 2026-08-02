@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import { HiOutlineViewList, HiOutlineChartBar, HiOutlineUsers, HiOutlineVideoCamera } from 'react-icons/hi';
 import { IoShirtOutline } from 'react-icons/io5';
 import LiveStreamPlayer from '../LiveStreamPlayer/LiveStreamPlayer';
+import { useLiveFieldState } from '../../hooks/useLiveFieldState';
+import { buildRosterFallback } from '../../utils/liveFieldState';
 import './LiveMatchGraphicWidget.css';
 
 const playerRosterMap = {
@@ -78,7 +80,7 @@ function getInningsInfo(match, team1, team2, score1, wickets1, score2, wickets2,
   };
 }
 
-function WagonWheel() {
+function WagonWheel({ highlightAngle }) {
   const cx = 60;
   const cy = 60;
   const r = 52;
@@ -91,23 +93,34 @@ function WagonWheel() {
         const endAngle = (sector.angle + 22.5) * (Math.PI / 180);
         const x1 = cx + r * Math.cos(startAngle);
         const y1 = cy + r * Math.sin(startAngle);
-        const x2 = cx + r * Math.cos(endAngle);
-        const y2 = cy + r * Math.sin(endAngle);
         const midAngle = sector.angle * (Math.PI / 180);
         const labelR = r * 0.62;
         const lx = cx + labelR * Math.cos(midAngle);
         const ly = cy + labelR * Math.sin(midAngle);
+        const isHighlight = highlightAngle != null && sector.angle === highlightAngle;
 
         return (
           <g key={i}>
             <line x1={cx} y1={cy} x2={x1} y2={y1} stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
-            <text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle" className="wagon-label">
+            {isHighlight && (
+              <path
+                d={`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${cx + r * Math.cos(endAngle)} ${cy + r * Math.sin(endAngle)} Z`}
+                fill="rgba(251,191,36,0.35)"
+              />
+            )}
+            <text
+              x={lx}
+              y={ly}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              className={`wagon-label ${isHighlight ? 'wagon-label--active' : ''}`}
+            >
               {sector.runs}
             </text>
           </g>
         );
       })}
-      <circle cx={cx} cy={cy} r="6" fill="#c4a35a" />
+      <circle cx={cx} cy={cy} r="6" fill="#c4a35a" className="wagon-center-dot" />
     </svg>
   );
 }
@@ -133,49 +146,53 @@ export default function LiveMatchGraphicWidget({ match }) {
     : null;
   const activeInnings = selectedInnings || innings?.defaultInnings || '';
 
-  const t1Data = playerRosterMap[team1] || {
-    batters: [`${team1.split(' ')[0]} Batter 1`, `${team1.split(' ')[0]} Batter 2`],
-    bowlers: [`${team1.split(' ')[0]} Bowler`],
-  };
-  const t2Data = playerRosterMap[team2] || {
-    batters: [`${team2.split(' ')[0]} Batter 1`, `${team2.split(' ')[0]} Batter 2`],
-    bowlers: [`${team2.split(' ')[0]} Bowler`],
-  };
+  const t1Data = playerRosterMap[team1] || buildRosterFallback(team1);
+  const t2Data = playerRosterMap[team2] || buildRosterFallback(team2);
 
   const team1Short = getTeamShort(team1);
   const team2Short = getTeamShort(team2);
   const battingRoster = activeInnings.includes(team2Short) ? t2Data : t1Data;
   const bowlingRoster = activeInnings.includes(team2Short) ? t1Data : t2Data;
 
-  const striker = match?.liveDetails?.batter1?.name || battingRoster.batters[0];
-  const nonStriker = match?.liveDetails?.batter2?.name || battingRoster.batters[1];
-  const bowler = match?.liveDetails?.bowler?.name || bowlingRoster.bowlers[0];
+  const isLiveMatch = matchState === 'in' || match?.isLive;
+  const fieldState = useLiveFieldState(isLiveMatch ? match : null, battingRoster);
 
-  const currentOverNum = Math.max(1, Math.ceil(parseFloat(
+  const striker = fieldState
+    ? (fieldState.strikerIdx === 0 ? fieldState.batter1.name : fieldState.batter2.name)
+    : (match?.liveDetails?.batter1?.name || battingRoster.batters[0]);
+  const nonStriker = fieldState
+    ? (fieldState.strikerIdx === 0 ? fieldState.batter2.name : fieldState.batter1.name)
+    : (match?.liveDetails?.batter2?.name || battingRoster.batters[1]);
+  const bowler = fieldState?.bowler || match?.liveDetails?.bowler?.name || bowlingRoster.bowlers[0];
+
+  const currentOverNum = fieldState?.overNum ?? Math.max(1, Math.ceil(parseFloat(
     innings?.inningsNum === 2 ? (match?.liveDetails?.overs2 || overs) : overs
   ) || 1));
-  const overBalls = match?.liveDetails?.currentOverBalls || ['2', '1', '1', '4', '1'];
+
+  const overBalls = fieldState?.overBalls
+    || match?.liveDetails?.currentOverBalls?.map((b) => (b === '0' ? '•' : b))
+    || ['•'];
 
   const wicketOvers = useMemo(() => {
     const seed = (match?.id || 'm1').charCodeAt(1) || 2;
     return new Set([1, (seed % 5) + 6, (seed % 4) + 10].filter(o => o <= 20));
   }, [match?.id]);
 
-  const b1 = useMemo(() => ({
+  const b1 = fieldState?.batter1 ?? {
     name: striker,
     runs: match?.liveDetails?.batter1?.runs ?? Math.max(12, Math.floor(score2 * 0.38) || 28),
     balls: match?.liveDetails?.batter1?.balls ?? Math.max(8, Math.floor(score2 * 0.24) || 22),
     fours: match?.liveDetails?.batter1?.fours ?? 3,
     sixes: match?.liveDetails?.batter1?.sixes ?? 1,
-  }), [match, score2, striker]);
+  };
 
-  const b2 = useMemo(() => ({
+  const b2 = fieldState?.batter2 ?? {
     name: nonStriker,
     runs: match?.liveDetails?.batter2?.runs ?? Math.max(5, Math.floor(score2 * 0.22) || 14),
     balls: match?.liveDetails?.batter2?.balls ?? Math.max(4, Math.floor(score2 * 0.15) || 11),
     fours: match?.liveDetails?.batter2?.fours ?? 1,
     sixes: match?.liveDetails?.batter2?.sixes ?? 0,
-  }), [match, score2, nonStriker]);
+  };
 
   if (!match) {
     return (
@@ -248,71 +265,27 @@ export default function LiveMatchGraphicWidget({ match }) {
         </div>
 
         <div className="live-widget-tabs" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeWidgetTab === 'video'}
-            onClick={() => setActiveWidgetTab('video')}
-            className={`live-widget-tab ${activeWidgetTab === 'video' ? 'active' : ''}`}
-          >
-            <HiOutlineVideoCamera />
-            <span className="live-widget-tab-label">Video</span>
+          <button type="button" role="tab" aria-selected={activeWidgetTab === 'video'} onClick={() => setActiveWidgetTab('video')} className={`live-widget-tab ${activeWidgetTab === 'video' ? 'active' : ''}`}>
+            <HiOutlineVideoCamera /><span className="live-widget-tab-label">Video</span>
           </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeWidgetTab === 'field'}
-            onClick={() => setActiveWidgetTab('field')}
-            className={`live-widget-tab ${activeWidgetTab === 'field' ? 'active' : ''}`}
-          >
-            <span className="live-widget-tab-icon live-widget-tab-icon--stadium">🏟</span>
-            <span className="live-widget-tab-label">Field</span>
+          <button type="button" role="tab" aria-selected={activeWidgetTab === 'field'} onClick={() => setActiveWidgetTab('field')} className={`live-widget-tab ${activeWidgetTab === 'field' ? 'active' : ''}`}>
+            <span className="live-widget-tab-icon live-widget-tab-icon--stadium">🏟</span><span className="live-widget-tab-label">Field</span>
           </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeWidgetTab === 'scorecard'}
-            onClick={() => setActiveWidgetTab('scorecard')}
-            className={`live-widget-tab ${activeWidgetTab === 'scorecard' ? 'active' : ''}`}
-          >
-            <HiOutlineViewList />
-            <span className="live-widget-tab-label">Score</span>
+          <button type="button" role="tab" aria-selected={activeWidgetTab === 'scorecard'} onClick={() => setActiveWidgetTab('scorecard')} className={`live-widget-tab ${activeWidgetTab === 'scorecard' ? 'active' : ''}`}>
+            <HiOutlineViewList /><span className="live-widget-tab-label">Score</span>
           </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeWidgetTab === 'stats'}
-            onClick={() => setActiveWidgetTab('stats')}
-            className={`live-widget-tab ${activeWidgetTab === 'stats' ? 'active' : ''}`}
-          >
-            <HiOutlineChartBar />
-            <span className="live-widget-tab-label">Stats</span>
+          <button type="button" role="tab" aria-selected={activeWidgetTab === 'stats'} onClick={() => setActiveWidgetTab('stats')} className={`live-widget-tab ${activeWidgetTab === 'stats' ? 'active' : ''}`}>
+            <HiOutlineChartBar /><span className="live-widget-tab-label">Stats</span>
           </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeWidgetTab === 'lineups'}
-            onClick={() => setActiveWidgetTab('lineups')}
-            className={`live-widget-tab ${activeWidgetTab === 'lineups' ? 'active' : ''}`}
-          >
-            <HiOutlineUsers />
-            <span className="live-widget-tab-label">Lineups</span>
+          <button type="button" role="tab" aria-selected={activeWidgetTab === 'lineups'} onClick={() => setActiveWidgetTab('lineups')} className={`live-widget-tab ${activeWidgetTab === 'lineups' ? 'active' : ''}`}>
+            <HiOutlineUsers /><span className="live-widget-tab-label">Lineups</span>
           </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeWidgetTab === 'kits'}
-            onClick={() => setActiveWidgetTab('kits')}
-            className={`live-widget-tab ${activeWidgetTab === 'kits' ? 'active' : ''}`}
-          >
-            <IoShirtOutline />
-            <span className="live-widget-tab-label">Kits</span>
+          <button type="button" role="tab" aria-selected={activeWidgetTab === 'kits'} onClick={() => setActiveWidgetTab('kits')} className={`live-widget-tab ${activeWidgetTab === 'kits' ? 'active' : ''}`}>
+            <IoShirtOutline /><span className="live-widget-tab-label">Kits</span>
           </button>
         </div>
 
-        {activeWidgetTab === 'video' && (
-          <LiveStreamPlayer match={match} />
-        )}
+        {activeWidgetTab === 'video' && <LiveStreamPlayer match={match} />}
 
         {activeWidgetTab === 'field' && (
           <div className="live-widget-visualizer">
@@ -339,7 +312,10 @@ export default function LiveMatchGraphicWidget({ match }) {
                 <div className="live-widget-over-label">OVER {currentOverNum}</div>
                 <div className="live-widget-over-balls">
                   {overBalls.map((ball, idx) => (
-                    <span key={idx} className={`live-widget-ball ${ball === '4' ? 'boundary' : ''}`}>
+                    <span
+                      key={`${currentOverNum}-${idx}-${ball}`}
+                      className={`live-widget-ball ${ball === '4' || ball === '6' ? 'boundary' : ''} ${idx === overBalls.length - 1 ? 'live-widget-ball--latest' : ''}`}
+                    >
                       {ball}
                     </span>
                   ))}
@@ -347,7 +323,7 @@ export default function LiveMatchGraphicWidget({ match }) {
               </div>
 
               <div className="live-widget-wagon-wrap">
-                <WagonWheel />
+                <WagonWheel highlightAngle={fieldState?.wagonAngle} />
               </div>
             </div>
           </div>
@@ -366,8 +342,7 @@ export default function LiveMatchGraphicWidget({ match }) {
               <span>{b2.name}</span><span>{b2.runs}</span><span>{b2.balls}</span><span>{b2.fours}</span><span>{b2.sixes}</span>
             </div>
             <div className="live-widget-scorecard-bowler">
-              <span>Bowler</span>
-              <span>{bowler}</span>
+              <span>Bowler</span><span>{bowler}</span>
             </div>
           </div>
         )}
@@ -380,10 +355,7 @@ export default function LiveMatchGraphicWidget({ match }) {
               <span>{team2.replace(' W', '')}</span>
             </div>
             <div className="live-widget-prob-track">
-              <div
-                className="live-widget-prob-fill team1"
-                style={{ width: `${Math.min(85, Math.max(15, Math.round((score1 / (score2 || score1 || 1)) * 50)))}%` }}
-              />
+              <div className="live-widget-prob-fill team1" style={{ width: `${Math.min(85, Math.max(15, Math.round((score1 / (score2 || score1 || 1)) * 50)))}%` }} />
             </div>
             <div className="live-widget-stat-grid">
               <div><span>Run rate</span><strong>{(score2 / Math.max(1, parseFloat(overs) || 1)).toFixed(2)}</strong></div>
@@ -396,17 +368,11 @@ export default function LiveMatchGraphicWidget({ match }) {
           <div className="live-widget-panel">
             <h4 className="live-widget-panel-title">{team1.replace(' W', '')}</h4>
             {t1Data.batters.map((name, idx) => (
-              <div key={idx} className="live-widget-lineup-row">
-                <span>{name}</span>
-                <span>Batter</span>
-              </div>
+              <div key={idx} className="live-widget-lineup-row"><span>{name}</span><span>Batter</span></div>
             ))}
             <h4 className="live-widget-panel-title">{team2.replace(' W', '')}</h4>
             {t2Data.batters.map((name, idx) => (
-              <div key={idx} className="live-widget-lineup-row">
-                <span>{name}</span>
-                <span>Batter</span>
-              </div>
+              <div key={idx} className="live-widget-lineup-row"><span>{name}</span><span>Batter</span></div>
             ))}
           </div>
         )}

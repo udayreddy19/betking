@@ -409,6 +409,26 @@
   fill: white;
   font-size: 9px;
   font-weight: 800;
+  transition: fill 0.3s ease, font-size 0.3s ease;
+}
+
+.wagon-label--active {
+  fill: #fbbf24;
+  font-size: 11px;
+}
+
+.wagon-center-dot {
+  transition: transform 0.3s ease;
+}
+
+.live-widget-ball--latest {
+  animation: ballPop 0.4s ease;
+  color: #fbbf24;
+}
+
+@keyframes ballPop {
+  0% { transform: scale(1.4); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 .live-widget-panel {
