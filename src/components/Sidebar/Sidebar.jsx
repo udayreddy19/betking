@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AnimatePresence, motion } from 'motion/react';
 import {
   IoClose,
   FiChevronRight,
@@ -22,7 +21,6 @@ import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
 import FinancialModals from '../FinancialModals/FinancialModals';
-import { useReducedMotion, motionDuration } from '../motion/useReducedMotion';
 import './Sidebar.css';
 
 export default function Sidebar() {
@@ -30,7 +28,6 @@ export default function Sidebar() {
   const { openMyBets } = useBetSlip();
   const navigate = useNavigate();
   const [activeFinModal, setActiveFinModal] = useState(null);
-  const reduced = useReducedMotion();
 
   const handleLogin = () => {
     closeSidebar();
@@ -53,25 +50,8 @@ export default function Sidebar() {
 
   return (
     <>
-      <AnimatePresence>
-        {isSidebarOpen && (
-          <motion.div
-            className="sidebar-overlay open"
-            onClick={closeSidebar}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: motionDuration(reduced, 0.25) }}
-          />
-        )}
-      </AnimatePresence>
-      <motion.aside
-        className={`sidebar ${isSidebarOpen ? 'open' : ''}`}
-        id="sidebar"
-        initial={false}
-        animate={{ x: isSidebarOpen ? 0 : '-100%' }}
-        transition={{ type: reduced ? 'tween' : 'spring', stiffness: 320, damping: 32, duration: reduced ? 0 : undefined }}
-      >
+      <div className={`sidebar-overlay ${isSidebarOpen ? 'open' : ''}`} onClick={closeSidebar} />
+      <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`} id="sidebar">
         <div className="sidebar-header">
           <span style={{ fontWeight: 700, fontSize: 'var(--text-lg)' }}>
             {isLoggedIn ? `Hi, ${user.displayName.split(' ')[0]}` : 'Menu'}
@@ -83,6 +63,7 @@ export default function Sidebar() {
 
         {isLoggedIn ? (
           <>
+            {/* Top Navigation Tabs */}
             <div className="sidebar-tabs">
               <button className="sidebar-tab active">
                 <HiOutlineDocumentText className="tab-icon" />
@@ -107,6 +88,7 @@ export default function Sidebar() {
             </div>
 
             <div className="sidebar-content">
+              {/* Wicket Keeper Level Badge */}
               <div className="sidebar-loyalty">
                 <HiOutlineTrophy className="loyalty-avatar-icon" aria-hidden />
                 <div className="loyalty-info">
@@ -116,6 +98,7 @@ export default function Sidebar() {
                 <div className="loyalty-ring" />
               </div>
 
+              {/* Notifications */}
               <div className="sidebar-notifications" onClick={() => openFinModal('transactions')}>
                 <IoNotifications className="notif-icon" />
                 <div className="notif-info">
@@ -126,6 +109,7 @@ export default function Sidebar() {
                 <FiChevronRight className="notif-arrow" />
               </div>
 
+              {/* Actions Grid */}
               <div className="sidebar-actions">
                 <div className="sidebar-actions-row">
                   <button className="sidebar-action" onClick={() => { closeSidebar(); openDepositModal(); }}>
@@ -167,6 +151,7 @@ export default function Sidebar() {
                 </div>
               </div>
 
+              {/* Marketplace Link */}
               <button className="sidebar-link" onClick={() => openFinModal('marketplace')}>
                 <span className="link-left">
                   <MdOutlineStorefront className="link-icon" />
@@ -175,6 +160,7 @@ export default function Sidebar() {
                 <FiChevronRight className="link-arrow" />
               </button>
 
+              {/* Loyalty Benefits Link */}
               <button className="sidebar-link" onClick={() => openFinModal('bonuses')}>
                 <span className="link-left">
                   <HiOutlineTrophy className="link-icon" />
@@ -207,8 +193,9 @@ export default function Sidebar() {
             </div>
           </div>
         )}
-      </motion.aside>
+      </aside>
 
+      {/* Financial Modals for Withdrawals, Cancel W/D, Transactions, History, Bonuses, Marketplace */}
       <FinancialModals modalType={activeFinModal} onClose={() => setActiveFinModal(null)} />
     </>
   );

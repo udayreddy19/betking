@@ -1,10 +1,8 @@
-import { useState, memo } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBetSlip } from '../../context/BetSlipContext';
 import MatchDetailModal from '../MatchDetailModal/MatchDetailModal';
 import SportIcon from '../SportIcon/SportIcon';
-import HoverScale from '../motion/HoverScale';
-import LivePulse from '../ui/LivePulse';
 import { isMatchBettable, isMatchLive, isMatchFinished, hasCricketPlayStarted } from '../../utils/matchBetting';
 import { resolveCricketTeamScores } from '../../utils/cricketScores';
 import './MatchCard.css';
@@ -65,7 +63,7 @@ function TeamBadge({ team }) {
   );
 }
 
-function MatchCard({ match, variant = 'default' }) {
+export default function MatchCard({ match, variant = 'default' }) {
   const { addBet, isBetSelected } = useBetSlip();
   const navigate = useNavigate();
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -131,16 +129,23 @@ function MatchCard({ match, variant = 'default' }) {
       : (match.time || 'Scheduled');
 
   const TeamIcon = isHome ? TeamJersey : TeamBadge;
-  const cardClassName = `match-card ${isHome ? 'match-card--home' : ''} ${isLiveNow ? 'match-card--live' : ''}`;
-  const cardProps = {
-    className: cardClassName,
-    id: `match-${match.id}`,
-    onClick: openDetails,
-    style: { cursor: 'pointer' },
-  };
 
-  const cardBody = (
+  return (
     <>
+      {!isHome && (
+        <MatchDetailModal
+          match={match}
+          isOpen={isDetailOpen}
+          onClose={() => setIsDetailOpen(false)}
+        />
+      )}
+
+      <div
+        className={`match-card ${isHome ? 'match-card--home' : ''}`}
+        id={`match-${match.id}`}
+        onClick={openDetails}
+        style={{ cursor: 'pointer' }}
+      >
         <div className="match-card-header">
           <span className="match-card-league">
             <SportIcon icon={leagueIconKey(match.league)} sport={match.sport} className="league-flag" />
@@ -157,7 +162,8 @@ function MatchCard({ match, variant = 'default' }) {
             timeLabel
           ) : isLiveNow ? (
             <>
-              <LivePulse label="LIVE" />
+              <span className="live-dot" />
+              LIVE
               {inlineScore && <span className="match-card-score-inline">{inlineScore}</span>}
             </>
           ) : isFinished ? (
@@ -237,26 +243,7 @@ function MatchCard({ match, variant = 'default' }) {
             <span>➔</span>
           </button>
         )}
-    </>
-  );
-
-  return (
-    <>
-      {!isHome && (
-        <MatchDetailModal
-          match={match}
-          isOpen={isDetailOpen}
-          onClose={() => setIsDetailOpen(false)}
-        />
-      )}
-
-      {isHome ? (
-        <div {...cardProps}>{cardBody}</div>
-      ) : (
-        <HoverScale {...cardProps}>{cardBody}</HoverScale>
-      )}
+      </div>
     </>
   );
 }
-
-export default memo(MatchCard);

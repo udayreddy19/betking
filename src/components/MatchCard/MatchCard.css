@@ -3,20 +3,13 @@
   border-radius: var(--radius-lg);
   padding: var(--space-4);
   box-shadow: var(--shadow-card);
-  transition: box-shadow var(--transition-base), border-color var(--transition-base);
+  transition: all var(--transition-base);
   border: 1.5px solid transparent;
   min-width: 280px;
 }
 .match-card:hover {
   box-shadow: var(--shadow-card-hover);
   border-color: var(--color-primary-bg);
-}
-.match-card--live {
-  border-color: rgba(239, 68, 68, 0.15);
-}
-.match-card--live:hover {
-  border-color: rgba(239, 68, 68, 0.3);
-  box-shadow: var(--shadow-card-hover), 0 0 20px rgba(239, 68, 68, 0.08);
 }
 .match-card-header {
   display: flex;

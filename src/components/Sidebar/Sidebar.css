@@ -23,14 +23,16 @@
   width: var(--sidebar-width);
   max-width: 90vw;
   height: 100vh;
-  background: var(--color-glass-strong);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-right: 1px solid var(--color-glass-border);
+  background: var(--color-surface);
   z-index: var(--z-modal);
+  transform: translateX(-100%);
+  transition: transform var(--transition-base);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+}
+.sidebar.open {
+  transform: translateX(0);
 }
 
 .sidebar-header {

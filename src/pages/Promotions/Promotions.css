@@ -34,24 +34,12 @@
 .promo-item-banner {
   height: 180px;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-3);
   position: relative;
   overflow: hidden;
+  padding: var(--space-6);
 }
-
-.promo-item-banner-icon {
-  opacity: 0.9;
-  color: var(--color-on-primary);
-}
-
-.promo-item-btn {
-  width: 100%;
-  margin-top: var(--space-2);
-}
-
 .promo-item-banner::after {
   content: '';
   position: absolute;
@@ -82,10 +70,18 @@
   color: var(--color-text-secondary);
   margin-bottom: var(--space-4);
 }
-
-.promo-bonus-amount {
+.promo-item-btn {
+  display: inline-block;
+  padding: var(--space-2) var(--space-5);
+  background: var(--color-primary);
+  color: white;
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
   font-weight: var(--font-semibold);
-  color: var(--color-primary);
+  transition: all var(--transition-fast);
+}
+.promo-item-btn:hover {
+  background: var(--color-primary-dark);
 }
 
 @media (max-width: 768px) {

@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { BetSlipProvider } from './context/BetSlipContext';
 import { LiveSportsProvider } from './context/LiveSportsContext';
@@ -16,9 +16,6 @@ import MobileBetSlip from './components/MobileBetSlip/MobileBetSlip';
 import GlobalBetBar from './components/GlobalBetBar/GlobalBetBar';
 import BetSettlementRunner from './components/BetSettlementRunner/BetSettlementRunner';
 import GamePlayModal from './components/GamePlayModal/GamePlayModal';
-import PageTransition from './components/motion/PageTransition';
-import BackToTop from './components/ui/BackToTop';
-import './components/ui/ui.css';
 
 import Home from './pages/Home/Home';
 import Register from './pages/Register/Register';
@@ -36,36 +33,7 @@ const Casino = lazy(() => import('./pages/Casino/Casino'));
 const LiveCasino = lazy(() => import('./pages/LiveCasino/LiveCasino'));
 
 function PageLoader() {
-  return (
-    <div className="page-loader" role="status">
-      <div className="ui-skeleton" style={{ width: 120, height: 16, margin: 'auto' }} />
-    </div>
-  );
-}
-
-function AnimatedRoutes() {
-  const location = useLocation();
-
-  return (
-    <PageTransition>
-      <Routes location={location}>
-        <Route path="/" element={<Home />} />
-        <Route path="/live-betting" element={<Sports />} />
-        <Route path="/sports" element={<Sports />} />
-        <Route path="/casino" element={<Casino />} />
-        <Route path="/live-casino" element={<LiveCasino />} />
-        <Route path="/fantasy" element={<Fantasy />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/promotions" element={<Promotions />} />
-        <Route path="/terms" element={<Terms />} />
-        <Route path="/privacy" element={<Privacy />} />
-        <Route path="/responsible-gaming" element={<ResponsibleGaming />} />
-        <Route path="/help" element={<Help />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </PageTransition>
-  );
+  return <div className="page-loader" role="status">Loading…</div>;
 }
 
 function AppLayout() {
@@ -80,10 +48,24 @@ function AppLayout() {
       <BetSettlementRunner />
       <MobileBetSlip />
       <GlobalBetBar />
-      <BackToTop />
       <main className="app-main">
         <Suspense fallback={<PageLoader />}>
-          <AnimatedRoutes />
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/live-betting" element={<Sports />} />
+            <Route path="/sports" element={<Sports />} />
+            <Route path="/casino" element={<Casino />} />
+            <Route path="/live-casino" element={<LiveCasino />} />
+            <Route path="/fantasy" element={<Fantasy />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/promotions" element={<Promotions />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/responsible-gaming" element={<ResponsibleGaming />} />
+            <Route path="/help" element={<Help />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
         </Suspense>
       </main>
       <Footer />
