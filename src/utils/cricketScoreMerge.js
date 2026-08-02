@@ -64,6 +64,7 @@ export function mergeCricketLiveDetails(prev = {}, next = {}) {
   merged.batter2 = next.batter2 || prev.batter2;
   merged.bowler = next.bowler || prev.bowler;
   merged.commentary = next.commentary || prev.commentary;
+  merged.currentOverBalls = next.currentOverBalls?.length ? next.currentOverBalls : prev.currentOverBalls;
 
   const resolved = flattenCricketTeamScores(resolveCricketTeamScores(null, merged));
   merged.runs = resolved.runs;

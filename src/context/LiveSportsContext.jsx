@@ -2,9 +2,7 @@ import { createContext, useContext, useState, useEffect, useRef, useCallback, us
 import { getStableMatchOdds } from '../utils/odds';
 import { normalizeApiMatches } from '../utils/matchFilters';
 import { fetchLiveScores } from '../services/liveScoresService';
-
-const LiveSportsContext = createContext(null);
-const SCORES_POLL_MS = 5000;
+import { LIVE_SCORES_POLL_MS } from '../config/livePolling';
 
 function attachOdds(matches, oddsCache) {
   return matches.map((match) => {
@@ -41,6 +39,7 @@ export function LiveSportsProvider({ children }) {
   const oddsCacheRef = useRef(new Map());
   const matchesSummaryRef = useRef('');
   const hasLoadedRef = useRef(false);
+  const pollMsRef = useRef(LIVE_SCORES_POLL_MS);
 
   const refreshScores = useCallback(async (options = {}) => {
     const { force = false } = options;
@@ -48,6 +47,9 @@ export function LiveSportsProvider({ children }) {
 
     try {
       const data = await fetchLiveScores({ force });
+      if (data.pollIntervalMs && data.pollIntervalMs > 0) {
+        pollMsRef.current = data.pollIntervalMs;
+      }
       const apiMatches = attachOdds(data.matches || [], oddsCacheRef.current);
       const normalized = normalizeApiMatches(apiMatches);
 
@@ -101,7 +103,7 @@ export function LiveSportsProvider({ children }) {
 
     refreshScores();
 
-    const interval = setInterval(tick, SCORES_POLL_MS);
+    const interval = setInterval(tick, LIVE_SCORES_POLL_MS);
 
     const onVisibility = () => {
       if (!document.hidden) refreshScores();

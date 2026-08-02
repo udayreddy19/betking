@@ -1,5 +1,6 @@
 import { aggregateLiveScores } from '../lib/aggregator.mjs';
 import { fetchMatchDetail } from '../lib/matchDetailFetcher.mjs';
+import { LIVE_SCORES_POLL_MS } from '../lib/livePolling.mjs';
 
 export function liveScoresApiPlugin() {
   return {
@@ -17,7 +18,7 @@ export function liveScoresApiPlugin() {
           const force = url.searchParams.get('refresh') === '1';
           const payload = await aggregateLiveScores({ force });
           res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify(payload));
+          res.end(JSON.stringify({ ...payload, pollIntervalMs: LIVE_SCORES_POLL_MS }));
         } catch (error) {
           console.error('[Live Scores Plugin]', error);
           res.statusCode = 502;

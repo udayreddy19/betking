@@ -15,13 +15,12 @@ export function useMatchDetail(match) {
 
   const matchId = match?.id;
   const pollable = canPoll(match);
-  const isLive = match?.matchState === 'in' || match?.isLive;
 
   useEffect(() => {
-    if (match && pollable && isLive) {
+    if (match && pollable) {
       prefetchMatchDetail(match, { priority: true });
     }
-  }, [matchId, pollable, isLive]);
+  }, [matchId, pollable]);
 
   const detailVersion = useSyncExternalStore(
     (onStoreChange) => (matchId && pollable
@@ -40,5 +39,5 @@ export function useMatchDetail(match) {
       return enrichMatchWithDetail(base, detail);
     }
     return enrichFromPoller(base) || base;
-  }, [match, matchId, detailVersion, isLive, pollable]);
+  }, [match, matchId, detailVersion, pollable]);
 }

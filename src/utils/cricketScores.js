@@ -1,4 +1,5 @@
 import { normalizeCricbuzzOvers, oversToBalls } from './oversUtils';
+import { normalizeMatchOvers, oversToBallsForMatch } from './cricketFormat';
 
 function normalizeTeamToken(name = '') {
   return String(name)
@@ -16,13 +17,14 @@ export function teamNameMatches(teamName, token) {
   return team.includes(hint) || hint.includes(team) || team.startsWith(hint) || hint.startsWith(team);
 }
 
-function scoreEntry(token, runs, wickets, overs) {
+function scoreEntry(token, runs, wickets, overs, match) {
+  const normalized = match ? normalizeMatchOvers(overs ?? '0.0', match) : normalizeCricbuzzOvers(overs ?? '0.0');
   return {
     token: token || '',
     runs: runs ?? 0,
     wickets: wickets ?? 0,
-    overs: normalizeCricbuzzOvers(overs ?? '0.0'),
-    balls: oversToBalls(overs ?? '0.0'),
+    overs: normalized,
+    balls: match ? oversToBallsForMatch(overs ?? '0.0', match) : oversToBalls(overs ?? '0.0'),
   };
 }
 
@@ -39,16 +41,16 @@ export function resolveCricketTeamScores(match, ld = {}) {
 
   const entries = [];
   if (ld.firstRuns != null || ld.firstTeamName) {
-    entries.push(scoreEntry(ld.firstTeamName, ld.firstRuns, ld.firstWickets, ld.firstOvers));
+    entries.push(scoreEntry(ld.firstTeamName, ld.firstRuns, ld.firstWickets, ld.firstOvers, match));
   }
   if (ld.chaseRuns != null || ld.chaseTeamName) {
-    entries.push(scoreEntry(ld.chaseTeamName, ld.chaseRuns, ld.chaseWickets, ld.chaseOvers));
+    entries.push(scoreEntry(ld.chaseTeamName, ld.chaseRuns, ld.chaseWickets, ld.chaseOvers, match));
   }
 
   if (entries.length === 0) {
     return {
-      team1: scoreEntry(team1Name, ld.runs, ld.wickets, ld.overs),
-      team2: scoreEntry(team2Name, ld.score2, ld.wickets2, ld.overs2),
+      team1: scoreEntry(team1Name, ld.runs, ld.wickets, ld.overs, match),
+      team2: scoreEntry(team2Name, ld.score2, ld.wickets2, ld.overs2, match),
     };
   }
 
@@ -57,18 +59,18 @@ export function resolveCricketTeamScores(match, ld = {}) {
     if (teamNameMatches(team1Name, entry.token)) {
       return {
         team1: { ...entry, token: team1Name },
-        team2: scoreEntry(team2Name, 0, 0, '0.0'),
+        team2: scoreEntry(team2Name, 0, 0, '0.0', match),
       };
     }
     if (teamNameMatches(team2Name, entry.token)) {
       return {
-        team1: scoreEntry(team1Name, 0, 0, '0.0'),
+        team1: scoreEntry(team1Name, 0, 0, '0.0', match),
         team2: { ...entry, token: team2Name },
       };
     }
     return {
       team1: { ...entry, token: team1Name },
-      team2: scoreEntry(team2Name, 0, 0, '0.0'),
+      team2: scoreEntry(team2Name, 0, 0, '0.0', match),
     };
   }
 
@@ -77,8 +79,8 @@ export function resolveCricketTeamScores(match, ld = {}) {
   const used = new Set([team1Entry, team2Entry].filter(Boolean));
 
   const remaining = entries.filter((entry) => !used.has(entry));
-  const fallbackTeam1 = team1Entry || remaining[0] || scoreEntry(team1Name, 0, 0, '0.0');
-  const fallbackTeam2 = team2Entry || remaining[1] || remaining[0] || scoreEntry(team2Name, 0, 0, '0.0');
+  const fallbackTeam1 = team1Entry || remaining[0] || scoreEntry(team1Name, 0, 0, '0.0', match);
+  const fallbackTeam2 = team2Entry || remaining[1] || remaining[0] || scoreEntry(team2Name, 0, 0, '0.0', match);
 
   if (fallbackTeam1 === fallbackTeam2 && entries.length > 1) {
     return {

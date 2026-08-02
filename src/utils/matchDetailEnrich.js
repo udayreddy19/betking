@@ -21,6 +21,7 @@ function enrichCricketDetails(match, ld, base) {
     batter2: ld.batter2 || base.batter2,
     bowler: ld.bowler || base.bowler,
     commentary: ld.commentary || base.commentary,
+    currentOverBalls: ld.currentOverBalls?.length ? ld.currentOverBalls : base.currentOverBalls,
   };
 }
 
@@ -46,6 +47,7 @@ export function enrichMatchWithDetail(match, detail) {
     time: detail.time ?? match.time,
     squads: detail.squads ?? match.squads,
     scorecardInnings: detail.scorecardInnings ?? match.scorecardInnings,
+    overHistory: detail.overHistory ?? match.overHistory,
     liveDetails,
   };
 }

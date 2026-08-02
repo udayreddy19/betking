@@ -1,4 +1,4 @@
-import { getRosterForTeam, normalizeTeamKey } from '../data/cricketRosters';
+import { normalizeTeamKey } from '../data/cricketRosters';
 
 function teamsMatch(teamA, teamB) {
   if (!teamA || !teamB) return false;
@@ -10,13 +10,8 @@ function teamsMatch(teamA, teamB) {
   return a.split(' ')[0] === b.split(' ')[0];
 }
 
-function rosterToSquad(teamName) {
-  const roster = getRosterForTeam(teamName);
-  const players = [
-    ...roster.batters.map((name) => ({ name, role: 'Batter' })),
-    ...roster.bowlers.map((name) => ({ name, role: 'Bowler' })),
-  ];
-  return { name: teamName, players };
+function emptySquad(teamName) {
+  return { name: teamName, players: [] };
 }
 
 /** Map API squads to home/away team names on the match card. */
@@ -30,15 +25,15 @@ export function resolveMatchSquads(match, team1Name, team2Name) {
     if (!team2Squad && squads[1]) team2Squad = squads[1];
 
     return {
-      team1: team1Squad || rosterToSquad(team1Name),
-      team2: team2Squad || rosterToSquad(team2Name),
+      team1: team1Squad || emptySquad(team1Name),
+      team2: team2Squad || emptySquad(team2Name),
       fromApi: true,
     };
   }
 
   return {
-    team1: rosterToSquad(team1Name),
-    team2: rosterToSquad(team2Name),
+    team1: emptySquad(team1Name),
+    team2: emptySquad(team2Name),
     fromApi: false,
   };
 }
@@ -63,4 +58,16 @@ export function formatPlayerRole(player) {
   if (player.isCaptain) return 'Captain';
   if (player.isKeeper) return 'WK';
   return player.role || 'Player';
+}
+
+export function squadToRoster(squad, opponentSquad) {
+  const batters = (squad?.players || [])
+    .filter((p) => p.role !== 'Bowler' && !String(p.role || '').toLowerCase().includes('bowl'))
+    .map((p) => p.name)
+    .filter(Boolean);
+  const bowlers = (opponentSquad?.players || [])
+    .filter((p) => p.role === 'Bowler' || String(p.role || '').toLowerCase().includes('bowl'))
+    .map((p) => p.name)
+    .filter(Boolean);
+  return { batters, bowlers };
 }

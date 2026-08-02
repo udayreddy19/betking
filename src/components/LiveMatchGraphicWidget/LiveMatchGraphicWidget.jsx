@@ -2,8 +2,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { HiOutlineViewList, HiOutlineChartBar, HiOutlineUsers } from '../../icons';
 import { useLiveFieldState } from '../../hooks/useLiveFieldState';
 import { useMatchDetail } from '../../hooks/useMatchDetail';
-import { getRosterForTeam } from '../../data/cricketRosters';
-import { resolveMatchSquads, formatPlayerRole } from '../../utils/matchSquads';
+import { resolveMatchSquads, formatPlayerRole, squadToRoster } from '../../utils/matchSquads';
 import { getBallDisplayKind, getBallDisplayLabel, parseOvers } from '../../utils/liveFieldState';
 import {
   getTeamShortCode,
@@ -24,6 +23,7 @@ import {
 import { isCricketTrackerLive, getMatchState } from '../../utils/matchBetting';
 import { isCricketSecondInnings, resolveCricketTeamScores } from '../../utils/cricketScores';
 import { oversToBalls } from '../../utils/oversUtils';
+import { getMatchMaxOvers, normalizeMatchOvers } from '../../utils/cricketFormat';
 import { isPlaceholderPlayerName, displayPlayerName } from '../../utils/cricketPlayers';
 import './LiveMatchGraphicWidget.css';
 
@@ -284,8 +284,13 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
 
   const activeInnings = selectedInnings || innings?.defaultInnings || '';
 
-  const t1Data = getRosterForTeam(team1);
-  const t2Data = getRosterForTeam(team2);
+  const squads = useMemo(
+    () => resolveMatchSquads(match, team1, team2),
+    [match, team1, team2],
+  );
+
+  const t1Data = useMemo(() => squadToRoster(squads.team1, squads.team2), [squads]);
+  const t2Data = useMemo(() => squadToRoster(squads.team2, squads.team1), [squads]);
 
   const team1Short = getTeamShort(team1);
   const team2Short = getTeamShort(team2);
@@ -296,7 +301,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
   const battingRoster = viewingTeam2Innings ? t2Data : t1Data;
   const bowlingRoster = viewingTeam2Innings ? t1Data : t2Data;
 
-  const fieldState = useLiveFieldState(isCricketSport && showCricketTracker ? match : null, battingRoster);
+  const fieldState = useLiveFieldState(showCricketTracker ? match : null);
 
   const apiBatter1 = match?.liveDetails?.batter1;
   const apiBatter2 = match?.liveDetails?.batter2;
@@ -328,24 +333,15 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
     ? getChaseText(match, innings, team1, score1, score2, wickets2)
     : null;
 
-  const wicketOvers = useMemo(() => {
-    const wkts = innings?.inningsNum === 2 ? wickets2 : wickets1;
-    const currentOver = parseOvers(innings?.displayOvers || overs).over;
-    return getWicketOvers(match, wkts, currentOver);
-  }, [match, innings?.inningsNum, innings?.displayOvers, wickets1, wickets2, overs]);
+  const wicketOvers = useMemo(() => getWicketOvers(match), [match?.overHistory]);
 
   const overHistoryRows = useMemo(
     () => buildOverHistoryRows(fieldState, match?.id, match),
-    [fieldState, match?.id, match?.liveDetails?.overs, match?.liveDetails?.overs2, match?.liveDetails?.chaseOvers, match?.liveDetails?.score2, match?.liveDetails?.chaseRuns, match?.matchState],
+    [fieldState, match],
   );
 
   const activeScorecardTab = scorecardInnings
     || (innings?.inningsNum === 2 ? `${team2Short} 1ST` : `${team1Short} 1ST`);
-
-  const squads = useMemo(
-    () => resolveMatchSquads(match, team1, team2),
-    [match, team1, team2],
-  );
 
   const scorecardPlayers = useMemo(() => {
     const isTeam2Tab = activeScorecardTab.includes(team2Short);
@@ -369,6 +365,9 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
   const inningsFours = fieldState?.inningsFours ?? 0;
   const inningsSixes = fieldState?.inningsSixes ?? 0;
   const inningsExtras = fieldState?.extras ?? 0;
+
+  const maxOvers = getMatchMaxOvers(match);
+  const displayOversNormalized = normalizeMatchOvers(innings?.displayOvers || overs, match);
 
   if (!match) {
     return (
@@ -406,7 +405,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
     <div className="live-graphic-card-10cric">
       <div className="live-widget-body">
         <div className="live-widget-inn-badge">
-          {`INN ${innings.inningsNum} | ${innings.displayOvers}/20 OV`}
+          {`INN ${innings.inningsNum} | ${displayOversNormalized}/${maxOvers} OV`}
         </div>
 
         <div className="live-widget-teams-row">
@@ -571,6 +570,9 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
                 <span>B</span>
                 <span>S/R</span>
               </div>
+              {scorecardPlayers.length === 0 && (
+                <p className="cric-lineup-empty">Scorecard loads from API when available.</p>
+              )}
               {scorecardPlayers.map((player, idx) => (
                 <div key={`${player.name}-${idx}`} className="cric-scorecard-table__row">
                   <div className="cric-scorecard-table__batter">
@@ -600,7 +602,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
               >
                 <span>{team1Display} 1st INNS</span>
                 <span className="cric-stats-innings__score">
-                  {resolvedScores.team1.runs}/{resolvedScores.team1.wickets} ({formatInningsOversLabel(resolvedScores.team1.overs)} ov)
+                  {resolvedScores.team1.runs}/{resolvedScores.team1.wickets} ({formatInningsOversLabel(resolvedScores.team1.overs, match)} ov)
                 </span>
                 <span className="cric-stats-innings__arrow">{expandedStatsInnings === 'team1' ? '▲' : '▼'}</span>
               </button>
@@ -612,7 +614,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
               >
                 <span>{team2Display} 1st INNS</span>
                 <span className="cric-stats-innings__score">
-                  {resolvedScores.team2.runs}/{resolvedScores.team2.wickets} ({formatInningsOversLabel(resolvedScores.team2.overs)} ov)
+                  {resolvedScores.team2.runs}/{resolvedScores.team2.wickets} ({formatInningsOversLabel(resolvedScores.team2.overs, match)} ov)
                 </span>
                 <span className="cric-stats-innings__arrow">{expandedStatsInnings === 'team2' ? '▲' : '▼'}</span>
               </button>

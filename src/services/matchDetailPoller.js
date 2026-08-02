@@ -3,9 +3,10 @@
  */
 import { enrichMatchWithDetail } from '../utils/matchDetailEnrich';
 import { mergeCricketLiveDetails, mergeCricketPlayersOnly } from '../utils/cricketScoreMerge';
+import { MATCH_DETAIL_LIVE_POLL_MS, MATCH_DETAIL_IDLE_POLL_MS } from '../config/livePolling';
 
-const LIVE_GAP_MS = 2500;
-const IDLE_GAP_MS = 8000;
+const LIVE_GAP_MS = MATCH_DETAIL_LIVE_POLL_MS;
+const IDLE_GAP_MS = MATCH_DETAIL_IDLE_POLL_MS;
 const MAX_POLLERS = 3;
 
 /** @type {Map<string, { match: object, detail: object|null, version: number, listeners: Set<Function>, running: boolean, isLive: boolean, priority: boolean }>} */
@@ -85,6 +86,7 @@ function mergeDetails(prev, next, { isFull = false } = {}) {
     time: next.time ?? prev.time,
     squads: next.squads ?? prev.squads,
     scorecardInnings: next.scorecardInnings ?? prev.scorecardInnings,
+    overHistory: next.overHistory?.length ? next.overHistory : prev.overHistory,
     liveDetails: {
       ...liveDetails,
       batter1: liveDetails.batter1 || prevLd.batter1,
@@ -99,8 +101,6 @@ async function pollLoop(key) {
   if (!state || state.running) return;
   state.running = true;
 
-  let fullCounter = 0;
-
   while (pollers.has(key)) {
     const s = pollers.get(key);
     if (!s?.match) break;
@@ -109,18 +109,8 @@ async function pollLoop(key) {
     const t0 = Date.now();
 
     try {
-      const isCricket = s.match.sport === 'cricket' || s.match.sport === 'virtual-cricket';
-      fullCounter += 1;
-      const useFull = !isCricket || fullCounter >= 4;
-
-      if (useFull) {
-        fullCounter = 0;
-        const full = await fetchDetail(s.match, false);
-        if (full) emit(key, mergeDetails(pollers.get(key)?.detail, full, { isFull: true }));
-      } else {
-        const fast = await fetchDetail(s.match, true);
-        if (fast) emit(key, mergeDetails(s.detail, fast, { isFull: false }));
-      }
+      const full = await fetchDetail(s.match, false);
+      if (full) emit(key, mergeDetails(pollers.get(key)?.detail, full, { isFull: true }));
     } catch (err) {
       console.warn('Match detail poll failed:', err);
     }
@@ -161,7 +151,7 @@ function ensurePoller(match, { priority = false } = {}) {
 }
 
 export function prefetchMatchDetail(match, { priority = false } = {}) {
-  if (!match || !(match.isLive || match.matchState === 'in')) return;
+  if (!match) return;
   ensurePoller(match, { priority });
 }
 

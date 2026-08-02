@@ -39,7 +39,10 @@ const PRE_MATCH_HOLD_HINTS = [
   'interrupted',
 ];
 
-function parseOversBallCount(overs) {
+import { oversToBallsForMatch } from './cricketFormat';
+
+function parseOversBallCount(overs, match) {
+  if (match) return oversToBallsForMatch(overs, match);
   const str = String(overs ?? '0');
   const parts = str.split('.');
   const whole = parseInt(parts[0], 10) || 0;
@@ -82,8 +85,8 @@ export function hasCricketPlayStarted(match) {
 
   if (runs > 0 || wickets > 0 || score2 > 0 || wickets2 > 0) return true;
 
-  const overs = parseOversBallCount(ld.overs || ld.firstOvers);
-  const overs2 = parseOversBallCount(ld.overs2 || ld.chaseOvers);
+  const overs = parseOversBallCount(ld.overs || ld.firstOvers, match);
+  const overs2 = parseOversBallCount(ld.overs2 || ld.chaseOvers, match);
   if (overs > 0 || overs2 > 0) return true;
 
   return false;

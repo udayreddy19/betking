@@ -335,7 +335,7 @@ export default function Sports() {
   }, [searchParams]);
 
   const matchTimeLabel = activeMatch
-    ? (getMatchState(activeMatch) === 'in'
+    ? (isTrulyLiveMatch(activeMatch)
       ? 'Live'
       : getMatchState(activeMatch) === 'post'
         ? 'Finished'
@@ -521,11 +521,11 @@ export default function Sports() {
                 onClick={() => selectMatch(m.id)}
               >
                 <div className="sports-ticker-row">
-                  <span>{m.team1.shortName || m.team1.name.slice(0, 10)}</span>
+                  <span title={m.team1.name}>{m.team1.shortName || m.team1.name.slice(0, 12)}</span>
                   <span>{team1Score || ''}</span>
                 </div>
                 <div className="sports-ticker-row">
-                  <span>{m.team2.shortName || m.team2.name.slice(0, 10)}</span>
+                  <span title={m.team2.name}>{m.team2.shortName || m.team2.name.slice(0, 12)}</span>
                   <span>{team2Score || ''}</span>
                 </div>
                 {isLive && <span className="sports-ticker-live">LIVE</span>}

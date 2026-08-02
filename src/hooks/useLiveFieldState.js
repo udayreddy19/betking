@@ -1,104 +1,51 @@
-import { useState, useEffect, useRef } from 'react';
-import {
-  buildRosterFallback,
-  createFieldState,
-  tickFieldState,
-  needsResync,
-  syncFieldStateFromMatch,
-} from '../utils/liveFieldState';
+import { useMemo } from 'react';
+import { isPlaceholderPlayerName } from '../utils/cricketPlayers';
 
-const TICK_MS = 5000;
+/** Build field view state purely from API liveDetails — no simulation. */
+export function buildFieldStateFromApi(match) {
+  const ld = match?.liveDetails || {};
+  if (!ld.batter1 && !ld.batter2 && !ld.runs && !ld.currentOverBalls?.length) {
+    return null;
+  }
 
-function isApiBackedMatch(match) {
-  if (!match) return false;
-  return !!(
-    match.cricbuzzMatchId
-    || match.id?.startsWith('cb_')
-    || match.source === 'cricbuzz'
-    || match.source === 'espn'
-    || match.id?.startsWith('api_')
-    || match.fancodeMatchId
-  );
+  const batter1 = ld.batter1 && !isPlaceholderPlayerName(ld.batter1.name)
+    ? { ...ld.batter1, fours: ld.batter1.fours ?? 0, sixes: ld.batter1.sixes ?? 0 }
+    : { name: '', runs: 0, balls: 0, fours: 0, sixes: 0 };
+
+  const batter2 = ld.batter2 && !isPlaceholderPlayerName(ld.batter2.name)
+    ? { ...ld.batter2, fours: ld.batter2.fours ?? 0, sixes: ld.batter2.sixes ?? 0 }
+    : { name: '', runs: 0, balls: 0, fours: 0, sixes: 0 };
+
+  const overHistory = match?.overHistory || [];
+  const currentOver = overHistory.find((o) => o.isCurrent) || overHistory[overHistory.length - 1];
+
+  return {
+    matchId: match?.id,
+    overNum: currentOver?.overNum ?? 1,
+    overBalls: ld.currentOverBalls || currentOver?.balls || [],
+    recentOvers: overHistory.filter((o) => !o.isCurrent).slice(-3),
+    strikerIdx: 0,
+    batter1,
+    batter2,
+    bowler: ld.bowler?.name && !isPlaceholderPlayerName(ld.bowler.name) ? ld.bowler.name : '',
+    inningsFours: ld.fours ?? batter1.fours + batter2.fours,
+    inningsSixes: ld.sixes ?? batter1.sixes + batter2.sixes,
+    extras: ld.extras ?? 0,
+    fromApi: true,
+  };
 }
 
-export function useLiveFieldState(match, roster) {
-  const [fieldState, setFieldState] = useState(() => {
-    if (!match) return null;
-    const r = roster || buildRosterFallback(match.team1?.name || 'Team 1');
-    return createFieldState(match, r);
-  });
-  const stateRef = useRef(fieldState);
-  const rosterRef = useRef(roster);
-
-  rosterRef.current = roster;
-
-  const ld = match?.liveDetails;
-
-  // Sync when API scores / overs / batters change
-  useEffect(() => {
-    if (!match) {
-      stateRef.current = null;
-      setFieldState(null);
-      return;
-    }
-
-    const r = rosterRef.current || buildRosterFallback(match.team1?.name || 'Team 1');
-
-    if (needsResync(stateRef.current, match)) {
-      const next = syncFieldStateFromMatch(stateRef.current, match, r);
-      stateRef.current = next;
-      setFieldState(next);
-    } else if (!stateRef.current) {
-      const next = createFieldState(match, r);
-      stateRef.current = next;
-      setFieldState(next);
-    }
-  }, [
+export function useLiveFieldState(match) {
+  return useMemo(() => buildFieldStateFromApi(match), [
     match,
     match?.id,
-    ld?.runs,
-    ld?.score2,
-    ld?.chaseRuns,
-    ld?.firstRuns,
-    ld?.overs,
-    ld?.overs2,
-    ld?.chaseOvers,
-    ld?.wickets,
-    ld?.wickets2,
-    ld?.batter1?.runs,
-    ld?.batter1?.balls,
-    ld?.batter2?.runs,
-    ld?.batter2?.balls,
-    ld?.batter1?.name,
-    ld?.batter2?.name,
-    ld?.bowler?.name,
+    match?.overHistory,
+    match?.liveDetails?.runs,
+    match?.liveDetails?.wickets,
+    match?.liveDetails?.overs,
+    match?.liveDetails?.batter1,
+    match?.liveDetails?.batter2,
+    match?.liveDetails?.bowler,
+    match?.liveDetails?.currentOverBalls,
   ]);
-
-  // Only simulate balls for mock matches — API-backed matches use real score sync
-  useEffect(() => {
-    if (!match || isApiBackedMatch(match)) return undefined;
-
-    const isLive = match.matchState === 'in' || match.isLive;
-    if (!isLive) return undefined;
-
-    const tick = () => {
-      const r = rosterRef.current || buildRosterFallback(match.team1?.name || 'Team 1');
-      if (!stateRef.current) {
-        stateRef.current = createFieldState(match, r);
-      }
-      const next = tickFieldState(stateRef.current, match, r);
-      stateRef.current = next;
-      setFieldState({ ...next });
-    };
-
-    const bootTimer = setTimeout(tick, 1200);
-    const interval = setInterval(tick, TICK_MS);
-
-    return () => {
-      clearTimeout(bootTimer);
-      clearInterval(interval);
-    };
-  }, [match?.id, match?.matchState, match?.isLive, match?.cricbuzzMatchId, match?.source]);
-
-  return fieldState;
 }
