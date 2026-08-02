@@ -212,6 +212,9 @@ export function needsResync(state, match) {
     || state.syncedScore2 !== (ld.score2 ?? 0)
     || state.syncedOvers !== (ld.overs || '0.0')
     || state.syncedWickets !== (ld.wickets ?? 0)
+    || (ld.batter1?.name && state.batter1?.name !== ld.batter1.name)
+    || (ld.batter2?.name && state.batter2?.name !== ld.batter2.name)
+    || (ld.bowler?.name && state.bowler !== ld.bowler.name)
   );
 }
 

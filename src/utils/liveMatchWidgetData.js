@@ -1,4 +1,5 @@
 import { parseOvers } from './liveFieldState';
+import { ballsRemaining } from './oversUtils';
 
 function hashSeed(str) {
   let h = 0;
@@ -25,15 +26,21 @@ export function getTeamDisplayName(name) {
 export function getChaseText(match, innings, team1, score1, score2, wickets2) {
   if (innings.inningsNum !== 2 || match?.matchState !== 'in') return null;
 
+  const ld = match?.liveDetails || {};
   const chasingTeam = getTeamDisplayName(innings.battingTeam);
+
+  const commentaryMatch = ld.commentary?.match(/need (\d+) runs? in (\d+) balls?/i);
+  if (commentaryMatch) {
+    return `${chasingTeam} (${score2}/${wickets2}) require ${commentaryMatch[1]} runs from ${commentaryMatch[2]} balls.`;
+  }
+
   const target = score1 + 1;
   const runsNeeded = Math.max(0, target - score2);
-  const { over, ball } = parseOvers(innings.displayOvers);
-  const ballsBowled = over * 6 + ball;
-  const totalBalls = 20 * 6;
-  const ballsRemaining = Math.max(0, totalBalls - ballsBowled);
+  const ballsLeft = ld.chaseBallNbr != null
+    ? Math.max(0, 20 * 6 - ld.chaseBallNbr)
+    : ballsRemaining(innings.displayOvers);
 
-  return `${chasingTeam} (${score2}/${wickets2}) require ${runsNeeded} runs from ${ballsRemaining} balls.`;
+  return `${chasingTeam} (${score2}/${wickets2}) require ${runsNeeded} runs from ${ballsLeft} balls.`;
 }
 
 const DISMISSAL_TEMPLATES = [

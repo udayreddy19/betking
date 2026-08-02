@@ -72,7 +72,8 @@ export function mergeApiAndDefaultMatches(apiMatches, defaultMatches) {
         ...match.liveDetails,
         ...apiMatch.liveDetails,
       },
-      fancodeMatchId: apiMatch.fancodeMatchId,
+      cricbuzzMatchId: apiMatch.cricbuzzMatchId || match.cricbuzzMatchId,
+      fancodeMatchId: apiMatch.fancodeMatchId || match.fancodeMatchId,
       scoreSource: apiMatch.source || 'api',
     };
   });

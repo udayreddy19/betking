@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
 import { HiOutlineViewList, HiOutlineChartBar, HiOutlineUsers } from 'react-icons/hi';
 import { useLiveFieldState } from '../../hooks/useLiveFieldState';
-import { buildRosterFallback } from '../../utils/liveFieldState';
+import { useMatchDetail } from '../../hooks/useMatchDetail';
+import { getRosterForTeam } from '../../data/cricketRosters';
 import {
   getTeamShortCode,
   getTeamDisplayName,
@@ -12,41 +13,6 @@ import {
   getWicketOvers,
 } from '../../utils/liveMatchWidgetData';
 import './LiveMatchGraphicWidget.css';
-
-const playerRosterMap = {
-  'Sri Lanka': {
-    batters: ['I Dulani', 'AMCJK Athapaththu', 'Kavindi, Sanjana', 'RMVD Gunaratne', 'H Madavi', 'O Ranasinghe'],
-    bowlers: ['Umm-e-Hani', 'Waheeda Akhtar', 'Fatima Sana', 'Nashra Sandhu'],
-  },
-  'Pakistan': {
-    batters: ['G Feroza', 'Muneeba Ali', 'Nida Dar', 'Bismah Maroof', 'Ayesha Naseem', 'S Irfan'],
-    bowlers: ['Umm-e-Hani', 'Waheeda Akhtar', 'Fatima Sana', 'Diana Baig'],
-  },
-  'London Spirit W': {
-    batters: ['M. Bouchier', 'S. Molineux', 'A. Capsey', 'D. Wyatt'],
-    bowlers: ['C. Dean', 'L. Smith', 'A. Capsey'],
-  },
-  'Southern Brave W': {
-    batters: ['D. Wyatt', 'S. Taylor', 'M. Bouchier', 'G. Adams'],
-    bowlers: ['C. Dean', 'L. Smith', 'A. Capsey'],
-  },
-  'Birmingham Phoenix': {
-    batters: ['J. Root', 'J. Cox', 'L. Livingstone', 'W. Smeed'],
-    bowlers: ['A. Zampa', 'T. Southee', 'S. Mahmood'],
-  },
-  'Welsh Fire': {
-    batters: ['J. Bairstow', 'T. Kohler-Cadmore', 'D. Payne', 'L. Wells'],
-    bowlers: ['S. Mahmood', 'D. Payne', 'M. Crane'],
-  },
-  'South Delhi Superstarz': {
-    batters: ['Priyansh Arya', 'Tejaswi Dahiya', 'Ayush Badoni', 'Dhruv Singh'],
-    bowlers: ['Kuldip Yadav', 'Digvesh Rathi', 'Sarthak Ray'],
-  },
-  'East Delhi Riders': {
-    batters: ['Anuj Rawat', 'Sujal Singh', 'Hardik Sharma', 'Rohan Rathi'],
-    bowlers: ['Simarjeet Singh', 'Navdeep Saini', 'Harsh Tyagi'],
-  },
-};
 
 function getTeamShort(name) {
   return getTeamShortCode(name);
@@ -128,7 +94,8 @@ function FieldIcon() {
   );
 }
 
-export default function LiveMatchGraphicWidget({ match }) {
+export default function LiveMatchGraphicWidget({ match: rawMatch }) {
+  const { match } = useMatchDetail(rawMatch);
   const [activeWidgetTab, setActiveWidgetTab] = useState('field');
   const [selectedInnings, setSelectedInnings] = useState('');
   const [scorecardInnings, setScorecardInnings] = useState('');
@@ -150,8 +117,8 @@ export default function LiveMatchGraphicWidget({ match }) {
     : null;
   const activeInnings = selectedInnings || innings?.defaultInnings || '';
 
-  const t1Data = playerRosterMap[team1] || buildRosterFallback(team1);
-  const t2Data = playerRosterMap[team2] || buildRosterFallback(team2);
+  const t1Data = getRosterForTeam(team1);
+  const t2Data = getRosterForTeam(team2);
 
   const team1Short = getTeamShort(team1);
   const team2Short = getTeamShort(team2);
@@ -165,29 +132,29 @@ export default function LiveMatchGraphicWidget({ match }) {
   const isLiveMatch = matchState === 'in' || match?.isLive;
   const fieldState = useLiveFieldState(isLiveMatch ? match : null, battingRoster);
 
+  const apiBatter1 = match?.liveDetails?.batter1;
+  const apiBatter2 = match?.liveDetails?.batter2;
+  const apiBowler = match?.liveDetails?.bowler?.name;
+
   const striker = fieldState
     ? (fieldState.strikerIdx === 0 ? fieldState.batter1.name : fieldState.batter2.name)
-    : (match?.liveDetails?.batter1?.name || battingRoster.batters[0]);
+    : (apiBatter1?.name || battingRoster.batters[0]);
   const nonStriker = fieldState
     ? (fieldState.strikerIdx === 0 ? fieldState.batter2.name : fieldState.batter1.name)
-    : (match?.liveDetails?.batter2?.name || battingRoster.batters[1]);
-  const bowler = fieldState?.bowler || match?.liveDetails?.bowler?.name || bowlingRoster.bowlers[0];
+    : (apiBatter2?.name || battingRoster.batters[1]);
+  const bowler = fieldState?.bowler || apiBowler || bowlingRoster.bowlers[0];
 
-  const b1 = fieldState?.batter1 ?? {
-    name: striker,
-    runs: match?.liveDetails?.batter1?.runs ?? 15,
-    balls: match?.liveDetails?.batter1?.balls ?? 11,
-    fours: match?.liveDetails?.batter1?.fours ?? 3,
-    sixes: match?.liveDetails?.batter1?.sixes ?? 0,
-  };
+  const b1 = (fieldState?.batter1?.name && !fieldState.batter1.name.includes('Batter'))
+    ? fieldState.batter1
+    : apiBatter1
+      ? { fours: 0, sixes: 0, ...apiBatter1 }
+      : fieldState?.batter1 ?? { name: striker, runs: 0, balls: 0, fours: 0, sixes: 0 };
 
-  const b2 = fieldState?.batter2 ?? {
-    name: nonStriker,
-    runs: match?.liveDetails?.batter2?.runs ?? 8,
-    balls: match?.liveDetails?.batter2?.balls ?? 9,
-    fours: match?.liveDetails?.batter2?.fours ?? 1,
-    sixes: match?.liveDetails?.batter2?.sixes ?? 0,
-  };
+  const b2 = (fieldState?.batter2?.name && !fieldState.batter2.name.includes('Batter'))
+    ? fieldState.batter2
+    : apiBatter2
+      ? { fours: 0, sixes: 0, ...apiBatter2 }
+      : fieldState?.batter2 ?? { name: nonStriker, runs: 0, balls: 0, fours: 0, sixes: 0 };
 
   const chaseText = innings
     ? getChaseText(match, innings, team1, score1, score2, wickets2)
