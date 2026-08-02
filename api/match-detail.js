@@ -12,7 +12,7 @@ export default async function handler(req, res) {
 
   try {
     const detail = await fetchCricbuzzMatchDetailCached(matchId);
-    res.setHeader('Cache-Control', 's-maxage=3, stale-while-revalidate=5');
+    res.setHeader('Cache-Control', 'no-store');
     return res.status(200).json(detail);
   } catch (error) {
     console.error('[Match Detail API]', error);

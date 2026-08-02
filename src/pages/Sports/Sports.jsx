@@ -12,6 +12,7 @@ import { useLiveSports } from '../../context/LiveSportsContext';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { useAuth } from '../../context/AuthContext';
 import { isMatchBettable } from '../../utils/matchBetting';
+import { prefetchMatchDetail } from '../../services/matchDetailPoller';
 import { filterMatches } from '../../utils/matchFilters';
 import { resolveLeagueId, getLeagueMeta, isSameLeague } from '../../utils/leagueNavigation';
 import './Sports.css';
@@ -149,6 +150,12 @@ export default function Sports() {
     return sportMatches.find(m => m.id === selectedMatchId) || null;
   }, [sportMatches, selectedMatchId, viewMode]);
 
+  useEffect(() => {
+    sportMatches
+      .filter((m) => m.isLive && m.sport === 'cricket')
+      .forEach((m) => prefetchMatchDetail(m));
+  }, [sportMatches]);
+
   const selectMatch = useCallback((matchId) => {
     setSelectedMatchId(matchId);
     setViewMode('match');
@@ -160,7 +167,9 @@ export default function Sports() {
       return next;
     }, { replace: true });
     refreshScores();
-  }, [activeSport, activeLeague, setSearchParams, refreshScores]);
+    const found = sportMatches.find((m) => m.id === matchId);
+    if (found) prefetchMatchDetail(found);
+  }, [activeSport, activeLeague, setSearchParams, refreshScores, sportMatches]);
 
   const showLeagueOverview = useCallback((leagueId = activeLeague) => {
     const resolved = resolveLeagueId(leagueId);

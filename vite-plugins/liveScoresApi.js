@@ -2,7 +2,7 @@ import { aggregateLiveScores } from '../lib/aggregator.mjs';
 import { fetchCricbuzzMatchDetailCached } from '../lib/cricbuzzMatchDetail.mjs';
 
 const detailCache = new Map();
-const DETAIL_TTL_MS = 3000;
+const DETAIL_TTL_MS = 1000;
 
 async function getMatchDetail(matchId) {
   const cached = detailCache.get(matchId);

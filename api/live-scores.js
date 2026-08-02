@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     const force = !!(req.query?._ || req.query?.refresh);
     const payload = await aggregateLiveScores({ force });
 
-    res.setHeader('Cache-Control', 's-maxage=5, stale-while-revalidate=10');
+    res.setHeader('Cache-Control', 'no-store');
     return res.status(200).json(payload);
   } catch (error) {
     console.error('[Live Scores API]', error);
