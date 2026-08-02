@@ -6,10 +6,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    const payload = await aggregateLiveScores();
+    const force = !!(req.query?._ || req.query?.refresh);
+    const payload = await aggregateLiveScores({ force });
 
-    // Cache for 30s at the CDN edge, serve stale for up to 60s while revalidating
-    res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=60');
+    res.setHeader('Cache-Control', 's-maxage=5, stale-while-revalidate=10');
     return res.status(200).json(payload);
   } catch (error) {
     console.error('[Live Scores API]', error);

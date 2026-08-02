@@ -159,7 +159,8 @@ export default function Sports() {
       next.set('match', matchId);
       return next;
     }, { replace: true });
-  }, [activeSport, activeLeague, setSearchParams]);
+    refreshScores();
+  }, [activeSport, activeLeague, setSearchParams, refreshScores]);
 
   const showLeagueOverview = useCallback((leagueId = activeLeague) => {
     const resolved = resolveLeagueId(leagueId);

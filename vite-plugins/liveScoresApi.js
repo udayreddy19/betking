@@ -1,5 +1,16 @@
 import { aggregateLiveScores } from '../lib/aggregator.mjs';
-import { fetchCricbuzzMatchDetail } from '../lib/cricbuzzMatchDetail.mjs';
+import { fetchCricbuzzMatchDetailCached } from '../lib/cricbuzzMatchDetail.mjs';
+
+const detailCache = new Map();
+const DETAIL_TTL_MS = 3000;
+
+async function getMatchDetail(matchId) {
+  const cached = detailCache.get(matchId);
+  if (cached && Date.now() - cached.at < DETAIL_TTL_MS) return cached.data;
+  const detail = await fetchCricbuzzMatchDetailCached(matchId);
+  detailCache.set(matchId, { data: detail, at: Date.now() });
+  return detail;
+}
 
 export function liveScoresApiPlugin() {
   return {
@@ -13,7 +24,9 @@ export function liveScoresApiPlugin() {
         }
 
         try {
-          const payload = await aggregateLiveScores();
+          const url = new URL(req.url, 'http://localhost');
+          const force = !!(url.searchParams.get('_') || url.searchParams.get('refresh'));
+          const payload = await aggregateLiveScores({ force });
           res.setHeader('Content-Type', 'application/json');
           res.end(JSON.stringify(payload));
         } catch (error) {
@@ -44,7 +57,7 @@ export function liveScoresApiPlugin() {
             return;
           }
 
-          const detail = await fetchCricbuzzMatchDetail(matchId);
+          const detail = await getMatchDetail(matchId);
           res.setHeader('Content-Type', 'application/json');
           res.end(JSON.stringify(detail));
         } catch (error) {

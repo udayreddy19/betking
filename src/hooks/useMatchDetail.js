@@ -1,59 +1,94 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { enrichMatchWithDetail } from '../utils/matchDetailEnrich';
 
-const DETAIL_CACHE = new Map();
-const CACHE_TTL_MS = 12_000;
+const LIVE_POLL_MS = 4000;
+const INFLIGHT = new Map();
 
 async function fetchMatchDetail(matchId) {
-  const cached = DETAIL_CACHE.get(matchId);
-  if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
-    return cached.data;
-  }
+  const existing = INFLIGHT.get(matchId);
+  if (existing) return existing;
 
-  const res = await fetch(`/api/match-detail?id=${matchId}`);
-  if (!res.ok) throw new Error(`Match detail failed (${res.status})`);
-  const data = await res.json();
-  DETAIL_CACHE.set(matchId, { data, at: Date.now() });
-  return data;
+  const promise = fetch(`/api/match-detail?id=${matchId}&_=${Date.now()}`, {
+    cache: 'no-store',
+  })
+    .then(async (res) => {
+      if (!res.ok) throw new Error(`Match detail failed (${res.status})`);
+      return res.json();
+    })
+    .finally(() => {
+      INFLIGHT.delete(matchId);
+    });
+
+  INFLIGHT.set(matchId, promise);
+  return promise;
 }
 
 export function useMatchDetail(match) {
   const [enrichedMatch, setEnrichedMatch] = useState(match);
-  const [isLoading, setIsLoading] = useState(false);
+  const matchRef = useRef(match);
+  const detailRef = useRef(null);
+  const matchIdRef = useRef(null);
+
+  matchRef.current = match;
 
   const matchId = match?.cricbuzzMatchId || (
     match?.id?.startsWith('cb_') ? match.id.replace('cb_', '') : null
   );
 
+  // Merge list-API score updates without wiping detail-enriched state
   useEffect(() => {
-    setEnrichedMatch(match);
+    if (detailRef.current) {
+      setEnrichedMatch(enrichMatchWithDetail(matchRef.current, detailRef.current));
+    } else {
+      setEnrichedMatch(match);
+    }
+  }, [match]);
 
-    if (!match || !matchId) return undefined;
-    if (match.sport !== 'cricket' && match.sport !== 'virtual-cricket') return undefined;
+  // Fast poll Cricbuzz match page for live scores + player names
+  useEffect(() => {
+    if (!match || !matchId) {
+      detailRef.current = null;
+      matchIdRef.current = null;
+      return undefined;
+    }
+
+    if (match.sport !== 'cricket' && match.sport !== 'virtual-cricket') {
+      return undefined;
+    }
+
+    const isLive = match.matchState === 'in' || match.isLive;
+    const pollMs = isLive ? LIVE_POLL_MS : 15000;
+
+    if (matchIdRef.current !== matchId) {
+      detailRef.current = null;
+      matchIdRef.current = matchId;
+    }
 
     let cancelled = false;
+    let timer;
 
     const load = async () => {
-      setIsLoading(true);
       try {
         const detail = await fetchMatchDetail(matchId);
-        if (!cancelled && detail) {
-          setEnrichedMatch(enrichMatchWithDetail(match, detail));
-        }
+        if (cancelled) return;
+        detailRef.current = detail;
+        setEnrichedMatch(enrichMatchWithDetail(matchRef.current, detail));
       } catch (err) {
         console.warn('Match detail fetch failed:', err);
       } finally {
-        if (!cancelled) setIsLoading(false);
+        if (!cancelled) {
+          timer = setTimeout(load, pollMs);
+        }
       }
     };
 
     load();
-    const interval = setInterval(load, 15000);
+
     return () => {
       cancelled = true;
-      clearInterval(interval);
+      clearTimeout(timer);
     };
-  }, [match, matchId]);
+  }, [match, matchId, match?.matchState, match?.isLive]);
 
-  return { match: enrichedMatch, isLoading };
+  return { match: enrichedMatch };
 }

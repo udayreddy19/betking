@@ -75,7 +75,7 @@ export function LiveSportsProvider({ children }) {
 
   useEffect(() => {
     refreshScores();
-    const interval = setInterval(refreshScores, 30000);
+    const interval = setInterval(refreshScores, 10000);
     return () => clearInterval(interval);
   }, [refreshScores]);
 

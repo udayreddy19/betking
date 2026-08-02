@@ -15,7 +15,7 @@ export { normalizeTeamName };
  * Returns: { matches, series, counts, sources, fetchedAt, cached }
  */
 export async function fetchLiveScores() {
-  const response = await fetch('/api/live-scores');
+  const response = await fetch(`/api/live-scores?_=${Date.now()}`, { cache: 'no-store' });
   if (!response.ok) {
     throw new Error(`Live scores API failed (${response.status})`);
   }
