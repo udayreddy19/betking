@@ -86,7 +86,7 @@ export const featuredLeagues = [
   { id: 'sl-pak-w', name: 'T20 Series Sri Lanka vs Pakistan, Women', sport: 'cricket', icon: 'flame', matchLeagues: ['T20 Series Sri Lanka vs Pakistan, Women', 'Pakistan Women tour of Sri Lanka', 'Pakistan Women tour of Sri Lanka, 2026'] },
   { id: 'pak-wi', name: 'Test Series West Indies vs. Pakistan', sport: 'cricket', icon: 'flame', matchLeagues: ['West Indies v Pakistan, 2026', 'Pakistan tour of West Indies, 2026', 'Test Series West Indies vs. Pakistan'] },
   { id: 'qcl', name: 'Quantum Cricket League', sport: 'cricket', icon: 'flame', matchLeagues: ['Quantum Cricket League', 'Global Super League', 'Global Super League 2026'] },
-  { id: 'ipl-srl', name: 'Indian Premier League SRL', sport: 'cricket', icon: 'flame', matchLeagues: ['IPL 2026', 'IPL SRL', 'Indian Premier League', 'Indian Premier League SRL'] },
+  { id: 'ipl-srl', name: 'Indian Premier League SRL', sport: 'cricket', icon: 'flame', breadcrumb: 'Simulated Reality League - Indian Premier League SRL', matchLeagues: ['IPL 2026', 'IPL SRL', 'Indian Premier League', 'Indian Premier League SRL'] },
   { id: 't20-intl-srl', name: 'T20 International SRL', sport: 'cricket', icon: 'flame', matchLeagues: ['T20 International SRL', 'T20 International'] },
   { id: 'tt-elite', name: 'TT Elite Series', sport: 'table-tennis', icon: 'flame', matchLeagues: ['TT Elite Series'] },
   { id: 'cpl', name: 'Caribbean Premier League', sport: 'cricket', icon: 'flame', matchLeagues: ['Caribbean Premier League', 'Caribbean Premier League 2026'] },
@@ -125,6 +125,11 @@ export const leagueGroups = [
     country: 'Australia',
     flag: '🇦🇺',
     leagues: ['Big Bash League', 'Sheffield Shield', 'WBBL'],
+  },
+  {
+    country: 'Virtual Cricket',
+    flag: '🎮',
+    leagues: ['Simulated Reality League', 'Indian Premier League SRL', 'T20 International SRL'],
   },
 ];
 

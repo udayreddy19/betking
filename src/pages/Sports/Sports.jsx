@@ -15,6 +15,8 @@ import { resolveCricketTeamScores } from '../../utils/cricketScores';
 import { prefetchMatchDetail } from '../../services/matchDetailPoller';
 import { filterMatches } from '../../utils/matchFilters';
 import { resolveLeagueId, getLeagueMeta, isSameLeague, groupMatchesByLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
+import { getIplSrlMatches } from '../../data/iplSrlMatches';
+import SrlLeaguePanel from '../../components/SrlLeaguePanel/SrlLeaguePanel';
 import './Sports.css';
 
 const MARKET_CATEGORIES = [
@@ -213,6 +215,8 @@ export default function Sports() {
     return () => mq.removeEventListener('change', onChange);
   }, []);
 
+  const isIplSrlView = isSameLeague(activeLeague, 'ipl-srl');
+
   const sportMatches = useMemo(() => {
     const filtered = filterByLeague(
       filterMatches(matches, {
@@ -224,13 +228,21 @@ export default function Sports() {
       cricketSeries,
     );
 
-    return [...filtered].sort((a, b) => {
+    let list = filtered;
+    if (isIplSrlView && activeSport === 'cricket') {
+      const seeded = getIplSrlMatches();
+      const byId = new Map(seeded.map((m) => [m.id, m]));
+      for (const m of filtered) byId.set(m.id, m);
+      list = [...byId.values()];
+    }
+
+    return [...list].sort((a, b) => {
       const liveA = getMatchState(a) === 'in' ? 0 : 1;
       const liveB = getMatchState(b) === 'in' ? 0 : 1;
       if (liveA !== liveB) return liveA - liveB;
       return String(a.time).localeCompare(String(b.time));
     });
-  }, [matches, activeSport, activeLeague, searchQuery, cricketSeries]);
+  }, [matches, activeSport, activeLeague, searchQuery, cricketSeries, isIplSrlView]);
 
   const liveMatches = useMemo(
     () => sportMatches.filter((m) => getMatchState(m) === 'in'),
@@ -584,7 +596,16 @@ export default function Sports() {
           </section>
         )}
 
-        {viewMode === 'league' && cricketGroups.length > 0 && (
+        {viewMode === 'league' && isIplSrlView && (
+          <SrlLeaguePanel
+            matches={sportMatches}
+            onSelectMatch={selectMatch}
+            onQuickBet={quickBet}
+            isBetSelected={isBetSelected}
+          />
+        )}
+
+        {viewMode === 'league' && !isIplSrlView && cricketGroups.length > 0 && (
           <CricketGroupedMatches
             groups={cricketGroups}
             onSelectMatch={selectMatch}
@@ -594,7 +615,7 @@ export default function Sports() {
           />
         )}
 
-        {viewMode === 'league' && sportMatches.length > 0 && cricketGroups.length === 0 && (
+        {viewMode === 'league' && !isIplSrlView && sportMatches.length > 0 && cricketGroups.length === 0 && (
           <div className="sports-league-overview">
             {isLiveBettingPage && upcomingMatches.length > 0 && (
               <h2 className="sports-section-heading">
