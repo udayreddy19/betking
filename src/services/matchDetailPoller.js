@@ -7,10 +7,14 @@ import { MATCH_DETAIL_LIVE_POLL_MS, MATCH_DETAIL_IDLE_POLL_MS } from '../config/
 
 const LIVE_GAP_MS = MATCH_DETAIL_LIVE_POLL_MS;
 const IDLE_GAP_MS = MATCH_DETAIL_IDLE_POLL_MS;
-const MAX_POLLERS = 3;
+const MAX_POLLERS = 6;
 
 /** @type {Map<string, { match: object, detail: object|null, version: number, listeners: Set<Function>, running: boolean, isLive: boolean, priority: boolean }>} */
 const pollers = new Map();
+
+/** Persist detail across poller eviction so widgets keep scorecard/squads. */
+const detailCache = new Map();
+const cacheVersions = new Map();
 
 function sleep(ms) {
   return new Promise((resolve) => { setTimeout(resolve, ms); });
@@ -70,9 +74,27 @@ function emit(key, detail) {
   if (state.detail && detailFingerprint(state.detail) === detailFingerprint(detail)) {
     return;
   }
+  detailCache.set(key, detail);
+  cacheVersions.set(key, (cacheVersions.get(key) || 0) + 1);
   state.detail = detail;
   state.version += 1;
   state.listeners.forEach((fn) => fn());
+}
+
+async function fetchAndEmit(key) {
+  const state = pollers.get(key);
+  if (!state?.match) return;
+  try {
+    const full = await fetchDetail(state.match, false);
+    if (full) {
+      emit(key, mergeDetails(pollers.get(key)?.detail || detailCache.get(key), full, {
+        isFull: true,
+        match: state.match,
+      }));
+    }
+  } catch (err) {
+    console.warn('Match detail fetch failed:', err);
+  }
 }
 
 function getPollerKey(match) {
@@ -206,10 +228,11 @@ function ensurePoller(match, { priority = false } = {}) {
       if (!freed) return;
     }
 
+    const cached = detailCache.get(key);
     pollers.set(key, {
       match,
-      detail: null,
-      version: 0,
+      detail: cached || null,
+      version: cacheVersions.get(key) || 0,
       listeners: new Set(),
       running: false,
       isLive,
@@ -221,6 +244,10 @@ function ensurePoller(match, { priority = false } = {}) {
     s.match = match;
     s.isLive = isLive;
     if (priority) s.priority = true;
+    if (!s.detail && detailCache.has(key)) {
+      s.detail = detailCache.get(key);
+      s.version = cacheVersions.get(key) || s.version;
+    }
   }
 }
 
@@ -246,15 +273,26 @@ export function subscribeMatchDetailStore(matchId, listener, match) {
   const state = pollers.get(matchId);
   if (!state) return () => {};
   state.listeners.add(listener);
+  if (!state.detail && detailCache.has(matchId)) {
+    state.detail = detailCache.get(matchId);
+    state.version = cacheVersions.get(matchId) || state.version;
+  }
+  if (!state.detail) {
+    fetchAndEmit(matchId);
+  } else {
+    queueMicrotask(() => listener());
+  }
   return () => removeListener(matchId, listener);
 }
 
 export function getMatchDetailSnapshot(matchId) {
-  return pollers.get(matchId)?.detail ?? null;
+  return pollers.get(matchId)?.detail ?? detailCache.get(matchId) ?? null;
 }
 
 export function getMatchDetailVersion(matchId) {
-  return pollers.get(matchId)?.version ?? 0;
+  const pollerVersion = pollers.get(matchId)?.version ?? 0;
+  const cacheVersion = cacheVersions.get(matchId) ?? 0;
+  return Math.max(pollerVersion, cacheVersion);
 }
 
 export function subscribeMatchDetail(match, listener) {

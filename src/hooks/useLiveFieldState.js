@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { isPlaceholderPlayerName } from '../utils/cricketPlayers';
 import { teamNameMatches } from '../utils/cricketScores';
+import { enrichLivePlayersFromScorecard } from '../utils/scorecardLivePlayers';
 
 function aggregateBoundariesFromScorecard(match, battingTeamName) {
   const innings = match?.scorecardInnings?.find(
@@ -25,7 +26,10 @@ function getBattingTeamName(match, ld) {
 
 /** Build field view state purely from API liveDetails — no simulation. */
 export function buildFieldStateFromApi(match) {
-  const ld = match?.liveDetails || {};
+  const ld = enrichLivePlayersFromScorecard(
+    match?.liveDetails || {},
+    match?.scorecardInnings || [],
+  );
   if (!ld.batter1 && !ld.batter2 && ld.runs == null && ld.chaseRuns == null
     && ld.firstRuns == null && !ld.currentOverBalls?.length) {
     return null;

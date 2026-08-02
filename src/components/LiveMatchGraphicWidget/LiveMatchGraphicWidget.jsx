@@ -307,7 +307,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
 
   const squads = useMemo(
     () => resolveMatchSquads(match, team1, team2),
-    [match?.squads, match?.scorecardInnings, team1, team2],
+    [match, match?.squads, match?.scorecardInnings, team1, team2],
   );
 
   const t1Data = useMemo(() => squadToRoster(squads.team1, squads.team2), [squads]);
@@ -371,7 +371,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
     const shortLabel = isTeam2Tab ? team2Short : team1Short;
     const isBatting = (innings?.inningsNum === 2 && isTeam2Tab) || (innings?.inningsNum === 1 && !isTeam2Tab);
     return buildScorecardInnings(match, teamLabel, roster, isBatting ? fieldState : null, isBatting, shortLabel);
-  }, [activeScorecardTab, match?.scorecardInnings, match?.liveDetails, match?.overHistory, team1, team2, t1Data, t2Data, fieldState, innings, team1Short, team2Short]);
+  }, [activeScorecardTab, match, team1, team2, t1Data, t2Data, fieldState, innings, team1Short, team2Short]);
 
   const statsOvers = useMemo(
     () => buildStatsOvers(fieldState, match),

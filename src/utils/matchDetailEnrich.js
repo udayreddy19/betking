@@ -2,6 +2,7 @@ import { normalizeMatchOvers } from './cricketFormat';
 import { mergeCricketLiveDetails } from './cricketScoreMerge';
 import { flattenCricketTeamScores, resolveCricketTeamScores } from './cricketScores';
 import { isHundredMatch, hundredBallsToOvers } from './cricketFormat';
+import { enrichLivePlayersFromScorecard } from './scorecardLivePlayers';
 
 function applyHundredBallNbr(match, ld) {
   const isHundred = isHundredMatch(match)
@@ -72,11 +73,20 @@ export function enrichMatchWithDetail(match, detail) {
   let liveDetails = baseLd;
   if (hasLive) {
     if (sport === 'cricket' || sport === 'virtual-cricket') {
-      const fromDetail = enrichCricketDetails(matchForScores, ld, {});
+      const scorecardInnings = detail.scorecardInnings?.length
+        ? detail.scorecardInnings
+        : match.scorecardInnings;
+      const ldWithPlayers = enrichLivePlayersFromScorecard(ld, scorecardInnings || []);
+      const fromDetail = enrichCricketDetails(matchForScores, ldWithPlayers, {});
       liveDetails = mergeCricketLiveDetails(baseLd, fromDetail, matchForScores);
     } else {
       liveDetails = { ...baseLd, ...ld };
     }
+  } else if (hasMeta && (sport === 'cricket' || sport === 'virtual-cricket')) {
+    const scorecardInnings = detail.scorecardInnings?.length
+      ? detail.scorecardInnings
+      : match.scorecardInnings;
+    liveDetails = enrichLivePlayersFromScorecard(baseLd, scorecardInnings || []);
   }
 
   return {

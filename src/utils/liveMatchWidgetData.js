@@ -4,6 +4,7 @@ import { isCricketSecondInnings } from './cricketScores';
 import { getScorecardInningsForTeam } from './matchSquads';
 import { isPlaceholderPlayerName } from './cricketPlayers';
 import { getMatchMaxBalls, oversToBallsForMatch } from './cricketFormat';
+import { enrichLivePlayersFromScorecard } from './scorecardLivePlayers';
 
 export function getTeamShortCode(name) {
   const clean = name.replace(/\s+W$/, '').trim();
@@ -112,7 +113,10 @@ function liveBattersFromDetails(ld) {
 export function buildScorecardInnings(match, teamName, _roster, _fieldState, isBattingInnings, teamShortName = '') {
   const apiInnings = getScorecardInningsForTeam(match, teamName, teamShortName);
   if (apiInnings?.batters?.length) {
-    const ld = match?.liveDetails || {};
+    const ld = enrichLivePlayersFromScorecard(
+      match?.liveDetails || {},
+      match?.scorecardInnings || [],
+    );
     let players = apiInnings.batters
       .filter(hasBatted)
       .map((b) => ({
@@ -140,7 +144,11 @@ export function buildScorecardInnings(match, teamName, _roster, _fieldState, isB
   }
 
   if (isBattingInnings) {
-    return liveBattersFromDetails(match?.liveDetails);
+    const ld = enrichLivePlayersFromScorecard(
+      match?.liveDetails || {},
+      match?.scorecardInnings || [],
+    );
+    return liveBattersFromDetails(ld);
   }
 
   return [];
