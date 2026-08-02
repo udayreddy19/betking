@@ -1,182 +1,144 @@
-import { useId } from 'react';
+import { useId, useMemo } from 'react';
+import { getJerseyPalette } from '../../utils/jerseyColors';
 import './TeamJersey.css';
 
-function resolveJerseyColor(color) {
-  if (!color || color === '#e5e7eb' || color === '#ffffff') return '#4a7ab5';
-  return color;
-}
-
-function resolveAccentColor(primary) {
-  const hex = primary.replace('#', '');
-  if (hex.length !== 6) return '#e8b923';
-  const r = parseInt(hex.slice(0, 2), 16);
-  const g = parseInt(hex.slice(2, 4), 16);
-  const b = parseInt(hex.slice(4, 6), 16);
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.55 ? '#d4920a' : '#e8b923';
-}
-
-function shade(hex, amount) {
-  const h = hex.replace('#', '');
-  if (h.length !== 6) return hex;
-  const clamp = (v) => Math.max(0, Math.min(255, v));
-  const r = clamp(parseInt(h.slice(0, 2), 16) + amount);
-  const g = clamp(parseInt(h.slice(2, 4), 16) + amount);
-  const b = clamp(parseInt(h.slice(4, 6), 16) + amount);
-  return `#${[r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
-}
-
-export default function TeamJersey({ team, size = 48, className = '' }) {
+/**
+ * 3D cricket jersey icon — matches approved mockup.
+ * Body color = team.color (or name-derived). Chevron/hem = contrasting accent.
+ */
+export default function TeamJersey({ team, size = 52, className = '' }) {
   const uid = useId().replace(/:/g, '');
-  const primary = resolveJerseyColor(team?.color);
-  const accent = team?.accentColor || resolveAccentColor(primary);
-  const dark = shade(primary, -35);
-  const mid = primary;
-  const light = shade(primary, 30);
-  const collar = shade(primary, -50);
-  const height = Math.round(size * 1.2);
+  const palette = useMemo(() => getJerseyPalette(team), [team?.color, team?.accentColor, team?.name, team?.shortName]);
+  const height = Math.round(size * 1.22);
+
+  const bodyPath = `
+    M 36 12
+    C 44 10, 56 9, 64 9
+    C 72 9, 84 10, 92 12
+    C 98 14, 102 18, 104 24
+    L 108 32
+    C 110 40, 111 50, 110 60
+    L 106 98
+    C 104 108, 96 116, 64 120
+    C 32 116, 24 108, 22 98
+    L 18 60
+    C 17 50, 18 40, 20 32
+    L 24 24
+    C 26 18, 30 14, 36 12
+    Z
+  `;
+
+  const sleeveL = `
+    M 28 24
+    C 18 22, 10 28, 6 38
+    C 2 48, 4 58, 12 62
+    C 18 64, 24 60, 26 50
+    C 28 40, 28 30, 28 24
+    Z
+  `;
+
+  const sleeveR = `
+    M 100 24
+    C 110 22, 118 28, 122 38
+    C 126 48, 124 58, 116 62
+    C 110 64, 104 60, 102 50
+    C 100 40, 100 30, 100 24
+    Z
+  `;
 
   return (
     <div
       className={`team-jersey-kit ${className}`.trim()}
       style={{ width: size, height }}
       aria-hidden="true"
+      title={team?.name || undefined}
     >
       <svg
-        viewBox="0 0 100 120"
+        viewBox="0 0 128 132"
         width={size}
         height={height}
         className="team-jersey-kit__svg"
         xmlns="http://www.w3.org/2000/svg"
       >
         <defs>
-          <linearGradient id={`${uid}-body`} x1="30%" y1="0%" x2="70%" y2="100%">
-            <stop offset="0%" stopColor={light} />
-            <stop offset="40%" stopColor={mid} />
-            <stop offset="100%" stopColor={dark} />
+          <clipPath id={`${uid}-body`}>
+            <path d={bodyPath} />
+          </clipPath>
+
+          <linearGradient id={`${uid}-fabric`} x1="22%" y1="0%" x2="78%" y2="100%">
+            <stop offset="0%" stopColor={palette.light} />
+            <stop offset="38%" stopColor={palette.mid} />
+            <stop offset="78%" stopColor={palette.shade} />
+            <stop offset="100%" stopColor={palette.dark} />
           </linearGradient>
-          <linearGradient id={`${uid}-sleeve-l`} x1="100%" y1="20%" x2="0%" y2="80%">
-            <stop offset="0%" stopColor={light} />
-            <stop offset="100%" stopColor={dark} />
+
+          <linearGradient id={`${uid}-sleeve`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor={palette.light} />
+            <stop offset="100%" stopColor={palette.dark} />
           </linearGradient>
-          <linearGradient id={`${uid}-sleeve-r`} x1="0%" y1="20%" x2="100%" y2="80%">
-            <stop offset="0%" stopColor={light} />
-            <stop offset="100%" stopColor={dark} />
+
+          <linearGradient id={`${uid}-accent`} x1="50%" y1="0%" x2="50%" y2="100%">
+            <stop offset="0%" stopColor={palette.accentHi} />
+            <stop offset="50%" stopColor={palette.accent} />
+            <stop offset="100%" stopColor={palette.accentLo} />
           </linearGradient>
-          <linearGradient id={`${uid}-accent`} x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor={shade(accent, 25)} />
-            <stop offset="50%" stopColor={accent} />
-            <stop offset="100%" stopColor={shade(accent, -20)} />
-          </linearGradient>
-          <radialGradient id={`${uid}-shine`} cx="35%" cy="25%" r="45%">
-            <stop offset="0%" stopColor="rgba(255,255,255,0.35)" />
+
+          <radialGradient id={`${uid}-shine`} cx="30%" cy="16%" r="46%">
+            <stop offset="0%" stopColor="rgba(255,255,255,0.45)" />
+            <stop offset="65%" stopColor="rgba(255,255,255,0.1)" />
             <stop offset="100%" stopColor="rgba(255,255,255,0)" />
           </radialGradient>
-          <filter id={`${uid}-shadow`} x="-15%" y="-8%" width="130%" height="125%">
-            <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="#000" floodOpacity="0.2" />
+
+          <filter id={`${uid}-shadow`} x="-18%" y="-12%" width="136%" height="135%">
+            <feDropShadow dx="0" dy="4" stdDeviation="4.5" floodColor="#0f172a" floodOpacity="0.24" />
           </filter>
         </defs>
 
         <g filter={`url(#${uid}-shadow)`}>
-          {/* Left sleeve */}
-          <path
-            d="M 22 18
-               C 14 18, 8 24, 6 32
-               C 4 38, 6 44, 12 46
-               C 17 47, 22 43, 24 36
-               C 26 28, 25 20, 22 18 Z"
-            fill={`url(#${uid}-sleeve-l)`}
-          />
-          {/* Right sleeve */}
-          <path
-            d="M 78 18
-               C 86 18, 92 24, 94 32
-               C 96 38, 94 44, 88 46
-               C 83 47, 78 43, 76 36
-               C 74 28, 75 20, 78 18 Z"
-            fill={`url(#${uid}-sleeve-r)`}
-          />
-
-          {/* Main torso */}
-          <path
-            d="M 26 16
-               C 30 14, 36 13, 50 13
-               C 64 13, 70 14, 74 16
-               L 80 28
-               C 82 34, 83 42, 82 52
-               L 80 88
-               C 78 96, 72 102, 50 104
-               C 28 102, 22 96, 20 88
-               L 18 52
-               C 17 42, 18 34, 20 28
-               Z"
-            fill={`url(#${uid}-body)`}
-          />
+          <path d={sleeveL} fill={`url(#${uid}-sleeve)`} />
+          <path d={sleeveR} fill={`url(#${uid}-sleeve)`} />
+          <path d={bodyPath} fill={`url(#${uid}-fabric)`} />
 
           {/* V-neck collar */}
           <path
-            d="M 36 16
-               L 50 30
-               L 64 16
-               C 60 15, 55 14, 50 14
-               C 45 14, 40 15, 36 16 Z"
-            fill={collar}
+            d="M 46 12 C 52 10, 58 9, 64 9 C 70 9, 76 10, 82 12 L 64 28 Z"
+            fill={palette.collar}
           />
           <path
-            d="M 38 16.5 L 50 27.5 L 62 16.5"
-            stroke="rgba(255,255,255,0.15)"
-            strokeWidth="0.8"
+            d="M 48 12.5 L 64 25.5 L 80 12.5"
             fill="none"
+            stroke="rgba(255,255,255,0.22)"
+            strokeWidth="0.75"
             strokeLinecap="round"
           />
 
-          {/* Chest chevron — wide V band like real kit */}
-          <path
-            d="M 18 36
-               L 82 36
-               L 50 62
-               Z"
-            fill={`url(#${uid}-accent)`}
-          />
-          <path
-            d="M 24 37.5 L 50 58.5 L 76 37.5"
-            stroke="rgba(0,0,0,0.07)"
-            strokeWidth="0.8"
-            fill="none"
-          />
+          <g clipPath={`url(#${uid}-body)`}>
+            {/* Chest chevron */}
+            <path
+              d="M 20 42
+                 L 108 42
+                 L 64 86
+                 Z"
+              fill={`url(#${uid}-accent)`}
+            />
+            <path
+              d="M 26 43.5 L 64 80.5 L 102 43.5"
+              fill="none"
+              stroke="rgba(0,0,0,0.06)"
+              strokeWidth="0.8"
+            />
 
-          {/* Lower side accents */}
-          <path
-            d="M 21 86
-               C 24 92, 30 97, 36 100
-               L 32 101
-               C 26 98, 21 92, 20 87
-               Z"
-            fill={`url(#${uid}-accent)`}
-          />
-          <path
-            d="M 79 86
-               C 76 92, 70 97, 64 100
-               L 68 101
-               C 74 98, 79 92, 80 87
-               Z"
-            fill={`url(#${uid}-accent)`}
-          />
+            {/* Hem corner panels */}
+            <path d="M 26 98 L 36 112 L 28 114 Z" fill={`url(#${uid}-accent)`} />
+            <path d="M 102 98 L 92 112 L 100 114 Z" fill={`url(#${uid}-accent)`} />
 
-          {/* Fabric shine */}
-          <ellipse cx="38" cy="32" rx="18" ry="22" fill={`url(#${uid}-shine)`} />
+            <ellipse cx="44" cy="28" rx="30" ry="36" fill={`url(#${uid}-shine)`} />
+          </g>
 
-          {/* Subtle seam lines */}
           <path
-            d="M 24 28 C 30 26, 40 25, 50 25 C 60 25, 70 26, 76 28"
-            stroke="rgba(0,0,0,0.06)"
-            strokeWidth="0.6"
-            fill="none"
-          />
-          <path
-            d="M 22 46 C 34 44, 66 44, 78 46"
-            stroke="rgba(255,255,255,0.1)"
-            strokeWidth="0.5"
+            d="M 32 28 C 48 25, 80 25, 96 28"
+            stroke="rgba(0,0,0,0.05)"
+            strokeWidth="0.65"
             fill="none"
           />
         </g>
