@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { LazyMotion, MotionConfig, domAnimation } from 'motion/react';
+import { MotionConfig } from 'motion/react';
 import { ThemeProvider } from './context/ThemeContext';
 import { BetSlipProvider } from './context/BetSlipContext';
 import { LiveSportsProvider } from './context/LiveSportsContext';
@@ -76,25 +76,23 @@ function AppLayout() {
 
 export default function App() {
   return (
-    <LazyMotion features={domAnimation} strict>
-      <MotionConfig
-        reducedMotion="user"
-        transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
-      >
-        <ThemeProvider>
-          <BrowserRouter>
-            <AuthProvider>
-              <CasinoProvider>
-                <LiveSportsProvider>
-                  <BetSlipProvider>
-                    <AppLayout />
-                  </BetSlipProvider>
-                </LiveSportsProvider>
-              </CasinoProvider>
-            </AuthProvider>
-          </BrowserRouter>
-        </ThemeProvider>
-      </MotionConfig>
-    </LazyMotion>
+    <MotionConfig
+      reducedMotion="user"
+      transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+    >
+      <ThemeProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <CasinoProvider>
+              <LiveSportsProvider>
+                <BetSlipProvider>
+                  <AppLayout />
+                </BetSlipProvider>
+              </LiveSportsProvider>
+            </CasinoProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </ThemeProvider>
+    </MotionConfig>
   );
 }

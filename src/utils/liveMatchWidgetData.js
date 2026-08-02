@@ -24,7 +24,7 @@ export function getTeamDisplayName(name) {
 }
 
 export function getChaseText(match, innings, team1, team2) {
-  if (!isCricketSecondInnings(match, match?.liveDetails) || innings.inningsNum !== 2) return null;
+  if (!innings || !isCricketSecondInnings(match, match?.liveDetails) || innings.inningsNum !== 2) return null;
 
   const ld = match?.liveDetails || {};
   const resolved = resolveCricketTeamScores(match, ld);

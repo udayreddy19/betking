@@ -386,9 +386,11 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
   const displayOversNormalized = normalizeMatchOvers(innings?.displayOvers || overs, match);
   const isUnlimitedOvers = maxOvers == null;
   const timelineOvers = maxOvers ?? Math.max(20, parseInt(String(displayOversNormalized).split('.')[0], 10) + 5);
-  const inningsBadge = isUnlimitedOvers
-    ? `INN ${innings.inningsNum} | ${displayOversNormalized} OV`
-    : `INN ${innings.inningsNum} | ${displayOversNormalized}/${maxOvers} OV`;
+  const inningsBadge = innings
+    ? (isUnlimitedOvers
+      ? `INN ${innings.inningsNum} | ${displayOversNormalized} OV`
+      : `INN ${innings.inningsNum} | ${displayOversNormalized}/${maxOvers} OV`)
+    : '';
 
   if (!match) {
     return (
