@@ -2,12 +2,7 @@ import { createContext, useContext, useState, useEffect, useRef, useCallback } f
 import { matches as defaultMatches } from '../data/mockData';
 import { getStableMatchOdds } from '../utils/odds';
 import { mergeApiAndDefaultMatches } from '../utils/matchFilters';
-import {
-  fetchEspnLiveScores,
-  fetchFanCodeScores,
-  fetchCricbuzzScores,
-  mergeLiveScoreSources,
-} from '../services/liveScoresService';
+import { fetchLiveScores } from '../services/liveScoresService';
 
 const LiveSportsContext = createContext(null);
 
@@ -25,72 +20,48 @@ function attachOdds(matches, oddsCache) {
 export function LiveSportsProvider({ children }) {
   const [matches, setMatches] = useState(defaultMatches);
   const [cricketSeries, setCricketSeries] = useState([]);
-  const [tickerMessage, setTickerMessage] = useState('🟢 Syncing Cricbuzz live scores...');
+  const [tickerMessage, setTickerMessage] = useState('🟢 Syncing live scores...');
   const [scoresError, setScoresError] = useState(null);
   const [isScoresLoading, setIsScoresLoading] = useState(true);
   const oddsCacheRef = useRef(new Map());
 
   const refreshScores = useCallback(async () => {
     setIsScoresLoading(true);
-    let cricbuzzResult = { matches: [], series: [], counts: {} };
-    let fancodeResult = { matches: [], counts: {} };
-    let espnResult = { matches: [], counts: {} };
-    let hadSourceError = false;
 
     try {
-      cricbuzzResult = await fetchCricbuzzScores();
-      setCricketSeries(cricbuzzResult.series || []);
-    } catch (error) {
-      hadSourceError = true;
-      console.warn('Cricbuzz fetch error:', error);
-    }
+      const data = await fetchLiveScores();
+      const apiMatches = attachOdds(data.matches || [], oddsCacheRef.current);
 
-    try {
-      fancodeResult = await fetchFanCodeScores();
-    } catch (error) {
-      hadSourceError = true;
-      console.warn('FanCode live score fetch error:', error);
-    }
+      setCricketSeries(data.series || []);
 
-    try {
-      espnResult = await fetchEspnLiveScores(oddsCacheRef.current);
-    } catch (error) {
-      hadSourceError = true;
-      console.warn('ESPN live score fetch error:', error);
-    }
+      if (apiMatches.length > 0) {
+        setMatches(mergeApiAndDefaultMatches(apiMatches, defaultMatches));
+        setScoresError(null);
 
-    const mergedApiMatches = attachOdds(
-      mergeLiveScoreSources(cricbuzzResult.matches, fancodeResult.matches, espnResult.matches),
-      oddsCacheRef.current
-    );
+        // Build ticker message from source status
+        const { counts, sources } = data;
+        const okSources = Object.entries(sources || {})
+          .filter(([, status]) => status === 'ok')
+          .map(([name]) => name);
 
-    if (mergedApiMatches.length > 0) {
-      setMatches(mergeApiAndDefaultMatches(mergedApiMatches, defaultMatches));
-      setScoresError(null);
-    } else if (hadSourceError) {
-      setScoresError('Live scores temporarily unavailable. Showing cached matches — tap Retry.');
-      setTickerMessage('⚠️ Live score sync failed — using cached data');
-    }
+        const primarySource = okSources.includes('cricbuzz') ? 'CRICBUZZ'
+          : okSources.includes('fancode') ? 'FanCode'
+          : okSources.includes('espn') ? 'ESPN'
+          : 'API';
 
-    const liveCount = mergedApiMatches.filter((match) => match.isLive).length;
-    const cricketCount = mergedApiMatches.filter((m) => m.sport === 'cricket').length;
-    const soccerCount = mergedApiMatches.filter((m) => m.sport === 'soccer').length;
-    const cbTotal = cricbuzzResult.counts?.total || cricbuzzResult.matches.length;
+        const emoji = okSources.includes('cricbuzz') ? '🟢' : '🟡';
 
-    if (mergedApiMatches.length > 0) {
-      if (cbTotal > 0) {
         setTickerMessage(
-          `🟢 CRICBUZZ LIVE — ${cbTotal} cricket matches (${cricbuzzResult.counts?.live || liveCount} live) · ${mergedApiMatches.length} total events`
-        );
-      } else if (fancodeResult.matches.length > 0) {
-        setTickerMessage(
-          `🟡 FanCode fallback — ${mergedApiMatches.length} events (${liveCount} live, ${cricketCount} cricket, ${soccerCount} soccer)`
+          `${emoji} ${primarySource} LIVE — ${counts.total} events (${counts.live} live, ${counts.cricket} cricket, ${counts.soccer} soccer)`
         );
       } else {
-        setTickerMessage(
-          `🟡 ESPN fallback — ${mergedApiMatches.length} events synced (${liveCount} live)`
-        );
+        setScoresError('Live scores temporarily unavailable. Showing cached matches — tap Retry.');
+        setTickerMessage('⚠️ Live score sync failed — using cached data');
       }
+    } catch (error) {
+      console.warn('Live scores fetch error:', error);
+      setScoresError('Live scores temporarily unavailable. Showing cached matches — tap Retry.');
+      setTickerMessage('⚠️ Live score sync failed — using cached data');
     }
 
     setIsScoresLoading(false);
