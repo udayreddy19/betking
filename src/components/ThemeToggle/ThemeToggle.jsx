@@ -1,15 +1,10 @@
-import { HiOutlineMoon, HiOutlineSun } from '../../icons';
+import { SunIcon, MoonIcon } from '@animateicons/react/lucide';
 import { useTheme } from '../../context/ThemeContext';
 import './ThemeToggle.css';
 
 export default function ThemeToggle({ variant = 'header', className = '' }) {
   const { theme, setTheme } = useTheme();
   const isDark = theme === 'dark';
-
-  const selectTheme = (mode, event) => {
-    if (theme === mode) return;
-    setTheme(mode, event);
-  };
 
   return (
     <div
@@ -22,22 +17,22 @@ export default function ThemeToggle({ variant = 'header', className = '' }) {
       <button
         type="button"
         className={`theme-toggle-option ${!isDark ? 'active' : ''}`}
-        onClick={(e) => selectTheme('light', e)}
+        onClick={() => setTheme('light')}
         aria-label="Switch to light mode"
         aria-pressed={!isDark}
         title="Light mode"
       >
-        <HiOutlineSun className="theme-toggle-icon" />
+        <SunIcon size={16} isAnimated={false} className="theme-toggle-icon" />
       </button>
       <button
         type="button"
         className={`theme-toggle-option ${isDark ? 'active' : ''}`}
-        onClick={(e) => selectTheme('dark', e)}
+        onClick={() => setTheme('dark')}
         aria-label="Switch to dark mode"
         aria-pressed={isDark}
         title="Dark mode"
       >
-        <HiOutlineMoon className="theme-toggle-icon" />
+        <MoonIcon size={16} isAnimated={false} className="theme-toggle-icon" />
       </button>
     </div>
   );

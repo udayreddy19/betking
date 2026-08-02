@@ -193,44 +193,24 @@
 
 html {
   color-scheme: light;
-  view-transition-name: root;
 }
 
 html[data-theme="dark"] {
   color-scheme: dark;
 }
 
-/* Animated theme switch (View Transitions API) */
-@supports (view-transition-name: root) {
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    animation-duration: 0.55s;
-    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  ::view-transition-old(root) {
-    z-index: 1;
-  }
-
-  ::view-transition-new(root) {
-    z-index: 2;
-    animation-name: theme-circle-reveal;
-  }
-
-  @keyframes theme-circle-reveal {
-    from {
-      clip-path: circle(0% at var(--theme-x, 50%) var(--theme-y, 0%));
-    }
-    to {
-      clip-path: circle(var(--theme-r, 150vmax) at var(--theme-x, 50%) var(--theme-y, 0%));
-    }
-  }
+/* Instant theme swap — suppress cascading color transitions in Chrome */
+html.theme-switching,
+html.theme-switching * {
+  transition-duration: 0s !important;
+  animation-duration: 0s !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    animation: none !important;
+  html.theme-switching,
+  html.theme-switching * {
+    transition-duration: 0s !important;
+    animation-duration: 0s !important;
   }
 }
 
@@ -263,7 +243,6 @@ body {
   line-height: 1.6;
   min-height: 100vh;
   overflow-x: hidden;
-  transition: background-color var(--transition-base), color var(--transition-base);
 }
 
 a {

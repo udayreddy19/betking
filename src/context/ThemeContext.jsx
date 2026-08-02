@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { flushSync } from 'react-dom';
 import { runThemeTransition } from '../utils/themeTransition';
 
 const ThemeContext = createContext(null);
@@ -26,20 +25,18 @@ export function ThemeProvider({ children }) {
     localStorage.setItem(STORAGE_KEY, theme);
   }, [theme]);
 
-  const setTheme = useCallback((mode, event) => {
+  const setTheme = useCallback((mode) => {
     if (mode !== 'light' && mode !== 'dark') return;
     if (mode === theme) return;
 
     runThemeTransition(() => {
-      flushSync(() => {
-        setThemeState(mode);
-        applyTheme(mode);
-      });
-    }, event);
+      setThemeState(mode);
+      applyTheme(mode);
+    });
   }, [theme]);
 
-  const toggleTheme = useCallback((event) => {
-    setTheme(theme === 'light' ? 'dark' : 'light', event);
+  const toggleTheme = useCallback(() => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
   }, [theme, setTheme]);
 
   return (
