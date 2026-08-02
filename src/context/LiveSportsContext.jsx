@@ -51,8 +51,14 @@ export function LiveSportsProvider({ children }) {
 
         const emoji = okSources.includes('cricbuzz') ? '🟢' : '🟡';
 
+        // Build dynamic sport breakdown
+        const sportNames = ['cricket', 'soccer', 'basketball', 'tennis', 'american-football'];
+        const sportParts = sportNames
+          .filter((s) => counts[s] > 0)
+          .map((s) => `${counts[s]} ${s}`);
+
         setTickerMessage(
-          `${emoji} ${primarySource} LIVE — ${counts.total} events (${counts.live} live, ${counts.cricket} cricket, ${counts.soccer} soccer)`
+          `${emoji} ${primarySource} LIVE — ${counts.total} events (${counts.live} live${sportParts.length ? ' · ' + sportParts.join(', ') : ''})`
         );
       } else {
         setScoresError('Live scores temporarily unavailable. Showing cached matches — tap Retry.');

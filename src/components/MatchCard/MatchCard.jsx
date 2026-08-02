@@ -61,15 +61,44 @@ export default function MatchCard({ match }) {
     setIsDetailOpen(true);
   };
 
-  const cricketScore = match.liveDetails && match.sport === 'cricket'
-    && Number.isFinite(match.liveDetails.runs)
-    ? `${match.liveDetails.runs}/${match.liveDetails.wickets} (${match.liveDetails.overs || '0.0'})`
-    : null;
+  // Individual team scores per sport
+  const ld = match.liveDetails || {};
+  let team1Score = null;
+  let team2Score = null;
+  let inlineScore = null;
 
-  const soccerScore = match.liveDetails && match.sport === 'soccer'
-    && Number.isFinite(match.liveDetails.score1)
-    ? `${match.liveDetails.score1} - ${match.liveDetails.score2} (${match.liveDetails.minute || ''})`
-    : null;
+  if (match.sport === 'cricket') {
+    const t1 = Number.isFinite(ld.runs) ? `${ld.runs}/${ld.wickets} (${ld.overs || '0.0'})` : null;
+    const t2 = Number.isFinite(ld.score2) ? `${ld.score2}/${ld.wickets2 ?? 0} (${ld.overs2 || '0.0'})` : null;
+    team1Score = t1;
+    team2Score = t2;
+    inlineScore = t1 && t2 ? `${t1}  vs  ${t2}` : t1;
+  } else if (match.sport === 'soccer') {
+    if (Number.isFinite(ld.score1)) {
+      team1Score = String(ld.score1);
+      team2Score = String(ld.score2 ?? 0);
+      inlineScore = `${team1Score} - ${team2Score} (${ld.minute || ''})`;
+    }
+  } else if (match.sport === 'basketball' || match.sport === 'american-football') {
+    if (Number.isFinite(ld.score1) || Number.isFinite(ld.score2)) {
+      team1Score = String(ld.score1 ?? 0);
+      team2Score = String(ld.score2 ?? 0);
+      const period = ld.quarter || '';
+      inlineScore = `${team1Score} - ${team2Score} (${period})`;
+    }
+  } else if (match.sport === 'tennis') {
+    if (ld.sets1?.length || ld.sets2?.length) {
+      const s1 = (ld.sets1 || []).filter((v) => v > 0).length;
+      const s2 = (ld.sets2 || []).filter((v) => v > 0).length;
+      team1Score = (ld.sets1 || []).join(' ');
+      team2Score = (ld.sets2 || []).join(' ');
+      inlineScore = `${s1} - ${s2} sets`;
+    } else if (Number.isFinite(ld.score1)) {
+      team1Score = String(ld.score1);
+      team2Score = String(ld.score2 ?? 0);
+      inlineScore = `${team1Score} - ${team2Score}`;
+    }
+  }
 
   return (
     <>
@@ -95,9 +124,9 @@ export default function MatchCard({ match }) {
             <>
               <span className="live-dot" />
               LIVE
-              {(cricketScore || soccerScore) && (
+              {inlineScore && (
                 <span className="match-card-score-inline">
-                  {cricketScore || soccerScore}
+                  {inlineScore}
                 </span>
               )}
             </>
@@ -120,11 +149,17 @@ export default function MatchCard({ match }) {
           <div className="match-card-team">
             <TeamBadge team={match.team1} />
             <span className="team-name">{match.team1.name}</span>
+            {(isLiveNow || isFinished) && team1Score && (
+              <span className="team-score">{team1Score}</span>
+            )}
           </div>
           <span className="vs-text">VS</span>
           <div className="match-card-team">
             <TeamBadge team={match.team2} />
             <span className="team-name">{match.team2.name}</span>
+            {(isLiveNow || isFinished) && team2Score && (
+              <span className="team-score">{team2Score}</span>
+            )}
           </div>
         </div>
 

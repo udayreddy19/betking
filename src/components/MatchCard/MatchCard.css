@@ -99,6 +99,16 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.team-score {
+  font-size: 0.7rem;
+  font-weight: var(--font-bold);
+  color: var(--color-success, #22c55e);
+  background: var(--color-bg);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
 .vs-text {
   font-size: var(--text-xs);
   font-weight: var(--font-bold);
