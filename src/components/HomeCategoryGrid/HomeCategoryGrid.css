@@ -1,0 +1,116 @@
+.home-category-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 0.5fr 0.5fr;
+  grid-template-rows: 1fr 1fr;
+  grid-template-areas:
+    "sports live instant vip"
+    "sports live promos loyalty";
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+  min-height: 300px;
+}
+
+.home-cat-tile {
+  position: relative;
+  border: none;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  cursor: pointer;
+  text-align: left;
+  padding: var(--space-4);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  min-height: 0;
+}
+
+.home-cat-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.home-cat-tile--large { grid-area: sports; }
+.home-cat-tile--tall { grid-area: live; }
+
+.home-category-grid .home-cat-tile:nth-child(3) { grid-area: instant; }
+.home-category-grid .home-cat-tile:nth-child(4) { grid-area: vip; }
+.home-category-grid .home-cat-tile:nth-child(5) { grid-area: promos; }
+.home-category-grid .home-cat-tile:nth-child(6) { grid-area: loyalty; }
+
+.home-cat-label {
+  position: relative;
+  z-index: 2;
+  font-size: var(--text-sm);
+  font-weight: var(--font-extrabold);
+  color: var(--color-text);
+  letter-spacing: 0.06em;
+}
+
+.home-cat-image {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 65%;
+  height: 75%;
+  object-fit: cover;
+  object-position: center bottom;
+  pointer-events: none;
+  mask-image: linear-gradient(to left, black 60%, transparent);
+  -webkit-mask-image: linear-gradient(to left, black 60%, transparent);
+}
+
+.home-cat-tile--large .home-cat-image,
+.home-cat-tile--tall .home-cat-image {
+  width: 80%;
+  height: 85%;
+}
+
+.home-cat-badge {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  z-index: 3;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: var(--radius-full);
+  background: #111827;
+  color: #fff;
+  font-size: var(--text-xs);
+  font-weight: var(--font-bold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 900px) {
+  .home-category-grid {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "sports sports"
+      "live live"
+      "instant vip"
+      "promos loyalty";
+    min-height: auto;
+  }
+
+  .home-cat-tile--large,
+  .home-cat-tile--tall {
+    min-height: 140px;
+  }
+
+  .home-cat-tile--small {
+    min-height: 100px;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-category-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "sports"
+      "live"
+      "instant"
+      "vip"
+      "promos"
+      "loyalty";
+  }
+}

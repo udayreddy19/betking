@@ -237,3 +237,101 @@
 .match-card-markets-link:hover {
   color: var(--color-primary);
 }
+
+/* ── 10CRIC home variant ── */
+.match-card--home {
+  background: linear-gradient(180deg, #f3f0ff 0%, #ffffff 35%);
+  border: 1px solid #e8e4f5;
+  box-shadow: none;
+  padding: var(--space-3);
+  min-width: 260px;
+  max-width: 280px;
+}
+
+.match-card--home:hover {
+  border-color: #d8d0f5;
+  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.08);
+}
+
+.match-card--home .match-card-header {
+  margin-bottom: var(--space-2);
+}
+
+.match-card--home .match-card-league {
+  font-size: 0.7rem;
+}
+
+.match-card-sport-tag--home {
+  background: #7c3aed !important;
+  color: #fff;
+  font-size: 0.6rem;
+  padding: 3px 8px;
+}
+
+.match-card--home .match-card-time {
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-2);
+}
+
+.match-card--home .match-card-teams {
+  margin-bottom: var(--space-3);
+  gap: var(--space-6);
+}
+
+.team-jersey {
+  position: relative;
+  width: 44px;
+  height: 52px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.team-jersey-neck {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 8px;
+  background: var(--jersey-color);
+  border-radius: 4px 4px 0 0;
+  z-index: 1;
+}
+
+.team-jersey-body {
+  width: 40px;
+  height: 44px;
+  background: var(--jersey-color);
+  border-radius: 6px 6px 4px 4px;
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.12);
+}
+
+.match-card-odds--home .odds-btn {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.match-card-odds--home .odds-btn:hover {
+  background: #ede9fe;
+  border-color: #c4b5fd;
+}
+
+.match-card-odds--home .odds-btn.selected {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.match-card-odds--home .odds-label {
+  font-weight: var(--font-bold);
+  color: var(--color-text-muted);
+}
+
+.match-card-odds--home .odds-value {
+  font-weight: var(--font-extrabold);
+}

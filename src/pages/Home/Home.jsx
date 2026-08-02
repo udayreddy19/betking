@@ -1,82 +1,147 @@
 import { useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiChevronRight, FiChevronLeft } from 'react-icons/fi';
-import { useAuth } from '../../context/AuthContext';
 import FilterChips from '../../components/FilterChips/FilterChips';
 import MatchCard from '../../components/MatchCard/MatchCard';
-import GameCarousel from '../../components/GameCarousel/GameCarousel';
-import '../../components/GameCarousel/GameCarousel.css';
-import { sportsCategories, WELCOME_BONUS, casinoGames } from '../../data/mockData';
+import HomeCategoryGrid from '../../components/HomeCategoryGrid/HomeCategoryGrid';
+import ProviderRibbon from '../../components/ProviderRibbon/ProviderRibbon';
+import HomeTopGameCard from '../../components/HomeTopGameCard/HomeTopGameCard';
+import GameCard from '../../components/GameCard/GameCard';
+import { sportsCategories, featuredLeagues, casinoGames } from '../../data/mockData';
+import { liveCasinoGames } from '../../data/casinoGamesData';
+import {
+  homePromoSlides,
+  topGameIds,
+  topLiveGameCount,
+} from '../../data/homePageData';
 import { useLiveSports } from '../../context/LiveSportsContext';
+import { useAuth } from '../../context/AuthContext';
 import { filterMatches } from '../../utils/matchFilters';
+import { getLeagueMeta, isSameLeague } from '../../utils/leagueNavigation';
 import './Home.css';
 
-const sportNameById = Object.fromEntries(sportsCategories.map(s => [s.id, s.name]));
-
-const MATCH_STATE_TABS = [
-  { id: 'all', label: 'All' },
-  { id: 'live', label: 'Live' },
-  { id: 'upcoming', label: 'Upcoming' },
-  { id: 'completed', label: 'Completed' },
-];
+function filterByLeague(matchList, leagueId) {
+  if (!leagueId || leagueId === 'all') return matchList;
+  const meta = getLeagueMeta(leagueId);
+  if (!meta) return matchList;
+  return matchList.filter(
+    (m) => meta.matchLeagues.includes(m.league) || m.league === meta.name
+  );
+}
 
 export default function Home() {
-  const { isLoggedIn } = useAuth();
   const { matches } = useLiveSports();
+  const { showToast } = useAuth();
   const navigate = useNavigate();
   const [activeSport, setActiveSport] = useState('cricket');
-  const [activeStateTab, setActiveStateTab] = useState('all');
+  const [activeLeague, setActiveLeague] = useState('all');
+  const [promoIndex, setPromoIndex] = useState(0);
   const matchScrollRef = useRef(null);
+  const topGamesRef = useRef(null);
+  const liveGamesRef = useRef(null);
 
-  const scrollMatches = (direction) => {
-    if (!matchScrollRef.current) return;
-    matchScrollRef.current.scrollBy({ left: direction === 'left' ? -320 : 320, behavior: 'smooth' });
-  };
-
-  const filteredMatches = useMemo(
-    () => filterMatches(matches || [], { sport: activeSport, stateTab: activeStateTab }),
-    [matches, activeSport, activeStateTab]
+  const leagueChips = useMemo(
+    () => featuredLeagues.filter((l) => l.sport === activeSport),
+    [activeSport]
   );
 
-  const handleSportChange = (sportId) => {
-    setActiveSport(sportId);
-    setActiveStateTab('all');
-  };
+  const sportMatches = useMemo(() => {
+    const bySport = filterMatches(matches || [], { sport: activeSport, stateTab: 'all' });
+    return filterByLeague(bySport, activeLeague);
+  }, [matches, activeSport, activeLeague]);
 
-  const emptyLabel = activeStateTab === 'all'
-    ? ''
-    : `${activeStateTab} `;
-
-  const featuredCasinoGames = useMemo(
-    () => casinoGames.filter(g => g.isHot || g.isNew).slice(0, 12),
+  const topGames = useMemo(
+    () => topGameIds.map((id) => casinoGames.find((g) => g.id === id)).filter(Boolean),
     []
   );
 
+  const topLiveGames = useMemo(
+    () => liveCasinoGames.filter((g) => g.isHot || g.isLive).slice(0, topLiveGameCount),
+    []
+  );
+
+  const scroll = (ref, direction) => {
+    if (!ref.current) return;
+    ref.current.scrollBy({ left: direction === 'left' ? -320 : 320, behavior: 'smooth' });
+  };
+
+  const handleSportChange = (sportId) => {
+    setActiveSport(sportId);
+    setActiveLeague('all');
+  };
+
+  const promo = homePromoSlides[promoIndex % homePromoSlides.length];
+
   return (
     <div className="home-page container" id="home-page">
-      {!isLoggedIn && (
-        <div className="hero-banner" id="hero-banner">
-          <div className="hero-content">
-            <h1>Get your welcome bonus!</h1>
-            <div className="hero-amount">{WELCOME_BONUS.displayShort}!</div>
-            <button className="hero-cta" onClick={() => navigate('/register')}>
-              Claim now
-            </button>
-            <p className="hero-promo-code">Use code <strong>{WELCOME_BONUS.code}</strong></p>
-          </div>
-          <div className="hero-visual">🎰</div>
+      {/* Promo banner carousel */}
+      <button
+        type="button"
+        className="home-promo-banner"
+        style={{ background: promo.gradient }}
+        onClick={() => {
+          setPromoIndex((i) => (i + 1) % homePromoSlides.length);
+          if (promo.id === 'welcome') navigate('/register');
+          else navigate('/promotions');
+        }}
+      >
+        <div className="home-promo-banner__coin" style={{ borderColor: promo.accent }}>
+          <span>{promo.emoji}</span>
         </div>
-      )}
+        <div className="home-promo-banner__text">
+          <span className="home-promo-banner__title">{promo.title}</span>
+          <span className="home-promo-banner__subtitle">{promo.subtitle}</span>
+        </div>
+        <div className="home-promo-banner__dots">
+          {homePromoSlides.map((s, i) => (
+            <span key={s.id} className={`home-promo-dot ${i === promoIndex % homePromoSlides.length ? 'active' : ''}`} />
+          ))}
+        </div>
+      </button>
 
-      <div className="home-sports-action" id="sports-action-section">
+      {/* Category grid: SPORTS / LIVE CASINO / INSTANT / VIP / PROMOS / LOYALTY */}
+      <HomeCategoryGrid />
+
+      {/* Top Games */}
+      <section className="home-section" id="top-games-section">
+        <div className="section-header">
+          <h2>Top Games</h2>
+          <div className="section-header-actions">
+            <button type="button" className="carousel-view-all" onClick={() => navigate('/casino')}>
+              View All
+            </button>
+            <button type="button" className="carousel-nav-btn" onClick={() => scroll(topGamesRef, 'left')} aria-label="Scroll left">
+              <FiChevronLeft />
+            </button>
+            <button type="button" className="carousel-nav-btn" onClick={() => scroll(topGamesRef, 'right')} aria-label="Scroll right">
+              <FiChevronRight />
+            </button>
+          </div>
+        </div>
+        <div className="home-games-scroll" ref={topGamesRef}>
+          {topGames.map((game) => (
+            <HomeTopGameCard key={game.id} game={game} />
+          ))}
+        </div>
+      </section>
+
+      {/* Provider ribbon */}
+      <ProviderRibbon />
+
+      {/* Sports action */}
+      <section className="home-section home-sports-action" id="sports-action-section">
         <div className="section-header">
           <h2>Sports action</h2>
           <div className="section-header-actions">
             <button type="button" className="carousel-view-all" onClick={() => navigate('/sports')}>
               View All
             </button>
-            <button type="button" className="carousel-nav-btn" onClick={() => scrollMatches('left')}><FiChevronLeft /></button>
-            <button type="button" className="carousel-nav-btn" onClick={() => scrollMatches('right')}><FiChevronRight /></button>
+            <button type="button" className="carousel-nav-btn" onClick={() => scroll(matchScrollRef, 'left')} aria-label="Scroll left">
+              <FiChevronLeft />
+            </button>
+            <button type="button" className="carousel-nav-btn" onClick={() => scroll(matchScrollRef, 'right')} aria-label="Scroll right">
+              <FiChevronRight />
+            </button>
           </div>
         </div>
 
@@ -84,48 +149,82 @@ export default function Home() {
           items={sportsCategories}
           activeId={activeSport}
           onSelect={handleSportChange}
-          className="filter-chips-row scroll-row-bleed"
+          className="filter-chips-row scroll-row-bleed home-sport-chips"
         />
 
-        <div className="home-match-state-tabs scroll-row-bleed">
-          {MATCH_STATE_TABS.map(tab => (
+        {leagueChips.length > 0 && (
+          <div className="home-league-chips scroll-row-bleed">
             <button
-              key={tab.id}
               type="button"
-              className={`home-match-state-tab ${activeStateTab === tab.id ? 'active' : ''}`}
-              onClick={() => setActiveStateTab(tab.id)}
+              className={`home-league-chip ${activeLeague === 'all' ? 'active' : ''}`}
+              onClick={() => setActiveLeague('all')}
             >
-              {tab.id === 'live' && <span className="tab-dot" />}
-              {tab.label}
+              All
             </button>
-          ))}
-        </div>
+            {leagueChips.map((league) => (
+              <button
+                key={league.id}
+                type="button"
+                className={`home-league-chip ${isSameLeague(activeLeague, league.id) ? 'active' : ''}`}
+                onClick={() => setActiveLeague(league.id)}
+              >
+                {league.icon && <span className="home-league-chip-icon">{league.icon}</span>}
+                {league.name}
+              </button>
+            ))}
+          </div>
+        )}
 
-        <div className="match-cards-scroll" ref={matchScrollRef} key={`${activeSport}-${activeStateTab}`}>
-          {filteredMatches.length > 0 ? (
-            filteredMatches.map(match => (
-              <MatchCard key={match.id} match={match} />
+        <div className="match-cards-scroll" ref={matchScrollRef} key={`${activeSport}-${activeLeague}`}>
+          {sportMatches.length > 0 ? (
+            sportMatches.map((match) => (
+              <MatchCard key={match.id} match={match} variant="home" />
             ))
           ) : (
             <div className="no-matches-empty">
-              <span className="no-matches-icon">{sportsCategories.find(s => s.id === activeSport)?.icon || '🏆'}</span>
-              <p>No {emptyLabel}{sportNameById[activeSport] || 'sport'} matches right now</p>
+              <span className="no-matches-icon">{sportsCategories.find((s) => s.id === activeSport)?.icon || '🏆'}</span>
+              <p>No {sportsCategories.find((s) => s.id === activeSport)?.name || 'sport'} matches right now</p>
               <button type="button" className="no-matches-cta" onClick={() => navigate('/sports')}>
                 Browse all sports
               </button>
             </div>
           )}
         </div>
-      </div>
+      </section>
 
-      <div className="home-casino-section" id="home-casino-section">
-        <GameCarousel
-          title="Popular Casino Games"
-          games={featuredCasinoGames}
-          viewAllLink
-          viewAllPath="/casino"
-        />
-      </div>
+      {/* Top Live Games */}
+      <section className="home-section home-live-games" id="top-live-games-section">
+        <div className="section-header">
+          <h2>Top Live Games</h2>
+          <div className="section-header-actions">
+            <button type="button" className="carousel-view-all" onClick={() => navigate('/live-casino')}>
+              View All
+            </button>
+            <button type="button" className="carousel-nav-btn" onClick={() => scroll(liveGamesRef, 'left')} aria-label="Scroll left">
+              <FiChevronLeft />
+            </button>
+            <button type="button" className="carousel-nav-btn" onClick={() => scroll(liveGamesRef, 'right')} aria-label="Scroll right">
+              <FiChevronRight />
+            </button>
+          </div>
+        </div>
+        <div className="home-live-games-scroll" ref={liveGamesRef}>
+          {topLiveGames.map((game) => (
+            <div key={game.id} className="home-live-game-wrap">
+              <GameCard game={game} />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <button
+        type="button"
+        className="home-chat-fab"
+        aria-label="Live chat"
+        onClick={() => showToast('Live chat support coming soon!', 'info')}
+      >
+        💬
+      </button>
     </div>
   );
 }
