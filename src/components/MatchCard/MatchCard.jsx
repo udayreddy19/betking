@@ -67,13 +67,13 @@ export default function MatchCard({ match }) {
   let team2Score = null;
   let inlineScore = null;
 
-  if (match.sport === 'cricket') {
-    const t1 = Number.isFinite(ld.runs) ? `${ld.runs}/${ld.wickets} (${ld.overs || '0.0'})` : null;
+  if (match.sport === 'cricket' || match.sport === 'virtual-cricket') {
+    const t1 = Number.isFinite(ld.runs) ? `${ld.runs}/${ld.wickets ?? 0} (${ld.overs || '0.0'})` : null;
     const t2 = Number.isFinite(ld.score2) ? `${ld.score2}/${ld.wickets2 ?? 0} (${ld.overs2 || '0.0'})` : null;
     team1Score = t1;
     team2Score = t2;
     inlineScore = t1 && t2 ? `${t1}  vs  ${t2}` : t1;
-  } else if (match.sport === 'soccer') {
+  } else if (match.sport === 'soccer' || match.sport === 'esoccer') {
     if (Number.isFinite(ld.score1)) {
       team1Score = String(ld.score1);
       team2Score = String(ld.score2 ?? 0);

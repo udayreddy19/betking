@@ -51,30 +51,56 @@ function filterByLeague(matchList, activeLeague, cricketSeries = []) {
 }
 
 function getMatchScores(match) {
-  const isCricket = match.sport === 'cricket' || match.sport === 'virtual-cricket';
-  const isSoccer = match.sport === 'soccer' || match.sport === 'esoccer';
-  const hasScore = match.liveDetails && (match.matchState === 'in' || match.matchState === 'post');
-  const state = match.matchState || (match.isLive ? 'in' : 'pre');
+  const ld = match.liveDetails || {};
+  const isLive = match.isLive || match.matchState === 'in';
+  const isFinished = match.matchState === 'post';
 
   let team1Score = '';
   let team2Score = '';
-  let statusLabel = match.time || 'VS';
 
-  if (hasScore && isCricket) {
-    team1Score = `${match.liveDetails.runs}/${match.liveDetails.wickets}`;
-    team2Score = `${match.liveDetails.score2}/${match.liveDetails.wickets2}`;
-    statusLabel = state === 'in' ? 'Live' : (state === 'post' ? 'FT' : match.time);
-  } else if (hasScore && isSoccer) {
-    team1Score = String(match.liveDetails.score1 ?? '');
-    team2Score = String(match.liveDetails.score2 ?? '');
-    statusLabel = state === 'in' ? 'Live' : (state === 'post' ? 'FT' : match.time);
-  } else if (hasScore) {
-    team1Score = String(match.liveDetails.score1 ?? match.liveDetails.runs ?? '');
-    team2Score = String(match.liveDetails.score2 ?? match.liveDetails.score2 ?? '');
-    statusLabel = state === 'in' ? 'Live' : match.time;
+  if (isLive || isFinished) {
+    if (match.sport === 'cricket' || match.sport === 'virtual-cricket') {
+      const r1 = ld.runs ?? 0;
+      const w1 = ld.wickets ?? 0;
+      team1Score = w1 > 0 ? `${r1}/${w1}` : `${r1}`;
+
+      const r2 = ld.score2 ?? 0;
+      const w2 = ld.wickets2 ?? 0;
+      team2Score = w2 > 0 ? `${r2}/${w2}` : `${r2}`;
+    } else if (match.sport === 'soccer' || match.sport === 'esoccer') {
+      team1Score = String(ld.score1 ?? 0);
+      team2Score = String(ld.score2 ?? 0);
+    } else if (match.sport === 'basketball' || match.sport === 'american-football') {
+      team1Score = String(ld.score1 ?? 0);
+      team2Score = String(ld.score2 ?? 0);
+    } else if (match.sport === 'tennis') {
+      if (ld.sets1?.length || ld.sets2?.length) {
+        team1Score = (ld.sets1 || []).join(' ');
+        team2Score = (ld.sets2 || []).join(' ');
+      } else {
+        team1Score = String(ld.score1 ?? 0);
+        team2Score = String(ld.score2 ?? 0);
+      }
+    } else {
+      team1Score = String(ld.score1 ?? ld.runs ?? '0');
+      team2Score = String(ld.score2 ?? '0');
+    }
+  } else {
+    const timeStr = match.time || 'Scheduled';
+    if (timeStr.includes(' ')) {
+      const parts = timeStr.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        team1Score = parts.slice(0, -1).join(' ');
+        team2Score = parts[parts.length - 1];
+      } else {
+        team2Score = timeStr;
+      }
+    } else {
+      team2Score = timeStr;
+    }
   }
 
-  return { team1Score, team2Score, statusLabel, state };
+  return { team1Score, team2Score, isLive, isFinished };
 }
 
 function MarketsSuspended() {
@@ -350,7 +376,7 @@ export default function Sports() {
               )}
             </div>
           ) : sportMatches.slice(0, 10).map(m => {
-            const { team1Score, team2Score, statusLabel, state } = getMatchScores(m);
+            const { team1Score, team2Score, isLive } = getMatchScores(m);
             return (
               <button
                 key={m.id}
@@ -359,14 +385,14 @@ export default function Sports() {
                 onClick={() => selectMatch(m.id)}
               >
                 <div className="sports-ticker-row">
-                  <span>{m.team1.shortName || m.team1.name.slice(0, 8)}</span>
-                  <span>{team1Score || '–'}</span>
+                  <span>{m.team1.shortName || m.team1.name.slice(0, 10)}</span>
+                  <span>{team1Score || ''}</span>
                 </div>
                 <div className="sports-ticker-row">
-                  <span>{m.team2.shortName || m.team2.name.slice(0, 8)}</span>
-                  <span>{team2Score || statusLabel}</span>
+                  <span>{m.team2.shortName || m.team2.name.slice(0, 10)}</span>
+                  <span>{team2Score || ''}</span>
                 </div>
-                {state === 'in' && <span className="sports-ticker-live">LIVE</span>}
+                {isLive && <span className="sports-ticker-live">LIVE</span>}
               </button>
             );
           })}
@@ -378,7 +404,7 @@ export default function Sports() {
             <p className="sports-league-overview-subtitle">Select a match to view markets and live scores</p>
             <div className="sports-league-overview-list">
               {sportMatches.map((m) => {
-                const { team1Score, team2Score, statusLabel, state } = getMatchScores(m);
+                const { team1Score, team2Score, isLive } = getMatchScores(m);
                 return (
                   <button
                     key={m.id}
@@ -388,7 +414,7 @@ export default function Sports() {
                   >
                     <div className="sports-league-overview-card-top">
                       <span className="sports-league-overview-time">{m.time}</span>
-                      {state === 'in' && <span className="sports-league-overview-live">LIVE</span>}
+                      {isLive && <span className="sports-league-overview-live">LIVE</span>}
                     </div>
                     <div className="sports-league-overview-teams">
                       <div className="sports-league-overview-team">
@@ -397,7 +423,7 @@ export default function Sports() {
                       </div>
                       <div className="sports-league-overview-team">
                         <span>{m.team2.name}</span>
-                        <strong>{team2Score || statusLabel}</strong>
+                        <strong>{team2Score || '–'}</strong>
                       </div>
                     </div>
                   </button>
