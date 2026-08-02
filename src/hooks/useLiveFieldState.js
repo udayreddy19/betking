@@ -26,7 +26,8 @@ function getBattingTeamName(match, ld) {
 /** Build field view state purely from API liveDetails — no simulation. */
 export function buildFieldStateFromApi(match) {
   const ld = match?.liveDetails || {};
-  if (!ld.batter1 && !ld.batter2 && !ld.runs && !ld.currentOverBalls?.length) {
+  if (!ld.batter1 && !ld.batter2 && ld.runs == null && ld.chaseRuns == null
+    && ld.firstRuns == null && !ld.currentOverBalls?.length) {
     return null;
   }
 

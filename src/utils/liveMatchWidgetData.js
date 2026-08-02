@@ -34,20 +34,18 @@ export function getChaseText(match, innings, team1, score1, score2, wickets2) {
   if (chaseRuns >= target) return null;
 
   const runsNeeded = Math.max(0, target - chaseRuns);
-  const maxBalls = getMatchMaxBalls(match);
-  const ballsBowled = ld.chaseBallNbr != null
-    ? ld.chaseBallNbr
-    : oversToBallsForMatch(innings.displayOvers, match);
-  const ballsLeft = Math.max(0, maxBalls - ballsBowled);
 
   const commentaryMatch = ld.commentary?.match(/need (\d+) runs? in (\d+) balls?/i);
   if (commentaryMatch) {
-    const commRuns = parseInt(commentaryMatch[1], 10);
     const commBalls = parseInt(commentaryMatch[2], 10);
-    if (commRuns === runsNeeded) {
-      return `${chasingTeam} (${chaseRuns}/${chaseWickets}) require ${runsNeeded} runs from ${commBalls} balls.`;
-    }
+    return `${chasingTeam} (${chaseRuns}/${chaseWickets}) require ${runsNeeded} runs from ${commBalls} balls.`;
   }
+
+  const maxBalls = getMatchMaxBalls(match);
+  const ballsBowled = ld.chaseBallNbr != null
+    ? ld.chaseBallNbr
+    : oversToBallsForMatch(ld.chaseOvers || innings.displayOvers, match);
+  const ballsLeft = Math.max(0, maxBalls - ballsBowled);
 
   return `${chasingTeam} (${chaseRuns}/${chaseWickets}) require ${runsNeeded} runs from ${ballsLeft} balls.`;
 }

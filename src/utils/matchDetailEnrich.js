@@ -1,4 +1,4 @@
-import { normalizeCricbuzzOvers } from './oversUtils';
+import { normalizeMatchOvers } from './cricketFormat';
 import { mergeCricketLiveDetails } from './cricketScoreMerge';
 import { flattenCricketTeamScores, resolveCricketTeamScores } from './cricketScores';
 import { isHundredMatch, hundredBallsToOvers } from './cricketFormat';
@@ -31,16 +31,25 @@ function enrichCricketDetails(match, ld, base) {
     ...merged,
     runs: flat.runs,
     wickets: flat.wickets,
-    overs: normalizeCricbuzzOvers(flat.overs),
+    overs: normalizeMatchOvers(flat.overs, match),
     score2: flat.score2,
     wickets2: flat.wickets2,
-    overs2: normalizeCricbuzzOvers(flat.overs2),
-    chaseBallNbr: ld.chaseBallNbr ?? base.chaseBallNbr,
+    overs2: normalizeMatchOvers(flat.overs2, match),
+    chaseBallNbr: merged.chaseBallNbr ?? ld.chaseBallNbr ?? base.chaseBallNbr,
     batter1: ld.batter1 || base.batter1,
     batter2: ld.batter2 || base.batter2,
     bowler: ld.bowler || base.bowler,
     commentary: ld.commentary || base.commentary,
     currentOverBalls: ld.currentOverBalls?.length ? ld.currentOverBalls : base.currentOverBalls,
+    firstRuns: merged.firstRuns,
+    firstWickets: merged.firstWickets,
+    firstOvers: merged.firstOvers,
+    firstTeamName: merged.firstTeamName,
+    chaseRuns: merged.chaseRuns,
+    chaseWickets: merged.chaseWickets,
+    chaseOvers: merged.chaseOvers,
+    chaseTeamName: merged.chaseTeamName,
+    inningsId: merged.inningsId ?? ld.inningsId,
   };
 }
 
@@ -78,6 +87,8 @@ export function enrichMatchWithDetail(match, detail) {
       ?? match.matchState,
     time: detail.time ?? match.time,
     seriesName: matchForScores.seriesName,
+    matchFormat: detail.matchHeader?.matchFormat || match.matchFormat,
+    matchHeader: detail.matchHeader || match.matchHeader,
     squads: detail.squads?.length ? detail.squads : match.squads,
     scorecardInnings: detail.scorecardInnings?.length ? detail.scorecardInnings : match.scorecardInnings,
     overHistory: detail.overHistory?.length ? detail.overHistory : match.overHistory,

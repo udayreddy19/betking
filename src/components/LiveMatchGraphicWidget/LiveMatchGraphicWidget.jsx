@@ -35,12 +35,18 @@ function getInningsInfo(match, team1, team2, resolved) {
   const isChasing = isCricketSecondInnings(match, ld);
   const team1Score = resolved.team1;
   const team2Score = resolved.team2;
-  const team2Batting = team2Score.balls > team1Score.balls
-    || (team2Score.balls === team1Score.balls && isChasing && ld.chaseTeamName
-      && teamNameMatches(team2, ld.chaseTeamName));
 
   if (isChasing) {
-    const battingTeam = team2Batting ? team2 : team1;
+    let battingTeam = team2;
+    if (ld.chaseTeamName) {
+      if (teamNameMatches(team1, ld.chaseTeamName)) battingTeam = team1;
+      else if (teamNameMatches(team2, ld.chaseTeamName)) battingTeam = team2;
+    } else if (ld.firstTeamName) {
+      // Chasing team is whoever didn't bat first
+      battingTeam = teamNameMatches(team1, ld.firstTeamName) ? team2 : team1;
+    }
+
+    const battingScore = battingTeam === team1 ? team1Score : team2Score;
     return {
       inningsNum: 2,
       battingTeam,
@@ -49,7 +55,7 @@ function getInningsInfo(match, team1, team2, resolved) {
       displayWickets1: team1Score.wickets,
       displayScore2: team2Score.runs,
       displayWickets2: team2Score.wickets,
-      displayOvers: team2Batting ? team2Score.overs : team1Score.overs,
+      displayOvers: ld.chaseOvers || battingScore.overs || '0.0',
       defaultInnings: `${getTeamDisplayName(battingTeam)} INNS`,
     };
   }
@@ -70,7 +76,7 @@ function getInningsInfo(match, team1, team2, resolved) {
     displayWickets1: team1Score.wickets,
     displayScore2: team2Score.runs,
     displayWickets2: team2Score.wickets,
-    displayOvers: (battingTeam === team2 ? team2Score.overs : team1Score.overs) || ld.overs || '0.0',
+    displayOvers: (battingTeam === team2 ? team2Score.overs : team1Score.overs) || ld.firstOvers || ld.overs || '0.0',
     defaultInnings: `${getTeamDisplayName(battingTeam)} INNS`,
   };
 }
@@ -445,10 +451,12 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
 
         <div className="live-widget-timeline" aria-hidden="true">
           <div className="live-widget-timeline-track">
-            {Array.from({ length: 21 }, (_, i) => (
+            {Array.from({ length: Math.min(maxOvers, 50) + 1 }, (_, i) => (
               <div key={i} className="live-widget-timeline-tick">
                 {wicketOvers.has(i) && i > 0 && <span className="live-widget-wicket">W</span>}
-                {i % 2 === 0 && <span className="live-widget-timeline-label">{i}</span>}
+                {i % Math.max(1, Math.floor(maxOvers / 10)) === 0 && (
+                  <span className="live-widget-timeline-label">{i}</span>
+                )}
               </div>
             ))}
           </div>
