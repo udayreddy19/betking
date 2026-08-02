@@ -107,7 +107,7 @@ export default function MatchCard({ match, variant = 'default' }) {
       ? 'Finished'
       : (match.time || 'Scheduled');
 
-  const jerseySize = isHome ? 44 : 40;
+  const jerseySize = isHome ? 52 : 46;
 
   return (
     <>
