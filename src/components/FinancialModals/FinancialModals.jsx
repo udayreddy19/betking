@@ -227,7 +227,7 @@ export default function FinancialModals({ modalType, onClose }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fffbebf1', padding: '12px', borderRadius: '8px', border: '1px solid #fde68a' }}>
               <div>
                 <div style={{ fontWeight: 800, color: '#92400e' }}>₹500 Free Bet Voucher</div>
-                <div style={{ fontSize: '0.75rem', color: '#b45309' }}>Cost: 50 Coins (You have {user.coins} Coins)</div>
+                <div style={{ fontSize: '0.75rem', color: '#b45309' }}>Cost: 50 Loyalty Points (You have {user.loyaltyPoints ?? user.coins ?? 0})</div>
               </div>
               <button
                 onClick={() => notify('Redeemed ₹500 Free Bet Voucher!')}

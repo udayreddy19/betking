@@ -27,8 +27,8 @@ export default function Profile() {
             <span className="value">{user.loyaltyRank} · Lv.{user.loyaltyLevel}</span>
           </div>
           <div className="profile-stat">
-            <span className="label">Coins</span>
-            <span className="value">{user.coins ?? 0}</span>
+            <span className="label">Loyalty points</span>
+            <span className="value">{(user.loyaltyPoints ?? user.coins ?? 0).toLocaleString('en-IN')}</span>
           </div>
         </div>
 

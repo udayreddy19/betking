@@ -1,5 +1,13 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { STARTING_BALANCE, WELCOME_BONUS } from '../data/mockData';
+import { formatInr } from '../utils/walletBalance';
+import {
+  pointsFromSpend,
+  pointsToRupees,
+  LOYALTY_MIN_REDEEM_POINTS,
+  canRedeemLoyaltyPoints,
+  getUserLoyaltyPoints,
+} from '../utils/loyaltyPoints';
 
 const AuthContext = createContext(null);
 
@@ -17,7 +25,8 @@ const SEED_USER = {
   loyaltyRank: 'Rookie',
   xpToNext: 1000,
   notifications: 0,
-  coins: 58,
+  loyaltyPoints: 850,
+  coins: 850,
 };
 
 function ensureSeedUser() {
@@ -52,7 +61,8 @@ function toSessionUser(stored) {
     loyaltyRank: stored.loyaltyRank ?? 'Rookie',
     xpToNext: stored.xpToNext ?? 1000,
     notifications: stored.notifications ?? 0,
-    coins: stored.coins ?? 0,
+    loyaltyPoints: stored.loyaltyPoints ?? stored.coins ?? 0,
+    coins: stored.loyaltyPoints ?? stored.coins ?? 0,
   };
 }
 
@@ -79,7 +89,8 @@ function syncStoredUser(sessionUser) {
     loyaltyRank: sessionUser.loyaltyRank,
     xpToNext: sessionUser.xpToNext,
     notifications: sessionUser.notifications,
-    coins: sessionUser.coins ?? users[idx].coins ?? 0,
+    loyaltyPoints: sessionUser.loyaltyPoints ?? sessionUser.coins ?? users[idx].loyaltyPoints ?? users[idx].coins ?? 0,
+    coins: sessionUser.loyaltyPoints ?? sessionUser.coins ?? users[idx].loyaltyPoints ?? users[idx].coins ?? 0,
   };
   saveStoredUsers(users);
 }
@@ -165,6 +176,7 @@ export function AuthProvider({ children }) {
       loyaltyRank: 'Rookie',
       xpToNext: 1000,
       notifications: 0,
+      loyaltyPoints: 50,
       coins: 50,
       welcomeBonusApplied: true,
     };
@@ -226,13 +238,62 @@ export function AuthProvider({ children }) {
 
   const deductFunds = useCallback((amount) => {
     let success = false;
+    let pointsEarned = 0;
     setUser(prev => {
       if (!prev || prev.balance < amount) return prev;
       success = true;
-      return { ...prev, balance: prev.balance - amount };
+      pointsEarned = pointsFromSpend(amount);
+      const currentPoints = getUserLoyaltyPoints(prev);
+      const nextPoints = currentPoints + pointsEarned;
+      return {
+        ...prev,
+        balance: prev.balance - amount,
+        loyaltyPoints: nextPoints,
+        coins: nextPoints,
+      };
     });
+    if (success && pointsEarned > 0) {
+      showToast(`+${pointsEarned} loyalty points earned`, 'success');
+    }
     return success;
-  }, [setUser]);
+  }, [setUser, showToast]);
+
+  const redeemLoyaltyPoints = useCallback(() => {
+    let redeemedPoints = 0;
+    let creditedRupees = 0;
+    let error = null;
+
+    setUser(prev => {
+      if (!prev) {
+        error = 'Please log in to redeem points.';
+        return prev;
+      }
+      const points = getUserLoyaltyPoints(prev);
+      if (!canRedeemLoyaltyPoints(points)) {
+        error = `You need at least ${LOYALTY_MIN_REDEEM_POINTS} points to redeem.`;
+        return prev;
+      }
+      redeemedPoints = points;
+      creditedRupees = pointsToRupees(points);
+      return {
+        ...prev,
+        balance: prev.balance + creditedRupees,
+        loyaltyPoints: 0,
+        coins: 0,
+      };
+    });
+
+    if (error) {
+      showToast(error, 'info');
+      return { ok: false, error };
+    }
+
+    showToast(
+      'Redeemed ' + redeemedPoints + ' points - ' + formatInr(creditedRupees) + ' credited to wallet',
+      'success',
+    );
+    return { ok: true, points: redeemedPoints, rupees: creditedRupees };
+  }, [setUser, showToast]);
 
   const updateUserBalance = useCallback((delta) => {
     let success = false;
@@ -263,6 +324,7 @@ export function AuthProvider({ children }) {
     logout,
     addFunds,
     deductFunds,
+    redeemLoyaltyPoints,
     updateUserBalance,
     toast,
     showToast,
@@ -285,6 +347,7 @@ export function AuthProvider({ children }) {
     logout,
     addFunds,
     deductFunds,
+    redeemLoyaltyPoints,
     updateUserBalance,
     toast,
     showToast,

@@ -4,6 +4,7 @@ import { HiOutlineMenu, HiOutlineClipboardList, IoGiftOutline, FiChevronDown } f
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { getWalletBreakdown, formatInr } from '../../utils/walletBalance';
+import { getLoyaltySummary, LOYALTY_MIN_REDEEM_POINTS } from '../../utils/loyaltyPoints';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
 import MyBetsPanel from '../MyBetsPanel/MyBetsPanel';
 import PromotionsPanel from '../PromotionsPanel/PromotionsPanel';
@@ -29,7 +30,7 @@ const moreLinks = [
 ];
 
 function Header() {
-  const { user, isLoggedIn, openLoginModal, openDepositModal, toggleSidebar } = useAuth();
+  const { user, isLoggedIn, openLoginModal, openDepositModal, toggleSidebar, redeemLoyaltyPoints } = useAuth();
   const { myBetsCount, isMyBetsOpen, toggleMyBets, closeMyBets } = useBetSlip();
   const [isPromosOpen, setIsPromosOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
@@ -39,8 +40,7 @@ function Header() {
   const navigate = useNavigate();
 
   const wallet = getWalletBreakdown(user);
-
-  const coins = user?.coins ?? 58;
+  const loyalty = getLoyaltySummary(user);
 
   useEffect(() => {
     if (!isMoreOpen) return undefined;
@@ -73,6 +73,10 @@ function Header() {
     closePromos();
     toggleMyBets();
   }, [closePromos, toggleMyBets]);
+
+  const handleRedeemLoyalty = useCallback(() => {
+    redeemLoyaltyPoints();
+  }, [redeemLoyaltyPoints]);
 
   return (
     <header className="header" id="main-header">
@@ -156,10 +160,6 @@ function Header() {
           {isLoggedIn ? (
             <>
               <div className="header-wallet-group" ref={walletRef}>
-                <div className="header-loyalty-ring" title="Loyalty points">
-                  <span className="header-loyalty-icon">⭐</span>
-                  <span>{coins}</span>
-                </div>
                 <div className="header-wallet-dropdown-wrap">
                   <button
                     type="button"
@@ -175,6 +175,40 @@ function Header() {
                   </button>
                   {isWalletOpen && (
                     <div className="header-wallet-menu" role="menu">
+                      <div className="header-wallet-menu__loyalty">
+                        <div className="header-wallet-menu__loyalty-head">
+                          <span className="header-wallet-menu__loyalty-title">
+                            <span className="header-loyalty-icon" aria-hidden="true">⭐</span>
+                            Loyalty points
+                          </span>
+                          <span className="header-wallet-menu__loyalty-points">{loyalty.points}</span>
+                        </div>
+                        <p className="header-wallet-menu__loyalty-hint">
+                          Earn 5 pts per ₹100 spent · 5 pts = ₹1
+                        </p>
+                        <div className="header-wallet-menu__loyalty-progress" aria-hidden="true">
+                          <div
+                            className="header-wallet-menu__loyalty-progress-bar"
+                            style={{ width: `${loyalty.progress}%` }}
+                          />
+                        </div>
+                        <p className="header-wallet-menu__loyalty-meta">
+                          {loyalty.canRedeem
+                            ? `Redeem for ${formatInr(loyalty.redeemValue)}`
+                            : `${loyalty.pointsToUnlock} pts to unlock redemption`}
+                        </p>
+                        <button
+                          type="button"
+                          className="header-wallet-menu__redeem"
+                          disabled={!loyalty.canRedeem}
+                          onClick={handleRedeemLoyalty}
+                        >
+                          Redeem {LOYALTY_MIN_REDEEM_POINTS}+ points
+                        </button>
+                      </div>
+
+                      <div className="header-wallet-menu__divider" />
+
                       <div className="header-wallet-menu__row">
                         <span className="header-wallet-menu__label">Balance</span>
                         <span className="header-wallet-menu__value">{formatInr(wallet.total)}</span>
@@ -210,10 +244,6 @@ function Header() {
           ) : (
             <div className="header-auth-buttons">
               <div className="header-wallet-group header-wallet-group--guest">
-                <div className="header-loyalty-ring">
-                  <span className="header-loyalty-icon">⭐</span>
-                  <span>58</span>
-                </div>
                 <div className="header-balance header-balance--static">
                   <span className="balance-wallet-icon">👛</span>
                   <span>₹0</span>
