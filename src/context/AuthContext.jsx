@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { STARTING_BALANCE, WELCOME_BONUS } from '../data/mockData';
 import { formatInr } from '../utils/walletBalance';
+import { getWithdrawableAmount, splitBetWinPayout } from '../utils/wageringRules';
 import {
   pointsFromSpend,
   pointsToRupees,
@@ -19,6 +20,7 @@ const SEED_USER = {
   password: 'demo1234',
   displayName: 'Demo User',
   balance: 8500,
+  lockedDepositBalance: 0,
   bonusBalance: 1200,
   freebetBalance: 300,
   loyaltyLevel: 1,
@@ -55,6 +57,7 @@ function toSessionUser(stored) {
     displayName: stored.displayName,
     phone: stored.phone,
     balance: stored.balance,
+    lockedDepositBalance: stored.lockedDepositBalance ?? 0,
     bonusBalance: stored.bonusBalance ?? 0,
     freebetBalance: stored.freebetBalance ?? 0,
     loyaltyLevel: stored.loyaltyLevel ?? 1,
@@ -83,6 +86,7 @@ function syncStoredUser(sessionUser) {
     displayName: sessionUser.displayName,
     phone: sessionUser.phone ?? users[idx].phone,
     balance: sessionUser.balance,
+    lockedDepositBalance: sessionUser.lockedDepositBalance ?? users[idx].lockedDepositBalance ?? 0,
     bonusBalance: sessionUser.bonusBalance ?? users[idx].bonusBalance ?? 0,
     freebetBalance: sessionUser.freebetBalance ?? users[idx].freebetBalance ?? 0,
     loyaltyLevel: sessionUser.loyaltyLevel,
@@ -170,6 +174,7 @@ export function AuthProvider({ children }) {
       displayName: displayName.trim(),
       phone: phone?.trim() || '',
       balance: STARTING_BALANCE,
+      lockedDepositBalance: 0,
       bonusBalance: welcomeCredit,
       freebetBalance: 0,
       loyaltyLevel: 1,
@@ -197,8 +202,8 @@ export function AuthProvider({ children }) {
 
     const amount = promo.bonusAmount || 500;
     saveClaimedPromo(user.email, promo.id);
-    setUser(prev => (prev ? { ...prev, balance: prev.balance + amount } : prev));
-    showToast(`₹${amount.toLocaleString('en-IN')} bonus credited to your balance!`, 'success');
+    setUser(prev => (prev ? { ...prev, bonusBalance: (prev.bonusBalance ?? 0) + amount } : prev));
+    showToast(`₹${amount.toLocaleString('en-IN')} bonus credited! Bet at 1.80+ odds to use it.`, 'success');
     return { ok: true, amount };
   }, [user, setUser, showToast]);
 
@@ -231,32 +236,75 @@ export function AuthProvider({ children }) {
   const addFunds = useCallback((amount, method = 'Deposit') => {
     setUser(prev => {
       if (!prev) return prev;
-      return { ...prev, balance: prev.balance + amount };
-    });
-    showToast(`Successfully deposited ₹${amount.toLocaleString('en-IN')} via ${method}!`);
-  }, [setUser, showToast]);
-
-  const deductFunds = useCallback((amount) => {
-    let success = false;
-    let pointsEarned = 0;
-    setUser(prev => {
-      if (!prev || prev.balance < amount) return prev;
-      success = true;
-      pointsEarned = pointsFromSpend(amount);
-      const currentPoints = getUserLoyaltyPoints(prev);
-      const nextPoints = currentPoints + pointsEarned;
+      const deposit = Number(amount) || 0;
       return {
         ...prev,
-        balance: prev.balance - amount,
+        balance: prev.balance + deposit,
+        lockedDepositBalance: (prev.lockedDepositBalance ?? 0) + deposit,
+      };
+    });
+    showToast(
+      `Deposited ${formatInr(amount)} via ${method}. Wager this amount before withdrawal.`,
+      'success',
+    );
+  }, [setUser, showToast]);
+
+  const deductStake = useCallback(({ cashAmount = 0, bonusAmount = 0 } = {}) => {
+    const cash = Number(cashAmount) || 0;
+    const bonus = Number(bonusAmount) || 0;
+    const result = { success: false, pointsEarned: 0, wageringApplied: 0 };
+
+    setUser(prev => {
+      if (!prev) return prev;
+      if (cash > 0 && prev.balance < cash) return prev;
+      if (bonus > 0 && (prev.bonusBalance ?? 0) < bonus) return prev;
+
+      const locked = prev.lockedDepositBalance ?? 0;
+      const wageringApplied = Math.min(cash, locked);
+      const spendTotal = cash + bonus;
+      const pointsEarned = pointsFromSpend(spendTotal);
+      const currentPoints = getUserLoyaltyPoints(prev);
+      const nextPoints = currentPoints + pointsEarned;
+
+      result.success = true;
+      result.pointsEarned = pointsEarned;
+      result.wageringApplied = wageringApplied;
+
+      return {
+        ...prev,
+        balance: prev.balance - cash,
+        bonusBalance: (prev.bonusBalance ?? 0) - bonus,
+        lockedDepositBalance: locked - wageringApplied,
         loyaltyPoints: nextPoints,
         coins: nextPoints,
       };
     });
-    if (success && pointsEarned > 0) {
-      showToast(`+${pointsEarned} loyalty points earned`, 'success');
+
+    if (result.success && result.pointsEarned > 0) {
+      showToast(`+${result.pointsEarned} loyalty points earned`, 'success');
     }
-    return success;
+    return result;
   }, [setUser, showToast]);
+
+  const refundStake = useCallback(({ cashAmount = 0, bonusAmount = 0, wageringApplied = 0 } = {}) => {
+    setUser(prev => {
+      if (!prev) return prev;
+      const cash = Number(cashAmount) || 0;
+      const bonus = Number(bonusAmount) || 0;
+      const wagering = Number(wageringApplied) || 0;
+      return {
+        ...prev,
+        balance: prev.balance + cash,
+        bonusBalance: (prev.bonusBalance ?? 0) + bonus,
+        lockedDepositBalance: (prev.lockedDepositBalance ?? 0) + wagering,
+      };
+    });
+  }, [setUser]);
+
+  /** @deprecated Use deductStake — kept for any legacy callers */
+  const deductFunds = useCallback((amount) => {
+    return deductStake({ cashAmount: amount }).success;
+  }, [deductStake]);
 
   const redeemLoyaltyPoints = useCallback(() => {
     let redeemedPoints = 0;
@@ -307,6 +355,37 @@ export function AuthProvider({ children }) {
     return success;
   }, [setUser]);
 
+  const creditBetWin = useCallback((bet) => {
+    const { cashCredit, bonusCredit } = splitBetWinPayout(bet);
+    if (cashCredit <= 0 && bonusCredit <= 0) return { cashCredit: 0, bonusCredit: 0 };
+
+    setUser(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        balance: prev.balance + cashCredit,
+        bonusBalance: (prev.bonusBalance ?? 0) + bonusCredit,
+      };
+    });
+    return { cashCredit, bonusCredit };
+  }, [setUser]);
+
+  const withdrawFunds = useCallback((amount) => {
+    const amt = Number(amount) || 0;
+    let success = false;
+    let maxWithdrawable = 0;
+
+    setUser(prev => {
+      if (!prev) return prev;
+      maxWithdrawable = getWithdrawableAmount(prev);
+      if (amt <= 0 || amt > maxWithdrawable) return prev;
+      success = true;
+      return { ...prev, balance: prev.balance - amt };
+    });
+
+    return { success, maxWithdrawable };
+  }, [setUser]);
+
   const openLoginModal = useCallback(() => setIsLoginModalOpen(true), []);
   const closeLoginModal = useCallback(() => setIsLoginModalOpen(false), []);
   const openDepositModal = useCallback(() => setIsDepositModalOpen(true), []);
@@ -324,8 +403,12 @@ export function AuthProvider({ children }) {
     logout,
     addFunds,
     deductFunds,
+    deductStake,
+    refundStake,
     redeemLoyaltyPoints,
     updateUserBalance,
+    creditBetWin,
+    withdrawFunds,
     toast,
     showToast,
     dismissToast,
@@ -347,8 +430,12 @@ export function AuthProvider({ children }) {
     logout,
     addFunds,
     deductFunds,
+    deductStake,
+    refundStake,
     redeemLoyaltyPoints,
     updateUserBalance,
+    creditBetWin,
+    withdrawFunds,
     toast,
     showToast,
     dismissToast,

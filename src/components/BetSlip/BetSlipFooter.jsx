@@ -1,6 +1,12 @@
 import { useState } from 'react';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { useAuth } from '../../context/AuthContext';
+import { getWalletBreakdown, formatInr } from '../../utils/walletBalance';
+import {
+  BONUS_MIN_BET_ODDS,
+  BONUS_MIN_WITHDRAW_ODDS,
+  canBetWithBonusOnLegs,
+} from '../../utils/wageringRules';
 import './BetSlipFooter.css';
 
 const QUICK_STAKES = [100, 500, 1000];
@@ -10,10 +16,18 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
     bets, betCount, stake, setStake, totalOdds, potentialReturn, placeBets, clearAll,
     betType, totalStakeAmount,
   } = useBetSlip();
-  const { user, isLoggedIn, deductFunds, updateUserBalance, showToast, openLoginModal } = useAuth();
+  const {
+    user, isLoggedIn, deductStake, refundStake, showToast, openLoginModal,
+  } = useAuth();
   const [isPlacing, setIsPlacing] = useState(false);
+  const [stakeSource, setStakeSource] = useState('cash');
 
   if (betCount === 0) return null;
+
+  const wallet = getWalletBreakdown(user);
+  const bonusAvailable = wallet.bonus;
+  const canUseBonus = bonusAvailable > 0 && canBetWithBonusOnLegs(bets);
+  const activeSource = stakeSource === 'bonus' && canUseBonus ? 'bonus' : 'cash';
 
   const handlePlaceBet = async () => {
     if (isPlacing) return;
@@ -29,22 +43,42 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
       showToast('Enter a valid stake amount.', 'error');
       return;
     }
-    if (user.balance < amountToDeduct) {
-      showToast('Insufficient balance. Please deposit funds.', 'error');
+
+    if (activeSource === 'bonus') {
+      if (!canBetWithBonusOnLegs(bets)) {
+        showToast(
+          `Bonus bets require odds of ${BONUS_MIN_BET_ODDS.toFixed(2)} or higher on every selection.`,
+          'error',
+        );
+        return;
+      }
+      if (bonusAvailable < amountToDeduct) {
+        showToast('Insufficient bonus balance.', 'error');
+        return;
+      }
+    } else if (wallet.cashBalance < amountToDeduct) {
+      showToast('Insufficient cash balance. Please deposit funds.', 'error');
       return;
     }
 
     setIsPlacing(true);
     try {
-      const deducted = deductFunds(amountToDeduct);
-      if (!deducted) {
+      const cashAmount = activeSource === 'cash' ? amountToDeduct : 0;
+      const bonusAmount = activeSource === 'bonus' ? amountToDeduct : 0;
+      const deducted = deductStake({ cashAmount, bonusAmount });
+
+      if (!deducted.success) {
         showToast('Insufficient balance. Please deposit funds.', 'error');
         return;
       }
 
-      const result = placeBets();
+      const result = placeBets({ stakeSource: activeSource });
       if (!result.success) {
-        updateUserBalance(amountToDeduct);
+        refundStake({
+          cashAmount,
+          bonusAmount,
+          wageringApplied: deducted.wageringApplied,
+        });
         showToast(result.error || 'Could not place bet.', 'error');
         return;
       }
@@ -52,17 +86,53 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
       const ret = betType === 'multi'
         ? result.placed.potentialReturn
         : result.placed.reduce((s, p) => s + p.potentialReturn, 0);
+
+      const sourceLabel = activeSource === 'bonus' ? 'bonus' : 'cash';
       showToast(
         betType === 'multi'
-          ? `Multi bet placed! Potential return ₹${ret.toFixed(2)}`
-          : `${result.placed.length} single bet(s) placed! Potential return ₹${ret.toFixed(2)}`,
-        'success'
+          ? `Multi bet placed (${sourceLabel})! Potential return ₹${ret.toFixed(2)}`
+          : `${result.placed.length} single bet(s) placed (${sourceLabel})! Potential return ₹${ret.toFixed(2)}`,
+        'success',
       );
       onPlaced?.();
     } finally {
       setIsPlacing(false);
     }
   };
+
+  const stakeSourceToggle = bonusAvailable > 0 && (
+    <div className="betslip-stake-source">
+      <span className="betslip-stake-source__label">Stake from</span>
+      <div className="betslip-stake-source__tabs">
+        <button
+          type="button"
+          className={`betslip-stake-source__tab ${activeSource === 'cash' ? 'active' : ''}`}
+          onClick={() => setStakeSource('cash')}
+        >
+          Cash {formatInr(wallet.cashBalance)}
+        </button>
+        <button
+          type="button"
+          className={`betslip-stake-source__tab ${activeSource === 'bonus' ? 'active' : ''}`}
+          onClick={() => setStakeSource('bonus')}
+          disabled={!canUseBonus}
+        >
+          Bonus {formatInr(bonusAvailable)}
+        </button>
+      </div>
+      {stakeSource === 'bonus' && !canBetWithBonusOnLegs(bets) && (
+        <p className="betslip-stake-source__warn">
+          Bonus requires odds ≥ {BONUS_MIN_BET_ODDS.toFixed(2)}. Winnings withdrawable only at ≥
+          {BONUS_MIN_WITHDRAW_ODDS.toFixed(2)}.
+        </p>
+      )}
+      {activeSource === 'bonus' && canBetWithBonusOnLegs(bets) && (
+        <p className="betslip-stake-source__hint">
+          Winnings withdrawable only when odds are ≥ {BONUS_MIN_WITHDRAW_ODDS.toFixed(2)}.
+        </p>
+      )}
+    </div>
+  );
 
   const isModal = variant === 'modal';
   const placeLabel = betType === 'multi'
@@ -85,6 +155,8 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
             Clear all
           </button>
         </div>
+
+        {stakeSourceToggle}
 
         <div className="betslip-modal-row betslip-modal-actions">
           <div className="betslip-modal-quick-stakes">
@@ -129,6 +201,8 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
 
   return (
     <div className={`betslip-footer-panel ${variant === 'floating' ? 'betslip-footer-panel--floating' : ''}`}>
+      {stakeSourceToggle}
+
       {betType === 'multi' && (
         <>
           <div className="betslip-quick-stakes">

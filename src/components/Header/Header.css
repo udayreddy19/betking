@@ -351,6 +351,10 @@
   color: var(--color-primary);
 }
 
+.header-wallet-menu__value--locked {
+  color: #f59e0b;
+}
+
 .header-wallet-menu__deposit {
   width: 100%;
   margin-top: var(--space-3);

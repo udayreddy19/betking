@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { IoClose, IoCheckmarkCircle, BiWallet, BiMoneyWithdraw, BiHistory, BiTransfer, BiGift } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
+import { getWalletBreakdown, formatInr } from '../../utils/walletBalance';
 import './FinancialModals.css';
 
 export default function FinancialModals({ modalType, onClose }) {
-  const { user, updateUserBalance, showToast } = useAuth();
+  const { user, withdrawFunds, updateUserBalance, showToast } = useAuth();
   const { placedBets } = useBetSlip();
+  const wallet = getWalletBreakdown(user);
 
   // Withdraw state
   const [upiId, setUpiId] = useState('');
@@ -25,12 +27,23 @@ export default function FinancialModals({ modalType, onClose }) {
     if (!upiId.trim()) return notify('Please enter a valid UPI ID');
     const amt = parseFloat(withdrawAmount);
     if (isNaN(amt) || amt < 500) return notify('Minimum withdrawal is ₹500');
-    if (amt > user.balance) return notify('Insufficient balance');
+    if (amt > wallet.withdrawable) {
+      return notify(
+        wallet.lockedDeposit > 0
+          ? `Only ${formatInr(wallet.withdrawable)} is withdrawable. Wager deposited funds before withdrawing.`
+          : 'Insufficient withdrawable balance',
+      );
+    }
 
     setWithdrawStatus('processing');
 
     setTimeout(() => {
-      updateUserBalance(-amt);
+      const { success } = withdrawFunds(amt);
+      if (!success) {
+        setWithdrawStatus(null);
+        notify('Withdrawal failed. Please try again.');
+        return;
+      }
       setWithdrawStatus('success');
       setPendingWithdrawals(prev => [
         { id: `WD-${Math.floor(10000 + Math.random() * 90000)}`, amount: amt, upi: upiId, date: 'Just now', status: 'Razorpay Instant Payout Completed' },
@@ -84,8 +97,18 @@ export default function FinancialModals({ modalType, onClose }) {
             ) : (
               <form onSubmit={handleRazorpayWithdraw}>
                 <div className="fin-balance-box">
-                  <div className="fin-balance-label">Available Balance</div>
-                  <div className="fin-balance-amount">₹{user.balance.toLocaleString()}</div>
+                  <div className="fin-balance-label">Withdrawable balance</div>
+                  <div className="fin-balance-amount">{formatInr(wallet.withdrawable)}</div>
+                  {wallet.lockedDeposit > 0 && (
+                    <p className="fin-muted" style={{ fontSize: '0.8rem', marginTop: '6px' }}>
+                      {formatInr(wallet.lockedDeposit)} locked until wagered (deposits must be bet first)
+                    </p>
+                  )}
+                  {wallet.bonus > 0 && (
+                    <p className="fin-muted" style={{ fontSize: '0.8rem', marginTop: '4px' }}>
+                      Bonus {formatInr(wallet.bonus)}: bet at 1.80+ odds; winnings withdrawable at 1.85+
+                    </p>
+                  )}
                 </div>
 
                 <div style={{ marginBottom: '14px' }}>
@@ -105,7 +128,7 @@ export default function FinancialModals({ modalType, onClose }) {
                   <input
                     type="number"
                     min="500"
-                    max={user.balance}
+                    max={wallet.withdrawable}
                     value={withdrawAmount}
                     onChange={e => setWithdrawAmount(e.target.value)}
                     style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}

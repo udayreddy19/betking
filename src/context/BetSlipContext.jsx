@@ -161,10 +161,19 @@ export function BetSlipProvider({ children }) {
     return total.toFixed(2);
   }, [bets, betType, stake, singlesStakes, multiOdds]);
 
-  const placeBets = useCallback(() => {
+  const placeBets = useCallback((options = {}) => {
+    const stakeSource = options.stakeSource === 'bonus' ? 'bonus' : 'cash';
+
     if (bets.length === 0) {
       return { success: false, error: 'Your betslip is empty' };
     }
+
+    const withFundMeta = (placed, stakeAmount) => ({
+      ...placed,
+      fundSource: stakeSource,
+      cashStake: stakeSource === 'cash' ? stakeAmount : 0,
+      bonusStake: stakeSource === 'bonus' ? stakeAmount : 0,
+    });
 
     if (betType === 'multi') {
       const stakeAmount = parseFloat(stake);
@@ -172,7 +181,7 @@ export function BetSlipProvider({ children }) {
         return { success: false, error: 'Enter a valid stake amount' };
       }
 
-      const placed = {
+      const placed = withFundMeta({
         id: `placed-${Date.now()}`,
         type: 'multi',
         legs: [...bets],
@@ -181,7 +190,7 @@ export function BetSlipProvider({ children }) {
         potentialReturn: stakeAmount * multiOdds,
         status: 'pending',
         placedAt: new Date().toISOString(),
-      };
+      }, stakeAmount);
 
       setPlacedBets(prev => [placed, ...prev]);
       setBets([]);
@@ -189,7 +198,7 @@ export function BetSlipProvider({ children }) {
       setSinglesStakes({});
       setIsMyBetsOpen(true);
       setIsMobileOpen(false);
-      return { success: true, placed, totalDeducted: stakeAmount };
+      return { success: true, placed, totalDeducted: stakeAmount, stakeSource };
     }
 
     const placements = [];
@@ -201,7 +210,7 @@ export function BetSlipProvider({ children }) {
         return { success: false, error: `Enter stake for "${bet.selectionName}"` };
       }
       totalDeducted += stakeAmount;
-      placements.push({
+      placements.push(withFundMeta({
         id: `placed-${Date.now()}-${bet.id}`,
         type: 'single',
         legs: [bet],
@@ -210,7 +219,7 @@ export function BetSlipProvider({ children }) {
         potentialReturn: stakeAmount * bet.odds,
         status: 'pending',
         placedAt: new Date().toISOString(),
-      });
+      }, stakeAmount));
     }
 
     setPlacedBets(prev => [...placements, ...prev]);
@@ -219,7 +228,7 @@ export function BetSlipProvider({ children }) {
     setSinglesStakes({});
     setIsMyBetsOpen(true);
     setIsMobileOpen(false);
-    return { success: true, placed: placements, totalDeducted };
+    return { success: true, placed: placements, totalDeducted, stakeSource };
   }, [bets, betType, stake, singlesStakes, multiOdds]);
 
   const applySettledBets = useCallback((nextBets) => {
