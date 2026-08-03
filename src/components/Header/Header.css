@@ -355,6 +355,10 @@
   color: #f59e0b;
 }
 
+.header-wallet-menu__value--winnings {
+  color: #22c55e;
+}
+
 .header-wallet-menu__deposit {
   width: 100%;
   margin-top: var(--space-3);

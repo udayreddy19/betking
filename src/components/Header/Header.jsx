@@ -221,12 +221,21 @@ function Header() {
                       </div>
                       {wallet.lockedDeposit > 0 && (
                         <div className="header-wallet-menu__row">
-                          <span className="header-wallet-menu__label">Locked (deposit)</span>
+                          <span className="header-wallet-menu__label">Deposited (locked)</span>
                           <span className="header-wallet-menu__value header-wallet-menu__value--locked">
                             {formatInr(wallet.lockedDeposit)}
                           </span>
                         </div>
                       )}
+
+                      <div className="header-wallet-menu__divider" />
+
+                      <div className="header-wallet-menu__row">
+                        <span className="header-wallet-menu__label">Winnings</span>
+                        <span className="header-wallet-menu__value header-wallet-menu__value--winnings">
+                          {formatInr(wallet.winnings)}
+                        </span>
+                      </div>
                       <div className="header-wallet-menu__row header-wallet-menu__row--highlight">
                         <span className="header-wallet-menu__label">Withdrawable balance</span>
                         <span className="header-wallet-menu__value">{formatInr(wallet.withdrawable)}</span>

@@ -1,7 +1,12 @@
-import { getWithdrawableAmount, getLockedDepositAmount } from './wageringRules';
+import {
+  getWithdrawableAmount,
+  getLockedDepositAmount,
+  getWinningsAmount,
+} from './wageringRules';
 
 /** Wallet breakdown for header / profile display */
 export function getWalletBreakdown(user) {
+  const winnings = getWinningsAmount(user);
   const withdrawable = getWithdrawableAmount(user);
   const lockedDeposit = getLockedDepositAmount(user);
   const bonus = user?.bonusBalance ?? 0;
@@ -13,6 +18,7 @@ export function getWalletBreakdown(user) {
   return {
     total,
     withdrawable,
+    winnings,
     lockedDeposit,
     cashBalance,
     bonus,

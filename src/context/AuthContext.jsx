@@ -21,6 +21,7 @@ const SEED_USER = {
   displayName: 'Demo User',
   balance: 8500,
   lockedDepositBalance: 0,
+  winningsBalance: 8500,
   bonusBalance: 1200,
   freebetBalance: 300,
   loyaltyLevel: 1,
@@ -58,6 +59,10 @@ function toSessionUser(stored) {
     phone: stored.phone,
     balance: stored.balance,
     lockedDepositBalance: stored.lockedDepositBalance ?? 0,
+    winningsBalance: stored.winningsBalance ?? Math.max(
+      0,
+      (stored.balance ?? 0) - (stored.lockedDepositBalance ?? 0),
+    ),
     bonusBalance: stored.bonusBalance ?? 0,
     freebetBalance: stored.freebetBalance ?? 0,
     loyaltyLevel: stored.loyaltyLevel ?? 1,
@@ -87,6 +92,7 @@ function syncStoredUser(sessionUser) {
     phone: sessionUser.phone ?? users[idx].phone,
     balance: sessionUser.balance,
     lockedDepositBalance: sessionUser.lockedDepositBalance ?? users[idx].lockedDepositBalance ?? 0,
+    winningsBalance: sessionUser.winningsBalance ?? users[idx].winningsBalance ?? 0,
     bonusBalance: sessionUser.bonusBalance ?? users[idx].bonusBalance ?? 0,
     freebetBalance: sessionUser.freebetBalance ?? users[idx].freebetBalance ?? 0,
     loyaltyLevel: sessionUser.loyaltyLevel,
@@ -146,7 +152,16 @@ export function AuthProvider({ children }) {
     ensureSeedUser();
     try {
       const saved = localStorage.getItem(SESSION_KEY);
-      if (saved) setUserState(JSON.parse(saved));
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setUserState({
+          ...parsed,
+          winningsBalance: parsed.winningsBalance ?? Math.max(
+            0,
+            (parsed.balance ?? 0) - (parsed.lockedDepositBalance ?? 0),
+          ),
+        });
+      }
     } catch {
       localStorage.removeItem(SESSION_KEY);
     }
@@ -175,6 +190,7 @@ export function AuthProvider({ children }) {
       phone: phone?.trim() || '',
       balance: STARTING_BALANCE,
       lockedDepositBalance: 0,
+      winningsBalance: 0,
       bonusBalance: welcomeCredit,
       freebetBalance: 0,
       loyaltyLevel: 1,
@@ -326,6 +342,7 @@ export function AuthProvider({ children }) {
       return {
         ...prev,
         balance: prev.balance + creditedRupees,
+        winningsBalance: (prev.winningsBalance ?? 0) + creditedRupees,
         loyaltyPoints: 0,
         coins: 0,
       };
@@ -356,8 +373,10 @@ export function AuthProvider({ children }) {
   }, [setUser]);
 
   const creditBetWin = useCallback((bet) => {
-    const { cashCredit, bonusCredit } = splitBetWinPayout(bet);
-    if (cashCredit <= 0 && bonusCredit <= 0) return { cashCredit: 0, bonusCredit: 0 };
+    const { cashCredit, bonusCredit, winningsCredit } = splitBetWinPayout(bet);
+    if (cashCredit <= 0 && bonusCredit <= 0 && winningsCredit <= 0) {
+      return { cashCredit: 0, bonusCredit: 0, winningsCredit: 0 };
+    }
 
     setUser(prev => {
       if (!prev) return prev;
@@ -365,9 +384,10 @@ export function AuthProvider({ children }) {
         ...prev,
         balance: prev.balance + cashCredit,
         bonusBalance: (prev.bonusBalance ?? 0) + bonusCredit,
+        winningsBalance: (prev.winningsBalance ?? 0) + winningsCredit,
       };
     });
-    return { cashCredit, bonusCredit };
+    return { cashCredit, bonusCredit, winningsCredit };
   }, [setUser]);
 
   const withdrawFunds = useCallback((amount) => {
@@ -379,11 +399,29 @@ export function AuthProvider({ children }) {
       if (!prev) return prev;
       maxWithdrawable = getWithdrawableAmount(prev);
       if (amt <= 0 || amt > maxWithdrawable) return prev;
+      if (prev.balance < amt) return prev;
       success = true;
-      return { ...prev, balance: prev.balance - amt };
+      return {
+        ...prev,
+        balance: prev.balance - amt,
+        winningsBalance: (prev.winningsBalance ?? 0) - amt,
+      };
     });
 
     return { success, maxWithdrawable };
+  }, [setUser]);
+
+  const refundWithdrawal = useCallback((amount) => {
+    const amt = Number(amount) || 0;
+    if (amt <= 0) return;
+    setUser(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        balance: prev.balance + amt,
+        winningsBalance: (prev.winningsBalance ?? 0) + amt,
+      };
+    });
   }, [setUser]);
 
   const openLoginModal = useCallback(() => setIsLoginModalOpen(true), []);
@@ -409,6 +447,7 @@ export function AuthProvider({ children }) {
     updateUserBalance,
     creditBetWin,
     withdrawFunds,
+    refundWithdrawal,
     toast,
     showToast,
     dismissToast,
@@ -436,6 +475,7 @@ export function AuthProvider({ children }) {
     updateUserBalance,
     creditBetWin,
     withdrawFunds,
+    refundWithdrawal,
     toast,
     showToast,
     dismissToast,

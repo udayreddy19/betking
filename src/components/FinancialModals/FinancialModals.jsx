@@ -6,7 +6,7 @@ import { getWalletBreakdown, formatInr } from '../../utils/walletBalance';
 import './FinancialModals.css';
 
 export default function FinancialModals({ modalType, onClose }) {
-  const { user, withdrawFunds, updateUserBalance, showToast } = useAuth();
+  const { user, withdrawFunds, refundWithdrawal, showToast } = useAuth();
   const { placedBets } = useBetSlip();
   const wallet = getWalletBreakdown(user);
 
@@ -30,8 +30,8 @@ export default function FinancialModals({ modalType, onClose }) {
     if (amt > wallet.withdrawable) {
       return notify(
         wallet.lockedDeposit > 0
-          ? `Only ${formatInr(wallet.withdrawable)} is withdrawable. Wager deposited funds before withdrawing.`
-          : 'Insufficient withdrawable balance',
+          ? `Only ${formatInr(wallet.withdrawable)} winnings available. Deposits must be wagered first.`
+          : `Only ${formatInr(wallet.withdrawable)} winnings can be withdrawn.`,
       );
     }
 
@@ -55,7 +55,7 @@ export default function FinancialModals({ modalType, onClose }) {
   // Cancel Pending Withdrawal
   const handleCancelWithdrawal = (id, amount) => {
     setPendingWithdrawals(prev => prev.filter(w => w.id !== id));
-    updateUserBalance(amount);
+    refundWithdrawal(amount);
     notify(`Withdrawal ${id} cancelled. ₹${amount} refunded to your balance!`);
   };
 
@@ -97,11 +97,16 @@ export default function FinancialModals({ modalType, onClose }) {
             ) : (
               <form onSubmit={handleRazorpayWithdraw}>
                 <div className="fin-balance-box">
-                  <div className="fin-balance-label">Withdrawable balance</div>
-                  <div className="fin-balance-amount">{formatInr(wallet.withdrawable)}</div>
+                  <div className="fin-balance-label">Winnings (withdrawable)</div>
+                  <div className="fin-balance-amount">{formatInr(wallet.winnings)}</div>
                   {wallet.lockedDeposit > 0 && (
                     <p className="fin-muted" style={{ fontSize: '0.8rem', marginTop: '6px' }}>
-                      {formatInr(wallet.lockedDeposit)} locked until wagered (deposits must be bet first)
+                      {formatInr(wallet.lockedDeposit)} deposited — wager before it can become winnings
+                    </p>
+                  )}
+                  {wallet.cashBalance > wallet.winnings && wallet.lockedDeposit === 0 && (
+                    <p className="fin-muted" style={{ fontSize: '0.8rem', marginTop: '6px' }}>
+                      Cash balance {formatInr(wallet.cashBalance)} is playable; only bet winnings can be withdrawn
                     </p>
                   )}
                   {wallet.bonus > 0 && (
