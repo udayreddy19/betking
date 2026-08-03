@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   IoClose,
@@ -20,14 +19,15 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
-import FinancialModals from '../FinancialModals/FinancialModals';
 import './Sidebar.css';
 
 export default function Sidebar() {
-  const { user, isLoggedIn, isSidebarOpen, closeSidebar, logout, openLoginModal, openDepositModal } = useAuth();
+  const {
+    user, isLoggedIn, isSidebarOpen, closeSidebar, logout,
+    openLoginModal, openDepositModal, openFinModal,
+  } = useAuth();
   const { openMyBets } = useBetSlip();
   const navigate = useNavigate();
-  const [activeFinModal, setActiveFinModal] = useState(null);
 
   const handleLogin = () => {
     closeSidebar();
@@ -44,8 +44,9 @@ export default function Sidebar() {
     navigate('/');
   };
 
-  const openFinModal = (type) => {
-    setActiveFinModal(type);
+  const handleFinModal = (type) => {
+    closeSidebar();
+    openFinModal(type);
   };
 
   return (
@@ -99,7 +100,7 @@ export default function Sidebar() {
               </div>
 
               {/* Notifications */}
-              <div className="sidebar-notifications" onClick={() => openFinModal('transactions')}>
+              <div className="sidebar-notifications" onClick={() => handleFinModal('transactions')}>
                 <IoNotifications className="notif-icon" />
                 <div className="notif-info">
                   <h4>Notifications center</h4>
@@ -117,12 +118,12 @@ export default function Sidebar() {
                     <span className="action-label">Deposit</span>
                   </button>
 
-                  <button className="sidebar-action" onClick={() => openFinModal('withdraw')}>
+                  <button className="sidebar-action" onClick={() => handleFinModal('withdraw')}>
                     <span className="action-icon-wrap"><BiMoneyWithdraw className="action-icon" /></span>
                     <span className="action-label">Withdraw</span>
                   </button>
 
-                  <button className="sidebar-action" onClick={() => openFinModal('cancel-wd')}>
+                  <button className="sidebar-action" onClick={() => handleFinModal('cancel-wd')}>
                     <span className="action-icon-wrap"><MdOutlineCancel className="action-icon" /></span>
                     <span className="action-label">Cancel W/D</span>
                   </button>
@@ -134,17 +135,17 @@ export default function Sidebar() {
                 </div>
 
                 <div className="sidebar-actions-row sidebar-actions-row--three">
-                  <button className="sidebar-action" onClick={() => openFinModal('bets-history')}>
+                  <button className="sidebar-action" onClick={() => handleFinModal('bets-history')}>
                     <span className="action-icon-wrap"><BiHistory className="action-icon" /></span>
                     <span className="action-label">Bets History</span>
                   </button>
 
-                  <button className="sidebar-action" onClick={() => openFinModal('transactions')}>
+                  <button className="sidebar-action" onClick={() => handleFinModal('transactions')}>
                     <span className="action-icon-wrap"><BiTransfer className="action-icon" /></span>
                     <span className="action-label">Transactions</span>
                   </button>
 
-                  <button className="sidebar-action" onClick={() => openFinModal('bonuses')}>
+                  <button className="sidebar-action" onClick={() => handleFinModal('bonuses')}>
                     <span className="action-icon-wrap"><BiGift className="action-icon" /></span>
                     <span className="action-label">My Bonuses</span>
                   </button>
@@ -152,7 +153,7 @@ export default function Sidebar() {
               </div>
 
               {/* Marketplace Link */}
-              <button className="sidebar-link" onClick={() => openFinModal('marketplace')}>
+              <button className="sidebar-link" onClick={() => handleFinModal('marketplace')}>
                 <span className="link-left">
                   <MdOutlineStorefront className="link-icon" />
                   Marketplace
@@ -161,7 +162,7 @@ export default function Sidebar() {
               </button>
 
               {/* Loyalty Benefits Link */}
-              <button className="sidebar-link" onClick={() => openFinModal('bonuses')}>
+              <button className="sidebar-link" onClick={() => handleFinModal('bonuses')}>
                 <span className="link-left">
                   <HiOutlineTrophy className="link-icon" />
                   Discover Loyalty Benefits
@@ -194,9 +195,6 @@ export default function Sidebar() {
           </div>
         )}
       </aside>
-
-      {/* Financial Modals for Withdrawals, Cancel W/D, Transactions, History, Bonuses, Marketplace */}
-      <FinancialModals modalType={activeFinModal} onClose={() => setActiveFinModal(null)} />
     </>
   );
 }

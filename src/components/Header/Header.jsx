@@ -30,7 +30,7 @@ const moreLinks = [
 ];
 
 function Header() {
-  const { user, isLoggedIn, openLoginModal, openDepositModal, toggleSidebar, redeemLoyaltyPoints } = useAuth();
+  const { user, isLoggedIn, openLoginModal, openDepositModal, toggleSidebar, redeemLoyaltyPoints, openFinModal } = useAuth();
   const { myBetsCount, isMyBetsOpen, toggleMyBets, closeMyBets } = useBetSlip();
   const [isPromosOpen, setIsPromosOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
@@ -237,19 +237,31 @@ function Header() {
                         </span>
                       </div>
                       <div className="header-wallet-menu__row header-wallet-menu__row--highlight">
-                        <span className="header-wallet-menu__label">Withdrawable balance</span>
+                        <span className="header-wallet-menu__label">Withdrawable</span>
                         <span className="header-wallet-menu__value">{formatInr(wallet.withdrawable)}</span>
                       </div>
-                      <button
-                        type="button"
-                        className="header-wallet-menu__deposit"
-                        onClick={() => {
-                          setIsWalletOpen(false);
-                          openDepositModal();
-                        }}
-                      >
-                        Deposit
-                      </button>
+                      <div className="header-wallet-menu__actions">
+                        <button
+                          type="button"
+                          className="header-wallet-menu__deposit"
+                          onClick={() => {
+                            setIsWalletOpen(false);
+                            openDepositModal();
+                          }}
+                        >
+                          Deposit
+                        </button>
+                        <button
+                          type="button"
+                          className="header-wallet-menu__withdraw"
+                          onClick={() => {
+                            setIsWalletOpen(false);
+                            openFinModal('withdraw');
+                          }}
+                        >
+                          Withdraw
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

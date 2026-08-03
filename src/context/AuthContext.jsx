@@ -1,7 +1,12 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { STARTING_BALANCE, WELCOME_BONUS } from '../data/mockData';
 import { formatInr } from '../utils/walletBalance';
-import { getWithdrawableAmount, splitBetWinPayout } from '../utils/wageringRules';
+import {
+  getWithdrawableAmount,
+  splitBetWinPayout,
+  allocateCashStake,
+} from '../utils/wageringRules';
+import { appendTransaction, loadTransactions } from '../utils/transactions';
 import {
   pointsFromSpend,
   pointsToRupees,
@@ -125,7 +130,9 @@ export function AuthProvider({ children }) {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [finModalType, setFinModalType] = useState(null);
   const [toast, setToast] = useState(null);
+  const [transactions, setTransactions] = useState([]);
   const toastTimerRef = useRef(null);
 
   const dismissToast = useCallback(() => {
@@ -154,13 +161,15 @@ export function AuthProvider({ children }) {
       const saved = localStorage.getItem(SESSION_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        setUserState({
+        const session = {
           ...parsed,
           winningsBalance: parsed.winningsBalance ?? Math.max(
             0,
             (parsed.balance ?? 0) - (parsed.lockedDepositBalance ?? 0),
           ),
-        });
+        };
+        setUserState(session);
+        setTransactions(loadTransactions(session.email));
       }
     } catch {
       localStorage.removeItem(SESSION_KEY);
@@ -169,6 +178,11 @@ export function AuthProvider({ children }) {
     return () => {
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     };
+  }, []);
+
+  const recordTx = useCallback((email, entry) => {
+    if (!email) return;
+    setTransactions(appendTransaction(email, entry));
   }, []);
 
   const register = useCallback(({ email, password, displayName, phone }) => {
@@ -219,9 +233,14 @@ export function AuthProvider({ children }) {
     const amount = promo.bonusAmount || 500;
     saveClaimedPromo(user.email, promo.id);
     setUser(prev => (prev ? { ...prev, bonusBalance: (prev.bonusBalance ?? 0) + amount } : prev));
+    recordTx(user.email, {
+      type: 'bonus',
+      amount,
+      label: `Bonus claimed · ${promo.title || promo.id}`,
+    });
     showToast(`₹${amount.toLocaleString('en-IN')} bonus credited! Bet at 1.80+ odds to use it.`, 'success');
     return { ok: true, amount };
-  }, [user, setUser, showToast]);
+  }, [user, setUser, showToast, recordTx]);
 
   const isPromotionClaimed = useCallback((promoId) => {
     if (!user) return false;
@@ -238,6 +257,7 @@ export function AuthProvider({ children }) {
 
     const sessionUser = toSessionUser(stored);
     setUser(sessionUser);
+    setTransactions(loadTransactions(sessionUser.email));
     setIsLoginModalOpen(false);
     showToast(`Welcome back, ${sessionUser.displayName}!`);
     return true;
@@ -245,38 +265,55 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(() => {
     setUser(null);
+    setTransactions([]);
     setIsSidebarOpen(false);
     showToast('You have been logged out.', 'info');
   }, [setUser, showToast]);
 
   const addFunds = useCallback((amount, method = 'Deposit') => {
+    const deposit = Number(amount) || 0;
+    let email = null;
     setUser(prev => {
       if (!prev) return prev;
-      const deposit = Number(amount) || 0;
+      email = prev.email;
       return {
         ...prev,
         balance: prev.balance + deposit,
         lockedDepositBalance: (prev.lockedDepositBalance ?? 0) + deposit,
       };
     });
+    if (email) {
+      recordTx(email, {
+        type: 'deposit',
+        amount: deposit,
+        method,
+        label: `Deposit via ${method}`,
+      });
+    }
     showToast(
       `Deposited ${formatInr(amount)} via ${method}. Wager this amount before withdrawal.`,
       'success',
     );
-  }, [setUser, showToast]);
+  }, [setUser, showToast, recordTx]);
 
   const deductStake = useCallback(({ cashAmount = 0, bonusAmount = 0 } = {}) => {
     const cash = Number(cashAmount) || 0;
     const bonus = Number(bonusAmount) || 0;
-    const result = { success: false, pointsEarned: 0, wageringApplied: 0 };
+    const result = {
+      success: false,
+      pointsEarned: 0,
+      wageringApplied: 0,
+      winningsSpent: 0,
+    };
 
     setUser(prev => {
       if (!prev) return prev;
       if (cash > 0 && prev.balance < cash) return prev;
       if (bonus > 0 && (prev.bonusBalance ?? 0) < bonus) return prev;
 
-      const locked = prev.lockedDepositBalance ?? 0;
-      const wageringApplied = Math.min(cash, locked);
+      const allocation = allocateCashStake(prev, cash);
+      if (cash > 0 && allocation.total < cash) return prev;
+
       const spendTotal = cash + bonus;
       const pointsEarned = pointsFromSpend(spendTotal);
       const currentPoints = getUserLoyaltyPoints(prev);
@@ -284,13 +321,15 @@ export function AuthProvider({ children }) {
 
       result.success = true;
       result.pointsEarned = pointsEarned;
-      result.wageringApplied = wageringApplied;
+      result.wageringApplied = allocation.fromLocked;
+      result.winningsSpent = allocation.fromWinnings;
 
       return {
         ...prev,
         balance: prev.balance - cash,
         bonusBalance: (prev.bonusBalance ?? 0) - bonus,
-        lockedDepositBalance: locked - wageringApplied,
+        lockedDepositBalance: (prev.lockedDepositBalance ?? 0) - allocation.fromLocked,
+        winningsBalance: Math.max(0, (prev.winningsBalance ?? 0) - allocation.fromWinnings),
         loyaltyPoints: nextPoints,
         coins: nextPoints,
       };
@@ -302,17 +341,24 @@ export function AuthProvider({ children }) {
     return result;
   }, [setUser, showToast]);
 
-  const refundStake = useCallback(({ cashAmount = 0, bonusAmount = 0, wageringApplied = 0 } = {}) => {
+  const refundStake = useCallback(({
+    cashAmount = 0,
+    bonusAmount = 0,
+    wageringApplied = 0,
+    winningsSpent = 0,
+  } = {}) => {
     setUser(prev => {
       if (!prev) return prev;
       const cash = Number(cashAmount) || 0;
       const bonus = Number(bonusAmount) || 0;
       const wagering = Number(wageringApplied) || 0;
+      const winnings = Number(winningsSpent) || 0;
       return {
         ...prev,
         balance: prev.balance + cash,
         bonusBalance: (prev.bonusBalance ?? 0) + bonus,
         lockedDepositBalance: (prev.lockedDepositBalance ?? 0) + wagering,
+        winningsBalance: (prev.winningsBalance ?? 0) + winnings,
       };
     });
   }, [setUser]);
@@ -326,6 +372,7 @@ export function AuthProvider({ children }) {
     let redeemedPoints = 0;
     let creditedRupees = 0;
     let error = null;
+    let email = null;
 
     setUser(prev => {
       if (!prev) {
@@ -339,6 +386,7 @@ export function AuthProvider({ children }) {
       }
       redeemedPoints = points;
       creditedRupees = pointsToRupees(points);
+      email = prev.email;
       return {
         ...prev,
         balance: prev.balance + creditedRupees,
@@ -353,12 +401,20 @@ export function AuthProvider({ children }) {
       return { ok: false, error };
     }
 
+    if (email) {
+      recordTx(email, {
+        type: 'loyalty_redeem',
+        amount: creditedRupees,
+        label: `Loyalty redeem (${redeemedPoints} pts)`,
+      });
+    }
+
     showToast(
       'Redeemed ' + redeemedPoints + ' points - ' + formatInr(creditedRupees) + ' credited to wallet',
       'success',
     );
     return { ok: true, points: redeemedPoints, rupees: creditedRupees };
-  }, [setUser, showToast]);
+  }, [setUser, showToast, recordTx]);
 
   const updateUserBalance = useCallback((delta) => {
     let success = false;
@@ -378,8 +434,10 @@ export function AuthProvider({ children }) {
       return { cashCredit: 0, bonusCredit: 0, winningsCredit: 0 };
     }
 
+    let email = null;
     setUser(prev => {
       if (!prev) return prev;
+      email = prev.email;
       return {
         ...prev,
         balance: prev.balance + cashCredit,
@@ -387,13 +445,26 @@ export function AuthProvider({ children }) {
         winningsBalance: (prev.winningsBalance ?? 0) + winningsCredit,
       };
     });
+
+    if (email) {
+      recordTx(email, {
+        type: 'bet_win',
+        amount: cashCredit || bonusCredit,
+        winnings: winningsCredit,
+        label: winningsCredit > 0
+          ? `Bet won · ${formatInr(winningsCredit)} winnings`
+          : 'Bet settled',
+      });
+    }
+
     return { cashCredit, bonusCredit, winningsCredit };
-  }, [setUser]);
+  }, [setUser, recordTx]);
 
   const withdrawFunds = useCallback((amount) => {
     const amt = Number(amount) || 0;
     let success = false;
     let maxWithdrawable = 0;
+    let email = null;
 
     setUser(prev => {
       if (!prev) return prev;
@@ -401,28 +472,46 @@ export function AuthProvider({ children }) {
       if (amt <= 0 || amt > maxWithdrawable) return prev;
       if (prev.balance < amt) return prev;
       success = true;
+      email = prev.email;
       return {
         ...prev,
         balance: prev.balance - amt,
-        winningsBalance: (prev.winningsBalance ?? 0) - amt,
+        winningsBalance: Math.max(0, (prev.winningsBalance ?? 0) - amt),
       };
     });
 
+    if (success && email) {
+      recordTx(email, {
+        type: 'withdraw',
+        amount: -amt,
+        label: 'Instant UPI withdrawal',
+      });
+    }
+
     return { success, maxWithdrawable };
-  }, [setUser]);
+  }, [setUser, recordTx]);
 
   const refundWithdrawal = useCallback((amount) => {
     const amt = Number(amount) || 0;
     if (amt <= 0) return;
+    let email = null;
     setUser(prev => {
       if (!prev) return prev;
+      email = prev.email;
       return {
         ...prev,
         balance: prev.balance + amt,
         winningsBalance: (prev.winningsBalance ?? 0) + amt,
       };
     });
-  }, [setUser]);
+    if (email) {
+      recordTx(email, {
+        type: 'withdraw_cancel',
+        amount: amt,
+        label: 'Withdrawal cancelled · refund',
+      });
+    }
+  }, [setUser, recordTx]);
 
   const openLoginModal = useCallback(() => setIsLoginModalOpen(true), []);
   const closeLoginModal = useCallback(() => setIsLoginModalOpen(false), []);
@@ -430,6 +519,8 @@ export function AuthProvider({ children }) {
   const closeDepositModal = useCallback(() => setIsDepositModalOpen(false), []);
   const toggleSidebar = useCallback(() => setIsSidebarOpen(prev => !prev), []);
   const closeSidebar = useCallback(() => setIsSidebarOpen(false), []);
+  const openFinModal = useCallback((type) => setFinModalType(type), []);
+  const closeFinModal = useCallback(() => setFinModalType(null), []);
 
   const value = useMemo(() => ({
     user,
@@ -448,6 +539,7 @@ export function AuthProvider({ children }) {
     creditBetWin,
     withdrawFunds,
     refundWithdrawal,
+    transactions,
     toast,
     showToast,
     dismissToast,
@@ -460,6 +552,9 @@ export function AuthProvider({ children }) {
     isSidebarOpen,
     toggleSidebar,
     closeSidebar,
+    finModalType,
+    openFinModal,
+    closeFinModal,
   }), [
     user,
     register,
@@ -476,6 +571,7 @@ export function AuthProvider({ children }) {
     creditBetWin,
     withdrawFunds,
     refundWithdrawal,
+    transactions,
     toast,
     showToast,
     dismissToast,
@@ -488,6 +584,9 @@ export function AuthProvider({ children }) {
     isSidebarOpen,
     toggleSidebar,
     closeSidebar,
+    finModalType,
+    openFinModal,
+    closeFinModal,
   ]);
 
   return (

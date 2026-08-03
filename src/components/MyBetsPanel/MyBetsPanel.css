@@ -161,6 +161,26 @@
   letter-spacing: 0.04em;
 }
 
+.my-bets-fund-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 0.65rem;
+  font-weight: var(--font-bold);
+  letter-spacing: 0.04em;
+}
+
+.my-bets-fund-badge--cash {
+  background: rgba(34, 197, 94, 0.12);
+  color: #16a34a;
+}
+
+.my-bets-fund-badge--bonus {
+  background: rgba(168, 85, 247, 0.12);
+  color: #9333ea;
+}
+
 .my-bets-time {
   font-size: var(--text-xs);
   color: var(--color-text-muted);

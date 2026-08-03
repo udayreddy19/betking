@@ -78,6 +78,7 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
           cashAmount,
           bonusAmount,
           wageringApplied: deducted.wageringApplied,
+          winningsSpent: deducted.winningsSpent,
         });
         showToast(result.error || 'Could not place bet.', 'error');
         return;

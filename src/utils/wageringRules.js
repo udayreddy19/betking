@@ -13,7 +13,7 @@ export function qualifiesForBonusWithdrawal(bet) {
 }
 
 export function getWinningsAmount(user) {
-  return user?.winningsBalance ?? 0;
+  return Math.max(0, user?.winningsBalance ?? 0);
 }
 
 /** Only bet winnings can be withdrawn — not locked deposits or bonus */
@@ -22,7 +22,32 @@ export function getWithdrawableAmount(user) {
 }
 
 export function getLockedDepositAmount(user) {
-  return user?.lockedDepositBalance ?? 0;
+  return Math.max(0, user?.lockedDepositBalance ?? 0);
+}
+
+/**
+ * Split a cash stake across locked deposits, playable cash, then winnings.
+ * Locked deposits are wagered first to clear playthrough.
+ */
+export function allocateCashStake(user, cashAmount) {
+  const cash = Math.max(0, Number(cashAmount) || 0);
+  const balance = user?.balance ?? 0;
+  const locked = getLockedDepositAmount(user);
+  const winnings = getWinningsAmount(user);
+  const unlockedNonWinnings = Math.max(0, balance - locked - winnings);
+
+  const fromLocked = Math.min(cash, locked);
+  let remaining = cash - fromLocked;
+  const fromNonWinnings = Math.min(remaining, unlockedNonWinnings);
+  remaining -= fromNonWinnings;
+  const fromWinnings = Math.min(remaining, winnings);
+
+  return {
+    fromLocked,
+    fromNonWinnings,
+    fromWinnings,
+    total: fromLocked + fromNonWinnings + fromWinnings,
+  };
 }
 
 /** Split bet win payout: balance (playable), bonus recycle, and withdrawable winnings */
@@ -41,7 +66,7 @@ export function splitBetWinPayout(bet) {
   if (bonusStake > 0) {
     const bonusShare = (bonusStake / stake) * payout;
     if (qualifiesForBonusWithdrawal(bet)) {
-      const profit = bonusShare - bonusStake;
+      const profit = Math.max(0, bonusShare - bonusStake);
       cashCredit += profit;
       winningsCredit += profit;
     } else {
@@ -51,7 +76,7 @@ export function splitBetWinPayout(bet) {
 
   if (cashStake > 0) {
     const cashPayout = (cashStake / stake) * payout;
-    const profit = cashPayout - cashStake;
+    const profit = Math.max(0, cashPayout - cashStake);
     cashCredit += cashPayout;
     winningsCredit += profit;
   }

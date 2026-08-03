@@ -55,6 +55,9 @@ export default function MyBetsPanel() {
                 <div className="my-bets-card-top">
                   <div className="my-bets-card-badges">
                     <span className="my-bets-type-badge">{placed.type === 'multi' ? 'MULTI' : 'SINGLE'}</span>
+                    <span className={`my-bets-fund-badge my-bets-fund-badge--${placed.fundSource || 'cash'}`}>
+                      {(placed.fundSource || 'cash').toUpperCase()}
+                    </span>
                     <span className={`my-bets-status-badge my-bets-status-badge--${placed.status || 'pending'}`}>
                       {(placed.status || 'pending').toUpperCase()}
                     </span>

@@ -4,7 +4,7 @@ import { MotionConfig } from 'motion/react';
 import { ThemeProvider } from './context/ThemeContext';
 import { BetSlipProvider } from './context/BetSlipContext';
 import { LiveSportsProvider } from './context/LiveSportsContext';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { CasinoProvider } from './context/CasinoContext';
 
 import Header from './components/Header/Header';
@@ -13,6 +13,7 @@ import Sidebar from './components/Sidebar/Sidebar';
 import LoginModal from './components/LoginModal/LoginModal';
 import DepositModal from './components/DepositModal/DepositModal';
 import Toast from './components/Toast/Toast';
+import FinancialModals from './components/FinancialModals/FinancialModals';
 import MobileBetSlip from './components/MobileBetSlip/MobileBetSlip';
 import GlobalBetBar from './components/GlobalBetBar/GlobalBetBar';
 import BetSettlementRunner from './components/BetSettlementRunner/BetSettlementRunner';
@@ -44,6 +45,7 @@ function AppLayout() {
       <Sidebar />
       <LoginModal />
       <DepositModal />
+      <AppFinancialModals />
       <Toast />
       <GamePlayModal />
       <BetSettlementRunner />
@@ -72,6 +74,11 @@ function AppLayout() {
       <Footer />
     </>
   );
+}
+
+function AppFinancialModals() {
+  const { finModalType, closeFinModal } = useAuth();
+  return <FinancialModals modalType={finModalType} onClose={closeFinModal} />;
 }
 
 export default function App() {
