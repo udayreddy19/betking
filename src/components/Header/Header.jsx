@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { HiOutlineMenu, HiOutlineClipboardList, IoGiftOutline, FiChevronDown } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
+import { getWalletBreakdown, formatInr } from '../../utils/walletBalance';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
 import MyBetsPanel from '../MyBetsPanel/MyBetsPanel';
 import PromotionsPanel from '../PromotionsPanel/PromotionsPanel';
@@ -32,11 +33,14 @@ function Header() {
   const { myBetsCount, isMyBetsOpen, toggleMyBets, closeMyBets } = useBetSlip();
   const [isPromosOpen, setIsPromosOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const [isWalletOpen, setIsWalletOpen] = useState(false);
   const moreRef = useRef(null);
+  const walletRef = useRef(null);
   const navigate = useNavigate();
 
+  const wallet = getWalletBreakdown(user);
+
   const coins = user?.coins ?? 58;
-  const balance = user?.balance ?? 0;
 
   useEffect(() => {
     if (!isMoreOpen) return undefined;
@@ -46,6 +50,15 @@ function Header() {
     document.addEventListener('mousedown', close);
     return () => document.removeEventListener('mousedown', close);
   }, [isMoreOpen]);
+
+  useEffect(() => {
+    if (!isWalletOpen) return undefined;
+    const close = (e) => {
+      if (walletRef.current && !walletRef.current.contains(e.target)) setIsWalletOpen(false);
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [isWalletOpen]);
 
   const togglePromos = useCallback(() => {
     setIsPromosOpen((open) => {
@@ -142,16 +155,53 @@ function Header() {
 
           {isLoggedIn ? (
             <>
-              <div className="header-wallet-group">
+              <div className="header-wallet-group" ref={walletRef}>
                 <div className="header-loyalty-ring" title="Loyalty points">
                   <span className="header-loyalty-icon">⭐</span>
                   <span>{coins}</span>
                 </div>
-                <button type="button" className="header-balance" id="header-balance" onClick={openDepositModal}>
-                  <span className="balance-wallet-icon">👛</span>
-                  <span>₹{balance.toLocaleString('en-IN')}</span>
-                  <FiChevronDown className="balance-chevron" />
-                </button>
+                <div className="header-wallet-dropdown-wrap">
+                  <button
+                    type="button"
+                    className={`header-balance ${isWalletOpen ? 'active' : ''}`}
+                    id="header-balance"
+                    onClick={() => setIsWalletOpen((open) => !open)}
+                    aria-expanded={isWalletOpen}
+                    aria-haspopup="true"
+                  >
+                    <span className="balance-wallet-icon">👛</span>
+                    <span>{formatInr(wallet.total)}</span>
+                    <FiChevronDown className={`balance-chevron ${isWalletOpen ? 'open' : ''}`} />
+                  </button>
+                  {isWalletOpen && (
+                    <div className="header-wallet-menu" role="menu">
+                      <div className="header-wallet-menu__row">
+                        <span className="header-wallet-menu__label">Balance</span>
+                        <span className="header-wallet-menu__value">{formatInr(wallet.total)}</span>
+                      </div>
+                      <div className="header-wallet-menu__row">
+                        <span className="header-wallet-menu__label">Bonus / Freebets</span>
+                        <span className="header-wallet-menu__value header-wallet-menu__value--bonus">
+                          {formatInr(wallet.bonusAndFreebets)}
+                        </span>
+                      </div>
+                      <div className="header-wallet-menu__row header-wallet-menu__row--highlight">
+                        <span className="header-wallet-menu__label">Withdrawable balance</span>
+                        <span className="header-wallet-menu__value">{formatInr(wallet.withdrawable)}</span>
+                      </div>
+                      <button
+                        type="button"
+                        className="header-wallet-menu__deposit"
+                        onClick={() => {
+                          setIsWalletOpen(false);
+                          openDepositModal();
+                        }}
+                      >
+                        Deposit
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
               <button className="header-deposit-btn" onClick={openDepositModal} id="deposit-btn">
                 Deposit
