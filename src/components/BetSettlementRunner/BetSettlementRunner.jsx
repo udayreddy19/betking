@@ -26,15 +26,15 @@ export default function BetSettlementRunner() {
     for (const bet of newlySettled) {
       creditedRef.current.add(bet.id);
       if (bet.status === 'won' && bet.payout > 0) {
-        const { cashCredit, bonusCredit, winningsCredit } = creditBetWin(bet);
+        const { cashCredit, bonusCredit, freebetCredit, winningsCredit } = creditBetWin(bet);
         if (winningsCredit > 0) {
           showToast(
             `Bet won! ${formatInr(winningsCredit)} winnings added (withdrawable)`,
             'success',
           );
-        } else if (bonusCredit > 0) {
+        } else if (bonusCredit > 0 || freebetCredit > 0) {
           showToast(
-            `${formatInr(bonusCredit)} returned to bonus (winnings not withdrawable at these odds)`,
+            `${formatInr(bonusCredit || freebetCredit)} returned to ${bonusCredit > 0 ? 'bonus' : 'freebet'} (not withdrawable at these odds)`,
             'info',
           );
         } else if (cashCredit > 0) {

@@ -1,11 +1,24 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { IoClose } from '../../icons';
 import { useBetSlip } from '../../context/BetSlipContext';
+import { useAuth } from '../../context/AuthContext';
+import { getCashoutOffer } from '../../utils/wageringRules';
+import { formatInr } from '../../utils/walletBalance';
 import './MyBetsPanel.css';
 
+const FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'pending', label: 'Open' },
+  { id: 'won', label: 'Won' },
+  { id: 'lost', label: 'Lost' },
+  { id: 'cashed_out', label: 'Cash out' },
+];
+
 export default function MyBetsPanel() {
-  const { placedBets, myBetsCount, isMyBetsOpen, closeMyBets } = useBetSlip();
+  const { placedBets, myBetsCount, isMyBetsOpen, closeMyBets, cashOutBet } = useBetSlip();
+  const { creditCashout, showToast } = useAuth();
   const panelRef = useRef(null);
+  const [filter, setFilter] = useState('all');
 
   useEffect(() => {
     if (!isMyBetsOpen) return undefined;
@@ -31,6 +44,25 @@ export default function MyBetsPanel() {
 
   if (!isMyBetsOpen) return null;
 
+  const filtered = filter === 'all'
+    ? placedBets
+    : placedBets.filter((b) => (b.status || 'pending') === filter);
+
+  const handleCashout = (bet) => {
+    const offer = getCashoutOffer(bet);
+    if (offer <= 0) {
+      showToast('Cash out not available for this bet.', 'info');
+      return;
+    }
+    const cashed = cashOutBet(bet.id);
+    if (!cashed) {
+      showToast('Could not cash out.', 'error');
+      return;
+    }
+    creditCashout(cashed.cashoutAmount || offer, cashed.id);
+    showToast(`Cashed out for ${formatInr(cashed.cashoutAmount || offer)}`, 'success');
+  };
+
   return (
     <>
       <div className="my-bets-backdrop" onClick={closeMyBets} aria-hidden="true" />
@@ -42,69 +74,100 @@ export default function MyBetsPanel() {
           </button>
         </div>
 
+        <div className="my-bets-filters">
+          {FILTERS.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              className={`my-bets-filter ${filter === f.id ? 'active' : ''}`}
+              onClick={() => setFilter(f.id)}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
         <div className="my-bets-body">
-          {placedBets.length === 0 ? (
+          {filtered.length === 0 ? (
             <div className="my-bets-empty">
               <div className="my-bets-empty-icon">📋</div>
-              <h4>No active bets</h4>
-              <p>Your placed bets will appear here</p>
+              <h4>No bets here</h4>
+              <p>{filter === 'all' ? 'Your placed bets will appear here' : `No ${filter.replace('_', ' ')} bets`}</p>
             </div>
           ) : (
-            placedBets.map((placed) => (
-              <div className={`my-bets-card my-bets-card--${placed.status || 'pending'}`} key={placed.id}>
-                <div className="my-bets-card-top">
-                  <div className="my-bets-card-badges">
-                    <span className="my-bets-type-badge">{placed.type === 'multi' ? 'MULTI' : 'SINGLE'}</span>
-                    <span className={`my-bets-fund-badge my-bets-fund-badge--${placed.fundSource || 'cash'}`}>
-                      {(placed.fundSource || 'cash').toUpperCase()}
-                    </span>
-                    <span className={`my-bets-status-badge my-bets-status-badge--${placed.status || 'pending'}`}>
-                      {(placed.status || 'pending').toUpperCase()}
-                    </span>
-                  </div>
-                  <span className="my-bets-time">
-                    {new Date(placed.placedAt).toLocaleString('en-IN')}
-                  </span>
-                </div>
-
-                {placed.legs.map((leg) => (
-                  <div key={leg.id} className="my-bets-leg">
-                    <div className="my-bets-market">{leg.marketName}</div>
-                    <div className="my-bets-selection-row">
-                      <span className="my-bets-selection">{leg.selectionName}</span>
-                      <span className="my-bets-odds">{Number(leg.odds).toFixed(2)}</span>
+            filtered.map((placed) => {
+              const cashoutOffer = getCashoutOffer(placed);
+              return (
+                <div className={`my-bets-card my-bets-card--${placed.status || 'pending'}`} key={placed.id}>
+                  <div className="my-bets-card-top">
+                    <div className="my-bets-card-badges">
+                      <span className="my-bets-type-badge">{placed.type === 'multi' ? 'MULTI' : 'SINGLE'}</span>
+                      <span className={`my-bets-fund-badge my-bets-fund-badge--${placed.fundSource || 'cash'}`}>
+                        {(placed.fundSource || 'cash').toUpperCase()}
+                      </span>
+                      <span className={`my-bets-status-badge my-bets-status-badge--${placed.status || 'pending'}`}>
+                        {(placed.status || 'pending').replace('_', ' ').toUpperCase()}
+                      </span>
                     </div>
-                    <div className="my-bets-match">{leg.matchName}</div>
+                    <span className="my-bets-time">
+                      {new Date(placed.placedAt).toLocaleString('en-IN')}
+                    </span>
                   </div>
-                ))}
 
-                <div className="my-bets-summary">
-                  <span className="label">Stake</span>
-                  <span className="value">₹{placed.stake.toFixed(2)}</span>
-                </div>
-                {placed.type === 'multi' && (
+                  {placed.legs.map((leg) => (
+                    <div key={leg.id} className="my-bets-leg">
+                      <div className="my-bets-market">{leg.marketName}</div>
+                      <div className="my-bets-selection-row">
+                        <span className="my-bets-selection">{leg.selectionName}</span>
+                        <span className="my-bets-odds">{Number(leg.odds).toFixed(2)}</span>
+                      </div>
+                      <div className="my-bets-match">{leg.matchName}</div>
+                    </div>
+                  ))}
+
                   <div className="my-bets-summary">
-                    <span className="label">Total odds</span>
-                    <span className="value">{Number(placed.totalOdds).toFixed(2)}</span>
+                    <span className="label">Stake</span>
+                    <span className="value">₹{placed.stake.toFixed(2)}</span>
                   </div>
-                )}
-                <div className="my-bets-summary">
-                  <span className="label">Potential return</span>
-                  <span className="value">₹{placed.potentialReturn.toFixed(2)}</span>
+                  {placed.type === 'multi' && (
+                    <div className="my-bets-summary">
+                      <span className="label">Total odds</span>
+                      <span className="value">{Number(placed.totalOdds).toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="my-bets-summary">
+                    <span className="label">Potential return</span>
+                    <span className="value">₹{placed.potentialReturn.toFixed(2)}</span>
+                  </div>
+                  {placed.status === 'won' && placed.payout > 0 && (
+                    <div className="my-bets-summary my-bets-summary--won">
+                      <span className="label">Payout</span>
+                      <span className="value">₹{placed.payout.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {placed.status === 'cashed_out' && (
+                    <div className="my-bets-summary my-bets-summary--won">
+                      <span className="label">Cashed out</span>
+                      <span className="value">₹{(placed.cashoutAmount || placed.payout || 0).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {cashoutOffer > 0 && (
+                    <button
+                      type="button"
+                      className="my-bets-cashout-btn"
+                      onClick={() => handleCashout(placed)}
+                    >
+                      Cash out {formatInr(cashoutOffer)}
+                    </button>
+                  )}
+                  {placed.settledAt && (
+                    <div className="my-bets-settled-at">
+                      Settled {new Date(placed.settledAt).toLocaleString('en-IN')}
+                    </div>
+                  )}
                 </div>
-                {placed.status === 'won' && placed.payout > 0 && (
-                  <div className="my-bets-summary my-bets-summary--won">
-                    <span className="label">Payout</span>
-                    <span className="value">₹{placed.payout.toFixed(2)}</span>
-                  </div>
-                )}
-                {placed.settledAt && (
-                  <div className="my-bets-settled-at">
-                    Settled {new Date(placed.settledAt).toLocaleString('en-IN')}
-                  </div>
-                )}
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>

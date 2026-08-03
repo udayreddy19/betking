@@ -21,6 +21,14 @@ export default function Terms() {
           You are responsible for keeping your login credentials secure. We may require identity verification for withdrawals and compliance.
         </p>
       </section>
+      <section>
+        <h2>4. Wagering & withdrawals</h2>
+        <p>
+          Deposited funds must be placed on bets before they can contribute to withdrawable balance.
+          Only bet winnings (and eligible bonus/freebet profits meeting minimum odds) may be withdrawn.
+          Bonus and freebet balances are not directly withdrawable.
+        </p>
+      </section>
       <p><Link to="/">← Back to home</Link></p>
     </div>
   );

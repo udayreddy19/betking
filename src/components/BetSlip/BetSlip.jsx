@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { IoClose, IoSettingsOutline } from '../../icons';
 import SportIcon from '../SportIcon/SportIcon';
 import { useBetSlip } from '../../context/BetSlipContext';
 import BetSlipFooter from './BetSlipFooter';
+import { MIN_STAKE_INR, BONUS_MIN_BET_ODDS, BONUS_MIN_WITHDRAW_ODDS } from '../../utils/wageringRules';
 import './BetSlip.css';
 
 function formatBetTime(timestamp) {
@@ -16,6 +18,7 @@ export default function BetSlip() {
     betCount,
     betType, setBetType, singlesStakes, setSingleStake,
   } = useBetSlip();
+  const [showSettings, setShowSettings] = useState(false);
 
   return (
     <div className="betslip" id="betslip">
@@ -26,10 +29,25 @@ export default function BetSlip() {
         {betCount > 0 && (
           <button type="button" className="betslip-clear" onClick={clearAll}>Clear all</button>
         )}
-        <button className="betslip-settings" type="button" aria-label="Betslip settings">
+        <button
+          className="betslip-settings"
+          type="button"
+          aria-label="Betslip settings"
+          aria-expanded={showSettings}
+          onClick={() => setShowSettings((v) => !v)}
+        >
           <IoSettingsOutline />
         </button>
       </div>
+
+      {showSettings && (
+        <div className="betslip-settings-panel">
+          <p><strong>Min stake:</strong> ₹{MIN_STAKE_INR}</p>
+          <p><strong>Bonus/Freebet:</strong> odds ≥ {BONUS_MIN_BET_ODDS.toFixed(2)}</p>
+          <p><strong>Withdrawable bonus wins:</strong> odds ≥ {BONUS_MIN_WITHDRAW_ODDS.toFixed(2)}</p>
+          <p>Deposits must be wagered before withdrawal. Only Winnings can be withdrawn.</p>
+        </div>
+      )}
 
       {betCount > 0 && (
         <div className="betslip-type-toggle">
@@ -80,7 +98,7 @@ export default function BetSlip() {
                   <input
                     id={`stake-${bet.id}`}
                     type="number"
-                    min="0"
+                    min={MIN_STAKE_INR}
                     value={singlesStakes[bet.id] ?? ''}
                     onChange={e => setSingleStake(bet.id, e.target.value)}
                     placeholder="0.00"

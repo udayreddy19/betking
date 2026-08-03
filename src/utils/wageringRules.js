@@ -1,6 +1,9 @@
-/** Bonus bets require min odds; only winnings from 1.85+ odds are withdrawable */
+/** Bonus / freebet odds gates; only winnings are withdrawable */
 export const BONUS_MIN_BET_ODDS = 1.80;
 export const BONUS_MIN_WITHDRAW_ODDS = 1.85;
+export const MIN_STAKE_INR = 10;
+/** Early cashout pays this fraction of potential return */
+export const CASHOUT_OFFER_RATIO = 0.72;
 
 export function canBetWithBonusOnLegs(legs) {
   if (!legs?.length) return false;
@@ -23,6 +26,14 @@ export function getWithdrawableAmount(user) {
 
 export function getLockedDepositAmount(user) {
   return Math.max(0, user?.lockedDepositBalance ?? 0);
+}
+
+export function getCashoutOffer(bet) {
+  if (!bet || bet.status !== 'pending') return 0;
+  if (bet.fundSource === 'bonus' || bet.fundSource === 'freebet') return 0;
+  const potential = Number(bet.potentialReturn) || 0;
+  if (potential <= 0) return 0;
+  return Math.round(potential * CASHOUT_OFFER_RATIO * 100) / 100;
 }
 
 /**
@@ -50,17 +61,21 @@ export function allocateCashStake(user, cashAmount) {
   };
 }
 
-/** Split bet win payout: balance (playable), bonus recycle, and withdrawable winnings */
+/** Split bet win payout: balance (playable), bonus recycle, freebet profit, winnings */
 export function splitBetWinPayout(bet) {
   const payout = Number(bet.payout) || 0;
   const stake = Number(bet.stake) || 0;
-  if (payout <= 0 || stake <= 0) return { cashCredit: 0, bonusCredit: 0, winningsCredit: 0 };
+  if (payout <= 0 || stake <= 0) {
+    return { cashCredit: 0, bonusCredit: 0, freebetCredit: 0, winningsCredit: 0 };
+  }
 
   const bonusStake = Number(bet.bonusStake) || 0;
+  const freebetStake = Number(bet.freebetStake) || (bet.fundSource === 'freebet' ? stake : 0);
   const cashStake = Number(bet.cashStake) || (bet.fundSource === 'cash' ? stake : 0);
 
   let cashCredit = 0;
   let bonusCredit = 0;
+  let freebetCredit = 0;
   let winningsCredit = 0;
 
   if (bonusStake > 0) {
@@ -74,6 +89,17 @@ export function splitBetWinPayout(bet) {
     }
   }
 
+  if (freebetStake > 0) {
+    const freeShare = (freebetStake / stake) * payout;
+    const profit = Math.max(0, freeShare - freebetStake);
+    if (qualifiesForBonusWithdrawal(bet)) {
+      cashCredit += profit;
+      winningsCredit += profit;
+    } else {
+      freebetCredit += freebetStake;
+    }
+  }
+
   if (cashStake > 0) {
     const cashPayout = (cashStake / stake) * payout;
     const profit = Math.max(0, cashPayout - cashStake);
@@ -81,5 +107,5 @@ export function splitBetWinPayout(bet) {
     winningsCredit += profit;
   }
 
-  return { cashCredit, bonusCredit, winningsCredit };
+  return { cashCredit, bonusCredit, freebetCredit, winningsCredit };
 }

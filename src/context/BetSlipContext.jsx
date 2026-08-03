@@ -162,7 +162,9 @@ export function BetSlipProvider({ children }) {
   }, [bets, betType, stake, singlesStakes, multiOdds]);
 
   const placeBets = useCallback((options = {}) => {
-    const stakeSource = options.stakeSource === 'bonus' ? 'bonus' : 'cash';
+    const stakeSource = ['bonus', 'freebet'].includes(options.stakeSource)
+      ? options.stakeSource
+      : 'cash';
 
     if (bets.length === 0) {
       return { success: false, error: 'Your betslip is empty' };
@@ -173,6 +175,7 @@ export function BetSlipProvider({ children }) {
       fundSource: stakeSource,
       cashStake: stakeSource === 'cash' ? stakeAmount : 0,
       bonusStake: stakeSource === 'bonus' ? stakeAmount : 0,
+      freebetStake: stakeSource === 'freebet' ? stakeAmount : 0,
     });
 
     if (betType === 'multi') {
@@ -231,6 +234,27 @@ export function BetSlipProvider({ children }) {
     return { success: true, placed: placements, totalDeducted, stakeSource };
   }, [bets, betType, stake, singlesStakes, multiOdds]);
 
+  const cashOutBet = useCallback((betId) => {
+    const target = placedBets.find(
+      (bet) => bet.id === betId
+        && bet.status === 'pending'
+        && bet.fundSource !== 'bonus'
+        && bet.fundSource !== 'freebet',
+    );
+    if (!target) return null;
+    const offer = Math.round((Number(target.potentialReturn) || 0) * 0.72 * 100) / 100;
+    if (offer <= 0) return null;
+    const cashed = {
+      ...target,
+      status: 'cashed_out',
+      payout: offer,
+      cashoutAmount: offer,
+      cashedOutAt: new Date().toISOString(),
+    };
+    setPlacedBets((prev) => prev.map((bet) => (bet.id === betId ? cashed : bet)));
+    return cashed;
+  }, [placedBets]);
+
   const applySettledBets = useCallback((nextBets) => {
     setPlacedBets(nextBets);
   }, []);
@@ -242,6 +266,7 @@ export function BetSlipProvider({ children }) {
     removeBet,
     clearAll,
     placeBets,
+    cashOutBet,
     applySettledBets,
     isBetSelected,
     stake,
@@ -269,6 +294,7 @@ export function BetSlipProvider({ children }) {
     removeBet,
     clearAll,
     placeBets,
+    cashOutBet,
     applySettledBets,
     isBetSelected,
     stake,

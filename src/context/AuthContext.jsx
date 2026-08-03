@@ -296,9 +296,10 @@ export function AuthProvider({ children }) {
     );
   }, [setUser, showToast, recordTx]);
 
-  const deductStake = useCallback(({ cashAmount = 0, bonusAmount = 0 } = {}) => {
+  const deductStake = useCallback(({ cashAmount = 0, bonusAmount = 0, freebetAmount = 0 } = {}) => {
     const cash = Number(cashAmount) || 0;
     const bonus = Number(bonusAmount) || 0;
+    const freebet = Number(freebetAmount) || 0;
     const result = {
       success: false,
       pointsEarned: 0,
@@ -310,11 +311,12 @@ export function AuthProvider({ children }) {
       if (!prev) return prev;
       if (cash > 0 && prev.balance < cash) return prev;
       if (bonus > 0 && (prev.bonusBalance ?? 0) < bonus) return prev;
+      if (freebet > 0 && (prev.freebetBalance ?? 0) < freebet) return prev;
 
       const allocation = allocateCashStake(prev, cash);
       if (cash > 0 && allocation.total < cash) return prev;
 
-      const spendTotal = cash + bonus;
+      const spendTotal = cash + bonus + freebet;
       const pointsEarned = pointsFromSpend(spendTotal);
       const currentPoints = getUserLoyaltyPoints(prev);
       const nextPoints = currentPoints + pointsEarned;
@@ -328,6 +330,7 @@ export function AuthProvider({ children }) {
         ...prev,
         balance: prev.balance - cash,
         bonusBalance: (prev.bonusBalance ?? 0) - bonus,
+        freebetBalance: (prev.freebetBalance ?? 0) - freebet,
         lockedDepositBalance: (prev.lockedDepositBalance ?? 0) - allocation.fromLocked,
         winningsBalance: Math.max(0, (prev.winningsBalance ?? 0) - allocation.fromWinnings),
         loyaltyPoints: nextPoints,
@@ -344,6 +347,7 @@ export function AuthProvider({ children }) {
   const refundStake = useCallback(({
     cashAmount = 0,
     bonusAmount = 0,
+    freebetAmount = 0,
     wageringApplied = 0,
     winningsSpent = 0,
   } = {}) => {
@@ -351,12 +355,14 @@ export function AuthProvider({ children }) {
       if (!prev) return prev;
       const cash = Number(cashAmount) || 0;
       const bonus = Number(bonusAmount) || 0;
+      const freebet = Number(freebetAmount) || 0;
       const wagering = Number(wageringApplied) || 0;
       const winnings = Number(winningsSpent) || 0;
       return {
         ...prev,
         balance: prev.balance + cash,
         bonusBalance: (prev.bonusBalance ?? 0) + bonus,
+        freebetBalance: (prev.freebetBalance ?? 0) + freebet,
         lockedDepositBalance: (prev.lockedDepositBalance ?? 0) + wagering,
         winningsBalance: (prev.winningsBalance ?? 0) + winnings,
       };
@@ -429,9 +435,9 @@ export function AuthProvider({ children }) {
   }, [setUser]);
 
   const creditBetWin = useCallback((bet) => {
-    const { cashCredit, bonusCredit, winningsCredit } = splitBetWinPayout(bet);
-    if (cashCredit <= 0 && bonusCredit <= 0 && winningsCredit <= 0) {
-      return { cashCredit: 0, bonusCredit: 0, winningsCredit: 0 };
+    const { cashCredit, bonusCredit, freebetCredit, winningsCredit } = splitBetWinPayout(bet);
+    if (cashCredit <= 0 && bonusCredit <= 0 && freebetCredit <= 0 && winningsCredit <= 0) {
+      return { cashCredit: 0, bonusCredit: 0, freebetCredit: 0, winningsCredit: 0 };
     }
 
     let email = null;
@@ -442,6 +448,7 @@ export function AuthProvider({ children }) {
         ...prev,
         balance: prev.balance + cashCredit,
         bonusBalance: (prev.bonusBalance ?? 0) + bonusCredit,
+        freebetBalance: (prev.freebetBalance ?? 0) + freebetCredit,
         winningsBalance: (prev.winningsBalance ?? 0) + winningsCredit,
       };
     });
@@ -449,7 +456,7 @@ export function AuthProvider({ children }) {
     if (email) {
       recordTx(email, {
         type: 'bet_win',
-        amount: cashCredit || bonusCredit,
+        amount: cashCredit || bonusCredit || freebetCredit,
         winnings: winningsCredit,
         label: winningsCredit > 0
           ? `Bet won · ${formatInr(winningsCredit)} winnings`
@@ -457,7 +464,30 @@ export function AuthProvider({ children }) {
       });
     }
 
-    return { cashCredit, bonusCredit, winningsCredit };
+    return { cashCredit, bonusCredit, freebetCredit, winningsCredit };
+  }, [setUser, recordTx]);
+
+  const creditCashout = useCallback((amount, betId) => {
+    const amt = Number(amount) || 0;
+    if (amt <= 0) return false;
+    let email = null;
+    setUser(prev => {
+      if (!prev) return prev;
+      email = prev.email;
+      return {
+        ...prev,
+        balance: prev.balance + amt,
+        winningsBalance: (prev.winningsBalance ?? 0) + amt,
+      };
+    });
+    if (email) {
+      recordTx(email, {
+        type: 'cashout',
+        amount: amt,
+        label: `Cash out${betId ? ` · ${String(betId).slice(-6)}` : ''}`,
+      });
+    }
+    return true;
   }, [setUser, recordTx]);
 
   const withdrawFunds = useCallback((amount) => {
@@ -537,6 +567,7 @@ export function AuthProvider({ children }) {
     redeemLoyaltyPoints,
     updateUserBalance,
     creditBetWin,
+    creditCashout,
     withdrawFunds,
     refundWithdrawal,
     transactions,
@@ -569,6 +600,7 @@ export function AuthProvider({ children }) {
     redeemLoyaltyPoints,
     updateUserBalance,
     creditBetWin,
+    creditCashout,
     withdrawFunds,
     refundWithdrawal,
     transactions,
