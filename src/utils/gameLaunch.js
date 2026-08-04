@@ -12,7 +12,7 @@ function getLobbyReturnUrl() {
 /** Apply current site as return/lobby URL on a launch config */
 export function withLobbyUrl(config) {
   if (!config) return null;
-  const lobby = encodeURIComponent(getLobbyReturnUrl());
+  const _lobby = encodeURIComponent(getLobbyReturnUrl());
   let startUrl = config.startUrl;
 
   try {

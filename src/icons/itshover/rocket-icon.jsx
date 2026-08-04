@@ -66,14 +66,6 @@ const RocketIcon = forwardRef(
       stopAnimation: stop,
     }));
 
-    const handleHoverStart = () => {
-      start();
-    };
-
-    const handleHoverEnd = () => {
-      stop();
-    };
-
     return (
       <motion.svg
         ref={scope}

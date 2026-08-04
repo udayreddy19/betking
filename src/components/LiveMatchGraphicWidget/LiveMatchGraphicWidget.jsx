@@ -280,6 +280,8 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
   const sport = match?.sport || 'cricket';
   const team1 = match?.team1?.name || 'Team 1';
   const team2 = match?.team2?.name || 'Team 2';
+  const team1Short = getTeamShort(team1);
+  const team2Short = getTeamShort(team2);
 
   const resolvedScores = useMemo(
     () => resolveCricketTeamScores(match, match?.liveDetails || {}),

@@ -71,7 +71,7 @@ export default function DepositModal() {
         if (orderRes.ok) {
           order = await orderRes.json();
         }
-      } catch (_err) {
+      } catch {
         console.warn('Backend order creation endpoint unavailable, attempting client initialization...');
       }
 

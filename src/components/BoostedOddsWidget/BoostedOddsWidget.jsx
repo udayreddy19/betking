@@ -1,6 +1,5 @@
 import { FiZap, FiFlame, FiClock, FiPlusCircle, FiCheck } from '../../icons';
 import { useBetSlip } from '../../context/BetSlipContext';
-import { useAuth } from '../../context/AuthContext';
 import './BoostedOddsWidget.css';
 
 const BOOSTED_PROMOS = [
@@ -47,7 +46,6 @@ const BOOSTED_PROMOS = [
 
 export default function BoostedOddsWidget() {
   const { addBet, isBetSelected } = useBetSlip();
-  const { showToast } = useAuth();
 
   const handleAddBoost = (boost) => {
     const fakeMatch = {

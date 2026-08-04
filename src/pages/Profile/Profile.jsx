@@ -10,7 +10,6 @@ import {
 import {
   DEFAULT_DAILY_DEPOSIT_LIMIT,
   DEFAULT_DAILY_STAKE_LIMIT,
-  isSelfExcluded,
 } from '../../utils/responsibleGaming';
 import { FiDownload, FiShield, FiSliders, FiList, FiAlertTriangle } from '../../icons';
 import '../Legal/LegalPage.css';
@@ -55,6 +54,11 @@ export default function Profile() {
       return true;
     });
   }, [transactions, txFilter, txSearch]);
+
+  // Compute wallet, loyalty and excluded before early return to satisfy Rules of Hooks
+  const wallet = useMemo(() => user ? getWalletBreakdown(user) : null, [user]);
+  const loyalty = useMemo(() => user ? getLoyaltySummary(user) : null, [user]);
+  const excluded = user?.selfExcludedUntil && new Date(user.selfExcludedUntil) > new Date();
 
   if (!isLoggedIn) {
     return <Navigate to="/" replace />;

@@ -22,9 +22,9 @@ export function useMatchDetail(match) {
     }
   }, [matchId, pollable]);
 
-  const detailVersion = useSyncExternalStore(
+  useSyncExternalStore(
     (onStoreChange) => {
-      if (!matchId || !pollable) return () => {};
+      if (!matchId || !pollable) return () => { };
       const current = matchRef.current;
       return subscribeMatchDetailStore(matchId, onStoreChange, current);
     },
@@ -41,5 +41,5 @@ export function useMatchDetail(match) {
       return enrichMatchWithDetail(base, detail);
     }
     return enrichFromPoller(base) || base;
-  }, [match, matchId, detailVersion, pollable]);
+  }, [matchId]);
 }

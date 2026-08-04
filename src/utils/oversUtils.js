@@ -14,7 +14,7 @@ export function normalizeCricbuzzOvers(value) {
   return `${whole}.${ball}`;
 }
 
-export function oversToBalls(oversStr, totalOvers = 20) {
+export function oversToBalls(oversStr, _totalOvers = 20) {
   const normalized = normalizeCricbuzzOvers(oversStr);
   const parts = normalized.split('.');
   const whole = parseInt(parts[0], 10) || 0;
