@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+import { getCashoutOffer } from '../utils/wageringRules';
 
 const BetSlipContext = createContext(null);
 const PLACED_BETS_KEY = 'betking_placed_bets';
@@ -242,7 +242,7 @@ export function BetSlipProvider({ children }) {
         && bet.fundSource !== 'freebet',
     );
     if (!target) return null;
-    const offer = Math.round((Number(target.potentialReturn) || 0) * 0.72 * 100) / 100;
+    const offer = getCashoutOffer(target);
     if (offer <= 0) return null;
     const cashed = {
       ...target,

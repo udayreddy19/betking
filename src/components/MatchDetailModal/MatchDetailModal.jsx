@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { IoClose } from '../../icons';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { isMatchBettable, isMatchLive } from '../../utils/matchBetting';

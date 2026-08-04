@@ -2,7 +2,7 @@
 export const BONUS_MIN_BET_ODDS = 1.80;
 export const BONUS_MIN_WITHDRAW_ODDS = 1.85;
 export const MIN_STAKE_INR = 10;
-/** Early cashout pays this fraction of potential return */
+/** Early cashout pays this fraction of stake */
 export const CASHOUT_OFFER_RATIO = 0.72;
 
 export function canBetWithBonusOnLegs(legs) {
@@ -31,9 +31,9 @@ export function getLockedDepositAmount(user) {
 export function getCashoutOffer(bet) {
   if (!bet || bet.status !== 'pending') return 0;
   if (bet.fundSource === 'bonus' || bet.fundSource === 'freebet') return 0;
-  const potential = Number(bet.potentialReturn) || 0;
-  if (potential <= 0) return 0;
-  return Math.round(potential * CASHOUT_OFFER_RATIO * 100) / 100;
+  const stake = Number(bet.stake) || 0;
+  if (stake <= 0) return 0;
+  return Math.round(stake * CASHOUT_OFFER_RATIO * 100) / 100;
 }
 
 /**
