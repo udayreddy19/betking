@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getWalletBreakdown, formatInr } from '../../utils/walletBalance';
@@ -6,78 +7,345 @@ import {
   BONUS_MIN_BET_ODDS,
   BONUS_MIN_WITHDRAW_ODDS,
 } from '../../utils/wageringRules';
+import {
+  DEFAULT_DAILY_DEPOSIT_LIMIT,
+  DEFAULT_DAILY_STAKE_LIMIT,
+  isSelfExcluded,
+} from '../../utils/responsibleGaming';
+import { FiDownload, FiShield, FiSliders, FiList, FiAlertTriangle } from '../../icons';
 import '../Legal/LegalPage.css';
 import './Profile.css';
 
 export default function Profile() {
-  const { user, isLoggedIn, openDepositModal, openFinModal, redeemLoyaltyPoints } = useAuth();
+  const {
+    user,
+    isLoggedIn,
+    openDepositModal,
+    openFinModal,
+    redeemLoyaltyPoints,
+    transactions,
+    updateRgLimits,
+    selfExcludeAccount,
+    showToast,
+  } = useAuth();
+
+  const [activeTab, setActiveTab] = useState('overview');
+  const [txFilter, setTxFilter] = useState('all');
+  const [txSearch, setTxSearch] = useState('');
+
+  // RG Form States
+  const [depositLimit, setDepositLimit] = useState(
+    () => user?.dailyDepositLimit || DEFAULT_DAILY_DEPOSIT_LIMIT,
+  );
+  const [stakeLimit, setStakeLimit] = useState(
+    () => user?.dailyStakeLimit || DEFAULT_DAILY_STAKE_LIMIT,
+  );
+  const [selfExcludeDays, setSelfExcludeDays] = useState('7');
+
+  // Filtered transactions (Hook call placed unconditionally before early return)
+  const filteredTx = useMemo(() => {
+    return (transactions || []).filter((tx) => {
+      if (txFilter !== 'all' && tx.type !== txFilter) return false;
+      if (txSearch.trim()) {
+        const query = txSearch.toLowerCase();
+        const label = (tx.label || '').toLowerCase();
+        const method = (tx.method || '').toLowerCase();
+        return label.includes(query) || method.includes(query) || String(tx.amount).includes(query);
+      }
+      return true;
+    });
+  }, [transactions, txFilter, txSearch]);
 
   if (!isLoggedIn) {
     return <Navigate to="/" replace />;
   }
 
-  const wallet = getWalletBreakdown(user);
-  const loyalty = getLoyaltySummary(user);
+  const handleSaveLimits = (e) => {
+    e.preventDefault();
+    updateRgLimits({
+      dailyDepositLimit: Number(depositLimit),
+      dailyStakeLimit: Number(stakeLimit),
+    });
+  };
+
+  const handleSelfExclude = () => {
+    const days = Number(selfExcludeDays) || 7;
+    if (window.confirm(`Are you sure you want to self-exclude your account for ${days} days? Betting and deposits will be blocked.`)) {
+      selfExcludeAccount(days);
+    }
+  };
+
+  const exportCsv = () => {
+    if (!transactions || transactions.length === 0) {
+      showToast('No transactions available to export.', 'info');
+      return;
+    }
+
+    const headers = ['Transaction ID', 'Date', 'Type', 'Description', 'Amount (INR)'];
+    const rows = transactions.map((t) => [
+      t.id,
+      t.createdAt ? new Date(t.createdAt).toLocaleString() : '',
+      t.type,
+      `"${(t.label || '').replace(/"/g, '""')}"`,
+      t.amount,
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `betking_statement_${user.email}_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Transaction statement downloaded as CSV', 'success');
+  };
 
   return (
     <div className="profile-page container" id="profile-page">
       <div className="profile-card">
-        <div className="profile-avatar">👤</div>
-        <h1>{user.displayName}</h1>
-        <p className="profile-email">{user.email}</p>
 
-        <div className="profile-wallet-grid">
-          <div className="profile-stat">
-            <span className="label">Total balance</span>
-            <span className="value">{formatInr(wallet.total)}</span>
-          </div>
-          <div className="profile-stat">
-            <span className="label">Winnings</span>
-            <span className="value profile-stat__winnings">{formatInr(wallet.winnings)}</span>
-          </div>
-          <div className="profile-stat">
-            <span className="label">Bonus / Freebets</span>
-            <span className="value profile-stat__bonus">{formatInr(wallet.bonusAndFreebets)}</span>
-          </div>
-          <div className="profile-stat">
-            <span className="label">Deposited (locked)</span>
-            <span className="value profile-stat__locked">{formatInr(wallet.lockedDeposit)}</span>
+        {/* Profile Top Bar */}
+        <div className="profile-header">
+          <div className="profile-avatar">👤</div>
+          <div className="profile-user-info">
+            <h1>{user.displayName}</h1>
+            <p className="profile-email">{user.email}</p>
+            {excluded && (
+              <span className="profile-badge-excluded">
+                <FiAlertTriangle /> Self-Excluded until {new Date(user.selfExcludedUntil).toLocaleDateString()}
+              </span>
+            )}
           </div>
         </div>
 
-        <div className="profile-loyalty-box">
-          <div className="profile-loyalty-head">
-            <span>Loyalty · {user.loyaltyRank} Lv.{user.loyaltyLevel}</span>
-            <strong>{loyalty.points} pts</strong>
-          </div>
-          <div className="profile-loyalty-bar">
-            <div style={{ width: `${loyalty.progress}%` }} />
-          </div>
-          <p className="profile-loyalty-meta">
-            {loyalty.canRedeem
-              ? `Ready to redeem for ${formatInr(loyalty.redeemValue)}`
-              : `${loyalty.pointsToUnlock} pts to unlock (min ${LOYALTY_MIN_REDEEM_POINTS})`}
-          </p>
+        {/* Profile Tabs */}
+        <div className="profile-tabs-nav">
           <button
             type="button"
-            className="profile-link-btn"
-            disabled={!loyalty.canRedeem}
-            onClick={() => redeemLoyaltyPoints()}
+            className={`profile-tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
+            onClick={() => setActiveTab('overview')}
           >
-            Redeem points
+            Overview
+          </button>
+          <button
+            type="button"
+            className={`profile-tab-btn ${activeTab === 'rg' ? 'active' : ''}`}
+            onClick={() => setActiveTab('rg')}
+          >
+            <FiShield /> Responsible Gaming
+          </button>
+          <button
+            type="button"
+            className={`profile-tab-btn ${activeTab === 'history' ? 'active' : ''}`}
+            onClick={() => setActiveTab('history')}
+          >
+            <FiList /> Transactions ({transactions.length})
           </button>
         </div>
 
-        <p className="profile-rules">
-          Deposits must be wagered before withdrawal. Bonus bets need odds ≥ {BONUS_MIN_BET_ODDS.toFixed(2)};
-          bonus winnings withdraw at ≥ {BONUS_MIN_WITHDRAW_ODDS.toFixed(2)}. Only Winnings can be withdrawn.
-        </p>
+        {/* TAB 1: OVERVIEW */}
+        {activeTab === 'overview' && (
+          <>
+            <div className="profile-wallet-grid">
+              <div className="profile-stat">
+                <span className="label">Total balance</span>
+                <span className="value">{formatInr(wallet.total)}</span>
+              </div>
+              <div className="profile-stat">
+                <span className="label">Winnings</span>
+                <span className="value profile-stat__winnings">{formatInr(wallet.winnings)}</span>
+              </div>
+              <div className="profile-stat">
+                <span className="label">Bonus / Freebets</span>
+                <span className="value profile-stat__bonus">{formatInr(wallet.bonusAndFreebets)}</span>
+              </div>
+              <div className="profile-stat">
+                <span className="label">Deposited (locked)</span>
+                <span className="value profile-stat__locked">{formatInr(wallet.lockedDeposit)}</span>
+              </div>
+            </div>
 
-        <div className="profile-actions">
-          <button type="button" className="profile-link-btn" onClick={openDepositModal}>Deposit</button>
-          <button type="button" className="profile-link-btn outline" onClick={() => openFinModal('withdraw')}>Withdraw</button>
-          <Link to="/sports" className="profile-link-btn outline">Sports</Link>
-        </div>
+            <div className="profile-loyalty-box">
+              <div className="profile-loyalty-head">
+                <span>Loyalty · {user.loyaltyRank} Lv.{user.loyaltyLevel}</span>
+                <strong>{loyalty.points} pts</strong>
+              </div>
+              <div className="profile-loyalty-bar">
+                <div style={{ width: `${loyalty.progress}%` }} />
+              </div>
+              <p className="profile-loyalty-meta">
+                {loyalty.canRedeem
+                  ? `Ready to redeem for ${formatInr(loyalty.redeemValue)}`
+                  : `${loyalty.pointsToUnlock} pts to unlock (min ${LOYALTY_MIN_REDEEM_POINTS})`}
+              </p>
+              <button
+                type="button"
+                className="profile-link-btn"
+                disabled={!loyalty.canRedeem}
+                onClick={() => redeemLoyaltyPoints()}
+              >
+                Redeem points
+              </button>
+            </div>
+
+            <p className="profile-rules">
+              Deposits must be wagered before withdrawal. Bonus bets need odds ≥ {BONUS_MIN_BET_ODDS.toFixed(2)};
+              bonus winnings withdraw at ≥ {BONUS_MIN_WITHDRAW_ODDS.toFixed(2)}. Only Winnings can be withdrawn.
+            </p>
+
+            <div className="profile-actions">
+              <button type="button" className="profile-link-btn" onClick={openDepositModal}>Deposit</button>
+              <button type="button" className="profile-link-btn outline" onClick={() => openFinModal('withdraw')}>Withdraw</button>
+              <Link to="/sports" className="profile-link-btn outline">Sports</Link>
+            </div>
+          </>
+        )}
+
+        {/* TAB 2: RESPONSIBLE GAMING */}
+        {activeTab === 'rg' && (
+          <div className="profile-rg-section">
+            <div className="rg-card-box">
+              <h3><FiSliders /> Daily Wagering & Deposit Limits</h3>
+              <p>Set custom daily deposit and stake limits to maintain safe play.</p>
+
+              <form onSubmit={handleSaveLimits} className="rg-form">
+                <div className="rg-form-group">
+                  <label>Daily Deposit Limit (₹)</label>
+                  <input
+                    type="number"
+                    min="500"
+                    step="500"
+                    value={depositLimit}
+                    onChange={(e) => setDepositLimit(e.target.value)}
+                  />
+                  <small>Daily used: ₹{(user.dailyDepositUsed || 0).toLocaleString()} / ₹{Number(depositLimit).toLocaleString()}</small>
+                </div>
+
+                <div className="rg-form-group">
+                  <label>Daily Stake Limit (₹)</label>
+                  <input
+                    type="number"
+                    min="500"
+                    step="500"
+                    value={stakeLimit}
+                    onChange={(e) => setStakeLimit(e.target.value)}
+                  />
+                  <small>Daily used: ₹{(user.dailyStakeUsed || 0).toLocaleString()} / ₹{Number(stakeLimit).toLocaleString()}</small>
+                </div>
+
+                <button type="submit" className="profile-link-btn">Save Limits</button>
+              </form>
+            </div>
+
+            <div className="rg-card-box warning">
+              <h3><FiShield /> Self-Exclusion Tool</h3>
+              <p>Take a break from betting. Self-exclusion immediately blocks all deposits and bet placement for the selected duration.</p>
+
+              <div className="rg-exclude-controls">
+                <select
+                  value={selfExcludeDays}
+                  onChange={(e) => setSelfExcludeDays(e.target.value)}
+                  className="rg-select"
+                >
+                  <option value="7">7 Days Self-Exclusion</option>
+                  <option value="30">30 Days Self-Exclusion</option>
+                  <option value="90">90 Days Self-Exclusion</option>
+                </select>
+
+                <button
+                  type="button"
+                  className="profile-link-btn danger"
+                  onClick={handleSelfExclude}
+                  disabled={excluded}
+                >
+                  {excluded ? 'Currently Excluded' : 'Activate Self-Exclusion'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: TRANSACTION HISTORY */}
+        {activeTab === 'history' && (
+          <div className="profile-history-section">
+            <div className="history-toolbar">
+              <div className="history-filters">
+                {['all', 'deposit', 'withdraw', 'bet_win', 'bonus', 'loyalty_redeem'].map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    className={`history-chip ${txFilter === cat ? 'active' : ''}`}
+                    onClick={() => setTxFilter(cat)}
+                  >
+                    {cat === 'all' && 'All'}
+                    {cat === 'deposit' && 'Deposits'}
+                    {cat === 'withdraw' && 'Withdrawals'}
+                    {cat === 'bet_win' && 'Wins'}
+                    {cat === 'bonus' && 'Bonuses'}
+                    {cat === 'loyalty_redeem' && 'Loyalty'}
+                  </button>
+                ))}
+              </div>
+
+              <div className="history-search-row">
+                <input
+                  type="search"
+                  placeholder="Search transactions..."
+                  value={txSearch}
+                  onChange={(e) => setTxSearch(e.target.value)}
+                  className="history-search-input"
+                />
+                <button type="button" className="profile-link-btn outline icon-btn" onClick={exportCsv}>
+                  <FiDownload /> Export CSV
+                </button>
+              </div>
+            </div>
+
+            {filteredTx.length === 0 ? (
+              <div className="history-empty">
+                <p>No transactions found matching criteria.</p>
+              </div>
+            ) : (
+              <div className="history-table-wrapper">
+                <table className="history-table">
+                  <thead>
+                    <tr>
+                      <th>Time</th>
+                      <th>Type</th>
+                      <th>Description</th>
+                      <th>Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredTx.map((tx) => {
+                      const isPositive = ['deposit', 'bet_win', 'bonus', 'loyalty_redeem', 'cashout'].includes(tx.type);
+                      return (
+                        <tr key={tx.id}>
+                          <td className="tx-time">
+                            {tx.createdAt ? new Date(tx.createdAt).toLocaleDateString('en-IN', {
+                              day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+                            }) : '–'}
+                          </td>
+                          <td className="tx-type">
+                            <span className={`tx-tag tx-tag--${tx.type}`}>
+                              {tx.type.replace('_', ' ')}
+                            </span>
+                          </td>
+                          <td className="tx-desc">{tx.label}</td>
+                          <td className={`tx-amount ${isPositive ? 'positive' : 'negative'}`}>
+                            {isPositive ? '+' : ''}{formatInr(tx.amount)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { IoClose, IoChevronBack, IoQrCodeOutline, IoKeyOutline, FiArrowRight, FiShield, FiAlertCircle } from '../../icons';
+import { IoClose, IoChevronBack, IoKeyOutline, FiArrowRight, FiShield, FiAlertCircle } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { paymentMethods } from '../../data/mockData';
 import RazorpayModal from '../RazorpayModal/RazorpayModal';
@@ -7,15 +7,15 @@ import './DepositModal.css';
 
 export default function DepositModal() {
   const { isDepositModalOpen, closeDepositModal, addFunds, user } = useAuth();
-  const [activeCategory, setActiveCategory] = useState('all');
+  const [activeCategory] = useState('all');
   const [selectedMethod, setSelectedMethod] = useState(null);
 
   // Form states
   const [amount, setAmount] = useState('1000');
   const [giftCardCode, setGiftCardCode] = useState('');
   const [upiId, setUpiId] = useState('john@upi');
-  const [upiMode, setUpiMode] = useState('id'); // 'id' | 'qr'
   const [razorpayKey, setRazorpayKey] = useState(import.meta.env.VITE_RAZORPAY_KEY_ID || '');
+
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isRzpModalOpen, setIsRzpModalOpen] = useState(false);
@@ -71,7 +71,7 @@ export default function DepositModal() {
         if (orderRes.ok) {
           order = await orderRes.json();
         }
-      } catch (e) {
+      } catch (_err) {
         console.warn('Backend order creation endpoint unavailable, attempting client initialization...');
       }
 

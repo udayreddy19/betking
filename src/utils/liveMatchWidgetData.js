@@ -23,7 +23,7 @@ export function getTeamDisplayName(name) {
   return name.replace(/\s+W$/, '').trim();
 }
 
-export function getChaseText(match, innings, team1, team2) {
+export function getChaseText(match, innings, team1, _team2) {
   if (!innings || !isCricketSecondInnings(match, match?.liveDetails) || innings.inningsNum !== 2) return null;
 
   const ld = match?.liveDetails || {};

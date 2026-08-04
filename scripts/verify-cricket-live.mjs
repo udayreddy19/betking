@@ -58,6 +58,8 @@ const rockets = await checkDetail(
   { hundredCompleteFirst: true },
 );
 
+console.log('Derby check complete:', derby?.id, '| Rockets check complete:', rockets?.id);
+
 const list = await fetchCricbuzzMatches();
 const listDerby = list.matches.find((m) => m.cricbuzzMatchId == 143705);
 const listRockets = list.matches.find((m) => m.cricbuzzMatchId == 145198);

@@ -14,6 +14,12 @@ import {
   canRedeemLoyaltyPoints,
   getUserLoyaltyPoints,
 } from '../utils/loyaltyPoints';
+import {
+  normalizeRgState,
+  canDepositAmount,
+  canStakeAmount,
+} from '../utils/responsibleGaming';
+
 
 const AuthContext = createContext(null);
 
@@ -588,7 +594,32 @@ export function AuthProvider({ children }) {
     }
   }, [setUser, recordTx]);
 
+  const updateRgLimits = useCallback(({ dailyDepositLimit, dailyStakeLimit }) => {
+    setUser(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        dailyDepositLimit: Number(dailyDepositLimit) || prev.dailyDepositLimit,
+        dailyStakeLimit: Number(dailyStakeLimit) || prev.dailyStakeLimit,
+      };
+    });
+    showToast('Responsible Gaming limits updated successfully', 'success');
+  }, [setUser, showToast]);
+
+  const selfExcludeAccount = useCallback((days = 7) => {
+    const until = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+    setUser(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        selfExcludedUntil: until,
+      };
+    });
+    showToast(`Account self-excluded for ${days} days.`, 'info');
+  }, [setUser, showToast]);
+
   const openLoginModal = useCallback(() => setIsLoginModalOpen(true), []);
+
   const closeLoginModal = useCallback(() => setIsLoginModalOpen(false), []);
   const openDepositModal = useCallback(() => setIsDepositModalOpen(true), []);
   const closeDepositModal = useCallback(() => setIsDepositModalOpen(false), []);
@@ -631,6 +662,8 @@ export function AuthProvider({ children }) {
     finModalType,
     openFinModal,
     closeFinModal,
+    updateRgLimits,
+    selfExcludeAccount,
   }), [
     user,
     register,
@@ -664,6 +697,8 @@ export function AuthProvider({ children }) {
     finModalType,
     openFinModal,
     closeFinModal,
+    updateRgLimits,
+    selfExcludeAccount,
   ]);
 
   return (

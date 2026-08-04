@@ -42,6 +42,8 @@ import {
   LayersIcon,
   StarIcon,
   MessageCircleIcon,
+  FlameIcon as LucideFlameIcon,
+  CheckIcon,
 } from '@animateicons/react/lucide';
 
 import { withAnimatedIcon } from './animateIcon.jsx';
@@ -91,6 +93,7 @@ export {
   LayersIcon,
   StarIcon,
   MessageCircleIcon,
+  CheckIcon,
 };
 
 // Drop-in aliases (react-icons names used across the app)
@@ -112,6 +115,16 @@ export const FiRefreshCw = withAnimatedIcon(RefreshCwIcon);
 export const FiPlay = withAnimatedIcon(PlayIcon);
 export const FiShield = withAnimatedIcon(ShieldCheckIcon);
 export const FiAlertCircle = withAnimatedIcon(InfoIcon);
+
+export const FiDownload = withAnimatedIcon(ExternalLinkIcon);
+export const FiSliders = withAnimatedIcon(SettingsIcon);
+export const FiList = withAnimatedIcon(LayoutListIcon);
+export const FiAlertTriangle = withAnimatedIcon(InfoIcon);
+export const FiZap = withAnimatedIcon(ZapIcon);
+export const FiFlame = withAnimatedIcon(LucideFlameIcon);
+export const FiClock = withAnimatedIcon(ClockIcon);
+export const FiPlusCircle = withAnimatedIcon(CircleCheckIcon);
+export const FiCheck = withAnimatedIcon(CheckIcon);
 
 export const IoClose = withAnimatedIcon(XIcon);
 export const IoGiftOutline = withAnimatedIcon(GiftIcon);

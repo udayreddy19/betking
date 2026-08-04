@@ -3,7 +3,7 @@ import { HiOutlineViewList, HiOutlineChartBar, HiOutlineUsers } from '../../icon
 import { useLiveFieldState } from '../../hooks/useLiveFieldState';
 import { useMatchDetail } from '../../hooks/useMatchDetail';
 import { resolveMatchSquads, formatPlayerRole, squadToRoster } from '../../utils/matchSquads';
-import { getBallDisplayKind, getBallDisplayLabel, parseOvers } from '../../utils/liveFieldState';
+import { getBallDisplayKind, getBallDisplayLabel } from '../../utils/liveFieldState';
 import {
   getTeamShortCode,
   getTeamDisplayName,
@@ -283,13 +283,9 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
 
   const resolvedScores = useMemo(
     () => resolveCricketTeamScores(match, match?.liveDetails || {}),
-    [match, match?.liveDetails],
+    [match],
   );
 
-  const score1 = resolvedScores.team1.runs;
-  const wickets1 = resolvedScores.team1.wickets;
-  const score2 = resolvedScores.team2.runs;
-  const wickets2 = resolvedScores.team2.wickets;
   const overs = resolvedScores.team1.overs || match?.liveDetails?.overs || '0.0';
   const matchState = getMatchState(match);
   const isCricketSport = sport === 'cricket' || sport === 'virtual-cricket';
@@ -307,20 +303,11 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
 
   const squads = useMemo(
     () => resolveMatchSquads(match, team1, team2),
-    [match, match?.squads, match?.scorecardInnings, team1, team2],
+    [match, team1, team2],
   );
 
   const t1Data = useMemo(() => squadToRoster(squads.team1, squads.team2), [squads]);
   const t2Data = useMemo(() => squadToRoster(squads.team2, squads.team1), [squads]);
-
-  const team1Short = getTeamShort(team1);
-  const team2Short = getTeamShort(team2);
-  const team1Display = getTeamDisplayName(team1);
-  const team2Display = getTeamDisplayName(team2);
-
-  const viewingTeam2Innings = activeInnings.includes(team2Display) || activeInnings.includes(team2Short);
-  const battingRoster = viewingTeam2Innings ? t2Data : t1Data;
-  const bowlingRoster = viewingTeam2Innings ? t1Data : t2Data;
 
   const fieldState = useLiveFieldState(showCricketTracker ? match : null);
 
@@ -354,7 +341,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
     ? getChaseText(match, innings, team1, team2)
     : null;
 
-  const wicketOvers = useMemo(() => getWicketOvers(match), [match?.overHistory]);
+  const wicketOvers = useMemo(() => getWicketOvers(match), [match]);
 
   const overHistoryRows = useMemo(
     () => buildOverHistoryRows(fieldState, match?.id, match),
@@ -375,7 +362,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
 
   const statsOvers = useMemo(
     () => buildStatsOvers(fieldState, match),
-    [fieldState, match, match?.liveDetails?.overs, match?.liveDetails?.overs2, match?.liveDetails?.wickets, match?.liveDetails?.wickets2],
+    [fieldState, match],
   );
 
   const inningsFours = fieldState?.inningsFours ?? 0;

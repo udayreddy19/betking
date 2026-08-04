@@ -7,7 +7,7 @@ import './TeamJersey.css';
 export default function TeamJersey({ team, size = 52, className = '' }) {
   const filter = useMemo(
     () => getJerseyImageFilter(team),
-    [team?.color, team?.accentColor, team?.name, team?.shortName],
+    [team],
   );
   const height = Math.round(size * 1.22);
 

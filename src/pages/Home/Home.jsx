@@ -10,7 +10,7 @@ import { homePromoSlides } from '../../data/homePageData';
 import { useLiveMatches, useLiveSportsMeta } from '../../context/LiveSportsContext';
 import { useAuth } from '../../context/AuthContext';
 import { filterMatches } from '../../utils/matchFilters';
-import { getLeagueMeta, isSameLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
+import BoostedOddsWidget from '../../components/BoostedOddsWidget/BoostedOddsWidget';
 import './Home.css';
 
 function filterByLeague(matchList, leagueId) {
@@ -89,6 +89,8 @@ export default function Home() {
       </button>
 
       <HomeCategoryGrid />
+
+      <BoostedOddsWidget />
 
       <section className="home-section home-sports-action" id="sports-action-section">
         <div className="section-header">

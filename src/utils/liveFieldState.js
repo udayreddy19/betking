@@ -78,10 +78,7 @@ function nextBallOutcome(matchId, ballIndex) {
   return RUN_SEQUENCE[seed % RUN_SEQUENCE.length];
 }
 
-/** @deprecated use nextBallOutcome */
-function nextRun(matchId, ballIndex) {
-  return nextBallOutcome(matchId, ballIndex);
-}
+
 
 function runsToWagonAngle(runs) {
   const map = { 0: 315, 1: 270, 2: 45, 3: 90, 4: 180, 6: 0 };
@@ -221,7 +218,6 @@ export function tickFieldState(state, match, roster) {
   if (!state || !match) return state;
 
   const matchId = match.id || 'default';
-  const ld = match.liveDetails || {};
   const isLive = match.matchState === 'in' || match.isLive;
 
   if (!isLive) return state;

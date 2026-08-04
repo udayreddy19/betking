@@ -25,6 +25,25 @@ const teamRosters = {
 export default function MatchDetailModal({ match, isOpen, onClose }) {
   const { addBet, isBetSelected, betCount } = useBetSlip();
   const [activeMarketCategory, setActiveMarketCategory] = useState('all');
+  const [builderLegs, setBuilderLegs] = useState([]);
+
+  const toggleBuilderLeg = (label, odds) => {
+    setBuilderLegs(prev => {
+      const exists = prev.find(l => l.label === label);
+      if (exists) return prev.filter(l => l.label !== label);
+      if (prev.length >= 4) return prev;
+      return [...prev, { label, odds: Number(odds) }];
+    });
+  };
+
+  const builderCombinedOdds = useMemo(() => {
+    if (!builderLegs.length) return 1.0;
+    const product = builderLegs.reduce((acc, leg) => acc * leg.odds, 1);
+    // Slight correlation discount factor for same match
+    const discount = builderLegs.length > 1 ? 0.92 : 1.0;
+    return Math.max(1.10, Math.round(product * discount * 100) / 100);
+  }, [builderLegs]);
+
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -214,7 +233,7 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
 
         {/* Market Category Filter Tabs */}
         <div className="market-tabs">
-          {['all', 'main', 'overs-deliveries', 'player-props', 'specials'].map(cat => (
+          {['all', 'main', 'overs-deliveries', 'player-props', 'specials', 'builder', 'insights'].map(cat => (
             <button
               key={cat}
               className={`market-tab ${activeMarketCategory === cat ? 'active' : ''}`}
@@ -225,6 +244,8 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
               {cat === 'overs-deliveries' && (sport === 'cricket' ? 'Overs & Deliveries' : 'Interval Markets')}
               {cat === 'player-props' && 'Player Props'}
               {cat === 'specials' && 'Specials'}
+              {cat === 'builder' && '🛠️ Bet Builder'}
+              {cat === 'insights' && '📊 Match Insights'}
             </button>
           ))}
         </div>
@@ -433,6 +454,206 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
                   <span className="market-label">Both Teams Score: No</span>
                   <span className="market-val">2.00</span>
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* BET BUILDER UI VIEW */}
+          {activeMarketCategory === 'builder' && (
+            <div className="builder-view">
+              <div className="builder-header-box">
+                <h4>🛠️ Same Match Bet Builder</h4>
+                <p>Select up to 4 legs from this match to construct a single custom parlay bet.</p>
+              </div>
+
+              <div className="builder-options-list">
+                <div className="builder-option-group">
+                  <h5>Match Winner</h5>
+                  <div className="market-odds-grid two-col">
+                    {[
+                      { label: `${team1Name} to Win`, odds: match.odds.team1 || 1.85 },
+                      { label: `${team2Name} to Win`, odds: match.odds.team2 || 1.95 },
+                    ].map((opt) => {
+                      const isSel = builderLegs.some(l => l.label === opt.label);
+                      return (
+                        <button
+                          key={opt.label}
+                          type="button"
+                          className={`market-odds-btn ${isSel ? 'selected' : ''}`}
+                          onClick={() => toggleBuilderLeg(opt.label, opt.odds)}
+                        >
+                          <span className="market-label">{opt.label}</span>
+                          <span className="market-val">{Number(opt.odds).toFixed(2)}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="builder-option-group">
+                  <h5>Match Total Score</h5>
+                  <div className="market-odds-grid two-col">
+                    {[
+                      { label: 'Total Score Over 160.5', odds: 1.90 },
+                      { label: 'Total Score Under 160.5', odds: 1.85 },
+                    ].map((opt) => {
+                      const isSel = builderLegs.some(l => l.label === opt.label);
+                      return (
+                        <button
+                          key={opt.label}
+                          type="button"
+                          className={`market-odds-btn ${isSel ? 'selected' : ''}`}
+                          onClick={() => toggleBuilderLeg(opt.label, opt.odds)}
+                        >
+                          <span className="market-label">{opt.label}</span>
+                          <span className="market-val">{opt.odds.toFixed(2)}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="builder-option-group">
+                  <h5>Top Player Milestone</h5>
+                  <div className="market-odds-grid two-col">
+                    {[
+                      { label: `${team1Players[0]} > 25.5 Runs/Points`, odds: 1.82 },
+                      { label: `${team2Players[0]} > 25.5 Runs/Points`, odds: 1.88 },
+                    ].map((opt) => {
+                      const isSel = builderLegs.some(l => l.label === opt.label);
+                      return (
+                        <button
+                          key={opt.label}
+                          type="button"
+                          className={`market-odds-btn ${isSel ? 'selected' : ''}`}
+                          onClick={() => toggleBuilderLeg(opt.label, opt.odds)}
+                        >
+                          <span className="market-label">{opt.label}</span>
+                          <span className="market-val">{opt.odds.toFixed(2)}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <div className="builder-summary-box">
+                <div className="builder-legs-chips">
+                  {builderLegs.length === 0 ? (
+                    <span className="builder-empty-hint">Tap choices above to add legs to your builder</span>
+                  ) : (
+                    builderLegs.map((leg) => (
+                      <span key={leg.label} className="builder-leg-chip">
+                        {leg.label} ({leg.odds.toFixed(2)})
+                        <button type="button" onClick={() => toggleBuilderLeg(leg.label, leg.odds)}>×</button>
+                      </span>
+                    ))
+                  )}
+                </div>
+
+                <div className="builder-bottom-row">
+                  <div className="builder-odds-result">
+                    <span>Combined Odds:</span>
+                    <strong>{builderCombinedOdds.toFixed(2)}</strong>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="deposit-confirm-btn"
+                    disabled={builderLegs.length === 0}
+                    onClick={() => {
+                      const desc = `BetBuilder (${builderLegs.length} legs): ${builderLegs.map(l => l.label).join(' + ')}`;
+                      addBet(
+                        match,
+                        `Builder:${Date.now()}`,
+                        builderCombinedOdds,
+                        desc,
+                        { marketName: '🛠️ Same Match Bet Builder' },
+                      );
+                      setBuilderLegs([]);
+                    }}
+                  >
+                    Add Bet Builder to Slip
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MATCH INSIGHTS & H2H VIEW */}
+          {activeMarketCategory === 'insights' && (
+            <div className="insights-view">
+              <div className="insights-card">
+                <h4>⚡ Live Win Probability</h4>
+                <div className="insights-win-meter">
+                  <div className="insights-meter-labels">
+                    <span>{team1Name} 64%</span>
+                    <span>{team2Name} 36%</span>
+                  </div>
+                  <div className="insights-meter-bar">
+                    <div className="meter-team1" style={{ width: '64%' }} />
+                    <div className="meter-team2" style={{ width: '36%' }} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="insights-card">
+                <h4>🤝 Head-to-Head Record (Last 5 Encounters)</h4>
+                <div className="insights-h2h-grid">
+                  <div className="h2h-stat-box">
+                    <strong>3 Wins</strong>
+                    <span>{team1Name}</span>
+                  </div>
+                  <div className="h2h-stat-box">
+                    <strong>0 Draws</strong>
+                    <span>Tied / NR</span>
+                  </div>
+                  <div className="h2h-stat-box">
+                    <strong>2 Wins</strong>
+                    <span>{team2Name}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="insights-card">
+                <h4>🔥 Recent Form Guide</h4>
+                <div className="form-guide-row">
+                  <div className="form-team">
+                    <span>{team1Name}:</span>
+                    <div className="form-badges">
+                      <span className="badge-w">W</span>
+                      <span className="badge-w">W</span>
+                      <span className="badge-l">L</span>
+                      <span className="badge-w">W</span>
+                      <span className="badge-w">W</span>
+                    </div>
+                  </div>
+                  <div className="form-team">
+                    <span>{team2Name}:</span>
+                    <div className="form-badges">
+                      <span className="badge-l">L</span>
+                      <span className="badge-w">W</span>
+                      <span className="badge-w">W</span>
+                      <span className="badge-l">L</span>
+                      <span className="badge-l">L</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="insights-card">
+                <h4>⭐ Key Player Matchup</h4>
+                <div className="player-matchup-grid">
+                  <div className="player-box">
+                    <strong>{team1Players[0] || 'Batter 1'}</strong>
+                    <span>42.5 Avg Runs / 148.2 SR</span>
+                  </div>
+                  <div className="player-vs">VS</div>
+                  <div className="player-box">
+                    <strong>{team2Players[2] || 'Bowler 1'}</strong>
+                    <span>2.1 Wkts/Match / 6.4 Econ</span>
+                  </div>
+                </div>
               </div>
             </div>
           )}

@@ -440,3 +440,226 @@
     font-size: 0.7rem;
   }
 }
+
+/* Bet Builder Styles */
+.builder-view {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.builder-header-box {
+  background: linear-gradient(135deg, #1e1b4b 0%, #311b92 100%);
+  color: #ffffff;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+}
+
+.builder-header-box h4 {
+  font-size: var(--text-sm);
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.builder-header-box p {
+  font-size: var(--text-xs);
+  color: #e0e7ff;
+}
+
+.builder-option-group h5 {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-bottom: 6px;
+}
+
+.builder-summary-box {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.builder-legs-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: var(--space-4);
+  min-height: 28px;
+}
+
+.builder-empty-hint {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.builder-leg-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-primary-alpha-10, #f3e8ff);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.builder-leg-chip button {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.builder-bottom-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.builder-odds-result {
+  display: flex;
+  flex-direction: column;
+}
+
+.builder-odds-result span {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.builder-odds-result strong {
+  font-size: var(--text-xl);
+  color: var(--color-primary);
+}
+
+/* Match Insights Styles */
+.insights-view {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.insights-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.insights-card h4 {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-3);
+}
+
+.insights-meter-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.insights-meter-bar {
+  display: flex;
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.meter-team1 { background: #3b82f6; }
+.meter-team2 { background: #ef4444; }
+
+.insights-h2h-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--space-2);
+  text-align: center;
+}
+
+.h2h-stat-box {
+  background: var(--color-bg);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+}
+
+.h2h-stat-box strong {
+  display: block;
+  font-size: var(--text-sm);
+
+  color: var(--color-text);
+}
+
+.h2h-stat-box span {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+.form-guide-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.form-team {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--text-xs);
+}
+
+.form-badges {
+  display: flex;
+  gap: 4px;
+}
+
+.badge-w, .badge-l {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: white;
+}
+
+.badge-w { background: #22c55e; }
+.badge-l { background: #ef4444; }
+
+.player-matchup-grid {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.player-box {
+  flex: 1;
+  background: var(--color-bg);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+}
+
+.player-box strong {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--color-text);
+}
+
+.player-box span {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+.player-vs {
+  font-weight: 900;
+  color: var(--color-primary);
+  font-size: 0.8rem;
+}
+
