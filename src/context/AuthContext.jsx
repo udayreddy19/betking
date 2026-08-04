@@ -76,6 +76,7 @@ function toSessionUser(stored) {
     notifications: stored.notifications ?? 0,
     loyaltyPoints: stored.loyaltyPoints ?? stored.coins ?? 0,
     coins: stored.loyaltyPoints ?? stored.coins ?? 0,
+    ...normalizeRgState(stored),
   };
 }
 
@@ -106,6 +107,12 @@ function syncStoredUser(sessionUser) {
     notifications: sessionUser.notifications,
     loyaltyPoints: sessionUser.loyaltyPoints ?? sessionUser.coins ?? users[idx].loyaltyPoints ?? users[idx].coins ?? 0,
     coins: sessionUser.loyaltyPoints ?? sessionUser.coins ?? users[idx].loyaltyPoints ?? users[idx].coins ?? 0,
+    dailyDepositLimit: sessionUser.dailyDepositLimit ?? users[idx].dailyDepositLimit,
+    dailyStakeLimit: sessionUser.dailyStakeLimit ?? users[idx].dailyStakeLimit,
+    dailyDepositUsed: sessionUser.dailyDepositUsed ?? users[idx].dailyDepositUsed ?? 0,
+    dailyStakeUsed: sessionUser.dailyStakeUsed ?? users[idx].dailyStakeUsed ?? 0,
+    rgDayKey: sessionUser.rgDayKey ?? users[idx].rgDayKey,
+    selfExcludedUntil: sessionUser.selfExcludedUntil ?? users[idx].selfExcludedUntil ?? null,
   };
   saveStoredUsers(users);
 }
@@ -273,15 +280,35 @@ export function AuthProvider({ children }) {
   const addFunds = useCallback((amount, method = 'Deposit') => {
     const deposit = Number(amount) || 0;
     let email = null;
+    let blocked = null;
+
     setUser(prev => {
       if (!prev) return prev;
+      const check = canDepositAmount(prev, deposit);
+      if (!check.ok) {
+        blocked = check.error;
+        return prev;
+      }
       email = prev.email;
+      const rg = check.rg;
       return {
         ...prev,
         balance: prev.balance + deposit,
         lockedDepositBalance: (prev.lockedDepositBalance ?? 0) + deposit,
+        rgDayKey: rg.rgDayKey,
+        dailyDepositLimit: rg.dailyDepositLimit,
+        dailyStakeLimit: rg.dailyStakeLimit,
+        dailyDepositUsed: rg.dailyDepositUsed + deposit,
+        dailyStakeUsed: rg.dailyStakeUsed,
+        selfExcludedUntil: rg.selfExcludedUntil,
       };
     });
+
+    if (blocked) {
+      showToast(blocked, 'error');
+      return false;
+    }
+
     if (email) {
       recordTx(email, {
         type: 'deposit',
@@ -294,21 +321,31 @@ export function AuthProvider({ children }) {
       `Deposited ${formatInr(amount)} via ${method}. Wager this amount before withdrawal.`,
       'success',
     );
+    return true;
   }, [setUser, showToast, recordTx]);
 
   const deductStake = useCallback(({ cashAmount = 0, bonusAmount = 0, freebetAmount = 0 } = {}) => {
     const cash = Number(cashAmount) || 0;
     const bonus = Number(bonusAmount) || 0;
     const freebet = Number(freebetAmount) || 0;
+    const spendTotal = cash + bonus + freebet;
     const result = {
       success: false,
       pointsEarned: 0,
       wageringApplied: 0,
       winningsSpent: 0,
+      error: null,
     };
 
     setUser(prev => {
       if (!prev) return prev;
+
+      const rgCheck = canStakeAmount(prev, spendTotal);
+      if (!rgCheck.ok) {
+        result.error = rgCheck.error;
+        return prev;
+      }
+
       if (cash > 0 && prev.balance < cash) return prev;
       if (bonus > 0 && (prev.bonusBalance ?? 0) < bonus) return prev;
       if (freebet > 0 && (prev.freebetBalance ?? 0) < freebet) return prev;
@@ -316,10 +353,10 @@ export function AuthProvider({ children }) {
       const allocation = allocateCashStake(prev, cash);
       if (cash > 0 && allocation.total < cash) return prev;
 
-      const spendTotal = cash + bonus + freebet;
       const pointsEarned = pointsFromSpend(spendTotal);
       const currentPoints = getUserLoyaltyPoints(prev);
       const nextPoints = currentPoints + pointsEarned;
+      const rg = rgCheck.rg;
 
       result.success = true;
       result.pointsEarned = pointsEarned;
@@ -335,10 +372,18 @@ export function AuthProvider({ children }) {
         winningsBalance: Math.max(0, (prev.winningsBalance ?? 0) - allocation.fromWinnings),
         loyaltyPoints: nextPoints,
         coins: nextPoints,
+        rgDayKey: rg.rgDayKey,
+        dailyDepositLimit: rg.dailyDepositLimit,
+        dailyStakeLimit: rg.dailyStakeLimit,
+        dailyDepositUsed: rg.dailyDepositUsed,
+        dailyStakeUsed: rg.dailyStakeUsed + spendTotal,
+        selfExcludedUntil: rg.selfExcludedUntil,
       };
     });
 
-    if (result.success && result.pointsEarned > 0) {
+    if (!result.success && result.error) {
+      showToast(result.error, 'error');
+    } else if (result.success && result.pointsEarned > 0) {
       showToast(`+${result.pointsEarned} loyalty points earned`, 'success');
     }
     return result;
