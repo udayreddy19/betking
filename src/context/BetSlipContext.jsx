@@ -260,6 +260,26 @@ export function BetSlipProvider({ children }) {
     setPlacedBets(nextBets);
   }, []);
 
+  const adminSettleBet = useCallback((betId, outcome, customPayout) => {
+    let settledItem = null;
+    setPlacedBets((prev) => prev.map((bet) => {
+      if (bet.id !== betId) return bet;
+      const payout = outcome === 'won'
+        ? (customPayout ?? bet.potentialReturn)
+        : outcome === 'cashed_out'
+          ? (customPayout ?? bet.stake * 0.8)
+          : 0;
+      settledItem = {
+        ...bet,
+        status: outcome,
+        payout,
+        settledAt: new Date().toISOString(),
+      };
+      return settledItem;
+    }));
+    return settledItem;
+  }, []);
+
   const value = useMemo(() => ({
     bets,
     placedBets,
@@ -269,6 +289,7 @@ export function BetSlipProvider({ children }) {
     placeBets,
     cashOutBet,
     applySettledBets,
+    adminSettleBet,
     isBetSelected,
     stake,
     setStake,
@@ -297,6 +318,7 @@ export function BetSlipProvider({ children }) {
     placeBets,
     cashOutBet,
     applySettledBets,
+    adminSettleBet,
     isBetSelected,
     stake,
     betType,

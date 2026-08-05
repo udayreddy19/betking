@@ -34,6 +34,7 @@ import NotFound from './pages/Legal/NotFound';
 const Sports = lazy(() => import('./pages/Sports/Sports'));
 const Casino = lazy(() => import('./pages/Casino/Casino'));
 const LiveCasino = lazy(() => import('./pages/LiveCasino/LiveCasino'));
+const Admin = lazy(() => import('./pages/Admin/Admin'));
 
 function PageLoader() {
   return <div className="page-loader" role="status">Loading…</div>;
@@ -65,6 +66,7 @@ function AppLayout() {
               <Route path="/profile" element={<Profile />} />
               <Route path="/register" element={<Register />} />
               <Route path="/promotions" element={<Promotions />} />
+              <Route path="/admin" element={<Admin />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/responsible-gaming" element={<ResponsibleGaming />} />

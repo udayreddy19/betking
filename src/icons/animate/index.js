@@ -165,3 +165,16 @@ export const MdOutlineStorefront = withAnimatedIcon(ShoppingCartIcon);
 export const RiLogoutBoxRLine = withAnimatedIcon(LogOutIcon);
 export const FiMessageCircle = withAnimatedIcon(MessageCircleIcon);
 export const FiStar = withAnimatedIcon(StarIcon);
+
+export const FiUsers = withAnimatedIcon(UsersIcon);
+export const FiDollarSign = withAnimatedIcon(IndianRupeeIcon);
+export const FiActivity = withAnimatedIcon(ActivityIcon);
+export const FiCheckCircle = withAnimatedIcon(CircleCheckIcon);
+export const FiXCircle = withAnimatedIcon(XIcon);
+export const FiEdit = withAnimatedIcon(FileTextIcon);
+export const FiPlus = withAnimatedIcon(CheckIcon);
+export const FiLock = withAnimatedIcon(LockIcon);
+export const FiUnlock = withAnimatedIcon(LockIcon);
+export const FiCpu = withAnimatedIcon(ZapIcon);
+export const FiTrendingUp = withAnimatedIcon(ChartBarIcon);
+export const FiGift = withAnimatedIcon(GiftIcon);

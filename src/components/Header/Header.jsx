@@ -23,6 +23,7 @@ const navLinks = [
 ];
 
 const moreLinks = [
+  { to: '/admin', label: '🛡️ Admin Portal' },
   { to: '/help', label: 'Help Center' },
   { to: '/promotions', label: 'Promotions' },
   { to: '/casino', label: 'Casino' },

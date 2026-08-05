@@ -70,6 +70,10 @@ export default function Sidebar() {
                 <HiOutlineDocumentText className="tab-icon" />
                 Account
               </button>
+              <button className="sidebar-tab" onClick={() => { closeSidebar(); navigate('/admin'); }}>
+                <HiOutlineDocumentText className="tab-icon" />
+                Admin
+              </button>
               <button className="sidebar-tab" onClick={() => { closeSidebar(); navigate('/profile'); }}>
                 <HiOutlineUser className="tab-icon" />
                 Profile
