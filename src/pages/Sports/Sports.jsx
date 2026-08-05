@@ -5,6 +5,7 @@ import FilterChips from '../../components/FilterChips/FilterChips';
 import SportIcon from '../../components/SportIcon/SportIcon';
 import BetSlip from '../../components/BetSlip/BetSlip';
 import LiveMatchGraphicWidget from '../../components/LiveMatchGraphicWidget/LiveMatchGraphicWidget';
+import ErrorBoundary from '../../components/ErrorBoundary/ErrorBoundary';
 import SportsLeagueSidebar from '../../components/SportsLeagueSidebar/SportsLeagueSidebar';
 import { sportsCategories, featuredLeagues } from '../../data/mockData';
 import { useLiveMatches, useLiveSportsMeta } from '../../context/LiveSportsContext';
@@ -688,7 +689,9 @@ export default function Sports() {
             <>
               {!isWideLayout && (
                 <div className="sports-mobile-live-widget">
-                  <LiveMatchGraphicWidget match={activeMatch} />
+                  <ErrorBoundary>
+                    <LiveMatchGraphicWidget match={activeMatch} />
+                  </ErrorBoundary>
                 </div>
               )}
 
@@ -886,7 +889,9 @@ export default function Sports() {
         <aside className="sports-right">
           {isWideLayout && (
             <div className="sports-desktop-live-widget">
-              <LiveMatchGraphicWidget match={activeMatch} />
+              <ErrorBoundary>
+                <LiveMatchGraphicWidget match={activeMatch} />
+              </ErrorBoundary>
             </div>
           )}
           <div className="sports-search sports-search--desktop">

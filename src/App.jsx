@@ -18,6 +18,7 @@ import MobileBetSlip from './components/MobileBetSlip/MobileBetSlip';
 import GlobalBetBar from './components/GlobalBetBar/GlobalBetBar';
 import BetSettlementRunner from './components/BetSettlementRunner/BetSettlementRunner';
 import GamePlayModal from './components/GamePlayModal/GamePlayModal';
+import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 
 import Home from './pages/Home/Home';
 import Register from './pages/Register/Register';
@@ -52,24 +53,26 @@ function AppLayout() {
       <MobileBetSlip />
       <GlobalBetBar />
       <main className="app-main">
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/live-betting" element={<Sports />} />
-            <Route path="/sports" element={<Sports />} />
-            <Route path="/casino" element={<Casino />} />
-            <Route path="/live-casino" element={<LiveCasino />} />
-            <Route path="/fantasy" element={<Fantasy />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/promotions" element={<Promotions />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/responsible-gaming" element={<ResponsibleGaming />} />
-            <Route path="/help" element={<Help />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/live-betting" element={<Sports />} />
+              <Route path="/sports" element={<Sports />} />
+              <Route path="/casino" element={<Casino />} />
+              <Route path="/live-casino" element={<LiveCasino />} />
+              <Route path="/fantasy" element={<Fantasy />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/promotions" element={<Promotions />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/responsible-gaming" element={<ResponsibleGaming />} />
+              <Route path="/help" element={<Help />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </ErrorBoundary>
       </main>
       <Footer />
     </>
