@@ -8,6 +8,7 @@ import { getLoyaltySummary, LOYALTY_MIN_REDEEM_POINTS } from '../../utils/loyalt
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
 import MyBetsPanel from '../MyBetsPanel/MyBetsPanel';
 import PromotionsPanel from '../PromotionsPanel/PromotionsPanel';
+import RupeeSymbol from '../RupeeSymbol/RupeeSymbol';
 import '../MyBetsPanel/MyBetsPanel.css';
 import '../PromotionsPanel/PromotionsPanel.css';
 import './Header.css';
@@ -134,14 +135,16 @@ function Header() {
           <ThemeToggle />
           <button
             type="button"
-            className={`header-my-bets-btn header-my-bets-btn--compact ${isMyBetsOpen ? 'active' : ''}`}
+            className={`header-my-bets-btn ${isMyBetsOpen ? 'active' : ''}`}
             data-my-bets-trigger
             onClick={handleMyBetsToggle}
             aria-expanded={isMyBetsOpen}
             aria-haspopup="dialog"
             aria-label="My bets"
+            id="header-my-bets-btn"
           >
             <HiOutlineClipboardList className="header-my-bets-icon" aria-hidden="true" />
+            <span className="header-my-bets-label">My Bets</span>
             {myBetsCount > 0 && <span className="header-my-bets-badge">{myBetsCount}</span>}
           </button>
           <button
@@ -170,7 +173,13 @@ function Header() {
                     aria-haspopup="true"
                   >
                     <span className="balance-wallet-icon">👛</span>
-                    <span>{formatInr(wallet.total)}</span>
+                    <span className="balance-amount-text">
+                      <RupeeSymbol variant="text" />
+                      {Number(wallet.total).toLocaleString('en-IN', {
+                        minimumFractionDigits: wallet.total % 1 !== 0 ? 2 : 0,
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
                     <FiChevronDown className={`balance-chevron ${isWalletOpen ? 'open' : ''}`} />
                   </button>
                   {isWalletOpen && (
@@ -275,7 +284,7 @@ function Header() {
               <div className="header-wallet-group header-wallet-group--guest">
                 <div className="header-balance header-balance--static">
                   <span className="balance-wallet-icon">👛</span>
-                  <span>₹0</span>
+                  <span><RupeeSymbol variant="text" />0</span>
                   <FiChevronDown className="balance-chevron" />
                 </div>
               </div>

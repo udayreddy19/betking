@@ -28,5 +28,10 @@ export function getWalletBreakdown(user) {
 }
 
 export function formatInr(amount) {
-  return `₹${Number(amount || 0).toLocaleString('en-IN')}`;
+  const num = Number(amount || 0);
+  const formatted = num.toLocaleString('en-IN', {
+    minimumFractionDigits: num % 1 !== 0 ? 2 : 0,
+    maximumFractionDigits: 2,
+  });
+  return `₹${formatted}`;
 }

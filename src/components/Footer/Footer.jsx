@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { UpiLogo, GPayLogo, PhonePeLogo, PaytmLogo } from '../PaymentLogos/PaymentLogos';
 import './Footer.css';
 
 export default function Footer() {
@@ -39,11 +40,11 @@ export default function Footer() {
 
         <div className="footer-bottom">
           <p>© 2026 BetKing. All rights reserved.</p>
-          <div className="footer-payments">
-            <div className="footer-payment-icon" style={{ background: '#22c55e', color: '#fff', fontWeight: 'bold' }}>UPI</div>
-            <div className="footer-payment-icon" style={{ background: '#4285f4', color: '#fff', fontWeight: 'bold' }}>GPay</div>
-            <div className="footer-payment-icon" style={{ background: '#5f259f', color: '#fff', fontWeight: 'bold' }}>PhonePe</div>
-            <div className="footer-payment-icon" style={{ background: '#00baf2', color: '#fff', fontWeight: 'bold' }}>Paytm</div>
+          <div className="footer-payments" aria-label="Accepted payment methods">
+            <span className="footer-payment-badge" title="UPI Instant Payment"><UpiLogo height={30} /></span>
+            <span className="footer-payment-badge" title="Google Pay"><GPayLogo height={30} /></span>
+            <span className="footer-payment-badge" title="PhonePe"><PhonePeLogo height={30} /></span>
+            <span className="footer-payment-badge" title="Paytm Wallet & UPI"><PaytmLogo height={30} /></span>
           </div>
         </div>
 

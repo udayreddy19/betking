@@ -3,6 +3,7 @@ import { IoClose, IoChevronBack, IoKeyOutline, FiArrowRight, FiShield, FiAlertCi
 import { useAuth } from '../../context/AuthContext';
 import { paymentMethods } from '../../data/mockData';
 import RazorpayModal from '../RazorpayModal/RazorpayModal';
+import { GPayLogo, PhonePeLogo, PaytmLogo, BhimLogo } from '../PaymentLogos/PaymentLogos';
 import './DepositModal.css';
 
 export default function DepositModal() {
@@ -325,20 +326,16 @@ export default function DepositModal() {
                     {/* App quick launch bar */}
                     <div className="upi-apps">
                       <div className="upi-app-btn">
-                        <div className="upi-app-icon" style={{ background: '#4285f4' }}>G</div>
-                        <span>GPay</span>
+                        <GPayLogo height={26} />
                       </div>
                       <div className="upi-app-btn">
-                        <div className="upi-app-icon" style={{ background: '#5f259f' }}>P</div>
-                        <span>PhonePe</span>
+                        <PhonePeLogo height={26} />
                       </div>
                       <div className="upi-app-btn">
-                        <div className="upi-app-icon" style={{ background: '#00baf2' }}>P</div>
-                        <span>Paytm</span>
+                        <PaytmLogo height={26} />
                       </div>
                       <div className="upi-app-btn">
-                        <div className="upi-app-icon" style={{ background: '#ff9900' }}>a</div>
-                        <span>BHIM</span>
+                        <BhimLogo height={26} />
                       </div>
                     </div>
                   </>

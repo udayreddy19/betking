@@ -237,26 +237,45 @@
   color: var(--color-primary);
 }
 
-.header-my-bets-btn--compact .header-my-bets-label {
-  display: none;
+.header-my-bets-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) 12px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.header-my-bets-btn:hover,
+.header-my-bets-btn.active {
+  border-color: var(--color-primary-light);
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+}
+
+.header-my-bets-icon {
+  font-size: 1.1rem;
+}
+
+.header-my-bets-badge {
+  background: var(--color-primary);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
+  min-width: 18px;
+  text-align: center;
 }
 
 .header-wallet-group--guest .header-balance--static {
   cursor: default;
-}
-
-.balance-wallet-icon {
-  font-size: 0.85rem;
-}
-
-.header-theme-toggle {
-  display: none;
-}
-
-@media (min-width: 1200px) {
-  .header-my-bets-btn--compact {
-    display: none;
-  }
 }
 
 .header-balance {
