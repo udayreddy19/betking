@@ -3,7 +3,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../../context/AuthContext';
 import { formatInr } from '../../utils/walletBalance';
 import { FiX, FiZap } from '../../icons';
+import AnimatedMotionGiftIcon from '../AnimatedMotionGiftIcon/AnimatedMotionGiftIcon';
 import './DailySpinModal.css';
+
+import { playWinSound } from '../../utils/soundEffects';
 
 // Crisp, readable 2-line labels
 const WHEEL_SECTORS = [
@@ -18,7 +21,7 @@ const WHEEL_SECTORS = [
 ];
 
 export default function DailySpinModal({ isOpen, onClose }) {
-  const { user, updateUser, showToast } = useAuth();
+  const { user, updateUser, addBonus, addFreebet, showToast } = useAuth();
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotationDegree, setRotationDegree] = useState(0);
   const [wonPrize, setWonPrize] = useState(null);
@@ -48,18 +51,17 @@ export default function DailySpinModal({ isOpen, onClose }) {
       const prize = WHEEL_SECTORS[winningIndex];
       setWonPrize(prize);
       setHasSpunToday(true);
+      playWinSound();
 
       if (prize.type === 'bonus') {
-        const currentBonus = user?.bonusBalance || 0;
-        updateUser({ bonusBalance: currentBonus + prize.value });
-        showToast(`🎁 You won ${formatInr(prize.value)} Bonus Credit!`, 'success');
+        addBonus(prize.value, `Spin Wheel · ${prize.amount} Bonus`);
+        showToast(`You won ${formatInr(prize.value)} Bonus Credit!`, 'success');
       } else if (prize.type === 'freebet') {
-        const currentFreebet = user?.freebetBalance || 0;
-        updateUser({ freebetBalance: currentFreebet + prize.value });
+        addFreebet(prize.value, `Spin Wheel · ${prize.amount} Freebet`);
         showToast(`⚡ You unlocked a ${formatInr(prize.value)} Freebet Voucher!`, 'success');
       } else {
         const currentXp = user?.loyaltyPoints || 0;
-        updateUser({ loyaltyPoints: currentXp + prize.value });
+        updateUser({ loyaltyPoints: currentXp + prize.value, coins: (user?.coins || 0) + prize.value });
         showToast(`⭐ You gained ${prize.value} VIP Loyalty XP!`, 'info');
       }
     }, 5200);
@@ -170,7 +172,9 @@ export default function DailySpinModal({ isOpen, onClose }) {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
             >
-              <span className="prize-emoji">🎁</span>
+              <span className="prize-emoji">
+                <AnimatedMotionGiftIcon size={32} />
+              </span>
               <div>
                 <h4>YOU WON {wonPrize.amount} {wonPrize.subtitle}!</h4>
                 <p>Added to your bonus wallet balance.</p>

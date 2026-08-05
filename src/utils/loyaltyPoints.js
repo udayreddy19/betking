@@ -1,7 +1,7 @@
-/** Loyalty: 5 points per ₹100 spent; 5 points = ₹1; redeem from 1000 points */
+/** Loyalty: 5 points per ₹100 spent; 5 points = ₹1; redeemable from 50 points */
 export const LOYALTY_POINTS_PER_100 = 5;
 export const LOYALTY_POINTS_PER_RUPEE = 5;
-export const LOYALTY_MIN_REDEEM_POINTS = 1000;
+export const LOYALTY_MIN_REDEEM_POINTS = 50;
 
 export function getUserLoyaltyPoints(user) {
   return user?.loyaltyPoints ?? user?.coins ?? 0;

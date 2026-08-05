@@ -813,6 +813,8 @@
   width: 100%;
   max-height: none;
   border: 1px solid var(--color-border);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  order: -1;
 }
 
 .sports-right .live-graphic-card-10cric {

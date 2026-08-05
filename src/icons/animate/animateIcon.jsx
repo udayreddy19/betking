@@ -1,6 +1,7 @@
 import { forwardRef, useRef, useCallback } from 'react';
+import { motion } from 'motion/react';
 
-/** Wrap @animateicons/react icons with cross-browser pointer hover (Chrome-safe). */
+/** Wrap @animateicons/react icons with Framer Motion hover feedback & animations. */
 export function withAnimatedIcon(Icon) {
   const Wrapped = forwardRef(function AnimatedIcon(
     {
@@ -33,7 +34,7 @@ export function withAnimatedIcon(Icon) {
     }, [forwardedRef]);
 
     return (
-      <span
+      <motion.span
         className={`animated-icon-wrap ${className}`.trim()}
         style={{
           display: 'inline-flex',
@@ -45,6 +46,12 @@ export function withAnimatedIcon(Icon) {
         }}
         onPointerEnter={start}
         onPointerLeave={stop}
+        whileHover={{
+          scale: 1.2,
+          rotate: [0, -8, 8, 0],
+        }}
+        whileTap={{ scale: 0.88 }}
+        transition={{ duration: 0.3, ease: 'easeOut' }}
         role="presentation"
       >
         <Icon
@@ -55,7 +62,7 @@ export function withAnimatedIcon(Icon) {
           isAnimated={false}
           {...props}
         />
-      </span>
+      </motion.span>
     );
   });
 

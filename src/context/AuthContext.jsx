@@ -425,7 +425,7 @@ export function AuthProvider({ children }) {
     return deductStake({ cashAmount: amount }).success;
   }, [deductStake]);
 
-  const redeemLoyaltyPoints = useCallback(() => {
+  const redeemLoyaltyPoints = useCallback((requestedPoints) => {
     let redeemedPoints = 0;
     let creditedRupees = 0;
     let error = null;
@@ -436,20 +436,26 @@ export function AuthProvider({ children }) {
         error = 'Please log in to redeem points.';
         return prev;
       }
-      const points = getUserLoyaltyPoints(prev);
-      if (!canRedeemLoyaltyPoints(points)) {
+      const availablePoints = getUserLoyaltyPoints(prev);
+      const targetPoints = requestedPoints ? Number(requestedPoints) || 0 : availablePoints;
+      const pointsToRedeem = Math.min(availablePoints, Math.max(LOYALTY_MIN_REDEEM_POINTS, targetPoints));
+
+      if (availablePoints < LOYALTY_MIN_REDEEM_POINTS || pointsToRedeem < LOYALTY_MIN_REDEEM_POINTS) {
         error = `You need at least ${LOYALTY_MIN_REDEEM_POINTS} points to redeem.`;
         return prev;
       }
-      redeemedPoints = points;
-      creditedRupees = pointsToRupees(points);
+
+      redeemedPoints = pointsToRedeem;
+      creditedRupees = pointsToRupees(pointsToRedeem);
       email = prev.email;
+      const remainingPoints = availablePoints - pointsToRedeem;
+
       return {
         ...prev,
         balance: prev.balance + creditedRupees,
         winningsBalance: (prev.winningsBalance ?? 0) + creditedRupees,
-        loyaltyPoints: 0,
-        coins: 0,
+        loyaltyPoints: remainingPoints,
+        coins: remainingPoints,
       };
     });
 
@@ -467,7 +473,7 @@ export function AuthProvider({ children }) {
     }
 
     showToast(
-      'Redeemed ' + redeemedPoints + ' points - ' + formatInr(creditedRupees) + ' credited to wallet',
+      'Redeemed ' + redeemedPoints + ' points - ' + formatInr(creditedRupees) + ' credited to cash wallet!',
       'success',
     );
     return { ok: true, points: redeemedPoints, rupees: creditedRupees };
@@ -594,6 +600,58 @@ export function AuthProvider({ children }) {
     }
   }, [setUser, recordTx]);
 
+  const updateUser = useCallback((patch) => {
+    setUser(prev => {
+      if (!prev) return prev;
+      const next = typeof patch === 'function' ? patch(prev) : { ...prev, ...patch };
+      return next;
+    });
+  }, [setUser]);
+
+  const addBonus = useCallback((amount, label = 'Bonus credit') => {
+    const amt = Number(amount) || 0;
+    if (amt <= 0) return;
+    let email = null;
+    setUser(prev => {
+      if (!prev) return prev;
+      email = prev.email;
+      return {
+        ...prev,
+        bonusBalance: (prev.bonusBalance ?? 0) + amt,
+      };
+    });
+    if (email) {
+      recordTx(email, {
+        type: 'BONUS_CLAIM',
+        amount: amt,
+        label,
+        status: 'COMPLETED',
+      });
+    }
+  }, [setUser, recordTx]);
+
+  const addFreebet = useCallback((amount, label = 'Freebet voucher') => {
+    const amt = Number(amount) || 0;
+    if (amt <= 0) return;
+    let email = null;
+    setUser(prev => {
+      if (!prev) return prev;
+      email = prev.email;
+      return {
+        ...prev,
+        freebetBalance: (prev.freebetBalance ?? 0) + amt,
+      };
+    });
+    if (email) {
+      recordTx(email, {
+        type: 'BONUS_CLAIM',
+        amount: amt,
+        label,
+        status: 'COMPLETED',
+      });
+    }
+  }, [setUser, recordTx]);
+
   const updateRgLimits = useCallback(({ dailyDepositLimit, dailyStakeLimit }) => {
     setUser(prev => {
       if (!prev) return prev;
@@ -646,6 +704,9 @@ export function AuthProvider({ children }) {
     creditCashout,
     withdrawFunds,
     refundWithdrawal,
+    updateUser,
+    addBonus,
+    addFreebet,
     transactions,
     toast,
     showToast,
@@ -681,6 +742,9 @@ export function AuthProvider({ children }) {
     creditCashout,
     withdrawFunds,
     refundWithdrawal,
+    updateUser,
+    addBonus,
+    addFreebet,
     transactions,
     toast,
     showToast,
@@ -708,8 +772,28 @@ export function AuthProvider({ children }) {
   );
 }
 
+const dummyAuthFallback = {
+  user: null,
+  isLoggedIn: false,
+  showToast: () => {},
+  dismissToast: () => {},
+  openLoginModal: () => {},
+  closeLoginModal: () => {},
+  openDepositModal: () => {},
+  closeDepositModal: () => {},
+  addFunds: () => {},
+  deductFunds: () => {},
+  deductStake: () => {},
+  refundStake: () => {},
+  redeemLoyaltyPoints: () => {},
+  updateUser: () => {},
+  addBonus: () => {},
+  addFreebet: () => {},
+  transactions: [],
+  finModalType: null,
+};
+
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
-  return context;
+  return context || dummyAuthFallback;
 }

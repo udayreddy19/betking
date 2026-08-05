@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { IoClose, IoChevronBack, IoKeyOutline, FiArrowRight, FiShield, FiAlertCircle } from '../../icons';
+import { motion } from 'motion/react';
+import { IoClose, IoChevronBack, IoKeyOutline, FiArrowRight, FiShield, FiAlertCircle, FiDollarSign, FiZap } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { paymentMethods } from '../../data/mockData';
 import RazorpayModal from '../RazorpayModal/RazorpayModal';
-import { GPayLogo, PhonePeLogo, PaytmLogo, BhimLogo } from '../PaymentLogos/PaymentLogos';
+import { GPayLogo, PhonePeLogo, PaytmLogo, BhimLogo, UpiExpressIcon } from '../PaymentLogos/PaymentLogos';
 import './DepositModal.css';
 
 export default function DepositModal() {
@@ -161,11 +162,18 @@ export default function DepositModal() {
           <div className="deposit-header">
             <div className="deposit-header-left">
               {selectedMethod && !isSuccess && (
-                <button className="deposit-back-btn" onClick={() => setSelectedMethod(null)}>
+                <motion.button
+                  type="button"
+                  className="deposit-back-btn"
+                  onClick={() => setSelectedMethod(null)}
+                  whileHover={{ scale: 1.1, x: -2 }}
+                  whileTap={{ scale: 0.9 }}
+                >
                   <IoChevronBack />
-                </button>
+                </motion.button>
               )}
-              <h2>
+              <h2 className="flex-center gap-2">
+                <FiDollarSign style={{ color: 'var(--color-primary)' }} />
                 {isSuccess
                   ? 'Deposit Complete'
                   : selectedMethod
@@ -173,9 +181,15 @@ export default function DepositModal() {
                     : 'Deposit Funds'}
               </h2>
             </div>
-            <button className="deposit-close" onClick={handleClose}>
+            <motion.button
+              type="button"
+              className="deposit-close"
+              onClick={handleClose}
+              whileHover={{ scale: 1.15, rotate: 90 }}
+              whileTap={{ scale: 0.85 }}
+            >
               <IoClose />
-            </button>
+            </motion.button>
           </div>
 
           {/* Razorpay Banner for UPI & Wallets */}
@@ -190,7 +204,16 @@ export default function DepositModal() {
               fontSize: 'var(--text-xs)',
               fontWeight: 600
             }}>
-              <span>📱 Instant UPI & Wallets</span>
+              <span className="flex-center gap-2">
+                <motion.span
+                  animate={{ scale: [1, 1.25, 1], rotate: [0, -10, 10, 0] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  style={{ display: 'inline-flex' }}
+                >
+                  <FiZap style={{ color: '#f59e0b' }} />
+                </motion.span>
+                Instant UPI & Wallets
+              </span>
               <span style={{
                 background: 'rgba(255,255,255,0.15)',
                 padding: '2px 8px',
@@ -360,18 +383,26 @@ export default function DepositModal() {
               </form>
             ) : (
               /* Method Selection List View */
-              filteredMethods.map(method => (
-                <div
+              filteredMethods.map((method) => (
+                <motion.div
                   className="deposit-method"
                   key={method.id}
                   onClick={() => handleMethodSelect(method)}
+                  whileHover={{ scale: 1.02, x: 2 }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ duration: 0.2 }}
                 >
-                  <div
-                    className="deposit-method-icon"
-                    style={{ background: method.color || 'var(--color-text)' }}
-                  >
-                    {method.icon}
-                  </div>
+                  {method.id === 'upi-express' || method.type === 'upi' ? (
+                    <UpiExpressIcon size={44} />
+                  ) : (
+                    <motion.div
+                      className="deposit-method-icon"
+                      style={{ background: method.color || 'var(--color-text)' }}
+                      whileHover={{ rotate: [0, -8, 8, 0], scale: 1.1 }}
+                    >
+                      {method.icon}
+                    </motion.div>
+                  )}
                   <div className="deposit-method-info">
                     <div className="deposit-method-title">
                       <h4>{method.name}</h4>
@@ -379,10 +410,10 @@ export default function DepositModal() {
                     </div>
                     <p>{method.description}</p>
                   </div>
-                  <div className="deposit-method-arrow">
+                  <motion.div className="deposit-method-arrow" whileHover={{ x: 5 }}>
                     <FiArrowRight />
-                  </div>
-                </div>
+                  </motion.div>
+                </motion.div>
               ))
             )}
           </div>

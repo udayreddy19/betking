@@ -3,6 +3,9 @@ import { IoClose } from '../../icons';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { isMatchBettable, isMatchLive } from '../../utils/matchBetting';
 import { generateMatchMarkets } from '../../utils/oddsMarketsGenerator';
+import { resolveCricketTeamScores, isCricketSecondInnings } from '../../utils/cricketScores';
+import { getChaseText } from '../../utils/liveMatchWidgetData';
+import { getMatchMaxOvers } from '../../utils/cricketFormat';
 import BetSlipFooter from '../BetSlip/BetSlipFooter';
 import TeamJersey from '../TeamJersey/TeamJersey';
 import './MatchDetailModal.css';
@@ -75,13 +78,15 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
   const team1Players = teamRosters[team1Name] || [`${match.team1.shortName} Opener`, `${match.team1.shortName} Captain`, `${match.team1.shortName} Batter 3`, `${match.team1.shortName} All-Rounder`];
   const team2Players = teamRosters[team2Name] || [`${match.team2.shortName} Opener`, `${match.team2.shortName} Captain`, `${match.team2.shortName} Batter 3`, `${match.team2.shortName} All-Rounder`];
 
-  // Innings detection for Cricket
-  const isSecondInnings = sport === 'cricket' && isLiveNow && match.liveDetails && match.liveDetails.score2 !== undefined && match.liveDetails.runs !== undefined;
-  const targetScore = (match.liveDetails?.score2 || 0) + 1;
-  const currentScore = match.liveDetails?.runs || 0;
-  const wicketsLost = match.liveDetails?.wickets || 0;
-  const reqRuns = Math.max(0, targetScore - currentScore);
-  const oversDone = match.liveDetails?.overs || '0.0';
+  // Dynamic Innings & Scores detection for Cricket
+  const ld = match?.liveDetails || {};
+  const cricketScores = resolveCricketTeamScores(match, ld);
+  const isSecondInnings = isCricketSecondInnings(match, ld);
+  const maxOvers = getMatchMaxOvers(match) || 20;
+
+  const team1Score = cricketScores.team1;
+  const team2Score = cricketScores.team2;
+  const chaseText = getChaseText(match, { inningsNum: isSecondInnings ? 2 : 1, battingTeam: team2Name }, team1Name, team2Name);
 
   const handleOddsClick = (arg1, arg2, arg3, arg4) => {
     let e;
@@ -142,7 +147,7 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
             <h4>{team1Name}</h4>
             {isLiveNow && match.liveDetails && (
               <div className="scoreboard-score">
-                {sport === 'cricket' && `${currentScore}/${wicketsLost}`}
+                {sport === 'cricket' && `${team1Score.runs}/${team1Score.wickets} (${team1Score.overs} ov)`}
                 {sport === 'soccer' && (match.liveDetails.score1 ?? 2)}
                 {sport === 'basketball' && (match.liveDetails.score1 ?? 94)}
               </div>
@@ -154,7 +159,7 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
               <div className="scoreboard-live-badge">
                 <span className="live-pulse" />
                 LIVE {
-                  sport === 'cricket' ? (isSecondInnings ? `(INN 2 | ${oversDone}/20 OV)` : `(INN 1 | ${oversDone}/20 OV)`) :
+                  sport === 'cricket' ? (isSecondInnings ? `(INN 2 | ${team2Score.overs}/${maxOvers} OV)` : `(INN 1 | ${team1Score.overs}/${maxOvers} OV)`) :
                   sport === 'soccer' ? `(${match.liveDetails?.minute || '74'}' In Play)` : '(In Play)'
                 }
               </div>
@@ -169,7 +174,7 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
             <h4>{team2Name}</h4>
             {isLiveNow && match.liveDetails && (
               <div className="scoreboard-score">
-                {sport === 'cricket' && `${match.liveDetails.score2 || 148}/${match.liveDetails.wickets2 || 5}`}
+                {sport === 'cricket' && `${team2Score.runs}/${team2Score.wickets} (${team2Score.overs} ov)`}
                 {sport === 'soccer' && (match.liveDetails.score2 ?? 1)}
                 {sport === 'basketball' && (match.liveDetails.score2 ?? 88)}
               </div>
@@ -183,56 +188,72 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
         {sport === 'cricket' && isLiveNow && (
           <div className="cricket-live-center">
             <div className="cricket-chase-pill">
-              {isSecondInnings
-                ? `⚡ ${team1Name} (${currentScore}/${wicketsLost}) require ${reqRuns} runs from 69 balls.`
-                : `⚡ 1st Innings in progress: ${team1Name} ${currentScore}/${wicketsLost} (${oversDone}/20 Ov)`}
+              {chaseText
+                ? `⚡ ${chaseText}`
+                : isSecondInnings
+                ? `⚡ 2nd Innings: ${team2Name} ${team2Score.runs}/${team2Score.wickets} (${team2Score.overs}/${maxOvers} Ov)`
+                : `⚡ 1st Innings: ${team1Name} ${team1Score.runs}/${team1Score.wickets} (${team1Score.overs}/${maxOvers} Ov)`}
             </div>
 
             {/* Live Batter & Bowler Table */}
-            <div className="cricket-live-tables">
-              <div className="cricket-table-box">
-                <div className="cricket-table-title">BATTER</div>
-                <table className="cricket-mini-table">
-                  <thead>
-                    <tr>
-                      <th>NAME</th>
-                      <th>R</th>
-                      <th>B</th>
-                      <th>4S</th>
-                      <th>6S</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>{team1Players[0] || 'SR Bhudia'} *</td>
-                      <td>{Math.floor(currentScore * 0.3)}</td>
-                      <td>18</td>
-                      <td>3</td>
-                      <td>1</td>
-                    </tr>
-                    <tr>
-                      <td>{team1Players[1] || 'RR Patel'}</td>
-                      <td>{Math.floor(currentScore * 0.2)}</td>
-                      <td>12</td>
-                      <td>2</td>
-                      <td>0</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+            {(() => {
+              const ld = match.liveDetails || {};
+              const b1 = ld.batter1 || {};
+              const b2 = ld.batter2 || {};
+              const b1Name = b1.name || team1Players[0] || 'Batter 1';
+              const b2Name = b2.name || team1Players[1] || 'Batter 2';
+              const bowlerName = ld.bowler?.name || team2Players[2] || 'Bowler';
+              const fours = ld.fours ?? ((b1.fours || 0) + (b2.fours || 0));
+              const sixes = ld.sixes ?? ((b1.sixes || 0) + (b2.sixes || 0));
+              const extras = ld.extras ?? 0;
 
-              <div className="cricket-table-box">
-                <div className="cricket-table-title">CURRENT BOWLER & STATS</div>
-                <div className="bowler-stat-row">
-                  <span>Bowler: <strong>{team2Players[2] || 'Rizwan Butt'}</strong></span>
+              return (
+                <div className="cricket-live-tables">
+                  <div className="cricket-table-box">
+                    <div className="cricket-table-title">BATTER</div>
+                    <table className="cricket-mini-table">
+                      <thead>
+                        <tr>
+                          <th>NAME</th>
+                          <th>R</th>
+                          <th>B</th>
+                          <th>4S</th>
+                          <th>6S</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>{b1Name} *</td>
+                          <td>{b1.runs ?? Math.floor(currentScore * 0.3)}</td>
+                          <td>{b1.balls ?? 18}</td>
+                          <td>{b1.fours ?? 3}</td>
+                          <td>{b1.sixes ?? 1}</td>
+                        </tr>
+                        <tr>
+                          <td>{b2Name}</td>
+                          <td>{b2.runs ?? Math.floor(currentScore * 0.2)}</td>
+                          <td>{b2.balls ?? 12}</td>
+                          <td>{b2.fours ?? 2}</td>
+                          <td>{b2.sixes ?? 0}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="cricket-table-box">
+                    <div className="cricket-table-title">CURRENT BOWLER & STATS</div>
+                    <div className="bowler-stat-row">
+                      <span>Bowler: <strong>{bowlerName}</strong></span>
+                    </div>
+                    <div className="innings-stats-grid">
+                      <div><span>Fours:</span> <strong>{fours}</strong></div>
+                      <div><span>Sixes:</span> <strong>{sixes}</strong></div>
+                      <div><span>Extras:</span> <strong>{extras}</strong></div>
+                    </div>
+                  </div>
                 </div>
-                <div className="innings-stats-grid">
-                  <div><span>Fours:</span> <strong>9</strong></div>
-                  <div><span>Sixes:</span> <strong>3</strong></div>
-                  <div><span>Extras:</span> <strong>8</strong></div>
-                </div>
-              </div>
-            </div>
+              );
+            })()}
           </div>
         )}
 

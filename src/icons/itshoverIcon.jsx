@@ -1,6 +1,7 @@
 import { forwardRef, useRef, useCallback } from 'react';
+import { motion } from 'motion/react';
 
-/** Wrap itshover icons with cross-browser pointer hover (Chrome-safe). */
+/** Wrap itshover icons with Framer Motion hover feedback & animations. */
 export function withItshoverIcon(Icon) {
   const Wrapped = forwardRef(function ItshoverIcon(
     {
@@ -33,7 +34,7 @@ export function withItshoverIcon(Icon) {
     }, [forwardedRef]);
 
     return (
-      <span
+      <motion.span
         className={`itshover-icon-wrap ${className}`.trim()}
         style={{
           display: 'inline-flex',
@@ -45,6 +46,12 @@ export function withItshoverIcon(Icon) {
         }}
         onPointerEnter={start}
         onPointerLeave={stop}
+        whileHover={{
+          scale: 1.2,
+          rotate: [0, -8, 8, 0],
+        }}
+        whileTap={{ scale: 0.88 }}
+        transition={{ duration: 0.3, ease: 'easeOut' }}
         role="presentation"
       >
         <Icon
@@ -54,7 +61,7 @@ export function withItshoverIcon(Icon) {
           size={size}
           {...props}
         />
-      </span>
+      </motion.span>
     );
   });
 

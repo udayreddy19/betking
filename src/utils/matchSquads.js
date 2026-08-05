@@ -10,8 +10,25 @@ function teamsMatch(teamA, teamB) {
   return a.split(' ')[0] === b.split(' ')[0];
 }
 
-function emptySquad(teamName) {
-  return { name: teamName, players: [] };
+function generateFullSquad(teamName) {
+  const short = (teamName || 'Team').replace(/\s+W$/i, '').trim();
+  const prefix = short.split(' ')[0] || 'Player';
+
+  const defaultPlayers = [
+    { id: 1, name: `${prefix} Opener 1`, role: 'Batter', isCaptain: true },
+    { id: 2, name: `${prefix} Opener 2`, role: 'Batter' },
+    { id: 3, name: `${prefix} Keeper`, role: 'Batter', isKeeper: true },
+    { id: 4, name: `${prefix} Batter 3`, role: 'Batter' },
+    { id: 5, name: `${prefix} Batter 4`, role: 'Batter' },
+    { id: 6, name: `${prefix} All-Rounder 1`, role: 'All-Rounder' },
+    { id: 7, name: `${prefix} All-Rounder 2`, role: 'All-Rounder' },
+    { id: 8, name: `${prefix} Spinner 1`, role: 'Bowler' },
+    { id: 9, name: `${prefix} Pacer 1`, role: 'Bowler' },
+    { id: 10, name: `${prefix} Pacer 2`, role: 'Bowler' },
+    { id: 11, name: `${prefix} Pacer 3`, role: 'Bowler' },
+  ];
+
+  return { name: teamName, players: defaultPlayers };
 }
 
 /** Map API squads to home/away team names on the match card. */
@@ -25,15 +42,15 @@ export function resolveMatchSquads(match, team1Name, team2Name) {
     if (!team2Squad && squads[1]) team2Squad = squads[1];
 
     return {
-      team1: team1Squad || emptySquad(team1Name),
-      team2: team2Squad || emptySquad(team2Name),
+      team1: (team1Squad?.players?.length ? team1Squad : generateFullSquad(team1Name)),
+      team2: (team2Squad?.players?.length ? team2Squad : generateFullSquad(team2Name)),
       fromApi: true,
     };
   }
 
   return {
-    team1: emptySquad(team1Name),
-    team2: emptySquad(team2Name),
+    team1: generateFullSquad(team1Name),
+    team2: generateFullSquad(team2Name),
     fromApi: false,
   };
 }

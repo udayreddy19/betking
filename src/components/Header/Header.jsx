@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect, memo } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { HiOutlineMenu, HiOutlineClipboardList, IoGiftOutline, FiChevronDown } from '../../icons';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { motion } from 'motion/react';
+import { HiOutlineMenu, HiOutlineClipboardList, IoGiftOutline, FiChevronDown, FiZap, FiShield } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { getWalletBreakdown, formatInr } from '../../utils/walletBalance';
@@ -9,6 +10,8 @@ import ThemeToggle from '../ThemeToggle/ThemeToggle';
 import MyBetsPanel from '../MyBetsPanel/MyBetsPanel';
 import PromotionsPanel from '../PromotionsPanel/PromotionsPanel';
 import RupeeSymbol from '../RupeeSymbol/RupeeSymbol';
+import DailySpinModal from '../DailySpinModal/DailySpinModal';
+import AnimatedMotionGiftIcon from '../AnimatedMotionGiftIcon/AnimatedMotionGiftIcon';
 import '../MyBetsPanel/MyBetsPanel.css';
 import '../PromotionsPanel/PromotionsPanel.css';
 import './Header.css';
@@ -31,8 +34,6 @@ const moreLinks = [
   { to: '/responsible-gaming', label: 'Responsible Gaming' },
 ];
 
-import DailySpinModal from '../DailySpinModal/DailySpinModal';
-
 function Header() {
   const { user, isLoggedIn, openLoginModal, openDepositModal, toggleSidebar, redeemLoyaltyPoints, openFinModal } = useAuth();
   const { myBetsCount, isMyBetsOpen, toggleMyBets, closeMyBets } = useBetSlip();
@@ -43,6 +44,17 @@ function Header() {
   const moreRef = useRef(null);
   const walletRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isAdminPage = location.pathname.startsWith('/admin');
+  const isAdminUser = user?.role === 'admin' || user?.email === 'admin@betking.com';
+  // ONLY show Admin Clean Header when actively on the /admin route
+  const showAdminCleanHeader = isAdminPage;
+
+  const activeMoreLinks = moreLinks.filter((link) => {
+    if (link.to === '/admin') return isAdminUser;
+    return true;
+  });
 
   const wallet = getWalletBreakdown(user);
   const loyalty = getLoyaltySummary(user);
@@ -79,8 +91,8 @@ function Header() {
     toggleMyBets();
   }, [closePromos, toggleMyBets]);
 
-  const handleRedeemLoyalty = useCallback(() => {
-    redeemLoyaltyPoints();
+  const handleRedeemLoyalty = useCallback((pts) => {
+    redeemLoyaltyPoints(pts);
   }, [redeemLoyaltyPoints]);
 
   return (
@@ -119,7 +131,7 @@ function Header() {
               </button>
               {isMoreOpen && (
                 <div className="header-more-menu">
-                  {moreLinks.map((link) => (
+                  {activeMoreLinks.map((link) => (
                     <button
                       key={link.to}
                       type="button"
@@ -137,41 +149,70 @@ function Header() {
 
         <div className="header-right">
           <ThemeToggle />
-          <button
-            type="button"
-            className={`header-my-bets-btn ${isMyBetsOpen ? 'active' : ''}`}
-            data-my-bets-trigger
-            onClick={handleMyBetsToggle}
-            aria-expanded={isMyBetsOpen}
-            aria-haspopup="dialog"
-            aria-label="My bets"
-            id="header-my-bets-btn"
-          >
-            <HiOutlineClipboardList className="header-my-bets-icon" aria-hidden="true" />
-            <span className="header-my-bets-label">My Bets</span>
-            {myBetsCount > 0 && <span className="header-my-bets-badge">{myBetsCount}</span>}
-          </button>
-          <button
-            type="button"
-            className="header-bonuses-btn"
-            id="daily-spin-btn"
-            title="Spin & Win Daily Rewards"
-            onClick={() => setIsSpinOpen(true)}
-          >
-            🎰
-          </button>
-          <button
-            type="button"
-            className={`header-bonuses-btn ${isPromosOpen ? 'active' : ''}`}
-            id="bonuses-btn"
-            data-promos-trigger
-            aria-label="Promotions"
-            aria-expanded={isPromosOpen}
-            aria-haspopup="dialog"
-            onClick={togglePromos}
-          >
-            <IoGiftOutline />
-          </button>
+
+          {showAdminCleanHeader ? (
+            <div className="header-admin-clean-bar">
+              <span className="admin-status-badge">
+                <span className="admin-status-dot" /> ADMIN MODE
+              </span>
+              {!isAdminPage && (
+                <button className="header-deposit-btn" onClick={() => navigate('/admin')}>
+                  Admin Portal
+                </button>
+              )}
+            </div>
+          ) : (
+            <>
+              <motion.button
+                type="button"
+                className={`header-action-icon-btn ${isMyBetsOpen ? 'active' : ''}`}
+                data-my-bets-trigger
+                onClick={handleMyBetsToggle}
+                aria-expanded={isMyBetsOpen}
+                aria-haspopup="dialog"
+                aria-label="My bets"
+                id="header-my-bets-btn"
+                title="My Bets"
+                whileHover={{ scale: 1.15, rotate: -5 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <HiOutlineClipboardList className="header-my-bets-icon" aria-hidden="true" />
+                {myBetsCount > 0 && <span className="header-my-bets-badge">{myBetsCount}</span>}
+              </motion.button>
+              <motion.button
+                type="button"
+                className="header-action-icon-btn header-spin-icon-btn"
+                id="daily-spin-btn"
+                title="Spin & Win Daily Rewards"
+                onClick={() => setIsSpinOpen(true)}
+                whileHover={{ scale: 1.2, rotate: 15 }}
+                whileTap={{ scale: 0.85 }}
+              >
+                <motion.div
+                  animate={{ scale: [1, 1.25, 1], rotate: [0, -10, 10, 0] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  style={{ display: 'inline-flex' }}
+                >
+                  <FiZap style={{ color: '#f59e0b' }} />
+                </motion.div>
+              </motion.button>
+              <motion.button
+                type="button"
+                className={`header-action-icon-btn ${isPromosOpen ? 'active' : ''}`}
+                id="bonuses-btn"
+                data-promos-trigger
+                aria-label="Promotions"
+                aria-expanded={isPromosOpen}
+                aria-haspopup="dialog"
+                onClick={togglePromos}
+                title="Promotions"
+                whileHover={{ scale: 1.15 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <AnimatedMotionGiftIcon size={18} />
+              </motion.button>
+            </>
+          )}
 
           {isLoggedIn ? (
             <>
@@ -215,29 +256,60 @@ function Header() {
                         </div>
                         <p className="header-wallet-menu__loyalty-meta">
                           {loyalty.canRedeem
-                            ? `Redeem for ${formatInr(loyalty.redeemValue)}`
-                            : `${loyalty.pointsToUnlock} pts to unlock redemption`}
+                            ? `Redeem for cash (5 pts = ₹1)`
+                            : `${loyalty.pointsToUnlock} pts to unlock redemption (${LOYALTY_MIN_REDEEM_POINTS} pts min)`}
                         </p>
-                        <button
-                          type="button"
-                          className="header-wallet-menu__redeem"
-                          disabled={!loyalty.canRedeem}
-                          onClick={handleRedeemLoyalty}
-                        >
-                          Redeem {LOYALTY_MIN_REDEEM_POINTS}+ points
-                        </button>
+                        <div className="loyalty-redeem-btn-group">
+                          {loyalty.points >= 50 && (
+                            <button
+                              type="button"
+                              className="header-wallet-menu__redeem header-wallet-menu__redeem--sm"
+                              onClick={() => handleRedeemLoyalty(50)}
+                            >
+                              50 pts (₹10)
+                            </button>
+                          )}
+                          {loyalty.points >= 100 && (
+                            <button
+                              type="button"
+                              className="header-wallet-menu__redeem header-wallet-menu__redeem--sm"
+                              onClick={() => handleRedeemLoyalty(100)}
+                            >
+                              100 pts (₹20)
+                            </button>
+                          )}
+                          {loyalty.canRedeem && (
+                            <button
+                              type="button"
+                              className="header-wallet-menu__redeem"
+                              onClick={() => handleRedeemLoyalty(loyalty.points)}
+                            >
+                              Redeem All ({loyalty.points} pts = {formatInr(loyalty.redeemValue)})
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       <div className="header-wallet-menu__divider" />
 
                       <div className="header-wallet-menu__row">
-                        <span className="header-wallet-menu__label">Balance</span>
-                        <span className="header-wallet-menu__value">{formatInr(wallet.total)}</span>
+                        <span className="header-wallet-menu__label">Cash Balance</span>
+                        <span className="header-wallet-menu__value">{formatInr(wallet.cashBalance)}</span>
                       </div>
                       <div className="header-wallet-menu__row">
-                        <span className="header-wallet-menu__label">Bonus / Freebets</span>
+                        <span className="header-wallet-menu__label flex-center gap-1">
+                          <AnimatedMotionGiftIcon size={13} /> Bonus Wallet
+                        </span>
                         <span className="header-wallet-menu__value header-wallet-menu__value--bonus">
-                          {formatInr(wallet.bonusAndFreebets)}
+                          {formatInr(wallet.bonus)}
+                        </span>
+                      </div>
+                      <div className="header-wallet-menu__row">
+                        <span className="header-wallet-menu__label flex-center gap-1">
+                          <FiZap size={13} style={{ color: '#0284c7' }} /> Freebet Vouchers
+                        </span>
+                        <span className="header-wallet-menu__value header-wallet-menu__value--freebet">
+                          {formatInr(wallet.freebets)}
                         </span>
                       </div>
                       {wallet.lockedDeposit > 0 && (

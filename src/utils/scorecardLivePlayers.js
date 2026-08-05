@@ -9,26 +9,28 @@ export function enrichLivePlayersFromScorecard(liveDetails = {}, scorecardInning
     || scorecardInnings[scorecardInnings.length - 1];
   if (!currentInnings) return next;
 
-  const atCrease = (currentInnings.batters || []).filter(
-    (b) => b.notOut && /^(batting|not out)$/i.test(b.dismissal || ''),
+  const battersList = currentInnings.batters || [];
+  const atCrease = battersList.filter(
+    (b) => b.notOut || !b.dismissal || /^(batting|not out)$/i.test(b.dismissal || ''),
   );
+  const activeBatters = atCrease.length ? atCrease : battersList.slice(0, 2);
 
-  if (!next.batter1?.name && atCrease[0]) {
+  if (!next.batter1?.name && activeBatters[0]) {
     next.batter1 = {
-      name: atCrease[0].name,
-      runs: atCrease[0].runs ?? 0,
-      balls: atCrease[0].balls ?? 0,
-      fours: atCrease[0].fours ?? 0,
-      sixes: atCrease[0].sixes ?? 0,
+      name: activeBatters[0].name,
+      runs: activeBatters[0].runs ?? 0,
+      balls: activeBatters[0].balls ?? 0,
+      fours: activeBatters[0].fours ?? 0,
+      sixes: activeBatters[0].sixes ?? 0,
     };
   }
-  if (!next.batter2?.name && atCrease[1]) {
+  if (!next.batter2?.name && activeBatters[1]) {
     next.batter2 = {
-      name: atCrease[1].name,
-      runs: atCrease[1].runs ?? 0,
-      balls: atCrease[1].balls ?? 0,
-      fours: atCrease[1].fours ?? 0,
-      sixes: atCrease[1].sixes ?? 0,
+      name: activeBatters[1].name,
+      runs: activeBatters[1].runs ?? 0,
+      balls: activeBatters[1].balls ?? 0,
+      fours: activeBatters[1].fours ?? 0,
+      sixes: activeBatters[1].sixes ?? 0,
     };
   }
 

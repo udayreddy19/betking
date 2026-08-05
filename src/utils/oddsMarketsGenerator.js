@@ -41,54 +41,101 @@ export function computeLiveDynamicOdds(match) {
 
   const ld = match.liveDetails || {};
 
-  // --- CRICKET DYNAMIC LIVE ODDS ---
+  // --- CRICKET DYNAMIC LIVE ODDS (HUMAN TRADER ALGORITHM) ---
   if (sport === 'cricket' || sport === 'virtual-cricket') {
     const { team1, team2 } = resolveCricketTeamScores(match, ld);
     const is2ndInnings = isCricketSecondInnings(match, ld);
 
-    let p1 = 1 / baseT1;
-    let p2 = 1 / baseT2;
+    const isOdiOrListA = (team1.balls > 120 || team2.balls > 120 || /50|one day|cup|list a/i.test(match.league || ''));
+    const totalBalls = isOdiOrListA ? 300 : 120;
+    const parRRR = isOdiOrListA ? 5.4 : 8.2;
 
-    if (is2ndInnings) {
-      // Team 2 chasing Team 1 target score
-      const target = (team1.runs || 150) + 1;
-      const chaseRuns = team2.runs || 0;
-      const wickets = team2.wickets || 0;
-      const ballsBowled = team2.balls || 1;
-      const totalBalls = 120; // Standard T20 limit
-      const remainingBalls = Math.max(1, totalBalls - ballsBowled);
-      const runsNeeded = Math.max(1, target - chaseRuns);
+    // Ball-by-ball micro factors (4s, 6s, Wickets, Dots)
+    const currentOver = (ld.currentOverBalls || []).map(b => String(b).toUpperCase());
+    const lastBall = currentOver.length ? currentOver[currentOver.length - 1] : String(ld.lastBall || ld.lastRun || '').toUpperCase();
 
-      const rrr = (runsNeeded / remainingBalls) * 6;
-      const crr = (chaseRuns / Math.max(1, ballsBowled)) * 6;
-
-      // Higher RRR favors Team 1 (defending)
-      let rrrFactor = (rrr - 7.5) * 0.06;
-      let wicketFactor = wickets * 0.08;
-
-      p1 += rrrFactor + wicketFactor;
-      p2 -= (rrrFactor + wicketFactor);
-    } else {
-      // 1st Innings: Team 1 batting
-      const runs = team1.runs || 0;
-      const wickets = team1.wickets || 0;
-      const balls = team1.balls || 1;
-      const crr = (runs / Math.max(1, balls)) * 6;
-
-      let crrFactor = (crr - 7.0) * 0.03;
-      let wicketFactor = wickets * 0.05;
-
-      p1 += (crrFactor - wicketFactor);
-      p2 -= (crrFactor - wicketFactor);
+    // Human Ball Momentum Impact:
+    let ballMomentum = 0;
+    if (lastBall === '6' || lastBall === '6B') {
+      ballMomentum = 0.035; // 6 shifts batting win probability +3.5%
+    } else if (lastBall === '4' || lastBall === '4B') {
+      ballMomentum = 0.020; // 4 shifts batting win probability +2.0%
+    } else if (lastBall === 'W' || lastBall === 'WKT') {
+      ballMomentum = -0.065; // Wicket penalizes batting win probability -6.5%
+    } else if (lastBall === '0' || lastBall === '•') {
+      ballMomentum = -0.006;
+    } else if (lastBall === '1' || lastBall === '2' || lastBall === '3') {
+      ballMomentum = 0.004;
     }
 
-    const totalP = p1 + p2;
-    p1 = p1 / totalP;
-    p2 = p2 / totalP;
+    let pDefending = 0.50;
+    let pChasing = 0.50;
+
+    if (is2ndInnings) {
+      // 2ND INNINGS: Team 1 defended, Team 2 chasing
+      const target = (team1.runs || 150) + 1;
+      const chaseRuns = team2.runs || 0;
+      const wicketsLost = team2.wickets || 0;
+      const ballsBowled = Math.max(0, team2.balls || 0);
+      const remainingBalls = Math.max(1, totalBalls - ballsBowled);
+      const runsNeeded = Math.max(0, target - chaseRuns);
+
+      const rrr = (runsNeeded / remainingBalls) * 6;
+
+      // Human Bookmaker 2nd Innings Target Curve:
+      // Compare RRR to par RRR (e.g. 5.4 for 50-over, 8.2 for T20)
+      const rrrDiff = rrr - parRRR;
+      const oversRemaining = remainingBalls / 6;
+
+      // Weight RRR pressure heavily when remaining overs shrink
+      const urgencyFactor = 1 + (1 / Math.max(1, oversRemaining * 0.5));
+      const rrrPenalty = rrrDiff * 0.035 * urgencyFactor;
+
+      // Wickets lost penalty for chasing team
+      const wicketPenalty = wicketsLost * 0.045 * (1 + (wicketsLost > 4 ? 0.3 : 0));
+
+      // Chasing team probability starts at 0.50 (adjusted for target vs par target)
+      let chaseProb = 0.50 - rrrPenalty - wicketPenalty + ballMomentum;
+
+      // Target difficulty adjustment (e.g., Target 264 in 50 overs is very standard, ~47% chase)
+      if (isOdiOrListA && target >= 250 && target <= 280 && ballsBowled < 12) {
+        chaseProb = 0.47 + ballMomentum;
+      } else if (!isOdiOrListA && target >= 165 && target <= 180 && ballsBowled < 12) {
+        chaseProb = 0.48 + ballMomentum;
+      }
+
+      chaseProb = Math.max(0.03, Math.min(0.97, chaseProb));
+
+      pDefending = 1 - chaseProb;
+      pChasing = chaseProb;
+    } else {
+      // 1ST INNINGS: Team 1 batting, Team 2 bowling
+      const runs = team1.runs || 0;
+      const wickets = Math.min(9, team1.wickets || 0);
+      const ballsBowled = Math.max(1, team1.balls || 1);
+      const crr = (runs / ballsBowled) * 6;
+
+      const crrDiff = crr - parRRR;
+      const wicketPenalty = wickets * 0.04;
+
+      let batProb = 0.50 + (crrDiff * 0.03) - wicketPenalty + ballMomentum;
+      batProb = Math.max(0.08, Math.min(0.92, batProb));
+
+      pDefending = batProb;
+      pChasing = 1 - batProb;
+    }
+
+    // Map back to team1 (Hampshire / Home) vs team2 (Glamorgan / Away)
+    const pTeam1 = pDefending;
+    const pTeam2 = pChasing;
+
+    const clamped1 = Math.max(0.04, Math.min(0.96, pTeam1));
+    const clamped2 = Math.max(0.04, Math.min(0.96, pTeam2));
+    const total = clamped1 + clamped2;
 
     return {
-      team1: probToOdds(p1),
-      team2: probToOdds(p2),
+      team1: probToOdds(clamped1 / total),
+      team2: probToOdds(clamped2 / total),
     };
   }
 
@@ -245,31 +292,44 @@ export function generateMatchMarkets(match) {
       ],
     });
 
+    // Ball-by-ball event inspection for markets
+    const currentOver = (ld.currentOverBalls || []).map(b => String(b).toUpperCase());
+    const lastBall = currentOver.length ? currentOver[currentOver.length - 1] : String(ld.lastBall || ld.lastRun || '').toUpperCase();
+    const isLastBallBoundary = lastBall === '4' || lastBall === '6' || lastBall === '4B' || lastBall === '6B';
+    const isLastBallSix = lastBall === '6' || lastBall === '6B';
+    const isLastBallFour = lastBall === '4' || lastBall === '4B';
+    const isLastBallWicket = lastBall === 'W' || lastBall === 'WKT';
+
+    const b14s = (ld.batter1?.fours || 0) + (ld.batter2?.fours || 0);
+    const b16s = (ld.batter1?.sixes || 0) + (ld.batter2?.sixes || 0);
+    const liveFoursCount = ld.fours ?? Math.max(b14s, Math.floor((team1.runs + team2.runs) / 12));
+    const liveSixesCount = ld.sixes ?? Math.max(b16s, Math.floor((team1.runs + team2.runs) / 24));
+
     // 3. Total Match Sixes
-    const estSixes = isLive ? Math.max(6, Math.floor((team1.runs + team2.runs) / 22)) : 12;
-    const sixesLine = estSixes + 0.5;
-    const sixesOverOdds = Number(liveOdds.team1 < liveOdds.team2 ? 1.75 : 2.05).toFixed(2);
-    const sixesUnderOdds = Number(liveOdds.team1 < liveOdds.team2 ? 2.05 : 1.75).toFixed(2);
+    const sixesLine = isLive ? Math.max(4.5, liveSixesCount + 2.5) : 12.5;
+    const sixesOverOdds = isLastBallSix ? 1.65 : isLastBallWicket ? 2.15 : 1.85;
+    const sixesUnderOdds = Number((3.65 - sixesOverOdds).toFixed(2));
     markets.push({
       key: 'match_sixes',
       title: 'Total Match Sixes',
       category: 'totals',
       options: [
-        { selection: `Sixes:Over ${sixesLine}`, name: `Over ${sixesLine}`, odds: Number(sixesOverOdds) },
-        { selection: `Sixes:Under ${sixesLine}`, name: `Under ${sixesLine}`, odds: Number(sixesUnderOdds) },
+        { selection: `Sixes:Over ${sixesLine}`, name: `Over ${sixesLine}`, odds: sixesOverOdds },
+        { selection: `Sixes:Under ${sixesLine}`, name: `Under ${sixesLine}`, odds: sixesUnderOdds },
       ],
     });
 
     // 4. Total Match Fours
-    const estFours = isLive ? Math.max(14, Math.floor((team1.runs + team2.runs) / 10)) : 28;
-    const foursLine = estFours + 0.5;
+    const foursLine = isLive ? Math.max(12.5, liveFoursCount + 5.5) : 28.5;
+    const foursOverOdds = isLastBallFour ? 1.68 : isLastBallWicket ? 2.10 : 1.85;
+    const foursUnderOdds = Number((3.65 - foursOverOdds).toFixed(2));
     markets.push({
       key: 'match_fours',
       title: 'Total Match Fours',
       category: 'totals',
       options: [
-        { selection: `Fours:Over ${foursLine}`, name: `Over ${foursLine}`, odds: 1.85 },
-        { selection: `Fours:Under ${foursLine}`, name: `Under ${foursLine}`, odds: 1.85 },
+        { selection: `Fours:Over ${foursLine}`, name: `Over ${foursLine}`, odds: foursOverOdds },
+        { selection: `Fours:Under ${foursLine}`, name: `Under ${foursLine}`, odds: foursUnderOdds },
       ],
     });
 
@@ -277,13 +337,15 @@ export function generateMatchMarkets(match) {
     const currentTotalRuns = team1.runs + team2.runs;
     const projectedRuns = isLive ? Math.max(280, currentTotalRuns + 120) : 315;
     const matchRunsLine = projectedRuns + 0.5;
+    const runsOverOdds = isLastBallBoundary ? 1.72 : isLastBallWicket ? 2.08 : 1.87;
+    const runsUnderOdds = Number((3.65 - runsOverOdds).toFixed(2));
     markets.push({
       key: 'match_total_runs',
       title: 'Total Match Runs',
       category: 'totals',
       options: [
-        { selection: `MatchRuns:Over ${matchRunsLine}`, name: `Over ${matchRunsLine}`, odds: 1.87 },
-        { selection: `MatchRuns:Under ${matchRunsLine}`, name: `Under ${matchRunsLine}`, odds: 1.87 },
+        { selection: `MatchRuns:Over ${matchRunsLine}`, name: `Over ${matchRunsLine}`, odds: runsOverOdds },
+        { selection: `MatchRuns:Under ${matchRunsLine}`, name: `Under ${matchRunsLine}`, odds: runsUnderOdds },
       ],
     });
 
@@ -312,17 +374,18 @@ export function generateMatchMarkets(match) {
       ],
     });
 
-    // 8. Next delivery total
-    const deliveryOverOdds = isLive ? Number((1.35 + (team1.runs % 3) * 0.15).toFixed(2)) : 1.45;
+    // 8. Next delivery total & Boundary
+    const deliveryOverOdds = isLive ? (isLastBallBoundary ? 1.25 : isLastBallWicket ? 1.65 : 1.45) : 1.45;
+    const deliveryBoundaryOdds = isLastBallBoundary ? 3.40 : isLastBallWicket ? 5.50 : 4.50;
     markets.push({
       key: 'delivery',
-      title: `1st innings over ${currentOversNum + 1} - 5th delivery total`,
+      title: `1st innings over ${currentOversNum + 1} - next delivery total`,
       category: 'delivery',
       options: [
         { selection: 'Delivery:Over 0.5', name: 'Over 0.5', odds: deliveryOverOdds },
         { selection: 'Delivery:Under 0.5', name: 'Under 0.5', odds: Number((3.50 - deliveryOverOdds).toFixed(2)) },
-        { selection: 'Delivery:Over 1.5', name: 'Over 1.5', odds: 3.85 },
-        { selection: 'Delivery:Boundary', name: 'Boundary (4 or 6)', odds: 4.50 },
+        { selection: 'Delivery:Over 1.5', name: 'Over 1.5', odds: isLastBallBoundary ? 3.10 : 3.85 },
+        { selection: 'Delivery:Boundary', name: 'Boundary (4 or 6)', odds: deliveryBoundaryOdds },
       ],
     });
 

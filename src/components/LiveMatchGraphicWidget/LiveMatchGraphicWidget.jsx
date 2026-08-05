@@ -325,21 +325,21 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
   const nonStriker = fieldState
     ? (fieldState.strikerIdx === 0 ? fieldState.batter2.name : fieldState.batter1.name)
     : (apiBatter2?.name || '');
-  const bowler = fieldState?.bowler || apiBowler || '';
 
-  const resolveBatter = (apiBatter, fieldBatter, fallbackName) => {
+  const resolveBatter = (apiBatter, fieldBatter, fallbackName, squadFallback) => {
     if (apiBatter?.name && !isPlaceholderPlayerName(apiBatter.name)) {
       return { fours: 0, sixes: 0, ...apiBatter };
     }
     if (fieldBatter?.name && !isPlaceholderPlayerName(fieldBatter.name)) {
       return fieldBatter;
     }
-    const name = displayPlayerName(fallbackName);
+    const name = displayPlayerName(fallbackName, squadFallback);
     return { name, runs: 0, balls: 0, fours: 0, sixes: 0 };
   };
 
-  const b1 = resolveBatter(apiBatter1, fieldState?.batter1, striker);
-  const b2 = resolveBatter(apiBatter2, fieldState?.batter2, nonStriker);
+  const b1 = resolveBatter(apiBatter1, fieldState?.batter1, striker, t1Data[0]?.name || `${team1Short} Opener 1`);
+  const b2 = resolveBatter(apiBatter2, fieldState?.batter2, nonStriker, t1Data[1]?.name || `${team1Short} Opener 2`);
+  const bowler = displayPlayerName(fieldState?.bowler || apiBowler || '', t2Data[10]?.name || t2Data[8]?.name || `${team2Short} Bowler`);
 
   const chaseText = innings
     ? getChaseText(match, innings, team1, team2)

@@ -20,6 +20,8 @@ export default function BetSlip() {
   } = useBetSlip();
   const [showSettings, setShowSettings] = useState(false);
 
+  if (betCount === 0) return null;
+
   return (
     <div className="betslip" id="betslip">
       <div className="betslip-header">
@@ -79,22 +81,18 @@ export default function BetSlip() {
           bets.map(bet => (
             <div className="betslip-bet" key={bet.id}>
               <div className="betslip-bet-top">
-                <div className="betslip-bet-meta">
-                  <SportIcon sport={bet.sport} className="betslip-bet-sport-icon" />
-                  <span className="betslip-bet-time">{formatBetTime(bet.timestamp)}</span>
-                </div>
+                <div className="betslip-bet-market">{bet.marketName}</div>
                 <button className="betslip-bet-remove" onClick={() => removeBet(bet.id)} type="button" aria-label="Remove bet">
                   <IoClose />
                 </button>
               </div>
-              <div className="betslip-bet-market">{bet.marketName}</div>
               <div className="betslip-bet-selection-row">
                 <span className="betslip-bet-selection">{bet.selectionName}</span>
                 <span className="betslip-bet-odds">{Number(bet.odds).toFixed(2)}</span>
               </div>
               {betType === 'singles' && (
                 <div className="betslip-bet-stake-row">
-                  <label htmlFor={`stake-${bet.id}`}>Stake (₹)</label>
+                  <label htmlFor={`stake-${bet.id}`}>Stake</label>
                   <input
                     id={`stake-${bet.id}`}
                     type="number"

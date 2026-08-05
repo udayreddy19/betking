@@ -136,9 +136,6 @@ export function getMatchState(match) {
   }
 
   if (explicit === 'in' || match?.isLive) {
-    if ((match?.sport === 'cricket' || match?.sport === 'virtual-cricket') && !hasCricketPlayStarted(match)) {
-      return 'pre';
-    }
     return 'in';
   }
   return 'pre';

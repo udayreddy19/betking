@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { IoClose } from '../../icons';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { useAuth } from '../../context/AuthContext';
@@ -17,8 +18,17 @@ const FILTERS = [
 export default function MyBetsPanel() {
   const { placedBets, myBetsCount, isMyBetsOpen, closeMyBets, cashOutBet } = useBetSlip();
   const { creditCashout, showToast } = useAuth();
+  const navigate = useNavigate();
   const panelRef = useRef(null);
   const [filter, setFilter] = useState('all');
+
+  const handleLegClick = (leg) => {
+    if (!leg) return;
+    const matchId = leg.matchId || leg.id;
+    const sport = leg.sport || 'cricket';
+    closeMyBets();
+    navigate(`/sports?sport=${encodeURIComponent(sport)}&match=${encodeURIComponent(matchId)}`);
+  };
 
   useEffect(() => {
     if (!isMyBetsOpen) return undefined;
@@ -115,13 +125,21 @@ export default function MyBetsPanel() {
                   </div>
 
                   {placed.legs.map((leg) => (
-                    <div key={leg.id} className="my-bets-leg">
+                    <div
+                      key={leg.id}
+                      className="my-bets-leg my-bets-leg--clickable"
+                      onClick={() => handleLegClick(leg)}
+                      title="Click to view match details"
+                    >
                       <div className="my-bets-market">{leg.marketName}</div>
                       <div className="my-bets-selection-row">
                         <span className="my-bets-selection">{leg.selectionName}</span>
                         <span className="my-bets-odds">{Number(leg.odds).toFixed(2)}</span>
                       </div>
-                      <div className="my-bets-match">{leg.matchName}</div>
+                      <div className="my-bets-match-row">
+                        <span>{leg.matchName}</span>
+                        <span className="my-bets-match-link-icon">↗</span>
+                      </div>
                     </div>
                   ))}
 

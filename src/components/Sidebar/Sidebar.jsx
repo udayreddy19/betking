@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'motion/react';
 import {
   IoClose,
   FiChevronRight,
@@ -57,9 +58,15 @@ export default function Sidebar() {
           <span style={{ fontWeight: 700, fontSize: 'var(--text-lg)' }}>
             {isLoggedIn ? `Hi, ${user.displayName.split(' ')[0]}` : 'Menu'}
           </span>
-          <button className="sidebar-close" onClick={closeSidebar} id="sidebar-close">
+          <motion.button
+            className="sidebar-close"
+            onClick={closeSidebar}
+            id="sidebar-close"
+            whileHover={{ scale: 1.15, rotate: 90 }}
+            whileTap={{ scale: 0.85 }}
+          >
             <IoClose />
-          </button>
+          </motion.button>
         </div>
 
         {isLoggedIn ? (
@@ -70,10 +77,12 @@ export default function Sidebar() {
                 <HiOutlineDocumentText className="tab-icon" />
                 Account
               </button>
-              <button className="sidebar-tab" onClick={() => { closeSidebar(); navigate('/admin'); }}>
-                <HiOutlineDocumentText className="tab-icon" />
-                Admin
-              </button>
+              {(user?.role === 'admin' || user?.email === 'admin@betking.com') && (
+                <button className="sidebar-tab" onClick={() => { closeSidebar(); navigate('/admin'); }}>
+                  <HiOutlineDocumentText className="tab-icon" />
+                  Admin
+                </button>
+              )}
               <button className="sidebar-tab" onClick={() => { closeSidebar(); navigate('/profile'); }}>
                 <HiOutlineUser className="tab-icon" />
                 Profile

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { getCashoutOffer } from '../utils/wageringRules';
+import { playBetSound, playWinSound } from '../utils/soundEffects';
 
 const BetSlipContext = createContext(null);
 const PLACED_BETS_KEY = 'betking_placed_bets';
@@ -202,6 +203,7 @@ export function BetSlipProvider({ children }) {
       setSinglesStakes({});
       setIsMyBetsOpen(true);
       setIsMobileOpen(false);
+      playBetSound();
       return { success: true, placed, totalDeducted: stakeAmount, stakeSource };
     }
 
@@ -232,6 +234,7 @@ export function BetSlipProvider({ children }) {
     setSinglesStakes({});
     setIsMyBetsOpen(true);
     setIsMobileOpen(false);
+    playBetSound();
     return { success: true, placed: placements, totalDeducted, stakeSource };
   }, [bets, betType, stake, singlesStakes, multiOdds]);
 
@@ -253,6 +256,7 @@ export function BetSlipProvider({ children }) {
       cashedOutAt: new Date().toISOString(),
     };
     setPlacedBets((prev) => prev.map((bet) => (bet.id === betId ? cashed : bet)));
+    playWinSound();
     return cashed;
   }, [placedBets]);
 

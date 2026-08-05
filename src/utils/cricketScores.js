@@ -50,9 +50,9 @@ export function resolveCricketTeamScores(match, ld = {}) {
   if (isSecondInnings) {
     entries.push(scoreEntry(
       ld.chaseTeamName,
-      ld.chaseRuns ?? ld.runs,
-      ld.chaseWickets ?? ld.wickets,
-      ld.chaseOvers ?? ld.overs,
+      ld.chaseRuns ?? ld.score2 ?? 0,
+      ld.chaseWickets ?? ld.wickets2 ?? 0,
+      ld.chaseOvers ?? ld.overs2 ?? '0.0',
       match,
     ));
   }
@@ -128,5 +128,7 @@ export function isCricketSecondInnings(match, ld = {}) {
   const { team1, team2 } = resolveCricketTeamScores(match, ld);
   const team1Played = team1.runs > 0 || team1.wickets > 0 || team1.balls > 0;
   const team2Played = team2.runs > 0 || team2.wickets > 0 || team2.balls > 0;
-  return team1Played && team2Played;
+  const team1InningsFinished = team1.wickets >= 10 || team1.balls >= 120 || (ld.firstRuns != null && ld.firstRuns > 0);
+
+  return (team1Played && team2Played) || team1InningsFinished;
 }

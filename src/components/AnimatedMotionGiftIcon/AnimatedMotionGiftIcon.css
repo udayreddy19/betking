@@ -1,0 +1,10 @@
+.aesthetic-motion-gift {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  flex-shrink: 0;
+  line-height: 0;
+  filter: drop-shadow(0 2px 6px rgba(124, 58, 237, 0.25));
+  cursor: pointer;
+}

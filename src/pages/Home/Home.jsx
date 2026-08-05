@@ -12,6 +12,7 @@ import { useAuth } from '../../context/AuthContext';
 import { filterMatches } from '../../utils/matchFilters';
 import { getLeagueMeta, isSameLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
 import BoostedOddsWidget from '../../components/BoostedOddsWidget/BoostedOddsWidget';
+import AnimatedMotionGiftIcon from '../../components/AnimatedMotionGiftIcon/AnimatedMotionGiftIcon';
 import './Home.css';
 
 function filterByLeague(matchList, leagueId) {
@@ -72,7 +73,7 @@ export default function Home() {
         }}
       >
         <div className="home-promo-banner__coin">
-          <span>{promo.emoji}</span>
+          {promo.emoji === '🎁' ? <AnimatedMotionGiftIcon size={32} /> : <span>{promo.emoji}</span>}
         </div>
         <div className="home-promo-banner__text">
           <span className="home-promo-banner__title">{promo.title}</span>

@@ -179,7 +179,8 @@ export default function Sports() {
   const matches = useLiveMatches();
   const { tickerMessage, cricketSeries, scoresError, refreshScores, isScoresLoading } = useLiveSportsMeta();
   const { addBet, isBetSelected } = useBetSlip();
-  const { showToast } = useAuth();
+  const { user, showToast } = useAuth();
+  const isAdminUser = user?.role === 'admin' || user?.email === 'admin@betking.com';
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
   const isLiveBettingPage = location.pathname === '/live-betting';
@@ -207,6 +208,16 @@ export default function Sports() {
     mq.addEventListener('change', onChange);
     return () => mq.removeEventListener('change', onChange);
   }, []);
+
+  useEffect(() => {
+    const urlMatchId = searchParams.get('match');
+    const urlSport = searchParams.get('sport');
+    if (urlMatchId) {
+      setSelectedMatchId(urlMatchId);
+      setViewMode('match');
+      if (urlSport) setActiveSport(urlSport);
+    }
+  }, [searchParams]);
 
   const isIplSrlView = isSameLeague(activeLeague, 'ipl-srl');
 
@@ -508,12 +519,14 @@ export default function Sports() {
             </div>
           )}
 
-          <div className={`sports-live-status sports-live-status--${liveStatusClass} sports-live-status-bar`} role="status">
-            <span className="sports-live-status-dot" />
-            {tickerMessage || 'Syncing live scores…'}
-          </div>
+          {isAdminUser && (
+            <div className={`sports-live-status sports-live-status--${liveStatusClass} sports-live-status-bar`} role="status">
+              <span className="sports-live-status-dot" />
+              {tickerMessage || 'Syncing live scores…'}
+            </div>
+          )}
 
-          {scoresError && (
+          {isAdminUser && scoresError && (
             <div className="sports-scores-error" role="alert">
               <span>{scoresError}</span>
               <button
@@ -780,6 +793,7 @@ export default function Sports() {
         </div>
 
         <aside className="sports-right">
+          <BetSlip />
           {isWideLayout && (
             <div className="sports-desktop-live-widget">
               <ErrorBoundary>
@@ -799,7 +813,6 @@ export default function Sports() {
               />
             </div>
           </div>
-          <BetSlip />
         </aside>
       </div>
     </div>

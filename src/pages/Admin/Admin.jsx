@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { useLiveMatches } from '../../context/LiveSportsContext';
 import { formatInr } from '../../utils/walletBalance';
+import { loadAllSystemTransactions } from '../../utils/transactions';
 import {
   FiUsers,
   FiDollarSign,
@@ -21,6 +22,7 @@ import {
   FiCpu,
   FiTrendingUp,
 } from '../../icons';
+import AnimatedMotionGiftIcon from '../../components/AnimatedMotionGiftIcon/AnimatedMotionGiftIcon';
 import './Admin.css';
 
 export default function Admin() {
@@ -125,6 +127,149 @@ export default function Admin() {
     { id: 1, action: 'System Initialization', detail: 'Admin master control suite loaded', time: 'Just now' },
     { id: 2, action: 'Live Polling Accelerated', detail: 'Live score refresh frequency set to 2.0s', time: '5 mins ago' },
   ]);
+
+  // Profit & Loss (P&L) and Leaderboards Timeframe state
+  const [pnlTimeframe, setPnlTimeframe] = useState('week'); // 'day', 'week', 'month', 'year'
+  const [leaderboardTimeframe, setLeaderboardTimeframe] = useState('week'); // 'day', 'week', 'month', 'year'
+
+  // Financial Ledger Transactions State
+  const [systemTxList, setSystemTxList] = useState(loadAllSystemTransactions);
+  const [txFilterType, setTxFilterType] = useState('ALL');
+  const [txFilterStatus, setTxFilterStatus] = useState('ALL');
+  const [txSearchQuery, setTxSearchQuery] = useState('');
+  const [selectedUserEmail, setSelectedUserEmail] = useState('demo@betking.com');
+  const [selectedUserTxFilter, setSelectedUserTxFilter] = useState('ALL');
+
+  // Timeframe P&L Data Map
+  const pnlDataByTimeframe = {
+    day: {
+      period: 'Today (24 Hours)',
+      turnover: 184500,
+      payouts: 112000,
+      ggr: 72500,
+      margin: '39.3%',
+      tax: 14500,
+      netProfit: 58000,
+      chart: [
+        { label: '00:00-06:00', revenue: 24000, payout: 12000 },
+        { label: '06:00-12:00', revenue: 42000, payout: 26000 },
+        { label: '12:00-18:00', revenue: 68000, payout: 41000 },
+        { label: '18:00-24:00', revenue: 50500, payout: 33000 },
+      ],
+    },
+    week: {
+      period: 'This Week (7 Days)',
+      turnover: 948000,
+      payouts: 612000,
+      ggr: 336000,
+      margin: '35.4%',
+      tax: 67200,
+      netProfit: 268800,
+      chart: [
+        { label: 'Mon', revenue: 110000, payout: 68000 },
+        { label: 'Tue', revenue: 125000, payout: 79000 },
+        { label: 'Wed', revenue: 142000, payout: 88000 },
+        { label: 'Thu', revenue: 138000, payout: 86000 },
+        { label: 'Fri', revenue: 165000, payout: 104000 },
+        { label: 'Sat', revenue: 182000, payout: 115000 },
+        { label: 'Sun', revenue: 86000, payout: 72000 },
+      ],
+    },
+    month: {
+      period: 'This Month (30 Days)',
+      turnover: 4250000,
+      payouts: 2720000,
+      ggr: 1530000,
+      margin: '36.0%',
+      tax: 306000,
+      netProfit: 1224000,
+      chart: [
+        { label: 'Week 1', revenue: 980000, payout: 620000 },
+        { label: 'Week 2', revenue: 1120000, payout: 710000 },
+        { label: 'Week 3', revenue: 1050000, payout: 680000 },
+        { label: 'Week 4', revenue: 1100000, payout: 710000 },
+      ],
+    },
+    year: {
+      period: 'This Year (2026 YTD)',
+      turnover: 48500000,
+      payouts: 30800000,
+      ggr: 17700000,
+      margin: '36.5%',
+      tax: 3540000,
+      netProfit: 14160000,
+      chart: [
+        { label: 'Q1', revenue: 11200000, payout: 7100000 },
+        { label: 'Q2', revenue: 12400000, payout: 7800000 },
+        { label: 'Q3', revenue: 13100000, payout: 8300000 },
+        { label: 'Q4 (Est)', revenue: 11800000, payout: 7600000 },
+      ],
+    },
+  };
+
+  // Top Profiters Data by Timeframe
+  const topProfitersData = {
+    day: [
+      { id: 1, name: 'Vikram S.', email: 'vikram.s@gmail.com', bets: 12, stake: 25000, payout: 88000, netProfit: 63000, rank: 'VIP Platinum' },
+      { id: 2, name: 'Ananya P.', email: 'ananya.p@yahoo.com', bets: 8, stake: 15000, payout: 52000, netProfit: 37000, rank: 'VIP Gold' },
+      { id: 3, name: 'Rohan Verma', email: 'rohan.v@outlook.com', bets: 15, stake: 30000, payout: 64000, netProfit: 34000, rank: 'VIP Silver' },
+      { id: 4, name: 'Karan Joshi', email: 'karan.j@gmail.com', bets: 6, stake: 10000, payout: 38000, netProfit: 28000, rank: 'VIP Bronze' },
+      { id: 5, name: 'Priya Sharma', email: 'priya.s@gmail.com', bets: 9, stake: 18000, payout: 42000, netProfit: 24000, rank: 'VIP Gold' },
+    ],
+    week: [
+      { id: 1, name: 'Rohan Verma', email: 'rohan.v@outlook.com', bets: 48, stake: 120000, payout: 310000, netProfit: 190000, rank: 'VIP Platinum' },
+      { id: 2, name: 'Vikram S.', email: 'vikram.s@gmail.com', bets: 35, stake: 95000, payout: 240000, netProfit: 145000, rank: 'VIP Platinum' },
+      { id: 3, name: 'Siddharth R.', email: 'sid.r@gmail.com', bets: 29, stake: 70000, payout: 185000, netProfit: 115000, rank: 'VIP Gold' },
+      { id: 4, name: 'Ananya P.', email: 'ananya.p@yahoo.com', bets: 22, stake: 60000, payout: 158000, netProfit: 98000, rank: 'VIP Gold' },
+      { id: 5, name: 'Deepak Patel', email: 'deepak.p@gmail.com', bets: 41, stake: 110000, payout: 192000, netProfit: 82000, rank: 'VIP Silver' },
+    ],
+    month: [
+      { id: 1, name: 'Rohan Verma', email: 'rohan.v@outlook.com', bets: 185, stake: 450000, payout: 1180000, netProfit: 730000, rank: 'VIP Diamond' },
+      { id: 2, name: 'Amitabh K.', email: 'amitabh.k@gmail.com', bets: 142, stake: 380000, payout: 920000, netProfit: 540000, rank: 'VIP Platinum' },
+      { id: 3, name: 'Vikram S.', email: 'vikram.s@gmail.com', bets: 120, stake: 310000, payout: 780000, netProfit: 470000, rank: 'VIP Platinum' },
+      { id: 4, name: 'Siddharth R.', email: 'sid.r@gmail.com', bets: 98, stake: 260000, payout: 640000, netProfit: 380000, rank: 'VIP Gold' },
+      { id: 5, name: 'Neha Gupta', email: 'neha.g@gmail.com', bets: 115, stake: 290000, payout: 610000, netProfit: 320000, rank: 'VIP Gold' },
+    ],
+    year: [
+      { id: 1, name: 'Rohan Verma', email: 'rohan.v@outlook.com', bets: 1420, stake: 3800000, payout: 9400000, netProfit: 5600000, rank: 'VIP Diamond' },
+      { id: 2, name: 'Amitabh K.', email: 'amitabh.k@gmail.com', bets: 1100, stake: 3100000, payout: 7300000, netProfit: 4200000, rank: 'VIP Diamond' },
+      { id: 3, name: 'Vikram S.', email: 'vikram.s@gmail.com', bets: 950, stake: 2600000, payout: 5800000, netProfit: 3200000, rank: 'VIP Platinum' },
+      { id: 4, name: 'Rajesh Nair', email: 'rajesh.n@gmail.com', bets: 820, stake: 2200000, payout: 4900000, netProfit: 2700000, rank: 'VIP Platinum' },
+      { id: 5, name: 'Siddharth R.', email: 'sid.r@gmail.com', bets: 760, stake: 1950000, payout: 4200000, netProfit: 2250000, rank: 'VIP Gold' },
+    ],
+  };
+
+  // Top Losers Data by Timeframe (GGR Contributors)
+  const topLosersData = {
+    day: [
+      { id: 1, name: 'Manish Kumar', email: 'manish.k@gmail.com', bets: 28, stake: 85000, payout: 18000, netLoss: 67000, rank: 'VIP Silver' },
+      { id: 2, name: 'Arjun Reddy', email: 'arjun.r@yahoo.com', bets: 19, stake: 54000, payout: 12000, netLoss: 42000, rank: 'VIP Bronze' },
+      { id: 3, name: 'Suresh Raina', email: 'suresh.r@outlook.com', bets: 22, stake: 48000, payout: 11000, netLoss: 37000, rank: 'VIP Silver' },
+      { id: 4, name: 'Kavita Roy', email: 'kavita.r@gmail.com', bets: 14, stake: 39000, payout: 8000, netLoss: 31000, rank: 'VIP Bronze' },
+      { id: 5, name: 'Aakash Singh', email: 'aakash.s@gmail.com', bets: 16, stake: 35000, payout: 9000, netLoss: 26000, rank: 'VIP Bronze' },
+    ],
+    week: [
+      { id: 1, name: 'Manish Kumar', email: 'manish.k@gmail.com', bets: 112, stake: 380000, payout: 95000, netLoss: 285000, rank: 'VIP Gold' },
+      { id: 2, name: 'Arjun Reddy', email: 'arjun.r@yahoo.com', bets: 85, stake: 260000, payout: 72000, netLoss: 188000, rank: 'VIP Silver' },
+      { id: 3, name: 'Tarun Shah', email: 'tarun.s@gmail.com', bets: 72, stake: 210000, payout: 62000, netLoss: 148000, rank: 'VIP Silver' },
+      { id: 4, name: 'Suresh Raina', email: 'suresh.r@outlook.com', bets: 68, stake: 190000, payout: 55000, netLoss: 135000, rank: 'VIP Silver' },
+      { id: 5, name: 'Gaurav Gill', email: 'gaurav.g@gmail.com', bets: 54, stake: 165000, payout: 48000, netLoss: 117000, rank: 'VIP Bronze' },
+    ],
+    month: [
+      { id: 1, name: 'Manish Kumar', email: 'manish.k@gmail.com', bets: 420, stake: 1450000, payout: 380000, netLoss: 1070000, rank: 'VIP Platinum' },
+      { id: 2, name: 'Arjun Reddy', email: 'arjun.r@yahoo.com', bets: 310, stake: 980000, payout: 260000, netLoss: 720000, rank: 'VIP Gold' },
+      { id: 3, name: 'Tarun Shah', email: 'tarun.s@gmail.com', bets: 260, stake: 820000, payout: 230000, netLoss: 590000, rank: 'VIP Gold' },
+      { id: 4, name: 'Vivek Oberoi', email: 'vivek.o@gmail.com', bets: 210, stake: 690000, payout: 180000, netLoss: 510000, rank: 'VIP Silver' },
+      { id: 5, name: 'Suresh Raina', email: 'suresh.r@outlook.com', bets: 240, stake: 720000, payout: 220000, netLoss: 500000, rank: 'VIP Silver' },
+    ],
+    year: [
+      { id: 1, name: 'Manish Kumar', email: 'manish.k@gmail.com', bets: 3800, stake: 12800000, payout: 3400000, netLoss: 9400000, rank: 'VIP Diamond' },
+      { id: 2, name: 'Arjun Reddy', email: 'arjun.r@yahoo.com', bets: 2900, stake: 9100000, payout: 2500000, netLoss: 6600000, rank: 'VIP Platinum' },
+      { id: 3, name: 'Tarun Shah', email: 'tarun.s@gmail.com', bets: 2400, stake: 7800000, payout: 2200000, netLoss: 5600000, rank: 'VIP Platinum' },
+      { id: 4, name: 'Suresh Raina', email: 'suresh.r@outlook.com', bets: 2100, stake: 6900000, payout: 2000000, netLoss: 4900000, rank: 'VIP Gold' },
+      { id: 5, name: 'Gaurav Gill', email: 'gaurav.g@gmail.com', bets: 1850, stake: 5800000, payout: 1700000, netLoss: 4100000, rank: 'VIP Gold' },
+    ],
+  };
 
   // Chart Data
   const chartData = [
@@ -266,6 +411,37 @@ export default function Admin() {
     if (betFilter === 'all') return placedBets;
     return placedBets.filter((b) => b.status === betFilter);
   }, [placedBets, betFilter]);
+
+  const filteredTxList = useMemo(() => {
+    return systemTxList.filter((tx) => {
+      if (txFilterType !== 'ALL' && tx.type !== txFilterType) return false;
+      if (txFilterStatus !== 'ALL' && tx.status !== txFilterStatus) return false;
+      if (txSearchQuery.trim()) {
+        const q = txSearchQuery.toLowerCase();
+        const matchId = (tx.id || '').toLowerCase().includes(q);
+        const matchUser = (tx.userEmail || '').toLowerCase().includes(q) || (tx.userName || '').toLowerCase().includes(q);
+        const matchUtr = (tx.utr || '').toLowerCase().includes(q);
+        const matchMethod = (tx.method || '').toLowerCase().includes(q);
+        return matchId || matchUser || matchUtr || matchMethod;
+      }
+      return true;
+    });
+  }, [systemTxList, txFilterType, txFilterStatus, txSearchQuery]);
+
+  const selectedUserTransactions = useMemo(() => {
+    const allForUser = systemTxList.filter((tx) => tx.userEmail === selectedUserEmail);
+    if (selectedUserTxFilter === 'ALL') return allForUser;
+    return allForUser.filter((tx) => tx.type === selectedUserTxFilter);
+  }, [systemTxList, selectedUserEmail, selectedUserTxFilter]);
+
+  const selectedUserStats = useMemo(() => {
+    const allForUser = systemTxList.filter((tx) => tx.userEmail === selectedUserEmail);
+    const deposits = allForUser.filter((t) => t.type === 'DEPOSIT').reduce((s, t) => s + (t.amount || 0), 0);
+    const withdrawals = allForUser.filter((t) => t.type === 'WITHDRAWAL').reduce((s, t) => s + (t.amount || 0), 0);
+    const totalWon = allForUser.filter((t) => t.type === 'BET_WIN').reduce((s, t) => s + (t.amount || 0), 0);
+    const totalStaked = allForUser.filter((t) => t.type === 'BET_STAKE').reduce((s, t) => s + (t.amount || 0), 0);
+    return { deposits, withdrawals, totalWon, totalStaked, netPnl: totalWon - totalStaked };
+  }, [systemTxList, selectedUserEmail]);
 
   // Metrics calculations
   const totalUserBalance = (user?.balance || 0) + (user?.bonusBalance || 0) + (user?.freebetBalance || 0);
@@ -457,6 +633,9 @@ export default function Admin() {
         <div className="admin-nav-tabs">
           {[
             { id: 'dashboard', label: 'Dashboard', icon: <FiActivity /> },
+            { id: 'pnl', label: 'Profit & Loss (P&L)', icon: <FiDollarSign /> },
+            { id: 'leaderboards', label: 'Top Profiters & Losers', icon: <FiTrendingUp /> },
+            { id: 'financial_ledger', label: `Financial Ledger (${systemTxList.length})`, icon: <FiDollarSign /> },
             { id: 'analytics', label: 'GGR Analytics', icon: <FiTrendingUp /> },
             { id: 'master_limits', label: 'Limits & Config', icon: <FiSliders /> },
             { id: 'gateways', label: 'Payment Gateways & UPI', icon: <FiDollarSign /> },
@@ -556,6 +735,366 @@ export default function Admin() {
                       <span className="p-name">Razorpay Gateway</span>
                       <span className="p-status p-status--ok"><FiCheckCircle /> Mode: {gatewayMode.toUpperCase()}</span>
                     </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: PROFIT & LOSS (P&L) MASTER CENTER */}
+            {activeTab === 'pnl' && (
+              <div className="admin-tab-content">
+                <div className="admin-card">
+                  <div className="card-header flex-between">
+                    <div>
+                      <h3>📊 Platform Profit & Loss (P&L) Statement</h3>
+                      <p className="card-sub text-muted">Real-time GGR, NGR, payouts, and margin breakdown for {pnlDataByTimeframe[pnlTimeframe].period}</p>
+                    </div>
+                    <div className="admin-timeframe-selector">
+                      {['day', 'week', 'month', 'year'].map((tf) => (
+                        <button
+                          key={tf}
+                          type="button"
+                          className={`timeframe-btn ${pnlTimeframe === tf ? 'active' : ''}`}
+                          onClick={() => setPnlTimeframe(tf)}
+                        >
+                          {tf === 'day' ? 'Day (24H)' : tf === 'week' ? 'Week (7D)' : tf === 'month' ? 'Month (30D)' : 'Year (365D)'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="admin-metrics-grid pnl-metrics-grid">
+                    <div className="admin-card metric-card">
+                      <div className="metric-icon" style={{ background: '#10b98120', color: '#10b981' }}><FiDollarSign /></div>
+                      <div className="metric-info">
+                        <span className="metric-label">Gross TurnOver (Volume)</span>
+                        <span className="metric-value">{formatInr(pnlDataByTimeframe[pnlTimeframe].turnover)}</span>
+                        <span className="metric-sub">Total Player Stakes</span>
+                      </div>
+                    </div>
+
+                    <div className="admin-card metric-card">
+                      <div className="metric-icon" style={{ background: '#ef444420', color: '#ef4444' }}><FiActivity /></div>
+                      <div className="metric-info">
+                        <span className="metric-label">User Payouts (Winnings)</span>
+                        <span className="metric-value">{formatInr(pnlDataByTimeframe[pnlTimeframe].payouts)}</span>
+                        <span className="metric-sub">Disbursed Winnings</span>
+                      </div>
+                    </div>
+
+                    <div className="admin-card metric-card">
+                      <div className="metric-icon" style={{ background: '#8b5cf620', color: '#8b5cf6' }}><FiTrendingUp /></div>
+                      <div className="metric-info">
+                        <span className="metric-label">Gross Gaming Revenue (GGR)</span>
+                        <span className="metric-value" style={{ color: '#8b5cf6' }}>{formatInr(pnlDataByTimeframe[pnlTimeframe].ggr)}</span>
+                        <span className="metric-sub">Margin: {pnlDataByTimeframe[pnlTimeframe].margin}</span>
+                      </div>
+                    </div>
+
+                    <div className="admin-card metric-card">
+                      <div className="metric-icon" style={{ background: '#22c55e20', color: '#22c55e' }}><FiCheckCircle /></div>
+                      <div className="metric-info">
+                        <span className="metric-label">Net Operating Profit</span>
+                        <span className="metric-value text-green">{formatInr(pnlDataByTimeframe[pnlTimeframe].netProfit)}</span>
+                        <span className="metric-sub">Tax: {formatInr(pnlDataByTimeframe[pnlTimeframe].tax)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pnl-chart-box">
+                    <h4 className="pnl-chart-title">Revenue vs. Payout Performance ({pnlDataByTimeframe[pnlTimeframe].period})</h4>
+                    <div className="chart-bar-container">
+                      {pnlDataByTimeframe[pnlTimeframe].chart.map((d, index) => (
+                        <div key={d.label} className="chart-col">
+                          <div className="col-bars">
+                            <motion.div
+                              className="bar-fill bar-fill--revenue"
+                              initial={{ height: 0 }}
+                              animate={{ height: `${(d.revenue / (pnlDataByTimeframe[pnlTimeframe].chart[0].revenue * 2 || 100000)) * 100}%` }}
+                              transition={{ duration: 0.5, delay: index * 0.08 }}
+                              title={`Turnover: ₹${d.revenue}`}
+                            />
+                            <motion.div
+                              className="bar-fill bar-fill--payout"
+                              initial={{ height: 0 }}
+                              animate={{ height: `${(d.payout / (pnlDataByTimeframe[pnlTimeframe].chart[0].revenue * 2 || 100000)) * 100}%` }}
+                              transition={{ duration: 0.5, delay: index * 0.08 + 0.1 }}
+                              title={`Payouts: ₹${d.payout}`}
+                            />
+                          </div>
+                          <span className="chart-label">{d.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: TOP PROFITERS & TOP LOSERS LEADERBOARD */}
+            {activeTab === 'leaderboards' && (
+              <div className="admin-tab-content">
+                <div className="admin-card mb-6">
+                  <div className="card-header flex-between">
+                    <div>
+                      <h3>🏆 Top Profiters & Losers Rankings</h3>
+                      <p className="card-sub text-muted">Filter player profitability & platform GGR contributors by timeframe</p>
+                    </div>
+                    <div className="admin-timeframe-selector">
+                      {['day', 'week', 'month', 'year'].map((tf) => (
+                        <button
+                          key={tf}
+                          type="button"
+                          className={`timeframe-btn ${leaderboardTimeframe === tf ? 'active' : ''}`}
+                          onClick={() => setLeaderboardTimeframe(tf)}
+                        >
+                          {tf === 'day' ? 'Day (24H)' : tf === 'week' ? 'Week (7D)' : tf === 'month' ? 'Month (30D)' : 'Year (365D)'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="leaderboards-grid">
+                  {/* TOP PROFITERS TABLE */}
+                  <div className="admin-card">
+                    <div className="card-header">
+                      <h4 className="text-green font-bold flex-center gap-2">
+                        🏆 Top Profiters ({leaderboardTimeframe.toUpperCase()})
+                      </h4>
+                      <span className="text-xs text-muted">Players with highest net winnings</span>
+                    </div>
+
+                    <div className="admin-table-wrap">
+                      <table className="admin-table leaderboard-table">
+                        <thead>
+                          <tr>
+                            <th className="th-center">Rank</th>
+                            <th className="th-left">Player</th>
+                            <th className="th-center">Bets</th>
+                            <th className="th-right">Stakes</th>
+                            <th className="th-right">Payouts</th>
+                            <th className="th-right">Net Profit</th>
+                            <th className="th-center">VIP Tier</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {topProfitersData[leaderboardTimeframe].map((p, idx) => (
+                            <tr key={p.id}>
+                              <td className="td-center">
+                                <span className={`rank-badge rank-badge--${idx === 0 ? 'gold' : idx === 1 ? 'silver' : idx === 2 ? 'bronze' : 'normal'}`}>
+                                  #{idx + 1}
+                                </span>
+                              </td>
+                              <td className="td-left">
+                                <div className="user-cell-name">{p.name}</div>
+                                <div className="user-cell-email">{p.email}</div>
+                              </td>
+                              <td className="td-center">{p.bets}</td>
+                              <td className="td-right">{formatInr(p.stake)}</td>
+                              <td className="td-right">{formatInr(p.payout)}</td>
+                              <td className="td-right">
+                                <span className="net-profit-pill">
+                                  +{formatInr(p.netProfit)}
+                                </span>
+                              </td>
+                              <td className="td-center"><span className="vip-badge">{p.rank}</span></td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* TOP LOSERS TABLE */}
+                  <div className="admin-card">
+                    <div className="card-header">
+                      <h4 className="text-danger font-bold flex-center gap-2">
+                        🔻 Top Losers ({leaderboardTimeframe.toUpperCase()})
+                      </h4>
+                      <span className="text-xs text-muted">Top platform GGR contributors</span>
+                    </div>
+
+                    <div className="admin-table-wrap">
+                      <table className="admin-table leaderboard-table">
+                        <thead>
+                          <tr>
+                            <th className="th-center">Rank</th>
+                            <th className="th-left">Player</th>
+                            <th className="th-center">Bets</th>
+                            <th className="th-right">Stakes</th>
+                            <th className="th-right">Payouts</th>
+                            <th className="th-right">Net Loss</th>
+                            <th className="th-center">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {topLosersData[leaderboardTimeframe].map((p, idx) => (
+                            <tr key={p.id}>
+                              <td className="td-center">
+                                <span className="rank-badge rank-badge--normal">
+                                  #{idx + 1}
+                                </span>
+                              </td>
+                              <td className="td-left">
+                                <div className="user-cell-name">{p.name}</div>
+                                <div className="user-cell-email">{p.email}</div>
+                              </td>
+                              <td className="td-center">{p.bets}</td>
+                              <td className="td-right">{formatInr(p.stake)}</td>
+                              <td className="td-right">{formatInr(p.payout)}</td>
+                              <td className="td-right">
+                                <span className="net-loss-pill">
+                                  -{formatInr(p.netLoss)}
+                                </span>
+                              </td>
+                              <td className="td-center">
+                                <button
+                                  type="button"
+                                  className="admin-btn admin-btn--sm admin-btn--success btn-reward-vip"
+                                  onClick={() => {
+                                    showToast(`VIP Retain Voucher sent to ${p.name}!`, 'success');
+                                    logAction('VIP Voucher Sent', `Sent retention freebet to ${p.email}`);
+                                  }}
+                                >
+                                  <AnimatedMotionGiftIcon size={14} color="#ffffff" /> Reward VIP
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: FINANCIAL LEDGER & ALL TRANSACTIONS */}
+            {activeTab === 'financial_ledger' && (
+              <div className="admin-tab-content">
+                <div className="admin-card mb-6">
+                  <div className="card-header flex-between">
+                    <div>
+                      <h3>📜 Master System Financial Ledger</h3>
+                      <p className="card-sub text-muted">Capturing every single deposit, withdrawal, bet payout, and bonus across the system</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn--sm"
+                      onClick={() => setSystemTxList(loadAllSystemTransactions())}
+                    >
+                      <FiRefreshCw /> Refresh Ledger
+                    </button>
+                  </div>
+
+                  {/* Filter controls */}
+                  <div className="admin-filters-row mt-4">
+                    <div className="search-box">
+                      <FiSearch className="search-icon" />
+                      <input
+                        type="text"
+                        placeholder="Search Tx ID, User Email, Name, or UTR..."
+                        value={txSearchQuery}
+                        onChange={(e) => setTxSearchQuery(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="filter-group">
+                      <label>Type:</label>
+                      <select value={txFilterType} onChange={(e) => setTxFilterType(e.target.value)}>
+                        <option value="ALL">All Types</option>
+                        <option value="DEPOSIT">Deposits</option>
+                        <option value="WITHDRAWAL">Withdrawals</option>
+                        <option value="BET_WIN">Bet Wins</option>
+                        <option value="BET_STAKE">Bet Stakes</option>
+                        <option value="BONUS_CLAIM">Bonus Claims</option>
+                      </select>
+                    </div>
+
+                    <div className="filter-group">
+                      <label>Status:</label>
+                      <select value={txFilterStatus} onChange={(e) => setTxFilterStatus(e.target.value)}>
+                        <option value="ALL">All Statuses</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="REJECTED">Rejected</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="admin-card">
+                  <div className="admin-table-wrap">
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>Transaction ID</th>
+                          <th>User / Email</th>
+                          <th>Date & Time</th>
+                          <th>Type</th>
+                          <th>Method / Gateway</th>
+                          <th>UTR / Ref Code</th>
+                          <th>Amount</th>
+                          <th>Status</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredTxList.length === 0 ? (
+                          <tr>
+                            <td colSpan="9" className="text-center py-6 text-muted">
+                              No matching transactions found in the financial ledger.
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredTxList.map((tx) => (
+                            <tr key={tx.id}>
+                              <td><code className="tx-id-code">{tx.id}</code></td>
+                              <td>
+                                <div className="user-cell-name">{tx.userName || 'User'}</div>
+                                <div className="user-cell-email">{tx.userEmail}</div>
+                              </td>
+                              <td className="text-xs text-muted">
+                                {new Date(tx.createdAt).toLocaleString('en-IN', {
+                                  dateStyle: 'medium',
+                                  timeStyle: 'short',
+                                })}
+                              </td>
+                              <td>
+                                <span className={`tx-type-pill tx-type-pill--${(tx.type || 'other').toLowerCase()}`}>
+                                  {tx.type}
+                                </span>
+                              </td>
+                              <td><span className="font-bold text-xs">{tx.method || 'Online'}</span></td>
+                              <td><code className="utr-code">{tx.utr || 'N/A'}</code></td>
+                              <td>
+                                <span className={`font-bold ${['DEPOSIT', 'BET_WIN', 'BONUS_CLAIM'].includes(tx.type) ? 'text-green' : 'text-danger'}`}>
+                                  {['DEPOSIT', 'BET_WIN', 'BONUS_CLAIM'].includes(tx.type) ? '+' : '-'}{formatInr(tx.amount || 0)}
+                                </span>
+                              </td>
+                              <td>
+                                <span className={`status-tag status-tag--${(tx.status || 'completed').toLowerCase()}`}>
+                                  {tx.status}
+                                </span>
+                              </td>
+                              <td>
+                                <button
+                                  type="button"
+                                  className="admin-btn admin-btn--sm"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(tx.utr || tx.id);
+                                    showToast(`Copied UTR/Ref ${tx.utr || tx.id}!`, 'info');
+                                  }}
+                                >
+                                  Copy Ref
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
@@ -779,31 +1318,40 @@ export default function Admin() {
               </div>
             )}
 
-            {/* TAB 6: USERS & WALLETS */}
+            {/* TAB 6: USERS & WALLETS + PER-USER TRANSACTION LEDGER */}
             {activeTab === 'users' && (
               <div className="admin-tab-content">
-                <div className="admin-card">
-                  <div className="card-header">
-                    <h3>Active User Account & Wallet Control</h3>
-                    <div className="admin-search-box">
-                      <FiSearch />
-                      <input
-                        type="text"
-                        placeholder="Search users..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
+                <div className="admin-card mb-6">
+                  <div className="card-header flex-between">
+                    <div>
+                      <h3>👤 Active User Account & Per-User Transaction History</h3>
+                      <p className="card-sub text-muted">Select any user to inspect their wallet balances and full transaction ledger (Deposits, Withdrawals, Bets, Rewards)</p>
+                    </div>
+                    <div className="user-select-box">
+                      <label className="text-xs font-bold text-muted mr-2">Select User Account:</label>
+                      <select
+                        value={selectedUserEmail}
+                        onChange={(e) => setSelectedUserEmail(e.target.value)}
+                        className="user-select-dropdown"
+                      >
+                        <option value="demo@betking.com">Demo User (demo@betking.com)</option>
+                        <option value="vikram.s@gmail.com">Vikram S. (vikram.s@gmail.com)</option>
+                        <option value="ananya.p@yahoo.com">Ananya P. (ananya.p@yahoo.com)</option>
+                        <option value="manish.k@gmail.com">Manish Kumar (manish.k@gmail.com)</option>
+                        <option value="rohan.v@outlook.com">Rohan Verma (rohan.v@outlook.com)</option>
+                        <option value="arjun.r@yahoo.com">Arjun Reddy (arjun.r@yahoo.com)</option>
+                      </select>
                     </div>
                   </div>
 
-                  <div className="admin-user-profile-view">
+                  <div className="admin-user-profile-view mt-4">
                     <div className="user-profile-card">
                       <div className="user-avatar-large">
-                        {user?.displayName ? user.displayName.slice(0, 2).toUpperCase() : 'US'}
+                        {selectedUserEmail.slice(0, 2).toUpperCase()}
                       </div>
                       <div>
-                        <h4>{user?.displayName || 'Demo User'}</h4>
-                        <p>{user?.email || 'demo@betking.com'} · <span className="vip-tag">{user?.loyaltyRank || 'Rookie'} (Lvl {user?.loyaltyLevel || 1})</span></p>
+                        <h4>{selectedUserEmail.split('@')[0]}</h4>
+                        <p>{selectedUserEmail} · <span className="vip-tag">Active Account</span></p>
                       </div>
                     </div>
 
@@ -816,41 +1364,136 @@ export default function Admin() {
                     </div>
                   </div>
 
-                  {/* Edit Balance Form */}
-                  <form onSubmit={handleUpdateUserBalance} className="admin-form-grid">
-                    <div className="form-group">
-                      <label>Cash Balance (₹)</label>
-                      <input
-                        type="number"
-                        placeholder={user?.balance || 0}
-                        value={editingBalance}
-                        onChange={(e) => setEditingBalance(e.target.value)}
-                      />
+                  {/* Per-User Financial Summary Cards */}
+                  <div className="admin-metrics-grid user-financial-grid mt-4">
+                    <div className="admin-card metric-card">
+                      <div className="metric-icon" style={{ background: '#10b98120', color: '#10b981' }}><FiDollarSign /></div>
+                      <div className="metric-info">
+                        <span className="metric-label">Total Deposited</span>
+                        <span className="metric-value text-green">{formatInr(selectedUserStats.deposits)}</span>
+                        <span className="metric-sub">User Deposit Lifetime</span>
+                      </div>
                     </div>
-                    <div className="form-group">
-                      <label>Bonus Balance (₹)</label>
-                      <input
-                        type="number"
-                        placeholder={user?.bonusBalance || 0}
-                        value={editingBonus}
-                        onChange={(e) => setEditingBonus(e.target.value)}
-                      />
+
+                    <div className="admin-card metric-card">
+                      <div className="metric-icon" style={{ background: '#3b82f620', color: '#3b82f6' }}><FiActivity /></div>
+                      <div className="metric-info">
+                        <span className="metric-label">Total Withdrawn</span>
+                        <span className="metric-value">{formatInr(selectedUserStats.withdrawals)}</span>
+                        <span className="metric-sub">User Withdrawal Lifetime</span>
+                      </div>
                     </div>
-                    <div className="form-group">
-                      <label>Freebet Balance (₹)</label>
-                      <input
-                        type="number"
-                        placeholder={user?.freebetBalance || 0}
-                        value={editingFreebet}
-                        onChange={(e) => setEditingFreebet(e.target.value)}
-                      />
+
+                    <div className="admin-card metric-card">
+                      <div className="metric-icon" style={{ background: '#8b5cf620', color: '#8b5cf6' }}><FiTrendingUp /></div>
+                      <div className="metric-info">
+                        <span className="metric-label">Total Payout Winnings</span>
+                        <span className="metric-value">{formatInr(selectedUserStats.totalWon)}</span>
+                        <span className="metric-sub">Staked: {formatInr(selectedUserStats.totalStaked)}</span>
+                      </div>
                     </div>
-                    <div className="form-group form-group--btn">
-                      <button type="submit" className="admin-btn admin-btn--primary">
-                        <FiEdit /> Save Wallet Overrides
-                      </button>
+
+                    <div className="admin-card metric-card">
+                      <div className="metric-icon" style={{ background: '#f59e0b20', color: '#f59e0b' }}><FiCheckCircle /></div>
+                      <div className="metric-info">
+                        <span className="metric-label">User Net P&L</span>
+                        <span className={`metric-value ${selectedUserStats.netPnl >= 0 ? 'text-green' : 'text-danger'}`}>
+                          {selectedUserStats.netPnl >= 0 ? '+' : ''}{formatInr(selectedUserStats.netPnl)}
+                        </span>
+                        <span className="metric-sub">{selectedUserStats.netPnl >= 0 ? 'Net Winner' : 'Net Contributor'}</span>
+                      </div>
                     </div>
-                  </form>
+                  </div>
+                </div>
+
+                {/* PER-USER TRANSACTION HISTORY TABLE */}
+                <div className="admin-card">
+                  <div className="card-header flex-between">
+                    <div>
+                      <h4>📜 Transaction History for {selectedUserEmail}</h4>
+                      <span className="text-xs text-muted">Showing all deposits, withdrawals, bet stakes, payouts, and bonus claims for this account</span>
+                    </div>
+
+                    <div className="filter-pills">
+                      {['ALL', 'DEPOSIT', 'WITHDRAWAL', 'BET_WIN', 'BET_STAKE', 'BONUS_CLAIM'].map((t) => (
+                        <button
+                          key={t}
+                          type="button"
+                          className={`filter-pill ${selectedUserTxFilter === t ? 'active' : ''}`}
+                          onClick={() => setSelectedUserTxFilter(t)}
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="admin-table-wrap">
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>Transaction ID</th>
+                          <th>Date & Time</th>
+                          <th>Type</th>
+                          <th>Method / Gateway</th>
+                          <th>UTR / Ref Code</th>
+                          <th>Amount</th>
+                          <th>Status</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedUserTransactions.length === 0 ? (
+                          <tr>
+                            <td colSpan="8" className="text-center py-6 text-muted">
+                              No transactions recorded for {selectedUserEmail} under "{selectedUserTxFilter}" filter.
+                            </td>
+                          </tr>
+                        ) : (
+                          selectedUserTransactions.map((tx) => (
+                            <tr key={tx.id}>
+                              <td><code className="tx-id-code">{tx.id}</code></td>
+                              <td className="text-xs text-muted">
+                                {new Date(tx.createdAt).toLocaleString('en-IN', {
+                                  dateStyle: 'medium',
+                                  timeStyle: 'short',
+                                })}
+                              </td>
+                              <td>
+                                <span className={`tx-type-pill tx-type-pill--${(tx.type || 'other').toLowerCase()}`}>
+                                  {tx.type}
+                                </span>
+                              </td>
+                              <td><span className="font-bold text-xs">{tx.method || 'Online'}</span></td>
+                              <td><code className="utr-code">{tx.utr || 'N/A'}</code></td>
+                              <td>
+                                <span className={`font-bold ${['DEPOSIT', 'BET_WIN', 'BONUS_CLAIM'].includes(tx.type) ? 'text-green' : 'text-danger'}`}>
+                                  {['DEPOSIT', 'BET_WIN', 'BONUS_CLAIM'].includes(tx.type) ? '+' : '-'}{formatInr(tx.amount || 0)}
+                                </span>
+                              </td>
+                              <td>
+                                <span className={`status-tag status-tag--${(tx.status || 'completed').toLowerCase()}`}>
+                                  {tx.status}
+                                </span>
+                              </td>
+                              <td>
+                                <button
+                                  type="button"
+                                  className="admin-btn admin-btn--sm"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(tx.utr || tx.id);
+                                    showToast(`Copied UTR/Ref ${tx.utr || tx.id}!`, 'info');
+                                  }}
+                                >
+                                  Copy Ref
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             )}
@@ -1133,12 +1776,12 @@ export default function Admin() {
               </div>
             )}
 
-            {/* TAB 11: LIVE TOAST NOTIFICATION DISPATCHER */}
+            {/* TAB 11: LIVE PUSH ALERTS */}
             {activeTab === 'push_alerts' && (
               <div className="admin-tab-content">
                 <div className="admin-card">
                   <div className="card-header">
-                    <h3>🔔 Live Site Notification Dispatcher</h3>
+                    <h3>⚡ Dispatch Live Broadcast Push Alert</h3>
                   </div>
 
                   <form onSubmit={handleDispatchNotification} className="admin-form-grid">
@@ -1146,7 +1789,7 @@ export default function Admin() {
                       <label>Notification Message</label>
                       <input
                         type="text"
-                        placeholder="e.g. 🎁 Claim ₹500 Free Bet Now!"
+                        placeholder="e.g. Claim ₹500 Free Bet Now!"
                         value={dispatchToastText}
                         onChange={(e) => setDispatchToastText(e.target.value)}
                         required

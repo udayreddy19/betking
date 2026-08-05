@@ -288,20 +288,67 @@
 }
 
 .betslip-footer-summary {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
 }
 
 .betslip-footer-panel .betslip-quick-stakes {
-  margin-bottom: var(--space-3);
+  display: flex;
+  gap: 4px;
+  margin-bottom: 6px;
 }
 
-.betslip-footer-panel .betslip-stake {
-  margin-bottom: var(--space-3);
+.betslip-footer-panel .betslip-quick-stake-btn {
+  flex: 1;
+  padding: 4px 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.betslip-footer-panel .betslip-quick-stake-btn:hover {
+  background: var(--color-primary-bg);
+  border-color: var(--color-primary);
+}
+
+.betslip-stake--inline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.betslip-stake-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.betslip-stake--inline input {
+  width: 120px;
+  height: 32px;
+  padding: 4px 8px;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  text-align: right;
 }
 
 .betslip-footer-panel .betslip-place-btn {
-  margin-top: var(--space-1);
+  margin-top: 2px;
+  height: 38px;
+  padding: 0 12px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  border-radius: 8px;
 }

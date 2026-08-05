@@ -249,8 +249,8 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
             ))}
           </div>
 
-          <div className="betslip-stake">
-            <label htmlFor="stake-input">Stake (₹) · min {MIN_STAKE_INR}</label>
+          <div className="betslip-stake betslip-stake--inline">
+            <span className="betslip-stake-label">Stake (₹)</span>
             <input
               type="number"
               placeholder="0.00"
@@ -265,13 +265,13 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
 
       <div className="betslip-footer-summary">
         <div className="betslip-summary">
-          <span className="label">{betType === 'multi' ? 'Total Odds' : 'Total Stake'}</span>
+          <span className="label">{betType === 'multi' ? 'Odds' : 'Stake'}</span>
           <span className="value">
             {betType === 'multi' ? totalOdds : `₹${totalStakeAmount.toFixed(2)}`}
           </span>
         </div>
         <div className="betslip-summary">
-          <span className="label">Potential Return</span>
+          <span className="label">Return</span>
           <span className="value">₹{potentialReturn}</span>
         </div>
       </div>
