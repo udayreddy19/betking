@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
+import { useLiveMatches } from '../../context/LiveSportsContext';
 import { formatInr } from '../../utils/walletBalance';
 import {
   FiUsers,
@@ -25,7 +26,7 @@ import './Admin.css';
 export default function Admin() {
   const { user, updateUser, showToast, addFunds } = useAuth();
   const { placedBets, adminSettleBet } = useBetSlip();
-  const liveMatches = useLiveMatchesSafe();
+  const liveMatches = useLiveMatches() || [];
 
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
     return localStorage.getItem('betking_admin_auth') === 'true';
@@ -1319,13 +1320,4 @@ export default function Admin() {
       </div>
     </div>
   );
-}
-
-function useLiveMatchesSafe() {
-  try {
-    const { useLiveMatches } = require('../../context/LiveSportsContext');
-    return useLiveMatches() || [];
-  } catch {
-    return [];
-  }
 }
