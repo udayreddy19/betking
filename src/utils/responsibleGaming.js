@@ -8,8 +8,8 @@ export function getTodayKey() {
 
 export function normalizeRgState(user) {
   const today = getTodayKey();
-  const day = user?.rgDayKey === today ? today : today;
   const sameDay = user?.rgDayKey === today;
+  const day = sameDay ? user.rgDayKey : today;
 
   return {
     rgDayKey: day,

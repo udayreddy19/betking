@@ -1,9 +1,9 @@
 // Node.js / Express Backend Server with Razorpay Webhook Handler
 // Usage: node server/index.js
 
-const express = require('express');
-const crypto = require('crypto');
-const cors = require('cors');
+import express from 'express';
+import crypto from 'crypto';
+import cors from 'cors';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -16,8 +16,7 @@ app.use(express.json({
 }));
 app.use(cors());
 
-// Razorpay Credentials & Webhook Secret
-const RAZORPAY_SECRET = process.env.RAZORPAY_KEY_SECRET || 'YOUR_RAZORPAY_KEY_SECRET';
+// Razorpay Webhook Secret
 const RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || 'betking_wh_secret_2026';
 
 // -----------------------------------------------------------------------------
@@ -25,7 +24,7 @@ const RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || 'betking_
 // -----------------------------------------------------------------------------
 app.post('/api/create-order', async (req, res) => {
   const { amount, userId } = req.body;
-  
+
   if (!amount || amount <= 0) {
     return res.status(400).json({ error: 'Invalid deposit amount' });
   }
@@ -38,7 +37,7 @@ app.post('/api/create-order', async (req, res) => {
     //   receipt: `rcpt_${userId}_${Date.now()}`,
     //   notes: { userId: userId || 'udayreddy12' }
     // });
-    
+
     // Mock response format matching Razorpay API:
     const mockOrder = {
       id: `order_${Math.random().toString(36).substring(2, 12)}`,
@@ -65,7 +64,7 @@ app.post('/api/create-order', async (req, res) => {
 // -----------------------------------------------------------------------------
 app.post('/api/webhooks/razorpay', (req, res) => {
   const signature = req.headers['x-razorpay-signature'];
-  const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || 'betking_wh_secret_2026';
+  const webhookSecret = RAZORPAY_WEBHOOK_SECRET;
 
   // Security Check 1: Ensure signature header exists
   if (!signature) {

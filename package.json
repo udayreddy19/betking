@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@animateicons/react": "^0.4.1",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
     "motion": "^12.43.0",
     "razorpay": "^2.9.8",
     "react": "^19.2.8",

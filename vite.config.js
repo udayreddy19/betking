@@ -12,12 +12,19 @@ export default defineConfig({
           if (id.includes('node_modules/react-router') || id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) {
             return 'vendor';
           }
-          if (
-            id.includes('node_modules/@animateicons')
-            || id.includes('node_modules/motion')
-            || id.includes('/src/icons/itshover/')
-          ) {
-            return 'icons';
+          if (id.includes('node_modules/@animateicons')) {
+            return 'icons-animateicons';
+          }
+          if (id.includes('node_modules/motion')) {
+            return 'icons-motion';
+          }
+          // Split each itshover icon into its own chunk
+          if (id.includes('/src/icons/itshover/')) {
+            const match = id.match(/\/src\/icons\/itshover\/([^/]+)\./);
+            if (match) {
+              return `icon-${match[1].replace('-icon', '')}`;
+            }
+            return 'icons-itshover';
           }
         },
       },
