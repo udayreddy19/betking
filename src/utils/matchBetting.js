@@ -143,26 +143,19 @@ export function getMatchState(match) {
 
 export function isApiBackedMatch(match) {
   if (!match) return false;
+  if (match.id) return true;
   return !!(
     match.cricbuzzMatchId
     || match.espnEventId
     || match.fancodeMatchId
-    || match.source === 'espn'
-    || match.source === 'cricbuzz'
-    || match.source === 'fancode'
-    || match.source === 'srl'
-    || match.scoreSource === 'sim'
-    || match.scoreSource === 'api'
-    || match.id?.startsWith('api_')
-    || match.id?.startsWith('cb_')
-    || match.id?.startsWith('srl_ipl_')
+    || match.source
+    || match.scoreSource
   );
 }
 
 export function isMockMatch(match) {
   if (!match) return false;
   if (match.isMock === true) return true;
-  if (isApiBackedMatch(match)) return false;
   const id = String(match.id || '');
   return /^m\d+$/.test(id) || id.startsWith('mock_');
 }
@@ -175,13 +168,10 @@ export function isTrulyLiveMatch(match) {
 /** Live matches shown in Live Betting — API-backed in-play or verified live. */
 export function isDisplayableLiveMatch(match) {
   if (!match) return false;
-  if (getMatchState(match) !== 'in') return false;
-  if (match.sport === 'cricket' || match.sport === 'virtual-cricket') {
-    if (!hasCricketPlayStarted(match)) return false;
-  }
-  if (isApiBackedMatch(match)) return true;
-  if (isMockMatch(match)) return false;
-  return !!match.isLive;
+  const state = getMatchState(match);
+  if (state === 'post') return false;
+  if (state === 'in' || match.isLive) return true;
+  return false;
 }
 
 export function isMatchLive(match) {

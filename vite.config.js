@@ -1,10 +1,11 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { liveScoresApiPlugin } from './vite-plugins/liveScoresApi.js'
+import { sportsApiPlatformPlugin } from './vite-plugins/sportsApiPlatform.js'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), liveScoresApiPlugin()],
+  plugins: [react(), liveScoresApiPlugin(), sportsApiPlatformPlugin()],
   build: {
     rollupOptions: {
       output: {

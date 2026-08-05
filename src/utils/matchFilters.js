@@ -52,16 +52,13 @@ export function filterMatches(matches, { sport, stateTab = 'all', searchQuery = 
 function normalizeLiveFlags(match) {
   let state = getMatchState(match);
   const apiLive = match?.isLive === true || match?.matchState === 'in';
-  const cricketPrePlay = (match?.sport === 'cricket' || match?.sport === 'virtual-cricket')
-    && state === 'pre'
-    && apiLive;
 
   return {
     ...match,
     isMock: false,
     matchState: state,
-    isLive: state === 'in' && (apiLive || isApiBackedMatch(match)),
-    time: cricketPrePlay ? (match.time === 'Live' ? 'Scheduled' : match.time) : match.time,
+    isLive: state === 'in' || apiLive,
+    time: match.time || 'Live',
     scoreSource: match.source || match.scoreSource || 'api',
   };
 }

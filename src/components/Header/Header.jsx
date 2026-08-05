@@ -58,6 +58,16 @@ function Header() {
 
   const wallet = getWalletBreakdown(user);
   const loyalty = getLoyaltySummary(user);
+  const [sliderPoints, setSliderPoints] = useState(loyalty.points || 50);
+
+  useEffect(() => {
+    if (loyalty.points > 0) {
+      setSliderPoints((prev) => {
+        if (prev > loyalty.points || prev < 50) return loyalty.points;
+        return prev;
+      });
+    }
+  }, [loyalty.points]);
 
   useEffect(() => {
     if (!isMoreOpen) return undefined;
@@ -259,35 +269,57 @@ function Header() {
                             ? `Redeem for cash (5 pts = ₹1)`
                             : `${loyalty.pointsToUnlock} pts to unlock redemption (${LOYALTY_MIN_REDEEM_POINTS} pts min)`}
                         </p>
-                        <div className="loyalty-redeem-btn-group">
-                          {loyalty.points >= 50 && (
+                        {loyalty.canRedeem && (
+                          <div className="loyalty-slider-section">
+                            <div className="loyalty-slider-header">
+                              <span className="loyalty-slider-label">Redeem amount:</span>
+                              <span className="loyalty-slider-value">
+                                <strong>{sliderPoints} pts</strong>
+                                <span className="loyalty-slider-rupees">(= ₹{(sliderPoints / 5).toFixed(2)})</span>
+                              </span>
+                            </div>
+
+                            <input
+                              type="range"
+                              min={Math.min(LOYALTY_MIN_REDEEM_POINTS, loyalty.points)}
+                              max={loyalty.points}
+                              step={5}
+                              value={sliderPoints}
+                              onChange={(e) => setSliderPoints(Number(e.target.value))}
+                              className="loyalty-range-input"
+                              id="loyalty-points-slider"
+                            />
+
+                            <div className="loyalty-slider-limits">
+                              <span>50 pts (₹10)</span>
+                              <span>{loyalty.points} pts (₹{(loyalty.points / 5).toFixed(2)})</span>
+                            </div>
+
+                            <div className="loyalty-slider-presets">
+                              {[0.25, 0.5, 0.75, 1].map((pct) => {
+                                const targetPts = Math.max(50, Math.floor((loyalty.points * pct) / 5) * 5);
+                                return (
+                                  <button
+                                    key={pct}
+                                    type="button"
+                                    className={`loyalty-preset-chip ${sliderPoints === targetPts ? 'active' : ''}`}
+                                    onClick={() => setSliderPoints(targetPts)}
+                                  >
+                                    {pct === 1 ? 'Max' : `${pct * 100}%`}
+                                  </button>
+                                );
+                              })}
+                            </div>
+
                             <button
                               type="button"
-                              className="header-wallet-menu__redeem header-wallet-menu__redeem--sm"
-                              onClick={() => handleRedeemLoyalty(50)}
+                              className="header-wallet-menu__redeem header-wallet-menu__redeem--slider"
+                              onClick={() => handleRedeemLoyalty(sliderPoints)}
                             >
-                              50 pts (₹10)
+                              Redeem {sliderPoints} pts (₹{(sliderPoints / 5).toFixed(2)})
                             </button>
-                          )}
-                          {loyalty.points >= 100 && (
-                            <button
-                              type="button"
-                              className="header-wallet-menu__redeem header-wallet-menu__redeem--sm"
-                              onClick={() => handleRedeemLoyalty(100)}
-                            >
-                              100 pts (₹20)
-                            </button>
-                          )}
-                          {loyalty.canRedeem && (
-                            <button
-                              type="button"
-                              className="header-wallet-menu__redeem"
-                              onClick={() => handleRedeemLoyalty(loyalty.points)}
-                            >
-                              Redeem All ({loyalty.points} pts = {formatInr(loyalty.redeemValue)})
-                            </button>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </div>
 
                       <div className="header-wallet-menu__divider" />

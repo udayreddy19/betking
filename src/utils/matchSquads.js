@@ -1,4 +1,4 @@
-import { normalizeTeamKey } from '../data/cricketRosters';
+import { normalizeTeamKey, getRosterForTeam } from '../data/cricketRosters';
 
 function teamsMatch(teamA, teamB) {
   if (!teamA || !teamB) return false;
@@ -11,24 +11,25 @@ function teamsMatch(teamA, teamB) {
 }
 
 function generateFullSquad(teamName) {
-  const short = (teamName || 'Team').replace(/\s+W$/i, '').trim();
-  const prefix = short.split(' ')[0] || 'Player';
+  const roster = getRosterForTeam(teamName);
+  const batters = roster?.batters || ['Player 1', 'Player 2'];
+  const bowlers = roster?.bowlers || ['Bowler 1', 'Bowler 2'];
 
-  const defaultPlayers = [
-    { id: 1, name: `${prefix} Opener 1`, role: 'Batter', isCaptain: true },
-    { id: 2, name: `${prefix} Opener 2`, role: 'Batter' },
-    { id: 3, name: `${prefix} Keeper`, role: 'Batter', isKeeper: true },
-    { id: 4, name: `${prefix} Batter 3`, role: 'Batter' },
-    { id: 5, name: `${prefix} Batter 4`, role: 'Batter' },
-    { id: 6, name: `${prefix} All-Rounder 1`, role: 'All-Rounder' },
-    { id: 7, name: `${prefix} All-Rounder 2`, role: 'All-Rounder' },
-    { id: 8, name: `${prefix} Spinner 1`, role: 'Bowler' },
-    { id: 9, name: `${prefix} Pacer 1`, role: 'Bowler' },
-    { id: 10, name: `${prefix} Pacer 2`, role: 'Bowler' },
-    { id: 11, name: `${prefix} Pacer 3`, role: 'Bowler' },
+  const players = [
+    { id: 1, name: batters[0] || 'Opener 1', role: 'Batter', isCaptain: true },
+    { id: 2, name: batters[1] || 'Opener 2', role: 'Batter' },
+    { id: 3, name: batters[2] || 'Keeper', role: 'Batter', isKeeper: true },
+    { id: 4, name: batters[3] || 'Middle Order 1', role: 'Batter' },
+    { id: 5, name: batters[4] || 'Middle Order 2', role: 'Batter' },
+    { id: 6, name: batters[5] || 'All-Rounder 1', role: 'All-Rounder' },
+    { id: 7, name: batters[6] || 'All-Rounder 2', role: 'All-Rounder' },
+    { id: 8, name: bowlers[0] || 'Spinner 1', role: 'Bowler' },
+    { id: 9, name: bowlers[1] || 'Pacer 1', role: 'Bowler' },
+    { id: 10, name: bowlers[2] || 'Pacer 2', role: 'Bowler' },
+    { id: 11, name: bowlers[3] || 'Pacer 3', role: 'Bowler' },
   ];
 
-  return { name: teamName, players: defaultPlayers };
+  return { name: teamName, players };
 }
 
 /** Map API squads to home/away team names on the match card. */

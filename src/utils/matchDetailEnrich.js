@@ -102,6 +102,17 @@ export function enrichMatchWithDetail(match, detail) {
     squads: detail.squads?.length ? detail.squads : match.squads,
     scorecardInnings: detail.scorecardInnings?.length ? detail.scorecardInnings : match.scorecardInnings,
     overHistory: detail.overHistory?.length ? detail.overHistory : match.overHistory,
+    venue: detail.venue || match.venue || null,
+    officials: detail.officials || match.officials || null,
+    toss: detail.toss || match.toss || null,
+    events: detail.events || match.events || null,
+    commentary: detail.commentary || match.commentary || null,
+    lineups: detail.lineups || match.lineups || null,
+    odds: detail.odds || match.odds || null,
+    headToHead: detail.headToHead || match.headToHead || null,
+    awards: detail.awards || match.awards || null,
+    season: detail.season || match.season || null,
+    tournament: detail.tournament || match.tournament || null,
     liveDetails,
   };
 }
