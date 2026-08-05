@@ -12,25 +12,24 @@ import { normalizeApiMatches } from '../utils/matchFilters';
 import { fetchLiveScores } from '../services/liveScoresService';
 import { getIplSrlMatches } from '../../lib/iplSrlSimulator.mjs';
 import { LIVE_SCORES_POLL_MS } from '../config/livePolling';
+import { computeLiveDynamicOdds } from '../utils/oddsMarketsGenerator';
 
 const LiveMatchesContext = createContext([]);
 const LiveSportsMetaContext = createContext(null);
 
-function attachOdds(matches, oddsCache) {
+function attachOdds(matches) {
   return matches.map((match) => {
-    if (match.odds) return match;
-    const cacheKey = match.id;
-    if (!oddsCache.has(cacheKey)) {
-      oddsCache.set(cacheKey, getStableMatchOdds(cacheKey, {
-        hasDraw: match.sport === 'soccer' || match.sport === 'esoccer',
-      }));
-    }
-    return { ...match, odds: oddsCache.get(cacheKey) };
+    const liveOdds = computeLiveDynamicOdds(match);
+    return {
+      ...match,
+      preOdds: match.preOdds || match.odds || liveOdds,
+      odds: liveOdds,
+    };
   });
 }
 
 function mergeSrlMatches(matches) {
-  const srl = getIplSrlMatches();
+  const srl = attachOdds(getIplSrlMatches());
   const rest = matches.filter((m) => !String(m.id || '').startsWith('srl_ipl_'));
   return [...rest, ...srl];
 }
@@ -45,9 +44,13 @@ function matchDisplayKey(match) {
     match.matchState,
     match.isLive,
     match.time,
+    match.odds?.team1,
+    match.odds?.team2,
+    match.odds?.draw,
     ld.runs,
     ld.wickets,
     ld.overs,
+    ld.score1,
     ld.score2,
     ld.wickets2,
     ld.overs2,
@@ -130,7 +133,7 @@ export function LiveSportsProvider({ children }) {
       if (data.pollIntervalMs && data.pollIntervalMs > 0) {
         pollMsRef.current = data.pollIntervalMs;
       }
-      const apiMatches = attachOdds(data.matches || [], oddsCacheRef.current);
+      const apiMatches = attachOdds(data.matches || []);
       const normalized = normalizeApiMatches(apiMatches);
       const nextSeries = data.series || [];
       const nextSeriesSignature = seriesSignature(nextSeries);
