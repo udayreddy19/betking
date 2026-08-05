@@ -172,9 +172,8 @@ function Header() {
                     aria-expanded={isWalletOpen}
                     aria-haspopup="true"
                   >
-                    <span className="balance-wallet-icon">👛</span>
                     <span className="balance-amount-text">
-                      <RupeeSymbol variant="text" />
+                      <RupeeSymbol size={20} />
                       {Number(wallet.total).toLocaleString('en-IN', {
                         minimumFractionDigits: wallet.total % 1 !== 0 ? 2 : 0,
                         maximumFractionDigits: 2,
@@ -283,8 +282,7 @@ function Header() {
             <div className="header-auth-buttons">
               <div className="header-wallet-group header-wallet-group--guest">
                 <div className="header-balance header-balance--static">
-                  <span className="balance-wallet-icon">👛</span>
-                  <span><RupeeSymbol variant="text" />0</span>
+                  <span><RupeeSymbol size={18} />0</span>
                   <FiChevronDown className="balance-chevron" />
                 </div>
               </div>

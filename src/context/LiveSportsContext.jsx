@@ -254,7 +254,7 @@ export function LiveSportsProvider({ children }) {
       });
     };
 
-    const srlInterval = setInterval(tickSrl, 3000);
+    const srlInterval = setInterval(tickSrl, 2000);
     return () => clearInterval(srlInterval);
   }, []);
 
