@@ -31,10 +31,13 @@ const moreLinks = [
   { to: '/responsible-gaming', label: 'Responsible Gaming' },
 ];
 
+import DailySpinModal from '../DailySpinModal/DailySpinModal';
+
 function Header() {
   const { user, isLoggedIn, openLoginModal, openDepositModal, toggleSidebar, redeemLoyaltyPoints, openFinModal } = useAuth();
   const { myBetsCount, isMyBetsOpen, toggleMyBets, closeMyBets } = useBetSlip();
   const [isPromosOpen, setIsPromosOpen] = useState(false);
+  const [isSpinOpen, setIsSpinOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const moreRef = useRef(null);
@@ -147,6 +150,15 @@ function Header() {
             <HiOutlineClipboardList className="header-my-bets-icon" aria-hidden="true" />
             <span className="header-my-bets-label">My Bets</span>
             {myBetsCount > 0 && <span className="header-my-bets-badge">{myBetsCount}</span>}
+          </button>
+          <button
+            type="button"
+            className="header-bonuses-btn"
+            id="daily-spin-btn"
+            title="Spin & Win Daily Rewards"
+            onClick={() => setIsSpinOpen(true)}
+          >
+            🎰
           </button>
           <button
             type="button"
@@ -300,6 +312,7 @@ function Header() {
       </div>
       <MyBetsPanel />
       <PromotionsPanel isOpen={isPromosOpen} onClose={closePromos} />
+      <DailySpinModal isOpen={isSpinOpen} onClose={() => setIsSpinOpen(false)} />
     </header>
   );
 }
