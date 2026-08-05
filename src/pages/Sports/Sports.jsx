@@ -17,15 +17,8 @@ import { prefetchMatchDetail } from '../../services/matchDetailPoller';
 import { filterMatches } from '../../utils/matchFilters';
 import { resolveLeagueId, getLeagueMeta, isSameLeague, groupMatchesByLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
 import SrlLeaguePanel from '../../components/SrlLeaguePanel/SrlLeaguePanel';
+import { generateMatchMarkets, getMarketCategoriesForSport } from '../../utils/oddsMarketsGenerator';
 import './Sports.css';
-
-const MARKET_CATEGORIES = [
-  { id: 'all', label: 'All' },
-  { id: 'main', label: 'Main' },
-  { id: 'over', label: 'Over' },
-  { id: 'delivery', label: 'Delivery' },
-  { id: 'partnership', label: 'Partnership' },
-];
 
 function filterByLeague(matchList, activeLeague, cricketSeries = []) {
   if (!activeLeague || activeLeague === 'all') return matchList;
@@ -271,6 +264,15 @@ export default function Sports() {
 
     return match || null;
   }, [sportMatches, matches, selectedMatchId, viewMode]);
+
+  const marketCategories = useMemo(() => {
+    return getMarketCategoriesForSport(activeMatch?.sport || activeSport || 'cricket');
+  }, [activeMatch, activeSport]);
+
+  const matchMarkets = useMemo(() => {
+    if (!activeMatch) return [];
+    return generateMatchMarkets(activeMatch);
+  }, [activeMatch]);
 
   const liveMatchPrefetchKey = useMemo(
     () => liveMatches.slice(0, 3).map((match) => {
@@ -705,7 +707,7 @@ export default function Sports() {
               </div>
 
               <div className="sports-market-cats">
-                {MARKET_CATEGORIES.map(cat => (
+                {marketCategories.map(cat => (
                   <button
                     key={cat.id}
                     type="button"
@@ -717,148 +719,39 @@ export default function Sports() {
                 ))}
               </div>
 
-              {showCategory('main') && (
-                <div className="sports-market-panel">
-                  <button
-                    type="button"
-                    className="sports-market-panel-header"
-                    onClick={() => toggleMarket('winner')}
-                  >
-                    <span>Winner (incl. super over)</span>
-                    {expandedMarkets.winner ? <HiOutlineChevronUp /> : <HiOutlineChevronDown />}
-                  </button>
-                  {expandedMarkets.winner && (
-                    canBetActive ? (
-                      <div className="sports-market-odds-grid">
-                        <button
-                          type="button"
-                          className={oddsBtnClass('1')}
-                          onClick={() => placeBet('1', activeMatch.odds?.team1, activeMatch.team1.name, 'Winner (incl. super over)')}
-                        >
-                          <span>{activeMatch.team1.name}</span>
-                          <span className="odds-val">{Number(activeMatch.odds?.team1 || 0).toFixed(2)}</span>
-                        </button>
-                        {activeMatch.odds?.draw !== undefined && (
-                          <button
-                            type="button"
-                            className={oddsBtnClass('X')}
-                            onClick={() => placeBet('X', activeMatch.odds.draw, 'Draw', 'Winner (incl. super over)')}
-                          >
-                            <span>Draw</span>
-                            <span className="odds-val">{Number(activeMatch.odds.draw).toFixed(2)}</span>
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          className={oddsBtnClass('2')}
-                          onClick={() => placeBet('2', activeMatch.odds?.team2, activeMatch.team2.name, 'Winner (incl. super over)')}
-                        >
-                          <span>{activeMatch.team2.name}</span>
-                          <span className="odds-val">{Number(activeMatch.odds?.team2 || 0).toFixed(2)}</span>
-                        </button>
-                      </div>
-                    ) : <MarketsSuspended />
-                  )}
-                </div>
-              )}
-
-              {showCategory('main') && (
-                <div className="sports-market-panel">
-                  <button
-                    type="button"
-                    className="sports-market-panel-header"
-                    onClick={() => toggleMarket('tie')}
-                  >
-                    <span>Will there be a tie</span>
-                    {expandedMarkets.tie ? <HiOutlineChevronUp /> : <HiOutlineChevronDown />}
-                  </button>
-                  {expandedMarkets.tie && (
-                    canBetActive ? (
-                      <div className="sports-market-odds-grid">
-                        <button
-                          type="button"
-                          className={oddsBtnClass('Tie:Yes')}
-                          onClick={() => placeBet('Tie:Yes', 11.50, 'Yes', 'Will there be a tie')}
-                        >
-                          <span>Yes</span>
-                          <span className="odds-val">11.50</span>
-                        </button>
-                        <button
-                          type="button"
-                          className={oddsBtnClass('Tie:No')}
-                          onClick={() => placeBet('Tie:No', 1.05, 'No', 'Will there be a tie')}
-                        >
-                          <span>No</span>
-                          <span className="odds-val">1.05</span>
-                        </button>
-                      </div>
-                    ) : <MarketsSuspended />
-                  )}
-                </div>
-              )}
-
-              {showCategory('over') && (
-                <div className="sports-market-panel">
-                  <button type="button" className="sports-market-panel-header" onClick={() => toggleMarket('over10')}>
-                    <span>1st innings over 12 - {activeMatch.team1.name} total</span>
-                    {expandedMarkets.over10 ? <HiOutlineChevronUp /> : <HiOutlineChevronDown />}
-                  </button>
-                  {expandedMarkets.over10 && (
-                    canBetActive ? (
-                      <div className="sports-market-odds-grid">
-                        <button type="button" className={oddsBtnClass('Over 12 Total:Over 6.5')} onClick={() => placeBet('Over 12 Total:Over 6.5', 2.06, 'Over 6.5', '1st innings over 12 total')}>
-                          <span>Over 6.5</span><span className="odds-val">2.06</span>
-                        </button>
-                        <button type="button" className={oddsBtnClass('Over 12 Total:Under 6.5')} onClick={() => placeBet('Over 12 Total:Under 6.5', 1.63, 'Under 6.5', '1st innings over 12 total')}>
-                          <span>Under 6.5</span><span className="odds-val">1.63</span>
-                        </button>
-                      </div>
-                    ) : <MarketsSuspended />
-                  )}
-                </div>
-              )}
-
-              {showCategory('delivery') && (
-                <div className="sports-market-panel">
-                  <button type="button" className="sports-market-panel-header" onClick={() => toggleMarket('delivery')}>
-                    <span>1st innings over 12 - 5th delivery {activeMatch.team2.name} total</span>
-                    {expandedMarkets.delivery ? <HiOutlineChevronUp /> : <HiOutlineChevronDown />}
-                  </button>
-                  {expandedMarkets.delivery && (
-                    canBetActive ? (
-                      <div className="sports-market-odds-grid">
-                        <button type="button" className={oddsBtnClass('Delivery:Over 0.5')} onClick={() => placeBet('Delivery:Over 0.5', 1.45, 'Over 0.5', '5th delivery total')}>
-                          <span>Over 0.5</span><span className="odds-val">1.45</span>
-                        </button>
-                        <button type="button" className={oddsBtnClass('Delivery:Under 0.5')} onClick={() => placeBet('Delivery:Under 0.5', 2.30, 'Under 0.5', '5th delivery total')}>
-                          <span>Under 0.5</span><span className="odds-val">2.30</span>
-                        </button>
-                      </div>
-                    ) : <MarketsSuspended />
-                  )}
-                </div>
-              )}
-
-              {showCategory('partnership') && (
-                <div className="sports-market-panel">
-                  <button type="button" className="sports-market-panel-header" onClick={() => toggleMarket('partnership')}>
-                    <span>1st innings - 1st partnership total</span>
-                    {expandedMarkets.partnership ? <HiOutlineChevronUp /> : <HiOutlineChevronDown />}
-                  </button>
-                  {expandedMarkets.partnership && (
-                    canBetActive ? (
-                      <div className="sports-market-odds-grid">
-                        <button type="button" className={oddsBtnClass('Partnership:Over 45.5')} onClick={() => placeBet('Partnership:Over 45.5', 1.90, 'Over 45.5', '1st partnership total')}>
-                          <span>Over 45.5</span><span className="odds-val">1.90</span>
-                        </button>
-                        <button type="button" className={oddsBtnClass('Partnership:Under 45.5')} onClick={() => placeBet('Partnership:Under 45.5', 1.90, 'Under 45.5', '1st partnership total')}>
-                          <span>Under 45.5</span><span className="odds-val">1.90</span>
-                        </button>
-                      </div>
-                    ) : <MarketsSuspended />
-                  )}
-                </div>
-              )}
+              {matchMarkets.map((market) => {
+                if (!showCategory(market.category)) return null;
+                const isExpanded = expandedMarkets[market.key] !== false;
+                return (
+                  <div key={market.key} className="sports-market-panel">
+                    <button
+                      type="button"
+                      className="sports-market-panel-header"
+                      onClick={() => toggleMarket(market.key)}
+                    >
+                      <span>{market.title}</span>
+                      {isExpanded ? <HiOutlineChevronUp /> : <HiOutlineChevronDown />}
+                    </button>
+                    {isExpanded && (
+                      canBetActive ? (
+                        <div className="sports-market-odds-grid">
+                          {market.options.map((opt) => (
+                            <button
+                              key={opt.selection}
+                              type="button"
+                              className={oddsBtnClass(opt.selection)}
+                              onClick={() => placeBet(opt.selection, opt.odds, opt.name, market.title)}
+                            >
+                              <span>{opt.name}</span>
+                              <span className="odds-val">{Number(opt.odds).toFixed(2)}</span>
+                            </button>
+                          ))}
+                        </div>
+                      ) : <MarketsSuspended />
+                    )}
+                  </div>
+                );
+              })}
 
             </>
           ) : viewMode === 'match' ? (

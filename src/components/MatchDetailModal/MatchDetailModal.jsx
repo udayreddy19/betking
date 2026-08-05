@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { IoClose } from '../../icons';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { isMatchBettable, isMatchLive } from '../../utils/matchBetting';
+import { generateMatchMarkets } from '../../utils/oddsMarketsGenerator';
 import BetSlipFooter from '../BetSlip/BetSlipFooter';
 import TeamJersey from '../TeamJersey/TeamJersey';
 import './MatchDetailModal.css';
@@ -65,6 +66,10 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
   const team1Name = match.team1.name;
   const team2Name = match.team2.name;
   const sport = match.sport || 'cricket';
+
+  const matchMarkets = useMemo(() => {
+    return generateMatchMarkets(match);
+  }, [match]);
 
   // Dynamic player names
   const team1Players = teamRosters[team1Name] || [`${match.team1.shortName} Opener`, `${match.team1.shortName} Captain`, `${match.team1.shortName} Batter 3`, `${match.team1.shortName} All-Rounder`];
@@ -300,162 +305,37 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
             </div>
           )}
 
-          {/* CRICKET SPECIFIC 10CRIC MARKETS */}
-          {(sport === 'cricket' || sport === 'virtual-cricket') && (
-            <>
-              {/* Over-by-Over & Ball-by-Ball Delivery Markets */}
-              {(activeMarketCategory === 'all' || activeMarketCategory === 'overs-deliveries') && (
-                <>
-                  <div className="market-box">
-                    <div className="market-title"><span>{isSecondInnings ? '2nd' : '1st'} innings over 10 - {team1Name} total</span></div>
-                    <div className="market-odds-grid two-col">
-                      <button type="button" className={propOddsBtnClass('Over 10 Total', 'Over 6.5')} disabled={!canBet} onClick={() => handleOddsClick('Over 10 Total', 'Over 6.5', 2.06)}>
-                        <span className="market-label">Over 6.5</span>
-                        <span className="market-val">2.06</span>
-                      </button>
-                      <button type="button" className={propOddsBtnClass('Over 10 Total', 'Under 6.5')} disabled={!canBet} onClick={() => handleOddsClick('Over 10 Total', 'Under 6.5', 1.63)}>
-                        <span className="market-label">Under 6.5</span>
-                        <span className="market-val">1.63</span>
-                      </button>
-                      <button type="button" className={propOddsBtnClass('Over 10 Total', 'Over 7.5')} disabled={!canBet} onClick={() => handleOddsClick('Over 10 Total', 'Over 7.5', 2.66)}>
-                        <span className="market-label">Over 7.5</span>
-                        <span className="market-val">2.66</span>
-                      </button>
-                      <button type="button" className={propOddsBtnClass('Over 10 Total', 'Under 7.5')} disabled={!canBet} onClick={() => handleOddsClick('Over 10 Total', 'Under 7.5', 1.38)}>
-                        <span className="market-label">Under 7.5</span>
-                        <span className="market-val">1.38</span>
-                      </button>
-                    </div>
-                  </div>
+          {/* DYNAMIC EXPANDED BETTING MARKETS */}
+          {activeMarketCategory !== 'builder' && activeMarketCategory !== 'insights' && (
+            matchMarkets.map((m) => {
+              const isCatMatch = activeMarketCategory === 'all'
+                || activeMarketCategory === 'main'
+                || activeMarketCategory === m.category;
+              if (!isCatMatch) return null;
 
-                  <div className="market-box">
-                    <div className="market-title"><span>{isSecondInnings ? '2nd' : '1st'} innings over 11 - {team1Name} total</span></div>
-                    <div className="market-odds-grid two-col">
-                      <button type="button" className={propOddsBtnClass('Over 11 Total', 'Over 6.5')} disabled={!canBet} onClick={() => handleOddsClick('Over 11 Total', 'Over 6.5', 2.00)}>
-                        <span className="market-label">Over 6.5</span>
-                        <span className="market-val">2.00</span>
-                      </button>
-                      <button type="button" className={propOddsBtnClass('Over 11 Total', 'Under 6.5')} disabled={!canBet} onClick={() => handleOddsClick('Over 11 Total', 'Under 6.5', 1.66)}>
-                        <span className="market-label">Under 6.5</span>
-                        <span className="market-val">1.66</span>
-                      </button>
-                    </div>
+              return (
+                <div key={m.key} className="market-box">
+                  <div className="market-title">
+                    <span>{m.title}</span>
+                    {m.key === 'winner' && <span className="market-cashout">CASHOUT AVAILABLE</span>}
                   </div>
-
-                  <div className="market-box">
-                    <div className="market-title"><span>{isSecondInnings ? '2nd' : '1st'} innings overs 0 to 12 - {team1Name} total</span></div>
-                    <div className="market-odds-grid two-col">
-                      <button type="button" className={propOddsBtnClass('Overs 0-12 Total', 'Over 92.5')} disabled={!canBet} onClick={() => handleOddsClick('Overs 0-12 Total', 'Over 92.5', 1.80)}>
-                        <span className="market-label">Over 92.5</span>
-                        <span className="market-val">1.80</span>
+                  <div className={`market-odds-grid ${m.options.length >= 3 ? 'multi-col' : 'two-col'}`}>
+                    {m.options.map((opt) => (
+                      <button
+                        key={opt.selection}
+                        type="button"
+                        className={propOddsBtnClass(m.title, opt.name)}
+                        disabled={!canBet}
+                        onClick={(e) => handleOddsClick(e, opt.selection, opt.odds, opt.name)}
+                      >
+                        <span className="market-label">{opt.name}</span>
+                        <span className="market-val">{Number(opt.odds).toFixed(2)}</span>
                       </button>
-                      <button type="button" className={propOddsBtnClass('Overs 0-12 Total', 'Under 92.5')} disabled={!canBet} onClick={() => handleOddsClick('Overs 0-12 Total', 'Under 92.5', 1.80)}>
-                        <span className="market-label">Under 92.5</span>
-                        <span className="market-val">1.80</span>
-                      </button>
-                    </div>
+                    ))}
                   </div>
-
-                  {/* Ball-by-Ball Delivery Odds */}
-                  <div className="market-box">
-                    <div className="market-title"><span>{isSecondInnings ? '2nd' : '1st'} innings over 9 - 5th delivery {team1Name} total</span></div>
-                    <div className="market-odds-grid multi-col">
-                      <button type="button" className={propOddsBtnClass('Over 9 Ball 5', 'Over 0.5')} disabled={!canBet} onClick={() => handleOddsClick('Over 9 Ball 5', 'Over 0.5', 1.42)}>
-                        <span className="market-label">Over 0.5</span>
-                        <span className="market-val">1.42</span>
-                      </button>
-                      <button type="button" className={propOddsBtnClass('Over 9 Ball 5', 'Under 0.5')} disabled={!canBet} onClick={() => handleOddsClick('Over 9 Ball 5', 'Under 0.5', 2.28)}>
-                        <span className="market-label">Under 0.5</span>
-                        <span className="market-val">2.28</span>
-                      </button>
-                      <button type="button" className={propOddsBtnClass('Over 9 Ball 5', 'Over 1.5')} disabled={!canBet} onClick={() => handleOddsClick('Over 9 Ball 5', 'Over 1.5', 4.00)}>
-                        <span className="market-label">Over 1.5</span>
-                        <span className="market-val">4.00</span>
-                      </button>
-                      <button type="button" className={propOddsBtnClass('Over 9 Ball 5', 'Over 3.5')} disabled={!canBet} onClick={() => handleOddsClick('Over 9 Ball 5', 'Over 3.5', 6.00)}>
-                        <span className="market-label">Over 3.5</span>
-                        <span className="market-val">6.00</span>
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Player Props */}
-              {(activeMarketCategory === 'all' || activeMarketCategory === 'player-props') && (
-                <div className="market-box">
-                  <div className="market-title"><span>Player Performance Props</span></div>
-                  {team1Players.slice(0, 2).map((player, idx) => {
-                    const line = (17.5 + idx * 8).toFixed(1);
-                    return (
-                      <div key={player} className="market-subgroup">
-                        <div className="market-subtitle">{player} total runs</div>
-                        <div className="market-odds-grid two-col">
-                          <button type="button" className={propOddsBtnClass(`${player} Total Runs`, `Over ${line}`)} disabled={!canBet} onClick={() => handleOddsClick(`${player} Total Runs`, `Over ${line}`, 1.83)}>
-                            <span className="market-label">Over {line}</span>
-                            <span className="market-val">1.83</span>
-                          </button>
-                          <button type="button" className={propOddsBtnClass(`${player} Total Runs`, `Under ${line}`)} disabled={!canBet} onClick={() => handleOddsClick(`${player} Total Runs`, `Under ${line}`, 1.83)}>
-                            <span className="market-label">Under {line}</span>
-                            <span className="market-val">1.83</span>
-                          </button>
-                        </div>
-                      </div>
-                    );
-                    })}
                 </div>
-              )}
-
-              {/* Dismissal Method & Odd/Even Specials */}
-              {(activeMarketCategory === 'all' || activeMarketCategory === 'specials') && (
-                <>
-                  <div className="market-box">
-                    <div className="market-title"><span>{team1Name} total at 4th dismissal</span></div>
-                    <div className="market-odds-grid two-col">
-                      <button type="button" className={propOddsBtnClass('4th Dismissal Total', 'Over 89.5')} disabled={!canBet} onClick={() => handleOddsClick('4th Dismissal Total', 'Over 89.5', 1.82)}>
-                        <span className="market-label">Over 89.5</span>
-                        <span className="market-val">1.82</span>
-                      </button>
-                      <button type="button" className={propOddsBtnClass('4th Dismissal Total', 'Under 89.5')} disabled={!canBet} onClick={() => handleOddsClick('4th Dismissal Total', 'Under 89.5', 1.82)}>
-                        <span className="market-label">Under 89.5</span>
-                        <span className="market-val">1.82</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="market-box">
-                    <div className="market-title"><span>Over 10 Total Runs - Odd/Even</span></div>
-                    <div className="market-odds-grid two-col">
-                      <button type="button" className={propOddsBtnClass('Over 10 Odd/Even', 'Odd')} disabled={!canBet} onClick={() => handleOddsClick('Over 10 Odd/Even', 'Odd', 1.82)}>
-                        <span className="market-label">Odd</span>
-                        <span className="market-val">1.82</span>
-                      </button>
-                      <button type="button" className={propOddsBtnClass('Over 10 Odd/Even', 'Even')} disabled={!canBet} onClick={() => handleOddsClick('Over 10 Odd/Even', 'Even', 1.82)}>
-                        <span className="market-label">Even</span>
-                        <span className="market-val">1.82</span>
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-            </>
-          )}
-
-          {/* SOCCER / BASKETBALL MARKETS */}
-          {sport !== 'cricket' && sport !== 'virtual-cricket' && (
-            <div className="market-box">
-              <div className="market-title"><span>Match Props</span></div>
-              <div className="market-odds-grid two-col">
-                <button type="button" className={propOddsBtnClass('Both Teams to Score', 'Yes')} disabled={!canBet} onClick={() => handleOddsClick('Both Teams to Score', 'Yes', 1.80)}>
-                  <span className="market-label">Both Teams Score: Yes</span>
-                  <span className="market-val">1.80</span>
-                </button>
-                <button type="button" className={propOddsBtnClass('Both Teams to Score', 'No')} disabled={!canBet} onClick={() => handleOddsClick('Both Teams to Score', 'No', 2.00)}>
-                  <span className="market-label">Both Teams Score: No</span>
-                  <span className="market-val">2.00</span>
-                </button>
-              </div>
-            </div>
+              );
+            })
           )}
 
           {/* BET BUILDER UI VIEW */}
