@@ -46,16 +46,64 @@ export function appendTransaction(email, entry) {
   return next;
 }
 
+const OVERRIDES_KEY = 'betking_tx_overrides';
+
+export function updateTransactionStatus(txId, newStatus, utrCode = null) {
+  try {
+    const all = JSON.parse(localStorage.getItem(TX_KEY) || '{}');
+    let updatedTx = null;
+
+    Object.keys(all).forEach((email) => {
+      const userTxs = all[email] || [];
+      const idx = userTxs.findIndex((t) => t.id === txId);
+      if (idx >= 0) {
+        userTxs[idx].status = newStatus;
+        if (utrCode) userTxs[idx].utr = utrCode;
+        userTxs[idx].processedAt = new Date().toISOString();
+        updatedTx = userTxs[idx];
+      }
+    });
+    localStorage.setItem(TX_KEY, JSON.stringify(all));
+
+    const overrides = JSON.parse(localStorage.getItem(OVERRIDES_KEY) || '{}');
+    overrides[txId] = { status: newStatus, utr: utrCode, processedAt: new Date().toISOString() };
+    localStorage.setItem(OVERRIDES_KEY, JSON.stringify(overrides));
+
+    const mockIdx = INITIAL_MOCK_TRANSACTIONS.findIndex((t) => t.id === txId);
+    if (mockIdx >= 0) {
+      INITIAL_MOCK_TRANSACTIONS[mockIdx].status = newStatus;
+      if (utrCode) INITIAL_MOCK_TRANSACTIONS[mockIdx].utr = utrCode;
+    }
+
+    return updatedTx || { id: txId, status: newStatus };
+  } catch (err) {
+    console.error('Error updating transaction status:', err);
+    return null;
+  }
+}
+
 export function loadAllSystemTransactions() {
   try {
     const all = JSON.parse(localStorage.getItem(TX_KEY) || '{}');
-    let list = [...INITIAL_MOCK_TRANSACTIONS];
+    const overrides = JSON.parse(localStorage.getItem(OVERRIDES_KEY) || '{}');
+
+    let list = INITIAL_MOCK_TRANSACTIONS.map((tx) => {
+      if (overrides[tx.id]) {
+        return { ...tx, ...overrides[tx.id] };
+      }
+      return tx;
+    });
 
     Object.keys(all).forEach((email) => {
       const userTxs = all[email] || [];
       userTxs.forEach((tx) => {
-        if (!list.some((existing) => existing.id === tx.id)) {
-          list.push({ ...tx, userEmail: email });
+        const override = overrides[tx.id] || {};
+        const mergedTx = { ...tx, userEmail: email, ...override };
+        const idx = list.findIndex((existing) => existing.id === tx.id);
+        if (idx >= 0) {
+          list[idx] = mergedTx;
+        } else {
+          list.push(mergedTx);
         }
       });
     });
@@ -65,3 +113,4 @@ export function loadAllSystemTransactions() {
     return INITIAL_MOCK_TRANSACTIONS;
   }
 }
+

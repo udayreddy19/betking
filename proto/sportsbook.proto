@@ -1,0 +1,128 @@
+syntax = "proto3";
+
+package sportsbook;
+
+// --- Match Service ---
+service MatchService {
+  rpc GetLiveMatches (GetLiveMatchesRequest) returns (GetLiveMatchesResponse);
+  rpc GetMatchDetails (GetMatchDetailsRequest) returns (MatchDetailsResponse);
+}
+
+message GetLiveMatchesRequest {
+  string sport = 1;
+  bool force_refresh = 2;
+}
+
+message GetLiveMatchesResponse {
+  repeated Match matches = 1;
+  int32 total_count = 2;
+  int32 live_count = 3;
+}
+
+message Match {
+  string id = 1;
+  string sport = 2;
+  string league = 3;
+  string match_state = 4;
+  bool is_live = 5;
+  string time = 6;
+  Team home_team = 7;
+  Team away_team = 8;
+  LiveDetails live_details = 9;
+}
+
+message Team {
+  string id = 1;
+  string name = 2;
+  string short_name = 3;
+}
+
+message LiveDetails {
+  int32 runs = 1;
+  int32 wickets = 2;
+  string overs = 3;
+  int32 score2 = 4;
+  int32 wickets2 = 5;
+  string overs2 = 6;
+  string commentary = 7;
+}
+
+message GetMatchDetailsRequest {
+  string match_id = 1;
+}
+
+message MatchDetailsResponse {
+  Match match = 1;
+}
+
+// --- Wallet Service ---
+service WalletService {
+  rpc GetBalance (GetBalanceRequest) returns (GetBalanceResponse);
+  rpc ReserveFunds (ReserveFundsRequest) returns (ReserveFundsResponse);
+  rpc CreditPayout (CreditPayoutRequest) returns (CreditPayoutResponse);
+}
+
+message GetBalanceRequest {
+  string user_id = 1;
+}
+
+message GetBalanceResponse {
+  double balance = 1;
+  double bonus_balance = 2;
+  string currency = 3;
+}
+
+message ReserveFundsRequest {
+  string user_id = 1;
+  double amount = 2;
+  string bet_id = 3;
+}
+
+message ReserveFundsResponse {
+  bool success = 1;
+  string transaction_id = 2;
+}
+
+message CreditPayoutRequest {
+  string user_id = 1;
+  double amount = 2;
+  string reference_id = 3;
+}
+
+message CreditPayoutResponse {
+  bool success = 1;
+  double new_balance = 2;
+}
+
+// --- Risk Service ---
+service RiskService {
+  rpc ValidateBet (ValidateBetRequest) returns (ValidateBetResponse);
+}
+
+message ValidateBetRequest {
+  string user_id = 1;
+  string selection_id = 2;
+  double stake = 3;
+  double odds = 4;
+}
+
+message ValidateBetResponse {
+  bool approved = 1;
+  string reason = 2;
+  double max_allowed_stake = 3;
+}
+
+// --- Cashout Service ---
+service CashoutService {
+  rpc CalculateCashout (CalculateCashoutRequest) returns (CalculateCashoutResponse);
+}
+
+message CalculateCashoutRequest {
+  string bet_id = 1;
+  string user_id = 2;
+}
+
+message CalculateCashoutResponse {
+  double cashout_value = 1;
+  bool available = 2;
+}

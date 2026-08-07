@@ -44,7 +44,14 @@ export function matchBelongsToLeague(match, leagueMeta) {
     ...(leagueMeta.matchLeagues || []),
   ].filter(Boolean);
 
-  const matchFields = [match.league, match.seriesName].filter(Boolean);
+  const matchFields = [
+    match.league,
+    match.seriesName,
+    match.team1?.name,
+    match.team2?.name,
+    `${match.team1?.name || ''} vs ${match.team2?.name || ''}`,
+    `${match.team1?.name || ''} v ${match.team2?.name || ''}`,
+  ].filter(Boolean);
 
   return candidates.some((candidate) =>
     matchFields.some((field) => textsMatch(field, candidate)),

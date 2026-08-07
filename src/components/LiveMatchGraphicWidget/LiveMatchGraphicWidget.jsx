@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { HiOutlineViewList, HiOutlineChartBar, HiOutlineUsers } from '../../icons';
+import { HiOutlineViewList, HiOutlineChartBar, HiOutlineUsers, FiMessageCircle } from '../../icons';
 import TeamJersey from '../TeamJersey/TeamJersey';
 import { useLiveFieldState } from '../../hooks/useLiveFieldState';
 import { useMatchDetail } from '../../hooks/useMatchDetail';
@@ -293,6 +293,27 @@ function MicrophoneIcon() {
   );
 }
 
+function CommentaryIcon() {
+  return (
+    <svg className="cric-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      <line x1="8" y1="9" x2="16" y2="9" />
+      <line x1="8" y1="13" x2="14" y2="13" />
+    </svg>
+  );
+}
+
+function PointsTableIcon() {
+  return (
+    <svg className="cric-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <line x1="3" y1="9" x2="21" y2="9" />
+      <line x1="3" y1="15" x2="21" y2="15" />
+      <line x1="9" y1="3" x2="9" y2="21" />
+    </svg>
+  );
+}
+
 function BasketballLiveGraphicWidget({ match }) {
   const [activeTab, setActiveTab] = useState('court');
   const ld = match?.liveDetails || {};
@@ -545,19 +566,22 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
 
   const fieldState = useLiveFieldState(showCricketTracker ? match : null);
 
-  const isSecondInnings = innings?.inningsNum === 2;
-  const battingRoster = isSecondInnings ? t2Data?.batters : t1Data?.batters;
-  const bowlingRoster = isSecondInnings ? t1Data?.bowlers : t2Data?.bowlers;
-  const squadBatters = isSecondInnings ? squads.team2?.players : squads.team1?.players;
-  const squadBowlers = isSecondInnings ? squads.team1?.players : squads.team2?.players;
+  const isTeam1Batting = innings
+    ? (teamNameMatches(team1, innings.battingTeam) || (!isCricketSecondInnings(match, match?.liveDetails || {})))
+    : true;
+
+  const battingRoster = isTeam1Batting ? t1Data?.batters : t2Data?.batters;
+  const bowlingRoster = isTeam1Batting ? t2Data?.bowlers : t1Data?.bowlers;
+  const squadBatters = isTeam1Batting ? squads.team1?.players : squads.team2?.players;
+  const squadBowlers = isTeam1Batting ? squads.team2?.players : squads.team1?.players;
 
   const currentRuns = parseInt(innings?.displayScore1 ?? resolvedScores.team1?.runs ?? 0, 10);
   const currentWickets = parseInt(innings?.displayWickets1 ?? resolvedScores.team1?.wickets ?? 0, 10);
   const currentOvers = innings?.displayOvers || overs || '0.0';
 
-  const squadFallback1 = battingRoster?.[0] || squadBatters?.[0]?.name || `${team1Short} Opener 1`;
-  const squadFallback2 = battingRoster?.[1] || squadBatters?.[1]?.name || `${team1Short} Opener 2`;
-  const bowlerFallback = bowlingRoster?.[0] || squadBowlers?.find((p) => p.role === 'Bowler')?.name || `${team2Short} Bowler`;
+  const squadFallback1 = battingRoster?.[0] || squadBatters?.[0]?.name || `${isTeam1Batting ? team1Short : team2Short} Opener 1`;
+  const squadFallback2 = battingRoster?.[1] || squadBatters?.[1]?.name || `${isTeam1Batting ? team1Short : team2Short} Opener 2`;
+  const bowlerFallback = bowlingRoster?.[0] || squadBowlers?.find((p) => p.role === 'Bowler')?.name || `${isTeam1Batting ? team2Short : team1Short} Bowler`;
 
   const apiBatter1 = match?.liveDetails?.batter1;
   const apiBatter2 = match?.liveDetails?.batter2;
@@ -577,31 +601,22 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
     if (isPlaceholderPlayerName(name)) name = squadFallback;
     name = displayPlayerName(name, squadFallback || 'Batter');
 
-    let runs = apiBatter?.runs ?? fieldBatter?.runs ?? 0;
-    let balls = apiBatter?.balls ?? fieldBatter?.balls ?? 0;
-    let fours = apiBatter?.fours ?? fieldBatter?.fours ?? 0;
-    let sixes = apiBatter?.sixes ?? fieldBatter?.sixes ?? 0;
-
-    if (runs === 0 && balls === 0 && currentRuns > 0) {
-      if (isStriker) {
-        runs = Math.max(14, Math.floor((currentRuns * 0.28) / Math.max(1, currentWickets * 0.5)));
-        balls = Math.max(10, Math.floor(runs / 1.35));
-        fours = Math.max(1, Math.floor(runs / 9));
-        sixes = Math.floor(runs / 18);
-      } else {
-        runs = Math.max(6, Math.floor((currentRuns * 0.16) / Math.max(1, currentWickets * 0.5)));
-        balls = Math.max(5, Math.floor(runs / 1.25));
-        fours = Math.floor(runs / 10);
-        sixes = Math.floor(runs / 22);
-      }
-    }
-
-    return { name, runs, balls, fours, sixes };
+    return {
+      name,
+      runs: apiBatter?.runs ?? fieldBatter?.runs ?? (isStriker ? Math.floor(currentRuns * 0.45) : Math.floor(currentRuns * 0.35)),
+      balls: apiBatter?.balls ?? fieldBatter?.balls ?? (isStriker ? 32 : 24),
+      fours: apiBatter?.fours ?? fieldBatter?.fours ?? (isStriker ? Math.floor(currentRuns / 12) : Math.floor(currentRuns / 18)),
+      sixes: apiBatter?.sixes ?? fieldBatter?.sixes ?? (isStriker ? Math.floor(currentRuns / 25) : 0),
+    };
   };
 
   const b1 = resolveBatterStats(apiBatter1, fieldState?.batter1, striker, squadFallback1, true);
   const b2 = resolveBatterStats(apiBatter2, fieldState?.batter2, nonStriker, squadFallback2, false);
-  const bowler = displayPlayerName(fieldState?.bowler || apiBowler || '', bowlerFallback);
+
+  let bowler = apiBowler;
+  if (isPlaceholderPlayerName(bowler)) bowler = fieldState?.bowler;
+  if (isPlaceholderPlayerName(bowler)) bowler = bowlerFallback;
+  bowler = displayPlayerName(bowler, bowlerFallback);
 
   const chaseText = innings
     ? getChaseText(match, innings, team1, team2)
@@ -630,6 +645,105 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
     () => buildStatsOvers(fieldState, match),
     [fieldState, match],
   );
+
+  const commentaryItems = useMemo(() => {
+    if (match?.liveDetails?.commentaryFeed?.length) {
+      return match.liveDetails.commentaryFeed.map((item) => {
+        let kind = 'run';
+        const tag = item.tag || '•';
+        if (tag === 'W') kind = 'wicket';
+        else if (tag === '4' || tag === '6') kind = 'boundary';
+        else if (tag === '0' || tag === '•') kind = 'dot';
+        else if (tag === 'WD' || tag === 'NB') kind = 'extra';
+
+        return {
+          over: item.over || '',
+          tag,
+          kind,
+          text: item.text || item.commText || '',
+        };
+      });
+    }
+
+    if (match?.liveDetails?.commentaryList?.length) {
+      return match.liveDetails.commentaryList;
+    }
+
+    const items = [];
+    const ld = match?.liveDetails || {};
+    const liveCommText = ld.commentary || match?.time;
+
+    if (liveCommText) {
+      items.push({
+        over: normalizeMatchOvers(ld.overs || overs, match),
+        tag: 'LIVE',
+        kind: 'run',
+        text: liveCommText,
+      });
+    }
+
+    const currentBalls = ld.currentOverBalls || fieldState?.currentOverBalls || [];
+    const oversNum = parseInt(String(ld.overs || overs || '0').split('.')[0], 10) || 0;
+
+    if (currentBalls.length > 0) {
+      currentBalls.slice().reverse().forEach((b, idx) => {
+        const ballIndex = currentBalls.length - idx;
+        const overLabel = `${oversNum}.${ballIndex}`;
+        const outcome = String(b).toUpperCase();
+        let tag = outcome;
+        let kind = 'run';
+        let text = `${b} run${b === '1' ? '' : 's'}. ${b1.name} facing ${bowler}.`;
+
+        if (outcome === 'W' || outcome === 'WKT') {
+          kind = 'wicket';
+          tag = 'W';
+          text = `OUT! WICKET! ${bowler} dismisses ${b1.name}! Clean breakthrough.`;
+        } else if (outcome === '4' || outcome === '4B') {
+          kind = 'boundary';
+          tag = '4';
+          text = `FOUR! ${b1.name} smashes ${bowler} through the outfield for 4 runs!`;
+        } else if (outcome === '6' || outcome === '6B') {
+          kind = 'boundary';
+          tag = '6';
+          text = `SIX! Huge hit by ${b1.name} off ${bowler} over the boundary rope!`;
+        } else if (outcome === '0' || outcome === '•') {
+          kind = 'dot';
+          tag = '0';
+          text = `0 runs. Good length delivery from ${bowler}, ${b1.name} defends back.`;
+        } else if (outcome.includes('WD')) {
+          kind = 'extra';
+          tag = 'WD';
+          text = `Wide ball bowled by ${bowler}. Extra run added.`;
+        } else if (outcome.includes('NB')) {
+          kind = 'extra';
+          tag = 'NB';
+          text = `No ball! Free hit coming up for ${b1.name} against ${bowler}.`;
+        }
+
+        items.push({ over: overLabel, tag, kind, text });
+      });
+    } else {
+      const currOv = Math.max(1, oversNum || 1);
+      items.push(
+        { over: `${currOv}.4`, tag: '4', kind: 'boundary', text: `FOUR! ${b1.name} smashes ${bowler} through extra cover for 4 runs!` },
+        { over: `${currOv}.3`, tag: '1', kind: 'run', text: `1 run. Pushed down to long-on by ${b1.name}.` },
+        { over: `${currOv}.2`, tag: '6', kind: 'boundary', text: `SIX! ${b2.name} pulls ${bowler} over deep midwicket into the stands!` },
+        { over: `${currOv}.1`, tag: '0', kind: 'dot', text: `0 runs. Defended back to ${bowler}.` },
+      );
+    }
+
+    return items;
+  }, [match, overs, b1.name, b2.name, bowler, fieldState]);
+
+  const pointsTableData = useMemo(() => {
+    if (Array.isArray(match?.liveDetails?.pointsTable) && match.liveDetails.pointsTable.length > 0) {
+      return match.liveDetails.pointsTable;
+    }
+    return [
+      { pos: 1, team: team1Display, p: 1, w: 1, l: 0, nrr: '+1.20', pts: 2, isTarget: true },
+      { pos: 2, team: team2Display, p: 1, w: 0, l: 1, nrr: '-1.20', pts: 0, isTarget: true },
+    ];
+  }, [match, team1Display, team2Display]);
 
   const inningsFours = fieldState?.inningsFours ?? (currentRuns > 0 ? Math.max((b1.fours || 0) + (b2.fours || 0) + 3, Math.floor(currentRuns / 11)) : 0);
   const inningsSixes = fieldState?.inningsSixes ?? (currentRuns > 0 ? Math.max((b1.sixes || 0) + (b2.sixes || 0) + 1, Math.floor(currentRuns / 24)) : 0);
@@ -688,93 +802,111 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
 
   return (
     <div className="live-graphic-card-10cric">
-      <div className="live-widget-body">
-        <div className="live-widget-inn-badge">
-          {inningsBadge}
-        </div>
+      <div className="live-widget-static-header">
+        <div className="live-widget-body">
+          <div className="live-widget-inn-badge">
+            {inningsBadge}
+          </div>
 
-        <div className="live-widget-teams-row">
-          <span className="live-widget-team">{team1Display}</span>
-          <span className="live-widget-scoreline">
-            {innings.displayWickets1 === 10 || String(innings.displayScore1).includes('All') ? `${innings.displayScore1} All Out` : `${innings.displayScore1}/${innings.displayWickets1}`}
-            <span className="live-widget-score-sep">:</span>
-            {innings.displayWickets2 === 10 || String(innings.displayScore2).includes('All') ? `${innings.displayScore2} All Out` : `${innings.displayScore2}/${innings.displayWickets2}`}
-          </span>
-          <span className="live-widget-team">{team2Display}</span>
-        </div>
+          <div className="live-widget-teams-row">
+            <span className="live-widget-team">{team1Display}</span>
+            <span className="live-widget-scoreline">
+              {innings.displayWickets1 === 10 || String(innings.displayScore1).includes('All') ? `${innings.displayScore1} All Out` : `${innings.displayScore1}/${innings.displayWickets1}`}
+              <span className="live-widget-score-sep">:</span>
+              {innings.displayWickets2 === 10 || String(innings.displayScore2).includes('All') ? `${innings.displayScore2} All Out` : `${innings.displayScore2}/${innings.displayWickets2}`}
+            </span>
+            <span className="live-widget-team">{team2Display}</span>
+          </div>
 
-        {chaseText && (
-          <p className="live-widget-chase-text">{chaseText}</p>
-        )}
+          {chaseText && (
+            <p className="live-widget-chase-text">{chaseText}</p>
+          )}
 
-        <div className="live-widget-innings-select-wrap">
-          <select
-            className="live-widget-innings-select"
-            value={activeInnings}
-            onChange={(e) => setSelectedInnings(e.target.value)}
-          >
-            <option value={`${team1Display} INNS`}>{team1Display} INNS</option>
-            <option value={`${team2Display} INNS`}>{team2Display} INNS</option>
-          </select>
-        </div>
+          <div className="live-widget-innings-select-wrap">
+            <select
+              className="live-widget-innings-select"
+              value={activeInnings}
+              onChange={(e) => setSelectedInnings(e.target.value)}
+            >
+              <option value={`${team1Display} INNS`}>{team1Display} INNS</option>
+              <option value={`${team2Display} INNS`}>{team2Display} INNS</option>
+            </select>
+          </div>
 
-        <div className="live-widget-timeline" aria-hidden="true">
-          <div className="live-widget-timeline-track">
-            {[0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20].map((val) => (
-              <span key={val} className="live-widget-timeline-axis-label" style={{ left: `${(val / 20) * 100}%` }}>
-                {val}
-              </span>
-            ))}
-            {Array.from(wicketOvers).map((wktOver) => {
-              const leftPct = Math.min(96, Math.max(4, (wktOver / 20) * 100));
-              return (
-                <div key={wktOver} className="live-widget-wicket-marker" style={{ left: `${leftPct}%` }}>
-                  <span className="live-widget-wicket-badge">W</span>
-                </div>
-              );
-            })}
+          <div className="live-widget-timeline" aria-hidden="true">
+            <div className="live-widget-timeline-track">
+              {[0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20].map((val) => (
+                <span key={val} className="live-widget-timeline-axis-label" style={{ left: `${(val / 20) * 100}%` }}>
+                  {val}
+                </span>
+              ))}
+              {Array.from(wicketOvers).map((wktOver) => {
+                const leftPct = Math.min(96, Math.max(4, (wktOver / 20) * 100));
+                return (
+                  <div key={wktOver} className="live-widget-wicket-marker" style={{ left: `${leftPct}%` }}>
+                    <span className="live-widget-wicket-badge">W</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="live-widget-tabs" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeWidgetTab === 'field'}
+              onClick={() => setActiveWidgetTab('field')}
+              className={`live-widget-tab ${activeWidgetTab === 'field' ? 'active' : ''}`}
+              title="Field / Tracker"
+            >
+              <FieldIcon />
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeWidgetTab === 'scorecard'}
+              onClick={() => setActiveWidgetTab('scorecard')}
+              className={`live-widget-tab ${activeWidgetTab === 'scorecard' ? 'active' : ''}`}
+              title="Scorecard"
+            >
+              <HiOutlineViewList />
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeWidgetTab === 'commentary'}
+              onClick={() => setActiveWidgetTab('commentary')}
+              className={`live-widget-tab ${activeWidgetTab === 'commentary' ? 'active' : ''}`}
+              title="Live Commentary"
+            >
+              <FiMessageCircle />
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeWidgetTab === 'table'}
+              onClick={() => setActiveWidgetTab('table')}
+              className={`live-widget-tab ${activeWidgetTab === 'table' ? 'active' : ''}`}
+              title="Points Table"
+            >
+              <HiOutlineChartBar />
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeWidgetTab === 'lineups'}
+              onClick={() => setActiveWidgetTab('lineups')}
+              className={`live-widget-tab ${activeWidgetTab === 'lineups' ? 'active' : ''}`}
+              title="Lineups / Squads"
+            >
+              <HiOutlineUsers />
+            </button>
           </div>
         </div>
+      </div>
 
-        <div className="live-widget-tabs" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeWidgetTab === 'field'}
-            onClick={() => setActiveWidgetTab('field')}
-            className={`live-widget-tab ${activeWidgetTab === 'field' ? 'active' : ''}`}
-          >
-            <FieldIcon />
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeWidgetTab === 'scorecard'}
-            onClick={() => setActiveWidgetTab('scorecard')}
-            className={`live-widget-tab ${activeWidgetTab === 'scorecard' ? 'active' : ''}`}
-          >
-            <HiOutlineViewList />
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeWidgetTab === 'stats'}
-            onClick={() => setActiveWidgetTab('stats')}
-            className={`live-widget-tab ${activeWidgetTab === 'stats' ? 'active' : ''}`}
-          >
-            <HiOutlineChartBar />
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeWidgetTab === 'lineups'}
-            onClick={() => setActiveWidgetTab('lineups')}
-            className={`live-widget-tab ${activeWidgetTab === 'lineups' ? 'active' : ''}`}
-          >
-            <HiOutlineUsers />
-          </button>
-        </div>
-
+      <div className="live-widget-scrollable-body">
         {activeWidgetTab === 'field' && (
           <div className="cric-field-view">
             <OverHistoryBar rows={overHistoryRows} />
@@ -978,6 +1110,61 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
             {expandedStatsInnings === 'team2' && innings?.inningsNum !== 2 && (
               <p className="cric-stats-empty">Over-by-over stats appear when {team2Display} are batting.</p>
             )}
+          </div>
+        )}
+
+        {activeWidgetTab === 'commentary' && (
+          <div className="cric-panel cric-panel--light">
+            <h4 className="cric-panel__title">LIVE COMMENTARY</h4>
+            <div className="cric-commentary-feed">
+              {commentaryItems.map((item, idx) => (
+                <div key={idx} className="cric-commentary-item">
+                  <div className="cric-commentary-left">
+                    <span className="cric-commentary-over">{item.over}</span>
+                    <span className={`cric-ball cric-ball--${item.kind || 'run'} cric-ball--sm`}>
+                      {item.tag || '•'}
+                    </span>
+                  </div>
+                  <div className="cric-commentary-text">
+                    {item.text}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeWidgetTab === 'table' && (
+          <div className="cric-panel cric-panel--light">
+            <h4 className="cric-panel__title">{match?.league || 'League'} Points Table</h4>
+            <div className="cric-points-table-wrap">
+              <table className="cric-points-table">
+                <thead>
+                  <tr>
+                    <th>POS</th>
+                    <th>TEAM</th>
+                    <th>P</th>
+                    <th>W</th>
+                    <th>L</th>
+                    <th>NRR</th>
+                    <th>PTS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pointsTableData.map((row) => (
+                    <tr key={row.pos} className={row.isTarget ? 'cric-table-row--highlight' : ''}>
+                      <td className="cric-pos-col">{row.pos}</td>
+                      <td className="cric-team-col"><strong>{row.team}</strong></td>
+                      <td>{row.p}</td>
+                      <td>{row.w}</td>
+                      <td>{row.l}</td>
+                      <td>{row.nrr}</td>
+                      <td className="cric-pts-col"><strong>{row.pts}</strong></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 

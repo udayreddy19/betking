@@ -1,0 +1,46 @@
+import { useState, useEffect } from 'react';
+import { getSystemWideExposureSummary } from '../../../lib/exposureEngine.mjs';
+import { getProviderHealthDashboard } from '../../../lib/providerHealthManager.mjs';
+import './TraderConsole.css';
+
+export default function TraderConsole() {
+  const [exposure, setExposure] = useState(null);
+  const [providers, setProviders] = useState(null);
+
+  useEffect(() => {
+    setExposure(getSystemWideExposureSummary());
+    setProviders(getProviderHealthDashboard());
+  }, []);
+
+  return (
+    <div className="trader-console-page">
+      <header className="trader-header">
+        <h1>⚡ BetKing Professional Trader Console</h1>
+        <span className="trader-status">LIVE TRADING SESSION ACTIVE</span>
+      </header>
+
+      <div className="trader-grid">
+        <div className="trader-card">
+          <h3>Global Risk & Exposure Summary</h3>
+          {exposure ? (
+            <div className="trader-metrics">
+              <p>Total Active Bets: <strong>{exposure.globalBetsCount}</strong></p>
+              <p>Total Staked Volume: <strong>₹{exposure.globalStakedAmount.toLocaleString()}</strong></p>
+              <p>Worst Case Liability: <strong className="text-danger">₹{exposure.globalWorstCaseLoss.toLocaleString()}</strong></p>
+            </div>
+          ) : <p>Loading metrics...</p>}
+        </div>
+
+        <div className="trader-card">
+          <h3>Provider Health & Gateway Failover</h3>
+          {providers ? (
+            <div className="trader-metrics">
+              <p>Healthy Providers: <strong>{providers.healthyProviders} / {providers.totalProviders}</strong></p>
+              <p>Active Priority Queue: <strong>{providers.activeQueue.join(' → ')}</strong></p>
+            </div>
+          ) : <p>Loading provider health...</p>}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -12,6 +12,7 @@ import PromotionsPanel from '../PromotionsPanel/PromotionsPanel';
 import RupeeSymbol from '../RupeeSymbol/RupeeSymbol';
 import DailySpinModal from '../DailySpinModal/DailySpinModal';
 import AnimatedMotionGiftIcon from '../AnimatedMotionGiftIcon/AnimatedMotionGiftIcon';
+import { ODDS_FORMAT_OPTIONS } from '../../utils/oddsFormatter';
 import '../MyBetsPanel/MyBetsPanel.css';
 import '../PromotionsPanel/PromotionsPanel.css';
 import './Header.css';
@@ -41,6 +42,15 @@ function Header() {
   const [isSpinOpen, setIsSpinOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
+  const [oddsFormat, setOddsFormat] = useState(() => localStorage.getItem('betking_odds_format') || 'decimal');
+
+  const handleOddsFormatChange = (e) => {
+    const fmt = e.target.value;
+    setOddsFormat(fmt);
+    localStorage.setItem('betking_odds_format', fmt);
+    window.dispatchEvent(new CustomEvent('oddsformatchange', { detail: fmt }));
+  };
+
   const moreRef = useRef(null);
   const walletRef = useRef(null);
   const navigate = useNavigate();
@@ -222,6 +232,21 @@ function Header() {
                 <AnimatedMotionGiftIcon size={18} />
               </motion.button>
             </>
+          )}
+
+          {isAdminUser && (
+            <select
+              className="header-odds-format-select"
+              value={oddsFormat}
+              onChange={handleOddsFormatChange}
+              title="Odds Format Engine (Admin)"
+            >
+              {ODDS_FORMAT_OPTIONS.map((opt) => (
+                <option key={opt.id} value={opt.id}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
           )}
 
           {isLoggedIn ? (

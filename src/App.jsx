@@ -35,6 +35,7 @@ const Sports = lazy(() => import('./pages/Sports/Sports'));
 const Casino = lazy(() => import('./pages/Casino/Casino'));
 const LiveCasino = lazy(() => import('./pages/LiveCasino/LiveCasino'));
 const Admin = lazy(() => import('./pages/Admin/Admin'));
+const TraderConsole = lazy(() => import('./pages/Trader/TraderConsole'));
 const ApiDocs = lazy(() => import('./pages/ApiDocs/ApiDocs'));
 
 function PageLoader() {
@@ -68,6 +69,7 @@ function AppLayout() {
               <Route path="/register" element={<Register />} />
               <Route path="/promotions" element={<Promotions />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/trader" element={<TraderConsole />} />
               <Route path="/developer" element={<ApiDocs />} />
               <Route path="/api-docs" element={<ApiDocs />} />
               <Route path="/terms" element={<Terms />} />

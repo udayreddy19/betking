@@ -31,9 +31,9 @@ export default function FinancialModals({ modalType, onClose }) {
 
   const handleRazorpayWithdraw = (e) => {
     e.preventDefault();
-    if (!upiId.trim()) return notify('Please enter a valid UPI ID');
+    if (!upiId.trim()) return notify('Please enter a valid UPI ID / Bank Details');
     const amt = parseFloat(withdrawAmount);
-    if (isNaN(amt) || amt < 500) return notify('Minimum withdrawal is ₹500');
+    if (isNaN(amt) || amt < 10) return notify('Minimum withdrawal is ₹10');
     if (amt > wallet.withdrawable) {
       return notify(
         wallet.lockedDeposit > 0
@@ -45,10 +45,10 @@ export default function FinancialModals({ modalType, onClose }) {
     setWithdrawStatus('processing');
 
     setTimeout(() => {
-      const { success } = withdrawFunds(amt);
+      const { success } = withdrawFunds(amt, 'UPI', upiId);
       if (!success) {
         setWithdrawStatus(null);
-        notify('Withdrawal failed. Please try again.');
+        notify('Withdrawal failed. Please check your withdrawable balance.');
         return;
       }
       setWithdrawStatus('success');
@@ -58,12 +58,12 @@ export default function FinancialModals({ modalType, onClose }) {
           amount: amt,
           upi: upiId,
           date: 'Just now',
-          status: 'processing',
+          status: 'PENDING_APPROVAL',
           refunded: false,
         },
         ...prev,
       ]);
-    }, 1200);
+    }, 400);
   };
 
   const handleCancelWithdrawal = (id, amount) => {
@@ -84,7 +84,7 @@ export default function FinancialModals({ modalType, onClose }) {
       <div className="fin-modal-card" onClick={e => e.stopPropagation()}>
         <div className="fin-modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 800 }}>
-            {modalType === 'withdraw' && <><BiMoneyWithdraw style={{ color: '#22c55e', fontSize: '1.4rem' }} /> Razorpay Instant Withdrawal</>}
+            {modalType === 'withdraw' && <><BiMoneyWithdraw style={{ color: '#22c55e', fontSize: '1.4rem' }} /> UPI / Bank Withdrawal Request</>}
             {modalType === 'cancel-wd' && <><BiMoneyWithdraw style={{ color: '#ef4444', fontSize: '1.4rem' }} /> Cancel Pending Withdrawals</>}
             {modalType === 'transactions' && <><BiTransfer style={{ color: '#3b82f6', fontSize: '1.4rem' }} /> Transaction History</>}
             {modalType === 'bets-history' && <><BiHistory style={{ color: '#f59e0b', fontSize: '1.4rem' }} /> My Bets History</>}
@@ -101,10 +101,24 @@ export default function FinancialModals({ modalType, onClose }) {
             {withdrawStatus === 'success' ? (
               <div style={{ textAlign: 'center', padding: '20px 0' }}>
                 <IoCheckmarkCircle style={{ color: '#22c55e', fontSize: '3.5rem', marginBottom: '10px' }} />
-                <h3 style={{ margin: 0, fontWeight: 800 }}>Payout Sent via Razorpay!</h3>
+                <h3 style={{ margin: 0, fontWeight: 800 }}>Withdrawal Request Submitted!</h3>
                 <p className="fin-muted" style={{ fontSize: '0.85rem', marginTop: '6px' }}>
-                  ₹{withdrawAmount} sent instantly to <strong>{upiId}</strong>.
+                  ₹{withdrawAmount} requested for UPI / Bank ID: <strong>{upiId}</strong>.
                 </p>
+                <div style={{
+                  background: 'rgba(234, 179, 8, 0.12)',
+                  border: '1px solid #eab308',
+                  borderRadius: '8px',
+                  padding: '10px 14px',
+                  color: '#ca8a04',
+                  fontSize: '0.83rem',
+                  fontWeight: 600,
+                  marginTop: '12px',
+                  lineHeight: '1.4',
+                }}>
+                  ⏳ Status: <strong>Pending Admin Approval</strong><br />
+                  Once approved by Admin, funds will be transferred directly to your bank account / UPI ID.
+                </div>
                 <button
                   className="fin-btn-primary"
                   onClick={() => { setWithdrawStatus(null); onClose(); }}
@@ -131,10 +145,10 @@ export default function FinancialModals({ modalType, onClose }) {
                 </div>
 
                 <div style={{ marginBottom: '14px' }}>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px' }}>Enter UPI ID</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px' }}>Enter UPI ID / Bank Details</label>
                   <input
                     type="text"
-                    placeholder="e.g. name@upi"
+                    placeholder="e.g. name@upi or Bank Account details"
                     value={upiId}
                     onChange={e => setUpiId(e.target.value)}
                     style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
@@ -146,7 +160,7 @@ export default function FinancialModals({ modalType, onClose }) {
                   <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px' }}>Withdrawal Amount (₹)</label>
                   <input
                     type="number"
-                    min="500"
+                    min="10"
                     max={wallet.withdrawable}
                     value={withdrawAmount}
                     onChange={e => setWithdrawAmount(e.target.value)}
@@ -154,7 +168,7 @@ export default function FinancialModals({ modalType, onClose }) {
                     required
                   />
                   <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
-                    {['500', '1000', '2500', '5000'].map(val => (
+                    {['100', '500', '1000', '2500'].map(val => (
                       <button
                         type="button"
                         key={val}
@@ -165,20 +179,20 @@ export default function FinancialModals({ modalType, onClose }) {
                         ₹{val}
                       </button>
                     ))}
-                    {wallet.withdrawable >= 500 && (
+                    {wallet.withdrawable >= 10 && (
                       <button
                         type="button"
                         onClick={() => setWithdrawAmount(String(Math.floor(wallet.withdrawable)))}
                         className="fin-chip-btn"
                       >
-                        Max
+                        Max (₹{Math.floor(wallet.withdrawable)})
                       </button>
                     )}
                   </div>
                 </div>
 
-                <button type="submit" className="fin-btn-primary" disabled={withdrawStatus === 'processing' || wallet.withdrawable < 500}>
-                  {withdrawStatus === 'processing' ? 'Processing Razorpay Payout...' : 'Instant Razorpay UPI Payout'}
+                <button type="submit" className="fin-btn-primary" disabled={withdrawStatus === 'processing' || wallet.withdrawable < 10}>
+                  {withdrawStatus === 'processing' ? 'Submitting Request...' : 'Request UPI / Bank Withdrawal'}
                 </button>
               </form>
             )}

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { FiSearch, FiHome, HiOutlineChevronDown, HiOutlineChevronUp, FiMessageCircle } from '../../icons';
 import FilterChips from '../../components/FilterChips/FilterChips';
@@ -30,19 +30,27 @@ function filterByLeague(matchList, activeLeague, cricketSeries = []) {
       || `cb-series-${series.seriesId}` === activeLeague
   );
   if (dynamicSeries) {
-    return matchList.filter((match) =>
+    const res = matchList.filter((match) =>
       match.league === dynamicSeries.name
       || match.seriesName === dynamicSeries.rawName
       || match.cricbuzzSeriesId === dynamicSeries.seriesId
     );
+    if (res.length > 0) return res;
   }
 
   const leagueMeta = getLeagueMeta(activeLeague, cricketSeries);
   if (leagueMeta) {
-    return matchList.filter((match) => matchBelongsToLeague(match, leagueMeta));
+    const res = matchList.filter((match) => matchBelongsToLeague(match, leagueMeta));
+    if (res.length > 0) return res;
   }
 
-  return matchList.filter((match) => match.league === activeLeague || match.league === resolveLeagueId(activeLeague));
+  const normalizedKey = String(activeLeague).toLowerCase().replace(/[^a-z0-9]/g, '');
+  return matchList.filter((match) => {
+    const l1 = String(match.league || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const l2 = String(match.seriesName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    return (l1 && (l1.includes(normalizedKey) || normalizedKey.includes(l1))) ||
+      (l2 && (l2.includes(normalizedKey) || normalizedKey.includes(l2)));
+  });
 }
 
 function getMatchScores(match) {
@@ -286,23 +294,22 @@ export default function Sports() {
     return groupMatchesByLeague(sportMatches);
   }, [activeSport, activeLeague, sportMatches]);
 
+  const lastActiveMatchRef = useRef(null);
+
   // Find the selected match in the full matches array (not just filtered sportMatches)
-  // This ensures match detail works even if the match is filtered out by sport/league
+  // Persist lastActiveMatchRef so background API refreshes never flash 'Match not found'
   const activeMatch = useMemo(() => {
     if (viewMode !== 'match' || !selectedMatchId) return null;
 
-    // First try to find in filtered sportMatches (preferred)
-    let match = sportMatches.find(m => m.id === selectedMatchId);
+    let match = sportMatches.find(m => m.id === selectedMatchId)
+      || matches.find(m => m.id === selectedMatchId);
 
-    // If not found in filtered list, search in full matches array
-    if (!match) {
-      match = matches.find(m => m.id === selectedMatchId);
-
-      // If found in full matches but not in sportMatches, we may need to adjust filters
-      // For now, just return the match so detail modal can display
+    if (match) {
+      lastActiveMatchRef.current = match;
+      return match;
     }
 
-    return match || null;
+    return lastActiveMatchRef.current || null;
   }, [sportMatches, matches, selectedMatchId, viewMode]);
 
   const marketCategories = useMemo(() => {

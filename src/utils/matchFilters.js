@@ -1,4 +1,4 @@
-import { getMatchState, isApiBackedMatch, isDisplayableLiveMatch } from './matchBetting';
+import { getMatchState, isApiBackedMatch, isDisplayableLiveMatch } from './matchBetting.js';
 
 export function normalizeSportId(sport) {
   return String(sport || '').toLowerCase().trim();
@@ -14,9 +14,12 @@ export function dedupeMatches(matches) {
 }
 
 export function filterMatchesBySport(matches, sportId) {
-  if (!sportId) return matches;
+  if (!sportId || sportId === 'all') return matches;
   const target = normalizeSportId(sportId);
-  return matches.filter(match => normalizeSportId(match.sport) === target);
+  return matches.filter(match => {
+    const s = normalizeSportId(match.sport || 'cricket');
+    return s === target;
+  });
 }
 
 export function filterMatchesByState(matches, stateTab = 'all') {
@@ -50,6 +53,7 @@ export function filterMatches(matches, { sport, stateTab = 'all', searchQuery = 
 }
 
 function normalizeLiveFlags(match) {
+  if (!match) return null;
   let state = getMatchState(match);
   const apiLive = match?.isLive === true || match?.matchState === 'in';
 
@@ -66,7 +70,7 @@ function normalizeLiveFlags(match) {
 /** Normalize API-sourced matches only — no mock/demo merge. */
 export function normalizeApiMatches(apiMatches = []) {
   return dedupeMatches(
-    apiMatches.map((match) => normalizeLiveFlags(match)),
+    (apiMatches || []).map((match) => normalizeLiveFlags(match)).filter(Boolean),
   );
 }
 

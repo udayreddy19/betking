@@ -82,3 +82,70 @@ export function settleAllPlacedBets(placedBets, matches) {
   });
   return { bets: next, changed };
 }
+
+/**
+ * MODULE 7: Enterprise Cashout Engine
+ * Calculates Live Cashout, Partial Cashout, and Auto Cashout thresholds.
+ */
+export function calculateLiveCashoutValue(placedBet, currentLiveOdds = 2.0, houseMarginPct = 4.0) {
+  if (!placedBet || placedBet.status !== 'pending') {
+    return { available: false, cashoutValue: 0, reason: 'Bet is not active' };
+  }
+
+  const stake = Number(placedBet.stake || placedBet.amount || 0);
+  const originalOdds = Number(placedBet.odds || placedBet.totalOdds || 1.0);
+  const potentialPayout = stake * originalOdds;
+  const currentOdds = Math.max(1.01, Number(currentLiveOdds) || 2.0);
+
+  // Fair Cashout = Potential Payout / Current Live Odds
+  const fairCashout = potentialPayout / currentOdds;
+  const marginDeduction = 1 - (houseMarginPct / 100);
+  let finalCashout = fairCashout * marginDeduction;
+
+  // Cap cashout between 10% of stake and 98% of potential payout
+  const minCashout = stake * 0.10;
+  const maxCashout = potentialPayout * 0.98;
+  finalCashout = Math.max(minCashout, Math.min(maxCashout, finalCashout));
+
+  return {
+    available: true,
+    cashoutValue: Number(finalCashout.toFixed(2)),
+    fairCashout: Number(fairCashout.toFixed(2)),
+    stake,
+    potentialPayout,
+    currentLiveOdds: currentOdds,
+    calculatedAt: new Date().toISOString(),
+  };
+}
+
+export function calculatePartialCashout(placedBet, currentLiveOdds, cashoutPercentage = 50, houseMarginPct = 4.0) {
+  const fullQuote = calculateLiveCashoutValue(placedBet, currentLiveOdds, houseMarginPct);
+  if (!fullQuote.available) return fullQuote;
+
+  const pct = Math.max(10, Math.min(90, Number(cashoutPercentage) || 50)) / 100;
+  const partialCashoutValue = Number((fullQuote.cashoutValue * pct).toFixed(2));
+  const remainingStake = Number((placedBet.stake * (1 - pct)).toFixed(2));
+
+  return {
+    available: true,
+    partialCashoutValue,
+    remainingStake,
+    cashoutPercentage: pct * 100,
+    fullCashoutValue: fullQuote.cashoutValue,
+  };
+}
+
+export function evaluateAutoCashout(placedBet, currentLiveOdds, targetCashoutThreshold) {
+  const quote = calculateLiveCashoutValue(placedBet, currentLiveOdds);
+  if (!quote.available) return { shouldExecute: false };
+
+  const target = Number(targetCashoutThreshold);
+  const shouldExecute = quote.cashoutValue >= target;
+
+  return {
+    shouldExecute,
+    currentCashoutValue: quote.cashoutValue,
+    targetThreshold: target,
+  };
+}
+

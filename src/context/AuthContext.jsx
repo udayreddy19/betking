@@ -6,7 +6,7 @@ import {
   splitBetWinPayout,
   allocateCashStake,
 } from '../utils/wageringRules';
-import { appendTransaction, loadTransactions } from '../utils/transactions';
+import { appendTransaction, loadTransactions, updateTransactionStatus } from '../utils/transactions';
 import {
   pointsFromSpend,
   pointsToRupees,
@@ -547,7 +547,8 @@ export function AuthProvider({ children }) {
     return true;
   }, [setUser, recordTx]);
 
-  const withdrawFunds = useCallback((amount) => {
+  // Step 1: User submits a withdrawal request (Deducts balance, status = PENDING_APPROVAL)
+  const withdrawFunds = useCallback((amount, method = 'UPI', details = '') => {
     const amt = Number(amount) || 0;
     let success = false;
     let maxWithdrawable = 0;
@@ -569,14 +570,93 @@ export function AuthProvider({ children }) {
 
     if (success && email) {
       recordTx(email, {
-        type: 'withdraw',
+        type: 'WITHDRAWAL',
         amount: -amt,
-        label: 'Instant UPI withdrawal',
+        method: method || 'UPI',
+        utr: 'PENDING_ADMIN',
+        status: 'PENDING_APPROVAL',
+        details: details || 'UPI Withdrawal',
+        label: `Withdrawal request (${method}) · Pending Admin Approval`,
+      });
+      showToast(`Withdrawal of ${formatInr(amt)} requested! Awaiting Admin/Finance approval.`, 'info');
+    }
+
+    return { success, maxWithdrawable, status: success ? 'PENDING_APPROVAL' : 'FAILED' };
+  }, [setUser, recordTx, showToast]);
+
+  // Step 2: Admin approves withdrawal request
+  const adminApproveWithdrawal = useCallback((txId, targetEmail, amount) => {
+    const amt = Number(amount) || 0;
+    const utr = `UTR${Date.now()}`;
+    const emailToApprove = targetEmail || user?.email || 'demo@betking.com';
+
+    updateTransactionStatus(txId, 'COMPLETED', utr);
+
+    if (emailToApprove) {
+      recordTx(emailToApprove, {
+        type: 'WITHDRAWAL_APPROVED',
+        amount: -amt,
+        method: 'Bank/UPI Payout',
+        utr: utr,
+        status: 'COMPLETED',
+        label: `Withdrawal Approved · Transferred via ${utr}`,
       });
     }
 
-    return { success, maxWithdrawable };
-  }, [setUser, recordTx]);
+    showToast(`Withdrawal of ${formatInr(amt)} APPROVED! Dispatched via ${utr}`, 'success');
+  }, [user, recordTx, showToast]);
+
+  // Step 3: Admin rejects withdrawal request (Refunds user balance + notifies user)
+  const adminRejectWithdrawal = useCallback((txId, targetEmail, amount) => {
+    const amt = Number(amount) || 0;
+    const emailToRefund = targetEmail || user?.email || 'demo@betking.com';
+
+    updateTransactionStatus(txId, 'REJECTED');
+
+    // 1. Update stored users list
+    const users = getStoredUsers();
+    const idx = users.findIndex(u => u.email.toLowerCase() === emailToRefund.toLowerCase());
+    if (idx >= 0) {
+      users[idx].balance = (users[idx].balance || 0) + amt;
+      users[idx].winningsBalance = (users[idx].winningsBalance || 0) + amt;
+      saveStoredUsers(users);
+    }
+
+    // 2. Update active session user in localStorage
+    try {
+      const activeSession = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+      if (activeSession && activeSession.email.toLowerCase() === emailToRefund.toLowerCase()) {
+        activeSession.balance = (activeSession.balance || 0) + amt;
+        activeSession.winningsBalance = (activeSession.winningsBalance || 0) + amt;
+        localStorage.setItem(SESSION_KEY, JSON.stringify(activeSession));
+      }
+    } catch (e) {
+      console.error('Error updating active session balance:', e);
+    }
+
+    // 3. Update active React user state if logged-in user matches
+    if (user && user.email.toLowerCase() === emailToRefund.toLowerCase()) {
+      setUser(prev => prev ? ({
+        ...prev,
+        balance: prev.balance + amt,
+        winningsBalance: (prev.winningsBalance ?? 0) + amt,
+      }) : prev);
+    }
+
+    // 4. Record refund transaction entry
+    if (emailToRefund) {
+      recordTx(emailToRefund, {
+        type: 'WITHDRAWAL_REFUND',
+        amount: amt,
+        method: 'REFUND',
+        utr: 'REFUNDED',
+        status: 'COMPLETED',
+        label: `Withdrawal Rejected · ${formatInr(amt)} refunded to wallet`,
+      });
+    }
+
+    showToast(`Withdrawal of ${formatInr(amt)} REJECTED — ${formatInr(amt)} refunded to wallet!`, 'warning');
+  }, [user, setUser, recordTx, showToast]);
 
   const refundWithdrawal = useCallback((amount) => {
     const amt = Number(amount) || 0;
@@ -741,6 +821,8 @@ export function AuthProvider({ children }) {
     creditBetWin,
     creditCashout,
     withdrawFunds,
+    adminApproveWithdrawal,
+    adminRejectWithdrawal,
     refundWithdrawal,
     updateUser,
     addBonus,

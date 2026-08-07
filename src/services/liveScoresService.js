@@ -101,12 +101,18 @@ export async function fetchLiveScores(options = {}) {
         matchMap.set(key, g);
       } else {
         const existing = matchMap.get(key);
-        // Merge attributes if gateway has richer live score data
-        const gRuns = g.liveDetails?.runs || g.liveDetails?.score2 || 0;
-        const eRuns = existing.liveDetails?.runs || existing.liveDetails?.score2 || 0;
-        if (gRuns > 0 && eRuns === 0) {
-          matchMap.set(key, { ...existing, ...g, liveDetails: { ...existing.liveDetails, ...g.liveDetails } });
-        }
+        // Deep-merge attributes preserving commentaryFeed, overHistory, and squads
+        matchMap.set(key, {
+          ...g,
+          ...existing,
+          liveDetails: {
+            ...g.liveDetails,
+            ...existing.liveDetails,
+            commentaryFeed: existing.liveDetails?.commentaryFeed || g.liveDetails?.commentaryFeed,
+            overHistory: existing.liveDetails?.overHistory || g.liveDetails?.overHistory,
+            squads: existing.liveDetails?.squads || g.liveDetails?.squads,
+          },
+        });
       }
     }
 

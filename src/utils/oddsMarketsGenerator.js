@@ -3,7 +3,7 @@
  * Dynamically updates odds and lines in real time based on live match scores.
  */
 
-import { resolveCricketTeamScores, isCricketSecondInnings } from './cricketScores';
+import { resolveCricketTeamScores, isCricketSecondInnings } from './cricketScores.js';
 
 function getSeed(matchId = 'm1') {
   return [...String(matchId)].reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
@@ -292,6 +292,20 @@ export function generateMatchMarkets(match) {
       ],
     });
 
+    // 3. Double Chance
+    const dc1XOdds = Number((1 / (1 / Number(t1Odds) + 1 / (Number(drawOdds) || 12.0))).toFixed(2));
+    const dcX2Odds = Number((1 / (1 / Number(t2Odds) + 1 / (Number(drawOdds) || 12.0))).toFixed(2));
+    markets.push({
+      key: 'double_chance',
+      title: 'Double Chance',
+      category: 'main',
+      options: [
+        { selection: 'DC:1X', name: `${team1Name} or Draw`, odds: Math.max(1.05, dc1XOdds) },
+        { selection: 'DC:12', name: `${team1Name} or ${team2Name}`, odds: 1.25 },
+        { selection: 'DC:X2', name: `Draw or ${team2Name}`, odds: Math.max(1.05, dcX2Odds) },
+      ],
+    });
+
     // Ball-by-ball event inspection for markets
     const currentOver = (ld.currentOverBalls || []).map(b => String(b).toUpperCase());
     const lastBall = currentOver.length ? currentOver[currentOver.length - 1] : String(ld.lastBall || ld.lastRun || '').toUpperCase();
@@ -305,7 +319,7 @@ export function generateMatchMarkets(match) {
     const liveFoursCount = ld.fours ?? Math.max(b14s, Math.floor((team1.runs + team2.runs) / 12));
     const liveSixesCount = ld.sixes ?? Math.max(b16s, Math.floor((team1.runs + team2.runs) / 24));
 
-    // 3. Total Match Sixes
+    // 4. Total Match Sixes
     const sixesLine = isLive ? Math.max(4.5, liveSixesCount + 2.5) : 12.5;
     const sixesOverOdds = isLastBallSix ? 1.65 : isLastBallWicket ? 2.15 : 1.85;
     const sixesUnderOdds = Number((3.65 - sixesOverOdds).toFixed(2));
@@ -319,7 +333,18 @@ export function generateMatchMarkets(match) {
       ],
     });
 
-    // 4. Total Match Fours
+    // 5. Total Match Sixes (Alt Line)
+    markets.push({
+      key: 'match_sixes_alt',
+      title: 'Total Match Sixes (Alternate)',
+      category: 'totals',
+      options: [
+        { selection: `SixesAlt:Over ${sixesLine - 3}`, name: `Over ${sixesLine - 3}`, odds: 1.40 },
+        { selection: `SixesAlt:Under ${sixesLine + 3}`, name: `Under ${sixesLine + 3}`, odds: 1.40 },
+      ],
+    });
+
+    // 6. Total Match Fours
     const foursLine = isLive ? Math.max(12.5, liveFoursCount + 5.5) : 28.5;
     const foursOverOdds = isLastBallFour ? 1.68 : isLastBallWicket ? 2.10 : 1.85;
     const foursUnderOdds = Number((3.65 - foursOverOdds).toFixed(2));
@@ -333,7 +358,18 @@ export function generateMatchMarkets(match) {
       ],
     });
 
-    // 5. Total Match Runs
+    // 7. Total Match Fours (Alt Line)
+    markets.push({
+      key: 'match_fours_alt',
+      title: 'Total Match Fours (Alternate)',
+      category: 'totals',
+      options: [
+        { selection: `FoursAlt:Over ${foursLine - 6}`, name: `Over ${foursLine - 6}`, odds: 1.38 },
+        { selection: `FoursAlt:Under ${foursLine + 6}`, name: `Under ${foursLine + 6}`, odds: 1.38 },
+      ],
+    });
+
+    // 8. Total Match Runs
     const currentTotalRuns = team1.runs + team2.runs;
     const projectedRuns = isLive ? Math.max(280, currentTotalRuns + 120) : 315;
     const matchRunsLine = projectedRuns + 0.5;
@@ -349,7 +385,42 @@ export function generateMatchMarkets(match) {
       ],
     });
 
-    // 6. 1st Innings Over 12 Total
+    // 9. Team 1 Total Runs
+    const t1Proj = isLive ? Math.max(120, team1.runs + 45) : 165.5;
+    markets.push({
+      key: 'team1_runs',
+      title: `${team1Name} Total Runs`,
+      category: 'totals',
+      options: [
+        { selection: `T1Runs:Over ${t1Proj}`, name: `Over ${t1Proj}`, odds: 1.85 },
+        { selection: `T1Runs:Under ${t1Proj}`, name: `Under ${t1Proj}`, odds: 1.85 },
+      ],
+    });
+
+    // 10. Team 2 Total Runs
+    const t2Proj = isLive ? Math.max(115, team2.runs + 45) : 155.5;
+    markets.push({
+      key: 'team2_runs',
+      title: `${team2Name} Total Runs`,
+      category: 'totals',
+      options: [
+        { selection: `T2Runs:Over ${t2Proj}`, name: `Over ${t2Proj}`, odds: 1.85 },
+        { selection: `T2Runs:Under ${t2Proj}`, name: `Under ${t2Proj}`, odds: 1.85 },
+      ],
+    });
+
+    // 11. 1st Innings Powerplay (6 Overs) Total
+    markets.push({
+      key: 'powerplay_total',
+      title: '1st Innings 6 Over Powerplay Total',
+      category: 'over',
+      options: [
+        { selection: 'Powerplay:Over 48.5', name: 'Over 48.5', odds: 1.87 },
+        { selection: 'Powerplay:Under 48.5', name: 'Under 48.5', odds: 1.87 },
+      ],
+    });
+
+    // 12. 1st Innings Over 12 Total
     const currentOversNum = parseInt(team1.overs || '0', 10);
     const overTarget = isLive && currentOversNum >= 12 ? currentOversNum + 2 : 12;
     const overOddsBase = isLive ? Math.max(1.30, Math.min(3.20, 2.00 - (team1.runs % 10) * 0.08)) : 2.02;
@@ -363,7 +434,7 @@ export function generateMatchMarkets(match) {
       ],
     });
 
-    // 7. 1st Over Runs Total
+    // 13. 1st Over Runs Total
     markets.push({
       key: 'first_over_runs',
       title: '1st Innings 1st Over Total Runs',
@@ -374,7 +445,18 @@ export function generateMatchMarkets(match) {
       ],
     });
 
-    // 8. Next delivery total & Boundary
+    // 14. 1st Over Wicket
+    markets.push({
+      key: 'first_over_wicket',
+      title: 'Wicket in 1st Over',
+      category: 'over',
+      options: [
+        { selection: 'FirstOverWicket:Yes', name: 'Yes', odds: 4.50 },
+        { selection: 'FirstOverWicket:No', name: 'No', odds: 1.18 },
+      ],
+    });
+
+    // 15. Next delivery total & Boundary
     const deliveryOverOdds = isLive ? (isLastBallBoundary ? 1.25 : isLastBallWicket ? 1.65 : 1.45) : 1.45;
     const deliveryBoundaryOdds = isLastBallBoundary ? 3.40 : isLastBallWicket ? 5.50 : 4.50;
     markets.push({
@@ -386,10 +468,11 @@ export function generateMatchMarkets(match) {
         { selection: 'Delivery:Under 0.5', name: 'Under 0.5', odds: Number((3.50 - deliveryOverOdds).toFixed(2)) },
         { selection: 'Delivery:Over 1.5', name: 'Over 1.5', odds: isLastBallBoundary ? 3.10 : 3.85 },
         { selection: 'Delivery:Boundary', name: 'Boundary (4 or 6)', odds: deliveryBoundaryOdds },
+        { selection: 'Delivery:Wicket', name: 'Wicket', odds: 9.50 },
       ],
     });
 
-    // 9. 1st Partnership Total
+    // 16. 1st Partnership Total
     markets.push({
       key: 'partnership',
       title: '1st innings - 1st partnership total',
@@ -400,7 +483,7 @@ export function generateMatchMarkets(match) {
       ],
     });
 
-    // 10. Highest Opening Partnership
+    // 17. Highest Opening Partnership
     markets.push({
       key: 'highest_opening',
       title: 'Highest Opening Partnership',
@@ -412,7 +495,31 @@ export function generateMatchMarkets(match) {
       ],
     });
 
-    // 11. Method of Next Wicket
+    // 18. Team to Score Most Sixes
+    markets.push({
+      key: 'most_sixes',
+      title: 'Team to Score Most Sixes',
+      category: 'props',
+      options: [
+        { selection: 'MostSixes:1', name: team1Name, odds: Number((Number(t1Odds) * 1.05).toFixed(2)) },
+        { selection: 'MostSixes:2', name: team2Name, odds: Number((Number(t2Odds) * 1.05).toFixed(2)) },
+        { selection: 'MostSixes:Tie', name: 'Tie', odds: 7.50 },
+      ],
+    });
+
+    // 19. Team to Score Most Fours
+    markets.push({
+      key: 'most_fours',
+      title: 'Team to Score Most Fours',
+      category: 'props',
+      options: [
+        { selection: 'MostFours:1', name: team1Name, odds: Number((Number(t1Odds) * 1.02).toFixed(2)) },
+        { selection: 'MostFours:2', name: team2Name, odds: Number((Number(t2Odds) * 1.02).toFixed(2)) },
+        { selection: 'MostFours:Tie', name: 'Tie', odds: 9.00 },
+      ],
+    });
+
+    // 20. Method of Next Wicket
     markets.push({
       key: 'next_wicket_method',
       title: 'Method of Next Wicket',
@@ -425,7 +532,19 @@ export function generateMatchMarkets(match) {
       ],
     });
 
-    // 12. Top Batter Runs (Player prop)
+    // 21. Race to 50 Runs
+    markets.push({
+      key: 'race_to_50',
+      title: 'Race to 50 Runs',
+      category: 'props',
+      options: [
+        { selection: 'Race50:1', name: team1Name, odds: Number(t1Odds) },
+        { selection: 'Race50:2', name: team2Name, odds: Number(t2Odds) },
+        { selection: 'Race50:Neither', name: 'Neither', odds: 25.0 },
+      ],
+    });
+
+    // 22. Top Batter Runs (Player prop)
     const batterLine = isLive ? Math.max(25.5, (team1.runs || 10) + 15.5) : 34.5;
     markets.push({
       key: 'top_batter',
@@ -434,6 +553,40 @@ export function generateMatchMarkets(match) {
       options: [
         { selection: `TopBatter:Over ${batterLine}`, name: `Over ${batterLine} Runs`, odds: 1.83 },
         { selection: `TopBatter:Under ${batterLine}`, name: `Under ${batterLine} Runs`, odds: 1.83 },
+      ],
+    });
+
+    // 23. Player to Score 50+ Runs
+    const strikerName = ld.batter1?.name || `${team1Name} Striker`;
+    markets.push({
+      key: 'player_fifty',
+      title: `${strikerName} to Score 50+ Runs`,
+      category: 'props',
+      options: [
+        { selection: 'Fifty:Yes', name: 'Yes', odds: 2.10 },
+        { selection: 'Fifty:No', name: 'No', odds: 1.68 },
+      ],
+    });
+
+    // 24. A Century to be Scored in Match
+    markets.push({
+      key: 'match_century',
+      title: 'A Century (100+) to be Scored in Match',
+      category: 'props',
+      options: [
+        { selection: 'Century:Yes', name: 'Yes', odds: 3.40 },
+        { selection: 'Century:No', name: 'No', odds: 1.30 },
+      ],
+    });
+
+    // 25. Total Match Wickets
+    markets.push({
+      key: 'total_wickets',
+      title: 'Total Match Wickets',
+      category: 'totals',
+      options: [
+        { selection: 'Wickets:Over 11.5', name: 'Over 11.5', odds: 1.85 },
+        { selection: 'Wickets:Under 11.5', name: 'Under 11.5', odds: 1.85 },
       ],
     });
   }
@@ -470,7 +623,7 @@ export function generateMatchMarkets(match) {
       ],
     });
 
-    // 3. Total Goals Over/Under Line
+    // 3. Total Goals Over/Under Line (Main)
     const goalLine = totalGoals >= 2 ? totalGoals + 1.5 : 2.5;
     const overGoalOdds = totalGoals >= 2 ? 1.45 : isLive ? 2.10 : 1.92;
     const underGoalOdds = totalGoals >= 2 ? 2.50 : isLive ? 1.65 : 1.85;
@@ -484,7 +637,51 @@ export function generateMatchMarkets(match) {
       ],
     });
 
-    // 4. Double Chance
+    // 4. Total Goals Over/Under 1.5
+    markets.push({
+      key: 'goals_15',
+      title: 'Total Goals Over/Under 1.5',
+      category: 'goals',
+      options: [
+        { selection: 'Goals:Over 1.5', name: 'Over 1.5', odds: 1.25 },
+        { selection: 'Goals:Under 1.5', name: 'Under 1.5', odds: 3.75 },
+      ],
+    });
+
+    // 5. Total Goals Over/Under 3.5
+    markets.push({
+      key: 'goals_35',
+      title: 'Total Goals Over/Under 3.5',
+      category: 'goals',
+      options: [
+        { selection: 'Goals:Over 3.5', name: 'Over 3.5', odds: 3.10 },
+        { selection: 'Goals:Under 3.5', name: 'Under 3.5', odds: 1.35 },
+      ],
+    });
+
+    // 6. Team 1 Total Goals
+    markets.push({
+      key: 'team1_goals',
+      title: `${team1Name} Total Goals`,
+      category: 'goals',
+      options: [
+        { selection: 'T1Goals:Over 1.5', name: 'Over 1.5', odds: 1.85 },
+        { selection: 'T1Goals:Under 1.5', name: 'Under 1.5', odds: 1.85 },
+      ],
+    });
+
+    // 7. Team 2 Total Goals
+    markets.push({
+      key: 'team2_goals',
+      title: `${team2Name} Total Goals`,
+      category: 'goals',
+      options: [
+        { selection: 'T2Goals:Over 1.5', name: 'Over 1.5', odds: 1.95 },
+        { selection: 'T2Goals:Under 1.5', name: 'Under 1.5', odds: 1.75 },
+      ],
+    });
+
+    // 8. Double Chance
     const dc1XOdds = Number((1 / (1 / liveOdds.team1 + 1 / (liveOdds.draw || 3.30))).toFixed(2));
     const dcX2Odds = Number((1 / (1 / liveOdds.team2 + 1 / (liveOdds.draw || 3.30))).toFixed(2));
     markets.push({
@@ -498,7 +695,18 @@ export function generateMatchMarkets(match) {
       ],
     });
 
-    // 5. First Half Winner
+    // 9. Draw No Bet
+    markets.push({
+      key: 'dnb',
+      title: 'Draw No Bet',
+      category: 'chance',
+      options: [
+        { selection: 'DNB:1', name: team1Name, odds: Number((Number(t1Odds) * 0.72).toFixed(2)) },
+        { selection: 'DNB:2', name: team2Name, odds: Number((Number(t2Odds) * 0.72).toFixed(2)) },
+      ],
+    });
+
+    // 10. First Half Winner
     markets.push({
       key: 'half1_winner',
       title: '1st Half Winner',
@@ -507,6 +715,46 @@ export function generateMatchMarkets(match) {
         { selection: '1H:1', name: team1Name, odds: Number((liveOdds.team1 * 1.25).toFixed(2)) },
         { selection: '1H:X', name: 'Draw', odds: 2.10 },
         { selection: '1H:2', name: team2Name, odds: Number((liveOdds.team2 * 1.25).toFixed(2)) },
+      ],
+    });
+
+    // 11. Half Time / Full Time (HT/FT)
+    markets.push({
+      key: 'ht_ft',
+      title: 'Half Time / Full Time',
+      category: 'halves',
+      options: [
+        { selection: 'HTFT:1/1', name: `${team1Name} / ${team1Name}`, odds: Number((Number(t1Odds) * 1.8).toFixed(2)) },
+        { selection: 'HTFT:X/1', name: `Draw / ${team1Name}`, odds: 4.50 },
+        { selection: 'HTFT:2/2', name: `${team2Name} / ${team2Name}`, odds: Number((Number(t2Odds) * 1.8).toFixed(2)) },
+        { selection: 'HTFT:X/2', name: `Draw / ${team2Name}`, odds: 5.20 },
+      ],
+    });
+
+    // 12. Correct Score Grid
+    markets.push({
+      key: 'correct_score',
+      title: 'Correct Score',
+      category: 'goals',
+      options: [
+        { selection: 'CS:1-0', name: '1-0', odds: 6.50 },
+        { selection: 'CS:2-0', name: '2-0', odds: 8.50 },
+        { selection: 'CS:2-1', name: '2-1', odds: 8.00 },
+        { selection: 'CS:0-0', name: '0-0', odds: 9.00 },
+        { selection: 'CS:1-1', name: '1-1', odds: 6.00 },
+        { selection: 'CS:0-1', name: '0-1', odds: 7.50 },
+        { selection: 'CS:0-2', name: '0-2', odds: 11.00 },
+      ],
+    });
+
+    // 13. Total Corners Over/Under 9.5
+    markets.push({
+      key: 'corners_95',
+      title: 'Total Match Corners Over/Under 9.5',
+      category: 'main',
+      options: [
+        { selection: 'Corners:Over 9.5', name: 'Over 9.5 Corners', odds: 1.85 },
+        { selection: 'Corners:Under 9.5', name: 'Under 9.5 Corners', odds: 1.85 },
       ],
     });
   }
@@ -552,6 +800,28 @@ export function generateMatchMarkets(match) {
         { selection: `Points:Under ${totalLine}`, name: `Under ${totalLine}`, odds: 1.88 },
       ],
     });
+
+    // 4. Team 1 Total Points
+    markets.push({
+      key: 'team1_pts',
+      title: `${team1Name} Total Points`,
+      category: 'totals',
+      options: [
+        { selection: 'T1Pts:Over 108.5', name: 'Over 108.5', odds: 1.85 },
+        { selection: 'T1Pts:Under 108.5', name: 'Under 108.5', odds: 1.85 },
+      ],
+    });
+
+    // 5. Team 2 Total Points
+    markets.push({
+      key: 'team2_pts',
+      title: `${team2Name} Total Points`,
+      category: 'totals',
+      options: [
+        { selection: 'T2Pts:Over 105.5', name: 'Over 105.5', odds: 1.85 },
+        { selection: 'T2Pts:Under 105.5', name: 'Under 105.5', odds: 1.85 },
+      ],
+    });
   }
 
   // --- TENNIS MARKETS ---
@@ -573,6 +843,16 @@ export function generateMatchMarkets(match) {
       options: [
         { selection: 'Set1:1', name: team1Name, odds: Number((liveOdds.team1 * 1.05).toFixed(2)) },
         { selection: 'Set1:2', name: team2Name, odds: Number((liveOdds.team2 * 1.05).toFixed(2)) },
+      ],
+    });
+
+    markets.push({
+      key: 'total_games',
+      title: 'Total Match Games',
+      category: 'games',
+      options: [
+        { selection: 'Games:Over 21.5', name: 'Over 21.5 Games', odds: 1.85 },
+        { selection: 'Games:Under 21.5', name: 'Under 21.5 Games', odds: 1.85 },
       ],
     });
   }

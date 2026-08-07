@@ -39,7 +39,7 @@ const PRE_MATCH_HOLD_HINTS = [
   'interrupted',
 ];
 
-import { oversToBallsForMatch } from './cricketFormat';
+import { oversToBallsForMatch } from './cricketFormat.js';
 
 function parseOversBallCount(overs, match) {
   if (match) return oversToBallsForMatch(overs, match);

@@ -1,4 +1,4 @@
-import { normalizeCricbuzzOvers, oversToBalls } from './oversUtils';
+import { normalizeCricbuzzOvers, oversToBalls } from './oversUtils.js';
 
 const HUNDRED_BALLS_PER_INNINGS = 100;
 const HUNDRED_BALLS_PER_OVER = 5;

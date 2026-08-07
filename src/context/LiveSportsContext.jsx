@@ -19,11 +19,22 @@ const LiveSportsMetaContext = createContext(null);
 
 function attachOdds(matches) {
   return matches.map((match) => {
-    const liveOdds = computeLiveDynamicOdds(match);
+    const homeOdds = match.odds?.home || match.odds?.team1 || match.preOdds?.team1 || match.preOdds?.home;
+    const awayOdds = match.odds?.away || match.odds?.team2 || match.preOdds?.team2 || match.preOdds?.away;
+    const drawOdds = match.odds?.draw || match.preOdds?.draw;
+
+    const stableOdds = {
+      team1: homeOdds || 1.85,
+      team2: awayOdds || 1.95,
+      draw: drawOdds || null,
+      home: homeOdds || 1.85,
+      away: awayOdds || 1.95,
+    };
+
     return {
       ...match,
-      preOdds: match.preOdds || match.odds || liveOdds,
-      odds: liveOdds,
+      preOdds: match.preOdds || stableOdds,
+      odds: stableOdds,
     };
   });
 }
@@ -82,24 +93,31 @@ function summarizeMatches(matches) {
 
 function mergeMatchesStable(prev, next) {
   if (prev.length === 0) return next;
-  if (prev.length !== next.length) return next;
 
-  const prevById = new Map(prev.map((match) => [match.id, match]));
-  let changed = false;
-  const merged = next.map((candidate) => {
+  const prevById = new Map(prev.map((m) => [m.id, m]));
+  const processedIds = new Set();
+  const merged = [];
+
+  for (const candidate of next) {
+    processedIds.add(candidate.id);
     const previous = prevById.get(candidate.id);
     if (!previous) {
-      changed = true;
-      return candidate;
+      merged.push(candidate);
+    } else if (matchDisplayKey(previous) === matchDisplayKey(candidate)) {
+      merged.push(previous);
+    } else {
+      merged.push(candidate);
     }
-    if (matchDisplayKey(previous) === matchDisplayKey(candidate)) {
-      return previous;
-    }
-    changed = true;
-    return candidate;
-  });
+  }
 
-  return changed ? merged : prev;
+  // Retain active matches from prev if omitted in next during transient provider delay
+  for (const previous of prev) {
+    if (!processedIds.has(previous.id)) {
+      merged.push(previous);
+    }
+  }
+
+  return merged;
 }
 
 function seriesSignature(series) {
@@ -176,20 +194,13 @@ export function LiveSportsProvider({ children }) {
         const nextTicker = `${emoji} ${primarySource} LIVE — ${total} events (${live} live${sportParts.length ? ' · ' + sportParts.join(', ') : ''})`;
         setTickerMessage((prev) => (prev === nextTicker ? prev : nextTicker));
       } else {
-        const withSrl = mergeSrlMatches([]);
-        matchesSummaryRef.current = summarizeMatches(withSrl);
-        setMatches(withSrl);
-        setScoresError((prev) => {
-          const next = withSrl.length
-            ? null
-            : 'No live events from score providers right now — tap Retry.';
-          return prev === next ? prev : next;
-        });
-        setTickerMessage((prev) => {
-          const next = withSrl.length
-            ? `🟢 IPL SRL LIVE — ${withSrl.length} simulated fixtures`
-            : '⚠️ No matches returned from API';
-          return prev === next ? prev : next;
+        setMatches((prev) => {
+          if (prev && prev.length > 0) {
+            return prev;
+          }
+          const withSrl = mergeSrlMatches([]);
+          matchesSummaryRef.current = summarizeMatches(withSrl);
+          return withSrl;
         });
       }
     } catch (error) {
