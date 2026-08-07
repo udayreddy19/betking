@@ -12,6 +12,7 @@ export default defineConfig({
   },
   plugins: [react(), liveScoresApiPlugin(), sportsApiPlatformPlugin()],
   build: {
+    chunkSizeWarningLimit: 1600,
     rollupOptions: {
       output: {
         manualChunks(id) {
