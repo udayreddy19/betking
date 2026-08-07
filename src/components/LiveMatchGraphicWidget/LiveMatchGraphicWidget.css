@@ -274,29 +274,40 @@
 
 .live-widget-tabs {
   display: flex;
-  justify-content: stretch;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   border-bottom: 1px solid var(--color-graphic-border);
   background: var(--color-panel);
+  padding: 6px var(--space-3);
+  scrollbar-width: none;
 }
 
 .live-widget-tab {
-  flex: 1;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 10px 0 8px;
+  gap: 6px;
+  white-space: nowrap;
+  padding: 6px 12px;
   background: transparent;
-  border: none;
-  border-bottom: 3px solid transparent;
+  border: 1px solid transparent;
+  border-radius: 20px;
   color: #9ca3af;
-  font-size: 1.25rem;
+  font-size: 0.78rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
-  margin-bottom: -1px;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.live-widget-tab svg {
+  font-size: 1rem;
 }
 
 .live-widget-tab.active {
-  border-bottom-color: #7c3aed;
+  background: rgba(124, 58, 237, 0.12);
+  border-color: #7c3aed;
   color: #7c3aed;
 }
 

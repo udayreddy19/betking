@@ -1030,6 +1030,59 @@
   }
 }
 
+@media (max-width: 768px) {
+  .admin-inner {
+    padding: 0 var(--space-3);
+  }
+
+  .admin-header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: var(--space-4);
+  }
+
+  .admin-nav-tabs {
+    display: flex;
+    white-space: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
+  }
+
+  .admin-nav-tabs .admin-tab {
+    font-size: 0.78rem;
+    padding: 8px 12px;
+    flex-shrink: 0;
+  }
+
+  .admin-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-table {
+    min-width: 650px;
+  }
+
+  .admin-table th,
+  .admin-table td {
+    padding: 10px 8px;
+    font-size: 0.78rem;
+  }
+
+  .table-actions {
+    flex-direction: column;
+    gap: 4px !important;
+  }
+
+  .table-actions .admin-btn {
+    width: 100%;
+    text-align: center;
+    padding: 8px 10px;
+    font-size: 0.75rem;
+  }
+}
+
 @media (max-width: 640px) {
   .admin-metrics-grid,
   .provider-status-grid,

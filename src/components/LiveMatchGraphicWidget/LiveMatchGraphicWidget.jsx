@@ -861,6 +861,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
               title="Field / Tracker"
             >
               <FieldIcon />
+              <span>Tracker</span>
             </button>
             <button
               type="button"
@@ -871,6 +872,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
               title="Scorecard"
             >
               <HiOutlineViewList />
+              <span>Scorecard</span>
             </button>
             <button
               type="button"
@@ -881,6 +883,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
               title="Live Commentary"
             >
               <FiMessageCircle />
+              <span>Commentary</span>
             </button>
             <button
               type="button"
@@ -891,6 +894,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
               title="Points Table"
             >
               <HiOutlineChartBar />
+              <span>Points Table</span>
             </button>
             <button
               type="button"
@@ -901,6 +905,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
               title="Lineups / Squads"
             >
               <HiOutlineUsers />
+              <span>Lineups</span>
             </button>
           </div>
         </div>
