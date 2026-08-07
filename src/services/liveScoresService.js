@@ -61,9 +61,11 @@ export async function fetchLiveScores(options = {}) {
       },
       liveDetails: {
         runs: g.liveScore?.runs ?? g.score?.home ?? 0,
-        score2: g.liveScore?.runs ?? g.score?.away ?? 0,
+        score2: g.liveScore?.score2 ?? g.liveScore?.chaseRuns ?? g.score?.away ?? 0,
         wickets: g.liveScore?.wickets ?? g.score?.wickets ?? 0,
+        wickets2: g.liveScore?.wickets2 ?? g.liveScore?.chaseWickets ?? 0,
         overs: g.liveScore?.overs ?? g.score?.overs ?? '0.0',
+        overs2: g.liveScore?.overs2 ?? g.liveScore?.chaseOvers ?? '0.0',
         commentary: g.commentary?.textCommentary || (g.provider ? `Provider: ${g.provider}` : ''),
         toss: g.toss || null,
       },
@@ -79,9 +81,36 @@ export async function fetchLiveScores(options = {}) {
       source: g.provider || 'gateway',
     }));
 
-    // Dedup gateway matches with legacy matches
-    const newGateway = gatewayMatches.filter((g) => !legacyIds.has(String(g.id)));
-    const mergedMatches = [...legacyMatches, ...newGateway];
+    // Dedup gateway matches with legacy matches by ID and team names
+    const getMatchTeamKey = (m) => {
+      const t1 = (m.team1?.name || m.homeTeam?.name || m.homeTeam?.teamName || '').toLowerCase().replace(/\(men\)|\(women\)/gi, '').replace(/[^a-z0-9]/g, '');
+      const t2 = (m.team2?.name || m.awayTeam?.name || m.awayTeam?.teamName || '').toLowerCase().replace(/\(men\)|\(women\)/gi, '').replace(/[^a-z0-9]/g, '');
+      if (!t1 || !t2) return String(m.id || Math.random());
+      return [t1, t2].sort().join('|');
+    };
+
+    const matchMap = new Map();
+    for (const m of legacyMatches) {
+      const key = getMatchTeamKey(m);
+      matchMap.set(key, m);
+    }
+
+    for (const g of gatewayMatches) {
+      const key = getMatchTeamKey(g);
+      if (!matchMap.has(key)) {
+        matchMap.set(key, g);
+      } else {
+        const existing = matchMap.get(key);
+        // Merge attributes if gateway has richer live score data
+        const gRuns = g.liveDetails?.runs || g.liveDetails?.score2 || 0;
+        const eRuns = existing.liveDetails?.runs || existing.liveDetails?.score2 || 0;
+        if (gRuns > 0 && eRuns === 0) {
+          matchMap.set(key, { ...existing, ...g, liveDetails: { ...existing.liveDetails, ...g.liveDetails } });
+        }
+      }
+    }
+
+    const mergedMatches = Array.from(matchMap.values());
 
     return {
       matches: mergedMatches,

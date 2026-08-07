@@ -808,6 +808,178 @@
   background: var(--color-primary-bg);
 }
 
+/* ---------------------------------------------------------------------------
+ * 10Cric 2026 Match Card Styling
+ * --------------------------------------------------------------------------- */
+.sports-cricket-row-10cric {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  transition: all var(--transition-fast);
+}
+
+.sports-cricket-row-10cric:hover {
+  border-color: var(--color-primary-light);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.sports-cricket-row__meta-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.sports-cricket-row__league-sub {
+  font-weight: 500;
+  color: #64748b;
+}
+
+.sports-cricket-row__status-text {
+  font-weight: 600;
+  color: #64748b;
+}
+
+.sports-cricket-row__body {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.sports-cricket-row__teams-btn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sports-cricket-row__team {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sports-cricket-row__team-name {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--color-text);
+  flex: 1;
+}
+
+.sports-cricket-row__score {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.sports-cricket-row__overs-sub {
+  font-size: 0.74rem;
+  color: #64748b;
+  font-weight: 600;
+  margin-left: 30px;
+  margin-top: -2px;
+}
+
+.sports-cricket-row__odds-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sports-cricket-odds-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 68px;
+  height: 44px;
+  background: #f1f5f9;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 2px 6px;
+}
+
+[data-theme='dark'] .sports-cricket-odds-card {
+  background: rgba(30, 41, 59, 0.7);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.sports-cricket-odds-card:hover {
+  background: rgba(234, 179, 8, 0.15);
+  border-color: rgba(234, 179, 8, 0.4);
+}
+
+.sports-cricket-odds-card.selected {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.sports-cricket-odds-card.selected .odds-label,
+.sports-cricket-odds-card.selected .odds-val {
+  color: #ffffff;
+}
+
+.sports-cricket-odds-card .odds-label {
+  font-size: 0.65rem;
+  color: #64748b;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.sports-cricket-odds-card .odds-val {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+[data-theme='dark'] .sports-cricket-odds-card .odds-val {
+  color: #f8fafc;
+}
+
+.sports-cricket-odds-card.locked {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.sports-cricket-markets-capsule {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 10px;
+  background: transparent;
+  border: 1.5px solid #0f172a;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #0f172a;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+[data-theme='dark'] .sports-cricket-markets-capsule {
+  border-color: #f8fafc;
+  color: #f8fafc;
+}
+
+.sports-cricket-markets-capsule:hover {
+  background: rgba(15, 23, 42, 0.05);
+}
+
 .sports-right .betslip {
   position: static;
   width: 100%;

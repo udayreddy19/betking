@@ -42,6 +42,26 @@ export default function Home() {
     return activeLeague ? filterByLeague(bySport, activeLeague) : bySport;
   }, [matches, activeSport, activeLeague]);
 
+  const sportCounts = useMemo(() => {
+    const map = {};
+    for (const cat of sportsCategories) {
+      map[cat.id] = (matches || []).filter((m) => {
+        const s = String(m.sport || '').toLowerCase();
+        if (cat.id === 'cricket') return s === 'cricket';
+        if (cat.id === 'soccer') return s === 'soccer' || s === 'football';
+        if (cat.id === 'basketball') return s === 'basketball';
+        if (cat.id === 'tennis') return s === 'tennis';
+        if (cat.id === 'table-tennis') return s === 'table-tennis' || s === 'tabletennis';
+        if (cat.id === 'kabaddi') return s === 'kabaddi';
+        if (cat.id === 'esoccer') return s === 'esoccer';
+        if (cat.id === 'volleyball') return s === 'volleyball';
+        if (cat.id === 'american-football') return s === 'american-football' || s === 'nfl';
+        return s === cat.id;
+      }).length;
+    }
+    return map;
+  }, [matches]);
+
   useEffect(() => {
     const timer = setInterval(() => {
       setPromoIndex((i) => (i + 1) % homePromoSlides.length);
@@ -114,6 +134,7 @@ export default function Home() {
           items={sportsCategories}
           activeId={activeSport}
           onSelect={handleSportChange}
+          counts={sportCounts}
           className="filter-chips-row scroll-row-bleed home-sport-chips"
         />
 

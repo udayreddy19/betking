@@ -90,7 +90,7 @@ export function resolveCricketTeamScores(match, ld = {}) {
 
   const remaining = entries.filter((entry) => !used.has(entry));
   const fallbackTeam1 = team1Entry || remaining[0] || scoreEntry(team1Name, 0, 0, '0.0', match);
-  const fallbackTeam2 = team2Entry || remaining[1] || remaining[0] || scoreEntry(team2Name, 0, 0, '0.0', match);
+  const fallbackTeam2 = team2Entry || (remaining.length > 1 ? remaining[1] : scoreEntry(team2Name, 0, 0, '0.0', match));
 
   if (fallbackTeam1 === fallbackTeam2 && entries.length > 1) {
     return {
@@ -100,8 +100,8 @@ export function resolveCricketTeamScores(match, ld = {}) {
   }
 
   return {
-    team1: { ...fallbackTeam1, token: team1Name },
-    team2: { ...fallbackTeam2, token: team2Name },
+    team1: fallbackTeam1,
+    team2: fallbackTeam2,
   };
 }
 
@@ -117,18 +117,24 @@ export function flattenCricketTeamScores(scores) {
 }
 
 export function isCricketSecondInnings(match, ld = {}) {
-  if (match?.matchState !== 'in') return false;
+  if (match?.matchState !== 'in' && !match?.isLive) return false;
 
-  if ((ld.inningsId ?? 0) > 1) return true;
+  if ((ld.inningsId ?? 0) >= 2) return true;
 
-  if (ld.chaseRuns != null && ld.firstRuns != null) return true;
+  if (ld.chaseRuns != null && ld.firstRuns != null && (ld.chaseRuns > 0 || ld.chaseOvers || (ld.chaseWickets ?? 0) > 0)) return true;
 
-  if (ld.chaseTeamName && ld.firstTeamName) return true;
+  if (ld.chaseTeamName && ld.firstTeamName && (ld.chaseRuns > 0 || (ld.chaseBallNbr ?? 0) > 0)) return true;
 
   const { team1, team2 } = resolveCricketTeamScores(match, ld);
-  const team1Played = team1.runs > 0 || team1.wickets > 0 || team1.balls > 0;
   const team2Played = team2.runs > 0 || team2.wickets > 0 || team2.balls > 0;
-  const team1InningsFinished = team1.wickets >= 10 || team1.balls >= 120 || (ld.firstRuns != null && ld.firstRuns > 0);
 
-  return (team1Played && team2Played) || team1InningsFinished;
+  if (team2Played) {
+    return true;
+  }
+
+  const isOdi = /50|one day|cup|list a/i.test(match?.league || match?.seriesName || '');
+  const team1MaxBalls = isOdi ? 300 : 120;
+  const team1InningsFinished = team1.wickets >= 10 || team1.balls >= team1MaxBalls;
+
+  return team1InningsFinished && (team2Played || (ld.chaseBallNbr ?? 0) > 0);
 }

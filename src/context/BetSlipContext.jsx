@@ -305,7 +305,7 @@ export function BetSlipProvider({ children }) {
     potentialReturn,
     totalStakeAmount,
     betCount: bets.length,
-    myBetsCount: placedBets.length,
+    myBetsCount: placedBets.filter((b) => (b.status || 'pending') === 'pending' || (b.status || 'pending') === 'open').length,
     isMobileOpen,
     setIsMobileOpen,
     openMobileBetslip,

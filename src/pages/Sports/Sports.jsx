@@ -3,6 +3,7 @@ import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { FiSearch, FiHome, HiOutlineChevronDown, HiOutlineChevronUp, FiMessageCircle } from '../../icons';
 import FilterChips from '../../components/FilterChips/FilterChips';
 import SportIcon from '../../components/SportIcon/SportIcon';
+import TeamJersey from '../../components/TeamJersey/TeamJersey';
 import BetSlip from '../../components/BetSlip/BetSlip';
 import LiveMatchGraphicWidget from '../../components/LiveMatchGraphicWidget/LiveMatchGraphicWidget';
 import ErrorBoundary from '../../components/ErrorBoundary/ErrorBoundary';
@@ -105,57 +106,85 @@ function CricketGroupedMatches({ groups, onSelectMatch, getMatchScores, isBetSel
         <section key={league} className="sports-cricket-group">
           <h3 className="sports-cricket-group__title">{league}</h3>
           {matches.map((m) => {
-            const { team1Score, team2Score, isLive, isFinished } = getMatchScores(m);
+            const { team1Score, team2Score, isLive, isFinished, overs2 } = getMatchScores(m);
             const showScores = isLive || isFinished;
+
+            const statusLabel = isLive
+              ? (m.liveDetails?.period || (team2Score && team2Score !== '0/0' ? 'Second innings' : 'First innings'))
+              : isFinished
+                ? 'Match Ended'
+                : (m.time || 'Scheduled');
+
+            const oversDisplay = isLive && overs2 && overs2 !== '0.0'
+              ? `(${overs2} ov.)`
+              : (isLive && m.liveDetails?.overs && m.liveDetails.overs !== '0.0' ? `(${m.liveDetails.overs} ov.)` : null);
+
+            const marketCount = 22 + ((m.id?.length || 0) % 15);
+
             return (
-              <div key={m.id} className="sports-cricket-row">
-                <button type="button" className="sports-cricket-row__main" onClick={() => onSelectMatch(m.id)}>
-                  <div className="sports-cricket-row__meta">
-                    <span className="sports-cricket-row__league">{league}</span>
-                    <span className="sports-cricket-row__time">{m.time}</span>
-                    {isLive && <span className="sports-cricket-row__live">LIVE</span>}
-                  </div>
-                  <div className="sports-cricket-row__teams">
+              <div key={m.id} className="sports-cricket-row-10cric">
+                <div className="sports-cricket-row__meta-bar">
+                  <span className="sports-cricket-row__league-sub">{league}</span>
+                  <span className="sports-cricket-row__status-text">{statusLabel}</span>
+                </div>
+
+                <div className="sports-cricket-row__body">
+                  <button type="button" className="sports-cricket-row__teams-btn" onClick={() => onSelectMatch(m.id)}>
                     <div className="sports-cricket-row__team">
-                      <span>{m.team1.name}</span>
-                      {showScores && <strong>{team1Score || '–'}</strong>}
+                      <TeamJersey team={m.team1} size={22} />
+                      <span className="sports-cricket-row__team-name">{m.team1.name}</span>
+                      {showScores && <strong className="sports-cricket-row__score">{team1Score || '–'}</strong>}
                     </div>
                     <div className="sports-cricket-row__team">
-                      <span>{m.team2.name}</span>
-                      {showScores && <strong>{team2Score || '–'}</strong>}
+                      <TeamJersey team={m.team2} size={22} />
+                      <span className="sports-cricket-row__team-name">{m.team2.name}</span>
+                      {showScores && <strong className="sports-cricket-row__score">{team2Score || '–'}</strong>}
                     </div>
-                  </div>
-                </button>
-                <div className="sports-cricket-row__odds">
-                  <button
-                    type="button"
-                    className={`sports-cricket-odds-btn ${isBetSelected(m.id, '1') ? 'selected' : ''}`}
-                    onClick={() => onQuickBet(m, '1', m.odds?.team1, m.team1.name)}
-                  >
-                    <span>1</span>
-                    <strong>{Number(m.odds?.team1 || 0).toFixed(2)}</strong>
+                    {oversDisplay && (
+                      <div className="sports-cricket-row__overs-sub">
+                        {oversDisplay}
+                      </div>
+                    )}
                   </button>
-                  {m.odds?.draw != null && (
+
+                  <div className="sports-cricket-row__odds-container">
                     <button
                       type="button"
-                      className={`sports-cricket-odds-btn ${isBetSelected(m.id, 'X') ? 'selected' : ''}`}
-                      onClick={() => onQuickBet(m, 'X', m.odds.draw, 'Draw')}
+                      className={`sports-cricket-odds-card ${isBetSelected(m.id, '1') ? 'selected' : ''}`}
+                      onClick={() => onQuickBet(m, '1', m.odds?.team1, m.team1.name)}
                     >
-                      <span>X</span>
-                      <strong>{Number(m.odds.draw).toFixed(2)}</strong>
+                      <span className="odds-label">1</span>
+                      <strong className="odds-val">{Number(m.odds?.team1 || 0).toFixed(2)}</strong>
                     </button>
-                  )}
-                  <button
-                    type="button"
-                    className={`sports-cricket-odds-btn ${isBetSelected(m.id, '2') ? 'selected' : ''}`}
-                    onClick={() => onQuickBet(m, '2', m.odds?.team2, m.team2.name)}
-                  >
-                    <span>2</span>
-                    <strong>{Number(m.odds?.team2 || 0).toFixed(2)}</strong>
-                  </button>
-                  <button type="button" className="sports-cricket-markets-btn" onClick={() => onSelectMatch(m.id)}>
-                    +{120 + (m.id?.length || 0) % 80}
-                  </button>
+
+                    <button
+                      type="button"
+                      className={`sports-cricket-odds-card ${isBetSelected(m.id, '2') ? 'selected' : ''}`}
+                      onClick={() => onQuickBet(m, '2', m.odds?.team2, m.team2.name)}
+                    >
+                      <span className="odds-label">2</span>
+                      <strong className="odds-val">{Number(m.odds?.team2 || 0).toFixed(2)}</strong>
+                    </button>
+
+                    {m.odds?.draw != null ? (
+                      <button
+                        type="button"
+                        className={`sports-cricket-odds-card ${isBetSelected(m.id, 'X') ? 'selected' : ''}`}
+                        onClick={() => onQuickBet(m, 'X', m.odds.draw, 'Draw')}
+                      >
+                        <span className="odds-label">X</span>
+                        <strong className="odds-val">{Number(m.odds.draw).toFixed(2)}</strong>
+                      </button>
+                    ) : (
+                      <div className="sports-cricket-odds-card locked">
+                        <span className="lock-icon">🔒</span>
+                      </div>
+                    )}
+
+                    <button type="button" className="sports-cricket-markets-capsule" onClick={() => onSelectMatch(m.id)}>
+                      +{marketCount}
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -411,6 +440,26 @@ export default function Sports() {
     addBet(match, selection, odds, selectionName, { marketName: 'Match Winner' });
   };
 
+  const sportCounts = useMemo(() => {
+    const map = {};
+    for (const cat of sportsCategories) {
+      map[cat.id] = matches.filter((m) => {
+        const s = String(m.sport || '').toLowerCase();
+        if (cat.id === 'cricket') return s === 'cricket';
+        if (cat.id === 'soccer') return s === 'soccer' || s === 'football';
+        if (cat.id === 'basketball') return s === 'basketball';
+        if (cat.id === 'tennis') return s === 'tennis';
+        if (cat.id === 'table-tennis') return s === 'table-tennis' || s === 'tabletennis';
+        if (cat.id === 'kabaddi') return s === 'kabaddi';
+        if (cat.id === 'esoccer') return s === 'esoccer';
+        if (cat.id === 'volleyball') return s === 'volleyball';
+        if (cat.id === 'american-football') return s === 'american-football' || s === 'nfl';
+        return s === cat.id;
+      }).length;
+    }
+    return map;
+  }, [matches]);
+
   return (
     <div
       className={`sports-page${viewMode === 'match' ? ' sports-page--match' : ''}`}
@@ -491,6 +540,7 @@ export default function Sports() {
             items={sportsCategories}
             activeId={activeSport}
             onSelect={handleSportChange}
+            counts={sportCounts}
             className="filter-chips-row sports-sport-chips"
           />
 

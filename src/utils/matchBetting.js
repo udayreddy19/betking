@@ -100,11 +100,18 @@ export function isCricketTrackerLive(match) {
 }
 
 export function getMatchState(match) {
+  if (!match) return 'pre';
+  const statusStr = String(match.status || '').toLowerCase();
+  const liveStatusStr = String(match.liveStatus || '').toLowerCase();
+  if (statusStr === 'finished' || statusStr === 'completed' || liveStatusStr === 'completed' || liveStatusStr === 'finished' || statusStr === 'post') {
+    return 'post';
+  }
+
   const explicit = match?.matchState;
   const time = String(match?.time || '').toLowerCase();
   const minute = String(match?.liveDetails?.minute || '').toLowerCase();
   const commentary = String(match?.liveDetails?.commentary || '').toLowerCase();
-  const combined = `${time} ${minute} ${commentary}`;
+  const combined = `${time} ${minute} ${commentary} ${statusStr} ${liveStatusStr}`;
 
   if (time === 'ft' || combined.includes('full time') || combined.includes('final')) {
     return 'post';

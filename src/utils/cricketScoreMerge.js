@@ -20,28 +20,55 @@ function pickMonotonicInt(prev, next) {
 export function mergeCricketLiveDetails(prev = {}, next = {}, match = null) {
   const merged = { ...prev, ...next };
 
-  const prevChase = prev.chaseRuns ?? prev.score2;
-  const nextChase = next.chaseRuns ?? next.score2;
-  if (prevChase != null || nextChase != null) {
-    const chaseRuns = pickMonotonicInt(prevChase, nextChase);
-    merged.chaseRuns = chaseRuns;
-    merged.score2 = pickMonotonicInt(prev.score2, chaseRuns);
-    merged.chaseWickets = pickMonotonicInt(prev.chaseWickets ?? prev.wickets2, next.chaseWickets ?? next.wickets2);
-    merged.wickets2 = pickMonotonicInt(prev.wickets2, merged.chaseWickets);
-    merged.chaseOvers = pickHigherOvers(prev.chaseOvers ?? prev.overs2, next.chaseOvers ?? next.overs2);
-    merged.overs2 = normalizeCricbuzzOvers(pickHigherOvers(prev.overs2, merged.chaseOvers));
-    merged.chaseBallNbr = pickMonotonicInt(prev.chaseBallNbr, next.chaseBallNbr);
-  }
+  // Check if second innings has genuinely started
+  const isSecondInnings = (next.inningsId != null && next.inningsId >= 2)
+    || (prev.inningsId != null && prev.inningsId >= 2)
+    || (next.chaseRuns != null && next.chaseRuns > 0)
+    || (prev.chaseRuns != null && prev.chaseRuns > 0)
+    || (next.chaseOvers && next.chaseOvers !== '0.0')
+    || (next.wickets2 != null && next.wickets2 > 0)
+    || (prev.wickets2 != null && prev.wickets2 > 0);
 
-  const prevFirst = prev.firstRuns ?? prev.runs;
-  const nextFirst = next.firstRuns ?? next.runs;
-  if (prevFirst != null || nextFirst != null) {
+  if (!isSecondInnings) {
+    merged.chaseRuns = undefined;
+    merged.chaseWickets = undefined;
+    merged.chaseOvers = undefined;
+    merged.score2 = 0;
+    merged.wickets2 = 0;
+    merged.overs2 = '0.0';
+
+    const prevFirst = prev.firstRuns ?? prev.runs;
+    const nextFirst = next.firstRuns ?? next.runs;
     merged.firstRuns = pickMonotonicInt(prevFirst, nextFirst);
     merged.runs = pickMonotonicInt(prev.runs, merged.firstRuns);
     merged.firstWickets = pickMonotonicInt(prev.firstWickets ?? prev.wickets, next.firstWickets ?? next.wickets);
     merged.wickets = pickMonotonicInt(prev.wickets, merged.firstWickets);
     merged.firstOvers = pickHigherOvers(prev.firstOvers ?? prev.overs, next.firstOvers ?? next.overs);
-    merged.overs = normalizeCricbuzzOvers(pickHigherOvers(prev.overs, merged.firstOvers));
+    merged.overs = normalizeCricbuzzOvers(merged.firstOvers);
+  } else {
+    const prevChase = prev.chaseRuns ?? (prev.score2 > 0 ? prev.score2 : null);
+    const nextChase = next.chaseRuns ?? (next.score2 > 0 ? next.score2 : null);
+    if (prevChase != null || nextChase != null) {
+      const chaseRuns = pickMonotonicInt(prevChase, nextChase);
+      merged.chaseRuns = chaseRuns;
+      merged.score2 = chaseRuns;
+      merged.chaseWickets = pickMonotonicInt(prev.chaseWickets ?? prev.wickets2, next.chaseWickets ?? next.wickets2);
+      merged.wickets2 = merged.chaseWickets;
+      merged.chaseOvers = pickHigherOvers(prev.chaseOvers ?? prev.overs2, next.chaseOvers ?? next.overs2);
+      merged.overs2 = normalizeCricbuzzOvers(merged.chaseOvers);
+      merged.chaseBallNbr = pickMonotonicInt(prev.chaseBallNbr, next.chaseBallNbr);
+    }
+
+    const prevFirst = prev.firstRuns ?? prev.runs;
+    const nextFirst = next.firstRuns ?? next.runs;
+    if (prevFirst != null || nextFirst != null) {
+      merged.firstRuns = pickMonotonicInt(prevFirst, nextFirst);
+      merged.runs = pickMonotonicInt(prev.runs, merged.firstRuns);
+      merged.firstWickets = pickMonotonicInt(prev.firstWickets ?? prev.wickets, next.firstWickets ?? next.wickets);
+      merged.wickets = pickMonotonicInt(prev.wickets, merged.firstWickets);
+      merged.firstOvers = pickHigherOvers(prev.firstOvers ?? prev.overs, next.firstOvers ?? next.overs);
+      merged.overs = normalizeCricbuzzOvers(merged.firstOvers);
+    }
   }
 
   if (next.runs != null || prev.runs != null) {

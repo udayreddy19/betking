@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { HiOutlineViewList, HiOutlineChartBar, HiOutlineUsers } from '../../icons';
+import TeamJersey from '../TeamJersey/TeamJersey';
 import { useLiveFieldState } from '../../hooks/useLiveFieldState';
 import { useMatchDetail } from '../../hooks/useMatchDetail';
 import { resolveMatchSquads, formatPlayerRole, squadToRoster } from '../../utils/matchSquads';
@@ -270,6 +271,231 @@ function PreMatchCricketPanel({ match, team1Display, team2Display, matchState })
   );
 }
 
+function BasketballCourtIcon() {
+  return (
+    <svg className="cric-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <line x1="12" y1="3" x2="12" y2="21" />
+      <circle cx="12" cy="12" r="4" />
+      <path d="M3 8a4 4 0 0 1 4 4 4 4 0 0 1-4 4" />
+      <path d="M21 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4" />
+    </svg>
+  );
+}
+
+function MicrophoneIcon() {
+  return (
+    <svg className="cric-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+      <line x1="12" y1="19" x2="12" y2="22" />
+    </svg>
+  );
+}
+
+function BasketballLiveGraphicWidget({ match }) {
+  const [activeTab, setActiveTab] = useState('court');
+  const ld = match?.liveDetails || {};
+
+  const team1 = match?.team1?.name || match?.team1 || 'Team 1';
+  const team2 = match?.team2?.name || match?.team2 || 'Team 2';
+  const team1Short = getTeamShortCode(team1);
+  const team2Short = getTeamShortCode(team2);
+
+  const score1 = ld.score1 ?? ld.runs ?? 36;
+  const score2 = ld.score2 ?? ld.wickets ?? 29;
+
+  const quarter = ld.quarter || ld.period || '2nd';
+  const clock = ld.clock || ld.time || '00:03';
+  const league = match?.league || 'NBL';
+
+  const isQ1 = /1st|q1/i.test(quarter);
+  const isQ2 = /2nd|q2/i.test(quarter);
+  const isQ3 = /3rd|q3/i.test(quarter);
+  const isQ4 = /4th|q4/i.test(quarter);
+
+  let currentMin = 19;
+  if (isQ1) currentMin = 6;
+  else if (isQ2) currentMin = 19;
+  else if (isQ3) currentMin = 28;
+  else if (isQ4) currentMin = 37;
+
+  const progressPct = Math.min(100, Math.max(0, (currentMin / 40) * 100));
+
+  const hasPossession = ld.possession || 'team1';
+  const isTeam1Possession = hasPossession === 'team1' || teamNameMatches(team1, hasPossession);
+
+  const lastEvent = ld.lastEvent || {
+    teamName: team2,
+    action: '3 pt scored',
+    detail: '2/9 (22.2%) 3 Point Shots',
+    color: '#eab308',
+  };
+
+  return (
+    <div className="live-graphic-card-10cric bb-widget">
+      <div className="bb-header-bar">
+        <span className="bb-header-title">
+          <span className="bb-icon">🏀</span> {league}
+        </span>
+      </div>
+
+      <div className="bb-body">
+        <div className="bb-score-header-badge">
+          {quarter} | {clock}
+        </div>
+
+        <div className="bb-teams-score-row">
+          <div className="bb-team-side left">
+            <TeamJersey team={match?.team1} size={28} />
+            <span className="bb-team-name">{team1}</span>
+          </div>
+
+          <div className="bb-score-display">
+            <span>{score1}</span>
+            <span className="bb-score-colon">:</span>
+            <span>{score2}</span>
+          </div>
+
+          <div className="bb-team-side right">
+            <span className="bb-team-name">{team2}</span>
+            <TeamJersey team={match?.team2} size={28} />
+          </div>
+        </div>
+
+        <div className="bb-timeline-section">
+          <div className="bb-timeline-teams-col">
+            <span>{team1Short}</span>
+            <span>{team2Short}</span>
+          </div>
+
+          <div className="bb-timeline-bar-wrap">
+            <div className="bb-timeline-axis">
+              {[0, 10, 20, 30, 40].map((m) => (
+                <span key={m} className="bb-axis-label" style={{ left: `${(m / 40) * 100}%` }}>
+                  <span className="bb-tick-line" />
+                  {m}
+                </span>
+              ))}
+            </div>
+            <div className="bb-timeline-track">
+              <div className="bb-timeline-fill" style={{ width: `${progressPct}%` }} />
+              <div className="bb-timeline-dot" style={{ left: `${progressPct}%` }} />
+            </div>
+          </div>
+
+          <div className="bb-timeline-side-stats">
+            <span className="bb-chart-icon">📊</span>
+            <span className="bb-format-tag">4x10 min</span>
+            <span className="bb-period-score-box">0:0</span>
+          </div>
+        </div>
+
+        <div className="bb-widget-tabs" role="tablist">
+          <button
+            type="button"
+            className={`bb-tab ${activeTab === 'court' ? 'active' : ''}`}
+            onClick={() => setActiveTab('court')}
+            title="Court View"
+          >
+            <BasketballCourtIcon />
+          </button>
+          <button
+            type="button"
+            className={`bb-tab ${activeTab === 'stats' ? 'active' : ''}`}
+            onClick={() => setActiveTab('stats')}
+            title="Statistics"
+          >
+            <HiOutlineChartBar />
+          </button>
+          <button
+            type="button"
+            className={`bb-tab ${activeTab === 'lineups' ? 'active' : ''}`}
+            onClick={() => setActiveTab('lineups')}
+            title="Lineups"
+          >
+            <HiOutlineUsers />
+          </button>
+          <button
+            type="button"
+            className={`bb-tab ${activeTab === 'audio' ? 'active' : ''}`}
+            onClick={() => setActiveTab('audio')}
+            title="Audio / Commentary"
+          >
+            <MicrophoneIcon />
+          </button>
+        </div>
+
+        {activeTab === 'court' && (
+          <div className="bb-court-view">
+            <div className="bb-court-container">
+              <svg className="bb-court-svg" viewBox="0 0 500 300" preserveAspectRatio="none">
+                <rect width="500" height="300" fill="url(#wood-floor-grad)" rx="12" />
+                <rect x="15" y="15" width="470" height="270" fill="none" stroke="#ffffff" strokeWidth="2" opacity="0.85" />
+
+                <line x1="250" y1="15" x2="250" y2="285" stroke="#ffffff" strokeWidth="2" opacity="0.85" />
+                <circle cx="250" cy="150" r="45" fill="none" stroke="#ffffff" strokeWidth="2" opacity="0.85" />
+
+                <rect x="15" y="105" width="90" height="90" fill="#c25e38" opacity="0.85" stroke="#ffffff" strokeWidth="2" />
+                <path d="M 105 105 A 45 45 0 0 1 105 195" fill="none" stroke="#ffffff" strokeWidth="2" />
+                <path d="M 15 40 A 130 130 0 0 1 15 260" fill="none" stroke="#ffffff" strokeWidth="2" />
+                <circle cx="35" cy="150" r="12" fill="none" stroke="#ef4444" strokeWidth="3" />
+
+                <rect x="395" y="105" width="90" height="90" fill="#c25e38" opacity="0.85" stroke="#ffffff" strokeWidth="2" />
+                <path d="M 395 105 A 45 45 0 0 1 395 195" fill="none" stroke="#ffffff" strokeWidth="2" />
+                <path d="M 485 40 A 130 130 0 0 2 485 260" fill="none" stroke="#ffffff" strokeWidth="2" />
+                <circle cx="465" cy="150" r="12" fill="none" stroke="#ef4444" strokeWidth="3" />
+
+                <defs>
+                  <linearGradient id="wood-floor-grad" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#d4a373" />
+                    <stop offset="50%" stopColor="#e5b887" />
+                    <stop offset="100%" stopColor="#cfa06e" />
+                  </linearGradient>
+                </defs>
+              </svg>
+
+              <div className="bb-court-top-badge">
+                {quarter} | {clock}
+              </div>
+
+              <div className="bb-event-card">
+                <div className="bb-event-score-pill">
+                  <span className="team1-score-bg">{score1}</span>
+                  <span className="score-sep">:</span>
+                  <span className="team2-score-bg">{score2}</span>
+                </div>
+
+                <div className="bb-event-banner" style={{ background: lastEvent.color || '#eab308' }}>
+                  {lastEvent.teamName || team2}
+                </div>
+
+                <div className="bb-event-details-box">
+                  <strong className="bb-event-action">{lastEvent.action || '3 pt scored'}</strong>
+                  <span className="bb-event-sub">{lastEvent.detail || '2/9 (22.2%) 3 Point Shots'}</span>
+                  <div className="bb-event-jersey-wrap">
+                    <TeamJersey team={match?.team2} size={38} />
+                  </div>
+                </div>
+              </div>
+
+              {isTeam1Possession && (
+                <div className="bb-possession-zone left">
+                  <div className="bb-possession-text">
+                    <strong>{team1}</strong>
+                    <span>Possession</span>
+                  </div>
+                  <div className="bb-possession-line" />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function LiveMatchGraphicWidget({ match: rawMatch }) {
   const match = useMatchDetail(rawMatch);
   const [activeWidgetTab, setActiveWidgetTab] = useState('field');
@@ -277,7 +503,11 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
   const [scorecardInnings, setScorecardInnings] = useState('');
   const [expandedStatsInnings, setExpandedStatsInnings] = useState('team1');
 
-  const sport = match?.sport || 'cricket';
+  const sport = String(match?.sport || 'cricket').toLowerCase();
+
+  if (sport === 'basketball' || sport === 'nba' || sport === 'nbl') {
+    return <BasketballLiveGraphicWidget match={match} />;
+  }
   const team1 = match?.team1?.name || 'Team 1';
   const team2 = match?.team2?.name || 'Team 2';
   const team1Short = getTeamShort(team1);
@@ -409,11 +639,20 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
   const displayOversNormalized = normalizeMatchOvers(innings?.displayOvers || overs, match);
   const isUnlimitedOvers = maxOvers == null;
   const timelineOvers = maxOvers ?? Math.max(20, parseInt(String(displayOversNormalized).split('.')[0], 10) + 5);
-  const inningsBadge = innings
-    ? (isUnlimitedOvers
-      ? `INN ${innings.inningsNum} | ${displayOversNormalized} OV`
-      : `INN ${innings.inningsNum} | ${displayOversNormalized}/${maxOvers} OV`)
-    : '';
+  const isMatchFinished = matchState === 'post' || match?.isCompleted || match?.liveStatus === 'COMPLETED';
+  const inningsBadge = isMatchFinished
+    ? 'MATCH COMPLETE'
+    : (innings
+      ? (isUnlimitedOvers
+        ? `INN ${innings.inningsNum} | ${displayOversNormalized} OV`
+        : `INN ${innings.inningsNum} | ${displayOversNormalized}/${maxOvers} OV`)
+      : '');
+
+  useEffect(() => {
+    if (isMatchFinished) {
+      setActiveWidgetTab('scorecard');
+    }
+  }, [isMatchFinished, match?.id]);
 
   if (!match) {
     return (
@@ -436,7 +675,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
     );
   }
 
-  if (!showCricketTracker) {
+  if (!showCricketTracker && !isMatchFinished) {
     return (
       <PreMatchCricketPanel
         match={match}
@@ -457,9 +696,9 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
         <div className="live-widget-teams-row">
           <span className="live-widget-team">{team1Display}</span>
           <span className="live-widget-scoreline">
-            {innings.displayScore1}/{innings.displayWickets1}
+            {innings.displayWickets1 === 10 || String(innings.displayScore1).includes('All') ? `${innings.displayScore1} All Out` : `${innings.displayScore1}/${innings.displayWickets1}`}
             <span className="live-widget-score-sep">:</span>
-            {innings.displayScore2}/{innings.displayWickets2}
+            {innings.displayWickets2 === 10 || String(innings.displayScore2).includes('All') ? `${innings.displayScore2} All Out` : `${innings.displayScore2}/${innings.displayWickets2}`}
           </span>
           <span className="live-widget-team">{team2Display}</span>
         </div>
@@ -481,14 +720,19 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
 
         <div className="live-widget-timeline" aria-hidden="true">
           <div className="live-widget-timeline-track">
-            {Array.from({ length: Math.min(timelineOvers, 50) + 1 }, (_, i) => (
-              <div key={i} className="live-widget-timeline-tick">
-                {wicketOvers.has(i) && i > 0 && <span className="live-widget-wicket">W</span>}
-                {i % Math.max(1, Math.floor(timelineOvers / 10)) === 0 && (
-                  <span className="live-widget-timeline-label">{i}</span>
-                )}
-              </div>
+            {[0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20].map((val) => (
+              <span key={val} className="live-widget-timeline-axis-label" style={{ left: `${(val / 20) * 100}%` }}>
+                {val}
+              </span>
             ))}
+            {Array.from(wicketOvers).map((wktOver) => {
+              const leftPct = Math.min(96, Math.max(4, (wktOver / 20) * 100));
+              return (
+                <div key={wktOver} className="live-widget-wicket-marker" style={{ left: `${leftPct}%` }}>
+                  <span className="live-widget-wicket-badge">W</span>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -536,7 +780,31 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
             <OverHistoryBar rows={overHistoryRows} />
 
             <div className="cric-field-pitch">
-              <div className="cric-field-pitch__bg" />
+              <div className="cric-field-pitch__bg">
+                <svg viewBox="0 0 400 220" fill="none" className="cric-pitch-svg" preserveAspectRatio="none">
+                  <rect width="400" height="220" fill="url(#grass-grad)" />
+                  <polygon points="130,220 270,220 225,100 175,100" fill="url(#pitch-strip-grad)" opacity="0.85" />
+                  <line x1="145" y1="195" x2="255" y2="195" stroke="#ffffff" strokeWidth="1.5" opacity="0.75" />
+                  <line x1="180" y1="115" x2="220" y2="115" stroke="#ffffff" strokeWidth="1.5" opacity="0.75" />
+                  <rect x="195" y="105" width="2" height="12" fill="#ffffff" opacity="0.9" />
+                  <rect x="199" y="105" width="2" height="12" fill="#ffffff" opacity="0.9" />
+                  <rect x="203" y="105" width="2" height="12" fill="#ffffff" opacity="0.9" />
+                  <path d="M145 200 Q 200 150 255 125" stroke="#ef4444" strokeWidth="2.5" strokeDasharray="5,3" fill="none" opacity="0.85" />
+                  <circle cx="255" cy="125" r="4.5" fill="#ef4444" />
+
+                  <defs>
+                    <linearGradient id="grass-grad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#255428" />
+                      <stop offset="50%" stopColor="#356d39" />
+                      <stop offset="100%" stopColor="#1f4722" />
+                    </linearGradient>
+                    <linearGradient id="pitch-strip-grad" x1="0" y1="1" x2="0" y2="0">
+                      <stop offset="0%" stopColor="#bc9a62" />
+                      <stop offset="100%" stopColor="#9e7e4b" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
 
               <div className="cric-field-scorecard">
                 <div className="cric-field-table">
@@ -575,14 +843,17 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
                   <div className="cric-field-bowler">
                     <span className="cric-field-bowler__label">CURRENT BOWLER</span>
                     <span className="cric-field-bowler__name">
-                      <span className="cric-ball-icon" aria-hidden="true">⚾</span>
                       {displayPlayerName(bowler)}
+                      <span className="cric-ball-icon" aria-hidden="true">⚾</span>
                     </span>
                   </div>
-                  <div className="cric-field-extras">
-                    <div><span>Fours</span><strong>{inningsFours}</strong></div>
-                    <div><span>Sixes</span><strong>{inningsSixes}</strong></div>
-                    <div><span>Extras</span><strong>{inningsExtras}</strong></div>
+                  <div className="cric-field-stats-col">
+                    <span className="cric-field-stats__label">INNINGS STATS</span>
+                    <div className="cric-field-extras">
+                      <div><span>Fours</span><strong>{inningsFours}</strong></div>
+                      <div><span>Sixes</span><strong>{inningsSixes}</strong></div>
+                      <div><span>Extras</span><strong>{inningsExtras}</strong></div>
+                    </div>
                   </div>
                 </div>
               </div>

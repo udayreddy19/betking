@@ -318,16 +318,37 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 6px;
   font-size: var(--text-xs);
   color: var(--color-primary);
   font-weight: var(--font-semibold);
   margin-top: 2px;
 }
 
+.my-bets-match-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.my-bets-score-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .my-bets-match-link-icon {
   font-size: 0.85rem;
   opacity: 0.8;
   transition: transform 0.15s ease;
+  flex-shrink: 0;
 }
 
 .my-bets-leg--clickable:hover .my-bets-match-link-icon {
