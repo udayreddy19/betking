@@ -6,6 +6,8 @@ import { generateMatchMarkets } from '../../utils/oddsMarketsGenerator';
 import { resolveCricketTeamScores, isCricketSecondInnings } from '../../utils/cricketScores';
 import { getChaseText } from '../../utils/liveMatchWidgetData';
 import { getMatchMaxOvers } from '../../utils/cricketFormat';
+import { getRosterForTeam } from '../../data/cricketRosters';
+import { displayPlayerName } from '../../utils/cricketPlayers';
 import BetSlipFooter from '../BetSlip/BetSlipFooter';
 import TeamJersey from '../TeamJersey/TeamJersey';
 import './MatchDetailModal.css';
@@ -74,9 +76,11 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
     return generateMatchMarkets(match);
   }, [match]);
 
-  // Dynamic player names
-  const team1Players = teamRosters[team1Name] || [`${match.team1.shortName} Opener`, `${match.team1.shortName} Captain`, `${match.team1.shortName} Batter 3`, `${match.team1.shortName} All-Rounder`];
-  const team2Players = teamRosters[team2Name] || [`${match.team2.shortName} Opener`, `${match.team2.shortName} Captain`, `${match.team2.shortName} Batter 3`, `${match.team2.shortName} All-Rounder`];
+  // Dynamic player names from realistic roster database
+  const t1Roster = getRosterForTeam(team1Name);
+  const t2Roster = getRosterForTeam(team2Name);
+  const team1Players = t1Roster?.batters || [`${team1Name} Batter 1`, `${team1Name} Batter 2`, `${team1Name} Batter 3`, `${team1Name} Batter 4`];
+  const team2Players = t2Roster?.batters || [`${team2Name} Batter 1`, `${team2Name} Batter 2`, `${team2Name} Batter 3`, `${team2Name} Batter 4`];
 
   // Dynamic Innings & Scores detection for Cricket
   const ld = match?.liveDetails || {};
@@ -195,16 +199,29 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
                 : `⚡ 1st Innings: ${team1Name} ${team1Score.runs}/${team1Score.wickets} (${team1Score.overs}/${maxOvers} Ov)`}
             </div>
 
+            {(() => {
+              const tossText = match.toss
+                ? (typeof match.toss === 'string' ? match.toss : `${match.toss.winner || team1Name} won the toss & elected to ${match.toss.decision || 'bat'}`)
+                : `${team1Name} won the toss & elected to bat`;
+              return (
+                <div className="cricket-toss-pill">
+                  🪙 {tossText}
+                </div>
+              );
+            })()}
+
             {/* Live Batter & Bowler Table */}
             {(() => {
               const ld = match.liveDetails || {};
               const b1 = ld.batter1 || {};
               const b2 = ld.batter2 || {};
-              const b1Name = b1.name || team1Players[0] || 'Batter 1';
-              const b2Name = b2.name || team1Players[1] || 'Batter 2';
-              const bowlerName = ld.bowler?.name || team2Players[2] || 'Bowler';
-              const fours = ld.fours ?? ((b1.fours || 0) + (b2.fours || 0));
-              const sixes = ld.sixes ?? ((b1.sixes || 0) + (b2.sixes || 0));
+              const b1Name = displayPlayerName(b1.name, team1Players[0], team1Name);
+              const b2Name = displayPlayerName(b2.name, team1Players[1], team1Name);
+              const bowlerName = displayPlayerName(ld.bowler?.name || ld.bowler, t2Roster?.bowlers?.[0] || team2Players[3], team2Name);
+              const combinedFours = (b1.fours || 0) + (b2.fours || 0);
+              const combinedSixes = (b1.sixes || 0) + (b2.sixes || 0);
+              const fours = Math.max(ld.fours || 0, combinedFours);
+              const sixes = Math.max(ld.sixes || 0, combinedSixes);
               const extras = ld.extras ?? 0;
 
               return (
@@ -224,16 +241,16 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
                       <tbody>
                         <tr>
                           <td>{b1Name} *</td>
-                          <td>{b1.runs ?? Math.floor(currentScore * 0.3)}</td>
-                          <td>{b1.balls ?? 18}</td>
-                          <td>{b1.fours ?? 3}</td>
-                          <td>{b1.sixes ?? 1}</td>
+                          <td>{b1.runs ?? 0}</td>
+                          <td>{b1.balls ?? 0}</td>
+                          <td>{b1.fours ?? 0}</td>
+                          <td>{b1.sixes ?? 0}</td>
                         </tr>
                         <tr>
                           <td>{b2Name}</td>
-                          <td>{b2.runs ?? Math.floor(currentScore * 0.2)}</td>
-                          <td>{b2.balls ?? 12}</td>
-                          <td>{b2.fours ?? 2}</td>
+                          <td>{b2.runs ?? 0}</td>
+                          <td>{b2.balls ?? 0}</td>
+                          <td>{b2.fours ?? 0}</td>
                           <td>{b2.sixes ?? 0}</td>
                         </tr>
                       </tbody>

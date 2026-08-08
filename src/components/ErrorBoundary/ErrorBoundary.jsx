@@ -14,6 +14,12 @@ export default class ErrorBoundary extends React.Component {
     console.error('Unhandled React Error Boundary caught an error:', error, errorInfo);
   }
 
+  componentDidUpdate(prevProps) {
+    if (this.state.hasError && (prevProps.resetKey !== this.props.resetKey || prevProps.children !== this.props.children)) {
+      this.setState({ hasError: false, error: null });
+    }
+  }
+
   render() {
     if (this.state.hasError) {
       if (this.props.fallback) {

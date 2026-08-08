@@ -11,6 +11,7 @@ import { getStableMatchOdds } from '../utils/odds';
 import { normalizeApiMatches } from '../utils/matchFilters';
 import { fetchLiveScores } from '../services/liveScoresService';
 import { getIplSrlMatches } from '../../lib/iplSrlSimulator.mjs';
+import { DEFAULT_MATCH_FIXTURES } from '../data/defaultMatchesFixtures';
 import { LIVE_SCORES_POLL_MS } from '../config/livePolling';
 import { computeLiveDynamicOdds } from '../utils/oddsMarketsGenerator';
 
@@ -41,8 +42,13 @@ function attachOdds(matches) {
 
 function mergeSrlMatches(matches) {
   const srl = attachOdds(getIplSrlMatches());
+  const defaults = attachOdds(DEFAULT_MATCH_FIXTURES);
   const rest = matches.filter((m) => !String(m.id || '').startsWith('srl_ipl_'));
-  return [...rest, ...srl];
+
+  const existingIds = new Set(rest.map((m) => m.id));
+  const missingDefaults = defaults.filter((m) => !existingIds.has(m.id));
+
+  return [...rest, ...srl, ...missingDefaults];
 }
 
 function matchDisplayKey(match) {
@@ -127,7 +133,7 @@ function seriesSignature(series) {
 }
 
 export function LiveSportsProvider({ children }) {
-  const [matches, setMatches] = useState([]);
+  const [matches, setMatches] = useState(() => mergeSrlMatches([]));
   const [cricketSeries, setCricketSeries] = useState([]);
   const [tickerMessage, setTickerMessage] = useState('🟢 Syncing live scores...');
   const [scoresError, setScoresError] = useState(null);

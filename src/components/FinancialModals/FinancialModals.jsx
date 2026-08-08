@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion } from 'motion/react';
 import { IoClose, IoCheckmarkCircle, BiWallet, BiMoneyWithdraw, BiHistory, BiTransfer, BiGift } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';

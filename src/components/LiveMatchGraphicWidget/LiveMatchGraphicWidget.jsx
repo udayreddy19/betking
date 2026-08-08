@@ -3,7 +3,11 @@ import { HiOutlineViewList, HiOutlineChartBar, HiOutlineUsers, FiMessageCircle }
 import TeamJersey from '../TeamJersey/TeamJersey';
 import { useLiveFieldState } from '../../hooks/useLiveFieldState';
 import { useMatchDetail } from '../../hooks/useMatchDetail';
+import { useCentralizedMatchState } from '../../hooks/useCentralizedMatchState';
+import { centralizedMatchEngine } from '../../services/centralizedMatchStateEngine';
 import { resolveMatchSquads, formatPlayerRole, squadToRoster } from '../../utils/matchSquads';
+import { getRosterForTeam } from '../../data/cricketRosters';
+import { isPlaceholderPlayerName, displayPlayerName } from '../../utils/cricketPlayers';
 import { getBallDisplayKind, getBallDisplayLabel } from '../../utils/liveFieldState';
 import {
   getTeamShortCode,
@@ -24,7 +28,6 @@ import {
 import { isCricketTrackerLive, getMatchState } from '../../utils/matchBetting';
 import { isCricketSecondInnings, resolveCricketTeamScores, teamNameMatches } from '../../utils/cricketScores';
 import { getMatchMaxOvers, normalizeMatchOvers } from '../../utils/cricketFormat';
-import { isPlaceholderPlayerName, displayPlayerName } from '../../utils/cricketPlayers';
 import './LiveMatchGraphicWidget.css';
 
 function getTeamShort(name) {
@@ -261,6 +264,16 @@ function PreMatchCricketPanel({ match, team1Display, team2Display, matchState })
         </div>
 
         <p className="live-widget-prematch-status">{status}</p>
+        {(() => {
+          const tossText = match?.toss
+            ? (typeof match.toss === 'string' ? match.toss : `${match.toss.winner || team1Display} won the toss & elected to ${match.toss.decision || 'bat'}`)
+            : `${team1Display} won the toss & elected to bat`;
+          return (
+            <p className="live-widget-chase-text" style={{ marginTop: '6px' }}>
+              🪙 {tossText}
+            </p>
+          );
+        })()}
         <p className="live-widget-prematch-hint">
           {matchState === 'post'
             ? 'Final scorecard will appear here when available.'
@@ -519,10 +532,23 @@ function BasketballLiveGraphicWidget({ match }) {
 
 export default function LiveMatchGraphicWidget({ match: rawMatch }) {
   const match = useMatchDetail(rawMatch);
+
+  useEffect(() => {
+    if (match?.id) {
+      centralizedMatchEngine.updateMatchState(match.id, match);
+    }
+  }, [match]);
+
+  const matchStateObj = useCentralizedMatchState(match);
+
   const [activeWidgetTab, setActiveWidgetTab] = useState('field');
   const [selectedInnings, setSelectedInnings] = useState('');
   const [scorecardInnings, setScorecardInnings] = useState('');
   const [expandedStatsInnings, setExpandedStatsInnings] = useState('team1');
+
+  if (!match) {
+    return null;
+  }
 
   const sport = String(match?.sport || 'cricket').toLowerCase();
 
@@ -541,7 +567,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
     [match],
   );
 
-  const overs = resolvedScores.team1.overs || match?.liveDetails?.overs || '0.0';
+  const overs = matchStateObj?.currentInnings?.overs || resolvedScores.team1.overs || match?.liveDetails?.overs || '0.0';
   const matchState = getMatchState(match);
   const isCricketSport = sport === 'cricket' || sport === 'virtual-cricket';
   const showCricketTracker = isCricketSport && isCricketTrackerLive(match);
@@ -566,26 +592,38 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
 
   const fieldState = useLiveFieldState(showCricketTracker ? match : null);
 
-  const isTeam1Batting = innings
-    ? (teamNameMatches(team1, innings.battingTeam) || (!isCricketSecondInnings(match, match?.liveDetails || {})))
-    : true;
+  const isTeam1Batting = matchStateObj?.currentInnings?.batTeam
+    ? teamNameMatches(team1, matchStateObj.currentInnings.batTeam)
+    : (innings ? (teamNameMatches(team1, innings.battingTeam) || (!isCricketSecondInnings(match, match?.liveDetails || {}))) : true);
 
   const battingRoster = isTeam1Batting ? t1Data?.batters : t2Data?.batters;
   const bowlingRoster = isTeam1Batting ? t2Data?.bowlers : t1Data?.bowlers;
   const squadBatters = isTeam1Batting ? squads.team1?.players : squads.team2?.players;
   const squadBowlers = isTeam1Batting ? squads.team2?.players : squads.team1?.players;
 
-  const currentRuns = parseInt(innings?.displayScore1 ?? resolvedScores.team1?.runs ?? 0, 10);
-  const currentWickets = parseInt(innings?.displayWickets1 ?? resolvedScores.team1?.wickets ?? 0, 10);
-  const currentOvers = innings?.displayOvers || overs || '0.0';
+  const currentRuns = matchStateObj?.currentInnings?.runs ?? parseInt(innings?.displayScore1 ?? resolvedScores.team1?.runs ?? 0, 10);
+  const currentWickets = matchStateObj?.currentInnings?.wickets ?? parseInt(innings?.displayWickets1 ?? resolvedScores.team1?.wickets ?? 0, 10);
+  const currentOvers = matchStateObj?.currentInnings?.overs || innings?.displayOvers || overs || '0.0';
+  const currentBatTeamName = isTeam1Batting ? team1 : team2;
+  const currentBowlTeamName = isTeam1Batting ? team2 : team1;
+  const batRoster = getRosterForTeam(currentBatTeamName);
+  const bowlRoster = getRosterForTeam(currentBowlTeamName);
 
-  const squadFallback1 = battingRoster?.[0] || squadBatters?.[0]?.name || `${isTeam1Batting ? team1Short : team2Short} Opener 1`;
-  const squadFallback2 = battingRoster?.[1] || squadBatters?.[1]?.name || `${isTeam1Batting ? team1Short : team2Short} Opener 2`;
-  const bowlerFallback = bowlingRoster?.[0] || squadBowlers?.find((p) => p.role === 'Bowler')?.name || `${isTeam1Batting ? team2Short : team1Short} Bowler`;
+  const squadFallback1 = battingRoster?.[0] || squadBatters?.[0]?.name || batRoster?.batters?.[0] || `${currentBatTeamName} Batter 1`;
+  const squadFallback2 = battingRoster?.[1] || squadBatters?.[1]?.name || batRoster?.batters?.[1] || `${currentBatTeamName} Batter 2`;
+  const bowlerFallback = bowlingRoster?.[0] || squadBowlers?.find((p) => p.role === 'Bowler')?.name || bowlRoster?.bowlers?.[0] || `${currentBowlTeamName} Bowler`;
 
-  const apiBatter1 = match?.liveDetails?.batter1;
-  const apiBatter2 = match?.liveDetails?.batter2;
-  const apiBowler = match?.liveDetails?.bowler?.name || match?.liveDetails?.bowler;
+  const apiBatter1 = matchStateObj?.currentBatters?.striker?.name
+    ? matchStateObj.currentBatters.striker
+    : match?.liveDetails?.batter1;
+
+  const apiBatter2 = matchStateObj?.currentBatters?.nonStriker?.name
+    ? matchStateObj.currentBatters.nonStriker
+    : match?.liveDetails?.batter2;
+
+  const apiBowler = matchStateObj?.currentBowler?.name
+    ? matchStateObj.currentBowler.name
+    : (match?.liveDetails?.bowler?.name || match?.liveDetails?.bowler);
 
   const striker = fieldState
     ? (fieldState.strikerIdx === 0 ? fieldState.batter1.name : fieldState.batter2.name)
@@ -599,28 +637,33 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
     if (isPlaceholderPlayerName(name)) name = fieldBatter?.name;
     if (isPlaceholderPlayerName(name)) name = fallbackName;
     if (isPlaceholderPlayerName(name)) name = squadFallback;
-    name = displayPlayerName(name, squadFallback || 'Batter');
+    name = displayPlayerName(name, squadFallback, currentBatTeamName);
 
     return {
       name,
-      runs: apiBatter?.runs ?? fieldBatter?.runs ?? (isStriker ? Math.floor(currentRuns * 0.45) : Math.floor(currentRuns * 0.35)),
-      balls: apiBatter?.balls ?? fieldBatter?.balls ?? (isStriker ? 32 : 24),
-      fours: apiBatter?.fours ?? fieldBatter?.fours ?? (isStriker ? Math.floor(currentRuns / 12) : Math.floor(currentRuns / 18)),
-      sixes: apiBatter?.sixes ?? fieldBatter?.sixes ?? (isStriker ? Math.floor(currentRuns / 25) : 0),
+      runs: apiBatter?.runs ?? fieldBatter?.runs ?? 0,
+      balls: apiBatter?.balls ?? fieldBatter?.balls ?? 0,
+      fours: apiBatter?.fours ?? fieldBatter?.fours ?? 0,
+      sixes: apiBatter?.sixes ?? fieldBatter?.sixes ?? 0,
     };
   };
 
   const b1 = resolveBatterStats(apiBatter1, fieldState?.batter1, striker, squadFallback1, true);
-  const b2 = resolveBatterStats(apiBatter2, fieldState?.batter2, nonStriker, squadFallback2, false);
+  let b2 = resolveBatterStats(apiBatter2, fieldState?.batter2, nonStriker, squadFallback2, false);
 
-  let bowler = apiBowler;
-  if (isPlaceholderPlayerName(bowler)) bowler = fieldState?.bowler;
-  if (isPlaceholderPlayerName(bowler)) bowler = bowlerFallback;
-  bowler = displayPlayerName(bowler, bowlerFallback);
+  if (b2.name === b1.name) {
+    const altName = batRoster?.batters?.[1] || squadBatters?.[1]?.name || `${currentBatTeamName} Opener 2`;
+    b2 = { ...b2, name: displayPlayerName(altName, `${currentBatTeamName} Opener 2`, currentBatTeamName) };
+  }
 
-  const chaseText = innings
-    ? getChaseText(match, innings, team1, team2)
-    : null;
+  let bowler = fieldState?.bowler || apiBowler;
+  bowler = displayPlayerName(bowler, bowlerFallback, currentBowlTeamName);
+
+  const chaseText = matchStateObj?.chaseState?.target
+    ? `${matchStateObj.currentInnings?.batTeam || 'Team'} need ${matchStateObj.chaseState.requiredRuns} runs to win`
+    : (matchStateObj?.leadTrailState?.lead
+      ? `${matchStateObj.leadTrailState.leadingTeam} lead by ${matchStateObj.leadTrailState.lead} runs`
+      : (innings ? getChaseText(match, innings, team1, team2) : null));
 
   const wicketOvers = useMemo(() => getWicketOvers(match), [match]);
 
@@ -745,9 +788,20 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
     ];
   }, [match, team1Display, team2Display]);
 
-  const inningsFours = fieldState?.inningsFours ?? (currentRuns > 0 ? Math.max((b1.fours || 0) + (b2.fours || 0) + 3, Math.floor(currentRuns / 11)) : 0);
-  const inningsSixes = fieldState?.inningsSixes ?? (currentRuns > 0 ? Math.max((b1.sixes || 0) + (b2.sixes || 0) + 1, Math.floor(currentRuns / 24)) : 0);
-  const inningsExtras = fieldState?.extras ?? (currentRuns > 0 ? Math.floor(currentRuns * 0.05) + 1 : 0);
+  const combinedBatterFours = (b1?.fours || 0) + (b2?.fours || 0);
+  const combinedBatterSixes = (b1?.sixes || 0) + (b2?.sixes || 0);
+
+  const inningsFours = Math.max(
+    fieldState?.inningsFours || 0,
+    match?.liveDetails?.fours || 0,
+    combinedBatterFours,
+  );
+  const inningsSixes = Math.max(
+    fieldState?.inningsSixes || 0,
+    match?.liveDetails?.sixes || 0,
+    combinedBatterSixes,
+  );
+  const inningsExtras = match?.liveDetails?.extras ?? fieldState?.extras ?? 0;
 
   const maxOvers = getMatchMaxOvers(match);
   const displayOversNormalized = normalizeMatchOvers(innings?.displayOvers || overs, match);
@@ -821,6 +875,17 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
           {chaseText && (
             <p className="live-widget-chase-text">{chaseText}</p>
           )}
+
+          {(() => {
+            const tossText = match?.toss
+              ? (typeof match.toss === 'string' ? match.toss : `${match.toss.winner || team1Display} won the toss & elected to ${match.toss.decision || 'bat'}`)
+              : (matchStateObj?.toss?.winner ? `${matchStateObj.toss.winner} won the toss & elected to ${matchStateObj.toss.decision}` : `${team1Display} won the toss & elected to bat`);
+            return (
+              <p className="live-widget-chase-text" style={{ marginTop: '4px', opacity: 0.9 }}>
+                🪙 {tossText}
+              </p>
+            );
+          })()}
 
           <div className="live-widget-innings-select-wrap">
             <select

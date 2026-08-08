@@ -1,4 +1,6 @@
-/** True for empty, dash, or roster placeholder names like "batter1" / "Batter 1". */
+import { getRosterForTeam } from '../data/cricketRosters.js';
+
+/** True for empty, dash, or generic role placeholders like "Captain", "Opener", "Pacer", "Batter 1". */
 export function isPlaceholderPlayerName(name) {
   if (!name || typeof name !== 'string') return true;
   const trimmed = name.trim();
@@ -11,18 +13,29 @@ export function isPlaceholderPlayerName(name) {
     /keeper\s*\d*$/i.test(lower) ||
     /all-rounder\s*\d*$/i.test(lower) ||
     /pacer\s*\d*$/i.test(lower) ||
-    /spinner\s*\d*$/i.test(lower)
+    /spinner\s*\d*$/i.test(lower) ||
+    /captain/i.test(lower) ||
+    /middle\s*order/i.test(lower) ||
+    /striker/i.test(lower) ||
+    /non-striker/i.test(lower) ||
+    lower.includes('opener') ||
+    lower.includes('pacer') ||
+    lower.includes('captain') ||
+    lower === 'player' ||
+    lower === 'batsman' ||
+    lower === 'bowler'
   );
 }
 
-export function displayPlayerName(name, fallback = 'Player') {
+export function displayPlayerName(name, fallback = '', teamName = '') {
   if (!isPlaceholderPlayerName(name)) return name.trim();
   if (!isPlaceholderPlayerName(fallback)) return fallback.trim();
-  if (typeof name === 'string' && name.trim() && name.trim() !== '—' && name.trim() !== '-') {
-    return name.trim();
+  
+  if (teamName) {
+    const roster = getRosterForTeam(teamName);
+    if (roster?.batters?.length) return roster.batters[0];
+    return `${teamName} Player`;
   }
-  if (typeof fallback === 'string' && fallback.trim() && fallback.trim() !== '—' && fallback.trim() !== '-') {
-    return fallback.trim();
-  }
+  
   return 'Player';
 }

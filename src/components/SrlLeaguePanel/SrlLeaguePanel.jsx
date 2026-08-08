@@ -59,6 +59,16 @@ export default function SrlLeaguePanel({
             <article key={match.id} className={`srl-match-card ${isLive ? 'srl-match-card--live' : ''}`}>
               <div className="srl-match-card__top">
                 <span className="srl-match-card__league">{IPL_SRL_LEAGUE}</span>
+                {(() => {
+                  const tossText = match.toss
+                    ? (typeof match.toss === 'string' ? match.toss : `${match.toss.winner || match.team1.name} won the toss & elected to ${match.toss.decision || 'bat'}`)
+                    : `${match.team1.name} won the toss & elected to bat`;
+                  return (
+                    <span className="srl-match-card__toss" style={{ fontSize: '0.72rem', color: 'var(--color-accent-gold)', marginLeft: 'auto', marginRight: '8px' }}>
+                      🪙 {tossText}
+                    </span>
+                  );
+                })()}
                 {isLive ? (
                   <span className="srl-match-card__innings">{inningsLabel(match)}</span>
                 ) : (

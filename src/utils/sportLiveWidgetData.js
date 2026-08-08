@@ -34,8 +34,8 @@ export function getSportScores(match) {
   }
 
   return {
-    score1: ld.score1 ?? 0,
-    score2: ld.score2 ?? 0,
+    score1: ld.score1 ?? match?.score1 ?? match?.team1Score ?? 0,
+    score2: ld.score2 ?? match?.score2 ?? match?.team2Score ?? 0,
     suffix1: '',
     suffix2: '',
   };

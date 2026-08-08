@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'motion/react';
 import { IoClose, IoEyeOutline, IoEyeOffOutline } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import './LoginModal.css';

@@ -12,21 +12,28 @@ function teamsMatch(teamA, teamB) {
 
 function generateFullSquad(teamName) {
   const roster = getRosterForTeam(teamName);
-  const batters = roster?.batters || ['Player 1', 'Player 2'];
-  const bowlers = roster?.bowlers || ['Bowler 1', 'Bowler 2'];
+  const cleanTeam = String(teamName || 'Team').replace(/\s+srl$/i, '').trim();
+
+  const batters = roster?.batters?.length
+    ? roster.batters
+    : [`${cleanTeam} Opener 1`, `${cleanTeam} Opener 2`, `${cleanTeam} Batter 3`, `${cleanTeam} Batter 4`, `${cleanTeam} Batter 5`, `${cleanTeam} All-Rounder 1`, `${cleanTeam} All-Rounder 2`];
+
+  const bowlers = roster?.bowlers?.length
+    ? roster.bowlers
+    : [`${cleanTeam} Pacer 1`, `${cleanTeam} Pacer 2`, `${cleanTeam} Spinner 1`, `${cleanTeam} Pacer 3`];
 
   const players = [
-    { id: 1, name: batters[0] || 'Opener 1', role: 'Batter', isCaptain: true },
-    { id: 2, name: batters[1] || 'Opener 2', role: 'Batter' },
-    { id: 3, name: batters[2] || 'Keeper', role: 'Batter', isKeeper: true },
-    { id: 4, name: batters[3] || 'Middle Order 1', role: 'Batter' },
-    { id: 5, name: batters[4] || 'Middle Order 2', role: 'Batter' },
-    { id: 6, name: batters[5] || 'All-Rounder 1', role: 'All-Rounder' },
-    { id: 7, name: batters[6] || 'All-Rounder 2', role: 'All-Rounder' },
-    { id: 8, name: bowlers[0] || 'Spinner 1', role: 'Bowler' },
-    { id: 9, name: bowlers[1] || 'Pacer 1', role: 'Bowler' },
-    { id: 10, name: bowlers[2] || 'Pacer 2', role: 'Bowler' },
-    { id: 11, name: bowlers[3] || 'Pacer 3', role: 'Bowler' },
+    { id: 1, name: batters[0] || `${cleanTeam} Opener 1`, role: 'Batter', isCaptain: true },
+    { id: 2, name: batters[1] || `${cleanTeam} Opener 2`, role: 'Batter' },
+    { id: 3, name: batters[2] || `${cleanTeam} Batter 3`, role: 'Batter', isKeeper: true },
+    { id: 4, name: batters[3] || `${cleanTeam} Batter 4`, role: 'Batter' },
+    { id: 5, name: batters[4] || `${cleanTeam} Batter 5`, role: 'Batter' },
+    { id: 6, name: batters[5] || `${cleanTeam} All-Rounder 1`, role: 'All-Rounder' },
+    { id: 7, name: batters[6] || `${cleanTeam} All-Rounder 2`, role: 'All-Rounder' },
+    { id: 8, name: bowlers[0] || `${cleanTeam} Pacer 1`, role: 'Bowler' },
+    { id: 9, name: bowlers[1] || `${cleanTeam} Pacer 2`, role: 'Bowler' },
+    { id: 10, name: bowlers[2] || `${cleanTeam} Spinner 1`, role: 'Bowler' },
+    { id: 11, name: bowlers[3] || `${cleanTeam} Pacer 3`, role: 'Bowler' },
   ];
 
   return { name: teamName, players };

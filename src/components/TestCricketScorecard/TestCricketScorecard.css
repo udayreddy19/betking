@@ -1,0 +1,186 @@
+.test-scorecard-container {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  margin-bottom: var(--space-6);
+  font-family: inherit;
+}
+
+/* Header Banner */
+.test-scorecard-header {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+  color: #ffffff;
+  padding: 20px 24px;
+}
+
+.test-header-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.9;
+}
+
+.test-session-badge {
+  background: rgba(245, 158, 11, 0.2);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.test-match-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.test-match-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.test-lead-tag {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-weight: 800;
+}
+
+/* Tabs */
+.test-scorecard-tabs {
+  display: flex;
+  background: var(--color-bg-alt);
+  border-bottom: 1px solid var(--color-border);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.test-tab-btn {
+  padding: 14px 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  border: none;
+  background: transparent;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.test-tab-btn:hover {
+  color: var(--color-text);
+  background: rgba(124, 58, 237, 0.04);
+}
+
+.test-tab-btn.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  background: var(--color-surface);
+}
+
+/* Scorecard Content */
+.test-scorecard-body {
+  padding: 24px;
+}
+
+.test-table-section {
+  margin-bottom: 24px;
+}
+
+.test-table-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--color-text);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.test-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.test-data-table th {
+  background: var(--color-bg-alt);
+  color: var(--color-text-secondary);
+  text-align: left;
+  padding: 10px 12px;
+  font-weight: 700;
+  border-bottom: 1.5px solid var(--color-border);
+}
+
+.test-data-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-border-light);
+  color: var(--color-text);
+}
+
+.test-batter-name {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.test-dismissal-text {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.test-milestone-chip {
+  background: rgba(124, 58, 237, 0.1);
+  color: var(--color-primary);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  margin-left: 6px;
+}
+
+/* FOW & Extras List */
+.test-fow-box {
+  background: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+/* Timeline Cards */
+.test-timeline-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.test-timeline-card {
+  background: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+}
+
+.test-timeline-card h5 {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  margin-bottom: 8px;
+}

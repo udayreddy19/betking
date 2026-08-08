@@ -95,7 +95,9 @@ export function hasCricketPlayStarted(match) {
 /** Cricket live tracker / scorecard should only run after play starts. */
 export function isCricketTrackerLive(match) {
   if (!match) return false;
-  if (getMatchState(match) !== 'in') return false;
+  const state = getMatchState(match);
+  if (state === 'post') return false;
+  if (state === 'in' || match.isLive === true) return true;
   return hasCricketPlayStarted(match);
 }
 
@@ -103,7 +105,7 @@ export function getMatchState(match) {
   if (!match) return 'pre';
   const statusStr = String(match.status || '').toLowerCase();
   const liveStatusStr = String(match.liveStatus || '').toLowerCase();
-  if (statusStr === 'finished' || statusStr === 'completed' || liveStatusStr === 'completed' || liveStatusStr === 'finished' || statusStr === 'post') {
+  if (statusStr === 'finished' || statusStr === 'completed' || liveStatusStr === 'completed' || liveStatusStr === 'finished' || statusStr === 'post' || match.matchState === 'post') {
     return 'post';
   }
 
@@ -121,13 +123,22 @@ export function getMatchState(match) {
     return 'post';
   }
 
-  // Innings break is still an in-progress match (must beat stale matchState: 'pre').
+  // Innings break or active live match indicators
   if (/innings\s*break/i.test(combined) || /innings\s*break/i.test(String(explicit || ''))) {
     return 'in';
   }
 
+  if (match.isLive === true || explicit === 'in' || statusStr === 'live' || liveStatusStr === 'in_progress' || time === 'live') {
+    return 'in';
+  }
+
+  const ld = match.liveDetails || {};
+  if (ld.runs > 0 || ld.wickets > 0 || ld.score1 > 0 || ld.score2 > 0 || (ld.overs && ld.overs !== '0.0')) {
+    return 'in';
+  }
+
   if (explicit === 'post') return 'post';
-  if (explicit === 'pre') return 'pre';
+  if (explicit === 'pre' && !match.isLive) return 'pre';
 
   if (UPCOMING_TIME_HINTS.some((hint) => combined.includes(hint))) {
     return 'pre';
@@ -142,9 +153,6 @@ export function getMatchState(match) {
     return 'pre';
   }
 
-  if (explicit === 'in' || match?.isLive) {
-    return 'in';
-  }
   return 'pre';
 }
 

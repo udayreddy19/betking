@@ -3,60 +3,36 @@ import { SunIcon, MoonIcon } from '@animateicons/react/lucide';
 import { useTheme } from '../../context/ThemeContext';
 import './ThemeToggle.css';
 
-export default function ThemeToggle({ variant = 'header', className = '' }) {
-  const { theme, setTheme } = useTheme();
+export default function ThemeToggle({ className = '' }) {
+  const { theme, toggleTheme } = useTheme();
   const isDark = theme === 'dark';
 
   return (
-    <div
-      className={`theme-toggle-pill theme-toggle-pill--${variant} ${className}`.trim()}
-      data-theme={theme}
-      role="group"
-      aria-label="Theme"
+    <motion.button
+      type="button"
+      className={`theme-toggle-btn ${isDark ? 'dark' : 'light'} ${className}`.trim()}
+      onClick={toggleTheme}
+      aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+      title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+      whileHover={{ scale: 1.08 }}
+      whileTap={{ scale: 0.92 }}
     >
-      {/* Framer Motion Sliding Thumb Indicator */}
-      <motion.span
-        className="theme-toggle-thumb"
-        aria-hidden="true"
-        animate={{
-          x: isDark ? 28 : 0,
-        }}
-        transition={{
-          type: 'spring',
-          stiffness: 500,
-          damping: 32,
-        }}
-      />
-
-      {/* Light Mode Sun Button with Motion Spin & Scale */}
-      <motion.button
-        type="button"
-        className={`theme-toggle-option ${!isDark ? 'active' : ''}`}
-        onClick={() => setTheme('light')}
-        aria-label="Switch to light mode"
-        aria-pressed={!isDark}
-        title="Light mode"
-        whileHover={{ scale: 1.25, rotate: 180 }}
-        whileTap={{ scale: 0.85 }}
-        transition={{ duration: 0.4, ease: 'easeOut' }}
-      >
-        <SunIcon size={16} isAnimated={!isDark} className="theme-toggle-icon" />
-      </motion.button>
-
-      {/* Dark Mode Moon Button with Motion Tilt & Float */}
-      <motion.button
-        type="button"
-        className={`theme-toggle-option ${isDark ? 'active' : ''}`}
-        onClick={() => setTheme('dark')}
-        aria-label="Switch to dark mode"
-        aria-pressed={isDark}
-        title="Dark mode"
-        whileHover={{ scale: 1.25, rotate: -25, y: -2 }}
-        whileTap={{ scale: 0.85 }}
-        transition={{ duration: 0.4, ease: 'easeOut' }}
-      >
-        <MoonIcon size={16} isAnimated={isDark} className="theme-toggle-icon" />
-      </motion.button>
-    </div>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={theme}
+          initial={{ opacity: 0, rotate: -90, scale: 0.7 }}
+          animate={{ opacity: 1, rotate: 0, scale: 1 }}
+          exit={{ opacity: 0, rotate: 90, scale: 0.7 }}
+          transition={{ duration: 0.22, ease: 'easeOut' }}
+          className="theme-toggle-icon-wrap"
+        >
+          {isDark ? (
+            <MoonIcon size={20} isAnimated={true} className="theme-icon moon-icon" />
+          ) : (
+            <SunIcon size={22} isAnimated={true} className="theme-icon sun-icon" />
+          )}
+        </motion.div>
+      </AnimatePresence>
+    </motion.button>
   );
 }

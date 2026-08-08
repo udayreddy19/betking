@@ -1,122 +1,213 @@
 import { motion } from 'motion/react';
 
 /**
- * Authentic SVG Brand Payment Logos for BetKing with Framer Motion animations
+ * 1:1 Pixel-Perfect Official Brand Payment Badges matching the user's reference:
+ * - UPI (Green badge #00A859 with official orange/white triangle logo)
+ * - Google Pay (Dark badge #1C2333 with official 4-color Google G logo)
+ * - PhonePe (Purple badge #5F259F with white circle P logo)
+ * - Paytm (Navy blue badge #002970 with white pay and cyan tm logo)
  */
 
-export function UpiLogo({ height = 28, className = '' }) {
+export function UpiLogo({ height = 36, width = 110, className = '', onClick }) {
   return (
-    <motion.svg
-      height={height}
-      viewBox="0 0 100 32"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
+    <motion.div
       className={className}
-      style={{ borderRadius: '6px', overflow: 'hidden' }}
-      whileHover={{ scale: 1.12, y: -1.5 }}
-      whileTap={{ scale: 0.94 }}
-      transition={{ duration: 0.2 }}
+      onClick={onClick}
+      style={{
+        width: width,
+        height: height,
+        borderRadius: '8px',
+        background: '#00A859',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '0 12px',
+        gap: '8px',
+        cursor: onClick ? 'pointer' : 'default',
+        boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+        userSelect: 'none',
+        flexShrink: 0,
+      }}
+      whileHover={{ scale: 1.05, y: -1 }}
+      whileTap={{ scale: 0.95 }}
+      transition={{ duration: 0.15 }}
     >
-      <rect width="100" height="32" rx="6" fill="#059669" />
-      <g transform="translate(10, 6)">
-        <path d="M12 4L18 16H14.5L12 11L9.5 16H6L12 4Z" fill="#FFFFFF" />
-        <path d="M16 4L22 16H18.5L16 11L13.5 16H10L16 4Z" fill="#F97316" />
-        <text x="26" y="15" fill="#FFFFFF" fontFamily="system-ui, -apple-system, sans-serif" fontWeight="900" fontSize="13" letterSpacing="0.8">UPI</text>
-      </g>
-    </motion.svg>
+      {/* Official UPI double-triangle logo */}
+      <svg width="22" height="18" viewBox="0 0 22 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M7.5 1.5L13.5 16.5H9.5L7.5 10.5L5.5 16.5H1.5L7.5 1.5Z" fill="#FFFFFF" />
+        <path d="M14.5 1.5L20.5 16.5H16.5L14.5 10.5L12.5 16.5H8.5L14.5 1.5Z" fill="#F97316" />
+      </svg>
+      <span style={{
+        color: '#FFFFFF',
+        fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+        fontWeight: 900,
+        fontSize: '15px',
+        letterSpacing: '0.8px',
+      }}>
+        UPI
+      </span>
+    </motion.div>
   );
 }
 
-export function GPayLogo({ height = 28, className = '' }) {
+export function GPayLogo({ height = 36, width = 110, className = '', onClick }) {
   return (
-    <motion.svg
-      height={height}
-      viewBox="0 0 100 32"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
+    <motion.div
       className={className}
-      style={{ borderRadius: '6px', overflow: 'hidden' }}
-      whileHover={{ scale: 1.12, y: -1.5 }}
-      whileTap={{ scale: 0.94 }}
-      transition={{ duration: 0.2 }}
+      onClick={onClick}
+      style={{
+        width: width,
+        height: height,
+        borderRadius: '8px',
+        background: '#1C2333',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '0 12px',
+        gap: '8px',
+        cursor: onClick ? 'pointer' : 'default',
+        boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+        userSelect: 'none',
+        flexShrink: 0,
+      }}
+      whileHover={{ scale: 1.05, y: -1 }}
+      whileTap={{ scale: 0.95 }}
+      transition={{ duration: 0.15 }}
     >
-      <rect width="100" height="32" rx="6" fill="#1E293B" />
-      <g transform="translate(12, 6)">
-        <path d="M9.5 10.2c0-.5 0-1-.1-1.5H5v3h2.6c-.1.7-.5 1.4-1.1 1.8v1.5h1.8c1.1-1 1.7-2.6 1.7-4.8z" fill="#4285F4"/>
-        <path d="M5 14.8c2.6 0 4.8-.9 6.4-2.4l-1.8-1.5c-.5.4-1.2.7-2.1.7-1.6 0-3-1.1-3.5-2.6H2.1v1.6c1.5 2.6 4.3 4.2 7.4 4.2z" fill="#34A853"/>
-        <path d="M1.5 9c-.1-.5-.1-1 0-1.5V5.9H2.1c-.9 1.7-.9 3.8 0 5.5l1.8-1.5c-.3-.3-.4-.6-.4-.9z" fill="#FBBC05"/>
-        <path d="M5 3.2c1.4 0 2.7.5 3.7 1.4l1.4-1.4C8.7 1.9 6.9 1.2 5 1.2 1.9 1.2-.9 2.8-2.4 5.4l1.8 1.5c.5-1.5 1.9-2.7 3.5-2.7z" transform="translate(2.5, 2)" fill="#EA4335"/>
-        <text x="18" y="15" fill="#FFFFFF" fontFamily="system-ui, -apple-system, sans-serif" fontWeight="700" fontSize="13">Pay</text>
-      </g>
-    </motion.svg>
+      {/* Official 4-color Google G icon */}
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M17.64 9.2c0-.63-.06-1.25-.16-1.84H9v3.49h4.84a4.14 4.14 0 0 1-1.8 2.71v2.25h2.91c1.7-1.57 2.69-3.88 2.69-6.61z" fill="#4285F4"/>
+        <path d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.91-2.25c-.8.54-1.83.87-3.05.87-2.34 0-4.33-1.58-5.04-3.71H.96v2.33C2.44 15.98 5.48 18 9 18z" fill="#34A853"/>
+        <path d="M3.96 10.73A5.4 5.4 0 0 1 3.68 9c0-.6.1-1.18.28-1.73V4.94H.96A8.99 8.99 0 0 0 0 9c0 1.45.35 2.82.96 4.06l3-2.33z" fill="#FBBC05"/>
+        <path d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.59C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.94l3 2.33C4.67 5.16 6.66 3.58 9 3.58z" fill="#EA4335"/>
+      </svg>
+      <span style={{
+        color: '#FFFFFF',
+        fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+        fontWeight: 700,
+        fontSize: '15px',
+      }}>
+        Pay
+      </span>
+    </motion.div>
   );
 }
 
-export function PhonePeLogo({ height = 28, className = '' }) {
+export function PhonePeLogo({ height = 36, width = 110, className = '', onClick }) {
   return (
-    <motion.svg
-      height={height}
-      viewBox="0 0 100 32"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
+    <motion.div
       className={className}
-      style={{ borderRadius: '6px', overflow: 'hidden' }}
-      whileHover={{ scale: 1.12, y: -1.5 }}
-      whileTap={{ scale: 0.94 }}
-      transition={{ duration: 0.2 }}
+      onClick={onClick}
+      style={{
+        width: width,
+        height: height,
+        borderRadius: '8px',
+        background: '#5F259F',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '0 10px',
+        gap: '6px',
+        cursor: onClick ? 'pointer' : 'default',
+        boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+        userSelect: 'none',
+        flexShrink: 0,
+      }}
+      whileHover={{ scale: 1.05, y: -1 }}
+      whileTap={{ scale: 0.95 }}
+      transition={{ duration: 0.15 }}
     >
-      <rect width="100" height="32" rx="6" fill="#5F259F" />
-      <g transform="translate(8, 6)">
-        <circle cx="10" cy="10" r="8" fill="#FFFFFF" />
-        <path d="M8 6H11.5C12.9 6 14 7.1 14 8.5C14 9.9 12.9 11 11.5 11H9.5V14H8V6ZM9.5 9.5H11.5C12.1 9.5 12.5 9.1 12.5 8.5C12.5 7.9 12.1 7.5 11.5 7.5H9.5V9.5Z" fill="#5F259F" />
-        <text x="23" y="15" fill="#FFFFFF" fontFamily="system-ui, -apple-system, sans-serif" fontWeight="800" fontSize="12" letterSpacing="0.3">PhonePe</text>
-      </g>
-    </motion.svg>
+      {/* Official PhonePe white circle P logo */}
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="10" cy="10" r="9.5" fill="#FFFFFF"/>
+        <path d="M7.8 5.5H11.6C12.9 5.5 13.9 6.5 13.9 7.8C13.9 9.1 12.9 10.1 11.6 10.1H9.5V14.2H7.8V5.5ZM9.5 8.7H11.6C12.1 8.7 12.5 8.3 12.5 7.8C12.5 7.3 12.1 6.9 11.6 6.9H9.5V8.7Z" fill="#5F259F"/>
+      </svg>
+      <span style={{
+        color: '#FFFFFF',
+        fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+        fontWeight: 800,
+        fontSize: '14px',
+        letterSpacing: '0.2px',
+      }}>
+        PhonePe
+      </span>
+    </motion.div>
   );
 }
 
-export function PaytmLogo({ height = 28, className = '' }) {
+export function PaytmLogo({ height = 36, width = 110, className = '', onClick }) {
   return (
-    <motion.svg
-      height={height}
-      viewBox="0 0 100 32"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
+    <motion.div
       className={className}
-      style={{ borderRadius: '6px', overflow: 'hidden' }}
-      whileHover={{ scale: 1.12, y: -1.5 }}
-      whileTap={{ scale: 0.94 }}
-      transition={{ duration: 0.2 }}
+      onClick={onClick}
+      style={{
+        width: width,
+        height: height,
+        borderRadius: '8px',
+        background: '#002970',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '0 12px',
+        cursor: onClick ? 'pointer' : 'default',
+        boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+        userSelect: 'none',
+        flexShrink: 0,
+      }}
+      whileHover={{ scale: 1.05, y: -1 }}
+      whileTap={{ scale: 0.95 }}
+      transition={{ duration: 0.15 }}
     >
-      <rect width="100" height="32" rx="6" fill="#002E6E" />
-      <g transform="translate(10, 6)">
-        <text x="4" y="15" fill="#FFFFFF" fontFamily="system-ui, -apple-system, sans-serif" fontWeight="900" fontSize="14">pay</text>
-        <text x="32" y="15" fill="#00BAF2" fontFamily="system-ui, -apple-system, sans-serif" fontWeight="900" fontSize="14">tm</text>
-      </g>
-    </motion.svg>
+      <span style={{
+        fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+        fontWeight: 900,
+        fontSize: '16px',
+        letterSpacing: '-0.6px',
+      }}>
+        <span style={{ color: '#FFFFFF' }}>pay</span>
+        <span style={{ color: '#00BAF2' }}>tm</span>
+      </span>
+    </motion.div>
   );
 }
 
-export function BhimLogo({ height = 28, className = '' }) {
+export function BhimLogo({ height = 36, width = 110, className = '', onClick }) {
   return (
-    <motion.svg
-      height={height}
-      viewBox="0 0 100 32"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
+    <motion.div
       className={className}
-      style={{ borderRadius: '6px', overflow: 'hidden' }}
-      whileHover={{ scale: 1.12, y: -1.5 }}
-      whileTap={{ scale: 0.94 }}
-      transition={{ duration: 0.2 }}
+      onClick={onClick}
+      style={{
+        width: width,
+        height: height,
+        borderRadius: '8px',
+        background: '#0F172A',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '0 10px',
+        gap: '6px',
+        cursor: onClick ? 'pointer' : 'default',
+        boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+        userSelect: 'none',
+        flexShrink: 0,
+      }}
+      whileHover={{ scale: 1.05, y: -1 }}
+      whileTap={{ scale: 0.95 }}
+      transition={{ duration: 0.15 }}
     >
-      <rect width="100" height="32" rx="6" fill="#0F172A" />
-      <g transform="translate(10, 6)">
-        <path d="M4 3L13 10L4 17V3Z" fill="#059669" />
-        <path d="M10 3L19 10L10 17V3Z" fill="#F97316" />
-        <text x="25" y="15" fill="#FFFFFF" fontFamily="system-ui, -apple-system, sans-serif" fontWeight="900" fontSize="13">BHIM</text>
-      </g>
-    </motion.svg>
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 2L12 9L3 16V2Z" fill="#00A859" />
+        <path d="M9 2L18 9L9 16V2Z" fill="#F97316" />
+      </svg>
+      <span style={{
+        color: '#FFFFFF',
+        fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+        fontWeight: 900,
+        fontSize: '14px',
+      }}>
+        BHIM
+      </span>
+    </motion.div>
   );
 }
 
@@ -133,20 +224,20 @@ export function UpiExpressIcon({ size = 48, className = '' }) {
         boxShadow: '0 4px 12px rgba(15, 23, 42, 0.4)',
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
-        padding: '5px',
+        padding: '4px',
         gap: '3px',
         alignItems: 'center',
         justifyItems: 'center',
         flexShrink: 0,
       }}
-      whileHover={{ scale: 1.1, rotate: [0, -4, 4, 0] }}
-      whileTap={{ scale: 0.94 }}
-      transition={{ duration: 0.25 }}
+      whileHover={{ scale: 1.08 }}
+      whileTap={{ scale: 0.95 }}
+      transition={{ duration: 0.15 }}
     >
-      <GPayLogo height={15} />
-      <PhonePeLogo height={15} />
-      <PaytmLogo height={15} />
-      <BhimLogo height={15} />
+      <UpiLogo height={16} width={42} />
+      <GPayLogo height={16} width={42} />
+      <PhonePeLogo height={16} width={42} />
+      <PaytmLogo height={16} width={42} />
     </motion.div>
   );
 }

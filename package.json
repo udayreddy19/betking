@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "lint": "oxlint",
+    "start": "node server/index.js",
     "preview": "vite preview",
+    "lint": "oxlint",
     "fetch-itshover-icons": "node scripts/fetch-itshover-icons.mjs"
   },
   "dependencies": {

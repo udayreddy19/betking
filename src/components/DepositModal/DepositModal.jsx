@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import { motion } from 'motion/react';
-import { IoClose, IoChevronBack, IoKeyOutline, FiArrowRight, FiShield, FiAlertCircle, FiDollarSign, FiZap } from '../../icons';
+import { motion, AnimatePresence } from 'motion/react';
+import { IoClose, IoChevronBack, IoKeyOutline, FiArrowRight, FiShield, FiAlertCircle, FiZap, FiCheck } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { paymentMethods } from '../../data/mockData';
 import RazorpayModal from '../RazorpayModal/RazorpayModal';
-import { GPayLogo, PhonePeLogo, PaytmLogo, BhimLogo, UpiExpressIcon } from '../PaymentLogos/PaymentLogos';
+import { UpiLogo, GPayLogo, PhonePeLogo, PaytmLogo, BhimLogo } from '../PaymentLogos/PaymentLogos';
+import RupeeSymbol from '../RupeeSymbol/RupeeSymbol';
 import './DepositModal.css';
 
 export default function DepositModal() {
   const { isDepositModalOpen, closeDepositModal, addFunds, user } = useAuth();
-  const [activeCategory] = useState('all');
   const [selectedMethod, setSelectedMethod] = useState(null);
 
   // Form states
@@ -34,27 +34,6 @@ export default function DepositModal() {
     closeDepositModal();
   };
 
-  const filteredMethods = paymentMethods.filter(m => {
-    if (activeCategory === 'all') return true;
-    if (activeCategory === 'razorpay') return m.type === 'razorpay';
-    if (activeCategory === 'giftcard') return m.type === 'giftcard';
-    if (activeCategory === 'upi') return m.type === 'upi';
-    if (activeCategory === 'crypto') return m.type === 'crypto';
-    return true;
-  });
-
-  const handleMethodSelect = (method) => {
-    setSelectedMethod(method);
-    setIsSuccess(false);
-    setErrorMsg('');
-    if (method.id === 'amazon_gift') {
-      setGiftCardCode('');
-      setAmount('1000');
-    } else {
-      setAmount('1000');
-    }
-  };
-
   const openRazorpayRealPayment = async (depositAmt) => {
     setErrorMsg('');
     setIsLoading(true);
@@ -62,7 +41,6 @@ export default function DepositModal() {
     const activeKey = razorpayKey.trim() || import.meta.env.VITE_RAZORPAY_KEY_ID;
 
     try {
-      // 1. Call Backend Vercel Serverless Function to create real Razorpay Order
       let order = null;
       try {
         const orderRes = await fetch('/api/create-razorpay-order', {
@@ -77,16 +55,15 @@ export default function DepositModal() {
         console.warn('Backend order creation endpoint unavailable, attempting client initialization...');
       }
 
-      // 2. If Real Razorpay SDK is loaded on window and Key is present:
       if (window.Razorpay && activeKey && (activeKey.startsWith('rzp_test_') || activeKey.startsWith('rzp_live_'))) {
         setIsLoading(false);
         const options = {
           key: activeKey,
-          amount: depositAmt * 100, // Amount in paise
+          amount: depositAmt * 100,
           currency: 'INR',
           name: 'BetKing Gaming',
           description: 'Account Deposit (UPI Push Collect)',
-          order_id: order?.id, // Real Order ID from server if available
+          order_id: order?.id,
           handler: function (response) {
             console.log('Razorpay Real Payment Successful:', response);
             addFunds(depositAmt, 'Razorpay Real Payment');
@@ -98,12 +75,7 @@ export default function DepositModal() {
             contact: '9876543210',
             vpa: upiId.trim() || 'udayreddy@okicici',
           },
-          notes: {
-            userId: user?.username || 'udayreddy12',
-          },
-          theme: {
-            color: '#7c3aed',
-          },
+          theme: { color: '#7c3aed' },
           modal: {
             ondismiss: function () {
               setIsLoading(false);
@@ -120,7 +92,6 @@ export default function DepositModal() {
         return;
       }
 
-      // 3. If Key ID is missing, launch the Interactive Razorpay Payment Modal popup
       setIsLoading(false);
       setIsRzpModalOpen(true);
     } catch (err) {
@@ -136,17 +107,17 @@ export default function DepositModal() {
   };
 
   const handleDepositSubmit = (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     const depositAmt = parseFloat(amount);
     if (isNaN(depositAmt) || depositAmt <= 0) return;
 
-    // All UPI & Wallet payments trigger Razorpay Gateway flow
     openRazorpayRealPayment(depositAmt);
   };
 
+  const currentBonusAmount = (parseFloat(amount || 0) * 1).toLocaleString();
+
   return (
     <>
-      {/* Interactive Razorpay Checkout Modal */}
       <RazorpayModal
         isOpen={isRzpModalOpen}
         onClose={() => setIsRzpModalOpen(false)}
@@ -156,7 +127,7 @@ export default function DepositModal() {
       />
 
       <div className="deposit-overlay" onClick={handleClose} id="deposit-modal">
-        <div className="deposit-card" onClick={e => e.stopPropagation()}>
+        <div className="deposit-card" onClick={(e) => e.stopPropagation()}>
 
           {/* Header */}
           <div className="deposit-header">
@@ -166,14 +137,14 @@ export default function DepositModal() {
                   type="button"
                   className="deposit-back-btn"
                   onClick={() => setSelectedMethod(null)}
-                  whileHover={{ scale: 1.1, x: -2 }}
-                  whileTap={{ scale: 0.9 }}
+                  whileHover={{ scale: 1.08, x: -2 }}
+                  whileTap={{ scale: 0.92 }}
                 >
                   <IoChevronBack />
                 </motion.button>
               )}
-              <h2 className="flex-center gap-2">
-                <FiDollarSign style={{ color: 'var(--color-primary)' }} />
+              <h2>
+                <span className="deposit-header-rupee"><RupeeSymbol size={22} /></span>
                 {isSuccess
                   ? 'Deposit Complete'
                   : selectedMethod
@@ -185,237 +156,124 @@ export default function DepositModal() {
               type="button"
               className="deposit-close"
               onClick={handleClose}
-              whileHover={{ scale: 1.15, rotate: 90 }}
-              whileTap={{ scale: 0.85 }}
+              whileHover={{ scale: 1.1, rotate: 90 }}
+              whileTap={{ scale: 0.9 }}
             >
               <IoClose />
             </motion.button>
           </div>
-
-          {/* Razorpay Banner for UPI & Wallets */}
-          {!selectedMethod && !isSuccess && (
-            <div style={{
-              background: 'linear-gradient(135deg, #0c2340 0%, #1e3a8a 100%)',
-              color: 'white',
-              padding: 'var(--space-3) var(--space-4)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              fontSize: 'var(--text-xs)',
-              fontWeight: 600
-            }}>
-              <span className="flex-center gap-2">
-                <motion.span
-                  animate={{ scale: [1, 1.25, 1], rotate: [0, -10, 10, 0] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  style={{ display: 'inline-flex' }}
-                >
-                  <FiZap style={{ color: '#f59e0b' }} />
-                </motion.span>
-                Instant UPI & Wallets
-              </span>
-              <span style={{
-                background: 'rgba(255,255,255,0.15)',
-                padding: '2px 8px',
-                borderRadius: '12px',
-                fontSize: '0.7rem'
-              }}>Powered by Razorpay</span>
-            </div>
-          )}
 
           {/* Body Content */}
           <div className="deposit-body">
             {errorMsg && (
               <div style={{
                 background: '#fef2f2', border: '1px solid #fecaca', color: '#ef4444',
-                padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-xs)',
-                marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)'
+                padding: '10px 14px', borderRadius: '12px', fontSize: '0.8rem',
+                marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px'
               }}>
                 <FiAlertCircle style={{ flexShrink: 0 }} />
                 <span>{errorMsg}</span>
               </div>
             )}
 
-            {isSuccess ? (
-              /* Success Screen */
-              <div className="deposit-success">
-                <span className="deposit-success-icon">🎉</span>
-                <h3>₹{parseFloat(amount).toLocaleString()} Added!</h3>
-                <p>Your deposit via <strong>{selectedMethod?.name || 'Razorpay'}</strong> was successful and credited instantly to your BetKing balance.</p>
-                <button className="deposit-confirm-btn" onClick={handleClose}>
-                  Done & Continue Betting
-                </button>
-              </div>
-            ) : selectedMethod ? (
-              /* Selected Payment Method Form View */
-              <form onSubmit={handleDepositSubmit}>
-                {/* Preset Amount Chips */}
-                <div className="deposit-form-group">
-                  <label>Select Deposit Amount (₹)</label>
-                  <div className="amount-presets">
-                    {['500', '1000', '2500', '5000', '10000'].map(val => (
+            <AnimatePresence mode="wait">
+              {isSuccess ? (
+                /* Success View */
+                <motion.div
+                  key="success"
+                  className="deposit-success"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <span className="deposit-success-icon">🎉</span>
+                  <h3>₹{parseFloat(amount).toLocaleString()} Added!</h3>
+                  <p>Your deposit was processed successfully and credited instantly to your BetKing balance.</p>
+                  <button type="button" className="deposit-pay-btn" onClick={handleClose}>
+                    <FiCheck /> Done & Continue Betting
+                  </button>
+                </motion.div>
+              ) : (
+                /* Main Deposit Form View */
+                <motion.form
+                  key="form"
+                  onSubmit={handleDepositSubmit}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  {/* Preset Amount Chips */}
+                  <div className="amount-presets-label">
+                    <span>Select Deposit Amount (₹)</span>
+                  </div>
+
+                  <div className="amount-presets-grid">
+                    {['500', '1000', '2500', '5000', '10000', '25000'].map((val) => (
                       <button
                         type="button"
                         key={val}
-                        className={`amount-preset-btn ${amount === val ? 'active' : ''}`}
+                        className={`amount-preset-chip ${amount === val ? 'active' : ''}`}
                         onClick={() => setAmount(val)}
                       >
-                        ₹{val}
+                        <span>₹{parseFloat(val).toLocaleString()}</span>
                       </button>
                     ))}
                   </div>
-                  <input
-                    type="number"
-                    className="deposit-form-input"
-                    value={amount}
-                    onChange={e => setAmount(e.target.value)}
-                    placeholder="Enter custom amount"
-                    min={selectedMethod.min}
-                    max={selectedMethod.max}
-                    required
-                  />
-                </div>
 
-                {/* Razorpay Gateway Information & Key Configuration */}
-                {selectedMethod.type === 'razorpay' && (
-                  <>
-                    <div style={{
-                      background: 'linear-gradient(135deg, #0c2340 0%, #1e3a8a 100%)',
-                      color: 'white',
-                      borderRadius: 'var(--radius-lg)',
-                      padding: 'var(--space-4)',
-                      marginBottom: 'var(--space-4)',
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-2)', fontWeight: 'bold', fontSize: 'var(--text-sm)' }}>
-                        <FiShield style={{ color: '#38bdf8' }} /> Real Razorpay Payment Gateway
-                      </div>
-                      <p style={{ fontSize: 'var(--text-xs)', opacity: 0.85, lineHeight: 1.5 }}>
-                        Entering your UPI ID sends a <strong>REAL UPI Collect Push Request</strong> directly to your PhonePe / GPay / Paytm mobile app!
-                      </p>
-                    </div>
-
-                    <div className="deposit-form-group">
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}>
-                        <IoKeyOutline /> Razorpay Key ID (Enter your rzp_test_... or rzp_live_... key)
-                      </label>
-                      <input
-                        type="text"
-                        className="deposit-form-input"
-                        placeholder="e.g. rzp_test_XXXXXX or rzp_live_XXXXXX"
-                        value={razorpayKey}
-                        onChange={e => setRazorpayKey(e.target.value)}
-                        style={{ fontSize: 'var(--text-xs)', fontFamily: 'monospace' }}
-                      />
-                    </div>
-                  </>
-                )}
-
-                {/* Amazon Gift Card Specific Fields */}
-                {selectedMethod.type === 'giftcard' && (
-                  <div className="deposit-form-group">
-                    <label>Amazon Pay Gift Card Claim Code</label>
+                  {/* Custom Amount Input */}
+                  <div className="deposit-input-wrap">
+                    <span className="deposit-input-symbol">₹</span>
                     <input
-                      type="text"
+                      type="number"
                       className="deposit-form-input"
-                      placeholder="e.g. AG12-3456-7890-ABCD"
-                      value={giftCardCode}
-                      onChange={e => setGiftCardCode(e.target.value.toUpperCase())}
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      placeholder="Enter custom deposit amount"
+                      min="100"
+                      max="100000"
                       required
                     />
-                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
-                      Enter 14 or 15 digit claim code printed on your Amazon Gift Card.
-                    </p>
                   </div>
-                )}
 
-                {/* UPI Specific Fields */}
-                {selectedMethod.type === 'upi' && (
-                  <>
-                    <div className="deposit-form-group">
-                      <label>Enter Your UPI VPA ID</label>
-                      <input
-                        type="text"
-                        className="deposit-form-input"
-                        placeholder="e.g. username@upi / mobile@paytm / mobile@ybl"
-                        value={upiId}
-                        onChange={e => setUpiId(e.target.value)}
-                        required
-                      />
-                      <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
-                        Razorpay will send a live <strong>UPI Collect Request</strong> to your mobile app (GPay / PhonePe / Paytm / BHIM).
-                      </p>
-                    </div>
-
-                    {/* App quick launch bar */}
-                    <div className="upi-apps">
-                      <div className="upi-app-btn">
-                        <GPayLogo height={26} />
-                      </div>
-                      <div className="upi-app-btn">
-                        <PhonePeLogo height={26} />
-                      </div>
-                      <div className="upi-app-btn">
-                        <PaytmLogo height={26} />
-                      </div>
-                      <div className="upi-app-btn">
-                        <BhimLogo height={26} />
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {/* Submit CTA */}
-                <button
-                  type="submit"
-                  className="deposit-confirm-btn"
-                  disabled={isLoading}
-                  style={selectedMethod.type === 'razorpay' ? { background: '#0c2340' } : {}}
-                >
-                  {isLoading ? (
-                    'Creating Real Razorpay Payment...'
-                  ) : (
-                    <>
-                      Pay ₹{parseFloat(amount || 0).toLocaleString()} via {selectedMethod.name}
-                      <FiArrowRight />
-                    </>
-                  )}
-                </button>
-              </form>
-            ) : (
-              /* Method Selection List View */
-              filteredMethods.map((method) => (
-                <motion.div
-                  className="deposit-method"
-                  key={method.id}
-                  onClick={() => handleMethodSelect(method)}
-                  whileHover={{ scale: 1.02, x: 2 }}
-                  whileTap={{ scale: 0.97 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {method.id === 'upi-express' || method.type === 'upi' ? (
-                    <UpiExpressIcon size={44} />
-                  ) : (
-                    <motion.div
-                      className="deposit-method-icon"
-                      style={{ background: method.color || 'var(--color-text)' }}
-                      whileHover={{ rotate: [0, -8, 8, 0], scale: 1.1 }}
-                    >
-                      {method.icon}
-                    </motion.div>
-                  )}
-                  <div className="deposit-method-info">
-                    <div className="deposit-method-title">
-                      <h4>{method.name}</h4>
-                      {method.badge && <span className="deposit-method-badge">{method.badge}</span>}
-                    </div>
-                    <p>{method.description}</p>
+                  {/* Quick UPI Launcher Apps */}
+                  <div className="deposit-quick-apps-label">Fast UPI VPA Fill / Instant Apps</div>
+                  <div className="deposit-quick-apps-bar">
+                    <UpiLogo height={32} width={95} onClick={() => setUpiId('john@upi')} />
+                    <GPayLogo height={32} width={95} onClick={() => setUpiId('john@okicici')} />
+                    <PhonePeLogo height={32} width={95} onClick={() => setUpiId('john@ybl')} />
+                    <PaytmLogo height={32} width={95} onClick={() => setUpiId('john@paytm')} />
+                    <BhimLogo height={32} width={95} onClick={() => setUpiId('john@bhim')} />
                   </div>
-                  <motion.div className="deposit-method-arrow" whileHover={{ x: 5 }}>
-                    <FiArrowRight />
-                  </motion.div>
-                </motion.div>
-              ))
-            )}
+
+                  {/* Submit CTA */}
+                  <motion.button
+                    type="submit"
+                    className="deposit-pay-btn"
+                    disabled={isLoading}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {isLoading ? (
+                      'Connecting to Razorpay Gateway...'
+                    ) : (
+                      <>
+                        Pay ₹{parseFloat(amount || 0).toLocaleString()} via Razorpay
+                        <FiArrowRight />
+                      </>
+                    )}
+                  </motion.button>
+
+                  {/* Trust Footer */}
+                  <div className="deposit-trust-footer">
+                    <span className="deposit-trust-item">🔒 256-Bit SSL Encrypted</span>
+                    <span>•</span>
+                    <span className="deposit-trust-item">⚡ Instant Auto Credit</span>
+                    <span>•</span>
+                    <span className="deposit-trust-item">🛡️ Razorpay Verified</span>
+                  </div>
+                </motion.form>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>

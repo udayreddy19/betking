@@ -110,7 +110,7 @@
 }
 
 .live-widget-team {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 800;
   color: var(--color-text);
   line-height: 1.2;
@@ -118,7 +118,8 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  word-break: break-word;
+  white-space: nowrap;
+  word-break: normal;
 }
 
 .live-widget-team:first-child { text-align: left; }

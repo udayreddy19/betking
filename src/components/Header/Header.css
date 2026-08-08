@@ -420,37 +420,42 @@
 }
 
 .header-wallet-menu__actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  display: flex;
+  gap: 10px;
   margin-top: var(--space-3);
 }
 
 .header-wallet-menu__deposit,
 .header-wallet-menu__withdraw {
-  width: 100%;
-  padding: var(--space-2) var(--space-3);
-  border: none;
+  flex: 1;
+  padding: 10px 14px;
   border-radius: var(--radius-full);
   font-size: var(--text-sm);
-  font-weight: var(--font-semibold);
+  font-weight: 700;
   cursor: pointer;
-  transition: background var(--transition-fast), opacity var(--transition-fast);
+  text-align: center;
+  transition: all 0.15s ease;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .header-wallet-menu__deposit {
-  background: var(--color-primary);
-  color: var(--color-on-primary);
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.25);
 }
 
 .header-wallet-menu__deposit:hover {
-  background: var(--color-primary-dark);
+  opacity: 0.95;
 }
 
 .header-wallet-menu__withdraw {
-  background: transparent;
+  background: var(--color-bg);
   color: var(--color-text);
-  border: 1px solid var(--color-border);
+  border: 1.5px solid var(--color-border);
 }
 
 .header-wallet-menu__withdraw:hover {
@@ -750,7 +755,20 @@
 
 @media (max-width: 640px) {
   .header-balance {
-    display: none;
+    display: flex;
+  }
+
+  .balance-btn {
+    padding: 4px 8px;
+    font-size: 0.76rem;
+    gap: 4px;
+  }
+
+  .header-wallet-menu {
+    right: -10px;
+    left: auto;
+    width: calc(100vw - 24px);
+    max-width: 320px;
   }
 
   .header-join-label-full {

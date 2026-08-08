@@ -15,6 +15,7 @@ import DepositModal from './components/DepositModal/DepositModal';
 import Toast from './components/Toast/Toast';
 import FinancialModals from './components/FinancialModals/FinancialModals';
 import MobileBetSlip from './components/MobileBetSlip/MobileBetSlip';
+import MobileBottomBar from './components/MobileBottomBar/MobileBottomBar';
 import GlobalBetBar from './components/GlobalBetBar/GlobalBetBar';
 import BetSettlementRunner from './components/BetSettlementRunner/BetSettlementRunner';
 import GamePlayModal from './components/GamePlayModal/GamePlayModal';
@@ -37,6 +38,7 @@ const LiveCasino = lazy(() => import('./pages/LiveCasino/LiveCasino'));
 const Admin = lazy(() => import('./pages/Admin/Admin'));
 const TraderConsole = lazy(() => import('./pages/Trader/TraderConsole'));
 const ApiDocs = lazy(() => import('./pages/ApiDocs/ApiDocs'));
+const Vip = lazy(() => import('./pages/Vip/Vip'));
 
 function PageLoader() {
   return <div className="page-loader" role="status">Loading…</div>;
@@ -54,6 +56,7 @@ function AppLayout() {
       <GamePlayModal />
       <BetSettlementRunner />
       <MobileBetSlip />
+      <MobileBottomBar />
       <GlobalBetBar />
       <main className="app-main">
         <ErrorBoundary>
@@ -68,6 +71,7 @@ function AppLayout() {
               <Route path="/profile" element={<Profile />} />
               <Route path="/register" element={<Register />} />
               <Route path="/promotions" element={<Promotions />} />
+              <Route path="/vip" element={<Vip />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/trader" element={<TraderConsole />} />
               <Route path="/developer" element={<ApiDocs />} />

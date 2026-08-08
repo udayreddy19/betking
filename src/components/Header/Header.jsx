@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { HiOutlineMenu, HiOutlineClipboardList, IoGiftOutline, FiChevronDown, FiZap, FiShield } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
@@ -149,20 +149,28 @@ function Header() {
               >
                 More <FiChevronDown className="header-more-chevron" />
               </button>
-              {isMoreOpen && (
-                <div className="header-more-menu">
-                  {activeMoreLinks.map((link) => (
-                    <button
-                      key={link.to}
-                      type="button"
-                      className="header-more-item"
-                      onClick={() => { navigate(link.to); setIsMoreOpen(false); }}
-                    >
-                      {link.label}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <AnimatePresence>
+                {isMoreOpen && (
+                  <motion.div
+                    className="header-more-menu"
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.18, ease: 'easeOut' }}
+                  >
+                    {activeMoreLinks.map((link) => (
+                      <button
+                        key={link.to}
+                        type="button"
+                        className="header-more-item"
+                        onClick={() => { navigate(link.to); setIsMoreOpen(false); }}
+                      >
+                        {link.label}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </nav>
         </div>
@@ -270,8 +278,16 @@ function Header() {
                     </span>
                     <FiChevronDown className={`balance-chevron ${isWalletOpen ? 'open' : ''}`} />
                   </button>
-                  {isWalletOpen && (
-                    <div className="header-wallet-menu" role="menu">
+                  <AnimatePresence>
+                    {isWalletOpen && (
+                      <motion.div
+                        className="header-wallet-menu"
+                        role="menu"
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
+                        transition={{ duration: 0.18, ease: 'easeOut' }}
+                      >
                       <div className="header-wallet-menu__loyalty">
                         <div className="header-wallet-menu__loyalty-head">
                           <span className="header-wallet-menu__loyalty-title">
@@ -412,13 +428,11 @@ function Header() {
                           Withdraw
                         </button>
                       </div>
-                    </div>
+                    </motion.div>
                   )}
+                </AnimatePresence>
                 </div>
               </div>
-              <button className="header-deposit-btn" onClick={openDepositModal} id="deposit-btn">
-                Deposit
-              </button>
             </>
           ) : (
             <div className="header-auth-buttons">

@@ -15,6 +15,9 @@ import { useAuth } from '../../context/AuthContext';
 import { isMatchBettable, isTrulyLiveMatch, getMatchState } from '../../utils/matchBetting';
 import { resolveCricketTeamScores } from '../../utils/cricketScores';
 import { prefetchMatchDetail } from '../../services/matchDetailPoller';
+import { useMatchDetail } from '../../hooks/useMatchDetail';
+import { useCentralizedMatchState } from '../../hooks/useCentralizedMatchState';
+import { centralizedMatchEngine } from '../../services/centralizedMatchStateEngine';
 import { filterMatches } from '../../utils/matchFilters';
 import { resolveLeagueId, getLeagueMeta, isSameLeague, groupMatchesByLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
 import SrlLeaguePanel from '../../components/SrlLeaguePanel/SrlLeaguePanel';
@@ -54,57 +57,50 @@ function filterByLeague(matchList, activeLeague, cricketSeries = []) {
 }
 
 function getMatchScores(match) {
-  const ld = match.liveDetails || {};
   const isLive = isTrulyLiveMatch(match);
   const isFinished = getMatchState(match) === 'post';
+  const state = centralizedMatchEngine.getSnapshot(match?.id, match);
 
-  let team1Score = '';
-  let team2Score = '';
+  let team1Score = state?.teams?.team1?.score || '';
+  let team2Score = state?.teams?.team2?.score || '';
 
-  if (isLive || isFinished) {
-    if (match.sport === 'cricket' || match.sport === 'virtual-cricket') {
-      const scores = resolveCricketTeamScores(match, ld);
-      const r1 = scores.team1.runs ?? 0;
-      const w1 = scores.team1.wickets ?? 0;
-      const r2 = scores.team2.runs ?? 0;
-      const w2 = scores.team2.wickets ?? 0;
-      const hasScore = r1 > 0 || w1 > 0 || r2 > 0 || w2 > 0;
-      team1Score = (r1 > 0 || w1 > 0) ? `${r1}/${w1}` : (ld.commentary || '');
-      team2Score = (r2 > 0 || w2 > 0) ? `${r2}/${w2}` : (hasScore ? '0/0' : '');
-    } else if (match.sport === 'soccer' || match.sport === 'esoccer') {
+  if ((!team1Score || team1Score === '0/0') && (!team2Score || team2Score === '0/0')) {
+    const ld = match?.liveDetails || {};
+    if (match?.sport === 'soccer' || match?.sport === 'esoccer' || match?.sport === 'basketball') {
       team1Score = String(ld.score1 ?? 0);
       team2Score = String(ld.score2 ?? 0);
-    } else if (match.sport === 'basketball' || match.sport === 'american-football') {
-      team1Score = String(ld.score1 ?? 0);
-      team2Score = String(ld.score2 ?? 0);
-    } else if (match.sport === 'tennis') {
-      if (ld.sets1?.length || ld.sets2?.length) {
-        team1Score = (ld.sets1 || []).join(' ');
-        team2Score = (ld.sets2 || []).join(' ');
-      } else {
-        team1Score = String(ld.score1 ?? 0);
-        team2Score = String(ld.score2 ?? 0);
-      }
     } else {
-      team1Score = String(ld.score1 ?? ld.runs ?? '0');
-      team2Score = String(ld.score2 ?? '0');
-    }
-  } else {
-    const timeStr = match.time || 'Scheduled';
-    if (timeStr.includes(' ')) {
-      const parts = timeStr.trim().split(/\s+/);
-      if (parts.length >= 2) {
-        team1Score = parts.slice(0, -1).join(' ');
-        team2Score = parts[parts.length - 1];
-      } else {
-        team2Score = timeStr;
-      }
-    } else {
-      team2Score = timeStr;
+      team1Score = `${ld.runs ?? 0}/${ld.wickets ?? 0}`;
+      team2Score = `${ld.score2 ?? 0}/${ld.wickets2 ?? 0}`;
     }
   }
 
-  return { team1Score, team2Score, isLive, isFinished };
+  return { team1Score, team2Score, isLive, isFinished, state };
+}
+
+function resolveTossText(match, centralizedState) {
+  if (!match) return null;
+  const isCricket = match.sport === 'cricket' || match.sport === 'virtual-cricket' || !match.sport;
+  if (!isCricket) return null;
+
+  const t = match.toss || match.liveDetails?.toss || match.matchHeader?.toss || centralizedState?.toss;
+  if (typeof t === 'string' && t.trim()) return t.trim();
+  if (t && typeof t === 'object') {
+    const winner = t.winnerName || t.winner || t.teamWinnerName;
+    const decision = t.decision || t.decisionChoice || 'bat';
+    if (winner) {
+      return `${winner} won the toss & elected to ${decision.toLowerCase()}`;
+    }
+  }
+
+  const team1Name = match.team1?.name || match.team1;
+  const ld = match.liveDetails || {};
+  const batTeam = ld.firstTeamName || ld.batTeam || team1Name;
+  if (batTeam && (match.isLive || match.matchState === 'in')) {
+    return `${batTeam} won the toss & elected to bat`;
+  }
+
+  return null;
 }
 
 function CricketGroupedMatches({ groups, onSelectMatch, getMatchScores, isBetSelected, onQuickBet }) {
@@ -130,14 +126,25 @@ function CricketGroupedMatches({ groups, onSelectMatch, getMatchScores, isBetSel
             const marketCount = 22 + ((m.id?.length || 0) % 15);
 
             return (
-              <div key={m.id} className="sports-cricket-row-10cric">
-                <div className="sports-cricket-row__meta-bar">
-                  <span className="sports-cricket-row__league-sub">{league}</span>
-                  <span className="sports-cricket-row__status-text">{statusLabel}</span>
-                </div>
+              <div
+                key={m.id}
+                className="sports-cricket-row-10cric"
+                onClick={() => onSelectMatch(m.id)}
+                style={{ cursor: 'pointer' }}
+              >
+                {(() => {
+                  const rowToss = resolveTossText(m);
+                  return (
+                    <div className="sports-cricket-row__meta-bar">
+                      <span className="sports-cricket-row__league-sub">{league}</span>
+                      {rowToss && <span className="sports-cricket-row__status-text" style={{ color: 'var(--color-accent-gold)' }}>🪙 {rowToss}</span>}
+                      <span className="sports-cricket-row__status-text">{statusLabel}</span>
+                    </div>
+                  );
+                })()}
 
                 <div className="sports-cricket-row__body">
-                  <button type="button" className="sports-cricket-row__teams-btn" onClick={() => onSelectMatch(m.id)}>
+                  <div className="sports-cricket-row__teams-btn">
                     <div className="sports-cricket-row__team">
                       <TeamJersey team={m.team1} size={22} />
                       <span className="sports-cricket-row__team-name">{m.team1.name}</span>
@@ -153,13 +160,13 @@ function CricketGroupedMatches({ groups, onSelectMatch, getMatchScores, isBetSel
                         {oversDisplay}
                       </div>
                     )}
-                  </button>
+                  </div>
 
-                  <div className="sports-cricket-row__odds-container">
+                  <div className="sports-cricket-row__odds-container" onClick={(e) => e.stopPropagation()}>
                     <button
                       type="button"
                       className={`sports-cricket-odds-card ${isBetSelected(m.id, '1') ? 'selected' : ''}`}
-                      onClick={() => onQuickBet(m, '1', m.odds?.team1, m.team1.name)}
+                      onClick={(e) => { e.stopPropagation(); onQuickBet(m, '1', m.odds?.team1, m.team1.name); }}
                     >
                       <span className="odds-label">1</span>
                       <strong className="odds-val">{Number(m.odds?.team1 || 0).toFixed(2)}</strong>
@@ -168,7 +175,7 @@ function CricketGroupedMatches({ groups, onSelectMatch, getMatchScores, isBetSel
                     <button
                       type="button"
                       className={`sports-cricket-odds-card ${isBetSelected(m.id, '2') ? 'selected' : ''}`}
-                      onClick={() => onQuickBet(m, '2', m.odds?.team2, m.team2.name)}
+                      onClick={(e) => { e.stopPropagation(); onQuickBet(m, '2', m.odds?.team2, m.team2.name); }}
                     >
                       <span className="odds-label">2</span>
                       <strong className="odds-val">{Number(m.odds?.team2 || 0).toFixed(2)}</strong>
@@ -178,7 +185,7 @@ function CricketGroupedMatches({ groups, onSelectMatch, getMatchScores, isBetSel
                       <button
                         type="button"
                         className={`sports-cricket-odds-card ${isBetSelected(m.id, 'X') ? 'selected' : ''}`}
-                        onClick={() => onQuickBet(m, 'X', m.odds.draw, 'Draw')}
+                        onClick={(e) => { e.stopPropagation(); onQuickBet(m, 'X', m.odds.draw, 'Draw'); }}
                       >
                         <span className="odds-label">X</span>
                         <strong className="odds-val">{Number(m.odds.draw).toFixed(2)}</strong>
@@ -189,7 +196,11 @@ function CricketGroupedMatches({ groups, onSelectMatch, getMatchScores, isBetSel
                       </div>
                     )}
 
-                    <button type="button" className="sports-cricket-markets-capsule" onClick={() => onSelectMatch(m.id)}>
+                    <button
+                      type="button"
+                      className="sports-cricket-markets-capsule"
+                      onClick={(e) => { e.stopPropagation(); onSelectMatch(m.id); }}
+                    >
                       +{marketCount}
                     </button>
                   </div>
@@ -246,15 +257,7 @@ export default function Sports() {
     return () => mq.removeEventListener('change', onChange);
   }, []);
 
-  useEffect(() => {
-    const urlMatchId = searchParams.get('match');
-    const urlSport = searchParams.get('sport');
-    if (urlMatchId) {
-      setSelectedMatchId(urlMatchId);
-      setViewMode('match');
-      if (urlSport) setActiveSport(urlSport);
-    }
-  }, [searchParams]);
+
 
   const isIplSrlView = isSameLeague(activeLeague, 'ipl-srl');
 
@@ -298,11 +301,12 @@ export default function Sports() {
 
   // Find the selected match in the full matches array (not just filtered sportMatches)
   // Persist lastActiveMatchRef so background API refreshes never flash 'Match not found'
-  const activeMatch = useMemo(() => {
-    if (viewMode !== 'match' || !selectedMatchId) return null;
+  const baseActiveMatch = useMemo(() => {
+    const targetId = selectedMatchId || liveMatches[0]?.id || sportMatches[0]?.id;
+    if (!targetId) return null;
 
-    let match = sportMatches.find(m => m.id === selectedMatchId)
-      || matches.find(m => m.id === selectedMatchId);
+    let match = sportMatches.find(m => m.id === targetId)
+      || matches.find(m => m.id === targetId);
 
     if (match) {
       lastActiveMatchRef.current = match;
@@ -310,7 +314,17 @@ export default function Sports() {
     }
 
     return lastActiveMatchRef.current || null;
-  }, [sportMatches, matches, selectedMatchId, viewMode]);
+  }, [sportMatches, matches, selectedMatchId, liveMatches]);
+
+  const activeMatch = useMatchDetail(baseActiveMatch);
+  
+  useEffect(() => {
+    if (activeMatch?.id) {
+      centralizedMatchEngine.updateMatchState(activeMatch.id, activeMatch);
+    }
+  }, [activeMatch]);
+
+  const centralizedState = useCentralizedMatchState(activeMatch);
 
   const marketCategories = useMemo(() => {
     return getMarketCategoriesForSport(activeMatch?.sport || activeSport || 'cricket');
@@ -679,10 +693,12 @@ export default function Sports() {
                       </div>
                       <div className="sports-league-overview-teams">
                         <div className="sports-league-overview-team">
+                          <TeamJersey team={m.team1} size={22} />
                           <span>{m.team1.name}</span>
                           <strong>{team1Score || '–'}</strong>
                         </div>
                         <div className="sports-league-overview-team">
+                          <TeamJersey team={m.team2} size={22} />
                           <span>{m.team2.name}</span>
                           <strong>{team2Score || '–'}</strong>
                         </div>
@@ -742,10 +758,12 @@ export default function Sports() {
                       </div>
                       <div className="sports-league-overview-teams">
                         <div className="sports-league-overview-team">
+                          <TeamJersey team={m.team1} size={22} />
                           <span>{m.team1.name}</span>
                           <strong>{team1Score || '–'}</strong>
                         </div>
                         <div className="sports-league-overview-team">
+                          <TeamJersey team={m.team2} size={22} />
                           <span>{m.team2.name}</span>
                           <strong>{team2Score || '–'}</strong>
                         </div>
@@ -767,14 +785,67 @@ export default function Sports() {
                 </div>
               )}
 
-              <div className="sports-match-banner sports-match-banner--desktop-only">
-                <div className="sports-match-banner-time">{matchTimeLabel}</div>
-                <div className="sports-match-banner-teams">
-                  <span className="sports-match-banner-team">{activeMatch.team1.name}</span>
-                  <span className="sports-match-banner-vs">VS</span>
-                  <span className="sports-match-banner-team">{activeMatch.team2.name}</span>
-                </div>
-              </div>
+              {(() => {
+                const { team1Score, team2Score, isLive } = getMatchScores(activeMatch);
+                const commText = centralizedState?.commentary || activeMatch.liveDetails?.commentary;
+
+                const matchFormatBadge = (typeof activeMatch.matchType === 'string' ? activeMatch.matchType : typeof activeMatch.matchFormat === 'string' ? activeMatch.matchFormat : typeof activeMatch.format === 'string' ? activeMatch.format : (activeMatch.sport === 'cricket' ? 'T20' : activeMatch.sport)).toUpperCase();
+
+                const rawVenue = activeMatch.venue || activeMatch.ground || activeMatch.liveDetails?.venue;
+                const venueText = typeof rawVenue === 'string'
+                  ? rawVenue
+                  : (rawVenue?.venueName || rawVenue?.name || (rawVenue?.city ? `${rawVenue.city}${rawVenue.country ? `, ${rawVenue.country}` : ''}` : null));
+
+                const rawSeries = activeMatch.seriesName || activeMatch.league;
+                const seriesText = typeof rawSeries === 'string' ? rawSeries : (rawSeries?.name || null);
+
+                const tossText = resolveTossText(activeMatch, centralizedState);
+
+                return (
+                  <div className="sports-match-banner sports-match-banner--desktop-only">
+                    <div className="sports-match-banner-time">
+                      {isLive && <span className="sports-live-badge-dot" />}
+                      {matchTimeLabel}
+                    </div>
+
+                    <div className="sports-match-banner-meta-bar">
+                      <span className="sports-format-badge">{matchFormatBadge}</span>
+                      {seriesText && <span className="sports-series-name">🏆 {seriesText}</span>}
+                      {venueText && <span className="sports-venue-tag">📍 {venueText}</span>}
+                    </div>
+
+                    <div className="sports-match-banner-teams">
+                      <div className="sports-match-banner-team-col">
+                        <TeamJersey team={activeMatch.team1} size={48} />
+                        <span className="sports-match-banner-team">{activeMatch.team1.name}</span>
+                        {isLive && team1Score && (
+                          <strong className="sports-match-banner-score">{team1Score}</strong>
+                        )}
+                      </div>
+
+                      <span className="sports-match-banner-vs">VS</span>
+
+                      <div className="sports-match-banner-team-col">
+                        <TeamJersey team={activeMatch.team2} size={48} />
+                        <span className="sports-match-banner-team">{activeMatch.team2.name}</span>
+                        {isLive && team2Score && (
+                          <strong className="sports-match-banner-score">{team2Score}</strong>
+                        )}
+                      </div>
+                    </div>
+
+                    {tossText && (
+                      <div className="sports-toss-badge">
+                        <span>🪙 {tossText}</span>
+                      </div>
+                    )}
+
+                    {commText && (
+                      <p className="sports-match-banner-commentary">{commText}</p>
+                    )}
+                  </div>
+                );
+              })()}
 
               <div className="sports-market-cats">
                 {marketCategories.map(cat => (
@@ -851,9 +922,9 @@ export default function Sports() {
 
         <aside className="sports-right">
           <BetSlip />
-          {isWideLayout && (
+          {isWideLayout && activeMatch && (
             <div className="sports-desktop-live-widget">
-              <ErrorBoundary>
+              <ErrorBoundary resetKey={activeMatch?.id}>
                 <LiveMatchGraphicWidget match={activeMatch} />
               </ErrorBoundary>
             </div>
