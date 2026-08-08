@@ -96,7 +96,7 @@ function persistSession(user) {
 
 function syncStoredUser(sessionUser) {
   const users = getStoredUsers();
-  const idx = users.findIndex(u => u.email === sessionUser.email);
+  const idx = users.findIndex(u => u.email.toLowerCase() === sessionUser.email.toLowerCase());
   if (idx < 0) return;
   users[idx] = {
     ...users[idx],
@@ -586,11 +586,14 @@ export function AuthProvider({ children }) {
 
   // Step 2: Admin approves withdrawal request
   const adminApproveWithdrawal = useCallback((txId, targetEmail, amount) => {
-    const amt = Number(amount) || 0;
-    const utr = `UTR${Date.now()}`;
-    const emailToApprove = targetEmail || user?.email || 'demo@betking.com';
-
-    updateTransactionStatus(txId, 'COMPLETED', utr);
+    const defaultUtr = `UTR${Date.now()}`;
+    const updatedTx = updateTransactionStatus(txId, 'COMPLETED', defaultUtr);
+    const emailToApprove = targetEmail || updatedTx?.userEmail || updatedTx?.email || user?.email || 'demo@betking.com';
+    let amt = Math.abs(Number(amount));
+    if (isNaN(amt) || amt <= 0) {
+      amt = Math.abs(Number(updatedTx?.amount) || 0);
+    }
+    const utr = updatedTx?.utr || defaultUtr;
 
     if (emailToApprove) {
       recordTx(emailToApprove, {
@@ -603,29 +606,50 @@ export function AuthProvider({ children }) {
       });
     }
 
+    if (user && user.email.toLowerCase() === emailToApprove.toLowerCase()) {
+      setTransactions(loadTransactions(user.email));
+    }
+
     showToast(`Withdrawal of ${formatInr(amt)} APPROVED! Dispatched via ${utr}`, 'success');
   }, [user, recordTx, showToast]);
 
   // Step 3: Admin rejects withdrawal request (Refunds user balance + notifies user)
   const adminRejectWithdrawal = useCallback((txId, targetEmail, amount) => {
-    const amt = Number(amount) || 0;
-    const emailToRefund = targetEmail || user?.email || 'demo@betking.com';
+    const updatedTx = updateTransactionStatus(txId, 'REJECTED');
+    const emailToRefund = (targetEmail || updatedTx?.userEmail || updatedTx?.email || user?.email || 'demo@betking.com').toLowerCase();
+    
+    let amt = Math.abs(Number(amount));
+    if (isNaN(amt) || amt <= 0) {
+      amt = Math.abs(Number(updatedTx?.amount) || 0);
+    }
 
-    updateTransactionStatus(txId, 'REJECTED');
+    if (amt <= 0) {
+      console.warn('adminRejectWithdrawal: unable to determine refund amount', { txId, targetEmail, amount });
+      showToast('Withdrawal rejected, but refund amount could not be determined.', 'warning');
+      return;
+    }
 
     // 1. Update stored users list
     const users = getStoredUsers();
-    const idx = users.findIndex(u => u.email.toLowerCase() === emailToRefund.toLowerCase());
+    const idx = users.findIndex(u => u.email.toLowerCase() === emailToRefund);
     if (idx >= 0) {
       users[idx].balance = (users[idx].balance || 0) + amt;
       users[idx].winningsBalance = (users[idx].winningsBalance || 0) + amt;
+      saveStoredUsers(users);
+    } else {
+      users.push({
+        email: emailToRefund,
+        displayName: emailToRefund.split('@')[0],
+        balance: amt,
+        winningsBalance: amt,
+      });
       saveStoredUsers(users);
     }
 
     // 2. Update active session user in localStorage
     try {
       const activeSession = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
-      if (activeSession && activeSession.email.toLowerCase() === emailToRefund.toLowerCase()) {
+      if (activeSession && activeSession.email.toLowerCase() === emailToRefund) {
         activeSession.balance = (activeSession.balance || 0) + amt;
         activeSession.winningsBalance = (activeSession.winningsBalance || 0) + amt;
         localStorage.setItem(SESSION_KEY, JSON.stringify(activeSession));
@@ -635,13 +659,14 @@ export function AuthProvider({ children }) {
     }
 
     // 3. Update active React user state if logged-in user matches
-    if (user && user.email.toLowerCase() === emailToRefund.toLowerCase()) {
-      setUser(prev => prev ? ({
+    setUser(prev => {
+      if (!prev || prev.email.toLowerCase() !== emailToRefund) return prev;
+      return {
         ...prev,
         balance: prev.balance + amt,
         winningsBalance: (prev.winningsBalance ?? 0) + amt,
-      }) : prev);
-    }
+      };
+    });
 
     // 4. Record refund transaction entry
     if (emailToRefund) {
@@ -653,6 +678,10 @@ export function AuthProvider({ children }) {
         status: 'COMPLETED',
         label: `Withdrawal Rejected · ${formatInr(amt)} refunded to wallet`,
       });
+    }
+
+    if (user && user.email.toLowerCase() === emailToRefund) {
+      setTransactions(loadTransactions(user.email));
     }
 
     showToast(`Withdrawal of ${formatInr(amt)} REJECTED — ${formatInr(amt)} refunded to wallet!`, 'warning');

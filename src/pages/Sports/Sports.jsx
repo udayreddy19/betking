@@ -875,7 +875,7 @@ export default function Sports() {
                     </button>
                     {isExpanded && (
                       canBetActive ? (
-                        <div className="sports-market-odds-grid">
+                        <div className={`sports-market-odds-grid ${market.options.length === 3 ? 'three-col' : (market.options.length > 3 ? 'multi-col' : 'two-col')}`}>
                           {market.options.map((opt) => (
                             <button
                               key={opt.selection}

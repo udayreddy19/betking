@@ -504,9 +504,24 @@
 
 .sports-market-odds-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
   gap: var(--space-3);
   margin-top: var(--space-4);
+}
+
+.sports-market-odds-grid.two-col {
+  grid-template-columns: 1fr 1fr;
+}
+
+.sports-market-odds-grid.three-col {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.sports-market-odds-grid.three-col .sports-market-odds-btn {
+  padding: 12px 10px;
+}
+
+.sports-market-odds-grid.multi-col {
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
 }
 
 .sports-market-odds-btn {

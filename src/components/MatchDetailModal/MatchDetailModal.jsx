@@ -357,7 +357,7 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
                     <span>{m.title}</span>
                     {m.key === 'winner' && <span className="market-cashout">CASHOUT AVAILABLE</span>}
                   </div>
-                  <div className={`market-odds-grid ${m.options.length >= 3 ? 'multi-col' : 'two-col'}`}>
+                  <div className={`market-odds-grid ${m.options.length === 3 ? 'three-col' : (m.options.length > 3 ? 'multi-col' : 'two-col')}`}>
                     {m.options.map((opt) => (
                       <button
                         key={opt.selection}
