@@ -40,15 +40,58 @@ function attachOdds(matches) {
   });
 }
 
+function normalizeTeamKey(name = '') {
+  return String(name)
+    .replace(/\s*(1st|2nd|3rd|4th|inns|innings|xi|srl|women|men|t20|test)\b/gi, '')
+    .replace(/[^a-z0-9]/gi, '')
+    .trim()
+    .toLowerCase();
+}
+
 function mergeSrlMatches(matches) {
   const srl = attachOdds(getIplSrlMatches());
   const defaults = attachOdds(DEFAULT_MATCH_FIXTURES);
-  const rest = matches.filter((m) => !String(m.id || '').startsWith('srl_ipl_'));
+  const apiMatches = matches.filter((m) => !String(m.id || '').startsWith('srl_ipl_'));
 
-  const existingIds = new Set(rest.map((m) => m.id));
-  const missingDefaults = defaults.filter((m) => !existingIds.has(m.id));
+  // Collect active team tokens from live API matches
+  const liveTeams = new Set();
+  apiMatches.forEach((m) => {
+    const t1 = normalizeTeamKey(m?.team1?.name || m?.team1 || '');
+    const t2 = normalizeTeamKey(m?.team2?.name || m?.team2 || '');
+    if (t1 && t1.length >= 3) liveTeams.add(t1);
+    if (t2 && t2.length >= 3) liveTeams.add(t2);
+  });
 
-  return [...rest, ...srl, ...missingDefaults];
+  // Exclude static default fixtures if either team is currently playing in a live API match
+  const filteredDefaults = defaults.filter((m) => {
+    const t1 = normalizeTeamKey(m?.team1?.name || m?.team1 || '');
+    const t2 = normalizeTeamKey(m?.team2?.name || m?.team2 || '');
+    const t1Conflict = t1 && Array.from(liveTeams).some((lt) => t1.includes(lt) || lt.includes(t1));
+    const t2Conflict = t2 && Array.from(liveTeams).some((lt) => t2.includes(lt) || lt.includes(t2));
+    return !t1Conflict && !t2Conflict;
+  });
+
+  const combined = [...apiMatches, ...srl, ...filteredDefaults];
+
+  const seenIds = new Set();
+  const seenPairs = new Set();
+  const result = [];
+
+  for (const match of combined) {
+    if (!match?.id || seenIds.has(match.id)) continue;
+
+    const t1 = normalizeTeamKey(match?.team1?.name || match?.team1 || '');
+    const t2 = normalizeTeamKey(match?.team2?.name || match?.team2 || '');
+    const pairKey = (t1 && t2) ? [t1, t2].sort().join('::') : null;
+
+    if (pairKey && seenPairs.has(pairKey)) continue;
+
+    seenIds.add(match.id);
+    if (pairKey) seenPairs.add(pairKey);
+    result.push(match);
+  }
+
+  return result;
 }
 
 function matchDisplayKey(match) {

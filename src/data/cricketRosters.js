@@ -170,12 +170,7 @@ const ROSTERS = {
 
 export function normalizeTeamKey(name = '') {
   return String(name)
-    .replace(/\s+srl$/i, '')
-    .replace(/\s+w$/i, '')
-    .replace(/\s+women$/i, '')
-    .replace(/\s+men$/i, '')
-    .replace(/\s+t20$/i, '')
-    .replace(/\s+test$/i, '')
+    .replace(/\s*(1st|2nd|3rd|4th|inns|innings|xi|srl|women|men|t20|test)\b/gi, '')
     .replace(/[^a-z0-9]/gi, ' ')
     .trim()
     .toLowerCase();
@@ -183,49 +178,40 @@ export function normalizeTeamKey(name = '') {
 
 export function getRosterForTeam(teamName) {
   if (!teamName) return { batters: [], bowlers: [] };
-  const key = normalizeTeamKey(teamName);
+  const rawStr = String(teamName);
+  const cleanStr = rawStr.replace(/\s*(1st|2nd|3rd|4th|inns|innings)\b/gi, '').trim();
+  const key = normalizeTeamKey(cleanStr).replace(/\s+/g, '');
 
   if (ROSTERS[key]) return ROSTERS[key];
 
   for (const [rosterKey, roster] of Object.entries(ROSTERS)) {
-    if (key === rosterKey || key.includes(rosterKey) || rosterKey.includes(key)) {
+    const normRosterKey = rosterKey.replace(/\s+/g, '');
+    if (key === normRosterKey || (key.length >= 3 && normRosterKey.includes(key))) {
       return roster;
     }
   }
 
-  // Alias lookups for common country/team name variations
-  if (key === 'wi' || key.includes('west indies') || key.includes('windies')) return ROSTERS['west indies'];
-  if (key === 'pak' || key.includes('pakistan')) return ROSTERS['pakistan'];
-  if (key === 'ind' || key.includes('india')) return ROSTERS['india'];
-  if (key === 'eng' || key.includes('england')) return ROSTERS['england'];
-  if (key === 'aus' || key.includes('australia')) return ROSTERS['australia'];
-  if (key === 'sa' || key.includes('south africa')) return ROSTERS['south africa'];
-  if (key === 'nz' || key.includes('new zealand')) return ROSTERS['new zealand'];
-  if (key === 'sl' || key.includes('sri lanka')) return ROSTERS['sri lanka'];
-  if (key === 'rr' || key.includes('rajasthan')) return ROSTERS['rajasthan royals'];
-  if (key === 'srh' || key.includes('sunrisers') || key.includes('hyderabad')) return ROSTERS['sunrisers hyderabad'];
-  if (key === 'csk' || key.includes('chennai')) return ROSTERS['chennai super kings'];
-  if (key === 'mi' || key.includes('mumbai')) return ROSTERS['mumbai indians'];
-  if (key === 'rcb' || key.includes('bengaluru') || key.includes('bangalore')) return ROSTERS['royal challengers bengaluru'];
+  // Alias lookups with word boundaries (handles "IND 1ST", "SL 1ST", "KKR 1ST", "CSK 1ST", etc.)
+  if (/\b(wi|west indies|windies)\b/i.test(cleanStr)) return ROSTERS['west indies'];
+  if (/\b(pak|pakistan)\b/i.test(cleanStr)) return ROSTERS['pakistan'];
+  if (/\b(ind|india)\b/i.test(cleanStr)) return ROSTERS['india'];
+  if (/\b(eng|england)\b/i.test(cleanStr)) return ROSTERS['england'];
+  if (/\b(aus|australia)\b/i.test(cleanStr)) return ROSTERS['australia'];
+  if (/\b(sa|south africa)\b/i.test(cleanStr)) return ROSTERS['south africa'];
+  if (/\b(nz|new zealand|kiwis)\b/i.test(cleanStr)) return ROSTERS['new zealand'];
+  if (/\b(sl|sri lanka)\b/i.test(cleanStr)) return ROSTERS['sri lanka'];
+  if (/\b(rr|rajasthan)\b/i.test(cleanStr)) return ROSTERS['rajasthan royals'];
+  if (/\b(srh|sunrisers|hyderabad)\b/i.test(cleanStr)) return ROSTERS['sunrisers hyderabad'];
+  if (/\b(csk|chennai)\b/i.test(cleanStr)) return ROSTERS['chennai super kings'];
+  if (/\b(mi|mumbai)\b/i.test(cleanStr)) return ROSTERS['mumbai indians'];
+  if (/\b(rcb|bengaluru|bangalore)\b/i.test(cleanStr)) return ROSTERS['royal challengers bengaluru'];
+  if (/\b(kkr|kolkata)\b/i.test(cleanStr)) return ROSTERS['kolkata knight riders'];
+  if (/\b(dc|delhi)\b/i.test(cleanStr)) return ROSTERS['delhi capitals'];
+  if (/\b(pbks|punjab)\b/i.test(cleanStr)) return ROSTERS['punjab kings'];
+  if (/\b(gt|gujarat)\b/i.test(cleanStr)) return ROSTERS['gujarat titans'];
+  if (/\b(lsg|lucknow)\b/i.test(cleanStr)) return ROSTERS['lucknow super giants'];
 
-  const cleanName = String(teamName).replace(/\s+srl$/i, '').trim();
-  return {
-    batters: [
-      `${cleanName} Opener 1`,
-      `${cleanName} Opener 2`,
-      `${cleanName} Batter 3`,
-      `${cleanName} Batter 4`,
-      `${cleanName} Batter 5`,
-      `${cleanName} All-Rounder 1`,
-      `${cleanName} All-Rounder 2`,
-    ],
-    bowlers: [
-      `${cleanName} Pacer 1`,
-      `${cleanName} Pacer 2`,
-      `${cleanName} Spinner 1`,
-      `${cleanName} Pacer 3`,
-    ],
-  };
+  return { batters: [], bowlers: [] };
 }
 
 export { ROSTERS };

@@ -43,10 +43,12 @@ export function computeLiveDynamicOdds(match) {
 
   // --- CRICKET DYNAMIC LIVE ODDS (HUMAN TRADER ALGORITHM) ---
   if (sport === 'cricket' || sport === 'virtual-cricket') {
-    const { team1, team2 } = resolveCricketTeamScores(match, ld);
+    const scores = resolveCricketTeamScores(match, ld) || {};
+    const team1 = scores.team1 || { runs: 0, wickets: 0, balls: 0 };
+    const team2 = scores.team2 || { runs: 0, wickets: 0, balls: 0 };
     const is2ndInnings = isCricketSecondInnings(match, ld);
 
-    const isOdiOrListA = (team1.balls > 120 || team2.balls > 120 || /50|one day|cup|list a/i.test(match.league || ''));
+    const isOdiOrListA = ((team1.balls || 0) > 120 || (team2.balls || 0) > 120 || /50|one day|cup|list a/i.test(match.league || ''));
     const totalBalls = isOdiOrListA ? 300 : 120;
     const parRRR = isOdiOrListA ? 5.4 : 8.2;
 

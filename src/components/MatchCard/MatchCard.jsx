@@ -163,7 +163,7 @@ export default function MatchCard({ match, variant = 'default' }) {
         <div className="match-card-teams">
           <div className="match-card-team">
             <TeamJersey team={match.team1} size={jerseySize} />
-            <span className="team-name">{match.team1.name}</span>
+            <span className="team-name">{match.team1?.name || match.team1 || 'Team 1'}</span>
             {!isHome && (isLiveNow || isFinished) && team1Score && (
               <span className="team-score">{team1Score}</span>
             )}
@@ -171,7 +171,7 @@ export default function MatchCard({ match, variant = 'default' }) {
           {!isHome && <span className="vs-text">VS</span>}
           <div className="match-card-team">
             <TeamJersey team={match.team2} size={jerseySize} />
-            <span className="team-name">{match.team2.name}</span>
+            <span className="team-name">{match.team2?.name || match.team2 || 'Team 2'}</span>
             {!isHome && (isLiveNow || isFinished) && team2Score && (
               <span className="team-score">{team2Score}</span>
             )}
@@ -188,26 +188,26 @@ export default function MatchCard({ match, variant = 'default' }) {
           <div className={`match-card-odds ${isHome ? 'match-card-odds--home' : ''}`} onClick={(e) => e.stopPropagation()}>
             <button
               className={`odds-btn ${isBetSelected(match.id, '1') ? 'selected' : ''}`}
-              onClick={(e) => handleOddsClick(e, '1', match.odds.team1)}
+              onClick={(e) => handleOddsClick(e, '1', match.odds?.team1 ?? 1.85)}
             >
               <span className="odds-label">1</span>
-              <span className="odds-value">{Number(match.odds.team1).toFixed(2)}</span>
+              <span className="odds-value">{Number(match.odds?.team1 || 1.85).toFixed(2)}</span>
             </button>
-            {!isHome && match.odds.draw !== undefined && (
+            {!isHome && match.odds?.draw !== undefined && match.odds?.draw !== null && (
               <button
                 className={`odds-btn ${isBetSelected(match.id, 'X') ? 'selected' : ''}`}
-                onClick={(e) => handleOddsClick(e, 'X', match.odds.draw)}
+                onClick={(e) => handleOddsClick(e, 'X', match.odds?.draw)}
               >
                 <span className="odds-label">X</span>
-                <span className="odds-value">{Number(match.odds.draw).toFixed(2)}</span>
+                <span className="odds-value">{Number(match.odds?.draw || 3.50).toFixed(2)}</span>
               </button>
             )}
             <button
               className={`odds-btn ${isBetSelected(match.id, '2') ? 'selected' : ''}`}
-              onClick={(e) => handleOddsClick(e, '2', match.odds.team2)}
+              onClick={(e) => handleOddsClick(e, '2', match.odds?.team2 ?? 1.95)}
             >
               <span className="odds-label">2</span>
-              <span className="odds-value">{Number(match.odds.team2).toFixed(2)}</span>
+              <span className="odds-value">{Number(match.odds?.team2 || 1.95).toFixed(2)}</span>
             </button>
           </div>
         ) : (

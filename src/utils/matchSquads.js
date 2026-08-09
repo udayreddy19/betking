@@ -1,4 +1,5 @@
 import { normalizeTeamKey, getRosterForTeam } from '../data/cricketRosters';
+import { isPlaceholderPlayerName } from './cricketPlayers';
 
 function teamsMatch(teamA, teamB) {
   if (!teamA || !teamB) return false;
@@ -39,6 +40,20 @@ function generateFullSquad(teamName) {
   return { name: teamName, players };
 }
 
+function sanitizeSquadPlayers(squad, teamName) {
+  const full = generateFullSquad(teamName);
+  if (!squad?.players?.length) return full;
+
+  const sanitizedPlayers = squad.players.map((p, idx) => {
+    let name = p.name;
+    if (isPlaceholderPlayerName(name)) {
+      name = full.players[idx]?.name || `${teamName} Player ${idx + 1}`;
+    }
+    return { ...p, name };
+  });
+  return { ...squad, name: teamName, players: sanitizedPlayers };
+}
+
 /** Map API squads to home/away team names on the match card. */
 export function resolveMatchSquads(match, team1Name, team2Name) {
   const squads = match?.squads;
@@ -50,8 +65,8 @@ export function resolveMatchSquads(match, team1Name, team2Name) {
     if (!team2Squad && squads[1]) team2Squad = squads[1];
 
     return {
-      team1: (team1Squad?.players?.length ? team1Squad : generateFullSquad(team1Name)),
-      team2: (team2Squad?.players?.length ? team2Squad : generateFullSquad(team2Name)),
+      team1: sanitizeSquadPlayers(team1Squad, team1Name),
+      team2: sanitizeSquadPlayers(team2Squad, team2Name),
       fromApi: true,
     };
   }

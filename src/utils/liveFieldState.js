@@ -1,6 +1,7 @@
 import { isPlaceholderPlayerName } from './cricketPlayers';
 import { isCricketSecondInnings, resolveCricketTeamScores } from './cricketScores';
 import { oversToBalls } from './oversUtils';
+import { getRosterForTeam } from '../data/cricketRosters';
 
 const RUN_SEQUENCE = [1, 0, 2, 1, 4, 1, 0, 1, 2, 6, 1, 1, 4, 0, 2, 1, 3, 1, 0, 4];
 const EXTRA_OUTCOMES = ['wd', '1wd', '2wd', 'lb', '1lb', '2lb', 'nb', '1nb', 'W'];
@@ -134,17 +135,21 @@ export function generateCurrentOverBalls(matchId, oversStr) {
   return { overNum: currentOverNum, balls };
 }
 
-function resolveBatterName(apiName, rosterName) {
-  if (!isPlaceholderPlayerName(apiName)) return apiName.trim();
-  if (!isPlaceholderPlayerName(rosterName)) return rosterName.trim();
+function resolveBatterName(apiName, rosterName, teamName = '') {
+  if (apiName && !isPlaceholderPlayerName(apiName)) return apiName.trim();
+  if (rosterName && !isPlaceholderPlayerName(rosterName)) return rosterName.trim();
+  if (teamName) {
+    const roster = getRosterForTeam(teamName);
+    if (roster?.batters?.length) return roster.batters[0];
+  }
   return '';
 }
 
 export function buildRosterFallback(teamName) {
-  const short = teamName.replace(/\s+W$/, '').split(' ')[0];
+  const roster = getRosterForTeam(teamName);
   return {
-    batters: [`${short} Batter 1`, `${short} Batter 2`, `${short} Batter 3`],
-    bowlers: [`${short} Bowler`, `${short} Bowler 2`],
+    batters: roster?.batters?.length ? roster.batters : [],
+    bowlers: roster?.bowlers?.length ? roster.bowlers : [],
   };
 }
 
@@ -157,22 +162,27 @@ export function createFieldState(match, roster) {
     : (ld.overs || ld.firstOvers || '0.0');
 
   const { overNum, balls: ballsInOver } = generateCurrentOverBalls(matchId, oversStr);
-  const { over, ball } = parseOvers(oversStr);
-  const startBall = ball;
+
+  const batTeamName = battingIdx === 2 ? (match?.team2?.name || match?.team2) : (match?.team1?.name || match?.team1);
+  const batRoster = getRosterForTeam(batTeamName);
+  const activeRoster = (roster?.batters?.length && !isPlaceholderPlayerName(roster.batters[0])) ? roster : batRoster;
 
   const strikerIdx = 0;
+  const b1Name = resolveBatterName(ld.batter1?.name, activeRoster.batters?.[strikerIdx], batTeamName);
+  const b2Name = resolveBatterName(ld.batter2?.name, activeRoster.batters?.[1], batTeamName);
+
   const batter1 = {
-    name: resolveBatterName(ld.batter1?.name, roster.batters[strikerIdx]),
-    runs: ld.batter1?.runs ?? 12 + (over % 5) * 3,
-    balls: ld.batter1?.balls ?? 8 + startBall,
-    fours: ld.batter1?.fours ?? 2,
+    name: b1Name || null,
+    runs: ld.batter1?.runs ?? 0,
+    balls: ld.batter1?.balls ?? 0,
+    fours: ld.batter1?.fours ?? 0,
     sixes: ld.batter1?.sixes ?? 0,
   };
   const batter2 = {
-    name: resolveBatterName(ld.batter2?.name, roster.batters[1]),
-    runs: ld.batter2?.runs ?? 8 + (over % 3) * 2,
-    balls: ld.batter2?.balls ?? 6 + startBall,
-    fours: ld.batter2?.fours ?? 1,
+    name: b2Name || null,
+    runs: ld.batter2?.runs ?? 0,
+    balls: ld.batter2?.balls ?? 0,
+    fours: ld.batter2?.fours ?? 0,
     sixes: ld.batter2?.sixes ?? 0,
   };
 

@@ -39,6 +39,12 @@ const Admin = lazy(() => import('./pages/Admin/Admin'));
 const TraderConsole = lazy(() => import('./pages/Trader/TraderConsole'));
 const ApiDocs = lazy(() => import('./pages/ApiDocs/ApiDocs'));
 const Vip = lazy(() => import('./pages/Vip/Vip'));
+const IPLSRLHome = lazy(() => import('./pages/IPLSRL/IPLSRLHome'));
+const IPLSRLMatchCenter = lazy(() => import('./pages/IPLSRL/IPLSRLMatchCenter'));
+const IPLSRLStandings = lazy(() => import('./pages/IPLSRL/IPLSRLStandings'));
+const IPLSRLStats = lazy(() => import('./pages/IPLSRL/IPLSRLStats'));
+const IPLSRLTeams = lazy(() => import('./pages/IPLSRL/IPLSRLTeams'));
+const IPLSRLAdmin = lazy(() => import('./pages/Admin/IPLSRL/IPLSRLAdmin'));
 
 function PageLoader() {
   return <div className="page-loader" role="status">Loading…</div>;
@@ -73,6 +79,12 @@ function AppLayout() {
               <Route path="/promotions" element={<Promotions />} />
               <Route path="/vip" element={<Vip />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/admin/iplsrl" element={<IPLSRLAdmin />} />
+              <Route path="/iplsrl" element={<IPLSRLHome />} />
+              <Route path="/iplsrl/match-center" element={<IPLSRLMatchCenter />} />
+              <Route path="/iplsrl/standings" element={<IPLSRLStandings />} />
+              <Route path="/iplsrl/stats" element={<IPLSRLStats />} />
+              <Route path="/iplsrl/teams" element={<IPLSRLTeams />} />
               <Route path="/trader" element={<TraderConsole />} />
               <Route path="/developer" element={<ApiDocs />} />
               <Route path="/api-docs" element={<ApiDocs />} />

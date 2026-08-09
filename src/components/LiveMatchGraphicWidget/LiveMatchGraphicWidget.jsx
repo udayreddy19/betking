@@ -100,6 +100,38 @@ function BallDot({ ball, size = 'md' }) {
   );
 }
 
+function CricketFieldVisual() {
+  return (
+    <div className="cric-field-pitch">
+      <div className="cric-field-pitch__bg">
+        <svg viewBox="0 0 400 220" fill="none" className="cric-pitch-svg" preserveAspectRatio="none">
+          <rect width="400" height="220" fill="url(#grass-grad)" />
+          <polygon points="130,220 270,220 225,100 175,100" fill="url(#pitch-strip-grad)" opacity="0.85" />
+          <line x1="145" y1="195" x2="255" y2="195" stroke="#ffffff" strokeWidth="1.5" opacity="0.75" />
+          <line x1="180" y1="115" x2="220" y2="115" stroke="#ffffff" strokeWidth="1.5" opacity="0.75" />
+          <rect x="195" y="105" width="2" height="12" fill="#ffffff" opacity="0.9" />
+          <rect x="199" y="105" width="2" height="12" fill="#ffffff" opacity="0.9" />
+          <rect x="203" y="105" width="2" height="12" fill="#ffffff" opacity="0.9" />
+          <path d="M145 200 Q 200 150 255 125" stroke="#ef4444" strokeWidth="2.5" strokeDasharray="5,3" fill="none" opacity="0.85" />
+          <circle cx="255" cy="125" r="4.5" fill="#ef4444" />
+
+          <defs>
+            <linearGradient id="grass-grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#255428" />
+              <stop offset="50%" stopColor="#356d39" />
+              <stop offset="100%" stopColor="#1f4722" />
+            </linearGradient>
+            <linearGradient id="pitch-strip-grad" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="0%" stopColor="#bc9a62" />
+              <stop offset="100%" stopColor="#9e7e4b" />
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+    </div>
+  );
+}
+
 function OverHistoryBar({ rows }) {
   const scrollRef = useRef(null);
 
@@ -637,6 +669,11 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
     if (isPlaceholderPlayerName(name)) name = fieldBatter?.name;
     if (isPlaceholderPlayerName(name)) name = fallbackName;
     if (isPlaceholderPlayerName(name)) name = squadFallback;
+
+    if (isPlaceholderPlayerName(name)) {
+      const roster = getRosterForTeam(currentBatTeamName);
+      name = isStriker ? roster?.batters?.[0] : roster?.batters?.[1];
+    }
     name = displayPlayerName(name, squadFallback, currentBatTeamName);
 
     return {
@@ -652,12 +689,21 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
   let b2 = resolveBatterStats(apiBatter2, fieldState?.batter2, nonStriker, squadFallback2, false);
 
   if (b2.name === b1.name) {
-    const altName = batRoster?.batters?.[1] || squadBatters?.[1]?.name || `${currentBatTeamName} Opener 2`;
-    b2 = { ...b2, name: displayPlayerName(altName, `${currentBatTeamName} Opener 2`, currentBatTeamName) };
+    const batRosterList = getRosterForTeam(currentBatTeamName)?.batters || [];
+    const altName = batRosterList[1] || batRoster?.batters?.[1] || squadBatters?.[1]?.name;
+    b2 = { ...b2, name: displayPlayerName(altName, '', currentBatTeamName) };
   }
 
   let bowler = fieldState?.bowler || apiBowler;
-  bowler = displayPlayerName(bowler, bowlerFallback, currentBowlTeamName);
+  if (typeof bowler === 'object' && bowler?.name) bowler = bowler.name;
+
+  if (isPlaceholderPlayerName(bowler) || teamNameMatches(currentBowlTeamName, bowler) || teamNameMatches(currentBatTeamName, bowler)) {
+    const bowlRosterList = getRosterForTeam(currentBowlTeamName)?.bowlers || [];
+    bowler = bowlRosterList[0] || (bowlingRoster?.[0] && !isPlaceholderPlayerName(bowlingRoster[0]) ? bowlingRoster[0] : null);
+  }
+  if (isPlaceholderPlayerName(bowler) || teamNameMatches(currentBowlTeamName, bowler) || teamNameMatches(currentBatTeamName, bowler)) {
+    bowler = null;
+  }
 
   const chaseText = matchStateObj?.chaseState?.target
     ? `${matchStateObj.currentInnings?.batTeam || 'Team'} need ${matchStateObj.chaseState.requiredRuns} runs to win`
@@ -735,32 +781,32 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
         const outcome = String(b).toUpperCase();
         let tag = outcome;
         let kind = 'run';
-        let text = `${b} run${b === '1' ? '' : 's'}. ${b1.name} facing ${bowler}.`;
+        let text = `${b} run${b === '1' ? '' : 's'}. ${b1.name || 'Striker'} facing ${bowler || 'Bowler'}.`;
 
         if (outcome === 'W' || outcome === 'WKT') {
           kind = 'wicket';
           tag = 'W';
-          text = `OUT! WICKET! ${bowler} dismisses ${b1.name}! Clean breakthrough.`;
+          text = `OUT! WICKET! ${bowler || 'Bowler'} dismisses ${b1.name || 'Batter'}! Clean breakthrough.`;
         } else if (outcome === '4' || outcome === '4B') {
           kind = 'boundary';
           tag = '4';
-          text = `FOUR! ${b1.name} smashes ${bowler} through the outfield for 4 runs!`;
+          text = `FOUR! ${b1.name || 'Batter'} smashes ${bowler || 'Bowler'} through the outfield for 4 runs!`;
         } else if (outcome === '6' || outcome === '6B') {
           kind = 'boundary';
           tag = '6';
-          text = `SIX! Huge hit by ${b1.name} off ${bowler} over the boundary rope!`;
+          text = `SIX! MASSIVE HIT! ${b1.name || 'Batter'} clears the boundary rope off ${bowler || 'Bowler'}!`;
         } else if (outcome === '0' || outcome === '•') {
           kind = 'dot';
           tag = '0';
-          text = `0 runs. Good length delivery from ${bowler}, ${b1.name} defends back.`;
+          text = `0 runs. Good length delivery from ${bowler || 'Bowler'}, ${b1.name || 'Batter'} defends back.`;
         } else if (outcome.includes('WD')) {
           kind = 'extra';
           tag = 'WD';
-          text = `Wide ball bowled by ${bowler}. Extra run added.`;
+          text = `Wide ball bowled by ${bowler || 'Bowler'}. Extra run added.`;
         } else if (outcome.includes('NB')) {
           kind = 'extra';
           tag = 'NB';
-          text = `No ball! Free hit coming up for ${b1.name} against ${bowler}.`;
+          text = `No ball! Free hit coming up for ${b1.name || 'Batter'} against ${bowler || 'Bowler'}.`;
         }
 
         items.push({ over: overLabel, tag, kind, text });
@@ -768,15 +814,15 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
     } else {
       const currOv = Math.max(1, oversNum || 1);
       items.push(
-        { over: `${currOv}.4`, tag: '4', kind: 'boundary', text: `FOUR! ${b1.name} smashes ${bowler} through extra cover for 4 runs!` },
-        { over: `${currOv}.3`, tag: '1', kind: 'run', text: `1 run. Pushed down to long-on by ${b1.name}.` },
-        { over: `${currOv}.2`, tag: '6', kind: 'boundary', text: `SIX! ${b2.name} pulls ${bowler} over deep midwicket into the stands!` },
-        { over: `${currOv}.1`, tag: '0', kind: 'dot', text: `0 runs. Defended back to ${bowler}.` },
+        { over: `${currOv}.4`, tag: '4', kind: 'boundary', text: `FOUR! ${b1.name || 'Batter'} smashes ${bowler || 'Bowler'} through extra cover for 4 runs!` },
+        { over: `${currOv}.3`, tag: '1', kind: 'run', text: `1 run. Pushed down to long-on by ${b1.name || 'Batter'}.` },
+        { over: `${currOv}.2`, tag: '6', kind: 'boundary', text: `SIX! ${b2.name || 'Non-striker'} pulls ${bowler || 'Bowler'} over deep midwicket into the stands!` },
+        { over: `${currOv}.1`, tag: '0', kind: 'dot', text: `0 runs. Defended back to ${bowler || 'Bowler'}.` },
       );
     }
 
     return items;
-  }, [match, overs, b1.name, b2.name, bowler, fieldState]);
+  }, [match, fieldState, overs, b1.name, bowler]);
 
   const pointsTableData = useMemo(() => {
     if (Array.isArray(match?.liveDetails?.pointsTable) && match.liveDetails.pointsTable.length > 0) {
@@ -788,8 +834,8 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
     ];
   }, [match, team1Display, team2Display]);
 
-  const combinedBatterFours = (b1?.fours || 0) + (b2?.fours || 0);
-  const combinedBatterSixes = (b1?.sixes || 0) + (b2?.sixes || 0);
+  const combinedBatterFours = (b1.fours || 0) + (b2.fours || 0);
+  const combinedBatterSixes = (b1.sixes || 0) + (b2.sixes || 0);
 
   const inningsFours = Math.max(
     fieldState?.inningsFours || 0,
@@ -923,10 +969,9 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
               aria-selected={activeWidgetTab === 'field'}
               onClick={() => setActiveWidgetTab('field')}
               className={`live-widget-tab ${activeWidgetTab === 'field' ? 'active' : ''}`}
-              title="Field / Tracker"
             >
               <FieldIcon />
-              <span>Tracker</span>
+              Tracker
             </button>
             <button
               type="button"
@@ -934,10 +979,9 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
               aria-selected={activeWidgetTab === 'scorecard'}
               onClick={() => setActiveWidgetTab('scorecard')}
               className={`live-widget-tab ${activeWidgetTab === 'scorecard' ? 'active' : ''}`}
-              title="Scorecard"
             >
-              <HiOutlineViewList />
-              <span>Scorecard</span>
+              <PointsTableIcon />
+              Scorecard
             </button>
             <button
               type="button"
@@ -945,32 +989,9 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
               aria-selected={activeWidgetTab === 'commentary'}
               onClick={() => setActiveWidgetTab('commentary')}
               className={`live-widget-tab ${activeWidgetTab === 'commentary' ? 'active' : ''}`}
-              title="Live Commentary"
             >
-              <FiMessageCircle />
-              <span>Commentary</span>
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeWidgetTab === 'table'}
-              onClick={() => setActiveWidgetTab('table')}
-              className={`live-widget-tab ${activeWidgetTab === 'table' ? 'active' : ''}`}
-              title="Points Table"
-            >
-              <HiOutlineChartBar />
-              <span>Points Table</span>
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeWidgetTab === 'lineups'}
-              onClick={() => setActiveWidgetTab('lineups')}
-              className={`live-widget-tab ${activeWidgetTab === 'lineups' ? 'active' : ''}`}
-              title="Lineups / Squads"
-            >
-              <HiOutlineUsers />
-              <span>Lineups</span>
+              <CommentaryIcon />
+              Commentary
             </button>
           </div>
         </div>
@@ -978,84 +999,56 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
 
       <div className="live-widget-scrollable-body">
         {activeWidgetTab === 'field' && (
-          <div className="cric-field-view">
-            <OverHistoryBar rows={overHistoryRows} />
+          <div className="cric-panel cric-panel--dark">
+            <OverHistoryBar fieldState={fieldState} rows={overHistoryRows} />
 
-            <div className="cric-field-pitch">
-              <div className="cric-field-pitch__bg">
-                <svg viewBox="0 0 400 220" fill="none" className="cric-pitch-svg" preserveAspectRatio="none">
-                  <rect width="400" height="220" fill="url(#grass-grad)" />
-                  <polygon points="130,220 270,220 225,100 175,100" fill="url(#pitch-strip-grad)" opacity="0.85" />
-                  <line x1="145" y1="195" x2="255" y2="195" stroke="#ffffff" strokeWidth="1.5" opacity="0.75" />
-                  <line x1="180" y1="115" x2="220" y2="115" stroke="#ffffff" strokeWidth="1.5" opacity="0.75" />
-                  <rect x="195" y="105" width="2" height="12" fill="#ffffff" opacity="0.9" />
-                  <rect x="199" y="105" width="2" height="12" fill="#ffffff" opacity="0.9" />
-                  <rect x="203" y="105" width="2" height="12" fill="#ffffff" opacity="0.9" />
-                  <path d="M145 200 Q 200 150 255 125" stroke="#ef4444" strokeWidth="2.5" strokeDasharray="5,3" fill="none" opacity="0.85" />
-                  <circle cx="255" cy="125" r="4.5" fill="#ef4444" />
-
-                  <defs>
-                    <linearGradient id="grass-grad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#255428" />
-                      <stop offset="50%" stopColor="#356d39" />
-                      <stop offset="100%" stopColor="#1f4722" />
-                    </linearGradient>
-                    <linearGradient id="pitch-strip-grad" x1="0" y1="1" x2="0" y2="0">
-                      <stop offset="0%" stopColor="#bc9a62" />
-                      <stop offset="100%" stopColor="#9e7e4b" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-              </div>
-
-              <div className="cric-field-scorecard">
-                <div className="cric-field-table">
-                  <div className="cric-field-table__head">
-                    <span>BATTER</span>
-                    <span>R</span>
-                    <span>B</span>
-                    <span>4S</span>
-                    <span>6S</span>
-                  </div>
-
-                  <div className={`cric-field-table__row ${fieldState?.strikerIdx === 0 ? 'striker' : ''}`}>
-                    <span className="cric-field-table__name">
-                      {displayPlayerName(b1.name)}
-                      {fieldState?.strikerIdx === 0 && <span className="cric-bat-icon" aria-label="on strike">🏏</span>}
-                    </span>
-                    <span>{b1.runs}</span>
-                    <span>{b1.balls}</span>
-                    <span>{b1.fours}</span>
-                    <span>{b1.sixes}</span>
-                  </div>
-
-                  <div className={`cric-field-table__row ${fieldState?.strikerIdx === 1 ? 'striker' : ''}`}>
-                    <span className="cric-field-table__name">
-                      {displayPlayerName(b2.name)}
-                      {fieldState?.strikerIdx === 1 && <span className="cric-bat-icon" aria-label="on strike">🏏</span>}
-                    </span>
-                    <span>{b2.runs}</span>
-                    <span>{b2.balls}</span>
-                    <span>{b2.fours}</span>
-                    <span>{b2.sixes}</span>
-                  </div>
+            <div className="cric-field-scorecard">
+              <div className="cric-field-table">
+                <div className="cric-field-table__head">
+                  <span>BATTER</span>
+                  <span>R</span>
+                  <span>B</span>
+                  <span>4S</span>
+                  <span>6S</span>
                 </div>
 
-                <div className="cric-field-footer">
-                  <div className="cric-field-bowler">
-                    <span className="cric-field-bowler__label">CURRENT BOWLER</span>
-                    <span className="cric-field-bowler__name">
-                      {displayPlayerName(bowler)}
-                      <span className="cric-ball-icon" aria-hidden="true">⚾</span>
-                    </span>
-                  </div>
-                  <div className="cric-field-stats-col">
-                    <span className="cric-field-stats__label">INNINGS STATS</span>
-                    <div className="cric-field-extras">
-                      <div><span>Fours</span><strong>{inningsFours}</strong></div>
-                      <div><span>Sixes</span><strong>{inningsSixes}</strong></div>
-                      <div><span>Extras</span><strong>{inningsExtras}</strong></div>
-                    </div>
+                <div className={`cric-field-table__row ${fieldState?.strikerIdx === 0 ? 'striker' : ''}`}>
+                  <span className="cric-field-table__name">
+                    {displayPlayerName(b1.name) || 'Lineup Pending'}
+                    {fieldState?.strikerIdx === 0 && <span className="cric-bat-icon" aria-label="on strike">🏏</span>}
+                  </span>
+                  <span>{b1.runs}</span>
+                  <span>{b1.balls}</span>
+                  <span>{b1.fours}</span>
+                  <span>{b1.sixes}</span>
+                </div>
+
+                <div className={`cric-field-table__row ${fieldState?.strikerIdx === 1 ? 'striker' : ''}`}>
+                  <span className="cric-field-table__name">
+                    {displayPlayerName(b2.name) || 'Lineup Pending'}
+                    {fieldState?.strikerIdx === 1 && <span className="cric-bat-icon" aria-label="on strike">🏏</span>}
+                  </span>
+                  <span>{b2.runs}</span>
+                  <span>{b2.balls}</span>
+                  <span>{b2.fours}</span>
+                  <span>{b2.sixes}</span>
+                </div>
+              </div>
+
+              <div className="cric-field-footer">
+                <div className="cric-field-bowler">
+                  <span className="cric-field-bowler__label">CURRENT BOWLER</span>
+                  <span className="cric-field-bowler__name">
+                    {displayPlayerName(bowler) || 'Lineup Pending'}
+                    <span className="cric-ball-icon" aria-hidden="true">⚾</span>
+                  </span>
+                </div>
+                <div className="cric-field-stats-col">
+                  <span className="cric-field-stats__label">INNINGS STATS</span>
+                  <div className="cric-field-extras">
+                    <div><span>Fours</span><strong>{inningsFours}</strong></div>
+                    <div><span>Sixes</span><strong>{inningsSixes}</strong></div>
+                    <div><span>Extras</span><strong>{inningsExtras}</strong></div>
                   </div>
                 </div>
               </div>

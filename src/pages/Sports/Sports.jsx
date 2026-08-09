@@ -27,6 +27,28 @@ import './Sports.css';
 function filterByLeague(matchList, activeLeague, cricketSeries = []) {
   if (!activeLeague || activeLeague === 'all') return matchList;
 
+  const isSrlLeague = activeLeague === 'ipl-srl' ||
+    activeLeague === 't20-intl-srl' ||
+    String(activeLeague).toLowerCase().includes('srl');
+
+  if (isSrlLeague) {
+    return matchList.filter((match) => {
+      const isSrlMatch = match.source === 'srl' ||
+        String(match.id || '').startsWith('srl_') ||
+        String(match.league || '').toLowerCase().includes('srl') ||
+        String(match.seriesName || '').toLowerCase().includes('srl');
+
+      if (!isSrlMatch) return false;
+
+      if (activeLeague === 'ipl-srl' || String(activeLeague).toLowerCase().includes('indian premier league')) {
+        return match.league === 'Indian Premier League SRL' ||
+          String(match.id || '').startsWith('srl_ipl_') ||
+          String(match.league || '').toLowerCase().includes('indian premier league srl');
+      }
+      return true;
+    });
+  }
+
   const dynamicSeries = cricketSeries.find(
     (series) => series.id === activeLeague
       || series.name === activeLeague
@@ -49,10 +71,15 @@ function filterByLeague(matchList, activeLeague, cricketSeries = []) {
 
   const normalizedKey = String(activeLeague).toLowerCase().replace(/[^a-z0-9]/g, '');
   return matchList.filter((match) => {
+    const isMatchSrl = match.source === 'srl' ||
+      String(match.id || '').startsWith('srl_') ||
+      String(match.league || '').toLowerCase().includes('srl');
+    if (isMatchSrl) return false;
+
     const l1 = String(match.league || '').toLowerCase().replace(/[^a-z0-9]/g, '');
     const l2 = String(match.seriesName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-    return (l1 && (l1.includes(normalizedKey) || normalizedKey.includes(l1))) ||
-      (l2 && (l2.includes(normalizedKey) || normalizedKey.includes(l2)));
+    return (l1 && (l1 === normalizedKey || l1.includes(normalizedKey))) ||
+      (l2 && (l2 === normalizedKey || l2.includes(normalizedKey)));
   });
 }
 
@@ -70,8 +97,8 @@ function getMatchScores(match) {
       team1Score = String(ld.score1 ?? 0);
       team2Score = String(ld.score2 ?? 0);
     } else {
-      team1Score = `${ld.runs ?? 0}/${ld.wickets ?? 0}`;
-      team2Score = `${ld.score2 ?? 0}/${ld.wickets2 ?? 0}`;
+      team1Score = `${ld.runs ?? 0}/${ld.wickets ?? 0}${(ld.declared || ld.declared1) ? 'd' : ''}`;
+      team2Score = `${ld.score2 ?? 0}/${ld.wickets2 ?? 0}${ld.declared2 ? 'd' : ''}`;
     }
   }
 

@@ -7,35 +7,28 @@ export function isPlaceholderPlayerName(name) {
   if (!trimmed || trimmed === '—' || trimmed === '-') return true;
   const lower = trimmed.toLowerCase();
   return (
-    /batter\s*\d*$/i.test(lower) ||
-    /bowler\s*\d*$/i.test(lower) ||
-    /opener\s*\d*$/i.test(lower) ||
-    /keeper\s*\d*$/i.test(lower) ||
-    /all-rounder\s*\d*$/i.test(lower) ||
-    /pacer\s*\d*$/i.test(lower) ||
-    /spinner\s*\d*$/i.test(lower) ||
-    /captain/i.test(lower) ||
-    /middle\s*order/i.test(lower) ||
-    /striker/i.test(lower) ||
-    /non-striker/i.test(lower) ||
-    lower.includes('opener') ||
-    lower.includes('pacer') ||
-    lower.includes('captain') ||
     lower === 'player' ||
     lower === 'batsman' ||
-    lower === 'bowler'
+    lower === 'bowler' ||
+    lower === 'null' ||
+    lower === 'undefined' ||
+    /team\s*\d/i.test(lower) ||
+    /batter\s*\d/i.test(lower) ||
+    /bowler\s*\d/i.test(lower) ||
+    /opener\s*\d/i.test(lower) ||
+    /pacer\s*\d/i.test(lower) ||
+    /spinner\s*\d/i.test(lower)
   );
 }
 
 export function displayPlayerName(name, fallback = '', teamName = '') {
-  if (!isPlaceholderPlayerName(name)) return name.trim();
-  if (!isPlaceholderPlayerName(fallback)) return fallback.trim();
-  
+  if (name && !isPlaceholderPlayerName(name)) return name.trim();
+  if (fallback && !isPlaceholderPlayerName(fallback)) return fallback.trim();
+
   if (teamName) {
     const roster = getRosterForTeam(teamName);
     if (roster?.batters?.length) return roster.batters[0];
-    return `${teamName} Player`;
   }
-  
-  return 'Player';
+
+  return null;
 }

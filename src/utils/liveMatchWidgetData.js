@@ -124,7 +124,9 @@ function liveBattersFromDetails(ld) {
     }));
 }
 export function buildScorecardInnings(match, teamName, roster, _fieldState, isBattingInnings, teamShortName = '') {
+  const realRoster = getRosterForTeam(teamName);
   const apiInnings = getScorecardInningsForTeam(match, teamName, teamShortName);
+
   if (apiInnings?.batters?.length) {
     const ld = enrichLivePlayersFromScorecard(
       match?.liveDetails || {},
@@ -132,18 +134,24 @@ export function buildScorecardInnings(match, teamName, roster, _fieldState, isBa
     );
     let players = apiInnings.batters
       .filter(hasBatted)
-      .map((b) => ({
-        name: b.name,
-        runs: b.runs,
-        balls: b.balls,
-        fours: b.fours ?? 0,
-        sixes: b.sixes ?? 0,
-        sr: b.sr,
-        dismissal: b.dismissal,
-        notOut: b.notOut,
-        isStriker: false,
-        statusLabel: formatBatterStatus(b),
-      }));
+      .map((b, idx) => {
+        let name = b.name;
+        if (isPlaceholderPlayerName(name)) {
+          name = realRoster?.batters?.[idx] || (roster?.batters?.[idx] && !isPlaceholderPlayerName(roster.batters[idx]) ? roster.batters[idx] : null) || name;
+        }
+        return {
+          name,
+          runs: b.runs,
+          balls: b.balls,
+          fours: b.fours ?? 0,
+          sixes: b.sixes ?? 0,
+          sr: b.sr,
+          dismissal: b.dismissal,
+          notOut: b.notOut,
+          isStriker: false,
+          statusLabel: formatBatterStatus(b),
+        };
+      });
 
     if (isBattingInnings) {
       players = mergeLiveBatterStats(players, ld);
@@ -161,8 +169,13 @@ export function buildScorecardInnings(match, teamName, roster, _fieldState, isBa
     match?.scorecardInnings || [],
   );
 
-  const teamRoster = getRosterForTeam(teamName);
-  const battersList = (roster?.batters?.length ? roster.batters : teamRoster.batters);
+  const rawBattersList = roster?.batters?.length ? roster.batters : realRoster.batters;
+  const battersList = rawBattersList.map((name, idx) => {
+    if (isPlaceholderPlayerName(name)) {
+      return realRoster?.batters?.[idx] || `${teamName} Batter ${idx + 1}`;
+    }
+    return name;
+  });
 
   // Resolve team score from resolveCricketTeamScores
   const resolved = resolveCricketTeamScores(match, ld);
@@ -174,8 +187,10 @@ export function buildScorecardInnings(match, teamName, roster, _fieldState, isBa
 
   // If in-play batting innings with 0-1 wickets down:
   if (isBattingInnings && totalWickets <= 1) {
-    const b1Name = ld.batter1?.name || battersList[0];
-    const b2Name = ld.batter2?.name || battersList[1];
+    let b1Name = ld.batter1?.name || battersList[0];
+    let b2Name = ld.batter2?.name || battersList[1];
+    if (isPlaceholderPlayerName(b1Name)) b1Name = realRoster?.batters?.[0] || battersList[0];
+    if (isPlaceholderPlayerName(b2Name)) b2Name = realRoster?.batters?.[1] || battersList[1];
 
     const b1Runs = ld.batter1?.runs ?? Math.floor(totalRuns * 0.6);
     const b2Runs = ld.batter2?.runs ?? Math.max(0, totalRuns - b1Runs);
@@ -219,17 +234,21 @@ export function buildScorecardInnings(match, teamName, roster, _fieldState, isBa
     const isLast = i === Math.min(battersList.length, 7) - 1;
     const playerRuns = isLast ? Math.max(0, totalRuns - sumRuns) : Math.floor(totalRuns * runShares[i]);
     sumRuns += playerRuns;
+    const playerBalls = Math.max(1, Math.floor(playerRuns * (1.05 + (i * 0.08))));
 
-    const balls = Math.max(1, Math.floor(playerRuns * (1.1 + (i * 0.05))));
+    let rawName = battersList[i];
+    if (isPlaceholderPlayerName(rawName)) {
+      rawName = realRoster?.batters?.[i] || `${teamName} Batter ${i + 1}`;
+    };
     const fours = Math.floor(playerRuns / 5);
     const sixes = Math.floor(playerRuns / 14);
     const isNotOut = i >= totalWickets;
 
     result.push({
-      name: battersList[i],
+      name: rawName,
       runs: playerRuns,
-      balls: balls,
-      sr: balls > 0 ? ((playerRuns / balls) * 100).toFixed(2) : '0.00',
+      balls: playerBalls,
+      sr: playerBalls > 0 ? ((playerRuns / playerBalls) * 100).toFixed(2) : '0.00',
       fours: fours,
       sixes: sixes,
       notOut: isNotOut,

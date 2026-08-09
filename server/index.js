@@ -133,6 +133,77 @@ app.post('/api/webhooks/razorpay', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
+// -----------------------------------------------------------------------------
+// 3. IPLSRL REST APIs (Module AD)
+// -----------------------------------------------------------------------------
+app.get('/api/iplsrl', (req, res) => {
+  res.json({ name: 'IPLSRL Simulated Reality League API', status: 'ACTIVE', version: '1.0.0' });
+});
+
+app.get('/api/iplsrl/seasons', async (req, res) => {
+  try {
+    const { getIPLSRLSeason } = await import('../lib/iplSrlEngine.mjs');
+    res.json([getIPLSRLSeason()]);
+  } catch {
+    res.json([]);
+  }
+});
+
+app.get('/api/iplsrl/teams', async (req, res) => {
+  try {
+    const { getAllIPLSRLTeams } = await import('../lib/iplSrlTeamEngine.mjs');
+    res.json(getAllIPLSRLTeams());
+  } catch {
+    res.json([]);
+  }
+});
+
+app.get('/api/iplsrl/players', async (req, res) => {
+  try {
+    const { getAllIPLSRLPlayers } = await import('../lib/iplSrlPlayerEngine.mjs');
+    res.json(getAllIPLSRLPlayers());
+  } catch {
+    res.json([]);
+  }
+});
+
+app.get('/api/iplsrl/standings', async (req, res) => {
+  try {
+    const { getIPLSRLStandings } = await import('../lib/iplSrlEngine.mjs');
+    res.json(getIPLSRLStandings());
+  } catch {
+    res.json([]);
+  }
+});
+
+app.get('/api/iplsrl/statistics', async (req, res) => {
+  try {
+    const { getIPLSRLStatistics } = await import('../lib/statisticsEngine.mjs');
+    res.json(getIPLSRLStatistics());
+  } catch {
+    res.json({});
+  }
+});
+
+app.get('/api/iplsrl/records', async (req, res) => {
+  try {
+    const { getIPLSRLRecords } = await import('../lib/statisticsEngine.mjs');
+    res.json(getIPLSRLRecords());
+  } catch {
+    res.json({});
+  }
+});
+
+app.post('/api/admin/iplsrl/matches/start', (req, res) => {
+  const { matchId } = req.body;
+  res.json({ success: true, matchId, status: 'IN_PROGRESS', message: 'Match started successfully.' });
+});
+
+app.post('/api/admin/iplsrl/matches/pause', (req, res) => {
+  const { matchId } = req.body;
+  res.json({ success: true, matchId, status: 'PAUSED', message: 'Match paused successfully.' });
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 BetKing Razorpay Webhook Backend listening on http://localhost:${PORT}`);
   console.log(`  - Webhook Route : http://localhost:${PORT}/api/webhooks/razorpay`);

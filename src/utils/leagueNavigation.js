@@ -13,7 +13,19 @@ function textsMatch(a, b) {
   if (!a || !b) return false;
   const na = normalizeLeagueText(a);
   const nb = normalizeLeagueText(b);
-  return na === nb || na.includes(nb) || nb.includes(na);
+  if (!na || !nb) return false;
+
+  if (na === nb) return true;
+
+  const wordsA = na.split(' ').filter(Boolean);
+  const wordsB = nb.split(' ').filter(Boolean);
+
+  // If one of the strings is a single short word (e.g. "india"), require exact match to avoid matching "indian premier league"
+  if (wordsA.length === 1 || wordsB.length === 1) {
+    return na === nb;
+  }
+
+  return na.includes(nb) || nb.includes(na);
 }
 
 /** Map sidebar label, breadcrumb text, or id → featured league id */
@@ -38,19 +50,38 @@ export function isSameLeague(activeLeague, key) {
 export function matchBelongsToLeague(match, leagueMeta) {
   if (!match || !leagueMeta) return false;
 
+  const isSrlLeague = leagueMeta.id === 'ipl-srl' ||
+    leagueMeta.id === 't20-intl-srl' ||
+    String(leagueMeta.name || '').toLowerCase().includes('srl');
+
+  const isMatchSrl = match.source === 'srl' ||
+    String(match.id || '').startsWith('srl_') ||
+    String(match.league || '').toLowerCase().includes('srl') ||
+    String(match.seriesName || '').toLowerCase().includes('srl');
+
+  // SRL leagues MUST ONLY match SRL matches
+  if (isSrlLeague) {
+    if (!isMatchSrl) return false;
+    if (leagueMeta.id === 'ipl-srl' || String(leagueMeta.name).toLowerCase().includes('indian premier league')) {
+      return match.league === 'Indian Premier League SRL' ||
+        String(match.id || '').startsWith('srl_ipl_') ||
+        String(match.league || '').toLowerCase().includes('indian premier league srl');
+    }
+  }
+
+  // Non-SRL leagues MUST NEVER match SRL matches
+  if (isMatchSrl && !isSrlLeague) return false;
+
   const candidates = [
     leagueMeta.name,
     leagueMeta.breadcrumb,
     ...(leagueMeta.matchLeagues || []),
   ].filter(Boolean);
 
+  // Compare strictly against match league/series fields — NEVER team names
   const matchFields = [
     match.league,
     match.seriesName,
-    match.team1?.name,
-    match.team2?.name,
-    `${match.team1?.name || ''} vs ${match.team2?.name || ''}`,
-    `${match.team1?.name || ''} v ${match.team2?.name || ''}`,
   ].filter(Boolean);
 
   return candidates.some((candidate) =>
