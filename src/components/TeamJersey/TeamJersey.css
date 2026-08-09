@@ -5,6 +5,7 @@
   flex-shrink: 0;
   line-height: 0;
   background: transparent;
+  transition: transform 0.3s ease;
 }
 
 .team-jersey-kit__img {
@@ -15,4 +16,25 @@
   user-select: none;
   -webkit-user-drag: none;
   background: transparent;
+}
+
+@keyframes jerseyFlyFloat {
+  0% {
+    transform: translateY(0px) scale(1) rotate(0deg);
+    filter: drop-shadow(0 2px 8px rgba(34, 197, 94, 0.4));
+  }
+  50% {
+    transform: translateY(-8px) scale(1.08) rotate(-1.5deg);
+    filter: drop-shadow(0 12px 20px rgba(34, 197, 94, 0.75));
+  }
+  100% {
+    transform: translateY(0px) scale(1) rotate(0deg);
+    filter: drop-shadow(0 2px 8px rgba(34, 197, 94, 0.4));
+  }
+}
+
+.team-jersey-kit--flying {
+  animation: jerseyFlyFloat 2.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  position: relative;
+  z-index: 2;
 }

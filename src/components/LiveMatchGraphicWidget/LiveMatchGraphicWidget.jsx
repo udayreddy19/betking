@@ -909,13 +909,19 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
           </div>
 
           <div className="live-widget-teams-row">
-            <span className="live-widget-team">{team1Display}</span>
+            <div className="live-widget-team-cell">
+              <TeamJersey team={match?.team1 || team1} size={42} isFlying={isTeam1Batting} />
+              <span className="live-widget-team">{team1Display}</span>
+            </div>
             <span className="live-widget-scoreline">
               {innings.displayWickets1 === 10 || String(innings.displayScore1).includes('All') ? `${innings.displayScore1} All Out` : `${innings.displayScore1}/${innings.displayWickets1}`}
               <span className="live-widget-score-sep">:</span>
               {innings.displayWickets2 === 10 || String(innings.displayScore2).includes('All') ? `${innings.displayScore2} All Out` : `${innings.displayScore2}/${innings.displayWickets2}`}
             </span>
-            <span className="live-widget-team">{team2Display}</span>
+            <div className="live-widget-team-cell">
+              <span className="live-widget-team">{team2Display}</span>
+              <TeamJersey team={match?.team2 || team2} size={42} isFlying={!isTeam1Batting} />
+            </div>
           </div>
 
           {chaseText && (

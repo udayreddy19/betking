@@ -147,7 +147,7 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
         {/* 10CRIC Style Live Scoreboard Header */}
         <div className="match-detail-scoreboard">
           <div className="scoreboard-team">
-            <TeamJersey team={match.team1} size={48} />
+            <TeamJersey team={match.team1} size={48} isFlying={isLiveNow && sport === 'cricket' && !isSecondInnings} />
             <h4>{team1Name}</h4>
             {isLiveNow && match.liveDetails && (
               <div className="scoreboard-score">
@@ -174,7 +174,7 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
           </div>
 
           <div className="scoreboard-team">
-            <TeamJersey team={match.team2} size={48} />
+            <TeamJersey team={match.team2} size={48} isFlying={isLiveNow && sport === 'cricket' && isSecondInnings} />
             <h4>{team2Name}</h4>
             {isLiveNow && match.liveDetails && (
               <div className="scoreboard-score">
