@@ -16,7 +16,7 @@ export default function MatchCountdownTimer({ match, showIcon = true, className 
         if (isTest && testDayLabel) {
           setTimeLeft(`${testDayLabel}`);
         } else {
-          setTimeLeft('LIVE IN PLAY');
+          setTimeLeft('');
         }
         return;
       }

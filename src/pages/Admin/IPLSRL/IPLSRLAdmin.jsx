@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { getAllIPLSRLTeams, createIPLSRLTeam, updateIPLSRLTeam } from '../../../../lib/iplSrlTeamEngine.mjs';
-import { getAllIPLSRLPlayers, updateIPLSRLPlayer } from '../../../../lib/iplSrlPlayerEngine.mjs';
+import { getAllIPLSRLPlayers, updateIPLSRLPlayer, createIPLSRLPlayer, PLAYER_ROLES } from '../../../../lib/iplSrlPlayerEngine.mjs';
 import { getIPLSRLSeason, getIPLSRLStandings } from '../../../../lib/iplSrlEngine.mjs';
 import './IPLSRLAdmin.css';
 
@@ -12,6 +12,11 @@ export default function IPLSRLAdmin() {
   const [teams, setTeams] = useState(getAllIPLSRLTeams());
   const [players, setPlayers] = useState(getAllIPLSRLPlayers());
   const [season, setSeason] = useState(getIPLSRLSeason());
+  const [selectedTeamFilter, setSelectedTeamFilter] = useState('ALL');
+  const [playerSearchQuery, setPlayerSearchQuery] = useState('');
+  const [newPlayerName, setNewPlayerName] = useState('');
+  const [newPlayerTeam, setNewPlayerTeam] = useState('csk_srl');
+  const [newPlayerRole, setNewPlayerRole] = useState(PLAYER_ROLES.BATTER);
   const [auditLogs, setAuditLogs] = useState([
     { id: 1, action: 'Simulation Speed Changed', detail: 'Set to NORMAL', time: 'Just now', admin: 'SuperAdmin' },
     { id: 2, action: 'Team Rating Updated', detail: 'CSK SRL strength adjusted to 85', time: '5 mins ago', admin: 'SuperAdmin' },
@@ -36,6 +41,26 @@ export default function IPLSRLAdmin() {
       ...prev,
     ]);
   };
+
+  const handleCreatePlayer = (e) => {
+    e.preventDefault();
+    if (!newPlayerName.trim()) return;
+    const created = createIPLSRLPlayer({
+      name: newPlayerName,
+      displayName: newPlayerName.split(' ').map(w => w[0]).join(' ') + ' ' + newPlayerName.split(' ').slice(-1)[0],
+      teamId: newPlayerTeam,
+      role: newPlayerRole,
+    });
+    setPlayers([...getAllIPLSRLPlayers()]);
+    setNewPlayerName('');
+    addAuditLog('Created Player', `Added ${created.name} to ${created.teamId}`);
+  };
+
+  const filteredPlayers = players.filter(p => {
+    const matchesTeam = selectedTeamFilter === 'ALL' || p.teamId === selectedTeamFilter;
+    const matchesSearch = !playerSearchQuery || p.name.toLowerCase().includes(playerSearchQuery.toLowerCase()) || p.displayName.toLowerCase().includes(playerSearchQuery.toLowerCase());
+    return matchesTeam && matchesSearch;
+  });
 
   return (
     <div className="iplsrl-admin-container">
@@ -172,6 +197,166 @@ export default function IPLSRLAdmin() {
                     <button className="iplsrl-btn sm danger" onClick={() => addAuditLog('Disabled Team', t.teamName)}>
                       Disable
                     </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {activeTab === 'players' && (
+        <div className="iplsrl-admin-card">
+          <h3>👤 Manage Player Roster & Player Names</h3>
+          <p className="iplsrl-card-sub text-muted">
+            Edit player full names, display names, team assignments, roles, and skill ratings in real time.
+          </p>
+
+          <form className="iplsrl-inline-form" onSubmit={handleCreatePlayer} style={{ marginBottom: '1.25rem' }}>
+            <input
+              type="text"
+              placeholder="Player Name (e.g. Jasprit Bumrah SRL)"
+              value={newPlayerName}
+              onChange={e => setNewPlayerName(e.target.value)}
+              style={{ flex: 2 }}
+            />
+            <select value={newPlayerTeam} onChange={e => setNewPlayerTeam(e.target.value)}>
+              {teams.map(t => (
+                <option key={t.teamId} value={t.teamId}>{t.shortName} ({t.teamName})</option>
+              ))}
+            </select>
+            <select value={newPlayerRole} onChange={e => setNewPlayerRole(e.target.value)}>
+              {Object.entries(PLAYER_ROLES).map(([key, val]) => (
+                <option key={key} value={val}>{val}</option>
+              ))}
+            </select>
+            <button type="submit" className="iplsrl-btn primary">Add Player</button>
+          </form>
+
+          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', alignItems: 'center' }}>
+            <div style={{ flex: 1 }}>
+              <input
+                type="text"
+                placeholder="🔍 Search players by name..."
+                value={playerSearchQuery}
+                onChange={e => setPlayerSearchQuery(e.target.value)}
+                style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(0,0,0,0.3)', color: '#fff' }}
+              />
+            </div>
+            <div>
+              <select
+                value={selectedTeamFilter}
+                onChange={e => setSelectedTeamFilter(e.target.value)}
+                style={{ padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(0,0,0,0.3)', color: '#fff' }}
+              >
+                <option value="ALL">All Teams ({players.length} Players)</option>
+                {teams.map(t => (
+                  <option key={t.teamId} value={t.teamId}>{t.shortName}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <table className="iplsrl-table">
+            <thead>
+              <tr>
+                <th>Player Full Name</th>
+                <th>Display Name</th>
+                <th>Team</th>
+                <th>Role</th>
+                <th>Batting</th>
+                <th>Bowling</th>
+                <th>Form</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredPlayers.map(p => (
+                <tr key={p.playerId}>
+                  <td>
+                    <input
+                      type="text"
+                      value={p.name}
+                      style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '0.35rem 0.5rem', borderRadius: '4px', width: '100%', fontWeight: '600' }}
+                      onChange={e => {
+                        const updatedName = e.target.value;
+                        updateIPLSRLPlayer(p.playerId, { name: updatedName });
+                        setPlayers([...getAllIPLSRLPlayers()]);
+                        addAuditLog('Updated Player Name', `${p.playerId} -> ${updatedName}`);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={p.displayName || ''}
+                      style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '0.35rem 0.5rem', borderRadius: '4px', width: '100%' }}
+                      onChange={e => {
+                        const updatedDisplay = e.target.value;
+                        updateIPLSRLPlayer(p.playerId, { displayName: updatedDisplay });
+                        setPlayers([...getAllIPLSRLPlayers()]);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <select
+                      value={p.teamId || ''}
+                      style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '0.35rem 0.5rem', borderRadius: '4px' }}
+                      onChange={e => {
+                        updateIPLSRLPlayer(p.playerId, { teamId: e.target.value });
+                        setPlayers([...getAllIPLSRLPlayers()]);
+                      }}
+                    >
+                      {teams.map(t => (
+                        <option key={t.teamId} value={t.teamId}>{t.shortName}</option>
+                      ))}
+                    </select>
+                  </td>
+                  <td>
+                    <select
+                      value={p.role}
+                      style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '0.35rem 0.5rem', borderRadius: '4px' }}
+                      onChange={e => {
+                        updateIPLSRLPlayer(p.playerId, { role: e.target.value });
+                        setPlayers([...getAllIPLSRLPlayers()]);
+                      }}
+                    >
+                      {Object.entries(PLAYER_ROLES).map(([key, val]) => (
+                        <option key={key} value={val}>{val}</option>
+                      ))}
+                    </select>
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      value={p.battingRating}
+                      className="rating-input"
+                      onChange={e => {
+                        updateIPLSRLPlayer(p.playerId, { battingRating: Number(e.target.value) });
+                        setPlayers([...getAllIPLSRLPlayers()]);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      value={p.bowlingRating}
+                      className="rating-input"
+                      onChange={e => {
+                        updateIPLSRLPlayer(p.playerId, { bowlingRating: Number(e.target.value) });
+                        setPlayers([...getAllIPLSRLPlayers()]);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      value={p.formRating}
+                      className="rating-input"
+                      onChange={e => {
+                        updateIPLSRLPlayer(p.playerId, { formRating: Number(e.target.value) });
+                        setPlayers([...getAllIPLSRLPlayers()]);
+                      }}
+                    />
                   </td>
                 </tr>
               ))}

@@ -12,6 +12,9 @@ export function isPlaceholderPlayerName(name) {
     lower === 'bowler' ||
     lower === 'null' ||
     lower === 'undefined' ||
+    lower === 'j. smith' ||
+    lower === 'a. patel' ||
+    lower === 'p. cummins' ||
     /team\s*\d/i.test(lower) ||
     /batter\s*\d/i.test(lower) ||
     /bowler\s*\d/i.test(lower) ||

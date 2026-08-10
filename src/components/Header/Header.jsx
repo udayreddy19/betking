@@ -125,8 +125,8 @@ function Header() {
           </button>
 
           <NavLink to="/" className="header-logo" id="header-logo">
-            <span className="logo-icon logo-icon-circle">10</span>
-            <span className="logo-text">CRIC</span>
+            <span className="logo-icon logo-icon-circle">BK</span>
+            <span className="logo-text">BETKING</span>
           </NavLink>
 
           <nav className="header-nav" id="main-nav">

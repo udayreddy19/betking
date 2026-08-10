@@ -1392,81 +1392,322 @@ app.get('/api/admin/outbox/metrics', async (req, res) => {
 });
 
 // -----------------------------------------------------------------------------
-// User & Admin Support Center REST APIs
+// User & Admin Support Center REST APIs (v1 & legacy endpoints)
 // -----------------------------------------------------------------------------
-app.get('/api/support/conversations', async (req, res) => {
+app.get(['/api/support/conversations', '/api/v1/support/tickets'], async (req, res) => {
   const userId = req.query.userId || 'demo@betking.com';
   try {
     const { supportEngine } = await import('../lib/supportEngine.mjs');
     const conversations = supportEngine.getUserConversations(userId);
-    res.json({ success: true, conversations });
+    res.json({ success: true, conversations, tickets: conversations });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.post('/api/support/conversations', async (req, res) => {
-  const { userId, category, initialMessage, context } = req.body;
+app.get(['/api/support/conversations/:id', '/api/v1/support/tickets/:id'], async (req, res) => {
   try {
     const { supportEngine } = await import('../lib/supportEngine.mjs');
-    const conversation = supportEngine.startConversation({
+    const conversation = supportEngine.getConversationById(req.params.id, 'user');
+    if (!conversation) return res.status(404).json({ error: 'Support Ticket not found' });
+    res.json({ success: true, conversation, ticket: conversation });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post(['/api/support/conversations', '/api/v1/support/tickets'], async (req, res) => {
+  const { userId, subject, category, priority, initialMessage, attachments, idempotencyKey, relatedEntityType, relatedEntityId, bypassDuplicateCheck } = req.body;
+  try {
+    const { supportEngine } = await import('../lib/supportEngine.mjs');
+    const result = await supportEngine.startConversation({
       userId: userId || 'demo@betking.com',
-      category: category || 'GENERAL',
-      initialMessage: initialMessage || 'Support inquiry',
-      context: context || {},
+      subject: subject || 'Support Request',
+      category: category || 'General',
+      priority: priority || 'NORMAL',
+      initialMessage: initialMessage || 'New inquiry',
+      attachments: attachments || [],
+      idempotencyKey: idempotencyKey || req.headers['x-idempotency-key'],
+      relatedEntityType,
+      relatedEntityId,
+      bypassDuplicateCheck: bypassDuplicateCheck === true,
     });
-    res.json({ success: true, conversation });
+
+    if (result.isDuplicate) {
+      return res.status(409).json({
+        success: false,
+        isDuplicate: true,
+        error: result.message,
+        message: result.message,
+        activeTicket: result.activeTicket,
+        conversationId: result.conversationId,
+        ticketNumber: result.ticketNumber,
+      });
+    }
+
+    res.json({ success: true, conversation: result, ticket: result });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.post('/api/support/conversations/:id/messages', async (req, res) => {
-  const { sender, text, agentName, attachments } = req.body;
+app.post(['/api/support/conversations/:id/messages', '/api/v1/support/tickets/:id/messages'], async (req, res) => {
+  const { senderId, senderType, messageType, agentName, text, attachments, idempotencyKey } = req.body;
   try {
     const { supportEngine } = await import('../lib/supportEngine.mjs');
-    const msg = supportEngine.addMessage(req.params.id, {
-      sender: sender || 'customer',
-      text: text || '',
+    const msg = await supportEngine.addMessage(req.params.id, {
+      senderId: senderId || 'user',
+      senderType: senderType || 'user',
+      messageType: messageType || 'USER_MESSAGE',
       agentName: agentName || 'Priya Sharma',
+      text: text || '',
       attachments: attachments || [],
+      idempotencyKey: idempotencyKey || req.headers['x-idempotency-key'],
     });
-    if (!msg) return res.status(404).json({ error: 'Conversation not found' });
+    if (!msg) return res.status(404).json({ error: 'Support Ticket not found' });
     res.json({ success: true, message: msg });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.post('/api/support/conversations/:id/feedback', async (req, res) => {
+app.post(['/api/support/conversations/:id/read', '/api/v1/support/tickets/:id/read'], async (req, res) => {
+  const { actorType } = req.body;
+  try {
+    const { supportEngine } = await import('../lib/supportEngine.mjs');
+    const updated = await supportEngine.markAsRead(req.params.id, actorType || 'user');
+    if (!updated) return res.status(404).json({ error: 'Support Ticket not found' });
+    res.json({ success: true, conversation: updated, ticket: updated });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post(['/api/support/conversations/:id/close', '/api/v1/support/tickets/:id/close'], async (req, res) => {
+  const { userId, resolutionCode } = req.body;
+  try {
+    const { supportEngine } = await import('../lib/supportEngine.mjs');
+    const closed = await supportEngine.closeTicket(req.params.id, { closedBy: userId || 'user', resolutionCode });
+    if (!closed) return res.status(404).json({ error: 'Support Ticket not found' });
+    res.json({ success: true, conversation: closed, ticket: closed });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post(['/api/support/conversations/:id/reopen', '/api/v1/support/tickets/:id/reopen'], async (req, res) => {
+  const { userId, reason } = req.body;
+  try {
+    const { supportEngine } = await import('../lib/supportEngine.mjs');
+    const reopened = await supportEngine.reopenConversation(req.params.id, { actorId: userId || 'user', reason });
+    if (!reopened) return res.status(404).json({ error: 'Support Ticket not found' });
+    res.json({ success: true, conversation: reopened, ticket: reopened });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post(['/api/support/conversations/:id/feedback', '/api/v1/support/tickets/:id/feedback'], async (req, res) => {
   const { rating, comment } = req.body;
   try {
     const { supportEngine } = await import('../lib/supportEngine.mjs');
-    const fb = supportEngine.submitFeedback(req.params.id, { rating, comment });
-    if (!fb) return res.status(404).json({ error: 'Conversation not found' });
+    const fb = supportEngine.submitFeedback ? supportEngine.submitFeedback(req.params.id, { rating, comment }) : { rating, comment };
     res.json({ success: true, feedback: fb });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.get('/api/admin/support/conversations', async (req, res) => {
+app.get(['/api/admin/support/conversations', '/api/v1/admin/support/tickets'], async (req, res) => {
   try {
     const { supportEngine } = await import('../lib/supportEngine.mjs');
     const conversations = supportEngine.getAllConversations();
-    res.json({ success: true, conversations });
+    const metrics = supportEngine.getAdminMetrics();
+    res.json({ success: true, conversations, tickets: conversations, metrics });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.post('/api/admin/support/conversations/:id/assign', async (req, res) => {
-  const { agentName, teamId } = req.body;
+app.get('/api/v1/admin/support/tickets/unresolved', async (req, res) => {
   try {
     const { supportEngine } = await import('../lib/supportEngine.mjs');
-    const updated = supportEngine.assignAgent(req.params.id, { agentName, teamId });
-    if (!updated) return res.status(404).json({ error: 'Conversation not found' });
-    res.json({ success: true, conversation: updated });
+    const unresolved = supportEngine.getUnresolvedTickets();
+    res.json({ success: true, tickets: unresolved });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/v1/admin/support/tickets/metrics', async (req, res) => {
+  try {
+    const { supportEngine } = await import('../lib/supportEngine.mjs');
+    const metrics = supportEngine.getAdminMetrics();
+    res.json({ success: true, metrics });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get(['/api/admin/support/conversations/:id', '/api/v1/admin/support/tickets/:id'], async (req, res) => {
+  try {
+    const { supportEngine } = await import('../lib/supportEngine.mjs');
+    const conversation = supportEngine.getConversationById(req.params.id, 'admin');
+    if (!conversation) return res.status(404).json({ error: 'Support Ticket not found' });
+    res.json({ success: true, conversation, ticket: conversation });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post(['/api/admin/support/conversations/:id/assign', '/api/v1/admin/support/tickets/:id/assign'], async (req, res) => {
+  const { agentId, agentName, teamId, assignedBy } = req.body;
+  try {
+    const { supportEngine } = await import('../lib/supportEngine.mjs');
+    const updated = await supportEngine.assignAgent(req.params.id, { agentId, agentName, teamId, assignedBy });
+    if (!updated) return res.status(404).json({ error: 'Support Ticket not found' });
+    res.json({ success: true, conversation: updated, ticket: updated });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post(['/api/admin/support/conversations/:id/escalate', '/api/v1/admin/support/tickets/:id/escalate'], async (req, res) => {
+  const { escalatedBy, fromTeam, toTeam, reason } = req.body;
+  try {
+    const { supportEngine } = await import('../lib/supportEngine.mjs');
+    const updated = await supportEngine.escalateConversation(req.params.id, { escalatedBy, fromTeam, toTeam, reason });
+    if (!updated) return res.status(404).json({ error: 'Support Ticket not found' });
+    res.json({ success: true, conversation: updated, ticket: updated });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post(['/api/admin/support/conversations/:id/resolve', '/api/v1/admin/support/tickets/:id/resolve'], async (req, res) => {
+  const { resolutionCode, resolutionSummary, resolvedBy } = req.body;
+  try {
+    const { supportEngine } = await import('../lib/supportEngine.mjs');
+    const resolved = await supportEngine.provideResolution(req.params.id, { resolutionCode, resolutionSummary, resolvedBy });
+    res.json({ success: true, conversation: resolved, ticket: resolved });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post(['/api/admin/support/conversations/:id/status', '/api/v1/admin/support/tickets/:id/status'], async (req, res) => {
+  const { status, resolutionReason, actorId } = req.body;
+  try {
+    const { supportEngine } = await import('../lib/supportEngine.mjs');
+    const updated = await supportEngine.updateStatus(req.params.id, { status, resolutionReason, actorId });
+    if (!updated) return res.status(404).json({ error: 'Support Ticket not found' });
+    res.json({ success: true, conversation: updated, ticket: updated });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// Phase 2 — Advanced User Security & Account Controls REST APIs
+// -----------------------------------------------------------------------------
+app.get('/api/v1/user/security/devices', async (req, res) => {
+  const userId = req.query.userId || 'demo@betking.com';
+  try {
+    const { userSecurityCenter } = await import('../lib/userSecurityCenter.mjs');
+    const devices = userSecurityCenter.getUserDevices(userId);
+    res.json({ success: true, devices });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/v1/user/security/devices/register', async (req, res) => {
+  const { userId, deviceId, deviceHash, deviceType, platform, browser, os, ipAddress, locationCity, locationCountry } = req.body;
+  try {
+    const { userSecurityCenter } = await import('../lib/userSecurityCenter.mjs');
+    const dev = await userSecurityCenter.registerDevice(userId || 'demo@betking.com', {
+      deviceId, deviceHash, deviceType, platform, browser, os, ipAddress, locationCity, locationCountry
+    });
+    res.json({ success: true, device: dev });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/v1/user/security/devices/logout', async (req, res) => {
+  const { userId, deviceId } = req.body;
+  try {
+    const { userSecurityCenter } = await import('../lib/userSecurityCenter.mjs');
+    const result = await userSecurityCenter.logoutDevice(userId || 'demo@betking.com', deviceId);
+    res.json({ success: true, result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/v1/user/security/devices/logout-all-others', async (req, res) => {
+  const { userId, currentDeviceId } = req.body;
+  try {
+    const { userSecurityCenter } = await import('../lib/userSecurityCenter.mjs');
+    const result = await userSecurityCenter.logoutAllOtherDevices(userId || 'demo@betking.com', currentDeviceId);
+    res.json({ success: true, result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/v1/user/security/alerts', async (req, res) => {
+  const userId = req.query.userId || 'demo@betking.com';
+  try {
+    const { userSecurityCenter } = await import('../lib/userSecurityCenter.mjs');
+    const alerts = userSecurityCenter.getUserSecurityAlerts(userId);
+    res.json({ success: true, alerts });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/v1/user/security/alerts/:id/read', async (req, res) => {
+  const { userId } = req.body;
+  try {
+    const { userSecurityCenter } = await import('../lib/userSecurityCenter.mjs');
+    const result = userSecurityCenter.markAlertAsRead(userId || 'demo@betking.com', req.params.id);
+    res.json({ success: true, result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/v1/user/security/control-status', async (req, res) => {
+  const userId = req.query.userId || 'demo@betking.com';
+  try {
+    const { userSecurityCenter } = await import('../lib/userSecurityCenter.mjs');
+    const status = userSecurityCenter.getAccountControlStatus(userId);
+    res.json({ success: true, status });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/v1/admin/security/account-controls', async (req, res) => {
+  const { userId, action, reason, category, operatorId, durationDays } = req.body;
+  try {
+    const { userSecurityCenter } = await import('../lib/userSecurityCenter.mjs');
+    let result = null;
+    if (action === 'RESTRICT') {
+      result = await userSecurityCenter.restrictAccount(userId, { reason, category, operatorId, durationDays });
+    } else if (action === 'SUSPEND') {
+      result = await userSecurityCenter.suspendAccount(userId, { reason, operatorId });
+    } else if (action === 'FREEZE') {
+      result = await userSecurityCenter.freezeAccount(userId, { reason, operatorId });
+    } else if (action === 'RECOVER') {
+      result = await userSecurityCenter.recoverAccount(userId, { operatorId });
+    } else if (action === 'SELF_EXCLUDE') {
+      result = await userSecurityCenter.selfExcludeAccount(userId, { durationDays, reason });
+    } else {
+      return res.status(400).json({ error: `Unknown security action '${action}'` });
+    }
+    res.json({ success: true, result });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1476,7 +1717,13 @@ app.post('/api/admin/support/conversations/:id/internal-notes', async (req, res)
   const { agentId, text } = req.body;
   try {
     const { supportEngine } = await import('../lib/supportEngine.mjs');
-    const note = supportEngine.addInternalNote(req.params.id, { agentId, text });
+    const note = await supportEngine.addMessage(req.params.id, {
+      senderId: agentId || 'admin',
+      senderType: 'admin',
+      messageType: 'INTERNAL_NOTE',
+      agentName: agentId || 'Priya Sharma (Admin)',
+      text: text || '',
+    });
     if (!note) return res.status(404).json({ error: 'Conversation not found' });
     res.json({ success: true, note });
   } catch (err) {
@@ -1488,7 +1735,7 @@ app.post('/api/admin/support/conversations/:id/resolve', async (req, res) => {
   const { resolutionReason, agentId } = req.body;
   try {
     const { supportEngine } = await import('../lib/supportEngine.mjs');
-    const resolved = supportEngine.resolveConversation(req.params.id, { resolutionReason, agentId });
+    const resolved = await supportEngine.resolveConversation(req.params.id, { resolutionReason, agentId });
     if (!resolved) return res.status(404).json({ error: 'Conversation not found' });
     res.json({ success: true, conversation: resolved });
   } catch (err) {
@@ -1601,6 +1848,379 @@ app.post('/api/v1/bet/place', async (req, res) => {
       idempotencyEngine.fail(idempotencyKey, err.message);
     }
     res.status(500).json({ error: err.message || 'Bet placement failed' });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// Platform Integrity Engine REST APIs
+// -----------------------------------------------------------------------------
+app.post('/api/v1/admin/integrity/scan', async (req, res) => {
+  try {
+    const { runFullIntegrityScan } = await import('../lib/platformIntegrityEngine.mjs');
+    const result = await runFullIntegrityScan();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/admin/integrity/exceptions', async (req, res) => {
+  try {
+    const { getOpenIntegrityExceptions } = await import('../lib/platformIntegrityEngine.mjs');
+    const result = await getOpenIntegrityExceptions();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/admin/integrity/metrics', async (req, res) => {
+  try {
+    const { getIntegrityScanMetrics } = await import('../lib/platformIntegrityEngine.mjs');
+    const result = await getIntegrityScanMetrics();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/v1/admin/integrity/exceptions/:id/resolve', async (req, res) => {
+  const { resolution, resolvedBy } = req.body;
+  try {
+    const { resolveIntegrityException } = await import('../lib/platformIntegrityEngine.mjs');
+    const result = await resolveIntegrityException(req.params.id, { resolution, resolvedBy });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// Content Management System REST APIs
+// -----------------------------------------------------------------------------
+app.post('/api/v1/admin/cms/content', async (req, res) => {
+  try {
+    const { createContent } = await import('../lib/cmsEngine.mjs');
+    const result = await createContent(req.body);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.put('/api/v1/admin/cms/content/:id', async (req, res) => {
+  try {
+    const { updateContent } = await import('../lib/cmsEngine.mjs');
+    const result = await updateContent(req.params.id, req.body);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/v1/admin/cms/content/:id/status', async (req, res) => {
+  try {
+    const { transitionContentStatus } = await import('../lib/cmsEngine.mjs');
+    const result = await transitionContentStatus(req.params.id, req.body);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/admin/cms/content', async (req, res) => {
+  const { contentType, status, tenantId } = req.query;
+  try {
+    const { getContentByType } = await import('../lib/cmsEngine.mjs');
+    const result = await getContentByType(contentType || 'BANNER', { status, tenantId });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/admin/cms/content/:id/versions', async (req, res) => {
+  try {
+    const { getContentVersionHistory } = await import('../lib/cmsEngine.mjs');
+    const result = await getContentVersionHistory(req.params.id);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/cms/published', async (req, res) => {
+  const { contentType, tenantId } = req.query;
+  try {
+    const { getPublishedContent } = await import('../lib/cmsEngine.mjs');
+    const result = await getPublishedContent(contentType || 'BANNER', { tenantId });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// Platform Configuration Center REST APIs
+// -----------------------------------------------------------------------------
+app.post('/api/v1/admin/config', async (req, res) => {
+  try {
+    const { setConfig } = await import('../lib/configEngine.mjs');
+    const result = await setConfig(req.body);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/admin/config', async (req, res) => {
+  const { category } = req.query;
+  try {
+    if (category) {
+      const { getConfigByCategory } = await import('../lib/configEngine.mjs');
+      const result = await getConfigByCategory(category);
+      res.json(result);
+    } else {
+      const { getAllConfigSummary } = await import('../lib/configEngine.mjs');
+      const result = await getAllConfigSummary();
+      res.json(result);
+    }
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/admin/config/:key', async (req, res) => {
+  try {
+    const { getConfig } = await import('../lib/configEngine.mjs');
+    const result = await getConfig(req.params.key);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/admin/config/:key/audit', async (req, res) => {
+  try {
+    const { getConfigAuditHistory } = await import('../lib/configEngine.mjs');
+    const result = await getConfigAuditHistory(req.params.key);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// Feature Flags REST APIs
+// -----------------------------------------------------------------------------
+app.post('/api/v1/admin/feature-flags', async (req, res) => {
+  try {
+    const { upsertFeatureFlag } = await import('../lib/featureStore.mjs');
+    const result = await upsertFeatureFlag(req.body);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/admin/feature-flags', async (req, res) => {
+  try {
+    const { getAllFeatureFlags } = await import('../lib/featureStore.mjs');
+    const result = await getAllFeatureFlags();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/admin/feature-flags/:key/check', async (req, res) => {
+  const { tenantId, userId, segment } = req.query;
+  try {
+    const { isFeatureEnabled } = await import('../lib/featureStore.mjs');
+    const enabled = await isFeatureEnabled(req.params.key, { tenantId, userId, segment });
+    res.json({ success: true, flagKey: req.params.key, enabled });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/admin/feature-flags/:key/audit', async (req, res) => {
+  try {
+    const { getFeatureFlagAudit } = await import('../lib/featureStore.mjs');
+    const result = await getFeatureFlagAudit(req.params.key);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// Customer Segmentation REST APIs
+// -----------------------------------------------------------------------------
+app.post('/api/v1/admin/segments', async (req, res) => {
+  try {
+    const { createCustomerSegment } = await import('../lib/crmEngine.mjs');
+    const result = await createCustomerSegment(req.body);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/admin/segments', async (req, res) => {
+  try {
+    const { getAllCustomerSegments } = await import('../lib/crmEngine.mjs');
+    const result = await getAllCustomerSegments();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/admin/segments/user/:userId', async (req, res) => {
+  try {
+    const { getUserSegments } = await import('../lib/crmEngine.mjs');
+    const result = await getUserSegments(req.params.userId);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// VIP & Loyalty REST APIs
+// -----------------------------------------------------------------------------
+app.get('/api/v1/vip/benefits', async (req, res) => {
+  try {
+    const { getVipBenefitsCatalog } = await import('../lib/vipEngine.mjs');
+    res.json(getVipBenefitsCatalog());
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/user/vip/status', async (req, res) => {
+  const { userId } = req.query;
+  try {
+    const { getUserVipStatus } = await import('../lib/vipEngine.mjs');
+    res.json({ success: true, vip: getUserVipStatus(userId || 'demo@betking.com') });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/user/vip/history', async (req, res) => {
+  const { userId } = req.query;
+  try {
+    const { getVipTierHistory } = await import('../lib/vipEngine.mjs');
+    const result = await getVipTierHistory(userId || 'demo@betking.com');
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// Affiliate Platform REST APIs
+// -----------------------------------------------------------------------------
+app.post('/api/v1/admin/affiliates', async (req, res) => {
+  try {
+    const { createAffiliateAccount } = await import('../lib/affiliateEngine.mjs');
+    const result = await createAffiliateAccount(req.body);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/admin/affiliates', async (req, res) => {
+  try {
+    const { getAllAffiliates } = await import('../lib/affiliateEngine.mjs');
+    const result = await getAllAffiliates();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/admin/affiliates/:id', async (req, res) => {
+  try {
+    const { getAffiliateDashboard } = await import('../lib/affiliateEngine.mjs');
+    const result = await getAffiliateDashboard(req.params.id);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/v1/affiliates/click', async (req, res) => {
+  const { referralCode } = req.body;
+  try {
+    const { recordAffiliateClick } = await import('../lib/affiliateEngine.mjs');
+    const result = await recordAffiliateClick(referralCode);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/v1/affiliates/conversion', async (req, res) => {
+  try {
+    const { recordAffiliateConversion } = await import('../lib/affiliateEngine.mjs');
+    const result = await recordAffiliateConversion(req.body);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// Global Audit Explorer REST APIs
+// -----------------------------------------------------------------------------
+app.get('/api/v1/admin/audit/explorer', async (req, res) => {
+  const { actorId, action, targetId, module, startDate, endDate, limit } = req.query;
+  try {
+    const { query } = await import('../db/pg.js');
+    let sql = `SELECT event_id, actor_id, target_id, action, details, created_at FROM audit_events WHERE 1=1`;
+    const params = [];
+    let paramIdx = 1;
+
+    if (actorId) { sql += ` AND actor_id = $${paramIdx++}`; params.push(actorId); }
+    if (action) { sql += ` AND action ILIKE $${paramIdx++}`; params.push(`%${action}%`); }
+    if (targetId) { sql += ` AND target_id = $${paramIdx++}`; params.push(targetId); }
+    if (startDate) { sql += ` AND created_at >= $${paramIdx++}`; params.push(startDate); }
+    if (endDate) { sql += ` AND created_at <= $${paramIdx++}`; params.push(endDate); }
+
+    sql += ` ORDER BY created_at DESC LIMIT ${parseInt(limit) || 100};`;
+
+    const result = await query(sql, params);
+    res.json({ success: true, count: result.rows.length, events: result.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// Business Rules REST APIs
+// -----------------------------------------------------------------------------
+app.get('/api/v1/admin/rules', async (req, res) => {
+  try {
+    const { loadBusinessRules, getRegisteredRules } = await import('../lib/ruleEngine.mjs');
+    const pgRules = await loadBusinessRules();
+    const memRules = getRegisteredRules();
+    res.json({ success: true, persistedRules: pgRules, inMemoryRules: memRules });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/v1/admin/rules', async (req, res) => {
+  try {
+    const { persistBusinessRule } = await import('../lib/ruleEngine.mjs');
+    const result = await persistBusinessRule(req.body);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
   }
 });
 

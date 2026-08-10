@@ -837,20 +837,19 @@ export default function Sports() {
                         <>
                           <span className="sports-live-badge-dot" />
                           <span style={{ color: '#ef4444', fontWeight: 800 }}>LIVE</span>
-                          <MatchCountdownTimer match={activeMatch} style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)' }} />
+                          {isTest && testDayBadge && (
+                            <span style={{ background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '3px 10px', borderRadius: '16px', fontSize: '0.78rem', fontWeight: 800 }}>
+                              📅 {testDayBadge}
+                            </span>
+                          )}
                         </>
                       ) : (
-                        <MatchCountdownTimer match={activeMatch} style={{ fontSize: '0.95rem', padding: '6px 18px' }} />
+                        <MatchCountdownTimer match={activeMatch} style={{ fontSize: '0.92rem', padding: '6px 18px' }} />
                       )}
                     </div>
 
                     <div className="sports-match-banner-meta-bar">
                       <span className="sports-format-badge">{matchFormatBadge}</span>
-                      {testDayBadge && (
-                        <span className="sports-test-day-badge" style={{ background: '#7c3aed', color: '#ffffff', padding: '3px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 900, boxShadow: '0 2px 8px rgba(124, 58, 237, 0.3)' }}>
-                          📅 {testDayBadge}
-                        </span>
-                      )}
                       {seriesText && <span className="sports-series-name">🏆 {seriesText}</span>}
                       {venueText && <span className="sports-venue-tag">📍 {venueText}</span>}
                     </div>
@@ -882,7 +881,7 @@ export default function Sports() {
                     )}
 
                     <p className="sports-match-banner-commentary">
-                      {testDayBadge
+                      {isTest && testDayBadge
                         ? `📅 ${testDayBadge} · ${commText || 'Match play active'}`
                         : (!isLive ? `⏱️ Match ${formatMatchCountdown(activeMatch)}` : (commText || 'Match play active'))}
                     </p>

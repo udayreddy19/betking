@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { fraudGraphEngine } from '../../../lib/fraudGraphEngine.mjs';
+import { supportEngine } from '../../../lib/supportEngine.mjs';
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { useLiveMatches } from '../../context/LiveSportsContext';
@@ -119,6 +120,96 @@ export default function Admin() {
     tennis: 3.5,
     basketball: 4.5,
   });
+
+  // Real-Time Customer Support Engine State
+  const [supportConversations, setSupportConversations] = useState(() => supportEngine.getAllConversations());
+  const [selectedSupportConvId, setSelectedSupportConvId] = useState(() => {
+    const all = supportEngine.getAllConversations();
+    return all[0]?.conversationId || null;
+  });
+  const [supportReplyText, setSupportReplyText] = useState('');
+  const [cannedReplyText, setCannedReplyText] = useState('');
+  const [supportFilterTab, setSupportFilterTab] = useState('all');
+  const [supportSearchQuery, setSupportSearchQuery] = useState('');
+  const [composerTab, setComposerTab] = useState('reply'); // 'reply' | 'note'
+
+  const refreshSupportData = () => {
+    const all = supportEngine.getAllConversations();
+    setSupportConversations(all);
+    if (!selectedSupportConvId && all.length > 0) {
+      setSelectedSupportConvId(all[0].conversationId);
+    }
+  };
+
+  // Real-time synchronization for Admin Support Console
+  useEffect(() => {
+    refreshSupportData();
+    const handleUpdate = () => refreshSupportData();
+    window.addEventListener('support_engine_update', handleUpdate);
+    const interval = setInterval(refreshSupportData, 1000);
+    return () => {
+      window.removeEventListener('support_engine_update', handleUpdate);
+      clearInterval(interval);
+    };
+  }, []);
+
+  const selectedConv = supportConversations.find(c => c.conversationId === selectedSupportConvId) || supportConversations[0];
+
+  const handleResolveSupportCase = (convId, customCode, customSummary) => {
+    const targetId = convId || selectedSupportConvId;
+    if (!targetId) return;
+
+    const resCode = customCode || 'INFORMATION_PROVIDED';
+    const resSummary = customSummary || 'Issue investigated and resolution details provided to customer.';
+
+    try {
+      supportEngine.provideResolution(targetId, {
+        resolutionCode: resCode,
+        resolutionSummary: resSummary,
+        resolvedBy: 'Priya Sharma (Admin)',
+      });
+      refreshSupportData();
+      window.dispatchEvent(new CustomEvent('support_engine_update', { detail: { convId: targetId } }));
+      showToast(`Support Ticket #${targetId} resolved cleanly!`, 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  const handleCloseSupportCase = (convId, exceptionCode) => {
+    const targetId = convId || selectedSupportConvId;
+    if (!targetId) return;
+
+    try {
+      supportEngine.closeTicket(targetId, { closedBy: 'Priya Sharma (Admin)', resolutionCode: exceptionCode });
+      refreshSupportData();
+      window.dispatchEvent(new CustomEvent('support_engine_update', { detail: { convId: targetId } }));
+      showToast(`Support Ticket #${targetId} closed cleanly.`, 'info');
+    } catch (err) {
+      showToast(err.message, 'warning');
+    }
+  };
+
+  const handleSendSupportReply = (e) => {
+    if (e) e.preventDefault();
+    const targetId = selectedSupportConvId || selectedConv?.conversationId;
+    if (!targetId) return;
+    const textToSend = supportReplyText || cannedReplyText;
+    if (!textToSend.trim()) return;
+
+    supportEngine.addMessage(targetId, {
+      senderId: 'agent_priya',
+      senderType: 'admin',
+      messageType: 'ADMIN_MESSAGE',
+      agentName: 'Priya Sharma (Admin)',
+      text: textToSend.trim(),
+    });
+    setSupportReplyText('');
+    setCannedReplyText('');
+    refreshSupportData();
+    window.dispatchEvent(new CustomEvent('support_engine_update', { detail: { convId: targetId } }));
+    showToast('Reply dispatched to customer ticket!', 'success');
+  };
 
   // Live Toast Notification Dispatcher
   const [dispatchToastText, setDispatchToastText] = useState('');
@@ -2867,148 +2958,367 @@ export default function Admin() {
             )}
 
             {/* TAB: CUSTOMER SUPPORT CONSOLE & AGENT WORKSPACE */}
-            {activeTab === 'support' && (
-              <div className="admin-tab-content">
-                <div className="admin-card mb-6">
-                  <div className="card-header flex-between">
-                    <div>
-                      <h3>🎧 Customer Support Agent Console & Workspace</h3>
-                      <p className="card-sub text-muted">24/7 Agent Inbox, Live Conversation Queues, SLA Tracking, Canned Responses & Customer 360 Context</p>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs">
-                      <span className="font-bold text-slate-300">Agent Status:</span>
-                      <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/40 flex items-center gap-1.5">
-                        <span className="live-dot" /> ONLINE (Priya Sharma)
-                      </span>
-                    </div>
-                  </div>
+            {activeTab === 'support' && (() => {
+              const analytics = supportEngine.getAnalytics();
 
-                  {/* SUPPORT SLA METRICS SUMMARY */}
-                  <div className="grid grid-cols-4 gap-3 mt-4 text-xs">
-                    <div className="risk-summary-card">
-                      <div className="risk-summary-label">Open Support Cases</div>
-                      <div className="risk-summary-val font-bold text-amber-400">1 Open Case</div>
-                    </div>
-                    <div className="risk-summary-card">
-                      <div className="risk-summary-label">Avg Response Time</div>
-                      <div className="risk-summary-val font-bold text-emerald-400">1.4 mins</div>
-                    </div>
-                    <div className="risk-summary-card">
-                      <div className="risk-summary-label">SLA Compliance</div>
-                      <div className="risk-summary-val font-bold text-emerald-400">98.5% (Healthy)</div>
-                    </div>
-                    <div className="risk-summary-card">
-                      <div className="risk-summary-label">Customer CSAT Rating</div>
-                      <div className="risk-summary-val font-bold text-purple-400">4.9 / 5.0 ⭐</div>
-                    </div>
-                  </div>
+              // Filter conversations by tab and search query
+              let filtered = supportConversations;
+              if (supportFilterTab === 'open') filtered = filtered.filter(c => c.status === 'OPEN');
+              else if (supportFilterTab === 'unassigned') filtered = filtered.filter(c => !c.assignedAgentId || c.assignedAgentName === 'Unassigned');
+              else if (supportFilterTab === 'assigned') filtered = filtered.filter(c => c.assignedAgentId === 'agent_priya' || c.assignedAgentName?.includes('Priya'));
+              else if (supportFilterTab === 'pending') filtered = filtered.filter(c => c.status === 'PENDING');
+              else if (supportFilterTab === 'resolved') filtered = filtered.filter(c => c.status === 'RESOLVED');
+              else if (supportFilterTab === 'closed') filtered = filtered.filter(c => c.status === 'CLOSED');
+              else if (supportFilterTab === 'escalated') filtered = filtered.filter(c => c.status === 'ESCALATED');
+              else if (supportFilterTab === 'breached') filtered = filtered.filter(c => c.slaStatus === 'SLA_BREACHED');
 
-                  {/* AGENT SPLIT WORKSPACE */}
-                  <div className="grid grid-cols-12 gap-4 mt-6 text-xs">
-                    {/* LEFT COLUMN: QUEUE LIST */}
-                    <div className="col-span-4 p-3 rounded-xl bg-slate-900 border border-white/10 flex flex-col gap-2">
-                      <h4 className="font-bold text-slate-200 mb-1 flex items-center justify-between">
-                        <span>📥 Support Queue</span>
-                        <span className="text-[10px] text-muted">1 Active</span>
-                      </h4>
-                      <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/30 cursor-pointer">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="font-bold text-purple-300">demo@betking.com</span>
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">HIGH</span>
-                        </div>
-                        <div className="text-slate-300 text-[11px] truncate mb-1">Withdrawal of ₹1,000 via UPI is still pending...</div>
-                        <div className="flex justify-between text-[10px] text-slate-400">
-                          <span>Category: WITHDRAWAL</span>
-                          <span>2 mins ago</span>
-                        </div>
-                      </div>
-                    </div>
+              if (supportSearchQuery.trim()) {
+                const q = supportSearchQuery.toLowerCase();
+                filtered = filtered.filter(c =>
+                  c.userId.toLowerCase().includes(q) ||
+                  (c.conversationNumber || '').toLowerCase().includes(q) ||
+                  c.conversationId.toLowerCase().includes(q) ||
+                  c.subject.toLowerCase().includes(q) ||
+                  c.category.toLowerCase().includes(q) ||
+                  c.lastMessage.toLowerCase().includes(q)
+                );
+              }
 
-                    {/* CENTER COLUMN: CONVERSATION STREAM & REPLY COMPOSER */}
-                    <div className="col-span-5 p-3 rounded-xl bg-slate-900 border border-white/10 flex flex-col justify-between">
+              const activeConv = supportConversations.find(c => c.conversationId === selectedSupportConvId) || filtered[0] || supportConversations[0];
+
+              return (
+                <div className="admin-tab-content">
+                  <div className="admin-card mb-6">
+                    <div className="card-header flex-between">
                       <div>
-                        <div className="flex justify-between items-center pb-2 mb-3 border-b border-white/10">
-                          <div>
-                            <span className="font-bold text-slate-200">Conv #conv_9912 · demo@betking.com</span>
-                            <div className="text-[10px] text-slate-400">Category: WITHDRAWAL · SLA: HEALTHY</div>
-                          </div>
-                          <button type="button" className="risk-btn risk-btn--release">Resolve Case</button>
-                        </div>
-
-                        {/* MESSAGES & INTERNAL NOTES */}
-                        <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
-                          <div className="p-2.5 rounded bg-white/5 border border-white/5">
-                            <div className="flex justify-between text-[10px] text-slate-400 mb-1">
-                              <span className="font-bold text-purple-300">Customer (demo@betking.com)</span>
-                              <span>20:45:12</span>
-                            </div>
-                            <p className="text-slate-200">My withdrawal of ₹1,000 via UPI is still pending.</p>
-                          </div>
-
-                          <div className="p-2.5 rounded bg-blue-500/10 border border-blue-500/20">
-                            <div className="flex justify-between text-[10px] text-slate-400 mb-1">
-                              <span className="font-bold text-blue-300">Agent (Priya Sharma)</span>
-                              <span>20:46:00</span>
-                            </div>
-                            <p className="text-slate-200">Hello! I am inspecting your UPI withdrawal transaction tx_wd_99182 now.</p>
-                          </div>
-
-                          <div className="p-2.5 rounded bg-amber-500/10 border border-amber-500/30 font-mono text-[11px]">
-                            <div className="font-bold text-amber-300 mb-1">🔒 INTERNAL AGENT NOTE (Hidden from Customer):</div>
-                            <div className="text-amber-200">Verified account identity & KYC status. Banking gateway UTR response pending from ICICI gateway.</div>
-                          </div>
-                        </div>
+                        <h3>🎧 Customer Support Agent Console & Workspace</h3>
+                        <p className="card-sub text-muted">24/7 Real-Time Agent Inbox, SLA Tracking, Canned Responses, Internal Notes & Customer 360 Context</p>
                       </div>
-
-                      {/* REPLY & CANNED RESPONSES COMPOSER */}
-                      <div className="mt-4 pt-3 border-t border-white/10">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-[10px] font-bold text-slate-400">Quick Canned Reply:</span>
-                          <select className="user-select-dropdown text-xs flex-1">
-                            <option value="">Select Canned Response...</option>
-                            <option value="wd_pending">Withdrawal is processing via Banking Partner</option>
-                            <option value="kyc_req">KYC Document Upload Required</option>
-                            <option value="settle_rule">Bet Settled per Official Match Scorecard</option>
-                          </select>
-                        </div>
-                        <div className="flex gap-2">
-                          <input type="text" className="admin-input-field flex-1" placeholder="Type response to customer..." />
-                          <button type="button" className="risk-btn risk-btn--verify">Send Reply</button>
-                        </div>
+                      <div className="flex items-center gap-3 text-xs">
+                        <span className="font-bold text-slate-300">Agent Status:</span>
+                        <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/40 flex items-center gap-1.5">
+                          <span className="live-dot" /> ONLINE (Priya Sharma)
+                        </span>
                       </div>
                     </div>
 
-                    {/* RIGHT COLUMN: CUSTOMER 360 & CONTEXT PANEL */}
-                    <div className="col-span-3 p-3 rounded-xl bg-slate-900 border border-white/10 flex flex-col gap-3">
-                      <h4 className="font-bold text-slate-200 pb-2 border-b border-white/10">👤 Customer 360 Context</h4>
-                      <div className="space-y-2">
-                        <div>
-                          <span className="text-slate-400">User Email:</span>
-                          <div className="font-bold text-slate-200">demo@betking.com</div>
+                    {/* SUPPORT SLA METRICS SUMMARY */}
+                    <div className="support-metrics-grid">
+                      <div className="risk-summary-card">
+                        <div className="risk-summary-label">Open Support Cases</div>
+                        <div className="risk-summary-val font-bold text-amber-400">{analytics.openCount} Open Cases</div>
+                      </div>
+                      <div className="risk-summary-card">
+                        <div className="risk-summary-label">Avg Response Time</div>
+                        <div className="risk-summary-val font-bold text-emerald-400">{analytics.avgFirstResponseTime}</div>
+                      </div>
+                      <div className="risk-summary-card">
+                        <div className="risk-summary-label">SLA Compliance</div>
+                        <div className="risk-summary-val font-bold text-emerald-400">{analytics.slaCompliance} (Healthy)</div>
+                      </div>
+                      <div className="risk-summary-card">
+                        <div className="risk-summary-label">Customer CSAT Rating</div>
+                        <div className="risk-summary-val font-bold text-purple-400">{analytics.avgCsat} ⭐</div>
+                      </div>
+                    </div>
+
+                    {/* FILTER TABS & SEARCH BAR */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginTop: '18px', paddingTop: '14px', borderTop: '1px solid var(--color-border)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
+                        {[
+                          { id: 'all', label: 'All' },
+                          { id: 'open', label: 'Open' },
+                          { id: 'unassigned', label: 'Unassigned' },
+                          { id: 'assigned', label: 'Assigned to Me' },
+                          { id: 'pending', label: 'Pending' },
+                          { id: 'resolved', label: 'Resolved' },
+                          { id: 'closed', label: 'Closed' },
+                          { id: 'escalated', label: 'Escalated' },
+                          { id: 'breached', label: 'SLA Breached' },
+                        ].map((tab) => (
+                          <button
+                            key={tab.id}
+                            type="button"
+                            className={`filter-chip ${supportFilterTab === tab.id ? 'active' : ''}`}
+                            style={{ fontSize: '0.72rem', padding: '4px 10px' }}
+                            onClick={() => setSupportFilterTab(tab.id)}
+                          >
+                            {tab.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '280px' }}>
+                        <input
+                          type="text"
+                          className="admin-input-field"
+                          placeholder="Search email, conv ID, bet ID, tx..."
+                          value={supportSearchQuery}
+                          onChange={(e) => setSupportSearchQuery(e.target.value)}
+                          style={{ fontSize: '0.78rem', padding: '6px 12px' }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* AGENT SPLIT WORKSPACE */}
+                    <div className="support-workspace-grid">
+                      {/* LEFT COLUMN: QUEUE LIST */}
+                      <div className="support-queue-box">
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                          <span style={{ fontWeight: 800 }}>📥 Support Queue</span>
+                          <span style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)' }}>{filtered.length} Match</span>
                         </div>
-                        <div>
-                          <span className="text-slate-400">Account Status:</span>
-                          <div><span className="status-tag status-tag--won">ACTIVE</span></div>
-                        </div>
-                        <div>
-                          <span className="text-slate-400">KYC Verification:</span>
-                          <div><span className="status-tag status-tag--won">VERIFIED</span></div>
-                        </div>
-                        <div>
-                          <span className="text-slate-400">Risk Tier:</span>
-                          <div className="font-bold text-emerald-400">LOW RISK (Tier 1)</div>
-                        </div>
-                        <div className="pt-2 border-t border-white/10">
-                          <span className="text-slate-400">Related Context:</span>
-                          <div className="font-mono text-purple-300 font-bold">Transaction: tx_wd_99182</div>
-                          <div className="text-slate-300">Amount: ₹1,000 (UPI Payout)</div>
+
+                        {filtered.length === 0 ? (
+                          <div style={{ padding: '20px 10px', textAlign: 'center', color: 'var(--color-text-secondary)', fontSize: '0.78rem' }}>
+                            No tickets match filter query.
+                          </div>
+                        ) : (
+                          filtered.map((conv) => {
+                            const isSelected = conv.conversationId === activeConv?.conversationId;
+                            const isResolved = conv.status === 'RESOLVED' || conv.status === 'CLOSED';
+
+                            return (
+                              <div
+                                key={conv.conversationId}
+                                className="support-queue-item"
+                                style={{
+                                  background: isSelected ? 'rgba(168, 85, 247, 0.2)' : (isResolved ? 'rgba(255, 255, 255, 0.03)' : 'rgba(168, 85, 247, 0.08)'),
+                                  border: isSelected ? '1px solid #c084fc' : '1px solid rgba(168, 85, 247, 0.2)',
+                                }}
+                                onClick={() => setSelectedSupportConvId(conv.conversationId)}
+                              >
+                                <div className="support-queue-item-header">
+                                  <span style={{ fontWeight: 800, color: '#c084fc' }}>{conv.userId}</span>
+                                  <span style={{
+                                    background: isResolved ? 'rgba(34, 197, 94, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                                    color: isResolved ? '#4ade80' : '#f59e0b',
+                                    border: `1px solid ${isResolved ? 'rgba(34, 197, 94, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`,
+                                    padding: '1px 6px',
+                                    borderRadius: '4px',
+                                    fontSize: '0.65rem',
+                                    fontWeight: 800,
+                                  }}>
+                                    {isResolved ? 'RESOLVED' : (conv.priority || 'HIGH')}
+                                  </span>
+                                </div>
+                                <div style={{ fontSize: '0.78rem', color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {conv.lastMessage || 'User support query...'}
+                                </div>
+                                <div className="support-queue-item-footer">
+                                  <span>Cat: {conv.category}</span>
+                                  <span style={{ color: conv.slaStatus === 'SLA_BREACHED' ? '#ef4444' : '#4ade80', fontWeight: 800 }}>{conv.status}</span>
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+
+                      {/* CENTER COLUMN: CONVERSATION STREAM & DUAL REPLY COMPOSER */}
+                      <div className="support-queue-box">
+                        {activeConv ? (
+                          <>
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '8px', marginBottom: '12px', borderBottom: '1px solid var(--color-border)' }}>
+                                <div>
+                                  <span style={{ fontWeight: 800, color: 'var(--color-text)' }}>
+                                    {activeConv.conversationNumber || activeConv.conversationId} · {activeConv.userId}
+                                  </span>
+                                  <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)' }}>
+                                    Category: {activeConv.category} · Agent: {activeConv.assignedAgentName || 'Unassigned'} · SLA: <span style={{ color: activeConv.slaStatus === 'SLA_BREACHED' ? '#ef4444' : '#4ade80', fontWeight: 800 }}>{activeConv.slaStatus || 'WITHIN_SLA'}</span>
+                                  </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                  <button
+                                    type="button"
+                                    className="risk-btn risk-btn--verify"
+                                    style={{ fontSize: '0.7rem' }}
+                                    onClick={() => {
+                                      supportEngine.assignAgent(activeConv.conversationId, { agentId: 'agent_priya', agentName: 'Priya Sharma', teamId: 'SUPPORT_AGENT' });
+                                      refreshSupportData();
+                                      showToast('Assigned to Priya Sharma!', 'success');
+                                    }}
+                                  >
+                                    Assign to Me
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="risk-btn risk-btn--restrict"
+                                    style={{ fontSize: '0.7rem' }}
+                                    onClick={() => {
+                                      supportEngine.escalateConversation(activeConv.conversationId, { escalatedBy: 'Priya Sharma', fromTeam: 'SUPPORT_AGENT', toTeam: 'PAYMENTS', reason: 'High-value payout inspection' });
+                                      refreshSupportData();
+                                      showToast('Escalated to Payments Team!', 'warning');
+                                    }}
+                                  >
+                                    Escalate
+                                  </button>
+                                  {activeConv.status !== 'RESOLVED' && (
+                                    <button
+                                      type="button"
+                                      className="risk-btn risk-btn--release"
+                                      style={{ fontSize: '0.7rem' }}
+                                      onClick={() => handleResolveSupportCase(activeConv.conversationId)}
+                                    >
+                                      Resolve Case
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* MESSAGES & INTERNAL NOTES */}
+                              <div className="support-chat-stream">
+                                {(activeConv.messages || []).map((msg) => (
+                                  <div
+                                    key={msg.id}
+                                    className={`support-msg-box ${msg.senderType === 'admin' ? 'support-msg-box--agent' : 'support-msg-box--customer'}`}
+                                  >
+                                    <div className="support-msg-meta">
+                                      <span style={{ fontWeight: 800, color: msg.senderType === 'admin' ? '#60a5fa' : '#c084fc' }}>
+                                        {msg.senderType === 'admin' ? (msg.agentName || 'Agent (Priya Sharma)') : `Customer (${activeConv.userId})`}
+                                      </span>
+                                      <span>{msg.timestamp || (msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '')}</span>
+                                    </div>
+                                    <p style={{ margin: 0, color: 'var(--color-text)' }}>{msg.text}</p>
+                                  </div>
+                                ))}
+
+                                {(activeConv.internalNotes || []).map((note) => (
+                                  <div key={note.noteId} className="support-msg-box support-msg-box--note">
+                                    <div style={{ fontWeight: 800, color: '#f59e0b', marginBottom: '4px' }}>🔒 INTERNAL AGENT NOTE (Hidden from Customer):</div>
+                                    <div style={{ color: '#fde68a' }}>{note.text}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* DUAL COMPOSER (REPLY TO USER vs INTERNAL NOTE) */}
+                            <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--color-border)' }}>
+                              <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                                <button
+                                  type="button"
+                                  className={`filter-chip ${composerTab === 'reply' ? 'active' : ''}`}
+                                  style={{ fontSize: '0.7rem', padding: '2px 8px' }}
+                                  onClick={() => setComposerTab('reply')}
+                                >
+                                  💬 Reply to Customer
+                                </button>
+                                <button
+                                  type="button"
+                                  className={`filter-chip ${composerTab === 'note' ? 'active' : ''}`}
+                                  style={{ fontSize: '0.7rem', padding: '2px 8px', background: composerTab === 'note' ? '#f59e0b' : 'transparent', color: composerTab === 'note' ? '#ffffff' : 'inherit' }}
+                                  onClick={() => setComposerTab('note')}
+                                >
+                                  🔒 Internal Note (Hidden from User)
+                                </button>
+                              </div>
+
+                              {composerTab === 'reply' ? (
+                                <>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Quick Canned Reply:</span>
+                                    <select
+                                      className="user-select-dropdown"
+                                      style={{ fontSize: '0.78rem', flex: 1, padding: '4px 8px' }}
+                                      value={cannedReplyText}
+                                      onChange={(e) => {
+                                        setCannedReplyText(e.target.value);
+                                        if (e.target.value) setSupportReplyText(e.target.value);
+                                      }}
+                                    >
+                                      <option value="">Select Canned Response...</option>
+                                      <option value="Withdrawal is currently being processed via banking partner ICICI. Expected credit within 15 mins.">Withdrawal is processing via Banking Partner</option>
+                                      <option value="Please upload a clear copy of your PAN / Aadhaar card in Profile -> KYC verification section.">KYC Document Upload Required</option>
+                                      <option value="Your bet has been settled according to official match scorecard data.">Bet Settled per Official Match Scorecard</option>
+                                    </select>
+                                  </div>
+                                  <form onSubmit={handleSendSupportReply} style={{ display: 'flex', gap: '8px' }}>
+                                    <input
+                                      type="text"
+                                      className="admin-input-field"
+                                      style={{ flex: 1, padding: '8px 10px', fontSize: '0.8rem' }}
+                                      placeholder="Type official admin response to customer..."
+                                      value={supportReplyText}
+                                      onChange={(e) => setSupportReplyText(e.target.value)}
+                                    />
+                                    <button type="submit" className="risk-btn risk-btn--verify">Send Reply</button>
+                                  </form>
+                                </>
+                              ) : (
+                                <form
+                                  onSubmit={(e) => {
+                                    e.preventDefault();
+                                    if (!supportReplyText.trim()) return;
+                                    supportEngine.addMessage(activeConv.conversationId, {
+                                      senderId: 'Priya Sharma',
+                                      senderType: 'admin',
+                                      messageType: 'INTERNAL_NOTE',
+                                      agentName: 'Priya Sharma (Admin)',
+                                      text: supportReplyText.trim(),
+                                    });
+                                    setSupportReplyText('');
+                                    refreshSupportData();
+                                    showToast('Internal note saved!', 'info');
+                                  }}
+                                  style={{ display: 'flex', gap: '8px' }}
+                                >
+                                  <input
+                                    type="text"
+                                    className="admin-input-field"
+                                    style={{ flex: 1, padding: '8px 10px', fontSize: '0.8rem', borderColor: '#f59e0b' }}
+                                    placeholder="Type internal note for support team (never visible to user)..."
+                                    value={supportReplyText}
+                                    onChange={(e) => setSupportReplyText(e.target.value)}
+                                  />
+                                  <button type="submit" className="risk-btn" style={{ background: '#f59e0b', color: '#ffffff' }}>Add Note</button>
+                                </form>
+                              )}
+                            </div>
+                          </>
+                        ) : (
+                          <div style={{ padding: '20px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+                            No active ticket selected.
+                          </div>
+                        )}
+                      </div>
+
+                      {/* RIGHT COLUMN: CUSTOMER 360 & CONTEXT PANEL */}
+                      <div className="support-queue-box">
+                        <h4 style={{ margin: 0, fontWeight: 800, paddingBottom: '8px', borderBottom: '1px solid var(--color-border)', color: 'var(--color-text)' }}>👤 Customer 360 Context</h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.78rem' }}>
+                          <div>
+                            <span style={{ color: 'var(--color-text-secondary)' }}>User Email:</span>
+                            <div style={{ fontWeight: 800, color: 'var(--color-text)' }}>{activeConv?.userId || 'N/A'}</div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span style={{ color: 'var(--color-text-secondary)' }}>Account Status:</span>
+                            <span className="status-tag status-tag--won">ACTIVE</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span style={{ color: 'var(--color-text-secondary)' }}>KYC Verification:</span>
+                            <span className="status-tag status-tag--won">VERIFIED</span>
+                          </div>
+                          <div>
+                            <span style={{ color: 'var(--color-text-secondary)' }}>Risk Tier:</span>
+                            <div style={{ fontWeight: 800, color: '#4ade80' }}>LOW RISK (Tier 1)</div>
+                          </div>
+                          <div style={{ paddingTop: '8px', borderTop: '1px solid var(--color-border)' }}>
+                            <span style={{ color: 'var(--color-text-secondary)' }}>Related Context:</span>
+                            <div style={{ fontFamily: 'monospace', color: '#c084fc', fontWeight: 800 }}>
+                              Tx: {activeConv?.context?.transactionId || 'tx_wd_99182'}
+                            </div>
+                            <div style={{ color: 'var(--color-text)' }}>
+                              Category: {activeConv?.category || 'GENERAL'}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* TAB: DATABASE INSPECTOR & TABLE EXPLORER */}
             {activeTab === 'database' && (

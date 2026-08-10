@@ -48,6 +48,53 @@ export default function LiveChatSupportWidget() {
     status: 'ONLINE',
   };
 
+  const userEmail = user?.email || 'demo@betking.com';
+
+  // Real-time synchronization with supportEngine (Admin replies & ticket status updates)
+  useEffect(() => {
+    const syncFromSupportEngine = () => {
+      const convs = supportEngine.getUserConversations(userEmail);
+      if (!convs || convs.length === 0) return;
+
+      const activeConv = convs[0];
+      if (!activeConv || !activeConv.messages) return;
+
+      const mappedMsgs = activeConv.messages.map((m) => ({
+        id: m.id || m.messageId,
+        sender: (m.senderType === 'user' || m.senderId === userEmail || m.sender === 'customer') ? 'user' : 'agent',
+        agentName: m.agentName || 'Priya Sharma',
+        text: m.text,
+        timestamp: m.timestamp ? new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''),
+      }));
+
+      // If conversation is resolved by Admin, append resolution badge
+      if (activeConv.status === 'RESOLVED') {
+        const hasResolvedNotice = mappedMsgs.some(m => m.id === 'msg_resolved_system');
+        if (!hasResolvedNotice) {
+          mappedMsgs.push({
+            id: 'msg_resolved_system',
+            sender: 'system',
+            text: `✅ This support ticket (#${activeConv.conversationId}) has been resolved by Support Agent Priya Sharma.`,
+            timestamp: activeConv.resolvedAt ? new Date(activeConv.resolvedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+          });
+        }
+      }
+
+      setMessages(mappedMsgs);
+    };
+
+    syncFromSupportEngine();
+
+    const handleUpdate = () => syncFromSupportEngine();
+    window.addEventListener('support_engine_update', handleUpdate);
+    const interval = setInterval(syncFromSupportEngine, 1000);
+
+    return () => {
+      window.removeEventListener('support_engine_update', handleUpdate);
+      clearInterval(interval);
+    };
+  }, [userEmail]);
+
   useEffect(() => {
     if (isOpen) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -56,38 +103,56 @@ export default function LiveChatSupportWidget() {
 
   const [typingText, setTypingText] = useState('Support is typing...');
 
-  const handleSendMessage = (textToSend) => {
+  const handleSendMessage = async (textToSend) => {
     const query = textToSend || inputText;
     if (!query.trim()) return;
 
-    const userMsg = {
-      id: `msg_user_${Date.now()}`,
-      sender: 'user',
-      text: query,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
+    const userEmail = user?.email || 'demo@betking.com';
     if (!textToSend) setInputText('');
     setIsTyping(true);
 
-    const responseObj = handleUserSupportQuery(query, user?.email || 'demo@betking.com');
+    // Persist user query to supportEngine
+    let convs = supportEngine.getUserConversations(userEmail);
+    let conv = convs[0];
+    if (!conv) {
+      const res = await supportEngine.startConversation({
+        userId: userEmail,
+        category: 'General',
+        initialMessage: query,
+      });
+
+      if (res && res.isDuplicate) {
+        setIsTyping(false);
+        showToast(res.message, 'warning');
+        return;
+      }
+      conv = res;
+    } else {
+      await supportEngine.addMessage(conv.conversationId, {
+        senderId: userEmail,
+        senderType: 'user',
+        messageType: 'USER_MESSAGE',
+        text: query,
+      });
+    }
+
+    window.dispatchEvent(new CustomEvent('support_engine_update', { detail: { convId: conv?.conversationId } }));
+
+    // Generate AI Assistant response and persist to supportEngine
+    const responseObj = handleUserSupportQuery(query, userEmail);
     setTypingText(responseObj.typingText || 'BetKing Assistant is processing...');
 
-    // Simulate AI & Agent response delay
-    setTimeout(() => {
-      const agentMsg = {
-        id: `msg_agent_${Date.now()}`,
-        sender: 'agent',
+    setTimeout(async () => {
+      await supportEngine.addMessage(conv.conversationId, {
+        senderId: 'support_agent',
+        senderType: 'admin',
+        messageType: 'ADMIN_MESSAGE',
+        agentName: 'Priya Sharma (AI Assistant)',
         text: responseObj.response,
-        category: responseObj.category,
-        actions: responseObj.actions || [],
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-
-      setMessages((prev) => [...prev, agentMsg]);
+      });
       setIsTyping(false);
-    }, 800);
+      window.dispatchEvent(new CustomEvent('support_engine_update', { detail: { convId: conv?.conversationId } }));
+    }, 600);
   };
 
   const [csatRating, setCsatRating] = useState(5);
