@@ -44,6 +44,7 @@ import {
   MessageCircleIcon,
   FlameIcon as LucideFlameIcon,
   CheckIcon,
+  SendIcon,
 } from '@animateicons/react/lucide';
 
 import { withAnimatedIcon } from './animateIcon.jsx';
@@ -187,3 +188,6 @@ export const FiMessageSquare = withAnimatedIcon(MessageCircleIcon);
 export const FiAward = withAnimatedIcon(GiftIcon);
 export const HiOutlineHome = withAnimatedIcon(HouseIcon);
 export const FiMenu = withAnimatedIcon(MenuIcon);
+export const FiSend = withAnimatedIcon(SendIcon);
+export const FiUser = withAnimatedIcon(UserIcon);
+export const FiHelpCircle = withAnimatedIcon(InfoIcon);

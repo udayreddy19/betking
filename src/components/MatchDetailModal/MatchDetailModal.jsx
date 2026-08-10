@@ -10,6 +10,7 @@ import { getRosterForTeam } from '../../data/cricketRosters';
 import { displayPlayerName } from '../../utils/cricketPlayers';
 import BetSlipFooter from '../BetSlip/BetSlipFooter';
 import TeamJersey from '../TeamJersey/TeamJersey';
+import LiveChartsWidget from '../LiveChartsWidget/LiveChartsWidget';
 import './MatchDetailModal.css';
 
 // Roster database for realistic player names across sports
@@ -274,6 +275,9 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
           </div>
         )}
 
+        {/* Live Match Chart Analytics & Line Movement */}
+        <LiveChartsWidget match={match} />
+
         {/* Market Category Filter Tabs */}
         <div className="market-tabs">
           {['all', 'main', 'overs-deliveries', 'player-props', 'specials', 'builder', 'insights'].map(cat => (
@@ -357,7 +361,7 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
                     <span>{m.title}</span>
                     {m.key === 'winner' && <span className="market-cashout">CASHOUT AVAILABLE</span>}
                   </div>
-                  <div className={`market-odds-grid ${m.options.length === 3 ? 'three-col' : (m.options.length > 3 ? 'multi-col' : 'two-col')}`}>
+                  <div className={`market-odds-grid ${m.options.length === 3 ? 'three-col' : (m.options.length === 4 ? 'four-col' : (m.options.length > 4 ? 'multi-col' : 'two-col'))}`}>
                     {m.options.map((opt) => (
                       <button
                         key={opt.selection}

@@ -271,7 +271,7 @@
 }
 
 .market-odds-grid.two-col {
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, 1fr);
 }
 
 .market-odds-grid.three-col {
@@ -282,8 +282,12 @@
   padding: 12px 12px;
 }
 
+.market-odds-grid.four-col {
+  grid-template-columns: repeat(4, 1fr);
+}
+
 .market-odds-grid.multi-col {
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
 }
 
 .market-odds-btn {

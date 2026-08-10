@@ -76,7 +76,31 @@ const ENDPOINT_GROUPS = [
   },
 ];
 
+const PROVIDERS = [
+  { id: 'all', name: '🌐 All Providers', keyword: '', status: 'Operational (10Cric SSE Live)', latency: '18 ms' },
+  { id: '10cric', name: '🔥 10Cric 2026', link: 'https://www.10cric2026.com', keyword: '10cric', status: 'Operational (10Cric Live Odds & SSE)', latency: '12 ms' },
+  { id: 'crex', name: '⚡ CREX Live', link: 'https://crex.com', keyword: 'crex', status: 'Operational (CREX Ball-by-Ball Telemetry)', latency: '24 ms' },
+  { id: 'cricbuzz', name: '🏏 Cricbuzz API', keyword: 'cricbuzz', status: 'Operational (Cricbuzz Live Text & Commentary)', latency: '31 ms' },
+  { id: 'fancode', name: '📺 FanCode Stream', keyword: 'fancode', status: 'Operational (FanCode Live Stream Telemetry)', latency: '19 ms' },
+  { id: 'espn', name: '🌐 ESPN Sports', keyword: 'espn', status: 'Operational (ESPN Global Sports Feed)', latency: '42 ms' },
+  { id: 'football', name: '⚽ Football-Data.org', keyword: 'football', status: 'Operational (Football-Data REST Gateway)', latency: '28 ms' },
+];
+
+const CANONICAL_SCHEMAS = [
+  { name: 'MatchLiveSchema', type: 'Live Scores', desc: 'Canonical real-time scorelines, overs, wickets & run-rate telemetry', fields: ['matchId', 'status', 'teams', 'score', 'overs', 'currentRunRate', 'requiredRunRate', 'batsmen', 'bowlers'] },
+  { name: 'MatchOddsSchema', type: 'Trading Odds', desc: 'Normalized decimal odds matrix across 10Cric 2026 & trading engines', fields: ['marketId', 'name', 'selections', 'odds', 'status', 'margin', 'impliedProbability'] },
+  { name: 'CricketCommentarySchema', type: 'Text Stream', desc: 'Ball-by-ball & minute-by-minute live event text commentary payload', fields: ['commentaryId', 'ball', 'over', 'runs', 'event', 'text', 'timestamp'] },
+  { name: 'PlayingXISchema', type: 'Rosters', desc: 'Standardized playing XI rosters, captains, wicket-keepers & substitutes', fields: ['teamId', 'name', 'captain', 'wicketKeeper', 'playing11', 'substitutes', 'formation'] },
+  { name: 'StandingsSchema', type: 'League Table', desc: 'Tournament standings, net run-rate (NRR), goal difference & points', fields: ['leagueId', 'season', 'table', 'played', 'won', 'lost', 'points', 'nrr'] },
+  { name: 'PlayerStatsSchema', type: 'Player Stats', desc: 'Aggregated career & season statistics for batsmen, bowlers & players', fields: ['playerId', 'name', 'battingAvg', 'strikeRate', 'bowlingEconomy', 'wickets', 'centuries'] },
+  { name: 'VenueSchema', type: 'Stadium Info', desc: 'Stadium venue metadata, GPS coordinates, pitch reports & capacity', fields: ['venueId', 'name', 'city', 'country', 'capacity', 'pitchReport', 'weatherForecast'] },
+  { name: 'OfficialSchema', type: 'Match Referees', desc: 'Match umpires, TV umpires, match referee & VAR team assignments', fields: ['matchId', 'onFieldUmpires', 'tvUmpire', 'matchReferee', 'varOfficial'] },
+  { name: 'EventsSchema', type: 'Match Timeline', desc: 'Timeline of boundaries, wickets, goals, yellow/red cards & VAR reviews', fields: ['eventId', 'minute', 'over', 'type', 'player', 'description', 'videoClip'] },
+  { name: 'RankingsSchema', type: 'Global Rankings', desc: 'Official ICC & FIFA international team and player global rankings', fields: ['category', 'rank', 'teamOrPlayer', 'points', 'ratingChange'] },
+];
+
 export default function ApiDocs() {
+  const [selectedProvider, setSelectedProvider] = useState('all');
   const [selectedEndpoint, setSelectedEndpoint] = useState(ENDPOINT_GROUPS[0].endpoints[0]);
   const [urlInput, setUrlInput] = useState(ENDPOINT_GROUPS[0].endpoints[0].path);
   const [activeTab, setActiveTab] = useState('response');
@@ -88,11 +112,46 @@ export default function ApiDocs() {
   const [copiedKey, setCopiedKey] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Interactive Metric Card Modals State
+  const [activeMetricModal, setActiveMetricModal] = useState(null); // 'health' | 'latency' | 'provider' | 'schemas'
+  const [selectedSchema, setSelectedSchema] = useState(null);
+  const [benchmarkResults, setBenchmarkResults] = useState([]);
+  const [isBenchmarking, setIsBenchmarking] = useState(false);
 
   useEffect(() => {
     setUrlInput(selectedEndpoint.path);
     executeRequest(selectedEndpoint.path);
   }, [selectedEndpoint]);
+
+  const currentProviderObj = useMemo(() => {
+    return PROVIDERS.find((p) => p.id === selectedProvider) || PROVIDERS[0];
+  }, [selectedProvider]);
+
+  const runBenchmark = async () => {
+    setIsBenchmarking(true);
+    const testEndpoints = [
+      '/api/v1/matches/live',
+      '/api/v1/cricket/live',
+      '/api/v1/sports',
+      '/api/v1/standings',
+      '/api/v1/live/stream',
+    ];
+    const results = [];
+
+    for (const path of testEndpoints) {
+      const start = performance.now();
+      try {
+        const res = await fetch(path);
+        const lat = Math.round(performance.now() - start);
+        results.push({ path, status: res.status === 200 ? '200 OK' : `${res.status}`, latency: `${lat} ms`, rawLat: lat });
+      } catch {
+        results.push({ path, status: 'Error', latency: '35 ms', rawLat: 35 });
+      }
+    }
+    setBenchmarkResults(results);
+    setIsBenchmarking(false);
+  };
 
   const executeRequest = async (path) => {
     setIsLoading(true);
@@ -130,16 +189,44 @@ export default function ApiDocs() {
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
+  const handleSelectProvider = (provId) => {
+    setSelectedProvider(provId);
+    const prov = PROVIDERS.find((p) => p.id === provId);
+    if (!prov || prov.id === 'all') {
+      setSelectedEndpoint(ENDPOINT_GROUPS[0].endpoints[0]);
+      return;
+    }
+
+    const kw = prov.keyword.toLowerCase();
+    for (const grp of ENDPOINT_GROUPS) {
+      const match = grp.endpoints.find(
+        (ep) => ep.description.toLowerCase().includes(kw) || ep.path.toLowerCase().includes(kw) || grp.sources.toLowerCase().includes(kw)
+      );
+      if (match) {
+        setSelectedEndpoint(match);
+        return;
+      }
+    }
+  };
+
   const filteredGroups = useMemo(() => {
-    if (!searchQuery.trim()) return ENDPOINT_GROUPS;
-    const q = searchQuery.toLowerCase();
-    return ENDPOINT_GROUPS.map((grp) => ({
-      ...grp,
-      endpoints: grp.endpoints.filter(
-        (ep) => ep.path.toLowerCase().includes(q) || ep.description.toLowerCase().includes(q)
-      ),
-    })).filter((grp) => grp.endpoints.length > 0);
-  }, [searchQuery]);
+    const q = searchQuery.trim().toLowerCase();
+    const provKw = currentProviderObj.keyword ? currentProviderObj.keyword.toLowerCase() : '';
+
+    return ENDPOINT_GROUPS.map((grp) => {
+      const groupMatchesProv = provKw ? grp.sources.toLowerCase().includes(provKw) : true;
+      const matchingEndpoints = grp.endpoints.filter((ep) => {
+        const matchesSearch = !q || ep.path.toLowerCase().includes(q) || ep.description.toLowerCase().includes(q);
+        const matchesProv = !provKw || groupMatchesProv || ep.description.toLowerCase().includes(provKw) || ep.path.toLowerCase().includes(provKw);
+        return matchesSearch && matchesProv;
+      });
+
+      return {
+        ...grp,
+        endpoints: matchingEndpoints,
+      };
+    }).filter((grp) => grp.endpoints.length > 0);
+  }, [searchQuery, currentProviderObj]);
 
   const renderCodeSnippet = () => {
     const fullUrl = `http://localhost:5173${urlInput}`;
@@ -213,57 +300,101 @@ Console.WriteLine(response);`;
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="api-hero-badge">
-          <ZapIcon size={14} /> Official Sports & Scores API Gateway v1.0
+        <div className="api-hero-header-row flex-between">
+          <div className="api-hero-badge">
+            <ZapIcon size={14} className="api-zap-animated" /> Official Sports & Scores API Gateway v1.0
+          </div>
+          <div className="api-live-tag">
+            <span className="live-pulse"></span> LIVE OPERATOR GATEWAY
+          </div>
         </div>
+
         <h1 className="api-hero-title">
-          World-Class Sports API & Live Score Aggregator
+          BetKing Developer Hub & Sports Data Gateway
         </h1>
         <p className="api-hero-subtitle">
-          Canonical REST & Server-Sent Events (SSE) API layer unifying <strong>10Cric 2026</strong>, <strong>CREX</strong>, <strong>Cricbuzz</strong>, <strong>FanCode</strong>, <strong>ESPN</strong>, and 9 global sports providers into a single high-availability endpoint suite.
+          Canonical REST & Server-Sent Events (SSE) API layer unifying <strong>10Cric 2026</strong>, <strong>CREX</strong>, <strong>Cricbuzz</strong>, <strong>FanCode</strong>, <strong>ESPN</strong>, and global sports providers into a high-availability unified sports payload schema.
         </p>
 
         {/* Featured Provider Tag Bar */}
         <div className="api-providers-tag-bar">
-          <span className="api-provider-chip active">
-            🔥 10Cric 2026 (<a href="https://www.10cric2026.com" target="_blank" rel="noreferrer">10cric2026.com</a>)
-          </span>
-          <span className="api-provider-chip">⚡ CREX Live (crex.com)</span>
-          <span className="api-provider-chip">🏏 Cricbuzz API</span>
-          <span className="api-provider-chip">📺 FanCode Stream</span>
-          <span className="api-provider-chip">🌐 ESPN Sports</span>
+          {PROVIDERS.map((prov) => (
+            <button
+              key={prov.id}
+              type="button"
+              className={`api-provider-chip ${selectedProvider === prov.id ? 'active' : ''}`}
+              onClick={() => handleSelectProvider(prov.id)}
+            >
+              <span>{prov.name}</span>
+              {prov.link && (
+                <a
+                  href={prov.link}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  title={`Open official ${prov.name} site`}
+                >
+                  🔗
+                </a>
+              )}
+            </button>
+          ))}
         </div>
 
         {/* Metrics Grid */}
         <div className="api-metrics-grid">
-          <motion.div className="api-metric-card" whileHover={{ scale: 1.02 }}>
+          <motion.div
+            className="api-metric-card interactive"
+            whileHover={{ scale: 1.03, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setActiveMetricModal('health')}
+            title="Click to view Gateway Health & Provider SLA Details"
+          >
             <div className="api-metric-icon status"><ActivityIcon size={18} /></div>
             <div>
-              <span className="api-metric-label">Gateway Status</span>
-              <span className="api-metric-val green">Operational (10Cric SSE Live)</span>
+              <span className="api-metric-label">Gateway Status 🔍</span>
+              <span className="api-metric-val green">{currentProviderObj.status}</span>
             </div>
           </motion.div>
 
-          <motion.div className="api-metric-card" whileHover={{ scale: 1.02 }}>
+          <motion.div
+            className="api-metric-card interactive"
+            whileHover={{ scale: 1.03, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => { setActiveMetricModal('latency'); runBenchmark(); }}
+            title="Click to run live latency benchmark test"
+          >
             <div className="api-metric-icon latency"><ZapIcon size={18} /></div>
             <div>
-              <span className="api-metric-label">Avg Response Time</span>
-              <span className="api-metric-val">{responseLatency || '18 ms'}</span>
+              <span className="api-metric-label">Avg Response Time ⚡</span>
+              <span className="api-metric-val">{responseLatency || currentProviderObj.latency}</span>
             </div>
           </motion.div>
 
-          <motion.div className="api-metric-card" whileHover={{ scale: 1.02 }}>
+          <motion.div
+            className="api-metric-card interactive"
+            whileHover={{ scale: 1.03, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setActiveMetricModal('provider')}
+            title="Click to open Provider Selector & Telemetry Specs"
+          >
             <div className="api-metric-icon sources"><GlobeIcon size={18} /></div>
             <div>
-              <span className="api-metric-label">Data Providers Merged</span>
-              <span className="api-metric-val">10 Live Sources</span>
+              <span className="api-metric-label">Active Provider 🔄</span>
+              <span className="api-metric-val">{currentProviderObj.name}</span>
             </div>
           </motion.div>
 
-          <motion.div className="api-metric-card" whileHover={{ scale: 1.02 }}>
+          <motion.div
+            className="api-metric-card interactive"
+            whileHover={{ scale: 1.03, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setActiveMetricModal('schemas')}
+            title="Click to explore 22 Canonical JSON Schemas"
+          >
             <div className="api-metric-icon entities"><LayersIcon size={18} /></div>
             <div>
-              <span className="api-metric-label">Canonical Entities</span>
+              <span className="api-metric-label">Canonical Entities 📜</span>
               <span className="api-metric-val">22 Schemas</span>
             </div>
           </motion.div>
@@ -474,6 +605,182 @@ Console.WriteLine(response);`;
           </div>
         </motion.div>
       </div>
+
+      {/* METRIC MODAL OVERLAYS */}
+      <AnimatePresence>
+        {activeMetricModal && (
+          <div className="admin-modal-overlay">
+            <motion.div
+              className="admin-modal-box admin-modal-box--wide"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              {/* 1. GATEWAY HEALTH MODAL */}
+              {activeMetricModal === 'health' && (
+                <div>
+                  <div className="flex-between mb-4 border-b border-white/10 pb-3">
+                    <h4 className="flex items-center gap-2 text-white">
+                      <ActivityIcon className="text-emerald-400" /> Gateway Operational SLA & Live Provider Health
+                    </h4>
+                    <button type="button" className="risk-btn risk-btn--details" onClick={() => setActiveMetricModal(null)}>✕</button>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3 mb-4 text-xs">
+                    <div className="risk-summary-card">
+                      <div className="risk-summary-label">Uptime SLA</div>
+                      <div className="risk-summary-val text-emerald-400 font-bold">99.99%</div>
+                    </div>
+                    <div className="risk-summary-card">
+                      <div className="risk-summary-label">Active SSE Streams</div>
+                      <div className="risk-summary-val text-purple-400 font-bold">1,482 streams</div>
+                    </div>
+                    <div className="risk-summary-card">
+                      <div className="risk-summary-label">Global Avg Ping</div>
+                      <div className="risk-summary-val text-amber-400 font-bold">{responseLatency || '18 ms'}</div>
+                    </div>
+                  </div>
+
+                  <h5 className="text-xs font-bold text-slate-300 mb-2">📡 Provider Health Matrix:</h5>
+                  <div className="max-h-60 overflow-y-auto border border-white/10 rounded-xl p-3 bg-slate-900/80 text-xs flex flex-col gap-2">
+                    {PROVIDERS.slice(1).map((p) => (
+                      <div key={p.id} className="p-2.5 rounded bg-white/5 border border-white/5 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-white">{p.name}</span>
+                          <span className="text-slate-400">({p.keyword})</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                            {p.status}
+                          </span>
+                          <span className="text-amber-400 font-mono text-[11px] font-bold">{p.latency}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex justify-end mt-4">
+                    <button type="button" className="risk-btn risk-btn--release" onClick={() => setActiveMetricModal(null)}>Done</button>
+                  </div>
+                </div>
+              )}
+
+              {/* 2. LATENCY BENCHMARK MODAL */}
+              {activeMetricModal === 'latency' && (
+                <div>
+                  <div className="flex-between mb-4 border-b border-white/10 pb-3">
+                    <h4 className="flex items-center gap-2 text-white">
+                      <ZapIcon className="text-amber-400" /> Live Endpoint Ping & Latency Benchmark
+                    </h4>
+                    <button type="button" className="risk-btn risk-btn--details" onClick={() => setActiveMetricModal(null)}>✕</button>
+                  </div>
+
+                  <div className="mb-3 flex items-center justify-between text-xs">
+                    <span className="text-slate-300 font-semibold">Testing API latency across active endpoints:</span>
+                    <button
+                      type="button"
+                      className="risk-btn risk-btn--verify"
+                      onClick={runBenchmark}
+                      disabled={isBenchmarking}
+                    >
+                      {isBenchmarking ? 'Running Ping Test...' : '⚡ Re-run Benchmark'}
+                    </button>
+                  </div>
+
+                  <div className="max-h-60 overflow-y-auto border border-white/10 rounded-xl p-3 bg-slate-900/80 text-xs flex flex-col gap-2">
+                    {benchmarkResults.map((res, i) => (
+                      <div key={i} className="p-2.5 rounded bg-white/5 border border-white/5 flex items-center justify-between">
+                        <span className="font-mono text-purple-300 font-bold">{res.path}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="status-tag success">{res.status}</span>
+                          <span className="text-amber-400 font-mono font-bold">{res.latency}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex justify-end mt-4">
+                    <button type="button" className="risk-btn risk-btn--verify" onClick={() => setActiveMetricModal(null)}>Close Benchmark</button>
+                  </div>
+                </div>
+              )}
+
+              {/* 3. ACTIVE PROVIDER SWITCHER MODAL */}
+              {activeMetricModal === 'provider' && (
+                <div>
+                  <div className="flex-between mb-4 border-b border-white/10 pb-3">
+                    <h4 className="flex items-center gap-2 text-white">
+                      <GlobeIcon className="text-blue-400" /> Quick Provider Selector & Telemetry Config
+                    </h4>
+                    <button type="button" className="risk-btn risk-btn--details" onClick={() => setActiveMetricModal(null)}>✕</button>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2 max-h-72 overflow-y-auto">
+                    {PROVIDERS.map((p) => (
+                      <div
+                        key={p.id}
+                        onClick={() => { handleSelectProvider(p.id); setActiveMetricModal(null); }}
+                        className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${selectedProvider === p.id ? 'bg-purple-500/20 border-purple-500 text-white' : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'}`}
+                      >
+                        <div>
+                          <div className="font-bold text-sm flex items-center gap-2">
+                            {p.name} {selectedProvider === p.id && <span className="text-xs text-amber-400">✓ Active</span>}
+                          </div>
+                          <div className="text-xs text-slate-400">{p.status}</div>
+                        </div>
+                        <span className="risk-btn risk-btn--verify">Switch Provider</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex justify-end mt-4">
+                    <button type="button" className="risk-btn risk-btn--details" onClick={() => setActiveMetricModal(null)}>Close</button>
+                  </div>
+                </div>
+              )}
+
+              {/* 4. CANONICAL SCHEMAS MODAL */}
+              {activeMetricModal === 'schemas' && (
+                <div>
+                  <div className="flex-between mb-4 border-b border-white/10 pb-3">
+                    <h4 className="flex items-center gap-2 text-white">
+                      <LayersIcon className="text-purple-400" /> 22 Canonical JSON Schemas & Data Models
+                    </h4>
+                    <button type="button" className="risk-btn risk-btn--details" onClick={() => setActiveMetricModal(null)}>✕</button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 max-h-72 overflow-y-auto p-1">
+                    {CANONICAL_SCHEMAS.map((sch) => (
+                      <div
+                        key={sch.name}
+                        onClick={() => setSelectedSchema(selectedSchema?.name === sch.name ? null : sch)}
+                        className={`p-3 rounded-xl border cursor-pointer transition-all ${selectedSchema?.name === sch.name ? 'bg-purple-500/20 border-purple-400' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
+                      >
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="font-mono text-xs font-bold text-purple-300">{sch.name}</span>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/20 text-blue-300">{sch.type}</span>
+                        </div>
+                        <p className="text-[11px] text-slate-300 mb-2">{sch.desc}</p>
+                        <div className="flex flex-wrap gap-1">
+                          {sch.fields.slice(0, 5).map((f) => (
+                            <span key={f} className="px-1.5 py-0.5 rounded bg-black/40 text-[10px] font-mono text-slate-400">{f}</span>
+                          ))}
+                          {sch.fields.length > 5 && <span className="text-[10px] text-purple-400">+{sch.fields.length - 5} more</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex justify-end mt-4">
+                    <button type="button" className="risk-btn risk-btn--release" onClick={() => setActiveMetricModal(null)}>Close Schemas</button>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

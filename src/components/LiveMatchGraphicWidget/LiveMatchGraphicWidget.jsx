@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { HiOutlineViewList, HiOutlineChartBar, HiOutlineUsers, FiMessageCircle } from '../../icons';
 import TeamJersey from '../TeamJersey/TeamJersey';
+import LiveChartsWidget from '../LiveChartsWidget/LiveChartsWidget';
 import { useLiveFieldState } from '../../hooks/useLiveFieldState';
 import { useMatchDetail } from '../../hooks/useMatchDetail';
 import { useCentralizedMatchState } from '../../hooks/useCentralizedMatchState';
@@ -100,7 +101,7 @@ function BallDot({ ball, size = 'md' }) {
   );
 }
 
-function CricketFieldVisual() {
+export function CricketFieldVisual() {
   return (
     <div className="cric-field-pitch">
       <div className="cric-field-pitch__bg">
@@ -999,11 +1000,26 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
               <CommentaryIcon />
               Commentary
             </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeWidgetTab === 'charts'}
+              onClick={() => setActiveWidgetTab('charts')}
+              className={`live-widget-tab ${activeWidgetTab === 'charts' ? 'active' : ''}`}
+            >
+              <HiOutlineChartBar />
+              Live Charts
+            </button>
           </div>
         </div>
       </div>
 
       <div className="live-widget-scrollable-body">
+        {activeWidgetTab === 'charts' && (
+          <div className="cric-panel p-2">
+            <LiveChartsWidget match={match} />
+          </div>
+        )}
         {activeWidgetTab === 'field' && (
           <div className="cric-panel cric-panel--dark">
             <OverHistoryBar fieldState={fieldState} rows={overHistoryRows} />

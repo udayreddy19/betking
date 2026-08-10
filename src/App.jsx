@@ -19,6 +19,7 @@ import MobileBottomBar from './components/MobileBottomBar/MobileBottomBar';
 import GlobalBetBar from './components/GlobalBetBar/GlobalBetBar';
 import BetSettlementRunner from './components/BetSettlementRunner/BetSettlementRunner';
 import GamePlayModal from './components/GamePlayModal/GamePlayModal';
+import LiveChatSupportWidget from './components/LiveChatSupportWidget/LiveChatSupportWidget';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 
 import Home from './pages/Home/Home';
@@ -79,6 +80,7 @@ function AppLayout() {
               <Route path="/promotions" element={<Promotions />} />
               <Route path="/vip" element={<Vip />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/admin/*" element={<Admin />} />
               <Route path="/admin/iplsrl" element={<IPLSRLAdmin />} />
               <Route path="/iplsrl" element={<IPLSRLHome />} />
               <Route path="/iplsrl/match-center" element={<IPLSRLMatchCenter />} />
@@ -98,6 +100,7 @@ function AppLayout() {
         </ErrorBoundary>
       </main>
       <Footer />
+      <LiveChatSupportWidget />
     </>
   );
 }

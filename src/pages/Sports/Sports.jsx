@@ -513,10 +513,6 @@ export default function Sports() {
       className={`sports-page${viewMode === 'match' ? ' sports-page--match' : ''}`}
       id="sports-page"
     >
-      <button type="button" className="sports-chat-fab" aria-label="Live chat" onClick={() => showToast('Live chat support coming soon!', 'info')}>
-        <FiMessageCircle size={24} />
-      </button>
-
       <div className="sports-page-inner">
         <SportsLeagueSidebar
           activeSport={activeSport}
@@ -902,7 +898,7 @@ export default function Sports() {
                     </button>
                     {isExpanded && (
                       canBetActive ? (
-                        <div className={`sports-market-odds-grid ${market.options.length === 3 ? 'three-col' : (market.options.length > 3 ? 'multi-col' : 'two-col')}`}>
+                        <div className={`sports-market-odds-grid ${market.options.length === 3 ? 'three-col' : (market.options.length === 4 ? 'four-col' : (market.options.length > 4 ? 'multi-col' : 'two-col'))}`}>
                           {market.options.map((opt) => (
                             <button
                               key={opt.selection}

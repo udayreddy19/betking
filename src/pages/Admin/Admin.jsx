@@ -1,5 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
+import { fraudGraphEngine } from '../../../lib/fraudGraphEngine.mjs';
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { useLiveMatches } from '../../context/LiveSportsContext';
@@ -26,6 +28,8 @@ import AnimatedMotionGiftIcon from '../../components/AnimatedMotionGiftIcon/Anim
 import './Admin.css';
 
 export default function Admin() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const { user, updateUser, showToast, addFunds, adminApproveWithdrawal, adminRejectWithdrawal } = useAuth();
   const { placedBets, adminSettleBet } = useBetSlip();
   const liveMatches = useLiveMatches() || [];
@@ -38,7 +42,26 @@ export default function Admin() {
   const [inputPin, setInputPin] = useState('8888');
   const [authError, setAuthError] = useState('');
 
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(() => {
+    const path = location.pathname.replace('/admin', '').replace(/^\//, '');
+    return path || 'dashboard';
+  });
+
+  useEffect(() => {
+    const path = location.pathname.replace('/admin', '').replace(/^\//, '');
+    if (path && path !== activeTab) {
+      setActiveTab(path);
+    }
+  }, [location.pathname]);
+
+  const handleTabSelect = (tabId) => {
+    setActiveTab(tabId);
+    if (tabId === 'dashboard') {
+      navigate('/admin');
+    } else {
+      navigate(`/admin/${tabId}`);
+    }
+  };
   const [searchTerm, setSearchTerm] = useState('');
   const [betFilter, setBetFilter] = useState('all');
 
@@ -69,11 +92,14 @@ export default function Admin() {
   const [adminUpiId, setAdminUpiId] = useState('betking.pay@icici');
   const [adminPaytmNumber, setAdminPaytmNumber] = useState('9876543210');
 
-  // Anti-Fraud & Risk Flagged Accounts
-  const [flaggedAccounts, setFlaggedAccounts] = useState([
-    { id: 1, email: 'user992@tempmail.com', ip: '49.37.142.12', risk: 'HIGH', reason: 'Multiple account creations from same IP', status: 'flagged' },
-    { id: 2, email: 'bonus_hunter@mail.com', ip: '103.22.10.88', risk: 'MEDIUM', reason: 'Rapid deposit/withdrawal requests without wagering', status: 'flagged' },
-  ]);
+  // Anti-Fraud & Risk Flagged Accounts state
+  const [flaggedAccounts, setFlaggedAccounts] = useState(() => fraudGraphEngine.getFlaggedAccounts());
+  const [selectedRiskAccount, setSelectedRiskAccount] = useState(null);
+  const [activeRiskModal, setActiveRiskModal] = useState(null); // 'restrict' | 'verification' | 'release' | 'details'
+  const [restrictCategory, setRestrictCategory] = useState('Fraud review');
+  const [restrictNotes, setRestrictNotes] = useState('');
+  const [verificationType, setVerificationType] = useState('Identity verification');
+  const [releaseReason, setReleaseReason] = useState('');
 
   // Wheel of Fortune Outcome Rigging
   const [wheelOutcome, setWheelOutcome] = useState('random'); // 'random' | 'cash_500' | 'bonus_1000' | 'freebet_200' | 'no_win'
@@ -338,10 +364,55 @@ export default function Admin() {
     setDispatchToastText('');
   };
 
-  const handleBanAccount = (id, email) => {
-    setFlaggedAccounts((prev) => prev.map((a) => (a.id === id ? { ...a, status: 'banned' } : a)));
-    showToast(`Account ${email} banned and locked!`, 'error');
-    logAction('Account Banned', `Banned suspicious user ${email}`);
+  const handleConfirmRestrict = (e) => {
+    e.preventDefault();
+    if (!selectedRiskAccount) return;
+    try {
+      fraudGraphEngine.restrictAccount(selectedRiskAccount.id, {
+        category: restrictCategory,
+        operatorNotes: restrictNotes,
+      });
+      setFlaggedAccounts(fraudGraphEngine.getFlaggedAccounts());
+      showToast(`Account ${selectedRiskAccount.email} restricted under category: ${restrictCategory}`, 'warning');
+      logAction('Account Restricted', `Restricted ${selectedRiskAccount.email} (${restrictCategory})`);
+      setActiveRiskModal(null);
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  const handleConfirmVerification = (e) => {
+    e.preventDefault();
+    if (!selectedRiskAccount) return;
+    try {
+      fraudGraphEngine.requestVerification(selectedRiskAccount.id, {
+        verificationType,
+      });
+      setFlaggedAccounts(fraudGraphEngine.getFlaggedAccounts());
+      showToast(`Requested ${verificationType} for ${selectedRiskAccount.email}`, 'info');
+      logAction('Verification Requested', `Requested ${verificationType} for ${selectedRiskAccount.email}`);
+      setActiveRiskModal(null);
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  const handleConfirmRelease = (e) => {
+    e.preventDefault();
+    if (!selectedRiskAccount) return;
+    const res = fraudGraphEngine.releaseAccount(selectedRiskAccount.id, {
+      operatorReason: releaseReason || 'Verified by operator',
+    });
+
+    if (!res.success) {
+      showToast(res.reason, 'error');
+      return;
+    }
+
+    setFlaggedAccounts(fraudGraphEngine.getFlaggedAccounts());
+    showToast(`Account ${selectedRiskAccount.email} released successfully!`, 'success');
+    logAction('Account Released', `Released ${selectedRiskAccount.email}`);
+    setActiveRiskModal(null);
   };
 
   const handleUpdateUserBalance = (e) => {
@@ -649,29 +720,47 @@ export default function Admin() {
         {/* Navigation Tabs */}
         <div className="admin-nav-tabs">
           {[
-            { id: 'dashboard', label: 'Dashboard', icon: <FiActivity /> },
-            { id: 'odds_engine', label: '⚡ Dynamic Odds & Risk Engine', icon: <FiSliders /> },
-            { id: 'pnl', label: 'Profit & Loss (P&L)', icon: <FiDollarSign /> },
-            { id: 'leaderboards', label: 'Top Profiters & Losers', icon: <FiTrendingUp /> },
-            { id: 'financial_ledger', label: `Financial Ledger (${systemTxList.length})`, icon: <FiDollarSign /> },
-            { id: 'analytics', label: 'GGR Analytics', icon: <FiTrendingUp /> },
-            { id: 'master_limits', label: 'Limits & Config', icon: <FiSliders /> },
-            { id: 'gateways', label: 'Payment Gateways & UPI', icon: <FiDollarSign /> },
-            { id: 'antifraud', label: 'Anti-Fraud & Risk', icon: <FiShield /> },
-            { id: 'users', label: 'Users & Wallets', icon: <FiUsers /> },
+            { id: 'dashboard', label: 'Command Center', icon: <FiActivity /> },
+            { id: 'platform_twin', label: 'Platform Digital Twin 🌐', icon: <FiCpu /> },
+            { id: 'root_cause', label: 'Root-Cause Engine 🩺', icon: <FiSearch /> },
+            { id: 'match_integrity', label: 'Match Integrity 🎯', icon: <FiCheckCircle /> },
+            { id: 'financial_integrity', label: 'Financial Integrity ⚖️', icon: <FiDollarSign /> },
+            { id: 'policies', label: 'Policy-as-Code 📜', icon: <FiSliders /> },
+            { id: 'chaos', label: 'Chaos Engineering ⚡', icon: <FiXCircle /> },
+            { id: 'capacity', label: 'Capacity & Resilience 📈', icon: <FiTrendingUp /> },
+            { id: 'platform_health', label: 'Executive Risk Map 🗺️', icon: <FiActivity /> },
+            { id: 'investigations', label: 'Investigation Graph', icon: <FiSearch /> },
+            { id: 'event_replay', label: 'Event Replay Machine', icon: <FiRefreshCw /> },
+            { id: 'search', label: 'Global Search', icon: <FiSearch /> },
+            { id: 'anomalies', label: 'Anomaly Center', icon: <FiShield /> },
+            { id: 'blast_radius', label: 'Blast Radius', icon: <FiCpu /> },
+            { id: 'decisions', label: 'Decision Engine', icon: <FiSliders /> },
+            { id: 'simulation', label: 'Sandbox Simulation', icon: <FiCpu /> },
+            { id: 'slo', label: 'SLO/SLA Center', icon: <FiCheckCircle /> },
+            { id: 'copilot', label: 'AI Admin Copilot 🤖', icon: <FiCpu /> },
+            { id: 'users', label: 'User 360', icon: <FiUsers /> },
             { id: 'bets', label: `Bets (${pendingBets.length})`, icon: <FiTrendingUp /> },
-            { id: 'sports', label: 'Live Overrides', icon: <FiSliders /> },
-            { id: 'casino', label: 'Casino & Wheel Rigging', icon: <FiCpu /> },
-            { id: 'payments', label: `Withdrawals (${withdrawals.filter((w) => w.status === 'pending').length})`, icon: <FiDollarSign /> },
-            { id: 'push_alerts', label: 'Live Alerts', icon: <FiGift /> },
-            { id: 'broadcast', label: 'Broadcasts', icon: <FiGift /> },
-            { id: 'promos', label: 'Promos', icon: <FiGift /> },
+            { id: 'settlement', label: 'Settlement Control', icon: <FiCheckCircle /> },
+            { id: 'sports', label: 'Sports Operations', icon: <FiSliders /> },
+            { id: 'providers', label: 'Providers & Quality', icon: <FiCpu /> },
+            { id: 'antifraud', label: 'Fraud & Risk Cases', icon: <FiShield /> },
+            { id: 'compliance', label: 'Compliance (KYC/AML)', icon: <FiShield /> },
+            { id: 'finance', label: 'Financial Ledger', icon: <FiDollarSign /> },
+            { id: 'promos', label: 'Promotions', icon: <FiGift /> },
+            { id: 'support', label: 'Customer Support', icon: <FiUsers /> },
+            { id: 'incidents', label: 'Incident Center', icon: <FiXCircle /> },
+            { id: 'releases', label: 'Releases & Rollouts', icon: <FiRefreshCw /> },
+            { id: 'odds_engine', label: '⚡ Dynamic Odds & Risk', icon: <FiSliders /> },
+            { id: 'master_limits', label: 'Limits & Config', icon: <FiSliders /> },
+            { id: 'gateways', label: 'Payment Gateways', icon: <FiDollarSign /> },
+            { id: 'casino', label: 'Casino & Rigging', icon: <FiCpu /> },
+            { id: 'analytics', label: 'Analytics & GGR', icon: <FiTrendingUp /> },
             { id: 'logs', label: 'Audit Logs', icon: <FiCpu /> },
           ].map((tab) => (
             <motion.button
               key={tab.id}
               className={`admin-tab ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabSelect(tab.id)}
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.96 }}
             >
@@ -1492,9 +1581,12 @@ export default function Admin() {
             {activeTab === 'antifraud' && (
               <div className="admin-tab-content">
                 <div className="admin-card">
-                  <div className="card-header">
-                    <h3>🛡️ Anti-Fraud & Risk Flagged Accounts</h3>
-                    <span className="admin-badge admin-badge--warn">{flaggedAccounts.filter((a) => a.status === 'flagged').length} Flagged</span>
+                  <div className="card-header flex-between">
+                    <div>
+                      <h3>🛡️ Anti-Fraud & Risk Flagged Accounts</h3>
+                      <p className="card-sub text-muted">Server-enforced account risk lifecycle, verification requirements, and auditable action controls</p>
+                    </div>
+                    <span className="admin-badge admin-badge--warn">{flaggedAccounts.filter((a) => a.status === 'FLAGGED' || a.status === 'RESTRICTED').length} Risk Accounts</span>
                   </div>
 
                   <div className="admin-table-wrap">
@@ -1506,6 +1598,7 @@ export default function Admin() {
                           <th>Risk Tier</th>
                           <th>Flag Reason</th>
                           <th>Status</th>
+                          <th>Verification</th>
                           <th>Actions</th>
                         </tr>
                       </thead>
@@ -1514,22 +1607,672 @@ export default function Admin() {
                           <tr key={acc.id}>
                             <td>{acc.email}</td>
                             <td className="font-mono">{acc.ip}</td>
-                            <td><span className={`status-tag ${acc.risk === 'HIGH' ? 'status-tag--lost' : 'status-tag--pending'}`}>{acc.risk}</span></td>
-                            <td>{acc.reason}</td>
-                            <td><span className="status-tag status-tag--pending">{acc.status.toUpperCase()}</span></td>
                             <td>
-                              {acc.status !== 'banned' ? (
-                                <button className="admin-btn admin-btn--xs admin-btn--danger" onClick={() => handleBanAccount(acc.id, acc.email)}>
-                                  Ban Account
-                                </button>
-                              ) : (
-                                <span className="text-muted">Banned</span>
+                              <span className={`status-tag ${acc.risk === 'HIGH' ? 'status-tag--lost' : 'status-tag--pending'}`}>
+                                {acc.risk}
+                              </span>
+                            </td>
+                            <td>
+                              <div>{acc.reason}</div>
+                              {acc.restrictionReasonCategory && (
+                                <div className="text-xs text-muted">Category: {acc.restrictionReasonCategory}</div>
                               )}
+                            </td>
+                            <td>
+                              <span className={`status-tag ${acc.status === 'RESTRICTED' ? 'status-tag--lost' : (acc.status === 'RELEASED' ? 'status-tag--won' : 'status-tag--pending')}`}>
+                                {acc.status}
+                              </span>
+                            </td>
+                            <td>
+                              <span className="text-xs font-semibold text-muted">
+                                {acc.verificationStatus}
+                              </span>
+                            </td>
+                            <td>
+                              <div className="flex gap-2">
+                                {acc.status !== 'RESTRICTED' && (
+                                  <button
+                                    type="button"
+                                    className="risk-btn risk-btn--restrict"
+                                    onClick={() => { setSelectedRiskAccount(acc); setActiveRiskModal('restrict'); }}
+                                  >
+                                    <FiLock className="text-xs" /> Restrict
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  className="risk-btn risk-btn--verify"
+                                  onClick={() => { setSelectedRiskAccount(acc); setActiveRiskModal('verification'); }}
+                                >
+                                  <FiShield className="text-xs" /> Req. Verification
+                                </button>
+                                {acc.status === 'RESTRICTED' && (
+                                  <button
+                                    type="button"
+                                    className="risk-btn risk-btn--release"
+                                    onClick={() => { setSelectedRiskAccount(acc); setActiveRiskModal('release'); }}
+                                  >
+                                    <FiCheckCircle className="text-xs" /> Release
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  className="risk-btn risk-btn--details"
+                                  onClick={() => { setSelectedRiskAccount(fraudGraphEngine.getAccountDetails(acc.id)); setActiveRiskModal('details'); }}
+                                >
+                                  <FiActivity className="text-xs" /> Details
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                </div>
+
+                {/* RESTRICT CONFIRMATION MODAL */}
+                {activeRiskModal === 'restrict' && selectedRiskAccount && (
+                  <div className="admin-modal-overlay">
+                    <div className="admin-modal-box">
+                      <h4>🔒 Restrict Account — {selectedRiskAccount.email}</h4>
+                      <p className="text-sm text-muted mb-4">Select the legitimate restriction category and reason. Server-side rule engine will block non-permitted betting and withdrawal actions while preserving user wallet ledger.</p>
+
+                      <form onSubmit={handleConfirmRestrict}>
+                        <div className="form-group mb-3">
+                          <label className="text-xs font-bold text-muted mb-1 block">Restriction Reason Category:</label>
+                          <select
+                            value={restrictCategory}
+                            onChange={(e) => setRestrictCategory(e.target.value)}
+                            className="admin-input-field"
+                          >
+                            <option value="Fraud review">Fraud review</option>
+                            <option value="Identity verification required">Identity verification required</option>
+                            <option value="Payment review">Payment review</option>
+                            <option value="Security review">Security review</option>
+                            <option value="Suspicious account activity">Suspicious account activity</option>
+                            <option value="Responsible gaming review">Responsible gaming review</option>
+                            <option value="Compliance review">Compliance review</option>
+                          </select>
+                        </div>
+
+                        <div className="form-group mb-4">
+                          <label className="text-xs font-bold text-muted mb-1 block">Operator Investigation Notes:</label>
+                          <textarea
+                            value={restrictNotes}
+                            onChange={(e) => setRestrictNotes(e.target.value)}
+                            placeholder="Enter internal operator notes for audit trail..."
+                            className="admin-input-field"
+                            rows={3}
+                            required
+                          />
+                        </div>
+
+                        <div className="flex justify-end gap-2">
+                          <button type="button" className="admin-btn admin-btn--outline" onClick={() => setActiveRiskModal(null)}>Cancel</button>
+                          <button type="submit" className="admin-btn admin-btn--danger">Confirm Restrict</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
+
+                {/* REQUEST VERIFICATION MODAL */}
+                {activeRiskModal === 'verification' && selectedRiskAccount && (
+                  <div className="admin-modal-overlay">
+                    <div className="admin-modal-box">
+                      <h4>📑 Request User Verification — {selectedRiskAccount.email}</h4>
+                      <p className="text-sm text-muted mb-4">Initiate official verification requirement. The user will receive an in-app notification and email update.</p>
+
+                      <form onSubmit={handleConfirmVerification}>
+                        <div className="form-group mb-4">
+                          <label className="text-xs font-bold text-muted mb-1 block">Verification Requirement:</label>
+                          <select
+                            value={verificationType}
+                            onChange={(e) => setVerificationType(e.target.value)}
+                            className="admin-input-field"
+                          >
+                            <option value="Identity verification">Identity verification (Passport / Govt ID)</option>
+                            <option value="Age verification">Age verification (18+ Verification)</option>
+                            <option value="Address verification">Address verification (Utility Bill / Proof of Residency)</option>
+                            <option value="Payment verification">Payment verification (Bank statement / Card photo)</option>
+                            <option value="Enhanced verification">Enhanced verification (Source of Funds / EDD)</option>
+                          </select>
+                        </div>
+
+                        <div className="flex justify-end gap-2">
+                          <button type="button" className="admin-btn admin-btn--outline" onClick={() => setActiveRiskModal(null)}>Cancel</button>
+                          <button type="submit" className="admin-btn admin-btn--primary">Send Verification Request</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
+
+                {/* RELEASE CONFIRMATION MODAL */}
+                {activeRiskModal === 'release' && selectedRiskAccount && (
+                  <div className="admin-modal-overlay">
+                    <div className="admin-modal-box">
+                      <h4>🔓 Release Account — {selectedRiskAccount.email}</h4>
+                      <p className="text-sm text-muted mb-4">Server validation will verify that no mandatory verification requirements or compliance restrictions are active before releasing account.</p>
+
+                      <form onSubmit={handleConfirmRelease}>
+                        <div className="form-group mb-4">
+                          <label className="text-xs font-bold text-muted mb-1 block">Operator Release Reason:</label>
+                          <input
+                            type="text"
+                            value={releaseReason}
+                            onChange={(e) => setReleaseReason(e.target.value)}
+                            placeholder="e.g. Identity verified and cleared by compliance"
+                            className="admin-input-field"
+                            required
+                          />
+                        </div>
+
+                        <div className="flex justify-end gap-2">
+                          <button type="button" className="admin-btn admin-btn--outline" onClick={() => setActiveRiskModal(null)}>Cancel</button>
+                          <button type="submit" className="admin-btn admin-btn--success">Release Account</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
+
+                {/* ACCOUNT DETAILS & AUDIT DRAWER MODAL */}
+                {activeRiskModal === 'details' && selectedRiskAccount && (
+                  <div className="admin-modal-overlay">
+                    <div className="admin-modal-box admin-modal-box--wide">
+                      <div className="flex-between mb-4 border-b border-white/10 pb-3">
+                        <h4 className="flex items-center gap-2 text-white">
+                          <FiActivity className="text-purple-400" /> Account Risk Details & Activity Audit
+                        </h4>
+                        <button type="button" className="risk-btn risk-btn--details" onClick={() => setActiveRiskModal(null)}>✕</button>
+                      </div>
+
+                      <div className="mb-3 text-xs text-purple-300 font-semibold">
+                        User Account: <span className="text-white font-bold">{selectedRiskAccount.email}</span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 mb-4 text-xs">
+                        <div className="risk-summary-card">
+                          <div className="risk-summary-label">Risk Tier & Reason</div>
+                          <div className="risk-summary-val flex items-center gap-2">
+                            <span className={`status-tag ${selectedRiskAccount.risk === 'HIGH' ? 'status-tag--lost' : 'status-tag--pending'}`}>{selectedRiskAccount.risk}</span>
+                            <span>{selectedRiskAccount.reason}</span>
+                          </div>
+                        </div>
+                        <div className="risk-summary-card">
+                          <div className="risk-summary-label">Current Status & KYC Verification</div>
+                          <div className="risk-summary-val flex items-center gap-2">
+                            <span className={`status-tag ${selectedRiskAccount.status === 'RESTRICTED' ? 'status-tag--lost' : (selectedRiskAccount.status === 'RELEASED' ? 'status-tag--won' : 'status-tag--pending')}`}>{selectedRiskAccount.status}</span>
+                            <span className="text-muted">(KYC: {selectedRiskAccount.verificationStatus})</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <h5 className="text-xs font-bold text-slate-300 mb-2 flex items-center gap-2">
+                        📜 Auditable Activity & Event Timeline:
+                      </h5>
+                      <div className="max-h-56 overflow-y-auto border border-white/10 rounded-xl p-3 bg-slate-900/80 text-xs flex flex-col gap-2">
+                        {selectedRiskAccount.activity && selectedRiskAccount.activity.length > 0 ? (
+                          selectedRiskAccount.activity.map((act) => (
+                            <div key={act.activityId} className="p-2 rounded bg-white/5 border border-white/5 flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                                  {act.action}
+                                </span>
+                                <span className="text-slate-200">{act.details}</span>
+                              </div>
+                              <span className="text-slate-400 font-mono text-[10px] whitespace-nowrap ml-2">
+                                {new Date(act.timestamp).toLocaleTimeString()}
+                              </span>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-slate-400 p-2 text-center">No activity records logged.</div>
+                        )}
+                      </div>
+
+                      <div className="flex justify-end mt-5">
+                        <button type="button" className="risk-btn risk-btn--verify" onClick={() => setActiveRiskModal(null)}>Close Details</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* PHASE 3: PLATFORM DIGITAL TWIN */}
+            {activeTab === 'platform_twin' && (
+              <div className="admin-tab-content">
+                <div className="admin-card mb-6">
+                  <div className="card-header">
+                    <h3>🌐 Platform Digital Twin & Entity Topology</h3>
+                    <p className="card-sub text-muted">Real-time live operational topology mapping Platform → Tenants → Users → Bets → Matches → Odds → Risk → Settlement → Wallet → Ledger → Infrastructure</p>
+                  </div>
+                  <div className="grid grid-cols-4 gap-3 mt-4 text-xs font-mono">
+                    <div className="p-3 rounded-xl bg-slate-900 border border-emerald-500/30">
+                      <div className="text-slate-400 text-[10px]">TENANT ENTITY</div>
+                      <div className="font-bold text-emerald-400 mt-1">Tenant: BetKing India</div>
+                      <div className="text-slate-500 text-[10px] mt-1">Status: OPERATIONAL</div>
+                    </div>
+                    <div className="p-3 rounded-xl bg-slate-900 border border-purple-500/30">
+                      <div className="text-slate-400 text-[10px]">SPORTS REGISTRY</div>
+                      <div className="font-bold text-purple-400 mt-1">24 Active Matches</div>
+                      <div className="text-slate-500 text-[10px] mt-1">Feeds: 10Cric, CREX, FanCode</div>
+                    </div>
+                    <div className="p-3 rounded-xl bg-slate-900 border border-blue-500/30">
+                      <div className="text-slate-400 text-[10px]">REAL-TIME BETTING</div>
+                      <div className="font-bold text-blue-400 mt-1">384 Live Bets</div>
+                      <div className="text-slate-500 text-[10px] mt-1">Acceptance SLA: 18 ms</div>
+                    </div>
+                    <div className="p-3 rounded-xl bg-slate-900 border border-amber-500/30">
+                      <div className="text-slate-400 text-[10px]">LEDGER INTEGRITY</div>
+                      <div className="font-bold text-amber-400 mt-1">Reconciliation: BALANCED</div>
+                      <div className="text-slate-500 text-[10px] mt-1">Discrepancies: 0</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PHASE 3: ROOT-CAUSE ANALYSIS ENGINE */}
+            {activeTab === 'root_cause' && (
+              <div className="admin-tab-content">
+                <div className="admin-card">
+                  <div className="card-header">
+                    <h3>🩺 Automated Root-Cause Analysis Diagnostic Engine</h3>
+                    <p className="card-sub text-muted">Identifies primary root-cause candidates with evidence chains, dependency impact, and confidence scores</p>
+                  </div>
+                  <div className="p-4 rounded-xl bg-slate-900 border border-white/10 mt-4 text-xs">
+                    <div className="flex justify-between items-center mb-3">
+                      <div className="font-bold text-red-400">Incident: SETTLEMENT_DELAY_01</div>
+                      <span className="px-2 py-0.5 rounded bg-red-500/20 text-red-300 font-bold border border-red-500/30">CRITICAL DIAGNOSTIC</span>
+                    </div>
+                    <div className="p-3 rounded bg-white/5 border border-white/5 mb-2 font-mono">
+                      <div className="font-bold text-amber-300">Candidate 1: CREX Provider Latency Spike (Probability: 92% - CONFIRMED)</div>
+                      <div className="text-slate-400 text-[11px] mt-1">Evidence: HTTP 504 gateway timeout on /api/v1/crex/scorecards (latency: 5,420ms). 27 live cricket matches impacted.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PHASE 3: MATCH INTEGRITY CENTER */}
+            {activeTab === 'match_integrity' && (
+              <div className="admin-tab-content">
+                <div className="admin-card">
+                  <div className="card-header flex-between">
+                    <div>
+                      <h3>🎯 Sports Match & Score Integrity Guard</h3>
+                      <p className="card-sub text-muted">Enforces matchStateValidator rules: over bounds, score monotonicity, player affiliation, and provider conflict detection</p>
+                    </div>
+                    <span className="status-tag status-tag--won">Integrity Engine Active</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 mt-4 text-xs">
+                    <div className="risk-summary-card">
+                      <div className="risk-summary-label">Score Monotonicity</div>
+                      <div className="risk-summary-val text-emerald-400 font-bold">VERIFIED (0 Illegal Drops)</div>
+                    </div>
+                    <div className="risk-summary-card">
+                      <div className="risk-summary-label">Over Bounds Check</div>
+                      <div className="risk-summary-val text-emerald-400 font-bold">PASSED (&lt; 6 Balls / Over)</div>
+                    </div>
+                    <div className="risk-summary-card">
+                      <div className="risk-summary-label">Player Affiliations</div>
+                      <div className="risk-summary-val text-emerald-400 font-bold">VERIFIED (No Team Conflicts)</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PHASE 3: FINANCIAL INTEGRITY & RECONCILIATION */}
+            {activeTab === 'financial_integrity' && (
+              <div className="admin-tab-content">
+                <div className="admin-card">
+                  <div className="card-header">
+                    <h3>⚖️ Financial Integrity & Ledger Reconciliation Monitor</h3>
+                    <p className="card-sub text-muted">Continuous audit reconciling Bet Placement → Settlement → Wallet Balance → Financial Ledger → Payment Provider</p>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 mt-4 text-xs">
+                    <div className="risk-summary-card">
+                      <div className="risk-summary-label">Wallet vs Ledger Delta</div>
+                      <div className="risk-summary-val text-emerald-400 font-bold">₹0.00 (Balanced)</div>
+                    </div>
+                    <div className="risk-summary-card">
+                      <div className="risk-summary-label">Orphan Transactions</div>
+                      <div className="risk-summary-val text-emerald-400 font-bold">0 Detected</div>
+                    </div>
+                    <div className="risk-summary-card">
+                      <div className="risk-summary-label">Duplicate Payouts</div>
+                      <div className="risk-summary-val text-emerald-400 font-bold">0 Detected</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PHASE 3: POLICY-AS-CODE */}
+            {activeTab === 'policies' && (
+              <div className="admin-tab-content">
+                <div className="admin-card">
+                  <div className="card-header">
+                    <h3>📜 Policy-as-Code & Version Diff Engine</h3>
+                    <p className="card-sub text-muted">Manage versioned policy definitions for Risk, Trading, Settlement, Payments, KYC, AML, and RG</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-900 border border-white/10 mt-4 text-xs font-mono">
+                    <div className="font-bold text-slate-200 mb-2">Policy Diff: Max Single Bet Stake Rule (v12 vs v13)</div>
+                    <div className="text-red-400">- v12: max_stake = ₹25,000 (Auto approve limit = ₹1,000)</div>
+                    <div className="text-emerald-400">+ v13: max_stake = ₹50,000 (Auto approve limit = ₹2,000)</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PHASE 3: CHAOS ENGINEERING */}
+            {activeTab === 'chaos' && (
+              <div className="admin-tab-content">
+                <div className="admin-card">
+                  <div className="card-header flex-between">
+                    <div>
+                      <h3>⚡ Chaos Engineering & Resilience Control Center</h3>
+                      <p className="card-sub text-muted">Controlled simulation of provider outages, cache flushes, and network delay using disasterRecoverySimulator</p>
+                    </div>
+                    <span className="risk-btn risk-btn--verify">Safe Test Harness</span>
+                  </div>
+                  <div className="flex gap-2 mt-4">
+                    <button type="button" className="risk-btn risk-btn--details">Simulate Cache Flush</button>
+                    <button type="button" className="risk-btn risk-btn--details">Simulate Provider Failover</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PHASE 3: CAPACITY & RESILIENCE */}
+            {activeTab === 'capacity' && (
+              <div className="admin-tab-content">
+                <div className="admin-card">
+                  <div className="card-header">
+                    <h3>📈 Capacity Forecasting & Subsystem Resilience Score</h3>
+                    <p className="card-sub text-muted">Track concurrent user load, bet throughput, database utilization, and subsystem resilience metrics</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 mt-4 text-xs">
+                    <div className="risk-summary-card">
+                      <div className="risk-summary-label">Subsystem Resilience Score</div>
+                      <div className="risk-summary-val text-emerald-400 font-bold">96 / 100 (HIGH RESILIENCE)</div>
+                    </div>
+                    <div className="risk-summary-card">
+                      <div className="risk-summary-label">Projected Saturation</div>
+                      <div className="risk-summary-val text-blue-400 font-bold">&gt; 120,000 Concurrent Users</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PHASE 3: EXECUTIVE RISK MAP */}
+            {activeTab === 'platform_health' && (
+              <div className="admin-tab-content">
+                <div className="admin-card">
+                  <div className="card-header">
+                    <h3>🗺️ Executive Risk Map & Platform Health Matrix</h3>
+                    <p className="card-sub text-muted">Unified visual risk heat map across Sports, Betting, Finance, Fraud, Compliance, Payments, Infrastructure, and Security</p>
+                  </div>
+                  <div className="grid grid-cols-4 gap-3 mt-4 text-xs font-bold text-center">
+                    <div className="p-3 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Sportsbook Core: LOW RISK</div>
+                    <div className="p-3 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Finance & Ledger: LOW RISK</div>
+                    <div className="p-3 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30">Provider Latency: MEDIUM RISK</div>
+                    <div className="p-3 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Security Audit: LOW RISK</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PHASE 2: CROSS-SYSTEM INVESTIGATION GRAPH */}
+            {activeTab === 'investigations' && (
+              <div className="admin-tab-content">
+                <div className="admin-card mb-6">
+                  <div className="card-header">
+                    <h3>🔍 Cross-System Entity Investigation Graph & Timeline</h3>
+                    <p className="card-sub text-muted">Correlate relationships across User → Device → IP → Login → Bet → Match → Risk → Exposure → Settlement → Wallet → Ledger → Audit</p>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 mt-4 text-xs">
+                    <div className="risk-summary-card">
+                      <div className="risk-summary-label">Target Entity</div>
+                      <div className="risk-summary-val text-purple-400 font-bold">user992@tempmail.com</div>
+                    </div>
+                    <div className="risk-summary-card">
+                      <div className="risk-summary-label">Linked Device & IP</div>
+                      <div className="risk-summary-val text-slate-200">IP: 192.168.1.104 (Device ID: dev_mac_881)</div>
+                    </div>
+                    <div className="risk-summary-card">
+                      <div className="risk-summary-label">Current Risk Tier</div>
+                      <div className="risk-summary-val text-red-400 font-bold">HIGH RISK (Multi-Account Flag)</div>
+                    </div>
+                  </div>
+
+                  <h5 className="text-xs font-bold text-slate-300 mt-5 mb-2">🕸️ Entity Relationship Graph Nodes:</h5>
+                  <div className="p-4 rounded-xl bg-slate-900 border border-white/10 flex flex-wrap gap-3 items-center justify-between text-xs font-mono">
+                    <div className="p-2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">👤 User: user992</div>
+                    <span className="text-slate-500">➔</span>
+                    <div className="p-2 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">💻 Device: dev_mac_881</div>
+                    <span className="text-slate-500">➔</span>
+                    <div className="p-2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">🌐 IP: 192.168.1.104</div>
+                    <span className="text-slate-500">➔</span>
+                    <div className="p-2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">🎯 Bet: BET_LIVE_9981</div>
+                    <span className="text-slate-500">➔</span>
+                    <div className="p-2 rounded bg-red-500/20 text-red-300 border border-red-500/30">⚖️ Risk: ACCEPT_WITH_LIMIT</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PHASE 2: EVENT REPLAY TIME MACHINE */}
+            {activeTab === 'event_replay' && (
+              <div className="admin-tab-content">
+                <div className="admin-card">
+                  <div className="card-header flex-between">
+                    <div>
+                      <h3>⏱️ Event Replay & Time-Travel Debugging Machine</h3>
+                      <p className="card-sub text-muted">Read-only historical state inspection and version diff comparison for live matches and bets</p>
+                    </div>
+                    <span className="risk-btn risk-btn--verify">Read-Only Safety Mode</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mt-4 text-xs">
+                    <div className="p-3 rounded-xl bg-slate-900 border border-white/10">
+                      <h5 className="font-bold text-slate-300 mb-2">State at 20:00:00 (Version 1)</h5>
+                      <div className="font-mono text-slate-400">
+                        <div>Score: IND 145/3 (16.2 overs)</div>
+                        <div>Market State: OPEN (1.85 / 1.95)</div>
+                        <div>Exposure: ₹42,000</div>
+                      </div>
+                    </div>
+                    <div className="p-3 rounded-xl bg-slate-900 border border-purple-500/40">
+                      <h5 className="font-bold text-purple-300 mb-2">State at 20:01:15 (Version 2 - Wicket)</h5>
+                      <div className="font-mono text-slate-200">
+                        <div>Score: IND 145/4 (16.3 overs) - WICKET</div>
+                        <div>Market State: SUSPENDED (Wicket Event)</div>
+                        <div>Exposure: ₹42,000 (Locked)</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PHASE 2: GLOBAL SEARCH */}
+            {activeTab === 'search' && (
+              <div className="admin-tab-content">
+                <div className="admin-card mb-6">
+                  <div className="card-header">
+                    <h3>🔎 Global Admin Multi-Entity Search</h3>
+                    <p className="card-sub text-muted">Search across Users, Bets, Matches, Markets, Transactions, Payments, Fraud, Compliance, and Incidents</p>
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <input
+                      type="text"
+                      className="admin-input-field"
+                      placeholder="Enter User ID, Email, Bet ID, Tx ID, IP, or Match ID..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    <button type="button" className="risk-btn risk-btn--verify">Search Catalog</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PHASE 2: ANOMALY DETECTION CENTER */}
+            {activeTab === 'anomalies' && (
+              <div className="admin-tab-content">
+                <div className="admin-card">
+                  <div className="card-header">
+                    <h3>🚨 System Anomaly Detection & Incident Lifecycle</h3>
+                    <p className="card-sub text-muted">Real-time detection of betting velocity spikes, feed delays, deposit spikes, and score discrepancies</p>
+                  </div>
+                  <div className="admin-table-wrap mt-4">
+                    <table className="admin-table text-xs">
+                      <thead>
+                        <tr>
+                          <th>Anomaly ID</th>
+                          <th>Category</th>
+                          <th>Target Entity</th>
+                          <th>Severity</th>
+                          <th>Confidence</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td className="font-mono font-bold">anom_01</td>
+                          <td>Betting Velocity Spike</td>
+                          <td>Match: 10cric_2026_101</td>
+                          <td><span className="status-tag status-tag--lost">HIGH</span></td>
+                          <td className="font-bold text-amber-400">94%</td>
+                          <td><span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold border border-purple-500/30">INVESTIGATING</span></td>
+                          <td><button type="button" className="risk-btn risk-btn--details">View Anomaly</button></td>
+                        </tr>
+                        <tr>
+                          <td className="font-mono font-bold">anom_02</td>
+                          <td>Provider Feed Latency</td>
+                          <td>CREX Provider</td>
+                          <td><span className="status-tag status-tag--pending">MEDIUM</span></td>
+                          <td className="font-bold text-amber-400">88%</td>
+                          <td><span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 font-bold border border-blue-500/30">VALIDATING</span></td>
+                          <td><button type="button" className="risk-btn risk-btn--details">View Anomaly</button></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PHASE 2: BLAST RADIUS */}
+            {activeTab === 'blast_radius' && (
+              <div className="admin-tab-content">
+                <div className="admin-card">
+                  <div className="card-header">
+                    <h3>💥 Blast-Radius Impact & Outage Analysis Engine</h3>
+                    <p className="card-sub text-muted">Calculates affected matches, open bets, and financial exposure for provider or service failures</p>
+                  </div>
+                  <div className="grid grid-cols-4 gap-3 mt-4 text-xs">
+                    <div className="risk-summary-card">
+                      <div className="risk-summary-label">Affected Matches</div>
+                      <div className="risk-summary-val font-bold text-amber-400">4 Matches</div>
+                    </div>
+                    <div className="risk-summary-card">
+                      <div className="risk-summary-label">Affected Markets</div>
+                      <div className="risk-summary-val font-bold text-purple-400">28 Markets</div>
+                    </div>
+                    <div className="risk-summary-card">
+                      <div className="risk-summary-label">Impacted Bettors</div>
+                      <div className="risk-summary-val font-bold text-blue-400">148 Users</div>
+                    </div>
+                    <div className="risk-summary-card">
+                      <div className="risk-summary-label">Financial Exposure</div>
+                      <div className="risk-summary-val font-bold text-red-400">₹124,500</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PHASE 2: DECISION ENGINE */}
+            {activeTab === 'decisions' && (
+              <div className="admin-tab-content">
+                <div className="admin-card">
+                  <div className="card-header">
+                    <h3>🧠 Operational Decision Support & Approval Engine</h3>
+                    <p className="card-sub text-muted">AI-assisted recommendations with evidence analysis and mandatory human operator approval gates</p>
+                  </div>
+                  <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/30 mt-4 text-xs flex justify-between items-center">
+                    <div>
+                      <div className="font-bold text-purple-300 text-sm mb-1">⚡ Recommendation: Suspend Match 10cric_2026_101 Markets</div>
+                      <div className="text-slate-300">Reason: CREX feed latency exceeded 5,000ms threshold (Confidence: 96%)</div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button type="button" className="risk-btn risk-btn--details">Reject</button>
+                      <button type="button" className="risk-btn risk-btn--restrict">Approve & Execute</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PHASE 2: SANDBOX SIMULATION */}
+            {activeTab === 'simulation' && (
+              <div className="admin-tab-content">
+                <div className="admin-card">
+                  <div className="card-header flex-between">
+                    <div>
+                      <h3>🧪 Admin Sandbox & Scenario Simulation Engine</h3>
+                      <p className="card-sub text-muted">Test provider outages, score spikes, and exposure spikes in memory sandboxes strictly isolated from production</p>
+                    </div>
+                    <span className="risk-btn risk-btn--verify">Isolated Sandbox Active</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PHASE 2: SLO / SLA CENTER */}
+            {activeTab === 'slo' && (
+              <div className="admin-tab-content">
+                <div className="admin-card">
+                  <div className="card-header">
+                    <h3>🎯 Service Level Objectives (SLO) & SLA Compliance Monitor</h3>
+                    <p className="card-sub text-muted">Track score freshness, bet acceptance latency, settlement processing latency, and uptime budgets</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 mt-4 text-xs">
+                    <div className="risk-summary-card">
+                      <div className="risk-summary-label">Score Freshness SLA</div>
+                      <div className="risk-summary-val text-emerald-400 font-bold">12 ms (Target: &lt; 100 ms)</div>
+                    </div>
+                    <div className="risk-summary-card">
+                      <div className="risk-summary-label">Bet Acceptance Latency</div>
+                      <div className="risk-summary-val text-emerald-400 font-bold">18 ms (Target: &lt; 200 ms)</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PHASE 2: AI ADMIN COPILOT */}
+            {activeTab === 'copilot' && (
+              <div className="admin-tab-content">
+                <div className="admin-card">
+                  <div className="card-header">
+                    <h3>🤖 AI-Assisted Admin Operational Copilot</h3>
+                    <p className="card-sub text-muted">Ask operational questions backed strictly by empirical trace data, exposure engines, and audit logs</p>
+                  </div>
+                  <div className="p-4 rounded-xl bg-slate-900 border border-white/10 mt-4 text-xs font-mono text-slate-300">
+                    <div className="text-purple-300 font-bold mb-2">User Query: "Why is platform exposure high today?"</div>
+                    <div className="p-3 rounded bg-white/5 border border-white/5 text-slate-200">
+                      AI Copilot Response: Platform exposure is currently ₹124,500 driven primarily by Match 10cric_2026_101 (IND vs PAK) Match Winner market, accounting for 68% of net liability.
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2021,6 +2764,150 @@ export default function Admin() {
                         )}
                       </tbody>
                     </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: CUSTOMER SUPPORT CONSOLE & AGENT WORKSPACE */}
+            {activeTab === 'support' && (
+              <div className="admin-tab-content">
+                <div className="admin-card mb-6">
+                  <div className="card-header flex-between">
+                    <div>
+                      <h3>🎧 Customer Support Agent Console & Workspace</h3>
+                      <p className="card-sub text-muted">24/7 Agent Inbox, Live Conversation Queues, SLA Tracking, Canned Responses & Customer 360 Context</p>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs">
+                      <span className="font-bold text-slate-300">Agent Status:</span>
+                      <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/40 flex items-center gap-1.5">
+                        <span className="live-dot" /> ONLINE (Priya Sharma)
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* SUPPORT SLA METRICS SUMMARY */}
+                  <div className="grid grid-cols-4 gap-3 mt-4 text-xs">
+                    <div className="risk-summary-card">
+                      <div className="risk-summary-label">Open Support Cases</div>
+                      <div className="risk-summary-val font-bold text-amber-400">1 Open Case</div>
+                    </div>
+                    <div className="risk-summary-card">
+                      <div className="risk-summary-label">Avg Response Time</div>
+                      <div className="risk-summary-val font-bold text-emerald-400">1.4 mins</div>
+                    </div>
+                    <div className="risk-summary-card">
+                      <div className="risk-summary-label">SLA Compliance</div>
+                      <div className="risk-summary-val font-bold text-emerald-400">98.5% (Healthy)</div>
+                    </div>
+                    <div className="risk-summary-card">
+                      <div className="risk-summary-label">Customer CSAT Rating</div>
+                      <div className="risk-summary-val font-bold text-purple-400">4.9 / 5.0 ⭐</div>
+                    </div>
+                  </div>
+
+                  {/* AGENT SPLIT WORKSPACE */}
+                  <div className="grid grid-cols-12 gap-4 mt-6 text-xs">
+                    {/* LEFT COLUMN: QUEUE LIST */}
+                    <div className="col-span-4 p-3 rounded-xl bg-slate-900 border border-white/10 flex flex-col gap-2">
+                      <h4 className="font-bold text-slate-200 mb-1 flex items-center justify-between">
+                        <span>📥 Support Queue</span>
+                        <span className="text-[10px] text-muted">1 Active</span>
+                      </h4>
+                      <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/30 cursor-pointer">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="font-bold text-purple-300">demo@betking.com</span>
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">HIGH</span>
+                        </div>
+                        <div className="text-slate-300 text-[11px] truncate mb-1">Withdrawal of ₹1,000 via UPI is still pending...</div>
+                        <div className="flex justify-between text-[10px] text-slate-400">
+                          <span>Category: WITHDRAWAL</span>
+                          <span>2 mins ago</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* CENTER COLUMN: CONVERSATION STREAM & REPLY COMPOSER */}
+                    <div className="col-span-5 p-3 rounded-xl bg-slate-900 border border-white/10 flex flex-col justify-between">
+                      <div>
+                        <div className="flex justify-between items-center pb-2 mb-3 border-b border-white/10">
+                          <div>
+                            <span className="font-bold text-slate-200">Conv #conv_9912 · demo@betking.com</span>
+                            <div className="text-[10px] text-slate-400">Category: WITHDRAWAL · SLA: HEALTHY</div>
+                          </div>
+                          <button type="button" className="risk-btn risk-btn--release">Resolve Case</button>
+                        </div>
+
+                        {/* MESSAGES & INTERNAL NOTES */}
+                        <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                          <div className="p-2.5 rounded bg-white/5 border border-white/5">
+                            <div className="flex justify-between text-[10px] text-slate-400 mb-1">
+                              <span className="font-bold text-purple-300">Customer (demo@betking.com)</span>
+                              <span>20:45:12</span>
+                            </div>
+                            <p className="text-slate-200">My withdrawal of ₹1,000 via UPI is still pending.</p>
+                          </div>
+
+                          <div className="p-2.5 rounded bg-blue-500/10 border border-blue-500/20">
+                            <div className="flex justify-between text-[10px] text-slate-400 mb-1">
+                              <span className="font-bold text-blue-300">Agent (Priya Sharma)</span>
+                              <span>20:46:00</span>
+                            </div>
+                            <p className="text-slate-200">Hello! I am inspecting your UPI withdrawal transaction tx_wd_99182 now.</p>
+                          </div>
+
+                          <div className="p-2.5 rounded bg-amber-500/10 border border-amber-500/30 font-mono text-[11px]">
+                            <div className="font-bold text-amber-300 mb-1">🔒 INTERNAL AGENT NOTE (Hidden from Customer):</div>
+                            <div className="text-amber-200">Verified account identity & KYC status. Banking gateway UTR response pending from ICICI gateway.</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* REPLY & CANNED RESPONSES COMPOSER */}
+                      <div className="mt-4 pt-3 border-t border-white/10">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-[10px] font-bold text-slate-400">Quick Canned Reply:</span>
+                          <select className="user-select-dropdown text-xs flex-1">
+                            <option value="">Select Canned Response...</option>
+                            <option value="wd_pending">Withdrawal is processing via Banking Partner</option>
+                            <option value="kyc_req">KYC Document Upload Required</option>
+                            <option value="settle_rule">Bet Settled per Official Match Scorecard</option>
+                          </select>
+                        </div>
+                        <div className="flex gap-2">
+                          <input type="text" className="admin-input-field flex-1" placeholder="Type response to customer..." />
+                          <button type="button" className="risk-btn risk-btn--verify">Send Reply</button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* RIGHT COLUMN: CUSTOMER 360 & CONTEXT PANEL */}
+                    <div className="col-span-3 p-3 rounded-xl bg-slate-900 border border-white/10 flex flex-col gap-3">
+                      <h4 className="font-bold text-slate-200 pb-2 border-b border-white/10">👤 Customer 360 Context</h4>
+                      <div className="space-y-2">
+                        <div>
+                          <span className="text-slate-400">User Email:</span>
+                          <div className="font-bold text-slate-200">demo@betking.com</div>
+                        </div>
+                        <div>
+                          <span className="text-slate-400">Account Status:</span>
+                          <div><span className="status-tag status-tag--won">ACTIVE</span></div>
+                        </div>
+                        <div>
+                          <span className="text-slate-400">KYC Verification:</span>
+                          <div><span className="status-tag status-tag--won">VERIFIED</span></div>
+                        </div>
+                        <div>
+                          <span className="text-slate-400">Risk Tier:</span>
+                          <div className="font-bold text-emerald-400">LOW RISK (Tier 1)</div>
+                        </div>
+                        <div className="pt-2 border-t border-white/10">
+                          <span className="text-slate-400">Related Context:</span>
+                          <div className="font-mono text-purple-300 font-bold">Transaction: tx_wd_99182</div>
+                          <div className="text-slate-300">Amount: ₹1,000 (UPI Payout)</div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
