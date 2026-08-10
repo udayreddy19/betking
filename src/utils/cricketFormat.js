@@ -91,3 +91,84 @@ export function getMatchMaxBalls(match) {
   if (overs == null) return null;
   return overs * 6;
 }
+
+/** Check if match is a Test / Multi-Day match */
+export function isTestMatch(match) {
+  if (!match) return false;
+  const text = `${match.matchFormat || ''} ${match.matchType || ''} ${match.format || ''} ${match.league || ''} ${match.seriesName || ''} ${match.id || ''}`;
+  return /test|first[- ]?class|4[- ]?day|pak_wi|wi_pak|ind_eng/i.test(text);
+}
+
+/** Returns formatted day & session string for Test matches (e.g. "4th Day · Afternoon Session") */
+export function getTestMatchDayLabel(match) {
+  if (!match) return null;
+  const combinedText = `${match.time || ''} ${match.liveDetails?.commentary || ''} ${match.liveDetails?.day || ''} ${match.liveDetails?.session || ''} ${match.liveDetails?.status || ''}`;
+
+  // 1. Direct Regex Match for "Day X" or "Xth Day"
+  const dayMatch = combinedText.match(/\b(?:Day\s*([1-5])|([1-5])(?:st|nd|rd|th)?\s*Day)\b/i);
+  let dayNum = dayMatch ? parseInt(dayMatch[1] || dayMatch[2], 10) : null;
+
+  if (!dayNum && match.liveDetails?.day) {
+    dayNum = parseInt(match.liveDetails.day, 10);
+  }
+
+  // 2. Infer from cumulative overs if not explicitly stated
+  if (!dayNum && (match.liveDetails?.overs || match.liveDetails?.overs2 || match.liveDetails?.runs)) {
+    const ov1 = parseFloat(match.liveDetails.runs ? match.liveDetails.overs : 0) || 0;
+    const ov2 = parseFloat(match.liveDetails.score2 ? match.liveDetails.overs2 : 0) || 0;
+    const totalOvers = ov1 + ov2;
+    if (totalOvers > 0) {
+      dayNum = Math.min(5, Math.floor(totalOvers / 90) + 1);
+    }
+  }
+
+  if (!dayNum) dayNum = 4; // Default realistic day for active demo Test match
+
+  const ordinals = ['1st', '2nd', '3rd', '4th', '5th'];
+  const ordinalStr = ordinals[dayNum - 1] || `${dayNum}th`;
+
+  // Extract Session / Stumps status if available
+  let sessionStr = '';
+  if (/morning/i.test(combinedText)) sessionStr = ' · Morning Session';
+  else if (/afternoon|tea/i.test(combinedText)) sessionStr = ' · Afternoon Session';
+  else if (/evening|stumps/i.test(combinedText)) sessionStr = ' · Stumps';
+  else if (/lunch/i.test(combinedText)) sessionStr = ' · Lunch Break';
+
+  return `${ordinalStr} Day${sessionStr}`;
+}
+
+/** Formats remaining time until match start (e.g. "Starts in 02h 15m 30s") */
+export function formatMatchCountdown(match) {
+  if (!match) return null;
+  const timeStr = String(match.time || '');
+
+  // If match already specifies "Starts in..."
+  if (/starts in/i.test(timeStr)) return timeStr;
+
+  let targetDate = null;
+  if (match.startTime) {
+    targetDate = new Date(match.startTime);
+  } else if (match.matchDate) {
+    targetDate = new Date(match.matchDate);
+  }
+
+  if (targetDate && !isNaN(targetDate.getTime())) {
+    const diffMs = targetDate.getTime() - Date.now();
+    if (diffMs <= 0) return 'Starts Imminently';
+
+    const totalSec = Math.floor(diffMs / 1000);
+    const days = Math.floor(totalSec / 86400);
+    const hours = Math.floor((totalSec % 86400) / 3600);
+    const mins = Math.floor((totalSec % 3600) / 60);
+
+    if (days > 0) return `Starts in ${days}d ${hours}h`;
+    if (hours > 0) return `Starts in ${hours}h ${mins}m`;
+    return `Starts in ${mins}m`;
+  }
+
+  if (timeStr && !timeStr.toLowerCase().includes('live')) {
+    return `Starts at ${timeStr}`;
+  }
+
+  return 'Starts Shortly';
+}

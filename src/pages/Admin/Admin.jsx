@@ -25,6 +25,7 @@ import {
   FiTrendingUp,
 } from '../../icons';
 import AnimatedMotionGiftIcon from '../../components/AnimatedMotionGiftIcon/AnimatedMotionGiftIcon';
+import DatabaseInspector from '../../components/DatabaseInspector/DatabaseInspector';
 import './Admin.css';
 
 export default function Admin() {
@@ -64,6 +65,8 @@ export default function Admin() {
   };
   const [searchTerm, setSearchTerm] = useState('');
   const [betFilter, setBetFilter] = useState('all');
+  const [tabCategoryFilter, setTabCategoryFilter] = useState('all');
+  const [tabSearchQuery, setTabSearchQuery] = useState('');
 
   // Emergency & Risk Controls
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
@@ -718,55 +721,149 @@ export default function Admin() {
         </motion.div>
 
         {/* Navigation Tabs */}
+        {/* Navigation Category Filter & Module Search Bar */}
+        <div className="admin-tabs-filter-bar">
+          <div className="admin-category-pills">
+            {[
+              { id: 'all', label: 'All Modules' },
+              { id: 'core', label: '⚡ Core & AI' },
+              { id: 'sports', label: '🎯 Sportsbook' },
+              { id: 'integrity', label: '⚖️ Integrity & Resilience' },
+              { id: 'security', label: '🛡️ Security & Users' },
+              { id: 'ops', label: '💳 Finance & Ops' },
+            ].map((cat) => {
+              const allTabsList = [
+                { id: 'dashboard', label: 'Command Center', icon: <FiActivity />, category: 'core' },
+                { id: 'database', label: '🗄️ DB Inspector', icon: <FiCpu />, category: 'core' },
+                { id: 'odds_engine', label: '⚡ Dynamic Odds & Risk', icon: <FiSliders />, category: 'core' },
+                { id: 'analytics', label: 'Analytics & GGR', icon: <FiTrendingUp />, category: 'core' },
+                { id: 'copilot', label: 'AI Admin Copilot 🤖', icon: <FiCpu />, category: 'core' },
+                { id: 'bets', label: `Bets (${pendingBets.length})`, icon: <FiTrendingUp />, category: 'sports' },
+                { id: 'settlement', label: 'Settlement Control', icon: <FiCheckCircle />, category: 'sports' },
+                { id: 'sports', label: 'Sports Operations', icon: <FiSliders />, category: 'sports' },
+                { id: 'providers', label: 'Providers & Quality', icon: <FiCpu />, category: 'sports' },
+                { id: 'master_limits', label: 'Limits & Config', icon: <FiSliders />, category: 'sports' },
+                { id: 'casino', label: 'Casino & Rigging', icon: <FiCpu />, category: 'sports' },
+                { id: 'platform_twin', label: 'Platform Digital Twin 🌐', icon: <FiCpu />, category: 'integrity' },
+                { id: 'root_cause', label: 'Root-Cause Engine 🩺', icon: <FiSearch />, category: 'integrity' },
+                { id: 'match_integrity', label: 'Match Integrity 🎯', icon: <FiCheckCircle />, category: 'integrity' },
+                { id: 'financial_integrity', label: 'Financial Integrity ⚖️', icon: <FiDollarSign />, category: 'integrity' },
+                { id: 'policies', label: 'Policy-as-Code 📜', icon: <FiSliders />, category: 'integrity' },
+                { id: 'chaos', label: 'Chaos Engineering ⚡', icon: <FiXCircle />, category: 'integrity' },
+                { id: 'capacity', label: 'Capacity & Resilience 📈', icon: <FiTrendingUp />, category: 'integrity' },
+                { id: 'platform_health', label: 'Executive Risk Map 🗺️', icon: <FiActivity />, category: 'integrity' },
+                { id: 'investigations', label: 'Investigation Graph', icon: <FiSearch />, category: 'integrity' },
+                { id: 'event_replay', label: 'Event Replay Machine', icon: <FiRefreshCw />, category: 'integrity' },
+                { id: 'users', label: 'User 360', icon: <FiUsers />, category: 'security' },
+                { id: 'antifraud', label: 'Fraud & Risk Cases', icon: <FiShield />, category: 'security' },
+                { id: 'compliance', label: 'Compliance (KYC/AML)', icon: <FiShield />, category: 'security' },
+                { id: 'anomalies', label: 'Anomaly Center', icon: <FiShield />, category: 'security' },
+                { id: 'blast_radius', label: 'Blast Radius', icon: <FiCpu />, category: 'security' },
+                { id: 'decisions', label: 'Decision Engine', icon: <FiSliders />, category: 'security' },
+                { id: 'simulation', label: 'Sandbox Simulation', icon: <FiCpu />, category: 'security' },
+                { id: 'finance', label: 'Financial Ledger', icon: <FiDollarSign />, category: 'ops' },
+                { id: 'gateways', label: 'Payment Gateways', icon: <FiDollarSign />, category: 'ops' },
+                { id: 'promos', label: 'Promotions', icon: <FiGift />, category: 'ops' },
+                { id: 'support', label: 'Customer Support', icon: <FiUsers />, category: 'ops' },
+                { id: 'incidents', label: 'Incident Center', icon: <FiXCircle />, category: 'ops' },
+                { id: 'releases', label: 'Releases & Rollouts', icon: <FiRefreshCw />, category: 'ops' },
+                { id: 'slo', label: 'SLO/SLA Center', icon: <FiCheckCircle />, category: 'ops' },
+                { id: 'logs', label: 'Audit Logs', icon: <FiCpu />, category: 'ops' },
+                { id: 'search', label: 'Global Search', icon: <FiSearch />, category: 'ops' },
+              ];
+              const count = cat.id === 'all'
+                ? allTabsList.length
+                : allTabsList.filter((t) => t.category === cat.id).length;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  className={`admin-category-btn ${tabCategoryFilter === cat.id ? 'active' : ''}`}
+                  onClick={() => setTabCategoryFilter(cat.id)}
+                >
+                  {cat.label} <span className="cat-count">{count}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="admin-tab-search-wrap">
+            <FiSearch className="search-icon" />
+            <input
+              type="text"
+              placeholder="Search 37 modules..."
+              value={tabSearchQuery}
+              onChange={(e) => setTabSearchQuery(e.target.value)}
+            />
+            {tabSearchQuery && (
+              <button type="button" className="clear-search-btn" onClick={() => setTabSearchQuery('')}>
+                <FiXCircle />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Categorized & Filtered Navigation Tabs */}
         <div className="admin-nav-tabs">
           {[
-            { id: 'dashboard', label: 'Command Center', icon: <FiActivity /> },
-            { id: 'platform_twin', label: 'Platform Digital Twin 🌐', icon: <FiCpu /> },
-            { id: 'root_cause', label: 'Root-Cause Engine 🩺', icon: <FiSearch /> },
-            { id: 'match_integrity', label: 'Match Integrity 🎯', icon: <FiCheckCircle /> },
-            { id: 'financial_integrity', label: 'Financial Integrity ⚖️', icon: <FiDollarSign /> },
-            { id: 'policies', label: 'Policy-as-Code 📜', icon: <FiSliders /> },
-            { id: 'chaos', label: 'Chaos Engineering ⚡', icon: <FiXCircle /> },
-            { id: 'capacity', label: 'Capacity & Resilience 📈', icon: <FiTrendingUp /> },
-            { id: 'platform_health', label: 'Executive Risk Map 🗺️', icon: <FiActivity /> },
-            { id: 'investigations', label: 'Investigation Graph', icon: <FiSearch /> },
-            { id: 'event_replay', label: 'Event Replay Machine', icon: <FiRefreshCw /> },
-            { id: 'search', label: 'Global Search', icon: <FiSearch /> },
-            { id: 'anomalies', label: 'Anomaly Center', icon: <FiShield /> },
-            { id: 'blast_radius', label: 'Blast Radius', icon: <FiCpu /> },
-            { id: 'decisions', label: 'Decision Engine', icon: <FiSliders /> },
-            { id: 'simulation', label: 'Sandbox Simulation', icon: <FiCpu /> },
-            { id: 'slo', label: 'SLO/SLA Center', icon: <FiCheckCircle /> },
-            { id: 'copilot', label: 'AI Admin Copilot 🤖', icon: <FiCpu /> },
-            { id: 'users', label: 'User 360', icon: <FiUsers /> },
-            { id: 'bets', label: `Bets (${pendingBets.length})`, icon: <FiTrendingUp /> },
-            { id: 'settlement', label: 'Settlement Control', icon: <FiCheckCircle /> },
-            { id: 'sports', label: 'Sports Operations', icon: <FiSliders /> },
-            { id: 'providers', label: 'Providers & Quality', icon: <FiCpu /> },
-            { id: 'antifraud', label: 'Fraud & Risk Cases', icon: <FiShield /> },
-            { id: 'compliance', label: 'Compliance (KYC/AML)', icon: <FiShield /> },
-            { id: 'finance', label: 'Financial Ledger', icon: <FiDollarSign /> },
-            { id: 'promos', label: 'Promotions', icon: <FiGift /> },
-            { id: 'support', label: 'Customer Support', icon: <FiUsers /> },
-            { id: 'incidents', label: 'Incident Center', icon: <FiXCircle /> },
-            { id: 'releases', label: 'Releases & Rollouts', icon: <FiRefreshCw /> },
-            { id: 'odds_engine', label: '⚡ Dynamic Odds & Risk', icon: <FiSliders /> },
-            { id: 'master_limits', label: 'Limits & Config', icon: <FiSliders /> },
-            { id: 'gateways', label: 'Payment Gateways', icon: <FiDollarSign /> },
-            { id: 'casino', label: 'Casino & Rigging', icon: <FiCpu /> },
-            { id: 'analytics', label: 'Analytics & GGR', icon: <FiTrendingUp /> },
-            { id: 'logs', label: 'Audit Logs', icon: <FiCpu /> },
-          ].map((tab) => (
-            <motion.button
-              key={tab.id}
-              className={`admin-tab ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => handleTabSelect(tab.id)}
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.96 }}
-            >
-              {tab.icon} {tab.label}
-            </motion.button>
-          ))}
+            { id: 'dashboard', label: 'Command Center', icon: <FiActivity />, category: 'core' },
+            { id: 'database', label: '🗄️ DB Inspector', icon: <FiCpu />, category: 'core' },
+            { id: 'odds_engine', label: '⚡ Dynamic Odds & Risk', icon: <FiSliders />, category: 'core' },
+            { id: 'analytics', label: 'Analytics & GGR', icon: <FiTrendingUp />, category: 'core' },
+            { id: 'copilot', label: 'AI Admin Copilot 🤖', icon: <FiCpu />, category: 'core' },
+
+            { id: 'bets', label: `Bets (${pendingBets.length})`, icon: <FiTrendingUp />, category: 'sports' },
+            { id: 'settlement', label: 'Settlement Control', icon: <FiCheckCircle />, category: 'sports' },
+            { id: 'sports', label: 'Sports Operations', icon: <FiSliders />, category: 'sports' },
+            { id: 'providers', label: 'Providers & Quality', icon: <FiCpu />, category: 'sports' },
+            { id: 'master_limits', label: 'Limits & Config', icon: <FiSliders />, category: 'sports' },
+            { id: 'casino', label: 'Casino & Rigging', icon: <FiCpu />, category: 'sports' },
+
+            { id: 'platform_twin', label: 'Platform Digital Twin 🌐', icon: <FiCpu />, category: 'integrity' },
+            { id: 'root_cause', label: 'Root-Cause Engine 🩺', icon: <FiSearch />, category: 'integrity' },
+            { id: 'match_integrity', label: 'Match Integrity 🎯', icon: <FiCheckCircle />, category: 'integrity' },
+            { id: 'financial_integrity', label: 'Financial Integrity ⚖️', icon: <FiDollarSign />, category: 'integrity' },
+            { id: 'policies', label: 'Policy-as-Code 📜', icon: <FiSliders />, category: 'integrity' },
+            { id: 'chaos', label: 'Chaos Engineering ⚡', icon: <FiXCircle />, category: 'integrity' },
+            { id: 'capacity', label: 'Capacity & Resilience 📈', icon: <FiTrendingUp />, category: 'integrity' },
+            { id: 'platform_health', label: 'Executive Risk Map 🗺️', icon: <FiActivity />, category: 'integrity' },
+            { id: 'investigations', label: 'Investigation Graph', icon: <FiSearch />, category: 'integrity' },
+            { id: 'event_replay', label: 'Event Replay Machine', icon: <FiRefreshCw />, category: 'integrity' },
+
+            { id: 'users', label: 'User 360', icon: <FiUsers />, category: 'security' },
+            { id: 'antifraud', label: 'Fraud & Risk Cases', icon: <FiShield />, category: 'security' },
+            { id: 'compliance', label: 'Compliance (KYC/AML)', icon: <FiShield />, category: 'security' },
+            { id: 'anomalies', label: 'Anomaly Center', icon: <FiShield />, category: 'security' },
+            { id: 'blast_radius', label: 'Blast Radius', icon: <FiCpu />, category: 'security' },
+            { id: 'decisions', label: 'Decision Engine', icon: <FiSliders />, category: 'security' },
+            { id: 'simulation', label: 'Sandbox Simulation', icon: <FiCpu />, category: 'security' },
+
+            { id: 'finance', label: 'Financial Ledger', icon: <FiDollarSign />, category: 'ops' },
+            { id: 'gateways', label: 'Payment Gateways', icon: <FiDollarSign />, category: 'ops' },
+            { id: 'promos', label: 'Promotions', icon: <FiGift />, category: 'ops' },
+            { id: 'support', label: 'Customer Support', icon: <FiUsers />, category: 'ops' },
+            { id: 'incidents', label: 'Incident Center', icon: <FiXCircle />, category: 'ops' },
+            { id: 'releases', label: 'Releases & Rollouts', icon: <FiRefreshCw />, category: 'ops' },
+            { id: 'slo', label: 'SLO/SLA Center', icon: <FiCheckCircle />, category: 'ops' },
+            { id: 'logs', label: 'Audit Logs', icon: <FiCpu />, category: 'ops' },
+            { id: 'search', label: 'Global Search', icon: <FiSearch />, category: 'ops' },
+          ]
+            .filter((tab) => {
+              const matchesCat = tabCategoryFilter === 'all' || tab.category === tabCategoryFilter;
+              const matchesSearch = !tabSearchQuery || tab.label.toLowerCase().includes(tabSearchQuery.toLowerCase()) || tab.id.toLowerCase().includes(tabSearchQuery.toLowerCase());
+              return matchesCat && matchesSearch;
+            })
+            .map((tab) => (
+              <motion.button
+                key={tab.id}
+                className={`admin-tab ${activeTab === tab.id ? 'active' : ''}`}
+                onClick={() => handleTabSelect(tab.id)}
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.96 }}
+              >
+                {tab.icon} {tab.label}
+              </motion.button>
+            ))}
         </div>
 
         {/* TAB CONTENTS WITH ANIMATE PRESENCE */}
@@ -2910,6 +3007,13 @@ export default function Admin() {
                     </div>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* TAB: DATABASE INSPECTOR & TABLE EXPLORER */}
+            {activeTab === 'database' && (
+              <div className="admin-tab-content">
+                <DatabaseInspector />
               </div>
             )}
 

@@ -9,7 +9,7 @@ export default function RazorpayModal({ isOpen, onClose, amount, onSuccess, user
   const [cardNumber, setCardNumber] = useState('4111 1111 1111 1111');
   const [expiry, setExpiry] = useState('12/28');
   const [cvv, setCvv] = useState('123');
-  const [cardName, setCardName] = useState(user?.displayName || 'Uday Reddy');
+  const [cardName, setCardName] = useState(user?.displayName || 'John Doe');
 
   // UPI State
   const [upiId, setUpiId] = useState('john@okicici');

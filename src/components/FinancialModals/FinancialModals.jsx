@@ -21,10 +21,17 @@ export default function FinancialModals({ modalType, onClose }) {
   const { placedBets } = useBetSlip();
   const wallet = getWalletBreakdown(user);
 
+  const [withdrawMethod, setWithdrawMethod] = useState('UPI'); // 'UPI' | 'BANK_TRANSFER' | 'PAYTM'
   const [upiId, setUpiId] = useState('');
+  const [paytmNumber, setPaytmNumber] = useState('');
+  const [bankAccountName, setBankAccountName] = useState('');
+  const [bankName, setBankName] = useState('');
+  const [bankAccountNumber, setBankAccountNumber] = useState('');
+  const [bankIfsc, setBankIfsc] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState('1000');
   const [withdrawStatus, setWithdrawStatus] = useState(null);
   const [pendingWithdrawals, setPendingWithdrawals] = useState([]);
+  const [lastSubmittedDetails, setLastSubmittedDetails] = useState('');
 
   if (!modalType || !user) return null;
 
@@ -32,7 +39,6 @@ export default function FinancialModals({ modalType, onClose }) {
 
   const handleRazorpayWithdraw = (e) => {
     e.preventDefault();
-    if (!upiId.trim()) return notify('Please enter a valid UPI ID / Bank Details');
     const amt = parseFloat(withdrawAmount);
     if (isNaN(amt) || amt < 10) return notify('Minimum withdrawal is ₹10');
     if (amt > wallet.withdrawable) {
@@ -43,10 +49,37 @@ export default function FinancialModals({ modalType, onClose }) {
       );
     }
 
+    let detailsString = '';
+    let methodLabel = 'UPI';
+
+    if (withdrawMethod === 'UPI') {
+      if (!upiId.trim()) return notify('Please enter a valid UPI ID (e.g. name@upi)');
+      detailsString = `UPI ID: ${upiId.trim()}`;
+      methodLabel = 'UPI';
+    } else if (withdrawMethod === 'BANK_TRANSFER') {
+      if (!bankAccountName.trim()) return notify('Please enter the Account Holder Name');
+      if (!bankName.trim()) return notify('Please enter the Bank Name');
+      if (!bankAccountNumber.trim() || bankAccountNumber.trim().length < 6) {
+        return notify('Please enter a valid Bank Account Number');
+      }
+      if (!bankIfsc.trim() || bankIfsc.trim().length < 4) {
+        return notify('Please enter a valid Bank IFSC Code (e.g. HDFC0001234)');
+      }
+      detailsString = `Bank: ${bankName.trim()} | A/C: ${bankAccountNumber.trim()} | IFSC: ${bankIfsc.trim().toUpperCase()} | Name: ${bankAccountName.trim()}`;
+      methodLabel = 'BANK_TRANSFER';
+    } else if (withdrawMethod === 'PAYTM') {
+      if (!paytmNumber.trim() || paytmNumber.trim().length < 10) {
+        return notify('Please enter a valid 10-digit Paytm Mobile Number');
+      }
+      detailsString = `Paytm Wallet: ${paytmNumber.trim()}`;
+      methodLabel = 'PAYTM';
+    }
+
     setWithdrawStatus('processing');
+    setLastSubmittedDetails(detailsString);
 
     setTimeout(() => {
-      const { success } = withdrawFunds(amt, 'UPI', upiId);
+      const { success } = withdrawFunds(amt, methodLabel, detailsString);
       if (!success) {
         setWithdrawStatus(null);
         notify('Withdrawal failed. Please check your withdrawable balance.');
@@ -57,7 +90,8 @@ export default function FinancialModals({ modalType, onClose }) {
         {
           id: `WD-${Math.floor(10000 + Math.random() * 90000)}`,
           amount: amt,
-          upi: upiId,
+          method: methodLabel,
+          details: detailsString,
           date: 'Just now',
           status: 'PENDING_APPROVAL',
           refunded: false,
@@ -85,7 +119,7 @@ export default function FinancialModals({ modalType, onClose }) {
       <div className="fin-modal-card" onClick={e => e.stopPropagation()}>
         <div className="fin-modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 800 }}>
-            {modalType === 'withdraw' && <><BiMoneyWithdraw style={{ color: '#22c55e', fontSize: '1.4rem' }} /> UPI / Bank Withdrawal Request</>}
+            {modalType === 'withdraw' && <><BiMoneyWithdraw style={{ color: '#22c55e', fontSize: '1.4rem' }} /> Instant Withdrawal Request</>}
             {modalType === 'cancel-wd' && <><BiMoneyWithdraw style={{ color: '#ef4444', fontSize: '1.4rem' }} /> Cancel Pending Withdrawals</>}
             {modalType === 'transactions' && <><BiTransfer style={{ color: '#3b82f6', fontSize: '1.4rem' }} /> Transaction History</>}
             {modalType === 'bets-history' && <><BiHistory style={{ color: '#f59e0b', fontSize: '1.4rem' }} /> My Bets History</>}
@@ -104,8 +138,11 @@ export default function FinancialModals({ modalType, onClose }) {
                 <IoCheckmarkCircle style={{ color: '#22c55e', fontSize: '3.5rem', marginBottom: '10px' }} />
                 <h3 style={{ margin: 0, fontWeight: 800 }}>Withdrawal Request Submitted!</h3>
                 <p className="fin-muted" style={{ fontSize: '0.85rem', marginTop: '6px' }}>
-                  ₹{withdrawAmount} requested for UPI / Bank ID: <strong>{upiId}</strong>.
+                  ₹{withdrawAmount} requested via <strong>{withdrawMethod === 'BANK_TRANSFER' ? 'Direct Bank Transfer' : withdrawMethod === 'PAYTM' ? 'Paytm Wallet' : 'UPI'}</strong>.
                 </p>
+                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
+                  Details: <code>{lastSubmittedDetails}</code>
+                </div>
                 <div style={{
                   background: 'rgba(234, 179, 8, 0.12)',
                   border: '1px solid #eab308',
@@ -118,7 +155,7 @@ export default function FinancialModals({ modalType, onClose }) {
                   lineHeight: '1.4',
                 }}>
                   ⏳ Status: <strong>Pending Admin Approval</strong><br />
-                  Once approved by Admin, funds will be transferred directly to your bank account / UPI ID.
+                  Once approved by Admin, funds will be transferred directly to your bank account / destination.
                 </div>
                 <button
                   className="fin-btn-primary"
@@ -145,17 +182,113 @@ export default function FinancialModals({ modalType, onClose }) {
                   )}
                 </div>
 
+                {/* WITHDRAWAL METHOD SELECTOR */}
                 <div style={{ marginBottom: '14px' }}>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px' }}>Enter UPI ID / Bank Details</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. name@upi or Bank Account details"
-                    value={upiId}
-                    onChange={e => setUpiId(e.target.value)}
-                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
-                    required
-                  />
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px' }}>Select Withdrawal Method</label>
+                  <div className="fin-method-tabs">
+                    <button
+                      type="button"
+                      className={`fin-method-btn ${withdrawMethod === 'UPI' ? 'active' : ''}`}
+                      onClick={() => setWithdrawMethod('UPI')}
+                    >
+                      ⚡ Instant UPI
+                    </button>
+                    <button
+                      type="button"
+                      className={`fin-method-btn ${withdrawMethod === 'BANK_TRANSFER' ? 'active' : ''}`}
+                      onClick={() => setWithdrawMethod('BANK_TRANSFER')}
+                    >
+                      🏛️ Bank Transfer
+                    </button>
+                    <button
+                      type="button"
+                      className={`fin-method-btn ${withdrawMethod === 'PAYTM' ? 'active' : ''}`}
+                      onClick={() => setWithdrawMethod('PAYTM')}
+                    >
+                      📱 Paytm Wallet
+                    </button>
+                  </div>
                 </div>
+
+                {/* METHOD SPECIFIC INPUT FIELDS */}
+                {withdrawMethod === 'UPI' && (
+                  <div style={{ marginBottom: '14px' }}>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px' }}>Enter UPI ID</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. name@upi or 9876543210@paytm"
+                      value={upiId}
+                      onChange={e => setUpiId(e.target.value)}
+                      style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.9rem' }}
+                      required
+                    />
+                  </div>
+                )}
+
+                {withdrawMethod === 'BANK_TRANSFER' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '14px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '4px' }}>Account Holder Full Name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. John Doe"
+                        value={bankAccountName}
+                        onChange={e => setBankAccountName(e.target.value)}
+                        style={{ width: '100%', padding: '9px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.85rem' }}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '4px' }}>Bank Name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. HDFC Bank / State Bank of India / ICICI"
+                        value={bankName}
+                        onChange={e => setBankName(e.target.value)}
+                        style={{ width: '100%', padding: '9px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.85rem' }}
+                        required
+                      />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '4px' }}>Account Number</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. 5010023456789"
+                          value={bankAccountNumber}
+                          onChange={e => setBankAccountNumber(e.target.value)}
+                          style={{ width: '100%', padding: '9px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.85rem' }}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '4px' }}>IFSC Code</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. HDFC0001234"
+                          value={bankIfsc}
+                          onChange={e => setBankIfsc(e.target.value.toUpperCase())}
+                          style={{ width: '100%', padding: '9px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.85rem', textTransform: 'uppercase' }}
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {withdrawMethod === 'PAYTM' && (
+                  <div style={{ marginBottom: '14px' }}>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px' }}>Enter Paytm Mobile Number</label>
+                    <input
+                      type="tel"
+                      placeholder="e.g. 9876543210"
+                      value={paytmNumber}
+                      onChange={e => setPaytmNumber(e.target.value)}
+                      style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.9rem' }}
+                      required
+                    />
+                  </div>
+                )}
 
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px' }}>Withdrawal Amount (₹)</label>
@@ -165,7 +298,7 @@ export default function FinancialModals({ modalType, onClose }) {
                     max={wallet.withdrawable}
                     value={withdrawAmount}
                     onChange={e => setWithdrawAmount(e.target.value)}
-                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.9rem' }}
                     required
                   />
                   <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
@@ -193,7 +326,7 @@ export default function FinancialModals({ modalType, onClose }) {
                 </div>
 
                 <button type="submit" className="fin-btn-primary" disabled={withdrawStatus === 'processing' || wallet.withdrawable < 10}>
-                  {withdrawStatus === 'processing' ? 'Submitting Request...' : 'Request UPI / Bank Withdrawal'}
+                  {withdrawStatus === 'processing' ? 'Submitting Request...' : `Request ${withdrawMethod === 'BANK_TRANSFER' ? 'Bank Transfer' : withdrawMethod === 'PAYTM' ? 'Paytm' : 'UPI'} Withdrawal`}
                 </button>
               </form>
             )}

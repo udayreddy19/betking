@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { HiOutlineViewList, HiOutlineChartBar, HiOutlineUsers, FiMessageCircle } from '../../icons';
 import TeamJersey from '../TeamJersey/TeamJersey';
+import MatchCountdownTimer from '../MatchCountdownTimer/MatchCountdownTimer';
 import LiveChartsWidget from '../LiveChartsWidget/LiveChartsWidget';
 import { useLiveFieldState } from '../../hooks/useLiveFieldState';
 import { useMatchDetail } from '../../hooks/useMatchDetail';
@@ -285,9 +286,13 @@ function PreMatchCricketPanel({ match, team1Display, team2Display, matchState })
 
   return (
     <div className="live-graphic-card-10cric">
-      <div className="live-widget-body live-widget-body--prematch">
-        <div className="live-widget-inn-badge live-widget-inn-badge--prematch">
+      <div className="live-widget-body live-widget-body--prematch" style={{ padding: '24px 16px', textAlign: 'center' }}>
+        <div className="live-widget-inn-badge live-widget-inn-badge--prematch" style={{ marginBottom: '12px' }}>
           {matchState === 'post' ? 'MATCH COMPLETE' : 'UPCOMING'}
+        </div>
+
+        <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'center' }}>
+          <MatchCountdownTimer match={match} style={{ fontSize: '0.95rem', padding: '6px 18px' }} />
         </div>
 
         <div className="live-widget-teams-row">
@@ -905,8 +910,9 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
     <div className="live-graphic-card-10cric">
       <div className="live-widget-static-header">
         <div className="live-widget-body">
-          <div className="live-widget-inn-badge">
-            {inningsBadge}
+          <div className="live-widget-inn-badge" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span>{inningsBadge}</span>
+            <MatchCountdownTimer match={match} style={{ fontSize: '0.78rem', padding: '2px 10px' }} />
           </div>
 
           <div className="live-widget-teams-row">

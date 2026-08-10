@@ -13,8 +13,20 @@ function getInitialTheme() {
 }
 
 function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  document.documentElement.style.colorScheme = theme;
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+  const body = document.body;
+
+  root.setAttribute('data-theme', theme);
+  root.style.colorScheme = theme;
+  root.classList.remove('dark', 'light', 'theme-dark', 'theme-light');
+  root.classList.add(theme);
+
+  if (body) {
+    body.setAttribute('data-theme', theme);
+    body.classList.remove('dark', 'light', 'theme-dark', 'theme-light');
+    body.classList.add(theme);
+  }
 }
 
 export function ThemeProvider({ children }) {

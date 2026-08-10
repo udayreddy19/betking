@@ -5,11 +5,12 @@ import { isMatchBettable, isMatchLive } from '../../utils/matchBetting';
 import { generateMatchMarkets } from '../../utils/oddsMarketsGenerator';
 import { resolveCricketTeamScores, isCricketSecondInnings } from '../../utils/cricketScores';
 import { getChaseText } from '../../utils/liveMatchWidgetData';
-import { getMatchMaxOvers } from '../../utils/cricketFormat';
+import { getMatchMaxOvers, isTestMatch, getTestMatchDayLabel, formatMatchCountdown } from '../../utils/cricketFormat';
 import { getRosterForTeam } from '../../data/cricketRosters';
 import { displayPlayerName } from '../../utils/cricketPlayers';
 import BetSlipFooter from '../BetSlip/BetSlipFooter';
 import TeamJersey from '../TeamJersey/TeamJersey';
+import MatchCountdownTimer from '../MatchCountdownTimer/MatchCountdownTimer';
 import LiveChartsWidget from '../LiveChartsWidget/LiveChartsWidget';
 import './MatchDetailModal.css';
 
@@ -135,57 +136,74 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
         aria-label={`${team1Name} vs ${team2Name}`}
       >
         {/* Header */}
-        <div className="match-detail-header">
-          <div className="match-detail-league">
-            <span>🌐 {match.league}</span>
-            <span className="match-detail-sport-tag">{sport.toUpperCase()}</span>
-          </div>
-          <button className="match-detail-close" onClick={onClose}>
-            <IoClose />
-          </button>
-        </div>
+        {(() => {
+          const isTest = isTestMatch(match);
+          const testDayBadge = isTest ? getTestMatchDayLabel(match) : null;
+          const countdownText = !isLiveNow ? formatMatchCountdown(match) : null;
 
-        {/* 10CRIC Style Live Scoreboard Header */}
-        <div className="match-detail-scoreboard">
-          <div className="scoreboard-team">
-            <TeamJersey team={match.team1} size={48} isFlying={isLiveNow && sport === 'cricket' && !isSecondInnings} />
-            <h4>{team1Name}</h4>
-            {isLiveNow && match.liveDetails && (
-              <div className="scoreboard-score">
-                {sport === 'cricket' && `${team1Score.runs}/${team1Score.wickets} (${team1Score.overs} ov)`}
-                {sport === 'soccer' && (match.liveDetails.score1 ?? 2)}
-                {sport === 'basketball' && (match.liveDetails.score1 ?? 94)}
+          return (
+            <>
+              <div className="match-detail-header">
+                <div className="match-detail-league" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>🌐 {match.league}</span>
+                  <span className="match-detail-sport-tag">{sport.toUpperCase()}</span>
+                  {isTest && testDayBadge && (
+                    <span className="sports-test-day-badge" style={{ background: 'rgba(168, 85, 247, 0.2)', color: '#c084fc', border: '1px solid rgba(168, 85, 247, 0.4)', padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 800 }}>
+                      📅 {testDayBadge}
+                    </span>
+                  )}
+                </div>
+                <button className="match-detail-close" onClick={onClose}>
+                  <IoClose />
+                </button>
               </div>
-            )}
-          </div>
 
-          <div className="scoreboard-vs">
-            {isLiveNow ? (
-              <div className="scoreboard-live-badge">
-                <span className="live-pulse" />
-                LIVE {
-                  sport === 'cricket' ? (isSecondInnings ? `(INN 2 | ${team2Score.overs}/${maxOvers} OV)` : `(INN 1 | ${team1Score.overs}/${maxOvers} OV)`) :
-                  sport === 'soccer' ? `(${match.liveDetails?.minute || '74'}' In Play)` : '(In Play)'
-                }
-              </div>
-            ) : (
-              <div className="scoreboard-time">{match.time}</div>
-            )}
-            <span className="vs-label">VS</span>
-          </div>
+              {/* 10CRIC Style Live Scoreboard Header */}
+              <div className="match-detail-scoreboard">
+                <div className="scoreboard-team">
+                  <TeamJersey team={match.team1} size={48} isFlying={isLiveNow && sport === 'cricket' && !isSecondInnings} />
+                  <h4>{team1Name}</h4>
+                  {isLiveNow && match.liveDetails && (
+                    <div className="scoreboard-score">
+                      {sport === 'cricket' && `${team1Score.runs}/${team1Score.wickets} (${team1Score.overs} ov)`}
+                      {sport === 'soccer' && (match.liveDetails.score1 ?? 2)}
+                      {sport === 'basketball' && (match.liveDetails.score1 ?? 94)}
+                    </div>
+                  )}
+                </div>
 
-          <div className="scoreboard-team">
-            <TeamJersey team={match.team2} size={48} isFlying={isLiveNow && sport === 'cricket' && isSecondInnings} />
-            <h4>{team2Name}</h4>
-            {isLiveNow && match.liveDetails && (
-              <div className="scoreboard-score">
-                {sport === 'cricket' && `${team2Score.runs}/${team2Score.wickets} (${team2Score.overs} ov)`}
-                {sport === 'soccer' && (match.liveDetails.score2 ?? 1)}
-                {sport === 'basketball' && (match.liveDetails.score2 ?? 88)}
+                <div className="scoreboard-vs">
+                  {isLiveNow ? (
+                    <div className="scoreboard-live-badge">
+                      <span className="live-pulse" />
+                      LIVE {
+                        sport === 'cricket' ? (testDayBadge ? `(${testDayBadge})` : (isSecondInnings ? `(INN 2 | ${team2Score.overs}/${maxOvers} OV)` : `(INN 1 | ${team1Score.overs}/${maxOvers} OV)`)) :
+                        sport === 'soccer' ? `(${match.liveDetails?.minute || '74'}' In Play)` : '(In Play)'
+                      }
+                    </div>
+                  ) : (
+                    <div className="scoreboard-time">
+                      <MatchCountdownTimer match={match} />
+                    </div>
+                  )}
+                  <span className="vs-label">VS</span>
+                </div>
+
+                <div className="scoreboard-team">
+                  <TeamJersey team={match.team2} size={48} isFlying={isLiveNow && sport === 'cricket' && isSecondInnings} />
+                  <h4>{team2Name}</h4>
+                  {isLiveNow && match.liveDetails && (
+                    <div className="scoreboard-score">
+                      {sport === 'cricket' && `${team2Score.runs}/${team2Score.wickets} (${team2Score.overs} ov)`}
+                      {sport === 'soccer' && (match.liveDetails.score2 ?? 1)}
+                      {sport === 'basketball' && (match.liveDetails.score2 ?? 88)}
+                    </div>
+                  )}
+                </div>
               </div>
-            )}
-          </div>
-        </div>
+            </>
+          );
+        })()}
 
         {/* Scrollable body: live stats, market tabs, and markets */}
         <div className="match-detail-scroll">

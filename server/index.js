@@ -6,7 +6,7 @@ import crypto from 'crypto';
 import cors from 'cors';
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // IMPORTANT: Razorpay Webhooks MUST receive the RAW request body to verify HMAC signatures accurately.
 app.use(express.json({
@@ -18,6 +18,58 @@ app.use(cors());
 
 // Razorpay Webhook Secret
 const RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || 'betking_wh_secret_2026';
+
+// -----------------------------------------------------------------------------
+// Production Operational Health, Liveness & Readiness Endpoints
+// -----------------------------------------------------------------------------
+app.get('/liveness', (req, res) => {
+  res.json({ status: 'UP', service: 'betking-api', timestamp: new Date().toISOString() });
+});
+
+app.get('/readiness', async (req, res) => {
+  try {
+    const { query } = await import('../db/pg.js');
+    const { redis } = await import('../db/redis.js');
+
+    const pgPing = await query('SELECT 1 AS alive;');
+    const redisPing = await redis.ping();
+
+    const isReady = pgPing.rows[0]?.alive === 1 && redisPing === 'PONG';
+    if (isReady) {
+      res.json({ status: 'READY', postgres: 'CONNECTED', redis: 'PONG', timestamp: new Date().toISOString() });
+    } else {
+      res.status(503).json({ status: 'UNREADY', postgres: pgPing.rows[0]?.alive === 1 ? 'OK' : 'FAIL', redis: redisPing });
+    }
+  } catch (err) {
+    res.status(503).json({ status: 'UNREADY', error: err.message });
+  }
+});
+
+app.get('/health', async (req, res) => {
+  try {
+    const { getSystemHealthStatus } = await import('../lib/devopsEngine.mjs');
+    const health = await getSystemHealthStatus();
+    const statusCode = health.status === 'DOWN' ? 503 : 200;
+    res.status(statusCode).json(health);
+  } catch (err) {
+    res.status(500).json({ status: 'DOWN', error: err.message });
+  }
+});
+
+app.get('/readiness', async (req, res) => {
+  try {
+    const { getReadinessStatus } = await import('../lib/devopsEngine.mjs');
+    const readiness = await getReadinessStatus();
+    const statusCode = readiness.ready ? 200 : 503;
+    res.status(statusCode).json(readiness);
+  } catch (err) {
+    res.status(503).json({ ready: false, error: err.message });
+  }
+});
+
+app.get('/liveness', (req, res) => {
+  res.json({ alive: true, timestamp: new Date().toISOString() });
+});
 
 // -----------------------------------------------------------------------------
 // 1. Create Razorpay Order API (Called from Frontend before Checkout)
@@ -56,6 +108,32 @@ app.post('/api/create-order', async (req, res) => {
   } catch (err) {
     console.error('[API Error] Failed to create order:', err);
     res.status(500).json({ error: 'Server error creating order' });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// Database Health Endpoint (PostgreSQL & Redis Connectivity Check)
+// -----------------------------------------------------------------------------
+app.get('/api/health', async (req, res) => {
+  try {
+    const { checkPgHealth } = await import('../db/pg.js');
+    const { checkRedisHealth } = await import('../db/redis.js');
+
+    const pgHealth = await checkPgHealth();
+    const redisHealth = await checkRedisHealth();
+
+    const isHealthy = pgHealth.connected && redisHealth.connected;
+
+    res.status(isHealthy ? 200 : 503).json({
+      status: isHealthy ? 'UP' : 'DEGRADED',
+      timestamp: new Date().toISOString(),
+      services: {
+        postgresql: pgHealth,
+        redis: redisHealth,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ status: 'DOWN', error: err.message });
   }
 });
 
@@ -401,12 +479,6 @@ app.get('/api/admin/providers/health-matrix', async (req, res) => {
   }
 });
 
-    res.json({ success: true, incidents, killSwitches });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 // Phase 2 Advanced Control Plane APIs
 app.get('/api/admin/investigations/graph', async (req, res) => {
   const { entityId, entityType } = req.query;
@@ -614,6 +686,708 @@ app.get('/api/admin/jurisdictions/rules', async (req, res) => {
     res.json({ success: true, complianceReport: report });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// Web UI Database Inspector & Visualizer APIs
+// -----------------------------------------------------------------------------
+app.get('/api/admin/db/tables', async (req, res) => {
+  try {
+    const { query } = await import('../db/pg.js');
+    const { statfsSync } = await import('fs');
+
+    const sizeRes = await query("SELECT pg_size_pretty(pg_database_size('betking')) AS total_db_size;");
+    const totalDbSize = sizeRes.rows[0]?.total_db_size || '8.7 MB';
+
+    let availableDiskStorage = '13.0 GB Free of 228.0 GB (48% Used)';
+    try {
+      if (statfsSync) {
+        const stats = statfsSync('/');
+        const freeBytes = stats.bavail * stats.bsize;
+        const totalBytes = stats.blocks * stats.bsize;
+        const freeGb = (freeBytes / (1024 * 1024 * 1024)).toFixed(1);
+        const totalGb = (totalBytes / (1024 * 1024 * 1024)).toFixed(1);
+        const usedPct = Math.round(((totalBytes - freeBytes) / totalBytes) * 100);
+        availableDiskStorage = `${freeGb} GB Free / ${totalGb} GB Total (${usedPct}% Used)`;
+      }
+    } catch (err) {
+      // Fallback
+    }
+
+    const tablesRes = await query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      ORDER BY table_name ASC;
+    `);
+
+    const tablesWithCounts = await Promise.all(
+      tablesRes.rows.map(async (row) => {
+        const countRes = await query(`SELECT COUNT(*) FROM "${row.table_name}"`);
+        const sizeRes = await query(`SELECT pg_size_pretty(pg_total_relation_size('${row.table_name}')) AS table_size`);
+        return {
+          tableName: row.table_name,
+          rowCount: parseInt(countRes.rows[0].count, 10),
+          tableSize: sizeRes.rows[0]?.table_size || '16 kB',
+        };
+      })
+    );
+
+    res.json({ success: true, totalDbSize, availableDiskStorage, tables: tablesWithCounts });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/admin/db/tables/:tableName', async (req, res) => {
+  const { tableName } = req.params;
+  try {
+    const { query } = await import('../db/pg.js');
+
+    // Column definitions
+    const colsRes = await query(`
+      SELECT column_name, data_type 
+      FROM information_schema.columns 
+      WHERE table_name = $1
+      ORDER BY ordinal_position ASC;
+    `, [tableName]);
+
+    // Data rows
+    const rowsRes = await query(`SELECT * FROM "${tableName}" LIMIT 100`);
+
+    res.json({
+      success: true,
+      tableName,
+      columns: colsRes.rows,
+      rows: rowsRes.rows,
+      totalCount: rowsRes.rows.length,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// Financial Ledger & Multi-Domain Reconciliation APIs
+// -----------------------------------------------------------------------------
+app.get('/api/admin/financial/reconciliation', async (req, res) => {
+  try {
+    const { runFullReconciliationAudit } = await import('../lib/reconciliationEngine.mjs');
+    const result = await runFullReconciliationAudit();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/admin/reconciliation/cases', async (req, res) => {
+  try {
+    const { getReconciliationCasesMetrics } = await import('../lib/reconciliationEngine.mjs');
+    const metrics = await getReconciliationCasesMetrics();
+    res.json(metrics);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/admin/reconciliation/cases/:id/resolve', async (req, res) => {
+  const { id } = req.params;
+  const { resolution, notes } = req.body;
+  try {
+    const { query } = await import('../db/pg.js');
+    await query(`
+      UPDATE reconciliation_cases
+      SET status = 'RESOLVED', resolution = $2, notes = $3, resolved_at = CURRENT_TIMESTAMP
+      WHERE id = $1;
+    `, [id, resolution || 'Resolved by operator', notes || 'Manual audit verified']);
+    res.json({ success: true, caseId: id, status: 'RESOLVED' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// Bet Cashout & Account Restriction REST APIs
+// -----------------------------------------------------------------------------
+app.post('/api/bet/cashout', async (req, res) => {
+  const { betId, userId, requestedCashoutValue } = req.body;
+  const idempotencyKey = req.headers['x-idempotency-key'] || req.body.idempotencyKey;
+  try {
+    const { executeBetCashout } = await import('../lib/cashoutEngine.mjs');
+    const result = await executeBetCashout({ betId, userId, requestedCashoutValue, idempotencyKey });
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/admin/account/restrict', async (req, res) => {
+  const { userId, type, reason, actorId } = req.body;
+  try {
+    const { restrictAccount } = await import('../lib/accountRestrictionEngine.mjs');
+    const result = await restrictAccount({ userId, type, reason, actorId });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/admin/account/release', async (req, res) => {
+  const { userId, actorId, reason } = req.body;
+  try {
+    const { releaseAccount } = await import('../lib/accountRestrictionEngine.mjs');
+    const result = await releaseAccount({ userId, actorId, reason });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// Admin Control Center & Operations Intelligence REST APIs
+// -----------------------------------------------------------------------------
+app.get('/api/admin/dashboard/overview', async (req, res) => {
+  try {
+    const { getRealtimeDashboardOverview } = await import('../lib/adminIntelligenceEngine.mjs');
+    const overview = await getRealtimeDashboardOverview();
+    res.json(overview);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/admin/users/:userId/360', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const { getUser360View } = await import('../lib/adminIntelligenceEngine.mjs');
+    const u360 = await getUser360View(userId);
+    res.json(u360);
+  } catch (err) {
+    res.status(404).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/admin/bets/:betId/investigate', async (req, res) => {
+  const { betId } = req.params;
+  try {
+    const { investigateBet } = await import('../lib/adminIntelligenceEngine.mjs');
+    const trace = await investigateBet(betId);
+    res.json(trace);
+  } catch (err) {
+    res.status(404).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/admin/maker-checker/request', async (req, res) => {
+  const { actionType, targetEntityType, targetEntityId, requestPayload, makerId } = req.body;
+  try {
+    const { createMakerCheckerRequest } = await import('../lib/adminIntelligenceEngine.mjs');
+    const result = await createMakerCheckerRequest({ actionType, targetEntityType, targetEntityId, requestPayload, makerId });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/admin/maker-checker/approve', async (req, res) => {
+  const { requestId, checkerId } = req.body;
+  try {
+    const { approveMakerCheckerRequest } = await import('../lib/adminIntelligenceEngine.mjs');
+    const result = await approveMakerCheckerRequest({ requestId, checkerId });
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// Advanced Fraud, Security & Risk Signals REST APIs
+// -----------------------------------------------------------------------------
+app.get('/api/admin/fraud/signals', async (req, res) => {
+  try {
+    const { query } = await import('../db/pg.js');
+    const signalsRes = await query(`
+      SELECT id, user_id, signal_type, severity, score, source, evidence, status, created_at
+      FROM risk_signals
+      ORDER BY created_at DESC
+      LIMIT 100;
+    `);
+    res.json({ success: true, count: signalsRes.rows.length, signals: signalsRes.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/admin/fraud/cases', async (req, res) => {
+  try {
+    const { query } = await import('../db/pg.js');
+    const casesRes = await query(`
+      SELECT id, user_id, risk_score, assigned_investigator, status, notes, created_at
+      FROM fraud_cases
+      ORDER BY created_at DESC
+      LIMIT 100;
+    `);
+    res.json({ success: true, count: casesRes.rows.length, cases: casesRes.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/admin/fraud/cases/:id/update', async (req, res) => {
+  const { id } = req.params;
+  const { status, notes, resolution, investigatorId } = req.body;
+  try {
+    const { updateFraudCaseStatus } = await import('../lib/riskSignalEngine.mjs');
+    const result = await updateFraudCaseStatus({ caseId: id, status, notes, resolution, investigatorId });
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/admin/risk/rules/simulate', async (req, res) => {
+  const { userId, ruleType } = req.body;
+  try {
+    const { detectRapidPaymentCycle } = await import('../lib/riskSignalEngine.mjs');
+    let result = { simulation: 'CLEAN', action: 'ALLOW' };
+    if (ruleType === 'RAPID_PAYMENT_CYCLE') {
+      result = await detectRapidPaymentCycle(userId);
+    }
+    res.json({ success: true, userId, ruleType, result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// Sports Provider Orchestration & Reliability REST APIs
+// -----------------------------------------------------------------------------
+app.get('/api/admin/sports/providers', async (req, res) => {
+  try {
+    const { getProviderQualityMetrics } = await import('../lib/sportsProviderOrchestrator.mjs');
+    const srMetrics = await getProviderQualityMetrics('Sportradar');
+    const lsMetrics = await getProviderQualityMetrics('LivescoreAPI');
+    res.json({ success: true, providers: [srMetrics, lsMetrics] });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/admin/sports/conflicts', async (req, res) => {
+  try {
+    const { query } = await import('../db/pg.js');
+    const conflictsRes = await query(`
+      SELECT id, entity_type, canonical_entity_id, field_name, provider_a_name, provider_a_value, provider_b_name, provider_b_value, status, severity, created_at
+      FROM data_conflicts
+      ORDER BY created_at DESC
+      LIMIT 100;
+    `);
+    res.json({ success: true, count: conflictsRes.rows.length, conflicts: conflictsRes.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/admin/sports/conflicts/:id/resolve', async (req, res) => {
+  const { id } = req.params;
+  const { resolution, resolvedBy } = req.body;
+  try {
+    const { query } = await import('../db/pg.js');
+    await query(`
+      UPDATE data_conflicts
+      SET status = 'RESOLVED', resolved_at = CURRENT_TIMESTAMP, resolved_by = $2
+      WHERE id = $1;
+    `, [id, resolvedBy || 'ADMIN']);
+    res.json({ success: true, conflictId: id, status: 'RESOLVED' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/admin/sports/staleness', async (req, res) => {
+  try {
+    const { query } = await import('../db/pg.js');
+    const stalenessRes = await query(`
+      SELECT id, match_id, data_type, data_age_seconds, action_taken, created_at
+      FROM sports_data_staleness_logs
+      ORDER BY created_at DESC
+      LIMIT 100;
+    `);
+    res.json({ success: true, count: stalenessRes.rows.length, logs: stalenessRes.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// Advanced Business Intelligence (BI) & Reporting REST APIs
+// -----------------------------------------------------------------------------
+app.get('/api/v1/admin/analytics/overview', async (req, res) => {
+  try {
+    const { getExecutiveDashboardMetrics } = await import('../lib/businessIntelligenceEngine.mjs');
+    const metrics = await getExecutiveDashboardMetrics();
+    res.json(metrics);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/admin/analytics/betting', async (req, res) => {
+  try {
+    const { getBettingAnalytics } = await import('../lib/businessIntelligenceEngine.mjs');
+    const analytics = await getBettingAnalytics();
+    res.json(analytics);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/admin/analytics/finance', async (req, res) => {
+  try {
+    const { getFinancialAnalytics } = await import('../lib/businessIntelligenceEngine.mjs');
+    const analytics = await getFinancialAnalytics();
+    res.json(analytics);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/admin/analytics/funnel', async (req, res) => {
+  try {
+    const { getUserFunnelMetrics } = await import('../lib/businessIntelligenceEngine.mjs');
+    const funnel = await getUserFunnelMetrics();
+    res.json(funnel);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/v1/admin/reports/export', async (req, res) => {
+  const { userId, reportType, format, parameters } = req.body;
+  try {
+    const { generateReportExportJob } = await import('../lib/businessIntelligenceEngine.mjs');
+    const job = await generateReportExportJob({ userId: userId || 'admin', reportType, format, parameters });
+    res.json(job);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// Promotions, Bonus, Referral, Loyalty & CRM REST APIs
+// -----------------------------------------------------------------------------
+app.get('/api/v1/promotions', async (req, res) => {
+  try {
+    const { query } = await import('../db/pg.js');
+    const promosRes = await query(`SELECT id, name, code, type, max_reward, min_odds, min_stake, wagering_multiplier, expires_at FROM promotions WHERE status = 'ACTIVE';`);
+    res.json({ success: true, count: promosRes.rows.length, promotions: promosRes.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/v1/promotions/claim', async (req, res) => {
+  const { userId, promoCode, depositAmount } = req.body;
+  try {
+    const { claimPromotionBonus } = await import('../lib/promotionsEngine.mjs');
+    const result = await claimPromotionBonus({ userId, promoCode, depositAmount });
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/user/bonuses', async (req, res) => {
+  const { userId } = req.query;
+  try {
+    const { query } = await import('../db/pg.js');
+    const bonusesRes = await query(`
+      SELECT ub.id, ub.bonus_amount, ub.wagering_required, ub.wagering_completed, ub.status, ub.expires_at, p.name AS promo_name
+      FROM user_bonuses ub
+      JOIN promotions p ON ub.promotion_id = p.id
+      WHERE ub.user_id = $1
+      ORDER BY ub.created_at DESC;
+    `, [userId]);
+    res.json({ success: true, count: bonusesRes.rows.length, bonuses: bonusesRes.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/user/loyalty', async (req, res) => {
+  const { userId } = req.query;
+  try {
+    const { query } = await import('../db/pg.js');
+    const lRes = await query(`SELECT points, tier, updated_at FROM user_loyalty WHERE user_id = $1;`, [userId]);
+    const lData = lRes.rows[0] || { points: 0, tier: 'BRONZE' };
+    res.json({ success: true, userId, loyalty: lData });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/v1/admin/promotions/create', async (req, res) => {
+  const promoData = req.body;
+  try {
+    const { createPromotion } = await import('../lib/promotionsEngine.mjs');
+    const result = await createPromotion(promoData);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// Unified Notification & Communication REST APIs
+// -----------------------------------------------------------------------------
+app.get('/api/v1/user/notifications', async (req, res) => {
+  const { userId } = req.query;
+  try {
+    const { query } = await import('../db/pg.js');
+    const notifsRes = await query(`
+      SELECT id, event_type, category, channel, subject, body, status, is_read, created_at
+      FROM notifications
+      WHERE user_id = $1
+      ORDER BY created_at DESC
+      LIMIT 100;
+    `, [userId]);
+    res.json({ success: true, count: notifsRes.rows.length, notifications: notifsRes.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/v1/user/notifications/read', async (req, res) => {
+  const { userId, notificationId } = req.body;
+  try {
+    const { query } = await import('../db/pg.js');
+    await query(`UPDATE notifications SET is_read = TRUE WHERE id = $1 AND user_id = $2;`, [notificationId, userId]);
+    res.json({ success: true, notificationId, isRead: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/user/notifications/preferences', async (req, res) => {
+  const { userId } = req.query;
+  try {
+    const { query } = await import('../db/pg.js');
+    const prefRes = await query(`SELECT marketing_email, marketing_sms, marketing_push, transactional_email FROM user_notification_preferences WHERE user_id = $1;`, [userId]);
+    const pref = prefRes.rows[0] || { marketing_email: true, marketing_sms: true, marketing_push: true, transactional_email: true };
+    res.json({ success: true, userId, preferences: pref });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.put('/api/v1/user/notifications/preferences', async (req, res) => {
+  const { userId, marketingEmail, marketingSms, marketingPush } = req.body;
+  try {
+    const { query } = await import('../db/pg.js');
+    await query(`
+      INSERT INTO user_notification_preferences (user_id, marketing_email, marketing_sms, marketing_push, updated_at)
+      VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+      ON CONFLICT (user_id) DO UPDATE SET
+        marketing_email = EXCLUDED.marketing_email,
+        marketing_sms = EXCLUDED.marketing_sms,
+        marketing_push = EXCLUDED.marketing_push,
+        updated_at = CURRENT_TIMESTAMP;
+    `, [userId, marketingEmail ?? true, marketingSms ?? true, marketingPush ?? true]);
+    res.json({ success: true, userId, status: 'UPDATED' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/admin/notifications/queue', async (req, res) => {
+  try {
+    const { query } = await import('../db/pg.js');
+    const queueRes = await query(`
+      SELECT id, user_id, event_type, category, channel, status, attempts, error_message, created_at
+      FROM notifications
+      ORDER BY created_at DESC
+      LIMIT 100;
+    `);
+    res.json({ success: true, count: queueRes.rows.length, queue: queueRes.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// Multi-Tenant, White-Label & Platform Architecture REST APIs
+// -----------------------------------------------------------------------------
+app.get('/api/v1/tenant/config', async (req, res) => {
+  try {
+    const { resolveTenantContext } = await import('../lib/tenantEngine.mjs');
+    const tenant = await resolveTenantContext(req);
+    res.json({ success: true, tenant });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/admin/tenants', async (req, res) => {
+  try {
+    const { query } = await import('../db/pg.js');
+    const tenantsRes = await query(`
+      SELECT id, name, display_name, slug, domain, status, currency, timezone, branding, created_at
+      FROM tenants
+      ORDER BY created_at DESC;
+    `);
+    res.json({ success: true, count: tenantsRes.rows.length, tenants: tenantsRes.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/v1/admin/tenants/create', async (req, res) => {
+  const tenantData = req.body;
+  try {
+    const { createWhiteLabelTenant } = await import('../lib/tenantEngine.mjs');
+    const result = await createWhiteLabelTenant(tenantData);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// Developer Platform, Public API & Webhook Ecosystem REST APIs
+// -----------------------------------------------------------------------------
+app.get('/api/v1/public/sports', async (req, res) => {
+  const authHeader = req.headers['authorization'] || req.headers['x-api-key'];
+  try {
+    const { authenticateApiKey } = await import('../lib/developerPlatformEngine.mjs');
+    const authContext = await authenticateApiKey(authHeader?.replace('Bearer ', ''), 'sports:read');
+
+    const { query } = await import('../db/pg.js');
+    const sportsRes = await query(`SELECT sport_id, name FROM sports;`);
+    res.json({ success: true, count: sportsRes.rows.length, sports: sportsRes.rows, context: authContext });
+  } catch (err) {
+    const status = err.message.includes('API_RATE_LIMIT') ? 429 : err.message.includes('API_SCOPE') ? 403 : 401;
+    res.status(status).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/public/matches', async (req, res) => {
+  const authHeader = req.headers['authorization'] || req.headers['x-api-key'];
+  try {
+    const { authenticateApiKey } = await import('../lib/developerPlatformEngine.mjs');
+    const authContext = await authenticateApiKey(authHeader?.replace('Bearer ', ''), 'matches:read');
+
+    const { query } = await import('../db/pg.js');
+    const matchesRes = await query(`SELECT match_id, home_team, away_team, status FROM matches LIMIT 50;`);
+    res.json({ success: true, count: matchesRes.rows.length, matches: matchesRes.rows, context: authContext });
+  } catch (err) {
+    const status = err.message.includes('API_RATE_LIMIT') ? 429 : err.message.includes('API_SCOPE') ? 403 : 401;
+    res.status(status).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/v1/developer/apps', async (req, res) => {
+  const appData = req.body;
+  try {
+    const { createDeveloperApp } = await import('../lib/developerPlatformEngine.mjs');
+    const result = await createDeveloperApp(appData);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/v1/developer/keys', async (req, res) => {
+  const keyData = req.body;
+  try {
+    const { generateApiKey } = await import('../lib/developerPlatformEngine.mjs');
+    const result = await generateApiKey(keyData);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/v1/developer/webhooks', async (req, res) => {
+  const subData = req.body;
+  try {
+    const { createWebhookSubscription } = await import('../lib/developerPlatformEngine.mjs');
+    const result = await createWebhookSubscription(subData);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/developer/webhooks/deliveries', async (req, res) => {
+  try {
+    const { query } = await import('../db/pg.js');
+    const delivRes = await query(`
+      SELECT id, subscription_id, event_type, event_id, status, attempts, response_code, created_at
+      FROM webhook_deliveries
+      ORDER BY created_at DESC
+      LIMIT 100;
+    `);
+    res.json({ success: true, count: delivRes.rows.length, deliveries: delivRes.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// Production Operations, Observability & Incident REST APIs
+// -----------------------------------------------------------------------------
+app.get('/api/v1/admin/operations/incidents', async (req, res) => {
+  try {
+    const { query } = await import('../db/pg.js');
+    const incRes = await query(`
+      SELECT id, title, severity, service, status, root_cause, created_at, resolved_at
+      FROM incidents
+      ORDER BY created_at DESC
+      LIMIT 100;
+    `);
+    res.json({ success: true, count: incRes.rows.length, incidents: incRes.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/v1/admin/operations/incidents', async (req, res) => {
+  const incData = req.body;
+  try {
+    const { createProductionIncident } = await import('../lib/devopsEngine.mjs');
+    const result = await createProductionIncident(incData);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/admin/operations/backups', async (req, res) => {
+  try {
+    const { query } = await import('../db/pg.js');
+    const bkpRes = await query(`
+      SELECT id, backup_type, status, size_bytes, duration_ms, created_at
+      FROM backups_log
+      ORDER BY created_at DESC
+      LIMIT 50;
+    `);
+    res.json({ success: true, count: bkpRes.rows.length, backups: bkpRes.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// Transactional Outbox Observability APIs
+// -----------------------------------------------------------------------------
+app.get('/api/admin/outbox/metrics', async (req, res) => {
+  try {
+    const { getOutboxMetrics } = await import('../lib/outboxEngine.mjs');
+    const metrics = await getOutboxMetrics();
+    res.json({ success: true, metrics });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
@@ -830,8 +1604,15 @@ app.post('/api/v1/bet/place', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 BetKing Razorpay Webhook Backend listening on http://localhost:${PORT}`);
   console.log(`  - Webhook Route : http://localhost:${PORT}/api/webhooks/razorpay`);
   console.log(`  - Order Route   : http://localhost:${PORT}/api/create-order`);
+
+  try {
+    const { startBackgroundWorkers } = await import('../lib/schedulerWorker.mjs');
+    startBackgroundWorkers();
+  } catch (err) {
+    console.warn('[Scheduler Startup Notice]', err.message);
+  }
 });

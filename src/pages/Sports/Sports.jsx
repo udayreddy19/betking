@@ -4,6 +4,7 @@ import { FiSearch, FiHome, HiOutlineChevronDown, HiOutlineChevronUp, FiMessageCi
 import FilterChips from '../../components/FilterChips/FilterChips';
 import SportIcon from '../../components/SportIcon/SportIcon';
 import TeamJersey from '../../components/TeamJersey/TeamJersey';
+import MatchCountdownTimer from '../../components/MatchCountdownTimer/MatchCountdownTimer';
 import BetSlip from '../../components/BetSlip/BetSlip';
 import LiveMatchGraphicWidget from '../../components/LiveMatchGraphicWidget/LiveMatchGraphicWidget';
 import ErrorBoundary from '../../components/ErrorBoundary/ErrorBoundary';
@@ -14,6 +15,7 @@ import { useBetSlip } from '../../context/BetSlipContext';
 import { useAuth } from '../../context/AuthContext';
 import { isMatchBettable, isTrulyLiveMatch, getMatchState } from '../../utils/matchBetting';
 import { resolveCricketTeamScores } from '../../utils/cricketScores';
+import { isTestMatch, getTestMatchDayLabel, formatMatchCountdown } from '../../utils/cricketFormat';
 import { prefetchMatchDetail } from '../../services/matchDetailPoller';
 import { useMatchDetail } from '../../hooks/useMatchDetail';
 import { useCentralizedMatchState } from '../../hooks/useCentralizedMatchState';
@@ -814,6 +816,10 @@ export default function Sports() {
 
                 const matchFormatBadge = (typeof activeMatch.matchType === 'string' ? activeMatch.matchType : typeof activeMatch.matchFormat === 'string' ? activeMatch.matchFormat : typeof activeMatch.format === 'string' ? activeMatch.format : (activeMatch.sport === 'cricket' ? 'T20' : activeMatch.sport)).toUpperCase();
 
+                const isTest = isTestMatch(activeMatch) || matchFormatBadge === 'TEST';
+                const testDayBadge = isTest ? getTestMatchDayLabel(activeMatch) : null;
+                const countdownText = !isLive ? formatMatchCountdown(activeMatch) : null;
+
                 const rawVenue = activeMatch.venue || activeMatch.ground || activeMatch.liveDetails?.venue;
                 const venueText = typeof rawVenue === 'string'
                   ? rawVenue
@@ -826,13 +832,25 @@ export default function Sports() {
 
                 return (
                   <div className="sports-match-banner sports-match-banner--desktop-only">
-                    <div className="sports-match-banner-time">
-                      {isLive && <span className="sports-live-badge-dot" />}
-                      {matchTimeLabel}
+                    <div className="sports-match-banner-time" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '12px' }}>
+                      {isLive ? (
+                        <>
+                          <span className="sports-live-badge-dot" />
+                          <span style={{ color: '#ef4444', fontWeight: 800 }}>LIVE</span>
+                          <MatchCountdownTimer match={activeMatch} style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)' }} />
+                        </>
+                      ) : (
+                        <MatchCountdownTimer match={activeMatch} style={{ fontSize: '0.95rem', padding: '6px 18px' }} />
+                      )}
                     </div>
 
                     <div className="sports-match-banner-meta-bar">
                       <span className="sports-format-badge">{matchFormatBadge}</span>
+                      {testDayBadge && (
+                        <span className="sports-test-day-badge" style={{ background: '#7c3aed', color: '#ffffff', padding: '3px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 900, boxShadow: '0 2px 8px rgba(124, 58, 237, 0.3)' }}>
+                          📅 {testDayBadge}
+                        </span>
+                      )}
                       {seriesText && <span className="sports-series-name">🏆 {seriesText}</span>}
                       {venueText && <span className="sports-venue-tag">📍 {venueText}</span>}
                     </div>
@@ -863,9 +881,11 @@ export default function Sports() {
                       </div>
                     )}
 
-                    {commText && (
-                      <p className="sports-match-banner-commentary">{commText}</p>
-                    )}
+                    <p className="sports-match-banner-commentary">
+                      {testDayBadge
+                        ? `📅 ${testDayBadge} · ${commText || 'Match play active'}`
+                        : (!isLive ? `⏱️ Match ${formatMatchCountdown(activeMatch)}` : (commText || 'Match play active'))}
+                    </p>
                   </div>
                 );
               })()}

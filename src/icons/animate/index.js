@@ -191,3 +191,4 @@ export const FiMenu = withAnimatedIcon(MenuIcon);
 export const FiSend = withAnimatedIcon(SendIcon);
 export const FiUser = withAnimatedIcon(UserIcon);
 export const FiHelpCircle = withAnimatedIcon(InfoIcon);
+export const FiDatabase = withAnimatedIcon(ZapIcon);

@@ -70,7 +70,7 @@ export default function DepositModal() {
             setIsSuccess(true);
           },
           prefill: {
-            name: user?.displayName || 'Uday Reddy',
+            name: user?.displayName || 'John Doe',
             email: user?.username ? `${user.username}@betking.com` : 'uday@example.com',
             contact: '9876543210',
             vpa: upiId.trim() || 'udayreddy@okicici',

@@ -1,0 +1,61 @@
+-- Migration 007: Risk Signals, Fraud Cases & Device Fingerprints
+
+-- 1. RISK SIGNALS TABLE
+CREATE TABLE IF NOT EXISTS risk_signals (
+  id VARCHAR(64) PRIMARY KEY,
+  user_id VARCHAR(64) NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  signal_type VARCHAR(64) NOT NULL, -- DEVICE_CLUSTER | IP_CLUSTER | RAPID_PAYMENT_CYCLE | STAKE_VELOCITY | CREDENTIAL_CHANGE
+  severity VARCHAR(32) DEFAULT 'MEDIUM', -- LOW | MEDIUM | HIGH | CRITICAL
+  score INT DEFAULT 10,
+  source VARCHAR(64) DEFAULT 'SYSTEM',
+  evidence JSONB,
+  status VARCHAR(32) DEFAULT 'NEW', -- NEW | REVIEWING | CONFIRMED | DISMISSED | ESCALATED
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  reviewed_at TIMESTAMP WITH TIME ZONE,
+  reviewed_by VARCHAR(64)
+);
+
+CREATE INDEX IF NOT EXISTS idx_risk_signals_user ON risk_signals(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_risk_signals_type ON risk_signals(signal_type, severity);
+
+-- 2. FRAUD CASES MANAGEMENT TABLE
+CREATE TABLE IF NOT EXISTS fraud_cases (
+  id VARCHAR(64) PRIMARY KEY,
+  user_id VARCHAR(64) NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  risk_score INT DEFAULT 0,
+  assigned_investigator VARCHAR(64),
+  status VARCHAR(32) DEFAULT 'OPEN', -- OPEN | INVESTIGATING | ESCALATED | CONFIRMED | DISMISSED | RESOLVED
+  notes TEXT,
+  resolution TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  resolved_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX IF NOT EXISTS idx_fraud_cases_user ON fraud_cases(user_id, status);
+
+-- 3. DEVICE FINGERPRINTS & RELATIONSHIPS TABLE
+CREATE TABLE IF NOT EXISTS device_fingerprints (
+  id VARCHAR(64) PRIMARY KEY,
+  user_id VARCHAR(64) NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  device_hash VARCHAR(128) NOT NULL,
+  platform VARCHAR(64),
+  browser VARCHAR(64),
+  os VARCHAR(64),
+  ip_address VARCHAR(45),
+  first_seen TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  last_seen TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_device_hash ON device_fingerprints(device_hash);
+CREATE INDEX IF NOT EXISTS idx_device_ip ON device_fingerprints(ip_address);
+
+-- 4. CONFIGURABLE RISK RULES ENGINE TABLE
+CREATE TABLE IF NOT EXISTS risk_rules (
+  id VARCHAR(64) PRIMARY KEY,
+  rule_name VARCHAR(128) NOT NULL,
+  condition JSONB NOT NULL,
+  action VARCHAR(64) NOT NULL,
+  enabled BOOLEAN DEFAULT TRUE,
+  version INT DEFAULT 1,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);

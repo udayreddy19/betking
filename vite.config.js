@@ -9,6 +9,16 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     strictPort: true,
+    proxy: {
+      '/api/admin/db': {
+        target: 'http://127.0.0.1:5001',
+        changeOrigin: true,
+      },
+      '/api/health': {
+        target: 'http://127.0.0.1:5001',
+        changeOrigin: true,
+      },
+    },
   },
   plugins: [react(), liveScoresApiPlugin(), sportsApiPlatformPlugin()],
   build: {

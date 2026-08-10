@@ -4,8 +4,10 @@ import { useBetSlip } from '../../context/BetSlipContext';
 import MatchDetailModal from '../MatchDetailModal/MatchDetailModal';
 import SportIcon from '../SportIcon/SportIcon';
 import TeamJersey from '../TeamJersey/TeamJersey';
+import MatchCountdownTimer from '../MatchCountdownTimer/MatchCountdownTimer';
 import { isMatchBettable, isMatchLive, isMatchFinished, hasCricketPlayStarted } from '../../utils/matchBetting';
 import { resolveCricketTeamScores } from '../../utils/cricketScores';
+import { isTestMatch, getTestMatchDayLabel, formatMatchCountdown } from '../../utils/cricketFormat';
 import './MatchCard.css';
 
 const sportLabels = {
@@ -100,12 +102,16 @@ export default function MatchCard({ match, variant = 'default' }) {
     inlineScore = `${team1Score} - ${team2Score}`;
   }
 
+  const isTest = isTestMatch(match);
+  const testDayBadge = isTest ? getTestMatchDayLabel(match) : null;
+  const countdownText = !isLiveNow && !isFinished ? formatMatchCountdown(match) : null;
+
   const sportLabel = sportLabels[match.sport] || match.sport;
   const timeLabel = isLiveNow
     ? `LIVE${inlineScore ? ` · ${inlineScore}` : ''}`
     : isFinished
       ? 'Finished'
-      : (match.time || 'Scheduled');
+      : (countdownText || match.time || 'Scheduled');
 
   const jerseySize = isHome ? 52 : 46;
 
@@ -132,7 +138,7 @@ export default function MatchCard({ match, variant = 'default' }) {
           </span>
           <span className={`match-card-sport-tag ${isHome ? 'match-card-sport-tag--home' : ''}`} style={isHome ? undefined : { background: match.sportColor }}>
             <SportIcon sport={match.sport} className="match-card-sport-icon" />
-            {isHome ? sportLabel : match.sport}
+            {isTest ? (testDayBadge ? `TEST (${testDayBadge.split('·')[0].trim()})` : 'TEST') : (isHome ? sportLabel : match.sport)}
           </span>
         </div>
 
@@ -142,7 +148,7 @@ export default function MatchCard({ match, variant = 'default' }) {
           ) : isLiveNow ? (
             <>
               <span className="live-dot" />
-              LIVE
+              LIVE {isTest && testDayBadge ? `· ${testDayBadge.split('·')[0].trim()}` : ''}
               {inlineScore && <span className="match-card-score-inline">{inlineScore}</span>}
             </>
           ) : isFinished ? (
@@ -153,10 +159,7 @@ export default function MatchCard({ match, variant = 'default' }) {
               )}
             </>
           ) : (
-            <>
-              <span className="upcoming-badge">UPCOMING</span>
-              {match.time}
-            </>
+            <MatchCountdownTimer match={match} style={{ fontSize: '0.78rem', padding: '2px 8px' }} />
           )}
         </div>
 
