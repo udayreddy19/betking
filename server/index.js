@@ -16,35 +16,20 @@ app.use(express.json({
 }));
 app.use(cors());
 
+// ── Rate Limiting & Auth Middleware ──
+import { loginRateLimiter, registerRateLimiter } from './middleware/rateLimiter.js';
+import { adminAuth, requireRole } from './middleware/adminAuth.js';
+
+// ── Mount Modular Admin v2 Router (Phases 1-21: Advanced Operations & Governance) ──
+import adminRouter from './routes/index.js';
+app.use('/api/admin/v2', adminRouter);
+
 // Razorpay Webhook Secret
 const RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || 'betking_wh_secret_2026';
 
 // -----------------------------------------------------------------------------
 // Production Operational Health, Liveness & Readiness Endpoints
 // -----------------------------------------------------------------------------
-app.get('/liveness', (req, res) => {
-  res.json({ status: 'UP', service: 'betking-api', timestamp: new Date().toISOString() });
-});
-
-app.get('/readiness', async (req, res) => {
-  try {
-    const { query } = await import('../db/pg.js');
-    const { redis } = await import('../db/redis.js');
-
-    const pgPing = await query('SELECT 1 AS alive;');
-    const redisPing = await redis.ping();
-
-    const isReady = pgPing.rows[0]?.alive === 1 && redisPing === 'PONG';
-    if (isReady) {
-      res.json({ status: 'READY', postgres: 'CONNECTED', redis: 'PONG', timestamp: new Date().toISOString() });
-    } else {
-      res.status(503).json({ status: 'UNREADY', postgres: pgPing.rows[0]?.alive === 1 ? 'OK' : 'FAIL', redis: redisPing });
-    }
-  } catch (err) {
-    res.status(503).json({ status: 'UNREADY', error: err.message });
-  }
-});
-
 app.get('/health', async (req, res) => {
   try {
     const { getSystemHealthStatus } = await import('../lib/devopsEngine.mjs');
@@ -67,8 +52,88 @@ app.get('/readiness', async (req, res) => {
   }
 });
 
-app.get('/liveness', (req, res) => {
-  res.json({ alive: true, timestamp: new Date().toISOString() });
+app.get('/liveness', async (req, res) => {
+  try {
+    const { getLivenessStatus } = await import('../lib/devopsEngine.mjs');
+    res.json(getLivenessStatus());
+  } catch {
+    res.json({ alive: true, timestamp: new Date().toISOString() });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// Authentication Endpoints with Rate Limiting (Task 2)
+// -----------------------------------------------------------------------------
+app.post(['/api/auth/register', '/api/v1/auth/register'], registerRateLimiter, async (req, res) => {
+  try {
+    const { email, password, phone, userId: reqUserId } = req.body;
+    if (!email || !password || password.length < 6) {
+      return res.status(400).json({ error: 'Valid email and password (min 6 chars) required', code: 'INVALID_INPUT' });
+    }
+
+    const { query, withTransaction } = await import('../db/pg.js');
+    const { generateAdminToken } = await import('./middleware/adminAuth.js');
+
+    const existing = await query('SELECT user_id FROM users WHERE email = $1', [email]);
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ error: 'User with this email already exists', code: 'EMAIL_EXISTS' });
+    }
+
+    const userId = reqUserId || `usr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    const passHash = crypto.createHash('sha256').update(password).digest('hex');
+
+    await withTransaction(async (client) => {
+      await client.query(
+        `INSERT INTO users (user_id, email, phone, password_hash)
+         VALUES ($1, $2, $3, $4)`,
+        [userId, email, phone || null, passHash]
+      );
+      await client.query(
+        `INSERT INTO wallets (wallet_id, user_id, balance, currency)
+         VALUES ($1, $2, 0.00, 'INR')
+         ON CONFLICT (user_id) DO NOTHING`,
+        [`wal_${userId}`, userId]
+      );
+    });
+
+    const token = generateAdminToken(userId, 'USER', 'betking_in');
+    res.status(201).json({
+      success: true,
+      token,
+      user: { userId, email, phone: phone || null },
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Registration failed', message: err.message });
+  }
+});
+
+app.post(['/api/auth/login', '/api/v1/auth/login'], loginRateLimiter, async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password required', code: 'MISSING_CREDENTIALS' });
+    }
+
+    const { query } = await import('../db/pg.js');
+    const { generateAdminToken } = await import('./middleware/adminAuth.js');
+
+    const passHash = crypto.createHash('sha256').update(password).digest('hex');
+    const userRes = await query('SELECT user_id, email, phone, password_hash FROM users WHERE email = $1', [email]);
+
+    if (userRes.rows.length === 0 || (userRes.rows[0].password_hash && userRes.rows[0].password_hash !== passHash)) {
+      return res.status(401).json({ error: 'Invalid email or password', code: 'INVALID_CREDENTIALS' });
+    }
+
+    const user = userRes.rows[0];
+    const token = generateAdminToken(user.user_id, 'USER', 'betking_in');
+    res.json({
+      success: true,
+      token,
+      user: { userId: user.user_id, email: user.email, phone: user.phone },
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Login failed', message: err.message });
+  }
 });
 
 // -----------------------------------------------------------------------------
@@ -138,77 +203,79 @@ app.get('/api/health', async (req, res) => {
 });
 
 // -----------------------------------------------------------------------------
-// 2. Razorpay Webhook Endpoint (Configured in Razorpay Dashboard)
+// Dev Endpoint for OddsEngineV3 (Isolated Testing)
 // -----------------------------------------------------------------------------
-app.post('/api/webhooks/razorpay', (req, res) => {
+app.get('/api/dev/odds-v3/:matchId', async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { generate } = await import('../lib/odds-v3/OddsEngineV3.mjs');
+    const { createCanonicalMatchState } = await import('../lib/odds-v3/models/CanonicalMatchState.mjs');
+
+    const matchState = createCanonicalMatchState({
+      matchId: matchId || 'cric_hundred_m_1',
+      sport: 'CRICKET',
+      format: 'THE_HUNDRED',
+      status: 'LIVE',
+      team1: { id: 'OVI', name: 'Oval Invincibles', runs: 142, wickets: 5, balls: 100 },
+      team2: { id: 'TRT', name: 'Trent Rockets', runs: 98, wickets: 3, balls: 58 },
+      currentInnings: 2,
+      battingTeamId: 'TRT',
+      bowlingTeamId: 'OVI',
+      target: 143,
+      runsRequired: 45,
+      ballsPerInnings: 100,
+      ballsCompleted: 58,
+      ballsRemaining: 42,
+      providerTimestamp: Date.now(),
+      stateVersion: 1,
+    });
+
+    const snapshot = generate(matchState, { debug: true });
+    res.json(snapshot);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// 2. Razorpay Webhook & Payment Endpoints
+// -----------------------------------------------------------------------------
+app.post('/api/webhooks/razorpay', async (req, res) => {
   const signature = req.headers['x-razorpay-signature'];
-  const webhookSecret = RAZORPAY_WEBHOOK_SECRET;
+  try {
+    const { depositEngine } = await import('../lib/depositEngine.mjs');
+    const result = await depositEngine.processWebhook({
+      rawBody: req.rawBody,
+      signature,
+      payload: req.body.payload,
+      event: req.body.event,
+    }, req.correlationId);
 
-  // Security Check 1: Ensure signature header exists
-  if (!signature) {
-    console.warn('[Webhook Warning] Missing x-razorpay-signature header');
-    return res.status(400).json({ error: 'Missing signature' });
+    res.json(result);
+  } catch (err) {
+    const statusCode = err.message?.includes('INVALID_SIGNATURE') ? 400 : 500;
+    res.status(statusCode).json({ error: err.message || 'Webhook processing failed' });
   }
+});
 
-  // Security Check 2: Verify HMAC SHA256 signature using raw body & secret
-  const hmac = crypto.createHmac('sha256', webhookSecret);
-  hmac.update(req.rawBody);
-  const digest = hmac.digest('hex');
-
-  if (digest !== signature) {
-    console.error('[Webhook Error] Invalid signature match! Possible unauthorized request.');
-    return res.status(400).json({ error: 'Invalid webhook signature' });
+app.post('/api/v1/payments/create-order', async (req, res) => {
+  try {
+    const { depositEngine } = await import('../lib/depositEngine.mjs');
+    const result = await depositEngine.createOrder(req.body, req.correlationId);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
+});
 
-  // Signature Verified! Extract payload and event type
-  const event = req.body.event;
-  const payload = req.body.payload;
-
-  console.log(`\n======================================================`);
-  console.log(`[VERIFIED WEBHOOK EVENT]: ${event}`);
-  console.log(`======================================================`);
-
-  switch (event) {
-    case 'payment.captured': {
-      const payment = payload.payment.entity;
-      const amountInINR = payment.amount / 100;
-      const userId = payment.notes?.userId || 'udayreddy12';
-      const paymentId = payment.id;
-      const orderId = payment.order_id;
-      const method = payment.method; // 'upi', 'card', 'netbanking'
-
-      console.log(`[SUCCESS] Payment Captured!`);
-      console.log(` -> Payment ID : ${paymentId}`);
-      console.log(` -> Order ID   : ${orderId}`);
-      console.log(` -> User ID    : ${userId}`);
-      console.log(` -> Amount     : ₹${amountInINR}`);
-      console.log(` -> Method     : ${method}`);
-
-      // TODO: Update your Database here!
-      // await db.users.update({ username: userId }, { $inc: { balance: amountInINR } });
-      // await db.transactions.create({ userId, amount: amountInINR, paymentId, status: 'SUCCESS' });
-      break;
-    }
-
-    case 'payment.failed': {
-      const payment = payload.payment.entity;
-      const errorReason = payment.error_description || 'Unknown error';
-      console.log(`[FAILED] Payment Failed for ${payment.id}: ${errorReason}`);
-      break;
-    }
-
-    case 'refund.processed': {
-      const refund = payload.refund.entity;
-      console.log(`[REFUND] Refund Processed for Payment ${refund.payment_id}: ₹${refund.amount / 100}`);
-      break;
-    }
-
-    default:
-      console.log(`[INFO] Unhandled event type: ${event}`);
+app.post('/api/v1/withdrawals/request', async (req, res) => {
+  try {
+    const { withdrawalEngine } = await import('../lib/withdrawalEngine.mjs');
+    const result = await withdrawalEngine.requestWithdrawal(req.body, req.correlationId);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
-
-  // Acknowledge receipt to Razorpay (Must respond within 5 seconds with 200 OK)
-  res.status(200).json({ status: 'ok' });
 });
 
 // -----------------------------------------------------------------------------
@@ -822,22 +889,40 @@ app.post('/api/bet/cashout', async (req, res) => {
   }
 });
 
-app.post('/api/admin/account/restrict', async (req, res) => {
+app.post('/api/admin/account/restrict', adminAuth, requireRole('SUPER_ADMIN', 'OPERATIONS_ADMIN', 'RISK_ANALYST'), async (req, res) => {
   const { userId, type, reason, actorId } = req.body;
   try {
     const { restrictAccount } = await import('../lib/accountRestrictionEngine.mjs');
-    const result = await restrictAccount({ userId, type, reason, actorId });
+    const { enterpriseAuditEngine } = await import('../lib/enterpriseAuditEngine.mjs');
+    const result = await restrictAccount({ userId, type, reason, actorId: actorId || req.admin?.id });
+
+    enterpriseAuditEngine.recordEvent({
+      who: req.admin?.id || actorId || 'admin',
+      what: 'ACCOUNT_RESTRICTED',
+      reason,
+      referenceId: userId,
+    });
+
     res.json(result);
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-app.post('/api/admin/account/release', async (req, res) => {
+app.post('/api/admin/account/release', adminAuth, requireRole('SUPER_ADMIN', 'OPERATIONS_ADMIN', 'RISK_ANALYST'), async (req, res) => {
   const { userId, actorId, reason } = req.body;
   try {
     const { releaseAccount } = await import('../lib/accountRestrictionEngine.mjs');
-    const result = await releaseAccount({ userId, actorId, reason });
+    const { enterpriseAuditEngine } = await import('../lib/enterpriseAuditEngine.mjs');
+    const result = await releaseAccount({ userId, actorId: actorId || req.admin?.id, reason });
+
+    enterpriseAuditEngine.recordEvent({
+      who: req.admin?.id || actorId || 'admin',
+      what: 'ACCOUNT_RELEASED',
+      reason,
+      referenceId: userId,
+    });
+
     res.json(result);
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -877,6 +962,212 @@ app.get('/api/admin/bets/:betId/investigate', async (req, res) => {
   } catch (err) {
     res.status(404).json({ success: false, error: err.message });
   }
+});
+
+// -----------------------------------------------------------------------------
+// 13 CORE OPERATIONAL DOMAIN ADMIN APIS
+// -----------------------------------------------------------------------------
+app.get('/api/admin/control-tower/metrics', async (req, res) => {
+  res.json({
+    activeUsers: 1420,
+    openBets: 384,
+    liveMatches: 14,
+    todayTurnover: 482900,
+    ggr: 42100,
+    pendingWithdrawals: 12,
+    riskAlerts: 3,
+    openTickets: 5,
+    systemStatus: 'HEALTHY',
+  });
+});
+
+app.get('/api/admin/customers', async (req, res) => {
+  res.json({
+    users: [
+      { id: 'usr-101', name: 'Uday Reddy', email: 'uday@betking.com', phone: '+91 9876543210', balance: 14500, kyc: 'APPROVED', status: 'ACTIVE', risk: 'LOW', regDate: '2026-01-15' },
+      { id: 'usr-102', name: 'Rahul Sharma', email: 'rahul.s@gmail.com', phone: '+91 9123456789', balance: 3200, kyc: 'PENDING', status: 'ACTIVE', risk: 'MEDIUM', regDate: '2026-02-10' },
+      { id: 'usr-103', name: 'Vikram Singh', email: 'vikram.v@yahoo.com', phone: '+91 9988776655', balance: 0, kyc: 'REJECTED', status: 'RESTRICTED', risk: 'HIGH', regDate: '2026-03-01' },
+    ],
+  });
+});
+
+app.post('/api/admin/customers/:id/restrict', async (req, res) => {
+  const { id } = req.params;
+  const { action, reason } = req.body;
+  res.json({ success: true, userId: id, action, reason, timestamp: new Date().toISOString() });
+});
+
+app.get('/api/admin/sports/catalog', async (req, res) => {
+  res.json({
+    sports: [
+      { id: 'sp-cric', name: 'Cricket', competitions: 18, activeMatches: 14, provider: 'Cricbuzz / Fancode', latency: '120ms', status: 'ACTIVE' },
+      { id: 'sp-soc', name: 'Soccer', competitions: 34, activeMatches: 22, provider: 'Sportradar', latency: '180ms', status: 'ACTIVE' },
+      { id: 'sp-ten', name: 'Tennis', competitions: 12, activeMatches: 8, provider: 'Betradar', latency: '150ms', status: 'ACTIVE' },
+      { id: 'sp-srl', name: 'Virtual Cricket SRL', competitions: 4, activeMatches: 6, provider: 'IPL SRL Simulation Engine', latency: '40ms', status: 'ACTIVE' },
+    ],
+  });
+});
+
+app.get('/api/admin/trading/exposure', async (req, res) => {
+  res.json({
+    exposures: [
+      { matchId: 'm1', match: 'Madurai Panthers vs SKM Salem Spartans', market: 'Winner (incl. super over)', exposure: 124500, liability: 188000, riskScore: 'HIGH', status: 'ACTIVE' },
+      { matchId: 'm2', match: 'West Indies vs Pakistan', market: 'Total Match Sixes', exposure: 45000, liability: 82000, riskScore: 'MEDIUM', status: 'ACTIVE' },
+      { matchId: 'm3', match: 'India vs Sri Lanka', market: '1st Innings Runs', exposure: 98000, liability: 142000, riskScore: 'HIGH', status: 'ACTIVE' },
+    ],
+  });
+});
+
+app.post('/api/admin/trading/suspend-market', adminAuth, requireRole('SUPER_ADMIN', 'TRADING_ADMIN', 'RISK_ANALYST'), async (req, res) => {
+  try {
+    const { marketId, marketKey, reason = 'MANUAL_ADMIN' } = req.body;
+    const targetMarketId = marketId || marketKey;
+    if (!targetMarketId) return res.status(400).json({ error: 'marketId or marketKey is required' });
+
+    const { marketSuspensionEngine } = await import('../lib/marketSuspensionEngine.mjs');
+    const { logAdminAction } = await import('./middleware/auditLogger.js');
+
+    const result = await marketSuspensionEngine.addSuspensionCause(targetMarketId, reason, 'ADMIN', req.admin?.id || 'admin');
+
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: targetMarketId,
+      action: 'MARKET_SUSPENDED',
+      details: { reason, activeCauses: result.activeCauses },
+    });
+
+    res.json({ success: true, ...result, timestamp: new Date().toISOString() });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/admin/trading/resume-market', adminAuth, requireRole('SUPER_ADMIN', 'TRADING_ADMIN', 'RISK_ANALYST'), async (req, res) => {
+  try {
+    const { marketId, marketKey, reason = 'MANUAL_ADMIN' } = req.body;
+    const targetMarketId = marketId || marketKey;
+    if (!targetMarketId) return res.status(400).json({ error: 'marketId or marketKey is required' });
+
+    const { marketSuspensionEngine } = await import('../lib/marketSuspensionEngine.mjs');
+    const { logAdminAction } = await import('./middleware/auditLogger.js');
+
+    const result = await marketSuspensionEngine.clearSuspensionCause(targetMarketId, reason);
+
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: targetMarketId,
+      action: 'MARKET_RESUMED',
+      details: { clearedReason: reason, activeCauses: result.activeCauses },
+    });
+
+    res.json({ success: true, ...result, timestamp: new Date().toISOString() });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/admin/betting/bets', async (req, res) => {
+  res.json({
+    bets: [
+      { id: 'bet-8801', userId: 'usr-101', match: 'Madurai Panthers vs SKM Salem Spartans', selection: 'Madurai Panthers', stake: 1000, odds: 1.51, payout: 1510, status: 'OPEN', date: '2026-08-10 20:45' },
+      { id: 'bet-8802', userId: 'usr-102', match: 'India vs Sri Lanka', selection: 'India', stake: 500, odds: 1.35, payout: 675, status: 'SETTLED_WON', date: '2026-08-10 19:30' },
+      { id: 'bet-8803', userId: 'usr-103', match: 'West Indies vs Pakistan', selection: 'Over 12.5 Sixes', stake: 2000, odds: 1.85, payout: 0, status: 'SETTLED_LOST', date: '2026-08-10 18:15' },
+    ],
+  });
+});
+
+app.post('/api/admin/betting/settle', async (req, res) => {
+  const { betId, outcome } = req.body;
+  res.json({ success: true, betId, outcome, status: `SETTLED_${outcome}`, timestamp: new Date().toISOString() });
+});
+
+app.get('/api/admin/finance/withdrawals/pending', async (req, res) => {
+  res.json({
+    requests: [
+      { id: 'w-4401', userId: 'usr-101', userName: 'Uday Reddy', amount: 5000, method: 'Razorpay UPI', status: 'PENDING_APPROVAL', requestedAt: '2026-08-10 20:30', utr: 'UPI/6281920192' },
+      { id: 'w-4402', userId: 'usr-102', userName: 'Rahul Sharma', amount: 12000, method: 'IMPS Bank Transfer', status: 'PENDING_APPROVAL', requestedAt: '2026-08-10 19:45', utr: 'IMPS/9812938192' },
+    ],
+  });
+});
+
+app.post('/api/admin/finance/withdrawals/:id/approve', async (req, res) => {
+  const { id } = req.params;
+  res.json({ success: true, requestId: id, status: 'APPROVED', payoutTriggered: true, timestamp: new Date().toISOString() });
+});
+
+app.get('/api/admin/support/tickets', async (req, res) => {
+  res.json({
+    tickets: [
+      { id: 't-1001', userId: 'usr-101', userName: 'Uday Reddy', subject: 'Withdrawal delay query', category: 'Finance', priority: 'HIGH', status: 'OPEN', agent: 'Support Agent 1', createdAt: '2026-08-10 20:10', sla: 'WITHIN_SLA' },
+      { id: 't-1002', userId: 'usr-102', userName: 'Rahul Sharma', subject: 'Bet settlement query on T20 match', category: 'Betting', priority: 'MEDIUM', status: 'UNASSIGNED', agent: 'None', createdAt: '2026-08-10 19:15', sla: 'WITHIN_SLA' },
+    ],
+  });
+});
+
+app.post('/api/admin/support/tickets/:id/reply', async (req, res) => {
+  const { id } = req.params;
+  const { text } = req.body;
+  res.json({ success: true, ticketId: id, reply: text, timestamp: new Date().toISOString() });
+});
+
+app.get('/api/admin/growth/promotions', async (req, res) => {
+  res.json({
+    promotions: [
+      { id: 'p-101', name: 'TNPL 100% Deposit Bonus', code: 'TNPL100', bonusPct: 100, maxBonus: 5000, claims: 142, status: 'ACTIVE' },
+      { id: 'p-102', name: 'IPL SRL Risk-Free Bet', code: 'SRLFREE', bonusPct: 50, maxBonus: 2000, claims: 89, status: 'ACTIVE' },
+      { id: 'p-103', name: 'VIP Loyalty Cashback 10%', code: 'VIPCASH', bonusPct: 10, maxBonus: 10000, claims: 24, status: 'ACTIVE' },
+    ],
+  });
+});
+
+app.get('/api/admin/communications/logs', async (req, res) => {
+  res.json({
+    logs: [
+      { id: 'msg-701', channel: 'SMS', recipient: '+91 9876543210', template: 'OTP_VERIFICATION', status: 'DELIVERED', provider: 'Twilio', sentAt: '2026-08-10 20:42' },
+      { id: 'msg-702', channel: 'EMAIL', recipient: 'uday@betking.com', template: 'WITHDRAWAL_APPROVED', status: 'DELIVERED', provider: 'SendGrid', sentAt: '2026-08-10 20:30' },
+      { id: 'msg-703', channel: 'PUSH', recipient: 'usr-102', template: 'MATCH_LIVE_START', status: 'SENT', provider: 'Firebase FCM', sentAt: '2026-08-10 20:15' },
+    ],
+  });
+});
+
+app.get('/api/admin/analytics/reports', async (req, res) => {
+  res.json({
+    reports: [
+      { id: 'rep-01', name: 'Daily Turnover & GGR Breakdown', frequency: 'DAILY', format: 'CSV / BI JSON', lastGenerated: '2026-08-10 00:00', status: 'READY' },
+      { id: 'rep-02', name: 'High-Roller Risk & Liability Matrix', frequency: 'HOURLY', format: 'BI JSON', lastGenerated: '2026-08-10 20:00', status: 'READY' },
+      { id: 'rep-03', name: 'Customer Cohort Retention & LTV', frequency: 'WEEKLY', format: 'EXCEL', lastGenerated: '2026-08-04 00:00', status: 'READY' },
+    ],
+  });
+});
+
+app.get('/api/admin/platform/apikeys', async (req, res) => {
+  res.json({
+    keys: [
+      { id: 'key-01', name: 'Sportsbook Production API', prefix: 'bk_live_9f82...', scope: 'FULL_READ_WRITE', createdAt: '2026-01-01', status: 'ACTIVE' },
+      { id: 'key-02', name: 'Razorpay Payment Gateway Webhook Key', prefix: 'bk_rzp_3a11...', scope: 'WEBHOOK_PAYOUT', createdAt: '2026-01-10', status: 'ACTIVE' },
+    ],
+  });
+});
+
+app.get('/api/admin/operations/health', async (req, res) => {
+  res.json({
+    postgres: 'HEALTHY',
+    redis: 'HEALTHY',
+    websocket: 'HEALTHY',
+    cricbuzzFeed: 'HEALTHY',
+    razorpayGateway: 'HEALTHY',
+    outboxQueue: '0 PENDING',
+  });
+});
+
+app.get('/api/admin/security/audit', async (req, res) => {
+  res.json({
+    logs: [
+      { id: 'aud-9901', actor: 'Super Admin (uday)', action: 'WITHDRAWAL_APPROVE', entity: 'Withdrawal w-4401', ip: '127.0.0.1', timestamp: '2026-08-10 20:45', tenant: 'MAIN_BRAND' },
+      { id: 'aud-9902', actor: 'Trading Admin (trader1)', action: 'MARKET_SUSPEND', entity: 'Match m1 / Winner', ip: '127.0.0.1', timestamp: '2026-08-10 20:38', tenant: 'MAIN_BRAND' },
+      { id: 'aud-9903', actor: 'Support Agent (agent1)', action: 'TICKET_REPLY', entity: 'Ticket t-1001', ip: '127.0.0.1', timestamp: '2026-08-10 20:12', tenant: 'MAIN_BRAND' },
+    ],
+  });
 });
 
 app.post('/api/admin/maker-checker/request', async (req, res) => {
@@ -1689,24 +1980,34 @@ app.get('/api/v1/user/security/control-status', async (req, res) => {
   }
 });
 
-app.post('/api/v1/admin/security/account-controls', async (req, res) => {
+app.post('/api/v1/admin/security/account-controls', adminAuth, requireRole('SUPER_ADMIN', 'OPERATIONS_ADMIN', 'RISK_ANALYST'), async (req, res) => {
   const { userId, action, reason, category, operatorId, durationDays } = req.body;
   try {
     const { userSecurityCenter } = await import('../lib/userSecurityCenter.mjs');
+    const { enterpriseAuditEngine } = await import('../lib/enterpriseAuditEngine.mjs');
     let result = null;
+    const actor = req.admin?.id || operatorId || 'admin';
     if (action === 'RESTRICT') {
-      result = await userSecurityCenter.restrictAccount(userId, { reason, category, operatorId, durationDays });
+      result = await userSecurityCenter.restrictAccount(userId, { reason, category, operatorId: actor, durationDays });
     } else if (action === 'SUSPEND') {
-      result = await userSecurityCenter.suspendAccount(userId, { reason, operatorId });
+      result = await userSecurityCenter.suspendAccount(userId, { reason, operatorId: actor });
     } else if (action === 'FREEZE') {
-      result = await userSecurityCenter.freezeAccount(userId, { reason, operatorId });
+      result = await userSecurityCenter.freezeAccount(userId, { reason, operatorId: actor });
     } else if (action === 'RECOVER') {
-      result = await userSecurityCenter.recoverAccount(userId, { operatorId });
+      result = await userSecurityCenter.recoverAccount(userId, { operatorId: actor });
     } else if (action === 'SELF_EXCLUDE') {
       result = await userSecurityCenter.selfExcludeAccount(userId, { durationDays, reason });
     } else {
       return res.status(400).json({ error: `Unknown security action '${action}'` });
     }
+
+    enterpriseAuditEngine.recordEvent({
+      who: actor,
+      what: `ACCOUNT_${action}`,
+      reason: reason || category,
+      referenceId: userId,
+    });
+
     res.json({ success: true, result });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1796,58 +2097,27 @@ app.get('/api/v1/matches/:id', async (req, res) => {
   }
 });
 
-app.post('/api/v1/bet/place', async (req, res) => {
+app.post(['/api/bets/place', '/api/v1/bet/place'], async (req, res) => {
   const idempotencyKey = req.headers['x-idempotency-key'] || req.body.idempotencyKey;
-  const { userId, matchId, marketId, selectionId, stake, clientOdds } = req.body;
-
   try {
-    const { idempotencyEngine } = await import('../lib/idempotencyEngine.mjs');
-    const { concurrencyEngine } = await import('../lib/concurrencyEngine.mjs');
-    const { globalRiskOrchestrator } = await import('../lib/globalRiskOrchestrator.mjs');
-    const { canonicalMatchStateEngine } = await import('../lib/canonicalMatchState.mjs');
-
-    // 1. Check Idempotency Guard
-    const idemCheck = idempotencyEngine.checkOrLock(idempotencyKey, 'BET_PLACE');
-    if (idemCheck.isDuplicate) {
-      return res.json({ status: 'IDEMPOTENT_DUPLICATE', result: idemCheck.result });
-    }
-
-    // 2. Concurrency Lock Guard
-    const lockKey = `bet:${userId}:${matchId}`;
-    const result = await concurrencyEngine.runLocked(lockKey, async () => {
-      const matchState = canonicalMatchStateEngine.getMatchState(matchId);
-      const serverOdds = matchState?.bettingMarkets?.find((m) => m.id === marketId)?.odds?.find((o) => o.selection === selectionId)?.price || clientOdds;
-
-      const riskDecision = globalRiskOrchestrator.evaluateBetRequest({
-        userId,
-        matchId,
-        marketId,
-        selectionId,
-        clientOdds,
-        serverOdds,
-        stake,
-        matchVersion: matchState?.matchVersion || 1,
-        currentServerVersion: matchState?.matchVersion || 1,
-      });
-
-      return {
-        success: riskDecision.decision === 'ACCEPT' || riskDecision.decision === 'ACCEPT_WITH_LIMIT',
-        riskDecision,
-        placedAt: new Date().toISOString(),
-      };
-    });
-
-    if (idempotencyKey) {
-      idempotencyEngine.complete(idempotencyKey, result);
-    }
+    const { betPlacementEngine } = await import('../lib/betPlacementEngine.mjs');
+    const result = await betPlacementEngine.placeBet({
+      ...req.body,
+      idempotencyKey,
+    }, req.correlationId);
 
     res.json({ version: 'v1', ...result });
   } catch (err) {
-    if (idempotencyKey) {
-      const { idempotencyEngine } = await import('../lib/idempotencyEngine.mjs');
-      idempotencyEngine.fail(idempotencyKey, err.message);
+    let statusCode = 400;
+    if (err.message?.includes('ACCOUNT_RESTRICTED') || err.message?.includes('ACCOUNT_SUSPENDED')) {
+      statusCode = 403;
+    } else if (err.message?.includes('UNAUTHENTICATED')) {
+      statusCode = 401;
     }
-    res.status(500).json({ error: err.message || 'Bet placement failed' });
+    res.status(statusCode).json({
+      error: err.message || 'Bet placement failed',
+      code: err.message?.split(':')[0] || 'BET_PLACEMENT_FAILED',
+    });
   }
 });
 
@@ -1927,6 +2197,49 @@ app.post('/api/v1/admin/cms/content/:id/status', async (req, res) => {
     res.status(400).json({ success: false, error: err.message });
   }
 });
+
+// -----------------------------------------------------------------------------
+// Mass Settlement Endpoints
+// -----------------------------------------------------------------------------
+app.post('/api/admin/trading/settle-match', async (req, res) => {
+  const { matchId, matchState } = req.body;
+  try {
+    const { massSettlementWorker } = await import('../lib/massSettlementWorker.mjs');
+    const result = await massSettlementWorker.settleCompletedMatch(matchId, matchState, req.correlationId);
+    res.json({ version: 'v1', ...result });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/admin/trading/mass-settle', async (req, res) => {
+  try {
+    const { massSettlementWorker } = await import('../lib/massSettlementWorker.mjs');
+    const result = await massSettlementWorker.runMassSettlementBatch();
+    res.json({ version: 'v1', ...result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+import adminKycRouter from './routes/admin/kyc.js';
+import adminRiskRouter from './routes/admin/risk.js';
+import adminNotificationsRouter from './routes/admin/notifications.js';
+import adminAnalyticsRouter from './routes/admin/analytics.js';
+import adminTenantsRouter from './routes/admin/tenants.js';
+import promotionsRouter from './routes/promotions.js';
+import publicOddsRouter from './routes/public/odds.js';
+import developerAppsRouter from './routes/developer/apps.js';
+
+app.use('/api/admin/kyc', adminKycRouter);
+app.use('/api/admin/risk', adminRiskRouter);
+app.use('/api/admin', adminNotificationsRouter);
+app.use('/api/admin/analytics', adminAnalyticsRouter);
+app.use('/api/admin/tenants', adminTenantsRouter);
+app.use('/api/promotions', promotionsRouter);
+app.use('/api/v1/public', publicOddsRouter);
+app.use('/api/public/sports', publicOddsRouter);
+app.use('/api/developer', developerAppsRouter);
 
 app.get('/api/v1/admin/cms/content', async (req, res) => {
   const { contentType, status, tenantId } = req.query;
@@ -2224,10 +2537,16 @@ app.post('/api/v1/admin/rules', async (req, res) => {
   }
 });
 
-app.listen(PORT, async () => {
-  console.log(`🚀 BetKing Razorpay Webhook Backend listening on http://localhost:${PORT}`);
+import { createServer } from 'http';
+import { initWebSocketServer } from '../lib/websocketEngine.mjs';
+
+const httpServer = createServer(app);
+initWebSocketServer(httpServer);
+
+httpServer.listen(PORT, async () => {
+  console.log(`🚀 BetKing Backend listening on http://localhost:${PORT}`);
   console.log(`  - Webhook Route : http://localhost:${PORT}/api/webhooks/razorpay`);
-  console.log(`  - Order Route   : http://localhost:${PORT}/api/create-order`);
+  console.log(`  - WebSocket Route : ws://localhost:${PORT}/ws/support`);
 
   try {
     const { startBackgroundWorkers } = await import('../lib/schedulerWorker.mjs');

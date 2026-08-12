@@ -26,6 +26,7 @@ export default function Profile() {
     updateRgLimits,
     selfExcludeAccount,
     showToast,
+    changePassword,
   } = useAuth();
 
   const [activeTab, setActiveTab] = useState('overview');
@@ -40,6 +41,9 @@ export default function Profile() {
     () => user?.dailyStakeLimit || DEFAULT_DAILY_STAKE_LIMIT,
   );
   const [selfExcludeDays, setSelfExcludeDays] = useState('7');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   // Filtered transactions (Hook call placed unconditionally before early return)
   const filteredTx = useMemo(() => {
@@ -77,6 +81,23 @@ export default function Profile() {
     if (window.confirm(`Are you sure you want to self-exclude your account for ${days} days? Betting and deposits will be blocked.`)) {
       selfExcludeAccount(days);
     }
+  };
+
+  const handleChangePassword = (e) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      showToast('New passwords do not match.', 'error');
+      return;
+    }
+    const result = changePassword(currentPassword, newPassword);
+    if (!result.ok) {
+      showToast(result.error, 'error');
+      return;
+    }
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    showToast('Password updated.', 'success');
   };
 
   const exportCsv = () => {
@@ -138,6 +159,13 @@ export default function Profile() {
             onClick={() => setActiveTab('rg')}
           >
             <FiShield /> Responsible Gaming
+          </button>
+          <button
+            type="button"
+            className={`profile-tab-btn ${activeTab === 'security' ? 'active' : ''}`}
+            onClick={() => setActiveTab('security')}
+          >
+            Security
           </button>
           <button
             type="button"
@@ -266,6 +294,53 @@ export default function Profile() {
                   {excluded ? 'Currently Excluded' : 'Activate Self-Exclusion'}
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'security' && (
+          <div className="profile-rg-section">
+            <div className="rg-card-box">
+              <h3>Change password</h3>
+              <p>Update the password for {user.email}. Use at least 6 characters.</p>
+              <form onSubmit={handleChangePassword} className="rg-form">
+                <div className="rg-form-group">
+                  <label htmlFor="profile-current-password">Current password</label>
+                  <input
+                    id="profile-current-password"
+                    type="password"
+                    autoComplete="current-password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="rg-form-group">
+                  <label htmlFor="profile-new-password">New password</label>
+                  <input
+                    id="profile-new-password"
+                    type="password"
+                    autoComplete="new-password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    minLength={6}
+                    required
+                  />
+                </div>
+                <div className="rg-form-group">
+                  <label htmlFor="profile-confirm-password">Confirm new password</label>
+                  <input
+                    id="profile-confirm-password"
+                    type="password"
+                    autoComplete="new-password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    minLength={6}
+                    required
+                  />
+                </div>
+                <button type="submit" className="profile-link-btn">Update password</button>
+              </form>
             </div>
           </div>
         )}

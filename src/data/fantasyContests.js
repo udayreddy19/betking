@@ -55,10 +55,14 @@ export function loadFantasyEntries(email) {
 
 export function saveFantasyEntry(email, entry) {
   if (!email) return [];
-  const all = JSON.parse(localStorage.getItem(ENTRIES_KEY) || '{}');
-  const list = all[email] || [];
-  const next = [{ id: `FE-${Date.now()}`, joinedAt: new Date().toISOString(), ...entry }, ...list].slice(0, 50);
-  all[email] = next;
-  localStorage.setItem(ENTRIES_KEY, JSON.stringify(all));
-  return next;
+  try {
+    const all = JSON.parse(localStorage.getItem(ENTRIES_KEY) || '{}');
+    const list = all[email] || [];
+    const next = [{ id: `FE-${Date.now()}`, joinedAt: new Date().toISOString(), ...entry }, ...list].slice(0, 50);
+    all[email] = next;
+    localStorage.setItem(ENTRIES_KEY, JSON.stringify(all));
+    return next;
+  } catch {
+    return [];
+  }
 }

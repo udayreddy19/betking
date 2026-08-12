@@ -4,6 +4,7 @@
  */
 
 import { resolveCricketTeamScores, isCricketSecondInnings } from './cricketScores.js';
+import { evaluateMarketAgainstMatchState } from '../../lib/marketEvaluationEngine.mjs';
 
 function getSeed(matchId = 'm1') {
   return [...String(matchId)].reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
@@ -248,6 +249,7 @@ export function getMarketCategoriesForSport(sport = 'cricket') {
 
 export function generateMatchMarkets(match) {
   if (!match) return [];
+  console.warn('[NON_AUTHORITATIVE_ODDS_SOURCE] Legacy generateMatchMarkets invoked. OddsEngineV2 is the authoritative source.');
   const sport = match.sport || 'cricket';
   const seed = getSeed(match.id);
   const team1Name = match.team1?.name || match.team1?.shortName || 'Team 1';
@@ -265,6 +267,7 @@ export function generateMatchMarkets(match) {
   // --- CRICKET MARKETS ---
   if (sport === 'cricket' || sport === 'virtual-cricket') {
     const { team1, team2 } = resolveCricketTeamScores(match, ld);
+    const is2ndInnings = isCricketSecondInnings(match, ld);
 
     // 1. Winner
     const winnerOpts = [
@@ -373,8 +376,13 @@ export function generateMatchMarkets(match) {
 
     // 8. Total Match Runs
     const currentTotalRuns = team1.runs + team2.runs;
-    const projectedRuns = isLive ? Math.max(280, currentTotalRuns + 120) : 315;
-    const matchRunsLine = projectedRuns + 0.5;
+    const target = match.target || (is2ndInnings && team1.runs ? team1.runs + 1 : null);
+    let projectedRuns = isLive ? (currentTotalRuns + Math.max(10, Math.floor((120 - team2.balls) * 1.3))) : 315;
+    if (is2ndInnings && team1.runs) {
+      const maxPossibleTotal = team1.runs + (target ? target + 2 : 150);
+      projectedRuns = Math.min(maxPossibleTotal, projectedRuns);
+    }
+    const matchRunsLine = Math.floor(projectedRuns) + 0.5;
     const runsOverOdds = isLastBallBoundary ? 1.72 : isLastBallWicket ? 2.08 : 1.87;
     const runsUnderOdds = Number((3.65 - runsOverOdds).toFixed(2));
     markets.push({
@@ -388,33 +396,44 @@ export function generateMatchMarkets(match) {
     });
 
     // 9. Team 1 Total Runs
-    const t1Proj = isLive ? Math.max(120, team1.runs + 45) : 165.5;
+    const t1Runs = team1.runs || 0;
+    const t1Proj = isLive ? Math.max(165.5, Math.ceil((t1Runs + 15) / 5) * 5 + 0.5) : 165.5;
+    const t1IsDetermined = t1Runs > t1Proj;
     markets.push({
       key: 'team1_runs',
       title: `${team1Name} Total Runs`,
       category: 'totals',
+      status: t1IsDetermined ? 'DETERMINED' : 'OPEN',
       options: [
-        { selection: `T1Runs:Over ${t1Proj}`, name: `Over ${t1Proj}`, odds: 1.85 },
-        { selection: `T1Runs:Under ${t1Proj}`, name: `Under ${t1Proj}`, odds: 1.85 },
+        { selection: `T1Runs:Over ${t1Proj}`, name: `Over ${t1Proj}`, odds: t1IsDetermined ? 1.01 : 1.85, status: t1IsDetermined ? 'DETERMINED' : 'OPEN', bettable: !t1IsDetermined, won: t1IsDetermined },
+        { selection: `T1Runs:Under ${t1Proj}`, name: `Under ${t1Proj}`, odds: t1IsDetermined ? 1.01 : 1.85, status: t1IsDetermined ? 'DETERMINED' : 'OPEN', bettable: false, won: false },
       ],
     });
 
     // 10. Team 2 Total Runs
-    const t2Proj = isLive ? Math.max(115, team2.runs + 45) : 155.5;
+    const t2Runs = team2.runs || 0;
+    let t2Proj = isLive ? Math.max(155.5, Math.ceil((t2Runs + 15) / 5) * 5 + 0.5) : 155.5;
+    if (is2ndInnings && target != null) {
+      t2Proj = Math.min(target + 0.5, t2Runs + 15.5);
+    }
+    const t2IsDetermined = t2Runs > t2Proj;
     markets.push({
       key: 'team2_runs',
       title: `${team2Name} Total Runs`,
       category: 'totals',
+      status: t2IsDetermined ? 'DETERMINED' : 'OPEN',
       options: [
-        { selection: `T2Runs:Over ${t2Proj}`, name: `Over ${t2Proj}`, odds: 1.85 },
-        { selection: `T2Runs:Under ${t2Proj}`, name: `Under ${t2Proj}`, odds: 1.85 },
+        { selection: `T2Runs:Over ${t2Proj}`, name: `Over ${t2Proj}`, odds: t2IsDetermined ? 1.01 : 1.85, status: t2IsDetermined ? 'DETERMINED' : 'OPEN', bettable: !t2IsDetermined, won: t2IsDetermined },
+        { selection: `T2Runs:Under ${t2Proj}`, name: `Under ${t2Proj}`, odds: t2IsDetermined ? 1.01 : 1.85, status: t2IsDetermined ? 'DETERMINED' : 'OPEN', bettable: false, won: false },
       ],
     });
 
-    // 11. 1st Innings Powerplay (6 Overs) Total
+    const innLabel = is2ndInnings ? '2nd Innings' : '1st Innings';
+
+    // 11. Innings Powerplay (6 Overs) Total
     markets.push({
       key: 'powerplay_total',
-      title: '1st Innings 6 Over Powerplay Total',
+      title: `${innLabel} 6 Over Powerplay Total`,
       category: 'over',
       options: [
         { selection: 'Powerplay:Over 48.5', name: 'Over 48.5', odds: 1.87 },
@@ -872,5 +891,30 @@ export function generateMatchMarkets(match) {
     });
   }
 
-  return markets;
+  const { team1: team1Score, team2: team2Score } = (sport === 'cricket' || sport === 'virtual-cricket') ? resolveCricketTeamScores(match, ld) : { team1: {}, team2: {} };
+  const isSecondInnings = (sport === 'cricket' || sport === 'virtual-cricket') ? isCricketSecondInnings(match, ld) : false;
+
+  const matchStateObj = {
+    teams: {
+      team1: { name: team1Name, runs: team1Score?.runs ?? 0 },
+      team2: { name: team2Name, runs: team2Score?.runs ?? 0 },
+    },
+    liveDetails: ld,
+    currentInnings: { number: isSecondInnings ? 2 : 1 },
+    status: match.status,
+    matchState: match.matchState,
+    chaseState: match.chaseState,
+  };
+
+  const evaluatedMarkets = markets.map((m) => {
+    const evalRes = evaluateMarketAgainstMatchState(m, matchStateObj);
+    return {
+      ...m,
+      status: evalRes.status,
+      determined: evalRes.determined,
+      options: evalRes.options || m.options,
+    };
+  });
+
+  return evaluatedMarkets;
 }

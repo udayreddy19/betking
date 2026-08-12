@@ -42,3 +42,13 @@
   color: var(--color-primary);
   font-weight: var(--font-semibold);
 }
+
+.legal-chat-btn {
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: var(--font-semibold);
+  font-size: var(--text-sm);
+}

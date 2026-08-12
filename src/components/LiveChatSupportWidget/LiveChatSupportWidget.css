@@ -408,3 +408,32 @@
   align-items: center;
   gap: 4px;
 }
+
+.live-chat-csat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 4px 0;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.live-chat-csat-stars {
+  display: flex;
+  gap: 2px;
+}
+
+.live-chat-csat-stars button {
+  background: none;
+  border: none;
+  color: #475569;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.live-chat-csat-stars button.active,
+.live-chat-csat-stars button:hover {
+  color: #f59e0b;
+}

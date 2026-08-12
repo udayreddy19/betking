@@ -5,6 +5,9 @@ import { sportsApiPlatformPlugin } from './vite-plugins/sportsApiPlatform.js'
 
 // https://vite.dev/config/
 export default defineConfig({
+  resolve: {
+    dedupe: ['react', 'react-dom', 'motion'],
+  },
   server: {
     host: '0.0.0.0',
     port: 5173,

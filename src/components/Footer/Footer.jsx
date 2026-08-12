@@ -1,8 +1,11 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { UpiLogo, GPayLogo, PhonePeLogo, PaytmLogo } from '../PaymentLogos/PaymentLogos';
 import './Footer.css';
 
 export default function Footer() {
+  const location = useLocation();
+  if (location.pathname.startsWith('/admin')) return null;
+
   return (
     <footer className="footer" id="main-footer">
       <div className="footer-inner">

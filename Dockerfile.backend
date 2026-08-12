@@ -1,0 +1,27 @@
+# -----------------------------------------------------------------------------
+# BetKing Enterprise Backend & Worker Production Dockerfile
+# -----------------------------------------------------------------------------
+FROM node:20-alpine AS base
+
+# Install security updates & postgresql-client for pg_dump/psql healthchecks
+RUN apk add --no-cache postgresql-client wget curl
+
+WORKDIR /app
+
+# Copy dependency manifests
+COPY package*.json ./
+
+# Install production dependencies only
+RUN npm ci --only=production
+
+# Copy application source code
+COPY . .
+
+# Expose backend API / WebSocket port
+EXPOSE 5001
+
+# Run non-root node user for container security
+USER node
+
+# Default entrypoint starts Express + WebSocket backend server
+CMD ["node", "server/index.js"]

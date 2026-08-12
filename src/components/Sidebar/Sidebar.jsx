@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
   IoClose,
@@ -23,6 +23,8 @@ import ThemeToggle from '../ThemeToggle/ThemeToggle';
 import './Sidebar.css';
 
 export default function Sidebar() {
+  const location = useLocation();
+  if (location.pathname.startsWith('/admin')) return null;
   const {
     user, isLoggedIn, isSidebarOpen, closeSidebar, logout,
     openLoginModal, openDepositModal, openFinModal,

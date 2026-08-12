@@ -276,6 +276,36 @@ export function AuthProvider({ children }) {
     return true;
   }, [setUser, showToast]);
 
+  const resetPassword = useCallback((email, newPassword) => {
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    if (!normalizedEmail || !newPassword || String(newPassword).length < 6) {
+      return { ok: false, error: 'Enter a valid email and a password of at least 6 characters.' };
+    }
+    const users = getStoredUsers();
+    const idx = users.findIndex((u) => u.email === normalizedEmail);
+    if (idx < 0) {
+      return { ok: false, error: 'No account found for that email.' };
+    }
+    users[idx] = { ...users[idx], password: String(newPassword) };
+    saveStoredUsers(users);
+    return { ok: true };
+  }, []);
+
+  const changePassword = useCallback((currentPassword, newPassword) => {
+    if (!user) return { ok: false, error: 'Please log in to change your password.' };
+    if (!newPassword || String(newPassword).length < 6) {
+      return { ok: false, error: 'New password must be at least 6 characters.' };
+    }
+    const users = getStoredUsers();
+    const idx = users.findIndex((u) => u.email.toLowerCase() === user.email.toLowerCase());
+    if (idx < 0 || users[idx].password !== currentPassword) {
+      return { ok: false, error: 'Current password is incorrect.' };
+    }
+    users[idx] = { ...users[idx], password: String(newPassword) };
+    saveStoredUsers(users);
+    return { ok: true };
+  }, [user]);
+
   const logout = useCallback(() => {
     setUser(null);
     setTransactions([]);
@@ -802,6 +832,8 @@ export function AuthProvider({ children }) {
     claimPromotion,
     isPromotionClaimed,
     login,
+    resetPassword,
+    changePassword,
     logout,
     addFunds,
     deductFunds,
@@ -840,6 +872,8 @@ export function AuthProvider({ children }) {
     claimPromotion,
     isPromotionClaimed,
     login,
+    resetPassword,
+    changePassword,
     logout,
     addFunds,
     deductFunds,
@@ -886,6 +920,9 @@ export function AuthProvider({ children }) {
 const dummyAuthFallback = {
   user: null,
   isLoggedIn: false,
+  login: () => false,
+  resetPassword: () => ({ ok: false, error: 'Not available.' }),
+  changePassword: () => ({ ok: false, error: 'Not available.' }),
   showToast: () => {},
   dismissToast: () => {},
   openLoginModal: () => {},

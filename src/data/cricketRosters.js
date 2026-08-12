@@ -2,6 +2,38 @@
 
 const ROSTERS = {
   // ── INTERNATIONAL TEST & LIMITED OVERS TEAMS ──
+  ireland: {
+    batters: ['Paul Stirling', 'Andrew Balbirnie', 'Harry Tector', 'Lorcan Tucker', 'Curtis Campher', 'George Dockrell'],
+    bowlers: ['Mark Adair', 'Joshua Little', 'Craig Young', 'Graham Hume', 'Barry McCarthy'],
+  },
+  ire: {
+    batters: ['Paul Stirling', 'Andrew Balbirnie', 'Harry Tector', 'Lorcan Tucker', 'Curtis Campher', 'George Dockrell'],
+    bowlers: ['Mark Adair', 'Joshua Little', 'Craig Young', 'Graham Hume', 'Barry McCarthy'],
+  },
+  afghanistan: {
+    batters: ['Rahmanullah Gurbaz', 'Ibrahim Zadran', 'Rahmat Shah', 'Hashmatullah Shahidi', 'Azmatullah Omarzai', 'Mohammad Nabi'],
+    bowlers: ['Rashid Khan', 'Mujeeb Ur Rahman', 'Fazalhaq Farooqi', 'Naveen-ul-Haq', 'Noor Ahmad'],
+  },
+  afg: {
+    batters: ['Rahmanullah Gurbaz', 'Ibrahim Zadran', 'Rahmat Shah', 'Hashmatullah Shahidi', 'Azmatullah Omarzai', 'Mohammad Nabi'],
+    bowlers: ['Rashid Khan', 'Mujeeb Ur Rahman', 'Fazalhaq Farooqi', 'Naveen-ul-Haq', 'Noor Ahmad'],
+  },
+  singapore: {
+    batters: ['Aritra Dutta', 'Rohan Rangarajan', 'Surendran Chandramohan', 'Anish Paraam'],
+    bowlers: ['Janak Prakash', 'Vinoth Baskaran', 'Amjad Mahboob', 'Akshay Puri'],
+  },
+  sin: {
+    batters: ['Aritra Dutta', 'Rohan Rangarajan', 'Surendran Chandramohan', 'Anish Paraam'],
+    bowlers: ['Janak Prakash', 'Vinoth Baskaran', 'Amjad Mahboob', 'Akshay Puri'],
+  },
+  bahrain: {
+    batters: ['Haider Ali', 'Sarfraz Ali', 'Umer Toor', 'Ahmer Bin Nasir'],
+    bowlers: ['Rizwan Butt', 'Ali Dawood', 'Abdul Majid', 'Junaid Niazi'],
+  },
+  bhr: {
+    batters: ['Haider Ali', 'Sarfraz Ali', 'Umer Toor', 'Ahmer Bin Nasir'],
+    bowlers: ['Rizwan Butt', 'Ali Dawood', 'Abdul Majid', 'Junaid Niazi'],
+  },
   'west indies': {
     batters: ['Kraigg Brathwaite', 'Tevin Imlach', 'Alick Athanaze', 'Kavem Hodge', 'Shamarh Brooks', 'Joshua Da Silva', 'Jason Holder', 'Justin Greaves'],
     bowlers: ['Alzarri Joseph', 'Shamar Joseph', 'Jayden Seales', 'Gudakesh Motie', 'Kemar Roach'],

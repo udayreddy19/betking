@@ -129,15 +129,17 @@ class CentralizedMatchStateEngine {
     } else {
       const needMatch = commStr.match(/(?:([A-Za-z\s]+)\s+)?need\s+(\d+)\s+runs?(?:\s+in\s+(\d+)\s+balls?)?/i);
       const isSecond = (ld.inningsId ? parseInt(ld.inningsId, 10) > 1 : false)
-        || ld.chaseRuns != null
-        || (ld.score2 != null && ld.score2 > 0)
-        || Boolean(needMatch)
-        || (safePrevious.currentInnings?.number === 2);
+        || (ld.firstRuns != null && ld.chaseRuns != null)
+        || ((ld.score1 != null || ld.runs != null) && (ld.score2 != null && ld.score2 > 0))
+        || (ld.firstTeamName && ld.chaseTeamName && ld.chaseRuns != null)
+        || (ld.wickets2 != null && ld.wickets2 > 0)
+        || (ld.overs2 != null && ld.overs2 !== '0.0' && ld.overs2 !== '0')
+        || Boolean(needMatch && ld.firstRuns != null);
 
       if (isSecond) {
-        let firstRuns = ld.firstRuns ?? ld.runs ?? payload.runs ?? 0;
-        let firstWkts = ld.firstWickets ?? ld.wickets ?? payload.wickets ?? 0;
-        let firstOvs = ld.firstOvers ?? ld.overs ?? payload.overs ?? '50.0';
+        let firstRuns = ld.firstRuns ?? ld.score1 ?? ld.runs ?? 0;
+        let firstWkts = ld.firstWickets ?? ld.wickets ?? 10;
+        let firstOvs = ld.firstOvers ?? ld.overs ?? '50.0';
         let firstTeam = ld.firstTeamName || safePrevious.teams?.team1?.name || team1Name;
 
         let chaseRuns = ld.chaseRuns ?? ld.score2 ?? 0;
@@ -189,12 +191,13 @@ class CentralizedMatchStateEngine {
     const t1TotalRuns = team1Innings.reduce((sum, i) => sum + i.runs, 0);
     const t2TotalRuns = team2Innings.reduce((sum, i) => sum + i.runs, 0);
 
-    const formatTeamScore = (innings, defaultRuns, defaultWkts, isDeclared = false) => {
+    const isTestMatch = /test/i.test(matchFormat);
+    const formatTeamScore = (innings, defaultRuns = 0, defaultWkts = 0, isDeclared = false) => {
       if (innings.length === 0) {
-        return `${defaultRuns}/${defaultWkts}${isDeclared ? 'd' : ''}`;
+        return '0/0';
       }
-      if (innings.length === 1) {
-        const inn = innings[0];
+      if (innings.length === 1 || !isTestMatch) {
+        const inn = innings[innings.length - 1];
         const dec = (inn.declared || isDeclared) ? 'd' : '';
         return `${inn.runs}/${inn.wickets}${dec}`;
       }

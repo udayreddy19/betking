@@ -23,7 +23,8 @@ import { centralizedMatchEngine } from '../../services/centralizedMatchStateEngi
 import { filterMatches } from '../../utils/matchFilters';
 import { resolveLeagueId, getLeagueMeta, isSameLeague, groupMatchesByLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
 import SrlLeaguePanel from '../../components/SrlLeaguePanel/SrlLeaguePanel';
-import { generateMatchMarkets, getMarketCategoriesForSport } from '../../utils/oddsMarketsGenerator';
+import { fetchAuthoritativeMatchOdds, getCachedMatchOdds } from '../../services/oddsService';
+import { getMarketCategoriesForSport } from '../../utils/oddsMarketsGenerator';
 import './Sports.css';
 
 function filterByLeague(matchList, activeLeague, cricketSeries = []) {
@@ -93,14 +94,15 @@ function getMatchScores(match) {
   let team1Score = state?.teams?.team1?.score || '';
   let team2Score = state?.teams?.team2?.score || '';
 
-  if ((!team1Score || team1Score === '0/0') && (!team2Score || team2Score === '0/0')) {
+  if (!team1Score || team1Score === '0/0' || !team2Score || team2Score === '0/0') {
     const ld = match?.liveDetails || {};
     if (match?.sport === 'soccer' || match?.sport === 'esoccer' || match?.sport === 'basketball') {
       team1Score = String(ld.score1 ?? 0);
       team2Score = String(ld.score2 ?? 0);
     } else {
-      team1Score = `${ld.runs ?? 0}/${ld.wickets ?? 0}${(ld.declared || ld.declared1) ? 'd' : ''}`;
-      team2Score = `${ld.score2 ?? 0}/${ld.wickets2 ?? 0}${ld.declared2 ? 'd' : ''}`;
+      const resolved = resolveCricketTeamScores(match, ld);
+      team1Score = `${resolved.team1.runs}/${resolved.team1.wickets}`;
+      team2Score = `${resolved.team2.runs}/${resolved.team2.wickets}`;
     }
   }
 
@@ -346,7 +348,7 @@ export default function Sports() {
   }, [sportMatches, matches, selectedMatchId, liveMatches]);
 
   const activeMatch = useMatchDetail(baseActiveMatch);
-  
+
   useEffect(() => {
     if (activeMatch?.id) {
       centralizedMatchEngine.updateMatchState(activeMatch.id, activeMatch);
@@ -359,10 +361,35 @@ export default function Sports() {
     return getMarketCategoriesForSport(activeMatch?.sport || activeSport || 'cricket');
   }, [activeMatch, activeSport]);
 
-  const matchMarkets = useMemo(() => {
-    if (!activeMatch) return [];
-    return generateMatchMarkets(activeMatch);
-  }, [activeMatch]);
+  const [matchMarkets, setMatchMarkets] = useState([]);
+
+  useEffect(() => {
+    if (!activeMatch?.id && !activeMatch?.matchId) {
+      setMatchMarkets([]);
+      return;
+    }
+    const matchId = activeMatch.id || activeMatch.matchId;
+    const team1Name = activeMatch.team1?.name || activeMatch.team1;
+    const team2Name = activeMatch.team2?.name || activeMatch.team2;
+
+    const cached = getCachedMatchOdds(matchId);
+    if (cached && Array.isArray(cached.markets) && cached.markets.length > 0) {
+      setMatchMarkets(cached.markets);
+    } else {
+      setMatchMarkets([]);
+    }
+
+    let isCancelled = false;
+
+    fetchAuthoritativeMatchOdds(matchId, team1Name, team2Name).then((snapshot) => {
+      if (isCancelled) return;
+      if (snapshot && Array.isArray(snapshot.markets) && snapshot.markets.length > 0) {
+        setMatchMarkets(snapshot.markets);
+      }
+    });
+
+    return () => { isCancelled = true; };
+  }, [activeMatch?.id, activeMatch?.matchId]);
 
   const liveMatchPrefetchKey = useMemo(
     () => liveMatches.slice(0, 3).map((match) => {
@@ -375,10 +402,11 @@ export default function Sports() {
   useEffect(() => {
     if (!liveMatchPrefetchKey) return;
     const seen = new Set();
-    liveMatches.slice(0, 3).forEach((match) => {
+    liveMatches.slice(0, 5).forEach((match) => {
       if (seen.has(match.id)) return;
       seen.add(match.id);
       prefetchMatchDetail(match);
+      fetchAuthoritativeMatchOdds(match.id, match.team1?.name || match.team1, match.team2?.name || match.team2);
     });
   }, [liveMatchPrefetchKey, liveMatches]);
 
@@ -419,7 +447,16 @@ export default function Sports() {
     setExpandedMarkets(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const showCategory = (cat) => activeMarketCat === 'all' || activeMarketCat === cat;
+  const showCategory = (cat) => {
+    if (activeMarketCat === 'all') return true;
+    if (activeMarketCat === cat) return true;
+    if (activeMarketCat === 'totals' && (cat === 'totals' || cat === 'over' || cat === 'overs')) return true;
+    if (activeMarketCat === 'over' && (cat === 'over' || cat === 'overs' || cat === 'delivery')) return true;
+    if (activeMarketCat === 'delivery' && (cat === 'delivery' || cat === 'deliveries')) return true;
+    if (activeMarketCat === 'props' && (cat === 'props' || cat === 'player_props' || cat === 'h2h')) return true;
+    if (activeMarketCat === 'partnership' && (cat === 'partnership' || cat === 'wickets')) return true;
+    return false;
+  };
 
   const oddsBtnClass = (selection) => {
     if (!activeMatch) return 'sports-market-odds-btn';

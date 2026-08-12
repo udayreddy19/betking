@@ -8,11 +8,12 @@ export default function MatchCountdownTimer({ match, showIcon = true, className 
     if (!match) return;
 
     const updateTimer = () => {
-      const isLive = match.isLive || match.matchState === 'in';
+      const isLive = match.isLive || match.matchState === 'in' || match.status === 'LIVE' || match.status === 'IN_PROGRESS' || match.status === 'in_progress' || Boolean(match.overs && match.overs !== '0.0') || Boolean(match.liveDetails && (match.liveDetails.runs > 0 || match.liveDetails.score1 > 0));
+      const isFinished = match.status === 'COMPLETED' || match.status === 'FINISHED' || match.status === 'ENDED' || match.matchState === 'post';
       const isTest = isTestMatch(match);
       const testDayLabel = isTest ? getTestMatchDayLabel(match) : null;
 
-      if (isLive) {
+      if (isLive || isFinished) {
         if (isTest && testDayLabel) {
           setTimeLeft(`${testDayLabel}`);
         } else {
@@ -40,9 +41,8 @@ export default function MatchCountdownTimer({ match, showIcon = true, className 
       }
 
       if (!targetDate) {
-        // Fallback demo countdown timer (2h 45m 30s)
-        const fakeTarget = new Date(Date.now() + (2 * 3600 + 45 * 60 + 30) * 1000);
-        targetDate = fakeTarget;
+        setTimeLeft('');
+        return;
       }
 
       const diffMs = targetDate.getTime() - Date.now();

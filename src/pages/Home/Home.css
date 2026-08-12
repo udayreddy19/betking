@@ -342,28 +342,6 @@
   color: #fff;
 }
 
-/* ── Floating chat FAB ── */
-.home-chat-fab {
-  position: fixed;
-  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-  left: 24px;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  border: none;
-  background: var(--color-primary);
-  color: #fff;
-  font-size: 1.25rem;
-  cursor: pointer;
-  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.45);
-  z-index: var(--z-sticky);
-  transition: transform var(--transition-fast);
-}
-
-.home-chat-fab:hover {
-  transform: scale(1.05);
-}
-
 @media (max-width: 768px) {
   .home-promo-banner {
     padding: var(--space-4);
@@ -396,10 +374,4 @@
     scroll-padding-left: var(--container-padding, var(--space-4));
   }
 
-  .home-chat-fab {
-    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
-    left: 16px;
-    width: 48px;
-    height: 48px;
-  }
 }

@@ -9,23 +9,12 @@ import {
   FiX,
   FiSend,
   FiMinus,
-  FiUser,
   FiShield,
-  FiHelpCircle,
-  FiCheckCircle,
-  FiPhoneCall,
-  FiClock,
 } from '../../icons';
 import './LiveChatSupportWidget.css';
 
 export default function LiveChatSupportWidget() {
   const location = useLocation();
-
-  // Hide support chat widget on all admin portal routes
-  if (location.pathname.startsWith('/admin')) {
-    return null;
-  }
-
   const { user, showToast } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -39,7 +28,12 @@ export default function LiveChatSupportWidget() {
   ]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [typingText, setTypingText] = useState('Support is typing...');
+  const [csatRating, setCsatRating] = useState(5);
+  const [showCsatPrompt, setShowCsatPrompt] = useState(false);
   const messagesEndRef = useRef(null);
+
+  const isAdminRoute = location.pathname.startsWith('/admin');
 
   const activeAgent = {
     name: 'Priya Sharma',
@@ -50,8 +44,19 @@ export default function LiveChatSupportWidget() {
 
   const userEmail = user?.email || 'demo@betking.com';
 
+  useEffect(() => {
+    const openChat = () => {
+      setIsOpen(true);
+      setIsMinimized(false);
+    };
+    window.addEventListener('betking:open-support-chat', openChat);
+    return () => window.removeEventListener('betking:open-support-chat', openChat);
+  }, []);
+
   // Real-time synchronization with supportEngine (Admin replies & ticket status updates)
   useEffect(() => {
+    if (isAdminRoute) return undefined;
+
     const syncFromSupportEngine = () => {
       const convs = supportEngine.getUserConversations(userEmail);
       if (!convs || convs.length === 0) return;
@@ -93,15 +98,13 @@ export default function LiveChatSupportWidget() {
       window.removeEventListener('support_engine_update', handleUpdate);
       clearInterval(interval);
     };
-  }, [userEmail]);
+  }, [userEmail, isAdminRoute]);
 
   useEffect(() => {
     if (isOpen) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, isOpen, isTyping]);
-
-  const [typingText, setTypingText] = useState('Support is typing...');
 
   const handleSendMessage = async (textToSend) => {
     const query = textToSend || inputText;
@@ -155,10 +158,6 @@ export default function LiveChatSupportWidget() {
     }, 600);
   };
 
-  const [csatRating, setCsatRating] = useState(5);
-  const [csatComment, setCsatComment] = useState('');
-  const [showCsatPrompt, setShowCsatPrompt] = useState(false);
-
   const handleCreateTicket = () => {
     try {
       const tck = supportEngine.createTicket({
@@ -188,6 +187,8 @@ export default function LiveChatSupportWidget() {
     showToast(`Thank you for your ${ratingVal}-star support feedback!`, 'success');
     setShowCsatPrompt(false);
   };
+
+  if (isAdminRoute) return null;
 
   return (
     <div className="live-chat-support-wrapper">
@@ -367,6 +368,24 @@ export default function LiveChatSupportWidget() {
                       <FiShield /> 256-bit Encrypted
                     </span>
                   </div>
+                  {showCsatPrompt && (
+                    <div className="live-chat-csat">
+                      <span>How was this chat?</span>
+                      <div className="live-chat-csat-stars">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            className={star <= csatRating ? 'active' : ''}
+                            onClick={() => handleSubmitCsat(star)}
+                            aria-label={`${star} star${star === 1 ? '' : 's'}`}
+                          >
+                            ★
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </>
             )}

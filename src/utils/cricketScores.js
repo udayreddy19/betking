@@ -36,8 +36,8 @@ function pickEntryForTeam(entries, teamName) {
  * Map liveDetails fields onto team1/team2 regardless of chase/first naming.
  */
 export function resolveCricketTeamScores(match, ld = {}) {
-  const team1Name = match?.team1?.name || '';
-  const team2Name = match?.team2?.name || '';
+  const team1Name = match?.team1?.name || match?.team1 || '';
+  const team2Name = match?.team2?.name || match?.team2 || '';
 
   // Test match: resolve from testInnings[]
   if (ld.testInnings?.length > 0) {
@@ -47,42 +47,35 @@ export function resolveCricketTeamScores(match, ld = {}) {
   const commentaryStr = ld.commentary || '';
   const needMatch = commentaryStr.match(/(?:([A-Za-z\s]+)\s+)?need\s+(\d+)\s+runs?/i);
   
-  const isSecondInnings = (ld.inningsId ?? 0) > 1
-    || (ld.chaseRuns != null && ld.firstRuns != null)
-    || Boolean(ld.chaseTeamName && ld.firstTeamName)
-    || Boolean(ld.score2 != null && ld.score2 > 0 && ld.runs != null && ld.runs > 0)
-    || Boolean(needMatch);
+  // 2nd Innings ONLY if we have explicit 2nd innings score fields or explicit chase commentary with firstRuns
+  const hasSecondInningsData = (ld.inningsId ?? 0) >= 2
+    || (ld.firstRuns != null && ld.chaseRuns != null)
+    || ((ld.score1 != null || ld.runs != null) && (ld.score2 != null && ld.score2 > 0))
+    || (ld.firstTeamName && ld.chaseTeamName && ld.chaseRuns != null)
+    || (ld.wickets2 != null && ld.wickets2 > 0)
+    || (ld.overs2 != null && ld.overs2 !== '0.0' && ld.overs2 !== '0')
+    || Boolean(needMatch && ld.firstRuns != null);
 
-  if (isSecondInnings) {
+  if (hasSecondInningsData) {
     let chaseTeam = ld.chaseTeamName;
     let targetRuns = null;
 
     if (needMatch) {
-      if (!chaseTeam && needMatch[1]) {
-        chaseTeam = needMatch[1].trim();
-      }
+      if (!chaseTeam && needMatch[1]) chaseTeam = needMatch[1].trim();
       targetRuns = parseInt(needMatch[2], 10);
     }
 
-    const inferredFirstRuns = ld.firstRuns ?? (targetRuns ? targetRuns - 1 : ld.runs);
-    const inferredFirstWickets = ld.firstWickets ?? (targetRuns ? 10 : (ld.wickets ?? 0));
-    const inferredFirstOvers = ld.firstOvers ?? (targetRuns ? '50.0' : (ld.overs ?? '0.0'));
+    const firstTeam = ld.firstTeamName || (teamNameMatches(team1Name, chaseTeam) ? team2Name : team1Name);
+    const firstRuns = ld.firstRuns ?? ld.score1 ?? ld.runs ?? (targetRuns ? targetRuns - 1 : 0);
+    const firstWickets = ld.firstWickets ?? ld.wickets ?? (targetRuns ? 10 : 0);
+    const firstOvers = ld.firstOvers || ld.overs || '0.0';
 
-    const firstScore = scoreEntry(
-      ld.firstTeamName || (teamNameMatches(team1Name, chaseTeam) ? team2Name : team1Name),
-      inferredFirstRuns ?? 0,
-      inferredFirstWickets ?? 0,
-      inferredFirstOvers ?? '0.0',
-      match,
-    );
+    const chaseRuns = ld.chaseRuns ?? ld.score2 ?? 0;
+    const chaseWickets = ld.chaseWickets ?? ld.wickets2 ?? 0;
+    const chaseOvers = ld.chaseOvers || ld.overs2 || '0.0';
 
-    const chaseScore = scoreEntry(
-      chaseTeam || team2Name,
-      ld.chaseRuns ?? ld.score2 ?? (targetRuns ? (ld.runs ?? 0) : 0),
-      ld.chaseWickets ?? ld.wickets2 ?? (targetRuns ? (ld.wickets ?? 0) : 0),
-      ld.chaseOvers ?? ld.overs2 ?? (targetRuns ? (ld.overs ?? '0.0') : '0.0'),
-      match,
-    );
+    const firstScore = scoreEntry(firstTeam, firstRuns, firstWickets, firstOvers, match);
+    const chaseScore = scoreEntry(chaseTeam || team2Name, chaseRuns, chaseWickets, chaseOvers, match);
 
     const isTeam1Chasing = teamNameMatches(team1Name, chaseTeam || ld.chaseTeamName);
     return {

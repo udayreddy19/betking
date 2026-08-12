@@ -8,7 +8,6 @@ import HomeCategoryGrid from '../../components/HomeCategoryGrid/HomeCategoryGrid
 import { sportsCategories, featuredLeagues } from '../../data/mockData';
 import { homePromoSlides } from '../../data/homePageData';
 import { useLiveMatches, useLiveSportsMeta } from '../../context/LiveSportsContext';
-import { useAuth } from '../../context/AuthContext';
 import { filterMatches } from '../../utils/matchFilters';
 import { getLeagueMeta, isSameLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
 import BoostedOddsWidget from '../../components/BoostedOddsWidget/BoostedOddsWidget';
@@ -25,7 +24,6 @@ function filterByLeague(matchList, leagueId) {
 export default function Home() {
   const matches = useLiveMatches();
   const { isScoresLoading } = useLiveSportsMeta();
-  const { showToast } = useAuth();
   const navigate = useNavigate();
   const [activeSport, setActiveSport] = useState('cricket');
   const [activeLeague, setActiveLeague] = useState(null);
@@ -177,15 +175,6 @@ export default function Home() {
           )}
         </div>
       </section>
-
-      <button
-        type="button"
-        className="home-chat-fab"
-        aria-label="Live chat"
-        onClick={() => showToast('Live chat support coming soon!', 'info')}
-      >
-        💬
-      </button>
     </div>
   );
 }

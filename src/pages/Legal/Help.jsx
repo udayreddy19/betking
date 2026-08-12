@@ -53,7 +53,14 @@ export default function Help() {
       </section>
       <section>
         <h2>Contact</h2>
-        <p>For account or payment issues, contact support at support@betking.com.</p>
+        <p>For account or payment issues, open live chat or email support@betking.com.</p>
+        <button
+          type="button"
+          className="legal-chat-btn"
+          onClick={() => window.dispatchEvent(new CustomEvent('betking:open-support-chat'))}
+        >
+          Open live chat
+        </button>
       </section>
       <p><Link to="/">← Back to home</Link></p>
     </div>

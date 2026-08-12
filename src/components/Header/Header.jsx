@@ -57,6 +57,8 @@ function Header() {
   const location = useLocation();
 
   const isAdminPage = location.pathname.startsWith('/admin');
+  if (isAdminPage) return null;
+
   const isAdminUser = user?.role === 'admin' || user?.email === 'admin@betking.com';
   // ONLY show Admin Clean Header when actively on the /admin route
   const showAdminCleanHeader = isAdminPage;
@@ -180,9 +182,6 @@ function Header() {
 
           {showAdminCleanHeader ? (
             <div className="header-admin-clean-bar">
-              <span className="admin-status-badge">
-                <span className="admin-status-dot" /> ADMIN MODE
-              </span>
               {!isAdminPage && (
                 <button className="header-deposit-btn" onClick={() => navigate('/admin')}>
                   Admin Portal
@@ -257,7 +256,7 @@ function Header() {
             </select>
           )}
 
-          {isLoggedIn ? (
+          {isLoggedIn && !isAdminPage ? (
             <>
               <div className="header-wallet-group" ref={walletRef}>
                 <div className="header-wallet-dropdown-wrap">

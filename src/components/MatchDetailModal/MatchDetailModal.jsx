@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { IoClose } from '../../icons';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { isMatchBettable, isMatchLive } from '../../utils/matchBetting';
-import { generateMatchMarkets } from '../../utils/oddsMarketsGenerator';
+import { fetchAuthoritativeMatchOdds, getCachedMatchOdds } from '../../services/oddsService';
 import { resolveCricketTeamScores, isCricketSecondInnings } from '../../utils/cricketScores';
 import { getChaseText } from '../../utils/liveMatchWidgetData';
 import { getMatchMaxOvers, isTestMatch, getTestMatchDayLabel, formatMatchCountdown } from '../../utils/cricketFormat';
@@ -74,9 +74,33 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
   const team2Name = match.team2.name;
   const sport = match.sport || 'cricket';
 
-  const matchMarkets = useMemo(() => {
-    return generateMatchMarkets(match);
-  }, [match]);
+  const [matchMarkets, setMatchMarkets] = useState([]);
+
+  useEffect(() => {
+    if (!match?.id && !match?.matchId) {
+      setMatchMarkets([]);
+      return;
+    }
+    const matchId = match.id || match.matchId;
+
+    const cached = getCachedMatchOdds(matchId);
+    if (cached && Array.isArray(cached.markets) && cached.markets.length > 0) {
+      setMatchMarkets(cached.markets);
+    } else {
+      setMatchMarkets([]);
+    }
+
+    let isCancelled = false;
+
+    fetchAuthoritativeMatchOdds(matchId, team1Name, team2Name).then((snapshot) => {
+      if (isCancelled) return;
+      if (snapshot && Array.isArray(snapshot.markets) && snapshot.markets.length > 0) {
+        setMatchMarkets(snapshot.markets);
+      }
+    });
+
+    return () => { isCancelled = true; };
+  }, [match?.id, match?.matchId]);
 
   // Dynamic player names from realistic roster database
   const t1Roster = getRosterForTeam(team1Name);
@@ -321,160 +345,88 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
           </div>
         )}
 
-        {/* Markets Content List - 10CRIC Style */}
+        {/* Markets Content List - Authoritative Odds Engine V2 Snapshot */}
         <div className="market-content">
 
-          {/* 1. Main Winner Market */}
-          {(activeMarketCategory === 'all' || activeMarketCategory === 'main') && (
-            <div className="market-box">
-              <div className="market-title">
-                <span>Winner (incl. super over)</span>
-                <span className="market-cashout">CASHOUT AVAILABLE</span>
-              </div>
-              <div className={`market-odds-grid ${match.odds.draw !== undefined ? 'three-col' : 'two-col'}`}>
-                <button
-                  type="button"
-                  className={oddsBtnClass('1')}
-                  disabled={!canBet}
-                  onClick={(e) => handleOddsClick(e, '1', match.odds.team1)}
-                >
-                  <span className="market-label">{team1Name}</span>
-                  <span className="market-val">{Number(match.odds.team1).toFixed(2)}</span>
-                </button>
-                {match.odds.draw !== undefined && (
-                  <button
-                    type="button"
-                    className={oddsBtnClass('X')}
-                    disabled={!canBet}
-                    onClick={(e) => handleOddsClick(e, 'X', match.odds.draw)}
-                  >
-                    <span className="market-label">Draw</span>
-                    <span className="market-val">{Number(match.odds.draw).toFixed(2)}</span>
-                  </button>
-                )}
-                <button
-                  type="button"
-                  className={oddsBtnClass('2')}
-                  disabled={!canBet}
-                  onClick={(e) => handleOddsClick(e, '2', match.odds.team2)}
-                >
-                  <span className="market-label">{team2Name}</span>
-                  <span className="market-val">{Number(match.odds.team2).toFixed(2)}</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* DYNAMIC EXPANDED BETTING MARKETS */}
+          {/* DYNAMIC AUTHORITATIVE BETTING MARKETS FROM ODDS ENGINE V2 */}
           {activeMarketCategory !== 'builder' && activeMarketCategory !== 'insights' && (
-            matchMarkets.map((m) => {
-              const isCatMatch = activeMarketCategory === 'all'
-                || activeMarketCategory === 'main'
-                || activeMarketCategory === m.category;
-              if (!isCatMatch) return null;
+            matchMarkets.length > 0 ? (
+              matchMarkets.map((m) => {
+                const isCatMatch = activeMarketCategory === 'all'
+                  || (activeMarketCategory === 'main' && (m.category === 'main' || m.key === 'winner' || m.marketType === 'MATCH_WINNER'))
+                  || (activeMarketCategory === 'overs-deliveries' && (m.category === 'totals' || m.category === 'over' || m.category === 'overs' || m.category === 'delivery' || m.category === 'deliveries' || m.marketType === 'TEAM_TOTAL' || m.marketType === 'MATCH_TOTAL'))
+                  || (activeMarketCategory === 'player-props' && (m.category === 'props' || m.category === 'player_props' || m.category === 'h2h'))
+                  || (activeMarketCategory === 'specials' && (m.category === 'partnership' || m.category === 'wickets' || m.category === 'specials'))
+                  || activeMarketCategory === m.category
+                  || activeMarketCategory === m.categoryGroup;
+                if (!isCatMatch) return null;
+                const isMarketDetermined = m.status === 'DETERMINED' || m.status === 'CLOSED' || m.status === 'SETTLED' || m.determined;
 
-              return (
-                <div key={m.key} className="market-box">
-                  <div className="market-title">
-                    <span>{m.title}</span>
-                    {m.key === 'winner' && <span className="market-cashout">CASHOUT AVAILABLE</span>}
+                return (
+                  <div key={m.key} className={`market-box ${isMarketDetermined ? 'determined-market' : ''}`}>
+                    <div className="market-title">
+                      <span>{m.title}</span>
+                      {isMarketDetermined && <span className="market-cashout" style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)' }}>SETTLED / CLOSED</span>}
+                      {m.key === 'winner' && !isMarketDetermined && <span className="market-cashout">CASHOUT AVAILABLE</span>}
+                    </div>
+                    <div className={`market-odds-grid ${m.options.length === 3 ? 'three-col' : (m.options.length === 4 ? 'four-col' : (m.options.length > 4 ? 'multi-col' : 'two-col'))}`}>
+                      {m.options.map((opt) => {
+                        const isOptBettable = canBet && !isMarketDetermined && opt.bettable !== false && opt.status !== 'DETERMINED' && !opt.determined && opt.odds != null;
+                        return (
+                          <button
+                            key={opt.selection || opt.name}
+                            type="button"
+                            className={`${propOddsBtnClass(m.title, opt.name)} ${!isOptBettable ? 'locked disabled' : ''}`}
+                            disabled={!isOptBettable}
+                            onClick={(e) => isOptBettable && handleOddsClick(e, opt.selection, opt.odds, opt.name)}
+                            style={!isOptBettable ? { opacity: 0.6, cursor: 'not-allowed', background: '#1a2234' } : {}}
+                          >
+                            <span className="market-label">{opt.name}</span>
+                            <span className="market-val">{isOptBettable ? Number(opt.odds).toFixed(2) : (opt.won ? 'WON' : 'MARKET UNAVAILABLE')}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div className={`market-odds-grid ${m.options.length === 3 ? 'three-col' : (m.options.length === 4 ? 'four-col' : (m.options.length > 4 ? 'multi-col' : 'two-col'))}`}>
-                    {m.options.map((opt) => (
-                      <button
-                        key={opt.selection}
-                        type="button"
-                        className={propOddsBtnClass(m.title, opt.name)}
-                        disabled={!canBet}
-                        onClick={(e) => handleOddsClick(e, opt.selection, opt.odds, opt.name)}
-                      >
-                        <span className="market-label">{opt.name}</span>
-                        <span className="market-val">{Number(opt.odds).toFixed(2)}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              );
-            })
+                );
+              })
+            ) : (
+              <div className="match-detail-suspended" style={{ padding: '24px', textAlign: 'center', color: '#94a3b8' }}>
+                MARKET UNAVAILABLE — Fetching authoritative live odds...
+              </div>
+            )
           )}
 
-          {/* BET BUILDER UI VIEW */}
+          {/* BET BUILDER UI VIEW — AUTHORITATIVE snapshot LEGS */}
           {activeMarketCategory === 'builder' && (
             <div className="builder-view">
               <div className="builder-header-box">
                 <h4>🛠️ Same Match Bet Builder</h4>
-                <p>Select up to 4 legs from this match to construct a single custom parlay bet.</p>
+                <p>Select up to 4 legs from active authoritative markets to construct a custom parlay.</p>
               </div>
 
               <div className="builder-options-list">
-                <div className="builder-option-group">
-                  <h5>Match Winner</h5>
-                  <div className="market-odds-grid two-col">
-                    {[
-                      { label: `${team1Name} to Win`, odds: match.odds.team1 || 1.85 },
-                      { label: `${team2Name} to Win`, odds: match.odds.team2 || 1.95 },
-                    ].map((opt) => {
-                      const isSel = builderLegs.some(l => l.label === opt.label);
-                      return (
-                        <button
-                          key={opt.label}
-                          type="button"
-                          className={`market-odds-btn ${isSel ? 'selected' : ''}`}
-                          onClick={() => toggleBuilderLeg(opt.label, opt.odds)}
-                        >
-                          <span className="market-label">{opt.label}</span>
-                          <span className="market-val">{Number(opt.odds).toFixed(2)}</span>
-                        </button>
-                      );
-                    })}
+                {matchMarkets.filter(m => m.status === 'OPEN').map((m) => (
+                  <div key={m.key} className="builder-option-group">
+                    <h5>{m.title}</h5>
+                    <div className={`market-odds-grid ${m.options.length === 3 ? 'three-col' : 'two-col'}`}>
+                      {m.options.filter(o => o.bettable !== false && o.odds != null).map((opt) => {
+                        const isSel = builderLegs.some(l => l.label === opt.name);
+                        return (
+                          <button
+                            key={opt.selection || opt.name}
+                            type="button"
+                            className={`market-odds-btn ${isSel ? 'selected' : ''}`}
+                            onClick={() => toggleBuilderLeg(opt.name, opt.odds)}
+                          >
+                            <span className="market-label">{opt.name}</span>
+                            <span className="market-val">{Number(opt.odds).toFixed(2)}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-
-                <div className="builder-option-group">
-                  <h5>Match Total Score</h5>
-                  <div className="market-odds-grid two-col">
-                    {[
-                      { label: 'Total Score Over 160.5', odds: 1.90 },
-                      { label: 'Total Score Under 160.5', odds: 1.85 },
-                    ].map((opt) => {
-                      const isSel = builderLegs.some(l => l.label === opt.label);
-                      return (
-                        <button
-                          key={opt.label}
-                          type="button"
-                          className={`market-odds-btn ${isSel ? 'selected' : ''}`}
-                          onClick={() => toggleBuilderLeg(opt.label, opt.odds)}
-                        >
-                          <span className="market-label">{opt.label}</span>
-                          <span className="market-val">{opt.odds.toFixed(2)}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="builder-option-group">
-                  <h5>Top Player Milestone</h5>
-                  <div className="market-odds-grid two-col">
-                    {[
-                      { label: `${team1Players[0]} > 25.5 Runs/Points`, odds: 1.82 },
-                      { label: `${team2Players[0]} > 25.5 Runs/Points`, odds: 1.88 },
-                    ].map((opt) => {
-                      const isSel = builderLegs.some(l => l.label === opt.label);
-                      return (
-                        <button
-                          key={opt.label}
-                          type="button"
-                          className={`market-odds-btn ${isSel ? 'selected' : ''}`}
-                          onClick={() => toggleBuilderLeg(opt.label, opt.odds)}
-                        >
-                          <span className="market-label">{opt.label}</span>
-                          <span className="market-val">{opt.odds.toFixed(2)}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                ))}
               </div>
 
               <div className="builder-summary-box">

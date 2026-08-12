@@ -77,7 +77,7 @@ export function enrichMatchWithDetail(match, detail) {
         ? detail.scorecardInnings
         : match.scorecardInnings;
       const ldWithPlayers = enrichLivePlayersFromScorecard(ld, scorecardInnings || []);
-      const fromDetail = enrichCricketDetails(matchForScores, ldWithPlayers, {});
+      const fromDetail = enrichCricketDetails(matchForScores, ldWithPlayers, baseLd);
       liveDetails = mergeCricketLiveDetails(baseLd, fromDetail, matchForScores);
     } else {
       liveDetails = { ...baseLd, ...ld };
