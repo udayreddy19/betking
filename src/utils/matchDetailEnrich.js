@@ -3,6 +3,11 @@ import { mergeCricketLiveDetails } from './cricketScoreMerge';
 import { flattenCricketTeamScores, resolveCricketTeamScores } from './cricketScores';
 import { isHundredMatch, hundredBallsToOvers } from './cricketFormat';
 import { enrichLivePlayersFromScorecard } from './scorecardLivePlayers';
+import { isPlaceholderPlayerName } from './cricketPlayers';
+
+function hasPlayerName(player) {
+  return !!(player?.name && !isPlaceholderPlayerName(player.name));
+}
 
 function applyHundredBallNbr(match, ld) {
   const isHundred = isHundredMatch(match)
@@ -37,9 +42,9 @@ function enrichCricketDetails(match, ld, base) {
     wickets2: flat.wickets2,
     overs2: normalizeMatchOvers(flat.overs2, match),
     chaseBallNbr: merged.chaseBallNbr ?? ld.chaseBallNbr ?? base.chaseBallNbr,
-    batter1: ld.batter1 || base.batter1,
-    batter2: ld.batter2 || base.batter2,
-    bowler: ld.bowler || base.bowler,
+    batter1: hasPlayerName(ld.batter1) ? ld.batter1 : (hasPlayerName(base.batter1) ? base.batter1 : ld.batter1 || base.batter1),
+    batter2: hasPlayerName(ld.batter2) ? ld.batter2 : (hasPlayerName(base.batter2) ? base.batter2 : ld.batter2 || base.batter2),
+    bowler: hasPlayerName(ld.bowler) ? ld.bowler : (hasPlayerName(base.bowler) ? base.bowler : ld.bowler || base.bowler),
     commentary: ld.commentary || base.commentary,
     currentOverBalls: ld.currentOverBalls?.length ? ld.currentOverBalls : base.currentOverBalls,
     firstRuns: merged.firstRuns,
@@ -54,8 +59,26 @@ function enrichCricketDetails(match, ld, base) {
   };
 }
 
+function isSparseCricketDetail(detail, match) {
+  const ld = detail?.liveDetails || {};
+  const hasPlayers = !!(ld.batter1?.name || ld.batter2?.name || ld.bowler?.name);
+  const hasScore = Number(ld.runs) > 0
+    || Number(ld.score2) > 0
+    || Number(ld.chaseRuns) > 0
+    || Number(ld.firstRuns) > 0;
+  const hasOvers = ld.overs && ld.overs !== '0' && ld.overs !== '0.0';
+  const hasChaseOvers = ld.chaseOvers && ld.chaseOvers !== '0' && ld.chaseOvers !== '0.0';
+  const hasSquads = (detail?.squads || []).some((team) => team?.players?.length);
+  const hasScorecard = !!detail?.scorecardInnings?.length;
+  const baseHasLive = Number(match?.liveDetails?.runs) > 0
+    || Number(match?.liveDetails?.chaseRuns) > 0
+    || Number(match?.liveDetails?.score2) > 0;
+  return !hasPlayers && !hasScore && !hasOvers && !hasChaseOvers && !hasSquads && !hasScorecard && baseHasLive;
+}
+
 export function enrichMatchWithDetail(match, detail) {
   if (!match || !detail) return match;
+  if (isSparseCricketDetail(detail, match)) return match;
   const hasLive = detail.liveDetails && Object.keys(detail.liveDetails).length > 0;
   const hasMeta = detail.squads?.length || detail.scorecardInnings?.length || detail.overHistory?.length;
   if (!hasLive && !hasMeta) return match;
@@ -91,10 +114,10 @@ export function enrichMatchWithDetail(match, detail) {
 
   return {
     ...match,
-    isLive: detail.isLive ?? match.isLive,
-    matchState: detail.matchState
-      ?? (detail.isLive ? 'in' : undefined)
-      ?? match.matchState,
+    isLive: match.isLive === true || detail.isLive === true,
+    matchState: (match.matchState === 'in' || match.isLive || detail.matchState === 'in' || detail.isLive)
+      ? 'in'
+      : (detail.matchState || match.matchState),
     time: detail.time ?? match.time,
     seriesName: matchForScores.seriesName,
     matchFormat: detail.matchHeader?.matchFormat || match.matchFormat,

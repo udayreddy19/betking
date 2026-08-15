@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { MotionConfig } from 'motion/react';
 import { ThemeProvider } from './context/ThemeContext';
 import { BetSlipProvider } from './context/BetSlipContext';
@@ -51,7 +51,15 @@ function PageLoader() {
   return <div className="page-loader" role="status">Loading…</div>;
 }
 
+function AppFinancialModals() {
+  const { finModalType, closeFinModal } = useAuth();
+  return <FinancialModals modalType={finModalType} onClose={closeFinModal} />;
+}
+
 function AppLayout() {
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith('/admin');
+
   return (
     <>
       <Header />
@@ -63,9 +71,9 @@ function AppLayout() {
       <GamePlayModal />
       <BetSettlementRunner />
       <MobileBetSlip />
-      <MobileBottomBar />
-      <GlobalBetBar />
-      <main className="app-main">
+      {!isAdminRoute && <MobileBottomBar />}
+      {!isAdminRoute && <GlobalBetBar />}
+      <main className={`app-main${isAdminRoute ? ' app-main--admin' : ''}`}>
         <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <Routes>
@@ -79,9 +87,9 @@ function AppLayout() {
               <Route path="/register" element={<Register />} />
               <Route path="/promotions" element={<Promotions />} />
               <Route path="/vip" element={<Vip />} />
+              <Route path="/admin/iplsrl" element={<IPLSRLAdmin />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/*" element={<Admin />} />
-              <Route path="/admin/iplsrl" element={<IPLSRLAdmin />} />
               <Route path="/iplsrl" element={<IPLSRLHome />} />
               <Route path="/iplsrl/match-center" element={<IPLSRLMatchCenter />} />
               <Route path="/iplsrl/standings" element={<IPLSRLStandings />} />
@@ -99,15 +107,10 @@ function AppLayout() {
           </Suspense>
         </ErrorBoundary>
       </main>
-      <Footer />
-      <LiveChatSupportWidget />
+      {!isAdminRoute && <Footer />}
+      {!isAdminRoute && <LiveChatSupportWidget />}
     </>
   );
-}
-
-function AppFinancialModals() {
-  const { finModalType, closeFinModal } = useAuth();
-  return <FinancialModals modalType={finModalType} onClose={closeFinModal} />;
 }
 
 export default function App() {

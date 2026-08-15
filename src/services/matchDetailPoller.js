@@ -7,7 +7,7 @@ import { MATCH_DETAIL_LIVE_POLL_MS, MATCH_DETAIL_IDLE_POLL_MS } from '../config/
 
 const LIVE_GAP_MS = MATCH_DETAIL_LIVE_POLL_MS;
 const IDLE_GAP_MS = MATCH_DETAIL_IDLE_POLL_MS;
-const MAX_POLLERS = 6;
+const MAX_POLLERS = 16;
 
 /** @type {Map<string, { match: object, detail: object|null, version: number, listeners: Set<Function>, running: boolean, isLive: boolean, priority: boolean }>} */
 const pollers = new Map();
@@ -59,6 +59,10 @@ function detailFingerprint(detail) {
     bowl.overs,
     ld.commentary,
     (ld.currentOverBalls || []).join(','),
+    ld.commentaryFeed?.length ?? 0,
+    ld.commentaryFeed?.[0]?.text ?? '',
+    ld.commentaryList?.length ?? 0,
+    ld.commentaryList?.[0]?.text ?? '',
     detail.squads?.length ?? 0,
     detail.squads?.reduce((n, t) => n + (t.players?.length || 0), 0) ?? 0,
     detail.scorecardInnings?.length ?? 0,
@@ -79,6 +83,24 @@ function emit(key, detail) {
   state.detail = detail;
   state.version += 1;
   state.listeners.forEach((fn) => fn());
+  bumpGlobalDetailVersion();
+}
+
+let globalDetailVersion = 0;
+const globalDetailListeners = new Set();
+
+function bumpGlobalDetailVersion() {
+  globalDetailVersion += 1;
+  globalDetailListeners.forEach((fn) => fn());
+}
+
+export function subscribeGlobalMatchDetails(listener) {
+  globalDetailListeners.add(listener);
+  return () => globalDetailListeners.delete(listener);
+}
+
+export function getGlobalMatchDetailVersion() {
+  return globalDetailVersion;
 }
 
 async function fetchAndEmit(key) {
@@ -122,6 +144,10 @@ function buildDetailUrl(match, fast) {
   });
 
   if (match.league) params.set('league', match.league);
+  if (match.team1?.name) params.set('team1', match.team1.name);
+  if (match.team2?.name) params.set('team2', match.team2.name);
+  if (match.isLive) params.set('isLive', '1');
+  if (match.matchState) params.set('matchState', match.matchState);
   if (match.cricbuzzMatchId) params.set('cricbuzzMatchId', String(match.cricbuzzMatchId));
   if (match.espnEventId) params.set('espnEventId', String(match.espnEventId));
   if (match.espnPath) params.set('espnPath', match.espnPath);
@@ -317,7 +343,7 @@ export function subscribeMatchDetail(match, listener) {
 export function enrichFromPoller(match) {
   const key = getPollerKey(match);
   if (!key) return match;
-  const detail = pollers.get(key)?.detail;
+  const detail = pollers.get(key)?.detail ?? detailCache.get(key);
   if (!detail) return match;
   return enrichMatchWithDetail(match, detail);
 }

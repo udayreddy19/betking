@@ -4,6 +4,8 @@
  * Eliminates all duplicated component-level score calculations.
  */
 
+import { formatTeamShortName } from '../utils/teamShortName';
+
 class CentralizedMatchStateEngine {
   constructor() {
     /** @type {Map<string, object>} Stores canonical MatchState snapshots by matchId */
@@ -20,7 +22,7 @@ class CentralizedMatchStateEngine {
    * Subscribe to state updates for a specific match.
    */
   subscribe(matchId, callback) {
-    if (!matchId) return () => {};
+    if (!matchId) return () => { };
     if (!this.listeners.has(matchId)) {
       this.listeners.set(matchId, new Set());
     }
@@ -47,12 +49,11 @@ class CentralizedMatchStateEngine {
    */
   getSnapshot(matchId, fallbackMatch = null) {
     if (!matchId) return null;
-    let state = this.matchStates.get(matchId);
-    if (!state && fallbackMatch) {
-      state = this.computeCanonicalMatchState(matchId, fallbackMatch, {});
-      this.matchStates.set(matchId, state);
+    const stored = this.matchStates.get(matchId);
+    if (fallbackMatch) {
+      return this.computeCanonicalMatchState(matchId, fallbackMatch, stored || {});
     }
-    return state || null;
+    return stored || null;
   }
 
   /**
@@ -96,8 +97,8 @@ class CentralizedMatchStateEngine {
     const team1Name = payload.team1?.name || payload.matchHeader?.team1?.name || safePrevious.teams?.team1?.name || 'Team 1';
     const team2Name = payload.team2?.name || payload.matchHeader?.team2?.name || safePrevious.teams?.team2?.name || 'Team 2';
 
-    const team1Short = payload.team1?.shortName || safePrevious.teams?.team1?.shortName || team1Name.substring(0, 3).toUpperCase();
-    const team2Short = payload.team2?.shortName || safePrevious.teams?.team2?.shortName || team2Name.substring(0, 3).toUpperCase();
+    const team1Short = formatTeamShortName(team1Name, payload.team1?.shortName || safePrevious.teams?.team1?.shortName);
+    const team2Short = formatTeamShortName(team2Name, payload.team2?.shortName || safePrevious.teams?.team2?.shortName);
 
     const commStr = ld.commentary || payload.commentary || '';
     const matchFormat = ld.matchFormat || payload.matchFormat || payload.matchType || safePrevious.matchFormat || 'Cricket';
@@ -288,11 +289,17 @@ class CentralizedMatchStateEngine {
 
     // 6. Current Batters & Bowler
     const currentBatters = {
-      striker: ld.batter1 || safePrevious.currentBatters?.striker || { name: '', runs: 0, balls: 0, fours: 0, sixes: 0, strikeRate: '0.00' },
-      nonStriker: ld.batter2 || safePrevious.currentBatters?.nonStriker || { name: '', runs: 0, balls: 0, fours: 0, sixes: 0, strikeRate: '0.00' },
+      striker: (ld.batter1?.name ? ld.batter1 : null)
+        || (safePrevious.currentBatters?.striker?.name ? safePrevious.currentBatters.striker : null)
+        || { name: '', runs: 0, balls: 0, fours: 0, sixes: 0, strikeRate: '0.00' },
+      nonStriker: (ld.batter2?.name ? ld.batter2 : null)
+        || (safePrevious.currentBatters?.nonStriker?.name ? safePrevious.currentBatters.nonStriker : null)
+        || { name: '', runs: 0, balls: 0, fours: 0, sixes: 0, strikeRate: '0.00' },
     };
 
-    const currentBowler = ld.bowler || safePrevious.currentBowler || { name: '', overs: '0.0', maidens: 0, runs: 0, wickets: 0, economy: '0.00' };
+    const currentBowler = (ld.bowler?.name ? ld.bowler : null)
+      || (safePrevious.currentBowler?.name ? safePrevious.currentBowler : null)
+      || { name: '', overs: '0.0', maidens: 0, runs: 0, wickets: 0, economy: '0.00' };
 
     const partnership = ld.partnership || safePrevious.partnership || { runs: 0, balls: 0 };
     const recentBalls = ld.currentOverBalls || safePrevious.recentBalls || [];
@@ -346,28 +353,9 @@ class CentralizedMatchStateEngine {
     return Math.round(parseFloat(str) * 6);
   }
 
-  computeBettingMarkets({ team1Name, team2Name, t1Runs, t2Runs, chaseState }) {
-    let t1Odds = 1.85;
-    let t2Odds = 1.95;
-
-    if (chaseState) {
-      const rrr = parseFloat(chaseState.requiredRunRate || 6.0);
-      if (rrr > 12.0) {
-        t1Odds = 1.15;
-        t2Odds = 5.50;
-      } else if (rrr < 6.0) {
-        t1Odds = 3.20;
-        t2Odds = 1.30;
-      }
-    } else if (t1Runs > t2Runs) {
-      t1Odds = 1.65;
-      t2Odds = 2.20;
-    }
-
-    return [
-      { id: 'match_winner', name: 'Match Winner', odds: [{ selection: team1Name, price: t1Odds }, { selection: team2Name, price: t2Odds }] },
-      { id: 'next_over_runs', name: 'Total Runs Next Over', odds: [{ selection: 'Over 5.5', price: 1.85 }, { selection: 'Under 5.5', price: 1.85 }] },
-    ];
+  computeBettingMarkets() {
+    // OddsEngineV3 is the sole authoritative pricing path — never invent markets here.
+    return [];
   }
 }
 

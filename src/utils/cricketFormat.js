@@ -5,7 +5,14 @@ const HUNDRED_BALLS_PER_OVER = 5;
 const HUNDRED_MAX_OVERS = HUNDRED_BALLS_PER_INNINGS / HUNDRED_BALLS_PER_OVER;
 
 export function isHundredMatch(match) {
-  const text = `${match?.league || ''} ${match?.seriesName || ''} ${match?.matchType || ''} ${match?.matchFormat || ''}`;
+  const text = [
+    match?.league,
+    match?.seriesName,
+    match?.matchType,
+    match?.matchFormat,
+    match?.matchHeader?.matchFormat,
+    match?.matchHeader?.seriesName,
+  ].filter(Boolean).join(' ');
   return /hundred/i.test(text) || /\bhun\b/i.test(text);
 }
 

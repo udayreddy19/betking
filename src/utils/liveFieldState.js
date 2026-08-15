@@ -135,13 +135,9 @@ export function generateCurrentOverBalls(matchId, oversStr) {
   return { overNum: currentOverNum, balls };
 }
 
-function resolveBatterName(apiName, rosterName, teamName = '') {
+function resolveBatterName(apiName, rosterName) {
   if (apiName && !isPlaceholderPlayerName(apiName)) return apiName.trim();
   if (rosterName && !isPlaceholderPlayerName(rosterName)) return rosterName.trim();
-  if (teamName) {
-    const roster = getRosterForTeam(teamName);
-    if (roster?.batters?.length) return roster.batters[0];
-  }
   return '';
 }
 
@@ -163,13 +159,13 @@ export function createFieldState(match, roster) {
 
   const { overNum, balls: ballsInOver } = generateCurrentOverBalls(matchId, oversStr);
 
-  const batTeamName = battingIdx === 2 ? (match?.team2?.name || match?.team2) : (match?.team1?.name || match?.team1);
-  const batRoster = getRosterForTeam(batTeamName);
-  const activeRoster = (roster?.batters?.length && !isPlaceholderPlayerName(roster.batters[0])) ? roster : batRoster;
+  const activeRoster = (roster?.batters?.length && !isPlaceholderPlayerName(roster.batters[0]))
+    ? roster
+    : { batters: [], bowlers: [] };
 
   const strikerIdx = 0;
-  const b1Name = resolveBatterName(ld.batter1?.name, activeRoster.batters?.[strikerIdx], batTeamName);
-  const b2Name = resolveBatterName(ld.batter2?.name, activeRoster.batters?.[1], batTeamName);
+  const b1Name = resolveBatterName(ld.batter1?.name, activeRoster.batters?.[strikerIdx]);
+  const b2Name = resolveBatterName(ld.batter2?.name, activeRoster.batters?.[1]);
 
   const batter1 = {
     name: b1Name || null,
@@ -192,30 +188,30 @@ export function createFieldState(match, roster) {
   const lastRun = lastBall === 'W' ? 0 : (lastBall === '•' ? 0 : parseInt(lastBall, 10) || 1);
 
   const recentOvers = [];
-  if (over > 0) {
+  if (overNum > 0 && ballsInOver.length) {
     recentOvers.push({
-      overNum: over,
-      balls: generateOverBalls(matchId, over),
-      runs: 7,
-      wickets: 0,
+      overNum,
+      balls: ballsInOver,
+      runs: ballsInOver.reduce((sum, ball) => sum + (parseInt(ball, 10) || 0), 0),
+      wickets: ballsInOver.filter((ball) => String(ball).toUpperCase() === 'W').length,
     });
   }
 
   return {
     matchId,
     overNum,
-    overBalls: ballsInOver.length > 0 ? ballsInOver : (startBall === 0 ? [] : [formatBallOutcome(nextBallOutcome(matchId, 0))]),
+    overBalls: ballsInOver,
     recentOvers,
-    ballIndex: over * 6 + startBall,
+    ballIndex: ballsInOver.length,
     strikerIdx,
     batter1,
     batter2,
-    bowler: resolveBatterName(ld.bowler?.name, roster.bowlers[0]),
+    bowler: resolveBatterName(ld.bowler?.name, roster?.bowlers?.[0]),
     lastBallRun: lastRun,
     wagonAngle: runsToWagonAngle(lastRun),
-    inningsFours: ld.fours ?? 8 + over,
-    inningsSixes: ld.sixes ?? 2 + (over % 3),
-    extras: ld.extras ?? 2,
+    inningsFours: ld.fours ?? 0,
+    inningsSixes: ld.sixes ?? 0,
+    extras: ld.extras ?? 0,
     syncedRuns: ld.firstRuns ?? ld.runs ?? 0,
     syncedScore2: ld.chaseRuns ?? ld.score2 ?? 0,
     syncedOvers: oversStr,

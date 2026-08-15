@@ -16,6 +16,16 @@ export default defineConfig({
       '/api': {
         target: 'http://127.0.0.1:5001',
         changeOrigin: true,
+        bypass(req) {
+          const path = req.url?.split('?')[0] || '';
+          if (
+            path === '/api/live-scores'
+            || path === '/api/match-detail'
+            || /^\/api\/public\/sports\/matches\/[^/]+\/odds$/.test(path)
+          ) {
+            return req.url;
+          }
+        },
       },
     },
   },

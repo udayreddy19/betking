@@ -249,7 +249,7 @@ export function getMarketCategoriesForSport(sport = 'cricket') {
 
 export function generateMatchMarkets(match) {
   if (!match) return [];
-  console.warn('[NON_AUTHORITATIVE_ODDS_SOURCE] Legacy generateMatchMarkets invoked. OddsEngineV2 is the authoritative source.');
+  console.warn('[NON_AUTHORITATIVE_ODDS_SOURCE] Legacy generateMatchMarkets invoked. OddsEngineV3 is the authoritative source.');
   const sport = match.sport || 'cricket';
   const seed = getSeed(match.id);
   const team1Name = match.team1?.name || match.team1?.shortName || 'Team 1';

@@ -1,9 +1,7 @@
-import { getRosterForTeam } from '../data/cricketRosters';
 import {
   getMatchFormatHint,
   getMatchMaxBalls,
   normalizeMatchOvers,
-  oversToBallsForMatch,
 } from './cricketFormat';
 import { formatBallOutcome } from './liveFieldState';
 import { isCricketSecondInnings, resolveCricketTeamScores, teamNameMatches } from './cricketScores';
@@ -11,13 +9,10 @@ import { getScorecardInningsForTeam } from './matchSquads';
 import { isPlaceholderPlayerName } from './cricketPlayers';
 import { enrichLivePlayersFromScorecard } from './scorecardLivePlayers';
 
-export function getTeamShortCode(name) {
-  const clean = name.replace(/\s+W$/, '').trim();
-  const words = clean.split(/\s+/);
-  if (words.length >= 2) {
-    return words.map((w) => w[0]).join('').toUpperCase().slice(0, 3);
-  }
-  return clean.slice(0, 3).toUpperCase();
+import { formatTeamShortName } from './teamShortName';
+
+export function getTeamShortCode(name, existingShort = '') {
+  return formatTeamShortName(name, existingShort);
 }
 
 export function getTeamDisplayName(name) {
@@ -124,7 +119,6 @@ function liveBattersFromDetails(ld) {
     }));
 }
 export function buildScorecardInnings(match, teamName, roster, _fieldState, isBattingInnings, teamShortName = '') {
-  const realRoster = getRosterForTeam(teamName);
   const apiInnings = getScorecardInningsForTeam(match, teamName, teamShortName);
 
   if (apiInnings?.batters?.length) {
@@ -134,24 +128,19 @@ export function buildScorecardInnings(match, teamName, roster, _fieldState, isBa
     );
     let players = apiInnings.batters
       .filter(hasBatted)
-      .map((b, idx) => {
-        let name = b.name;
-        if (isPlaceholderPlayerName(name)) {
-          name = realRoster?.batters?.[idx] || (roster?.batters?.[idx] && !isPlaceholderPlayerName(roster.batters[idx]) ? roster.batters[idx] : null) || name;
-        }
-        return {
-          name,
-          runs: b.runs,
-          balls: b.balls,
-          fours: b.fours ?? 0,
-          sixes: b.sixes ?? 0,
-          sr: b.sr,
-          dismissal: b.dismissal,
-          notOut: b.notOut,
-          isStriker: false,
-          statusLabel: formatBatterStatus(b),
-        };
-      });
+      .filter((b) => b.name && !isPlaceholderPlayerName(b.name))
+      .map((b) => ({
+        name: b.name,
+        runs: b.runs,
+        balls: b.balls,
+        fours: b.fours ?? 0,
+        sixes: b.sixes ?? 0,
+        sr: b.sr,
+        dismissal: b.dismissal,
+        notOut: b.notOut,
+        isStriker: false,
+        statusLabel: formatBatterStatus(b),
+      }));
 
     if (isBattingInnings) {
       players = mergeLiveBatterStats(players, ld);
@@ -168,96 +157,7 @@ export function buildScorecardInnings(match, teamName, roster, _fieldState, isBa
     match?.liveDetails || {},
     match?.scorecardInnings || [],
   );
-
-  const rawBattersList = roster?.batters?.length ? roster.batters : realRoster.batters;
-  const battersList = rawBattersList.map((name, idx) => {
-    if (isPlaceholderPlayerName(name)) {
-      return realRoster?.batters?.[idx] || `${teamName} Batter ${idx + 1}`;
-    }
-    return name;
-  });
-
-  // Resolve team score from resolveCricketTeamScores
-  const resolved = resolveCricketTeamScores(match, ld);
-  const isTeam1 = teamNameMatches(match?.team1?.name, teamName);
-  const teamScore = isTeam1 ? resolved.team1 : resolved.team2;
-
-  const totalRuns = teamScore.runs ?? (isBattingInnings ? (ld.runs ?? 9) : 0);
-  const totalWickets = teamScore.wickets ?? (isBattingInnings ? (ld.wickets ?? 0) : 0);
-
-  // If in-play batting innings with 0-1 wickets down:
-  if (isBattingInnings && totalWickets <= 1) {
-    let b1Name = ld.batter1?.name || battersList[0];
-    let b2Name = ld.batter2?.name || battersList[1];
-    if (isPlaceholderPlayerName(b1Name)) b1Name = realRoster?.batters?.[0] || battersList[0];
-    if (isPlaceholderPlayerName(b2Name)) b2Name = realRoster?.batters?.[1] || battersList[1];
-
-    const b1Runs = ld.batter1?.runs ?? Math.floor(totalRuns * 0.6);
-    const b2Runs = ld.batter2?.runs ?? Math.max(0, totalRuns - b1Runs);
-    const b1Balls = ld.batter1?.balls ?? Math.max(1, Math.floor(b1Runs * 1.15));
-    const b2Balls = ld.batter2?.balls ?? Math.max(1, Math.floor(b2Runs * 1.15));
-
-    return [
-      {
-        name: b1Name,
-        runs: b1Runs,
-        balls: b1Balls,
-        sr: b1Balls > 0 ? ((b1Runs / b1Balls) * 100).toFixed(2) : '100.00',
-        fours: ld.batter1?.fours ?? Math.floor(b1Runs / 5),
-        sixes: ld.batter1?.sixes ?? Math.floor(b1Runs / 12),
-        notOut: true,
-        dismissal: 'batting',
-        statusLabel: 'batting',
-      },
-      {
-        name: b2Name,
-        runs: b2Runs,
-        balls: b2Balls,
-        sr: b2Balls > 0 ? ((b2Runs / b2Balls) * 100).toFixed(2) : '100.00',
-        fours: ld.batter2?.fours ?? Math.floor(b2Runs / 5),
-        sixes: ld.batter2?.sixes ?? Math.floor(b2Runs / 12),
-        notOut: true,
-        dismissal: 'batting',
-        statusLabel: 'batting',
-      },
-    ];
-  }
-
-  // Completed or multi-wicket innings: distribute totalRuns realistically across top batters
-  const runShares = [0.30, 0.22, 0.16, 0.12, 0.10, 0.06, 0.04];
-  const dismissals = ['c & b', 'c Wicketkeeper', 'lbw', 'b Bowler', 'run out', 'c Long-on', 'NOT OUT'];
-
-  let sumRuns = 0;
-  const result = [];
-
-  for (let i = 0; i < Math.min(battersList.length, 7); i++) {
-    const isLast = i === Math.min(battersList.length, 7) - 1;
-    const playerRuns = isLast ? Math.max(0, totalRuns - sumRuns) : Math.floor(totalRuns * runShares[i]);
-    sumRuns += playerRuns;
-    const playerBalls = Math.max(1, Math.floor(playerRuns * (1.05 + (i * 0.08))));
-
-    let rawName = battersList[i];
-    if (isPlaceholderPlayerName(rawName)) {
-      rawName = realRoster?.batters?.[i] || `${teamName} Batter ${i + 1}`;
-    };
-    const fours = Math.floor(playerRuns / 5);
-    const sixes = Math.floor(playerRuns / 14);
-    const isNotOut = i >= totalWickets;
-
-    result.push({
-      name: rawName,
-      runs: playerRuns,
-      balls: playerBalls,
-      sr: playerBalls > 0 ? ((playerRuns / playerBalls) * 100).toFixed(2) : '0.00',
-      fours: fours,
-      sixes: sixes,
-      notOut: isNotOut,
-      dismissal: isNotOut ? 'NOT OUT' : dismissals[i % dismissals.length],
-      statusLabel: isNotOut ? 'NOT OUT' : dismissals[i % dismissals.length],
-    });
-  }
-
-  return result;
+  return isBattingInnings ? liveBattersFromDetails(ld) : [];
 }
 
 function apiOverHistoryRows(match) {
@@ -275,38 +175,18 @@ function generateOverHistoryFromScore(match) {
   const ld = match?.liveDetails || {};
   const isChasing = isCricketSecondInnings(match, ld);
   const rawOvers = isChasing
-    ? (ld.overs2 || ld.chaseOvers || ld.overs || '1.0')
-    : (ld.overs || ld.firstOvers || '1.0');
+    ? (ld.overs2 || ld.chaseOvers || ld.overs)
+    : (ld.overs || ld.firstOvers);
+  if (!rawOvers || rawOvers === '0.0' || rawOvers === '0') return [];
+
   const oversStr = normalizeMatchOvers(rawOvers, match);
-  const currentOverNum = Math.max(1, parseInt(String(oversStr).split('.')[0], 10) || 1);
-  const ballInOver = Math.round((parseFloat(oversStr) % 1) * 10);
+  const currentOverNum = parseInt(String(oversStr).split('.')[0], 10) || 0;
+  if (currentOverNum < 1) return [];
 
-  const prevOverNum = Math.max(1, currentOverNum - 1);
-  const seed = [...String(match?.id || 'match')].reduce((a, c) => a + c.charCodeAt(0), 0);
+  const balls = (ld.currentOverBalls || []).map((b) => formatBallOutcome(b));
+  if (!balls.length) return [];
 
-  const prevBalls = ['1', '4', '4', '1', '1'];
-  const curBallPool = ['4', '4', 'Wd5', '1', '0', '6', 'W'];
-
-  const curBallsCount = ballInOver > 0 ? ballInOver : 3;
-  const curBalls = Array.from({ length: curBallsCount }, (_, i) => {
-    return curBallPool[(seed + currentOverNum * 3 + i) % curBallPool.length];
-  });
-
-  const rows = [];
-  if (prevOverNum < currentOverNum) {
-    rows.push({
-      overNum: prevOverNum,
-      balls: prevBalls,
-      isCurrent: false,
-    });
-  }
-  rows.push({
-    overNum: currentOverNum,
-    balls: curBalls,
-    isCurrent: true,
-  });
-
-  return rows;
+  return [{ overNum: currentOverNum, balls, isCurrent: true }];
 }
 
 export function buildOverHistoryRows(fieldState, _matchId, match) {
@@ -355,14 +235,16 @@ export function buildStatsOvers(_fieldState, match) {
   }
 
   const currentBalls = (ld.currentOverBalls || []).map((b) => formatBallOutcome(b));
-  const rawOvers = isChasing ? (ld.overs2 || ld.chaseOvers || ld.overs || '1.0') : (ld.overs || ld.firstOvers || '1.0');
+  if (!currentBalls.length) return [];
+  const rawOvers = isChasing ? (ld.overs2 || ld.chaseOvers || ld.overs) : (ld.overs || ld.firstOvers);
+  if (!rawOvers || rawOvers === '0.0' || rawOvers === '0') return [];
   const overNum = Math.max(1, parseInt(String(rawOvers).split('.')[0], 10) || 1);
 
   return [
     {
       overNum,
       summary: `${battingScore}/${battingWickets} (Over ${overNum})`,
-      balls: currentBalls.length ? currentBalls : ['1', '•', '2', '0', '1', 'W'],
+      balls: currentBalls,
     },
   ];
 }

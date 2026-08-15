@@ -1,57 +1,73 @@
 import React, { useState, useEffect } from 'react';
 import { adminApiClient } from '../api/adminApiClient';
 import AdminDataTable from '../components/AdminDataTable';
+import { startVisibleInterval } from '../utils/visibleInterval';
 
 export default function OperationsDomainView() {
-  const [health, setHealth] = useState({
-    postgres: 'HEALTHY',
-    redis: 'HEALTHY',
-    websocket: 'HEALTHY',
-    cricbuzzFeed: 'HEALTHY',
-    razorpayGateway: 'HEALTHY',
-    outboxQueue: '0 PENDING',
-  });
+  const [services, setServices] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    adminApiClient.get('/operations/health')
-      .then((data) => setHealth((prev) => ({ ...prev, ...data })))
-      .catch(() => {});
+    let cancelled = false;
+    const load = () => {
+      adminApiClient.get('/operations/health')
+        .then((data) => {
+          if (cancelled) return;
+          setServices(data.services || []);
+          setError(null);
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          setServices([]);
+          setError(err.message || 'Failed to load health matrix');
+        });
+    };
+    const stop = startVisibleInterval(load, 30000, { runImmediately: true });
+    return () => {
+      cancelled = true;
+      stop();
+    };
   }, []);
-
-  const healthServices = [
-    { service: 'PostgreSQL Database', status: health.postgres, latency: '4ms', uptime: '99.99%' },
-    { service: 'Redis Cache & Pub/Sub', status: health.redis, latency: '1ms', uptime: '99.99%' },
-    { service: 'Real-time WebSocket Gateway', status: health.websocket, latency: '12ms', uptime: '99.95%' },
-    { service: 'Cricbuzz Sports Data Feed', status: health.cricbuzzFeed, latency: '110ms', uptime: '99.90%' },
-    { service: 'Razorpay Payment Gateway', status: health.razorpayGateway, latency: '240ms', uptime: '99.85%' },
-    { service: 'Transactional Outbox Worker', status: health.outboxQueue, latency: '2ms', uptime: '100.00%' },
-  ];
 
   return (
     <div>
       <div style={{ marginBottom: '20px' }}>
         <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>12 · Systems Health & DevOps Operational Telemetry</h2>
-        <p style={{ margin: '4px 0 0', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-          Infrastructure status, outbox worker queue depths, dead letter queue (DLQ) controls, and incident response workflows.
+        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted, var(--color-text-muted))', fontSize: '0.85rem' }}>
+          Live Postgres ping + aggregator provider status. Unknown services stay UNKNOWN (not faked healthy).
         </p>
+        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.82rem' }}>{error}</p>}
       </div>
 
       <AdminDataTable
-        title="Authoritative Service & Infrastructure Health Checks"
-        data={healthServices}
+        title="Service & Infrastructure Health Checks"
+        emptyMessage="No health signals yet"
+        data={services}
         columns={[
           { header: 'Service / Dependency', key: 'service' },
           {
             header: 'Health Status',
             key: 'status',
-            render: (r) => (
-              <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(16, 185, 129, 0.2)', color: '#10b981' }}>
-                🟢 {r.status}
-              </span>
-            ),
+            render: (r) => {
+              const s = String(r.status || 'UNKNOWN').toUpperCase();
+              const ok = s === 'HEALTHY' || s === 'OK';
+              const bad = s === 'DOWN' || s === 'DEGRADED' || s === 'ERROR';
+              return (
+                <span style={{
+                  padding: '2px 8px',
+                  borderRadius: '4px',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  background: ok ? 'rgba(16, 185, 129, 0.2)' : bad ? 'rgba(239, 68, 68, 0.2)' : 'rgba(148, 163, 184, 0.2)',
+                  color: ok ? '#10b981' : bad ? '#f87171' : '#94a3b8',
+                }}>
+                  {s}
+                </span>
+              );
+            },
           },
-          { header: 'Response Latency', key: 'latency' },
-          { header: 'Availability SLA', key: 'uptime' },
+          { header: 'Latency / Mode', key: 'latency' },
+          { header: 'Detail', key: 'uptime' },
         ]}
       />
     </div>

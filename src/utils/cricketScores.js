@@ -4,9 +4,20 @@ import { normalizeMatchOvers, oversToBallsForMatch } from './cricketFormat';
 function normalizeTeamToken(name = '') {
   return String(name)
     .toLowerCase()
-    .replace(/\s+W$/, '')
-    .replace(/[^a-z0-9]/g, '')
-    .slice(0, 5);
+    .replace(/\(women\)|\bwomen\b|\bw\b$/gi, 'w')
+    .replace(/\(men\)|\bmen\b/gi, 'm')
+    .replace(/[^a-z0-9]/g, '');
+}
+
+function teamInitials(name = '') {
+  return String(name)
+    .replace(/[()]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word[0])
+    .join('')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
 }
 
 export function teamNameMatches(teamName, token) {
@@ -14,7 +25,24 @@ export function teamNameMatches(teamName, token) {
   const team = normalizeTeamToken(teamName);
   const hint = normalizeTeamToken(token);
   if (!team || !hint) return false;
-  return team.includes(hint) || hint.includes(team) || team.startsWith(hint) || hint.startsWith(team);
+  if (team === hint) return true;
+  if (team.includes(hint) || hint.includes(team)) return true;
+  const initials = teamInitials(teamName);
+  const hintInitials = teamInitials(token);
+  if (initials && (initials === hint || hint === initials || initials === hintInitials)) return true;
+  const team5 = team.slice(0, 5);
+  const hint5 = hint.slice(0, 5);
+  return team5.length >= 3 && hint5.length >= 3 && (team.startsWith(hint5) || hint.startsWith(team5));
+}
+
+export function pickPositiveScore(primary, fallback, lastResort = 0) {
+  const p = primary == null ? null : Number(primary);
+  const f = fallback == null ? null : Number(fallback);
+  if (p != null && Number.isFinite(p) && p > 0) return p;
+  if (f != null && Number.isFinite(f) && f > 0) return f;
+  if (p != null && Number.isFinite(p)) return p;
+  if (f != null && Number.isFinite(f)) return f;
+  return lastResort;
 }
 
 function scoreEntry(token, runs, wickets, overs, match) {
@@ -46,31 +74,35 @@ export function resolveCricketTeamScores(match, ld = {}) {
 
   const commentaryStr = ld.commentary || '';
   const needMatch = commentaryStr.match(/(?:([A-Za-z\s]+)\s+)?need\s+(\d+)\s+runs?/i);
-  
+
   // 2nd Innings ONLY if we have explicit 2nd innings score fields or explicit chase commentary with firstRuns
-  const hasSecondInningsData = (ld.inningsId ?? 0) >= 2
-    || (ld.firstRuns != null && ld.chaseRuns != null)
-    || ((ld.score1 != null || ld.runs != null) && (ld.score2 != null && ld.score2 > 0))
-    || (ld.firstTeamName && ld.chaseTeamName && ld.chaseRuns != null)
-    || (ld.wickets2 != null && ld.wickets2 > 0)
-    || (ld.overs2 != null && ld.overs2 !== '0.0' && ld.overs2 !== '0')
-    || Boolean(needMatch && ld.firstRuns != null);
+  const hasSecondInningsData = (Number(ld.inningsId) >= 2)
+    || Number(ld.chaseRuns) > 0
+    || Number(ld.wickets2) > 0
+    || Number(ld.chaseWickets) > 0
+    || (ld.overs2 != null && ld.overs2 !== '0.0' && ld.overs2 !== '0' && ld.overs2 !== '')
+    || (ld.chaseOvers != null && ld.chaseOvers !== '0.0' && ld.chaseOvers !== '0' && ld.chaseOvers !== '')
+    || Boolean(needMatch && Number(ld.firstRuns) > 0);
 
   if (hasSecondInningsData) {
     let chaseTeam = ld.chaseTeamName;
-    let targetRuns = null;
 
     if (needMatch) {
       if (!chaseTeam && needMatch[1]) chaseTeam = needMatch[1].trim();
-      targetRuns = parseInt(needMatch[2], 10);
     }
 
     const firstTeam = ld.firstTeamName || (teamNameMatches(team1Name, chaseTeam) ? team2Name : team1Name);
-    const firstRuns = ld.firstRuns ?? ld.score1 ?? ld.runs ?? (targetRuns ? targetRuns - 1 : 0);
-    const firstWickets = ld.firstWickets ?? ld.wickets ?? (targetRuns ? 10 : 0);
-    const firstOvers = ld.firstOvers || ld.overs || '0.0';
+    const firstRuns = ld.firstRuns != null
+      ? Number(ld.firstRuns)
+      : pickPositiveScore(ld.score1, null, 0);
+    const firstWickets = ld.firstWickets != null
+      ? Number(ld.firstWickets)
+      : pickPositiveScore(ld.wickets1, null, 0);
+    const firstOvers = ld.firstOvers || '0.0';
 
-    const chaseRuns = ld.chaseRuns ?? ld.score2 ?? 0;
+    const chaseRuns = ld.chaseRuns != null
+      ? Number(ld.chaseRuns)
+      : (ld.score2 != null ? Number(ld.score2) : 0);
     const chaseWickets = ld.chaseWickets ?? ld.wickets2 ?? 0;
     const chaseOvers = ld.chaseOvers || ld.overs2 || '0.0';
 
@@ -90,9 +122,9 @@ export function resolveCricketTeamScores(match, ld = {}) {
 
   const battingScore = scoreEntry(
     firstTeam,
-    ld.runs ?? ld.firstRuns ?? 0,
-    ld.wickets ?? ld.firstWickets ?? 0,
-    ld.overs ?? ld.firstOvers ?? '0.0',
+    pickPositiveScore(ld.runs, ld.firstRuns, pickPositiveScore(ld.score1, match?.score1, 0)),
+    pickPositiveScore(ld.wickets, ld.firstWickets, pickPositiveScore(ld.wickets1, 0)),
+    ld.overs || ld.firstOvers || '0.0',
     match,
   );
   const idleScore = scoreEntry(
@@ -120,19 +152,28 @@ export function flattenCricketTeamScores(scores) {
   };
 }
 
-export function isCricketSecondInnings(match, ld = {}) {
-  if (match?.matchState !== 'in' && !match?.isLive) return false;
+export function isEmptyOversValue(value) {
+  return value == null || value === '' || value === 0 || value === '0' || value === '0.0';
+}
 
+export function isCricketSecondInnings(match, ld = {}) {
   // Test match: only innings 4 is a "chase"
   if (ld.testInnings?.length > 0 || /test/i.test(ld.matchFormat || match?.matchFormat || '')) {
     return (ld.inningsId ?? 0) === 4;
   }
 
-  if ((ld.inningsId ?? 0) >= 2) return true;
+  if ((Number(ld.inningsId) || 0) >= 2) return true;
 
-  if (ld.chaseRuns != null && ld.firstRuns != null && (ld.chaseRuns > 0 || ld.chaseOvers || (ld.chaseWickets ?? 0) > 0)) return true;
+  if (Number(ld.chaseRuns) > 0 || Number(ld.score2) > 0 || Number(ld.wickets2) > 0 || Number(ld.chaseWickets) > 0) {
+    return true;
+  }
 
-  if (ld.chaseTeamName && ld.firstTeamName && (ld.chaseRuns > 0 || (ld.chaseBallNbr ?? 0) > 0)) return true;
+  if (match?.matchState !== 'in' && !match?.isLive) return false;
+
+  const chaseOversStarted = ld.chaseOvers && ld.chaseOvers !== '0.0' && ld.chaseOvers !== '0';
+  if (chaseOversStarted && Number(ld.chaseBallNbr) > 0) return true;
+
+  if (ld.chaseTeamName && ld.firstTeamName && Number(ld.chaseRuns) > 0) return true;
 
   const { team1, team2 } = resolveCricketTeamScores(match, ld);
   const team2Played = team2.runs > 0 || team2.wickets > 0 || team2.balls > 0;
@@ -189,4 +230,36 @@ function resolveTestMatchTeamScores(match, ld) {
   t2Score.innings = team2Innings;
 
   return { team1: t1Score, team2: t2Score };
+}
+
+export function resolveCricketTossText(match, extraState) {
+  if (!match) return null;
+  const isCricket = match.sport === 'cricket' || match.sport === 'virtual-cricket' || !match.sport;
+  if (!isCricket) return null;
+
+  const t = match.toss
+    || match.liveDetails?.toss
+    || match.matchHeader?.toss
+    || extraState?.toss
+    || match.matchHeader?.tossResults;
+  if (t && typeof t === 'object' && (t.tossWinnerName || t.winnerName) && !t.winner) {
+    const winner = t.tossWinnerName || t.winnerName;
+    const raw = String(t.decision || '').toLowerCase();
+    const decision = raw.includes('bowl') ? 'bowl' : raw.includes('bat') ? 'bat' : t.decision;
+    if (winner && decision) return `${winner} won the toss & elected to ${decision}`;
+    if (winner) return `${winner} won the toss`;
+  }
+  if (typeof t === 'string' && t.trim()) return t.trim();
+  if (t && typeof t === 'object') {
+    const winner = t.winnerName || t.winner || t.teamWinnerName;
+    const decision = t.decision || t.decisionChoice;
+    if (winner && decision) {
+      return `${winner} won the toss & elected to ${String(decision).toLowerCase()}`;
+    }
+    if (winner) return `${winner} won the toss`;
+  }
+
+  const comm = extraState?.commentary || match.liveDetails?.commentary || '';
+  if (/won the toss|opt(?:ed)? to (?:bat|bowl)|elected to/i.test(comm)) return comm;
+  return null;
 }

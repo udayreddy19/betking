@@ -1,33 +1,57 @@
 import React, { useState, useEffect } from 'react';
 import { adminApiClient } from '../api/adminApiClient';
 import AdminDataTable from '../components/AdminDataTable';
+import { ADMIN_ROLES } from '../permissions/AdminRBACGate';
 
 export default function SecurityGovernanceDomainView() {
   const [auditLogs, setAuditLogs] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
+    let cancelled = false;
     adminApiClient.get('/security/audit')
-      .then((data) => setAuditLogs(data.logs || []))
-      .catch(() => {
-        setAuditLogs([
-          { id: 'aud-9901', actor: 'Super Admin (uday)', action: 'WITHDRAWAL_APPROVE', entity: 'Withdrawal w-4401', ip: '127.0.0.1', timestamp: '2026-08-10 20:45', tenant: 'MAIN_BRAND' },
-          { id: 'aud-9902', actor: 'Trading Admin (trader1)', action: 'MARKET_SUSPEND', entity: 'Match m1 / Winner', ip: '127.0.0.1', timestamp: '2026-08-10 20:38', tenant: 'MAIN_BRAND' },
-          { id: 'aud-9903', actor: 'Support Agent (agent1)', action: 'TICKET_REPLY', entity: 'Ticket t-1001', ip: '127.0.0.1', timestamp: '2026-08-10 20:12', tenant: 'MAIN_BRAND' },
-        ]);
+      .then((data) => {
+        if (cancelled) return;
+        setAuditLogs(data.logs || []);
+        setError(data.note || null);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setAuditLogs([]);
+        setError(err.message || 'Failed to load audit logs');
       });
+    return () => { cancelled = true; };
   }, []);
+
+  const rbacRows = Object.keys(ADMIN_ROLES).map((role) => ({
+    id: role,
+    role,
+    access: role === 'SUPER_ADMIN' ? 'ALL DOMAINS' : 'SCOPED',
+  }));
 
   return (
     <div>
       <div style={{ marginBottom: '20px' }}>
         <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>13 · Security, RBAC & Enterprise Audit Explorer</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-          Role-Based Access Control (RBAC), security event correlation logs, admin user access control, and immutable audit trails.
+          Audit trail from `audit_events` (plus in-memory fallback if the table is empty).
         </p>
+        {error && <p style={{ margin: '8px 0 0', color: '#fbbf24', fontSize: '0.82rem' }}>{error}</p>}
       </div>
 
       <AdminDataTable
-        title="Enterprise Operational Audit Explorer (Who, What, When, Impact)"
+        title="RBAC Role Matrix"
+        searchable={false}
+        data={rbacRows}
+        columns={[
+          { header: 'Role', key: 'role' },
+          { header: 'Access Model', key: 'access' },
+        ]}
+      />
+
+      <AdminDataTable
+        title="Enterprise Operational Audit Explorer"
+        emptyMessage="No audit events recorded yet — perform an admin action to generate one"
         data={auditLogs}
         columns={[
           { header: 'Audit ID', key: 'id' },

@@ -8,6 +8,7 @@ import MatchCountdownTimer from '../MatchCountdownTimer/MatchCountdownTimer';
 import { isMatchBettable, isMatchLive, isMatchFinished, hasCricketPlayStarted } from '../../utils/matchBetting';
 import { resolveCricketTeamScores } from '../../utils/cricketScores';
 import { isTestMatch, getTestMatchDayLabel, formatMatchCountdown } from '../../utils/cricketFormat';
+import { enrichFromPoller } from '../../services/matchDetailPoller';
 import './MatchCard.css';
 
 const sportLabels = {
@@ -50,9 +51,10 @@ export default function MatchCard({ match, variant = 'default' }) {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const isHome = variant === 'home';
 
-  const isLiveNow = isMatchLive(match);
-  const isFinished = isMatchFinished(match);
-  const canBet = isMatchBettable(match);
+  const displayMatch = enrichFromPoller(match) || match;
+  const isLiveNow = isMatchLive(displayMatch);
+  const isFinished = isMatchFinished(displayMatch);
+  const canBet = isMatchBettable(displayMatch);
 
   const handleOddsClick = (e, selection, odds) => {
     e.stopPropagation();
@@ -74,15 +76,15 @@ export default function MatchCard({ match, variant = 'default' }) {
     setIsDetailOpen(true);
   };
 
-  const ld = match.liveDetails || {};
+  const ld = displayMatch.liveDetails || {};
   let team1Score = null;
   let team2Score = null;
   let inlineScore = null;
 
-  if (match.sport === 'cricket' || match.sport === 'virtual-cricket') {
-    const showCricketScores = isFinished || (isLiveNow && hasCricketPlayStarted(match));
+  if (displayMatch.sport === 'cricket' || displayMatch.sport === 'virtual-cricket') {
+    const showCricketScores = isFinished || (isLiveNow && hasCricketPlayStarted(displayMatch));
     if (showCricketScores) {
-      const scores = resolveCricketTeamScores(match, ld);
+      const scores = resolveCricketTeamScores(displayMatch, ld);
       const hasT1 = scores.team1.runs > 0 || scores.team1.wickets > 0 || scores.team1.balls > 0;
       const hasT2 = scores.team2.runs > 0 || scores.team2.wickets > 0 || scores.team2.balls > 0;
       if (hasT1) team1Score = `${scores.team1.runs}/${scores.team1.wickets}`;

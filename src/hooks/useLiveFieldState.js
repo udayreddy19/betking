@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { isPlaceholderPlayerName } from '../utils/cricketPlayers';
+import { isPlaceholderPlayerName, parseLivePlayersFromCommentary } from '../utils/cricketPlayers';
 import { teamNameMatches } from '../utils/cricketScores';
 import { enrichLivePlayersFromScorecard } from '../utils/scorecardLivePlayers';
 
@@ -30,6 +30,9 @@ export function buildFieldStateFromApi(match) {
     match?.liveDetails || {},
     match?.scorecardInnings || [],
   );
+  const parsed = parseLivePlayersFromCommentary(ld.commentary || match?.liveDetails?.commentary || '');
+  if (!ld.batter1?.name && parsed.batter1) ld.batter1 = parsed.batter1;
+  if (!ld.batter2?.name && parsed.batter2) ld.batter2 = parsed.batter2;
   if (!ld.batter1 && !ld.batter2 && ld.runs == null && ld.chaseRuns == null
     && ld.firstRuns == null && !ld.currentOverBalls?.length) {
     return null;

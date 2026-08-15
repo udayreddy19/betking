@@ -17,6 +17,94 @@
   --admin-accent-pink: #ec4899;
   --admin-text: #f9fafb;
   --admin-text-muted: #9ca3af;
+  --admin-sticky-bg: linear-gradient(180deg, rgba(11, 15, 25, 0.98) 70%, rgba(11, 15, 25, 0.85) 100%);
+  --admin-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  --admin-card-bg: linear-gradient(135deg, rgba(31, 41, 55, 0.6) 0%, rgba(17, 24, 39, 0.8) 100%);
+  --admin-chip-bg: rgba(17, 24, 39, 0.8);
+  --admin-input-bg: #0b0f19;
+}
+
+html[data-theme="light"] {
+  --admin-bg: #f1f5f9;
+  --admin-surface: #ffffff;
+  --admin-surface-hover: #f8fafc;
+  --admin-panel: #ffffff;
+  --admin-border: rgba(15, 23, 42, 0.1);
+  --admin-border-bright: rgba(15, 23, 42, 0.18);
+  --admin-text: #0f172a;
+  --admin-text-muted: #64748b;
+  --admin-sticky-bg: linear-gradient(180deg, rgba(241, 245, 249, 0.98) 70%, rgba(241, 245, 249, 0.88) 100%);
+  --admin-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --admin-card-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 1) 100%);
+  --admin-chip-bg: #ffffff;
+  --admin-input-bg: #ffffff;
+}
+
+html[data-theme="light"] .admin-shell,
+.admin-shell--light {
+  --admin-bg: #f1f5f9;
+  --admin-surface: #ffffff;
+  --admin-surface-hover: #f8fafc;
+  --admin-panel: #ffffff;
+  --admin-border: rgba(15, 23, 42, 0.1);
+  --admin-border-bright: rgba(15, 23, 42, 0.18);
+  --admin-text: #0f172a;
+  --admin-text-muted: #64748b;
+  --admin-sticky-bg: linear-gradient(180deg, rgba(241, 245, 249, 0.98) 70%, rgba(241, 245, 249, 0.88) 100%);
+  --admin-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --admin-card-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 1) 100%);
+  --admin-chip-bg: #ffffff;
+  --admin-input-bg: #ffffff;
+}
+
+html[data-theme="light"] .admin-shell,
+.admin-shell--light {
+  background: var(--admin-bg);
+  color: var(--admin-text);
+}
+
+.admin-shell,
+.admin-shell__column,
+.admin-shell__main {
+  background: var(--admin-bg);
+  color: var(--admin-text);
+}
+
+html[data-theme="light"] .admin-shell .telemetry-card,
+.admin-shell--light .telemetry-card {
+  background: var(--admin-card-bg);
+  border-color: var(--admin-border);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+}
+
+html[data-theme="light"] .admin-shell .admin-glass-card,
+.admin-shell--light .admin-glass-card {
+  box-shadow: var(--admin-shadow);
+}
+
+html[data-theme="light"] .admin-shell .admin-subtab:hover,
+.admin-shell--light .admin-subtab:hover {
+  background: rgba(15, 23, 42, 0.04);
+}
+
+html[data-theme="light"] .admin-shell .admin-badge--success,
+.admin-shell--light .admin-badge--success {
+  color: #059669;
+}
+
+html[data-theme="light"] .admin-shell .admin-badge--warning,
+.admin-shell--light .admin-badge--warning {
+  color: #d97706;
+}
+
+html[data-theme="light"] .admin-shell .admin-badge--danger,
+.admin-shell--light .admin-badge--danger {
+  color: #dc2626;
+}
+
+html[data-theme="light"] .admin-shell .admin-badge--info,
+.admin-shell--light .admin-badge--info {
+  color: #2563eb;
 }
 
 body {
@@ -43,13 +131,13 @@ body {
 
 /* Telemetry Metric Chip */
 .telemetry-card {
-  background: linear-gradient(135deg, rgba(31, 41, 55, 0.6) 0%, rgba(17, 24, 39, 0.8) 100%);
+  background: var(--admin-card-bg);
   border: 1px solid var(--admin-border);
   border-radius: 12px;
   padding: 16px;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--admin-shadow);
   transition: all 0.2s ease;
 }
 
@@ -204,4 +292,147 @@ body {
   color: #60a5fa;
   font-weight: 700;
   border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+/* ── Sidebar nav (single-row domain + subtree) ── */
+.admin-nav-item {
+  margin-bottom: 2px;
+}
+
+.admin-nav-domain-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+  min-width: 0;
+}
+
+.admin-nav-domain {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 38px;
+  padding: 0 10px;
+  margin: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--admin-text-muted);
+  font: inherit;
+  font-size: 0.83rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-nav-domain:hover {
+  color: var(--admin-text);
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.admin-nav-domain.is-active {
+  color: #60a5fa;
+  font-weight: 800;
+  border-color: rgba(59, 130, 246, 0.45);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.22) 0%, rgba(37, 99, 235, 0.12) 100%);
+}
+
+.admin-nav-domain__icon {
+  width: 18px !important;
+  height: 18px !important;
+  flex-shrink: 0;
+  display: block;
+  color: inherit;
+}
+
+.admin-nav-domain__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.admin-nav-chevron {
+  box-sizing: border-box;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--admin-text-muted);
+  cursor: pointer;
+}
+
+.admin-nav-chevron:hover,
+.admin-nav-chevron.is-open,
+.admin-nav-chevron.is-active {
+  color: #60a5fa;
+}
+
+.admin-nav-chevron:hover {
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.admin-nav-chevron svg {
+  width: 14px !important;
+  height: 14px !important;
+  display: block;
+}
+
+.admin-nav-subs {
+  margin: 2px 0 6px 19px;
+  padding-left: 12px;
+  border-left: 1.5px solid var(--admin-border-bright);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.admin-nav-sub {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  height: 30px;
+  padding: 0 10px;
+  margin: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--admin-text-muted);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-nav-sub:hover {
+  color: #60a5fa;
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.admin-nav-sub.is-active {
+  color: #60a5fa;
+  font-weight: 700;
+  background: rgba(59, 130, 246, 0.16);
+}
+
+@media (max-width: 1100px) {
+  .iplsrl-desk-grid {
+    grid-template-columns: 1fr !important;
+  }
 }

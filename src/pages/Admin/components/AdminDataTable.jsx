@@ -81,7 +81,7 @@ export default function AdminDataTable({
   };
 
   return (
-    <div style={{ background: 'var(--admin-surface, #111827)', border: '1px solid var(--admin-border)', borderRadius: '12px', overflow: 'hidden', margin: '16px 0', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.35)' }}>
+    <div style={{ background: 'var(--admin-surface)', border: '1px solid var(--admin-border)', borderRadius: '12px', overflow: 'hidden', margin: '16px 0', boxShadow: 'var(--admin-shadow)' }}>
       <div style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid var(--admin-border)' }}>
         {title && <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#fff' }}>{title}</h3>}
 
@@ -100,8 +100,8 @@ export default function AdminDataTable({
                 padding: '7px 14px',
                 borderRadius: '8px',
                 border: '1px solid var(--admin-border)',
-                background: 'var(--admin-bg, #0b0f19)',
-                color: 'var(--admin-text, #fff)',
+                background: 'var(--admin-input-bg)',
+                color: 'var(--admin-text)',
                 fontSize: '0.82rem',
                 outline: 'none',
                 minWidth: '220px',
@@ -134,7 +134,7 @@ export default function AdminDataTable({
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.84rem' }}>
           <thead>
-            <tr style={{ background: 'rgba(255, 255, 255, 0.03)', borderBottom: '1px solid var(--admin-border)' }}>
+            <tr style={{ background: 'var(--admin-surface-hover)', borderBottom: '1px solid var(--admin-border)' }}>
               {columns.map((col) => (
                 <th
                   key={col.key || col.header}
@@ -175,7 +175,7 @@ export default function AdminDataTable({
                     }}
                   >
                     {columns.map((col) => (
-                      <td key={col.key || col.header} style={{ padding: '12px 16px', color: 'var(--admin-text, #f9fafb)' }}>
+                      <td key={col.key || col.header} style={{ padding: '12px 16px', color: 'var(--admin-text)' }}>
                         {col.render ? col.render(row) : (col.accessor ? col.accessor(row) : row[col.key])}
                       </td>
                     ))}

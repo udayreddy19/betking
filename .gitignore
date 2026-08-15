@@ -23,3 +23,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Markdown files ignored as per instruction
+*.md
+**/*.md
+
+# Python caches & build outputs
+__pycache__/
+*.pyc
+csk_srl/Library/

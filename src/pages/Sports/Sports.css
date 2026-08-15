@@ -145,15 +145,22 @@
 /* Live match ticker */
 .sports-match-ticker {
   display: flex;
+  flex-wrap: nowrap;
   gap: var(--space-2);
   overflow-x: auto;
+  overflow-y: hidden;
   padding-bottom: var(--space-3);
   margin-bottom: var(--space-3);
-  scrollbar-width: none;
+  scrollbar-width: thin;
 }
 
 .sports-match-ticker::-webkit-scrollbar {
-  display: none;
+  height: 4px;
+}
+
+.sports-match-ticker::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-full);
 }
 
 .sports-ticker-card {
@@ -177,9 +184,16 @@
 }
 
 .sports-ticker-card.selected {
-  background: #fbbf24;
-  border-color: #f59e0b;
-  color: #0f172a;
+  background: var(--color-primary-bg, rgba(124, 58, 237, 0.2));
+  border-color: var(--color-primary, #7c3aed);
+  color: var(--color-text);
+  box-shadow: inset 0 0 0 1px rgba(124, 58, 237, 0.25);
+}
+
+[data-theme='dark'] .sports-ticker-card.selected {
+  background: rgba(124, 58, 237, 0.28);
+  border-color: #a78bfa;
+  color: #f8fafc;
 }
 
 .sports-ticker-row {
@@ -665,17 +679,20 @@
 }
 
 .sports-page-heading {
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-2);
 }
 
 .sports-page-heading h1 {
-  font-size: var(--text-xl);
+  font-size: 1.45rem;
   font-weight: var(--font-extrabold);
   color: var(--color-text);
-  margin-bottom: 2px;
+  margin: 0 0 4px;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
 }
 
 .sports-page-heading p {
+  margin: 0;
   font-size: var(--text-sm);
   color: var(--color-text-secondary);
 }
@@ -812,12 +829,13 @@
 }
 
 .sports-cricket-group__title {
-  font-size: 0.95rem;
-  font-weight: 700;
+  font-size: 0.98rem;
+  font-weight: 800;
   color: var(--color-text);
-  margin: 0 0 var(--space-2);
-  padding-bottom: var(--space-2);
+  margin: 0 0 10px;
+  padding: 0 2px 10px;
   border-bottom: 1px solid var(--color-border);
+  letter-spacing: -0.01em;
 }
 
 .sports-cricket-row {
@@ -942,39 +960,50 @@
 .sports-cricket-row-10cric {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 12px 16px;
-  margin-bottom: 12px;
-  transition: all var(--transition-fast);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
 }
 
 .sports-cricket-row-10cric:hover {
-  border-color: var(--color-primary-light);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-color: rgba(124, 58, 237, 0.45);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+[data-theme='dark'] .sports-cricket-row-10cric:hover {
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
 }
 
 .sports-cricket-row__meta-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
-  font-size: 0.75rem;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 0.72rem;
   color: var(--color-text-muted);
+  min-width: 0;
 }
 
 .sports-cricket-row__league-sub {
-  font-weight: 500;
-  color: #64748b;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .sports-cricket-row__status-text {
-  font-weight: 600;
-  color: #64748b;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
 }
 
 .sports-cricket-row__body {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 16px;
 }
@@ -985,43 +1014,55 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  flex: 1;
+  gap: 8px;
+  min-width: 0;
   text-align: left;
   cursor: pointer;
 }
 
 .sports-cricket-row__team {
-  display: flex;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) minmax(64px, auto);
   align-items: center;
-  gap: 8px;
+  column-gap: 10px;
+  min-height: 22px;
 }
 
 .sports-cricket-row__team-name {
-  font-size: 0.92rem;
-  font-weight: 600;
+  font-size: 0.9rem;
+  font-weight: 650;
   color: var(--color-text);
-  flex: 1;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .sports-cricket-row__score {
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 800;
   color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  justify-self: end;
+  white-space: nowrap;
 }
 
 .sports-cricket-row__overs-sub {
-  font-size: 0.74rem;
-  color: #64748b;
+  font-size: 0.72rem;
+  color: var(--color-text-secondary);
   font-weight: 600;
-  margin-left: 30px;
+  margin-left: 32px;
   margin-top: -2px;
+  letter-spacing: 0.01em;
 }
 
 .sports-cricket-row__odds-container {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .sports-cricket-odds-card {
@@ -1029,24 +1070,25 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-width: 68px;
-  height: 44px;
-  background: #f1f5f9;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 8px;
+  min-width: 64px;
+  height: 46px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.15s ease;
-  padding: 2px 6px;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+  padding: 4px 8px;
 }
 
 [data-theme='dark'] .sports-cricket-odds-card {
-  background: rgba(30, 41, 59, 0.7);
-  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.65);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
-.sports-cricket-odds-card:hover {
-  background: rgba(234, 179, 8, 0.15);
-  border-color: rgba(234, 179, 8, 0.4);
+.sports-cricket-odds-card:hover:not(:disabled):not(.locked) {
+  background: var(--color-primary-bg, rgba(124, 58, 237, 0.16));
+  border-color: rgba(124, 58, 237, 0.45);
+  transform: translateY(-1px);
 }
 
 .sports-cricket-odds-card.selected {
@@ -1060,52 +1102,78 @@
 }
 
 .sports-cricket-odds-card .odds-label {
-  font-size: 0.65rem;
-  color: #64748b;
-  font-weight: 600;
+  font-size: 0.62rem;
+  color: var(--color-text-muted);
+  font-weight: 700;
   line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .sports-cricket-odds-card .odds-val {
   font-size: 0.9rem;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--color-text);
   line-height: 1.2;
+  font-variant-numeric: tabular-nums;
 }
 
 [data-theme='dark'] .sports-cricket-odds-card .odds-val {
   color: #f8fafc;
 }
 
-.sports-cricket-odds-card.locked {
+.sports-cricket-odds-card.locked,
+.sports-cricket-odds-card:disabled {
   cursor: not-allowed;
-  opacity: 0.7;
+  opacity: 0.55;
 }
 
 .sports-cricket-markets-capsule {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 44px;
-  height: 44px;
-  padding: 0 10px;
+  min-width: 46px;
+  height: 46px;
+  padding: 0 12px;
   background: transparent;
-  border: 1.5px solid #0f172a;
-  border-radius: 12px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #0f172a;
+  border: 1.5px solid var(--color-border-bright, var(--color-border));
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 750;
+  color: var(--color-text);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 [data-theme='dark'] .sports-cricket-markets-capsule {
-  border-color: #f8fafc;
+  border-color: rgba(255, 255, 255, 0.28);
   color: #f8fafc;
 }
 
 .sports-cricket-markets-capsule:hover {
-  background: rgba(15, 23, 42, 0.05);
+  background: var(--color-primary-bg, rgba(124, 58, 237, 0.16));
+  border-color: var(--color-primary, #7c3aed);
+  color: var(--color-primary, #7c3aed);
+}
+
+@media (max-width: 720px) {
+  .sports-cricket-row__body {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .sports-cricket-row__odds-container {
+    width: 100%;
+  }
+
+  .sports-cricket-odds-card {
+    flex: 1;
+  }
+
+  .sports-cricket-markets-capsule {
+    margin-left: auto;
+  }
 }
 
 .sports-right .betslip {

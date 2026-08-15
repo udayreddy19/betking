@@ -69,28 +69,32 @@ router.post('/search', async (req, res) => {
 
     // Search Users
     if (typesToSearch.includes('users')) {
-      const userRes = await dbQuery(
-        `SELECT user_id, email, phone, created_at FROM users
-         WHERE user_id ILIKE $1 OR email ILIKE $1 OR phone ILIKE $1
-         LIMIT $2`,
-        [searchPattern, limit]
-      );
-      results.users = userRes.rows.map(r => ({
-        ...r, _entityType: 'user', _displayId: r.user_id, _displayLabel: r.email,
-      }));
+      try {
+        const userRes = await dbQuery(
+          `SELECT user_id, email, phone, created_at FROM users
+           WHERE user_id ILIKE $1 OR email ILIKE $1 OR phone ILIKE $1
+           LIMIT $2`,
+          [searchPattern, limit]
+        );
+        results.users = userRes.rows.map(r => ({
+          ...r, _entityType: 'user', _displayId: r.user_id, _displayLabel: r.email,
+        }));
+      } catch { results.users = []; }
     }
 
     // Search Bets
     if (typesToSearch.includes('bets')) {
-      const betRes = await dbQuery(
-        `SELECT bet_id, user_id, stake, odds, potential_payout, status, created_at FROM bets
-         WHERE bet_id ILIKE $1 OR user_id ILIKE $1
-         LIMIT $2`,
-        [searchPattern, limit]
-      );
-      results.bets = betRes.rows.map(r => ({
-        ...r, _entityType: 'bet', _displayId: r.bet_id, _displayLabel: `₹${r.stake} @ ${r.odds}`,
-      }));
+      try {
+        const betRes = await dbQuery(
+          `SELECT bet_id, user_id, stake, odds, potential_payout, status, created_at FROM bets
+           WHERE bet_id ILIKE $1 OR user_id ILIKE $1
+           LIMIT $2`,
+          [searchPattern, limit]
+        );
+        results.bets = betRes.rows.map(r => ({
+          ...r, _entityType: 'bet', _displayId: r.bet_id, _displayLabel: `₹${r.stake} @ ${r.odds}`,
+        }));
+      } catch { results.bets = []; }
     }
 
     // Search Tickets
@@ -109,73 +113,113 @@ router.post('/search', async (req, res) => {
       } catch { results.tickets = []; }
     }
 
-    // Search Matches
+    // Search Matches (DB + live aggregator fallback)
     if (typesToSearch.includes('matches')) {
-      const matchRes = await dbQuery(
-        `SELECT m.match_id, m.status, m.start_time, m.updated_at,
-                t1.name AS team1_name, t2.name AS team2_name
-         FROM matches m
-         LEFT JOIN teams t1 ON m.team1_id = t1.team_id
-         LEFT JOIN teams t2 ON m.team2_id = t2.team_id
-         WHERE m.match_id ILIKE $1 OR t1.name ILIKE $1 OR t2.name ILIKE $1
-         LIMIT $2`,
-        [searchPattern, limit]
-      );
-      results.matches = matchRes.rows.map(r => ({
-        ...r, _entityType: 'match', _displayId: r.match_id, _displayLabel: `${r.team1_name || '?'} vs ${r.team2_name || '?'}`,
-      }));
+      try {
+        const matchRes = await dbQuery(
+          `SELECT m.match_id, m.status, m.start_time, m.updated_at,
+                  t1.name AS team1_name, t2.name AS team2_name
+           FROM matches m
+           LEFT JOIN teams t1 ON m.team1_id = t1.team_id
+           LEFT JOIN teams t2 ON m.team2_id = t2.team_id
+           WHERE m.match_id ILIKE $1 OR t1.name ILIKE $1 OR t2.name ILIKE $1
+           LIMIT $2`,
+          [searchPattern, limit]
+        );
+        results.matches = matchRes.rows.map(r => ({
+          ...r, _entityType: 'match', _displayId: r.match_id, _displayLabel: `${r.team1_name || '?'} vs ${r.team2_name || '?'}`,
+        }));
+      } catch {
+        results.matches = [];
+      }
+
+      try {
+        const { getCachedAggregatedLiveScores, aggregateLiveScores } = await import('../../../lib/aggregator.mjs');
+        const snap = getCachedAggregatedLiveScores() || await aggregateLiveScores({ force: false });
+        const qLower = q.toLowerCase();
+        const liveHits = (snap?.matches || [])
+          .filter((m) => {
+            const t1 = (m.team1?.name || m.team1 || '').toString().toLowerCase();
+            const t2 = (m.team2?.name || m.team2 || '').toString().toLowerCase();
+            const id = String(m.id || m.matchId || '').toLowerCase();
+            const league = String(m.league || '').toLowerCase();
+            return id.includes(qLower) || t1.includes(qLower) || t2.includes(qLower) || league.includes(qLower);
+          })
+          .slice(0, limit)
+          .map((m) => ({
+            match_id: m.id || m.matchId,
+            status: m.isLive ? 'LIVE' : (m.matchState || 'UNKNOWN'),
+            _entityType: 'match',
+            _displayId: m.id || m.matchId,
+            _displayLabel: `${m.team1?.name || m.team1 || '?'} vs ${m.team2?.name || m.team2 || '?'}`,
+            source: m.source || 'live',
+          }));
+        const seen = new Set((results.matches || []).map((m) => m._displayId));
+        results.matches = [
+          ...(results.matches || []),
+          ...liveHits.filter((m) => !seen.has(m._displayId)),
+        ].slice(0, limit);
+      } catch { /* keep DB matches */ }
     }
 
     // Search Markets
     if (typesToSearch.includes('markets')) {
-      const marketRes = await dbQuery(
-        `SELECT market_id, match_id, name, category, status FROM markets
-         WHERE market_id ILIKE $1 OR name ILIKE $1
-         LIMIT $2`,
-        [searchPattern, limit]
-      );
-      results.markets = marketRes.rows.map(r => ({
-        ...r, _entityType: 'market', _displayId: r.market_id, _displayLabel: r.name,
-      }));
+      try {
+        const marketRes = await dbQuery(
+          `SELECT market_id, match_id, name, category, status FROM markets
+           WHERE market_id ILIKE $1 OR name ILIKE $1
+           LIMIT $2`,
+          [searchPattern, limit]
+        );
+        results.markets = marketRes.rows.map(r => ({
+          ...r, _entityType: 'market', _displayId: r.market_id, _displayLabel: r.name,
+        }));
+      } catch { results.markets = []; }
     }
 
     // Search Transactions
     if (typesToSearch.includes('transactions')) {
-      const txRes = await dbQuery(
-        `SELECT transaction_id, user_id, type, amount, status, utr, method, created_at FROM transactions
-         WHERE transaction_id ILIKE $1 OR user_id ILIKE $1 OR utr ILIKE $1
-         LIMIT $2`,
-        [searchPattern, limit]
-      );
-      results.transactions = txRes.rows.map(r => ({
-        ...r, _entityType: 'transaction', _displayId: r.transaction_id, _displayLabel: `${r.type} ₹${r.amount}`,
-      }));
+      try {
+        const txRes = await dbQuery(
+          `SELECT transaction_id, user_id, type, amount, status, utr, method, created_at FROM transactions
+           WHERE transaction_id ILIKE $1 OR user_id ILIKE $1 OR utr ILIKE $1
+           LIMIT $2`,
+          [searchPattern, limit]
+        );
+        results.transactions = txRes.rows.map(r => ({
+          ...r, _entityType: 'transaction', _displayId: r.transaction_id, _displayLabel: `${r.type} ₹${r.amount}`,
+        }));
+      } catch { results.transactions = []; }
     }
 
     // Search KYC Cases
     if (typesToSearch.includes('kyc_cases')) {
-      const kycRes = await dbQuery(
-        `SELECT case_id, user_id, status, pan_number, reviewed_by, updated_at FROM kyc_cases
-         WHERE case_id ILIKE $1 OR user_id ILIKE $1 OR pan_number ILIKE $1
-         LIMIT $2`,
-        [searchPattern, limit]
-      );
-      results.kyc_cases = kycRes.rows.map(r => ({
-        ...r, _entityType: 'kyc_case', _displayId: r.case_id, _displayLabel: `KYC: ${r.status}`,
-      }));
+      try {
+        const kycRes = await dbQuery(
+          `SELECT case_id, user_id, status, pan_number, reviewed_by, updated_at FROM kyc_cases
+           WHERE case_id ILIKE $1 OR user_id ILIKE $1 OR pan_number ILIKE $1
+           LIMIT $2`,
+          [searchPattern, limit]
+        );
+        results.kyc_cases = kycRes.rows.map(r => ({
+          ...r, _entityType: 'kyc_case', _displayId: r.case_id, _displayLabel: `KYC: ${r.status}`,
+        }));
+      } catch { results.kyc_cases = []; }
     }
 
     // Search Fraud Cases
     if (typesToSearch.includes('fraud_cases')) {
-      const fraudRes = await dbQuery(
-        `SELECT id, user_id, risk_score, assigned_investigator, status, notes, created_at FROM fraud_cases
-         WHERE id ILIKE $1 OR user_id ILIKE $1 OR assigned_investigator ILIKE $1
-         LIMIT $2`,
-        [searchPattern, limit]
-      );
-      results.fraud_cases = fraudRes.rows.map(r => ({
-        ...r, _entityType: 'fraud_case', _displayId: r.id, _displayLabel: `Fraud: Risk ${r.risk_score}`,
-      }));
+      try {
+        const fraudRes = await dbQuery(
+          `SELECT id, user_id, risk_score, assigned_investigator, status, notes, created_at FROM fraud_cases
+           WHERE id ILIKE $1 OR user_id ILIKE $1 OR assigned_investigator ILIKE $1
+           LIMIT $2`,
+          [searchPattern, limit]
+        );
+        results.fraud_cases = fraudRes.rows.map(r => ({
+          ...r, _entityType: 'fraud_case', _displayId: r.id, _displayLabel: `Fraud: Risk ${r.risk_score}`,
+        }));
+      } catch { results.fraud_cases = []; }
     }
 
     // Search Incidents
@@ -195,16 +239,34 @@ router.post('/search', async (req, res) => {
 
     // Search Audit Events
     if (typesToSearch.includes('audit_events')) {
-      const auditRes = await dbQuery(
-        `SELECT event_id, actor_id, target_id, action, created_at FROM audit_events
-         WHERE action ILIKE $1 OR actor_id ILIKE $1 OR target_id ILIKE $1
-         ORDER BY created_at DESC
-         LIMIT $2`,
-        [searchPattern, limit]
-      );
-      results.audit_events = auditRes.rows.map(r => ({
-        ...r, _entityType: 'audit_event', _displayId: `AE-${r.event_id}`, _displayLabel: r.action,
-      }));
+      try {
+        const auditRes = await dbQuery(
+          `SELECT event_id, actor_id, target_id, action, created_at FROM audit_events
+           WHERE action ILIKE $1 OR actor_id ILIKE $1 OR target_id ILIKE $1
+           ORDER BY created_at DESC
+           LIMIT $2`,
+          [searchPattern, limit]
+        );
+        results.audit_events = auditRes.rows.map(r => ({
+          ...r, _entityType: 'audit_event', _displayId: `AE-${r.event_id}`, _displayLabel: r.action,
+        }));
+      } catch { results.audit_events = []; }
+    }
+
+    // Search withdrawals
+    if (typesToSearch.includes('withdrawals')) {
+      try {
+        const wdRes = await dbQuery(
+          `SELECT withdrawal_id, user_id, amount, status, created_at FROM withdrawals
+           WHERE withdrawal_id ILIKE $1 OR user_id ILIKE $1
+           ORDER BY created_at DESC
+           LIMIT $2`,
+          [searchPattern, limit]
+        );
+        results.withdrawals = wdRes.rows.map(r => ({
+          ...r, _entityType: 'withdrawal', _displayId: r.withdrawal_id, _displayLabel: `₹${r.amount} · ${r.status}`,
+        }));
+      } catch { results.withdrawals = []; }
     }
 
     // Calculate total
@@ -333,7 +395,7 @@ router.get('/recent', async (req, res) => {
     );
     res.json({ recent: result.rows });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch recent searches', message: err.message });
+    res.json({ recent: [], note: err.message });
   }
 });
 

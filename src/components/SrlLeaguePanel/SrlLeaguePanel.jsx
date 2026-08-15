@@ -1,6 +1,6 @@
 import TeamJersey from '../TeamJersey/TeamJersey';
 import { isTrulyLiveMatch } from '../../utils/matchBetting';
-import { resolveCricketTeamScores, isCricketSecondInnings, teamNameMatches } from '../../utils/cricketScores';
+import { resolveCricketTeamScores, isCricketSecondInnings, teamNameMatches, resolveCricketTossText } from '../../utils/cricketScores';
 import { IPL_SRL_LEAGUE } from '../../data/iplSrlMatches';
 import './SrlLeaguePanel.css';
 
@@ -60,9 +60,8 @@ export default function SrlLeaguePanel({
               <div className="srl-match-card__top">
                 <span className="srl-match-card__league">{IPL_SRL_LEAGUE}</span>
                 {(() => {
-                  const tossText = match.toss
-                    ? (typeof match.toss === 'string' ? match.toss : `${match.toss.winner || match.team1.name} won the toss & elected to ${match.toss.decision || 'bat'}`)
-                    : `${match.team1.name} won the toss & elected to bat`;
+                  const tossText = resolveCricketTossText(match);
+                  if (!tossText) return null;
                   return (
                     <span className="srl-match-card__toss" style={{ fontSize: '0.72rem', color: 'var(--color-accent-gold)', marginLeft: 'auto', marginRight: '8px' }}>
                       🪙 {tossText}
@@ -109,7 +108,7 @@ export default function SrlLeaguePanel({
                     onClick={() => onQuickBet(match, '1', match.odds?.team1, match.team1.name)}
                   >
                     <span>1</span>
-                    <strong>{Number(match.odds?.team1 || 0).toFixed(2)}</strong>
+                    <strong>{Number(match.odds?.team1) > 1 ? Number(match.odds.team1).toFixed(2) : '—'}</strong>
                   </button>
                   <button
                     type="button"
@@ -117,7 +116,7 @@ export default function SrlLeaguePanel({
                     onClick={() => onQuickBet(match, '2', match.odds?.team2, match.team2.name)}
                   >
                     <span>2</span>
-                    <strong>{Number(match.odds?.team2 || 0).toFixed(2)}</strong>
+                    <strong>{Number(match.odds?.team2) > 1 ? Number(match.odds.team2).toFixed(2) : '—'}</strong>
                   </button>
                 </div>
 

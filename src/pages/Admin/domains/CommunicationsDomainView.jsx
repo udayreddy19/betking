@@ -4,17 +4,22 @@ import AdminDataTable from '../components/AdminDataTable';
 
 export default function CommunicationsDomainView() {
   const [logs, setLogs] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
+    let cancelled = false;
     adminApiClient.get('/communications/logs')
-      .then((data) => setLogs(data.logs || []))
-      .catch(() => {
-        setLogs([
-          { id: 'msg-701', channel: 'SMS', recipient: '+91 9876543210', template: 'OTP_VERIFICATION', status: 'DELIVERED', provider: 'Twilio', sentAt: '2026-08-10 20:42' },
-          { id: 'msg-702', channel: 'EMAIL', recipient: 'uday@betking.com', template: 'WITHDRAWAL_APPROVED', status: 'DELIVERED', provider: 'SendGrid', sentAt: '2026-08-10 20:30' },
-          { id: 'msg-703', channel: 'PUSH', recipient: 'usr-102', template: 'MATCH_LIVE_START', status: 'SENT', provider: 'Firebase FCM', sentAt: '2026-08-10 20:15' },
-        ]);
+      .then((data) => {
+        if (cancelled) return;
+        setLogs(data.logs || []);
+        setError(data.note || null);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setLogs([]);
+        setError(err.message || 'Failed to load communication logs');
       });
+    return () => { cancelled = true; };
   }, []);
 
   return (
@@ -22,12 +27,14 @@ export default function CommunicationsDomainView() {
       <div style={{ marginBottom: '20px' }}>
         <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>09 · Communications & Notification Delivery Engine</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-          Notification templates, SMS/Email/Push dispatchers, delivery status tracking, and DLQ retries.
+          Webhook / notification delivery records from the database.
         </p>
+        {error && <p style={{ margin: '8px 0 0', color: '#fbbf24', fontSize: '0.82rem' }}>{error}</p>}
       </div>
 
       <AdminDataTable
         title="Notification Delivery Logs"
+        emptyMessage="No notification deliveries recorded yet"
         data={logs}
         columns={[
           { header: 'Message ID', key: 'id' },

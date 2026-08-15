@@ -213,35 +213,42 @@ export function getRosterForTeam(teamName) {
   const rawStr = String(teamName);
   const cleanStr = rawStr.replace(/\s*(1st|2nd|3rd|4th|inns|innings)\b/gi, '').trim();
   const key = normalizeTeamKey(cleanStr).replace(/\s+/g, '');
+  const exact = cleanStr.replace(/\s+srl$/i, '').trim();
 
   if (ROSTERS[key]) return ROSTERS[key];
 
+  let best = null;
+  let bestLen = 0;
   for (const [rosterKey, roster] of Object.entries(ROSTERS)) {
     const normRosterKey = rosterKey.replace(/\s+/g, '');
-    if (key === normRosterKey || (key.length >= 3 && normRosterKey.includes(key))) {
-      return roster;
+    if (normRosterKey.length < 5) continue;
+    if (key === normRosterKey || (key.length >= 8 && (key.includes(normRosterKey) || normRosterKey.includes(key)))) {
+      if (normRosterKey.length > bestLen) {
+        best = roster;
+        bestLen = normRosterKey.length;
+      }
     }
   }
+  if (best) return best;
 
-  // Alias lookups with word boundaries (handles "IND 1ST", "SL 1ST", "KKR 1ST", "CSK 1ST", etc.)
-  if (/\b(wi|west indies|windies)\b/i.test(cleanStr)) return ROSTERS['west indies'];
-  if (/\b(pak|pakistan)\b/i.test(cleanStr)) return ROSTERS['pakistan'];
-  if (/\b(ind|india)\b/i.test(cleanStr)) return ROSTERS['india'];
-  if (/\b(eng|england)\b/i.test(cleanStr)) return ROSTERS['england'];
-  if (/\b(aus|australia)\b/i.test(cleanStr)) return ROSTERS['australia'];
-  if (/\b(sa|south africa)\b/i.test(cleanStr)) return ROSTERS['south africa'];
-  if (/\b(nz|new zealand|kiwis)\b/i.test(cleanStr)) return ROSTERS['new zealand'];
-  if (/\b(sl|sri lanka)\b/i.test(cleanStr)) return ROSTERS['sri lanka'];
-  if (/\b(rr|rajasthan)\b/i.test(cleanStr)) return ROSTERS['rajasthan royals'];
-  if (/\b(srh|sunrisers|hyderabad)\b/i.test(cleanStr)) return ROSTERS['sunrisers hyderabad'];
-  if (/\b(csk|chennai)\b/i.test(cleanStr)) return ROSTERS['chennai super kings'];
-  if (/\b(mi|mumbai)\b/i.test(cleanStr)) return ROSTERS['mumbai indians'];
-  if (/\b(rcb|bengaluru|bangalore)\b/i.test(cleanStr)) return ROSTERS['royal challengers bengaluru'];
-  if (/\b(kkr|kolkata)\b/i.test(cleanStr)) return ROSTERS['kolkata knight riders'];
-  if (/\b(dc|delhi)\b/i.test(cleanStr)) return ROSTERS['delhi capitals'];
-  if (/\b(pbks|punjab)\b/i.test(cleanStr)) return ROSTERS['punjab kings'];
-  if (/\b(gt|gujarat)\b/i.test(cleanStr)) return ROSTERS['gujarat titans'];
-  if (/\b(lsg|lucknow)\b/i.test(cleanStr)) return ROSTERS['lucknow super giants'];
+  if (/^(wi|west indies|windies)$/i.test(exact)) return ROSTERS['west indies'];
+  if (/^(pak|pakistan)$/i.test(exact)) return ROSTERS['pakistan'];
+  if (/^(ind|india)$/i.test(exact)) return ROSTERS['india'];
+  if (/^(eng|england)$/i.test(exact)) return ROSTERS['england'];
+  if (/^(aus|australia)$/i.test(exact)) return ROSTERS['australia'];
+  if (/^(sa|south africa)$/i.test(exact)) return ROSTERS['south africa'];
+  if (/^(nz|new zealand|kiwis)$/i.test(exact)) return ROSTERS['new zealand'];
+  if (/^(sl|sri lanka)$/i.test(exact)) return ROSTERS['sri lanka'];
+  if (/^(rr|rajasthan royals)$/i.test(exact)) return ROSTERS['rajasthan royals'];
+  if (/^(srh|sunrisers hyderabad)$/i.test(exact)) return ROSTERS['sunrisers hyderabad'];
+  if (/^(csk|chennai super kings)$/i.test(exact)) return ROSTERS['chennai super kings'];
+  if (/^(mi|mumbai indians)$/i.test(exact)) return ROSTERS['mumbai indians'];
+  if (/^(rcb|royal challengers bengaluru|royal challengers bangalore)$/i.test(exact)) return ROSTERS['royal challengers bengaluru'];
+  if (/^(kkr|kolkata knight riders)$/i.test(exact)) return ROSTERS['kolkata knight riders'];
+  if (/^(dc|delhi capitals)$/i.test(exact)) return ROSTERS['delhi capitals'];
+  if (/^(pbks|punjab kings)$/i.test(exact)) return ROSTERS['punjab kings'];
+  if (/^(gt|gujarat titans)$/i.test(exact)) return ROSTERS['gujarat titans'];
+  if (/^(lsg|lucknow super giants)$/i.test(exact)) return ROSTERS['lucknow super giants'];
 
   return { batters: [], bowlers: [] };
 }

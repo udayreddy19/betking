@@ -7,30 +7,33 @@ import {
   useCallback,
   useMemo,
 } from 'react';
-import { getStableMatchOdds } from '../utils/odds';
 import { normalizeApiMatches } from '../utils/matchFilters';
 import { fetchLiveScores } from '../services/liveScoresService';
-import { getIplSrlMatches } from '../../lib/iplSrlSimulator.mjs';
-import { DEFAULT_MATCH_FIXTURES } from '../data/defaultMatchesFixtures';
 import { LIVE_SCORES_POLL_MS } from '../config/livePolling';
-import { computeLiveDynamicOdds } from '../utils/oddsMarketsGenerator';
+import { getIplSrlMatches } from '../../lib/iplSrlSimulator.mjs';
+import { cricketScoreWeight, cricketSourceRank } from '../../lib/matchPairKey.mjs';
 
 const LiveMatchesContext = createContext([]);
 const LiveSportsMetaContext = createContext(null);
 
 function attachOdds(matches) {
   return matches.map((match) => {
-    const homeOdds = match.odds?.home || match.odds?.team1 || match.preOdds?.team1 || match.preOdds?.home;
-    const awayOdds = match.odds?.away || match.odds?.team2 || match.preOdds?.team2 || match.preOdds?.away;
-    const drawOdds = match.odds?.draw || match.preOdds?.draw;
+    const homeOdds = match.odds?.home ?? match.odds?.team1 ?? match.preOdds?.team1 ?? match.preOdds?.home ?? null;
+    const awayOdds = match.odds?.away ?? match.odds?.team2 ?? match.preOdds?.team2 ?? match.preOdds?.away ?? null;
+    const drawOdds = match.odds?.draw ?? match.preOdds?.draw ?? null;
 
-    const stableOdds = {
-      team1: homeOdds || 1.85,
-      team2: awayOdds || 1.95,
-      draw: drawOdds || null,
-      home: homeOdds || 1.85,
-      away: awayOdds || 1.95,
-    };
+    const hasHome = homeOdds != null && Number(homeOdds) > 1;
+    const hasAway = awayOdds != null && Number(awayOdds) > 1;
+
+    const stableOdds = hasHome && hasAway
+      ? {
+        team1: Number(homeOdds),
+        team2: Number(awayOdds),
+        draw: drawOdds != null && Number(drawOdds) > 1 ? Number(drawOdds) : null,
+        home: Number(homeOdds),
+        away: Number(awayOdds),
+      }
+      : null;
 
     return {
       ...match,
@@ -42,7 +45,7 @@ function attachOdds(matches) {
 
 function normalizeTeamKey(name = '') {
   return String(name)
-    .replace(/\s*(1st|2nd|3rd|4th|inns|innings|xi|srl|women|men|t20|test)\b/gi, '')
+    .replace(/\s*(1st|2nd|3rd|4th|inns|innings|xi|t20|test)\b/gi, '')
     .replace(/[^a-z0-9]/gi, '')
     .trim()
     .toLowerCase();
@@ -50,48 +53,66 @@ function normalizeTeamKey(name = '') {
 
 function mergeSrlMatches(matches) {
   const srl = attachOdds(getIplSrlMatches());
-  const defaults = attachOdds(DEFAULT_MATCH_FIXTURES);
-  const apiMatches = matches.filter((m) => !String(m.id || '').startsWith('srl_ipl_'));
-
-  // Collect active team tokens from live API matches
-  const liveTeams = new Set();
-  apiMatches.forEach((m) => {
-    const t1 = normalizeTeamKey(m?.team1?.name || m?.team1 || '');
-    const t2 = normalizeTeamKey(m?.team2?.name || m?.team2 || '');
-    if (t1 && t1.length >= 3) liveTeams.add(t1);
-    if (t2 && t2.length >= 3) liveTeams.add(t2);
-  });
-
-  // Exclude static default fixtures if either team is currently playing in a live API match
-  const filteredDefaults = defaults.filter((m) => {
-    const t1 = normalizeTeamKey(m?.team1?.name || m?.team1 || '');
-    const t2 = normalizeTeamKey(m?.team2?.name || m?.team2 || '');
-    const t1Conflict = t1 && Array.from(liveTeams).some((lt) => t1.includes(lt) || lt.includes(t1));
-    const t2Conflict = t2 && Array.from(liveTeams).some((lt) => t2.includes(lt) || lt.includes(t2));
-    return !t1Conflict && !t2Conflict;
-  });
-
-  const combined = [...apiMatches, ...srl, ...filteredDefaults];
+  const apiMatches = matches.filter((m) => !String(m.id || '').startsWith('srl_') && m.source !== 'srl');
 
   const seenIds = new Set();
-  const seenPairs = new Set();
+  const seenPairs = new Map();
   const result = [];
 
-  for (const match of combined) {
-    if (!match?.id || seenIds.has(match.id)) continue;
-
+  const pushUnique = (match, { allowSrl = false } = {}) => {
+    if (!match?.id || seenIds.has(match.id)) return;
     const t1 = normalizeTeamKey(match?.team1?.name || match?.team1 || '');
     const t2 = normalizeTeamKey(match?.team2?.name || match?.team2 || '');
-    const pairKey = (t1 && t2) ? [t1, t2].sort().join('::') : null;
-
-    if (pairKey && seenPairs.has(pairKey)) continue;
-
+    const blob = `${match?.team1?.name || ''} ${match?.team2?.name || ''} ${match?.league || ''} ${match?.id || ''}`;
+    const gender = /\bwomen\b|\(women\)/i.test(blob) ? 'w' : 'm';
+    const srlTag = allowSrl
+      || String(match.id || '').startsWith('srl_')
+      || match.source === 'srl'
+      || /\bsrl\b/i.test(blob)
+      ? 'srl'
+      : 'real';
+    const pairKey = (t1 && t2) ? `${gender}|${srlTag}|${[t1, t2].sort().join('::')}` : null;
+    if (pairKey && seenPairs.has(pairKey)) {
+      const existingIdx = seenPairs.get(pairKey);
+      const existing = result[existingIdx];
+      if (existing) {
+        const rankBetter = cricketSourceRank(match) > cricketSourceRank(existing);
+        const rankTied = cricketSourceRank(match) === cricketSourceRank(existing);
+        const scoreBetter = cricketScoreWeight(match) > cricketScoreWeight(existing);
+        if (rankBetter || (rankTied && scoreBetter)) {
+          result[existingIdx] = match;
+          seenIds.add(match.id);
+        }
+      }
+      return;
+    }
     seenIds.add(match.id);
-    if (pairKey) seenPairs.add(pairKey);
+    if (pairKey) seenPairs.set(pairKey, result.length);
     result.push(match);
-  }
+  };
+
+  for (const match of apiMatches) pushUnique(match, { allowSrl: false });
+  for (const match of srl) pushUnique(match, { allowSrl: true });
 
   return result;
+}
+
+function playerSlot(player) {
+  if (!player) return null;
+  const name = typeof player === 'string' ? player : player.name;
+  if (!name) return null;
+  return player;
+}
+
+function mergeLiveDetailsPreservePlayers(prevLd = {}, nextLd = {}) {
+  const merged = { ...prevLd, ...nextLd };
+  for (const key of ['batter1', 'batter2', 'bowler']) {
+    merged[key] = playerSlot(nextLd[key]) || playerSlot(prevLd[key]) || nextLd[key] || prevLd[key];
+  }
+  if (!merged.currentOverBalls?.length && prevLd.currentOverBalls?.length) {
+    merged.currentOverBalls = prevLd.currentOverBalls;
+  }
+  return merged;
 }
 
 function matchDisplayKey(match) {
@@ -155,7 +176,14 @@ function mergeMatchesStable(prev, next) {
     } else if (matchDisplayKey(previous) === matchDisplayKey(candidate)) {
       merged.push(previous);
     } else {
-      merged.push(candidate);
+      merged.push({
+        ...candidate,
+        liveDetails: mergeLiveDetailsPreservePlayers(previous.liveDetails, candidate.liveDetails),
+        squads: candidate.squads?.length ? candidate.squads : previous.squads,
+        scorecardInnings: candidate.scorecardInnings?.length
+          ? candidate.scorecardInnings
+          : previous.scorecardInnings,
+      });
     }
   }
 

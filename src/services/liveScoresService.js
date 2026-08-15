@@ -5,6 +5,7 @@
 
 import { normalizeTeamName } from '../utils/teamNames';
 import { sportsGatewayClient } from './sportsGatewayClient';
+import { cricketScoreWeight, cricketSourceRank, getCanonicalMatchPairKey } from '../../lib/matchPairKey.mjs';
 
 export { normalizeTeamName };
 
@@ -60,14 +61,29 @@ export async function fetchLiveScores(options = {}) {
         kit: g.awayTeam?.kit || null,
       },
       liveDetails: {
-        runs: g.liveScore?.runs ?? g.score?.home ?? 0,
-        score2: g.liveScore?.score2 ?? g.liveScore?.chaseRuns ?? g.score?.away ?? 0,
-        wickets: g.liveScore?.wickets ?? g.score?.wickets ?? 0,
-        wickets2: g.liveScore?.wickets2 ?? g.liveScore?.chaseWickets ?? 0,
-        overs: g.liveScore?.overs ?? g.score?.overs ?? '0.0',
-        overs2: g.liveScore?.overs2 ?? g.liveScore?.chaseOvers ?? '0.0',
-        commentary: g.commentary?.textCommentary || (g.provider ? `Provider: ${g.provider}` : ''),
-        toss: g.toss || null,
+        runs: g.liveScore?.runs ?? g.score?.home ?? g.liveDetails?.runs,
+        score2: g.liveScore?.score2 ?? g.liveScore?.chaseRuns ?? g.score?.away ?? g.liveDetails?.score2,
+        wickets: g.liveScore?.wickets ?? g.score?.wickets ?? g.liveDetails?.wickets,
+        wickets2: g.liveScore?.wickets2 ?? g.liveScore?.chaseWickets ?? g.liveDetails?.wickets2,
+        overs: g.liveScore?.overs ?? g.score?.overs ?? g.liveDetails?.overs,
+        overs2: g.liveScore?.overs2 ?? g.liveScore?.chaseOvers ?? g.liveDetails?.overs2,
+        firstRuns: g.liveDetails?.firstRuns,
+        firstWickets: g.liveDetails?.firstWickets,
+        firstOvers: g.liveDetails?.firstOvers,
+        firstTeamName: g.liveDetails?.firstTeamName,
+        chaseRuns: g.liveDetails?.chaseRuns,
+        chaseWickets: g.liveDetails?.chaseWickets,
+        chaseOvers: g.liveDetails?.chaseOvers,
+        chaseTeamName: g.liveDetails?.chaseTeamName,
+        commentary: g.commentary?.textCommentary || g.liveDetails?.commentary || (g.provider ? `Provider: ${g.provider}` : ''),
+        toss: g.toss || g.liveDetails?.toss || null,
+        // Player fields — must be preserved for scorecard widget
+        batter1: g.liveDetails?.batter1 || g.liveScore?.batter1 || null,
+        batter2: g.liveDetails?.batter2 || g.liveScore?.batter2 || null,
+        bowler: g.liveDetails?.bowler || g.liveScore?.bowler || null,
+        currentOverBalls: g.liveDetails?.currentOverBalls || g.liveScore?.currentOverBalls || [],
+        scorecardInnings: g.liveDetails?.scorecardInnings || g.scorecardInnings || [],
+        overHistory: g.liveDetails?.overHistory || g.overHistory || [],
       },
       venue: g.venue || null,
       officials: g.officials || null,
@@ -81,39 +97,53 @@ export async function fetchLiveScores(options = {}) {
       source: g.provider || 'gateway',
     }));
 
-    // Dedup gateway matches with legacy matches by ID and team names
-    const getMatchTeamKey = (m) => {
-      const t1 = (m.team1?.name || m.homeTeam?.name || m.homeTeam?.teamName || '').toLowerCase().replace(/\(men\)|\(women\)/gi, '').replace(/[^a-z0-9]/g, '');
-      const t2 = (m.team2?.name || m.awayTeam?.name || m.awayTeam?.teamName || '').toLowerCase().replace(/\(men\)|\(women\)/gi, '').replace(/[^a-z0-9]/g, '');
-      if (!t1 || !t2) return String(m.id || Math.random());
-      return [t1, t2].sort().join('|');
+    const mergeLiveDetails = (preferred = {}, fallback = {}) => ({
+      ...fallback,
+      ...preferred,
+      commentaryFeed: preferred.commentaryFeed || fallback.commentaryFeed,
+      overHistory: preferred.overHistory || fallback.overHistory,
+      squads: preferred.squads || fallback.squads,
+      batter1: preferred.batter1 || fallback.batter1,
+      batter2: preferred.batter2 || fallback.batter2,
+      bowler: preferred.bowler || fallback.bowler,
+    });
+
+    const mergeLegacyOrGateway = (existing, incoming) => {
+      if (!existing) return incoming;
+      const existingRank = cricketSourceRank(existing);
+      const incomingRank = cricketSourceRank(incoming);
+      let primary = incomingRank >= existingRank ? incoming : existing;
+      let secondary = incomingRank >= existingRank ? existing : incoming;
+      if (cricketScoreWeight(primary) === 0 && cricketScoreWeight(secondary) > 0) {
+        const scored = secondary;
+        secondary = primary;
+        primary = scored;
+      }
+      const cb = [existing, incoming].find((m) => String(m.id || '').startsWith('cb_'));
+      return {
+        ...secondary,
+        ...primary,
+        id: cb?.id || primary.id,
+        source: cb ? 'cricbuzz' : primary.source,
+        cricbuzzMatchId: existing.cricbuzzMatchId
+          || incoming.cricbuzzMatchId
+          || cb?.cricbuzzMatchId
+          || (cb?.id?.startsWith('cb_') ? String(cb.id).replace(/^cb_/, '') : null),
+        espnEventId: existing.espnEventId || incoming.espnEventId,
+        espnPath: existing.espnPath || incoming.espnPath,
+        liveDetails: mergeLiveDetails(primary.liveDetails, secondary.liveDetails),
+      };
     };
 
     const matchMap = new Map();
     for (const m of legacyMatches) {
-      const key = getMatchTeamKey(m);
-      matchMap.set(key, m);
+      const key = getCanonicalMatchPairKey(m) || String(m.id);
+      matchMap.set(key, mergeLegacyOrGateway(matchMap.get(key), m));
     }
 
     for (const g of gatewayMatches) {
-      const key = getMatchTeamKey(g);
-      if (!matchMap.has(key)) {
-        matchMap.set(key, g);
-      } else {
-        const existing = matchMap.get(key);
-        // Deep-merge attributes preserving commentaryFeed, overHistory, and squads
-        matchMap.set(key, {
-          ...g,
-          ...existing,
-          liveDetails: {
-            ...g.liveDetails,
-            ...existing.liveDetails,
-            commentaryFeed: existing.liveDetails?.commentaryFeed || g.liveDetails?.commentaryFeed,
-            overHistory: existing.liveDetails?.overHistory || g.liveDetails?.overHistory,
-            squads: existing.liveDetails?.squads || g.liveDetails?.squads,
-          },
-        });
-      }
+      const key = getCanonicalMatchPairKey(g) || String(g.id);
+      matchMap.set(key, mergeLegacyOrGateway(matchMap.get(key), g));
     }
 
     const mergedMatches = Array.from(matchMap.values());

@@ -1,32 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import { adminApiClient } from '../api/adminApiClient';
 import AdminDataTable from '../components/AdminDataTable';
+import { useAdminToast } from '../components/AdminToastContext';
 
 export default function PlatformDomainView() {
   const [apiKeys, setApiKeys] = useState([]);
-  const [featureFlags, setFeatureFlags] = useState([
-    { key: 'ENABLE_RAZORPAY_PAYOUTS', description: 'Automatic withdrawal payout via Razorpay API', enabled: true },
-    { key: 'ENABLE_SRL_SIMULATION', description: 'IPL SRL Virtual Cricket Simulation Engine', enabled: true },
-    { key: 'ENABLE_MAKER_CHECKER_WITHDRAWAL', description: 'Enforce Finance Admin secondary approval for > ₹10,000', enabled: true },
-  ]);
+  const [featureFlags, setFeatureFlags] = useState([]);
+  const [error, setError] = useState(null);
+  const { showToast } = useAdminToast();
 
   useEffect(() => {
+    let cancelled = false;
     adminApiClient.get('/platform/apikeys')
-      .then((data) => setApiKeys(data.keys || []))
-      .catch(() => {
-        setApiKeys([
-          { id: 'key-01', name: 'Sportsbook Production API', prefix: 'bk_live_9f82...', scope: 'FULL_READ_WRITE', createdAt: '2026-01-01', status: 'ACTIVE' },
-          { id: 'key-02', name: 'Razorpay Payment Gateway Webhook Key', prefix: 'bk_rzp_3a11...', scope: 'WEBHOOK_PAYOUT', createdAt: '2026-01-10', status: 'ACTIVE' },
-        ]);
+      .then((data) => {
+        if (cancelled) return;
+        setApiKeys(data.keys || []);
+        setFeatureFlags(data.flags || []);
+        setError(data.note || null);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setApiKeys([]);
+        setFeatureFlags([]);
+        setError(err.message || 'Failed to load platform config');
       });
+    return () => { cancelled = true; };
   }, []);
 
   const toggleFlag = (flagKey) => {
-    setFeatureFlags((prev) =>
-      prev.map((f) => (f.key === flagKey ? { ...f, enabled: !f.enabled } : f))
-    );
-    adminApiClient.post('/platform/flags/toggle', { key: flagKey })
-      .catch(() => {});
+    const current = featureFlags.find((f) => f.key === flagKey);
+    const nextEnabled = !(current?.enabled);
+    setFeatureFlags((prev) => prev.map((f) => (f.key === flagKey ? { ...f, enabled: nextEnabled } : f)));
+    adminApiClient.post('/platform/flags/toggle', { key: flagKey, enabled: nextEnabled })
+      .then(() => showToast(`Flag ${flagKey} → ${nextEnabled ? 'ENABLED' : 'DISABLED'}`, 'success'))
+      .catch((err) => {
+        setFeatureFlags((prev) => prev.map((f) => (f.key === flagKey ? { ...f, enabled: !nextEnabled } : f)));
+        showToast(err.message || 'Flag toggle failed', 'error');
+      });
   };
 
   return (
@@ -34,13 +44,17 @@ export default function PlatformDomainView() {
       <div style={{ marginBottom: '20px' }}>
         <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>11 · Platform Developer Infrastructure & Feature Flags</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-          API key rotation, webhook signature verification, tenant configuration, and real-time feature flags.
+          API keys from developer platform tables; sport enable flags from admin config.
         </p>
+        {error && <p style={{ margin: '8px 0 0', color: '#fbbf24', fontSize: '0.82rem' }}>{error}</p>}
       </div>
 
       <div style={{ marginBottom: '24px', padding: '20px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '12px' }}>
         <h3 style={{ margin: '0 0 16px', fontSize: '1.05rem' }}>System Feature Flags</h3>
         <div style={{ display: 'grid', gap: '12px' }}>
+          {featureFlags.length === 0 && (
+            <p style={{ color: 'var(--color-text-muted)', margin: 0 }}>No flags loaded.</p>
+          )}
           {featureFlags.map((flag) => (
             <div key={flag.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--color-panel)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
               <div>
@@ -48,6 +62,7 @@ export default function PlatformDomainView() {
                 <p style={{ margin: '2px 0 0', color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>{flag.description}</p>
               </div>
               <button
+                type="button"
                 onClick={() => toggleFlag(flag.key)}
                 style={{
                   padding: '6px 14px',
@@ -68,7 +83,8 @@ export default function PlatformDomainView() {
       </div>
 
       <AdminDataTable
-        title="Developer API Keys & Service Credentials"
+        title="Developer API Keys"
+        emptyMessage="No API keys registered"
         data={apiKeys}
         columns={[
           { header: 'Key ID', key: 'id' },

@@ -18,6 +18,8 @@ describe('OddsEngineV3 — Integration & Snapshot Generation', () => {
     ballsPerInnings: 100,
     ballsCompleted: 58,
     ballsRemaining: 42,
+    batter1: { name: 'Alex Hales', runs: 42, balls: 28 },
+    batter2: { name: 'Tom Kohler-Cadmore', runs: 31, balls: 22 },
     providerTimestamp: Date.now(),
     stateVersion: 1,
   };

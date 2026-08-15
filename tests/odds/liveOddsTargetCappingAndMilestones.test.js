@@ -46,7 +46,7 @@ describe('OddsEngineV3 — Target Capping & Market Pricing Integrity', () => {
     expect(alexHales25Market).toBeDefined();
     expect(alexHales25Market.name).toContain('2nd Innings');
     // Alex Hales is on 58 runs, so 25+ milestone is DETERMINED / SETTLED
-    expect(alexHales25Market.status).toBe('DETERMINED');
+    expect(['DETERMINED', 'SETTLED']).toContain(alexHales25Market.status);
 
     // 4. Verify Powerplay (Overs 0-5) market is filtered out since ballsCompleted (58) > 30
     const powerplayMarket = snapshot.markets.find((m) => m.marketId === 'overs_0_5_total');

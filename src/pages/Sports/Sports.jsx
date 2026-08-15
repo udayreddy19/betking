@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef, useSyncExternalStore } from 'react';
 import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { FiSearch, FiHome, HiOutlineChevronDown, HiOutlineChevronUp, FiMessageCircle } from '../../icons';
 import FilterChips from '../../components/FilterChips/FilterChips';
@@ -14,16 +14,21 @@ import { useLiveMatches, useLiveSportsMeta } from '../../context/LiveSportsConte
 import { useBetSlip } from '../../context/BetSlipContext';
 import { useAuth } from '../../context/AuthContext';
 import { isMatchBettable, isTrulyLiveMatch, getMatchState } from '../../utils/matchBetting';
-import { resolveCricketTeamScores } from '../../utils/cricketScores';
-import { isTestMatch, getTestMatchDayLabel, formatMatchCountdown } from '../../utils/cricketFormat';
-import { prefetchMatchDetail } from '../../services/matchDetailPoller';
+import { resolveCricketTeamScores, resolveCricketTossText } from '../../utils/cricketScores';
+import { isTestMatch, getTestMatchDayLabel, formatMatchCountdown, isHundredMatch } from '../../utils/cricketFormat';
+import { prefetchMatchDetail, enrichFromPoller, subscribeGlobalMatchDetails, getGlobalMatchDetailVersion } from '../../services/matchDetailPoller';
 import { useMatchDetail } from '../../hooks/useMatchDetail';
 import { useCentralizedMatchState } from '../../hooks/useCentralizedMatchState';
 import { centralizedMatchEngine } from '../../services/centralizedMatchStateEngine';
 import { filterMatches } from '../../utils/matchFilters';
 import { resolveLeagueId, getLeagueMeta, isSameLeague, groupMatchesByLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
+import { formatTeamShortName } from '../../utils/teamShortName';
 import SrlLeaguePanel from '../../components/SrlLeaguePanel/SrlLeaguePanel';
-import { fetchAuthoritativeMatchOdds, getCachedMatchOdds } from '../../services/oddsService';
+import {
+  fetchAuthoritativeMatchOdds,
+  getCachedMatchOdds,
+  provisionalWinnerMarketsFromMatch,
+} from '../../services/oddsService';
 import { getMarketCategoriesForSport } from '../../utils/oddsMarketsGenerator';
 import './Sports.css';
 
@@ -87,51 +92,38 @@ function filterByLeague(matchList, activeLeague, cricketSeries = []) {
 }
 
 function getMatchScores(match) {
-  const isLive = isTrulyLiveMatch(match);
-  const isFinished = getMatchState(match) === 'post';
-  const state = centralizedMatchEngine.getSnapshot(match?.id, match);
+  const enriched = enrichFromPoller(match) || match;
+  const isLive = isTrulyLiveMatch(enriched);
+  const isFinished = getMatchState(enriched) === 'post';
+  const state = centralizedMatchEngine.getSnapshot(enriched?.id, enriched);
+
+  if (!isLive && !isFinished) {
+    return { team1Score: '', team2Score: '', isLive, isFinished, state, overs2: enriched?.liveDetails?.overs2 };
+  }
 
   let team1Score = state?.teams?.team1?.score || '';
   let team2Score = state?.teams?.team2?.score || '';
 
   if (!team1Score || team1Score === '0/0' || !team2Score || team2Score === '0/0') {
-    const ld = match?.liveDetails || {};
-    if (match?.sport === 'soccer' || match?.sport === 'esoccer' || match?.sport === 'basketball') {
+    const ld = enriched?.liveDetails || {};
+    if (enriched?.sport === 'soccer' || enriched?.sport === 'esoccer' || enriched?.sport === 'basketball') {
       team1Score = String(ld.score1 ?? 0);
       team2Score = String(ld.score2 ?? 0);
     } else {
-      const resolved = resolveCricketTeamScores(match, ld);
+      const resolved = resolveCricketTeamScores(enriched, ld);
       team1Score = `${resolved.team1.runs}/${resolved.team1.wickets}`;
       team2Score = `${resolved.team2.runs}/${resolved.team2.wickets}`;
     }
   }
 
-  return { team1Score, team2Score, isLive, isFinished, state };
+  return { team1Score, team2Score, isLive, isFinished, state, overs2: enriched?.liveDetails?.overs2 };
 }
 
 function resolveTossText(match, centralizedState) {
-  if (!match) return null;
-  const isCricket = match.sport === 'cricket' || match.sport === 'virtual-cricket' || !match.sport;
-  if (!isCricket) return null;
-
-  const t = match.toss || match.liveDetails?.toss || match.matchHeader?.toss || centralizedState?.toss;
-  if (typeof t === 'string' && t.trim()) return t.trim();
-  if (t && typeof t === 'object') {
-    const winner = t.winnerName || t.winner || t.teamWinnerName;
-    const decision = t.decision || t.decisionChoice || 'bat';
-    if (winner) {
-      return `${winner} won the toss & elected to ${decision.toLowerCase()}`;
-    }
-  }
-
-  const team1Name = match.team1?.name || match.team1;
-  const ld = match.liveDetails || {};
-  const batTeam = ld.firstTeamName || ld.batTeam || team1Name;
-  if (batTeam && (match.isLive || match.matchState === 'in')) {
-    return `${batTeam} won the toss & elected to bat`;
-  }
-
-  return null;
+  return resolveCricketTossText(match, {
+    toss: centralizedState?.toss,
+    commentary: centralizedState?.commentary,
+  });
 }
 
 function CricketGroupedMatches({ groups, onSelectMatch, getMatchScores, isBetSelected, onQuickBet }) {
@@ -197,22 +189,30 @@ function CricketGroupedMatches({ groups, onSelectMatch, getMatchScores, isBetSel
                     <button
                       type="button"
                       className={`sports-cricket-odds-card ${isBetSelected(m.id, '1') ? 'selected' : ''}`}
-                      onClick={(e) => { e.stopPropagation(); onQuickBet(m, '1', m.odds?.team1, m.team1.name); }}
+                      disabled={!(Number(m.odds?.team1) > 1)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (Number(m.odds?.team1) > 1) onQuickBet(m, '1', m.odds.team1, m.team1.name);
+                      }}
                     >
                       <span className="odds-label">1</span>
-                      <strong className="odds-val">{Number(m.odds?.team1 || 0).toFixed(2)}</strong>
+                      <strong className="odds-val">{Number(m.odds?.team1) > 1 ? Number(m.odds.team1).toFixed(2) : '—'}</strong>
                     </button>
 
                     <button
                       type="button"
                       className={`sports-cricket-odds-card ${isBetSelected(m.id, '2') ? 'selected' : ''}`}
-                      onClick={(e) => { e.stopPropagation(); onQuickBet(m, '2', m.odds?.team2, m.team2.name); }}
+                      disabled={!(Number(m.odds?.team2) > 1)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (Number(m.odds?.team2) > 1) onQuickBet(m, '2', m.odds.team2, m.team2.name);
+                      }}
                     >
                       <span className="odds-label">2</span>
-                      <strong className="odds-val">{Number(m.odds?.team2 || 0).toFixed(2)}</strong>
+                      <strong className="odds-val">{Number(m.odds?.team2) > 1 ? Number(m.odds.team2).toFixed(2) : '—'}</strong>
                     </button>
 
-                    {m.odds?.draw != null ? (
+                    {m.odds?.draw != null && Number(m.odds.draw) > 1 ? (
                       <button
                         type="button"
                         className={`sports-cricket-odds-card ${isBetSelected(m.id, 'X') ? 'selected' : ''}`}
@@ -222,8 +222,8 @@ function CricketGroupedMatches({ groups, onSelectMatch, getMatchScores, isBetSel
                         <strong className="odds-val">{Number(m.odds.draw).toFixed(2)}</strong>
                       </button>
                     ) : (
-                      <div className="sports-cricket-odds-card locked">
-                        <span className="lock-icon">🔒</span>
+                      <div className="sports-cricket-odds-card locked" title="Not available">
+                        <span className="lock-icon">—</span>
                       </div>
                     )}
 
@@ -256,6 +256,7 @@ function MarketsSuspended() {
 
 export default function Sports() {
   const matches = useLiveMatches();
+  useSyncExternalStore(subscribeGlobalMatchDetails, getGlobalMatchDetailVersion, () => 0);
   const { tickerMessage, cricketSeries, scoresError, refreshScores, isScoresLoading } = useLiveSportsMeta();
   const { addBet, isBetSelected } = useBetSlip();
   const { user, showToast } = useAuth();
@@ -296,7 +297,7 @@ export default function Sports() {
     const filtered = filterByLeague(
       filterMatches(matches, {
         sport: activeSport,
-        stateTab: 'bettable',
+        stateTab: isLiveBettingPage ? 'bettable' : 'all',
         searchQuery,
       }),
       activeLeague,
@@ -311,7 +312,7 @@ export default function Sports() {
       if (liveA !== liveB) return liveA - liveB;
       return String(a.time).localeCompare(String(b.time));
     });
-  }, [matches, activeSport, activeLeague, searchQuery, cricketSeries]);
+  }, [matches, activeSport, activeLeague, searchQuery, cricketSeries, isLiveBettingPage]);
 
   const liveMatches = useMemo(
     () => sportMatches.filter((m) => getMatchState(m) === 'in'),
@@ -324,9 +325,9 @@ export default function Sports() {
   );
 
   const cricketGroups = useMemo(() => {
-    if (activeSport !== 'cricket' || activeLeague !== 'all') return [];
+    if (activeSport !== 'cricket') return [];
     return groupMatchesByLeague(sportMatches);
-  }, [activeSport, activeLeague, sportMatches]);
+  }, [activeSport, sportMatches]);
 
   const lastActiveMatchRef = useRef(null);
 
@@ -376,7 +377,8 @@ export default function Sports() {
     if (cached && Array.isArray(cached.markets) && cached.markets.length > 0) {
       setMatchMarkets(cached.markets);
     } else {
-      setMatchMarkets([]);
+      // Show list-card winner odds immediately while full V3 markets load.
+      setMatchMarkets(provisionalWinnerMarketsFromMatch(activeMatch));
     }
 
     let isCancelled = false;
@@ -402,7 +404,7 @@ export default function Sports() {
   useEffect(() => {
     if (!liveMatchPrefetchKey) return;
     const seen = new Set();
-    liveMatches.slice(0, 5).forEach((match) => {
+    liveMatches.slice(0, 12).forEach((match) => {
       if (seen.has(match.id)) return;
       seen.add(match.id);
       prefetchMatchDetail(match);
@@ -528,9 +530,12 @@ export default function Sports() {
   };
 
   const sportCounts = useMemo(() => {
+    const pool = isLiveBettingPage
+      ? filterMatches(matches, { stateTab: 'bettable' })
+      : matches;
     const map = {};
     for (const cat of sportsCategories) {
-      map[cat.id] = matches.filter((m) => {
+      map[cat.id] = pool.filter((m) => {
         const s = String(m.sport || '').toLowerCase();
         if (cat.id === 'cricket') return s === 'cricket';
         if (cat.id === 'soccer') return s === 'soccer' || s === 'football';
@@ -545,7 +550,7 @@ export default function Sports() {
       }).length;
     }
     return map;
-  }, [matches]);
+  }, [matches, isLiveBettingPage]);
 
   return (
     <div
@@ -723,11 +728,11 @@ export default function Sports() {
                   onClick={() => selectMatch(m.id)}
                 >
                   <div className="sports-ticker-row">
-                    <span title={m.team1.name}>{m.team1.shortName || m.team1.name.slice(0, 12)}</span>
+                    <span title={m.team1.name}>{formatTeamShortName(m.team1.name, m.team1.shortName)}</span>
                     <span>{team1Score || ''}</span>
                   </div>
                   <div className="sports-ticker-row">
-                    <span title={m.team2.name}>{m.team2.shortName || m.team2.name.slice(0, 12)}</span>
+                    <span title={m.team2.name}>{formatTeamShortName(m.team2.name, m.team2.shortName)}</span>
                     <span>{team2Score || ''}</span>
                   </div>
                   {isLive && <span className="sports-ticker-live">LIVE</span>}
@@ -851,7 +856,9 @@ export default function Sports() {
                 const { team1Score, team2Score, isLive } = getMatchScores(activeMatch);
                 const commText = centralizedState?.commentary || activeMatch.liveDetails?.commentary;
 
-                const matchFormatBadge = (typeof activeMatch.matchType === 'string' ? activeMatch.matchType : typeof activeMatch.matchFormat === 'string' ? activeMatch.matchFormat : typeof activeMatch.format === 'string' ? activeMatch.format : (activeMatch.sport === 'cricket' ? 'T20' : activeMatch.sport)).toUpperCase();
+                const matchFormatBadge = isHundredMatch(activeMatch)
+                  ? 'HUNDRED'
+                  : (typeof activeMatch.matchType === 'string' ? activeMatch.matchType : typeof activeMatch.matchFormat === 'string' ? activeMatch.matchFormat : typeof activeMatch.format === 'string' ? activeMatch.format : (activeMatch.sport === 'cricket' ? 'T20' : activeMatch.sport)).toUpperCase();
 
                 const isTest = isTestMatch(activeMatch) || matchFormatBadge === 'TEST';
                 const testDayBadge = isTest ? getTestMatchDayLabel(activeMatch) : null;

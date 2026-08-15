@@ -58,7 +58,7 @@ export function AdminToastProvider({ children }) {
                   gap: '12px',
                   padding: '14px 18px',
                   borderRadius: '10px',
-                  background: 'rgba(17, 24, 39, 0.92)',
+                  background: 'var(--admin-panel)',
                   backdropFilter: 'blur(16px)',
                   WebkitBackdropFilter: 'blur(16px)',
                   border: isSuccess
@@ -71,7 +71,7 @@ export function AdminToastProvider({ children }) {
                     : isError
                     ? '0 8px 32px rgba(239, 68, 68, 0.25)'
                     : '0 8px 32px rgba(59, 130, 246, 0.25)',
-                  color: '#ffffff',
+                  color: 'var(--admin-text)',
                   fontSize: '0.85rem',
                   fontWeight: 600,
                 }}

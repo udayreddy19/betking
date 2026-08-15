@@ -2,33 +2,20 @@ import { useState, useEffect, useMemo } from 'react';
 import { IoClose } from '../../icons';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { isMatchBettable, isMatchLive } from '../../utils/matchBetting';
-import { fetchAuthoritativeMatchOdds, getCachedMatchOdds } from '../../services/oddsService';
-import { resolveCricketTeamScores, isCricketSecondInnings } from '../../utils/cricketScores';
+import {
+  fetchAuthoritativeMatchOdds,
+  getCachedMatchOdds,
+  provisionalWinnerMarketsFromMatch,
+} from '../../services/oddsService';
+import { resolveCricketTeamScores, isCricketSecondInnings, resolveCricketTossText } from '../../utils/cricketScores';
 import { getChaseText } from '../../utils/liveMatchWidgetData';
 import { getMatchMaxOvers, isTestMatch, getTestMatchDayLabel, formatMatchCountdown } from '../../utils/cricketFormat';
-import { getRosterForTeam } from '../../data/cricketRosters';
 import { displayPlayerName } from '../../utils/cricketPlayers';
 import BetSlipFooter from '../BetSlip/BetSlipFooter';
 import TeamJersey from '../TeamJersey/TeamJersey';
 import MatchCountdownTimer from '../MatchCountdownTimer/MatchCountdownTimer';
 import LiveChartsWidget from '../LiveChartsWidget/LiveChartsWidget';
 import './MatchDetailModal.css';
-
-// Roster database for realistic player names across sports
-const teamRosters = {
-  'South Africa E...': ['Tristan Stubbs', 'Dewald Brevis', 'Bryce Parsons', 'Matthew Breetzke'],
-  'Bangladesh Em...': ['Towhid Hridoy', 'Tanzid Hasan', 'Parvez Hossain', 'Shamim Hossain'],
-  'West Delhi Lions': ['Hiten Dalal', 'Nitish Rana', 'Himmat Singh', 'Shivam Gupta'],
-  'New Delhi Tigers': ['Kshitiz Sharma', 'Himanshu Chauhan', 'Vaibhav Kandpal', 'Prince Yadav'],
-  'Kenya': ['SR Bhudia', 'RR Patel', 'Rakep Patel', 'Alex Obanda'],
-  'Bahrain': ['Haider Ali', 'Sarfraz Ali', 'Rizwan Butt', 'Junaid Niazi'],
-  'Manchester City': ['Erling Haaland', 'Kevin De Bruyne', 'Phil Foden', 'Julian Alvarez'],
-  'Arsenal': ['Bukayo Saka', 'Martin Odegaard', 'Gabriel Jesus', 'Kai Havertz'],
-  'Real Madrid': ['Vinicius Jr', 'Jude Bellingham', 'Rodrygo', 'Kylian Mbappe'],
-  'Barcelona': ['Robert Lewandowski', 'Lamine Yamal', 'Raphinha', 'Pedri'],
-  'LA Lakers': ['LeBron James', 'Anthony Davis', 'Austin Reaves', 'D\'Angelo Russell'],
-  'Boston Celtics': ['Jayson Tatum', 'Jaylen Brown', 'Kristaps Porzingis', 'Derrick White']
-};
 
 export default function MatchDetailModal({ match, isOpen, onClose }) {
   const { addBet, isBetSelected, betCount } = useBetSlip();
@@ -87,7 +74,8 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
     if (cached && Array.isArray(cached.markets) && cached.markets.length > 0) {
       setMatchMarkets(cached.markets);
     } else {
-      setMatchMarkets([]);
+      // Show list-card winner odds immediately while full V3 markets load.
+      setMatchMarkets(provisionalWinnerMarketsFromMatch(match));
     }
 
     let isCancelled = false;
@@ -102,11 +90,9 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
     return () => { isCancelled = true; };
   }, [match?.id, match?.matchId]);
 
-  // Dynamic player names from realistic roster database
-  const t1Roster = getRosterForTeam(team1Name);
-  const t2Roster = getRosterForTeam(team2Name);
-  const team1Players = t1Roster?.batters || [`${team1Name} Batter 1`, `${team1Name} Batter 2`, `${team1Name} Batter 3`, `${team1Name} Batter 4`];
-  const team2Players = t2Roster?.batters || [`${team2Name} Batter 1`, `${team2Name} Batter 2`, `${team2Name} Batter 3`, `${team2Name} Batter 4`];
+  const liveBatter1 = match?.liveDetails?.batter1;
+  const liveBatter2 = match?.liveDetails?.batter2;
+  const liveBowler = match?.liveDetails?.bowler;
 
   // Dynamic Innings & Scores detection for Cricket
   const ld = match?.liveDetails || {};
@@ -243,9 +229,8 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
             </div>
 
             {(() => {
-              const tossText = match.toss
-                ? (typeof match.toss === 'string' ? match.toss : `${match.toss.winner || team1Name} won the toss & elected to ${match.toss.decision || 'bat'}`)
-                : `${team1Name} won the toss & elected to bat`;
+              const tossText = resolveCricketTossText(match);
+              if (!tossText) return null;
               return (
                 <div className="cricket-toss-pill">
                   🪙 {tossText}
@@ -258,9 +243,9 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
               const ld = match.liveDetails || {};
               const b1 = ld.batter1 || {};
               const b2 = ld.batter2 || {};
-              const b1Name = displayPlayerName(b1.name, team1Players[0], team1Name);
-              const b2Name = displayPlayerName(b2.name, team1Players[1], team1Name);
-              const bowlerName = displayPlayerName(ld.bowler?.name || ld.bowler, t2Roster?.bowlers?.[0] || team2Players[3], team2Name);
+              const b1Name = displayPlayerName(b1.name) || '—';
+              const b2Name = displayPlayerName(b2.name) || '—';
+              const bowlerName = displayPlayerName(ld.bowler?.name || ld.bowler) || '—';
               const combinedFours = (b1.fours || 0) + (b2.fours || 0);
               const combinedSixes = (b1.sixes || 0) + (b2.sixes || 0);
               const fours = Math.max(ld.fours || 0, combinedFours);
@@ -475,78 +460,35 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
           {/* MATCH INSIGHTS & H2H VIEW */}
           {activeMarketCategory === 'insights' && (
             <div className="insights-view">
-              <div className="insights-card">
-                <h4>⚡ Live Win Probability</h4>
-                <div className="insights-win-meter">
-                  <div className="insights-meter-labels">
-                    <span>{team1Name} 64%</span>
-                    <span>{team2Name} 36%</span>
-                  </div>
-                  <div className="insights-meter-bar">
-                    <div className="meter-team1" style={{ width: '64%' }} />
-                    <div className="meter-team2" style={{ width: '36%' }} />
-                  </div>
-                </div>
-              </div>
-
-              <div className="insights-card">
-                <h4>🤝 Head-to-Head Record (Last 5 Encounters)</h4>
-                <div className="insights-h2h-grid">
-                  <div className="h2h-stat-box">
-                    <strong>3 Wins</strong>
-                    <span>{team1Name}</span>
-                  </div>
-                  <div className="h2h-stat-box">
-                    <strong>0 Draws</strong>
-                    <span>Tied / NR</span>
-                  </div>
-                  <div className="h2h-stat-box">
-                    <strong>2 Wins</strong>
-                    <span>{team2Name}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="insights-card">
-                <h4>🔥 Recent Form Guide</h4>
-                <div className="form-guide-row">
-                  <div className="form-team">
-                    <span>{team1Name}:</span>
-                    <div className="form-badges">
-                      <span className="badge-w">W</span>
-                      <span className="badge-w">W</span>
-                      <span className="badge-l">L</span>
-                      <span className="badge-w">W</span>
-                      <span className="badge-w">W</span>
+              {(liveBatter1?.name || liveBowler?.name) ? (
+                <div className="insights-card">
+                  <h4>⭐ Live player matchup</h4>
+                  <div className="player-matchup-grid">
+                    <div className="player-box">
+                      <strong>{displayPlayerName(liveBatter1?.name) || '—'}</strong>
+                      <span>
+                        {liveBatter1
+                          ? `${liveBatter1.runs ?? 0} (${liveBatter1.balls ?? 0}) · ${liveBatter1.fours ?? 0} fours · ${liveBatter1.sixes ?? 0} sixes`
+                          : 'Waiting for live batter'}
+                      </span>
                     </div>
-                  </div>
-                  <div className="form-team">
-                    <span>{team2Name}:</span>
-                    <div className="form-badges">
-                      <span className="badge-l">L</span>
-                      <span className="badge-w">W</span>
-                      <span className="badge-w">W</span>
-                      <span className="badge-l">L</span>
-                      <span className="badge-l">L</span>
+                    <div className="player-vs">VS</div>
+                    <div className="player-box">
+                      <strong>{displayPlayerName(liveBowler?.name) || '—'}</strong>
+                      <span>
+                        {liveBowler
+                          ? `${liveBowler.overs ?? 0} ov · ${liveBowler.wickets ?? 0}/${liveBowler.runs ?? 0}${liveBowler.economy != null ? ` · econ ${liveBowler.economy}` : ''}`
+                          : 'Waiting for live bowler'}
+                      </span>
                     </div>
                   </div>
                 </div>
-              </div>
-
-              <div className="insights-card">
-                <h4>⭐ Key Player Matchup</h4>
-                <div className="player-matchup-grid">
-                  <div className="player-box">
-                    <strong>{team1Players[0] || 'Batter 1'}</strong>
-                    <span>42.5 Avg Runs / 148.2 SR</span>
-                  </div>
-                  <div className="player-vs">VS</div>
-                  <div className="player-box">
-                    <strong>{team2Players[2] || 'Bowler 1'}</strong>
-                    <span>2.1 Wkts/Match / 6.4 Econ</span>
-                  </div>
+              ) : (
+                <div className="insights-card">
+                  <h4>Live details</h4>
+                  <p>Player matchup, form, and H2H appear here when the live source sends them. Nothing is invented.</p>
                 </div>
-              </div>
+              )}
             </div>
           )}
 

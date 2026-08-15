@@ -20,9 +20,41 @@ app.use(cors());
 import { loginRateLimiter, registerRateLimiter } from './middleware/rateLimiter.js';
 import { adminAuth, requireRole } from './middleware/adminAuth.js';
 
-// ── Mount Modular Admin v2 Router (Phases 1-21: Advanced Operations & Governance) ──
+// ── Mount Primary Modular Admin Router ──
 import adminRouter from './routes/index.js';
-app.use('/api/admin/v2', adminRouter);
+// Dev/admin bootstrap login — issued BEFORE the authenticated admin router.
+app.post('/api/auth/admin-login', async (req, res) => {
+  const allowDevLogin =
+    process.env.NODE_ENV !== 'production'
+    || process.env.ADMIN_DEV_LOGIN === '1';
+  if (!allowDevLogin) {
+    return res.status(403).json({
+      error: 'Admin bootstrap login disabled in production',
+      code: 'ADMIN_LOGIN_DISABLED',
+    });
+  }
+
+  try {
+    const { generateAdminToken, ADMIN_ROLES } = await import('./middleware/adminAuth.js');
+    const requestedRole = String(req.body?.role || 'SUPER_ADMIN');
+    const role = Object.values(ADMIN_ROLES).includes(requestedRole)
+      ? requestedRole
+      : ADMIN_ROLES.SUPER_ADMIN;
+    const adminId = String(req.body?.adminId || 'admin_local');
+    const token = generateAdminToken(adminId, role, 'betking_in');
+    res.json({
+      success: true,
+      token,
+      role,
+      adminId,
+      expiresInHours: 8,
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Admin login failed', message: err.message });
+  }
+});
+
+app.use('/api/admin', adminRouter);
 
 // Razorpay Webhook Secret
 const RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || 'betking_wh_secret_2026';
@@ -337,16 +369,6 @@ app.get('/api/iplsrl/records', async (req, res) => {
   } catch {
     res.json({});
   }
-});
-
-app.post('/api/admin/iplsrl/matches/start', (req, res) => {
-  const { matchId } = req.body;
-  res.json({ success: true, matchId, status: 'IN_PROGRESS', message: 'Match started successfully.' });
-});
-
-app.post('/api/admin/iplsrl/matches/pause', (req, res) => {
-  const { matchId } = req.body;
-  res.json({ success: true, matchId, status: 'PAUSED', message: 'Match paused successfully.' });
 });
 
 // -----------------------------------------------------------------------------
@@ -968,54 +990,65 @@ app.get('/api/admin/bets/:betId/investigate', async (req, res) => {
 // 13 CORE OPERATIONAL DOMAIN ADMIN APIS
 // -----------------------------------------------------------------------------
 app.get('/api/admin/control-tower/metrics', async (req, res) => {
-  res.json({
-    activeUsers: 1420,
-    openBets: 384,
-    liveMatches: 14,
-    todayTurnover: 482900,
-    ggr: 42100,
-    pendingWithdrawals: 12,
-    riskAlerts: 3,
-    openTickets: 5,
-    systemStatus: 'HEALTHY',
-  });
+  try {
+    const { buildControlTowerMetrics } = await import('../lib/adminLiveOps.mjs');
+    const { enrichControlTowerFinancials } = await import('../lib/adminDomainData.mjs');
+    const base = await buildControlTowerMetrics();
+    res.json(await enrichControlTowerFinancials(base));
+  } catch (err) {
+    res.status(500).json({ error: err.message, systemStatus: 'ERROR' });
+  }
 });
 
 app.get('/api/admin/customers', async (req, res) => {
-  res.json({
-    users: [
-      { id: 'usr-101', name: 'Uday Reddy', email: 'uday@betking.com', phone: '+91 9876543210', balance: 14500, kyc: 'APPROVED', status: 'ACTIVE', risk: 'LOW', regDate: '2026-01-15' },
-      { id: 'usr-102', name: 'Rahul Sharma', email: 'rahul.s@gmail.com', phone: '+91 9123456789', balance: 3200, kyc: 'PENDING', status: 'ACTIVE', risk: 'MEDIUM', regDate: '2026-02-10' },
-      { id: 'usr-103', name: 'Vikram Singh', email: 'vikram.v@yahoo.com', phone: '+91 9988776655', balance: 0, kyc: 'REJECTED', status: 'RESTRICTED', risk: 'HIGH', regDate: '2026-03-01' },
-    ],
-  });
+  try {
+    const { listCustomers } = await import('../lib/adminDomainData.mjs');
+    res.json(await listCustomers({ limit: 200 }));
+  } catch (err) {
+    res.status(500).json({ users: [], error: err.message });
+  }
 });
 
 app.post('/api/admin/customers/:id/restrict', async (req, res) => {
   const { id } = req.params;
   const { action, reason } = req.body;
-  res.json({ success: true, userId: id, action, reason, timestamp: new Date().toISOString() });
+  try {
+    const { query } = await import('../db/pg.js');
+    await query(
+      `INSERT INTO user_profiles (user_id, account_status, updated_at)
+       VALUES ($1, 'RESTRICTED', NOW())
+       ON CONFLICT (user_id) DO UPDATE SET account_status = 'RESTRICTED', updated_at = NOW()`,
+      [id],
+    ).catch(() => null);
+    const { logAdminAction } = await import('./middleware/auditLogger.js');
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: id,
+      action: 'ACCOUNT_RESTRICTED',
+      details: { action, reason },
+    });
+    res.json({ success: true, userId: id, action, reason, timestamp: new Date().toISOString() });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 app.get('/api/admin/sports/catalog', async (req, res) => {
-  res.json({
-    sports: [
-      { id: 'sp-cric', name: 'Cricket', competitions: 18, activeMatches: 14, provider: 'Cricbuzz / Fancode', latency: '120ms', status: 'ACTIVE' },
-      { id: 'sp-soc', name: 'Soccer', competitions: 34, activeMatches: 22, provider: 'Sportradar', latency: '180ms', status: 'ACTIVE' },
-      { id: 'sp-ten', name: 'Tennis', competitions: 12, activeMatches: 8, provider: 'Betradar', latency: '150ms', status: 'ACTIVE' },
-      { id: 'sp-srl', name: 'Virtual Cricket SRL', competitions: 4, activeMatches: 6, provider: 'IPL SRL Simulation Engine', latency: '40ms', status: 'ACTIVE' },
-    ],
-  });
+  try {
+    const { buildSportsCatalog } = await import('../lib/adminLiveOps.mjs');
+    res.json(await buildSportsCatalog());
+  } catch (err) {
+    res.status(500).json({ error: err.message, sports: [] });
+  }
 });
 
 app.get('/api/admin/trading/exposure', async (req, res) => {
-  res.json({
-    exposures: [
-      { matchId: 'm1', match: 'Madurai Panthers vs SKM Salem Spartans', market: 'Winner (incl. super over)', exposure: 124500, liability: 188000, riskScore: 'HIGH', status: 'ACTIVE' },
-      { matchId: 'm2', match: 'West Indies vs Pakistan', market: 'Total Match Sixes', exposure: 45000, liability: 82000, riskScore: 'MEDIUM', status: 'ACTIVE' },
-      { matchId: 'm3', match: 'India vs Sri Lanka', market: '1st Innings Runs', exposure: 98000, liability: 142000, riskScore: 'HIGH', status: 'ACTIVE' },
-    ],
-  });
+  try {
+    const { buildTradingExposures } = await import('../lib/adminLiveOps.mjs');
+    res.json(await buildTradingExposures({ limit: 50 }));
+  } catch (err) {
+    res.status(500).json({ error: err.message, exposures: [] });
+  }
 });
 
 app.post('/api/admin/trading/suspend-market', adminAuth, requireRole('SUPER_ADMIN', 'TRADING_ADMIN', 'RISK_ANALYST'), async (req, res) => {
@@ -1067,107 +1100,221 @@ app.post('/api/admin/trading/resume-market', adminAuth, requireRole('SUPER_ADMIN
 });
 
 app.get('/api/admin/betting/bets', async (req, res) => {
-  res.json({
-    bets: [
-      { id: 'bet-8801', userId: 'usr-101', match: 'Madurai Panthers vs SKM Salem Spartans', selection: 'Madurai Panthers', stake: 1000, odds: 1.51, payout: 1510, status: 'OPEN', date: '2026-08-10 20:45' },
-      { id: 'bet-8802', userId: 'usr-102', match: 'India vs Sri Lanka', selection: 'India', stake: 500, odds: 1.35, payout: 675, status: 'SETTLED_WON', date: '2026-08-10 19:30' },
-      { id: 'bet-8803', userId: 'usr-103', match: 'West Indies vs Pakistan', selection: 'Over 12.5 Sixes', stake: 2000, odds: 1.85, payout: 0, status: 'SETTLED_LOST', date: '2026-08-10 18:15' },
-    ],
-  });
+  try {
+    const { listBets } = await import('../lib/adminDomainData.mjs');
+    res.json(await listBets({ limit: 200 }));
+  } catch (err) {
+    res.status(500).json({ bets: [], error: err.message });
+  }
 });
 
 app.post('/api/admin/betting/settle', async (req, res) => {
   const { betId, outcome } = req.body;
-  res.json({ success: true, betId, outcome, status: `SETTLED_${outcome}`, timestamp: new Date().toISOString() });
+  if (!betId || !outcome) {
+    return res.status(400).json({ success: false, error: 'betId and outcome required' });
+  }
+  try {
+    const { query } = await import('../db/pg.js');
+    const status = String(outcome).toUpperCase().startsWith('WIN') ? 'WON' : 'LOST';
+    const result = await query(
+      `UPDATE bets SET status = $1 WHERE bet_id = $2 RETURNING bet_id, status`,
+      [status, betId],
+    );
+    if (!result.rows.length) {
+      return res.status(404).json({ success: false, error: 'Bet not found' });
+    }
+    const { logAdminAction } = await import('./middleware/auditLogger.js');
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: betId,
+      action: 'BET_SETTLED',
+      details: { outcome, status },
+    });
+    res.json({ success: true, betId, outcome, status: `SETTLED_${status}`, timestamp: new Date().toISOString() });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 app.get('/api/admin/finance/withdrawals/pending', async (req, res) => {
-  res.json({
-    requests: [
-      { id: 'w-4401', userId: 'usr-101', userName: 'Uday Reddy', amount: 5000, method: 'Razorpay UPI', status: 'PENDING_APPROVAL', requestedAt: '2026-08-10 20:30', utr: 'UPI/6281920192' },
-      { id: 'w-4402', userId: 'usr-102', userName: 'Rahul Sharma', amount: 12000, method: 'IMPS Bank Transfer', status: 'PENDING_APPROVAL', requestedAt: '2026-08-10 19:45', utr: 'IMPS/9812938192' },
-    ],
-  });
+  try {
+    const { listPendingWithdrawals } = await import('../lib/adminDomainData.mjs');
+    res.json(await listPendingWithdrawals({ limit: 200 }));
+  } catch (err) {
+    res.status(500).json({ requests: [], error: err.message });
+  }
 });
 
 app.post('/api/admin/finance/withdrawals/:id/approve', async (req, res) => {
   const { id } = req.params;
-  res.json({ success: true, requestId: id, status: 'APPROVED', payoutTriggered: true, timestamp: new Date().toISOString() });
+  try {
+    const { query } = await import('../db/pg.js');
+    const result = await query(
+      `UPDATE withdrawals SET status = 'APPROVED', updated_at = NOW()
+       WHERE withdrawal_id = $1 RETURNING withdrawal_id, status`,
+      [id],
+    );
+    if (!result.rows.length) {
+      return res.status(404).json({ success: false, error: 'Withdrawal not found' });
+    }
+    const { logAdminAction } = await import('./middleware/auditLogger.js');
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: id,
+      action: 'WITHDRAWAL_APPROVED',
+      details: {},
+    });
+    res.json({ success: true, requestId: id, status: 'APPROVED', payoutTriggered: false, timestamp: new Date().toISOString() });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/admin/finance/withdrawals/:id/reject', async (req, res) => {
+  const { id } = req.params;
+  const reason = String(req.body?.reason || '').trim();
+  if (!reason) return res.status(400).json({ success: false, error: 'reason required' });
+  try {
+    const { query } = await import('../db/pg.js');
+    const result = await query(
+      `UPDATE withdrawals SET status = 'REJECTED', updated_at = NOW()
+       WHERE withdrawal_id = $1 RETURNING withdrawal_id, status`,
+      [id],
+    );
+    if (!result.rows.length) {
+      return res.status(404).json({ success: false, error: 'Withdrawal not found' });
+    }
+    const { logAdminAction } = await import('./middleware/auditLogger.js');
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: id,
+      action: 'WITHDRAWAL_REJECTED',
+      details: { reason },
+    });
+    res.json({ success: true, requestId: id, status: 'REJECTED', reason, timestamp: new Date().toISOString() });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 app.get('/api/admin/support/tickets', async (req, res) => {
-  res.json({
-    tickets: [
-      { id: 't-1001', userId: 'usr-101', userName: 'Uday Reddy', subject: 'Withdrawal delay query', category: 'Finance', priority: 'HIGH', status: 'OPEN', agent: 'Support Agent 1', createdAt: '2026-08-10 20:10', sla: 'WITHIN_SLA' },
-      { id: 't-1002', userId: 'usr-102', userName: 'Rahul Sharma', subject: 'Bet settlement query on T20 match', category: 'Betting', priority: 'MEDIUM', status: 'UNASSIGNED', agent: 'None', createdAt: '2026-08-10 19:15', sla: 'WITHIN_SLA' },
-    ],
-  });
+  try {
+    const { listSupportTickets } = await import('../lib/adminDomainData.mjs');
+    res.json(await listSupportTickets({ limit: 200 }));
+  } catch (err) {
+    res.status(500).json({ tickets: [], error: err.message });
+  }
 });
 
 app.post('/api/admin/support/tickets/:id/reply', async (req, res) => {
   const { id } = req.params;
   const { text } = req.body;
-  res.json({ success: true, ticketId: id, reply: text, timestamp: new Date().toISOString() });
+  if (!text?.trim()) return res.status(400).json({ success: false, error: 'text required' });
+  try {
+    const { query } = await import('../db/pg.js');
+    await query(
+      `INSERT INTO support_messages (message_id, conversation_id, sender_type, sender_id, body, created_at)
+       VALUES ($1, $2, 'ADMIN', $3, $4, NOW())`,
+      [`msg_${Date.now()}`, id, req.admin?.id || 'admin', text],
+    ).catch(async () => {
+      await query(
+        `INSERT INTO support_messages (id, conversation_id, sender, message, created_at)
+         VALUES ($1, $2, $3, $4, NOW())`,
+        [`msg_${Date.now()}`, id, req.admin?.id || 'admin', text],
+      ).catch(() => null);
+    });
+    const { logAdminAction } = await import('./middleware/auditLogger.js');
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: id,
+      action: 'SUPPORT_REPLY',
+      details: { textPreview: String(text).slice(0, 120) },
+    });
+    res.json({ success: true, ticketId: id, reply: text, timestamp: new Date().toISOString() });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 app.get('/api/admin/growth/promotions', async (req, res) => {
-  res.json({
-    promotions: [
-      { id: 'p-101', name: 'TNPL 100% Deposit Bonus', code: 'TNPL100', bonusPct: 100, maxBonus: 5000, claims: 142, status: 'ACTIVE' },
-      { id: 'p-102', name: 'IPL SRL Risk-Free Bet', code: 'SRLFREE', bonusPct: 50, maxBonus: 2000, claims: 89, status: 'ACTIVE' },
-      { id: 'p-103', name: 'VIP Loyalty Cashback 10%', code: 'VIPCASH', bonusPct: 10, maxBonus: 10000, claims: 24, status: 'ACTIVE' },
-    ],
-  });
+  try {
+    const { listPromotions } = await import('../lib/adminDomainData.mjs');
+    res.json(await listPromotions({ limit: 200 }));
+  } catch (err) {
+    res.status(500).json({ promotions: [], error: err.message });
+  }
 });
 
 app.get('/api/admin/communications/logs', async (req, res) => {
-  res.json({
-    logs: [
-      { id: 'msg-701', channel: 'SMS', recipient: '+91 9876543210', template: 'OTP_VERIFICATION', status: 'DELIVERED', provider: 'Twilio', sentAt: '2026-08-10 20:42' },
-      { id: 'msg-702', channel: 'EMAIL', recipient: 'uday@betking.com', template: 'WITHDRAWAL_APPROVED', status: 'DELIVERED', provider: 'SendGrid', sentAt: '2026-08-10 20:30' },
-      { id: 'msg-703', channel: 'PUSH', recipient: 'usr-102', template: 'MATCH_LIVE_START', status: 'SENT', provider: 'Firebase FCM', sentAt: '2026-08-10 20:15' },
-    ],
-  });
+  try {
+    const { listCommunicationLogs } = await import('../lib/adminDomainData.mjs');
+    res.json(await listCommunicationLogs({ limit: 200 }));
+  } catch (err) {
+    res.status(500).json({ logs: [], error: err.message });
+  }
 });
 
 app.get('/api/admin/analytics/reports', async (req, res) => {
-  res.json({
-    reports: [
-      { id: 'rep-01', name: 'Daily Turnover & GGR Breakdown', frequency: 'DAILY', format: 'CSV / BI JSON', lastGenerated: '2026-08-10 00:00', status: 'READY' },
-      { id: 'rep-02', name: 'High-Roller Risk & Liability Matrix', frequency: 'HOURLY', format: 'BI JSON', lastGenerated: '2026-08-10 20:00', status: 'READY' },
-      { id: 'rep-03', name: 'Customer Cohort Retention & LTV', frequency: 'WEEKLY', format: 'EXCEL', lastGenerated: '2026-08-04 00:00', status: 'READY' },
-    ],
-  });
+  try {
+    const { listAnalyticsReports } = await import('../lib/adminDomainData.mjs');
+    res.json(await listAnalyticsReports());
+  } catch (err) {
+    res.status(500).json({ reports: [], error: err.message });
+  }
 });
 
 app.get('/api/admin/platform/apikeys', async (req, res) => {
-  res.json({
-    keys: [
-      { id: 'key-01', name: 'Sportsbook Production API', prefix: 'bk_live_9f82...', scope: 'FULL_READ_WRITE', createdAt: '2026-01-01', status: 'ACTIVE' },
-      { id: 'key-02', name: 'Razorpay Payment Gateway Webhook Key', prefix: 'bk_rzp_3a11...', scope: 'WEBHOOK_PAYOUT', createdAt: '2026-01-10', status: 'ACTIVE' },
-    ],
-  });
+  try {
+    const { listApiKeys, listFeatureFlags } = await import('../lib/adminDomainData.mjs');
+    const [keys, flags] = await Promise.all([listApiKeys({ limit: 100 }), listFeatureFlags()]);
+    res.json({ ...keys, ...flags });
+  } catch (err) {
+    res.status(500).json({ keys: [], flags: [], error: err.message });
+  }
+});
+
+app.post('/api/admin/platform/flags/toggle', async (req, res) => {
+  try {
+    const { key, enabled } = req.body || {};
+    if (!key) return res.status(400).json({ success: false, error: 'key required' });
+    const { setSportEnabledStatus, getAdminConfigSummary } = await import('../lib/adminConfig.mjs');
+    const sportMatch = String(key).match(/^SPORT_ENABLED_(.+)$/);
+    if (sportMatch) {
+      const sport = sportMatch[1].toLowerCase().replace(/_/g, '-');
+      const next = enabled == null
+        ? !getAdminConfigSummary().enabledSports?.[sport]
+        : !!enabled;
+      setSportEnabledStatus(sport, next);
+    }
+    const { logAdminAction } = await import('./middleware/auditLogger.js');
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: key,
+      action: 'FEATURE_FLAG_TOGGLE',
+      details: { key, enabled },
+    });
+    res.json({ success: true, key, timestamp: new Date().toISOString() });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 app.get('/api/admin/operations/health', async (req, res) => {
-  res.json({
-    postgres: 'HEALTHY',
-    redis: 'HEALTHY',
-    websocket: 'HEALTHY',
-    cricbuzzFeed: 'HEALTHY',
-    razorpayGateway: 'HEALTHY',
-    outboxQueue: '0 PENDING',
-  });
+  try {
+    const { buildOperationsHealth } = await import('../lib/adminDomainData.mjs');
+    res.json(await buildOperationsHealth());
+  } catch (err) {
+    res.status(500).json({ error: err.message, services: [] });
+  }
 });
 
 app.get('/api/admin/security/audit', async (req, res) => {
-  res.json({
-    logs: [
-      { id: 'aud-9901', actor: 'Super Admin (uday)', action: 'WITHDRAWAL_APPROVE', entity: 'Withdrawal w-4401', ip: '127.0.0.1', timestamp: '2026-08-10 20:45', tenant: 'MAIN_BRAND' },
-      { id: 'aud-9902', actor: 'Trading Admin (trader1)', action: 'MARKET_SUSPEND', entity: 'Match m1 / Winner', ip: '127.0.0.1', timestamp: '2026-08-10 20:38', tenant: 'MAIN_BRAND' },
-      { id: 'aud-9903', actor: 'Support Agent (agent1)', action: 'TICKET_REPLY', entity: 'Ticket t-1001', ip: '127.0.0.1', timestamp: '2026-08-10 20:12', tenant: 'MAIN_BRAND' },
-    ],
-  });
+  try {
+    const { listAuditLogs } = await import('../lib/adminDomainData.mjs');
+    res.json(await listAuditLogs({ limit: 200 }));
+  } catch (err) {
+    res.status(500).json({ logs: [], error: err.message });
+  }
 });
 
 app.post('/api/admin/maker-checker/request', async (req, res) => {
@@ -2229,6 +2376,7 @@ import adminAnalyticsRouter from './routes/admin/analytics.js';
 import adminTenantsRouter from './routes/admin/tenants.js';
 import promotionsRouter from './routes/promotions.js';
 import publicOddsRouter from './routes/public/odds.js';
+import liveScoresRouter from './routes/public/liveScores.js';
 import developerAppsRouter from './routes/developer/apps.js';
 
 app.use('/api/admin/kyc', adminKycRouter);
@@ -2239,6 +2387,7 @@ app.use('/api/admin/tenants', adminTenantsRouter);
 app.use('/api/promotions', promotionsRouter);
 app.use('/api/v1/public', publicOddsRouter);
 app.use('/api/public/sports', publicOddsRouter);
+app.use('/api', liveScoresRouter);
 app.use('/api/developer', developerAppsRouter);
 
 app.get('/api/v1/admin/cms/content', async (req, res) => {

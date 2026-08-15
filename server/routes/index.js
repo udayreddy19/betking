@@ -23,6 +23,10 @@ adminRouter.use(auditLogger);
 import commandCenterRouter from './admin/commandCenter.js';
 adminRouter.use('/command', commandCenterRouter);
 
+// IPLSRL operator control desk
+import iplsrlRouter from './admin/iplsrl.js';
+adminRouter.use('/iplsrl', iplsrlRouter);
+
 // Phase 2: Case Management
 import casesRouter from './admin/cases.js';
 adminRouter.use('/cases', casesRouter);
