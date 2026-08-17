@@ -9,7 +9,7 @@ describe('CaseService Unit & Integration Tests', () => {
     // Ensure test user exists in DB
     await query(`
       INSERT INTO users (user_id, email, phone, password_hash)
-      VALUES ('user_test_case_101', 'casetest@betking.com', '+919999999999', 'hash')
+      VALUES ('user_test_case_101', 'casetest@oddsyra.com', '+919999999999', 'hash')
       ON CONFLICT (user_id) DO NOTHING
     `);
   });
@@ -24,7 +24,7 @@ describe('CaseService Unit & Integration Tests', () => {
       userId: 'user_test_case_101',
       team: 'FINANCE',
       createdBy: 'admin_unit_tester',
-      tenantId: 'betking_in',
+      tenantId: 'oddsyra_in',
     });
 
     expect(caseData.caseId).toBeDefined();

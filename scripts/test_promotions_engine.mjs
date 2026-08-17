@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-console.log('🚀 EXECUTING BETKING PROMOTIONS, BONUS, REFERRAL & LOYALTY ACCEPTANCE TEST SUITE...\n');
+console.log('🚀 EXECUTING ODDSYRA PROMOTIONS, BONUS, REFERRAL & LOYALTY ACCEPTANCE TEST SUITE...\n');
 
 async function runPromotionsSuite() {
   let passed = 0;
@@ -16,7 +16,7 @@ async function runPromotionsSuite() {
   const promoCode = `WELCOME_${Date.now()}`;
 
   // Seed test users
-  await query(`INSERT INTO users (user_id, email) VALUES ($1, $2), ($3, $4);`, [testUser1, `${testUser1}@betking.com`, testUser2, `${testUser2}@betking.com`]);
+  await query(`INSERT INTO users (user_id, email) VALUES ($1, $2), ($3, $4);`, [testUser1, `${testUser1}@oddsyra.com`, testUser2, `${testUser2}@oddsyra.com`]);
   await query(`INSERT INTO user_profiles (user_id, display_name, kyc_status, account_status) VALUES ($1, 'Promo User 1', 'VERIFIED', 'ACTIVE'), ($2, 'Promo User 2', 'VERIFIED', 'ACTIVE');`, [testUser1, testUser2]);
   await query(`INSERT INTO wallets (wallet_id, user_id, balance, bonus_balance) VALUES ($1, $2, 1000.00, 0.00), ($3, $4, 1000.00, 0.00);`, [`w_${testUser1}`, testUser1, `w_${testUser2}`, testUser2]);
 

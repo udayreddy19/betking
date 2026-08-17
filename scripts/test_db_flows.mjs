@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-console.log('🧪 EXECUTING BETKING POSTGRESQL & REDIS FULL TEST MATRIX...\n');
+console.log('🧪 EXECUTING ODDSYRA POSTGRESQL & REDIS FULL TEST MATRIX...\n');
 
 async function runTestMatrix() {
   let passed = 0;
@@ -90,7 +90,7 @@ async function runTestMatrix() {
     `, ['user_demo_101']);
 
     const userProfile = profileRes.rows[0];
-    const supportRes = handleUserSupportQuery(inputMsg, 'demo@betking.com');
+    const supportRes = handleUserSupportQuery(inputMsg, 'demo@oddsyra.com');
 
     const intentOk = intent === 'KYC_STATUS';
     const statusMatch = userProfile?.kyc_status === 'VERIFIED';

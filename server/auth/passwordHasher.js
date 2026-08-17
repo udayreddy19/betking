@@ -1,5 +1,5 @@
 /**
- * Password Hasher — BetKing Authentication
+ * Password Hasher — OddsYra Authentication
  *
  * Uses Node.js built-in crypto.scrypt() with 32-byte random salt.
  * Provides equivalent security to bcrypt cost-10 with zero native dependencies.

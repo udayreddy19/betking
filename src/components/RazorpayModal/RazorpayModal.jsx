@@ -44,9 +44,9 @@ export default function RazorpayModal({ isOpen, onClose, amount, onSuccess, user
         {/* Navy Blue Razorpay Header */}
         <div className="rzp-header">
           <div className="rzp-header-left">
-            <div className="rzp-logo">B</div>
+            <div className="rzp-logo"><img src="/oddsyra-logo.png" alt="OddsYra" /></div>
             <div className="rzp-title">
-              <h3>BetKing Gaming</h3>
+              <h3>OddsYra Gaming</h3>
               <p>Account Deposit</p>
             </div>
           </div>

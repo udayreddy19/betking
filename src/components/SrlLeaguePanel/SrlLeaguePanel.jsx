@@ -39,7 +39,7 @@ export default function SrlLeaguePanel({
   if (!matches.length) {
     return (
       <div className="srl-league-empty">
-        <p>No BetKing SRL matches right now.</p>
+        <p>No OddsYra SRL matches right now.</p>
       </div>
     );
   }

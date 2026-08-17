@@ -7,7 +7,7 @@ import { generateAdminToken, ADMIN_ROLES } from '../../server/middleware/adminAu
 describe('RBAC, Account Status & IDOR Protection Middleware Tests', () => {
   describe('User Authentication Middleware (requireAuth)', () => {
     it('should allow valid user token and attach req.user', () => {
-      const token = generateAccessToken('usr_player_1', 'USER', 'betking_in');
+      const token = generateAccessToken('usr_player_1', 'USER', 'oddsyra_in');
       const req = { headers: { authorization: `Bearer ${token}` } };
       const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
       const next = vi.fn();

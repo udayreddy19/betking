@@ -52,13 +52,13 @@ function filterByLeague(matchList, activeLeague, cricketSeries = []) {
       if (!isSrlMatch) return false;
 
       if (activeLeague === 'ipl-srl'
-        || activeLeague === 'betking-srl'
-        || String(activeLeague).toLowerCase().includes('betking srl')) {
-        // Admin-gated BetKing SRL only — exclude external feed SRL products
+        || activeLeague === 'oddsyra-srl'
+        || String(activeLeague).toLowerCase().includes('oddsyra srl')) {
+        // Admin-gated OddsYra SRL only — exclude external feed SRL products
         return match.source === 'srl'
           || String(match.id || '').startsWith('srl_ipl_')
           || (
-            match.league === 'BetKing SRL'
+            match.league === 'OddsYra SRL'
             && match.source !== '10cric2026'
             && !String(match.id || '').startsWith('10cric_')
           );
@@ -278,7 +278,7 @@ export default function Sports() {
   const { tickerMessage, cricketSeries, scoresError, refreshScores, isScoresLoading } = useLiveSportsMeta();
   const { addBet, isBetSelected } = useBetSlip();
   const { user, showToast } = useAuth();
-  const isAdminUser = user?.role === 'admin' || user?.email === 'admin@betking.com';
+  const isAdminUser = user?.role === 'admin' || user?.email === 'admin@oddsyra.com';
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
   const isLiveBettingPage = location.pathname === '/live-betting';

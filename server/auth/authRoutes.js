@@ -1,5 +1,5 @@
 /**
- * Auth Routes — BetKing Authentication API
+ * Auth Routes — OddsYra Authentication API
  *
  * Exposes REST endpoints for signup, login, logout, token refresh,
  * password reset, and email verification.

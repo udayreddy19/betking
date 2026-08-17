@@ -1,5 +1,5 @@
 /**
- * Token Service — BetKing Authentication
+ * Token Service — OddsYra Authentication
  *
  * Manages JWT access tokens and opaque refresh tokens.
  * Access tokens: short-lived (15min), HS256 signed.
@@ -25,7 +25,7 @@ const REFRESH_TOKEN_EXPIRY_DAYS = 7;
  * @param {string} tenantId
  * @returns {string} — JWT string
  */
-export function generateAccessToken(userId, role = 'USER', tenantId = 'betking_in') {
+export function generateAccessToken(userId, role = 'USER', tenantId = 'oddsyra_in') {
   const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
   const now = Math.floor(Date.now() / 1000);
   const payload = Buffer.from(JSON.stringify({

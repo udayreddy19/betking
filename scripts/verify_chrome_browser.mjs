@@ -48,14 +48,14 @@ async function verifyChromeHeadless() {
       console.log(`Chrome Process exited with code: ${code}`);
 
       const hasRootDiv = domOutput.includes('<div id="root">');
-      const hasBetKingTitle = domOutput.includes('BetKing');
+      const hasOddsYraTitle = domOutput.includes('OddsYra');
       const domLength = domOutput.length;
 
       console.log(`DOM Output Length: ${domLength} bytes`);
       console.log(`Contains Root Container: ${hasRootDiv}`);
-      console.log(`Contains BetKing Title: ${hasBetKingTitle}`);
+      console.log(`Contains OddsYra Title: ${hasOddsYraTitle}`);
 
-      if (domLength > 500 && hasBetKingTitle) {
+      if (domLength > 500 && hasOddsYraTitle) {
         console.log('SUCCESS: Real Google Chrome rendered frontend DOM cleanly!');
         resolve({ success: true, domLength, hasRootDiv });
       } else {

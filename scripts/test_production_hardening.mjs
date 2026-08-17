@@ -10,7 +10,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-console.log('🛡️ EXECUTING BETKING POSTGRESQL PRODUCTION HARDENING & FINANCIAL INTEGRITY AUDIT...\n');
+console.log('🛡️ EXECUTING ODDSYRA POSTGRESQL PRODUCTION HARDENING & FINANCIAL INTEGRITY AUDIT...\n');
 
 async function runProductionHardeningSuite() {
   let passed = 0;
@@ -18,7 +18,7 @@ async function runProductionHardeningSuite() {
 
   // Setup test user with exact ₹1,000 balance & initial deposit transaction
   const testUserId = `user_hard_test_${Date.now()}`;
-  await query(`INSERT INTO users (user_id, email) VALUES ($1, $2);`, [testUserId, `${testUserId}@betking.com`]);
+  await query(`INSERT INTO users (user_id, email) VALUES ($1, $2);`, [testUserId, `${testUserId}@oddsyra.com`]);
   await query(`INSERT INTO user_profiles (user_id, display_name, kyc_status) VALUES ($1, 'Test User', 'VERIFIED');`, [testUserId]);
   await query(`INSERT INTO wallets (wallet_id, user_id, balance, bonus_balance) VALUES ($1, $2, 1000.00, 0.00);`, [`w_${testUserId}`, testUserId]);
   await query(`INSERT INTO transactions (transaction_id, user_id, type, amount, status) VALUES ($1, $2, 'DEPOSIT', 1000.00, 'COMPLETED');`, [`tx_init_${testUserId}`, testUserId]);

@@ -70,7 +70,7 @@ export default function BoostedOddsWidget() {
       <div className="boosted-header">
         <div className="boosted-title">
           <FiZap className="boosted-icon-zap" />
-          <h2>BetKing Daily Odds Boosts</h2>
+          <h2>OddsYra Daily Odds Boosts</h2>
           <span className="boosted-badge">LIVE</span>
         </div>
         <p className="boosted-subtitle">Enhanced odds on today's biggest matches — exclusive payout multipliers.</p>

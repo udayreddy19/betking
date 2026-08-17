@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    let lobbyUrl = 'https://betking-two.vercel.app/casino';
+    let lobbyUrl = 'https://oddsyra-two.vercel.app/casino';
     const ref = req.headers.referer || req.headers.origin;
     if (ref) {
       const base = new URL(ref);

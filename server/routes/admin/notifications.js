@@ -21,7 +21,7 @@ async function ensureAdminNotificationTable() {
         action_label VARCHAR(64),
         is_read BOOLEAN DEFAULT FALSE,
         is_actioned BOOLEAN DEFAULT FALSE,
-        tenant_id VARCHAR(64) DEFAULT 'betking_in',
+        tenant_id VARCHAR(64) DEFAULT 'oddsyra_in',
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);

@@ -162,7 +162,7 @@ export default function DailySpinModal({ isOpen, onClose }) {
             </motion.div>
 
             <div className="wheel-center-cap">
-              <span>BETKING</span>
+              <span>ODDSYRA</span>
             </div>
           </div>
 

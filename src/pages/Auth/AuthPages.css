@@ -22,20 +22,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
   margin-bottom: 24px;
 }
 
-.auth-logo .logo-icon {
-  font-size: 28px;
-}
-
-.auth-logo .brand-name {
-  font-size: 22px;
-  font-weight: 800;
-  background: var(--gradient-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.auth-logo img {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 16px;
+  background: #07111f;
 }
 
 .auth-state-box h2 {

@@ -41,7 +41,7 @@ export const FANTASY_CONTESTS = [
   },
 ];
 
-const ENTRIES_KEY = 'betking_fantasy_entries';
+const ENTRIES_KEY = 'oddsyra_fantasy_entries';
 
 export function loadFantasyEntries(email) {
   if (!email) return [];

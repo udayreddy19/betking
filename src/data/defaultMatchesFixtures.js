@@ -1,5 +1,5 @@
 /**
- * Default Multi-Sport & Multi-League Match Fixtures for BetKing.
+ * Default Multi-Sport & Multi-League Match Fixtures for OddsYra.
  * Ensures complete coverage across Cricket, Soccer, Basketball, Tennis, Table Tennis, Kabaddi, Esports & Volleyball.
  */
 

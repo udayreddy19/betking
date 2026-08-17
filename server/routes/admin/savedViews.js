@@ -13,7 +13,7 @@ async function ensureTable() {
     view_id VARCHAR(64) PRIMARY KEY, name VARCHAR(255) NOT NULL, filters JSONB DEFAULT '{}'::jsonb,
     columns JSONB DEFAULT '[]'::jsonb, sort_by VARCHAR(64), sort_dir VARCHAR(4) DEFAULT 'DESC',
     entity_type VARCHAR(64) DEFAULT 'bets', owner_id VARCHAR(64) NOT NULL,
-    visibility VARCHAR(32) DEFAULT 'PRIVATE', tenant_id VARCHAR(64) DEFAULT 'betking_in',
+    visibility VARCHAR(32) DEFAULT 'PRIVATE', tenant_id VARCHAR(64) DEFAULT 'oddsyra_in',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
   )`);
 }

@@ -1,5 +1,5 @@
 /**
- * Phase 2: Case Service — BetKing Unified Case Management
+ * Phase 2: Case Service — OddsYra Unified Case Management
  * 
  * Full CRUD + workflow operations for cases with audit trail.
  * Connects to PostgreSQL cases, case_notes, case_evidence, case_tasks, case_history tables.
@@ -23,7 +23,7 @@ export class CaseService {
   /**
    * Create a new case
    */
-  async createCase({ caseType, priority = 'MEDIUM', severity = 'MEDIUM', title, description, userId, entityType, entityId, team, relatedBets, relatedTransactions, relatedTickets, relatedPayments, relatedKyc, createdBy, tenantId = 'betking_in' }) {
+  async createCase({ caseType, priority = 'MEDIUM', severity = 'MEDIUM', title, description, userId, entityType, entityId, team, relatedBets, relatedTransactions, relatedTickets, relatedPayments, relatedKyc, createdBy, tenantId = 'oddsyra_in' }) {
     if (!VALID_TYPES.includes(caseType)) throw new Error(`Invalid case type: ${caseType}`);
     if (!VALID_PRIORITIES.includes(priority)) throw new Error(`Invalid priority: ${priority}`);
     if (!title) throw new Error('Case title is required');
@@ -72,7 +72,7 @@ export class CaseService {
   /**
    * List cases with filters, pagination, sorting
    */
-  async listCases({ status, caseType, priority, severity, ownerId, team, userId, page = 1, limit = 25, sortBy = 'created_at', sortDir = 'DESC', tenantId = 'betking_in' }) {
+  async listCases({ status, caseType, priority, severity, ownerId, team, userId, page = 1, limit = 25, sortBy = 'created_at', sortDir = 'DESC', tenantId = 'oddsyra_in' }) {
     const conditions = ['tenant_id = $1'];
     const params = [tenantId];
     let paramIndex = 2;

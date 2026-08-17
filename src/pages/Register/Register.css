@@ -8,6 +8,14 @@
   max-width: 600px;
   padding: var(--space-12) var(--space-8);
 }
+.register-logo {
+  width: 88px;
+  height: 88px;
+  object-fit: cover;
+  border-radius: 14px;
+  margin-bottom: var(--space-5);
+  background: #07111f;
+}
 .register-form-section h1 {
   font-size: var(--text-3xl);
   font-weight: var(--font-extrabold);

@@ -63,7 +63,7 @@ export default function CommandPalette({
   const debounceRef = useRef(null);
 
   const activeRole = typeof window !== 'undefined'
-    ? (localStorage.getItem('adminRole') || localStorage.getItem('betking_admin_role') || 'SUPER_ADMIN')
+    ? (localStorage.getItem('adminRole') || localStorage.getItem('oddsyra_admin_role') || 'SUPER_ADMIN')
     : 'SUPER_ADMIN';
   const availableQuickActions = QUICK_ACTIONS.filter(
     (act) => !act.allowedRoles || act.allowedRoles.includes(activeRole) || activeRole === 'SUPER_ADMIN',

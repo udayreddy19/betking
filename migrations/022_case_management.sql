@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS cases (
   related_kyc JSONB DEFAULT '[]'::jsonb,
   resolution TEXT,
   resolution_type VARCHAR(64), -- RESOLVED | DISMISSED | ESCALATED | AUTO_RESOLVED
-  tenant_id VARCHAR(64) DEFAULT 'betking_in',
+  tenant_id VARCHAR(64) DEFAULT 'oddsyra_in',
   created_by VARCHAR(64) NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

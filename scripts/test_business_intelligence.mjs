@@ -10,7 +10,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-console.log('🚀 EXECUTING BETKING ADVANCED BUSINESS INTELLIGENCE & REPORTING ACCEPTANCE TEST SUITE...\n');
+console.log('🚀 EXECUTING ODDSYRA ADVANCED BUSINESS INTELLIGENCE & REPORTING ACCEPTANCE TEST SUITE...\n');
 
 async function runBusinessIntelligenceSuite() {
   let passed = 0;

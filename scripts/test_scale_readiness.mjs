@@ -13,7 +13,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-console.log('🚀 EXECUTING BETKING ADVANCED DATABASE ARCHITECTURE & SCALE-READINESS TEST SUITE...\n');
+console.log('🚀 EXECUTING ODDSYRA ADVANCED DATABASE ARCHITECTURE & SCALE-READINESS TEST SUITE...\n');
 
 async function runScaleReadinessSuite() {
   let passed = 0;
@@ -122,7 +122,7 @@ async function runScaleReadinessSuite() {
   try {
     console.log('   ⏳ Test 4/8: Testing reconciliation case creation on financial discrepancy...');
     const synthUser = `user_recon_synth_${Date.now()}`;
-    await query(`INSERT INTO users (user_id, email) VALUES ($1, $2);`, [synthUser, `${synthUser}@betking.com`]);
+    await query(`INSERT INTO users (user_id, email) VALUES ($1, $2);`, [synthUser, `${synthUser}@oddsyra.com`]);
     await query(`INSERT INTO wallets (wallet_id, user_id, balance) VALUES ($1, $2, 9999.00);`, [`w_${synthUser}`, synthUser]);
 
     // Run audit

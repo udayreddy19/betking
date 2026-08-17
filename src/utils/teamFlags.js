@@ -188,6 +188,7 @@ export function normalizeTeamFlagLabel(team) {
     : (team?.name || team?.shortName || team?.teamName || '');
   return String(raw)
     .toLowerCase()
+    .replace(/oddsyra\s*srl/g, ' ')
     .replace(/betking\s*srl/g, ' ')
     .replace(/\bsrl\b/g, ' ')
     .replace(/\(v\)|\(virtual\)|\(women\)|\(men\)|\bwomen\b|\bmen\b|\bu-?19\b|\bu-?23\b/g, ' ')
@@ -246,7 +247,7 @@ export function flagImageUrl(code) {
 export function isNationalTeam(team) {
   const label = normalizeTeamFlagLabel(team);
   if (!label) return false;
-  if (/\bsrl\b/.test(label) || label.includes('betking')) return false;
+  if (/\bsrl\b/.test(label) || label.includes('oddsyra')) return false;
   if (COUNTRY_ALIASES[label]) return true;
 
   for (const phrase of COUNTRY_PHRASES) {

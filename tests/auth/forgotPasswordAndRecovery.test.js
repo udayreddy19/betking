@@ -238,15 +238,15 @@ describe('Production-Grade Forgot Password & Account Recovery Suite (Req 1-30)',
       // Create existing user
       mockDb.users.push({
         user_id: 'usr_real_1',
-        email: 'real.player@betking.com',
+        email: 'real.player@oddsyra.com',
         first_name: 'Real',
         last_name: 'Player',
         password_hash: await hashPassword('Pass123!'),
         status: 'ACTIVE',
       });
 
-      const resExisting = await forgotPassword(mockQuery, 'real.player@betking.com', '127.0.0.1');
-      const resUnknown = await forgotPassword(mockQuery, 'nonexistent@betking.com', '127.0.0.1');
+      const resExisting = await forgotPassword(mockQuery, 'real.player@oddsyra.com', '127.0.0.1');
+      const resUnknown = await forgotPassword(mockQuery, 'nonexistent@oddsyra.com', '127.0.0.1');
 
       expect(resExisting.success).toBe(true);
       expect(resUnknown.success).toBe(true);
@@ -259,18 +259,18 @@ describe('Production-Grade Forgot Password & Account Recovery Suite (Req 1-30)',
     it('invalidates previous active reset tokens when a new reset link is requested', async () => {
       mockDb.users.push({
         user_id: 'usr_resend_1',
-        email: 'resend.player@betking.com',
+        email: 'resend.player@oddsyra.com',
         first_name: 'Resend',
         password_hash: await hashPassword('Pass123!'),
         status: 'ACTIVE',
       });
 
       // Request 1
-      const res1 = await forgotPassword(mockQuery, 'resend.player@betking.com', '127.0.0.1');
+      const res1 = await forgotPassword(mockQuery, 'resend.player@oddsyra.com', '127.0.0.1');
       const token1 = res1.resetToken;
 
       // Request 2 (resend)
-      const res2 = await forgotPassword(mockQuery, 'resend.player@betking.com', '127.0.0.1');
+      const res2 = await forgotPassword(mockQuery, 'resend.player@oddsyra.com', '127.0.0.1');
       const token2 = res2.resetToken;
 
       expect(token1).not.toBe(token2);
@@ -304,13 +304,13 @@ describe('Production-Grade Forgot Password & Account Recovery Suite (Req 1-30)',
     beforeEach(async () => {
       mockDb.users.push({
         user_id: 'usr_single_use_1',
-        email: 'single.use@betking.com',
+        email: 'single.use@oddsyra.com',
         first_name: 'Single',
         password_hash: await hashPassword('OriginalPass123!'),
         status: 'ACTIVE',
       });
 
-      const forgotRes = await forgotPassword(mockQuery, 'single.use@betking.com', '127.0.0.1');
+      const forgotRes = await forgotPassword(mockQuery, 'single.use@oddsyra.com', '127.0.0.1');
       rawToken = forgotRes.resetToken;
     });
 
@@ -369,13 +369,13 @@ describe('Production-Grade Forgot Password & Account Recovery Suite (Req 1-30)',
     it('ensures only ONE request can successfully claim the token when hit concurrently', async () => {
       mockDb.users.push({
         user_id: 'usr_concurrent_1',
-        email: 'concurrent@betking.com',
+        email: 'concurrent@oddsyra.com',
         first_name: 'Concurrent',
         password_hash: await hashPassword('Pass123!'),
         status: 'ACTIVE',
       });
 
-      const forgotRes = await forgotPassword(mockQuery, 'concurrent@betking.com', '127.0.0.1');
+      const forgotRes = await forgotPassword(mockQuery, 'concurrent@oddsyra.com', '127.0.0.1');
       const token = forgotRes.resetToken;
 
       // Simulate 2 parallel reset requests arriving at the exact same moment
@@ -396,7 +396,7 @@ describe('Production-Grade Forgot Password & Account Recovery Suite (Req 1-30)',
     it('invalidates existing refresh tokens so old sessions are terminated', async () => {
       const user = {
         user_id: 'usr_session_inv_1',
-        email: 'session.inv@betking.com',
+        email: 'session.inv@oddsyra.com',
         first_name: 'Session',
         password_hash: await hashPassword('Pass123!'),
         status: 'ACTIVE',
@@ -430,7 +430,7 @@ describe('Production-Grade Forgot Password & Account Recovery Suite (Req 1-30)',
     it('PRESERVES restricted account status (SUSPENDED remains SUSPENDED after password reset)', async () => {
       const user = {
         user_id: 'usr_suspended_1',
-        email: 'suspended.player@betking.com',
+        email: 'suspended.player@oddsyra.com',
         first_name: 'Suspended',
         password_hash: await hashPassword('Pass123!'),
         status: 'SUSPENDED', // Restricted
@@ -453,7 +453,7 @@ describe('Production-Grade Forgot Password & Account Recovery Suite (Req 1-30)',
     it('executes full E2E flow: forgot password -> reset -> login with new password -> login with old password fails', async () => {
       // 1. User signs up
       const signupRes = await signup(mockQuery, mockWithTransaction, {
-        email: 'e2e.flow@betking.com',
+        email: 'e2e.flow@oddsyra.com',
         password: 'OriginalPassword123!',
         firstName: 'E2E',
         lastName: 'User',
@@ -461,7 +461,7 @@ describe('Production-Grade Forgot Password & Account Recovery Suite (Req 1-30)',
       expect(signupRes.success).toBe(true);
 
       // 2. User requests forgot password
-      const forgotRes = await forgotPassword(mockQuery, 'e2e.flow@betking.com', '127.0.0.1');
+      const forgotRes = await forgotPassword(mockQuery, 'e2e.flow@oddsyra.com', '127.0.0.1');
       expect(forgotRes.success).toBe(true);
       const resetToken = forgotRes.resetToken;
 
@@ -475,14 +475,14 @@ describe('Production-Grade Forgot Password & Account Recovery Suite (Req 1-30)',
 
       // 4. Login with old password must fail
       const oldLogin = await login(mockQuery, {
-        email: 'e2e.flow@betking.com',
+        email: 'e2e.flow@oddsyra.com',
         password: 'OriginalPassword123!',
       });
       expect(oldLogin.error).toBe('Invalid email or password.');
 
       // 5. Login with new password must succeed
       const newLogin = await login(mockQuery, {
-        email: 'e2e.flow@betking.com',
+        email: 'e2e.flow@oddsyra.com',
         password: 'NewStrongPassword2026!',
       });
       expect(newLogin.success).toBe(true);
@@ -492,7 +492,7 @@ describe('Production-Grade Forgot Password & Account Recovery Suite (Req 1-30)',
 
   describe('8. Audit Log Sanitization & Security (Requirements 20 & 29)', () => {
     it('never logs plaintext passwords, reset tokens, or token hashes into audit logs', async () => {
-      const forgotRes = await forgotPassword(mockQuery, 'e2e.flow@betking.com', '127.0.0.1');
+      const forgotRes = await forgotPassword(mockQuery, 'e2e.flow@oddsyra.com', '127.0.0.1');
       await resetPassword(mockQuery, mockWithTransaction, {
         token: forgotRes.resetToken,
         password: 'AuditSanitizationPass2026!',

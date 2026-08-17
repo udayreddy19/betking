@@ -82,7 +82,6 @@
   font-size: var(--text-base);
   font-weight: 700;
   letter-spacing: 0.04em;
-}
   transition: all var(--transition-fast);
   box-shadow: 0 2px 10px rgba(124,58,237,0.3);
   margin-top: var(--space-2);
@@ -115,19 +114,13 @@
 .modal-logo {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  justify-content: center;
   margin-bottom: var(--space-4);
 }
-.modal-logo .logo-icon {
-  width: 40px; height: 40px;
-  background: var(--color-text);
-  border-radius: var(--radius-md);
-  display: flex; align-items: center; justify-content: center;
-  color: white;
-  font-weight: 900;
-  font-size: var(--text-lg);
-}
-.modal-logo span {
-  font-size: var(--text-xl);
-  font-weight: var(--font-extrabold);
+.modal-logo img {
+  width: 132px;
+  height: 132px;
+  object-fit: cover;
+  border-radius: 16px;
+  background: #07111f;
 }

@@ -5,7 +5,7 @@ dotenv.config();
 
 const { Pool } = pg;
 
-const connectionString = process.env.DATABASE_URL || 'postgresql://betking_app:betking_dev_pass@127.0.0.1:5432/betking';
+const connectionString = process.env.DATABASE_URL || 'postgresql://oddsyra_app:oddsyra_dev_pass@127.0.0.1:5432/oddsyra';
 
 export const pool = new Pool({
   connectionString,
@@ -65,7 +65,7 @@ export async function checkPgHealth() {
     return {
       connected: true,
       serverTime: res.rows[0]?.server_time,
-      database: process.env.POSTGRES_DB || 'betking',
+      database: process.env.POSTGRES_DB || 'oddsyra',
     };
   } catch (err) {
     return {

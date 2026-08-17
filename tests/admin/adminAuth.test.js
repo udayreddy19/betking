@@ -3,7 +3,7 @@ import { adminAuth, requirePermission, requireRole, generateAdminToken, ADMIN_RO
 
 describe('Admin Authentication & RBAC Middleware', () => {
   it('should generate and verify JWT admin tokens', () => {
-    const token = generateAdminToken('admin_unit_test', ADMIN_ROLES.SUPER_ADMIN, 'betking_in');
+    const token = generateAdminToken('admin_unit_test', ADMIN_ROLES.SUPER_ADMIN, 'oddsyra_in');
     expect(token).toBeTypeOf('string');
     expect(token.split('.').length).toBe(3);
 

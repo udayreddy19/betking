@@ -17,7 +17,7 @@ async function ensureTable() {
     related_entity_type VARCHAR(64), related_entity_id VARCHAR(128),
     source_type VARCHAR(64), source_id VARCHAR(128),
     due_date TIMESTAMP WITH TIME ZONE, completed_at TIMESTAMP WITH TIME ZONE,
-    created_by VARCHAR(64) NOT NULL, tenant_id VARCHAR(64) DEFAULT 'betking_in',
+    created_by VARCHAR(64) NOT NULL, tenant_id VARCHAR(64) DEFAULT 'oddsyra_in',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
   )`);
 }

@@ -45,6 +45,7 @@ export default function Register() {
   return (
     <div className="register-page" id="register-page">
       <div className="register-form-section">
+        <img src="/oddsyra-logo.png" alt="OddsYra" className="register-logo" />
         <h1>Register in one easy step</h1>
 
         {error && <div className="register-error">{error}</div>}
@@ -159,7 +160,7 @@ export default function Register() {
         </div>
         <div className="register-hero-content">
           <span className="hero-emoji">👌</span>
-          <h2>Join BetKing</h2>
+          <h2>Join OddsYra</h2>
           <p>{WELCOME_BONUS.displayShort} Welcome Bonus</p>
         </div>
       </div>

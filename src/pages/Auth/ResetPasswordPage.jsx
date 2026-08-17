@@ -56,8 +56,7 @@ export default function ResetPasswordPage() {
     <div className="auth-page-container">
       <div className="auth-card">
         <div className="auth-logo">
-          <span className="logo-icon">👑</span>
-          <span className="brand-name">BetKing</span>
+          <img src="/oddsyra-logo.png" alt="OddsYra" />
         </div>
 
         {success ? (
@@ -79,7 +78,7 @@ export default function ResetPasswordPage() {
         ) : (
           <div className="auth-state-box">
             <h2>Set New Password</h2>
-            <p>Enter your new password below to secure your BetKing account.</p>
+            <p>Enter your new password below to secure your OddsYra account.</p>
 
             {error && <div className="auth-error-banner">{error}</div>}
 

@@ -79,7 +79,7 @@ export default function Sidebar() {
                 <HiOutlineDocumentText className="tab-icon" />
                 Account
               </button>
-              {(user?.role === 'admin' || user?.email === 'admin@betking.com') && (
+              {(user?.role === 'admin' || user?.email === 'admin@oddsyra.com') && (
                 <button className="sidebar-tab" onClick={() => { closeSidebar(); navigate('/admin'); }}>
                   <HiOutlineDocumentText className="tab-icon" />
                   Admin
@@ -200,7 +200,7 @@ export default function Sidebar() {
           </>
         ) : (
           <div className="sidebar-guest">
-            <h3>Welcome to BetKing!</h3>
+            <h3>Welcome to OddsYra!</h3>
             <p>Log in or create an account to start betting</p>
             <button className="sidebar-guest-btn primary" onClick={handleLogin}>Log in</button>
             <button className="sidebar-guest-btn outline" onClick={handleRegister}>Create Account</button>

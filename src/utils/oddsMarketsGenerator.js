@@ -1,5 +1,5 @@
 /**
- * Comprehensive Betting Markets & Dynamic Live Odds Generator for BetKing
+ * Comprehensive Betting Markets & Dynamic Live Odds Generator for OddsYra
  * Dynamically updates odds and lines in real time based on live match scores.
  */
 

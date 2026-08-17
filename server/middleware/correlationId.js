@@ -1,5 +1,5 @@
 /**
- * Correlation ID Middleware — BetKing Admin Operations
+ * Correlation ID Middleware — OddsYra Admin Operations
  * 
  * Injects a unique X-Correlation-ID into every request for distributed tracing.
  * If the client sends one, it's preserved. Otherwise a new one is generated.

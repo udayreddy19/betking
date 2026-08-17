@@ -532,15 +532,9 @@ function AdminShellInner() {
         style={{ background: 'var(--admin-panel)', borderRight: '1px solid var(--admin-border)' }}
       >
         <div style={{ padding: '20px 16px', borderBottom: '1px solid var(--admin-border)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <motion.div
-            animate={{ rotate: [0, -10, 10, 0], scale: [1, 1.1, 1] }}
-            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-            style={{ fontSize: '1.4rem', color: '#f59e0b', display: 'inline-flex' }}
-          >
-            <ShieldCheckIcon style={{ width: '24px', height: '24px' }} />
-          </motion.div>
+          <img src="/oddsyra-logo.png" alt="OddsYra" style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover', flexShrink: 0, background: '#07111f' }} />
           <div>
-            <h1 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 900, letterSpacing: '0.5px', color: 'var(--admin-text)' }}>BETKING ADMIN</h1>
+            <h1 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 900, letterSpacing: '0.5px', color: 'var(--admin-text)' }}>ODDSYRA ADMIN</h1>
             <span style={{ fontSize: '0.70rem', color: '#10b981', fontWeight: 800, letterSpacing: '0.4px' }}>OPERATIONS CONTROL CENTER</span>
           </div>
         </div>

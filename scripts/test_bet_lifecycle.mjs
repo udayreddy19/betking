@@ -13,7 +13,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-console.log('🚀 EXECUTING BETKING COMPLETE SPORTSBOOK BET LIFECYCLE ACCEPTANCE TEST SUITE...\n');
+console.log('🚀 EXECUTING ODDSYRA COMPLETE SPORTSBOOK BET LIFECYCLE ACCEPTANCE TEST SUITE...\n');
 
 async function runBetLifecycleSuite() {
   let passed = 0;
@@ -26,7 +26,7 @@ async function runBetLifecycleSuite() {
     console.log('   ⏳ Test 1/10: Testing full end-to-end bet placement & payout settlement lifecycle...');
 
     // User setup & deposit
-    await query(`INSERT INTO users (user_id, email) VALUES ($1, $2);`, [testUserId, `${testUserId}@betking.com`]);
+    await query(`INSERT INTO users (user_id, email) VALUES ($1, $2);`, [testUserId, `${testUserId}@oddsyra.com`]);
     await query(`INSERT INTO user_profiles (user_id, display_name, kyc_status, account_status) VALUES ($1, 'Lifecycle User', 'VERIFIED', 'ACTIVE');`, [testUserId]);
     await query(`INSERT INTO wallets (wallet_id, user_id, balance) VALUES ($1, $2, 0.00);`, [`w_${testUserId}`, testUserId]);
 

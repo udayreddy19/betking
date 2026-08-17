@@ -17,7 +17,7 @@ async function ensureTable() {
     schedule_id VARCHAR(64) PRIMARY KEY, action_type VARCHAR(128) NOT NULL, target_entity_type VARCHAR(64),
     target_entity_id VARCHAR(128), scheduled_time TIMESTAMP WITH TIME ZONE NOT NULL, timezone VARCHAR(64) DEFAULT 'Asia/Kolkata',
     status VARCHAR(32) DEFAULT 'SCHEDULED', created_by VARCHAR(64) NOT NULL, approved_by VARCHAR(64),
-    execution_result JSONB, rollback_info JSONB, tenant_id VARCHAR(64) DEFAULT 'betking_in',
+    execution_result JSONB, rollback_info JSONB, tenant_id VARCHAR(64) DEFAULT 'oddsyra_in',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP, executed_at TIMESTAMP WITH TIME ZONE
   )`);
 }

@@ -11,7 +11,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-console.log('🚀 EXECUTING BETKING DEVELOPER PLATFORM, PUBLIC API & WEBHOOK ACCEPTANCE TEST SUITE...\n');
+console.log('🚀 EXECUTING ODDSYRA DEVELOPER PLATFORM, PUBLIC API & WEBHOOK ACCEPTANCE TEST SUITE...\n');
 
 async function runDeveloperSuite() {
   let passed = 0;

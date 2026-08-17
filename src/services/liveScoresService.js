@@ -10,7 +10,7 @@ import { cricketScoreWeight, cricketSourceRank, getCanonicalMatchPairKey } from 
 export { normalizeTeamName };
 
 /**
- * Fetch live scores from unified BetKing API & Gateway.
+ * Fetch live scores from unified OddsYra API & Gateway.
  */
 export async function fetchLiveScores(options = {}) {
   const url = options.force ? '/api/live-scores?refresh=1' : '/api/live-scores';

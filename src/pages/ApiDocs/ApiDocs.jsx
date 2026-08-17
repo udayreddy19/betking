@@ -236,14 +236,14 @@ export default function ApiDocs() {
     const fullUrl = `http://localhost:5173${urlInput}`;
     switch (sdkLanguage) {
       case 'javascript':
-        return `// Fetch Live Scores via BetKing API
+        return `// Fetch Live Scores via OddsYra API
 const response = await fetch('${fullUrl}', {
   headers: { 'X-API-Key': 'bk_live_998877665544332211' }
 });
 const data = await response.json();
 console.log('Live Scores:', data.data);`;
       case 'python':
-        return `# Python BetKing API Client
+        return `# Python OddsYra API Client
 import requests
 
 url = "${fullUrl}"
@@ -314,7 +314,7 @@ Console.WriteLine(response);`;
         </div>
 
         <h1 className="api-hero-title">
-          BetKing Developer Hub & Sports Data Gateway
+          OddsYra Developer Hub & Sports Data Gateway
         </h1>
         <p className="api-hero-subtitle">
           Canonical REST & Server-Sent Events (SSE) API layer unifying <strong>10Cric 2026</strong>, <strong>CREX</strong>, <strong>Cricbuzz</strong>, <strong>FanCode</strong>, <strong>ESPN</strong>, and global sports providers into a high-availability unified sports payload schema.

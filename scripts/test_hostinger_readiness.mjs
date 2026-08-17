@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-console.log('🚀 EXECUTING BETKING PRODUCTION INFRASTRUCTURE & HOSTINGER READINESS TEST SUITE...\n');
+console.log('🚀 EXECUTING ODDSYRA PRODUCTION INFRASTRUCTURE & HOSTINGER READINESS TEST SUITE...\n');
 
 async function runHostingerReadinessSuite() {
   let passed = 0;
@@ -44,10 +44,10 @@ async function runHostingerReadinessSuite() {
   try {
     console.log('   ⏳ Test 3/8: Validating docker-compose.prod.yml production manifest...');
     const dockerFile = fs.readFileSync(path.join(rootDir, 'docker-compose.prod.yml'), 'utf8');
-    const hasPostgres = dockerFile.includes('betking_prod_postgres');
-    const hasRedis = dockerFile.includes('betking_prod_redis');
-    const hasNginx = dockerFile.includes('betking_prod_nginx');
-    const hasNetwork = dockerFile.includes('betking-prod-net');
+    const hasPostgres = dockerFile.includes('oddsyra_prod_postgres');
+    const hasRedis = dockerFile.includes('oddsyra_prod_redis');
+    const hasNginx = dockerFile.includes('oddsyra_prod_nginx');
+    const hasNetwork = dockerFile.includes('oddsyra-prod-net');
 
     if (hasPostgres && hasRedis && hasNginx && hasNetwork) {
       console.log(`✅ TEST 3/8 PASSED: docker-compose.prod.yml verified! (PostgreSQL, Redis, Nginx isolated on private network).`);

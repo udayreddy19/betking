@@ -1,4 +1,4 @@
--- Migration 001: Initial Schema for BetKing PostgreSQL Database
+-- Migration 001: Initial Schema for OddsYra PostgreSQL Database
 -- Authoritative Schema for Users, Sports, Bets, Wallets, Ledger, KYC, Support Chat, Audit
 
 -- 1. IDENTITY & USERS
@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
   email VARCHAR(255) UNIQUE NOT NULL,
   phone VARCHAR(32),
   password_hash VARCHAR(255),
-  tenant_id VARCHAR(64) DEFAULT 'betking_in',
+  tenant_id VARCHAR(64) DEFAULT 'oddsyra_in',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -154,7 +154,7 @@ CREATE TABLE IF NOT EXISTS kyc_cases (
 CREATE TABLE IF NOT EXISTS support_conversations (
   conversation_id VARCHAR(64) PRIMARY KEY,
   user_id VARCHAR(64) REFERENCES users(user_id),
-  tenant_id VARCHAR(64) DEFAULT 'betking_in',
+  tenant_id VARCHAR(64) DEFAULT 'oddsyra_in',
   assigned_agent VARCHAR(128) DEFAULT 'Priya Sharma',
   assigned_team VARCHAR(64) DEFAULT 'GENERAL',
   category VARCHAR(64) DEFAULT 'GENERAL',

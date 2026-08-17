@@ -300,7 +300,7 @@ describe('Auth Service & Endpoints Test Suite', () => {
   describe('User Signup Flow', () => {
     it('should successfully register a new user and create wallet & verification token', async () => {
       const result = await signup(mockQuery, mockWithTransaction, {
-        email: 'virat.kohli@betking.com',
+        email: 'virat.kohli@oddsyra.com',
         password: 'SuperSecurePassword2026!',
         firstName: 'Virat',
         lastName: 'Kohli',
@@ -314,7 +314,7 @@ describe('Auth Service & Endpoints Test Suite', () => {
       expect(result.emailVerificationToken).toBeDefined();
 
       expect(mockDb.users.length).toBe(1);
-      expect(mockDb.users[0].email).toBe('virat.kohli@betking.com');
+      expect(mockDb.users[0].email).toBe('virat.kohli@oddsyra.com');
       expect(mockDb.users[0].password_hash.startsWith('scrypt:')).toBe(true);
 
       expect(mockDb.wallets.length).toBe(1);
@@ -335,7 +335,7 @@ describe('Auth Service & Endpoints Test Suite', () => {
 
     it('should reject signup with weak password (< 8 characters)', async () => {
       const result = await signup(mockQuery, mockWithTransaction, {
-        email: 'test@betking.com',
+        email: 'test@oddsyra.com',
         password: 'short',
         firstName: 'Test',
       });
@@ -346,13 +346,13 @@ describe('Auth Service & Endpoints Test Suite', () => {
 
     it('should reject duplicate email without leaking account details', async () => {
       await signup(mockQuery, mockWithTransaction, {
-        email: 'duplicate@betking.com',
+        email: 'duplicate@oddsyra.com',
         password: 'Password123!',
         firstName: 'Original',
       });
 
       const dupResult = await signup(mockQuery, mockWithTransaction, {
-        email: 'duplicate@betking.com',
+        email: 'duplicate@oddsyra.com',
         password: 'AnotherPassword123!',
         firstName: 'Duplicate',
       });
@@ -366,7 +366,7 @@ describe('Auth Service & Endpoints Test Suite', () => {
   describe('User Login Flow & Lockout Protection', () => {
     beforeEach(async () => {
       await signup(mockQuery, mockWithTransaction, {
-        email: 'player@betking.com',
+        email: 'player@oddsyra.com',
         password: 'ValidPassword123!',
         firstName: 'Rohit',
         lastName: 'Sharma',
@@ -375,7 +375,7 @@ describe('Auth Service & Endpoints Test Suite', () => {
 
     it('should log in successfully with valid credentials and return tokens', async () => {
       const res = await login(mockQuery, {
-        email: 'player@betking.com',
+        email: 'player@oddsyra.com',
         password: 'ValidPassword123!',
         ip: '127.0.0.1',
       });
@@ -384,12 +384,12 @@ describe('Auth Service & Endpoints Test Suite', () => {
       expect(res.accessToken).toBeDefined();
       expect(res.refreshToken).toBeDefined();
       expect(res.user.displayName).toBe('Rohit Sharma');
-      expect(res.user.email).toBe('player@betking.com');
+      expect(res.user.email).toBe('player@oddsyra.com');
     });
 
     it('should fail on incorrect password with generic error message', async () => {
       const res = await login(mockQuery, {
-        email: 'player@betking.com',
+        email: 'player@oddsyra.com',
         password: 'WrongPassword!',
         ip: '127.0.0.1',
       });
@@ -402,7 +402,7 @@ describe('Auth Service & Endpoints Test Suite', () => {
     it('should lock account after 5 consecutive failed login attempts', async () => {
       for (let i = 1; i <= 4; i++) {
         await login(mockQuery, {
-          email: 'player@betking.com',
+          email: 'player@oddsyra.com',
           password: 'BadPassword',
           ip: '10.0.0.1',
         });
@@ -413,7 +413,7 @@ describe('Auth Service & Endpoints Test Suite', () => {
 
       // 5th attempt triggers lockout
       const lockRes = await login(mockQuery, {
-        email: 'player@betking.com',
+        email: 'player@oddsyra.com',
         password: 'BadPassword',
         ip: '10.0.0.1',
       });
@@ -424,7 +424,7 @@ describe('Auth Service & Endpoints Test Suite', () => {
 
       // Subsequent attempt blocked with ACCOUNT_LOCKED (423)
       const blockedRes = await login(mockQuery, {
-        email: 'player@betking.com',
+        email: 'player@oddsyra.com',
         password: 'ValidPassword123!',
         ip: '10.0.0.1',
       });
@@ -439,7 +439,7 @@ describe('Auth Service & Endpoints Test Suite', () => {
 
     beforeEach(async () => {
       const res = await signup(mockQuery, mockWithTransaction, {
-        email: 'reset.user@betking.com',
+        email: 'reset.user@oddsyra.com',
         password: 'InitialPassword123!',
         firstName: 'Hardik',
         lastName: 'Pandya',
@@ -448,7 +448,7 @@ describe('Auth Service & Endpoints Test Suite', () => {
     });
 
     it('should generate password reset token and successfully update password', async () => {
-      const forgotRes = await forgotPassword(mockQuery, 'reset.user@betking.com', '127.0.0.1');
+      const forgotRes = await forgotPassword(mockQuery, 'reset.user@oddsyra.com', '127.0.0.1');
       expect(forgotRes.success).toBe(true);
       expect(forgotRes.resetToken).toBeDefined();
 
@@ -457,14 +457,14 @@ describe('Auth Service & Endpoints Test Suite', () => {
 
       // Verify login works with new password
       const loginRes = await login(mockQuery, {
-        email: 'reset.user@betking.com',
+        email: 'reset.user@oddsyra.com',
         password: 'BrandNewPassword2026!',
       });
       expect(loginRes.success).toBe(true);
 
       // Verify old password is now rejected
       const oldLoginRes = await login(mockQuery, {
-        email: 'reset.user@betking.com',
+        email: 'reset.user@oddsyra.com',
         password: 'InitialPassword123!',
       });
       expect(oldLoginRes.error).toBeDefined();
@@ -472,7 +472,7 @@ describe('Auth Service & Endpoints Test Suite', () => {
 
     it('should verify email successfully using verification token', async () => {
       const signupRes = await signup(mockQuery, mockWithTransaction, {
-        email: 'verify.me@betking.com',
+        email: 'verify.me@oddsyra.com',
         password: 'Password123!',
         firstName: 'Jasprit',
       });
@@ -483,14 +483,14 @@ describe('Auth Service & Endpoints Test Suite', () => {
       const verifyRes = await verifyEmail(mockQuery, token);
       expect(verifyRes.success).toBe(true);
 
-      const user = mockDb.users.find(u => u.email === 'verify.me@betking.com');
+      const user = mockDb.users.find(u => u.email === 'verify.me@oddsyra.com');
       expect(user.email_verified_at).toBeDefined();
     });
   });
 
   describe('JWT and Refresh Token Lifecycle', () => {
     it('should generate valid JWT access token and verify signature', () => {
-      const token = generateAccessToken('usr_12345', 'USER', 'betking_in');
+      const token = generateAccessToken('usr_12345', 'USER', 'oddsyra_in');
       const payload = verifyAccessToken(token);
 
       expect(payload).toBeDefined();

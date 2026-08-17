@@ -72,7 +72,7 @@ app.post('/api/auth/admin-login', async (req, res) => {
       ? requestedRole
       : ADMIN_ROLES.SUPER_ADMIN;
     const adminId = String(req.body?.adminId || 'admin_local');
-    const token = generateAdminToken(adminId, role, 'betking_in');
+    const token = generateAdminToken(adminId, role, 'oddsyra_in');
     res.json({
       success: true,
       token,
@@ -648,7 +648,7 @@ app.get('/api/admin/platform-twin/graph', async (req, res) => {
     res.json({
       success: true,
       digitalTwin: {
-        platform: 'BetKing Production Environment',
+        platform: 'OddsYra Production Environment',
         activeTenants: 1,
         activeMatchesCount: sportsDataRegistry.getAllMatches().length,
         providersCount: providerHealthManager.getProviderHealth().activeProvidersCount,
@@ -743,7 +743,7 @@ app.get('/api/admin/db/tables', async (req, res) => {
     const { query } = await import('../db/pg.js');
     const { statfsSync } = await import('fs');
 
-    const sizeRes = await query("SELECT pg_size_pretty(pg_database_size('betking')) AS total_db_size;");
+    const sizeRes = await query("SELECT pg_size_pretty(pg_database_size('oddsyra')) AS total_db_size;");
     const totalDbSize = sizeRes.rows[0]?.total_db_size || '8.7 MB';
 
     let availableDiskStorage = '13.0 GB Free of 228.0 GB (48% Used)';
@@ -1797,7 +1797,7 @@ app.get('/api/admin/outbox/metrics', async (req, res) => {
 // User & Admin Support Center REST APIs (v1 & legacy endpoints)
 // -----------------------------------------------------------------------------
 app.get(['/api/support/conversations', '/api/v1/support/tickets'], async (req, res) => {
-  const userId = req.query.userId || 'demo@betking.com';
+  const userId = req.query.userId || 'demo@oddsyra.com';
   try {
     const { supportEngine } = await import('../lib/supportEngine.mjs');
     const conversations = supportEngine.getUserConversations(userId);
@@ -1823,7 +1823,7 @@ app.post(['/api/support/conversations', '/api/v1/support/tickets'], async (req, 
   try {
     const { supportEngine } = await import('../lib/supportEngine.mjs');
     const result = await supportEngine.startConversation({
-      userId: userId || 'demo@betking.com',
+      userId: userId || 'demo@oddsyra.com',
       subject: subject || 'Support Request',
       category: category || 'General',
       priority: priority || 'NORMAL',
@@ -2013,7 +2013,7 @@ app.post(['/api/admin/support/conversations/:id/status', '/api/v1/admin/support/
 // Phase 2 — Advanced User Security & Account Controls REST APIs
 // -----------------------------------------------------------------------------
 app.get('/api/v1/user/security/devices', async (req, res) => {
-  const userId = req.query.userId || 'demo@betking.com';
+  const userId = req.query.userId || 'demo@oddsyra.com';
   try {
     const { userSecurityCenter } = await import('../lib/userSecurityCenter.mjs');
     const devices = userSecurityCenter.getUserDevices(userId);
@@ -2027,7 +2027,7 @@ app.post('/api/v1/user/security/devices/register', async (req, res) => {
   const { userId, deviceId, deviceHash, deviceType, platform, browser, os, ipAddress, locationCity, locationCountry } = req.body;
   try {
     const { userSecurityCenter } = await import('../lib/userSecurityCenter.mjs');
-    const dev = await userSecurityCenter.registerDevice(userId || 'demo@betking.com', {
+    const dev = await userSecurityCenter.registerDevice(userId || 'demo@oddsyra.com', {
       deviceId, deviceHash, deviceType, platform, browser, os, ipAddress, locationCity, locationCountry
     });
     res.json({ success: true, device: dev });
@@ -2040,7 +2040,7 @@ app.post('/api/v1/user/security/devices/logout', async (req, res) => {
   const { userId, deviceId } = req.body;
   try {
     const { userSecurityCenter } = await import('../lib/userSecurityCenter.mjs');
-    const result = await userSecurityCenter.logoutDevice(userId || 'demo@betking.com', deviceId);
+    const result = await userSecurityCenter.logoutDevice(userId || 'demo@oddsyra.com', deviceId);
     res.json({ success: true, result });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2051,7 +2051,7 @@ app.post('/api/v1/user/security/devices/logout-all-others', async (req, res) => 
   const { userId, currentDeviceId } = req.body;
   try {
     const { userSecurityCenter } = await import('../lib/userSecurityCenter.mjs');
-    const result = await userSecurityCenter.logoutAllOtherDevices(userId || 'demo@betking.com', currentDeviceId);
+    const result = await userSecurityCenter.logoutAllOtherDevices(userId || 'demo@oddsyra.com', currentDeviceId);
     res.json({ success: true, result });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2059,7 +2059,7 @@ app.post('/api/v1/user/security/devices/logout-all-others', async (req, res) => 
 });
 
 app.get('/api/v1/user/security/alerts', async (req, res) => {
-  const userId = req.query.userId || 'demo@betking.com';
+  const userId = req.query.userId || 'demo@oddsyra.com';
   try {
     const { userSecurityCenter } = await import('../lib/userSecurityCenter.mjs');
     const alerts = userSecurityCenter.getUserSecurityAlerts(userId);
@@ -2073,7 +2073,7 @@ app.post('/api/v1/user/security/alerts/:id/read', async (req, res) => {
   const { userId } = req.body;
   try {
     const { userSecurityCenter } = await import('../lib/userSecurityCenter.mjs');
-    const result = userSecurityCenter.markAlertAsRead(userId || 'demo@betking.com', req.params.id);
+    const result = userSecurityCenter.markAlertAsRead(userId || 'demo@oddsyra.com', req.params.id);
     res.json({ success: true, result });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2081,7 +2081,7 @@ app.post('/api/v1/user/security/alerts/:id/read', async (req, res) => {
 });
 
 app.get('/api/v1/user/security/control-status', async (req, res) => {
-  const userId = req.query.userId || 'demo@betking.com';
+  const userId = req.query.userId || 'demo@oddsyra.com';
   try {
     const { userSecurityCenter } = await import('../lib/userSecurityCenter.mjs');
     const status = userSecurityCenter.getAccountControlStatus(userId);
@@ -2548,7 +2548,7 @@ app.get('/api/v1/user/vip/status', async (req, res) => {
   const { userId } = req.query;
   try {
     const { getUserVipStatus } = await import('../lib/vipEngine.mjs');
-    res.json({ success: true, vip: getUserVipStatus(userId || 'demo@betking.com') });
+    res.json({ success: true, vip: getUserVipStatus(userId || 'demo@oddsyra.com') });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -2558,7 +2558,7 @@ app.get('/api/v1/user/vip/history', async (req, res) => {
   const { userId } = req.query;
   try {
     const { getVipTierHistory } = await import('../lib/vipEngine.mjs');
-    const result = await getVipTierHistory(userId || 'demo@betking.com');
+    const result = await getVipTierHistory(userId || 'demo@oddsyra.com');
     res.json(result);
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -2684,13 +2684,15 @@ httpServer.listen(PORT, async () => {
     if (isProduction) process.exit(1);
   }
 
-  console.log(`🚀 BetKing Backend listening on http://localhost:${PORT}`);
+  console.log(`🚀 OddsYra Backend listening on http://localhost:${PORT}`);
   console.log(`  - Webhook Route : http://localhost:${PORT}/api/webhooks/razorpay`);
   console.log(`  - WebSocket Route : ws://localhost:${PORT}/ws/support`);
 
   try {
-    const { startBackgroundWorkers } = await import('../lib/schedulerWorker.mjs');
-    startBackgroundWorkers();
+    if (process.env.RUN_BACKGROUND_WORKERS !== 'false') {
+      const { startBackgroundWorkers } = await import('../lib/schedulerWorker.mjs');
+      startBackgroundWorkers();
+    }
   } catch (err) {
     console.warn('[Scheduler Startup Notice]', err.message);
   }

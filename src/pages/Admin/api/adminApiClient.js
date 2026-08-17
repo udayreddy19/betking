@@ -1,5 +1,5 @@
 /**
- * Centralized API client for BetKing Admin Operations Control Center
+ * Centralized API client for OddsYra Admin Operations Control Center
  * Manages admin authentication headers, correlation IDs, and standard error handling.
  */
 
@@ -46,7 +46,7 @@ export async function ensureAdminSession(roleOverride) {
 }
 
 async function request(endpoint, options = {}) {
-  let token = localStorage.getItem('adminToken') || localStorage.getItem('betking_token');
+  let token = localStorage.getItem('adminToken') || localStorage.getItem('oddsyra_token');
   if (!token) {
     try {
       token = await ensureAdminSession();

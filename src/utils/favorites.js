@@ -1,6 +1,6 @@
 import { storageGet, storageSet } from './browserCompat.js';
 
-const FAV_KEY = 'betking_favorite_matches';
+const FAV_KEY = 'oddsyra_favorite_matches';
 
 export function loadFavoriteMatchIds() {
   try {

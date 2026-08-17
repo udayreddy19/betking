@@ -1,7 +1,7 @@
-const TX_KEY = 'betking_transactions';
+const TX_KEY = 'oddsyra_transactions';
 
 const INITIAL_MOCK_TRANSACTIONS = [
-  { id: 'TXN-98421', userEmail: 'demo@betking.com', userName: 'Demo User', type: 'DEPOSIT', amount: 5000, method: 'UPI', utr: 'UTR984210452', status: 'COMPLETED', createdAt: new Date(Date.now() - 3600000).toISOString() },
+  { id: 'TXN-98421', userEmail: 'demo@oddsyra.com', userName: 'Demo User', type: 'DEPOSIT', amount: 5000, method: 'UPI', utr: 'UTR984210452', status: 'COMPLETED', createdAt: new Date(Date.now() - 3600000).toISOString() },
   { id: 'TXN-98420', userEmail: 'vikram.s@gmail.com', userName: 'Vikram S.', type: 'WITHDRAWAL', amount: 2500, method: 'Paytm', utr: 'UTR984201948', status: 'PENDING', createdAt: new Date(Date.now() - 7200000).toISOString() },
   { id: 'TXN-98419', userEmail: 'ananya.p@yahoo.com', userName: 'Ananya P.', type: 'DEPOSIT', amount: 10000, method: 'GPay', utr: 'UTR984198273', status: 'COMPLETED', createdAt: new Date(Date.now() - 10800000).toISOString() },
   { id: 'TXN-98418', userEmail: 'rohan.v@outlook.com', userName: 'Rohan Verma', type: 'BET_WIN', amount: 34000, method: 'Sportsbook', utr: 'BET-88210', status: 'COMPLETED', createdAt: new Date(Date.now() - 14400000).toISOString() },
@@ -16,7 +16,7 @@ export function loadTransactions(email) {
   try {
     const all = JSON.parse(localStorage.getItem(TX_KEY) || '{}');
     if (!all[email] || all[email].length === 0) {
-      if (email === 'demo@betking.com') {
+      if (email === 'demo@oddsyra.com') {
         all[email] = INITIAL_MOCK_TRANSACTIONS.filter((t) => t.userEmail === email);
         localStorage.setItem(TX_KEY, JSON.stringify(all));
         return all[email];
@@ -46,7 +46,7 @@ export function appendTransaction(email, entry) {
   return next;
 }
 
-const OVERRIDES_KEY = 'betking_tx_overrides';
+const OVERRIDES_KEY = 'oddsyra_tx_overrides';
 
 export function updateTransactionStatus(txId, newStatus, utrCode = null) {
   try {

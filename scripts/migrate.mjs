@@ -8,7 +8,7 @@ dotenv.config();
 const MIGRATIONS_DIR = path.join(process.cwd(), 'migrations');
 
 async function runMigrations() {
-  console.log('🚀 INITIALIZING BETKING POSTGRESQL MIGRATION RUNNER...');
+  console.log('🚀 INITIALIZING ODDSYRA POSTGRESQL MIGRATION RUNNER...');
 
   const client = await pool.connect();
   try {

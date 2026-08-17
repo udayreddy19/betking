@@ -1,5 +1,5 @@
 /**
- * Admin Routes Index — BetKing Admin Operations
+ * Admin Routes Index — OddsYra Admin Operations
  * 
  * Central router that mounts all modular admin route files.
  * Applied middleware: correlationId → adminAuth → auditLogger

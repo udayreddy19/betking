@@ -49,6 +49,18 @@
   font-size: var(--text-xs);
   color: rgba(255,255,255,0.4);
 }
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.footer-logo {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #07111f;
+}
 .footer-payments {
   display: flex;
   align-items: center;

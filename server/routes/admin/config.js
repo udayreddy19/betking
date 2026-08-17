@@ -15,7 +15,7 @@ async function ensureTable() {
     version_id VARCHAR(64) PRIMARY KEY, config_key VARCHAR(255) NOT NULL, config_value JSONB NOT NULL,
     version INT NOT NULL DEFAULT 1, is_active BOOLEAN DEFAULT FALSE, category VARCHAR(64) DEFAULT 'GENERAL',
     changed_by VARCHAR(64) NOT NULL, approved_by VARCHAR(64), change_reason TEXT,
-    tenant_id VARCHAR(64) DEFAULT 'betking_in', created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    tenant_id VARCHAR(64) DEFAULT 'oddsyra_in', created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
   )`);
 }
 

@@ -12,14 +12,14 @@ if (!fs.existsSync(BACKUP_DIR)) {
 }
 
 const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-const backupFile = path.join(BACKUP_DIR, `betking_local_backup_${timestamp}.sql`);
+const backupFile = path.join(BACKUP_DIR, `oddsyra_local_backup_${timestamp}.sql`);
 
 console.log(`📦 CREATING POSTGRESQL PRODUCTION BACKUP AT: ${backupFile}`);
 
 const t0 = Date.now();
 try {
-  const dbName = process.env.POSTGRES_DB || 'betking';
-  const dbUser = process.env.POSTGRES_USER || 'betking_app';
+  const dbName = process.env.POSTGRES_DB || 'oddsyra';
+  const dbUser = process.env.POSTGRES_USER || 'oddsyra_app';
   const dbHost = process.env.POSTGRES_HOST || '127.0.0.1';
   const dbPort = process.env.POSTGRES_PORT || '5432';
 
@@ -27,12 +27,12 @@ try {
 
   // Attempt 1: Native pg_dump on host
   try {
-    const cmd = `PGPASSWORD="${process.env.POSTGRES_PASSWORD || 'betking_dev_pass'}" pg_dump -h ${dbHost} -p ${dbPort} -U ${dbUser} -d ${dbName} > "${backupFile}"`;
+    const cmd = `PGPASSWORD="${process.env.POSTGRES_PASSWORD || 'oddsyra_dev_pass'}" pg_dump -h ${dbHost} -p ${dbPort} -U ${dbUser} -d ${dbName} > "${backupFile}"`;
     execSync(cmd, { stdio: 'pipe' });
     success = true;
   } catch (err) {
     // Attempt 2: Docker container exec fallback
-    const cmd = `docker exec betking_postgres pg_dump -U ${dbUser} -d ${dbName} > "${backupFile}"`;
+    const cmd = `docker exec oddsyra_postgres pg_dump -U ${dbUser} -d ${dbName} > "${backupFile}"`;
     execSync(cmd, { stdio: 'pipe' });
     success = true;
   }

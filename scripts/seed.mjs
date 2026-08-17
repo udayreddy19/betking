@@ -13,7 +13,7 @@ async function seedDevelopmentData() {
     // 1. Seed Users & Profiles
     await client.query(`
       INSERT INTO users (user_id, email, phone, tenant_id)
-      VALUES ('user_demo_101', 'demo@betking.com', '+919876543210', 'betking_in')
+      VALUES ('user_demo_101', 'demo@oddsyra.com', '+919876543210', 'oddsyra_in')
       ON CONFLICT (email) DO NOTHING;
     `);
 
@@ -80,7 +80,7 @@ async function seedDevelopmentData() {
     // 6. Seed Support Conversations & Messages
     await client.query(`
       INSERT INTO support_conversations (conversation_id, user_id, tenant_id, assigned_agent, assigned_team, category, priority, status)
-      VALUES ('conv_demo_9912', 'user_demo_101', 'betking_in', 'Priya Sharma', 'PAYMENTS', 'WITHDRAWAL', 'HIGH', 'OPEN')
+      VALUES ('conv_demo_9912', 'user_demo_101', 'oddsyra_in', 'Priya Sharma', 'PAYMENTS', 'WITHDRAWAL', 'HIGH', 'OPEN')
       ON CONFLICT (conversation_id) DO NOTHING;
 
       INSERT INTO support_messages (message_id, conversation_id, sender, agent_name, text)

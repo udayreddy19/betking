@@ -72,7 +72,7 @@ export default function DepositModal() {
         key: activeKey,
         amount: depositAmt * 100,
         currency: 'INR',
-        name: 'BetKing Gaming',
+        name: 'OddsYra Gaming',
         description: 'Account Deposit',
         order_id: orderData.orderId,
         handler: function () {
@@ -172,7 +172,7 @@ export default function DepositModal() {
                   <p>
                     {isProcessing
                       ? 'Your wallet will update automatically once the payment is confirmed.'
-                      : 'Your deposit has been credited to your BetKing wallet.'}
+                      : 'Your deposit has been credited to your OddsYra wallet.'}
                   </p>
                   <button type="button" className="deposit-pay-btn" onClick={handleClose}>
                     <FiCheck /> Done

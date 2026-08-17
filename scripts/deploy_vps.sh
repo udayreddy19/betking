@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # =============================================================================
-# BETKING SPORTSBOOK — HOSTINGER VPS DEPLOYMENT & ROLLBACK SCRIPT
+# ODDSYRA SPORTSBOOK — HOSTINGER VPS DEPLOYMENT & ROLLBACK SCRIPT
 # Zero-Downtime Deployment Pipeline with Automated Health Checks
 # =============================================================================
 
 set -e
 
-echo "🚀 STARTING BETKING PRODUCTION VPS DEPLOYMENT PIPELINE..."
+echo "🚀 STARTING ODDSYRA PRODUCTION VPS DEPLOYMENT PIPELINE..."
 
 # 1. Verify Configuration & Environment File
 if [ ! -f .env ]; then
@@ -44,7 +44,7 @@ done
 
 if [ "$HEALTH_OK" = true ]; then
   echo "====================================================================="
-  echo "🎉 DEPLOYMENT SUCCESSFUL! BetKing production containers are healthy."
+  echo "🎉 DEPLOYMENT SUCCESSFUL! OddsYra production containers are healthy."
   echo "====================================================================="
   exit 0
 else

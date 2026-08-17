@@ -119,7 +119,7 @@ export default function Profile() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `betking_statement_${user.email}_${Date.now()}.csv`);
+    link.setAttribute('download', `oddsyra_statement_${user.email}_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

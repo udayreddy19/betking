@@ -15,9 +15,9 @@ CREATE TABLE IF NOT EXISTS tenants (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Seed Default BetKing Tenant
+-- Seed Default OddsYra Tenant
 INSERT INTO tenants (id, name, display_name, slug, domain, status, currency, branding)
-VALUES ('tenant_default', 'BetKing Core', 'BetKing Sportsbook', 'betking', 'localhost', 'ACTIVE', 'INR', '{"primaryColor": "#10b981", "logo": "/assets/logo.png"}')
+VALUES ('tenant_default', 'OddsYra Core', 'OddsYra Sportsbook', 'oddsyra', 'localhost', 'ACTIVE', 'INR', '{"primaryColor": "#10b981", "logo": "/assets/logo.png"}')
 ON CONFLICT (id) DO NOTHING;
 
 -- 2. TENANT SPORTS & ODDS CONFIGURATION TABLE

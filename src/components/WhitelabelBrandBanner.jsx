@@ -5,9 +5,9 @@ import React from 'react';
  * Renders tenant identity badge (MAIN_SPORTSBOOK or White-Label Tenant Name) in Admin Control Center.
  */
 export default function WhitelabelBrandBanner({ tenant = {} }) {
-  const brandName = tenant.displayName || tenant.name || 'BetKing Sportsbook';
-  const slug = tenant.slug || 'betking';
-  const isDefault = tenant.id === 'tenant_default' || slug === 'betking';
+  const brandName = tenant.displayName || tenant.name || 'OddsYra Sportsbook';
+  const slug = tenant.slug || 'oddsyra';
+  const isDefault = tenant.id === 'tenant_default' || slug === 'oddsyra';
   const badgeText = isDefault ? 'MAIN_SPORTSBOOK' : `WHITELABEL (${slug.toUpperCase()})`;
 
   return (

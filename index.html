@@ -10,20 +10,20 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="BetKing" />
-    <meta name="application-name" content="BetKing" />
+    <meta name="apple-mobile-web-app-title" content="OddsYra" />
+    <meta name="application-name" content="OddsYra" />
     <meta name="msapplication-TileColor" content="#0b0e12" />
     <meta name="format-detection" content="telephone=no" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/oddsyra-logo.png" />
+    <link rel="apple-touch-icon" href="/oddsyra-logo.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <title>BetKing — Live Sportsbook</title>
+    <title>OddsYra — Live Sportsbook</title>
     <script>
       (function () {
         var theme = 'light';
         try {
-          var stored = localStorage.getItem('betking-theme');
+          var stored = localStorage.getItem('oddsyra-theme');
           if (stored === 'dark' || stored === 'light') theme = stored;
           else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) theme = 'dark';
         } catch (e) {
@@ -43,6 +43,6 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
-    <noscript>BetKing needs JavaScript enabled in your browser.</noscript>
+    <noscript>OddsYra needs JavaScript enabled in your browser.</noscript>
   </body>
 </html>

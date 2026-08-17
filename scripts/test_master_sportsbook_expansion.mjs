@@ -1,6 +1,6 @@
 /**
- * BETKING ADVANCED SPORTSBOOK PLATFORM EXPANSION — MASTER ACCEPTANCE SUITE
- * Validates all 36 phases of the BetKing Sportsbook Platform Expansion specification.
+ * ODDSYRA ADVANCED SPORTSBOOK PLATFORM EXPANSION — MASTER ACCEPTANCE SUITE
+ * Validates all 36 phases of the OddsYra Sportsbook Platform Expansion specification.
  */
 
 import { userSecurityCenter } from '../lib/userSecurityCenter.mjs';
@@ -18,7 +18,7 @@ import { createDeveloperApp } from '../lib/developerPlatformEngine.mjs';
 import { resolveTenantContext } from '../lib/tenantEngine.mjs';
 
 async function runMasterSportsbookExpansionSuite() {
-  console.log('🚀 EXECUTING BETKING ADVANCED SPORTSBOOK MASTER ACCEPTANCE SUITE...\n');
+  console.log('🚀 EXECUTING ODDSYRA ADVANCED SPORTSBOOK MASTER ACCEPTANCE SUITE...\n');
   let passCount = 0;
   const totalTests = 12;
 
@@ -27,7 +27,7 @@ async function runMasterSportsbookExpansionSuite() {
     // TEST 1: Phase 1 & 2 — User Account & Security Center (Device & Session Revocation)
     // -------------------------------------------------------------------------
     console.log('   ⏳ Test 1/12: Testing Phase 2 User Security, Device Management & Session Revocation...');
-    const testUserId = `master_user_${Date.now()}@betking.com`;
+    const testUserId = `master_user_${Date.now()}@oddsyra.com`;
     const dev1 = await userSecurityCenter.registerDevice(testUserId, { deviceHash: 'macbook_dev_01', platform: 'Web' });
     const dev2 = await userSecurityCenter.registerDevice(testUserId, { deviceHash: 'iphone_dev_02', platform: 'Mobile' });
     const logoutRes = await userSecurityCenter.logoutAllOtherDevices(testUserId, dev2.deviceId);
@@ -182,7 +182,7 @@ async function runMasterSportsbookExpansionSuite() {
     passCount++;
 
     console.log('\n=====================================================================');
-    console.log(`🎯 BETKING ADVANCED SPORTSBOOK MASTER ACCEPTANCE RESULT: ${passCount}/${totalTests} TESTS PASSED`);
+    console.log(`🎯 ODDSYRA ADVANCED SPORTSBOOK MASTER ACCEPTANCE RESULT: ${passCount}/${totalTests} TESTS PASSED`);
     console.log('=====================================================================\n');
 
   } catch (err) {

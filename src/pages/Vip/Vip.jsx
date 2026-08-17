@@ -99,7 +99,7 @@ export default function Vip() {
     {
       name: 'Vikram S. (Mumbai)',
       role: 'VIP Diamond Member',
-      quote: 'The instant priority withdrawals and having a dedicated WhatsApp VIP manager make BetKing unbeatable. Requests get handled in under 2 minutes!',
+      quote: 'The instant priority withdrawals and having a dedicated WhatsApp VIP manager make OddsYra unbeatable. Requests get handled in under 2 minutes!',
       stars: 5,
     },
     {
@@ -159,7 +159,7 @@ export default function Vip() {
             <div className="vip-hero__tag">
               <FiCrown /> EXCLUSIVE CLUB EXPERIENCE
             </div>
-            <h1>VIP Benefits at BetKing</h1>
+            <h1>VIP Benefits at OddsYra</h1>
             <p className="vip-hero__subtitle">
               Unrivaled VIP experience · Excellent service and exclusive personalized benefits created for you
             </p>
@@ -218,7 +218,7 @@ export default function Vip() {
           <div className="vip-spotlight__badge">EXCLUSIVE OFFERS EVERY DAY</div>
           <h2>Daily Cashback, Gifting & Birthday Bonuses</h2>
           <p>
-            As a BetKing VIP member, every day brings customized promotions tailored specifically to your gameplay. From zero-wagering daily cashbacks to luxury surprise gifts, experience top-tier gaming.
+            As a OddsYra VIP member, every day brings customized promotions tailored specifically to your gameplay. From zero-wagering daily cashbacks to luxury surprise gifts, experience top-tier gaming.
           </p>
         </motion.div>
 
@@ -317,7 +317,7 @@ export default function Vip() {
           <div className="vip-section__header">
             <span className="vip-section__badge">MEMBER TESTIMONIALS</span>
             <h2>Hear Why Our VIP Players Love It</h2>
-            <p>Real feedback from active BetKing VIP Club members</p>
+            <p>Real feedback from active OddsYra VIP Club members</p>
           </div>
 
           <div className="vip-testimonials-grid">
@@ -342,7 +342,7 @@ export default function Vip() {
         <div className="vip-loyalty-banner">
           <div className="vip-loyalty-banner__inner">
             <div>
-              <h2>👑 BetKing Loyalty Club</h2>
+              <h2>👑 OddsYra Loyalty Club</h2>
               <p>Play more, earn more: unlock bigger rewards, freebets, and cash prizes!</p>
             </div>
             <Link to="/marketplace" className="vip-btn-gold">

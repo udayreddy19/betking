@@ -1,5 +1,5 @@
 /**
- * BETKING SUPPORT TICKETING & REAL-TIME CHAT SYSTEM ACCEPTANCE SUITE
+ * ODDSYRA SUPPORT TICKETING & REAL-TIME CHAT SYSTEM ACCEPTANCE SUITE
  * Validates all 40 requirements: Ticket Creation, TK-100001+ Numbers, Duplicate Prevention,
  * Resolution Engine, Strict Closure Rule, SLA Management, Unresolved Queue, & Audit History.
  */
@@ -7,7 +7,7 @@
 import { supportEngine, APPROVED_RESOLUTION_CODES, TERMINAL_NOT_REQUIRED_CODES } from '../lib/supportEngine.mjs';
 
 async function runSupportTicketingAcceptanceSuite() {
-  console.log('🚀 EXECUTING BETKING SUPPORT TICKETING SYSTEM ACCEPTANCE SUITE...\n');
+  console.log('🚀 EXECUTING ODDSYRA SUPPORT TICKETING SYSTEM ACCEPTANCE SUITE...\n');
   let passCount = 0;
   const totalTests = 10;
 
@@ -37,7 +37,7 @@ async function runSupportTicketingAcceptanceSuite() {
     // TEST 2: Ticket Creation & TK-100001+ Ticket Number Generation
     // -------------------------------------------------------------------------
     console.log('   ⏳ Test 2/10: Testing Ticket Creation & Human-Readable Ticket Number Generation...');
-    const testUserId = `user_${Date.now()}@betking.com`;
+    const testUserId = `user_${Date.now()}@oddsyra.com`;
     const ticket1 = await supportEngine.startConversation({
       userId: testUserId,
       subject: 'Delayed Withdrawal of ₹2,500',
@@ -132,7 +132,7 @@ async function runSupportTicketingAcceptanceSuite() {
     console.log('   ⏳ Test 7/10: Testing Server-Side Strict Resolution Required Before Closing Enforcement...');
     // Create an unresolved ticket
     const ticket2 = await supportEngine.startConversation({
-      userId: `user2_${Date.now()}@betking.com`,
+      userId: `user2_${Date.now()}@oddsyra.com`,
       subject: 'Unresolved Bonus Query',
       category: 'Bonus / Promotion',
       initialMessage: 'Why was bonus not credited?',

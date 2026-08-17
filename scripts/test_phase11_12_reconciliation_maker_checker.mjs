@@ -11,7 +11,7 @@ async function runPhase1112AcceptanceTest() {
   let passCount = 0;
 
   try {
-    const testUserId = `mc_user_${Date.now()}@betking.com`;
+    const testUserId = `mc_user_${Date.now()}@oddsyra.com`;
 
     // 1. Run Multi-Domain Financial Reconciliation Audit
     console.log('   ⏳ Test 1/4: Running Multi-Domain Financial Reconciliation Audit...');

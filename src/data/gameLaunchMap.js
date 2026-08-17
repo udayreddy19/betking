@@ -1,4 +1,4 @@
-const LOBBY_URL = 'https://betking-two.vercel.app/casino';
+const LOBBY_URL = 'https://oddsyra-two.vercel.app/casino';
 
 /** @typedef {'spribe' | 'pragmatic' | 'tvbet' | 'spribe-turbo'} LaunchProvider */
 

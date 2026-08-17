@@ -10,7 +10,7 @@ async function runPhase2AcceptanceTest() {
   let passCount = 0;
 
   try {
-    const testUserId = `sec_user_${Date.now()}@betking.com`;
+    const testUserId = `sec_user_${Date.now()}@oddsyra.com`;
 
     // 1. Device Registration & Fingerprint
     console.log('   ⏳ Test 1/5: Registering User Devices & Fingerprint...');

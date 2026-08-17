@@ -1,5 +1,5 @@
 /**
- * Audit Logger Middleware — BetKing Admin Operations
+ * Audit Logger Middleware — OddsYra Admin Operations
  * 
  * Automatically logs all admin API calls to the audit_events table.
  * Captures actor, action, target, request details, and response status.

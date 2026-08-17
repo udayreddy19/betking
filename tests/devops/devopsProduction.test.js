@@ -49,8 +49,8 @@ describe('Phase 15 DevOps, Health Probes & Operations Tests', () => {
       NODE_ENV: 'production',
       DATABASE_URL: 'postgresql://usr:pass@localhost:5432/db',
       JWT_SECRET: 'secret',
-      FRONTEND_URL: 'https://betking.com',
-      CORS_ORIGIN: 'https://betking.com',
+      FRONTEND_URL: 'https://oddsyra.com',
+      CORS_ORIGIN: 'https://oddsyra.com',
       RAZORPAY_KEY_ID: 'rzp_live_test',
       RAZORPAY_KEY_SECRET: 'secret',
       RAZORPAY_WEBHOOK_SECRET: 'wh_secret',
@@ -65,7 +65,7 @@ describe('Phase 15 DevOps, Health Probes & Operations Tests', () => {
     const inc = await createProductionIncident({
       title: 'Database connection latency spike',
       severity: 'SEV-2',
-      service: 'betking_api',
+      service: 'oddsyra_api',
       rootCause: 'Transient network jitter',
     });
 

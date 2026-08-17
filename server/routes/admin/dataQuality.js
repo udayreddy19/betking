@@ -14,7 +14,7 @@ async function ensureTable() {
     issue_id VARCHAR(64) PRIMARY KEY, issue_type VARCHAR(64) NOT NULL, severity VARCHAR(16) DEFAULT 'MEDIUM',
     entity_type VARCHAR(64) NOT NULL, entity_id VARCHAR(128), description TEXT NOT NULL,
     details JSONB DEFAULT '{}'::jsonb, owner_id VARCHAR(64), status VARCHAR(32) DEFAULT 'OPEN',
-    resolution TEXT, tenant_id VARCHAR(64) DEFAULT 'betking_in',
+    resolution TEXT, tenant_id VARCHAR(64) DEFAULT 'oddsyra_in',
     detected_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP, resolved_at TIMESTAMP WITH TIME ZONE
   )`);
 }

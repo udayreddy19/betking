@@ -124,8 +124,7 @@ export default function LoginModal() {
         </button>
 
         <div className="modal-logo">
-          <span className="logo-icon">B</span>
-          <span>BetKing</span>
+          <img src="/oddsyra-logo.png" alt="OddsYra" />
         </div>
 
         <h2 className="modal-title">{getTitle()}</h2>

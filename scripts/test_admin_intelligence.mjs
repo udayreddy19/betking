@@ -11,7 +11,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-console.log('🚀 EXECUTING BETKING ADVANCED ADMIN CONTROL CENTER ACCEPTANCE TEST SUITE...\n');
+console.log('🚀 EXECUTING ODDSYRA ADVANCED ADMIN CONTROL CENTER ACCEPTANCE TEST SUITE...\n');
 
 async function runAdminIntelligenceSuite() {
   let passed = 0;

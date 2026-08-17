@@ -118,7 +118,7 @@ export default function IPLSRLConsoleView() {
   return (
     <div>
       <div style={{ marginBottom: 18 }}>
-        <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800 }}>BetKing SRL Console</h2>
+        <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800 }}>OddsYra SRL Console</h2>
         <p style={{ margin: '6px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.85rem', maxWidth: 720 }}>
           Matches stay upcoming for users until you press Start. You can script or declare the winning team at any time — including while the match is live.
         </p>

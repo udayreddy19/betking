@@ -53,11 +53,11 @@ export default function Help() {
       </section>
       <section>
         <h2>Contact</h2>
-        <p>For account or payment issues, open live chat or email support@betking.com.</p>
+        <p>For account or payment issues, open live chat or email support@oddsyra.com.</p>
         <button
           type="button"
           className="legal-chat-btn"
-          onClick={() => window.dispatchEvent(new CustomEvent('betking:open-support-chat'))}
+          onClick={() => window.dispatchEvent(new CustomEvent('oddsyra:open-support-chat'))}
         >
           Open live chat
         </button>

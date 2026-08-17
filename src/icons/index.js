@@ -1,5 +1,5 @@
 /**
- * Hybrid icon system for BetKing:
+ * Hybrid icon system for OddsYra:
  *
  * @animateicons/react (./animate/) — primary UI icons: navigation, forms, modals,
  *   header, sidebar, toasts, bet slip, chevrons, search, menu, user, wallet, settings, etc.

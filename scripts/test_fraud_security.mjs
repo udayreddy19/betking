@@ -7,7 +7,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-console.log('🚀 EXECUTING BETKING ADVANCED FRAUD, SECURITY & COMPLIANCE ACCEPTANCE TEST SUITE...\n');
+console.log('🚀 EXECUTING ODDSYRA ADVANCED FRAUD, SECURITY & COMPLIANCE ACCEPTANCE TEST SUITE...\n');
 
 async function runFraudSecuritySuite() {
   let passed = 0;
@@ -18,7 +18,7 @@ async function runFraudSecuritySuite() {
   const sharedDevHash = `device_shared_hash_999`;
 
   // Seed test users
-  await query(`INSERT INTO users (user_id, email) VALUES ($1, $2), ($3, $4);`, [testUser1, `${testUser1}@betking.com`, testUser2, `${testUser2}@betking.com`]);
+  await query(`INSERT INTO users (user_id, email) VALUES ($1, $2), ($3, $4);`, [testUser1, `${testUser1}@oddsyra.com`, testUser2, `${testUser2}@oddsyra.com`]);
   await query(`INSERT INTO user_profiles (user_id, display_name, kyc_status, account_status) VALUES ($1, 'Fraud User 1', 'VERIFIED', 'ACTIVE'), ($2, 'Fraud User 2', 'VERIFIED', 'ACTIVE');`, [testUser1, testUser2]);
   await query(`INSERT INTO wallets (wallet_id, user_id, balance) VALUES ($1, $2, 0.00), ($3, $4, 0.00);`, [`w_${testUser1}`, testUser1, `w_${testUser2}`, testUser2]);
 
@@ -52,7 +52,7 @@ async function runFraudSecuritySuite() {
     console.log('   ⏳ Test 3/10: Testing IP Cluster Detection across multiple accounts...');
     const sharedIp = '103.45.12.99';
     const testUser3 = `user_frd3_${Date.now()}`;
-    await query(`INSERT INTO users (user_id, email) VALUES ($1, $2);`, [testUser3, `${testUser3}@betking.com`]);
+    await query(`INSERT INTO users (user_id, email) VALUES ($1, $2);`, [testUser3, `${testUser3}@oddsyra.com`]);
     await query(`INSERT INTO user_profiles (user_id, display_name, kyc_status, account_status) VALUES ($1, 'Fraud User 3', 'VERIFIED', 'ACTIVE');`, [testUser3]);
     await query(`INSERT INTO wallets (wallet_id, user_id, balance) VALUES ($1, $2, 0.00);`, [`w_${testUser3}`, testUser3]);
 
@@ -178,9 +178,9 @@ async function runFraudSecuritySuite() {
     console.log('   ⏳ Test 9/10: Testing Privacy & Sensitive Data PII Masking...');
     const maskedE = maskEmail('john.doe@example.com');
     const maskedP = maskPhone('+919876543210');
-    const maskedProfile = maskUserProfile({ email: 'user@betking.com', phone: '9876543210', kycStatus: 'VERIFIED' }, 'OPERATOR');
+    const maskedProfile = maskUserProfile({ email: 'user@oddsyra.com', phone: '9876543210', kycStatus: 'VERIFIED' }, 'OPERATOR');
 
-    if (maskedE === 'j***e@example.com' && maskedP === '******3210' && maskedProfile.email === 'u***r@betking.com') {
+    if (maskedE === 'j***e@example.com' && maskedP === '******3210' && maskedProfile.email === 'u***r@oddsyra.com') {
       console.log(`✅ TEST 9/10 PASSED: Privacy PII Masking verified! ('${maskedE}', '${maskedP}').`);
       passed++;
     } else {

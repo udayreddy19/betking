@@ -43,12 +43,12 @@ function Header() {
   const [isSpinOpen, setIsSpinOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
-  const [oddsFormat, setOddsFormat] = useState(() => storageGet('betking_odds_format') || 'decimal');
+  const [oddsFormat, setOddsFormat] = useState(() => storageGet('oddsyra_odds_format') || 'decimal');
 
   const handleOddsFormatChange = (e) => {
     const fmt = e.target.value;
     setOddsFormat(fmt);
-    storageSet('betking_odds_format', fmt);
+    storageSet('oddsyra_odds_format', fmt);
     window.dispatchEvent(new CustomEvent('oddsformatchange', { detail: fmt }));
   };
 
@@ -60,7 +60,7 @@ function Header() {
   const isAdminPage = location.pathname.startsWith('/admin');
   if (isAdminPage) return null;
 
-  const isAdminUser = user?.role === 'admin' || user?.email === 'admin@betking.com';
+  const isAdminUser = user?.role === 'admin' || user?.email === 'admin@oddsyra.com';
   // ONLY show Admin Clean Header when actively on the /admin route
   const showAdminCleanHeader = isAdminPage;
 
@@ -129,8 +129,8 @@ function Header() {
           </button>
 
           <NavLink to="/" className="header-logo" id="header-logo">
-            <span className="logo-mark" aria-hidden="true">K</span>
-            <span className="logo-text">BETKING</span>
+            <img src="/oddsyra-logo.png" alt="OddsYra" className="logo-img" />
+            <span className="logo-text">ODDSYRA</span>
           </NavLink>
 
           <nav className="header-nav" id="main-nav">

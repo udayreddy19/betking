@@ -10,7 +10,7 @@ async function runPhase3AcceptanceTest() {
   let passCount = 0;
 
   try {
-    const testUserId = `rg_user_${Date.now()}@betking.com`;
+    const testUserId = `rg_user_${Date.now()}@oddsyra.com`;
 
     // 1. Configure Responsible Gaming Limits (Daily Limit = ₹5,000, Stake Limit = ₹10,000)
     console.log('   ⏳ Test 1/5: Setting Responsible Gaming Limits (Daily Deposit: ₹5,000, Stake: ₹10,000)...');

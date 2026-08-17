@@ -45,7 +45,7 @@ export default function DatabaseInspector() {
         { column_name: 'created_at', data_type: 'timestamp with time zone' },
       ],
       rows: [
-        { user_id: 'user_demo_101', email: 'demo@betking.com', phone: '+919876543210', tenant_id: 'betking_in', created_at: '2026-08-10T03:54:50.000Z' },
+        { user_id: 'user_demo_101', email: 'demo@oddsyra.com', phone: '+919876543210', tenant_id: 'oddsyra_in', created_at: '2026-08-10T03:54:50.000Z' },
       ],
     },
     user_profiles: {

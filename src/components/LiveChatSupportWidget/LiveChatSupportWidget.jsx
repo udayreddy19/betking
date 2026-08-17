@@ -21,7 +21,7 @@ export default function LiveChatSupportWidget() {
     {
       id: 'welcome_1',
       sender: 'agent',
-      text: `Hello ${user?.displayName || 'Sports Bettor'}! 👋 Welcome to BetKing 24/7 VIP Live Support. How can we help you today?`,
+      text: `Hello ${user?.displayName || 'Sports Bettor'}! 👋 Welcome to OddsYra 24/7 VIP Live Support. How can we help you today?`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -41,15 +41,15 @@ export default function LiveChatSupportWidget() {
     status: 'ONLINE',
   };
 
-  const userEmail = user?.email || 'demo@betking.com';
+  const userEmail = user?.email || 'demo@oddsyra.com';
 
   useEffect(() => {
     const openChat = () => {
       setIsOpen(true);
       setIsMinimized(false);
     };
-    window.addEventListener('betking:open-support-chat', openChat);
-    return () => window.removeEventListener('betking:open-support-chat', openChat);
+    window.addEventListener('oddsyra:open-support-chat', openChat);
+    return () => window.removeEventListener('oddsyra:open-support-chat', openChat);
   }, []);
 
   useEffect(() => {
@@ -62,7 +62,7 @@ export default function LiveChatSupportWidget() {
     const query = textToSend || inputText;
     if (!query.trim()) return;
 
-    const userEmail = user?.email || 'guest@betking.com';
+    const userEmail = user?.email || 'guest@oddsyra.com';
     if (!textToSend) setInputText('');
 
     const userMsg = {
@@ -77,7 +77,7 @@ export default function LiveChatSupportWidget() {
 
     // Generate AI Assistant response
     const responseObj = handleUserSupportQuery(query, userEmail);
-    setTypingText(responseObj.typingText || 'BetKing Assistant is processing...');
+    setTypingText(responseObj.typingText || 'OddsYra Assistant is processing...');
 
     setTimeout(() => {
       const agentMsg = {

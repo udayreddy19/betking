@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-console.log('🚀 EXECUTING BETKING UNIFIED NOTIFICATION & COMMUNICATION ACCEPTANCE TEST SUITE...\n');
+console.log('🚀 EXECUTING ODDSYRA UNIFIED NOTIFICATION & COMMUNICATION ACCEPTANCE TEST SUITE...\n');
 
 async function runNotificationSuite() {
   let passed = 0;
@@ -13,7 +13,7 @@ async function runNotificationSuite() {
   const testUser1 = `user_ntf1_${Date.now()}`;
 
   // Seed test user
-  await query(`INSERT INTO users (user_id, email) VALUES ($1, $2);`, [testUser1, `${testUser1}@betking.com`]);
+  await query(`INSERT INTO users (user_id, email) VALUES ($1, $2);`, [testUser1, `${testUser1}@oddsyra.com`]);
   await query(`INSERT INTO user_profiles (user_id, display_name, kyc_status, account_status) VALUES ($1, 'Notif User 1', 'VERIFIED', 'ACTIVE');`, [testUser1]);
 
   // 1. NOTIFICATION & COMMUNICATION AUDIT CHECK

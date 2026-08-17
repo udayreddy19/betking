@@ -1,5 +1,5 @@
 /**
- * Reusable Rate Limiter Middleware — BetKing Sportsbook Platform
+ * Reusable Rate Limiter Middleware — OddsYra Sportsbook Platform
  * 
  * Supports configurable window sizes, request thresholds per IP/key,
  * Redis caching integration with safe in-memory fallback.

@@ -44,15 +44,14 @@ export default function VerifyEmailPage() {
     <div className="auth-page-container">
       <div className="auth-card">
         <div className="auth-logo">
-          <span className="logo-icon">👑</span>
-          <span className="brand-name">BetKing</span>
+          <img src="/oddsyra-logo.png" alt="OddsYra" />
         </div>
 
         {status === 'verifying' && (
           <div className="auth-state-box">
             <div className="spinner"></div>
             <h2>Verifying your email...</h2>
-            <p>Please wait while we verify your BetKing account.</p>
+            <p>Please wait while we verify your OddsYra account.</p>
           </div>
         )}
 
@@ -60,7 +59,7 @@ export default function VerifyEmailPage() {
           <div className="auth-state-box">
             <div className="auth-success-icon">✅</div>
             <h2>Email Verified Successfully!</h2>
-            <p>Your BetKing account is now fully activated with verified security status.</p>
+            <p>Your OddsYra account is now fully activated with verified security status.</p>
             <div className="auth-actions">
               <button
                 type="button"

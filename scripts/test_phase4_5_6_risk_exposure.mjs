@@ -11,7 +11,7 @@ async function runPhase456AcceptanceTest() {
   let passCount = 0;
 
   try {
-    const testUserId = `risk_user_${Date.now()}@betking.com`;
+    const testUserId = `risk_user_${Date.now()}@oddsyra.com`;
 
     // 1. Domain Risk Evaluation across 7 Domains
     console.log('   ⏳ Test 1/5: Evaluating Risk across 7 Operational Domains (LOGIN, DEPOSIT, WITHDRAWAL, BONUS)...');

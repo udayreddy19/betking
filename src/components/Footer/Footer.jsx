@@ -42,7 +42,10 @@ export default function Footer() {
         <hr className="footer-divider" />
 
         <div className="footer-bottom">
-          <p>© 2026 BetKing. All rights reserved.</p>
+          <p className="footer-brand">
+            <img src="/oddsyra-logo.png" alt="" className="footer-logo" />
+            © 2026 OddsYra. All rights reserved.
+          </p>
           <div className="footer-payments" aria-label="Accepted payment methods">
             <span className="footer-payment-badge" title="UPI Instant Payment"><UpiLogo height={34} width={112} /></span>
             <span className="footer-payment-badge" title="Google Pay"><GPayLogo height={34} width={112} /></span>
@@ -54,7 +57,7 @@ export default function Footer() {
         <div className="footer-responsible">
           <div className="footer-age-badge">18+</div>
           <p>
-            BetKing promotes responsible gaming. Gambling can be addictive. Play responsibly.
+            OddsYra promotes responsible gaming. Gambling can be addictive. Play responsibly.
             Must be 18+ to register and play.
           </p>
         </div>

@@ -9,7 +9,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-console.log('🚀 EXECUTING BETKING MULTI-TENANT & WHITE-LABEL PLATFORM ACCEPTANCE TEST SUITE...\n');
+console.log('🚀 EXECUTING ODDSYRA MULTI-TENANT & WHITE-LABEL PLATFORM ACCEPTANCE TEST SUITE...\n');
 
 async function runMultiTenantSuite() {
   let passed = 0;

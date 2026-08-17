@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS entity_timeline_events (
   description TEXT,
   details JSONB DEFAULT '{}'::jsonb,
   correlation_id VARCHAR(128),
-  tenant_id VARCHAR(64) DEFAULT 'betking_in',
+  tenant_id VARCHAR(64) DEFAULT 'oddsyra_in',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS emergency_states (
   deactivated_at TIMESTAMP WITH TIME ZONE,
   requires_approval BOOLEAN DEFAULT FALSE,
   approval_workflow_id VARCHAR(64),
-  tenant_id VARCHAR(64) DEFAULT 'betking_in',
+  tenant_id VARCHAR(64) DEFAULT 'oddsyra_in',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS emergency_actions_log (
   actor_id VARCHAR(64) NOT NULL,
   details JSONB DEFAULT '{}'::jsonb,
   correlation_id VARCHAR(128),
-  tenant_id VARCHAR(64) DEFAULT 'betking_in',
+  tenant_id VARCHAR(64) DEFAULT 'oddsyra_in',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS admin_sessions (
   terminated_at TIMESTAMP WITH TIME ZONE,
   terminated_by VARCHAR(64),
   termination_reason TEXT,
-  tenant_id VARCHAR(64) DEFAULT 'betking_in'
+  tenant_id VARCHAR(64) DEFAULT 'oddsyra_in'
 );
 
 CREATE INDEX IF NOT EXISTS idx_admin_sessions_admin ON admin_sessions(admin_id, is_active);
@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS admin_login_history (
   success BOOLEAN NOT NULL DEFAULT TRUE,
   failure_reason TEXT,
   mfa_used BOOLEAN DEFAULT FALSE,
-  tenant_id VARCHAR(64) DEFAULT 'betking_in',
+  tenant_id VARCHAR(64) DEFAULT 'oddsyra_in',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -99,7 +99,7 @@ CREATE TABLE IF NOT EXISTS admin_privilege_changes (
   new_value TEXT,
   changed_by VARCHAR(64) NOT NULL,
   reason TEXT,
-  tenant_id VARCHAR(64) DEFAULT 'betking_in',
+  tenant_id VARCHAR(64) DEFAULT 'oddsyra_in',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

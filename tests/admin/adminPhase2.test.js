@@ -13,7 +13,7 @@ describe('Phase 2 Admin Control Center & RBAC Security Tests', () => {
   });
 
   it('CRITICAL: SUPPORT_AGENT must NOT perform SUPER_ADMIN emergency operation (403)', () => {
-    const token = generateAdminToken('agent_1', ADMIN_ROLES.SUPPORT_AGENT, 'betking_in');
+    const token = generateAdminToken('agent_1', ADMIN_ROLES.SUPPORT_AGENT, 'oddsyra_in');
     const req = { headers: { authorization: `Bearer ${token}` } };
     const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
     const next = vi.fn();
@@ -31,7 +31,7 @@ describe('Phase 2 Admin Control Center & RBAC Security Tests', () => {
   });
 
   it('SUPPORT_AGENT should be allowed to access support domain permission', () => {
-    const token = generateAdminToken('agent_2', ADMIN_ROLES.SUPPORT_AGENT, 'betking_in');
+    const token = generateAdminToken('agent_2', ADMIN_ROLES.SUPPORT_AGENT, 'oddsyra_in');
     const req = { headers: { authorization: `Bearer ${token}` } };
     const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
     const next = vi.fn();
@@ -47,7 +47,7 @@ describe('Phase 2 Admin Control Center & RBAC Security Tests', () => {
   });
 
   it('FINANCE_ADMIN should be allowed withdrawal domain permissions', () => {
-    const token = generateAdminToken('fin_1', ADMIN_ROLES.FINANCE_ADMIN, 'betking_in');
+    const token = generateAdminToken('fin_1', ADMIN_ROLES.FINANCE_ADMIN, 'oddsyra_in');
     const req = { headers: { authorization: `Bearer ${token}` } };
     const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
     const next = vi.fn();

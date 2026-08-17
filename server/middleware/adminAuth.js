@@ -1,5 +1,5 @@
 /**
- * Admin Authentication & RBAC Middleware — BetKing Admin Operations
+ * Admin Authentication & RBAC Middleware — OddsYra Admin Operations
  * 
  * Verifies JWT tokens, extracts admin role, enforces RBAC permissions,
  * and ensures tenant isolation for all admin API routes.
@@ -68,7 +68,7 @@ function verifyJWT(token) {
 /**
  * Generate a signed JWT for admin users
  */
-export function generateAdminToken(adminId, role, tenantId = 'betking_in') {
+export function generateAdminToken(adminId, role, tenantId = 'oddsyra_in') {
   const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
   const payload = Buffer.from(JSON.stringify({
     sub: adminId,
@@ -102,7 +102,7 @@ export function adminAuth(req, res, next) {
       req.admin = {
         id: decoded.sub,
         role: decoded.role || ADMIN_ROLES.SUPER_ADMIN,
-        tenant: decoded.tenant || 'betking_in',
+        tenant: decoded.tenant || 'oddsyra_in',
       };
       return next();
     }
@@ -115,7 +115,7 @@ export function adminAuth(req, res, next) {
       req.admin = {
         id: req.headers['x-admin-id'] || 'admin_test',
         role: headerRole,
-        tenant: req.headers['x-tenant-id'] || 'betking_in',
+        tenant: req.headers['x-tenant-id'] || 'oddsyra_in',
       };
       return next();
     }

@@ -11,7 +11,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-console.log('🚀 EXECUTING BETKING PRODUCTION OPERATIONS, OBSERVABILITY & DEVOPS ACCEPTANCE TEST SUITE...\n');
+console.log('🚀 EXECUTING ODDSYRA PRODUCTION OPERATIONS, OBSERVABILITY & DEVOPS ACCEPTANCE TEST SUITE...\n');
 
 async function runDevOpsSuite() {
   let passed = 0;

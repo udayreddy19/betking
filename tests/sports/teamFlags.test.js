@@ -12,7 +12,7 @@ describe('resolveTeamFlagCode', () => {
   });
 
   it('maps franchise and city clubs to their country', () => {
-    expect(resolveTeamFlagCode('Mumbai Indians BetKing SRL')).toBe('in');
+    expect(resolveTeamFlagCode('Mumbai Indians OddsYra SRL')).toBe('in');
     expect(resolveTeamFlagCode('SKG Erfelden Strikers')).toBe('de');
     expect(resolveTeamFlagCode('SV Wiesbaden')).toBe('de');
     expect(resolveTeamFlagCode('Hampshire')).toBe('gb-eng');
@@ -34,12 +34,12 @@ describe('national vs franchise marks', () => {
   it('uses flags for nations and kit jerseys for SRL clubs', () => {
     expect(isNationalTeam('India')).toBe(true);
     expect(isNationalTeam('Pakistan (V)')).toBe(true);
-    expect(isNationalTeam('Mumbai Indians BetKing SRL')).toBe(false);
-    expect(isNationalTeam('Chennai Super Kings BetKing SRL')).toBe(false);
+    expect(isNationalTeam('Mumbai Indians OddsYra SRL')).toBe(false);
+    expect(isNationalTeam('Chennai Super Kings OddsYra SRL')).toBe(false);
 
     const india = resolveTeamFlag('India');
-    const mi = resolveTeamFlag({ name: 'Mumbai Indians BetKing SRL', shortName: 'MI' });
-    const csk = resolveTeamFlag({ name: 'Chennai Super Kings BetKing SRL', shortName: 'CSK' });
+    const mi = resolveTeamFlag({ name: 'Mumbai Indians OddsYra SRL', shortName: 'MI' });
+    const csk = resolveTeamFlag({ name: 'Chennai Super Kings OddsYra SRL', shortName: 'CSK' });
     expect(india.kind).toBe('flag');
     expect(india.src).toContain('flagcdn.com/in.svg');
     expect(mi.kind).toBe('kit');

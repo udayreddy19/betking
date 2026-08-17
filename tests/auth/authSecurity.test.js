@@ -3,7 +3,7 @@ import { adminAuth, requirePermission, requireRole, generateAdminToken, ADMIN_RO
 
 describe('Phase 1 Auth & Security Tests', () => {
   it('should accept a valid JWT admin token', () => {
-    const token = generateAdminToken('admin_sec_1', ADMIN_ROLES.SUPER_ADMIN, 'betking_in');
+    const token = generateAdminToken('admin_sec_1', ADMIN_ROLES.SUPER_ADMIN, 'oddsyra_in');
     const req = { headers: { authorization: `Bearer ${token}` } };
     const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
     const next = vi.fn();

@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS support_conversations (
   conversation_id VARCHAR(64) PRIMARY KEY,
   conversation_number VARCHAR(32) UNIQUE NOT NULL,
   user_id VARCHAR(64) NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-  tenant_id VARCHAR(64) DEFAULT 'betking_in',
+  tenant_id VARCHAR(64) DEFAULT 'oddsyra_in',
   subject VARCHAR(255) NOT NULL DEFAULT 'Customer Support Inquiry',
   category VARCHAR(64) NOT NULL DEFAULT 'GENERAL',
   priority VARCHAR(32) NOT NULL DEFAULT 'NORMAL', -- LOW | NORMAL | HIGH | URGENT

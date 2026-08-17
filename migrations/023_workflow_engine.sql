@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS workflows (
   total_steps INT DEFAULT 1,
   timeout_hours INT DEFAULT 24,
   escalation_role VARCHAR(64),
-  tenant_id VARCHAR(64) DEFAULT 'betking_in',
+  tenant_id VARCHAR(64) DEFAULT 'oddsyra_in',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   completed_at TIMESTAMP WITH TIME ZONE,

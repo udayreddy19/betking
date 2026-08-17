@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-console.log('🚀 EXECUTING BETKING SPORTS DATA INTELLIGENCE & PROVIDER RELIABILITY ACCEPTANCE TEST SUITE...\n');
+console.log('🚀 EXECUTING ODDSYRA SPORTS DATA INTELLIGENCE & PROVIDER RELIABILITY ACCEPTANCE TEST SUITE...\n');
 
 async function runSportsDataReliabilitySuite() {
   let passed = 0;

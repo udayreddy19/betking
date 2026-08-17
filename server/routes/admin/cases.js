@@ -1,5 +1,5 @@
 /**
- * Phase 2: Case Management API Routes — BetKing Admin
+ * Phase 2: Case Management API Routes — OddsYra Admin
  * Full CRUD + workflow operations for unified case management.
  */
 

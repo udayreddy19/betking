@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * BetKing Platform Expansion Batch 1 — Acceptance Test Suite
+ * OddsYra Platform Expansion Batch 1 — Acceptance Test Suite
  * Tests: Platform Integrity Engine, CMS, Config Center, Feature Flags,
  *        Customer Segmentation, VIP/Loyalty, Affiliate Platform, Rules Engine,
  *        Audit Explorer
@@ -31,7 +31,7 @@ async function runTest(testNum, testName, testFn) {
   }
 }
 
-log('🚀 EXECUTING BETKING PLATFORM EXPANSION BATCH 1 ACCEPTANCE TEST SUITE...\n');
+log('🚀 EXECUTING ODDSYRA PLATFORM EXPANSION BATCH 1 ACCEPTANCE TEST SUITE...\n');
 
 // Ensure test user exists for FK safety
 await safePgQuery(`INSERT INTO users (user_id, email) VALUES ('test_exp_user', 'test_exp_user') ON CONFLICT (user_id) DO NOTHING;`);
@@ -77,7 +77,7 @@ await runTest(3, 'CMS Engine — Content DRAFT → PUBLISHED Lifecycle', async (
   const { createContent, transitionContentStatus, getPublishedContent } = await import('../lib/cmsEngine.mjs');
   const content = await createContent({
     contentType: 'BANNER',
-    title: 'Welcome to BetKing IPL Season!',
+    title: 'Welcome to OddsYra IPL Season!',
     body: '<h1>Win Big on IPL 2026</h1>',
     createdBy: 'admin',
   });
@@ -300,7 +300,7 @@ await runTest(12, 'Audit Explorer — PG Query with Filters', async () => {
 await runTest(13, 'Config Engine — Backward Compatibility (In-Memory Config)', async () => {
   const { getMasterPlatformConfig, updateFeatureFlag } = await import('../lib/configEngine.mjs');
   const config = getMasterPlatformConfig();
-  if (config.platformName !== 'BetKing Sportsbook') throw new Error('Platform config broken');
+  if (config.platformName !== 'OddsYra Sportsbook') throw new Error('Platform config broken');
   if (!config.featureFlags.enableBetBuilder) throw new Error('Feature flag missing');
 
   const flags = updateFeatureFlag('enableBetBuilder', false);
@@ -327,9 +327,9 @@ await runTest(14, 'Feature Store — Match Feature Cache Backward Compatibility'
 // ============================================================
 log(`\n=====================================================================`);
 if (failed === 0) {
-  log(`🎯 BETKING PLATFORM EXPANSION BATCH 1 RESULT: ${passed}/${TOTAL} TESTS PASSED`);
+  log(`🎯 ODDSYRA PLATFORM EXPANSION BATCH 1 RESULT: ${passed}/${TOTAL} TESTS PASSED`);
 } else {
-  log(`⚠️  BETKING PLATFORM EXPANSION BATCH 1 RESULT: ${passed}/${TOTAL} PASSED, ${failed}/${TOTAL} FAILED`);
+  log(`⚠️  ODDSYRA PLATFORM EXPANSION BATCH 1 RESULT: ${passed}/${TOTAL} PASSED, ${failed}/${TOTAL} FAILED`);
 }
 log(`=====================================================================\n`);
 

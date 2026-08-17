@@ -1,13 +1,13 @@
 /**
- * BetKing Support Platform & Real-Time Two-Way Communication Acceptance Test Suite
- * Validates all 25 Phases of the Rebuild BetKing Support Platform specification.
+ * OddsYra Support Platform & Real-Time Two-Way Communication Acceptance Test Suite
+ * Validates all 25 Phases of the Rebuild OddsYra Support Platform specification.
  */
 
 import { query } from '../db/pg.js';
 import { supportEngine, SUPPORT_CATEGORIES } from '../lib/supportEngine.mjs';
 
 async function runSupportPlatformAcceptanceTests() {
-  console.log('🚀 EXECUTING BETKING SUPPORT PLATFORM & REAL-TIME COMMUNICATION ACCEPTANCE TEST SUITE...\n');
+  console.log('🚀 EXECUTING ODDSYRA SUPPORT PLATFORM & REAL-TIME COMMUNICATION ACCEPTANCE TEST SUITE...\n');
   let passedCount = 0;
   const totalTests = 10;
 

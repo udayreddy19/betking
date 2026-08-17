@@ -22,20 +22,20 @@ const latestBackup = path.join(BACKUP_DIR, files[0]);
 console.log(`♻️ RESTORING POSTGRESQL DATABASE FROM BACKUP: ${latestBackup}`);
 
 try {
-  const dbName = process.env.POSTGRES_DB || 'betking';
-  const dbUser = process.env.POSTGRES_USER || 'betking_app';
+  const dbName = process.env.POSTGRES_DB || 'oddsyra';
+  const dbUser = process.env.POSTGRES_USER || 'oddsyra_app';
   const dbHost = process.env.POSTGRES_HOST || '127.0.0.1';
 
   let restored = false;
 
   // Attempt 1: Host psql
   try {
-    const cmd = `PGPASSWORD="${process.env.POSTGRES_PASSWORD || 'betking_dev_pass'}" psql -h ${dbHost} -U ${dbUser} -d ${dbName} < "${latestBackup}"`;
+    const cmd = `PGPASSWORD="${process.env.POSTGRES_PASSWORD || 'oddsyra_dev_pass'}" psql -h ${dbHost} -U ${dbUser} -d ${dbName} < "${latestBackup}"`;
     execSync(cmd, { stdio: 'pipe' });
     restored = true;
   } catch (err) {
     // Attempt 2: Docker psql fallback
-    const cmd = `docker exec -i betking_postgres psql -U ${dbUser} -d ${dbName} < "${latestBackup}"`;
+    const cmd = `docker exec -i oddsyra_postgres psql -U ${dbUser} -d ${dbName} < "${latestBackup}"`;
     execSync(cmd, { stdio: 'pipe' });
     restored = true;
   }

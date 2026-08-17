@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS admin_search_history (
   search_query VARCHAR(512) NOT NULL,
   result_count INT DEFAULT 0,
   entity_types_searched TEXT[] DEFAULT '{}',
-  tenant_id VARCHAR(64) DEFAULT 'betking_in',
+  tenant_id VARCHAR(64) DEFAULT 'oddsyra_in',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS admin_quick_actions_log (
   confirmation_reason TEXT,
   status VARCHAR(32) DEFAULT 'EXECUTED', -- EXECUTED | CONFIRMED | CANCELLED | DENIED
   correlation_id VARCHAR(128),
-  tenant_id VARCHAR(64) DEFAULT 'betking_in',
+  tenant_id VARCHAR(64) DEFAULT 'oddsyra_in',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -1,4 +1,4 @@
--- Migration 002: Performance Indexes & Relational Constraints for BetKing PostgreSQL
+-- Migration 002: Performance Indexes & Relational Constraints for OddsYra PostgreSQL
 
 -- Users & Profiles Indexes
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);

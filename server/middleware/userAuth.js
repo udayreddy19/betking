@@ -1,5 +1,5 @@
 /**
- * User Authentication Middleware — BetKing
+ * User Authentication Middleware — OddsYra
  *
  * Verifies JWT access tokens from Authorization header or bk_access cookie.
  * Attaches req.user = { userId, role, status } for downstream handlers.
@@ -25,7 +25,7 @@ export function requireAuth(req, res, next) {
   req.user = {
     userId: decoded.sub,
     role: decoded.role || 'USER',
-    tenant: decoded.tenant || 'betking_in',
+    tenant: decoded.tenant || 'oddsyra_in',
   };
 
   return next();
@@ -88,7 +88,7 @@ export function optionalAuth(req, res, next) {
       req.user = {
         userId: decoded.sub,
         role: decoded.role || 'USER',
-        tenant: decoded.tenant || 'betking_in',
+        tenant: decoded.tenant || 'oddsyra_in',
       };
     }
   }

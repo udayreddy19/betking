@@ -1,4 +1,4 @@
-name: BetKing Production CI/CD Pipeline
+name: OddsYra Production CI/CD Pipeline
 
 on:
   push:
@@ -15,9 +15,9 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_DB: betking
-          POSTGRES_USER: betking_app
-          POSTGRES_PASSWORD: betking_dev_pass
+          POSTGRES_DB: oddsyra
+          POSTGRES_USER: oddsyra_app
+          POSTGRES_PASSWORD: oddsyra_dev_pass
         ports:
           - 5432:5432
         options: >-
@@ -46,10 +46,10 @@ jobs:
 
       - name: Run Database Migrations
         env:
-          PGPASSWORD: betking_dev_pass
+          PGPASSWORD: oddsyra_dev_pass
         run: |
           for f in migrations/*.sql; do
-            psql -h 127.0.0.1 -U betking_app -d betking -f "$f"
+            psql -h 127.0.0.1 -U oddsyra_app -d oddsyra -f "$f"
           done
 
       - name: Run Oxlint
@@ -58,9 +58,9 @@ jobs:
       - name: Run Full Test Suite (Vitest)
         env:
           NODE_ENV: test
-          DATABASE_URL: postgresql://betking_app:betking_dev_pass@127.0.0.1:5432/betking
+          DATABASE_URL: postgresql://oddsyra_app:oddsyra_dev_pass@127.0.0.1:5432/oddsyra
           REDIS_URL: redis://127.0.0.1:6379
-          JWT_SECRET: betking_jwt_secret_dev_key_2026
+          JWT_SECRET: oddsyra_jwt_secret_dev_key_2026
         run: npm test
 
       - name: Build Frontend Application (Vite)
@@ -83,4 +83,4 @@ jobs:
           context: .
           file: ./Dockerfile.backend
           push: false
-          tags: betking-backend:latest
+          tags: oddsyra-backend:latest

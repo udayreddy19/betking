@@ -9,7 +9,7 @@ describe('Phase 1 Wallet & Concurrency Security Tests', () => {
     // Setup Test Users & Wallets
     await query(`
       INSERT INTO users (user_id, email, password_hash)
-      VALUES ($1, 'conc500@betking.com', 'hash'), ($2, 'conc800@betking.com', 'hash')
+      VALUES ($1, 'conc500@oddsyra.com', 'hash'), ($2, 'conc800@oddsyra.com', 'hash')
       ON CONFLICT (user_id) DO NOTHING;
     `, [user500, user800]);
 

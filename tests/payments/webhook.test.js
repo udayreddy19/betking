@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import crypto from 'crypto';
 
 describe('Phase 1 Razorpay Webhook Security Tests', () => {
-  const secret = process.env.RAZORPAY_WEBHOOK_SECRET || 'betking_wh_secret_2026';
+  const secret = process.env.RAZORPAY_WEBHOOK_SECRET || 'oddsyra_wh_secret_2026';
 
   const generateSignature = (bodyObj, keySecret) => {
     const rawBody = Buffer.from(JSON.stringify(bodyObj));
@@ -36,7 +36,7 @@ describe('Phase 1 Razorpay Webhook Security Tests', () => {
       expect(isValid).toBe(false);
     });
 
-    const validUserIds = ['usr_101', 'user.name@betking.com', 'user-123_456'];
+    const validUserIds = ['usr_101', 'user.name@oddsyra.com', 'user-123_456'];
     validUserIds.forEach(id => {
       const isValid = Boolean(id && typeof id === 'string' && id.length >= 3 && id.length <= 64 && /^[a-zA-Z0-9_\-\.\@]+$/.test(id));
       expect(isValid).toBe(true);

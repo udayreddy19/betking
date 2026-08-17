@@ -68,7 +68,7 @@ export function BetSlipProvider({ children }) {
   useEffect(() => {
     if (DEMO_MODE) {
       try {
-        const saved = JSON.parse(localStorage.getItem('betking_placed_bets') || '[]');
+        const saved = JSON.parse(localStorage.getItem('oddsyra_placed_bets') || '[]');
         setPlacedBets(saved);
       } catch {
         setPlacedBets([]);
@@ -83,7 +83,7 @@ export function BetSlipProvider({ children }) {
   useEffect(() => {
     if (DEMO_MODE) {
       try {
-        localStorage.setItem('betking_placed_bets', JSON.stringify(placedBets));
+        localStorage.setItem('oddsyra_placed_bets', JSON.stringify(placedBets));
       } catch {
         // Safari private mode / quota
       }

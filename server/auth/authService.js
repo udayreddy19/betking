@@ -1,5 +1,5 @@
 /**
- * Auth Service — BetKing Authentication
+ * Auth Service — OddsYra Authentication
  *
  * Core business logic for signup, login, logout, password reset,
  * email verification, and session management.

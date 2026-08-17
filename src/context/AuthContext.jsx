@@ -33,11 +33,11 @@ const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1' || import.meta.env.DEV;
 
 const AuthContext = createContext(null);
 
-const USERS_KEY = 'betking_users';
-const SESSION_KEY = 'betking_session';
-const CLAIMED_PROMOS_KEY = 'betking_claimed_promos';
+const USERS_KEY = 'oddsyra_users';
+const SESSION_KEY = 'oddsyra_session';
+const CLAIMED_PROMOS_KEY = 'oddsyra_claimed_promos';
 const SEED_USER = {
-  email: 'demo@betking.com',
+  email: 'demo@oddsyra.com',
   password: 'demo1234',
   displayName: 'Demo User',
   balance: 8500,
@@ -859,7 +859,7 @@ export function AuthProvider({ children }) {
   const adminApproveWithdrawal = useCallback((txId, targetEmail, amount) => {
     const defaultUtr = `UTR${Date.now()}`;
     const updatedTx = updateTransactionStatus(txId, 'COMPLETED', defaultUtr);
-    const emailToApprove = targetEmail || updatedTx?.userEmail || updatedTx?.email || user?.email || 'demo@betking.com';
+    const emailToApprove = targetEmail || updatedTx?.userEmail || updatedTx?.email || user?.email || 'demo@oddsyra.com';
     let amt = Math.abs(Number(amount));
     if (isNaN(amt) || amt <= 0) {
       amt = Math.abs(Number(updatedTx?.amount) || 0);
@@ -887,7 +887,7 @@ export function AuthProvider({ children }) {
   // Step 3: Admin rejects withdrawal request (Refunds user balance + notifies user)
   const adminRejectWithdrawal = useCallback((txId, targetEmail, amount) => {
     const updatedTx = updateTransactionStatus(txId, 'REJECTED');
-    const emailToRefund = (targetEmail || updatedTx?.userEmail || updatedTx?.email || user?.email || 'demo@betking.com').toLowerCase();
+    const emailToRefund = (targetEmail || updatedTx?.userEmail || updatedTx?.email || user?.email || 'demo@oddsyra.com').toLowerCase();
     
     let amt = Math.abs(Number(amount));
     if (isNaN(amt) || amt <= 0) {

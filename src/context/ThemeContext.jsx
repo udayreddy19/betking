@@ -3,7 +3,7 @@ import { runThemeTransition } from '../utils/themeTransition';
 import { prefersDarkScheme, storageGet, storageSet } from '../utils/browserCompat';
 
 const ThemeContext = createContext(null);
-const STORAGE_KEY = 'betking-theme';
+const STORAGE_KEY = 'oddsyra-theme';
 
 function getInitialTheme() {
   if (typeof window === 'undefined') return 'light';

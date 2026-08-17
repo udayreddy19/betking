@@ -1,4 +1,4 @@
--- Persist BetKing SRL operator desk sessions across restarts
+-- Persist OddsYra SRL operator desk sessions across restarts
 CREATE TABLE IF NOT EXISTS srl_operator_sessions (
   match_id VARCHAR(64) PRIMARY KEY,
   started_at TIMESTAMPTZ,

@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS business_rules (
   created_by VARCHAR(64) NOT NULL,
   approved_by VARCHAR(64),
   approved_at TIMESTAMP WITH TIME ZONE,
-  tenant_id VARCHAR(64) DEFAULT 'betking_in',
+  tenant_id VARCHAR(64) DEFAULT 'oddsyra_in',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

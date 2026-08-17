@@ -1,5 +1,5 @@
 /**
- * Transactional Email Service — BetKing Authentication
+ * Transactional Email Service — OddsYra Authentication
  *
  * Primary SMTP (Resend) with optional Brevo fallback when the primary
  * hits quota / rate-limit errors or SMTP_PRIMARY_DAILY_LIMIT.
@@ -22,7 +22,7 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
-const SMTP_FROM = process.env.SMTP_FROM || 'BetKing Security <no-reply@betking.com>';
+const SMTP_FROM = process.env.SMTP_FROM || 'OddsYra Security <no-reply@oddsyra.com>';
 const PRIMARY_DAILY_LIMIT = Math.max(0, parseInt(process.env.SMTP_PRIMARY_DAILY_LIMIT || '0', 10) || 0);
 
 const quotaState = {
@@ -167,10 +167,10 @@ export async function sendVerificationEmail({ email, name, token }) {
 </head>
 <body>
   <div class="container">
-    <div class="logo">👑 BetKing</div>
+    <div class="logo">👑 OddsYra</div>
     <h2>Verify Your Email Address</h2>
     <p>Hi <strong>${displayName}</strong>,</p>
-    <p>Thank you for registering with BetKing! Please click the button below to verify your email address and activate your welcome bonus:</p>
+    <p>Thank you for registering with OddsYra! Please click the button below to verify your email address and activate your welcome bonus:</p>
     
     <div style="text-align: center;">
       <a href="${verifyLink}" class="btn" target="_blank">Verify My Email</a>
@@ -179,10 +179,10 @@ export async function sendVerificationEmail({ email, name, token }) {
     <p style="font-size: 13px; color: #8b949e;">Or copy and paste this link in your browser:</p>
     <div class="code-box">${verifyLink}</div>
 
-    <p style="font-size: 13px; color: #8b949e; margin-top: 20px;">This link will expire in 24 hours. If you did not create a BetKing account, you can safely ignore this email.</p>
+    <p style="font-size: 13px; color: #8b949e; margin-top: 20px;">This link will expire in 24 hours. If you did not create a OddsYra account, you can safely ignore this email.</p>
 
     <div class="footer">
-      © ${new Date().getFullYear()} BetKing Sportsbook & Casino. All rights reserved.
+      © ${new Date().getFullYear()} OddsYra Sportsbook & Casino. All rights reserved.
     </div>
   </div>
 </body>
@@ -192,7 +192,7 @@ export async function sendVerificationEmail({ email, name, token }) {
   try {
     const info = await sendMailWithFailover({
       to: email,
-      subject: 'Verify your BetKing account',
+      subject: 'Verify your OddsYra account',
       html,
     });
 
@@ -230,10 +230,10 @@ export async function sendPasswordResetEmail({ email, name, token }) {
 </head>
 <body>
   <div class="container">
-    <div class="logo">👑 BetKing</div>
+    <div class="logo">👑 OddsYra</div>
     <h2>Reset Your Password</h2>
     <p>Hi <strong>${displayName}</strong>,</p>
-    <p>We received a request to reset the password for your BetKing account. Click the button below to choose a new password:</p>
+    <p>We received a request to reset the password for your OddsYra account. Click the button below to choose a new password:</p>
     
     <div style="text-align: center;">
       <a href="${resetLink}" class="btn" target="_blank">Reset My Password</a>
@@ -245,7 +245,7 @@ export async function sendPasswordResetEmail({ email, name, token }) {
     <p style="font-size: 13px; color: #8b949e; margin-top: 20px;">This link will expire in 60 minutes. If you did not request a password reset, your account is safe and you can ignore this email.</p>
 
     <div class="footer">
-      © ${new Date().getFullYear()} BetKing Sportsbook & Casino. All rights reserved.
+      © ${new Date().getFullYear()} OddsYra Sportsbook & Casino. All rights reserved.
     </div>
   </div>
 </body>
@@ -255,7 +255,7 @@ export async function sendPasswordResetEmail({ email, name, token }) {
   try {
     const info = await sendMailWithFailover({
       to: email,
-      subject: 'Reset your BetKing password',
+      subject: 'Reset your OddsYra password',
       html,
     });
 
@@ -292,20 +292,20 @@ export async function sendPasswordChangedNotificationEmail({ email, name }) {
 </head>
 <body>
   <div class="container">
-    <div class="logo">👑 BetKing Security</div>
+    <div class="logo">👑 OddsYra Security</div>
     <h2>Your Password Was Changed</h2>
     <p>Hi <strong>${displayName}</strong>,</p>
-    <p>This is a confirmation that the password for your BetKing account (<strong>${safeEmail}</strong>) has been successfully changed.</p>
+    <p>This is a confirmation that the password for your OddsYra account (<strong>${safeEmail}</strong>) has been successfully changed.</p>
     
     <div class="alert-box">
       ⚠️ <strong>Security Notice:</strong> All other active browser sessions and devices have been logged out automatically for your safety.
     </div>
 
     <p>If you made this change, no further action is needed.</p>
-    <p style="color: #f85149; font-weight: 600;">If you did NOT change your password, please contact BetKing Support immediately to secure your account.</p>
+    <p style="color: #f85149; font-weight: 600;">If you did NOT change your password, please contact OddsYra Support immediately to secure your account.</p>
 
     <div class="footer">
-      © ${new Date().getFullYear()} BetKing Sportsbook & Casino. All rights reserved.
+      © ${new Date().getFullYear()} OddsYra Sportsbook & Casino. All rights reserved.
     </div>
   </div>
 </body>
@@ -315,7 +315,7 @@ export async function sendPasswordChangedNotificationEmail({ email, name }) {
   try {
     const info = await sendMailWithFailover({
       to: email,
-      subject: 'Security Alert: Your BetKing password was changed',
+      subject: 'Security Alert: Your OddsYra password was changed',
       html,
     });
 

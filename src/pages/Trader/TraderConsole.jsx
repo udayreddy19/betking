@@ -32,7 +32,7 @@ export default function TraderConsole() {
   return (
     <div className="trader-console-page">
       <header className="trader-header">
-        <h1>⚡ BetKing Professional Trader Console</h1>
+        <h1>⚡ OddsYra Professional Trader Console</h1>
         <span className="trader-status">LIVE TRADING SESSION ACTIVE</span>
       </header>
 

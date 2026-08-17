@@ -1,5 +1,5 @@
 /**
- * Web Audio API Sound Effects Synthesizer for BetKing
+ * Web Audio API Sound Effects Synthesizer for OddsYra
  * Zero external audio files required, zero latency!
  */
 
