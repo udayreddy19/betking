@@ -1,14 +1,15 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { runThemeTransition } from '../utils/themeTransition';
+import { prefersDarkScheme, storageGet, storageSet } from '../utils/browserCompat';
 
 const ThemeContext = createContext(null);
 const STORAGE_KEY = 'betking-theme';
 
 function getInitialTheme() {
   if (typeof window === 'undefined') return 'light';
-  const stored = localStorage.getItem(STORAGE_KEY);
+  const stored = storageGet(STORAGE_KEY);
   if (stored === 'light' || stored === 'dark') return stored;
-  if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+  if (prefersDarkScheme()) return 'dark';
   return 'light';
 }
 
@@ -34,7 +35,7 @@ export function ThemeProvider({ children }) {
 
   useEffect(() => {
     applyTheme(theme);
-    localStorage.setItem(STORAGE_KEY, theme);
+    storageSet(STORAGE_KEY, theme);
   }, [theme]);
 
   const setTheme = useCallback((mode) => {

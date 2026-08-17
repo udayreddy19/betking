@@ -85,7 +85,7 @@ export default function DepositModal() {
           email: user?.email || '',
           vpa: upiId.trim() || undefined,
         },
-        theme: { color: '#7c3aed' },
+  theme: { color: '#1f8a4c' },
         modal: {
           ondismiss: function () {
             setIsLoading(false);

@@ -1,6 +1,7 @@
 import TeamJersey from '../TeamJersey/TeamJersey';
 import { isTrulyLiveMatch } from '../../utils/matchBetting';
 import { resolveCricketTeamScores, isCricketSecondInnings, teamNameMatches, resolveCricketTossText } from '../../utils/cricketScores';
+import { isTeamBattingInMatch } from '../../utils/teamFlags';
 import { IPL_SRL_LEAGUE } from '../../data/iplSrlMatches';
 import './SrlLeaguePanel.css';
 
@@ -81,7 +82,7 @@ export default function SrlLeaguePanel({
                 onClick={() => onSelectMatch(match.id)}
               >
                 <div className="srl-match-card__team">
-                  <TeamJersey team={match.team1} size={36} />
+                  <TeamJersey team={match.team1} size={36} isFlying={isLive && isTeamBattingInMatch(match, match.team1)} />
                   <span className="srl-match-card__team-name">{match.team1.name}</span>
                   {isLive && (
                     <strong className="srl-match-card__score">
@@ -90,7 +91,7 @@ export default function SrlLeaguePanel({
                   )}
                 </div>
                 <div className="srl-match-card__team">
-                  <TeamJersey team={match.team2} size={36} />
+                  <TeamJersey team={match.team2} size={36} isFlying={isLive && isTeamBattingInMatch(match, match.team2)} />
                   <span className="srl-match-card__team-name">{match.team2.name}</span>
                   {isLive && (
                     <strong className="srl-match-card__score">

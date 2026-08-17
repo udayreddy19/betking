@@ -69,10 +69,10 @@ export function getTeamKitSpec(team) {
   if (TEAM_KIT_SPECS[clean]) return TEAM_KIT_SPECS[clean];
   if (TEAM_KIT_SPECS[normKey]) return TEAM_KIT_SPECS[normKey];
 
-  for (const [key, spec] of Object.entries(TEAM_KIT_SPECS)) {
-    if (clean.includes(key) || key.includes(clean)) {
-      return spec;
-    }
+  const kitKeys = Object.keys(TEAM_KIT_SPECS).sort((a, b) => b.length - a.length);
+  for (const key of kitKeys) {
+    if (key.length <= 3) continue;
+    if (clean.includes(key)) return TEAM_KIT_SPECS[key];
   }
 
   // Fallback palette generated deterministically per team

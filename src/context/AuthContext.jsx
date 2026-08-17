@@ -19,6 +19,7 @@ import {
   canDepositAmount,
   canStakeAmount,
 } from '../utils/responsibleGaming';
+import { storageGet, storageSet, storageRemove } from '../utils/browserCompat';
 import {
   apiFetch,
   fetchMe,
@@ -61,14 +62,14 @@ function ensureSeedUser() {
 
 function getStoredUsers() {
   try {
-    return JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
+    return JSON.parse(storageGet(USERS_KEY) || '[]');
   } catch {
     return [];
   }
 }
 
 function saveStoredUsers(users) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  storageSet(USERS_KEY, JSON.stringify(users));
 }
 
 function toSessionUser(stored) {
@@ -97,9 +98,9 @@ function toSessionUser(stored) {
 
 function persistSession(user) {
   if (user) {
-    localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    storageSet(SESSION_KEY, JSON.stringify(user));
   } else {
-    localStorage.removeItem(SESSION_KEY);
+    storageRemove(SESSION_KEY);
   }
 }
 
@@ -134,7 +135,7 @@ function syncStoredUser(sessionUser) {
 
 function getClaimedPromos(email) {
   try {
-    const all = JSON.parse(localStorage.getItem(CLAIMED_PROMOS_KEY) || '{}');
+    const all = JSON.parse(storageGet(CLAIMED_PROMOS_KEY) || '{}');
     return all[email] || [];
   } catch {
     return [];
@@ -142,9 +143,13 @@ function getClaimedPromos(email) {
 }
 
 function saveClaimedPromo(email, promoId) {
-  const all = JSON.parse(localStorage.getItem(CLAIMED_PROMOS_KEY) || '{}');
-  all[email] = [...(all[email] || []), promoId];
-  localStorage.setItem(CLAIMED_PROMOS_KEY, JSON.stringify(all));
+  try {
+    const all = JSON.parse(storageGet(CLAIMED_PROMOS_KEY) || '{}');
+    all[email] = [...(all[email] || []), promoId];
+    storageSet(CLAIMED_PROMOS_KEY, JSON.stringify(all));
+  } catch {
+    // ignore quota / private mode
+  }
 }
 
 export function AuthProvider({ children }) {
@@ -194,12 +199,12 @@ export function AuthProvider({ children }) {
       }
 
       if (!DEMO_MODE) {
-        localStorage.removeItem(SESSION_KEY);
+        storageRemove(SESSION_KEY);
         return;
       }
 
       try {
-        const saved = localStorage.getItem(SESSION_KEY);
+        const saved = storageGet(SESSION_KEY);
         if (saved) {
           const parsed = JSON.parse(saved);
           const session = {
@@ -213,7 +218,7 @@ export function AuthProvider({ children }) {
           setTransactions(loadTransactions(session.email));
         }
       } catch {
-        localStorage.removeItem(SESSION_KEY);
+        storageRemove(SESSION_KEY);
       }
     };
 
@@ -914,11 +919,11 @@ export function AuthProvider({ children }) {
 
     // 2. Update active session user in localStorage
     try {
-      const activeSession = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+      const activeSession = JSON.parse(storageGet(SESSION_KEY) || 'null');
       if (activeSession && activeSession.email.toLowerCase() === emailToRefund) {
         activeSession.balance = (activeSession.balance || 0) + amt;
         activeSession.winningsBalance = (activeSession.winningsBalance || 0) + amt;
-        localStorage.setItem(SESSION_KEY, JSON.stringify(activeSession));
+        storageSet(SESSION_KEY, JSON.stringify(activeSession));
       }
     } catch (e) {
       console.error('Error updating active session balance:', e);

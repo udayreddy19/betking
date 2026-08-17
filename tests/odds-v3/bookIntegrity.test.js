@@ -56,14 +56,14 @@ describe('Book integrity', () => {
     expect(market.selections.every((s) => s.bettable === false)).toBe(true);
   });
 
-  it('does not invent cricket markets for soccer', () => {
+  it('prices soccer 1X2 instead of inventing cricket markets', () => {
     const snap = generateV3(createCanonicalMatchState({
       matchId: 'soccer_1',
       sport: 'SOCCER',
       format: 'T20',
       status: 'LIVE',
-      team1: { id: 'A', name: 'A', runs: 0, wickets: 0, balls: 0 },
-      team2: { id: 'B', name: 'B', runs: 0, wickets: 0, balls: 0 },
+      team1: { id: 'A', name: 'Arsenal', runs: 1, wickets: 0, balls: 0 },
+      team2: { id: 'B', name: 'Chelsea', runs: 0, wickets: 0, balls: 0 },
       currentInnings: 1,
       battingTeamId: 'A',
       bowlingTeamId: 'B',
@@ -73,8 +73,12 @@ describe('Book integrity', () => {
       providerTimestamp: Date.now(),
       stateVersion: 1,
     }));
-    expect(snap.status).toBe('UNSUPPORTED_SPORT');
-    expect(snap.markets).toEqual([]);
+    expect(snap.status).toBe('OK');
+    const winner = snap.markets.find((m) => m.marketId === 'match_winner');
+    expect(winner).toBeTruthy();
+    expect(winner.selections.map((s) => s.selectionId)).toEqual(['1', 'X', '2']);
+    expect(snap.markets.some((m) => m.marketType === 'NEXT_DELIVERY_RUNS')).toBe(false);
+    expect(snap.markets.some((m) => m.marketId === 'match_winner_super_over')).toBe(false);
   });
 
   it('lengthens the side with high liability', () => {

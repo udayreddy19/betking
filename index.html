@@ -2,17 +2,39 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>BetKing — Live Betting & Casino</title>
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#efeae0" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0b0e12" media="(prefers-color-scheme: dark)" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="BetKing" />
+    <meta name="application-name" content="BetKing" />
+    <meta name="msapplication-TileColor" content="#0b0e12" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <title>BetKing — Live Sportsbook</title>
     <script>
       (function () {
-        var t = localStorage.getItem('betking-theme');
-        if (t === 'dark' || t === 'light') {
-          document.documentElement.setAttribute('data-theme', t);
-        } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-          document.documentElement.setAttribute('data-theme', 'dark');
+        var theme = 'light';
+        try {
+          var stored = localStorage.getItem('betking-theme');
+          if (stored === 'dark' || stored === 'light') theme = stored;
+          else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) theme = 'dark';
+        } catch (e) {
+          try {
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) theme = 'dark';
+          } catch (e2) {}
         }
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.style.colorScheme = theme;
+        var metas = document.querySelectorAll('meta[name="theme-color"]');
+        for (var i = 0; i < metas.length; i++) metas[i].setAttribute('content', theme === 'dark' ? '#0b0e12' : '#efeae0');
       })();
     </script>
     <!-- Razorpay Checkout SDK -->
@@ -21,5 +43,6 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <noscript>BetKing needs JavaScript enabled in your browser.</noscript>
   </body>
 </html>

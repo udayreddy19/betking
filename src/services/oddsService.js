@@ -37,6 +37,7 @@ export function provisionalWinnerMarketsFromMatch(match) {
 
   const team1Name = match.team1?.name || match.team1 || 'Team 1';
   const team2Name = match.team2?.name || match.team2 || 'Team 2';
+  const drawOdds = Number(match.odds?.draw);
   const selections = [
     {
       selectionId: '1',
@@ -46,6 +47,14 @@ export function provisionalWinnerMarketsFromMatch(match) {
       status: 'ACTIVE',
       bettable: true,
     },
+    ...(drawOdds > 1 ? [{
+      selectionId: 'X',
+      selection: 'X',
+      name: 'Draw',
+      odds: drawOdds,
+      status: 'ACTIVE',
+      bettable: true,
+    }] : []),
     {
       selectionId: '2',
       selection: '2',

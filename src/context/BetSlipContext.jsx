@@ -82,7 +82,11 @@ export function BetSlipProvider({ children }) {
 
   useEffect(() => {
     if (DEMO_MODE) {
-      localStorage.setItem('betking_placed_bets', JSON.stringify(placedBets));
+      try {
+        localStorage.setItem('betking_placed_bets', JSON.stringify(placedBets));
+      } catch {
+        // Safari private mode / quota
+      }
     }
   }, [placedBets]);
 

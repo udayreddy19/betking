@@ -1,20 +1,20 @@
-/** 10CRIC-style homepage content — matched to screen recording Aug 2 2026 */
+/** Homepage promo content */
 
 export const homePromoSlides = [
   {
     id: 'crypto',
     title: '5% EXTRA',
-    subtitle: 'CASH ON CRYPTO',
-    gradient: 'linear-gradient(135deg, #fef9e7 0%, #fce7f3 45%, #dbeafe 100%)',
-    accent: '#c4b5fd',
+    subtitle: 'ON CRYPTO DEPOSITS',
+    gradient: 'linear-gradient(135deg, #163028 0%, #1f8a4c 55%, #7dff6b 140%)',
+    accent: '#7dff6b',
     emoji: '5%',
   },
   {
     id: 'welcome',
     title: '150% WELCOME',
     subtitle: 'BONUS UP TO ₹30,000',
-    gradient: 'linear-gradient(135deg, #ede9fe 0%, #fce7f3 50%, #fef3c7 100%)',
-    accent: '#7c3aed',
+    gradient: 'linear-gradient(135deg, #1c2a24 0%, #2a4a38 50%, #e07a2f 160%)',
+    accent: '#e07a2f',
     emoji: '🎁',
   },
 ];

@@ -57,6 +57,12 @@ function AppFinancialModals() {
 function AppLayout() {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
+  const isSportsRoute = location.pathname === '/sports' || location.pathname === '/live-betting';
+  const mainClass = [
+    'app-main',
+    isAdminRoute ? 'app-main--admin' : '',
+    isSportsRoute ? 'app-main--sports' : '',
+  ].filter(Boolean).join(' ');
 
   return (
     <>
@@ -71,7 +77,7 @@ function AppLayout() {
       <MobileBetSlip />
       {!isAdminRoute && <MobileBottomBar />}
       {!isAdminRoute && <GlobalBetBar />}
-      <main className={`app-main${isAdminRoute ? ' app-main--admin' : ''}`}>
+      <main className={mainClass}>
         <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <Routes>

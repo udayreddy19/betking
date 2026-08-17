@@ -33,7 +33,7 @@
 .auth-logo .brand-name {
   font-size: 22px;
   font-weight: 800;
-  background: linear-gradient(135deg, #a855f7, #ec4899);
+  background: var(--gradient-primary);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -115,8 +115,8 @@
 
 .auth-input:focus {
   outline: none;
-  border-color: #7c3aed;
-  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.25);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 25%, transparent);
 }
 
 .auth-eye-btn {
@@ -137,8 +137,8 @@
 .auth-primary-btn {
   width: 100%;
   padding: 13px 20px;
-  background: linear-gradient(135deg, #7c3aed, #a855f7);
-  color: #ffffff;
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
   border: none;
   border-radius: 8px;
   font-size: 15px;
@@ -193,7 +193,7 @@
 }
 
 .auth-link:hover {
-  color: #a855f7;
+  color: var(--color-primary);
   text-decoration: underline;
 }
 
@@ -202,7 +202,7 @@
   height: 40px;
   margin: 0 auto 20px;
   border: 3px solid rgba(124, 58, 237, 0.2);
-  border-top-color: #a855f7;
+  border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }

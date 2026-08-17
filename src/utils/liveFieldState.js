@@ -49,6 +49,7 @@ export function getBallDisplayKind(ball) {
   const b = raw.toLowerCase();
   if (raw === 'W') return 'wicket';
   if (raw === '•' || raw === '0' || !raw) return 'dot';
+  if (raw === '…' || raw === '...' || b === 'pending') return 'pending';
   if (b.includes('wd')) return 'wide';
   if (b.includes('lb')) return 'legbye';
   if (b.includes('nb')) return 'noball';
@@ -58,6 +59,7 @@ export function getBallDisplayKind(ball) {
 
 export function getBallDisplayLabel(ball) {
   if (ball === '•' || ball === '0') return '';
+  if (ball === 'pending') return '…';
   return String(ball);
 }
 

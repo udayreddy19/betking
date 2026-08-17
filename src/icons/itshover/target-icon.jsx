@@ -9,7 +9,8 @@ const TargetIcon = forwardRef(
     const [scope, animate] = useAnimate();
 
     const start = useCallback(async () => {
-      // Pulse all circles outward from center
+      if (!scope.current) return;
+      try {
       animate(
         ".circle-outer",
         {
@@ -47,15 +48,23 @@ const TargetIcon = forwardRef(
           delay: 0.2,
         },
       );
-    }, [animate]);
+      } catch {
+        /* scope can be null during unmount (Safari: root.querySelectorAll) */
+      }
+    }, [animate, scope]);
 
     const stop = useCallback(() => {
+      if (!scope.current) return;
+      try {
       animate(
         ".circle-outer, .circle-middle, .circle-inner",
         { scale: 1, opacity: 1 },
         { duration: 0.2, ease: "easeInOut" },
       );
-    }, [animate]);
+      } catch {
+        /* ignore unmounted scope */
+      }
+    }, [animate, scope]);
 
     useImperativeHandle(ref, () => ({
       startAnimation: start,

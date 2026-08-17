@@ -18,6 +18,7 @@ import {
   LayersIcon,
 } from '../../icons/animate';
 import { GlobeIcon } from '../../icons';
+import { copyToClipboard } from '../../utils/browserCompat';
 import './ApiDocs.css';
 
 const ENDPOINT_GROUPS = [
@@ -177,16 +178,19 @@ export default function ApiDocs() {
   };
 
   const handleCopyKey = () => {
-    navigator.clipboard.writeText('bk_live_998877665544332211');
-    setCopiedKey(true);
-    setTimeout(() => setCopiedKey(false), 2000);
+    copyToClipboard('bk_live_998877665544332211').then((ok) => {
+      if (!ok) return;
+      setCopiedKey(true);
+      setTimeout(() => setCopiedKey(false), 2000);
+    });
   };
 
   const handleCopyCode = () => {
-    const snippet = renderCodeSnippet();
-    navigator.clipboard.writeText(snippet);
-    setCopiedCode(true);
-    setTimeout(() => setCopiedCode(false), 2000);
+    copyToClipboard(renderCodeSnippet()).then((ok) => {
+      if (!ok) return;
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2000);
+    });
   };
 
   const handleSelectProvider = (provId) => {

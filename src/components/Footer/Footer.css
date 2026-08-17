@@ -16,12 +16,12 @@
   margin-bottom: var(--space-8);
 }
 .footer-section h4 {
-  font-size: var(--text-sm);
-  font-weight: var(--font-bold);
+  font-size: 0.72rem;
+  font-weight: 750;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.12em;
   margin-bottom: var(--space-4);
-  color: var(--color-primary-light);
+  color: var(--color-primary);
 }
 .footer-section a {
   display: block;

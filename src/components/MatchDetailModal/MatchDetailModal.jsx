@@ -9,6 +9,7 @@ import {
   provisionalWinnerMarketsFromMatch,
 } from '../../services/oddsService';
 import { resolveCricketTeamScores, isCricketSecondInnings, resolveCricketTossText } from '../../utils/cricketScores';
+import { isTeamBattingInMatch } from '../../utils/teamFlags';
 import { getChaseText } from '../../utils/liveMatchWidgetData';
 import { getMatchMaxOvers, isTestMatch, getTestMatchDayLabel, formatMatchCountdown } from '../../utils/cricketFormat';
 import { displayPlayerName } from '../../utils/cricketPlayers';
@@ -179,7 +180,7 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
               {/* 10CRIC Style Live Scoreboard Header */}
               <div className="match-detail-scoreboard">
                 <div className="scoreboard-team">
-                  <TeamJersey team={match.team1} size={48} isFlying={isLiveNow && sport === 'cricket' && !isSecondInnings} />
+                  <TeamJersey team={match.team1} size={48} isFlying={isLiveNow && isTeamBattingInMatch(match, match.team1)} />
                   <h4>{team1Name}</h4>
                   {isLiveNow && match.liveDetails && (
                     <div className="scoreboard-score">
@@ -208,7 +209,7 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
                 </div>
 
                 <div className="scoreboard-team">
-                  <TeamJersey team={match.team2} size={48} isFlying={isLiveNow && sport === 'cricket' && isSecondInnings} />
+                  <TeamJersey team={match.team2} size={48} isFlying={isLiveNow && isTeamBattingInMatch(match, match.team2)} />
                   <h4>{team2Name}</h4>
                   {isLiveNow && match.liveDetails && (
                     <div className="scoreboard-score">
@@ -354,9 +355,15 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
               matchMarkets.map((m) => {
                 const isCatMatch = activeMarketCategory === 'all'
                   || (activeMarketCategory === 'main' && (m.category === 'main' || m.key === 'winner' || m.marketType === 'MATCH_WINNER'))
-                  || (activeMarketCategory === 'overs-deliveries' && (m.category === 'totals' || m.category === 'over' || m.category === 'overs' || m.category === 'delivery' || m.category === 'deliveries' || m.marketType === 'TEAM_TOTAL' || m.marketType === 'MATCH_TOTAL'))
+                  || (activeMarketCategory === 'overs-deliveries' && (
+                    m.category === 'totals' || m.category === 'over' || m.category === 'overs'
+                    || m.category === 'delivery' || m.category === 'deliveries'
+                    || m.category === 'goals' || m.category === 'spreads' || m.category === 'sets'
+                    || m.category === 'games' || m.category === 'halves'
+                    || m.marketType === 'TEAM_TOTAL' || m.marketType === 'MATCH_TOTAL' || m.marketType === 'TOTAL' || m.marketType === 'SPREAD'
+                  ))
                   || (activeMarketCategory === 'player-props' && (m.category === 'props' || m.category === 'player_props' || m.category === 'h2h'))
-                  || (activeMarketCategory === 'specials' && (m.category === 'partnership' || m.category === 'wickets' || m.category === 'specials'))
+                  || (activeMarketCategory === 'specials' && (m.category === 'partnership' || m.category === 'wickets' || m.category === 'specials' || m.category === 'chance'))
                   || activeMarketCategory === m.category
                   || activeMarketCategory === m.categoryGroup;
                 if (!isCatMatch) return null;

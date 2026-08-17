@@ -1,12 +1,11 @@
 /**
  * Transactional Email Service — BetKing Authentication
  *
- * Sends branded HTML emails for:
- * 1. Email Verification (welcome verification link)
- * 2. Password Reset (secure reset link)
+ * Primary SMTP (Resend) with optional Brevo fallback when the primary
+ * hits quota / rate-limit errors or SMTP_PRIMARY_DAILY_LIMIT.
  *
- * Configurable via SMTP environment variables:
- * SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM, APP_URL
+ * SMTP_HOST / SMTP_USER / SMTP_PASSWORD — primary (Resend)
+ * SMTP_FALLBACK_HOST / SMTP_FALLBACK_USER / SMTP_FALLBACK_PASSWORD — backup (Brevo)
  */
 
 import nodemailer from 'nodemailer';
@@ -22,36 +21,127 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
-const SMTP_HOST = process.env.SMTP_HOST;
-const SMTP_PORT = parseInt(process.env.SMTP_PORT) || 587;
-const SMTP_SECURE = process.env.SMTP_SECURE === 'true' || SMTP_PORT === 465;
-const SMTP_USER = process.env.SMTP_USER;
-const SMTP_PASS = process.env.SMTP_PASSWORD || process.env.SMTP_PASS;
+
 const SMTP_FROM = process.env.SMTP_FROM || 'BetKing Security <no-reply@betking.com>';
+const PRIMARY_DAILY_LIMIT = Math.max(0, parseInt(process.env.SMTP_PRIMARY_DAILY_LIMIT || '0', 10) || 0);
 
-let transporter = null;
+const quotaState = {
+  dayKey: utcDayKey(),
+  primarySent: 0,
+  primaryExhaustedUntil: 0,
+};
 
-function getTransporter() {
-  if (transporter) return transporter;
+function utcDayKey(now = Date.now()) {
+  return new Date(now).toISOString().slice(0, 10);
+}
 
-  if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
-    transporter = nodemailer.createTransport({
-      host: SMTP_HOST,
-      port: SMTP_PORT,
-      secure: SMTP_SECURE,
-      auth: {
-        user: SMTP_USER,
-        pass: SMTP_PASS,
-      },
-    });
-  } else {
-    // In dev mode without configured SMTP, use JSON transport / console logger
-    transporter = nodemailer.createTransport({
-      jsonTransport: true,
-    });
+function rollQuotaWindow(now = Date.now()) {
+  const key = utcDayKey(now);
+  if (quotaState.dayKey !== key) {
+    quotaState.dayKey = key;
+    quotaState.primarySent = 0;
+    quotaState.primaryExhaustedUntil = 0;
+  }
+}
+
+export function isQuotaOrRateLimitError(err) {
+  const code = Number(err?.responseCode || err?.status || 0);
+  if (code === 429 || code === 421 || code === 452) return true;
+  const msg = `${err?.message || ''} ${err?.response || ''} ${err?.responseCode || ''}`.toLowerCase();
+  return /quota|rate.?limit|too many|daily limit|exceeded|maximum.*email|limit reached|try again later/.test(msg);
+}
+
+function envAccount(prefix) {
+  const host = process.env[`${prefix}HOST`];
+  const user = process.env[`${prefix}USER`];
+  const pass = process.env[`${prefix}PASSWORD`] || process.env[`${prefix}PASS`];
+  if (!host || !user || !pass) return null;
+  const port = parseInt(process.env[`${prefix}PORT`] || '', 10) || 587;
+  const secureEnv = process.env[`${prefix}SECURE`];
+  const secure = secureEnv === 'true' || (secureEnv !== 'false' && port === 465);
+  const from = process.env[`${prefix}FROM`] || SMTP_FROM;
+  return { name: prefix.startsWith('SMTP_FALLBACK') ? 'fallback' : 'primary', host, port, secure, user, pass, from };
+}
+
+function configuredAccounts() {
+  const primary = envAccount('SMTP_');
+  const fallback = envAccount('SMTP_FALLBACK_');
+  const accounts = [];
+  if (primary) accounts.push(primary);
+  if (fallback) accounts.push(fallback);
+  return accounts;
+}
+
+function createTransport(account) {
+  if (!account) {
+    return nodemailer.createTransport({ jsonTransport: true });
+  }
+  return nodemailer.createTransport({
+    host: account.host,
+    port: account.port,
+    secure: account.secure,
+    auth: { user: account.user, pass: account.pass },
+  });
+}
+
+function shouldSkipPrimary(now = Date.now()) {
+  rollQuotaWindow(now);
+  if (quotaState.primaryExhaustedUntil > now) return true;
+  if (PRIMARY_DAILY_LIMIT > 0 && quotaState.primarySent >= PRIMARY_DAILY_LIMIT) return true;
+  return false;
+}
+
+function markPrimarySuccess() {
+  rollQuotaWindow();
+  quotaState.primarySent += 1;
+  if (PRIMARY_DAILY_LIMIT > 0 && quotaState.primarySent >= PRIMARY_DAILY_LIMIT) {
+    quotaState.primaryExhaustedUntil = Date.now() + 60 * 60 * 1000;
+  }
+}
+
+function markPrimaryQuotaHit() {
+  rollQuotaWindow();
+  quotaState.primaryExhaustedUntil = Date.now() + 6 * 60 * 60 * 1000;
+}
+
+async function sendMailWithFailover({ to, subject, html, text }) {
+  const accounts = configuredAccounts();
+  if (accounts.length === 0) {
+    const tx = createTransport(null);
+    const info = await tx.sendMail({ from: SMTP_FROM, to, subject, html, text });
+    return { success: true, messageId: info.messageId, provider: 'dev-json' };
   }
 
-  return transporter;
+  const skipPrimary = shouldSkipPrimary();
+  const ordered = skipPrimary && accounts.length > 1
+    ? [accounts[1], accounts[0]]
+    : accounts;
+
+  let lastError = null;
+  for (const account of ordered) {
+    try {
+      const tx = createTransport(account);
+      const info = await tx.sendMail({
+        from: account.from,
+        to,
+        subject,
+        html,
+        text,
+      });
+      if (account.name === 'primary') markPrimarySuccess();
+      return { success: true, messageId: info.messageId, provider: account.name };
+    } catch (err) {
+      lastError = err;
+      console.error(`[EmailService] ${account.name} send failed:`, err.message);
+      if (account.name === 'primary' && isQuotaOrRateLimitError(err)) {
+        markPrimaryQuotaHit();
+        continue;
+      }
+      if (ordered.length > 1) continue;
+    }
+  }
+
+  throw lastError || new Error('SMTP send failed');
 }
 
 /**
@@ -100,19 +190,17 @@ export async function sendVerificationEmail({ email, name, token }) {
   `;
 
   try {
-    const tx = getTransporter();
-    const info = await tx.sendMail({
-      from: SMTP_FROM,
+    const info = await sendMailWithFailover({
       to: email,
       subject: 'Verify your BetKing account',
       html,
     });
 
     if (!isProduction) {
-      console.log(`\n📧 [EMAIL SENT] Verification Email to: ${email}`);
+      console.log(`\n📧 [EMAIL SENT] Verification Email to: ${email} via ${info.provider}`);
       console.log(`🔗 [VERIFY LINK]: ${verifyLink}\n`);
     }
-    return { success: true, messageId: info.messageId, ...(isProduction ? {} : { verifyLink }) };
+    return { success: true, messageId: info.messageId, provider: info.provider, ...(isProduction ? {} : { verifyLink }) };
   } catch (err) {
     console.error('[EmailService] Failed to send verification email:', err.message);
     return { success: false, error: err.message, verifyLink };
@@ -165,19 +253,17 @@ export async function sendPasswordResetEmail({ email, name, token }) {
   `;
 
   try {
-    const tx = getTransporter();
-    const info = await tx.sendMail({
-      from: SMTP_FROM,
+    const info = await sendMailWithFailover({
       to: email,
       subject: 'Reset your BetKing password',
       html,
     });
 
     if (!isProduction) {
-      console.log(`\n📧 [EMAIL SENT] Password Reset Email to: ${email}`);
+      console.log(`\n📧 [EMAIL SENT] Password Reset Email to: ${email} via ${info.provider}`);
       console.log(`🔗 [RESET LINK]: ${resetLink}\n`);
     }
-    return { success: true, messageId: info.messageId, ...(isProduction ? {} : { resetLink }) };
+    return { success: true, messageId: info.messageId, provider: info.provider, ...(isProduction ? {} : { resetLink }) };
   } catch (err) {
     console.error('[EmailService] Failed to send password reset email:', err.message);
     return { success: false, error: err.message, resetLink };
@@ -227,16 +313,14 @@ export async function sendPasswordChangedNotificationEmail({ email, name }) {
   `;
 
   try {
-    const tx = getTransporter();
-    const info = await tx.sendMail({
-      from: SMTP_FROM,
+    const info = await sendMailWithFailover({
       to: email,
       subject: 'Security Alert: Your BetKing password was changed',
       html,
     });
 
-    console.log(`\n📧 [EMAIL SENT] Password Changed Security Alert to: ${email}\n`);
-    return { success: true, messageId: info.messageId };
+    console.log(`\n📧 [EMAIL SENT] Password Changed Security Alert to: ${email} via ${info.provider}\n`);
+    return { success: true, messageId: info.messageId, provider: info.provider };
   } catch (err) {
     console.error('[EmailService] Failed to send password changed notification:', err.message);
     return { success: false, error: err.message };

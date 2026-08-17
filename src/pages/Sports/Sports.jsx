@@ -15,6 +15,7 @@ import { useBetSlip } from '../../context/BetSlipContext';
 import { useAuth } from '../../context/AuthContext';
 import { isMatchBettable, isTrulyLiveMatch, getMatchState, isMatchFinished } from '../../utils/matchBetting';
 import { resolveCricketTeamScores, resolveCricketTossText } from '../../utils/cricketScores';
+import { isTeamBattingInMatch } from '../../utils/teamFlags';
 import { isTestMatch, getTestMatchDayLabel, formatMatchCountdown, resolveCricketOversFormat } from '../../utils/cricketFormat';
 import { prefetchMatchDetail, enrichFromPoller, subscribeGlobalMatchDetails, getGlobalMatchDetailVersion } from '../../services/matchDetailPoller';
 import { useMatchDetail } from '../../hooks/useMatchDetail';
@@ -31,6 +32,7 @@ import {
   provisionalWinnerMarketsFromMatch,
 } from '../../services/oddsService';
 import { getMarketCategoriesForSport } from '../../utils/oddsMarketsGenerator';
+import { mediaQueryMatches, subscribeMediaQuery } from '../../utils/browserCompat';
 import './Sports.css';
 
 function filterByLeague(matchList, activeLeague, cricketSeries = []) {
@@ -112,7 +114,8 @@ function getMatchScores(match) {
   let team1Score = state?.teams?.team1?.score || '';
   let team2Score = state?.teams?.team2?.score || '';
   const ld = enriched?.liveDetails || {};
-  const isBallSport = enriched?.sport === 'soccer' || enriched?.sport === 'esoccer' || enriched?.sport === 'basketball';
+  const sportKey = String(enriched?.sport || '').toLowerCase();
+  const isBallSport = sportKey && !sportKey.includes('cricket');
 
   if (!isBallSport) {
     const resolved = resolveCricketTeamScores(enriched, ld);
@@ -142,16 +145,24 @@ function CricketGroupedMatches({ groups, onSelectMatch, getMatchScores, isBetSel
           {matches.map((m) => {
             const { team1Score, team2Score, isLive, isFinished, overs2 } = getMatchScores(m);
             const showScores = isLive || isFinished;
+            const sportKey = String(m.sport || '').toLowerCase();
+            const isCricketRow = !sportKey || sportKey.includes('cricket');
+            const showDrawSlot = isCricketRow || sportKey === 'soccer' || sportKey === 'esoccer';
 
             const statusLabel = isLive
-              ? (m.liveDetails?.period || (team2Score && team2Score !== '0/0' ? 'Second innings' : 'First innings'))
+              ? (m.liveDetails?.period
+                || m.liveDetails?.minute
+                || m.liveDetails?.currentSet
+                || (isCricketRow
+                  ? (team2Score && team2Score !== '0/0' ? 'Second innings' : 'First innings')
+                  : 'Live'))
               : isFinished
                 ? 'Match Ended'
                 : (m.time || 'Scheduled');
 
-            const oversDisplay = isLive && overs2 && overs2 !== '0.0'
+            const oversDisplay = isCricketRow && isLive && overs2 && overs2 !== '0.0'
               ? `(${overs2} ov.)`
-              : (isLive && m.liveDetails?.overs && m.liveDetails.overs !== '0.0' ? `(${m.liveDetails.overs} ov.)` : null);
+              : (isCricketRow && isLive && m.liveDetails?.overs && m.liveDetails.overs !== '0.0' ? `(${m.liveDetails.overs} ov.)` : null);
 
             const marketCount = 22 + ((m.id?.length || 0) % 15);
 
@@ -176,12 +187,12 @@ function CricketGroupedMatches({ groups, onSelectMatch, getMatchScores, isBetSel
                 <div className="sports-cricket-row__body">
                   <div className="sports-cricket-row__teams-btn">
                     <div className="sports-cricket-row__team">
-                      <TeamJersey team={m.team1} size={22} />
+                      <TeamJersey team={m.team1} size={22} isFlying={isLive && isTeamBattingInMatch(m, m.team1)} />
                       <span className="sports-cricket-row__team-name">{m.team1.name}</span>
                       {showScores && <strong className="sports-cricket-row__score">{team1Score || '–'}</strong>}
                     </div>
                     <div className="sports-cricket-row__team">
-                      <TeamJersey team={m.team2} size={22} />
+                      <TeamJersey team={m.team2} size={22} isFlying={isLive && isTeamBattingInMatch(m, m.team2)} />
                       <span className="sports-cricket-row__team-name">{m.team2.name}</span>
                       {showScores && <strong className="sports-cricket-row__score">{team2Score || '–'}</strong>}
                     </div>
@@ -228,11 +239,11 @@ function CricketGroupedMatches({ groups, onSelectMatch, getMatchScores, isBetSel
                         <span className="odds-label">X</span>
                         <strong className="odds-val">{Number(m.odds.draw).toFixed(2)}</strong>
                       </button>
-                    ) : (
+                    ) : showDrawSlot ? (
                       <div className="sports-cricket-odds-card locked" title="Not available">
                         <span className="lock-icon">—</span>
                       </div>
-                    )}
+                    ) : null}
 
                     <button
                       type="button"
@@ -285,16 +296,9 @@ export default function Sports() {
   const [expandedMarkets, setExpandedMarkets] = useState({
     winner: true, tie: true, over10: true, delivery: false, partnership: false,
   });
-  const [isWideLayout, setIsWideLayout] = useState(() =>
-    typeof window !== 'undefined' && window.matchMedia('(min-width: 1025px)').matches,
-  );
+  const [isWideLayout, setIsWideLayout] = useState(() => mediaQueryMatches('(min-width: 1025px)'));
 
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 1025px)');
-    const onChange = () => setIsWideLayout(mq.matches);
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
+  useEffect(() => subscribeMediaQuery('(min-width: 1025px)', setIsWideLayout), []);
 
 
 
@@ -333,10 +337,7 @@ export default function Sports() {
     [sportMatches],
   );
 
-  const cricketGroups = useMemo(() => {
-    if (activeSport !== 'cricket') return [];
-    return groupMatchesByLeague(sportMatches);
-  }, [activeSport, sportMatches]);
+  const cricketGroups = useMemo(() => groupMatchesByLeague(sportMatches), [sportMatches]);
 
   const lastActiveMatchRef = useRef(null);
 
@@ -386,11 +387,6 @@ export default function Sports() {
       return undefined;
     }
     if (isMatchFinished(activeMatch) || !isMatchBettable(activeMatch)) {
-      setMatchMarkets([]);
-      return undefined;
-    }
-    const sport = String(activeMatch?.sport || 'cricket').toLowerCase();
-    if (sport && !sport.includes('cricket')) {
       setMatchMarkets([]);
       return undefined;
     }
@@ -838,12 +834,12 @@ export default function Sports() {
                       </div>
                       <div className="sports-league-overview-teams">
                         <div className="sports-league-overview-team">
-                          <TeamJersey team={m.team1} size={22} />
+                          <TeamJersey team={m.team1} size={22} isFlying={isLive && isTeamBattingInMatch(m, m.team1)} />
                           <span>{m.team1.name}</span>
                           <strong>{team1Score || '–'}</strong>
                         </div>
                         <div className="sports-league-overview-team">
-                          <TeamJersey team={m.team2} size={22} />
+                          <TeamJersey team={m.team2} size={22} isFlying={isLive && isTeamBattingInMatch(m, m.team2)} />
                           <span>{m.team2.name}</span>
                           <strong>{team2Score || '–'}</strong>
                         </div>
@@ -903,12 +899,12 @@ export default function Sports() {
                       </div>
                       <div className="sports-league-overview-teams">
                         <div className="sports-league-overview-team">
-                          <TeamJersey team={m.team1} size={22} />
+                          <TeamJersey team={m.team1} size={22} isFlying={isLive && isTeamBattingInMatch(m, m.team1)} />
                           <span>{m.team1.name}</span>
                           <strong>{team1Score || '–'}</strong>
                         </div>
                         <div className="sports-league-overview-team">
-                          <TeamJersey team={m.team2} size={22} />
+                          <TeamJersey team={m.team2} size={22} isFlying={isLive && isTeamBattingInMatch(m, m.team2)} />
                           <span>{m.team2.name}</span>
                           <strong>{team2Score || '–'}</strong>
                         </div>
@@ -979,7 +975,7 @@ export default function Sports() {
 
                     <div className="sports-match-banner-teams">
                       <div className="sports-match-banner-team-col">
-                        <TeamJersey team={activeMatch.team1} size={48} />
+                        <TeamJersey team={activeMatch.team1} size={48} isFlying={isLive && isTeamBattingInMatch(activeMatch, activeMatch.team1)} />
                         <span className="sports-match-banner-team">{activeMatch.team1.name}</span>
                         {(isLive || isFinished) && team1Score && (
                           <strong className="sports-match-banner-score">{team1Score}</strong>
@@ -989,7 +985,7 @@ export default function Sports() {
                       <span className="sports-match-banner-vs">VS</span>
 
                       <div className="sports-match-banner-team-col">
-                        <TeamJersey team={activeMatch.team2} size={48} />
+                        <TeamJersey team={activeMatch.team2} size={48} isFlying={isLive && isTeamBattingInMatch(activeMatch, activeMatch.team2)} />
                         <span className="sports-match-banner-team">{activeMatch.team2.name}</span>
                         {(isLive || isFinished) && team2Score && (
                           <strong className="sports-match-banner-score">{team2Score}</strong>
@@ -1031,7 +1027,7 @@ export default function Sports() {
                 <MarketsSuspended />
               )}
               {canBetActive && !isMatchFinished(activeMatch) && matchMarkets.length === 0 && (
-                <p className="sports-empty">No bettable markets for this match. Cricket matches are priced live; other sports wait on a dedicated feed.</p>
+                <p className="sports-empty">No bettable markets for this match yet. Odds will appear when the book is open.</p>
               )}
 
               {canBetActive && !isMatchFinished(activeMatch) && matchMarkets.map((market) => {

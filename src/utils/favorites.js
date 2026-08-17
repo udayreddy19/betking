@@ -1,8 +1,10 @@
+import { storageGet, storageSet } from './browserCompat.js';
+
 const FAV_KEY = 'betking_favorite_matches';
 
 export function loadFavoriteMatchIds() {
   try {
-    const raw = JSON.parse(localStorage.getItem(FAV_KEY) || '[]');
+    const raw = JSON.parse(storageGet(FAV_KEY) || '[]');
     return Array.isArray(raw) ? raw.map(String) : [];
   } catch {
     return [];
@@ -10,7 +12,7 @@ export function loadFavoriteMatchIds() {
 }
 
 export function saveFavoriteMatchIds(ids) {
-  localStorage.setItem(FAV_KEY, JSON.stringify([...new Set(ids.map(String))].slice(0, 80)));
+  storageSet(FAV_KEY, JSON.stringify([...new Set(ids.map(String))].slice(0, 80)));
 }
 
 export function toggleFavoriteMatchId(id) {

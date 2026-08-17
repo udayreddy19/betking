@@ -12,6 +12,15 @@
     "test": "vitest run",
     "fetch-itshover-icons": "node scripts/fetch-itshover-icons.mjs"
   },
+  "browserslist": [
+    "chrome >= 80",
+    "firefox >= 78",
+    "safari >= 13",
+    "ios >= 13",
+    "edge >= 88",
+    "samsung >= 12",
+    "not dead"
+  ],
   "dependencies": {
     "@animateicons/react": "^0.4.1",
     "cookie-parser": "^1.4.7",

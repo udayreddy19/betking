@@ -1,23 +1,18 @@
+import { storageGet, storageSet, storageRemove } from './browserCompat.js';
+
 const ACCESS_TOKEN_KEY = 'bk_access_token';
 
 export function getAccessToken() {
-  try {
-    return sessionStorage.getItem(ACCESS_TOKEN_KEY);
-  } catch {
-    return null;
-  }
+  return storageGet(ACCESS_TOKEN_KEY, 'session');
 }
 
 export function setAccessToken(token) {
-  if (token) {
-    sessionStorage.setItem(ACCESS_TOKEN_KEY, token);
-  } else {
-    sessionStorage.removeItem(ACCESS_TOKEN_KEY);
-  }
+  if (token) storageSet(ACCESS_TOKEN_KEY, token, 'session');
+  else storageRemove(ACCESS_TOKEN_KEY, 'session');
 }
 
 export function clearAccessToken() {
-  sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+  storageRemove(ACCESS_TOKEN_KEY, 'session');
 }
 
 async function refreshAccessToken() {

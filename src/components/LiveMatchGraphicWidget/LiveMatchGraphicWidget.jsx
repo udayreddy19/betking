@@ -1,5 +1,12 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
-import { HiOutlineViewList, HiOutlineChartBar, HiOutlineUsers, FiMessageCircle } from '../../icons';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { LayoutListIcon, MessageCircleIcon, ChartBarIcon } from '@animateicons/react/lucide';
+import {
+  HiOutlineChartBar,
+  HiOutlineUsers,
+  FiChevronLeft,
+  FiChevronRight,
+  TargetIcon,
+} from '../../icons';
 import TeamJersey from '../TeamJersey/TeamJersey';
 import MatchCountdownTimer from '../MatchCountdownTimer/MatchCountdownTimer';
 import LiveChartsWidget from '../LiveChartsWidget/LiveChartsWidget';
@@ -108,15 +115,15 @@ function getInningsInfo(match, team1, team2, resolved) {
   };
 }
 
-function BallDot({ ball, size = 'md' }) {
+function BallDot({ ball, size = 'md', latest = false }) {
   const kind = getBallDisplayKind(ball);
   const label = getBallDisplayLabel(ball);
   const isCompact = kind === 'wide' || kind === 'legbye' || kind === 'noball';
 
   return (
     <span
-      className={`cric-ball cric-ball--${kind} cric-ball--${size}${isCompact ? ' cric-ball--extra' : ''}`}
-      title={ball}
+      className={`cric-ball cric-ball--${kind} cric-ball--${size}${isCompact ? ' cric-ball--extra' : ''}${latest ? ' cric-ball--latest' : ''}`}
+      title={ball === '…' ? 'Ball in progress' : ball}
     >
       {label}
     </span>
@@ -155,48 +162,128 @@ export function CricketFieldVisual() {
   );
 }
 
-function OverHistoryBar({ rows }) {
+function LiveWidgetTabIcon({ Icon, active, size = 18 }) {
+  const iconRef = useRef(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const node = iconRef.current;
+    if (!active || !node?.startAnimation) return undefined;
+
+    const run = () => {
+      if (cancelled) return;
+      try {
+        node.startAnimation?.();
+      } catch {
+        /* motion scope can be null after unmount */
+      }
+    };
+
+    run();
+    const id = window.setInterval(run, 1800);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [active]);
+
+  return (
+    <span className={`cric-tab-icon-wrap${active ? ' is-active' : ''}`}>
+      <Icon
+        ref={iconRef}
+        size={size}
+        className="cric-tab-icon"
+        color="currentColor"
+        isAnimated={false}
+      />
+    </span>
+  );
+}
+
+function OverHistoryBar({ rows, inningsNum }) {
   const scrollRef = useRef(null);
+  const [canScroll, setCanScroll] = useState(false);
+  const displayRows = useMemo(
+    () => (rows?.length ? rows : [{ overNum: 1, balls: ['…'], isCurrent: true }]),
+    [rows],
+  );
+
+  const measure = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScroll(el.scrollWidth > el.clientWidth + 4);
+  }, []);
 
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
     el.scrollTo({ left: el.scrollWidth, behavior: 'smooth' });
-  }, [rows]);
+    measure();
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
+    ro?.observe(el);
+    el.addEventListener('scroll', measure, { passive: true });
+    return () => {
+      ro?.disconnect();
+      el.removeEventListener('scroll', measure);
+    };
+  }, [displayRows, measure]);
 
-  if (!rows.length) return null;
+  const scrollByDir = (dir) => {
+    scrollRef.current?.scrollBy({ left: dir * 160, behavior: 'smooth' });
+  };
+
+  const lastOver = displayRows[displayRows.length - 1];
+  const lastBallIdx = (lastOver?.balls?.length || 1) - 1;
 
   return (
-    <div className="cric-over-history-wrap">
+    <div className={`cric-over-history-wrap${canScroll ? ' cric-over-history-wrap--scrollable' : ''}`}>
+      {inningsNum ? (
+        <span className="cric-over-history__inn" aria-hidden="true">{inningsNum}</span>
+      ) : null}
+      {canScroll && (
+        <button
+          type="button"
+          className="cric-over-history-nav cric-over-history-nav--prev"
+          onClick={() => scrollByDir(-1)}
+          aria-label="Scroll to earlier overs"
+        >
+          <FiChevronLeft size={14} />
+        </button>
+      )}
       <div className="cric-over-history" ref={scrollRef} role="region" aria-label="Ball-by-ball over history">
-        {rows.map((row) => (
+        {displayRows.map((row) => (
           <div
             key={row.overNum}
             className={`cric-over-history__block${row.isCurrent ? ' cric-over-history__block--current' : ''}`}
           >
             <span className="cric-over-history__label">OVER {row.overNum}</span>
             <div className="cric-over-history__balls">
-              {row.balls.map((ball, idx) => (
-                <BallDot key={`${row.overNum}-${idx}`} ball={ball} size="sm" />
+              {(row.balls || []).map((ball, idx) => (
+                <BallDot
+                  key={`${row.overNum}-${idx}`}
+                  ball={ball}
+                  size="sm"
+                  latest={row.isCurrent && idx === lastBallIdx}
+                />
               ))}
             </div>
           </div>
         ))}
       </div>
-      {rows.length > 2 && (
-        <span className="cric-over-history-hint" aria-hidden="true">← scroll →</span>
+      {canScroll && (
+        <button
+          type="button"
+          className="cric-over-history-nav cric-over-history-nav--next"
+          onClick={() => scrollByDir(1)}
+          aria-label="Scroll to later overs"
+        >
+          <FiChevronRight size={14} />
+        </button>
       )}
+      <span className="cric-over-history-hint" hidden={!canScroll} aria-hidden="true">
+        ← scroll →
+      </span>
     </div>
-  );
-}
-
-function FieldIcon() {
-  return (
-    <svg className="cric-tab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
-      <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="1.5" />
-      <circle cx="12" cy="12" r="1.5" fill="currentColor" />
-    </svg>
   );
 }
 
@@ -360,27 +447,6 @@ function MicrophoneIcon() {
       <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
       <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
       <line x1="12" y1="19" x2="12" y2="22" />
-    </svg>
-  );
-}
-
-function CommentaryIcon() {
-  return (
-    <svg className="cric-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-      <line x1="8" y1="9" x2="16" y2="9" />
-      <line x1="8" y1="13" x2="14" y2="13" />
-    </svg>
-  );
-}
-
-function PointsTableIcon() {
-  return (
-    <svg className="cric-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <line x1="3" y1="9" x2="21" y2="9" />
-      <line x1="3" y1="15" x2="21" y2="15" />
-      <line x1="9" y1="3" x2="9" y2="21" />
     </svg>
   );
 }
@@ -655,7 +721,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
 
   const isTeam1Batting = matchStateObj?.currentInnings?.batTeam
     ? teamNameMatches(team1, matchStateObj.currentInnings.batTeam)
-    : (innings ? (teamNameMatches(team1, innings.battingTeam) || (!isCricketSecondInnings(match, match?.liveDetails || {}))) : true);
+    : (innings ? teamNameMatches(team1, innings.battingTeam) : true);
 
   const currentRuns = matchStateObj?.currentInnings?.runs ?? parseInt(innings?.displayScore1 ?? resolvedScores.team1?.runs ?? 0, 10);
   const currentWickets = matchStateObj?.currentInnings?.wickets ?? parseInt(innings?.displayWickets1 ?? resolvedScores.team1?.wickets ?? 0, 10);
@@ -934,6 +1000,14 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
   const displayOversNormalized = normalizeMatchOvers(innings?.displayOvers || overs, match);
   const isUnlimitedOvers = maxOvers == null;
   const timelineOvers = maxOvers ?? Math.max(20, parseInt(String(displayOversNormalized).split('.')[0], 10) + 5);
+  const timelineTicks = useMemo(() => {
+    const max = Math.max(1, timelineOvers);
+    const step = max <= 10 ? 1 : max <= 20 ? 2 : 5;
+    const ticks = [];
+    for (let i = 0; i <= max; i += step) ticks.push(i);
+    if (ticks[ticks.length - 1] !== max) ticks.push(max);
+    return ticks;
+  }, [timelineOvers]);
   const isMatchFinished = matchState === 'post'
     || match?.isCompleted
     || match?.liveStatus === 'COMPLETED'
@@ -999,8 +1073,8 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
 
           <div className="live-widget-teams-row">
             <div className="live-widget-team-cell">
-              <TeamJersey team={match?.team1 || team1} size={42} isFlying={isTeam1Batting} />
-              <span className="live-widget-team">{team1Display}</span>
+              <TeamJersey team={match?.team1 || team1} size={42} isFlying={!isMatchFinished && isTeam1Batting} />
+              <span className="live-widget-team" title={team1Display}>{team1Short}</span>
             </div>
             <span className="live-widget-scoreline">
               {innings
@@ -1020,8 +1094,8 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
                 : '–'}
             </span>
             <div className="live-widget-team-cell">
-              <span className="live-widget-team">{team2Display}</span>
-              <TeamJersey team={match?.team2 || team2} size={42} isFlying={!isTeam1Batting} />
+              <TeamJersey team={match?.team2 || team2} size={42} isFlying={!isMatchFinished && !isTeam1Batting} />
+              <span className="live-widget-team" title={team2Display}>{team2Short}</span>
             </div>
           </div>
 
@@ -1052,13 +1126,13 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
 
           <div className="live-widget-timeline" aria-hidden="true">
             <div className="live-widget-timeline-track">
-              {[0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20].map((val) => (
-                <span key={val} className="live-widget-timeline-axis-label" style={{ left: `${(val / 20) * 100}%` }}>
+              {timelineTicks.map((val) => (
+                <span key={val} className="live-widget-timeline-axis-label" style={{ left: `${(val / timelineOvers) * 100}%` }}>
                   {val}
                 </span>
               ))}
               {Array.from(wicketOvers).map((wktOver) => {
-                const leftPct = Math.min(96, Math.max(4, (wktOver / 20) * 100));
+                const leftPct = Math.min(96, Math.max(4, (wktOver / timelineOvers) * 100));
                 return (
                   <div key={wktOver} className="live-widget-wicket-marker" style={{ left: `${leftPct}%` }}>
                     <span className="live-widget-wicket-badge">W</span>
@@ -1076,7 +1150,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
               onClick={() => setActiveWidgetTab('field')}
               className={`live-widget-tab ${activeWidgetTab === 'field' ? 'active' : ''}`}
             >
-              <FieldIcon />
+              <LiveWidgetTabIcon Icon={TargetIcon} active={activeWidgetTab === 'field'} />
               Tracker
             </button>
             <button
@@ -1086,7 +1160,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
               onClick={() => setActiveWidgetTab('scorecard')}
               className={`live-widget-tab ${activeWidgetTab === 'scorecard' ? 'active' : ''}`}
             >
-              <PointsTableIcon />
+              <LiveWidgetTabIcon Icon={LayoutListIcon} active={activeWidgetTab === 'scorecard'} />
               Scorecard
             </button>
             <button
@@ -1096,7 +1170,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
               onClick={() => setActiveWidgetTab('commentary')}
               className={`live-widget-tab ${activeWidgetTab === 'commentary' ? 'active' : ''}`}
             >
-              <CommentaryIcon />
+              <LiveWidgetTabIcon Icon={MessageCircleIcon} active={activeWidgetTab === 'commentary'} />
               Commentary
             </button>
             <button
@@ -1106,7 +1180,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
               onClick={() => setActiveWidgetTab('charts')}
               className={`live-widget-tab ${activeWidgetTab === 'charts' ? 'active' : ''}`}
             >
-              <HiOutlineChartBar />
+              <LiveWidgetTabIcon Icon={ChartBarIcon} active={activeWidgetTab === 'charts'} />
               Live Charts
             </button>
           </div>
@@ -1121,7 +1195,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
         )}
         {activeWidgetTab === 'field' && (
           <div className="cric-panel cric-panel--dark">
-            <OverHistoryBar fieldState={fieldState} rows={overHistoryRows} />
+            <OverHistoryBar rows={overHistoryRows} inningsNum={innings?.inningsNum} />
 
             <div className="cric-field-scorecard">
               <div className="cric-field-table">

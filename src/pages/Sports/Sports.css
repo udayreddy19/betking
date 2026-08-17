@@ -2,6 +2,7 @@
   position: relative;
   background: var(--color-bg);
   min-height: calc(100vh - var(--header-height));
+  min-height: calc(var(--app-height) - var(--header-height));
   padding: var(--space-4) 0 var(--space-8);
   overflow-x: hidden;
 }
@@ -28,14 +29,14 @@
   left: 24px;
   width: 52px;
   height: 52px;
-  border-radius: 50%;
-  background: #5e35b1;
-  color: white;
+  border-radius: 14px;
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
   font-size: 1.4rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 16px rgba(94, 53, 177, 0.4);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--color-primary) 40%, transparent);
   z-index: 50;
   transition: transform 0.15s ease;
 }
@@ -87,7 +88,7 @@
 }
 
 .sports-breadcrumb-link:hover {
-  color: #5e35b1;
+  color: var(--color-primary);
   text-decoration: underline;
 }
 
@@ -192,7 +193,7 @@
 
 [data-theme='dark'] .sports-ticker-card.selected {
   background: rgba(124, 58, 237, 0.28);
-  border-color: #a78bfa;
+  border-color: var(--color-primary-light);
   color: #f8fafc;
 }
 
@@ -354,14 +355,13 @@
 }
 
 .sports-format-badge {
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-  color: #ffffff;
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
   padding: 3px 10px;
   border-radius: 6px;
   font-size: 0.72rem;
-  font-weight: 900;
-  letter-spacing: 0.05em;
-  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
+  font-weight: 800;
+  letter-spacing: 0.08em;
 }
 
 .sports-series-name {
@@ -578,7 +578,7 @@
 }
 
 .sports-market-odds-btn.selected .odds-val {
-  color: #5e35b1;
+  color: var(--color-primary-dark);
 }
 
 .sports-market-suspended {
@@ -738,7 +738,7 @@
   transform: translateY(-50%);
   font-size: 0.72rem;
   font-weight: 700;
-  color: #5e35b1;
+  color: var(--color-primary);
 }
 
 .sports-mobile-live-widget {
@@ -1250,7 +1250,7 @@
   }
 
   .sports-page {
-    padding: var(--space-3) 0 calc(var(--space-16) + env(safe-area-inset-bottom, 0px));
+    padding: var(--space-3) 0 calc(var(--space-16) + var(--safe-bottom, env(safe-area-inset-bottom, 0px)));
   }
 
   .sports-right {

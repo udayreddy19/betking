@@ -7,6 +7,7 @@ import TeamJersey from '../TeamJersey/TeamJersey';
 import MatchCountdownTimer from '../MatchCountdownTimer/MatchCountdownTimer';
 import { isMatchBettable, isMatchLive, isMatchFinished, hasCricketPlayStarted } from '../../utils/matchBetting';
 import { resolveCricketTeamScores } from '../../utils/cricketScores';
+import { isTeamBattingInMatch } from '../../utils/teamFlags';
 import { isTestMatch, getTestMatchDayLabel, formatMatchCountdown } from '../../utils/cricketFormat';
 import { enrichFromPoller } from '../../services/matchDetailPoller';
 import './MatchCard.css';
@@ -167,7 +168,7 @@ export default function MatchCard({ match, variant = 'default' }) {
 
         <div className="match-card-teams">
           <div className="match-card-team">
-            <TeamJersey team={match.team1} size={jerseySize} />
+            <TeamJersey team={match.team1} size={jerseySize} isFlying={isLiveNow && isTeamBattingInMatch(match, match.team1)} />
             <span className="team-name">{match.team1?.name || match.team1 || 'Team 1'}</span>
             {!isHome && (isLiveNow || isFinished) && team1Score && (
               <span className="team-score">{team1Score}</span>
@@ -175,7 +176,7 @@ export default function MatchCard({ match, variant = 'default' }) {
           </div>
           {!isHome && <span className="vs-text">VS</span>}
           <div className="match-card-team">
-            <TeamJersey team={match.team2} size={jerseySize} />
+            <TeamJersey team={match.team2} size={jerseySize} isFlying={isLiveNow && isTeamBattingInMatch(match, match.team2)} />
             <span className="team-name">{match.team2?.name || match.team2 || 'Team 2'}</span>
             {!isHome && (isLiveNow || isFinished) && team2Score && (
               <span className="team-score">{team2Score}</span>
@@ -209,7 +210,7 @@ export default function MatchCard({ match, variant = 'default' }) {
                     <span className="odds-label">1</span>
                     <span className="odds-value">{hasT1Odds ? Number(t1Odds).toFixed(2) : '—'}</span>
                   </button>
-                  {!isHome && match.odds?.draw !== undefined && (
+                  {!isHome && (match.odds?.draw != null || match.sport === 'soccer' || match.sport === 'esoccer') && (
                     <button
                       className={`odds-btn ${isBetSelected(match.id, 'X') ? 'selected' : ''} ${!hasDrawOdds ? 'disabled' : ''}`}
                       disabled={!hasDrawOdds}

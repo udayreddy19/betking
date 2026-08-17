@@ -13,6 +13,7 @@ import RupeeSymbol from '../RupeeSymbol/RupeeSymbol';
 import DailySpinModal from '../DailySpinModal/DailySpinModal';
 import AnimatedMotionGiftIcon from '../AnimatedMotionGiftIcon/AnimatedMotionGiftIcon';
 import { ODDS_FORMAT_OPTIONS } from '../../utils/oddsFormatter';
+import { storageGet, storageSet } from '../../utils/browserCompat';
 import '../MyBetsPanel/MyBetsPanel.css';
 import '../PromotionsPanel/PromotionsPanel.css';
 import './Header.css';
@@ -42,12 +43,12 @@ function Header() {
   const [isSpinOpen, setIsSpinOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
-  const [oddsFormat, setOddsFormat] = useState(() => localStorage.getItem('betking_odds_format') || 'decimal');
+  const [oddsFormat, setOddsFormat] = useState(() => storageGet('betking_odds_format') || 'decimal');
 
   const handleOddsFormatChange = (e) => {
     const fmt = e.target.value;
     setOddsFormat(fmt);
-    localStorage.setItem('betking_odds_format', fmt);
+    storageSet('betking_odds_format', fmt);
     window.dispatchEvent(new CustomEvent('oddsformatchange', { detail: fmt }));
   };
 
@@ -128,7 +129,7 @@ function Header() {
           </button>
 
           <NavLink to="/" className="header-logo" id="header-logo">
-            <span className="logo-icon logo-icon-circle">BK</span>
+            <span className="logo-mark" aria-hidden="true">K</span>
             <span className="logo-text">BETKING</span>
           </NavLink>
 

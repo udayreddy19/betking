@@ -1,7 +1,10 @@
-import { useMemo } from 'react';
+import { useMemo, useId } from 'react';
+import { getTeamKitSpec } from '../../utils/teamKitSpecs';
+import { formatTeamShortName } from '../../utils/teamShortName';
 
 /** Authentic SVG 3D team jersey designs for international & IPL teams. */
-export function AuthenticTeamJerseySvg({ teamName, size = 52, isFlying = false }) {
+export function AuthenticTeamJerseySvg({ teamName, size = 52, isFlying = false, className = '' }) {
+  const uid = useId().replace(/:/g, '');
   const normKey = useMemo(() => {
     const raw = String(teamName || '').toLowerCase().trim();
     if (/\b(ind|india)\b/i.test(raw)) return 'ind';
@@ -255,18 +258,21 @@ export function AuthenticTeamJerseySvg({ teamName, size = 52, isFlying = false }
           ),
         };
 
-      default:
+      default: {
+        const kit = getTeamKitSpec(teamName);
+        const label = formatTeamShortName(String(teamName || ''), '').slice(0, 5);
         return {
-          primary: '#1D4ED8',
-          secondary: '#F59E0B',
-          sleeve: '#1E3A8A',
-          collar: '#F59E0B',
-          text: teamName ? teamName.slice(0, 7).toUpperCase() : 'TEAM',
-          badge: '🏏',
+          primary: kit.body,
+          secondary: kit.accent,
+          sleeve: kit.sleeve,
+          collar: kit.collar,
+          text: label,
+          badge: '',
           pattern: (
-            <polygon points="28,26 50,52 72,26 64,26 50,42 36,26" fill="#F59E0B" opacity="0.9" />
+            <polygon points="28,26 50,52 72,26 64,26 50,42 36,26" fill={kit.accent} opacity="0.9" />
           ),
         };
+      }
     }
   };
 
@@ -274,7 +280,7 @@ export function AuthenticTeamJerseySvg({ teamName, size = 52, isFlying = false }
 
   return (
     <div
-      className={`team-jersey-kit ${isFlying ? 'team-jersey-kit--flying' : ''}`}
+      className={`team-jersey-kit ${isFlying ? 'team-jersey-kit--flying' : ''} ${className}`.trim()}
       style={{ width: size, height }}
       aria-hidden="true"
       title={teamName}
@@ -286,18 +292,18 @@ export function AuthenticTeamJerseySvg({ teamName, size = 52, isFlying = false }
         preserveAspectRatio="xMidYMid meet"
       >
         <defs>
-          <linearGradient id={`body-grad-${normKey}`} x1="0" y1="0" x2="1" y2="1">
+          <linearGradient id={`body-grad-${uid}`} x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor={details.primary} />
             <stop offset="70%" stopColor={details.primary} />
             <stop offset="100%" stopColor={details.sleeve} />
           </linearGradient>
 
-          <linearGradient id={`sleeve-grad-${normKey}`} x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id={`sleeve-grad-${uid}`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={details.sleeve} />
             <stop offset="100%" stopColor={details.primary} />
           </linearGradient>
 
-          <linearGradient id="shine-3d" x1="0.2" y1="0" x2="0.8" y2="1">
+          <linearGradient id={`shine-3d-${uid}`} x1="0.2" y1="0" x2="0.8" y2="1">
             <stop offset="0%" stopColor="#ffffff" stopOpacity="0.32" />
             <stop offset="35%" stopColor="#ffffff" stopOpacity="0.06" />
             <stop offset="100%" stopColor="#000000" stopOpacity="0.3" />
@@ -310,7 +316,7 @@ export function AuthenticTeamJerseySvg({ teamName, size = 52, isFlying = false }
         {/* Left Sleeve */}
         <path
           d="M 28,26 L 6,42 L 14,64 L 32,48 Z"
-          fill={`url(#sleeve-grad-${normKey})`}
+          fill={`url(#sleeve-grad-${uid})`}
           stroke="#000000"
           strokeWidth="0.8"
           strokeOpacity="0.3"
@@ -320,7 +326,7 @@ export function AuthenticTeamJerseySvg({ teamName, size = 52, isFlying = false }
         {/* Right Sleeve */}
         <path
           d="M 72,26 L 94,42 L 86,64 L 68,48 Z"
-          fill={`url(#sleeve-grad-${normKey})`}
+          fill={`url(#sleeve-grad-${uid})`}
           stroke="#000000"
           strokeWidth="0.8"
           strokeOpacity="0.3"
@@ -330,7 +336,7 @@ export function AuthenticTeamJerseySvg({ teamName, size = 52, isFlying = false }
         {/* Main Torso */}
         <path
           d="M 28,26 Q 50,33 72,26 L 68,48 L 73,105 Q 50,108 27,105 L 32,48 Z"
-          fill={`url(#body-grad-${normKey})`}
+          fill={`url(#body-grad-${uid})`}
           stroke="#000000"
           strokeWidth="0.8"
           strokeOpacity="0.35"
@@ -351,7 +357,7 @@ export function AuthenticTeamJerseySvg({ teamName, size = 52, isFlying = false }
         {/* 3D Lighting Shading */}
         <path
           d="M 28,26 Q 50,33 72,26 L 68,48 L 73,105 Q 50,108 27,105 L 32,48 Z"
-          fill="url(#shine-3d)"
+          fill={`url(#shine-3d-${uid})`}
         />
 
         {/* Team Chest Name Badge */}

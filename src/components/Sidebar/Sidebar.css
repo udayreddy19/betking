@@ -10,6 +10,7 @@
   pointer-events: none;
   transition: opacity var(--transition-base);
   backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
 }
 .sidebar-overlay.open {
   opacity: 1;
@@ -23,6 +24,9 @@
   width: var(--sidebar-width);
   max-width: 90vw;
   height: 100vh;
+  height: 100dvh;
+  height: var(--app-height);
+  padding-top: var(--safe-top);
   background: var(--color-surface);
   z-index: var(--z-modal);
   transform: translateX(-100%);
@@ -96,7 +100,7 @@
   left: 20%;
   right: 20%;
   height: 3px;
-  background: var(--color-accent-gold);
+  background: var(--color-primary);
   border-radius: var(--radius-full) var(--radius-full) 0 0;
 }
 

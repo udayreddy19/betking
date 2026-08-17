@@ -58,8 +58,10 @@
   max-width: calc(100vw - 32px);
   height: 540px;
   max-height: calc(100vh - 100px);
+  max-height: calc(var(--app-height) - 100px);
   background: rgba(15, 23, 42, 0.95);
   backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 20px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(59, 130, 246, 0.15);

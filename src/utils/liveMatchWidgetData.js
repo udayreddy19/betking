@@ -3,7 +3,7 @@ import {
   getMatchMaxBalls,
   normalizeMatchOvers,
 } from './cricketFormat';
-import { formatBallOutcome } from './liveFieldState';
+import { formatBallOutcome, parseOvers } from './liveFieldState';
 import { isCricketSecondInnings, resolveCricketTeamScores, teamNameMatches } from './cricketScores';
 import { getScorecardInningsForTeam } from './matchSquads';
 import { isPlaceholderPlayerName } from './cricketPlayers';
@@ -201,6 +201,20 @@ export function buildScorecardInnings(match, teamName, roster, fieldState, isBat
   return battersFromFieldState(fieldState);
 }
 
+function battingOversStr(match) {
+  const ld = match?.liveDetails || {};
+  const isChasing = isCricketSecondInnings(match, ld);
+  return isChasing
+    ? (ld.overs2 || ld.chaseOvers || ld.overs || '0.0')
+    : (ld.overs || ld.firstOvers || '0.0');
+}
+
+function currentOverNumberFromOvers(oversStr, match) {
+  const { over, ball } = parseOvers(normalizeMatchOvers(oversStr || '0.0', match));
+  if (ball > 0) return over + 1;
+  return Math.max(1, over || 1);
+}
+
 function apiOverHistoryRows(match) {
   const rows = match?.overHistory;
   if (!Array.isArray(rows) || !rows.length) return [];
@@ -212,22 +226,50 @@ function apiOverHistoryRows(match) {
   }));
 }
 
+function rowsFromFieldState(fieldState) {
+  if (!fieldState) return [];
+  const recent = (fieldState.recentOvers || []).map((row) => ({
+    overNum: row.overNum,
+    balls: (row.balls || []).map((b) => formatBallOutcome(b)),
+    isCurrent: false,
+  }));
+  const currentBalls = (fieldState.overBalls || fieldState.currentOverBalls || [])
+    .map((b) => formatBallOutcome(b));
+  if (!recent.length && !currentBalls.length) return [];
+  return [
+    ...recent,
+    {
+      overNum: fieldState.overNum || (recent[recent.length - 1]?.overNum || 0) + 1,
+      balls: currentBalls,
+      isCurrent: true,
+    },
+  ];
+}
+
 function generateOverHistoryFromScore(match) {
   const ld = match?.liveDetails || {};
-  const isChasing = isCricketSecondInnings(match, ld);
-  const rawOvers = isChasing
-    ? (ld.overs2 || ld.chaseOvers || ld.overs)
-    : (ld.overs || ld.firstOvers);
+  const rawOvers = battingOversStr(match);
   if (!rawOvers || rawOvers === '0.0' || rawOvers === '0') return [];
-
-  const oversStr = normalizeMatchOvers(rawOvers, match);
-  const currentOverNum = parseInt(String(oversStr).split('.')[0], 10) || 0;
-  if (currentOverNum < 1) return [];
 
   const balls = (ld.currentOverBalls || []).map((b) => formatBallOutcome(b));
   if (!balls.length) return [];
 
-  return [{ overNum: currentOverNum, balls, isCurrent: true }];
+  return [{
+    overNum: currentOverNumberFromOvers(rawOvers, match),
+    balls,
+    isCurrent: true,
+  }];
+}
+
+function fallbackCurrentOverRow(match) {
+  const oversStr = battingOversStr(match);
+  const { ball } = parseOvers(normalizeMatchOvers(oversStr, match));
+  const count = Math.max(1, ball || 1);
+  return [{
+    overNum: currentOverNumberFromOvers(oversStr, match),
+    balls: Array.from({ length: count }, () => '…'),
+    isCurrent: true,
+  }];
 }
 
 export function buildOverHistoryRows(fieldState, _matchId, match) {
@@ -236,19 +278,13 @@ export function buildOverHistoryRows(fieldState, _matchId, match) {
   const fromApi = apiOverHistoryRows(match);
   if (fromApi.length) return fromApi;
 
-  const ld = match?.liveDetails || {};
-  const balls = (ld.currentOverBalls || []).map((b) => formatBallOutcome(b));
-  if (balls.length) {
-    const isChasing = isCricketSecondInnings(match, ld);
-    const rawOvers = isChasing
-      ? (ld.overs2 || ld.chaseOvers || ld.overs || '0.0')
-      : (ld.overs || ld.firstOvers || '0.0');
-    const oversStr = normalizeMatchOvers(rawOvers, match);
-    const overNum = Math.max(1, parseInt(String(oversStr).split('.')[0], 10) || 1);
-    return [{ overNum, balls, isCurrent: true }];
-  }
+  const fromField = rowsFromFieldState(fieldState);
+  if (fromField.some((row) => row.balls?.length)) return fromField;
 
-  return generateOverHistoryFromScore(match);
+  const generated = generateOverHistoryFromScore(match);
+  if (generated.length) return generated;
+
+  return fallbackCurrentOverRow(match);
 }
 
 export function buildStatsOvers(_fieldState, match) {

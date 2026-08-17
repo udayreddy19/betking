@@ -35,6 +35,8 @@ export default defineConfig({
   },
   plugins: [react(), liveScoresApiPlugin(), sportsApiPlatformPlugin()],
   build: {
+    target: ['es2019', 'safari13', 'chrome80', 'firefox78', 'edge88'],
+    cssTarget: ['safari13', 'chrome80', 'firefox78', 'edge88'],
     chunkSizeWarningLimit: 1600,
     rollupOptions: {
       output: {
