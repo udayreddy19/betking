@@ -1,0 +1,13 @@
+node_modules
+.env
+.env.*
+!.env.example
+!.env.production.example
+dist
+.git
+.cursor
+coverage
+*.log
+tests
+**/*.test.js
+**/*.test.mjs

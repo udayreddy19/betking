@@ -65,6 +65,7 @@ function Header() {
 
   const activeMoreLinks = moreLinks.filter((link) => {
     if (link.to === '/admin') return isAdminUser;
+    if (link.to === '/profile') return isLoggedIn;
     return true;
   });
 
@@ -188,7 +189,7 @@ function Header() {
                 </button>
               )}
             </div>
-          ) : (
+          ) : isLoggedIn ? (
             <>
               <motion.button
                 type="button"
@@ -239,7 +240,7 @@ function Header() {
                 <AnimatedMotionGiftIcon size={18} />
               </motion.button>
             </>
-          )}
+          ) : null}
 
           {isAdminUser && (
             <select
@@ -435,12 +436,6 @@ function Header() {
             </>
           ) : (
             <div className="header-auth-buttons">
-              <div className="header-wallet-group header-wallet-group--guest">
-                <div className="header-balance header-balance--static">
-                  <span><RupeeSymbol size={18} />0</span>
-                  <FiChevronDown className="balance-chevron" />
-                </div>
-              </div>
               <button className="header-login-btn" onClick={openLoginModal} id="login-btn">
                 Log in
               </button>
@@ -452,9 +447,9 @@ function Header() {
           )}
         </div>
       </div>
-      <MyBetsPanel />
-      <PromotionsPanel isOpen={isPromosOpen} onClose={closePromos} />
-      <DailySpinModal isOpen={isSpinOpen} onClose={() => setIsSpinOpen(false)} />
+      {isLoggedIn && <MyBetsPanel />}
+      {isLoggedIn && <PromotionsPanel isOpen={isPromosOpen} onClose={closePromos} />}
+      {isLoggedIn && <DailySpinModal isOpen={isSpinOpen} onClose={() => setIsSpinOpen(false)} />}
     </header>
   );
 }

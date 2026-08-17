@@ -1,0 +1,86 @@
+import { describe, it, expect } from 'vitest';
+import { generate as generateV3 } from '../../lib/odds-v3/OddsEngineV3.mjs';
+import { createCanonicalMatchState } from '../../lib/odds-v3/models/CanonicalMatchState.mjs';
+import {
+  alignWinnerMarkets,
+  assertBettableQuote,
+  suspendLockMarkets,
+} from '../../lib/odds-v3/bookIntegrity.mjs';
+import { riskAdjustmentEngine } from '../../lib/engines/riskAdjustmentEngine.mjs';
+
+describe('Book integrity', () => {
+  it('rejects lock prices and odds drift above 2%', () => {
+    expect(() => assertBettableQuote(1.00, 1.50)).toThrow(/ODDS_LOCKED/);
+    expect(() => assertBettableQuote(1.85, 2.50)).toThrow(/ODDS_CHANGED/);
+    expect(assertBettableQuote(1.85, 1.85)).toBe(1.85);
+    expect(assertBettableQuote(1.85, 1.87)).toBe(1.85);
+  });
+
+  it('copies Match Winner prices onto Winner (incl. Super Over)', () => {
+    const markets = alignWinnerMarkets([
+      {
+        marketId: 'match_winner',
+        status: 'OPEN',
+        selections: [
+          { selectionId: 'w1', name: 'RCB', odds: 8.2, probability: 0.12 },
+          { selectionId: 'w2', name: 'PBKS', odds: 1.12, probability: 0.88 },
+        ],
+      },
+      {
+        marketId: 'match_winner_super_over',
+        status: 'OPEN',
+        selections: [
+          { selectionId: 'so1', name: 'RCB', odds: 1.15, probability: 0.85 },
+          { selectionId: 'so2', name: 'PBKS', odds: 5.5, probability: 0.15 },
+        ],
+      },
+    ]);
+    const so = markets.find((m) => m.marketId === 'match_winner_super_over');
+    expect(so.selections[0].odds).toBe(8.2);
+    expect(so.selections[1].odds).toBe(1.12);
+    expect(so.selections[0].selectionId).toBe('so1');
+  });
+
+  it('suspends markets that print at the 1.01 floor', () => {
+    const [market] = suspendLockMarkets([
+      {
+        marketId: 'team_total',
+        status: 'OPEN',
+        selections: [
+          { selectionId: 'o', name: 'Over 76.5', odds: 1.01, probability: 0.99 },
+          { selectionId: 'u', name: 'Under 76.5', odds: 34, probability: 0.01 },
+        ],
+      },
+    ]);
+    expect(market.status).toBe('SUSPENDED');
+    expect(market.selections.every((s) => s.bettable === false)).toBe(true);
+  });
+
+  it('does not invent cricket markets for soccer', () => {
+    const snap = generateV3(createCanonicalMatchState({
+      matchId: 'soccer_1',
+      sport: 'SOCCER',
+      format: 'T20',
+      status: 'LIVE',
+      team1: { id: 'A', name: 'A', runs: 0, wickets: 0, balls: 0 },
+      team2: { id: 'B', name: 'B', runs: 0, wickets: 0, balls: 0 },
+      currentInnings: 1,
+      battingTeamId: 'A',
+      bowlingTeamId: 'B',
+      ballsPerInnings: 120,
+      ballsCompleted: 0,
+      ballsRemaining: 120,
+      providerTimestamp: Date.now(),
+      stateVersion: 1,
+    }));
+    expect(snap.status).toBe('UNSUPPORTED_SPORT');
+    expect(snap.markets).toEqual([]);
+  });
+
+  it('lengthens the side with high liability', () => {
+    riskAdjustmentEngine.recordBetLiability('mkt_ou', 'sel_over', 50000, 95000);
+    const shifted = riskAdjustmentEngine.applyTwoWayShift(0.5, 0.5, 'mkt_ou', 'sel_over', 'sel_under');
+    expect(shifted.p0).toBeLessThan(0.5);
+    expect(shifted.p1).toBeGreaterThan(0.5);
+  });
+});

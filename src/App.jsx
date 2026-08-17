@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { MotionConfig } from 'motion/react';
 import { ThemeProvider } from './context/ThemeContext';
 import { BetSlipProvider } from './context/BetSlipContext';
@@ -33,6 +33,9 @@ import ResponsibleGaming from './pages/Legal/ResponsibleGaming';
 import Help from './pages/Legal/Help';
 import NotFound from './pages/Legal/NotFound';
 
+const VerifyEmailPage = lazy(() => import('./pages/Auth/VerifyEmailPage'));
+const ResetPasswordPage = lazy(() => import('./pages/Auth/ResetPasswordPage'));
+
 const Sports = lazy(() => import('./pages/Sports/Sports'));
 const Casino = lazy(() => import('./pages/Casino/Casino'));
 const LiveCasino = lazy(() => import('./pages/LiveCasino/LiveCasino'));
@@ -40,11 +43,6 @@ const Admin = lazy(() => import('./pages/Admin/Admin'));
 const TraderConsole = lazy(() => import('./pages/Trader/TraderConsole'));
 const ApiDocs = lazy(() => import('./pages/ApiDocs/ApiDocs'));
 const Vip = lazy(() => import('./pages/Vip/Vip'));
-const IPLSRLHome = lazy(() => import('./pages/IPLSRL/IPLSRLHome'));
-const IPLSRLMatchCenter = lazy(() => import('./pages/IPLSRL/IPLSRLMatchCenter'));
-const IPLSRLStandings = lazy(() => import('./pages/IPLSRL/IPLSRLStandings'));
-const IPLSRLStats = lazy(() => import('./pages/IPLSRL/IPLSRLStats'));
-const IPLSRLTeams = lazy(() => import('./pages/IPLSRL/IPLSRLTeams'));
 const IPLSRLAdmin = lazy(() => import('./pages/Admin/IPLSRL/IPLSRLAdmin'));
 
 function PageLoader() {
@@ -85,16 +83,18 @@ function AppLayout() {
               <Route path="/fantasy" element={<Fantasy />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/verify-email" element={<VerifyEmailPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/promotions" element={<Promotions />} />
               <Route path="/vip" element={<Vip />} />
               <Route path="/admin/iplsrl" element={<IPLSRLAdmin />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/*" element={<Admin />} />
-              <Route path="/iplsrl" element={<IPLSRLHome />} />
-              <Route path="/iplsrl/match-center" element={<IPLSRLMatchCenter />} />
-              <Route path="/iplsrl/standings" element={<IPLSRLStandings />} />
-              <Route path="/iplsrl/stats" element={<IPLSRLStats />} />
-              <Route path="/iplsrl/teams" element={<IPLSRLTeams />} />
+              <Route path="/iplsrl" element={<Navigate to="/sports?league=ipl-srl" replace />} />
+              <Route path="/iplsrl/match-center" element={<Navigate to="/sports?league=ipl-srl" replace />} />
+              <Route path="/iplsrl/standings" element={<Navigate to="/sports?league=ipl-srl" replace />} />
+              <Route path="/iplsrl/stats" element={<Navigate to="/sports?league=ipl-srl" replace />} />
+              <Route path="/iplsrl/teams" element={<Navigate to="/sports?league=ipl-srl" replace />} />
               <Route path="/trader" element={<TraderConsole />} />
               <Route path="/developer" element={<ApiDocs />} />
               <Route path="/api-docs" element={<ApiDocs />} />
@@ -115,23 +115,25 @@ function AppLayout() {
 
 export default function App() {
   return (
-    <MotionConfig
-      reducedMotion="user"
-      transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
-    >
-      <ThemeProvider>
-        <BrowserRouter>
-          <AuthProvider>
-            <CasinoProvider>
-              <LiveSportsProvider>
-                <BetSlipProvider>
-                  <AppLayout />
-                </BetSlipProvider>
-              </LiveSportsProvider>
-            </CasinoProvider>
-          </AuthProvider>
-        </BrowserRouter>
-      </ThemeProvider>
-    </MotionConfig>
+    <ErrorBoundary>
+      <MotionConfig
+        reducedMotion="user"
+        transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+      >
+        <ThemeProvider>
+          <BrowserRouter>
+            <AuthProvider>
+              <CasinoProvider>
+                <LiveSportsProvider>
+                  <BetSlipProvider>
+                    <AppLayout />
+                  </BetSlipProvider>
+                </LiveSportsProvider>
+              </CasinoProvider>
+            </AuthProvider>
+          </BrowserRouter>
+        </ThemeProvider>
+      </MotionConfig>
+    </ErrorBoundary>
   );
 }

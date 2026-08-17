@@ -19,6 +19,15 @@ import {
   canDepositAmount,
   canStakeAmount,
 } from '../utils/responsibleGaming';
+import {
+  apiFetch,
+  fetchMe,
+  mapServerUserToSession,
+  setAccessToken,
+  clearAccessToken,
+} from '../utils/apiClient';
+
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1' || import.meta.env.DEV;
 
 
 const AuthContext = createContext(null);
@@ -169,24 +178,46 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    ensureSeedUser();
-    try {
-      const saved = localStorage.getItem(SESSION_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const session = {
-          ...parsed,
-          winningsBalance: parsed.winningsBalance ?? Math.max(
-            0,
-            (parsed.balance ?? 0) - (parsed.lockedDepositBalance ?? 0),
-          ),
-        };
-        setUserState(session);
-        setTransactions(loadTransactions(session.email));
+    if (DEMO_MODE) ensureSeedUser();
+
+    const restoreSession = async () => {
+      const token = sessionStorage.getItem('bk_access_token');
+      if (token) {
+        const me = await fetchMe();
+        if (me) {
+          const session = mapServerUserToSession(me);
+          setUserState(session);
+          setTransactions(loadTransactions(session.email));
+          return;
+        }
+        clearAccessToken();
       }
-    } catch {
-      localStorage.removeItem(SESSION_KEY);
-    }
+
+      if (!DEMO_MODE) {
+        localStorage.removeItem(SESSION_KEY);
+        return;
+      }
+
+      try {
+        const saved = localStorage.getItem(SESSION_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          const session = {
+            ...parsed,
+            winningsBalance: parsed.winningsBalance ?? Math.max(
+              0,
+              (parsed.balance ?? 0) - (parsed.lockedDepositBalance ?? 0),
+            ),
+          };
+          setUserState(session);
+          setTransactions(loadTransactions(session.email));
+        }
+      } catch {
+        localStorage.removeItem(SESSION_KEY);
+      }
+    };
+
+    restoreSession();
 
     return () => {
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -198,39 +229,97 @@ export function AuthProvider({ children }) {
     setTransactions(appendTransaction(email, entry));
   }, []);
 
-  const register = useCallback(({ email, password, displayName, phone }) => {
+  const register = useCallback(async ({ email, password, displayName, phone }) => {
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail || !password || !displayName?.trim()) {
       return { ok: false, error: 'Please fill in all required fields.' };
     }
 
-    const users = getStoredUsers();
-    if (users.some(u => u.email === normalizedEmail)) {
-      return { ok: false, error: 'An account with this email already exists.' };
+    try {
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          email: normalizedEmail,
+          password,
+          firstName: displayName.trim(),
+          phone: phone?.trim() || '',
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        return { ok: false, error: data.error || 'Registration failed.' };
+      }
+
+      if (data.accessToken) {
+        setAccessToken(data.accessToken);
+      }
+
+      const me = await fetchMe();
+      const sessionUser = mapServerUserToSession(me) || toSessionUser({
+        userId: data.user?.userId,
+        email: normalizedEmail,
+        displayName: displayName.trim(),
+        phone: phone?.trim() || '',
+        balance: 0,
+        lockedDepositBalance: 0,
+        winningsBalance: 0,
+        bonusBalance: 0,
+        freebetBalance: 0,
+        loyaltyLevel: 1,
+        loyaltyRank: 'Rookie',
+        xpToNext: 1000,
+        notifications: 0,
+        loyaltyPoints: 0,
+        coins: 0,
+      });
+
+      if (DEMO_MODE) {
+        const users = getStoredUsers();
+        saveStoredUsers([...users.filter(u => u.email !== normalizedEmail), {
+          ...sessionUser,
+          password,
+          welcomeBonusApplied: true,
+        }]);
+      }
+
+      setUser(sessionUser);
+      return { ok: true, welcomeCredit: 0 };
+    } catch {
+      if (!DEMO_MODE) {
+        return { ok: false, error: 'Unable to reach registration service.' };
+      }
+      // Offline demo fallback
+      const users = getStoredUsers();
+      if (users.some(u => u.email === normalizedEmail)) {
+        return { ok: false, error: 'An account with this email already exists.' };
+      }
+
+      const welcomeCredit = WELCOME_BONUS.registrationCredit || 0;
+      const stored = {
+        email: normalizedEmail,
+        password,
+        displayName: displayName.trim(),
+        phone: phone?.trim() || '',
+        balance: STARTING_BALANCE,
+        lockedDepositBalance: 0,
+        winningsBalance: 0,
+        bonusBalance: welcomeCredit,
+        freebetBalance: 0,
+        loyaltyLevel: 1,
+        loyaltyRank: 'Rookie',
+        xpToNext: 1000,
+        notifications: 0,
+        loyaltyPoints: 50,
+        coins: 50,
+        welcomeBonusApplied: true,
+      };
+
+      saveStoredUsers([...users, stored]);
+      return { ok: true, welcomeCredit };
     }
-
-    const welcomeCredit = WELCOME_BONUS.registrationCredit || 0;
-    const stored = {
-      email: normalizedEmail,
-      password,
-      displayName: displayName.trim(),
-      phone: phone?.trim() || '',
-      balance: STARTING_BALANCE,
-      lockedDepositBalance: 0,
-      winningsBalance: 0,
-      bonusBalance: welcomeCredit,
-      freebetBalance: 0,
-      loyaltyLevel: 1,
-      loyaltyRank: 'Rookie',
-      xpToNext: 1000,
-      notifications: 0,
-      loyaltyPoints: 50,
-      coins: 50,
-      welcomeBonusApplied: true,
-    };
-
-    saveStoredUsers([...users, stored]);
-    return { ok: true, welcomeCredit };
   }, []);
 
   const claimPromotion = useCallback((promo) => {
@@ -260,8 +349,47 @@ export function AuthProvider({ children }) {
     return getClaimedPromos(user.email).includes(promoId);
   }, [user]);
 
-  const login = useCallback((email, password) => {
+  const login = useCallback(async (email, password) => {
     const normalizedEmail = email.trim().toLowerCase();
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email: normalizedEmail, password }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        if (data.accessToken) {
+          setAccessToken(data.accessToken);
+        }
+
+        const me = await fetchMe();
+        const sessionUser = me
+          ? mapServerUserToSession(me)
+          : toSessionUser({
+            userId: data.user.userId,
+            email: data.user.email,
+            displayName: data.user.displayName || normalizedEmail.split('@')[0],
+            balance: 0,
+            winningsBalance: 0,
+          });
+
+        setUser(sessionUser);
+        setTransactions(loadTransactions(sessionUser.email));
+        setIsLoginModalOpen(false);
+        showToast(`Welcome back, ${sessionUser.displayName}!`);
+        return true;
+      }
+    } catch {
+      if (!DEMO_MODE) return false;
+    }
+
+    if (!DEMO_MODE) return false;
+
+    // Demo-only offline fallback
     const stored = getStoredUsers().find(
       u => u.email === normalizedEmail && u.password === password
     );
@@ -276,44 +404,152 @@ export function AuthProvider({ children }) {
     return true;
   }, [setUser, showToast]);
 
-  const resetPassword = useCallback((email, newPassword) => {
+  const forgotPassword = useCallback(async (email) => {
     const normalizedEmail = String(email || '').trim().toLowerCase();
-    if (!normalizedEmail || !newPassword || String(newPassword).length < 6) {
-      return { ok: false, error: 'Enter a valid email and a password of at least 6 characters.' };
+    if (!normalizedEmail || !normalizedEmail.includes('@')) {
+      return { ok: false, error: 'Please enter a valid email address.' };
     }
-    const users = getStoredUsers();
-    const idx = users.findIndex((u) => u.email === normalizedEmail);
-    if (idx < 0) {
-      return { ok: false, error: 'No account found for that email.' };
+
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: normalizedEmail }),
+      });
+      const data = await res.json();
+      return {
+        ok: true,
+        message: data.message || 'If that account exists, a reset code was generated.',
+        resetToken: data.resetToken, // Returned in dev mode for instant testing
+      };
+    } catch {
+      return {
+        ok: true,
+        message: 'Password reset link sent.',
+      };
     }
-    users[idx] = { ...users[idx], password: String(newPassword) };
-    saveStoredUsers(users);
-    return { ok: true };
   }, []);
 
-  const changePassword = useCallback((currentPassword, newPassword) => {
+  const resetPassword = useCallback(async (tokenOrEmail, newPassword) => {
+    const trimmedToken = String(tokenOrEmail || '').trim();
+    if (!trimmedToken || !newPassword || String(newPassword).length < 6) {
+      return { ok: false, error: 'Enter a valid verification code and a password of at least 6 characters.' };
+    }
+
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: trimmedToken, password: newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { ok: false, error: data.error || 'Password reset failed. Invalid or expired code.' };
+      }
+      return { ok: true, message: data.message || 'Password reset successfully.' };
+    } catch {
+      // Local fallback
+      const users = getStoredUsers();
+      const idx = users.findIndex((u) => u.email === trimmedToken.toLowerCase());
+      if (idx >= 0) {
+        users[idx] = { ...users[idx], password: String(newPassword) };
+        saveStoredUsers(users);
+        return { ok: true };
+      }
+      return { ok: false, error: 'Unable to connect to server.' };
+    }
+  }, []);
+
+  const verifyEmail = useCallback(async (token) => {
+    const trimmed = String(token || '').trim();
+    if (!trimmed) {
+      return { ok: false, error: 'Verification token is required.' };
+    }
+
+    try {
+      const res = await fetch('/api/auth/verify-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: trimmed }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { ok: false, error: data.error || 'Verification failed.' };
+      }
+      showToast('Email verified successfully!', 'success');
+      return { ok: true };
+    } catch {
+      return { ok: false, error: 'Unable to reach verification service.' };
+    }
+  }, [showToast]);
+
+
+  const changePassword = useCallback(async (currentPassword, newPassword) => {
     if (!user) return { ok: false, error: 'Please log in to change your password.' };
-    if (!newPassword || String(newPassword).length < 6) {
-      return { ok: false, error: 'New password must be at least 6 characters.' };
+    if (!newPassword || String(newPassword).length < 8) {
+      return { ok: false, error: 'New password must be at least 8 characters.' };
     }
-    const users = getStoredUsers();
-    const idx = users.findIndex((u) => u.email.toLowerCase() === user.email.toLowerCase());
-    if (idx < 0 || users[idx].password !== currentPassword) {
-      return { ok: false, error: 'Current password is incorrect.' };
+
+    try {
+      const res = await apiFetch('/api/auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { ok: false, error: data.error || 'Password change failed.' };
+      }
+      clearAccessToken();
+      setUser(null);
+      return { ok: true, message: data.message };
+    } catch {
+      if (!DEMO_MODE) {
+        return { ok: false, error: 'Unable to reach password service.' };
+      }
+      const users = getStoredUsers();
+      const idx = users.findIndex((u) => u.email.toLowerCase() === user.email.toLowerCase());
+      if (idx < 0 || users[idx].password !== currentPassword) {
+        return { ok: false, error: 'Current password is incorrect.' };
+      }
+      users[idx] = { ...users[idx], password: String(newPassword) };
+      saveStoredUsers(users);
+      return { ok: true };
     }
-    users[idx] = { ...users[idx], password: String(newPassword) };
-    saveStoredUsers(users);
-    return { ok: true };
   }, [user]);
 
-  const logout = useCallback(() => {
+  const refreshWallet = useCallback(async () => {
+    const me = await fetchMe();
+    if (!me) return false;
+    const sessionUser = mapServerUserToSession(me);
+    setUser(sessionUser);
+    return true;
+  }, [setUser]);
+
+  const logout = useCallback(async () => {
+    try {
+      await apiFetch('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // Ignore network error on logout
+    }
+    clearAccessToken();
     setUser(null);
     setTransactions([]);
     setIsSidebarOpen(false);
     showToast('You have been logged out.', 'info');
   }, [setUser, showToast]);
 
-  const addFunds = useCallback((amount, method = 'Deposit') => {
+
+  const addFunds = useCallback(async (amount, method = 'Deposit') => {
+    if (!DEMO_MODE) {
+      const refreshed = await refreshWallet();
+      if (refreshed) {
+        showToast('Deposit received — wallet updated.', 'success');
+        return true;
+      }
+      showToast('Payment processing — balance will update shortly.', 'info');
+      return false;
+    }
+
     const deposit = Number(amount) || 0;
     let email = null;
     let blocked = null;
@@ -358,7 +594,7 @@ export function AuthProvider({ children }) {
       'success',
     );
     return true;
-  }, [setUser, showToast, recordTx]);
+  }, [setUser, showToast, recordTx, refreshWallet]);
 
   const deductStake = useCallback(({ cashAmount = 0, bonusAmount = 0, freebetAmount = 0 } = {}) => {
     const cash = Number(cashAmount) || 0;
@@ -832,10 +1068,13 @@ export function AuthProvider({ children }) {
     claimPromotion,
     isPromotionClaimed,
     login,
+    forgotPassword,
     resetPassword,
+    verifyEmail,
     changePassword,
     logout,
     addFunds,
+    refreshWallet,
     deductFunds,
     deductStake,
     refundStake,
@@ -872,10 +1111,13 @@ export function AuthProvider({ children }) {
     claimPromotion,
     isPromotionClaimed,
     login,
+    forgotPassword,
     resetPassword,
+    verifyEmail,
     changePassword,
     logout,
     addFunds,
+    refreshWallet,
     deductFunds,
     deductStake,
     refundStake,

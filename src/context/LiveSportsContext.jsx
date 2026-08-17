@@ -51,9 +51,14 @@ function normalizeTeamKey(name = '') {
     .toLowerCase();
 }
 
+function isSrlMatch(match) {
+  return String(match?.id || '').startsWith('srl_') || match?.source === 'srl';
+}
+
 function mergeSrlMatches(matches) {
-  const srl = attachOdds(getIplSrlMatches());
-  const apiMatches = matches.filter((m) => !String(m.id || '').startsWith('srl_') && m.source !== 'srl');
+  const apiSrl = attachOdds(matches.filter(isSrlMatch));
+  const apiMatches = matches.filter((m) => !isSrlMatch(m));
+  const srl = apiSrl.length > 0 ? apiSrl : attachOdds(getIplSrlMatches());
 
   const seenIds = new Set();
   const seenPairs = new Map();

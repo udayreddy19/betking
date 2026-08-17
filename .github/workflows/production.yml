@@ -52,6 +52,9 @@ jobs:
             psql -h 127.0.0.1 -U betking_app -d betking -f "$f"
           done
 
+      - name: Run Oxlint
+        run: npx oxlint .
+
       - name: Run Full Test Suite (Vitest)
         env:
           NODE_ENV: test

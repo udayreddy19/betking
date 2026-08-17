@@ -15,7 +15,8 @@ export default class ErrorBoundary extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
-    if (this.state.hasError && (prevProps.resetKey !== this.props.resetKey || prevProps.children !== this.props.children)) {
+    if (!this.state.hasError) return;
+    if (prevProps.resetKey !== this.props.resetKey) {
       this.setState({ hasError: false, error: null });
     }
   }
@@ -38,7 +39,9 @@ export default class ErrorBoundary extends React.Component {
         }}>
           <h2>Something went wrong loading this section</h2>
           <p style={{ color: '#9ca3af', margin: '1rem 0' }}>
-            {this.state.error?.message || 'An unexpected rendering error occurred.'}
+            {import.meta.env.PROD
+              ? 'An unexpected rendering error occurred. Please refresh the page.'
+              : (this.state.error?.message || 'An unexpected rendering error occurred.')}
           </p>
           <button
             type="button"

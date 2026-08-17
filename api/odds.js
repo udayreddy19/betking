@@ -1,15 +1,19 @@
-import { calculateDynamicMatchOdds } from '../lib/oddsEngine.mjs';
-import { calculateMatchProbability } from '../lib/probabilityEngine.mjs';
+import { buildMatchOddsPayload } from '../lib/liveScoresApiHandlers.mjs';
 
 export default async function handler(req, res) {
   try {
     const matchId = req.query?.matchId || 'cb_169497';
-    const prob = calculateMatchProbability({ matchId, sport: 'cricket', homeElo: 1550, awayElo: 1680, isLive: true });
-    const odds = calculateDynamicMatchOdds({ id: matchId, sport: 'cricket', homeElo: 1550, awayElo: 1680, isLive: true });
+    const payload = await buildMatchOddsPayload({
+      matchId,
+      team1: req.query?.team1,
+      team2: req.query?.team2,
+      force: req.query?.refresh === '1',
+    });
 
     res.setHeader('Cache-Control', 'no-store');
-    return res.status(200).json({ success: true, matchId, probabilities: prob, odds: odds.odds, version: odds.version, publishedAt: odds.publishedAt });
+    return res.status(200).json(payload);
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    const status = err.statusCode || 500;
+    return res.status(status).json({ success: false, status: 'NOT_AVAILABLE', error: err.message });
   }
 }

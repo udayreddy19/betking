@@ -1,35 +1,43 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { IoClose, IoChevronBack, IoKeyOutline, FiArrowRight, FiShield, FiAlertCircle, FiZap, FiCheck } from '../../icons';
+import { IoClose, IoChevronBack, FiArrowRight, FiAlertCircle, FiCheck } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
-import { paymentMethods } from '../../data/mockData';
 import RazorpayModal from '../RazorpayModal/RazorpayModal';
 import { UpiLogo, GPayLogo, PhonePeLogo, PaytmLogo, BhimLogo } from '../PaymentLogos/PaymentLogos';
 import RupeeSymbol from '../RupeeSymbol/RupeeSymbol';
+import { apiFetch } from '../../utils/apiClient';
 import './DepositModal.css';
 
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1' || import.meta.env.DEV;
+
+function pollWalletRefresh(refreshWallet, attempts = 8) {
+  let count = 0;
+  const tick = async () => {
+    count += 1;
+    const ok = await refreshWallet?.();
+    if (ok || count >= attempts) return;
+    setTimeout(tick, 2500);
+  };
+  tick();
+}
+
 export default function DepositModal() {
-  const { isDepositModalOpen, closeDepositModal, addFunds, user } = useAuth();
-  const [selectedMethod, setSelectedMethod] = useState(null);
-
-  // Form states
+  const { isDepositModalOpen, closeDepositModal, refreshWallet, user } = useAuth();
   const [amount, setAmount] = useState('1000');
-  const [giftCardCode, setGiftCardCode] = useState('');
-  const [upiId, setUpiId] = useState('john@upi');
-  const [razorpayKey, setRazorpayKey] = useState(import.meta.env.VITE_RAZORPAY_KEY_ID || '');
-
+  const [upiId, setUpiId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isRzpModalOpen, setIsRzpModalOpen] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   if (!isDepositModalOpen) return null;
 
   const handleClose = () => {
-    setSelectedMethod(null);
     setIsSuccess(false);
     setIsLoading(false);
     setIsRzpModalOpen(false);
+    setIsProcessing(false);
     setErrorMsg('');
     closeDepositModal();
   };
@@ -38,118 +46,97 @@ export default function DepositModal() {
     setErrorMsg('');
     setIsLoading(true);
 
-    const activeKey = razorpayKey.trim() || import.meta.env.VITE_RAZORPAY_KEY_ID;
-
     try {
-      let order = null;
-      try {
-        const orderRes = await fetch('/api/create-razorpay-order', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount: depositAmt, userId: user?.email || 'guest' }),
-        });
-        if (orderRes.ok) {
-          order = await orderRes.json();
-        }
-      } catch {
-        console.warn('Backend order creation endpoint unavailable, attempting client initialization...');
-      }
-
-      if (window.Razorpay && activeKey && (activeKey.startsWith('rzp_test_') || activeKey.startsWith('rzp_live_'))) {
+      if (DEMO_MODE) {
         setIsLoading(false);
-        const options = {
-          key: activeKey,
-          amount: depositAmt * 100,
-          currency: 'INR',
-          name: 'BetKing Gaming',
-          description: 'Account Deposit (UPI Push Collect)',
-          order_id: order?.id,
-          handler: function (response) {
-            console.log('Razorpay Real Payment Successful:', response);
-            addFunds(depositAmt, 'Razorpay Real Payment');
-            setIsSuccess(true);
-          },
-          prefill: {
-            name: user?.displayName || 'John Doe',
-            email: user?.username ? `${user.username}@betking.com` : 'uday@example.com',
-            contact: '9876543210',
-            vpa: upiId.trim() || 'udayreddy@okicici',
-          },
-          theme: { color: '#7c3aed' },
-          modal: {
-            ondismiss: function () {
-              setIsLoading(false);
-            }
-          }
-        };
-
-        const rzp = new window.Razorpay(options);
-        rzp.on('payment.failed', function (response) {
-          setIsLoading(false);
-          setErrorMsg(`Payment Failed: ${response.error.description || 'Transaction cancelled or failed.'}`);
-        });
-        rzp.open();
+        setIsRzpModalOpen(true);
         return;
       }
 
+      const orderRes = await apiFetch('/api/v1/payments/create-order', {
+        method: 'POST',
+        body: JSON.stringify({ amount: depositAmt, currency: 'INR' }),
+      });
+      const orderData = await orderRes.json();
+      if (!orderRes.ok) {
+        throw new Error(orderData.error || 'Unable to create deposit order');
+      }
+
+      const activeKey = orderData.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID;
+      if (!window.Razorpay || !activeKey) {
+        throw new Error('Razorpay checkout is not available');
+      }
+
       setIsLoading(false);
-      setIsRzpModalOpen(true);
+      const options = {
+        key: activeKey,
+        amount: depositAmt * 100,
+        currency: 'INR',
+        name: 'BetKing Gaming',
+        description: 'Account Deposit',
+        order_id: orderData.orderId,
+        handler: function () {
+          setIsProcessing(true);
+          setIsSuccess(true);
+          pollWalletRefresh(refreshWallet);
+        },
+        prefill: {
+          name: user?.displayName || '',
+          email: user?.email || '',
+          vpa: upiId.trim() || undefined,
+        },
+        theme: { color: '#7c3aed' },
+        modal: {
+          ondismiss: function () {
+            setIsLoading(false);
+          },
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response) {
+        setErrorMsg(`Payment failed: ${response.error.description || 'Transaction cancelled.'}`);
+      });
+      rzp.open();
     } catch (err) {
       setIsLoading(false);
-      setErrorMsg(`Error launching payment: ${err.message}`);
+      setErrorMsg(err.message || 'Unable to start payment');
     }
   };
 
-  const handleRazorpayModalSuccess = (depositAmt) => {
+  const handleRazorpayModalSuccess = () => {
     setIsRzpModalOpen(false);
-    addFunds(parseFloat(depositAmt), 'Razorpay Gateway');
     setIsSuccess(true);
+    pollWalletRefresh(refreshWallet);
   };
 
   const handleDepositSubmit = (e) => {
     if (e) e.preventDefault();
     const depositAmt = parseFloat(amount);
     if (isNaN(depositAmt) || depositAmt <= 0) return;
-
     openRazorpayRealPayment(depositAmt);
   };
 
-  const currentBonusAmount = (parseFloat(amount || 0) * 1).toLocaleString();
-
   return (
     <>
-      <RazorpayModal
-        isOpen={isRzpModalOpen}
-        onClose={() => setIsRzpModalOpen(false)}
-        amount={amount}
-        onSuccess={handleRazorpayModalSuccess}
-        user={user}
-      />
+      {DEMO_MODE && (
+        <RazorpayModal
+          isOpen={isRzpModalOpen}
+          onClose={() => setIsRzpModalOpen(false)}
+          amount={amount}
+          onSuccess={handleRazorpayModalSuccess}
+          user={user}
+        />
+      )}
 
       <div className="deposit-overlay" onClick={handleClose} id="deposit-modal">
         <div className="deposit-card" onClick={(e) => e.stopPropagation()}>
 
-          {/* Header */}
           <div className="deposit-header">
             <div className="deposit-header-left">
-              {selectedMethod && !isSuccess && (
-                <motion.button
-                  type="button"
-                  className="deposit-back-btn"
-                  onClick={() => setSelectedMethod(null)}
-                  whileHover={{ scale: 1.08, x: -2 }}
-                  whileTap={{ scale: 0.92 }}
-                >
-                  <IoChevronBack />
-                </motion.button>
-              )}
               <h2>
                 <span className="deposit-header-rupee"><RupeeSymbol size={22} /></span>
-                {isSuccess
-                  ? 'Deposit Complete'
-                  : selectedMethod
-                    ? selectedMethod.name
-                    : 'Deposit Funds'}
+                {isSuccess ? 'Deposit Submitted' : 'Deposit Funds'}
               </h2>
             </div>
             <motion.button
@@ -163,14 +150,9 @@ export default function DepositModal() {
             </motion.button>
           </div>
 
-          {/* Body Content */}
           <div className="deposit-body">
             {errorMsg && (
-              <div style={{
-                background: '#fef2f2', border: '1px solid #fecaca', color: '#ef4444',
-                padding: '10px 14px', borderRadius: '12px', fontSize: '0.8rem',
-                marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px'
-              }}>
+              <div className="deposit-error-banner">
                 <FiAlertCircle style={{ flexShrink: 0 }} />
                 <span>{errorMsg}</span>
               </div>
@@ -178,7 +160,6 @@ export default function DepositModal() {
 
             <AnimatePresence mode="wait">
               {isSuccess ? (
-                /* Success View */
                 <motion.div
                   key="success"
                   className="deposit-success"
@@ -186,15 +167,18 @@ export default function DepositModal() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0 }}
                 >
-                  <span className="deposit-success-icon">🎉</span>
-                  <h3>₹{parseFloat(amount).toLocaleString()} Added!</h3>
-                  <p>Your deposit was processed successfully and credited instantly to your BetKing balance.</p>
+                  <span className="deposit-success-icon">{isProcessing ? '⏳' : '🎉'}</span>
+                  <h3>₹{parseFloat(amount).toLocaleString()} payment received</h3>
+                  <p>
+                    {isProcessing
+                      ? 'Your wallet will update automatically once the payment is confirmed.'
+                      : 'Your deposit has been credited to your BetKing wallet.'}
+                  </p>
                   <button type="button" className="deposit-pay-btn" onClick={handleClose}>
-                    <FiCheck /> Done & Continue Betting
+                    <FiCheck /> Done
                   </button>
                 </motion.div>
               ) : (
-                /* Main Deposit Form View */
                 <motion.form
                   key="form"
                   onSubmit={handleDepositSubmit}
@@ -202,7 +186,6 @@ export default function DepositModal() {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                 >
-                  {/* Preset Amount Chips */}
                   <div className="amount-presets-label">
                     <span>Select Deposit Amount (₹)</span>
                   </div>
@@ -220,7 +203,6 @@ export default function DepositModal() {
                     ))}
                   </div>
 
-                  {/* Custom Amount Input */}
                   <div className="deposit-input-wrap">
                     <span className="deposit-input-symbol">₹</span>
                     <input
@@ -235,17 +217,15 @@ export default function DepositModal() {
                     />
                   </div>
 
-                  {/* Quick UPI Launcher Apps */}
-                  <div className="deposit-quick-apps-label">Fast UPI VPA Fill / Instant Apps</div>
+                  <div className="deposit-quick-apps-label">UPI apps</div>
                   <div className="deposit-quick-apps-bar">
-                    <UpiLogo height={32} width={95} onClick={() => setUpiId('john@upi')} />
-                    <GPayLogo height={32} width={95} onClick={() => setUpiId('john@okicici')} />
-                    <PhonePeLogo height={32} width={95} onClick={() => setUpiId('john@ybl')} />
-                    <PaytmLogo height={32} width={95} onClick={() => setUpiId('john@paytm')} />
-                    <BhimLogo height={32} width={95} onClick={() => setUpiId('john@bhim')} />
+                    <UpiLogo height={36} width={118} onClick={() => setUpiId('john@upi')} />
+                    <GPayLogo height={36} width={118} onClick={() => setUpiId('john@okicici')} />
+                    <PhonePeLogo height={36} width={118} onClick={() => setUpiId('john@ybl')} />
+                    <PaytmLogo height={36} width={118} onClick={() => setUpiId('john@paytm')} />
+                    <BhimLogo height={36} width={118} onClick={() => setUpiId('john@bhim')} />
                   </div>
 
-                  {/* Submit CTA */}
                   <motion.button
                     type="submit"
                     className="deposit-pay-btn"
@@ -253,23 +233,17 @@ export default function DepositModal() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    {isLoading ? (
-                      'Connecting to Razorpay Gateway...'
-                    ) : (
-                      <>
-                        Pay ₹{parseFloat(amount || 0).toLocaleString()} via Razorpay
-                        <FiArrowRight />
-                      </>
+                    {isLoading ? 'Creating secure order…' : (
+                      <>Pay ₹{parseFloat(amount || 0).toLocaleString()} via Razorpay <FiArrowRight /></>
                     )}
                   </motion.button>
 
-                  {/* Trust Footer */}
                   <div className="deposit-trust-footer">
-                    <span className="deposit-trust-item">🔒 256-Bit SSL Encrypted</span>
+                    <span className="deposit-trust-item">🔒 SSL Encrypted</span>
                     <span>•</span>
-                    <span className="deposit-trust-item">⚡ Instant Auto Credit</span>
+                    <span className="deposit-trust-item">Webhook-verified credits</span>
                     <span>•</span>
-                    <span className="deposit-trust-item">🛡️ Razorpay Verified</span>
+                    <span className="deposit-trust-item">🛡️ Razorpay</span>
                   </div>
                 </motion.form>
               )}

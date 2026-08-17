@@ -6,6 +6,8 @@
  */
 
 import crypto from 'crypto';
+import { getJwtSecret } from '../../lib/jwtSecret.mjs';
+import { timingSafeEqualStrings } from '../../lib/cryptoUtils.mjs';
 
 // Admin roles mirror the frontend RBAC system
 const ADMIN_ROLES = {
@@ -32,7 +34,7 @@ const ROLE_PERMISSIONS = {
 /**
  * JWT Secret — in production this comes from env/secrets manager
  */
-const JWT_SECRET = process.env.JWT_SECRET || 'betking_jwt_secret_dev_key_2026';
+const JWT_SECRET = getJwtSecret();
 
 /**
  * Simple JWT verification (HS256)
@@ -50,7 +52,7 @@ function verifyJWT(token) {
       .update(`${headerB64}.${payloadB64}`)
       .digest('base64url');
 
-    if (expectedSig !== signatureB64) return null;
+    if (!timingSafeEqualStrings(expectedSig, signatureB64)) return null;
 
     const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString());
 

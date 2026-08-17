@@ -2,11 +2,47 @@ import { normalizeCricbuzzOvers, oversToBalls } from './oversUtils';
 import { flattenCricketTeamScores, resolveCricketTeamScores } from './cricketScores';
 import { isPlaceholderPlayerName } from './cricketPlayers';
 
+function batterStatWeight(player) {
+  if (!player || typeof player === 'string') return 0;
+  return (Number(player.runs) || 0)
+    + (Number(player.balls) || 0)
+    + (Number(player.fours) || 0)
+    + (Number(player.sixes) || 0)
+    + (Number(player.wickets) || 0);
+}
+
+function mergePlayerStats(primary, fallback) {
+  if (!primary) return fallback;
+  if (!fallback) return primary;
+  if (typeof primary === 'string' || typeof fallback === 'string') return primary;
+  return {
+    ...fallback,
+    ...primary,
+    name: primary.name || fallback.name,
+    runs: Math.max(Number(primary.runs) || 0, Number(fallback.runs) || 0),
+    balls: Math.max(Number(primary.balls) || 0, Number(fallback.balls) || 0),
+    fours: Math.max(Number(primary.fours) || 0, Number(fallback.fours) || 0),
+    sixes: Math.max(Number(primary.sixes) || 0, Number(fallback.sixes) || 0),
+    wickets: Math.max(Number(primary.wickets) || 0, Number(fallback.wickets) || 0),
+    overs: primary.overs || fallback.overs,
+    maidens: primary.maidens ?? fallback.maidens,
+  };
+}
+
 function pickNamedPlayer(nextPlayer, prevPlayer) {
   const nextName = nextPlayer?.name || (typeof nextPlayer === 'string' ? nextPlayer : '');
   const prevName = prevPlayer?.name || (typeof prevPlayer === 'string' ? prevPlayer : '');
   const nextValid = nextName && !isPlaceholderPlayerName(nextName);
   const prevValid = prevName && !isPlaceholderPlayerName(prevName);
+  if (nextValid && prevValid) {
+    if (nextName.toLowerCase() === prevName.toLowerCase()) {
+      return mergePlayerStats(nextPlayer, prevPlayer);
+    }
+    if (batterStatWeight(nextPlayer) === 0 && batterStatWeight(prevPlayer) > 0) {
+      return prevPlayer;
+    }
+    return nextPlayer;
+  }
   if (nextValid) return nextPlayer;
   if (prevValid) return prevPlayer;
   return nextPlayer || prevPlayer;

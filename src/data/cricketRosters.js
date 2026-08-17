@@ -149,6 +149,136 @@ const ROSTERS = {
     bowlers: ['Mohammed Siraj', 'Yash Dayal', 'Karn Sharma', 'Lockie Ferguson', 'Reece Topley'],
   },
 
+  // ── IPL TEAMS & SRL ──
+  'kolkata knight riders': {
+    batters: ['Sunil Narine', 'Phil Salt', 'Venkatesh Iyer', 'Shreyas Iyer', 'Rinku Singh', 'Andre Russell', 'Ramandeep Singh'],
+    bowlers: ['Mitchell Starc', 'Varun Chakaravarthy', 'Harshit Rana', 'Vaibhav Arora', 'Suyash Sharma'],
+  },
+  kkr: {
+    batters: ['Sunil Narine', 'Phil Salt', 'Venkatesh Iyer', 'Shreyas Iyer', 'Rinku Singh', 'Andre Russell', 'Ramandeep Singh'],
+    bowlers: ['Mitchell Starc', 'Varun Chakaravarthy', 'Harshit Rana', 'Vaibhav Arora', 'Suyash Sharma'],
+  },
+  kolk: {
+    batters: ['Sunil Narine', 'Phil Salt', 'Venkatesh Iyer', 'Shreyas Iyer', 'Rinku Singh', 'Andre Russell', 'Ramandeep Singh'],
+    bowlers: ['Mitchell Starc', 'Varun Chakaravarthy', 'Harshit Rana', 'Vaibhav Arora', 'Suyash Sharma'],
+  },
+  'punjab kings': {
+    batters: ['Shikhar Dhawan', 'Jonny Bairstow', 'Prabhsimran Singh', 'Rilee Rossouw', 'Sam Curran', 'Jitesh Sharma', 'Shashank Singh', 'Ashutosh Sharma'],
+    bowlers: ['Arshdeep Singh', 'Kagiso Rabada', 'Harshal Patel', 'Rahul Chahar', 'Harpreet Brar'],
+  },
+  pbks: {
+    batters: ['Shikhar Dhawan', 'Jonny Bairstow', 'Prabhsimran Singh', 'Rilee Rossouw', 'Sam Curran', 'Jitesh Sharma', 'Shashank Singh', 'Ashutosh Sharma'],
+    bowlers: ['Arshdeep Singh', 'Kagiso Rabada', 'Harshal Patel', 'Rahul Chahar', 'Harpreet Brar'],
+  },
+  punj: {
+    batters: ['Shikhar Dhawan', 'Jonny Bairstow', 'Prabhsimran Singh', 'Rilee Rossouw', 'Sam Curran', 'Jitesh Sharma', 'Shashank Singh', 'Ashutosh Sharma'],
+    bowlers: ['Arshdeep Singh', 'Kagiso Rabada', 'Harshal Patel', 'Rahul Chahar', 'Harpreet Brar'],
+  },
+  'delhi capitals': {
+    batters: ['David Warner', 'Prithvi Shaw', 'Jake Fraser-McGurk', 'Rishabh Pant', 'Tristan Stubbs', 'Axar Patel', 'Abishek Porel'],
+    bowlers: ['Kuldeep Yadav', 'Khaleel Ahmed', 'Mukesh Kumar', 'Ishant Sharma', 'Anrich Nortje'],
+  },
+  dc: {
+    batters: ['David Warner', 'Prithvi Shaw', 'Jake Fraser-McGurk', 'Rishabh Pant', 'Tristan Stubbs', 'Axar Patel', 'Abishek Porel'],
+    bowlers: ['Kuldeep Yadav', 'Khaleel Ahmed', 'Mukesh Kumar', 'Ishant Sharma', 'Anrich Nortje'],
+  },
+  dcl: {
+    batters: ['David Warner', 'Prithvi Shaw', 'Jake Fraser-McGurk', 'Rishabh Pant', 'Tristan Stubbs', 'Axar Patel', 'Abishek Porel'],
+    bowlers: ['Kuldeep Yadav', 'Khaleel Ahmed', 'Mukesh Kumar', 'Ishant Sharma', 'Anrich Nortje'],
+  },
+  'gujarat titans': {
+    batters: ['Shubman Gill', 'Wriddhiman Saha', 'Sai Sudharsan', 'David Miller', 'Shahrukh Khan', 'Rahul Tewatia', 'Rashid Khan'],
+    bowlers: ['Mohit Sharma', 'Noor Ahmad', 'Spencer Johnson', 'Umesh Yadav', 'Sai Kishore'],
+  },
+  gt: {
+    batters: ['Shubman Gill', 'Wriddhiman Saha', 'Sai Sudharsan', 'David Miller', 'Shahrukh Khan', 'Rahul Tewatia', 'Rashid Khan'],
+    bowlers: ['Mohit Sharma', 'Noor Ahmad', 'Spencer Johnson', 'Umesh Yadav', 'Sai Kishore'],
+  },
+  guja: {
+    batters: ['Shubman Gill', 'Wriddhiman Saha', 'Sai Sudharsan', 'David Miller', 'Shahrukh Khan', 'Rahul Tewatia', 'Rashid Khan'],
+    bowlers: ['Mohit Sharma', 'Noor Ahmad', 'Spencer Johnson', 'Umesh Yadav', 'Sai Kishore'],
+  },
+  'lucknow super giants': {
+    batters: ['KL Rahul', 'Quinton de Kock', 'Marcus Stoinis', 'Nicholas Pooran', 'Ayush Badoni', 'Deepak Hooda', 'Krunal Pandya'],
+    bowlers: ['Mayank Yadav', 'Ravi Bishnoi', 'Mohsin Khan', 'Naveen-ul-Haq', 'Yash Thakur'],
+  },
+  lsg: {
+    batters: ['KL Rahul', 'Quinton de Kock', 'Marcus Stoinis', 'Nicholas Pooran', 'Ayush Badoni', 'Deepak Hooda', 'Krunal Pandya'],
+    bowlers: ['Mayank Yadav', 'Ravi Bishnoi', 'Mohsin Khan', 'Naveen-ul-Haq', 'Yash Thakur'],
+  },
+  luck: {
+    batters: ['KL Rahul', 'Quinton de Kock', 'Marcus Stoinis', 'Nicholas Pooran', 'Ayush Badoni', 'Deepak Hooda', 'Krunal Pandya'],
+    bowlers: ['Mayank Yadav', 'Ravi Bishnoi', 'Mohsin Khan', 'Naveen-ul-Haq', 'Yash Thakur'],
+  },
+
+  // ── TAMIL NADU PREMIER LEAGUE (TNPL) ──
+  'lyca kovai kings': {
+    batters: ['Suresh Kumar', 'Sujay S', 'Balasubramaniam Sachin', 'Shahrukh Khan', 'U Mukilesh', 'Atheeq Ur Rahman'],
+    bowlers: ['Manimaran Siddharth', 'M Mohammed', 'Jhatavedh Subramanyan', 'Valliappan Yudheeswaran', 'Gowtham Thamarai'],
+  },
+  lkk: {
+    batters: ['Suresh Kumar', 'Sujay S', 'Balasubramaniam Sachin', 'Shahrukh Khan', 'U Mukilesh', 'Atheeq Ur Rahman'],
+    bowlers: ['Manimaran Siddharth', 'M Mohammed', 'Jhatavedh Subramanyan', 'Valliappan Yudheeswaran', 'Gowtham Thamarai'],
+  },
+  'ruby trichy warriors': {
+    batters: ['Ganga Sridhar Raju', 'Jafar Jamal', 'Mani Bharathi', 'Daryl Ferrario', 'Antony Dhas', 'R Rajkumar'],
+    bowlers: ['P Saravana Kumar', 'K Easwaran', 'Rahil Shah', 'M Poiyamozhi', 'G Godson'],
+  },
+  rtw: {
+    batters: ['Ganga Sridhar Raju', 'Jafar Jamal', 'Mani Bharathi', 'Daryl Ferrario', 'Antony Dhas', 'R Rajkumar'],
+    bowlers: ['P Saravana Kumar', 'K Easwaran', 'Rahil Shah', 'M Poiyamozhi', 'G Godson'],
+  },
+  'dindigul dragons': {
+    batters: ['Ravichandran Ashwin', 'Shivam Singh', 'Baba Indrajith', 'Boopathi Kumar', 'S Arun', 'Adithya Ganesh'],
+    bowlers: ['Varun Chakaravarthy', 'Sandeep Warrier', 'Suboth Bhati', 'P Vignesh', 'G Kishoor'],
+  },
+  dd: {
+    batters: ['Ravichandran Ashwin', 'Shivam Singh', 'Baba Indrajith', 'Boopathi Kumar', 'S Arun', 'Adithya Ganesh'],
+    bowlers: ['Varun Chakaravarthy', 'Sandeep Warrier', 'Suboth Bhati', 'P Vignesh', 'G Kishoor'],
+  },
+  'chepauk super gillies': {
+    batters: ['Baba Aparajith', 'N Jagadeesan', 'Pradosh Ranjan Paul', 'Daryl Ferrario', 'Abhishek Tanwar', 'Jitendra Kumar'],
+    bowlers: ['Rahil Shah', 'M Silambarasan', 'Ganeshan Periyaswamy', 'Aswin Crist', 'Lokesh Raj'],
+  },
+  csg: {
+    batters: ['Baba Aparajith', 'N Jagadeesan', 'Pradosh Ranjan Paul', 'Daryl Ferrario', 'Abhishek Tanwar', 'Jitendra Kumar'],
+    bowlers: ['Rahil Shah', 'M Silambarasan', 'Ganeshan Periyaswamy', 'Aswin Crist', 'Lokesh Raj'],
+  },
+
+  // ── DELHI PREMIER LEAGUE (DPL) ──
+  'new delhi tigers': {
+    batters: ['Himmat Singh', 'Lakshay Thareja', 'Dhruv Kaushik', 'Keshav Dabas', 'Yash Sehrawat', 'Ayush Doseja'],
+    bowlers: ['Divansh Rawat', 'Pranshu Vijayran', 'Pankaj Jaswal', 'Deepanshu Gulia', 'Rahul Gahlot'],
+  },
+  ndt: {
+    batters: ['Himmat Singh', 'Lakshay Thareja', 'Dhruv Kaushik', 'Keshav Dabas', 'Yash Sehrawat', 'Ayush Doseja'],
+    bowlers: ['Divansh Rawat', 'Pranshu Vijayran', 'Pankaj Jaswal', 'Deepanshu Gulia', 'Rahul Gahlot'],
+  },
+  'south delhi superstarz': {
+    batters: ['Priyansh Arya', 'Ayush Badoni', 'Tejaswi Dahiya', 'Dhruv Singh', 'Vision Panchal', 'Kuldip Yadav'],
+    bowlers: ['Digvesh Rathi', 'Sumit Mathur', 'Anshuman Hooda', 'Subodh Bhati', 'Raghav Singh'],
+  },
+  sds: {
+    batters: ['Priyansh Arya', 'Ayush Badoni', 'Tejaswi Dahiya', 'Dhruv Singh', 'Vision Panchal', 'Kuldip Yadav'],
+    bowlers: ['Digvesh Rathi', 'Sumit Mathur', 'Anshuman Hooda', 'Subodh Bhati', 'Raghav Singh'],
+  },
+  'east delhi riders': {
+    batters: ['Anuj Rawat', 'Sujal Singh', 'Hardik Sharma', 'Mayank Rawat', 'Samarth Seth', 'Himanshu Chauhan'],
+    bowlers: ['Simarjeet Singh', 'Navdeep Saini', 'Harsh Tyagi', 'Rounak Waghela', 'Bhagwan Singh'],
+  },
+  edr: {
+    batters: ['Anuj Rawat', 'Sujal Singh', 'Hardik Sharma', 'Mayank Rawat', 'Samarth Seth', 'Himanshu Chauhan'],
+    bowlers: ['Simarjeet Singh', 'Navdeep Saini', 'Harsh Tyagi', 'Rounak Waghela', 'Bhagwan Singh'],
+  },
+  'west delhi lions': {
+    batters: ['Hrithik Shokeen', 'Ayush Doseja', 'Deepak Punia', 'Dev Lakra', 'Ankit Kumar', 'Krish Yadav'],
+    bowlers: ['Ishant Sharma', 'Navdeep Saini', 'Manan Bhardwaj', 'Akhil Chaudhary', 'Tishant Dabla'],
+  },
+  wdl: {
+    batters: ['Hrithik Shokeen', 'Ayush Doseja', 'Deepak Punia', 'Dev Lakra', 'Ankit Kumar', 'Krish Yadav'],
+    bowlers: ['Ishant Sharma', 'Navdeep Saini', 'Manan Bhardwaj', 'Akhil Chaudhary', 'Tishant Dabla'],
+  },
+
   // ── DOMESTIC & LEAGUE TEAMS ──
   hampshire: {
     batters: ['James Vince', 'Ben McDermott', 'Nick Gubbins', 'Tom Prest', 'Joe Weatherley', 'Liam Dawson', 'James Fuller'],
@@ -201,56 +331,88 @@ const ROSTERS = {
 };
 
 export function normalizeTeamKey(name = '') {
-  return String(name)
-    .replace(/\s*(1st|2nd|3rd|4th|inns|innings|xi|srl|women|men|t20|test)\b/gi, '')
+  const str = typeof name === 'object' && name ? (name.name || '') : String(name || '');
+  return str
+    .replace(/\s*\([a-z0-9\s-]+\)/gi, '') // Remove (V), (W), (SRL), (Men), etc.
+    .replace(/\s*(1st|2nd|3rd|4th|inns|innings|xi|srl|women|men|t20|test|virtual|v)\b/gi, '')
     .replace(/[^a-z0-9]/gi, ' ')
     .trim()
     .toLowerCase();
 }
 
 export function getRosterForTeam(teamName) {
-  if (!teamName) return { batters: [], bowlers: [] };
-  const rawStr = String(teamName);
-  const cleanStr = rawStr.replace(/\s*(1st|2nd|3rd|4th|inns|innings)\b/gi, '').trim();
+  const empty = { batters: [], bowlers: [] };
+  if (!teamName) return empty;
+  const rawStr = typeof teamName === 'object' && teamName ? (teamName.name || '') : String(teamName || '');
+  const cleanStr = rawStr
+    .replace(/\s*\([a-z0-9\s-]+\)/gi, '')
+    .replace(/\s*(1st|2nd|3rd|4th|inns|innings|virtual|v)\b/gi, '')
+    .trim();
   const key = normalizeTeamKey(cleanStr).replace(/\s+/g, '');
   const exact = cleanStr.replace(/\s+srl$/i, '').trim();
 
-  if (ROSTERS[key]) return ROSTERS[key];
+  const withPlayers = (roster) => {
+    if (!roster || typeof roster !== 'object') return empty;
+    return {
+      batters: Array.isArray(roster.batters) ? roster.batters : [],
+      bowlers: Array.isArray(roster.bowlers) ? roster.bowlers : [],
+    };
+  };
+
+  if (ROSTERS[key]) return withPlayers(ROSTERS[key]);
+  if (ROSTERS[exact.toLowerCase()]) return withPlayers(ROSTERS[exact.toLowerCase()]);
 
   let best = null;
   let bestLen = 0;
   for (const [rosterKey, roster] of Object.entries(ROSTERS)) {
     const normRosterKey = rosterKey.replace(/\s+/g, '');
-    if (normRosterKey.length < 5) continue;
-    if (key === normRosterKey || (key.length >= 8 && (key.includes(normRosterKey) || normRosterKey.includes(key)))) {
+    if (normRosterKey.length < 3) continue;
+    if (key === normRosterKey || (key.length >= 4 && (key.includes(normRosterKey) || normRosterKey.includes(key)))) {
       if (normRosterKey.length > bestLen) {
         best = roster;
         bestLen = normRosterKey.length;
       }
     }
   }
-  if (best) return best;
+  if (best) return withPlayers(best);
 
-  if (/^(wi|west indies|windies)$/i.test(exact)) return ROSTERS['west indies'];
-  if (/^(pak|pakistan)$/i.test(exact)) return ROSTERS['pakistan'];
-  if (/^(ind|india)$/i.test(exact)) return ROSTERS['india'];
-  if (/^(eng|england)$/i.test(exact)) return ROSTERS['england'];
-  if (/^(aus|australia)$/i.test(exact)) return ROSTERS['australia'];
-  if (/^(sa|south africa)$/i.test(exact)) return ROSTERS['south africa'];
-  if (/^(nz|new zealand|kiwis)$/i.test(exact)) return ROSTERS['new zealand'];
-  if (/^(sl|sri lanka)$/i.test(exact)) return ROSTERS['sri lanka'];
-  if (/^(rr|rajasthan royals)$/i.test(exact)) return ROSTERS['rajasthan royals'];
-  if (/^(srh|sunrisers hyderabad)$/i.test(exact)) return ROSTERS['sunrisers hyderabad'];
-  if (/^(csk|chennai super kings)$/i.test(exact)) return ROSTERS['chennai super kings'];
-  if (/^(mi|mumbai indians)$/i.test(exact)) return ROSTERS['mumbai indians'];
-  if (/^(rcb|royal challengers bengaluru|royal challengers bangalore)$/i.test(exact)) return ROSTERS['royal challengers bengaluru'];
-  if (/^(kkr|kolkata knight riders)$/i.test(exact)) return ROSTERS['kolkata knight riders'];
-  if (/^(dc|delhi capitals)$/i.test(exact)) return ROSTERS['delhi capitals'];
-  if (/^(pbks|punjab kings)$/i.test(exact)) return ROSTERS['punjab kings'];
-  if (/^(gt|gujarat titans)$/i.test(exact)) return ROSTERS['gujarat titans'];
-  if (/^(lsg|lucknow super giants)$/i.test(exact)) return ROSTERS['lucknow super giants'];
+  if (/^(wi|west indies|windies)$/i.test(exact)) return withPlayers(ROSTERS['west indies']);
+  if (/^(pak|pakistan)$/i.test(exact)) return withPlayers(ROSTERS['pakistan']);
+  if (/^(ind|india)$/i.test(exact)) return withPlayers(ROSTERS['india']);
+  if (/^(eng|england)$/i.test(exact)) return withPlayers(ROSTERS['england']);
+  if (/^(aus|australia)$/i.test(exact)) return withPlayers(ROSTERS['australia']);
+  if (/^(sa|south africa)$/i.test(exact)) return withPlayers(ROSTERS['south africa']);
+  if (/^(nz|new zealand|kiwis)$/i.test(exact)) return withPlayers(ROSTERS['new zealand']);
+  if (/^(sl|sri lanka)$/i.test(exact)) return withPlayers(ROSTERS['sri lanka']);
+  if (/^(rr|rajasthan royals|rajasthan|raja)$/i.test(exact)) return withPlayers(ROSTERS['rajasthan royals']);
+  if (/^(srh|sunrisers hyderabad|hyderabad|hyde)$/i.test(exact)) return withPlayers(ROSTERS['sunrisers hyderabad']);
+  if (/^(csk|chennai super kings|chennai|cskl)$/i.test(exact)) return withPlayers(ROSTERS['chennai super kings']);
+  if (/^(mi|mumbai indians|mumbai)$/i.test(exact)) return withPlayers(ROSTERS['mumbai indians']);
+  if (/^(rcb|royal challengers bengaluru|royal challengers bangalore|bengaluru|bangalore|beng)$/i.test(exact)) return withPlayers(ROSTERS['royal challengers bengaluru']);
+  if (/^(kkr|kolkata knight riders|kolkata|kolk)$/i.test(exact)) return withPlayers(ROSTERS['kolkata knight riders']);
+  if (/^(dc|delhi capitals|delhi|dcl)$/i.test(exact)) return withPlayers(ROSTERS['delhi capitals']);
+  if (/^(pbks|punjab kings|punjab|punj)$/i.test(exact)) return withPlayers(ROSTERS['punjab kings']);
+  if (/^(gt|gujarat titans|gujarat|guja)$/i.test(exact)) return withPlayers(ROSTERS['gujarat titans']);
+  if (/^(lsg|lucknow super giants|lucknow|luck)$/i.test(exact)) return withPlayers(ROSTERS['lucknow super giants']);
 
-  return { batters: [], bowlers: [] };
+  // Generic clean fallback names for unmapped custom / fantasy / virtual teams
+  const cleanTeamLabel = cleanStr || teamName;
+  return {
+    batters: [
+      `${cleanTeamLabel} Opener A`,
+      `${cleanTeamLabel} Opener B`,
+      `${cleanTeamLabel} Top Order`,
+      `${cleanTeamLabel} Batter 4`,
+      `${cleanTeamLabel} All-Rounder`,
+    ],
+    bowlers: [
+      `${cleanTeamLabel} Lead Bowler`,
+      `${cleanTeamLabel} Spinner`,
+      `${cleanTeamLabel} Pacer`,
+      `${cleanTeamLabel} Strike Bowler`,
+    ],
+  };
 }
 
 export { ROSTERS };
+

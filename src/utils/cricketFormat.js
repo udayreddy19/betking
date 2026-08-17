@@ -5,19 +5,104 @@ const HUNDRED_BALLS_PER_OVER = 5;
 const HUNDRED_MAX_OVERS = HUNDRED_BALLS_PER_INNINGS / HUNDRED_BALLS_PER_OVER;
 
 export function isHundredMatch(match) {
-  const text = [
-    match?.league,
-    match?.seriesName,
-    match?.matchType,
-    match?.matchFormat,
-    match?.matchHeader?.matchFormat,
-    match?.matchHeader?.seriesName,
-  ].filter(Boolean).join(' ');
+  const text = collectMatchFormatText(match);
   return /hundred/i.test(text) || /\bhun\b/i.test(text);
 }
 
+/** Full text blob used for format / overs detection. */
+export function collectMatchFormatText(match) {
+  return [
+    match?.league,
+    match?.seriesName,
+    match?.competition,
+    match?.name,
+    match?.eventName,
+    match?.matchType,
+    match?.matchFormat,
+    match?.format,
+    match?.sport,
+    match?.time,
+    match?.id,
+    match?.matchHeader?.seriesName,
+    match?.matchHeader?.matchFormat,
+    match?.matchHeader?.matchDescription,
+    match?.team1?.name,
+    match?.team2?.name,
+    match?.liveDetails?.matchFormat,
+    match?.liveDetails?.commentary,
+    match?.liveDetails?.period,
+  ].filter(Boolean).join(' ');
+}
+
 export function getMatchFormatHint(match) {
-  return `${match?.matchFormat || ''} ${match?.league || ''} ${match?.seriesName || ''} ${match?.matchType || ''}`;
+  return collectMatchFormatText(match);
+}
+
+function oversWhole(value) {
+  return parseInt(String(value ?? '0').split('.')[0], 10) || 0;
+}
+
+function oversIsExactly(value, whole) {
+  const str = String(value ?? '').trim();
+  if (!str) return false;
+  const parts = str.split('.');
+  const w = parseInt(parts[0], 10) || 0;
+  const b = parseInt(parts[1], 10) || 0;
+  return w === whole && b === 0;
+}
+
+/** First innings finished at 10.0 overs (not mid-T20 at 10.0). */
+function inferT10FromLive(match) {
+  const ld = match?.liveDetails || {};
+  const firstOvers = ld.firstOvers || ((Number(ld.inningsId) || 0) >= 2 ? null : ld.overs);
+  if (!oversIsExactly(firstOvers, 10)) return false;
+  if ((Number(ld.inningsId) || 0) >= 2) return true;
+  if (Number(ld.chaseRuns) > 0 || Number(ld.score2) > 0) return true;
+  if (/innings\s*break|end of (?:the )?innings|all out/i.test(String(ld.commentary || ''))) return true;
+  return false;
+}
+
+/**
+ * Resolve limited-overs format. League/series T10 wins over a generic T20 matchType.
+ * @returns {'T10'|'T20'|'ODI'|'TEST'|'THE_HUNDRED'}
+ */
+export function resolveCricketOversFormat(match) {
+  if (!match) return 'T20';
+  if (isHundredMatch(match)) return 'THE_HUNDRED';
+
+  const raw = collectMatchFormatText(match).toUpperCase();
+
+  // Explicit T10 markers (before T20 — "Frankfurt T10" + matchType T20)
+  if (/T[\s-]?10|TEN\s*10|10[\s-]?OVERS?|TEN[\s-]?OVERS?|FRANKFURT\s*T10/.test(raw)) {
+    return 'T10';
+  }
+
+  if (inferT10FromLive(match)) return 'T10';
+
+  // Virtual / Quantum products on this book are 10-over games unless marked otherwise
+  const explicitLonger = /\bT20\b|TWENTY20|20[\s-]?OVERS?|\bODI\b|ONE[-\s]?DAY|\bTEST\b|50[\s-]?OVER/.test(raw);
+  if (!explicitLonger) {
+    if (String(match.sport || '').toLowerCase() === 'virtual-cricket') return 'T10';
+    if (/VIRTUAL\s*FAST\s*CRICKET|QUANTUM\s*CRICKET/.test(raw)) return 'T10';
+  }
+
+  if (/TEST|FIRST\s*CLASS|4[\s-]?DAY/.test(raw)) return 'TEST';
+  if (/ODI|ONE[-\s]?DAY|LIST\s*A|\b50[\s-]?OVERS?|CWC\s*LEAGUE/.test(raw)) return 'ODI';
+  if (/\bT20\b|TWENTY20|20[\s-]?OVERS?|\bBLAST\b|\bIPL\b|\bBBL\b|\bCPL\b|SA20|ILT20|\bMLC\b/.test(raw)) {
+    return 'T20';
+  }
+
+  // Live overs already past 10 in innings 1 → T20/ODI, not T10
+  const seen = Math.max(
+    oversWhole(match?.liveDetails?.overs),
+    oversWhole(match?.liveDetails?.firstOvers),
+    oversWhole(match?.liveDetails?.chaseOvers),
+    oversWhole(match?.liveDetails?.overs2),
+  );
+  if (seen > 10 && seen <= 20) return 'T20';
+  if (seen > 20) return 'ODI';
+
+  return 'T20';
 }
 
 /** Cricbuzz Hundred API often sends total balls as `64.0` or `100.0` instead of overs. */
@@ -62,22 +147,11 @@ export function normalizeMatchOvers(oversStr, match) {
 }
 
 export function getMatchMaxOvers(match) {
-  if (isHundredMatch(match)) return HUNDRED_MAX_OVERS;
-
-  const text = getMatchFormatHint(match);
-  if (/t10/i.test(text)) return 10;
-  if (/odi|one[- ]?day|list\s*a|50\s*over/i.test(text)) return 50;
-  if (/test|first[- ]?class/i.test(text)) return null;
-  if (/4[- ]?day/i.test(text)) return 90;
-  if (/t20|blast|ipl|bbl|cpl|sa20|ilt20|mlc/i.test(text)) return 20;
-
-  // Infer from current overs when format metadata is missing
-  const oversStr = match?.liveDetails?.overs
-    || match?.liveDetails?.firstOvers
-    || match?.liveDetails?.chaseOvers
-    || '0';
-  const whole = parseInt(String(oversStr).split('.')[0], 10) || 0;
-  if (whole > 20) return 50;
+  const format = resolveCricketOversFormat(match);
+  if (format === 'THE_HUNDRED') return HUNDRED_MAX_OVERS;
+  if (format === 'T10') return 10;
+  if (format === 'ODI') return 50;
+  if (format === 'TEST') return null;
   return 20;
 }
 

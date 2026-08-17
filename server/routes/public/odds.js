@@ -77,11 +77,14 @@ router.get('/matches/:matchId/odds', async (req, res) => {
 
   try {
     const { buildMatchOddsPayload } = await import('../../../lib/liveScoresApiHandlers.mjs');
+    const { parseLiveOddsOverlayFromQuery } = await import('../../../lib/matchOddsStateKey.mjs');
     const responsePayload = await buildMatchOddsPayload({
       matchId,
       team1: req.query.team1 ? String(req.query.team1) : undefined,
       team2: req.query.team2 ? String(req.query.team2) : undefined,
       force: req.query.refresh === '1' || req.query.refresh === 'true',
+      stateKey: req.query.stateKey ? String(req.query.stateKey) : '',
+      overlay: parseLiveOddsOverlayFromQuery(req.query),
     });
     res.json(responsePayload);
   } catch (err) {

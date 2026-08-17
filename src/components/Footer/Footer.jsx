@@ -44,10 +44,10 @@ export default function Footer() {
         <div className="footer-bottom">
           <p>© 2026 BetKing. All rights reserved.</p>
           <div className="footer-payments" aria-label="Accepted payment methods">
-            <span className="footer-payment-badge" title="UPI Instant Payment"><UpiLogo height={30} /></span>
-            <span className="footer-payment-badge" title="Google Pay"><GPayLogo height={30} /></span>
-            <span className="footer-payment-badge" title="PhonePe"><PhonePeLogo height={30} /></span>
-            <span className="footer-payment-badge" title="Paytm Wallet & UPI"><PaytmLogo height={30} /></span>
+            <span className="footer-payment-badge" title="UPI Instant Payment"><UpiLogo height={34} width={112} /></span>
+            <span className="footer-payment-badge" title="Google Pay"><GPayLogo height={34} width={112} /></span>
+            <span className="footer-payment-badge" title="PhonePe"><PhonePeLogo height={34} width={112} /></span>
+            <span className="footer-payment-badge" title="Paytm Wallet & UPI"><PaytmLogo height={34} width={112} /></span>
           </div>
         </div>
 

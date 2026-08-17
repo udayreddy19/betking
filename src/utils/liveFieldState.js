@@ -163,9 +163,11 @@ export function createFieldState(match, roster) {
     ? roster
     : { batters: [], bowlers: [] };
 
+  const batters = Array.isArray(activeRoster.batters) ? activeRoster.batters : [];
+  const bowlers = Array.isArray(activeRoster.bowlers) ? activeRoster.bowlers : [];
   const strikerIdx = 0;
-  const b1Name = resolveBatterName(ld.batter1?.name, activeRoster.batters?.[strikerIdx]);
-  const b2Name = resolveBatterName(ld.batter2?.name, activeRoster.batters?.[1]);
+  const b1Name = resolveBatterName(ld.batter1?.name, batters[strikerIdx]);
+  const b2Name = resolveBatterName(ld.batter2?.name, batters[1]);
 
   const batter1 = {
     name: b1Name || null,
@@ -255,7 +257,7 @@ export function tickFieldState(state, match, roster) {
       recentOvers = [...recentOvers.slice(-3), { overNum, balls: [...overBalls], runs: overRuns, wickets: overWkts }];
       overBalls = [];
       overNum += 1;
-      bowler = roster.bowlers[overNum % roster.bowlers.length] || bowler;
+      bowler = bowlers[overNum % Math.max(bowlers.length, 1)] || bowler;
     }
   } else {
     extras += 1;
@@ -263,7 +265,9 @@ export function tickFieldState(state, match, roster) {
 
   if (outcome === 'W') {
     const outIdx = strikerIdx;
-    const nextBatter = roster.batters[(outIdx + 2) % roster.batters.length] || `${roster.batters[0]}*`;
+    const nextBatter = batters.length
+      ? batters[(outIdx + 2) % batters.length]
+      : 'Batter';
     if (outIdx === 0) batter1 = { name: nextBatter, runs: 0, balls: 0, fours: 0, sixes: 0 };
     else batter2 = { name: nextBatter, runs: 0, balls: 0, fours: 0, sixes: 0 };
   } else if (!isNonLegalDelivery(ballLabel)) {

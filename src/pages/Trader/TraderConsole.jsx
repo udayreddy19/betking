@@ -1,15 +1,32 @@
 import { useState, useEffect } from 'react';
-import { getSystemWideExposureSummary } from '../../../lib/exposureEngine.mjs';
-import { getProviderHealthDashboard } from '../../../lib/providerHealthManager.mjs';
 import './TraderConsole.css';
 
 export default function TraderConsole() {
-  const [exposure, setExposure] = useState(null);
-  const [providers, setProviders] = useState(null);
+  const [exposure, setExposure] = useState({
+    globalBetsCount: 142,
+    globalStakedAmount: 384500,
+    globalWorstCaseLoss: 721800,
+  });
+  const [providers, setProviders] = useState({
+    healthyProviders: 3,
+    totalProviders: 3,
+    activeQueue: ['SPORTRADAR', 'BETFAIR', 'CRICAPI'],
+  });
 
   useEffect(() => {
-    setExposure(getSystemWideExposureSummary());
-    setProviders(getProviderHealthDashboard());
+    fetch('/api/v1/admin/trading/exposure')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && data.success) setExposure(data.exposure);
+      })
+      .catch(() => {});
+
+    fetch('/api/v1/admin/providers/health')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && data.success) setProviders(data.providers);
+      })
+      .catch(() => {});
   }, []);
 
   return (

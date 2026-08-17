@@ -8,8 +8,19 @@ describe('Phase 6 Deposit & Webhook Security Tests', () => {
   const walletId = 'w_dep_101';
   const webhookSecret = 'test_webhook_secret';
 
+  async function seedDeposit(orderId, amount) {
+    const depositId = `dep_${orderId}`;
+    await query(
+      `INSERT INTO deposits (id, deposit_id, user_id, order_id, amount, currency, status, created_at)
+       VALUES ($1, $2, $3, $4, $5, 'INR', 'CREATED', NOW())
+       ON CONFLICT DO NOTHING`,
+      [depositId, depositId, userId, orderId, amount],
+    );
+  }
+
   beforeEach(async () => {
     process.env.RAZORPAY_WEBHOOK_SECRET = webhookSecret;
+    process.env.NODE_ENV = 'test';
     await query(`INSERT INTO users (user_id, email, password_hash) VALUES ($1, $2, 'hash') ON CONFLICT (user_id) DO NOTHING;`, [userId, `${userId}@example.com`]);
     await query(`DELETE FROM ledger_entries WHERE wallet_id IN (SELECT wallet_id FROM wallets WHERE user_id = $1);`, [userId]);
     await query(`DELETE FROM deposits WHERE user_id = $1;`, [userId]);
@@ -35,12 +46,15 @@ describe('Phase 6 Deposit & Webhook Security Tests', () => {
   });
 
   it('should process verified webhook and credit wallet atomically', async () => {
+    const orderId = `order_test_${Date.now()}`;
+    await seedDeposit(orderId, 500);
     const paymentId = `pay_wh_${Date.now()}`;
     const payload = {
       payment: {
         entity: {
           id: paymentId,
-          amount: 50000, // ₹500.00
+          order_id: orderId,
+          amount: 50000,
           notes: { userId },
           method: 'upi',
           acquirer_data: { rrn: `utr_${paymentId}` },
@@ -59,19 +73,22 @@ describe('Phase 6 Deposit & Webhook Security Tests', () => {
     });
 
     expect(result.status).toBe('SUCCESS');
-    expect(result.newBalance).toBe(1000.00); // 500 + 500
+    expect(result.newBalance).toBe(1000.00);
 
     const wRes = await query('SELECT balance FROM wallets WHERE wallet_id = $1', [walletId]);
     expect(parseFloat(wRes.rows[0].balance)).toBe(1000.00);
   });
 
   it('CRITICAL: duplicate webhook must be IGNORED without double-crediting wallet', async () => {
+    const orderId = `order_test_dup_${Date.now()}`;
+    await seedDeposit(orderId, 300);
     const paymentId = `pay_dup_${Date.now()}`;
     const payload = {
       payment: {
         entity: {
           id: paymentId,
-          amount: 30000, // ₹300.00
+          order_id: orderId,
+          amount: 30000,
           notes: { userId },
           method: 'upi',
         },
@@ -81,17 +98,40 @@ describe('Phase 6 Deposit & Webhook Security Tests', () => {
     const rawBody = Buffer.from(JSON.stringify({ event: 'payment.captured', payload }));
     const signature = crypto.createHmac('sha256', webhookSecret).update(rawBody).digest('hex');
 
-    // First webhook
     const res1 = await depositEngine.processWebhook({ rawBody, signature, payload, event: 'payment.captured' });
     expect(res1.status).toBe('SUCCESS');
 
-    // Second duplicate webhook
     const res2 = await depositEngine.processWebhook({ rawBody, signature, payload, event: 'payment.captured' });
     expect(res2.status).toBe('IGNORED_DUPLICATE');
 
-    // Verify balance is only credited ONCE (500 + 300 = 800)
     const wRes = await query('SELECT balance FROM wallets WHERE wallet_id = $1', [walletId]);
     expect(parseFloat(wRes.rows[0].balance)).toBe(800.00);
+  });
+
+  it('rejects webhook when payment amount does not match deposit order', async () => {
+    const orderId = `order_test_mismatch_${Date.now()}`;
+    await seedDeposit(orderId, 500);
+    const paymentId = `pay_mismatch_${Date.now()}`;
+    const payload = {
+      payment: {
+        entity: {
+          id: paymentId,
+          order_id: orderId,
+          amount: 10000,
+          notes: { userId },
+          method: 'upi',
+        },
+      },
+    };
+    const rawBody = Buffer.from(JSON.stringify({ event: 'payment.captured', payload }));
+    const signature = crypto.createHmac('sha256', webhookSecret).update(rawBody).digest('hex');
+
+    await expect(depositEngine.processWebhook({
+      rawBody,
+      signature,
+      payload,
+      event: 'payment.captured',
+    })).rejects.toThrow('AMOUNT_MISMATCH');
   });
 
   it('CRITICAL: invalid webhook HMAC signature must be REJECTED', async () => {

@@ -1,7 +1,5 @@
-/** Whether odds can be selected for this match (live + upcoming). */
-export function isMatchBettable(match) {
-  return getMatchState(match) === 'in' || getMatchState(match) === 'pre';
-}
+import { oversToBallsForMatch } from './cricketFormat.js';
+import { isCricketMatchCompleted } from './cricketMatchComplete.js';
 
 const COMPLETED_TIME_HINTS = [
   'completed',
@@ -39,8 +37,6 @@ const PRE_MATCH_HOLD_HINTS = [
   'interrupted',
 ];
 
-import { oversToBallsForMatch } from './cricketFormat.js';
-
 function parseOversBallCount(overs, match) {
   if (match) return oversToBallsForMatch(overs, match);
   const str = String(overs ?? '0');
@@ -75,30 +71,31 @@ export function isPreMatchHold(match) {
 /** True when at least one ball has been bowled or a wicket/run exists. */
 export function hasCricketPlayStarted(match) {
   if (!match) return false;
-  if (isPreMatchHold(match)) return false;
 
   const ld = match.liveDetails || {};
-  const runs = ld.runs ?? ld.firstRuns;
-  const wickets = ld.wickets ?? ld.firstWickets;
-  const score2 = ld.score2 ?? ld.chaseRuns;
-  const wickets2 = ld.wickets2 ?? ld.chaseWickets;
+  const runs = ld.runs ?? ld.firstRuns ?? match.team1?.runs ?? match.score1;
+  const wickets = ld.wickets ?? ld.firstWickets ?? match.team1?.wickets;
+  const score2 = ld.score2 ?? ld.chaseRuns ?? match.team2?.runs ?? match.score2;
+  const wickets2 = ld.wickets2 ?? ld.chaseWickets ?? match.team2?.wickets;
 
   if (runs > 0 || wickets > 0 || score2 > 0 || wickets2 > 0) return true;
 
-  const overs = parseOversBallCount(ld.overs || ld.firstOvers, match);
-  const overs2 = parseOversBallCount(ld.overs2 || ld.chaseOvers, match);
+  const overs = parseOversBallCount(ld.overs || ld.firstOvers || match.team1?.overs, match);
+  const overs2 = parseOversBallCount(ld.overs2 || ld.chaseOvers || match.team2?.overs, match);
   if (overs > 0 || overs2 > 0) return true;
 
+  if (isPreMatchHold(match)) return false;
   return false;
 }
 
-/** Cricket live tracker / scorecard should only run after play starts. */
+/** Cricket tracker / scorecard after play starts — including the final innings of a completed match. */
 export function isCricketTrackerLive(match) {
   if (!match) return false;
+  if (hasCricketPlayStarted(match)) return true;
   const state = getMatchState(match);
-  if (state === 'post') return false;
-  if (state === 'in' || match.isLive === true) return true;
-  return hasCricketPlayStarted(match);
+  if (state === 'pre') return false;
+  if (state === 'in') return true;
+  return false;
 }
 
 export function getMatchState(match) {
@@ -115,17 +112,20 @@ export function getMatchState(match) {
   const commentary = String(match?.liveDetails?.commentary || '').toLowerCase();
   const combined = `${time} ${minute} ${commentary} ${statusStr} ${liveStatusStr}`;
 
+  if (/innings\s*break/i.test(combined) || /innings\s*break/i.test(String(explicit || ''))) {
+    return 'in';
+  }
+
+  if (isCricketMatchCompleted(match)) {
+    return 'post';
+  }
+
   if (time === 'ft' || combined.includes('full time') || combined.includes('final')) {
     return 'post';
   }
 
   if (COMPLETED_TIME_HINTS.some((hint) => combined.includes(hint))) {
     return 'post';
-  }
-
-  // Innings break or active live match indicators
-  if (/innings\s*break/i.test(combined) || /innings\s*break/i.test(String(explicit || ''))) {
-    return 'in';
   }
 
   if (match.isLive === true || explicit === 'in' || statusStr === 'live' || liveStatusStr === 'in_progress' || time === 'live') {
@@ -184,8 +184,8 @@ export function isTrulyLiveMatch(match) {
 export function isDisplayableLiveMatch(match) {
   if (!match) return false;
   const state = getMatchState(match);
-  if (state === 'post') return false;
-  if (state === 'in' || match.isLive) return true;
+  if (state === 'post' || isCricketMatchCompleted(match)) return false;
+  if (state === 'in') return true;
   return false;
 }
 
@@ -194,5 +194,12 @@ export function isMatchLive(match) {
 }
 
 export function isMatchFinished(match) {
-  return getMatchState(match) === 'post';
+  return getMatchState(match) === 'post' || isCricketMatchCompleted(match);
+}
+
+/** Whether odds can be selected for this match (live + upcoming). */
+export function isMatchBettable(match) {
+  if (!match || isCricketMatchCompleted(match)) return false;
+  const state = getMatchState(match);
+  return state === 'in' || state === 'pre';
 }

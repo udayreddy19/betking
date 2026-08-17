@@ -3,6 +3,7 @@ import {
   buildMatchDetailPayload,
   buildMatchOddsPayload,
 } from '../lib/liveScoresApiHandlers.mjs';
+import { parseLiveOddsOverlayFromQuery } from '../lib/matchOddsStateKey.mjs';
 
 const MATCH_ODDS_RE = /^\/api\/public\/sports\/matches\/([^/]+)\/odds$/;
 
@@ -103,6 +104,8 @@ async function handleMatchOdds(req, res, matchId) {
       team1: url.searchParams.get('team1') || undefined,
       team2: url.searchParams.get('team2') || undefined,
       force: url.searchParams.get('refresh') === '1',
+      stateKey: url.searchParams.get('stateKey') || '',
+      overlay: parseLiveOddsOverlayFromQuery(Object.fromEntries(url.searchParams.entries())),
     });
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify(payload));

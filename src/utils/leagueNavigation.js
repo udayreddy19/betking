@@ -62,10 +62,17 @@ export function matchBelongsToLeague(match, leagueMeta) {
   // SRL leagues MUST ONLY match SRL matches
   if (isSrlLeague) {
     if (!isMatchSrl) return false;
-    if (leagueMeta.id === 'ipl-srl' || String(leagueMeta.name).toLowerCase().includes('indian premier league')) {
-      return match.league === 'Indian Premier League SRL' ||
-        String(match.id || '').startsWith('srl_ipl_') ||
-        String(match.league || '').toLowerCase().includes('indian premier league srl');
+    if (leagueMeta.id === 'ipl-srl'
+      || leagueMeta.id === 'betking-srl'
+      || String(leagueMeta.name).toLowerCase().includes('betking srl')) {
+      // Admin-gated BetKing SRL only — exclude external feed SRL products
+      return match.source === 'srl'
+        || String(match.id || '').startsWith('srl_ipl_')
+        || (
+          match.league === 'BetKing SRL'
+          && match.source !== '10cric2026'
+          && !String(match.id || '').startsWith('10cric_')
+        );
     }
   }
 

@@ -24,7 +24,18 @@ router.post('/settings', async (req, res) => {
   }
 });
 
-router.post('/matches/:matchId/winner', async (req, res) => {
+router.post('/matches/:matchId/declare', async (req, res) => {
+  try {
+    const { declareIPLSRLWinner } = await import('../../../lib/iplSrlAdminControl.mjs');
+    if (!req.body?.teamId) return res.status(400).json({ error: 'teamId required' });
+    const snap = declareIPLSRLWinner(req.params.matchId, req.body.teamId, req.admin?.id || 'admin');
+    res.json(snap);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/force-winner', async (req, res) => {
   try {
     const { setIPLSRLForcedWinner, clearIPLSRLForcedWinner } = await import('../../../lib/iplSrlAdminControl.mjs');
     const admin = req.admin?.id || 'admin';

@@ -5,12 +5,14 @@ import { isMatchBettable, isMatchLive } from '../../utils/matchBetting';
 import {
   fetchAuthoritativeMatchOdds,
   getCachedMatchOdds,
+  matchOddsStateKey,
   provisionalWinnerMarketsFromMatch,
 } from '../../services/oddsService';
 import { resolveCricketTeamScores, isCricketSecondInnings, resolveCricketTossText } from '../../utils/cricketScores';
 import { getChaseText } from '../../utils/liveMatchWidgetData';
 import { getMatchMaxOvers, isTestMatch, getTestMatchDayLabel, formatMatchCountdown } from '../../utils/cricketFormat';
 import { displayPlayerName } from '../../utils/cricketPlayers';
+import { getRosterForTeam } from '../../data/cricketRosters';
 import BetSlipFooter from '../BetSlip/BetSlipFooter';
 import TeamJersey from '../TeamJersey/TeamJersey';
 import MatchCountdownTimer from '../MatchCountdownTimer/MatchCountdownTimer';
@@ -62,33 +64,39 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
   const sport = match.sport || 'cricket';
 
   const [matchMarkets, setMatchMarkets] = useState([]);
+  const oddsStateKey = matchOddsStateKey(match);
 
   useEffect(() => {
     if (!match?.id && !match?.matchId) {
       setMatchMarkets([]);
-      return;
+      return undefined;
     }
     const matchId = match.id || match.matchId;
 
-    const cached = getCachedMatchOdds(matchId);
-    if (cached && Array.isArray(cached.markets) && cached.markets.length > 0) {
+    const cached = getCachedMatchOdds(matchId, oddsStateKey);
+    if (cached?.markets?.length) {
       setMatchMarkets(cached.markets);
     } else {
-      // Show list-card winner odds immediately while full V3 markets load.
-      setMatchMarkets(provisionalWinnerMarketsFromMatch(match));
+      setMatchMarkets((prev) => (prev.length ? prev : provisionalWinnerMarketsFromMatch(match)));
     }
 
     let isCancelled = false;
 
-    fetchAuthoritativeMatchOdds(matchId, team1Name, team2Name).then((snapshot) => {
-      if (isCancelled) return;
-      if (snapshot && Array.isArray(snapshot.markets) && snapshot.markets.length > 0) {
-        setMatchMarkets(snapshot.markets);
-      }
-    });
+    const loadOdds = () => {
+      fetchAuthoritativeMatchOdds(matchId, team1Name, team2Name, { match }).then((snapshot) => {
+        if (isCancelled) return;
+        if (snapshot?.markets?.length) setMatchMarkets(snapshot.markets);
+      });
+    };
 
-    return () => { isCancelled = true; };
-  }, [match?.id, match?.matchId]);
+    loadOdds();
+    const poll = setInterval(loadOdds, 2000);
+
+    return () => {
+      isCancelled = true;
+      clearInterval(poll);
+    };
+  }, [match?.id, match?.matchId, oddsStateKey, team1Name, team2Name, match]);
 
   const liveBatter1 = match?.liveDetails?.batter1;
   const liveBatter2 = match?.liveDetails?.batter2;
@@ -241,11 +249,18 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
             {/* Live Batter & Bowler Table */}
             {(() => {
               const ld = match.liveDetails || {};
+              const t1Name = match?.team1?.name || match?.team1 || 'Team 1';
+              const t2Name = match?.team2?.name || match?.team2 || 'Team 2';
+              const batRoster = getRosterForTeam(t1Name) || { batters: [], bowlers: [] };
+              const bowlRoster = getRosterForTeam(t2Name) || { batters: [], bowlers: [] };
+
               const b1 = ld.batter1 || {};
               const b2 = ld.batter2 || {};
-              const b1Name = displayPlayerName(b1.name) || '—';
-              const b2Name = displayPlayerName(b2.name) || '—';
-              const bowlerName = displayPlayerName(ld.bowler?.name || ld.bowler) || '—';
+              const b1Name = displayPlayerName(b1.name) || batRoster?.batters?.[0] || 'Batter 1';
+              let b2Name = displayPlayerName(b2.name) || batRoster?.batters?.[1] || 'Batter 2';
+              if (b2Name === b1Name) b2Name = batRoster?.batters?.[2] || 'Batter 2';
+
+              const bowlerName = displayPlayerName(ld.bowler?.name || ld.bowler) || bowlRoster?.bowlers?.[0] || 'Bowler 1';
               const combinedFours = (b1.fours || 0) + (b2.fours || 0);
               const combinedSixes = (b1.sixes || 0) + (b2.sixes || 0);
               const fours = Math.max(ld.fours || 0, combinedFours);
@@ -346,17 +361,40 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
                   || activeMarketCategory === m.categoryGroup;
                 if (!isCatMatch) return null;
                 const isMarketDetermined = m.status === 'DETERMINED' || m.status === 'CLOSED' || m.status === 'SETTLED' || m.determined;
+                const isMarketSuspended = m.status === 'SUSPENDED';
 
                 return (
                   <div key={m.key} className={`market-box ${isMarketDetermined ? 'determined-market' : ''}`}>
                     <div className="market-title">
                       <span>{m.title}</span>
-                      {isMarketDetermined && <span className="market-cashout" style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)' }}>SETTLED / CLOSED</span>}
-                      {m.key === 'winner' && !isMarketDetermined && <span className="market-cashout">CASHOUT AVAILABLE</span>}
+                      {isMarketDetermined && (
+                        <span className="market-cashout" style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)' }}>
+                          {m.status === 'SETTLED' ? 'SETTLED' : 'MARKET DETERMINED'}
+                        </span>
+                      )}
+                      {isMarketSuspended && (
+                        <span className="market-cashout" style={{ background: 'rgba(234, 179, 8, 0.2)', color: '#eab308', border: '1px solid rgba(234, 179, 8, 0.4)' }}>
+                          SUSPENDED
+                        </span>
+                      )}
+                      {m.key === 'winner' && !isMarketDetermined && !isMarketSuspended && <span className="market-cashout">CASHOUT AVAILABLE</span>}
                     </div>
                     <div className={`market-odds-grid ${m.options.length === 3 ? 'three-col' : (m.options.length === 4 ? 'four-col' : (m.options.length > 4 ? 'multi-col' : 'two-col'))}`}>
                       {m.options.map((opt) => {
-                        const isOptBettable = canBet && !isMarketDetermined && opt.bettable !== false && opt.status !== 'DETERMINED' && !opt.determined && opt.odds != null;
+                        const isOptBettable = canBet && !isMarketDetermined && !isMarketSuspended && opt.bettable !== false && opt.status !== 'DETERMINED' && opt.status !== 'SUSPENDED' && !opt.determined && opt.odds != null;
+                        let displayVal = 'UNAVAILABLE';
+                        if (isOptBettable) {
+                          displayVal = Number(opt.odds).toFixed(2);
+                        } else if (opt.won === true || opt.status === 'WON') {
+                          displayVal = 'WON';
+                        } else if (opt.won === false || opt.status === 'LOST') {
+                          displayVal = 'LOST';
+                        } else if (isMarketSuspended || opt.status === 'SUSPENDED') {
+                          displayVal = 'SUSPENDED';
+                        } else if (isMarketDetermined) {
+                          displayVal = 'DETERMINED';
+                        }
+
                         return (
                           <button
                             key={opt.selection || opt.name}
@@ -367,7 +405,7 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
                             style={!isOptBettable ? { opacity: 0.6, cursor: 'not-allowed', background: '#1a2234' } : {}}
                           >
                             <span className="market-label">{opt.name}</span>
-                            <span className="market-val">{isOptBettable ? Number(opt.odds).toFixed(2) : (opt.won ? 'WON' : 'MARKET UNAVAILABLE')}</span>
+                            <span className="market-val">{displayVal}</span>
                           </button>
                         );
                       })}

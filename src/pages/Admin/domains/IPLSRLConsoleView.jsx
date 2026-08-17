@@ -118,9 +118,9 @@ export default function IPLSRLConsoleView() {
   return (
     <div>
       <div style={{ marginBottom: 18 }}>
-        <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800 }}>IPLSRL Console</h2>
+        <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800 }}>BetKing SRL Console</h2>
         <p style={{ margin: '6px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.85rem', maxWidth: 720 }}>
-          Operator desk for Simulated Reality League matches. Pick the winning team first — the match cannot start until a winner is scripted.
+          Matches stay upcoming for users until you press Start. You can script or declare the winning team at any time — including while the match is live.
         </p>
         {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.82rem' }}>{error}</p>}
       </div>
@@ -222,7 +222,7 @@ export default function IPLSRLConsoleView() {
                       {m.date} · {m.timeDisplay || '—'} · {m.venue}
                     </div>
                     <div style={{ fontSize: '0.74rem', marginTop: 6, color: m.forcedWinnerName ? '#34d399' : '#fbbf24' }}>
-                      {m.forcedWinnerName ? `Scripted winner: ${m.forcedWinnerName}` : 'Winner not set — cannot start'}
+                      {m.forcedWinnerName ? `Scripted winner: ${m.forcedWinnerName}` : 'No winner scripted yet — start anytime'}
                     </div>
                   </button>
                 ))}
@@ -249,44 +249,44 @@ export default function IPLSRLConsoleView() {
                     marginBottom: 14,
                   }}>
                     <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase', color: '#fbbf24', marginBottom: 8 }}>
-                      Required · Scripted winner
+                      Winner · anytime
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                       <button
                         type="button"
-                        disabled={busy || selected.controlStatus === 'LIVE' || selected.controlStatus === 'COMPLETED'}
+                        disabled={busy || selected.controlStatus === 'COMPLETED'}
                         onClick={() => run(
-                          () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/winner`, { teamId: selected.homeTeamId }),
+                          () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/force-winner`, { teamId: selected.homeTeamId }),
                           `${selected.homeShort} set to win`,
                         )}
                         style={{
                           ...actionBtn(selected.forcedWinnerTeamId === selected.homeTeamId ? '#16a34a' : '#334155'),
-                          opacity: (selected.controlStatus === 'LIVE' || selected.controlStatus === 'COMPLETED') ? 0.5 : 1,
+                          opacity: selected.controlStatus === 'COMPLETED' ? 0.5 : 1,
                         }}
                       >
                         {selected.homeShort} wins
                       </button>
                       <button
                         type="button"
-                        disabled={busy || selected.controlStatus === 'LIVE' || selected.controlStatus === 'COMPLETED'}
+                        disabled={busy || selected.controlStatus === 'COMPLETED'}
                         onClick={() => run(
-                          () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/winner`, { teamId: selected.awayTeamId }),
+                          () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/force-winner`, { teamId: selected.awayTeamId }),
                           `${selected.awayShort} set to win`,
                         )}
                         style={{
                           ...actionBtn(selected.forcedWinnerTeamId === selected.awayTeamId ? '#16a34a' : '#334155'),
-                          opacity: (selected.controlStatus === 'LIVE' || selected.controlStatus === 'COMPLETED') ? 0.5 : 1,
+                          opacity: selected.controlStatus === 'COMPLETED' ? 0.5 : 1,
                         }}
                       >
                         {selected.awayShort} wins
                       </button>
                     </div>
-                    {selected.forcedWinnerTeamId && selected.controlStatus !== 'LIVE' && selected.controlStatus !== 'COMPLETED' && (
+                    {selected.forcedWinnerTeamId && selected.controlStatus !== 'COMPLETED' && (
                       <button
                         type="button"
                         disabled={busy}
                         onClick={() => run(
-                          () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/winner`, { teamId: null }),
+                          () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/force-winner`, { teamId: null }),
                           'Winner cleared',
                         )}
                         style={{ ...actionBtn('#475569'), width: '100%', marginTop: 8 }}
@@ -294,13 +294,24 @@ export default function IPLSRLConsoleView() {
                         Clear scripted winner
                       </button>
                     )}
+                    <button
+                      type="button"
+                      disabled={busy || selected.controlStatus === 'COMPLETED' || !selected.forcedWinnerTeamId}
+                      onClick={() => run(
+                        () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/declare`, { teamId: selected.forcedWinnerTeamId }),
+                        'Winner declared — match complete',
+                      )}
+                      style={{ ...actionBtn('#b45309'), width: '100%', marginTop: 8 }}
+                    >
+                      Declare winner now
+                    </button>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
                     <button
                       type="button"
-                      disabled={busy || !selected.forcedWinnerTeamId || selected.controlStatus === 'LIVE' || selected.controlStatus === 'COMPLETED'}
-                      onClick={() => run(() => adminApiClient.post('/iplsrl/matches/start', { matchId: selected.matchId }), 'Match started')}
+                      disabled={busy || selected.controlStatus === 'LIVE' || selected.controlStatus === 'COMPLETED'}
+                      onClick={() => run(() => adminApiClient.post('/iplsrl/matches/start', { matchId: selected.matchId }), 'Match started for users')}
                       style={actionBtn('#2563eb')}
                     >
                       Start match
@@ -316,11 +327,11 @@ export default function IPLSRLConsoleView() {
                     )}
                     <button
                       type="button"
-                      disabled={busy || selected.controlStatus !== 'LIVE'}
-                      onClick={() => run(() => adminApiClient.post('/iplsrl/matches/delivery', { matchId: selected.matchId }), 'Delivery simulated')}
-                      style={actionBtn('#7c3aed')}
+                      disabled
+                      title="User-facing SRL matches run on the live clock"
+                      style={{ ...actionBtn('#7c3aed'), opacity: 0.45 }}
                     >
-                      Trigger delivery
+                      Clock-driven
                     </button>
                     <select
                       value={selected.speed}

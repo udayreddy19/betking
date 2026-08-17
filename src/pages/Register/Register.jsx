@@ -16,19 +16,26 @@ export default function Register() {
   const [displayName, setDisplayName] = useState('');
   const [phone, setPhone] = useState('');
 
-  const handleSubmit = (e) => {
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    const result = register({ email, password, displayName, phone });
-    if (!result.ok) {
-      setError(result.error);
-      return;
+    setLoading(true);
+    try {
+      const result = await register({ email, password, displayName, phone });
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      await login(email, password);
+      if (result.welcomeCredit) {
+        showToast(`Welcome bonus of ₹${result.welcomeCredit.toLocaleString('en-IN')} credited!`, 'success');
+      }
+      navigate('/sports');
+    } finally {
+      setLoading(false);
     }
-    login(email, password);
-    if (result.welcomeCredit) {
-      showToast(`Welcome bonus of ₹${result.welcomeCredit.toLocaleString('en-IN')} credited!`, 'success');
-    }
-    navigate('/sports');
   };
 
   const handleLoginClick = () => {
@@ -135,8 +142,8 @@ export default function Register() {
             </label>
           </div>
 
-          <button type="submit" className="register-submit-btn" disabled={!agreed} id="register-submit">
-            Register
+          <button type="submit" className="register-submit-btn" disabled={!agreed || loading} id="register-submit">
+            {loading ? 'Creating account...' : 'Register'}
           </button>
 
           <div className="register-login-link">

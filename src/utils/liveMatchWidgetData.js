@@ -22,11 +22,12 @@ export function getTeamDisplayName(name) {
 export function getChaseText(match, innings, team1, _team2) {
   const ld = match?.liveDetails || {};
 
-  if (ld.commentary && /require|need|chasing|target/i.test(ld.commentary)) {
-    return ld.commentary;
+  if (!isCricketSecondInnings(match, ld) && !/need\s+0/i.test(String(ld.commentary || ''))) {
+    if (ld.commentary && /require|need|chasing|target/i.test(ld.commentary)) {
+      return ld.commentary;
+    }
+    return null;
   }
-
-  if (!isCricketSecondInnings(match, ld)) return null;
 
   const resolved = resolveCricketTeamScores(match, ld);
   const chasingTeam = getTeamDisplayName(innings?.battingTeam || match?.team2?.name || 'Chasing team');
@@ -41,8 +42,18 @@ export function getChaseText(match, innings, team1, _team2) {
 
   if (firstRuns <= 0) return null;
 
+  if (/need\s+0\s+(?:more\s+)?runs/i.test(String(ld.commentary || ''))) {
+    return `${chasingTeam} won`;
+  }
+
+  if (ld.commentary && /require|need|chasing|target/i.test(ld.commentary) && !/need\s+0/i.test(ld.commentary)) {
+    return ld.commentary;
+  }
+
   const target = firstRuns + 1;
-  if (chaseRuns >= target) return null;
+  if (chaseRuns >= target) {
+    return `${chasingTeam} won`;
+  }
 
   const runsNeeded = Math.max(0, target - chaseRuns);
   const scoreLine = `${chasingTeam} (${chaseRuns}/${chaseWickets})`;
@@ -102,6 +113,24 @@ function mergeLiveBatterStats(players, liveDetails) {
   });
 }
 
+function battersFromFieldState(fieldState) {
+  if (!fieldState) return [];
+  return [fieldState.batter1, fieldState.batter2]
+    .filter((b) => b?.name && !isPlaceholderPlayerName(b.name))
+    .map((b) => ({
+      name: b.name,
+      runs: b.runs ?? 0,
+      balls: b.balls ?? 0,
+      sr: b.balls > 0 ? ((b.runs / b.balls) * 100).toFixed(2) : '0.00',
+      fours: b.fours ?? 0,
+      sixes: b.sixes ?? 0,
+      notOut: true,
+      dismissal: 'batting',
+      statusLabel: 'batting',
+      isStriker: false,
+    }));
+}
+
 function liveBattersFromDetails(ld) {
   return [ld?.batter1, ld?.batter2]
     .filter((b) => b?.name && !isPlaceholderPlayerName(b.name))
@@ -118,7 +147,8 @@ function liveBattersFromDetails(ld) {
       isStriker: false,
     }));
 }
-export function buildScorecardInnings(match, teamName, roster, _fieldState, isBattingInnings, teamShortName = '') {
+
+export function buildScorecardInnings(match, teamName, roster, fieldState, isBattingInnings, teamShortName = '') {
   const apiInnings = getScorecardInningsForTeam(match, teamName, teamShortName);
 
   if (apiInnings?.batters?.length) {
@@ -135,7 +165,7 @@ export function buildScorecardInnings(match, teamName, roster, _fieldState, isBa
         balls: b.balls,
         fours: b.fours ?? 0,
         sixes: b.sixes ?? 0,
-        sr: b.sr,
+        sr: b.sr ?? (b.balls > 0 ? ((b.runs / b.balls) * 100).toFixed(2) : '0.00'),
         dismissal: b.dismissal,
         notOut: b.notOut,
         isStriker: false,
@@ -144,6 +174,12 @@ export function buildScorecardInnings(match, teamName, roster, _fieldState, isBa
 
     if (isBattingInnings) {
       players = mergeLiveBatterStats(players, ld);
+      const fieldPlayers = battersFromFieldState(fieldState);
+      for (const fp of fieldPlayers) {
+        if (!players.some((p) => p.name.toLowerCase() === fp.name.toLowerCase())) {
+          players.push(fp);
+        }
+      }
       players = players.map((p) => ({
         ...p,
         statusLabel: formatBatterStatus(p),
@@ -157,7 +193,12 @@ export function buildScorecardInnings(match, teamName, roster, _fieldState, isBa
     match?.liveDetails || {},
     match?.scorecardInnings || [],
   );
-  return isBattingInnings ? liveBattersFromDetails(ld) : [];
+  if (!isBattingInnings) return [];
+
+  const fromLive = liveBattersFromDetails(ld);
+  if (fromLive.length) return fromLive;
+
+  return battersFromFieldState(fieldState);
 }
 
 function apiOverHistoryRows(match) {

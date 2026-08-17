@@ -1,3 +1,38 @@
+import { isPlaceholderPlayerName } from './cricketPlayers';
+
+function isUsablePlayer(player) {
+  const name = player?.name || (typeof player === 'string' ? player : '');
+  return !!(name && !isPlaceholderPlayerName(name));
+}
+
+function batterFromScorecard(b) {
+  return {
+    name: b.name,
+    runs: b.runs ?? 0,
+    balls: b.balls ?? 0,
+    fours: b.fours ?? 0,
+    sixes: b.sixes ?? 0,
+  };
+}
+
+function mergeLiveWithScorecardBatter(live, card) {
+  if (!card) return live;
+  if (!isUsablePlayer(live)) return batterFromScorecard(card);
+  if (String(live.name).toLowerCase() === String(card.name).toLowerCase()) {
+    return {
+      ...live,
+      runs: Math.max(live.runs ?? 0, card.runs ?? 0),
+      balls: Math.max(live.balls ?? 0, card.balls ?? 0),
+      fours: Math.max(live.fours ?? 0, card.fours ?? 0),
+      sixes: Math.max(live.sixes ?? 0, card.sixes ?? 0),
+    };
+  }
+  if ((live.runs ?? 0) === 0 && (live.balls ?? 0) === 0 && ((card.runs ?? 0) > 0 || (card.balls ?? 0) > 0)) {
+    return batterFromScorecard(card);
+  }
+  return live;
+}
+
 function isNotOutBatter(b) {
   if (!b?.name) return false;
   return !!(b.notOut || !b.dismissal || /^(batting|not out)$/i.test(String(b.dismissal || '')));
@@ -47,27 +82,18 @@ export function enrichLivePlayersFromScorecard(liveDetails = {}, scorecardInning
     );
     atCrease = [...atCrease, ...waiting].slice(0, 2);
   }
-
-  if (!next.batter1?.name && atCrease[0]) {
-    next.batter1 = {
-      name: atCrease[0].name,
-      runs: atCrease[0].runs ?? 0,
-      balls: atCrease[0].balls ?? 0,
-      fours: atCrease[0].fours ?? 0,
-      sixes: atCrease[0].sixes ?? 0,
-    };
-  }
-  if (!next.batter2?.name && atCrease[1]) {
-    next.batter2 = {
-      name: atCrease[1].name,
-      runs: atCrease[1].runs ?? 0,
-      balls: atCrease[1].balls ?? 0,
-      fours: atCrease[1].fours ?? 0,
-      sixes: atCrease[1].sixes ?? 0,
-    };
+  if (atCrease.length < 2) {
+    const withStats = (currentInnings.batters || [])
+      .filter((b) => isUsablePlayer(b) && ((b.balls ?? 0) > 0 || (b.runs ?? 0) > 0))
+      .filter((b) => !atCrease.some((a) => a.name === b.name))
+      .slice(-2);
+    atCrease = [...atCrease, ...withStats].slice(0, 2);
   }
 
-  if (!next.bowler?.name && currentInnings.bowlers?.length) {
+  next.batter1 = mergeLiveWithScorecardBatter(next.batter1, atCrease[0]);
+  next.batter2 = mergeLiveWithScorecardBatter(next.batter2, atCrease[1]);
+
+  if (!isUsablePlayer(next.bowler) && currentInnings.bowlers?.length) {
     const activeBowler = currentInnings.bowlers.find((b) => {
       const ovs = String(b.overs ?? '');
       return /\.\d*[1-9]/.test(ovs);

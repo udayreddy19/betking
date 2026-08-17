@@ -1,12 +1,17 @@
 // Node.js / Express Backend Server with Razorpay Webhook Handler
 // Usage: node server/index.js
 
+import 'dotenv/config';
 import express from 'express';
 import crypto from 'crypto';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 
 const app = express();
 const PORT = process.env.PORT || 5001;
+const isProduction = process.env.NODE_ENV === 'production';
+
+app.set('trust proxy', 1);
 
 // IMPORTANT: Razorpay Webhooks MUST receive the RAW request body to verify HMAC signatures accurately.
 app.use(express.json({
@@ -14,11 +19,37 @@ app.use(express.json({
     req.rawBody = buf;
   }
 }));
-app.use(cors());
+
+const corsOriginEnv = process.env.CORS_ORIGIN || process.env.CORS_ALLOWED_ORIGINS;
+const corsOptions = corsOriginEnv
+  ? {
+    origin: corsOriginEnv.split(',').map((s) => s.trim()),
+    credentials: true,
+  }
+  : isProduction
+    ? { origin: false, credentials: true }
+    : { origin: true, credentials: true };
+
+app.use(cors(corsOptions));
+app.use(cookieParser());
+
+// Security Headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
 
 // ── Rate Limiting & Auth Middleware ──
 import { loginRateLimiter, registerRateLimiter } from './middleware/rateLimiter.js';
 import { adminAuth, requireRole } from './middleware/adminAuth.js';
+import { requireAuth } from './middleware/userAuth.js';
+
+// ── Mount Production Auth Routes ──
+import authRouter from './auth/authRoutes.js';
+app.use('/api/auth', authRouter);
 
 // ── Mount Primary Modular Admin Router ──
 import adminRouter from './routes/index.js';
@@ -56,8 +87,13 @@ app.post('/api/auth/admin-login', async (req, res) => {
 
 app.use('/api/admin', adminRouter);
 
-// Razorpay Webhook Secret
-const RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || 'betking_wh_secret_2026';
+// All v1 admin endpoints require admin JWT
+app.use('/api/v1/admin', adminAuth);
+
+// Legacy inline admin routes defined below also require auth
+app.use('/api/admin', adminAuth);
+
+// Razorpay Webhook Secret — validated at boot in production (depositEngine reads env directly)
 
 // -----------------------------------------------------------------------------
 // Production Operational Health, Liveness & Readiness Endpoints
@@ -94,119 +130,52 @@ app.get('/liveness', async (req, res) => {
 });
 
 // -----------------------------------------------------------------------------
-// Authentication Endpoints with Rate Limiting (Task 2)
+// Legacy Auth Endpoints — v1 compatibility redirects
+// New production auth is handled by server/auth/authRoutes.js mounted at /api/auth
+// These legacy paths redirect to the new endpoints for backward compatibility.
 // -----------------------------------------------------------------------------
-app.post(['/api/auth/register', '/api/v1/auth/register'], registerRateLimiter, async (req, res) => {
-  try {
-    const { email, password, phone, userId: reqUserId } = req.body;
-    if (!email || !password || password.length < 6) {
-      return res.status(400).json({ error: 'Valid email and password (min 6 chars) required', code: 'INVALID_INPUT' });
-    }
-
-    const { query, withTransaction } = await import('../db/pg.js');
-    const { generateAdminToken } = await import('./middleware/adminAuth.js');
-
-    const existing = await query('SELECT user_id FROM users WHERE email = $1', [email]);
-    if (existing.rows.length > 0) {
-      return res.status(400).json({ error: 'User with this email already exists', code: 'EMAIL_EXISTS' });
-    }
-
-    const userId = reqUserId || `usr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-    const passHash = crypto.createHash('sha256').update(password).digest('hex');
-
-    await withTransaction(async (client) => {
-      await client.query(
-        `INSERT INTO users (user_id, email, phone, password_hash)
-         VALUES ($1, $2, $3, $4)`,
-        [userId, email, phone || null, passHash]
-      );
-      await client.query(
-        `INSERT INTO wallets (wallet_id, user_id, balance, currency)
-         VALUES ($1, $2, 0.00, 'INR')
-         ON CONFLICT (user_id) DO NOTHING`,
-        [`wal_${userId}`, userId]
-      );
-    });
-
-    const token = generateAdminToken(userId, 'USER', 'betking_in');
-    res.status(201).json({
-      success: true,
-      token,
-      user: { userId, email, phone: phone || null },
-    });
-  } catch (err) {
-    res.status(500).json({ error: 'Registration failed', message: err.message });
-  }
+app.post('/api/v1/auth/register', registerRateLimiter, (req, res, next) => {
+  req.url = '/api/auth/signup';
+  app.handle(req, res, next);
 });
 
-app.post(['/api/auth/login', '/api/v1/auth/login'], loginRateLimiter, async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password required', code: 'MISSING_CREDENTIALS' });
-    }
-
-    const { query } = await import('../db/pg.js');
-    const { generateAdminToken } = await import('./middleware/adminAuth.js');
-
-    const passHash = crypto.createHash('sha256').update(password).digest('hex');
-    const userRes = await query('SELECT user_id, email, phone, password_hash FROM users WHERE email = $1', [email]);
-
-    if (userRes.rows.length === 0 || (userRes.rows[0].password_hash && userRes.rows[0].password_hash !== passHash)) {
-      return res.status(401).json({ error: 'Invalid email or password', code: 'INVALID_CREDENTIALS' });
-    }
-
-    const user = userRes.rows[0];
-    const token = generateAdminToken(user.user_id, 'USER', 'betking_in');
-    res.json({
-      success: true,
-      token,
-      user: { userId: user.user_id, email: user.email, phone: user.phone },
-    });
-  } catch (err) {
-    res.status(500).json({ error: 'Login failed', message: err.message });
-  }
+app.post('/api/v1/auth/login', loginRateLimiter, (req, res, next) => {
+  req.url = '/api/auth/login';
+  app.handle(req, res, next);
 });
 
 // -----------------------------------------------------------------------------
-// 1. Create Razorpay Order API (Called from Frontend before Checkout)
+// 1. Create Razorpay Order API (dev-only mock — production uses /api/v1/payments/create-order)
 // -----------------------------------------------------------------------------
-app.post('/api/create-order', async (req, res) => {
-  const { amount, userId } = req.body;
+if (!isProduction) {
+  app.post('/api/create-order', async (req, res) => {
+    const { amount, userId } = req.body;
 
-  if (!amount || amount <= 0) {
-    return res.status(400).json({ error: 'Invalid deposit amount' });
-  }
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: 'Invalid deposit amount' });
+    }
 
-  try {
-    // If using razorpay SDK:
-    // const order = await razorpayInstance.orders.create({
-    //   amount: amount * 100, // paise
-    //   currency: 'INR',
-    //   receipt: `rcpt_${userId}_${Date.now()}`,
-    //   notes: { userId: userId || 'udayreddy12' }
-    // });
+    try {
+      const mockOrder = {
+        id: `order_${Math.random().toString(36).substring(2, 12)}`,
+        entity: 'order',
+        amount: amount * 100,
+        amount_paid: 0,
+        amount_due: amount * 100,
+        currency: 'INR',
+        receipt: `rcpt_${userId || 'user123'}_${Date.now()}`,
+        status: 'created',
+        notes: { userId: userId || 'user123' },
+      };
 
-    // Mock response format matching Razorpay API:
-    const mockOrder = {
-      id: `order_${Math.random().toString(36).substring(2, 12)}`,
-      entity: 'order',
-      amount: amount * 100,
-      amount_paid: 0,
-      amount_due: amount * 100,
-      currency: 'INR',
-      receipt: `rcpt_${userId || 'user123'}_${Date.now()}`,
-      status: 'created',
-      notes: { userId: userId || 'udayreddy12' }
-    };
-
-    console.log(`[API] Order created: ${mockOrder.id} for ₹${amount}`);
-    res.json(mockOrder);
-  } catch (err) {
-    console.error('[API Error] Failed to create order:', err);
-    res.status(500).json({ error: 'Server error creating order' });
-  }
-});
+      console.log(`[API] Dev mock order created: ${mockOrder.id} for ₹${amount}`);
+      res.json(mockOrder);
+    } catch (err) {
+      console.error('[API Error] Failed to create order:', err);
+      res.status(500).json({ error: 'Server error creating order' });
+    }
+  });
+}
 
 // -----------------------------------------------------------------------------
 // Database Health Endpoint (PostgreSQL & Redis Connectivity Check)
@@ -237,37 +206,19 @@ app.get('/api/health', async (req, res) => {
 // -----------------------------------------------------------------------------
 // Dev Endpoint for OddsEngineV3 (Isolated Testing)
 // -----------------------------------------------------------------------------
-app.get('/api/dev/odds-v3/:matchId', async (req, res) => {
-  try {
-    const { matchId } = req.params;
-    const { generate } = await import('../lib/odds-v3/OddsEngineV3.mjs');
-    const { createCanonicalMatchState } = await import('../lib/odds-v3/models/CanonicalMatchState.mjs');
-
-    const matchState = createCanonicalMatchState({
-      matchId: matchId || 'cric_hundred_m_1',
-      sport: 'CRICKET',
-      format: 'THE_HUNDRED',
-      status: 'LIVE',
-      team1: { id: 'OVI', name: 'Oval Invincibles', runs: 142, wickets: 5, balls: 100 },
-      team2: { id: 'TRT', name: 'Trent Rockets', runs: 98, wickets: 3, balls: 58 },
-      currentInnings: 2,
-      battingTeamId: 'TRT',
-      bowlingTeamId: 'OVI',
-      target: 143,
-      runsRequired: 45,
-      ballsPerInnings: 100,
-      ballsCompleted: 58,
-      ballsRemaining: 42,
-      providerTimestamp: Date.now(),
-      stateVersion: 1,
-    });
-
-    const snapshot = generate(matchState, { debug: true });
-    res.json(snapshot);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+if (!isProduction) {
+  app.get('/api/dev/odds-v3/:matchId', async (req, res) => {
+    try {
+      const { matchId } = req.params;
+      const { buildMatchOddsPayload } = await import('../lib/liveScoresApiHandlers.mjs');
+      const snapshot = await buildMatchOddsPayload({ matchId, force: req.query.refresh === '1' });
+      res.json(snapshot);
+    } catch (err) {
+      const status = err.statusCode || 500;
+      res.status(status).json({ error: err.message });
+    }
+  });
+}
 
 // -----------------------------------------------------------------------------
 // 2. Razorpay Webhook & Payment Endpoints
@@ -290,20 +241,26 @@ app.post('/api/webhooks/razorpay', async (req, res) => {
   }
 });
 
-app.post('/api/v1/payments/create-order', async (req, res) => {
+app.post('/api/v1/payments/create-order', requireAuth, async (req, res) => {
   try {
     const { depositEngine } = await import('../lib/depositEngine.mjs');
-    const result = await depositEngine.createOrder(req.body, req.correlationId);
+    const result = await depositEngine.createOrder(
+      { ...req.body, userId: req.user.userId },
+      req.correlationId,
+    );
     res.json(result);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-app.post('/api/v1/withdrawals/request', async (req, res) => {
+app.post('/api/v1/withdrawals/request', requireAuth, async (req, res) => {
   try {
     const { withdrawalEngine } = await import('../lib/withdrawalEngine.mjs');
-    const result = await withdrawalEngine.requestWithdrawal(req.body, req.correlationId);
+    const result = await withdrawalEngine.requestWithdrawal(
+      { ...req.body, userId: req.user.userId },
+      req.correlationId,
+    );
     res.json(result);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -899,12 +856,17 @@ app.post('/api/admin/reconciliation/cases/:id/resolve', async (req, res) => {
 // -----------------------------------------------------------------------------
 // Bet Cashout & Account Restriction REST APIs
 // -----------------------------------------------------------------------------
-app.post('/api/bet/cashout', async (req, res) => {
-  const { betId, userId, requestedCashoutValue } = req.body;
+app.post('/api/bet/cashout', requireAuth, async (req, res) => {
+  const { betId, requestedCashoutValue } = req.body;
   const idempotencyKey = req.headers['x-idempotency-key'] || req.body.idempotencyKey;
   try {
     const { executeBetCashout } = await import('../lib/cashoutEngine.mjs');
-    const result = await executeBetCashout({ betId, userId, requestedCashoutValue, idempotencyKey });
+    const result = await executeBetCashout({
+      betId,
+      userId: req.user.userId,
+      requestedCashoutValue,
+      idempotencyKey,
+    });
     res.json(result);
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
@@ -1525,19 +1487,22 @@ app.get('/api/v1/promotions', async (req, res) => {
   }
 });
 
-app.post('/api/v1/promotions/claim', async (req, res) => {
-  const { userId, promoCode, depositAmount } = req.body;
+app.post('/api/v1/promotions/claim', requireAuth, async (req, res) => {
+  const { promoCode, depositAmount } = req.body;
   try {
     const { claimPromotionBonus } = await import('../lib/promotionsEngine.mjs');
-    const result = await claimPromotionBonus({ userId, promoCode, depositAmount });
+    const result = await claimPromotionBonus({
+      userId: req.user.userId,
+      promoCode,
+      depositAmount,
+    });
     res.json(result);
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
   }
 });
 
-app.get('/api/v1/user/bonuses', async (req, res) => {
-  const { userId } = req.query;
+app.get('/api/v1/user/bonuses', requireAuth, async (req, res) => {
   try {
     const { query } = await import('../db/pg.js');
     const bonusesRes = await query(`
@@ -1546,20 +1511,19 @@ app.get('/api/v1/user/bonuses', async (req, res) => {
       JOIN promotions p ON ub.promotion_id = p.id
       WHERE ub.user_id = $1
       ORDER BY ub.created_at DESC;
-    `, [userId]);
+    `, [req.user.userId]);
     res.json({ success: true, count: bonusesRes.rows.length, bonuses: bonusesRes.rows });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-app.get('/api/v1/user/loyalty', async (req, res) => {
-  const { userId } = req.query;
+app.get('/api/v1/user/loyalty', requireAuth, async (req, res) => {
   try {
     const { query } = await import('../db/pg.js');
-    const lRes = await query(`SELECT points, tier, updated_at FROM user_loyalty WHERE user_id = $1;`, [userId]);
+    const lRes = await query(`SELECT points, tier, updated_at FROM user_loyalty WHERE user_id = $1;`, [req.user.userId]);
     const lData = lRes.rows[0] || { points: 0, tier: 'BRONZE' };
-    res.json({ success: true, userId, loyalty: lData });
+    res.json({ success: true, userId: req.user.userId, loyalty: lData });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -2244,12 +2208,31 @@ app.get('/api/v1/matches/:id', async (req, res) => {
   }
 });
 
-app.post(['/api/bets/place', '/api/v1/bet/place'], async (req, res) => {
+app.get('/api/bets/mine', requireAuth, async (req, res) => {
+  try {
+    const { query } = await import('../db/pg.js');
+    const result = await query(
+      `SELECT bet_id, user_id, match_id, market_id, selection_id, stake, odds, accepted_odds,
+              potential_payout, bet_type, status, created_at
+       FROM bets
+       WHERE user_id = $1
+       ORDER BY created_at DESC
+       LIMIT 100`,
+      [req.user.userId],
+    );
+    res.json({ success: true, bets: result.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post(['/api/bets/place', '/api/v1/bet/place'], requireAuth, async (req, res) => {
   const idempotencyKey = req.headers['x-idempotency-key'] || req.body.idempotencyKey;
   try {
     const { betPlacementEngine } = await import('../lib/betPlacementEngine.mjs');
     const result = await betPlacementEngine.placeBet({
       ...req.body,
+      userId: req.user.userId,
       idempotencyKey,
     }, req.correlationId);
 
@@ -2693,6 +2676,14 @@ const httpServer = createServer(app);
 initWebSocketServer(httpServer);
 
 httpServer.listen(PORT, async () => {
+  try {
+    const { validateProductionEnvironment } = await import('../lib/devopsEngine.mjs');
+    validateProductionEnvironment();
+  } catch (err) {
+    console.error('[Startup]', err.message);
+    if (isProduction) process.exit(1);
+  }
+
   console.log(`🚀 BetKing Backend listening on http://localhost:${PORT}`);
   console.log(`  - Webhook Route : http://localhost:${PORT}/api/webhooks/razorpay`);
   console.log(`  - WebSocket Route : ws://localhost:${PORT}/ws/support`);
@@ -2702,5 +2693,12 @@ httpServer.listen(PORT, async () => {
     startBackgroundWorkers();
   } catch (err) {
     console.warn('[Scheduler Startup Notice]', err.message);
+  }
+
+  try {
+    const { hydrateSrlOperatorSessions } = await import('../lib/iplSrlOperatorState.mjs');
+    await hydrateSrlOperatorSessions();
+  } catch (err) {
+    console.warn('[SRL Operator Hydrate Notice]', err.message);
   }
 });

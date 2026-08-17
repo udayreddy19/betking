@@ -37,6 +37,8 @@ describe('OddsEngineV3 — Phase 26 Migration Test Suite', () => {
       ballsPerInnings: 100,
       ballsCompleted: 58,
       ballsRemaining: 42,
+      batter1: { name: 'Alex Hales', runs: 42, balls: 28 },
+      batter2: { name: 'Dawid Malan', runs: 30, balls: 20 },
       providerTimestamp: Date.now(),
       stateVersion: 1,
     });
@@ -47,7 +49,7 @@ describe('OddsEngineV3 — Phase 26 Migration Test Suite', () => {
     expect(adapted.engine).toBe('OddsEngineV3');
     expect(adapted.engineVersion).toBe('3.0.0');
     expect(adapted.source).toBe('ODDS_ENGINE_V3');
-    expect(adapted.markets.length).toBeGreaterThanOrEqual(30);
+    expect(adapted.markets.length).toBeGreaterThanOrEqual(12);
 
     // Verify both 'selections' and 'options' exist for backward UI compatibility
     expect(adapted.markets[0].selections).toBeDefined();

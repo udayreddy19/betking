@@ -54,14 +54,13 @@ export function filterMatches(matches, { sport, stateTab = 'all', searchQuery = 
 
 function normalizeLiveFlags(match) {
   if (!match) return null;
-  let state = getMatchState(match);
-  const apiLive = match?.isLive === true || match?.matchState === 'in';
+  const state = getMatchState(match);
 
   return {
     ...match,
     isMock: false,
     matchState: state,
-    isLive: state === 'in' || apiLive,
+    isLive: state === 'in',
     time: match.time || 'Live',
     scoreSource: match.source || match.scoreSource || 'api',
   };

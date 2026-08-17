@@ -1,31 +1,29 @@
 import { Router } from 'express';
 import { claimPromotionBonus, releaseCompletedBonus } from '../../lib/promotionsEngine.mjs';
 import { query } from '../../db/pg.js';
+import { requireAuth } from '../middleware/userAuth.js';
 
 const router = Router();
 
-// POST /api/promotions/claim — Claim promotion bonus
-router.post('/claim', async (req, res) => {
-  const { userId, promoCode, depositAmount } = req.body;
-  if (!userId || !promoCode) {
-    return res.status(400).json({ error: 'User ID and promotion code are required' });
+router.post('/claim', requireAuth, async (req, res) => {
+  const { promoCode, depositAmount } = req.body;
+  if (!promoCode) {
+    return res.status(400).json({ error: 'Promotion code is required' });
   }
 
   try {
-    const result = await claimPromotionBonus({ userId, promoCode, depositAmount });
+    const result = await claimPromotionBonus({
+      userId: req.user.userId,
+      promoCode,
+      depositAmount,
+    });
     res.json(result);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-// GET /api/user/bonuses — Get active user bonuses with progress percentage
-router.get('/user/bonuses', async (req, res) => {
-  const { userId } = req.query;
-  if (!userId) {
-    return res.status(400).json({ error: 'User ID query parameter is required' });
-  }
-
+router.get('/user/bonuses', requireAuth, async (req, res) => {
   try {
     const result = await query(
       `SELECT ub.id, ub.promotion_id, p.name, p.code, ub.bonus_amount, ub.wagering_required, ub.wagering_completed, ub.status, ub.expires_at
@@ -33,10 +31,10 @@ router.get('/user/bonuses', async (req, res) => {
        JOIN promotions p ON p.id = ub.promotion_id
        WHERE ub.user_id = $1
        ORDER BY ub.created_at DESC`,
-      [userId]
+      [req.user.userId]
     );
 
-    const bonuses = result.rows.map(row => {
+    const bonuses = result.rows.map((row) => {
       const reqAmt = parseFloat(row.wagering_required);
       const compAmt = parseFloat(row.wagering_completed);
       const pct = reqAmt > 0 ? Math.min(100, Math.round((compAmt / reqAmt) * 100)) : 100;
@@ -55,21 +53,20 @@ router.get('/user/bonuses', async (req, res) => {
       };
     });
 
-    res.json({ success: true, userId, bonuses });
+    res.json({ success: true, userId: req.user.userId, bonuses });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST /api/user/bonuses/release — Atomic release of completed bonus
-router.post('/user/bonuses/release', async (req, res) => {
-  const { userId, bonusId } = req.body;
-  if (!userId || !bonusId) {
-    return res.status(400).json({ error: 'User ID and bonus ID are required' });
+router.post('/user/bonuses/release', requireAuth, async (req, res) => {
+  const { bonusId } = req.body;
+  if (!bonusId) {
+    return res.status(400).json({ error: 'Bonus ID is required' });
   }
 
   try {
-    const result = await releaseCompletedBonus({ userId, bonusId });
+    const result = await releaseCompletedBonus({ userId: req.user.userId, bonusId });
     res.json(result);
   } catch (err) {
     res.status(400).json({ error: err.message });

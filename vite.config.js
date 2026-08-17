@@ -13,6 +13,10 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     proxy: {
+      '/ws': {
+        target: 'ws://127.0.0.1:5001',
+        ws: true,
+      },
       '/api': {
         target: 'http://127.0.0.1:5001',
         changeOrigin: true,

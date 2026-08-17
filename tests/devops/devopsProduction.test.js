@@ -40,15 +40,23 @@ describe('Phase 15 DevOps, Health Probes & Operations Tests', () => {
     expect(log.user_id).toBe('usr_123');
   });
 
-  it('Production startup environment validator fails fast when DATABASE_URL or JWT_SECRET is missing', () => {
+  it('Production startup environment validator fails fast when required production secrets are missing', () => {
     expect(() =>
       validateProductionEnvironment({ NODE_ENV: 'production' })
-    ).toThrow('PRODUCTION_STARTUP_ERROR: Missing required secrets: DATABASE_URL, JWT_SECRET');
+    ).toThrow('PRODUCTION_STARTUP_ERROR');
 
     const valid = validateProductionEnvironment({
       NODE_ENV: 'production',
       DATABASE_URL: 'postgresql://usr:pass@localhost:5432/db',
       JWT_SECRET: 'secret',
+      FRONTEND_URL: 'https://betking.com',
+      CORS_ORIGIN: 'https://betking.com',
+      RAZORPAY_KEY_ID: 'rzp_live_test',
+      RAZORPAY_KEY_SECRET: 'secret',
+      RAZORPAY_WEBHOOK_SECRET: 'wh_secret',
+      SMTP_HOST: 'smtp.example.com',
+      SMTP_USER: 'user',
+      SMTP_PASSWORD: 'pass',
     });
     expect(valid.valid).toBe(true);
   });

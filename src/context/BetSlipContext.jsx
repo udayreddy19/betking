@@ -2,9 +2,40 @@ import { createContext, useContext, useState, useCallback, useMemo, useEffect } 
 import { useAuth } from './AuthContext';
 import { getCashoutOffer } from '../utils/wageringRules';
 import { playBetSound, playWinSound } from '../utils/soundEffects';
+import { isMatchBettable } from '../utils/matchBetting';
+import { apiFetch } from '../utils/apiClient';
+
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1' || import.meta.env.DEV;
 
 const BetSlipContext = createContext(null);
-const PLACED_BETS_KEY = 'betking_placed_bets';
+
+async function fetchMyBetsFromServer() {
+  const res = await apiFetch('/api/bets/mine');
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.bets || [];
+}
+
+function mapServerBetToPlaced(row) {
+  return {
+    id: row.bet_id,
+    type: row.bet_type === 'ACCUMULATOR' ? 'multi' : 'single',
+    legs: [{
+      matchId: row.match_id,
+      matchName: row.match_id,
+      selection: row.selection_id,
+      selectionName: row.selection_id,
+      marketName: row.market_id,
+      odds: Number(row.accepted_odds || row.odds),
+    }],
+    stake: Number(row.stake),
+    totalOdds: Number(row.accepted_odds || row.odds),
+    potentialReturn: Number(row.potential_payout),
+    status: String(row.status || 'pending').toLowerCase(),
+    placedAt: row.created_at,
+    fundSource: 'cash',
+  };
+}
 
 function loadPlacedBets() {
   try {
@@ -25,9 +56,9 @@ function getSelectionName(match, selection, customName) {
 }
 
 export function BetSlipProvider({ children }) {
-  const { showToast } = useAuth();
+  const { showToast, refreshWallet } = useAuth();
   const [bets, setBets] = useState([]);
-  const [placedBets, setPlacedBets] = useState(loadPlacedBets);
+  const [placedBets, setPlacedBets] = useState([]);
   const [stake, setStake] = useState('');
   const [betType, setBetType] = useState('multi');
   const [singlesStakes, setSinglesStakes] = useState({});
@@ -35,7 +66,24 @@ export function BetSlipProvider({ children }) {
   const [isMyBetsOpen, setIsMyBetsOpen] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem(PLACED_BETS_KEY, JSON.stringify(placedBets));
+    if (DEMO_MODE) {
+      try {
+        const saved = JSON.parse(localStorage.getItem('betking_placed_bets') || '[]');
+        setPlacedBets(saved);
+      } catch {
+        setPlacedBets([]);
+      }
+      return;
+    }
+    fetchMyBetsFromServer().then((rows) => {
+      setPlacedBets(rows.map(mapServerBetToPlaced));
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (DEMO_MODE) {
+      localStorage.setItem('betking_placed_bets', JSON.stringify(placedBets));
+    }
   }, [placedBets]);
 
   const openMyBets = useCallback(() => {
@@ -53,6 +101,14 @@ export function BetSlipProvider({ children }) {
   }, []);
 
   const addBet = useCallback((match, selection, odds, selectionName, options = {}) => {
+    if (!isMatchBettable(match)) {
+      showToast('This match is no longer open for betting', 'error');
+      return false;
+    }
+    if (!(Number(odds) > 1)) {
+      showToast('That market is not currently bettable', 'error');
+      return false;
+    }
     const existing = bets.find(b => b.matchId === match.id && b.selection === selection);
 
     if (existing) {
@@ -163,13 +219,77 @@ export function BetSlipProvider({ children }) {
     return total.toFixed(2);
   }, [bets, betType, stake, singlesStakes, multiOdds]);
 
-  const placeBets = useCallback((options = {}) => {
+  const placeBets = useCallback(async (options = {}) => {
     const stakeSource = ['bonus', 'freebet'].includes(options.stakeSource)
       ? options.stakeSource
       : 'cash';
 
     if (bets.length === 0) {
       return { success: false, error: 'Your betslip is empty' };
+    }
+
+    if (!DEMO_MODE) {
+      try {
+        if (betType === 'multi') {
+          const stakeAmount = parseFloat(stake);
+          if (!stakeAmount || stakeAmount <= 0) {
+            return { success: false, error: 'Enter a valid stake amount' };
+          }
+          const res = await apiFetch('/api/bets/place', {
+            method: 'POST',
+            headers: { 'X-Idempotency-Key': `multi-${Date.now()}` },
+            body: JSON.stringify({
+              stake: stakeAmount,
+              selections: bets.map((bet) => ({
+                matchId: bet.matchId,
+                marketId: bet.marketId || 'match_winner',
+                selectionId: bet.selection,
+                odds: bet.odds,
+                selectionName: bet.selectionName,
+              })),
+            }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            return { success: false, error: data.error || 'Bet placement failed' };
+          }
+        } else {
+          for (const bet of bets) {
+            const stakeAmount = parseFloat(singlesStakes[bet.id] || stake || 0);
+            if (!stakeAmount || stakeAmount <= 0) {
+              return { success: false, error: `Enter stake for "${bet.selectionName}"` };
+            }
+            const res = await apiFetch('/api/bets/place', {
+              method: 'POST',
+              headers: { 'X-Idempotency-Key': `single-${bet.id}-${Date.now()}` },
+              body: JSON.stringify({
+                matchId: bet.matchId,
+                marketId: bet.marketId || 'match_winner',
+                selectionId: bet.selection,
+                stake: stakeAmount,
+                clientOdds: bet.odds,
+              }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+              return { success: false, error: data.error || 'Bet placement failed' };
+            }
+          }
+        }
+
+        const serverBets = await fetchMyBetsFromServer();
+        setPlacedBets(serverBets.map(mapServerBetToPlaced));
+        setBets([]);
+        setStake('');
+        setSinglesStakes({});
+        setIsMyBetsOpen(true);
+        setIsMobileOpen(false);
+        playBetSound();
+        await refreshWallet?.();
+        return { success: true };
+      } catch {
+        return { success: false, error: 'Unable to reach betting service' };
+      }
     }
 
     const withFundMeta = (placed, stakeAmount) => ({
@@ -236,7 +356,7 @@ export function BetSlipProvider({ children }) {
     setIsMobileOpen(false);
     playBetSound();
     return { success: true, placed: placements, totalDeducted, stakeSource };
-  }, [bets, betType, stake, singlesStakes, multiOdds]);
+  }, [bets, betType, stake, singlesStakes, multiOdds, refreshWallet]);
 
   const cashOutBet = useCallback((betId) => {
     const target = placedBets.find(

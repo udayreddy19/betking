@@ -104,3 +104,22 @@ export const registerRateLimiter = createRateLimiter({
   maxRequests: parseInt(process.env.AUTH_REGISTER_RATE_LIMIT) || 10,
   windowSeconds: parseInt(process.env.AUTH_RATE_LIMIT_WINDOW) || 60,
 });
+
+export const forgotPasswordRateLimiter = createRateLimiter({
+  prefix: 'rl:forgot_password',
+  maxRequests: 3,
+  windowSeconds: 15 * 60, // 15 minutes
+});
+
+export const verifyEmailRateLimiter = createRateLimiter({
+  prefix: 'rl:verify_email',
+  maxRequests: 5,
+  windowSeconds: 15 * 60, // 15 minutes
+});
+
+export const authGeneralRateLimiter = createRateLimiter({
+  prefix: 'rl:auth_general',
+  maxRequests: 10,
+  windowSeconds: 60,
+});
+

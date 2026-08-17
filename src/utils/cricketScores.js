@@ -60,6 +60,41 @@ function pickEntryForTeam(entries, teamName) {
   return entries.find((entry) => entry.token && teamNameMatches(teamName, entry.token)) || null;
 }
 
+/** Feed copied the batting score onto both teams (often still labelled innings 2). */
+export function looksLikeMirroredFirstInnings(match, ld = {}) {
+  const text = String(ld.commentary || ld.minute || ld.period || match?.time || '');
+  const firstInningsLabel = /first\s+innings/i.test(text) && !/second\s+innings/i.test(text);
+
+  const t1 = Number(match?.team1?.runs ?? ld.score1 ?? ld.runs ?? 0);
+  const t2 = Number(match?.team2?.runs ?? ld.score2 ?? 0);
+  const w1 = Number(match?.team1?.wickets ?? ld.wickets1 ?? ld.wickets ?? 0);
+  const w2 = Number(match?.team2?.wickets ?? ld.wickets2 ?? ld.chaseWickets ?? 0);
+  const sameScore = t1 > 0 && t1 === t2;
+  const sameWkts = w1 === w2;
+
+  const firstRuns = Number(ld.firstRuns);
+  const chaseRuns = Number(ld.chaseRuns);
+  const distinctTotals = Number.isFinite(firstRuns) && firstRuns > 0
+    && Number.isFinite(chaseRuns)
+    && firstRuns !== chaseRuns;
+
+  const firstOvers = String(ld.firstOvers || '');
+  const chaseOvers = String(ld.chaseOvers || '');
+  const distinctOvers = firstOvers
+    && chaseOvers
+    && firstOvers !== '0.0'
+    && chaseOvers !== '0.0'
+    && firstOvers !== chaseOvers;
+
+  if (distinctTotals || distinctOvers) return false;
+  if (firstInningsLabel) return true;
+  if (!sameScore) return false;
+  if (ld.chaseTeamName && Number(ld.chaseRuns) > 0 && Number(ld.firstRuns) > 0 && Number(ld.firstRuns) !== Number(ld.chaseRuns)) {
+    return false;
+  }
+  return sameWkts || w2 === 0 || Number(ld.score2) === t1;
+}
+
 /**
  * Map liveDetails fields onto team1/team2 regardless of chase/first naming.
  */
@@ -74,15 +109,24 @@ export function resolveCricketTeamScores(match, ld = {}) {
 
   const commentaryStr = ld.commentary || '';
   const needMatch = commentaryStr.match(/(?:([A-Za-z\s]+)\s+)?need\s+(\d+)\s+runs?/i);
+  const mirroredFirst = looksLikeMirroredFirstInnings(match, ld);
 
   // 2nd Innings ONLY if we have explicit 2nd innings score fields or explicit chase commentary with firstRuns
-  const hasSecondInningsData = (Number(ld.inningsId) >= 2)
+  const hasSecondInningsData = !mirroredFirst && (
+    (Number(ld.inningsId) >= 2)
     || Number(ld.chaseRuns) > 0
     || Number(ld.wickets2) > 0
     || Number(ld.chaseWickets) > 0
     || (ld.overs2 != null && ld.overs2 !== '0.0' && ld.overs2 !== '0' && ld.overs2 !== '')
     || (ld.chaseOvers != null && ld.chaseOvers !== '0.0' && ld.chaseOvers !== '0' && ld.chaseOvers !== '')
-    || Boolean(needMatch && Number(ld.firstRuns) > 0);
+    || Boolean(needMatch && (Number(ld.firstRuns) > 0 || Number(needMatch[2]) === 0))
+    || (Number(ld.score1) > 0 && Number(ld.score2) > 0 && Number(ld.score1) !== Number(ld.score2))
+    || (
+      Number(match?.team1?.runs) > 0
+      && Number(match?.team2?.runs) > 0
+      && Number(match.team1.runs) !== Number(match.team2.runs)
+    )
+  );
 
   if (hasSecondInningsData) {
     let chaseTeam = ld.chaseTeamName;
@@ -92,19 +136,50 @@ export function resolveCricketTeamScores(match, ld = {}) {
     }
 
     const firstTeam = ld.firstTeamName || (teamNameMatches(team1Name, chaseTeam) ? team2Name : team1Name);
-    const firstRuns = ld.firstRuns != null
-      ? Number(ld.firstRuns)
-      : pickPositiveScore(ld.score1, null, 0);
-    const firstWickets = ld.firstWickets != null
-      ? Number(ld.firstWickets)
-      : pickPositiveScore(ld.wickets1, null, 0);
-    const firstOvers = ld.firstOvers || '0.0';
+    const firstFromMatch = teamNameMatches(team1Name, firstTeam)
+      ? pickPositiveScore(match?.team1?.runs, match?.score1, 0)
+      : pickPositiveScore(match?.team2?.runs, match?.score2, 0);
+    const firstRuns = pickPositiveScore(
+      ld.firstRuns,
+      teamNameMatches(team1Name, firstTeam) ? ld.score1 : (teamNameMatches(team2Name, firstTeam) ? ld.score2 : null),
+      firstFromMatch,
+    );
+    const firstWickets = pickPositiveScore(
+      ld.firstWickets,
+      teamNameMatches(team1Name, firstTeam) ? ld.wickets1 : ld.wickets2,
+      teamNameMatches(team1Name, firstTeam) ? match?.team1?.wickets : match?.team2?.wickets,
+    );
+    const firstOvers = [
+      ld.firstOvers,
+      firstRuns > 0 && teamNameMatches(team1Name, firstTeam) ? ld.overs : null,
+      firstRuns > 0 ? ld.overs2 : null,
+      teamNameMatches(team1Name, firstTeam) ? match?.team1?.overs : match?.team2?.overs,
+    ].find((value) => value != null && value !== '' && value !== 0 && value !== '0' && value !== '0.0')
+      || '0.0';
 
-    const chaseRuns = ld.chaseRuns != null
-      ? Number(ld.chaseRuns)
-      : (ld.score2 != null ? Number(ld.score2) : 0);
-    const chaseWickets = ld.chaseWickets ?? ld.wickets2 ?? 0;
-    const chaseOvers = ld.chaseOvers || ld.overs2 || '0.0';
+    const chaseTeamObj = teamNameMatches(team1Name, chaseTeam || ld.chaseTeamName)
+      ? match?.team1
+      : match?.team2;
+    const chaseRuns = Math.max(
+      pickPositiveScore(
+        ld.chaseRuns,
+        ld.score2,
+        pickPositiveScore(
+          Number(ld.inningsId) >= 2 ? ld.runs : null,
+          teamNameMatches(team1Name, chaseTeam || ld.chaseTeamName)
+            ? pickPositiveScore(match?.team1?.runs, match?.score1, 0)
+            : pickPositiveScore(match?.team2?.runs, match?.score2, 0),
+        ),
+      ),
+      Number(chaseTeamObj?.runs) || 0,
+    );
+    const chaseWickets = Math.max(
+      Number(ld.chaseWickets ?? ld.wickets2 ?? 0) || 0,
+      Number(chaseTeamObj?.wickets) || 0,
+    );
+    const chaseOvers = [ld.chaseOvers, ld.overs2, Number(ld.inningsId) >= 2 ? ld.overs : null, chaseTeamObj?.overs]
+      .find((value) => value != null && value !== '' && value !== 0 && value !== '0' && value !== '0.0')
+      || '0.0';
 
     const firstScore = scoreEntry(firstTeam, firstRuns, firstWickets, firstOvers, match);
     const chaseScore = scoreEntry(chaseTeam || team2Name, chaseRuns, chaseWickets, chaseOvers, match);
@@ -162,11 +237,13 @@ export function isCricketSecondInnings(match, ld = {}) {
     return (ld.inningsId ?? 0) === 4;
   }
 
+  if (looksLikeMirroredFirstInnings(match, ld)) return false;
+
   if ((Number(ld.inningsId) || 0) >= 2) return true;
 
-  if (Number(ld.chaseRuns) > 0 || Number(ld.score2) > 0 || Number(ld.wickets2) > 0 || Number(ld.chaseWickets) > 0) {
-    return true;
-  }
+  if (Number(ld.chaseRuns) > 0 || Number(ld.chaseWickets) > 0) return true;
+  if (Number(ld.score2) > 0 && Number(ld.score2) !== Number(ld.score1 ?? match?.team1?.runs ?? 0)) return true;
+  if (Number(ld.wickets2) > 0 && !looksLikeMirroredFirstInnings(match, ld)) return true;
 
   if (match?.matchState !== 'in' && !match?.isLive) return false;
 

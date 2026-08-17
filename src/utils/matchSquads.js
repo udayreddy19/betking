@@ -1,4 +1,4 @@
-import { normalizeTeamKey } from '../data/cricketRosters';
+import { normalizeTeamKey, getRosterForTeam } from '../data/cricketRosters';
 import { isPlaceholderPlayerName } from './cricketPlayers';
 
 function teamsMatch(teamA, teamB) {
@@ -7,7 +7,7 @@ function teamsMatch(teamA, teamB) {
   const b = normalizeTeamKey(teamB).replace(/\s+/g, '');
   if (!a || !b) return false;
   if (a === b) return true;
-  if (a.length >= 6 && b.length >= 6 && (b.includes(a) || a.includes(b))) return true;
+  if (a.length >= 4 && b.length >= 4 && (b.includes(a) || a.includes(b))) return true;
   return false;
 }
 
@@ -58,9 +58,29 @@ export function resolveMatchSquads(match, team1Name, team2Name) {
     if (resolved.team1.players.length || resolved.team2.players.length) return resolved;
   }
 
-  return squadsFromScorecard(match, team1Name, team2Name) || {
-    team1: emptySquad(team1Name),
-    team2: emptySquad(team2Name),
+  const fromScorecard = squadsFromScorecard(match, team1Name, team2Name);
+  if (fromScorecard && (fromScorecard.team1.players.length || fromScorecard.team2.players.length)) {
+    return fromScorecard;
+  }
+
+  // Fallback to rich roster dataset lookup
+  const t1Label = typeof team1Name === 'object' && team1Name ? (team1Name.name || 'Team 1') : String(team1Name || 'Team 1');
+  const t2Label = typeof team2Name === 'object' && team2Name ? (team2Name.name || 'Team 2') : String(team2Name || 'Team 2');
+  const r1 = getRosterForTeam(t1Label) || { batters: [], bowlers: [] };
+  const r2 = getRosterForTeam(t2Label) || { batters: [], bowlers: [] };
+
+  const t1Players = [
+    ...((r1?.batters) || []).map((name, i) => ({ name: String(name), role: i < 2 ? 'Opening Batter' : (i === 4 ? 'All-Rounder' : 'Batter'), isCaptain: i === 0 })),
+    ...((r1?.bowlers) || []).map((name) => ({ name: String(name), role: 'Bowler' })),
+  ];
+  const t2Players = [
+    ...((r2?.batters) || []).map((name, i) => ({ name: String(name), role: i < 2 ? 'Opening Batter' : (i === 4 ? 'All-Rounder' : 'Batter'), isCaptain: i === 0 })),
+    ...((r2?.bowlers) || []).map((name) => ({ name: String(name), role: 'Bowler' })),
+  ];
+
+  return {
+    team1: { name: t1Label, players: t1Players },
+    team2: { name: t2Label, players: t2Players },
     fromApi: false,
   };
 }

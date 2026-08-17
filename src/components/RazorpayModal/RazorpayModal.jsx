@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { IoClose, IoShieldCheckmark, IoLockClosed } from '../../icons';
+import { GPayLogo, PhonePeLogo } from '../PaymentLogos/PaymentLogos';
 import './RazorpayModal.css';
 
 export default function RazorpayModal({ isOpen, onClose, amount, onSuccess, user }) {
@@ -126,11 +127,11 @@ export default function RazorpayModal({ isOpen, onClose, amount, onSuccess, user
                     <div className="rzp-form-group">
                       <label>Popular Apps</label>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-                        <button type="button" style={{ padding: '8px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600, background: '#f8fafc' }}>
-                          🔵 Google Pay
+                        <button type="button" style={{ padding: '6px', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#111111', display: 'flex', justifyContent: 'center' }}>
+                          <GPayLogo height={32} width={110} />
                         </button>
-                        <button type="button" style={{ padding: '8px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600, background: '#f8fafc' }}>
-                          🟣 PhonePe
+                        <button type="button" style={{ padding: '6px', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#ffffff', display: 'flex', justifyContent: 'center' }}>
+                          <PhonePeLogo height={32} width={110} />
                         </button>
                       </div>
                     </div>

@@ -11,6 +11,7 @@ describe('Phase 6 Financial Concurrency & Load Tests', () => {
 
   beforeEach(async () => {
     process.env.RAZORPAY_WEBHOOK_SECRET = webhookSecret;
+    process.env.NODE_ENV = 'test';
     await query(`INSERT INTO users (user_id, email, password_hash) VALUES ($1, $2, 'hash') ON CONFLICT (user_id) DO NOTHING;`, [userId, `${userId}@example.com`]);
     await query(`DELETE FROM financial_discrepancies WHERE user_id = $1;`, [userId]);
     await query(`DELETE FROM ledger_entries WHERE wallet_id IN (SELECT wallet_id FROM wallets WHERE user_id = $1);`, [userId]);
@@ -27,10 +28,18 @@ describe('Phase 6 Financial Concurrency & Load Tests', () => {
 
     for (let i = 0; i < 100; i++) {
       const paymentId = `pay_stress_${runTag}_${i}`;
+      const orderId = `order_stress_${runTag}_${i}`;
+      const depositId = `dep_stress_${runTag}_${i}`;
+      await query(
+        `INSERT INTO deposits (id, deposit_id, user_id, order_id, amount, currency, status, created_at)
+         VALUES ($1, $2, $3, $4, 100, 'INR', 'CREATED', NOW())`,
+        [depositId, depositId, userId, orderId],
+      );
       const payload = {
         payment: {
           entity: {
             id: paymentId,
+            order_id: orderId,
             amount: 10000, // ₹100.00
             notes: { userId },
             method: 'upi',

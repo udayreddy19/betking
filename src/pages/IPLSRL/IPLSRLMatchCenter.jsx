@@ -1,8 +1,5 @@
 import { useState, useEffect } from 'react';
-import { simulateIPLSRLDelivery } from '../../../lib/iplSrlSimulationEngine.mjs';
 import { generateIPLSRLCommentary } from '../../../lib/iplSrlCommentaryEngine.mjs';
-import { calculateIPLSRLMatchProbabilities } from '../../../lib/probabilityEngine.mjs';
-import { generateIPLSRLMarkets, handleIPLSRLMarketSuspension } from '../../../lib/marketEngine.mjs';
 import { useBetSlip } from '../../context/BetSlipContext';
 import './IPLSRLMatchCenter.css';
 
@@ -22,6 +19,9 @@ export default function IPLSRLMatchCenter() {
     innings2: { runs: 112, wickets: 3, overs: 12, balls: 4 },
   });
 
+  const [markets, setMarkets] = useState([]);
+  const [probs, setProbs] = useState({ homeWinProbability: 0.58, awayWinProbability: 0.42, projectedScore: 178 });
+
   const [recentDeliveries, setRecentDeliveries] = useState([
     { over: 12, ball: 4, striker: 'Rohit Sharma', bowler: 'M Pathirana', outcome: 'FOUR', runs: 4 },
     { over: 12, ball: 3, striker: 'Rohit Sharma', bowler: 'M Pathirana', outcome: 'ONE', runs: 1 },
@@ -36,69 +36,34 @@ export default function IPLSRLMatchCenter() {
     { over: '12.1', text: 'M Pathirana to SKY, no run, good length delivery, defended.' },
   ]);
 
-  // Live simulation tick
+  // Fetch Authoritative Server SRL Match State & OddsEngineV3 Markets
   useEffect(() => {
-    const timer = setInterval(() => {
-      setMatchState(prev => {
-        if (prev.status !== 'IN_PROGRESS') return prev;
+    const fetchServerOdds = () => {
+      fetch(`/api/public/sports/matches/${matchState.matchId}/odds`)
+        .then(r => r.json())
+        .then(data => {
+          if (data && data.success && data.markets) {
+            setMarkets(data.markets.map(m => ({
+              marketId: m.marketId,
+              title: m.name || m.title,
+              status: m.status,
+              options: (m.selections || m.options || []).map(s => ({
+                selection: s.selectionId || s.selection,
+                name: s.name,
+                odds: Number(s.odds) > 1 ? Number(s.odds) : null,
+                status: s.status,
+                bettable: s.bettable !== false,
+              })),
+            })));
+          }
+        })
+        .catch(() => {});
+    };
 
-        let inn = { ...prev.innings2 };
-        let b = inn.balls + 1;
-        let o = inn.overs;
-        if (b >= 6) {
-          o += 1;
-          b = 0;
-        }
-
-        // Simulate delivery
-        const del = simulateIPLSRLDelivery({
-          overNum: o + 1,
-          ballNum: b || 6,
-          wicketsLost: inn.wickets,
-          targetScore: prev.targetScore,
-          currentRuns: inn.runs,
-        });
-
-        const newRuns = inn.runs + del.runs + del.extras;
-        const newWickets = del.isWicket ? Math.min(10, inn.wickets + 1) : inn.wickets;
-
-        // Commentary
-        const comm = generateIPLSRLCommentary({
-          over: o,
-          ball: b || 6,
-          striker: 'Rohit Sharma SRL',
-          bowler: 'M Pathirana SRL',
-          runs: del.runs,
-          outcome: del.outcome,
-          wicketType: del.wicketType,
-          isExtra: del.isExtra,
-        });
-
-        setCommentaryList(c => [comm, ...c.slice(0, 30)]);
-        setRecentDeliveries(rd => [{ over: o, ball: b || 6, outcome: del.outcome, runs: del.runs }, ...rd.slice(0, 5)]);
-
-        // Suspension check
-        const susp = handleIPLSRLMarketSuspension(del);
-
-        return {
-          ...prev,
-          isSuspended: susp.suspend,
-          innings2: {
-            ...inn,
-            runs: newRuns,
-            wickets: newWickets,
-            overs: o,
-            balls: b,
-          },
-        };
-      });
-    }, 4000);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  const probs = calculateIPLSRLMatchProbabilities(matchState);
-  const markets = generateIPLSRLMarkets(matchState);
+    fetchServerOdds();
+    const interval = setInterval(fetchServerOdds, 4000);
+    return () => clearInterval(interval);
+  }, [matchState.matchId]);
 
   const inn2OversFloat = matchState.innings2.overs + matchState.innings2.balls / 6;
   const crr = inn2OversFloat > 0 ? (matchState.innings2.runs / inn2OversFloat).toFixed(2) : '0.00';
@@ -196,15 +161,15 @@ export default function IPLSRLMatchCenter() {
                   <span className={`mc-status ${m.status.toLowerCase()}`}>{m.status}</span>
                 </div>
                 <div className="mc-options-row">
-                  {m.options.map(opt => (
+                  {m.options.filter((opt) => Number(opt.odds) > 1).map(opt => (
                     <button
                       key={opt.selection}
-                      disabled={m.status === 'SUSPENDED'}
+                      disabled={m.status === 'SUSPENDED' || m.status === 'SETTLED'}
                       className="mc-odds-btn"
                       onClick={() => addBet({ id: `${m.marketId}_${opt.selection}`, match: `${matchState.homeTeam.shortName} vs ${matchState.awayTeam.shortName}`, selection: opt.name, odds: opt.odds })}
                     >
                       <span>{opt.name}</span>
-                      <span className="odds-val">{opt.odds.toFixed(2)}</span>
+                      <span className="odds-val">{Number(opt.odds).toFixed(2)}</span>
                     </button>
                   ))}
                 </div>

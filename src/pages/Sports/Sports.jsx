@@ -13,9 +13,9 @@ import { sportsCategories, featuredLeagues } from '../../data/mockData';
 import { useLiveMatches, useLiveSportsMeta } from '../../context/LiveSportsContext';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { useAuth } from '../../context/AuthContext';
-import { isMatchBettable, isTrulyLiveMatch, getMatchState } from '../../utils/matchBetting';
+import { isMatchBettable, isTrulyLiveMatch, getMatchState, isMatchFinished } from '../../utils/matchBetting';
 import { resolveCricketTeamScores, resolveCricketTossText } from '../../utils/cricketScores';
-import { isTestMatch, getTestMatchDayLabel, formatMatchCountdown, isHundredMatch } from '../../utils/cricketFormat';
+import { isTestMatch, getTestMatchDayLabel, formatMatchCountdown, resolveCricketOversFormat } from '../../utils/cricketFormat';
 import { prefetchMatchDetail, enrichFromPoller, subscribeGlobalMatchDetails, getGlobalMatchDetailVersion } from '../../services/matchDetailPoller';
 import { useMatchDetail } from '../../hooks/useMatchDetail';
 import { useCentralizedMatchState } from '../../hooks/useCentralizedMatchState';
@@ -27,6 +27,7 @@ import SrlLeaguePanel from '../../components/SrlLeaguePanel/SrlLeaguePanel';
 import {
   fetchAuthoritativeMatchOdds,
   getCachedMatchOdds,
+  matchOddsStateKey,
   provisionalWinnerMarketsFromMatch,
 } from '../../services/oddsService';
 import { getMarketCategoriesForSport } from '../../utils/oddsMarketsGenerator';
@@ -48,10 +49,17 @@ function filterByLeague(matchList, activeLeague, cricketSeries = []) {
 
       if (!isSrlMatch) return false;
 
-      if (activeLeague === 'ipl-srl' || String(activeLeague).toLowerCase().includes('indian premier league')) {
-        return match.league === 'Indian Premier League SRL' ||
-          String(match.id || '').startsWith('srl_ipl_') ||
-          String(match.league || '').toLowerCase().includes('indian premier league srl');
+      if (activeLeague === 'ipl-srl'
+        || activeLeague === 'betking-srl'
+        || String(activeLeague).toLowerCase().includes('betking srl')) {
+        // Admin-gated BetKing SRL only — exclude external feed SRL products
+        return match.source === 'srl'
+          || String(match.id || '').startsWith('srl_ipl_')
+          || (
+            match.league === 'BetKing SRL'
+            && match.source !== '10cric2026'
+            && !String(match.id || '').startsWith('10cric_')
+          );
       }
       return true;
     });
@@ -103,17 +111,16 @@ function getMatchScores(match) {
 
   let team1Score = state?.teams?.team1?.score || '';
   let team2Score = state?.teams?.team2?.score || '';
+  const ld = enriched?.liveDetails || {};
+  const isBallSport = enriched?.sport === 'soccer' || enriched?.sport === 'esoccer' || enriched?.sport === 'basketball';
 
-  if (!team1Score || team1Score === '0/0' || !team2Score || team2Score === '0/0') {
-    const ld = enriched?.liveDetails || {};
-    if (enriched?.sport === 'soccer' || enriched?.sport === 'esoccer' || enriched?.sport === 'basketball') {
-      team1Score = String(ld.score1 ?? 0);
-      team2Score = String(ld.score2 ?? 0);
-    } else {
-      const resolved = resolveCricketTeamScores(enriched, ld);
-      team1Score = `${resolved.team1.runs}/${resolved.team1.wickets}`;
-      team2Score = `${resolved.team2.runs}/${resolved.team2.wickets}`;
-    }
+  if (!isBallSport) {
+    const resolved = resolveCricketTeamScores(enriched, ld);
+    team1Score = `${resolved.team1.runs}/${resolved.team1.wickets}`;
+    team2Score = `${resolved.team2.runs}/${resolved.team2.wickets}`;
+  } else if (!team1Score || team1Score === '0/0' || !team2Score || team2Score === '0/0') {
+    team1Score = String(ld.score1 ?? 0);
+    team2Score = String(ld.score2 ?? 0);
   }
 
   return { team1Score, team2Score, isLive, isFinished, state, overs2: enriched?.liveDetails?.overs2 };
@@ -310,7 +317,9 @@ export default function Sports() {
       const liveA = getMatchState(a) === 'in' ? 0 : 1;
       const liveB = getMatchState(b) === 'in' ? 0 : 1;
       if (liveA !== liveB) return liveA - liveB;
-      return String(a.time).localeCompare(String(b.time));
+      const leagueCmp = String(a.league || '').localeCompare(String(b.league || ''));
+      if (leagueCmp) return leagueCmp;
+      return String(a.id || '').localeCompare(String(b.id || ''));
     });
   }, [matches, activeSport, activeLeague, searchQuery, cricketSeries, isLiveBettingPage]);
 
@@ -334,7 +343,10 @@ export default function Sports() {
   // Find the selected match in the full matches array (not just filtered sportMatches)
   // Persist lastActiveMatchRef so background API refreshes never flash 'Match not found'
   const baseActiveMatch = useMemo(() => {
-    const targetId = selectedMatchId || liveMatches[0]?.id || sportMatches[0]?.id;
+    const targetId = selectedMatchId
+      || lastActiveMatchRef.current?.id
+      || liveMatches[0]?.id
+      || sportMatches[0]?.id;
     if (!targetId) return null;
 
     let match = sportMatches.find(m => m.id === targetId)
@@ -363,35 +375,104 @@ export default function Sports() {
   }, [activeMatch, activeSport]);
 
   const [matchMarkets, setMatchMarkets] = useState([]);
+  const activeMatchRef = useRef(activeMatch);
+  activeMatchRef.current = activeMatch;
+  const oddsStateKey = matchOddsStateKey(activeMatch);
 
   useEffect(() => {
-    if (!activeMatch?.id && !activeMatch?.matchId) {
+    const matchId = activeMatch?.id || activeMatch?.matchId;
+    if (!matchId) {
       setMatchMarkets([]);
-      return;
+      return undefined;
     }
-    const matchId = activeMatch.id || activeMatch.matchId;
-    const team1Name = activeMatch.team1?.name || activeMatch.team1;
-    const team2Name = activeMatch.team2?.name || activeMatch.team2;
-
-    const cached = getCachedMatchOdds(matchId);
-    if (cached && Array.isArray(cached.markets) && cached.markets.length > 0) {
-      setMatchMarkets(cached.markets);
-    } else {
-      // Show list-card winner odds immediately while full V3 markets load.
-      setMatchMarkets(provisionalWinnerMarketsFromMatch(activeMatch));
+    if (isMatchFinished(activeMatch) || !isMatchBettable(activeMatch)) {
+      setMatchMarkets([]);
+      return undefined;
+    }
+    const sport = String(activeMatch?.sport || 'cricket').toLowerCase();
+    if (sport && !sport.includes('cricket')) {
+      setMatchMarkets([]);
+      return undefined;
     }
 
-    let isCancelled = false;
-
-    fetchAuthoritativeMatchOdds(matchId, team1Name, team2Name).then((snapshot) => {
-      if (isCancelled) return;
-      if (snapshot && Array.isArray(snapshot.markets) && snapshot.markets.length > 0) {
-        setMatchMarkets(snapshot.markets);
-      }
+    setMatchMarkets(() => {
+      const cached = getCachedMatchOdds(matchId, oddsStateKey);
+      if (cached?.markets?.length) return cached.markets;
+      return provisionalWinnerMarketsFromMatch(activeMatch);
     });
 
+    let isCancelled = false;
+    const loadOdds = () => {
+      const m = activeMatchRef.current;
+      if (!m) return;
+      fetchAuthoritativeMatchOdds(
+        m.id || m.matchId,
+        m.team1?.name || m.team1,
+        m.team2?.name || m.team2,
+        { match: m },
+      ).then((snapshot) => {
+        if (isCancelled) return;
+        if ((m.id || m.matchId) !== matchId) return;
+        if (snapshot?.matchId && snapshot.matchId !== matchId) return;
+        if (snapshot?.markets?.length) setMatchMarkets(snapshot.markets);
+      });
+    };
+
+    loadOdds();
+    const poll = setInterval(loadOdds, 2000);
+
+    let ws;
+    try {
+      const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      ws = new WebSocket(`${proto}//${window.location.host}/ws/support`);
+      ws.addEventListener('open', () => {
+        ws.send(JSON.stringify({ type: 'subscribe', channel: `odds:match:${matchId}` }));
+      });
+      ws.addEventListener('message', (ev) => {
+        try {
+          const msg = JSON.parse(ev.data);
+          if (isCancelled) return;
+          const markets = msg.payload?.markets;
+          if (msg.eventType === 'odds.updated' && Array.isArray(markets) && markets.length > 0) {
+            if (msg.matchId && msg.matchId !== matchId) return;
+            setMatchMarkets(markets);
+          }
+        } catch {
+          // ignore malformed frames
+        }
+      });
+    } catch {
+      // HTTP poll remains the fallback
+    }
+
+    return () => {
+      isCancelled = true;
+      clearInterval(poll);
+      try { ws?.close(); } catch { /* ignore */ }
+    };
+  }, [activeMatch?.id, activeMatch?.matchId, activeMatch?.matchState, activeMatch?.isLive]);
+
+  useEffect(() => {
+    const m = activeMatch;
+    const matchId = m?.id || m?.matchId;
+    if (!matchId || !oddsStateKey) return undefined;
+    if (isMatchFinished(m) || !isMatchBettable(m)) {
+      setMatchMarkets([]);
+      return undefined;
+    }
+    let isCancelled = false;
+    fetchAuthoritativeMatchOdds(
+      matchId,
+      m.team1?.name || m.team1,
+      m.team2?.name || m.team2,
+      { match: m },
+    ).then((snapshot) => {
+      if (isCancelled) return;
+      if (snapshot?.matchId && snapshot.matchId !== matchId) return;
+      if (snapshot?.markets?.length) setMatchMarkets(snapshot.markets);
+    });
     return () => { isCancelled = true; };
-  }, [activeMatch?.id, activeMatch?.matchId]);
+  }, [activeMatch?.id, activeMatch?.matchId, oddsStateKey]);
 
   const liveMatchPrefetchKey = useMemo(
     () => liveMatches.slice(0, 3).map((match) => {
@@ -404,13 +485,13 @@ export default function Sports() {
   useEffect(() => {
     if (!liveMatchPrefetchKey) return;
     const seen = new Set();
-    liveMatches.slice(0, 12).forEach((match) => {
+    liveMatches.slice(0, 3).forEach((match) => {
       if (seen.has(match.id)) return;
       seen.add(match.id);
       prefetchMatchDetail(match);
-      fetchAuthoritativeMatchOdds(match.id, match.team1?.name || match.team1, match.team2?.name || match.team2);
+      fetchAuthoritativeMatchOdds(match.id, match.team1?.name || match.team1, match.team2?.name || match.team2, { match });
     });
-  }, [liveMatchPrefetchKey, liveMatches]);
+  }, [liveMatchPrefetchKey]);
 
   const selectMatch = useCallback((matchId) => {
     setSelectedMatchId(matchId);
@@ -494,9 +575,6 @@ export default function Sports() {
     if (match) {
       setSelectedMatchId(match);
       setViewMode('match');
-    } else {
-      setSelectedMatchId(null);
-      setViewMode('league');
     }
   }, [searchParams]);
 
@@ -520,7 +598,7 @@ export default function Sports() {
       : 'live';
 
   const placeBet = (selection, odds, selectionName, marketName) => {
-    if (!activeMatch || odds == null || Number.isNaN(Number(odds))) return;
+    if (!activeMatch || !(Number(odds) > 1)) return;
     addBet(activeMatch, selection, odds, selectionName, { marketName });
   };
 
@@ -846,24 +924,23 @@ export default function Sports() {
             <>
               {!isWideLayout && (
                 <div className="sports-mobile-live-widget">
-                  <ErrorBoundary>
+                  <ErrorBoundary resetKey={activeMatch?.id}>
                     <LiveMatchGraphicWidget match={activeMatch} />
                   </ErrorBoundary>
                 </div>
               )}
 
               {(() => {
-                const { team1Score, team2Score, isLive } = getMatchScores(activeMatch);
+                const { team1Score, team2Score, isLive, isFinished } = getMatchScores(activeMatch);
                 const commText = centralizedState?.commentary || activeMatch.liveDetails?.commentary;
 
-                const matchFormatBadge = isHundredMatch(activeMatch)
+                const matchFormatResolved = resolveCricketOversFormat(activeMatch);
+                const matchFormatBadge = matchFormatResolved === 'THE_HUNDRED'
                   ? 'HUNDRED'
-                  : (typeof activeMatch.matchType === 'string' ? activeMatch.matchType : typeof activeMatch.matchFormat === 'string' ? activeMatch.matchFormat : typeof activeMatch.format === 'string' ? activeMatch.format : (activeMatch.sport === 'cricket' ? 'T20' : activeMatch.sport)).toUpperCase();
+                  : matchFormatResolved;
 
                 const isTest = isTestMatch(activeMatch) || matchFormatBadge === 'TEST';
                 const testDayBadge = isTest ? getTestMatchDayLabel(activeMatch) : null;
-                const countdownText = !isLive ? formatMatchCountdown(activeMatch) : null;
-
                 const rawVenue = activeMatch.venue || activeMatch.ground || activeMatch.liveDetails?.venue;
                 const venueText = typeof rawVenue === 'string'
                   ? rawVenue
@@ -887,6 +964,8 @@ export default function Sports() {
                             </span>
                           )}
                         </>
+                      ) : isFinished ? (
+                        <span style={{ color: '#94a3b8', fontWeight: 800 }}>FINISHED</span>
                       ) : (
                         <MatchCountdownTimer match={activeMatch} style={{ fontSize: '0.92rem', padding: '6px 18px' }} />
                       )}
@@ -902,7 +981,7 @@ export default function Sports() {
                       <div className="sports-match-banner-team-col">
                         <TeamJersey team={activeMatch.team1} size={48} />
                         <span className="sports-match-banner-team">{activeMatch.team1.name}</span>
-                        {isLive && team1Score && (
+                        {(isLive || isFinished) && team1Score && (
                           <strong className="sports-match-banner-score">{team1Score}</strong>
                         )}
                       </div>
@@ -912,7 +991,7 @@ export default function Sports() {
                       <div className="sports-match-banner-team-col">
                         <TeamJersey team={activeMatch.team2} size={48} />
                         <span className="sports-match-banner-team">{activeMatch.team2.name}</span>
-                        {isLive && team2Score && (
+                        {(isLive || isFinished) && team2Score && (
                           <strong className="sports-match-banner-score">{team2Score}</strong>
                         )}
                       </div>
@@ -927,7 +1006,9 @@ export default function Sports() {
                     <p className="sports-match-banner-commentary">
                       {isTest && testDayBadge
                         ? `📅 ${testDayBadge} · ${commText || 'Match play active'}`
-                        : (!isLive ? `⏱️ Match ${formatMatchCountdown(activeMatch)}` : (commText || 'Match play active'))}
+                        : (isFinished
+                          ? (commText || 'Match completed')
+                          : (!isLive ? `⏱️ Match ${formatMatchCountdown(activeMatch)}` : (commText || 'Match play active')))}
                     </p>
                   </div>
                 );
@@ -946,8 +1027,20 @@ export default function Sports() {
                 ))}
               </div>
 
-              {matchMarkets.map((market) => {
+              {(!canBetActive || isMatchFinished(activeMatch)) && (
+                <MarketsSuspended />
+              )}
+              {canBetActive && !isMatchFinished(activeMatch) && matchMarkets.length === 0 && (
+                <p className="sports-empty">No bettable markets for this match. Cricket matches are priced live; other sports wait on a dedicated feed.</p>
+              )}
+
+              {canBetActive && !isMatchFinished(activeMatch) && matchMarkets.map((market) => {
                 if (!showCategory(market.category)) return null;
+                if (market.status && market.status !== 'OPEN') return null;
+                const options = (market.options || market.selections || []).filter(
+                  (opt) => opt.bettable !== false && Number(opt.odds) >= 1.01,
+                );
+                if (options.length === 0) return null;
                 const isExpanded = expandedMarkets[market.key] !== false;
                 return (
                   <div key={market.key} className="sports-market-panel">
@@ -961,8 +1054,8 @@ export default function Sports() {
                     </button>
                     {isExpanded && (
                       canBetActive ? (
-                        <div className={`sports-market-odds-grid ${market.options.length === 3 ? 'three-col' : (market.options.length === 4 ? 'four-col' : (market.options.length > 4 ? 'multi-col' : 'two-col'))}`}>
-                          {market.options.map((opt) => (
+                        <div className={`sports-market-odds-grid ${options.length === 3 ? 'three-col' : (options.length === 4 ? 'four-col' : (options.length > 4 ? 'multi-col' : 'two-col'))}`}>
+                          {options.map((opt) => (
                             <button
                               key={opt.selection}
                               type="button"

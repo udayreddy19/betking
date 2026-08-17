@@ -5,6 +5,7 @@
  */
 
 import { formatTeamShortName } from '../utils/teamShortName';
+import { looksLikeMirroredFirstInnings } from '../utils/cricketScores';
 
 class CentralizedMatchStateEngine {
   constructor() {
@@ -129,13 +130,16 @@ class CentralizedMatchStateEngine {
       }));
     } else {
       const needMatch = commStr.match(/(?:([A-Za-z\s]+)\s+)?need\s+(\d+)\s+runs?(?:\s+in\s+(\d+)\s+balls?)?/i);
-      const isSecond = (ld.inningsId ? parseInt(ld.inningsId, 10) > 1 : false)
-        || (ld.firstRuns != null && ld.chaseRuns != null)
-        || ((ld.score1 != null || ld.runs != null) && (ld.score2 != null && ld.score2 > 0))
-        || (ld.firstTeamName && ld.chaseTeamName && ld.chaseRuns != null)
-        || (ld.wickets2 != null && ld.wickets2 > 0)
-        || (ld.overs2 != null && ld.overs2 !== '0.0' && ld.overs2 !== '0')
-        || Boolean(needMatch && ld.firstRuns != null);
+      const mirrored = looksLikeMirroredFirstInnings(payload, ld);
+      const isSecond = !mirrored && (
+        (ld.inningsId ? parseInt(ld.inningsId, 10) > 1 : false)
+        || (Number(ld.firstRuns) > 0 && Number(ld.chaseRuns) > 0 && Number(ld.firstRuns) !== Number(ld.chaseRuns))
+        || (Number(ld.score1) > 0 && Number(ld.score2) > 0 && Number(ld.score1) !== Number(ld.score2))
+        || (ld.firstTeamName && ld.chaseTeamName && Number(ld.chaseRuns) > 0 && Number(ld.firstRuns) !== Number(ld.chaseRuns))
+        || (Number(ld.wickets2) > 0 && Number(ld.score2) > 0 && Number(ld.score2) !== Number(ld.score1 ?? ld.runs ?? 0))
+        || (ld.overs2 != null && ld.overs2 !== '0.0' && ld.overs2 !== '0' && ld.overs2 !== ld.overs && ld.overs2 !== ld.firstOvers)
+        || Boolean(needMatch && Number(ld.firstRuns) > 0)
+      );
 
       if (isSecond) {
         let firstRuns = ld.firstRuns ?? ld.score1 ?? ld.runs ?? 0;
@@ -259,6 +263,8 @@ class CentralizedMatchStateEngine {
 
         if (oppTotalRuns > 0) {
           target = (oppTotalRuns - currentPreviousRuns) + 1;
+        } else {
+          target = null;
         }
       }
 

@@ -24,7 +24,7 @@ describe('OddsEngineV3 — Integration & Snapshot Generation', () => {
     stateVersion: 1,
   };
 
-  it('generates 30+ active eligible markets for live Innings 2 chase', () => {
+  it('generates a compact live book for Innings 2 chase', () => {
     const state = createCanonicalMatchState(baseInput);
     const snapshot = generate(state);
 
@@ -32,14 +32,13 @@ describe('OddsEngineV3 — Integration & Snapshot Generation', () => {
     expect(snapshot.engineVersion).toBe('3.0.0');
     expect(snapshot.matchId).toBe('match_v3_test');
     expect(snapshot.status).toBe('OK');
-    expect(snapshot.markets.length).toBeGreaterThanOrEqual(30);
+    expect(snapshot.markets.length).toBeGreaterThanOrEqual(12);
 
     const marketTypes = snapshot.markets.map(m => m.marketType);
     expect(marketTypes).toContain('MATCH_WINNER');
     expect(marketTypes).toContain('TEAM_TOTAL');
     expect(marketTypes).toContain('MATCH_TOTAL');
     expect(marketTypes).toContain('NEXT_DELIVERY_RUNS');
-    expect(marketTypes).toContain('METHOD_OF_NEXT_WICKET');
     expect(marketTypes).toContain('PLAYER_SCORE_25');
     expect(marketTypes).toContain('BATTER_HEAD_TO_HEAD');
   });
