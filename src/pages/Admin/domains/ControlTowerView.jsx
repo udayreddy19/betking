@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { adminApiClient } from '../api/adminApiClient';
 import AdminDataTable from '../components/AdminDataTable';
@@ -42,9 +43,9 @@ function MetricCard({ label, value, hint, source, color, delay = 0, onClick }) {
             textTransform: 'uppercase',
             padding: '2px 7px',
             borderRadius: '999px',
-            background: source === 'LIVE' ? 'rgba(236, 72, 153, 0.15)' : 'rgba(59, 130, 246, 0.15)',
-            color: source === 'LIVE' ? '#f472b6' : '#60a5fa',
-            border: `1px solid ${source === 'LIVE' ? 'rgba(236, 72, 153, 0.3)' : 'rgba(59, 130, 246, 0.3)'}`,
+            background: source === 'LIVE' ? 'rgba(236, 72, 153, 0.15)' : (source === 'DOCS' ? 'rgba(168, 85, 247, 0.15)' : 'rgba(59, 130, 246, 0.15)'),
+            color: source === 'LIVE' ? '#f472b6' : (source === 'DOCS' ? '#c084fc' : '#60a5fa'),
+            border: `1px solid ${source === 'LIVE' ? 'rgba(236, 72, 153, 0.3)' : (source === 'DOCS' ? 'rgba(168, 85, 247, 0.3)' : 'rgba(59, 130, 246, 0.3)')}`,
           }}>
             {source}
           </span>
@@ -59,6 +60,7 @@ function MetricCard({ label, value, hint, source, color, delay = 0, onClick }) {
 }
 
 export default function ControlTowerView({ subModule = 'overview', onSubModuleChange, onNavigate }) {
+  const navigate = useNavigate();
   const [metrics, setMetrics] = useState({
     registeredUsers: null,
     activeUsers: null,
@@ -81,9 +83,9 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
   const [lastRefreshAt, setLastRefreshAt] = useState(null);
 
   const tabs = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'telemetry', label: 'Telemetry' },
-    { id: 'incidents', label: 'Incidents' },
+    { id: 'overview', label: 'Operational Overview' },
+    { id: 'telemetry', label: 'Telemetry & SLA' },
+    { id: 'incidents', label: 'Live System Incidents' },
   ];
 
   useEffect(() => {
@@ -141,10 +143,10 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
     });
     if ((metrics.pendingWithdrawals || 0) > 0) {
       rows.push({
-        id: 'wd-queue',
-        title: `${metrics.pendingWithdrawals} withdrawal(s) awaiting approval`,
+        id: 'finance-queue',
+        title: `${metrics.pendingWithdrawals} withdrawals pending approval`,
         severity: 'MEDIUM',
-        status: 'QUEUE',
+        status: 'PENDING',
         time: 'finance',
         domainId: 'finance',
         subModuleId: 'maker-checker',
@@ -197,6 +199,14 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
     { label: 'Pending Withdrawals', value: formatMetric(metrics.pendingWithdrawals), hint: 'Awaiting finance approval', source: 'DB', color: '#f87171', domainId: 'finance', subModuleId: 'maker-checker' },
     { label: 'Open Support Tickets', value: formatMetric(metrics.openTickets), hint: 'Unresolved conversations', source: 'DB', color: '#22d3ee', domainId: 'support', subModuleId: 'ticket-queue' },
     { label: 'IPLSRL Console', value: 'Desk', hint: 'Script winner → start → control balls', source: 'SRL', color: '#fb923c', domainId: 'sports', subModuleId: 'iplsrl-console' },
+    {
+      label: 'Developer API Hub',
+      value: 'Gateway',
+      hint: 'REST APIs, Live Stream & Sandbox',
+      source: 'DOCS',
+      color: '#a855f7',
+      onClick: () => navigate('/developer'),
+    },
   ];
 
   const titleBySub = {
@@ -292,9 +302,11 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
               source={card.source}
               color={card.color}
               delay={i * 0.03}
-              onClick={card.domainId && onNavigate
-                ? () => onNavigate({ domainId: card.domainId, subModuleId: card.subModuleId })
-                : undefined}
+              onClick={card.onClick
+                ? card.onClick
+                : (card.domainId && onNavigate
+                  ? () => onNavigate({ domainId: card.domainId, subModuleId: card.subModuleId })
+                  : undefined)}
             />
           ))}
         </div>
@@ -396,6 +408,22 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
             }}
           >
             Open Incidents →
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/developer')}
+            style={{
+              padding: '8px 14px',
+              borderRadius: '8px',
+              border: '1px solid rgba(168, 85, 247, 0.35)',
+              background: 'rgba(168, 85, 247, 0.12)',
+              color: '#c084fc',
+              fontWeight: 700,
+              fontSize: '0.8rem',
+              cursor: 'pointer',
+            }}
+          >
+            Developer API Gateway (/developer) ↗
           </button>
         </div>
       )}

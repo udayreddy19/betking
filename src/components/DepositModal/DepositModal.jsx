@@ -5,20 +5,19 @@ import { useAuth } from '../../context/AuthContext';
 import RazorpayModal from '../RazorpayModal/RazorpayModal';
 import { UpiLogo, GPayLogo, PhonePeLogo, PaytmLogo, BhimLogo } from '../PaymentLogos/PaymentLogos';
 import RupeeSymbol from '../RupeeSymbol/RupeeSymbol';
-import { apiFetch } from '../../utils/apiClient';
+import { apiFetch, fetchMe } from '../../utils/apiClient';
 import './DepositModal.css';
 
 const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1' || import.meta.env.DEV;
 
-function pollWalletRefresh(refreshWallet, attempts = 8) {
-  let count = 0;
-  const tick = async () => {
-    count += 1;
-    const ok = await refreshWallet?.();
-    if (ok || count >= attempts) return;
-    setTimeout(tick, 2500);
-  };
-  tick();
+async function waitForWalletCredit(refreshWallet, startBalance, attempts = 12) {
+  for (let count = 0; count < attempts; count += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+    await refreshWallet?.();
+    const me = await fetchMe().catch(() => null);
+    if (me && Number(me.balance) > Number(startBalance) + 0.009) return true;
+  }
+  return false;
 }
 
 export default function DepositModal() {
@@ -75,10 +74,16 @@ export default function DepositModal() {
         name: 'OddsYra Gaming',
         description: 'Account Deposit',
         order_id: orderData.orderId,
-        handler: function () {
+        handler: async function () {
           setIsProcessing(true);
-          setIsSuccess(true);
-          pollWalletRefresh(refreshWallet);
+          const startBalance = Number(user?.balance || 0);
+          const credited = await waitForWalletCredit(refreshWallet, startBalance);
+          setIsProcessing(false);
+          if (credited) {
+            setIsSuccess(true);
+          } else {
+            setErrorMsg('Payment submitted. Your wallet will update when the bank confirms it — this can take a minute.');
+          }
         },
         prefill: {
           name: user?.displayName || '',
@@ -107,7 +112,7 @@ export default function DepositModal() {
   const handleRazorpayModalSuccess = () => {
     setIsRzpModalOpen(false);
     setIsSuccess(true);
-    pollWalletRefresh(refreshWallet);
+    refreshWallet?.();
   };
 
   const handleDepositSubmit = (e) => {

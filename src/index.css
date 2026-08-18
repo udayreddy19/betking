@@ -283,6 +283,21 @@ h1, h2, h3, .header-logo, .modal-title {
   letter-spacing: -0.03em;
 }
 
+.brand-wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1;
+}
+.brand-wordmark-odds {
+  color: var(--color-text);
+}
+.brand-wordmark-yra {
+  color: var(--color-accent-gold);
+}
+
 a {
   text-decoration: none;
   color: inherit;
@@ -358,6 +373,14 @@ input, select, textarea {
   max-height: calc(100vh - var(--header-height));
   max-height: calc(var(--app-height) - var(--header-height));
   overflow: hidden;
+}
+
+.app-main--developer {
+  padding: 0;
+  min-height: calc(100vh - var(--header-height));
+  min-height: calc(var(--app-height) - var(--header-height));
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .admin-shell {
@@ -522,7 +545,7 @@ input, select, textarea {
   }
 
   .app-main {
-    padding: var(--space-4) 0 calc(var(--space-16) + var(--safe-bottom));
+    padding: var(--space-4) 0 calc(88px + env(safe-area-inset-bottom, 0px));
   }
 
   input, select, textarea {

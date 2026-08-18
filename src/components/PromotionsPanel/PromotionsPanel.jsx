@@ -5,6 +5,8 @@ import { useAuth } from '../../context/AuthContext';
 import { promotions } from '../../data/mockData';
 import './PromotionsPanel.css';
 
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1' || import.meta.env.DEV;
+
 export default function PromotionsPanel({ isOpen, onClose }) {
   const { isLoggedIn, openLoginModal, claimPromotion, isPromotionClaimed } = useAuth();
   const panelRef = useRef(null);
@@ -36,6 +38,7 @@ export default function PromotionsPanel({ isOpen, onClose }) {
       openLoginModal();
       return;
     }
+    if (!DEMO_MODE) return;
     claimPromotion(promo);
   };
 
@@ -63,14 +66,20 @@ export default function PromotionsPanel({ isOpen, onClose }) {
               {promo.code && (
                 <div className="promotions-panel-code">Code: <strong>{promo.code}</strong></div>
               )}
-              <button
-                type="button"
-                className="promotions-panel-claim"
-                onClick={() => handleClaim(promo)}
-                disabled={claimed}
-              >
-                {claimed ? 'Claimed' : 'Claim now'}
-              </button>
+              {DEMO_MODE ? (
+                <button
+                  type="button"
+                  className="promotions-panel-claim"
+                  onClick={() => handleClaim(promo)}
+                  disabled={claimed}
+                >
+                  {claimed ? 'Claimed' : 'Claim now'}
+                </button>
+              ) : (
+                <Link to={isLoggedIn ? '/profile' : '/register'} className="promotions-panel-claim" onClick={onClose}>
+                  {isLoggedIn ? 'Enter promo code' : 'Sign up with a code'}
+                </Link>
+              )}
             </article>
             );
           })}

@@ -37,15 +37,15 @@ export default function FinancialModals({ modalType, onClose }) {
 
   const notify = (msg) => showToast(msg);
 
-  const handleRazorpayWithdraw = (e) => {
+  const handleRazorpayWithdraw = async (e) => {
     e.preventDefault();
     const amt = parseFloat(withdrawAmount);
-    if (isNaN(amt) || amt < 10) return notify('Minimum withdrawal is ₹10');
+    if (isNaN(amt) || amt < 100) return notify('Minimum withdrawal is ₹100');
     if (amt > wallet.withdrawable) {
       return notify(
         wallet.lockedDeposit > 0
-          ? `Only ${formatInr(wallet.withdrawable)} winnings available. Deposits must be wagered first.`
-          : `Only ${formatInr(wallet.withdrawable)} winnings can be withdrawn.`,
+          ? `Only ${formatInr(wallet.withdrawable)} available after holds. Deposits must be wagered first.`
+          : `Only ${formatInr(wallet.withdrawable)} can be withdrawn.`,
       );
     }
 
@@ -78,27 +78,25 @@ export default function FinancialModals({ modalType, onClose }) {
     setWithdrawStatus('processing');
     setLastSubmittedDetails(detailsString);
 
-    setTimeout(() => {
-      const { success } = withdrawFunds(amt, methodLabel, detailsString);
-      if (!success) {
-        setWithdrawStatus(null);
-        notify('Withdrawal failed. Please check your withdrawable balance.');
-        return;
-      }
-      setWithdrawStatus('success');
-      setPendingWithdrawals(prev => [
-        {
-          id: `WD-${Math.floor(10000 + Math.random() * 90000)}`,
-          amount: amt,
-          method: methodLabel,
-          details: detailsString,
-          date: 'Just now',
-          status: 'PENDING_APPROVAL',
-          refunded: false,
-        },
-        ...prev,
-      ]);
-    }, 400);
+    const { success, withdrawalId, error } = await withdrawFunds(amt, methodLabel, detailsString);
+    if (!success) {
+      setWithdrawStatus(null);
+      notify(error || 'Withdrawal failed. Please check your available balance.');
+      return;
+    }
+    setWithdrawStatus('success');
+    setPendingWithdrawals(prev => [
+      {
+        id: withdrawalId || `WD-${Math.floor(10000 + Math.random() * 90000)}`,
+        amount: amt,
+        method: methodLabel,
+        details: detailsString,
+        date: 'Just now',
+        status: 'PENDING_REVIEW',
+        refunded: false,
+      },
+      ...prev,
+    ]);
   };
 
   const handleCancelWithdrawal = (id, amount) => {
@@ -107,11 +105,7 @@ export default function FinancialModals({ modalType, onClose }) {
       notify('This withdrawal can no longer be cancelled.');
       return;
     }
-    setPendingWithdrawals((prev) =>
-      prev.map((w) => (w.id === id ? { ...w, status: 'cancelled', refunded: true } : w)),
-    );
-    refundWithdrawal(amount);
-    notify(`Withdrawal ${id} cancelled. ${formatInr(amount)} refunded to winnings.`);
+    notify('Pending withdrawals are reviewed by finance and cannot be cancelled here.');
   };
 
   return (
@@ -313,7 +307,7 @@ export default function FinancialModals({ modalType, onClose }) {
                         ₹{val}
                       </button>
                     ))}
-                    {wallet.withdrawable >= 10 && (
+                    {wallet.withdrawable >= 100 && (
                       <button
                         type="button"
                         onClick={() => setWithdrawAmount(String(Math.floor(wallet.withdrawable)))}
@@ -325,7 +319,7 @@ export default function FinancialModals({ modalType, onClose }) {
                   </div>
                 </div>
 
-                <button type="submit" className="fin-btn-primary" disabled={withdrawStatus === 'processing' || wallet.withdrawable < 10}>
+                <button type="submit" className="fin-btn-primary" disabled={withdrawStatus === 'processing' || wallet.withdrawable < 100}>
                   {withdrawStatus === 'processing' ? 'Submitting Request...' : `Request ${withdrawMethod === 'BANK_TRANSFER' ? 'Bank Transfer' : withdrawMethod === 'PAYTM' ? 'Paytm' : 'UPI'} Withdrawal`}
                 </button>
               </form>

@@ -16,12 +16,14 @@ export function qualifiesForBonusWithdrawal(bet) {
 }
 
 export function getWinningsAmount(user) {
-  return Math.max(0, user?.winningsBalance ?? 0);
+  return getWithdrawableAmount(user);
 }
 
-/** Only bet winnings can be withdrawn — not locked deposits or bonus */
+/** Cash available after withdrawal holds */
 export function getWithdrawableAmount(user) {
-  return getWinningsAmount(user);
+  const balance = Number(user?.balance ?? 0);
+  const reserved = Number(user?.reservedBalance ?? 0);
+  return Math.max(0, balance - reserved);
 }
 
 export function getLockedDepositAmount(user) {
@@ -29,7 +31,8 @@ export function getLockedDepositAmount(user) {
 }
 
 export function getCashoutOffer(bet) {
-  if (!bet || bet.status !== 'pending') return 0;
+  const status = String(bet?.status || '').toLowerCase();
+  if (!bet || (status !== 'pending' && status !== 'accepted' && status !== 'open')) return 0;
   if (bet.fundSource === 'bonus' || bet.fundSource === 'freebet') return 0;
   const stake = Number(bet.stake) || 0;
   if (stake <= 0) return 0;

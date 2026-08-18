@@ -67,12 +67,11 @@
 }
 
 .header-logo .logo-img {
-  width: 40px;
-  height: 40px;
-  object-fit: cover;
-  border-radius: 8px;
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
-  background: #07111f;
+  border-radius: 9px;
+  display: block;
 }
 
 .header-logo .logo-text {
@@ -715,16 +714,37 @@
   .header-left {
     gap: var(--space-2);
     min-width: 0;
-    flex: 1;
+    flex: 0 1 auto;
   }
 
   .header-right {
-    gap: var(--space-2);
+    gap: 6px;
     flex-shrink: 0;
+    margin-left: auto;
   }
 
   .header-logo {
     font-size: var(--text-lg);
+  }
+
+  .header-logo .logo-text {
+    display: none;
+  }
+
+  .header-logo .logo-img {
+    width: 32px;
+    height: 32px;
+  }
+
+  .header-theme-toggle,
+  .header-action-icon-btn,
+  .header-odds-format-select {
+    display: none;
+  }
+
+  .header-balance {
+    padding: 4px 8px;
+    gap: 4px;
   }
 
   .theme-toggle,
@@ -782,10 +802,6 @@
 }
 
 @media (max-width: 400px) {
-  .header-logo .logo-text {
-    display: none;
-  }
-
   .header-login-btn {
     display: none;
   }

@@ -12,7 +12,7 @@ function formatBetTime(timestamp) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
-export default function BetSlip() {
+export default function BetSlip({ showFooter = true }) {
   const {
     bets, removeBet, clearAll,
     betCount,
@@ -108,7 +108,7 @@ export default function BetSlip() {
         )}
       </div>
 
-      <BetSlipFooter />
+      {showFooter && <BetSlipFooter />}
     </div>
   );
 }

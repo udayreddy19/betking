@@ -20,17 +20,19 @@
 
 .auth-logo {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 10px;
   margin-bottom: 24px;
 }
 
-.auth-logo img {
-  width: 120px;
-  height: 120px;
-  object-fit: cover;
-  border-radius: 16px;
-  background: #07111f;
+.auth-logo .brand-wordmark {
+  font-size: 1.35rem;
+}
+
+.auth-logo .brand-wordmark-odds {
+  color: #f0f6fc;
 }
 
 .auth-state-box h2 {

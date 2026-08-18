@@ -42,13 +42,9 @@
   height: 36px;
   border-radius: 8px;
   overflow: hidden;
-  background: #07111f;
   flex-shrink: 0;
 }
-.rzp-logo img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.rzp-logo svg {
   display: block;
 }
 .rzp-title {

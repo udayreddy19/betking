@@ -16,6 +16,7 @@ const FILTERS = [
   { id: 'lost', label: 'Lost' },
   { id: 'cashed_out', label: 'Cash out' },
 ];
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1' || import.meta.env.DEV;
 
 export default function MyBetsPanel() {
   const { placedBets, myBetsCount, isMyBetsOpen, closeMyBets, cashOutBet, adminSettleBet } = useBetSlip();
@@ -60,6 +61,7 @@ export default function MyBetsPanel() {
 
   // Auto-settle pending bets when matches complete
   useEffect(() => {
+    if (!DEMO_MODE) return;
     if (!placedBets?.length || !liveMatches?.length) return;
 
     placedBets.forEach((placed) => {
@@ -113,18 +115,20 @@ export default function MyBetsPanel() {
     return placedBets.filter((b) => (b.status || 'pending') === filter);
   }, [placedBets, filter]);
 
-  const handleCashout = (bet) => {
+  const handleCashout = async (bet) => {
     const offer = getCashoutOffer(bet);
     if (offer <= 0) {
       showToast('Cash out not available for this bet.', 'info');
       return;
     }
-    const cashed = cashOutBet(bet.id);
+    const cashed = await cashOutBet(bet.id);
     if (!cashed) {
       showToast('Could not cash out.', 'error');
       return;
     }
-    creditCashout(cashed.cashoutAmount || offer, cashed.id);
+    if (DEMO_MODE) {
+      creditCashout(cashed.cashoutAmount || offer, cashed.id);
+    }
     showToast(`Cashed out for ${formatInr(cashed.cashoutAmount || offer)}`, 'success');
   };
 

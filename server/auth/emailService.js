@@ -59,7 +59,10 @@ function envAccount(prefix) {
   const port = parseInt(process.env[`${prefix}PORT`] || '', 10) || 587;
   const secureEnv = process.env[`${prefix}SECURE`];
   const secure = secureEnv === 'true' || (secureEnv !== 'false' && port === 465);
-  const from = process.env[`${prefix}FROM`] || SMTP_FROM;
+  const fromRaw = process.env[`${prefix}FROM`] || SMTP_FROM;
+  const from = String(fromRaw || '').includes('@')
+    ? fromRaw
+    : 'no-reply@oddsyra.com';
   return { name: prefix.startsWith('SMTP_FALLBACK') ? 'fallback' : 'primary', host, port, secure, user, pass, from };
 }
 
@@ -72,6 +75,86 @@ function configuredAccounts() {
   return accounts;
 }
 
+/**
+ * Light-on-cream HTML for mail clients. Gmail iOS dark mode inverts
+ * dark templates and leaves body copy unreadable.
+ */
+function renderTransactionalEmail({ heading, greetingName, introHtml, ctaLabel, ctaHref, noteHtml, extraHtml = '' }) {
+  const year = new Date().getFullYear();
+  const safeHeading = escapeHtml(heading);
+  const safeCta = escapeHtml(ctaLabel);
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light only">
+  <meta name="supported-color-schemes" content="light">
+  <title>${safeHeading}</title>
+  <style>
+    :root { color-scheme: light only; }
+    @media (prefers-color-scheme: dark) {
+      .oy-body, .oy-card, .oy-td { background-color: #fbf8f2 !important; color: #14181f !important; }
+      .oy-muted { color: #5c6570 !important; }
+      .oy-brand { color: #1f8a4c !important; }
+      .oy-gold { color: #c98a12 !important; }
+      .oy-link { color: #166b3a !important; }
+    }
+  </style>
+</head>
+<body class="oy-body" bgcolor="#efeae0" style="margin:0;padding:24px 12px;background-color:#efeae0;color:#14181f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td align="center">
+        <table class="oy-card" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#fbf8f2" style="max-width:560px;background-color:#fbf8f2;border:1px solid #ddd4c4;border-radius:12px;">
+          <tr>
+            <td class="oy-td" style="padding:28px 24px 8px;font-size:22px;font-weight:800;letter-spacing:0.06em;">
+              <span class="oy-brand" style="color:#1f8a4c;">ODDS</span><span class="oy-gold" style="color:#c98a12;">YRA</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="oy-td" style="padding:8px 24px 0;font-size:22px;font-weight:800;line-height:1.3;color:#14181f;">${safeHeading}</td>
+          </tr>
+          <tr>
+            <td class="oy-td" style="padding:16px 24px 0;font-size:16px;line-height:1.55;color:#14181f;">
+              Hi <strong>${escapeHtml(greetingName)}</strong>,
+            </td>
+          </tr>
+          <tr>
+            <td class="oy-td" style="padding:12px 24px 0;font-size:16px;line-height:1.55;color:#14181f;">${introHtml}</td>
+          </tr>
+          <tr>
+            <td align="center" class="oy-td" style="padding:24px;">
+              <a href="${ctaHref}" target="_blank" style="display:inline-block;background-color:#1f8a4c;color:#ffffff !important;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;">${safeCta}</a>
+            </td>
+          </tr>
+          <tr>
+            <td class="oy-muted oy-td" style="padding:0 24px;font-size:13px;line-height:1.5;color:#5c6570;">Or copy and paste this link in your browser:</td>
+          </tr>
+          <tr>
+            <td class="oy-td" style="padding:10px 24px 0;">
+              <div style="background-color:#f6f2ea;border:1px dashed #1f8a4c;border-radius:8px;padding:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.45;word-break:break-all;overflow-wrap:anywhere;">
+                <a class="oy-link" href="${ctaHref}" style="color:#166b3a;text-decoration:underline;">${escapeHtml(ctaHref)}</a>
+              </div>
+            </td>
+          </tr>
+          ${extraHtml}
+          <tr>
+            <td class="oy-muted oy-td" style="padding:20px 24px 0;font-size:13px;line-height:1.5;color:#5c6570;">${noteHtml}</td>
+          </tr>
+          <tr>
+            <td class="oy-muted oy-td" style="padding:24px;font-size:12px;line-height:1.5;color:#5c6570;border-top:1px solid #ddd4c4;">
+              © ${year} OddsYra Sportsbook &amp; Casino. All rights reserved.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
 function createTransport(account) {
   if (!account) {
     return nodemailer.createTransport({ jsonTransport: true });
@@ -80,6 +163,7 @@ function createTransport(account) {
     host: account.host,
     port: account.port,
     secure: account.secure,
+    requireTLS: !account.secure,
     auth: { user: account.user, pass: account.pass },
   });
 }
@@ -107,6 +191,9 @@ function markPrimaryQuotaHit() {
 async function sendMailWithFailover({ to, subject, html, text }) {
   const accounts = configuredAccounts();
   if (accounts.length === 0) {
+    if (isProduction) {
+      throw new Error('SMTP is not configured (missing host, user, or password)');
+    }
     const tx = createTransport(null);
     const info = await tx.sendMail({ from: SMTP_FROM, to, subject, html, text });
     return { success: true, messageId: info.messageId, provider: 'dev-json' };
@@ -149,45 +236,15 @@ async function sendMailWithFailover({ to, subject, html, text }) {
  */
 export async function sendVerificationEmail({ email, name, token }) {
   const verifyLink = `${FRONTEND_URL}/verify-email?token=${encodeURIComponent(token)}`;
-  const displayName = escapeHtml(name || 'Valued Player');
 
-  const html = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0d1117; color: #e6edf3; margin: 0; padding: 40px 20px; }
-    .container { max-width: 560px; margin: 0 auto; background: #161b22; border-radius: 12px; padding: 36px; border: 1px solid #30363d; }
-    .logo { font-size: 26px; font-weight: 800; color: #a855f7; margin-bottom: 24px; display: flex; align-items: center; gap: 8px; }
-    .btn { display: inline-block; background: linear-gradient(135deg, #7c3aed, #a855f7); color: #ffffff !important; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 15px; margin: 24px 0; }
-    .footer { font-size: 12px; color: #8b949e; margin-top: 32px; border-top: 1px solid #30363d; padding-top: 20px; }
-    .code-box { background: #0d1117; border: 1px dashed #7c3aed; border-radius: 8px; padding: 12px; font-family: monospace; word-break: break-all; color: #c084fc; margin-top: 12px; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="logo">👑 OddsYra</div>
-    <h2>Verify Your Email Address</h2>
-    <p>Hi <strong>${displayName}</strong>,</p>
-    <p>Thank you for registering with OddsYra! Please click the button below to verify your email address and activate your welcome bonus:</p>
-    
-    <div style="text-align: center;">
-      <a href="${verifyLink}" class="btn" target="_blank">Verify My Email</a>
-    </div>
-
-    <p style="font-size: 13px; color: #8b949e;">Or copy and paste this link in your browser:</p>
-    <div class="code-box">${verifyLink}</div>
-
-    <p style="font-size: 13px; color: #8b949e; margin-top: 20px;">This link will expire in 24 hours. If you did not create a OddsYra account, you can safely ignore this email.</p>
-
-    <div class="footer">
-      © ${new Date().getFullYear()} OddsYra Sportsbook & Casino. All rights reserved.
-    </div>
-  </div>
-</body>
-</html>
-  `;
+  const html = renderTransactionalEmail({
+    heading: 'Verify Your Email Address',
+    greetingName: name || 'Valued Player',
+    introHtml: 'Thank you for registering with OddsYra! Please click the button below to verify your email address and activate your welcome bonus:',
+    ctaLabel: 'Verify My Email',
+    ctaHref: verifyLink,
+    noteHtml: 'This link will expire in 24 hours. If you did not create an OddsYra account, you can safely ignore this email.',
+  });
 
   try {
     const info = await sendMailWithFailover({
@@ -212,45 +269,15 @@ export async function sendVerificationEmail({ email, name, token }) {
  */
 export async function sendPasswordResetEmail({ email, name, token }) {
   const resetLink = `${FRONTEND_URL}/reset-password?token=${encodeURIComponent(token)}`;
-  const displayName = escapeHtml(name || 'Valued Player');
 
-  const html = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0d1117; color: #e6edf3; margin: 0; padding: 40px 20px; }
-    .container { max-width: 560px; margin: 0 auto; background: #161b22; border-radius: 12px; padding: 36px; border: 1px solid #30363d; }
-    .logo { font-size: 26px; font-weight: 800; color: #a855f7; margin-bottom: 24px; }
-    .btn { display: inline-block; background: linear-gradient(135deg, #7c3aed, #a855f7); color: #ffffff !important; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 15px; margin: 24px 0; }
-    .footer { font-size: 12px; color: #8b949e; margin-top: 32px; border-top: 1px solid #30363d; padding-top: 20px; }
-    .code-box { background: #0d1117; border: 1px dashed #7c3aed; border-radius: 8px; padding: 12px; font-family: monospace; word-break: break-all; color: #c084fc; margin-top: 12px; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="logo">👑 OddsYra</div>
-    <h2>Reset Your Password</h2>
-    <p>Hi <strong>${displayName}</strong>,</p>
-    <p>We received a request to reset the password for your OddsYra account. Click the button below to choose a new password:</p>
-    
-    <div style="text-align: center;">
-      <a href="${resetLink}" class="btn" target="_blank">Reset My Password</a>
-    </div>
-
-    <p style="font-size: 13px; color: #8b949e;">Or copy and paste this link in your browser:</p>
-    <div class="code-box">${resetLink}</div>
-
-    <p style="font-size: 13px; color: #8b949e; margin-top: 20px;">This link will expire in 60 minutes. If you did not request a password reset, your account is safe and you can ignore this email.</p>
-
-    <div class="footer">
-      © ${new Date().getFullYear()} OddsYra Sportsbook & Casino. All rights reserved.
-    </div>
-  </div>
-</body>
-</html>
-  `;
+  const html = renderTransactionalEmail({
+    heading: 'Reset Your Password',
+    greetingName: name || 'Valued Player',
+    introHtml: 'We received a request to reset the password for your OddsYra account. Click the button below to choose a new password:',
+    ctaLabel: 'Reset My Password',
+    ctaHref: resetLink,
+    noteHtml: 'This link will expire in 60 minutes. If you did not request a password reset, your account is safe and you can ignore this email.',
+  });
 
   try {
     const info = await sendMailWithFailover({
@@ -274,43 +301,30 @@ export async function sendPasswordResetEmail({ email, name, token }) {
  * Send a Security Notification after password has been changed (Requirement 19)
  */
 export async function sendPasswordChangedNotificationEmail({ email, name }) {
-  const displayName = escapeHtml(name || 'Valued Player');
   const safeEmail = escapeHtml(email);
 
-  const html = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0d1117; color: #e6edf3; margin: 0; padding: 40px 20px; }
-    .container { max-width: 560px; margin: 0 auto; background: #161b22; border-radius: 12px; padding: 36px; border: 1px solid #30363d; }
-    .logo { font-size: 26px; font-weight: 800; color: #a855f7; margin-bottom: 24px; }
-    .footer { font-size: 12px; color: #8b949e; margin-top: 32px; border-top: 1px solid #30363d; padding-top: 20px; }
-    .alert-box { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 8px; padding: 16px; color: #fbbf24; margin: 20px 0; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="logo">👑 OddsYra Security</div>
-    <h2>Your Password Was Changed</h2>
-    <p>Hi <strong>${displayName}</strong>,</p>
-    <p>This is a confirmation that the password for your OddsYra account (<strong>${safeEmail}</strong>) has been successfully changed.</p>
-    
-    <div class="alert-box">
-      ⚠️ <strong>Security Notice:</strong> All other active browser sessions and devices have been logged out automatically for your safety.
-    </div>
-
-    <p>If you made this change, no further action is needed.</p>
-    <p style="color: #f85149; font-weight: 600;">If you did NOT change your password, please contact OddsYra Support immediately to secure your account.</p>
-
-    <div class="footer">
-      © ${new Date().getFullYear()} OddsYra Sportsbook & Casino. All rights reserved.
-    </div>
-  </div>
-</body>
-</html>
-  `;
+  const html = renderTransactionalEmail({
+    heading: 'Your Password Was Changed',
+    greetingName: name || 'Valued Player',
+    introHtml: `This is a confirmation that the password for your OddsYra account (<strong>${safeEmail}</strong>) has been successfully changed.`,
+    ctaLabel: 'Open OddsYra',
+    ctaHref: FRONTEND_URL,
+    extraHtml: `
+          <tr>
+            <td class="oy-td" style="padding:20px 24px 0;">
+              <div style="background-color:#fff8e8;border:1px solid #f3c14a;border-radius:8px;padding:14px 16px;color:#8a5a00;font-size:14px;line-height:1.5;">
+                <strong>Security notice:</strong> All other active browser sessions and devices have been logged out automatically for your safety.
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td class="oy-td" style="padding:16px 24px 0;font-size:16px;line-height:1.55;color:#14181f;">If you made this change, no further action is needed.</td>
+          </tr>
+          <tr>
+            <td class="oy-td" style="padding:12px 24px 0;font-size:16px;line-height:1.55;color:#b91c1c;font-weight:600;">If you did NOT change your password, contact OddsYra Support immediately to secure your account.</td>
+          </tr>`,
+    noteHtml: 'This is an automated security message from OddsYra.',
+  });
 
   try {
     const info = await sendMailWithFailover({

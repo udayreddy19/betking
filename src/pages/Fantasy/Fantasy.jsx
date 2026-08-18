@@ -5,8 +5,10 @@ import { formatInr } from '../../utils/walletBalance';
 import { FANTASY_CONTESTS, loadFantasyEntries, saveFantasyEntry } from '../../data/fantasyContests';
 import './Fantasy.css';
 
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1' || import.meta.env.DEV;
+
 export default function Fantasy() {
-  const { user, isLoggedIn, openLoginModal, deductStake, showToast } = useAuth();
+  const { user, isLoggedIn, openLoginModal, showToast } = useAuth();
   const [entries, setEntries] = useState(() => loadFantasyEntries(user?.email));
   const [joiningId, setJoiningId] = useState(null);
 
@@ -21,6 +23,10 @@ export default function Fantasy() {
       openLoginModal();
       return;
     }
+    if (!DEMO_MODE || contest.entryFee > 0) {
+      showToast('Fantasy contests are not live yet. Place sports bets from the Sports page.', 'info');
+      return;
+    }
     if (joinedIds.has(contest.id)) {
       showToast('You already joined this contest.', 'info');
       return;
@@ -28,14 +34,6 @@ export default function Fantasy() {
     if (contest.filled >= contest.spots) {
       showToast('This contest is full.', 'info');
       return;
-    }
-
-    if (contest.entryFee > 0) {
-      const result = deductStake({ cashAmount: contest.entryFee });
-      if (!result?.success) {
-        showToast(result?.error || 'Insufficient balance to join this contest.', 'error');
-        return;
-      }
     }
 
     setJoiningId(contest.id);
@@ -61,7 +59,7 @@ export default function Fantasy() {
       <div className="fantasy-hero">
         <span className="fantasy-icon">🏆</span>
         <h1>Fantasy Cricket</h1>
-        <p>Pick a contest, pay the entry (or join free), and compete for the prize pool. Live sports betting stays on the Sports page.</p>
+        <p>Fantasy contests are not live yet. Live sports betting stays on the Sports page.</p>
         <div className="fantasy-actions">
           <Link to="/sports" className="fantasy-btn primary">Browse live matches</Link>
           <Link to="/promotions" className="fantasy-btn outline">View promotions</Link>
@@ -105,7 +103,7 @@ export default function Fantasy() {
                   disabled={joined || full || joiningId === contest.id}
                   onClick={() => handleJoin(contest)}
                 >
-                  {joined ? 'Joined' : full ? 'Contest full' : joiningId === contest.id ? 'Joining…' : 'Join contest'}
+                  {joined ? 'Joined' : full ? 'Contest full' : joiningId === contest.id ? 'Joining…' : DEMO_MODE && contest.entryFee === 0 ? 'Join contest' : 'Coming soon'}
                 </button>
               </article>
             );

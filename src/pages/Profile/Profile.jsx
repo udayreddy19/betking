@@ -22,6 +22,7 @@ export default function Profile() {
     openDepositModal,
     openFinModal,
     redeemLoyaltyPoints,
+    claimSignupPromoCode,
     transactions,
     updateRgLimits,
     selfExcludeAccount,
@@ -41,6 +42,8 @@ export default function Profile() {
     () => user?.dailyStakeLimit || DEFAULT_DAILY_STAKE_LIMIT,
   );
   const [selfExcludeDays, setSelfExcludeDays] = useState('7');
+  const [promoCode, setPromoCode] = useState('');
+  const [claimingPromo, setClaimingPromo] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -220,6 +223,36 @@ export default function Profile() {
                 Redeem points
               </button>
             </div>
+
+            <form
+              className="profile-loyalty-box"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setClaimingPromo(true);
+                const result = await claimSignupPromoCode(promoCode);
+                setClaimingPromo(false);
+                if (result?.ok) setPromoCode('');
+              }}
+            >
+              <div className="profile-loyalty-head">
+                <span>Promo code</span>
+              </div>
+              <p className="profile-loyalty-meta">Enter a code to credit bonus, free bet, or cash. Limits are set per code.</p>
+              <div className="profile-promo-row">
+                <input
+                  type="text"
+                  value={promoCode}
+                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                  placeholder="WELCOME100"
+                  maxLength={32}
+                  autoCapitalize="characters"
+                  autoComplete="off"
+                />
+                <button type="submit" className="profile-link-btn" disabled={claimingPromo || !promoCode.trim()}>
+                  {claimingPromo ? 'Claiming…' : 'Claim'}
+                </button>
+              </div>
+            </form>
 
             <p className="profile-rules">
               Deposits must be wagered before withdrawal. Bonus bets need odds ≥ {BONUS_MIN_BET_ODDS.toFixed(2)};

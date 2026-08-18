@@ -61,7 +61,7 @@ export default function MobileBottomBar() {
         {/* Betslip Quick Button */}
         <motion.button
           type="button"
-          className="mobile-bar-item betslip-item"
+          className={`mobile-bar-item betslip-item ${betCount > 0 ? 'has-bets' : ''}`}
           onClick={betCount > 0 ? openMobileBetslip : toggleSidebar}
           whileTap={{ scale: 0.88 }}
         >

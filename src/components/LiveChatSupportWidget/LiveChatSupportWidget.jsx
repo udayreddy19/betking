@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../../context/AuthContext';
+import { apiFetch } from '../../utils/apiClient';
 import { handleUserSupportQuery } from '../../../lib/supportAssistant.mjs';
 import {
   FiMessageSquare,
@@ -14,14 +15,14 @@ import './LiveChatSupportWidget.css';
 
 export default function LiveChatSupportWidget() {
   const location = useLocation();
-  const { user, showToast } = useAuth();
+  const { user, isLoggedIn, openLoginModal, showToast, isSidebarOpen } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState([
     {
       id: 'welcome_1',
       sender: 'agent',
-      text: `Hello ${user?.displayName || 'Sports Bettor'}! 👋 Welcome to OddsYra 24/7 VIP Live Support. How can we help you today?`,
+      text: `Hello ${user?.displayName || 'there'}! I’m the OddsYra assistant (not a live agent). Ask a question, or log in to open a real support ticket.`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -35,13 +36,11 @@ export default function LiveChatSupportWidget() {
   const isAdminRoute = location.pathname.startsWith('/admin');
 
   const activeAgent = {
-    name: 'Priya Sharma',
-    role: 'Senior Sportsbook Specialist',
-    avatar: '👩‍💼',
+    name: 'OddsYra Assistant',
+    role: 'Automated help · not a live agent',
+    avatar: '🤖',
     status: 'ONLINE',
   };
-
-  const userEmail = user?.email || 'demo@oddsyra.com';
 
   useEffect(() => {
     const openChat = () => {
@@ -83,7 +82,7 @@ export default function LiveChatSupportWidget() {
       const agentMsg = {
         id: `msg_agent_${Date.now()}`,
         sender: 'agent',
-        agentName: 'Priya Sharma (AI Assistant)',
+        agentName: 'OddsYra Assistant',
         text: responseObj.response,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
@@ -92,19 +91,50 @@ export default function LiveChatSupportWidget() {
     }, 600);
   };
 
-  const handleCreateTicket = () => {
-    const ticketId = `TCK-${Math.floor(100000 + Math.random() * 900000)}`;
-    showToast(`Support Ticket Created! Ticket ID: #${ticketId}`, 'success');
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: `tck_msg_${Date.now()}`,
-        sender: 'system',
-        text: `🎫 Support Ticket #${ticketId} created successfully. A priority agent will review your case shortly.`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      },
-    ]);
-    setShowCsatPrompt(true);
+  const handleCreateTicket = async () => {
+    if (!isLoggedIn) {
+      showToast('Log in to create a support ticket.', 'info');
+      openLoginModal?.();
+      return;
+    }
+    const recentUserText = messages
+      .filter((m) => m.sender === 'user')
+      .slice(-5)
+      .map((m) => m.text)
+      .join('\n')
+      || 'Customer requested a support ticket from chat.';
+    try {
+      const res = await apiFetch('/api/v1/support/tickets', {
+        method: 'POST',
+        body: JSON.stringify({
+          subject: 'Chat support request',
+          category: 'General',
+          initialMessage: recentUserText,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || 'Could not create a support ticket.');
+      }
+      const ticket = data.ticket || data.conversation || {};
+      const ticketNumber = ticket.ticketNumber || ticket.conversationNumber || ticket.conversationId;
+      if (!ticketNumber) {
+        throw new Error('Ticket was not created.');
+      }
+      showToast(`Support ticket ${ticketNumber} opened.`, 'success');
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `tck_msg_${Date.now()}`,
+          sender: 'system',
+          text: `Support ticket ${ticketNumber} was created. Our team will review it from the support queue.`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+      setShowCsatPrompt(true);
+    } catch (err) {
+      showToast(err.message || 'Could not create a support ticket.', 'error');
+    }
   };
 
   const handleSubmitCsat = (ratingVal) => {
@@ -116,7 +146,7 @@ export default function LiveChatSupportWidget() {
   if (isAdminRoute) return null;
 
   return (
-    <div className="live-chat-support-wrapper">
+    <div className={`live-chat-support-wrapper${isOpen ? ' live-chat-support-wrapper--open' : ''}${isSidebarOpen ? ' live-chat-support-wrapper--hidden' : ''}`}>
       {/* FLOATING LAUNCHER BUTTON */}
       {!isOpen && (
         <motion.button
@@ -127,11 +157,11 @@ export default function LiveChatSupportWidget() {
             setIsOpen(true);
             setIsMinimized(false);
           }}
-          aria-label="Open 24/7 Live Support Chat"
+          aria-label="Open OddsYra assistant"
         >
           <span className="live-chat-pulse-dot" />
           <FiMessageSquare className="live-chat-icon" />
-          <span className="live-chat-floating-text">24/7 Live Support</span>
+          <span className="live-chat-floating-text">Help</span>
         </motion.button>
       )}
 
@@ -153,7 +183,7 @@ export default function LiveChatSupportWidget() {
                   <div className="live-chat-agent-name">
                     {activeAgent.name}{' '}
                     <span className="live-chat-online-badge">
-                      <span className="live-chat-dot" /> 24/7 LIVE
+                      <span className="live-chat-dot" /> BOT
                     </span>
                   </div>
                   <div className="live-chat-agent-role">{activeAgent.role}</div>
@@ -287,7 +317,7 @@ export default function LiveChatSupportWidget() {
 
                   <div className="live-chat-footer-actions">
                     <button type="button" className="create-ticket-btn" onClick={handleCreateTicket}>
-                      🎫 Escalate to Priority Ticket
+                      {isLoggedIn ? 'Open a support ticket' : 'Log in to open a ticket'}
                     </button>
                     <span className="secure-badge">
                       <FiShield /> 256-bit Encrypted

@@ -78,6 +78,8 @@
   border-radius: var(--radius-full);
   font-size: var(--text-sm);
   font-weight: var(--font-semibold);
+  text-decoration: none;
+  text-align: center;
   transition: all var(--transition-fast);
 }
 .promo-item-btn:hover {

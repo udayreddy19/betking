@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal, flushSync } from 'react-dom';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ActivityIcon,
@@ -17,7 +18,10 @@ import {
   KeyIcon,
   ChevronRightIcon,
   ChevronDownIcon,
+  LockIcon,
+  LogOutIcon,
 } from '../../../icons/animate/index';
+import BrandLogo from '../../../components/BrandLogo/BrandLogo';
 import AdminRBACGate, { ADMIN_ROLES, AdminRoleProvider, useAdminRole } from '../permissions/AdminRBACGate';
 import CommandPalette from '../features/CommandPalette/CommandPalette';
 import ThemeToggle from '../../../components/ThemeToggle/ThemeToggle';
@@ -37,6 +41,7 @@ import PlatformDomainView from '../domains/PlatformDomainView';
 import OperationsDomainView from '../domains/OperationsDomainView';
 import SecurityGovernanceDomainView from '../domains/SecurityGovernanceDomainView';
 import { ensureAdminSession, adminApiClient } from '../api/adminApiClient';
+import { AdminToastProvider } from '../components/AdminToastContext';
 
 const DOMAIN_GROUPS = [
   {
@@ -138,7 +143,7 @@ const DOMAIN_GROUPS = [
         role: ADMIN_ROLES.MARKETING_ADMIN,
         subModules: [
           { id: 'promotions', label: 'Sportsbook Campaigns' },
-          { id: 'bonus-codes', label: 'Bonus Vouchers & Claims' },
+          { id: 'bonus-codes', label: 'Signup Promo Codes' },
           { id: 'vip-tiers', label: 'VIP Loyalty Tiers' },
         ],
       },
@@ -204,8 +209,6 @@ const DOMAIN_GROUPS = [
 
 const ALL_DOMAINS = DOMAIN_GROUPS.flatMap((g) => g.items);
 
-import { AdminToastProvider } from '../components/AdminToastContext';
-
 export default function AdminShell() {
   return (
     <AdminRoleProvider>
@@ -248,6 +251,11 @@ function AdminShellInner() {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [paletteSeedQuery, setPaletteSeedQuery] = useState('');
   const [sessionReady, setSessionReady] = useState(!!localStorage.getItem('adminToken'));
+  const [sessionChecking, setSessionChecking] = useState(true);
+  const [sessionError, setSessionError] = useState('');
+  const [signingIn, setSigningIn] = useState(false);
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
   const [liveAlerts, setLiveAlerts] = useState([]);
   const [alertsMenuPos, setAlertsMenuPos] = useState({ top: 56, right: 16 });
   const contentScrollRef = useRef(null);
@@ -282,12 +290,21 @@ function AdminShellInner() {
 
   React.useEffect(() => {
     let cancelled = false;
+    setSessionChecking(true);
     ensureAdminSession(activeRole)
       .then(() => {
-        if (!cancelled) setSessionReady(true);
+        if (cancelled) return;
+        setSessionReady(true);
+        setSessionError('');
       })
-      .catch(() => {
-        if (!cancelled) setSessionReady(false);
+      .catch((err) => {
+        if (cancelled) return;
+        setSessionReady(false);
+        setSessionError(err.message || 'Sign in with an admin account to continue.');
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setSessionChecking(false);
       });
     return () => { cancelled = true; };
   }, [activeRole]);
@@ -361,6 +378,7 @@ function AdminShellInner() {
   }, [sessionReady, activeRole]);
 
   React.useEffect(() => {
+    if (!sessionReady) return undefined;
     const handleKeyDown = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
@@ -370,7 +388,7 @@ function AdminShellInner() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [globalSearch, isCommandPaletteOpen]);
+  }, [globalSearch, isCommandPaletteOpen, sessionReady]);
 
   const toggleDomainExpand = (domainId) => {
     setExpandedDomains((prev) => ({
@@ -456,6 +474,28 @@ function AdminShellInner() {
     });
   };
 
+  const handleAdminSignIn = async (event) => {
+    event.preventDefault();
+    setSigningIn(true);
+    setSessionError('');
+    try {
+      await ensureAdminSession(activeRole, { email: adminEmail, password: adminPassword });
+      setSessionReady(true);
+    } catch (err) {
+      setSessionReady(false);
+      setSessionError(err.message || 'Could not sign in to admin.');
+    } finally {
+      setSigningIn(false);
+    }
+  };
+
+  const handleAdminLogout = () => {
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminRole');
+    setSessionReady(false);
+    setSessionError('');
+  };
+
   const handleRoleChange = (newRole) => {
     setActiveRole(newRole);
     ensureAdminSession(newRole).catch(() => {});
@@ -480,14 +520,260 @@ function AdminShellInner() {
     };
   }, [isAlertsOpen]);
 
-  const renderActiveDomainView = () => {
-    if (!sessionReady) {
-      return (
-        <div style={{ padding: '48px', textAlign: 'center', color: 'var(--admin-text-muted)' }}>
-          Establishing admin session…
+  // If initial session verification is underway and not ready yet, show sleek spinner
+  if (sessionChecking && !sessionReady) {
+    return (
+      <div
+        className={`admin-shell ${isDark ? 'admin-shell--dark' : 'admin-shell--light'}`}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+          background: 'var(--admin-bg, #0b0f19)',
+          color: 'var(--admin-text, #f9fafb)',
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+          gap: '16px',
+        }}
+      >
+        <motion.div
+          animate={{ scale: [1, 1.08, 1], opacity: [0.8, 1, 0.8] }}
+          transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
+        >
+          <BrandLogo size={52} />
+        </motion.div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '1.1rem', fontWeight: 900, letterSpacing: '0.6px' }}>ODDSYRA ADMIN</div>
+          <div style={{ fontSize: '0.76rem', color: 'var(--admin-text-muted)', marginTop: '4px' }}>
+            Verifying security session…
+          </div>
         </div>
-      );
-    }
+      </div>
+    );
+  }
+
+  // If unauthenticated, render a clean, secure login screen without sidebar or profile
+  if (!sessionReady) {
+    return (
+      <div
+        className={`admin-shell ${isDark ? 'admin-shell--dark' : 'admin-shell--light'}`}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: '100vh',
+          height: '100vh',
+          background: 'var(--admin-bg, #0b0f19)',
+          color: 'var(--admin-text, #f9fafb)',
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+          overflow: 'auto',
+        }}
+      >
+        {/* Top Navbar */}
+        <header
+          style={{
+            height: '60px',
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '0 24px',
+            borderBottom: '1px solid var(--admin-border)',
+            background: 'var(--admin-panel)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <BrandLogo size={34} />
+            <div>
+              <div style={{ fontSize: '0.96rem', fontWeight: 900, letterSpacing: '0.4px', color: 'var(--admin-text)' }}>
+                ODDSYRA ADMIN
+              </div>
+              <div style={{ fontSize: '0.68rem', color: '#10b981', fontWeight: 800, letterSpacing: '0.3px' }}>
+                OPERATIONS CONTROL CENTER
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <ThemeToggle />
+            <Link
+              to="/"
+              style={{
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                color: 'var(--admin-text-muted)',
+                textDecoration: 'none',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                border: '1px solid var(--admin-border)',
+                background: 'var(--admin-surface)',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              ← Back to Sportsbook
+            </Link>
+          </div>
+        </header>
+
+        {/* Center Login Container */}
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '32px 16px',
+          }}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 16, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            style={{
+              width: '100%',
+              maxWidth: '440px',
+              background: 'var(--admin-panel)',
+              border: '1px solid var(--admin-border)',
+              borderRadius: '16px',
+              padding: '32px 28px',
+              boxShadow: 'var(--admin-shadow)',
+            }}
+          >
+            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+              <div
+                style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '12px',
+                  background: 'rgba(59, 130, 246, 0.12)',
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#3b82f6',
+                  marginBottom: '14px',
+                }}
+              >
+                <LockIcon size={24} />
+              </div>
+              <h2 style={{ margin: '0 0 6px', fontSize: '1.25rem', fontWeight: 800, color: 'var(--admin-text)' }}>
+                Admin Sign In
+              </h2>
+              <p style={{ margin: 0, color: 'var(--admin-text-muted)', fontSize: '0.86rem', lineHeight: 1.45 }}>
+                Sign in with an authorized administrator account to open the Operations Control Center.
+              </p>
+            </div>
+
+            {sessionError && (
+              <div
+                style={{
+                  marginBottom: '18px',
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  background: 'rgba(239, 68, 68, 0.12)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  color: '#f87171',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <span>⚠️</span>
+                <span>{sessionError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleAdminSignIn} style={{ display: 'grid', gap: '16px' }}>
+              <label style={{ display: 'grid', gap: '6px', fontSize: '0.78rem', fontWeight: 700, color: 'var(--admin-text-muted)' }}>
+                ADMIN EMAIL
+                <input
+                  type="email"
+                  required
+                  autoFocus
+                  autoComplete="username"
+                  placeholder="admin@oddsyra.com"
+                  value={adminEmail}
+                  onChange={(e) => setAdminEmail(e.target.value)}
+                  style={{
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--admin-border)',
+                    background: 'var(--admin-bg)',
+                    color: 'var(--admin-text)',
+                    fontSize: '0.9rem',
+                    outline: 'none',
+                  }}
+                />
+              </label>
+
+              <label style={{ display: 'grid', gap: '6px', fontSize: '0.78rem', fontWeight: 700, color: 'var(--admin-text-muted)' }}>
+                PASSWORD
+                <input
+                  type="password"
+                  required
+                  autoComplete="current-password"
+                  placeholder="••••••••••••"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  style={{
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--admin-border)',
+                    background: 'var(--admin-bg)',
+                    color: 'var(--admin-text)',
+                    fontSize: '0.9rem',
+                    outline: 'none',
+                  }}
+                />
+              </label>
+
+              <button
+                type="submit"
+                disabled={signingIn}
+                style={{
+                  marginTop: '8px',
+                  padding: '12px 16px',
+                  border: 'none',
+                  borderRadius: '8px',
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                  color: '#fff',
+                  fontWeight: 800,
+                  fontSize: '0.92rem',
+                  cursor: signingIn ? 'wait' : 'pointer',
+                  boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)',
+                  transition: 'all 0.15s ease',
+                  opacity: signingIn ? 0.75 : 1,
+                }}
+              >
+                {signingIn ? 'Verifying credentials…' : 'Sign In to Operations Console'}
+              </button>
+            </form>
+
+            <div
+              style={{
+                marginTop: '22px',
+                paddingTop: '16px',
+                borderTop: '1px solid var(--admin-border)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                color: 'var(--admin-text-muted)',
+                fontSize: '0.74rem',
+              }}
+            >
+              <ShieldCheckIcon size={14} style={{ color: '#10b981' }} />
+              <span>RBAC &amp; Audit Logging Enforced</span>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
+
+  const renderActiveDomainView = () => {
     switch (activeDomain) {
       case 'control-tower': return (
         <ControlTowerView
@@ -518,7 +804,6 @@ function AdminShellInner() {
   };
 
   const currentDomainObj = ALL_DOMAINS.find((d) => d.id === activeDomain);
-  const currentSubObj = currentDomainObj?.subModules?.find((s) => s.id === activeSubModule);
 
   return (
     <div className={`admin-shell ${isDark ? 'admin-shell--dark' : 'admin-shell--light'}`} style={{ color: 'var(--admin-text, #f9fafb)', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
@@ -532,7 +817,7 @@ function AdminShellInner() {
         style={{ background: 'var(--admin-panel)', borderRight: '1px solid var(--admin-border)' }}
       >
         <div style={{ padding: '20px 16px', borderBottom: '1px solid var(--admin-border)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <img src="/oddsyra-logo.png" alt="OddsYra" style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover', flexShrink: 0, background: '#07111f' }} />
+          <BrandLogo size={36} />
           <div>
             <h1 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 900, letterSpacing: '0.5px', color: 'var(--admin-text)' }}>ODDSYRA ADMIN</h1>
             <span style={{ fontSize: '0.70rem', color: '#10b981', fontWeight: 800, letterSpacing: '0.4px' }}>OPERATIONS CONTROL CENTER</span>
@@ -832,10 +1117,24 @@ function AdminShellInner() {
 
             <span style={{ width: '1px', height: '18px', background: 'var(--admin-border)' }} />
 
+            {/* Authenticated Admin Profile Avatar & Sign Out */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
               <motion.div
-                whileHover={{ scale: 1.1, rotate: 5 }}
-                style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.82rem', boxShadow: '0 2px 8px rgba(59, 130, 246, 0.4)', cursor: 'pointer', flexShrink: 0 }}
+                whileHover={{ scale: 1.05 }}
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                  color: '#fff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 800,
+                  fontSize: '0.82rem',
+                  boxShadow: '0 2px 8px rgba(59, 130, 246, 0.4)',
+                  flexShrink: 0,
+                }}
               >
                 UR
               </motion.div>
@@ -843,6 +1142,41 @@ function AdminShellInner() {
                 <div style={{ fontWeight: 700, color: 'var(--admin-text)' }}>Superuser</div>
                 <div style={{ fontSize: '0.70rem', color: 'var(--admin-text-muted)' }}>{activeRole}</div>
               </div>
+
+              <motion.button
+                type="button"
+                onClick={handleAdminLogout}
+                whileHover={{ scale: 1.06 }}
+                whileTap={{ scale: 0.94 }}
+                title="Sign out of Admin Console"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '30px',
+                  height: '30px',
+                  marginLeft: '4px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--admin-border)',
+                  background: 'var(--admin-surface)',
+                  color: 'var(--admin-text-muted)',
+                  cursor: 'pointer',
+                  outline: 'none',
+                  transition: 'all 0.15s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#ef4444';
+                  e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.12)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = 'var(--admin-text-muted)';
+                  e.currentTarget.style.borderColor = 'var(--admin-border)';
+                  e.currentTarget.style.background = 'var(--admin-surface)';
+                }}
+              >
+                <LogOutIcon size={14} />
+              </motion.button>
             </div>
           </div>
         </header>
@@ -875,3 +1209,4 @@ function AdminShellInner() {
     </div>
   );
 }
+

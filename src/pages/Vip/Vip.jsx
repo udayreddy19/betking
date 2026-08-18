@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { apiFetch } from '../../utils/apiClient';
 import { formatInr } from '../../utils/walletBalance';
 import {
   FiCrown,
@@ -22,16 +23,48 @@ import {
 import './Vip.css';
 
 export default function Vip() {
-  const { user, openDepositModal, showToast } = useAuth();
+  const { user, isLoggedIn, openLoginModal, openDepositModal, showToast } = useAuth();
   const [requestedTrial, setRequestedTrial] = useState(false);
+  const [requestingTrial, setRequestingTrial] = useState(false);
 
-  const coins = user?.coins ?? user?.loyaltyPoints ?? 58;
+  const coins = user?.coins ?? user?.loyaltyPoints ?? 0;
   const balance = user?.balance ?? 0;
   const vipRank = user?.loyaltyRank || 'Pre-VIP';
 
-  const handleRequestVipTrial = () => {
-    setRequestedTrial(true);
-    showToast('🏆 VIP Trial Request submitted! Your dedicated VIP Manager will contact you via WhatsApp shortly.', 'success');
+  const handleRequestVipTrial = async () => {
+    if (!isLoggedIn) {
+      openLoginModal();
+      return;
+    }
+    if (requestingTrial || requestedTrial) return;
+    setRequestingTrial(true);
+    try {
+      const res = await apiFetch('/api/v1/support/tickets', {
+        method: 'POST',
+        body: JSON.stringify({
+          subject: 'VIP trial request',
+          category: 'VIP',
+          initialMessage: `${user?.email || user?.userId} requested the VIP trial program.`,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok && res.status !== 409) {
+        throw new Error(data.error || 'Could not submit VIP request.');
+      }
+      const ticket = data.ticket || data.conversation || data.activeTicket || {};
+      const ticketNumber = ticket.ticketNumber || ticket.conversationNumber || ticket.conversationId || data.ticketNumber;
+      setRequestedTrial(true);
+      showToast(
+        ticketNumber
+          ? `VIP request opened as ticket ${ticketNumber}.`
+          : 'VIP request submitted. Our team will review it.',
+        'success',
+      );
+    } catch (err) {
+      showToast(err.message || 'Could not submit VIP request.', 'error');
+    } finally {
+      setRequestingTrial(false);
+    }
   };
 
   const vipBenefits = [
@@ -168,9 +201,9 @@ export default function Vip() {
                 type="button"
                 className="vip-btn-primary"
                 onClick={handleRequestVipTrial}
-                disabled={requestedTrial}
+                disabled={requestedTrial || requestingTrial}
               >
-                <FiPhoneCall /> {requestedTrial ? 'VIP Trial Requested ✓' : 'Join VIP Trial Program'}
+                <FiPhoneCall /> {requestedTrial ? 'Request submitted' : requestingTrial ? 'Submitting…' : 'Request VIP review'}
               </button>
               <a href="#comparison" className="vip-btn-outline">
                 Compare Tiers <FiArrowRight />
@@ -238,7 +271,7 @@ export default function Vip() {
                   <span className="vip-step-num">1</span>
                   <div>
                     <strong>Play & Earn Coins</strong>
-                    <p>Place bets on sports or play casino games to accumulate loyalty coins.</p>
+                    <p>Place bets on sports to accumulate loyalty coins. Casino play is not live yet.</p>
                   </div>
                 </div>
                 <div className="vip-step-item">

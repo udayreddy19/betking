@@ -51,35 +51,88 @@ import { requireAuth } from './middleware/userAuth.js';
 import authRouter from './auth/authRoutes.js';
 app.use('/api/auth', authRouter);
 
+import rewardsRouter from './routes/rewards.js';
+app.use('/api/v1/rewards', rewardsRouter);
+
 // ── Mount Primary Modular Admin Router ──
 import adminRouter from './routes/index.js';
 // Dev/admin bootstrap login — issued BEFORE the authenticated admin router.
-app.post('/api/auth/admin-login', async (req, res) => {
+app.post('/api/auth/admin-login', loginRateLimiter, async (req, res) => {
   const allowDevLogin =
     process.env.NODE_ENV !== 'production'
     || process.env.ADMIN_DEV_LOGIN === '1';
-  if (!allowDevLogin) {
-    return res.status(403).json({
-      error: 'Admin bootstrap login disabled in production',
-      code: 'ADMIN_LOGIN_DISABLED',
-    });
-  }
 
   try {
     const { generateAdminToken, ADMIN_ROLES } = await import('./middleware/adminAuth.js');
+    const { isAdminEligibleUser, adminJwtRoleForUser } = await import('../lib/adminAccess.mjs');
     const requestedRole = String(req.body?.role || 'SUPER_ADMIN');
-    const role = Object.values(ADMIN_ROLES).includes(requestedRole)
+    const fallbackRole = Object.values(ADMIN_ROLES).includes(requestedRole)
       ? requestedRole
       : ADMIN_ROLES.SUPER_ADMIN;
+
+    const issue = (adminId, role) => {
+      const token = generateAdminToken(adminId, role, 'oddsyra_in');
+      return res.json({
+        success: true,
+        token,
+        role,
+        adminId,
+        expiresInHours: 8,
+      });
+    };
+
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const password = req.body?.password;
+
+    if (email && password) {
+      const { query } = await import('../db/pg.js');
+      const { login } = await import('./auth/authService.js');
+      const result = await login(query, {
+        email,
+        password,
+        ip: req.ip || req.headers['x-forwarded-for'],
+        userAgent: req.headers['user-agent'],
+      });
+      if (result.error) {
+        return res.status(result.status || 401).json({ error: result.error, code: result.code });
+      }
+      const account = result.user;
+      if (!isAdminEligibleUser(account)) {
+        return res.status(403).json({
+          error: 'This account is not allowed to open the admin console.',
+          code: 'ADMIN_NOT_ALLOWED',
+        });
+      }
+      return issue(account.userId, adminJwtRoleForUser(account));
+    }
+
+    const authHeader = req.headers.authorization;
+    const userToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    if (userToken) {
+      const { verifyAccessToken } = await import('./auth/tokenService.js');
+      const decoded = verifyAccessToken(userToken);
+      if (decoded?.sub) {
+        const { query } = await import('../db/pg.js');
+        const userRes = await query(
+          'SELECT user_id, email, role, status FROM users WHERE user_id = $1',
+          [decoded.sub],
+        );
+        const user = userRes.rows[0];
+        if (user && user.status !== 'BANNED' && user.status !== 'SUSPENDED' && isAdminEligibleUser(user)) {
+          return issue(user.user_id, adminJwtRoleForUser(user));
+        }
+      }
+    }
+
+    if (!allowDevLogin) {
+      return res.status(403).json({
+        error: 'Sign in with an admin account to open the console.',
+        code: 'ADMIN_LOGIN_REQUIRED',
+      });
+    }
+
     const adminId = String(req.body?.adminId || 'admin_local');
-    const token = generateAdminToken(adminId, role, 'oddsyra_in');
-    res.json({
-      success: true,
-      token,
-      role,
-      adminId,
-      expiresInHours: 8,
-    });
+    return issue(adminId, fallbackRole);
   } catch (err) {
     res.status(500).json({ error: 'Admin login failed', message: err.message });
   }
@@ -787,25 +840,36 @@ app.get('/api/admin/db/tables', async (req, res) => {
 });
 
 app.get('/api/admin/db/tables/:tableName', async (req, res) => {
-  const { tableName } = req.params;
+  const tableName = String(req.params.tableName || '');
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(tableName)) {
+    return res.status(400).json({ error: 'Invalid table name', code: 'INVALID_TABLE' });
+  }
   try {
     const { query } = await import('../db/pg.js');
+    const exists = await query(
+      `SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = $1`,
+      [tableName],
+    );
+    if (!exists.rows.length) {
+      return res.status(404).json({ error: 'Table not found' });
+    }
 
     // Column definitions
     const colsRes = await query(`
       SELECT column_name, data_type 
       FROM information_schema.columns 
-      WHERE table_name = $1
+      WHERE table_schema = 'public' AND table_name = $1
       ORDER BY ordinal_position ASC;
     `, [tableName]);
 
-    // Data rows
-    const rowsRes = await query(`SELECT * FROM "${tableName}" LIMIT 100`);
+    const safeCols = colsRes.rows.filter((col) => !['password_hash', 'password', 'refresh_token_hash'].includes(col.column_name));
+    const colList = safeCols.map((col) => `"${col.column_name}"`).join(', ') || '*';
+    const rowsRes = await query(`SELECT ${colList} FROM "${tableName}" LIMIT 100`);
 
     res.json({
       success: true,
       tableName,
-      columns: colsRes.rows,
+      columns: safeCols,
       rows: rowsRes.rows,
       totalCount: rowsRes.rows.length,
     });
@@ -1110,15 +1174,12 @@ app.get('/api/admin/finance/withdrawals/pending', async (req, res) => {
 app.post('/api/admin/finance/withdrawals/:id/approve', async (req, res) => {
   const { id } = req.params;
   try {
-    const { query } = await import('../db/pg.js');
-    const result = await query(
-      `UPDATE withdrawals SET status = 'APPROVED', updated_at = NOW()
-       WHERE withdrawal_id = $1 RETURNING withdrawal_id, status`,
-      [id],
-    );
-    if (!result.rows.length) {
-      return res.status(404).json({ success: false, error: 'Withdrawal not found' });
-    }
+    const { withdrawalEngine } = await import('../lib/withdrawalEngine.mjs');
+    const result = await withdrawalEngine.reviewWithdrawal({
+      withdrawalId: id,
+      adminId: req.admin?.id || 'admin',
+      decision: 'APPROVE',
+    });
     const { logAdminAction } = await import('./middleware/auditLogger.js');
     await logAdminAction({
       actorId: req.admin?.id || 'admin',
@@ -1126,9 +1187,10 @@ app.post('/api/admin/finance/withdrawals/:id/approve', async (req, res) => {
       action: 'WITHDRAWAL_APPROVED',
       details: {},
     });
-    res.json({ success: true, requestId: id, status: 'APPROVED', payoutTriggered: false, timestamp: new Date().toISOString() });
+    res.json({ success: true, requestId: id, status: result.status, payoutTriggered: true, timestamp: new Date().toISOString() });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    const status = err.message?.includes('not found') ? 404 : 400;
+    res.status(status).json({ success: false, error: err.message });
   }
 });
 
@@ -1137,15 +1199,13 @@ app.post('/api/admin/finance/withdrawals/:id/reject', async (req, res) => {
   const reason = String(req.body?.reason || '').trim();
   if (!reason) return res.status(400).json({ success: false, error: 'reason required' });
   try {
-    const { query } = await import('../db/pg.js');
-    const result = await query(
-      `UPDATE withdrawals SET status = 'REJECTED', updated_at = NOW()
-       WHERE withdrawal_id = $1 RETURNING withdrawal_id, status`,
-      [id],
-    );
-    if (!result.rows.length) {
-      return res.status(404).json({ success: false, error: 'Withdrawal not found' });
-    }
+    const { withdrawalEngine } = await import('../lib/withdrawalEngine.mjs');
+    const result = await withdrawalEngine.reviewWithdrawal({
+      withdrawalId: id,
+      adminId: req.admin?.id || 'admin',
+      decision: 'REJECT',
+      reason,
+    });
     const { logAdminAction } = await import('./middleware/auditLogger.js');
     await logAdminAction({
       actorId: req.admin?.id || 'admin',
@@ -1204,6 +1264,59 @@ app.get('/api/admin/growth/promotions', async (req, res) => {
     res.json(await listPromotions({ limit: 200 }));
   } catch (err) {
     res.status(500).json({ promotions: [], error: err.message });
+  }
+});
+
+app.get('/api/admin/growth/signup-codes', async (req, res) => {
+  try {
+    const { listSignupPromoCodes } = await import('../lib/signupPromoCodes.mjs');
+    const codes = await listSignupPromoCodes();
+    res.json({ success: true, codes });
+  } catch (err) {
+    res.status(500).json({ success: false, codes: [], error: err.message });
+  }
+});
+
+app.post('/api/admin/growth/signup-codes', async (req, res) => {
+  try {
+    const { createSignupPromoCode } = await import('../lib/signupPromoCodes.mjs');
+    const created = await createSignupPromoCode({
+      ...req.body,
+      createdBy: req.admin?.id || req.admin?.adminId || 'admin',
+    });
+    const { logAdminAction } = await import('./middleware/auditLogger.js');
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: created.id,
+      action: 'SIGNUP_PROMO_CREATE',
+      details: {
+        code: created.code,
+        rewardType: created.rewardType,
+        amount: created.amount,
+        maxPerUser: created.maxPerUser,
+        maxRedemptions: created.maxRedemptions,
+      },
+    });
+    res.status(201).json({ success: true, code: created });
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message, code: err.code });
+  }
+});
+
+app.patch('/api/admin/growth/signup-codes/:id/toggle', async (req, res) => {
+  try {
+    const { toggleSignupPromoCode } = await import('../lib/signupPromoCodes.mjs');
+    const updated = await toggleSignupPromoCode(req.params.id, req.body?.isActive);
+    const { logAdminAction } = await import('./middleware/auditLogger.js');
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: updated.id,
+      action: 'SIGNUP_PROMO_TOGGLE',
+      details: { code: updated.code, isActive: updated.isActive },
+    });
+    res.json({ success: true, code: updated });
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message, code: err.code });
   }
 });
 
@@ -1543,8 +1656,8 @@ app.post('/api/v1/admin/promotions/create', async (req, res) => {
 // -----------------------------------------------------------------------------
 // Unified Notification & Communication REST APIs
 // -----------------------------------------------------------------------------
-app.get('/api/v1/user/notifications', async (req, res) => {
-  const { userId } = req.query;
+app.get('/api/v1/user/notifications', requireAuth, async (req, res) => {
+  const userId = req.user.userId;
   try {
     const { query } = await import('../db/pg.js');
     const notifsRes = await query(`
@@ -1560,8 +1673,9 @@ app.get('/api/v1/user/notifications', async (req, res) => {
   }
 });
 
-app.post('/api/v1/user/notifications/read', async (req, res) => {
-  const { userId, notificationId } = req.body;
+app.post('/api/v1/user/notifications/read', requireAuth, async (req, res) => {
+  const userId = req.user.userId;
+  const { notificationId } = req.body;
   try {
     const { query } = await import('../db/pg.js');
     await query(`UPDATE notifications SET is_read = TRUE WHERE id = $1 AND user_id = $2;`, [notificationId, userId]);
@@ -1571,8 +1685,8 @@ app.post('/api/v1/user/notifications/read', async (req, res) => {
   }
 });
 
-app.get('/api/v1/user/notifications/preferences', async (req, res) => {
-  const { userId } = req.query;
+app.get('/api/v1/user/notifications/preferences', requireAuth, async (req, res) => {
+  const userId = req.user.userId;
   try {
     const { query } = await import('../db/pg.js');
     const prefRes = await query(`SELECT marketing_email, marketing_sms, marketing_push, transactional_email FROM user_notification_preferences WHERE user_id = $1;`, [userId]);
@@ -1583,8 +1697,9 @@ app.get('/api/v1/user/notifications/preferences', async (req, res) => {
   }
 });
 
-app.put('/api/v1/user/notifications/preferences', async (req, res) => {
-  const { userId, marketingEmail, marketingSms, marketingPush } = req.body;
+app.put('/api/v1/user/notifications/preferences', requireAuth, async (req, res) => {
+  const userId = req.user.userId;
+  const { marketingEmail, marketingSms, marketingPush } = req.body;
   try {
     const { query } = await import('../db/pg.js');
     await query(`
@@ -1688,40 +1803,56 @@ app.get('/api/v1/public/matches', async (req, res) => {
   }
 });
 
-app.post('/api/v1/developer/apps', async (req, res) => {
-  const appData = req.body;
+app.post('/api/v1/developer/apps', requireAuth, async (req, res) => {
   try {
     const { createDeveloperApp } = await import('../lib/developerPlatformEngine.mjs');
-    const result = await createDeveloperApp(appData);
+    const result = await createDeveloperApp({
+      ...req.body,
+      userId: req.user.userId,
+    });
     res.json(result);
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
   }
 });
 
-app.post('/api/v1/developer/keys', async (req, res) => {
-  const keyData = req.body;
+app.post('/api/v1/developer/keys', requireAuth, async (req, res) => {
   try {
+    const { query } = await import('../db/pg.js');
+    const owned = await query(
+      `SELECT id FROM developer_apps WHERE id = $1 AND user_id = $2`,
+      [req.body?.appId, req.user.userId],
+    );
+    if (!owned.rows.length) {
+      return res.status(404).json({ success: false, error: 'App not found' });
+    }
     const { generateApiKey } = await import('../lib/developerPlatformEngine.mjs');
-    const result = await generateApiKey(keyData);
+    const result = await generateApiKey(req.body);
     res.json(result);
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
   }
 });
 
-app.post('/api/v1/developer/webhooks', async (req, res) => {
-  const subData = req.body;
+app.post('/api/v1/developer/webhooks', requireAuth, async (req, res) => {
   try {
+    const { query } = await import('../db/pg.js');
+    const owned = await query(
+      `SELECT id FROM developer_apps WHERE id = $1 AND user_id = $2`,
+      [req.body?.appId, req.user.userId],
+    );
+    if (!owned.rows.length) {
+      return res.status(404).json({ success: false, error: 'App not found' });
+    }
     const { createWebhookSubscription } = await import('../lib/developerPlatformEngine.mjs');
-    const result = await createWebhookSubscription(subData);
+    const result = await createWebhookSubscription(req.body);
     res.json(result);
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
   }
 });
 
-app.get('/api/v1/developer/webhooks/deliveries', async (req, res) => {
+app.get('/api/v1/developer/webhooks/deliveries', requireAuth, async (req, res) => {
   try {
     const { query } = await import('../db/pg.js');
     const delivRes = await query(`
@@ -1796,8 +1927,8 @@ app.get('/api/admin/outbox/metrics', async (req, res) => {
 // -----------------------------------------------------------------------------
 // User & Admin Support Center REST APIs (v1 & legacy endpoints)
 // -----------------------------------------------------------------------------
-app.get(['/api/support/conversations', '/api/v1/support/tickets'], async (req, res) => {
-  const userId = req.query.userId || 'demo@oddsyra.com';
+app.get(['/api/support/conversations', '/api/v1/support/tickets'], requireAuth, async (req, res) => {
+  const userId = req.user.userId;
   try {
     const { supportEngine } = await import('../lib/supportEngine.mjs');
     const conversations = supportEngine.getUserConversations(userId);
@@ -1807,23 +1938,26 @@ app.get(['/api/support/conversations', '/api/v1/support/tickets'], async (req, r
   }
 });
 
-app.get(['/api/support/conversations/:id', '/api/v1/support/tickets/:id'], async (req, res) => {
+app.get(['/api/support/conversations/:id', '/api/v1/support/tickets/:id'], requireAuth, async (req, res) => {
   try {
     const { supportEngine } = await import('../lib/supportEngine.mjs');
-    const conversation = supportEngine.getConversationById(req.params.id, 'user');
+    const conversation = await supportEngine.getConversationById(req.params.id, 'user');
     if (!conversation) return res.status(404).json({ error: 'Support Ticket not found' });
+    if (String(conversation.userId) !== String(req.user.userId)) {
+      return res.status(403).json({ error: 'Forbidden', code: 'TICKET_FORBIDDEN' });
+    }
     res.json({ success: true, conversation, ticket: conversation });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.post(['/api/support/conversations', '/api/v1/support/tickets'], async (req, res) => {
-  const { userId, subject, category, priority, initialMessage, attachments, idempotencyKey, relatedEntityType, relatedEntityId, bypassDuplicateCheck } = req.body;
+app.post(['/api/support/conversations', '/api/v1/support/tickets'], requireAuth, async (req, res) => {
+  const { subject, category, priority, initialMessage, attachments, idempotencyKey, relatedEntityType, relatedEntityId, bypassDuplicateCheck } = req.body;
   try {
     const { supportEngine } = await import('../lib/supportEngine.mjs');
     const result = await supportEngine.startConversation({
-      userId: userId || 'demo@oddsyra.com',
+      userId: req.user.userId,
       subject: subject || 'Support Request',
       category: category || 'General',
       priority: priority || 'NORMAL',
@@ -1853,15 +1987,18 @@ app.post(['/api/support/conversations', '/api/v1/support/tickets'], async (req, 
   }
 });
 
-app.post(['/api/support/conversations/:id/messages', '/api/v1/support/tickets/:id/messages'], async (req, res) => {
-  const { senderId, senderType, messageType, agentName, text, attachments, idempotencyKey } = req.body;
+app.post(['/api/support/conversations/:id/messages', '/api/v1/support/tickets/:id/messages'], requireAuth, async (req, res) => {
+  const { messageType, text, attachments, idempotencyKey } = req.body;
   try {
     const { supportEngine } = await import('../lib/supportEngine.mjs');
+    const conversation = await supportEngine.getConversationById(req.params.id, 'user');
+    if (!conversation || String(conversation.userId) !== String(req.user.userId)) {
+      return res.status(404).json({ error: 'Support Ticket not found' });
+    }
     const msg = await supportEngine.addMessage(req.params.id, {
-      senderId: senderId || 'user',
-      senderType: senderType || 'user',
+      senderId: req.user.userId,
+      senderType: 'user',
       messageType: messageType || 'USER_MESSAGE',
-      agentName: agentName || 'Priya Sharma',
       text: text || '',
       attachments: attachments || [],
       idempotencyKey: idempotencyKey || req.headers['x-idempotency-key'],
@@ -1873,11 +2010,14 @@ app.post(['/api/support/conversations/:id/messages', '/api/v1/support/tickets/:i
   }
 });
 
-app.post(['/api/support/conversations/:id/read', '/api/v1/support/tickets/:id/read'], async (req, res) => {
-  const { actorType } = req.body;
+app.post(['/api/support/conversations/:id/read', '/api/v1/support/tickets/:id/read'], requireAuth, async (req, res) => {
   try {
     const { supportEngine } = await import('../lib/supportEngine.mjs');
-    const updated = await supportEngine.markAsRead(req.params.id, actorType || 'user');
+    const conversation = await supportEngine.getConversationById(req.params.id, 'user');
+    if (!conversation || String(conversation.userId) !== String(req.user.userId)) {
+      return res.status(404).json({ error: 'Support Ticket not found' });
+    }
+    const updated = await supportEngine.markAsRead(req.params.id, 'user');
     if (!updated) return res.status(404).json({ error: 'Support Ticket not found' });
     res.json({ success: true, conversation: updated, ticket: updated });
   } catch (err) {
@@ -1885,11 +2025,15 @@ app.post(['/api/support/conversations/:id/read', '/api/v1/support/tickets/:id/re
   }
 });
 
-app.post(['/api/support/conversations/:id/close', '/api/v1/support/tickets/:id/close'], async (req, res) => {
-  const { userId, resolutionCode } = req.body;
+app.post(['/api/support/conversations/:id/close', '/api/v1/support/tickets/:id/close'], requireAuth, async (req, res) => {
+  const { resolutionCode } = req.body;
   try {
     const { supportEngine } = await import('../lib/supportEngine.mjs');
-    const closed = await supportEngine.closeTicket(req.params.id, { closedBy: userId || 'user', resolutionCode });
+    const conversation = await supportEngine.getConversationById(req.params.id, 'user');
+    if (!conversation || String(conversation.userId) !== String(req.user.userId)) {
+      return res.status(404).json({ error: 'Support Ticket not found' });
+    }
+    const closed = await supportEngine.closeTicket(req.params.id, { closedBy: req.user.userId, resolutionCode });
     if (!closed) return res.status(404).json({ error: 'Support Ticket not found' });
     res.json({ success: true, conversation: closed, ticket: closed });
   } catch (err) {
@@ -1897,11 +2041,15 @@ app.post(['/api/support/conversations/:id/close', '/api/v1/support/tickets/:id/c
   }
 });
 
-app.post(['/api/support/conversations/:id/reopen', '/api/v1/support/tickets/:id/reopen'], async (req, res) => {
-  const { userId, reason } = req.body;
+app.post(['/api/support/conversations/:id/reopen', '/api/v1/support/tickets/:id/reopen'], requireAuth, async (req, res) => {
+  const { reason } = req.body;
   try {
     const { supportEngine } = await import('../lib/supportEngine.mjs');
-    const reopened = await supportEngine.reopenConversation(req.params.id, { actorId: userId || 'user', reason });
+    const conversation = await supportEngine.getConversationById(req.params.id, 'user');
+    if (!conversation || String(conversation.userId) !== String(req.user.userId)) {
+      return res.status(404).json({ error: 'Support Ticket not found' });
+    }
+    const reopened = await supportEngine.reopenConversation(req.params.id, { actorId: req.user.userId, reason });
     if (!reopened) return res.status(404).json({ error: 'Support Ticket not found' });
     res.json({ success: true, conversation: reopened, ticket: reopened });
   } catch (err) {
@@ -1909,10 +2057,14 @@ app.post(['/api/support/conversations/:id/reopen', '/api/v1/support/tickets/:id/
   }
 });
 
-app.post(['/api/support/conversations/:id/feedback', '/api/v1/support/tickets/:id/feedback'], async (req, res) => {
+app.post(['/api/support/conversations/:id/feedback', '/api/v1/support/tickets/:id/feedback'], requireAuth, async (req, res) => {
   const { rating, comment } = req.body;
   try {
     const { supportEngine } = await import('../lib/supportEngine.mjs');
+    const conversation = await supportEngine.getConversationById(req.params.id, 'user');
+    if (!conversation || String(conversation.userId) !== String(req.user.userId)) {
+      return res.status(404).json({ error: 'Support Ticket not found' });
+    }
     const fb = supportEngine.submitFeedback ? supportEngine.submitFeedback(req.params.id, { rating, comment }) : { rating, comment };
     res.json({ success: true, feedback: fb });
   } catch (err) {
@@ -2012,8 +2164,8 @@ app.post(['/api/admin/support/conversations/:id/status', '/api/v1/admin/support/
 // -----------------------------------------------------------------------------
 // Phase 2 — Advanced User Security & Account Controls REST APIs
 // -----------------------------------------------------------------------------
-app.get('/api/v1/user/security/devices', async (req, res) => {
-  const userId = req.query.userId || 'demo@oddsyra.com';
+app.get('/api/v1/user/security/devices', requireAuth, async (req, res) => {
+  const userId = req.user.userId;
   try {
     const { userSecurityCenter } = await import('../lib/userSecurityCenter.mjs');
     const devices = userSecurityCenter.getUserDevices(userId);
@@ -2023,11 +2175,11 @@ app.get('/api/v1/user/security/devices', async (req, res) => {
   }
 });
 
-app.post('/api/v1/user/security/devices/register', async (req, res) => {
-  const { userId, deviceId, deviceHash, deviceType, platform, browser, os, ipAddress, locationCity, locationCountry } = req.body;
+app.post('/api/v1/user/security/devices/register', requireAuth, async (req, res) => {
+  const { deviceId, deviceHash, deviceType, platform, browser, os, ipAddress, locationCity, locationCountry } = req.body;
   try {
     const { userSecurityCenter } = await import('../lib/userSecurityCenter.mjs');
-    const dev = await userSecurityCenter.registerDevice(userId || 'demo@oddsyra.com', {
+    const dev = await userSecurityCenter.registerDevice(req.user.userId, {
       deviceId, deviceHash, deviceType, platform, browser, os, ipAddress, locationCity, locationCountry
     });
     res.json({ success: true, device: dev });
@@ -2036,30 +2188,30 @@ app.post('/api/v1/user/security/devices/register', async (req, res) => {
   }
 });
 
-app.post('/api/v1/user/security/devices/logout', async (req, res) => {
-  const { userId, deviceId } = req.body;
+app.post('/api/v1/user/security/devices/logout', requireAuth, async (req, res) => {
+  const { deviceId } = req.body;
   try {
     const { userSecurityCenter } = await import('../lib/userSecurityCenter.mjs');
-    const result = await userSecurityCenter.logoutDevice(userId || 'demo@oddsyra.com', deviceId);
+    const result = await userSecurityCenter.logoutDevice(req.user.userId, deviceId);
     res.json({ success: true, result });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.post('/api/v1/user/security/devices/logout-all-others', async (req, res) => {
-  const { userId, currentDeviceId } = req.body;
+app.post('/api/v1/user/security/devices/logout-all-others', requireAuth, async (req, res) => {
+  const { currentDeviceId } = req.body;
   try {
     const { userSecurityCenter } = await import('../lib/userSecurityCenter.mjs');
-    const result = await userSecurityCenter.logoutAllOtherDevices(userId || 'demo@oddsyra.com', currentDeviceId);
+    const result = await userSecurityCenter.logoutAllOtherDevices(req.user.userId, currentDeviceId);
     res.json({ success: true, result });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.get('/api/v1/user/security/alerts', async (req, res) => {
-  const userId = req.query.userId || 'demo@oddsyra.com';
+app.get('/api/v1/user/security/alerts', requireAuth, async (req, res) => {
+  const userId = req.user.userId;
   try {
     const { userSecurityCenter } = await import('../lib/userSecurityCenter.mjs');
     const alerts = userSecurityCenter.getUserSecurityAlerts(userId);
@@ -2069,19 +2221,18 @@ app.get('/api/v1/user/security/alerts', async (req, res) => {
   }
 });
 
-app.post('/api/v1/user/security/alerts/:id/read', async (req, res) => {
-  const { userId } = req.body;
+app.post('/api/v1/user/security/alerts/:id/read', requireAuth, async (req, res) => {
   try {
     const { userSecurityCenter } = await import('../lib/userSecurityCenter.mjs');
-    const result = userSecurityCenter.markAlertAsRead(userId || 'demo@oddsyra.com', req.params.id);
+    const result = userSecurityCenter.markAlertAsRead(req.user.userId, req.params.id);
     res.json({ success: true, result });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.get('/api/v1/user/security/control-status', async (req, res) => {
-  const userId = req.query.userId || 'demo@oddsyra.com';
+app.get('/api/v1/user/security/control-status', requireAuth, async (req, res) => {
+  const userId = req.user.userId;
   try {
     const { userSecurityCenter } = await import('../lib/userSecurityCenter.mjs');
     const status = userSecurityCenter.getAccountControlStatus(userId);
@@ -2213,7 +2364,7 @@ app.get('/api/bets/mine', requireAuth, async (req, res) => {
     const { query } = await import('../db/pg.js');
     const result = await query(
       `SELECT bet_id, user_id, match_id, market_id, selection_id, stake, odds, accepted_odds,
-              potential_payout, bet_type, status, created_at
+              potential_payout, bet_type, status, created_at, COALESCE(fund_source, 'cash') AS fund_source
        FROM bets
        WHERE user_id = $1
        ORDER BY created_at DESC
@@ -2544,21 +2695,19 @@ app.get('/api/v1/vip/benefits', async (req, res) => {
   }
 });
 
-app.get('/api/v1/user/vip/status', async (req, res) => {
-  const { userId } = req.query;
+app.get('/api/v1/user/vip/status', requireAuth, async (req, res) => {
   try {
     const { getUserVipStatus } = await import('../lib/vipEngine.mjs');
-    res.json({ success: true, vip: getUserVipStatus(userId || 'demo@oddsyra.com') });
+    res.json({ success: true, vip: getUserVipStatus(req.user.userId) });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-app.get('/api/v1/user/vip/history', async (req, res) => {
-  const { userId } = req.query;
+app.get('/api/v1/user/vip/history', requireAuth, async (req, res) => {
   try {
     const { getVipTierHistory } = await import('../lib/vipEngine.mjs');
-    const result = await getVipTierHistory(userId || 'demo@oddsyra.com');
+    const result = await getVipTierHistory(req.user.userId);
     res.json(result);
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -2609,10 +2758,13 @@ app.post('/api/v1/affiliates/click', async (req, res) => {
   }
 });
 
-app.post('/api/v1/affiliates/conversion', async (req, res) => {
+app.post('/api/v1/affiliates/conversion', requireAuth, async (req, res) => {
   try {
     const { recordAffiliateConversion } = await import('../lib/affiliateEngine.mjs');
-    const result = await recordAffiliateConversion(req.body);
+    const result = await recordAffiliateConversion({
+      ...req.body,
+      referredUserId: req.user.userId,
+    });
     res.json(result);
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });

@@ -19,7 +19,10 @@ export default function DeveloperApiKeyTab() {
   const fetchApps = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/developer/apps');
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch('/api/developer/apps', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       const data = await res.json();
       if (data.success) {
         setApps(data.apps || []);
@@ -40,9 +43,13 @@ export default function DeveloperApiKeyTab() {
 
     try {
       setLoading(true);
+      const token = localStorage.getItem('adminToken');
       const res = await fetch('/api/developer/apps', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ name: newAppName, environment: 'PRODUCTION' }),
       });
       const data = await res.json();
@@ -60,9 +67,13 @@ export default function DeveloperApiKeyTab() {
   const handleGenerateKey = async (appId) => {
     try {
       setLoading(true);
+      const token = localStorage.getItem('adminToken');
       const res = await fetch(`/api/developer/apps/${appId}/keys`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ scopes: ['sports:read', 'matches:read', 'odds:read'] }),
       });
       const data = await res.json();

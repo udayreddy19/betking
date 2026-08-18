@@ -5,6 +5,8 @@ import { useAuth } from '../../context/AuthContext';
 import { settleAllPlacedBets } from '../../utils/betSettlement';
 import { formatInr } from '../../utils/walletBalance';
 
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1' || import.meta.env.DEV;
+
 /** Settles pending bets when live score data marks matches complete. */
 export default function BetSettlementRunner() {
   const matches = useLiveMatches();
@@ -13,6 +15,7 @@ export default function BetSettlementRunner() {
   const creditedRef = useRef(new Set());
 
   useEffect(() => {
+    if (!DEMO_MODE) return;
     if (!isLoggedIn || placedBets.length === 0) return;
     if (!placedBets.some((b) => b.status === 'pending')) return;
 

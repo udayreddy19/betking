@@ -14,8 +14,10 @@ import DailySpinModal from '../DailySpinModal/DailySpinModal';
 import AnimatedMotionGiftIcon from '../AnimatedMotionGiftIcon/AnimatedMotionGiftIcon';
 import { ODDS_FORMAT_OPTIONS } from '../../utils/oddsFormatter';
 import { storageGet, storageSet } from '../../utils/browserCompat';
+import { hasValidAdminSession } from '../../utils/adminSession';
 import '../MyBetsPanel/MyBetsPanel.css';
 import '../PromotionsPanel/PromotionsPanel.css';
+import BrandLogo, { BrandWordmark } from '../BrandLogo/BrandLogo';
 import './Header.css';
 
 const navLinks = [
@@ -56,23 +58,12 @@ function Header() {
   const walletRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
-
-  const isAdminPage = location.pathname.startsWith('/admin');
-  if (isAdminPage) return null;
-
-  const isAdminUser = user?.role === 'admin' || user?.email === 'admin@oddsyra.com';
-  // ONLY show Admin Clean Header when actively on the /admin route
-  const showAdminCleanHeader = isAdminPage;
-
-  const activeMoreLinks = moreLinks.filter((link) => {
-    if (link.to === '/admin') return isAdminUser;
-    if (link.to === '/profile') return isLoggedIn;
-    return true;
-  });
-
-  const wallet = getWalletBreakdown(user);
   const loyalty = getLoyaltySummary(user);
   const [sliderPoints, setSliderPoints] = useState(loyalty.points || 50);
+
+  const isAdminPage = location.pathname.startsWith('/admin');
+  const isDevRoute = location.pathname.startsWith('/developer') || location.pathname.startsWith('/api-docs');
+  const hasAdminSession = hasValidAdminSession();
 
   useEffect(() => {
     if (loyalty.points > 0) {
@@ -101,6 +92,12 @@ function Header() {
     return () => document.removeEventListener('mousedown', close);
   }, [isWalletOpen]);
 
+  useEffect(() => {
+    const openSpin = () => setIsSpinOpen(true);
+    window.addEventListener('oddsyra:open-daily-spin', openSpin);
+    return () => window.removeEventListener('oddsyra:open-daily-spin', openSpin);
+  }, []);
+
   const togglePromos = useCallback(() => {
     setIsPromosOpen((open) => {
       if (!open) closeMyBets();
@@ -119,6 +116,22 @@ function Header() {
     redeemLoyaltyPoints(pts);
   }, [redeemLoyaltyPoints]);
 
+  if (isAdminPage) return null;
+
+  const isAdminUser = ['admin', 'ADMIN', 'SUPER_ADMIN'].includes(user?.role)
+    || user?.email === 'admin@oddsyra.com'
+    || hasAdminSession;
+  const showAdminCleanHeader = false;
+  const wallet = getWalletBreakdown(user);
+
+  const activeMoreLinks = moreLinks.filter((link) => {
+    if (link.to === '/admin') return isAdminUser;
+    if (link.to === '/profile') return isLoggedIn;
+    return true;
+  });
+
+  const showOperatorChrome = isDevRoute && hasAdminSession && !isLoggedIn;
+
   return (
     <header className="header" id="main-header">
       <div className="header-inner">
@@ -129,8 +142,8 @@ function Header() {
           </button>
 
           <NavLink to="/" className="header-logo" id="header-logo">
-            <img src="/oddsyra-logo.png" alt="OddsYra" className="logo-img" />
-            <span className="logo-text">ODDSYRA</span>
+            <BrandLogo size={36} className="logo-img" />
+            <BrandWordmark className="logo-text" />
           </NavLink>
 
           <nav className="header-nav" id="main-nav">
@@ -180,7 +193,7 @@ function Header() {
         </div>
 
         <div className="header-right">
-          <ThemeToggle />
+          <ThemeToggle className="header-theme-toggle" />
 
           {showAdminCleanHeader ? (
             <div className="header-admin-clean-bar">
@@ -435,6 +448,14 @@ function Header() {
                 </div>
               </div>
             </>
+          ) : showOperatorChrome ? (
+            <button
+              type="button"
+              className="header-login-btn"
+              onClick={() => navigate('/admin')}
+            >
+              Back to Admin
+            </button>
           ) : (
             <div className="header-auth-buttons">
               <button className="header-login-btn" onClick={openLoginModal} id="login-btn">

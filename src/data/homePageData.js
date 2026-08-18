@@ -2,17 +2,17 @@
 
 export const homePromoSlides = [
   {
-    id: 'crypto',
-    title: '5% EXTRA',
-    subtitle: 'ON CRYPTO DEPOSITS',
+    id: 'sports',
+    title: 'LIVE SPORTS',
+    subtitle: 'BET ON REAL MATCHES',
     gradient: 'linear-gradient(135deg, #163028 0%, #1f8a4c 55%, #7dff6b 140%)',
     accent: '#7dff6b',
-    emoji: '5%',
+    emoji: '🏏',
   },
   {
-    id: 'welcome',
-    title: '150% WELCOME',
-    subtitle: 'BONUS UP TO ₹30,000',
+    id: 'promo',
+    title: 'PROMO CODES',
+    subtitle: 'ENTER A CODE IN PROFILE',
     gradient: 'linear-gradient(135deg, #1c2a24 0%, #2a4a38 50%, #e07a2f 160%)',
     accent: '#e07a2f',
     emoji: '🎁',

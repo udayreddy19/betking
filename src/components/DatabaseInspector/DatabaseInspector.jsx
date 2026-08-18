@@ -136,8 +136,7 @@ export default function DatabaseInspector() {
     }
 
     // Use seed tables fallback if live fetch fails
-    setTables(SEED_TABLES_FALLBACK);
-    if (!selectedTable) setSelectedTable('users');
+    setTables([]);
   };
 
   // Fetch rows & schema for selected table with fallback
@@ -172,14 +171,11 @@ export default function DatabaseInspector() {
     }
 
     // Fallback data for table
-    const fbData = SEED_ROWS_MAP[tableName] || {
-      columns: [{ column_name: 'id', data_type: 'character varying' }, { column_name: 'status', data_type: 'character varying' }],
-      rows: [],
-    };
+    const fbData = { columns: [], rows: [] };
     setTableData({
       columns: fbData.columns,
       rows: fbData.rows,
-      totalCount: fbData.rows.length,
+      totalCount: 0,
     });
     setLoading(false);
   };

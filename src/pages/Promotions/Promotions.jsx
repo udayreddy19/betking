@@ -1,6 +1,9 @@
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { promotions } from '../../data/mockData';
 import './Promotions.css';
+
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1' || import.meta.env.DEV;
 
 export default function Promotions() {
   const { openLoginModal, isLoggedIn, claimPromotion, isPromotionClaimed } = useAuth();
@@ -10,6 +13,7 @@ export default function Promotions() {
       openLoginModal();
       return;
     }
+    if (!DEMO_MODE) return;
     claimPromotion(promo);
   };
 
@@ -31,17 +35,23 @@ export default function Promotions() {
               <div className="promo-item-body">
                 <h4>{promo.subtitle}</h4>
                 <p>{promo.description}</p>
-                {promo.bonusAmount && (
+                {promo.bonusAmount && DEMO_MODE && (
                   <p className="promo-bonus-amount">Demo credit: ₹{promo.bonusAmount.toLocaleString('en-IN')}</p>
                 )}
-                <button
-                  type="button"
-                  className="promo-item-btn"
-                  onClick={() => handleClaim(promo)}
-                  disabled={claimed}
-                >
-                  {claimed ? 'Claimed' : 'Claim Now'}
-                </button>
+                {DEMO_MODE ? (
+                  <button
+                    type="button"
+                    className="promo-item-btn"
+                    onClick={() => handleClaim(promo)}
+                    disabled={claimed}
+                  >
+                    {claimed ? 'Claimed' : 'Claim Now'}
+                  </button>
+                ) : (
+                  <Link to={isLoggedIn ? '/profile' : '/register'} className="promo-item-btn">
+                    {isLoggedIn ? 'Enter promo code' : 'Sign up with a code'}
+                  </Link>
+                )}
               </div>
             </div>
           );

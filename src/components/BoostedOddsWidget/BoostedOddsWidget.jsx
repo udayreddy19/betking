@@ -1,6 +1,9 @@
 import { FiZap, FiFlame, FiClock, FiPlusCircle, FiCheck } from '../../icons';
 import { useBetSlip } from '../../context/BetSlipContext';
+import { useAuth } from '../../context/AuthContext';
 import './BoostedOddsWidget.css';
+
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1' || import.meta.env.DEV;
 
 const BOOSTED_PROMOS = [
   {
@@ -46,8 +49,13 @@ const BOOSTED_PROMOS = [
 
 export default function BoostedOddsWidget() {
   const { addBet, isBetSelected } = useBetSlip();
+  const { showToast } = useAuth();
 
   const handleAddBoost = (boost) => {
+    if (!DEMO_MODE) {
+      showToast('Odds boosts are not live yet. Add selections from live Sports markets.', 'info');
+      return;
+    }
     const fakeMatch = {
       id: boost.matchId,
       team1: { name: boost.matchName.split(' vs ')[0] || 'Team 1' },
@@ -71,9 +79,13 @@ export default function BoostedOddsWidget() {
         <div className="boosted-title">
           <FiZap className="boosted-icon-zap" />
           <h2>OddsYra Daily Odds Boosts</h2>
-          <span className="boosted-badge">LIVE</span>
+          <span className="boosted-badge">{DEMO_MODE ? 'DEMO' : 'SOON'}</span>
         </div>
-        <p className="boosted-subtitle">Enhanced odds on today's biggest matches — exclusive payout multipliers.</p>
+        <p className="boosted-subtitle">
+          {DEMO_MODE
+            ? 'Enhanced odds on sample matches for local demo play.'
+            : 'Boosted markets are not live yet. Bet from the Sports page.'}
+        </p>
       </div>
 
       <div className="boosted-grid">
@@ -107,13 +119,13 @@ export default function BoostedOddsWidget() {
                   className={`boosted-add-btn ${isAdded ? 'added' : ''}`}
                   onClick={() => handleAddBoost(boost)}
                 >
-                  {isAdded ? (
+                  {DEMO_MODE && isAdded ? (
                     <>
                       <FiCheck /> In Betslip
                     </>
                   ) : (
                     <>
-                      <FiPlusCircle /> Add Bet
+                      <FiPlusCircle /> {DEMO_MODE ? 'Add Bet' : 'Coming soon'}
                     </>
                   )}
                 </button>

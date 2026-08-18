@@ -1,10 +1,17 @@
+import { useEffect } from 'react';
 import { useBetSlip } from '../../context/BetSlipContext';
 import BetSlip from '../BetSlip/BetSlip';
+import BetSlipFooter from '../BetSlip/BetSlipFooter';
 import { IoClose } from '../../icons';
 import './MobileBetSlip.css';
 
 export default function MobileBetSlip() {
   const { betCount, isMobileOpen, setIsMobileOpen, openMobileBetslip } = useBetSlip();
+
+  useEffect(() => {
+    document.body.classList.toggle('mobile-betslip-open', isMobileOpen);
+    return () => document.body.classList.remove('mobile-betslip-open');
+  }, [isMobileOpen]);
 
   return (
     <>
@@ -29,7 +36,14 @@ export default function MobileBetSlip() {
             >
               <IoClose />
             </button>
-            <BetSlip />
+            <div className="mobile-betslip-main">
+              <BetSlip showFooter={false} />
+            </div>
+            {betCount > 0 && (
+              <div className="mobile-betslip-cta">
+                <BetSlipFooter onPlaced={() => setIsMobileOpen(false)} />
+              </div>
+            )}
           </div>
         </div>
       )}

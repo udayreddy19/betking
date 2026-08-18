@@ -67,28 +67,35 @@ export async function fetchMe() {
   return data.user || null;
 }
 
-export function mapServerUserToSession(serverUser) {
+export function mapServerUserToSession(serverUser, previous = null) {
   if (!serverUser) return null;
   const balance = Number(serverUser.balance) || 0;
   const bonusBalance = Number(serverUser.bonusBalance) || 0;
+  const freebetBalance = Number(serverUser.freebetBalance) || 0;
+  const loyaltyPoints = Number(serverUser.loyaltyPoints) || 0;
+  const reservedBalance = Number(serverUser.reservedBalance) || 0;
+  const available = Math.max(0, balance - reservedBalance);
   return {
+    ...(previous || {}),
     userId: serverUser.userId,
     email: serverUser.email,
     username: serverUser.email,
     displayName: serverUser.displayName || serverUser.firstName || serverUser.email?.split('@')[0],
-    phone: serverUser.phone || '',
+    phone: serverUser.phone || previous?.phone || '',
     balance,
+    reservedBalance,
     lockedDepositBalance: 0,
-    winningsBalance: balance,
+    winningsBalance: available,
     bonusBalance,
-    freebetBalance: 0,
-    loyaltyLevel: 1,
-    loyaltyRank: 'Rookie',
-    xpToNext: 1000,
-    notifications: 0,
-    loyaltyPoints: 0,
-    coins: 0,
+    freebetBalance,
+    loyaltyLevel: previous?.loyaltyLevel ?? 1,
+    loyaltyRank: previous?.loyaltyRank ?? 'Rookie',
+    xpToNext: previous?.xpToNext ?? 1000,
+    notifications: previous?.notifications ?? 0,
+    loyaltyPoints,
+    coins: loyaltyPoints,
     emailVerified: !!serverUser.emailVerified,
+    role: serverUser.role || previous?.role || 'USER',
     kycStatus: serverUser.kycStatus,
     status: serverUser.status,
   };

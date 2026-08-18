@@ -61,6 +61,34 @@ describe('Phase 15 DevOps, Health Probes & Operations Tests', () => {
     expect(valid.valid).toBe(true);
   });
 
+  it('rejects example Razorpay webhook and JWT secrets in production', () => {
+    const base = {
+      NODE_ENV: 'production',
+      DATABASE_URL: 'postgresql://usr:pass@localhost:5432/db',
+      FRONTEND_URL: 'https://oddsyra.com',
+      CORS_ORIGIN: 'https://oddsyra.com',
+      RAZORPAY_KEY_ID: 'rzp_live_test',
+      RAZORPAY_KEY_SECRET: 'secret',
+      SMTP_HOST: 'smtp.example.com',
+      SMTP_USER: 'user',
+      SMTP_PASSWORD: 'pass',
+    };
+    expect(() =>
+      validateProductionEnvironment({
+        ...base,
+        JWT_SECRET: 'oddsyra_jwt_secret_dev_key_2026',
+        RAZORPAY_WEBHOOK_SECRET: 'wh_secret',
+      })
+    ).toThrow('Unsafe JWT_SECRET');
+    expect(() =>
+      validateProductionEnvironment({
+        ...base,
+        JWT_SECRET: 'a-real-production-secret',
+        RAZORPAY_WEBHOOK_SECRET: 'oddsyra_wh_secret_2026',
+      })
+    ).toThrow('Unsafe RAZORPAY_WEBHOOK_SECRET');
+  });
+
   it('Incident logger creates SEV-1/SEV-2 incident record', async () => {
     const inc = await createProductionIncident({
       title: 'Database connection latency spike',

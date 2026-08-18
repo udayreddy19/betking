@@ -17,6 +17,8 @@ async function fetchMyBetsFromServer() {
 }
 
 function mapServerBetToPlaced(row) {
+  const rawStatus = String(row.status || 'pending').toLowerCase();
+  const status = rawStatus === 'accepted' ? 'pending' : rawStatus;
   return {
     id: row.bet_id,
     type: row.bet_type === 'ACCUMULATOR' ? 'multi' : 'single',
@@ -31,9 +33,9 @@ function mapServerBetToPlaced(row) {
     stake: Number(row.stake),
     totalOdds: Number(row.accepted_odds || row.odds),
     potentialReturn: Number(row.potential_payout),
-    status: String(row.status || 'pending').toLowerCase(),
+    status,
     placedAt: row.created_at,
-    fundSource: 'cash',
+    fundSource: row.fund_source || 'cash',
   };
 }
 
@@ -244,6 +246,7 @@ export function BetSlipProvider({ children }) {
             headers: { 'X-Idempotency-Key': `multi-${Date.now()}` },
             body: JSON.stringify({
               stake: stakeAmount,
+              fundSource: stakeSource,
               selections: bets.map((bet) => ({
                 matchId: bet.matchId,
                 marketId: bet.marketId || 'match_winner',
@@ -272,6 +275,7 @@ export function BetSlipProvider({ children }) {
                 selectionId: bet.selection,
                 stake: stakeAmount,
                 clientOdds: bet.odds,
+                fundSource: stakeSource,
               }),
             });
             const data = await res.json();
@@ -290,7 +294,13 @@ export function BetSlipProvider({ children }) {
         setIsMobileOpen(false);
         playBetSound();
         await refreshWallet?.();
-        return { success: true };
+        return {
+          success: true,
+          potentialReturn: Number(potentialReturn),
+          placed: betType === 'multi'
+            ? { potentialReturn: Number(potentialReturn) }
+            : [{ potentialReturn: Number(potentialReturn) }],
+        };
       } catch {
         return { success: false, error: 'Unable to reach betting service' };
       }
@@ -360,9 +370,32 @@ export function BetSlipProvider({ children }) {
     setIsMobileOpen(false);
     playBetSound();
     return { success: true, placed: placements, totalDeducted, stakeSource };
-  }, [bets, betType, stake, singlesStakes, multiOdds, refreshWallet]);
+  }, [bets, betType, stake, singlesStakes, multiOdds, refreshWallet, potentialReturn]);
 
-  const cashOutBet = useCallback((betId) => {
+  const cashOutBet = useCallback(async (betId) => {
+    if (!DEMO_MODE) {
+      try {
+        const res = await apiFetch('/api/bet/cashout', {
+          method: 'POST',
+          headers: { 'X-Idempotency-Key': `cashout-${betId}-${Date.now()}` },
+          body: JSON.stringify({ betId }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.success === false) return null;
+        const rows = await fetchMyBetsFromServer();
+        setPlacedBets(rows.map(mapServerBetToPlaced));
+        playWinSound();
+        await refreshWallet?.();
+        return {
+          id: betId,
+          status: 'cashed_out',
+          cashoutAmount: Number(data.cashoutAmount || 0),
+        };
+      } catch {
+        return null;
+      }
+    }
+
     const target = placedBets.find(
       (bet) => bet.id === betId
         && bet.status === 'pending'
@@ -382,7 +415,7 @@ export function BetSlipProvider({ children }) {
     setPlacedBets((prev) => prev.map((bet) => (bet.id === betId ? cashed : bet)));
     playWinSound();
     return cashed;
-  }, [placedBets]);
+  }, [placedBets, refreshWallet]);
 
   const applySettledBets = useCallback((nextBets) => {
     setPlacedBets(nextBets);

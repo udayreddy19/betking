@@ -2,8 +2,16 @@
   position: fixed;
   bottom: 24px;
   left: 24px;
-  z-index: 9999;
+  z-index: var(--z-fixed);
   font-family: inherit;
+}
+
+.live-chat-support-wrapper--open {
+  z-index: 450;
+}
+
+.live-chat-support-wrapper--hidden {
+  display: none;
 }
 
 /* FLOATING LAUNCHER BUTTON */
@@ -442,4 +450,32 @@
 .live-chat-csat-stars button.active,
 .live-chat-csat-stars button:hover {
   color: #f59e0b;
+}
+
+@media (max-width: 768px) {
+  .live-chat-support-wrapper {
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    left: 10px;
+    right: auto;
+  }
+
+  .live-chat-floating-btn {
+    padding: 10px;
+    gap: 0;
+    max-width: none;
+    width: 44px;
+    height: 44px;
+    justify-content: center;
+  }
+
+  .live-chat-floating-text {
+    display: none;
+  }
+
+  .live-chat-container {
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+    height: min(520px, calc(var(--app-height) - 160px - env(safe-area-inset-bottom, 0px)));
+    max-height: calc(var(--app-height) - 160px - env(safe-area-inset-bottom, 0px));
+  }
 }

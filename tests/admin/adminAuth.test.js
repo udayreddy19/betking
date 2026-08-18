@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { adminAuth, requirePermission, requireRole, generateAdminToken, ADMIN_ROLES } from '../../server/middleware/adminAuth.js';
+import { generateAccessToken } from '../../server/auth/tokenService.js';
 
 describe('Admin Authentication & RBAC Middleware', () => {
   it('should generate and verify JWT admin tokens', () => {
@@ -27,6 +28,19 @@ describe('Admin Authentication & RBAC Middleware', () => {
     expect(next).toHaveBeenCalled();
     expect(req.admin.id).toBe('finance_user');
     expect(req.admin.role).toBe(ADMIN_ROLES.FINANCE_ADMIN);
+  });
+
+  it('rejects a normal user access JWT', () => {
+    const userToken = generateAccessToken('usr_regular_customer', 'USER');
+    const req = { headers: { authorization: `Bearer ${userToken}` } };
+    const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
+    const next = vi.fn();
+
+    adminAuth(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(next).not.toHaveBeenCalled();
+    expect(req.admin).toBeUndefined();
   });
 
   it('should allow SUPER_ADMIN to pass requireRole check', () => {

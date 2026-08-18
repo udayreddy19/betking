@@ -3,7 +3,7 @@
    ========================================================================== */
 
 .api-docs-container {
-  padding: 24px 32px;
+  padding: 24px 32px 80px;
   max-width: 1440px;
   margin: 0 auto;
   min-height: 100vh;
@@ -11,6 +11,12 @@
   color: var(--color-text);
   background: var(--color-bg);
   transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.admin-shell .api-docs-container {
+  padding: 0;
+  min-height: auto;
+  background: transparent;
 }
 
 /* -----------------------------------------------------------------------------

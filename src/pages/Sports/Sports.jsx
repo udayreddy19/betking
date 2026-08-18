@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef, useSyncExternalStore } from 'react';
-import { Link, useSearchParams, useLocation } from 'react-router-dom';
+import { Link, useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { FiSearch, FiHome, HiOutlineChevronDown, HiOutlineChevronUp, FiMessageCircle } from '../../icons';
 import FilterChips from '../../components/FilterChips/FilterChips';
 import SportIcon from '../../components/SportIcon/SportIcon';
@@ -281,6 +281,7 @@ export default function Sports() {
   const isAdminUser = user?.role === 'admin' || user?.email === 'admin@oddsyra.com';
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const isLiveBettingPage = location.pathname === '/live-betting';
 
   const initialSport = searchParams.get('sport') || 'cricket';
@@ -498,7 +499,7 @@ export default function Sports() {
       if (activeLeague) next.set('league', resolveLeagueId(activeLeague));
       next.set('match', matchId);
       return next;
-    }, { replace: true });
+    });
     const found = sportMatches.find((m) => m.id === matchId);
     if (found) prefetchMatchDetail(found, { priority: true });
   }, [activeSport, activeLeague, setSearchParams, sportMatches]);
@@ -521,6 +522,15 @@ export default function Sports() {
       document.getElementById('sports-match-ticker')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     });
   }, [activeSport, activeLeague, setSearchParams]);
+
+  const goBackFromMatch = useCallback(() => {
+    const historyIndex = window.history.state?.idx;
+    if (typeof historyIndex === 'number' && historyIndex > 0) {
+      navigate(-1);
+      return;
+    }
+    showLeagueOverview(activeLeague);
+  }, [navigate, showLeagueOverview, activeLeague]);
 
   const toggleMarket = (key) => {
     setExpandedMarkets(prev => ({ ...prev, [key]: !prev[key] }));
@@ -571,6 +581,9 @@ export default function Sports() {
     if (match) {
       setSelectedMatchId(match);
       setViewMode('match');
+    } else {
+      setSelectedMatchId(null);
+      setViewMode('league');
     }
   }, [searchParams]);
 
@@ -656,7 +669,7 @@ export default function Sports() {
               <button
                 type="button"
                 className="sports-mobile-match-back"
-                onClick={() => showLeagueOverview(activeLeague)}
+                onClick={goBackFromMatch}
               >
                 ← {breadcrumbLeague}
               </button>

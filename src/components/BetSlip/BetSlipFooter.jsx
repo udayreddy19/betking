@@ -11,6 +11,7 @@ import {
 import './BetSlipFooter.css';
 
 const QUICK_STAKES = [100, 500, 1000];
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1' || import.meta.env.DEV;
 
 export default function BetSlipFooter({ variant = 'default', onPlaced }) {
   const {
@@ -81,29 +82,38 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
       const cashAmount = activeSource === 'cash' ? amountToDeduct : 0;
       const bonusAmount = activeSource === 'bonus' ? amountToDeduct : 0;
       const freebetAmount = activeSource === 'freebet' ? amountToDeduct : 0;
-      const deducted = deductStake({ cashAmount, bonusAmount, freebetAmount });
+      let deducted = { success: true, wageringApplied: 0, winningsSpent: 0 };
 
-      if (!deducted.success) {
-        showToast('Insufficient balance. Please deposit funds.', 'error');
-        return;
+      if (DEMO_MODE) {
+        deducted = deductStake({ cashAmount, bonusAmount, freebetAmount });
+        if (!deducted.success) {
+          showToast('Insufficient balance. Please deposit funds.', 'error');
+          return;
+        }
       }
 
-      const result = placeBets({ stakeSource: activeSource });
+      const result = await placeBets({ stakeSource: activeSource });
       if (!result.success) {
-        refundStake({
-          cashAmount,
-          bonusAmount,
-          freebetAmount,
-          wageringApplied: deducted.wageringApplied,
-          winningsSpent: deducted.winningsSpent,
-        });
+        if (DEMO_MODE) {
+          refundStake({
+            cashAmount,
+            bonusAmount,
+            freebetAmount,
+            wageringApplied: deducted.wageringApplied,
+            winningsSpent: deducted.winningsSpent,
+          });
+        }
         showToast(result.error || 'Could not place bet.', 'error');
         return;
       }
 
-      const ret = betType === 'multi'
-        ? result.placed.potentialReturn
-        : result.placed.reduce((s, p) => s + p.potentialReturn, 0);
+      const ret = Number(
+        result.potentialReturn
+        ?? result.placed?.potentialReturn
+        ?? (Array.isArray(result.placed)
+          ? result.placed.reduce((s, p) => s + Number(p.potentialReturn || 0), 0)
+          : potentialReturn),
+      );
 
       showToast(
         betType === 'multi'

@@ -6,8 +6,10 @@ import { useCasino } from '../../context/CasinoContext';
 import './GamePlayModal.css';
 import '../GamePlayer/GamePlayer.css';
 
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1' || import.meta.env.DEV;
+
 export default function GamePlayModal() {
-  const { isLoggedIn, openLoginModal, user } = useAuth();
+  const { isLoggedIn, openLoginModal, showToast } = useAuth();
   const { activeGame, isPlaying, closeGame, startPlaying, stopPlaying } = useCasino();
 
   useEffect(() => {
@@ -43,6 +45,10 @@ export default function GamePlayModal() {
     if (!isLoggedIn) {
       closeGame();
       openLoginModal();
+      return;
+    }
+    if (!DEMO_MODE) {
+      showToast('Casino tables are not live yet. Sports betting is available on the Sports page.', 'info');
       return;
     }
     startPlaying();

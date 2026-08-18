@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { UpiLogo, GPayLogo, PhonePeLogo, PaytmLogo } from '../PaymentLogos/PaymentLogos';
+import BrandLogo from '../BrandLogo/BrandLogo';
 import './Footer.css';
 
 export default function Footer() {
@@ -43,7 +44,7 @@ export default function Footer() {
 
         <div className="footer-bottom">
           <p className="footer-brand">
-            <img src="/oddsyra-logo.png" alt="" className="footer-logo" />
+            <BrandLogo size={32} className="footer-logo" />
             © 2026 OddsYra. All rights reserved.
           </p>
           <div className="footer-payments" aria-label="Accepted payment methods">

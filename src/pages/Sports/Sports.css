@@ -249,10 +249,13 @@
 }
 
 .sports-league-overview-title {
-  font-size: var(--text-xl);
-  font-weight: var(--font-bold);
+  font-family: var(--font-primary);
+  font-size: clamp(1.05rem, 4.6vw, 1.35rem);
+  font-weight: 800;
+  line-height: 1.2;
   color: var(--color-text);
   margin-bottom: var(--space-1);
+  overflow-wrap: anywhere;
 }
 
 .sports-league-overview-subtitle {
@@ -1250,7 +1253,7 @@
   }
 
   .sports-page {
-    padding: var(--space-3) 0 calc(var(--space-16) + var(--safe-bottom, env(safe-area-inset-bottom, 0px)));
+    padding: var(--space-3) 0 calc(96px + env(safe-area-inset-bottom, 0px));
   }
 
   .sports-right {

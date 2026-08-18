@@ -74,6 +74,7 @@ export function generateAdminToken(adminId, role, tenantId = 'oddsyra_in') {
     sub: adminId,
     role: role || ADMIN_ROLES.SUPER_ADMIN,
     tenant: tenantId,
+    type: 'admin',
     iat: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + (8 * 60 * 60), // 8 hours
   })).toString('base64url');
@@ -98,14 +99,21 @@ export function adminAuth(req, res, next) {
 
   if (token) {
     const decoded = verifyJWT(token);
-    if (decoded) {
+    if (!decoded) {
+      return res.status(401).json({ error: 'Invalid token', code: 'INVALID_TOKEN' });
+    }
+    const role = decoded.role;
+    const isAdminRole = role && Object.values(ADMIN_ROLES).includes(role);
+    const isUserAccess = decoded.type === 'access' || role === 'USER';
+    if (isAdminRole && !isUserAccess && decoded.type === 'admin') {
       req.admin = {
         id: decoded.sub,
-        role: decoded.role || ADMIN_ROLES.SUPER_ADMIN,
+        role,
         tenant: decoded.tenant || 'oddsyra_in',
       };
       return next();
     }
+    return res.status(403).json({ error: 'Admin access required', code: 'ADMIN_REQUIRED' });
   }
 
   // Test-only fallback: ONLY permitted when process.env.NODE_ENV === 'test'

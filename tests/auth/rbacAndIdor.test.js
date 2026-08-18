@@ -52,19 +52,9 @@ describe('RBAC, Account Status & IDOR Protection Middleware Tests', () => {
       const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
       const next = vi.fn();
 
-      // Admin auth middleware should process token
       adminAuth(req, res, next);
-      expect(next).toHaveBeenCalled();
-
-      // Check role enforcement: admin operations require SUPER_ADMIN or TRADING_ADMIN
-      const checkAdminRole = requireRole('SUPER_ADMIN', 'FINANCE_ADMIN');
-      const resRole = { status: vi.fn().mockReturnThis(), json: vi.fn() };
-      const nextRole = vi.fn();
-
-      checkAdminRole(req, resRole, nextRole);
-
-      expect(resRole.status).toHaveBeenCalledWith(403);
-      expect(nextRole).not.toHaveBeenCalled();
+      expect(next).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(403);
     });
 
     it('should allow valid SUPER_ADMIN token to pass admin authentication', () => {

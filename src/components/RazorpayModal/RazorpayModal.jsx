@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { IoClose, IoShieldCheckmark, IoLockClosed } from '../../icons';
 import { GPayLogo, PhonePeLogo } from '../PaymentLogos/PaymentLogos';
+import BrandLogo from '../BrandLogo/BrandLogo';
 import './RazorpayModal.css';
 
 export default function RazorpayModal({ isOpen, onClose, amount, onSuccess, user }) {
@@ -44,7 +45,7 @@ export default function RazorpayModal({ isOpen, onClose, amount, onSuccess, user
         {/* Navy Blue Razorpay Header */}
         <div className="rzp-header">
           <div className="rzp-header-left">
-            <div className="rzp-logo"><img src="/oddsyra-logo.png" alt="OddsYra" /></div>
+            <div className="rzp-logo"><BrandLogo size={36} /></div>
             <div className="rzp-title">
               <h3>OddsYra Gaming</h3>
               <p>Account Deposit</p>

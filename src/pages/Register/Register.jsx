@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { IoEyeOutline, IoEyeOffOutline } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { WELCOME_BONUS } from '../../data/mockData';
+import BrandLogo, { BrandWordmark } from '../../components/BrandLogo/BrandLogo';
 import './Register.css';
 
 export default function Register() {
@@ -15,6 +16,7 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [phone, setPhone] = useState('');
+  const [promoCode, setPromoCode] = useState('');
 
   const [loading, setLoading] = useState(false);
 
@@ -23,13 +25,23 @@ export default function Register() {
     setError('');
     setLoading(true);
     try {
-      const result = await register({ email, password, displayName, phone });
+      const result = await register({ email, password, displayName, phone, promoCode });
       if (!result.ok) {
         setError(result.error);
         return;
       }
       await login(email, password);
-      if (result.welcomeCredit) {
+      if (result.promoReward) {
+        const typeLabel = {
+          bonus: 'bonus',
+          freebet: 'free bet',
+          cash: 'real money',
+        }[result.promoReward.rewardType] || 'credit';
+        showToast(
+          `₹${Number(result.promoReward.amount).toLocaleString('en-IN')} ${typeLabel} credited with ${result.promoReward.code}.`,
+          'success',
+        );
+      } else if (result.welcomeCredit) {
         showToast(`Welcome bonus of ₹${result.welcomeCredit.toLocaleString('en-IN')} credited!`, 'success');
       }
       navigate('/sports');
@@ -45,7 +57,10 @@ export default function Register() {
   return (
     <div className="register-page" id="register-page">
       <div className="register-form-section">
-        <img src="/oddsyra-logo.png" alt="OddsYra" className="register-logo" />
+        <div className="register-logo-wrap">
+          <BrandLogo size={56} />
+          <BrandWordmark />
+        </div>
         <h1>Register in one easy step</h1>
 
         {error && <div className="register-error">{error}</div>}
@@ -126,6 +141,21 @@ export default function Register() {
                 required
               />
             </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="reg-promo">Promotional code (optional)</label>
+            <input
+              className="form-input"
+              id="reg-promo"
+              type="text"
+              autoComplete="off"
+              placeholder="Enter code if you have one"
+              value={promoCode}
+              onChange={e => setPromoCode(e.target.value.toUpperCase())}
+              maxLength={32}
+            />
+            <p className="form-hint">If a code is active, the reward is added to your wallet on signup.</p>
           </div>
 
           <div className="register-checkbox">

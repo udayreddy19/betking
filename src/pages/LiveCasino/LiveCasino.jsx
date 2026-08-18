@@ -77,7 +77,7 @@ export default function LiveCasino() {
     <div className="live-casino-page container" id="live-casino-page">
       <div className="live-casino-hero">
         <h1>Live Casino</h1>
-        <p>Real dealers, HD streams, and tables open 24/7 — from ₹10 minimum bets.</p>
+        <p>Live dealer tables are not live yet. Place sports bets from the Sports page.</p>
       </div>
 
       <div className="live-casino-categories scroll-row-bleed" id="lc-categories">

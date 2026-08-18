@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IoClose, IoEyeOutline, IoEyeOffOutline } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
+import BrandLogo, { BrandWordmark } from '../BrandLogo/BrandLogo';
 import './LoginModal.css';
 
 export default function LoginModal() {
@@ -124,7 +125,8 @@ export default function LoginModal() {
         </button>
 
         <div className="modal-logo">
-          <img src="/oddsyra-logo.png" alt="OddsYra" />
+          <BrandLogo size={64} />
+          <BrandWordmark />
         </div>
 
         <h2 className="modal-title">{getTitle()}</h2>

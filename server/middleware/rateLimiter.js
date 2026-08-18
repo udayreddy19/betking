@@ -123,3 +123,9 @@ export const authGeneralRateLimiter = createRateLimiter({
   windowSeconds: 60,
 });
 
+export const rewardsClaimRateLimiter = createRateLimiter({
+  prefix: 'rl:rewards_claim',
+  maxRequests: 10,
+  windowSeconds: 60,
+});
+

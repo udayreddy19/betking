@@ -77,7 +77,7 @@ export default function Casino() {
     <div className="casino-page container" id="casino-page">
       <div className="casino-hero">
         <h1>Casino</h1>
-        <p>2,000+ slots, crash games, jackpots, and table classics — play instantly.</p>
+        <p>Casino tables are not live yet. Sports betting stays on the Sports page.</p>
       </div>
 
       <div className="casino-categories scroll-row-bleed" id="casino-categories">

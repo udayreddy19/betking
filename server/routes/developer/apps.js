@@ -7,24 +7,20 @@ import {
   createWebhookSubscription,
 } from '../../../lib/developerPlatformEngine.mjs';
 import { query } from '../../../db/pg.js';
+import { adminAuth } from '../../middleware/adminAuth.js';
 
 const router = Router();
 
-// Middleware to mock authenticated user session for developer portal (e.g., req.user = { id: 'usr_dev_101' })
-function developerAuth(req, res, next) {
-  const userId = req.headers['x-user-id'] || 'usr_dev_101';
-  req.user = { id: userId };
-  next();
-}
+router.use(adminAuth);
 
 // POST /api/developer/apps — Create Developer App
-router.post('/apps', developerAuth, async (req, res) => {
+router.post('/apps', async (req, res) => {
   try {
     const { name, description, environment } = req.body;
     if (!name) return res.status(400).json({ error: 'Application name is required' });
 
     const app = await createDeveloperApp({
-      userId: req.user.id,
+      userId: req.admin.id,
       name,
       description,
       environment,
@@ -36,13 +32,13 @@ router.post('/apps', developerAuth, async (req, res) => {
 });
 
 // GET /api/developer/apps — List User's Developer Apps
-router.get('/apps', developerAuth, async (req, res) => {
+router.get('/apps', async (req, res) => {
   try {
     const appsRes = await query(`
       SELECT id, name, description, environment, status, created_at
       FROM developer_apps
       WHERE user_id = $1 ORDER BY created_at DESC;
-    `, [req.user.id]);
+    `, [req.admin.id]);
     res.json({ success: true, apps: appsRes.rows });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -50,13 +46,13 @@ router.get('/apps', developerAuth, async (req, res) => {
 });
 
 // POST /api/developer/apps/:id/keys — Generate API Key
-router.post('/apps/:id/keys', developerAuth, async (req, res) => {
+router.post('/apps/:id/keys', async (req, res) => {
   try {
     const appId = req.params.id;
     const { scopes, environment } = req.body;
 
     // Verify app ownership
-    const appCheck = await query(`SELECT id FROM developer_apps WHERE id = $1 AND user_id = $2;`, [appId, req.user.id]);
+    const appCheck = await query(`SELECT id FROM developer_apps WHERE id = $1 AND user_id = $2;`, [appId, req.admin.id]);
     if (appCheck.rows.length === 0) return res.status(404).json({ error: 'Developer application not found or unauthorized' });
 
     const key = await generateApiKey({
@@ -71,10 +67,10 @@ router.post('/apps/:id/keys', developerAuth, async (req, res) => {
 });
 
 // POST /api/developer/keys/:id/rotate — Rotate API Key
-router.post('/keys/:id/rotate', developerAuth, async (req, res) => {
+router.post('/keys/:id/rotate', async (req, res) => {
   try {
     const keyId = req.params.id;
-    const rotated = await rotateApiKey(keyId, req.user.id);
+    const rotated = await rotateApiKey(keyId, req.admin.id);
     res.json(rotated);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -82,10 +78,10 @@ router.post('/keys/:id/rotate', developerAuth, async (req, res) => {
 });
 
 // POST /api/developer/keys/:id/revoke — Revoke API Key
-router.post('/keys/:id/revoke', developerAuth, async (req, res) => {
+router.post('/keys/:id/revoke', async (req, res) => {
   try {
     const keyId = req.params.id;
-    const revoked = await revokeApiKey(keyId, req.user.id);
+    const revoked = await revokeApiKey(keyId, req.admin.id);
     res.json(revoked);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -93,12 +89,12 @@ router.post('/keys/:id/revoke', developerAuth, async (req, res) => {
 });
 
 // POST /api/developer/apps/:id/webhooks — Create Webhook Subscription (SSRF Defense)
-router.post('/apps/:id/webhooks', developerAuth, async (req, res) => {
+router.post('/apps/:id/webhooks', async (req, res) => {
   try {
     const appId = req.params.id;
     const { targetUrl, subscribedEvents } = req.body;
 
-    const appCheck = await query(`SELECT id FROM developer_apps WHERE id = $1 AND user_id = $2;`, [appId, req.user.id]);
+    const appCheck = await query(`SELECT id FROM developer_apps WHERE id = $1 AND user_id = $2;`, [appId, req.admin.id]);
     if (appCheck.rows.length === 0) return res.status(404).json({ error: 'Developer application not found or unauthorized' });
 
     const sub = await createWebhookSubscription({
@@ -113,10 +109,10 @@ router.post('/apps/:id/webhooks', developerAuth, async (req, res) => {
 });
 
 // GET /api/developer/apps/:id/webhooks — List Webhook Subscriptions & Delivery Logs
-router.get('/apps/:id/webhooks', developerAuth, async (req, res) => {
+router.get('/apps/:id/webhooks', async (req, res) => {
   try {
     const appId = req.params.id;
-    const appCheck = await query(`SELECT id FROM developer_apps WHERE id = $1 AND user_id = $2;`, [appId, req.user.id]);
+    const appCheck = await query(`SELECT id FROM developer_apps WHERE id = $1 AND user_id = $2;`, [appId, req.admin.id]);
     if (appCheck.rows.length === 0) return res.status(404).json({ error: 'Developer application not found or unauthorized' });
 
     const subsRes = await query(`

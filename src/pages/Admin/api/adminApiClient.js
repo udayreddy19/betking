@@ -3,40 +3,74 @@
  * Manages admin authentication headers, correlation IDs, and standard error handling.
  */
 
+import { getAccessToken } from '../../../utils/apiClient';
+
 const API_BASE = '/api/admin';
 
 let sessionPromise = null;
 
+function storeAdminSession(data, desiredRole) {
+  if (!data?.token) throw new Error('Admin session missing token');
+  localStorage.setItem('adminToken', data.token);
+  localStorage.setItem('adminRole', data.role || desiredRole || 'SUPER_ADMIN');
+  return data.token;
+}
+
+async function requestAdminLogin(body, userToken) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (userToken) headers.Authorization = `Bearer ${userToken}`;
+  const res = await fetch('/api/auth/admin-login', {
+    method: 'POST',
+    headers,
+    credentials: 'include',
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const error = new Error(data.error || `Admin session bootstrap failed (${res.status})`);
+    error.status = res.status;
+    error.code = data.code;
+    throw error;
+  }
+  return data;
+}
+
 /**
- * Ensure a valid admin JWT exists (dev bootstrap).
- * Production must disable /api/auth/admin-login unless ADMIN_DEV_LOGIN=1.
- * Skips re-login when a token already exists for the requested role.
+ * Ensure a valid admin JWT exists.
+ * Dev can bootstrap without a password. Production requires an admin account.
  */
-export async function ensureAdminSession(roleOverride) {
+export async function ensureAdminSession(roleOverride, credentials) {
   const existing = localStorage.getItem('adminToken');
   const currentRole = localStorage.getItem('adminRole') || 'SUPER_ADMIN';
   const desiredRole = roleOverride || currentRole || 'SUPER_ADMIN';
 
-  if (existing && (!roleOverride || currentRole === desiredRole)) {
+  if (existing && !credentials && (!roleOverride || currentRole === desiredRole)) {
     return existing;
+  }
+
+  if (credentials?.email && credentials?.password) {
+    const data = await requestAdminLogin({
+      role: desiredRole,
+      email: credentials.email,
+      password: credentials.password,
+    });
+    return storeAdminSession(data, desiredRole);
   }
 
   if (!sessionPromise) {
     sessionPromise = (async () => {
-      const res = await fetch('/api/auth/admin-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: desiredRole, adminId: 'admin_local' }),
-      });
-      if (!res.ok) {
-        throw new Error(`Admin session bootstrap failed (${res.status})`);
+      try {
+        const data = await requestAdminLogin(
+          { role: desiredRole, adminId: 'admin_local' },
+          getAccessToken(),
+        );
+        return storeAdminSession(data, desiredRole);
+      } catch (err) {
+        if (existing && (err.code === 'ADMIN_LOGIN_REQUIRED' || err.code === 'ADMIN_LOGIN_DISABLED')) {
+          return existing;
+        }
+        throw err;
       }
-      const data = await res.json();
-      if (!data?.token) throw new Error('Admin session missing token');
-      localStorage.setItem('adminToken', data.token);
-      if (data.role) localStorage.setItem('adminRole', data.role);
-      else localStorage.setItem('adminRole', desiredRole);
-      return data.token;
     })().finally(() => {
       sessionPromise = null;
     });

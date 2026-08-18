@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { IoEyeOutline, IoEyeOffOutline } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
+import BrandLogo, { BrandWordmark } from '../../components/BrandLogo/BrandLogo';
 import './AuthPages.css';
 
 export default function ResetPasswordPage() {
@@ -56,7 +57,8 @@ export default function ResetPasswordPage() {
     <div className="auth-page-container">
       <div className="auth-card">
         <div className="auth-logo">
-          <img src="/oddsyra-logo.png" alt="OddsYra" />
+          <BrandLogo size={56} />
+          <BrandWordmark />
         </div>
 
         {success ? (

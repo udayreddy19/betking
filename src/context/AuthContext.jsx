@@ -234,7 +234,7 @@ export function AuthProvider({ children }) {
     setTransactions(appendTransaction(email, entry));
   }, []);
 
-  const register = useCallback(async ({ email, password, displayName, phone }) => {
+  const register = useCallback(async ({ email, password, displayName, phone, promoCode }) => {
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail || !password || !displayName?.trim()) {
       return { ok: false, error: 'Please fill in all required fields.' };
@@ -250,6 +250,7 @@ export function AuthProvider({ children }) {
           password,
           firstName: displayName.trim(),
           phone: phone?.trim() || '',
+          promoCode: promoCode?.trim() || undefined,
         }),
       });
 
@@ -291,7 +292,7 @@ export function AuthProvider({ children }) {
       }
 
       setUser(sessionUser);
-      return { ok: true, welcomeCredit: 0 };
+      return { ok: true, welcomeCredit: 0, promoReward: data.promoReward || null };
     } catch {
       if (!DEMO_MODE) {
         return { ok: false, error: 'Unable to reach registration service.' };
@@ -328,6 +329,10 @@ export function AuthProvider({ children }) {
   }, []);
 
   const claimPromotion = useCallback((promo) => {
+    if (!DEMO_MODE) {
+      showToast('Use a promo code in Profile or at signup. Demo credits are not available on the live site.', 'info');
+      return { ok: false, error: 'Promo codes are claimed from Profile.' };
+    }
     if (!user) {
       return { ok: false, error: 'Please log in to claim this promotion.' };
     }
@@ -525,8 +530,7 @@ export function AuthProvider({ children }) {
   const refreshWallet = useCallback(async () => {
     const me = await fetchMe();
     if (!me) return false;
-    const sessionUser = mapServerUserToSession(me);
-    setUser(sessionUser);
+    setUser((prev) => mapServerUserToSession(me, prev) || prev);
     return true;
   }, [setUser]);
 
@@ -630,7 +634,7 @@ export function AuthProvider({ children }) {
       const allocation = allocateCashStake(prev, cash);
       if (cash > 0 && allocation.total < cash) return prev;
 
-      const pointsEarned = pointsFromSpend(spendTotal);
+      const pointsEarned = DEMO_MODE ? pointsFromSpend(spendTotal) : 0;
       const currentPoints = getUserLoyaltyPoints(prev);
       const nextPoints = currentPoints + pointsEarned;
       const rg = rgCheck.rg;
@@ -696,7 +700,49 @@ export function AuthProvider({ children }) {
     return deductStake({ cashAmount: amount }).success;
   }, [deductStake]);
 
-  const redeemLoyaltyPoints = useCallback((requestedPoints) => {
+  const redeemLoyaltyPoints = useCallback(async (requestedPoints) => {
+    if (!DEMO_MODE) {
+      try {
+        const res = await apiFetch('/api/v1/rewards/loyalty/redeem', {
+          method: 'POST',
+          body: JSON.stringify({
+            points: requestedPoints == null || requestedPoints === '' ? undefined : Number(requestedPoints),
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+          showToast(data.error || 'Could not redeem points.', 'error');
+          return { ok: false, error: data.error || 'Could not redeem points.' };
+        }
+
+        setUser((prev) => {
+          if (!prev) return prev;
+          const nextPoints = Number(data.remainingPoints ?? data.wallet?.loyaltyPoints ?? 0);
+          const nextBalance = Number(data.wallet?.balance ?? prev.balance);
+          const credited = Number(data.rupeesCredited || 0);
+          return {
+            ...prev,
+            balance: nextBalance,
+            reservedBalance: prev.reservedBalance ?? 0,
+            loyaltyPoints: nextPoints,
+            coins: nextPoints,
+            bonusBalance: Number(data.wallet?.bonusBalance ?? prev.bonusBalance ?? 0),
+            freebetBalance: Number(data.wallet?.freebetBalance ?? prev.freebetBalance ?? 0),
+          };
+        });
+
+        showToast(
+          'Redeemed ' + data.pointsRedeemed + ' points - ' + formatInr(data.rupeesCredited) + ' credited to cash wallet!',
+          'success',
+        );
+        await refreshWallet();
+        return { ok: true, points: data.pointsRedeemed, rupees: data.rupeesCredited };
+      } catch {
+        showToast('Unable to reach rewards service.', 'error');
+        return { ok: false, error: 'Unable to reach rewards service.' };
+      }
+    }
+
     let redeemedPoints = 0;
     let creditedRupees = 0;
     let error = null;
@@ -748,7 +794,53 @@ export function AuthProvider({ children }) {
       'success',
     );
     return { ok: true, points: redeemedPoints, rupees: creditedRupees };
-  }, [setUser, showToast, recordTx]);
+  }, [setUser, showToast, recordTx, refreshWallet]);
+
+  const claimSignupPromoCode = useCallback(async (rawCode) => {
+    const code = String(rawCode || '').trim();
+    if (!code) {
+      showToast('Enter a promo code.', 'info');
+      return { ok: false, error: 'Enter a promo code.' };
+    }
+    if (DEMO_MODE) {
+      showToast('Promo codes can be claimed on a live account.', 'info');
+      return { ok: false, error: 'Promo codes can be claimed on a live account.' };
+    }
+    try {
+      const res = await apiFetch('/api/v1/rewards/promo/claim', {
+        method: 'POST',
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        showToast(data.error || 'Could not claim promo code.', 'error');
+        return { ok: false, error: data.error || 'Could not claim promo code.' };
+      }
+      setUser((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          balance: Number(data.wallet?.balance ?? prev.balance),
+          bonusBalance: Number(data.wallet?.bonusBalance ?? prev.bonusBalance ?? 0),
+          freebetBalance: Number(data.wallet?.freebetBalance ?? prev.freebetBalance ?? 0),
+        };
+      });
+      const kind = data.rewardType === 'cash'
+        ? 'cash'
+        : data.rewardType === 'freebet'
+          ? 'free bet'
+          : 'bonus';
+      showToast(
+        `Promo ${data.code} applied — ${formatInr(data.amount)} ${kind} credited.`,
+        'success',
+      );
+      await refreshWallet();
+      return { ok: true, ...data };
+    } catch {
+      showToast('Unable to reach rewards service.', 'error');
+      return { ok: false, error: 'Unable to reach rewards service.' };
+    }
+  }, [setUser, showToast, refreshWallet]);
 
   const updateUserBalance = useCallback((delta) => {
     let success = false;
@@ -819,8 +911,41 @@ export function AuthProvider({ children }) {
   }, [setUser, recordTx]);
 
   // Step 1: User submits a withdrawal request (Deducts balance, status = PENDING_APPROVAL)
-  const withdrawFunds = useCallback((amount, method = 'UPI', details = '') => {
+  const withdrawFunds = useCallback(async (amount, method = 'UPI', details = '') => {
     const amt = Number(amount) || 0;
+    if (amt <= 0) {
+      return { success: false, maxWithdrawable: 0, status: 'FAILED' };
+    }
+
+    if (!DEMO_MODE) {
+      try {
+        const res = await apiFetch('/api/v1/withdrawals/request', {
+          method: 'POST',
+          body: JSON.stringify({
+            amount: amt,
+            bankDetails: { method: method || 'UPI', details: details || '' },
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.success === false) {
+          const message = data.error || 'Withdrawal failed.';
+          showToast(message, 'error');
+          return { success: false, maxWithdrawable: 0, status: 'FAILED', error: message };
+        }
+        await refreshWallet();
+        showToast(`Withdrawal of ${formatInr(amt)} requested. Awaiting finance approval.`, 'info');
+        return {
+          success: true,
+          maxWithdrawable: Number(data.availableBalance || 0),
+          status: data.status || 'PENDING_REVIEW',
+          withdrawalId: data.withdrawalId,
+        };
+      } catch {
+        showToast('Unable to reach withdrawals service.', 'error');
+        return { success: false, maxWithdrawable: 0, status: 'FAILED' };
+      }
+    }
+
     let success = false;
     let maxWithdrawable = 0;
     let email = null;
@@ -853,7 +978,7 @@ export function AuthProvider({ children }) {
     }
 
     return { success, maxWithdrawable, status: success ? 'PENDING_APPROVAL' : 'FAILED' };
-  }, [setUser, recordTx, showToast]);
+  }, [setUser, recordTx, showToast, refreshWallet]);
 
   // Step 2: Admin approves withdrawal request
   const adminApproveWithdrawal = useCallback((txId, targetEmail, amount) => {
@@ -1084,6 +1209,7 @@ export function AuthProvider({ children }) {
     deductStake,
     refundStake,
     redeemLoyaltyPoints,
+    claimSignupPromoCode,
     updateUserBalance,
     creditBetWin,
     creditCashout,
@@ -1127,6 +1253,7 @@ export function AuthProvider({ children }) {
     deductStake,
     refundStake,
     redeemLoyaltyPoints,
+    claimSignupPromoCode,
     updateUserBalance,
     creditBetWin,
     creditCashout,
@@ -1181,6 +1308,7 @@ const dummyAuthFallback = {
   deductStake: () => {},
   refundStake: () => {},
   redeemLoyaltyPoints: () => {},
+  claimSignupPromoCode: () => {},
   updateUser: () => {},
   addBonus: () => {},
   addFreebet: () => {},

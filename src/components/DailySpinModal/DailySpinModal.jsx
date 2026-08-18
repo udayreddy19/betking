@@ -1,70 +1,114 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../../context/AuthContext';
 import { formatInr } from '../../utils/walletBalance';
+import { apiFetch } from '../../utils/apiClient';
+import { DAILY_SPIN_PRIZES } from '../../../lib/dailySpinPrizes.mjs';
 import { FiX, FiZap } from '../../icons';
 import AnimatedMotionGiftIcon from '../AnimatedMotionGiftIcon/AnimatedMotionGiftIcon';
 import './DailySpinModal.css';
 
 import { playWinSound } from '../../utils/soundEffects';
 
-// Crisp, readable 2-line labels
-const WHEEL_SECTORS = [
-  { amount: '₹500', subtitle: 'BONUS', type: 'bonus', value: 500, color: '#6d28d9' },
-  { amount: '₹200', subtitle: 'FREEBET', type: 'freebet', value: 200, color: '#0284c7' },
-  { amount: '500 XP', subtitle: 'BOOST', type: 'xp', value: 500, color: '#d97706' },
-  { amount: '₹1,000', subtitle: 'BONUS', type: 'bonus', value: 1000, color: '#7c3aed' },
-  { amount: '₹100', subtitle: 'FREEBET', type: 'freebet', value: 100, color: '#0369a1' },
-  { amount: '₹2,500', subtitle: 'MEGA BONUS', type: 'bonus', value: 2500, color: '#8b5cf6' },
-  { amount: '1,000 XP', subtitle: 'BOOST', type: 'xp', value: 1000, color: '#b45309' },
-  { amount: '₹500', subtitle: 'FREEBET', type: 'freebet', value: 500, color: '#1d4ed8' },
-];
+const WHEEL_SECTORS = DAILY_SPIN_PRIZES;
 
 export default function DailySpinModal({ isOpen, onClose }) {
-  const { user, updateUser, addBonus, addFreebet, showToast } = useAuth();
+  const { updateUser, showToast } = useAuth();
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotationDegree, setRotationDegree] = useState(0);
   const [wonPrize, setWonPrize] = useState(null);
   const [hasSpunToday, setHasSpunToday] = useState(false);
+
+  const applyWallet = (wallet) => {
+    if (!wallet) return;
+    updateUser({
+      bonusBalance: Number(wallet.bonusBalance) || 0,
+      freebetBalance: Number(wallet.freebetBalance) || 0,
+      loyaltyPoints: Number(wallet.loyaltyPoints) || 0,
+      coins: Number(wallet.loyaltyPoints) || 0,
+    });
+  };
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiFetch('/api/v1/rewards/daily-spin');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        applyWallet(data.wallet);
+        if (data.hasSpunToday && data.prize) {
+          setHasSpunToday(true);
+          setWonPrize(WHEEL_SECTORS[data.prize.index] || data.prize);
+        }
+      } catch {
+        // Keep local UI if status fetch fails.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   const numSectors = WHEEL_SECTORS.length;
   const sectorAngle = 360 / numSectors;
 
-  const handleSpin = () => {
+  const landOnIndex = (winningIndex) => {
+    const fullSpins = 6 * 360;
+    const targetOffset = 360 - (winningIndex * sectorAngle + sectorAngle / 2);
+    setRotationDegree((prev) => prev + fullSpins + targetOffset);
+  };
+
+  const handleSpin = async () => {
     if (isSpinning || hasSpunToday) return;
 
     setIsSpinning(true);
     setWonPrize(null);
 
-    const winningIndex = Math.floor(Math.random() * numSectors);
-
-    const fullSpins = 6 * 360;
-    const targetOffset = 360 - (winningIndex * sectorAngle + sectorAngle / 2);
-    const newRotation = rotationDegree + fullSpins + targetOffset;
-
-    setRotationDegree(newRotation);
-
-    setTimeout(() => {
-      setIsSpinning(false);
-      const prize = WHEEL_SECTORS[winningIndex];
-      setWonPrize(prize);
-      setHasSpunToday(true);
-      playWinSound();
-
-      if (prize.type === 'bonus') {
-        addBonus(prize.value, `Spin Wheel · ${prize.amount} Bonus`);
-        showToast(`You won ${formatInr(prize.value)} Bonus Credit!`, 'success');
-      } else if (prize.type === 'freebet') {
-        addFreebet(prize.value, `Spin Wheel · ${prize.amount} Freebet`);
-        showToast(`⚡ You unlocked a ${formatInr(prize.value)} Freebet Voucher!`, 'success');
-      } else {
-        const currentXp = user?.loyaltyPoints || 0;
-        updateUser({ loyaltyPoints: currentXp + prize.value, coins: (user?.coins || 0) + prize.value });
-        showToast(`⭐ You gained ${prize.value} VIP Loyalty XP!`, 'info');
+    try {
+      const res = await apiFetch('/api/v1/rewards/daily-spin', {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.prize) {
+        setIsSpinning(false);
+        showToast(data.error || 'Could not save spin. Try again.', 'error');
+        return;
       }
-    }, 5200);
+
+      const prize = WHEEL_SECTORS[data.prize.index] || data.prize;
+      applyWallet(data.wallet);
+      setHasSpunToday(true);
+
+      if (data.alreadySpun) {
+        setIsSpinning(false);
+        setWonPrize(prize);
+        showToast('You already spun today. Prize is in your wallet.', 'info');
+        return;
+      }
+
+      landOnIndex(prize.index);
+      window.setTimeout(() => {
+        setIsSpinning(false);
+        setWonPrize(prize);
+        playWinSound();
+        if (prize.type === 'bonus') {
+          showToast(`You won ${formatInr(prize.value)} Bonus Credit!`, 'success');
+        } else if (prize.type === 'freebet') {
+          showToast(`You unlocked a ${formatInr(prize.value)} Freebet Voucher!`, 'success');
+        } else {
+          showToast(`You gained ${prize.value} VIP Loyalty XP!`, 'info');
+        }
+      }, 5200);
+    } catch {
+      setIsSpinning(false);
+      showToast('Could not save spin. Try again.', 'error');
+    }
   };
 
   return (
@@ -90,7 +134,6 @@ export default function DailySpinModal({ isOpen, onClose }) {
             <p>Spin daily to win Bonus Balance, Freebet Vouchers, and VIP Loyalty XP.</p>
           </div>
 
-          {/* SVG Vector Wheel */}
           <div className="wheel-wrapper">
             <div className="wheel-pointer">▼</div>
 
@@ -108,18 +151,18 @@ export default function DailySpinModal({ isOpen, onClose }) {
                     const startAngle = idx * sectorAngle - 90;
                     const endAngle = (idx + 1) * sectorAngle - 90;
 
-                    const x1 = 165 * Math.cos((startAngle * Math.PI) / 180);
-                    const y1 = 145 * Math.sin((startAngle * Math.PI) / 180);
-                    const x2 = 165 * Math.cos((endAngle * Math.PI) / 180);
-                    const y2 = 165 * Math.sin((endAngle * Math.PI) / 180);
+                    const radius = 165;
+                    const x1 = radius * Math.cos((startAngle * Math.PI) / 180);
+                    const y1 = radius * Math.sin((startAngle * Math.PI) / 180);
+                    const x2 = radius * Math.cos((endAngle * Math.PI) / 180);
+                    const y2 = radius * Math.sin((endAngle * Math.PI) / 180);
 
-                    const pathData = `M 0 0 L ${x1} ${y1} A 165 165 0 0 1 ${x2} ${y2} Z`;
+                    const pathData = `M 0 0 L ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2} Z`;
                     const midAngle = startAngle + sectorAngle / 2;
                     const textRad = (midAngle * Math.PI) / 180;
                     const tx = 110 * Math.cos(textRad);
                     const ty = 110 * Math.sin(textRad);
 
-                    // Ensure text is never upside down for maximum readability
                     let rotation = midAngle + 90;
                     if (midAngle > 0 && midAngle < 180) {
                       rotation += 180;
@@ -177,7 +220,13 @@ export default function DailySpinModal({ isOpen, onClose }) {
               </span>
               <div>
                 <h4>YOU WON {wonPrize.amount} {wonPrize.subtitle}!</h4>
-                <p>Added to your bonus wallet balance.</p>
+                <p>
+                  {wonPrize.type === 'freebet'
+                    ? 'Added to your freebet balance.'
+                    : wonPrize.type === 'xp'
+                      ? 'Added to your loyalty XP.'
+                      : 'Added to your bonus wallet balance.'}
+                </p>
               </div>
             </motion.div>
           )}

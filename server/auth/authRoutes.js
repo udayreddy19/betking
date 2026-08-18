@@ -77,6 +77,7 @@ router.post('/signup', registerRateLimiter, async (req, res) => {
         email: result.email,
         displayName: result.displayName,
       },
+      promoReward: result.promoReward || null,
       ...(result.emailVerificationToken && !IS_PRODUCTION
         ? { emailVerificationToken: result.emailVerificationToken }
         : {}),

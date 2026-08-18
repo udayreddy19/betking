@@ -86,8 +86,8 @@ export default function Home() {
         className="home-promo-banner"
         style={{ background: promo.gradient }}
         onClick={() => {
-          if (promo.id === 'welcome') navigate('/register');
-          else navigate('/promotions');
+          if (promo.id === 'sports') navigate('/sports');
+          else navigate('/profile');
         }}
       >
         <div className="home-promo-banner__coin">

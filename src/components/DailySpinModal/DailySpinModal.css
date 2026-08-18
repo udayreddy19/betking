@@ -6,14 +6,18 @@
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: var(--space-4);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: max(12px, env(safe-area-inset-top, 0px)) 12px calc(96px + env(safe-area-inset-bottom, 0px));
 }
 
 .daily-spin-modal {
   max-width: 480px;
   width: 100%;
+  margin: auto 0;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
@@ -77,12 +81,14 @@
 /* Vector SVG Wheel */
 .wheel-wrapper {
   position: relative;
-  width: 320px;
-  height: 320px;
+  width: min(320px, calc(100vw - 72px));
+  height: min(320px, calc(100vw - 72px));
   margin: var(--space-3) 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: visible;
+  flex-shrink: 0;
 }
 
 .wheel-pointer {
@@ -174,5 +180,50 @@
     cursor: not-allowed;
     background: var(--color-border);
     box-shadow: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .daily-spin-modal {
+    padding: 18px 14px 16px;
+  }
+
+  .spin-close-btn {
+    top: 10px;
+    right: 10px;
+  }
+
+  .spin-header h2 {
+    font-size: 1rem;
+    padding: 0 28px;
+  }
+
+  .spin-header p {
+    margin-bottom: 4px;
+  }
+
+  .wheel-wrapper {
+    width: min(240px, calc(100vw - 80px));
+    height: min(240px, calc(100vw - 80px));
+    margin: 6px 0 12px;
+  }
+
+  .wheel-pointer {
+    top: -10px;
+    font-size: 20px;
+  }
+
+  .wheel-center-cap {
+    width: 52px;
+    height: 52px;
+    border-width: 3px;
+  }
+
+  .wheel-center-cap span {
+    font-size: 8px;
+  }
+
+  .spin-trigger-btn {
+    padding: 12px;
   }
 }

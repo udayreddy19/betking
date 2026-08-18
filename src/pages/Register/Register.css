@@ -8,13 +8,14 @@
   max-width: 600px;
   padding: var(--space-12) var(--space-8);
 }
-.register-logo {
-  width: 88px;
-  height: 88px;
-  object-fit: cover;
-  border-radius: 14px;
+.register-logo-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   margin-bottom: var(--space-5);
-  background: #07111f;
+}
+.register-logo-wrap .brand-wordmark {
+  font-size: 1.5rem;
 }
 .register-form-section h1 {
   font-size: var(--text-3xl);
@@ -67,6 +68,11 @@
   box-shadow: 0 0 0 3px rgba(212, 168, 83, 0.1);
 }
 .register-form .form-input::placeholder {
+  color: var(--color-text-muted);
+}
+.register-form .form-hint {
+  margin: 0;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
 .phone-input-group {

@@ -68,9 +68,9 @@ router.get('/withdrawals', requirePermission('finance'), async (req, res) => {
 router.post('/withdrawals/:id/review', requirePermission('finance'), async (req, res) => {
   try {
     const { decision, reason } = req.body;
-    const result = await withdrawalEngine.processWithdrawalReview({
+    const result = await withdrawalEngine.reviewWithdrawal({
       withdrawalId: req.params.id,
-      adminId: req.user.id,
+      adminId: req.admin?.id || req.user?.id || 'admin',
       decision,
       reason,
     });

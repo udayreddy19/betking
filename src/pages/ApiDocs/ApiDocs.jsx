@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ZapIcon,
@@ -308,8 +309,26 @@ Console.WriteLine(response);`;
           <div className="api-hero-badge">
             <ZapIcon size={14} className="api-zap-animated" /> Official Sports & Scores API Gateway v1.0
           </div>
-          <div className="api-live-tag">
-            <span className="live-pulse"></span> LIVE OPERATOR GATEWAY
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <Link
+              to="/admin"
+              style={{
+                fontSize: '0.80rem',
+                fontWeight: 700,
+                color: '#93c5fd',
+                textDecoration: 'none',
+                padding: '5px 12px',
+                borderRadius: '8px',
+                border: '1px solid rgba(59, 130, 246, 0.4)',
+                background: 'rgba(59, 130, 246, 0.15)',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              ← Back to Control Tower
+            </Link>
+            <div className="api-live-tag">
+              <span className="live-pulse"></span> LIVE OPERATOR GATEWAY
+            </div>
           </div>
         </div>
 

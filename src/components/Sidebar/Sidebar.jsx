@@ -16,6 +16,7 @@ import {
   MdOutlineStorefront,
   RiLogoutBoxRLine,
   IoNotifications,
+  FiZap,
 } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
@@ -24,13 +25,16 @@ import './Sidebar.css';
 
 export default function Sidebar() {
   const location = useLocation();
-  if (location.pathname.startsWith('/admin')) return null;
   const {
     user, isLoggedIn, isSidebarOpen, closeSidebar, logout,
     openLoginModal, openDepositModal, openFinModal,
   } = useAuth();
   const { openMyBets } = useBetSlip();
   const navigate = useNavigate();
+  const isAdminPage = location.pathname.startsWith('/admin');
+  const isDevRoute = location.pathname.startsWith('/developer') || location.pathname.startsWith('/api-docs');
+
+  if (isAdminPage || isDevRoute) return null;
 
   const handleLogin = () => {
     closeSidebar();
@@ -89,15 +93,15 @@ export default function Sidebar() {
                 <HiOutlineUser className="tab-icon" />
                 Profile
               </button>
-              <button className="sidebar-tab" onClick={() => { closeSidebar(); navigate('/sports'); }}>
+              <button className="sidebar-tab sidebar-tab--page-nav" onClick={() => { closeSidebar(); navigate('/sports'); }}>
                 <HiOutlineTrophy className="tab-icon" />
                 Sports
               </button>
-              <button className="sidebar-tab" onClick={() => { closeSidebar(); navigate('/live-betting'); }}>
+              <button className="sidebar-tab sidebar-tab--page-nav" onClick={() => { closeSidebar(); navigate('/live-betting'); }}>
                 <HiOutlineCube className="tab-icon" />
                 Live
               </button>
-              <button className="sidebar-tab" onClick={() => { closeSidebar(); navigate('/casino'); }}>
+              <button className="sidebar-tab sidebar-tab--page-nav" onClick={() => { closeSidebar(); navigate('/casino'); }}>
                 <MdOutlineStorefront className="tab-icon" />
                 Casino
               </button>
@@ -138,9 +142,9 @@ export default function Sidebar() {
                     <span className="action-label">Withdraw</span>
                   </button>
 
-                  <button className="sidebar-action" onClick={() => handleFinModal('cancel-wd')}>
+                  <button className="sidebar-action" onClick={() => handleFinModal('cancel-wd')} title="Cancel withdrawal">
                     <span className="action-icon-wrap"><MdOutlineCancel className="action-icon" /></span>
-                    <span className="action-label">Cancel W/D</span>
+                    <span className="action-label">Cancel WD</span>
                   </button>
 
                   <button className="sidebar-action" onClick={() => { closeSidebar(); openMyBets(); }}>
@@ -149,20 +153,32 @@ export default function Sidebar() {
                   </button>
                 </div>
 
-                <div className="sidebar-actions-row sidebar-actions-row--three">
-                  <button className="sidebar-action" onClick={() => handleFinModal('bets-history')}>
+                <div className="sidebar-actions-row">
+                  <button className="sidebar-action" onClick={() => handleFinModal('bets-history')} title="Bets history">
                     <span className="action-icon-wrap"><BiHistory className="action-icon" /></span>
-                    <span className="action-label">Bets History</span>
+                    <span className="action-label">History</span>
                   </button>
 
-                  <button className="sidebar-action" onClick={() => handleFinModal('transactions')}>
+                  <button className="sidebar-action" onClick={() => handleFinModal('transactions')} title="Transactions">
                     <span className="action-icon-wrap"><BiTransfer className="action-icon" /></span>
-                    <span className="action-label">Transactions</span>
+                    <span className="action-label">Activity</span>
                   </button>
 
-                  <button className="sidebar-action" onClick={() => handleFinModal('bonuses')}>
+                  <button className="sidebar-action" onClick={() => handleFinModal('bonuses')} title="My bonuses">
                     <span className="action-icon-wrap"><BiGift className="action-icon" /></span>
-                    <span className="action-label">My Bonuses</span>
+                    <span className="action-label">Bonuses</span>
+                  </button>
+
+                  <button
+                    className="sidebar-action"
+                    onClick={() => {
+                      closeSidebar();
+                      window.dispatchEvent(new Event('oddsyra:open-daily-spin'));
+                    }}
+                    title="Daily spin"
+                  >
+                    <span className="action-icon-wrap"><FiZap className="action-icon" /></span>
+                    <span className="action-label">Spin</span>
                   </button>
                 </div>
               </div>

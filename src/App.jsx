@@ -21,6 +21,7 @@ import BetSettlementRunner from './components/BetSettlementRunner/BetSettlementR
 import GamePlayModal from './components/GamePlayModal/GamePlayModal';
 import LiveChatSupportWidget from './components/LiveChatSupportWidget/LiveChatSupportWidget';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
+import { getAdminSessionState } from './utils/adminSession';
 
 import Home from './pages/Home/Home';
 import Register from './pages/Register/Register';
@@ -49,6 +50,15 @@ function PageLoader() {
   return <div className="page-loader" role="status">Loading…</div>;
 }
 
+function AdminProtectedRoute({ children }) {
+  const session = getAdminSessionState();
+  if (session.valid) return children;
+  if (session.reason === 'expired') {
+    return <Navigate to="/admin" replace />;
+  }
+  return <Navigate to="/" replace />;
+}
+
 function AppFinancialModals() {
   const { finModalType, closeFinModal } = useAuth();
   return <FinancialModals modalType={finModalType} onClose={closeFinModal} />;
@@ -57,10 +67,12 @@ function AppFinancialModals() {
 function AppLayout() {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
+  const isDevRoute = location.pathname.startsWith('/developer') || location.pathname.startsWith('/api-docs');
   const isSportsRoute = location.pathname === '/sports' || location.pathname === '/live-betting';
   const mainClass = [
     'app-main',
     isAdminRoute ? 'app-main--admin' : '',
+    isDevRoute ? 'app-main--developer' : '',
     isSportsRoute ? 'app-main--sports' : '',
   ].filter(Boolean).join(' ');
 
@@ -75,10 +87,10 @@ function AppLayout() {
       <GamePlayModal />
       <BetSettlementRunner />
       <MobileBetSlip />
-      {!isAdminRoute && <MobileBottomBar />}
-      {!isAdminRoute && <GlobalBetBar />}
+      {!isAdminRoute && !isDevRoute && <MobileBottomBar />}
+      {!isAdminRoute && !isDevRoute && <GlobalBetBar />}
       <main className={mainClass}>
-        <ErrorBoundary>
+        <ErrorBoundary resetKey={location.pathname}>
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<Home />} />
@@ -93,7 +105,14 @@ function AppLayout() {
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/promotions" element={<Promotions />} />
               <Route path="/vip" element={<Vip />} />
-              <Route path="/admin/iplsrl" element={<IPLSRLAdmin />} />
+              <Route
+                path="/admin/iplsrl"
+                element={(
+                  <AdminProtectedRoute>
+                    <IPLSRLAdmin />
+                  </AdminProtectedRoute>
+                )}
+              />
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/*" element={<Admin />} />
               <Route path="/iplsrl" element={<Navigate to="/sports?league=ipl-srl" replace />} />
@@ -101,9 +120,30 @@ function AppLayout() {
               <Route path="/iplsrl/standings" element={<Navigate to="/sports?league=ipl-srl" replace />} />
               <Route path="/iplsrl/stats" element={<Navigate to="/sports?league=ipl-srl" replace />} />
               <Route path="/iplsrl/teams" element={<Navigate to="/sports?league=ipl-srl" replace />} />
-              <Route path="/trader" element={<TraderConsole />} />
-              <Route path="/developer" element={<ApiDocs />} />
-              <Route path="/api-docs" element={<ApiDocs />} />
+              <Route
+                path="/trader"
+                element={(
+                  <AdminProtectedRoute>
+                    <TraderConsole />
+                  </AdminProtectedRoute>
+                )}
+              />
+              <Route
+                path="/developer"
+                element={(
+                  <AdminProtectedRoute>
+                    <ApiDocs />
+                  </AdminProtectedRoute>
+                )}
+              />
+              <Route
+                path="/api-docs"
+                element={(
+                  <AdminProtectedRoute>
+                    <ApiDocs />
+                  </AdminProtectedRoute>
+                )}
+              />
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/responsible-gaming" element={<ResponsibleGaming />} />
@@ -113,8 +153,8 @@ function AppLayout() {
           </Suspense>
         </ErrorBoundary>
       </main>
-      {!isAdminRoute && <Footer />}
-      {!isAdminRoute && <LiveChatSupportWidget />}
+      {!isAdminRoute && !isDevRoute && <Footer />}
+      {!isAdminRoute && !isDevRoute && <LiveChatSupportWidget />}
     </>
   );
 }

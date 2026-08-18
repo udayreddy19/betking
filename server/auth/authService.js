@@ -37,7 +37,7 @@ const MIN_PASSWORD_LENGTH = 8;
  * @returns {Promise<object>} — { success, userId, token, refreshToken } or { error, code }
  */
 export async function signup(queryFn, withTransaction, data) {
-  const { email, password, firstName, lastName, phone, country, currency } = data;
+  const { email, password, firstName, lastName, phone, country, currency, promoCode } = data;
 
   // ── Validation ──
   const normalizedEmail = String(email || '').trim().toLowerCase();
@@ -66,38 +66,51 @@ export async function signup(queryFn, withTransaction, data) {
   const passwordHash = await hashPassword(password);
   const userId = `usr_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
   const walletId = `wal_${userId}`;
+  let promoReward = null;
 
   // ── Create user + wallet + profile in a transaction ──
-  await withTransaction(async (client) => {
-    await client.query(
-      `INSERT INTO users (user_id, email, phone, password_hash, first_name, last_name, country, currency, role, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'USER', 'ACTIVE')`,
-      [
-        userId,
-        normalizedEmail,
-        phone?.trim() || null,
-        passwordHash,
-        trimmedFirstName,
-        trimmedLastName || null,
-        country || 'India',
-        currency || 'INR',
-      ]
-    );
+  try {
+    await withTransaction(async (client) => {
+      await client.query(
+        `INSERT INTO users (user_id, email, phone, password_hash, first_name, last_name, country, currency, role, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'USER', 'ACTIVE')`,
+        [
+          userId,
+          normalizedEmail,
+          phone?.trim() || null,
+          passwordHash,
+          trimmedFirstName,
+          trimmedLastName || null,
+          country || 'India',
+          currency || 'INR',
+        ]
+      );
 
-    await client.query(
-      `INSERT INTO user_profiles (user_id, display_name, account_status)
-       VALUES ($1, $2, 'ACTIVE')
-       ON CONFLICT (user_id) DO NOTHING`,
-      [userId, `${trimmedFirstName}${trimmedLastName ? ' ' + trimmedLastName : ''}`]
-    );
+      await client.query(
+        `INSERT INTO user_profiles (user_id, display_name, account_status)
+         VALUES ($1, $2, 'ACTIVE')
+         ON CONFLICT (user_id) DO NOTHING`,
+        [userId, `${trimmedFirstName}${trimmedLastName ? ' ' + trimmedLastName : ''}`]
+      );
 
-    await client.query(
-      `INSERT INTO wallets (wallet_id, user_id, balance, bonus_balance, currency)
-       VALUES ($1, $2, 0.00, 0.00, $3)
-       ON CONFLICT (user_id) DO NOTHING`,
-      [walletId, userId, currency || 'INR']
-    );
-  });
+      await client.query(
+        `INSERT INTO wallets (wallet_id, user_id, balance, bonus_balance, currency)
+         VALUES ($1, $2, 0.00, 0.00, $3)
+         ON CONFLICT (user_id) DO NOTHING`,
+        [walletId, userId, currency || 'INR']
+      );
+
+      if (String(promoCode || '').trim()) {
+        const { applySignupPromoInTransaction } = await import('../../lib/signupPromoCodes.mjs');
+        promoReward = await applySignupPromoInTransaction(client, { userId, promoCode });
+      }
+    });
+  } catch (err) {
+    if (err.status && err.code) {
+      return { error: err.message, code: err.code, status: err.status };
+    }
+    throw err;
+  }
 
   // ── Generate tokens ──
   const accessToken = generateAccessToken(userId, 'USER');
@@ -139,6 +152,7 @@ export async function signup(queryFn, withTransaction, data) {
     refreshToken,
     verifyLink: emailRes.verifyLink,
     emailVerificationToken: verifyToken,
+    promoReward,
   };
 }
 
@@ -535,10 +549,13 @@ export async function getMe(queryFn, userId) {
             u.role, u.status, u.email_verified_at, u.phone_verified_at,
             u.country, u.currency, u.created_at, u.last_login_at,
             p.display_name, p.kyc_status, p.risk_tier, p.account_status,
-            w.balance, w.bonus_balance
+            w.balance, w.bonus_balance, COALESCE(w.freebet_balance, 0) AS freebet_balance,
+            COALESCE(w.reserved_balance, 0) AS reserved_balance,
+            COALESCE(l.points, 0) AS loyalty_points
      FROM users u
      LEFT JOIN user_profiles p ON p.user_id = u.user_id
      LEFT JOIN wallets w ON w.user_id = u.user_id
+     LEFT JOIN user_loyalty l ON l.user_id = u.user_id
      WHERE u.user_id = $1`,
     [userId]
   );
@@ -566,6 +583,9 @@ export async function getMe(queryFn, userId) {
       kycStatus: u.kyc_status,
       balance: parseFloat(u.balance || 0),
       bonusBalance: parseFloat(u.bonus_balance || 0),
+      freebetBalance: parseFloat(u.freebet_balance || 0),
+      reservedBalance: parseFloat(u.reserved_balance || 0),
+      loyaltyPoints: parseFloat(u.loyalty_points || 0),
       createdAt: u.created_at,
       lastLoginAt: u.last_login_at,
     },
