@@ -1,51 +1,108 @@
-import { useState, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../utils/apiClient';
-import { handleUserSupportQuery } from '../../../lib/supportAssistant.mjs';
+import {
+  createEmptyIntake,
+  nextSupportTurn,
+  buildTicketPayload,
+} from '../../../lib/supportAssistant.mjs';
 import {
   FiMessageSquare,
   FiX,
   FiSend,
-  FiMinus,
   FiShield,
 } from '../../icons';
 import './LiveChatSupportWidget.css';
 
+function storageKey(userId) {
+  return `oddsyra_support_chat_v1_${userId || 'guest'}`;
+}
+
+function nowStamp() {
+  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function welcomeMessage(name) {
+  return {
+    id: 'welcome_1',
+    sender: 'agent',
+    text: `Hi ${name || 'there'}. I’m the OddsYra assistant. Tell me what went wrong and I’ll collect the details, then you can open a support ticket. Our team replies on that ticket in Profile → Support.`,
+    timestamp: nowStamp(),
+  };
+}
+
+function loadSavedChat(userId) {
+  try {
+    const raw = localStorage.getItem(storageKey(userId));
+    if (!raw && userId) {
+      const guest = localStorage.getItem(storageKey(null));
+      if (guest) return JSON.parse(guest);
+    }
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function saveChat(userId, payload) {
+  try {
+    localStorage.setItem(storageKey(userId), JSON.stringify(payload));
+  } catch {
+    // ignore quota
+  }
+}
+
 export default function LiveChatSupportWidget() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, isLoggedIn, openLoginModal, showToast, isSidebarOpen } = useAuth();
+  const userId = user?.userId || user?.id || null;
+  const displayName = user?.displayName;
+
   const [isOpen, setIsOpen] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
-  const [messages, setMessages] = useState([
-    {
-      id: 'welcome_1',
-      sender: 'agent',
-      text: `Hello ${user?.displayName || 'there'}! I’m the OddsYra assistant (not a live agent). Ask a question, or log in to open a real support ticket.`,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    },
-  ]);
+  const [messages, setMessages] = useState(() => [welcomeMessage(displayName)]);
+  const [intake, setIntake] = useState(() => createEmptyIntake());
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [typingText, setTypingText] = useState('Support is typing...');
-  const [csatRating, setCsatRating] = useState(5);
-  const [showCsatPrompt, setShowCsatPrompt] = useState(false);
+  const [typingText, setTypingText] = useState('OddsYra Assistant is typing...');
+  const [creatingTicket, setCreatingTicket] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
   const messagesEndRef = useRef(null);
+  const intakeRef = useRef(intake);
+  const messagesRef = useRef(messages);
+
+  intakeRef.current = intake;
+  messagesRef.current = messages;
 
   const isAdminRoute = location.pathname.startsWith('/admin');
 
-  const activeAgent = {
-    name: 'OddsYra Assistant',
-    role: 'Automated help · not a live agent',
-    avatar: '🤖',
-    status: 'ONLINE',
-  };
+  useEffect(() => {
+    const saved = loadSavedChat(userId);
+    if (saved?.messages?.length) {
+      setMessages(saved.messages);
+      setIntake({ ...createEmptyIntake(), ...saved.intake });
+    } else {
+      setMessages([welcomeMessage(displayName)]);
+      setIntake(createEmptyIntake());
+    }
+    setHydrated(true);
+  }, [userId, displayName]);
 
   useEffect(() => {
-    const openChat = () => {
+    if (!hydrated) return;
+    saveChat(userId, { messages, intake });
+  }, [hydrated, userId, messages, intake]);
+
+  useEffect(() => {
+    const openChat = (event) => {
       setIsOpen(true);
-      setIsMinimized(false);
+      const conversationId = event?.detail?.conversationId;
+      if (conversationId) {
+        setIntake((prev) => ({ ...prev, conversationId, ticketCreated: true }));
+      }
     };
     window.addEventListener('oddsyra:open-support-chat', openChat);
     return () => window.removeEventListener('oddsyra:open-support-chat', openChat);
@@ -57,97 +114,142 @@ export default function LiveChatSupportWidget() {
     }
   }, [messages, isOpen, isTyping]);
 
-  const handleSendMessage = async (textToSend) => {
-    const query = textToSend || inputText;
-    if (!query.trim()) return;
+  const appendAgent = (text, actions = []) => {
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `msg_agent_${Date.now()}`,
+        sender: 'agent',
+        agentName: 'OddsYra Assistant',
+        text,
+        actions,
+        timestamp: nowStamp(),
+      },
+    ]);
+  };
 
-    const userEmail = user?.email || 'guest@oddsyra.com';
+  const createTicket = useCallback(async (currentIntake, currentMessages) => {
+    if (creatingTicket) return;
+    if (!isLoggedIn) {
+      showToast('Log in to create a support ticket.', 'info');
+      openLoginModal?.();
+      return;
+    }
+    const payload = buildTicketPayload(currentIntake, currentMessages);
+    setCreatingTicket(true);
+    try {
+      const res = await apiFetch('/api/v1/support/tickets', {
+        method: 'POST',
+        body: JSON.stringify({
+          subject: payload.subject,
+          category: payload.category,
+          initialMessage: payload.initialMessage,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok && res.status !== 409) {
+        throw new Error(data.error || 'Could not create a support ticket.');
+      }
+      const ticket = data.ticket || data.conversation || data.activeTicket || {};
+      const ticketNumber = ticket.ticketNumber || ticket.conversationNumber || data.ticketNumber;
+      const conversationId = ticket.conversationId || data.conversationId;
+      if (!ticketNumber && !conversationId) {
+        throw new Error('Ticket was not created.');
+      }
+      const nextIntake = {
+        ...currentIntake,
+        ticketCreated: true,
+        readyForTicket: false,
+        step: 'ticket_created',
+        ticketNumber: ticketNumber || conversationId,
+        conversationId,
+      };
+      setIntake(nextIntake);
+      showToast(`Support ticket ${ticketNumber || conversationId} opened.`, 'success');
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `tck_msg_${Date.now()}`,
+          sender: 'system',
+          text: `Ticket ${ticketNumber || conversationId} is open. You’ll find it under Profile → Support.`,
+          actions: [{ label: 'View my tickets', path: '/profile?tab=support' }],
+          timestamp: nowStamp(),
+        },
+      ]);
+      window.dispatchEvent(new CustomEvent('oddsyra:support-ticket-created', {
+        detail: { conversationId, ticketNumber },
+      }));
+    } catch (err) {
+      showToast(err.message || 'Could not create a support ticket.', 'error');
+    } finally {
+      setCreatingTicket(false);
+    }
+  }, [creatingTicket, isLoggedIn, openLoginModal, showToast]);
+
+  const handleSendMessage = async (textToSend) => {
+    const query = (textToSend || inputText || '').trim();
+    if (!query || isTyping) return;
     if (!textToSend) setInputText('');
 
     const userMsg = {
       id: `msg_user_${Date.now()}`,
       sender: 'user',
       text: query,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: nowStamp(),
     };
+    const nextMessages = [...messagesRef.current, userMsg];
+    setMessages(nextMessages);
 
-    setMessages((prev) => [...prev, userMsg]);
+    const existingTicketId = intakeRef.current.conversationId;
+    if (existingTicketId && intakeRef.current.ticketCreated && isLoggedIn) {
+      try {
+        await apiFetch(`/api/v1/support/tickets/${existingTicketId}/messages`, {
+          method: 'POST',
+          body: JSON.stringify({ text: query }),
+        });
+      } catch {
+        showToast('Message saved locally. Ticket sync will retry next time.', 'info');
+      }
+    }
+
     setIsTyping(true);
+    const responseObj = nextSupportTurn({
+      query,
+      intake: intakeRef.current,
+      loggedIn: isLoggedIn,
+    });
+    setTypingText(responseObj.typingText || 'OddsYra Assistant is typing...');
+    setIntake(responseObj.intake);
 
-    // Generate AI Assistant response
-    const responseObj = handleUserSupportQuery(query, userEmail);
-    setTypingText(responseObj.typingText || 'OddsYra Assistant is processing...');
-
-    setTimeout(() => {
-      const agentMsg = {
-        id: `msg_agent_${Date.now()}`,
-        sender: 'agent',
-        agentName: 'OddsYra Assistant',
-        text: responseObj.response,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-      setMessages((prev) => [...prev, agentMsg]);
+    window.setTimeout(async () => {
+      appendAgent(responseObj.response, responseObj.actions);
       setIsTyping(false);
-    }, 600);
+      if (responseObj.shouldCreateTicket) {
+        await createTicket(responseObj.intake, [...nextMessages]);
+      }
+    }, 450);
   };
 
-  const handleCreateTicket = async () => {
+  const handleCreateTicket = () => {
     if (!isLoggedIn) {
       showToast('Log in to create a support ticket.', 'info');
       openLoginModal?.();
       return;
     }
-    const recentUserText = messages
-      .filter((m) => m.sender === 'user')
-      .slice(-5)
-      .map((m) => m.text)
-      .join('\n')
-      || 'Customer requested a support ticket from chat.';
-    try {
-      const res = await apiFetch('/api/v1/support/tickets', {
-        method: 'POST',
-        body: JSON.stringify({
-          subject: 'Chat support request',
-          category: 'General',
-          initialMessage: recentUserText,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data.error || 'Could not create a support ticket.');
-      }
-      const ticket = data.ticket || data.conversation || {};
-      const ticketNumber = ticket.ticketNumber || ticket.conversationNumber || ticket.conversationId;
-      if (!ticketNumber) {
-        throw new Error('Ticket was not created.');
-      }
-      showToast(`Support ticket ${ticketNumber} opened.`, 'success');
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `tck_msg_${Date.now()}`,
-          sender: 'system',
-          text: `Support ticket ${ticketNumber} was created. Our team will review it from the support queue.`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        },
-      ]);
-      setShowCsatPrompt(true);
-    } catch (err) {
-      showToast(err.message || 'Could not create a support ticket.', 'error');
-    }
+    createTicket(intakeRef.current, messagesRef.current);
   };
 
-  const handleSubmitCsat = (ratingVal) => {
-    setCsatRating(ratingVal);
-    showToast(`Thank you for your ${ratingVal}-star support feedback!`, 'success');
-    setShowCsatPrompt(false);
+  const handleAction = (act) => {
+    if (act.actionType === 'ESCALATE') handleCreateTicket();
+    else if (act.actionType === 'LOGIN') openLoginModal?.();
+    else if (act.actionType === 'QUERY') handleSendMessage(act.query);
+    else if (act.path) navigate(act.path);
   };
 
   if (isAdminRoute) return null;
 
   return (
     <div className={`live-chat-support-wrapper${isOpen ? ' live-chat-support-wrapper--open' : ''}${isSidebarOpen ? ' live-chat-support-wrapper--hidden' : ''}`}>
-      {/* FLOATING LAUNCHER BUTTON */}
       {!isOpen && (
         <motion.button
           className="live-chat-floating-btn"
@@ -155,7 +257,6 @@ export default function LiveChatSupportWidget() {
           whileTap={{ scale: 0.94 }}
           onClick={() => {
             setIsOpen(true);
-            setIsMinimized(false);
           }}
           aria-label="Open OddsYra assistant"
         >
@@ -165,121 +266,87 @@ export default function LiveChatSupportWidget() {
         </motion.button>
       )}
 
-      {/* CHAT WINDOW MODAL */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            className={`live-chat-container ${isMinimized ? 'live-chat-container--minimized' : ''}`}
+            className="live-chat-container"
             initial={{ opacity: 0, y: 30, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 30, scale: 0.95 }}
             transition={{ duration: 0.25 }}
           >
-            {/* CHAT HEADER */}
             <div className="live-chat-header">
               <div className="live-chat-header-info">
-                <div className="live-chat-avatar">{activeAgent.avatar}</div>
+                <div className="live-chat-avatar">🤖</div>
                 <div>
                   <div className="live-chat-agent-name">
-                    {activeAgent.name}{' '}
+                    OddsYra Assistant{' '}
                     <span className="live-chat-online-badge">
                       <span className="live-chat-dot" /> BOT
                     </span>
                   </div>
-                  <div className="live-chat-agent-role">{activeAgent.role}</div>
+                  <div className="live-chat-agent-role">Collects issue details · opens a ticket</div>
                 </div>
               </div>
               <div className="live-chat-header-actions">
                 <button
                   type="button"
                   className="live-chat-control-btn"
-                  onClick={() => setIsMinimized(!isMinimized)}
-                  title={isMinimized ? 'Expand Chat' : 'Minimize Chat'}
-                >
-                  <FiMinus />
-                </button>
-                <button
-                  type="button"
-                  className="live-chat-control-btn"
                   onClick={() => setIsOpen(false)}
                   title="Close Chat"
+                  aria-label="Close chat"
                 >
                   <FiX />
                 </button>
               </div>
             </div>
 
-            {/* CHAT BODY */}
-            {!isMinimized && (
-              <>
-                <div className="live-chat-body">
-                  {/* TOPIC CHIPS QUICK SELECT */}
+            <div className="live-chat-body">
                   <div className="live-chat-topics-row">
-                    <span className="topics-label">Quick Topics:</span>
-                    <button
-                      type="button"
-                      className="chat-topic-chip"
-                      onClick={() => handleSendMessage('What is my withdrawal status?')}
-                    >
-                      ⚡ Withdrawals
-                    </button>
-                    <button
-                      type="button"
-                      className="chat-topic-chip"
-                      onClick={() => handleSendMessage('How are live bets settled?')}
-                    >
-                      🎯 Settlement
-                    </button>
-                    <button
-                      type="button"
-                      className="chat-topic-chip"
-                      onClick={() => handleSendMessage('How to claim deposit bonus?')}
-                    >
-                      🎁 Bonuses
-                    </button>
-                    <button
-                      type="button"
-                      className="chat-topic-chip"
-                      onClick={() => handleSendMessage('How to verify my account KYC?')}
-                    >
-                      🛡️ KYC Rules
-                    </button>
+                    <span className="topics-label">Start with:</span>
+                    {[
+                      ['Withdrawal', 'Withdrawals'],
+                      ['Deposit', 'Deposits'],
+                      ['Bet Settlement', 'Bets'],
+                      ['KYC', 'KYC'],
+                      ['Login / OTP', 'Login'],
+                    ].map(([query, label]) => (
+                      <button
+                        key={query}
+                        type="button"
+                        className="chat-topic-chip"
+                        onClick={() => handleSendMessage(`I have a ${query} issue`)}
+                      >
+                        {label}
+                      </button>
+                    ))}
                   </div>
 
-                  {/* MESSAGES LIST */}
                   <div className="live-chat-messages-list">
                     {messages.map((m) => (
                       <div key={m.id} className={`chat-bubble-row chat-bubble-row--${m.sender}`}>
                         {m.sender === 'agent' && <div className="chat-bubble-avatar">🤖</div>}
                         <div className={`chat-bubble chat-bubble--${m.sender}`}>
                           <p>{m.text}</p>
-
-                          {/* SMART ACTION BUTTONS */}
-                          {m.actions && m.actions.length > 0 && (
-                            <div className="chat-bubble-actions mt-2 flex flex-wrap gap-1.5">
+                          {m.actions?.length > 0 && (
+                            <div className="chat-bubble-actions">
                               {m.actions.map((act, idx) => (
                                 <button
-                                  key={idx}
+                                  key={`${m.id}_${idx}`}
                                   type="button"
-                                  className="chat-action-btn text-[11px] font-bold px-2.5 py-1 rounded-md bg-blue-500/20 text-blue-300 border border-blue-500/40 hover:bg-blue-500/30 transition-all cursor-pointer"
-                                  onClick={() => {
-                                    if (act.actionType === 'ESCALATE') handleCreateTicket();
-                                    else if (act.actionType === 'QUERY') handleSendMessage(act.query);
-                                    else if (act.path) window.location.href = act.path;
-                                  }}
+                                  className="chat-action-btn"
+                                  onClick={() => handleAction(act)}
                                 >
                                   {act.label}
                                 </button>
                               ))}
                             </div>
                           )}
-
                           <span className="chat-bubble-time">{m.timestamp}</span>
                         </div>
                       </div>
                     ))}
 
-                    {/* TYPING INDICATOR */}
                     {isTyping && (
                       <div className="chat-bubble-row chat-bubble-row--agent">
                         <div className="chat-bubble-avatar">🤖</div>
@@ -295,12 +362,11 @@ export default function LiveChatSupportWidget() {
                   </div>
                 </div>
 
-                {/* CHAT FOOTER INPUT */}
                 <div className="live-chat-footer">
                   <div className="live-chat-input-bar">
                     <input
                       type="text"
-                      placeholder="Type your message or query..."
+                      placeholder="Describe your issue..."
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
@@ -309,41 +375,30 @@ export default function LiveChatSupportWidget() {
                       type="button"
                       className="live-chat-send-btn"
                       onClick={() => handleSendMessage()}
-                      disabled={!inputText.trim()}
+                      disabled={!inputText.trim() || isTyping}
                     >
                       <FiSend />
                     </button>
                   </div>
 
                   <div className="live-chat-footer-actions">
-                    <button type="button" className="create-ticket-btn" onClick={handleCreateTicket}>
-                      {isLoggedIn ? 'Open a support ticket' : 'Log in to open a ticket'}
+                    <button
+                      type="button"
+                      className="create-ticket-btn"
+                      onClick={handleCreateTicket}
+                      disabled={creatingTicket}
+                    >
+                      {creatingTicket
+                        ? 'Opening ticket…'
+                        : isLoggedIn
+                          ? 'Create support ticket'
+                          : 'Log in to open a ticket'}
                     </button>
                     <span className="secure-badge">
-                      <FiShield /> 256-bit Encrypted
+                      <FiShield /> Saved in Profile → Support
                     </span>
                   </div>
-                  {showCsatPrompt && (
-                    <div className="live-chat-csat">
-                      <span>How was this chat?</span>
-                      <div className="live-chat-csat-stars">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <button
-                            key={star}
-                            type="button"
-                            className={star <= csatRating ? 'active' : ''}
-                            onClick={() => handleSubmitCsat(star)}
-                            aria-label={`${star} star${star === 1 ? '' : 's'}`}
-                          >
-                            ★
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
-              </>
-            )}
           </motion.div>
         )}
       </AnimatePresence>

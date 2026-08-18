@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getWalletBreakdown, formatInr } from '../../utils/walletBalance';
 import { getLoyaltySummary, LOYALTY_MIN_REDEEM_POINTS } from '../../utils/loyaltyPoints';
@@ -11,7 +11,8 @@ import {
   DEFAULT_DAILY_DEPOSIT_LIMIT,
   DEFAULT_DAILY_STAKE_LIMIT,
 } from '../../utils/responsibleGaming';
-import { FiDownload, FiShield, FiSliders, FiList, FiAlertTriangle } from '../../icons';
+import { FiDownload, FiShield, FiSliders, FiList, FiAlertTriangle, FiMessageSquare } from '../../icons';
+import ProfileSupportTab from './ProfileSupportTab';
 import '../Legal/LegalPage.css';
 import './Profile.css';
 
@@ -29,8 +30,8 @@ export default function Profile() {
     showToast,
     changePassword,
   } = useAuth();
-
-  const [activeTab, setActiveTab] = useState('overview');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'overview');
   const [txFilter, setTxFilter] = useState('all');
   const [txSearch, setTxSearch] = useState('');
 
@@ -47,6 +48,19 @@ export default function Profile() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab) setActiveTab(tab);
+  }, [searchParams]);
+
+  const selectTab = (tab) => {
+    setActiveTab(tab);
+    const next = new URLSearchParams(searchParams);
+    if (tab === 'overview') next.delete('tab');
+    else next.set('tab', tab);
+    setSearchParams(next, { replace: true });
+  };
 
   // Filtered transactions (Hook call placed unconditionally before early return)
   const filteredTx = useMemo(() => {
@@ -152,30 +166,37 @@ export default function Profile() {
           <button
             type="button"
             className={`profile-tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
-            onClick={() => setActiveTab('overview')}
+            onClick={() => selectTab('overview')}
           >
             Overview
           </button>
           <button
             type="button"
             className={`profile-tab-btn ${activeTab === 'rg' ? 'active' : ''}`}
-            onClick={() => setActiveTab('rg')}
+            onClick={() => selectTab('rg')}
           >
             <FiShield /> Responsible Gaming
           </button>
           <button
             type="button"
             className={`profile-tab-btn ${activeTab === 'security' ? 'active' : ''}`}
-            onClick={() => setActiveTab('security')}
+            onClick={() => selectTab('security')}
           >
             Security
           </button>
           <button
             type="button"
             className={`profile-tab-btn ${activeTab === 'history' ? 'active' : ''}`}
-            onClick={() => setActiveTab('history')}
+            onClick={() => selectTab('history')}
           >
             <FiList /> Transactions ({transactions.length})
+          </button>
+          <button
+            type="button"
+            className={`profile-tab-btn ${activeTab === 'support' ? 'active' : ''}`}
+            onClick={() => selectTab('support')}
+          >
+            <FiMessageSquare /> Support
           </button>
         </div>
 
@@ -456,6 +477,12 @@ export default function Profile() {
               </div>
             )}
           </div>
+        )}
+
+        {activeTab === 'support' && (
+          <ProfileSupportTab
+            onOpenChat={() => window.dispatchEvent(new CustomEvent('oddsyra:open-support-chat'))}
+          />
         )}
 
       </div>

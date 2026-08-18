@@ -1931,7 +1931,7 @@ app.get(['/api/support/conversations', '/api/v1/support/tickets'], requireAuth, 
   const userId = req.user.userId;
   try {
     const { supportEngine } = await import('../lib/supportEngine.mjs');
-    const conversations = supportEngine.getUserConversations(userId);
+    const conversations = await supportEngine.getUserConversations(userId);
     res.json({ success: true, conversations, tickets: conversations });
   } catch (err) {
     res.status(500).json({ error: err.message });

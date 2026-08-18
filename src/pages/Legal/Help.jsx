@@ -53,13 +53,13 @@ export default function Help() {
       </section>
       <section>
         <h2>Contact</h2>
-        <p>For account or payment issues, open live chat or email support@oddsyra.com.</p>
+        <p>For account or payment issues, chat with the assistant, open a ticket, and follow it in Profile → Support, or email support@oddsyra.com.</p>
         <button
           type="button"
           className="legal-chat-btn"
           onClick={() => window.dispatchEvent(new CustomEvent('oddsyra:open-support-chat'))}
         >
-          Open live chat
+          Open support chat
         </button>
       </section>
       <p><Link to="/">← Back to home</Link></p>
