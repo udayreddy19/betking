@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { IoClose, IoChevronBack, FiArrowRight, FiAlertCircle, FiCheck } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
+import { MIN_DEPOSIT_INR, MAX_DEPOSIT_INR } from '../../utils/vipBenefits';
 import RazorpayModal from '../RazorpayModal/RazorpayModal';
 import { UpiLogo, GPayLogo, PhonePeLogo, PaytmLogo, BhimLogo } from '../PaymentLogos/PaymentLogos';
 import RupeeSymbol from '../RupeeSymbol/RupeeSymbol';
@@ -118,7 +119,14 @@ export default function DepositModal() {
   const handleDepositSubmit = (e) => {
     if (e) e.preventDefault();
     const depositAmt = parseFloat(amount);
-    if (isNaN(depositAmt) || depositAmt <= 0) return;
+    if (isNaN(depositAmt) || depositAmt < MIN_DEPOSIT_INR) {
+      setErrorMsg(`Minimum deposit is ₹${MIN_DEPOSIT_INR.toLocaleString('en-IN')}.`);
+      return;
+    }
+    if (depositAmt > MAX_DEPOSIT_INR) {
+      setErrorMsg(`Maximum deposit is ₹${MAX_DEPOSIT_INR.toLocaleString('en-IN')}.`);
+      return;
+    }
     openRazorpayRealPayment(depositAmt);
   };
 
@@ -196,7 +204,7 @@ export default function DepositModal() {
                   </div>
 
                   <div className="amount-presets-grid">
-                    {['500', '1000', '2500', '5000', '10000', '25000'].map((val) => (
+                    {['1000', '2500', '5000', '10000', '25000', '50000'].map((val) => (
                       <button
                         type="button"
                         key={val}
@@ -215,9 +223,9 @@ export default function DepositModal() {
                       className="deposit-form-input"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      placeholder="Enter custom deposit amount"
-                      min="100"
-                      max="100000"
+                      placeholder="Minimum ₹1,000"
+                      min={MIN_DEPOSIT_INR}
+                      max={MAX_DEPOSIT_INR}
                       required
                     />
                   </div>

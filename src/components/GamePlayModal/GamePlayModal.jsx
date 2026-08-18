@@ -9,7 +9,7 @@ import '../GamePlayer/GamePlayer.css';
 const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1' || import.meta.env.DEV;
 
 export default function GamePlayModal() {
-  const { isLoggedIn, openLoginModal, showToast } = useAuth();
+  const { isLoggedIn, openLoginModal, showToast, user } = useAuth();
   const { activeGame, isPlaying, closeGame, startPlaying, stopPlaying } = useCasino();
 
   useEffect(() => {
@@ -95,7 +95,7 @@ export default function GamePlayModal() {
 
           {isLoggedIn && (
             <p className="game-play-balance">
-              Balance: ₹{user.balance.toLocaleString('en-IN')}
+              Balance: ₹{(user?.balance ?? 0).toLocaleString('en-IN')}
             </p>
           )}
         </div>

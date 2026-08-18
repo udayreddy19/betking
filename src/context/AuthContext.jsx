@@ -27,9 +27,7 @@ import {
   setAccessToken,
   clearAccessToken,
 } from '../utils/apiClient';
-
-const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1' || import.meta.env.DEV;
-
+import { DEMO_MODE } from '../utils/featureFlags';
 
 const AuthContext = createContext(null);
 
@@ -46,7 +44,8 @@ const SEED_USER = {
   bonusBalance: 1200,
   freebetBalance: 300,
   loyaltyLevel: 1,
-  loyaltyRank: 'Rookie',
+  loyaltyRank: 'SILVER',
+  loyaltyTier: 'SILVER',
   xpToNext: 1000,
   notifications: 0,
   loyaltyPoints: 850,
@@ -87,7 +86,8 @@ function toSessionUser(stored) {
     bonusBalance: stored.bonusBalance ?? 0,
     freebetBalance: stored.freebetBalance ?? 0,
     loyaltyLevel: stored.loyaltyLevel ?? 1,
-    loyaltyRank: stored.loyaltyRank ?? 'Rookie',
+    loyaltyTier: stored.loyaltyTier || stored.loyaltyRank || 'BRONZE',
+    loyaltyRank: stored.loyaltyTier || stored.loyaltyRank || 'BRONZE',
     xpToNext: stored.xpToNext ?? 1000,
     notifications: stored.notifications ?? 0,
     loyaltyPoints: stored.loyaltyPoints ?? stored.coins ?? 0,
@@ -119,6 +119,7 @@ function syncStoredUser(sessionUser) {
     freebetBalance: sessionUser.freebetBalance ?? users[idx].freebetBalance ?? 0,
     loyaltyLevel: sessionUser.loyaltyLevel,
     loyaltyRank: sessionUser.loyaltyRank,
+    loyaltyTier: sessionUser.loyaltyTier || sessionUser.loyaltyRank,
     xpToNext: sessionUser.xpToNext,
     notifications: sessionUser.notifications,
     loyaltyPoints: sessionUser.loyaltyPoints ?? sessionUser.coins ?? users[idx].loyaltyPoints ?? users[idx].coins ?? 0,
@@ -182,6 +183,24 @@ export function AuthProvider({ children }) {
     });
   }, []);
 
+  const syncTransactions = useCallback(async (email) => {
+    if (DEMO_MODE) {
+      setTransactions(loadTransactions(email));
+      return;
+    }
+    try {
+      const res = await apiFetch('/api/v1/user/transactions');
+      if (!res.ok) {
+        setTransactions([]);
+        return;
+      }
+      const data = await res.json();
+      setTransactions(Array.isArray(data?.transactions) ? data.transactions : []);
+    } catch {
+      setTransactions([]);
+    }
+  }, []);
+
   useEffect(() => {
     if (DEMO_MODE) ensureSeedUser();
 
@@ -192,7 +211,7 @@ export function AuthProvider({ children }) {
         if (me) {
           const session = mapServerUserToSession(me);
           setUserState(session);
-          setTransactions(loadTransactions(session.email));
+          await syncTransactions(session.email);
           return;
         }
         clearAccessToken();
@@ -227,12 +246,22 @@ export function AuthProvider({ children }) {
     return () => {
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     };
-  }, []);
+  }, [syncTransactions]);
 
   const recordTx = useCallback((email, entry) => {
     if (!email) return;
     setTransactions(appendTransaction(email, entry));
   }, []);
+
+  const refreshWallet = useCallback(async () => {
+    const me = await fetchMe();
+    if (!me) return false;
+    const session = mapServerUserToSession(me);
+    if (!session) return false;
+    setUser((prev) => mapServerUserToSession(me, prev) || prev);
+    await syncTransactions(session.email);
+    return true;
+  }, [setUser, syncTransactions]);
 
   const register = useCallback(async ({ email, password, displayName, phone, promoCode }) => {
     const normalizedEmail = email.trim().toLowerCase();
@@ -275,7 +304,8 @@ export function AuthProvider({ children }) {
         bonusBalance: 0,
         freebetBalance: 0,
         loyaltyLevel: 1,
-        loyaltyRank: 'Rookie',
+        loyaltyRank: 'BRONZE',
+        loyaltyTier: 'BRONZE',
         xpToNext: 1000,
         notifications: 0,
         loyaltyPoints: 0,
@@ -315,7 +345,8 @@ export function AuthProvider({ children }) {
         bonusBalance: welcomeCredit,
         freebetBalance: 0,
         loyaltyLevel: 1,
-        loyaltyRank: 'Rookie',
+        loyaltyRank: 'BRONZE',
+        loyaltyTier: 'BRONZE',
         xpToNext: 1000,
         notifications: 0,
         loyaltyPoints: 50,
@@ -328,31 +359,79 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const claimPromotion = useCallback((promo) => {
-    if (!DEMO_MODE) {
-      showToast('Use a promo code in Profile or at signup. Demo credits are not available on the live site.', 'info');
-      return { ok: false, error: 'Promo codes are claimed from Profile.' };
-    }
+  const claimPromotion = useCallback(async (promo) => {
     if (!user) {
       return { ok: false, error: 'Please log in to claim this promotion.' };
     }
 
-    const claimed = getClaimedPromos(user.email);
-    if (claimed.includes(promo.id)) {
-      return { ok: false, error: 'You have already claimed this promotion.' };
+    if (DEMO_MODE) {
+      const claimed = getClaimedPromos(user.email);
+      if (claimed.includes(promo.id)) {
+        return { ok: false, error: 'You have already claimed this promotion.' };
+      }
+
+      const amount = promo.bonusAmount || 500;
+      saveClaimedPromo(user.email, promo.id);
+      setUser(prev => (prev ? { ...prev, bonusBalance: (prev.bonusBalance ?? 0) + amount } : prev));
+      recordTx(user.email, {
+        type: 'bonus',
+        amount,
+        label: `Bonus claimed · ${promo.title || promo.id}`,
+      });
+      showToast(`₹${amount.toLocaleString('en-IN')} bonus credited! Bet at 1.75+ odds and rotate 5× before withdrawing winnings.`, 'success');
+      return { ok: true, amount };
     }
 
-    const amount = promo.bonusAmount || 500;
-    saveClaimedPromo(user.email, promo.id);
-    setUser(prev => (prev ? { ...prev, bonusBalance: (prev.bonusBalance ?? 0) + amount } : prev));
-    recordTx(user.email, {
-      type: 'bonus',
-      amount,
-      label: `Bonus claimed · ${promo.title || promo.id}`,
-    });
-    showToast(`₹${amount.toLocaleString('en-IN')} bonus credited! Bet at 1.80+ odds to use it.`, 'success');
-    return { ok: true, amount };
-  }, [user, setUser, showToast, recordTx]);
+    const code = promo.code || promo.promoCode;
+    if (!code) {
+      showToast('Promotion code missing.', 'error');
+      return { ok: false, error: 'Promotion code missing.' };
+    }
+
+    try {
+      if (promo.claimType === 'signup_code') {
+        const res = await apiFetch('/api/v1/rewards/promo/claim', {
+          method: 'POST',
+          body: JSON.stringify({ code }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+          showToast(data.error || 'Could not claim promo code.', 'error');
+          return { ok: false, error: data.error || 'Could not claim promo code.' };
+        }
+        await refreshWallet();
+        const kind = data.rewardType === 'freebet' ? 'free bet' : data.rewardType === 'cash' ? 'cash' : 'bonus';
+        showToast(
+          `Promo ${data.code} applied — ${formatInr(data.amount)} ${kind} credited.`,
+          'success',
+        );
+        return { ok: true, amount: data.amount, code: data.code };
+      }
+
+      const res = await apiFetch('/api/v1/promotions/claim', {
+        method: 'POST',
+        body: JSON.stringify({ promoCode: code }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.success === false) {
+        showToast(data.error || 'Could not claim promotion.', 'error');
+        return { ok: false, error: data.error || 'Could not claim promotion.' };
+      }
+      if (data.alreadyClaimed) {
+        showToast('You have already claimed this promotion.', 'info');
+        return { ok: true, alreadyClaimed: true, code };
+      }
+      await refreshWallet();
+      showToast(
+        `${formatInr(data.rewardAmount || 0)} bonus credited! Wagering required: ${formatInr(data.wageringRequired || 0)}.`,
+        'success',
+      );
+      return { ok: true, amount: data.rewardAmount, code };
+    } catch (err) {
+      showToast('Could not claim promotion.', 'error');
+      return { ok: false, error: err.message };
+    }
+  }, [user, setUser, showToast, recordTx, refreshWallet]);
 
   const isPromotionClaimed = useCallback((promoId) => {
     if (!user) return false;
@@ -388,7 +467,7 @@ export function AuthProvider({ children }) {
           });
 
         setUser(sessionUser);
-        setTransactions(loadTransactions(sessionUser.email));
+        await syncTransactions(sessionUser.email);
         setIsLoginModalOpen(false);
         showToast(`Welcome back, ${sessionUser.displayName}!`);
         return true;
@@ -458,13 +537,14 @@ export function AuthProvider({ children }) {
       }
       return { ok: true, message: data.message || 'Password reset successfully.' };
     } catch {
-      // Local fallback
-      const users = getStoredUsers();
-      const idx = users.findIndex((u) => u.email === trimmedToken.toLowerCase());
-      if (idx >= 0) {
-        users[idx] = { ...users[idx], password: String(newPassword) };
-        saveStoredUsers(users);
-        return { ok: true };
+      if (DEMO_MODE) {
+        const users = getStoredUsers();
+        const idx = users.findIndex((u) => u.email === trimmedToken.toLowerCase());
+        if (idx >= 0) {
+          users[idx] = { ...users[idx], password: String(newPassword) };
+          saveStoredUsers(users);
+          return { ok: true };
+        }
       }
       return { ok: false, error: 'Unable to connect to server.' };
     }
@@ -526,13 +606,6 @@ export function AuthProvider({ children }) {
       return { ok: true };
     }
   }, [user]);
-
-  const refreshWallet = useCallback(async () => {
-    const me = await fetchMe();
-    if (!me) return false;
-    setUser((prev) => mapServerUserToSession(me, prev) || prev);
-    return true;
-  }, [setUser]);
 
   const logout = useCallback(async () => {
     try {
@@ -634,7 +707,7 @@ export function AuthProvider({ children }) {
       const allocation = allocateCashStake(prev, cash);
       if (cash > 0 && allocation.total < cash) return prev;
 
-      const pointsEarned = DEMO_MODE ? pointsFromSpend(spendTotal) : 0;
+      const pointsEarned = DEMO_MODE ? pointsFromSpend(spendTotal, prev) : 0;
       const currentPoints = getUserLoyaltyPoints(prev);
       const nextPoints = currentPoints + pointsEarned;
       const rg = rgCheck.rg;
@@ -933,12 +1006,19 @@ export function AuthProvider({ children }) {
           return { success: false, maxWithdrawable: 0, status: 'FAILED', error: message };
         }
         await refreshWallet();
-        showToast(`Withdrawal of ${formatInr(amt)} requested. Awaiting finance approval.`, 'info');
+        const forfeited = Number(data.forfeitedBonus || 0);
+        showToast(
+          forfeited > 0
+            ? `Withdrawal of ${formatInr(amt)} requested. Remaining bonus ${formatInr(forfeited)} was forfeited.`
+            : `Withdrawal of ${formatInr(amt)} requested. Awaiting finance approval.`,
+          forfeited > 0 ? 'warning' : 'info',
+        );
         return {
           success: true,
           maxWithdrawable: Number(data.availableBalance || 0),
           status: data.status || 'PENDING_REVIEW',
           withdrawalId: data.withdrawalId,
+          forfeitedBonus: forfeited,
         };
       } catch {
         showToast('Unable to reach withdrawals service.', 'error');
@@ -949,6 +1029,7 @@ export function AuthProvider({ children }) {
     let success = false;
     let maxWithdrawable = 0;
     let email = null;
+    let forfeitedBonus = 0;
 
     setUser(prev => {
       if (!prev) return prev;
@@ -957,10 +1038,12 @@ export function AuthProvider({ children }) {
       if (prev.balance < amt) return prev;
       success = true;
       email = prev.email;
+      forfeitedBonus = Number(prev.bonusBalance || 0);
       return {
         ...prev,
         balance: prev.balance - amt,
         winningsBalance: Math.max(0, (prev.winningsBalance ?? 0) - amt),
+        bonusBalance: 0,
       };
     });
 
@@ -974,10 +1057,22 @@ export function AuthProvider({ children }) {
         details: details || 'UPI Withdrawal',
         label: `Withdrawal request (${method}) · Pending Admin Approval`,
       });
-      showToast(`Withdrawal of ${formatInr(amt)} requested! Awaiting Admin/Finance approval.`, 'info');
+      if (forfeitedBonus > 0) {
+        recordTx(email, {
+          type: 'bonus',
+          amount: -forfeitedBonus,
+          label: `Bonus forfeited on withdrawal · ${formatInr(forfeitedBonus)}`,
+        });
+        showToast(
+          `Withdrawal of ${formatInr(amt)} requested. Remaining bonus ${formatInr(forfeitedBonus)} was forfeited.`,
+          'warning',
+        );
+      } else {
+        showToast(`Withdrawal of ${formatInr(amt)} requested! Awaiting Admin/Finance approval.`, 'info');
+      }
     }
 
-    return { success, maxWithdrawable, status: success ? 'PENDING_APPROVAL' : 'FAILED' };
+    return { success, maxWithdrawable, status: success ? 'PENDING_APPROVAL' : 'FAILED', forfeitedBonus };
   }, [setUser, recordTx, showToast, refreshWallet]);
 
   // Step 2: Admin approves withdrawal request
@@ -1013,7 +1108,7 @@ export function AuthProvider({ children }) {
   const adminRejectWithdrawal = useCallback((txId, targetEmail, amount) => {
     const updatedTx = updateTransactionStatus(txId, 'REJECTED');
     const emailToRefund = (targetEmail || updatedTx?.userEmail || updatedTx?.email || user?.email || 'demo@oddsyra.com').toLowerCase();
-    
+
     let amt = Math.abs(Number(amount));
     if (isNaN(amt) || amt <= 0) {
       amt = Math.abs(Number(updatedTx?.amount) || 0);
@@ -1297,21 +1392,21 @@ const dummyAuthFallback = {
   login: () => false,
   resetPassword: () => ({ ok: false, error: 'Not available.' }),
   changePassword: () => ({ ok: false, error: 'Not available.' }),
-  showToast: () => {},
-  dismissToast: () => {},
-  openLoginModal: () => {},
-  closeLoginModal: () => {},
-  openDepositModal: () => {},
-  closeDepositModal: () => {},
-  addFunds: () => {},
-  deductFunds: () => {},
-  deductStake: () => {},
-  refundStake: () => {},
-  redeemLoyaltyPoints: () => {},
-  claimSignupPromoCode: () => {},
-  updateUser: () => {},
-  addBonus: () => {},
-  addFreebet: () => {},
+  showToast: () => { },
+  dismissToast: () => { },
+  openLoginModal: () => { },
+  closeLoginModal: () => { },
+  openDepositModal: () => { },
+  closeDepositModal: () => { },
+  addFunds: () => { },
+  deductFunds: () => { },
+  deductStake: () => { },
+  refundStake: () => { },
+  redeemLoyaltyPoints: () => { },
+  claimSignupPromoCode: () => { },
+  updateUser: () => { },
+  addBonus: () => { },
+  addFreebet: () => { },
   transactions: [],
   finModalType: null,
 };

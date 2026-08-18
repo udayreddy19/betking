@@ -6,6 +6,7 @@ const ICONS = {
   success: IoCheckmarkCircle,
   error: IoCloseCircle,
   info: IoInformationCircle,
+  warning: IoInformationCircle,
 };
 
 export default function Toast() {

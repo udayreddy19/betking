@@ -11,6 +11,11 @@ describe('Phase 10 Promotion Claim Idempotency & Budget Safety Tests', () => {
     await query(`INSERT INTO users (user_id, email, password_hash) VALUES ($1, $2, 'hash') ON CONFLICT (user_id) DO NOTHING;`, [userId, `${userId}@example.com`]);
     await query(`INSERT INTO user_profiles (user_id, account_status, kyc_status) VALUES ($1, 'ACTIVE', 'VERIFIED') ON CONFLICT (user_id) DO NOTHING;`, [userId]);
     await query(`INSERT INTO wallets (wallet_id, user_id, balance, bonus_balance, currency) VALUES ($1, $2, 5000.00, 0.00, 'INR') ON CONFLICT (wallet_id) DO NOTHING;`, [`wal_${userId}`, userId]);
+    await query(
+      `INSERT INTO transactions (transaction_id, user_id, type, amount, status)
+       VALUES ($1, $2, 'DEPOSIT', 100.00, 'SUCCESS')`,
+      [`tx_dep_${userId}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, userId],
+    );
 
     await query(`DELETE FROM user_bonuses WHERE user_id = $1;`, [userId]);
 
@@ -38,6 +43,19 @@ describe('Phase 10 Promotion Claim Idempotency & Budget Safety Tests', () => {
     // Verify only ONE bonus allocation in user_bonuses table
     const dbBonuses = await query('SELECT * FROM user_bonuses WHERE user_id = $1', [userId]);
     expect(dbBonuses.rows.length).toBe(1);
+  });
+
+  it('rejects a claim when the user has not deposited', async () => {
+    const freshId = `usr_claim_nodep_${Date.now()}`;
+    await query(`INSERT INTO users (user_id, email, password_hash) VALUES ($1, $2, 'hash')`, [freshId, `${freshId}@example.com`]);
+    await query(`INSERT INTO user_profiles (user_id, account_status, kyc_status) VALUES ($1, 'ACTIVE', 'VERIFIED')`, [freshId]);
+    await query(`INSERT INTO wallets (wallet_id, user_id, balance, bonus_balance, currency) VALUES ($1, $2, 0.00, 0.00, 'INR')`, [`wal_${freshId}`, freshId]);
+
+    await expect(claimPromotionBonus({ userId: freshId, promoCode })).rejects.toThrow(/Deposit first/);
+
+    await query(`DELETE FROM wallets WHERE user_id = $1`, [freshId]);
+    await query(`DELETE FROM user_profiles WHERE user_id = $1`, [freshId]);
+    await query(`DELETE FROM users WHERE user_id = $1`, [freshId]);
   });
 
   it('Budget Safety: attempting to claim when promotion budget is exhausted throws PROMOTION_ERROR', async () => {

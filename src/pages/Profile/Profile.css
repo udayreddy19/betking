@@ -177,6 +177,52 @@
   flex-shrink: 0;
 }
 
+.profile-kyc-row {
+  margin-top: 10px;
+}
+
+.profile-kyc-row input {
+  text-transform: none;
+}
+
+.profile-kyc-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  margin: 8px 0;
+}
+
+[data-theme="dark"] .profile-kyc-error {
+  background: #450a0a;
+  border-color: #991b1b;
+  color: #fecaca;
+}
+
+.profile-kyc-pill {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+}
+
+.profile-kyc-pill--verified {
+  background: rgba(31, 138, 76, 0.14);
+  color: var(--color-primary-dark, #166534);
+}
+
+.profile-kyc-pill--under_review,
+.profile-kyc-pill--pending {
+  background: rgba(232, 163, 23, 0.16);
+  color: #b45309;
+}
+
 .profile-rules {
   font-size: var(--text-xs);
   color: var(--color-text-muted);

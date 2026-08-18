@@ -18,25 +18,26 @@ import { hasValidAdminSession } from '../../utils/adminSession';
 import '../MyBetsPanel/MyBetsPanel.css';
 import '../PromotionsPanel/PromotionsPanel.css';
 import BrandLogo, { BrandWordmark } from '../BrandLogo/BrandLogo';
+import { withoutCasinoLinks } from '../../utils/featureFlags';
 import './Header.css';
 
-const navLinks = [
+const navLinks = withoutCasinoLinks([
   { to: '/live-betting', label: 'Live Betting' },
   { to: '/sports', label: 'Sports' },
   { to: '/casino', label: 'Casino' },
   { to: '/live-casino', label: 'Live Casino' },
   { to: '/fantasy', label: 'Fantasy' },
   { to: '/promotions', label: 'Win Free' },
-];
+]);
 
-const moreLinks = [
+const moreLinks = withoutCasinoLinks([
   { to: '/admin', label: '🛡️ Admin Portal' },
   { to: '/help', label: 'Help Center' },
   { to: '/promotions', label: 'Promotions' },
   { to: '/casino', label: 'Casino' },
   { to: '/profile', label: 'My Profile' },
   { to: '/responsible-gaming', label: 'Responsible Gaming' },
-];
+]);
 
 function Header() {
   const { user, isLoggedIn, openLoginModal, openDepositModal, toggleSidebar, redeemLoyaltyPoints, openFinModal } = useAuth();
@@ -63,6 +64,7 @@ function Header() {
 
   const isAdminPage = location.pathname.startsWith('/admin');
   const isDevRoute = location.pathname.startsWith('/developer') || location.pathname.startsWith('/api-docs');
+  const isRegisterPage = location.pathname === '/register';
   const hasAdminSession = hasValidAdminSession();
 
   useEffect(() => {
@@ -321,7 +323,7 @@ function Header() {
                         </div>
                         <p className="header-wallet-menu__loyalty-meta">
                           {loyalty.canRedeem
-                            ? `Redeem for cash (5 pts = ₹1)`
+                            ? `Redeem for cash (${loyalty.pointsPer100} pts / ₹100 · 5 pts = ₹1)`
                             : `${loyalty.pointsToUnlock} pts to unlock redemption (${LOYALTY_MIN_REDEEM_POINTS} pts min)`}
                         </p>
                         {loyalty.canRedeem && (
@@ -461,10 +463,12 @@ function Header() {
               <button className="header-login-btn" onClick={openLoginModal} id="login-btn">
                 Log in
               </button>
-              <button className="header-join-btn" onClick={() => navigate('/register')} id="join-btn">
-                <span className="header-join-label-full">Join now</span>
-                <span className="header-join-label-short">Join</span>
-              </button>
+              {!isRegisterPage && (
+                <button className="header-join-btn" onClick={() => navigate('/register')} id="join-btn">
+                  <span className="header-join-label-full">Join now</span>
+                  <span className="header-join-label-short">Join</span>
+                </button>
+              )}
             </div>
           )}
         </div>

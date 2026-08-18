@@ -14,6 +14,12 @@ describe('Phase 10 Loyalty Points & CRM Campaign Execution Tests', () => {
     await query(`INSERT INTO users (user_id, email, password_hash) VALUES ($1, $2, 'hash') ON CONFLICT (user_id) DO NOTHING;`, [userId, `${userId}@example.com`]);
     await query(`INSERT INTO user_profiles (user_id, account_status, kyc_status) VALUES ($1, 'ACTIVE', 'VERIFIED') ON CONFLICT (user_id) DO NOTHING;`, [userId]);
     await query(`INSERT INTO wallets (wallet_id, user_id, balance, bonus_balance, currency) VALUES ($1, $2, 5000.00, 0.00, 'INR') ON CONFLICT (wallet_id) DO NOTHING;`, [`wal_${userId}`, userId]);
+    await query(
+      `INSERT INTO transactions (transaction_id, user_id, type, amount, status)
+       VALUES ($1, $2, 'DEPOSIT', 1000.00, 'SUCCESS')
+       ON CONFLICT (transaction_id) DO NOTHING`,
+      [`tx_dep_${userId}`, userId],
+    );
 
     await query(`DELETE FROM user_loyalty WHERE user_id = $1;`, [userId]);
     await query(`DELETE FROM user_segment_memberships WHERE user_id = $1;`, [userId]);

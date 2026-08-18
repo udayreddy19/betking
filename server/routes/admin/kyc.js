@@ -35,8 +35,12 @@ router.get('/cases', requirePermission('kyc', 'admin'), async (req, res) => {
       [status, parseInt(limit), offset]
     );
 
-    const maskedCases = result.rows.map(row => ({
-      ...row,
+    const maskedCases = result.rows.map((row) => ({
+      caseId: row.case_id,
+      userId: row.user_id,
+      status: row.status,
+      reviewedBy: row.reviewed_by,
+      updatedAt: row.updated_at,
       panNumber: row.pan_number ? `XXXXXX${row.pan_number.slice(-4)}` : null,
       aadhaarNumber: row.aadhaar_number ? `XXXXXXXX${row.aadhaar_number.slice(-4)}` : null,
     }));

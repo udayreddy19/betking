@@ -3,6 +3,14 @@ import { motion } from 'motion/react';
 
 /** Wrap itshover icons with Framer Motion hover feedback & animations. */
 export function withItshoverIcon(Icon) {
+  if (typeof Icon !== 'function') {
+    const Fallback = forwardRef(function MissingItshoverIcon(props, forwardedRef) {
+      return <span ref={forwardedRef} className={props.className} aria-hidden="true" />;
+    });
+    Fallback.displayName = 'MissingItshoverIcon';
+    return Fallback;
+  }
+
   const Wrapped = forwardRef(function ItshoverIcon(
     {
       className = '',
@@ -46,10 +54,7 @@ export function withItshoverIcon(Icon) {
         }}
         onPointerEnter={start}
         onPointerLeave={stop}
-        whileHover={{
-          scale: 1.2,
-          rotate: [0, -8, 8, 0],
-        }}
+        whileHover={{ scale: 1.15 }}
         whileTap={{ scale: 0.88 }}
         transition={{ duration: 0.3, ease: 'easeOut' }}
         role="presentation"

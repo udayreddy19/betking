@@ -209,7 +209,7 @@ function SignupPromoCodesPanel() {
               style={{ ...inputStyle, textTransform: 'uppercase' }}
               value={form.code}
               onChange={(e) => updateField('code', e.target.value.toUpperCase())}
-              placeholder="WELCOME100"
+              placeholder="VIP1000"
               required
               minLength={3}
               maxLength={32}

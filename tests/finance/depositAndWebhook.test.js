@@ -45,6 +45,10 @@ describe('Phase 6 Deposit & Webhook Security Tests', () => {
     await expect(depositEngine.createOrder({ userId, amount: 50.123 })).rejects.toThrow('INVALID_AMOUNT');
   });
 
+  it('rejects deposits below ₹1,000', async () => {
+    await expect(depositEngine.createOrder({ userId, amount: 500 })).rejects.toThrow(/Minimum deposit is ₹1000/);
+  });
+
   it('should process verified webhook and credit wallet atomically', async () => {
     const orderId = `order_test_${Date.now()}`;
     await seedDeposit(orderId, 500);

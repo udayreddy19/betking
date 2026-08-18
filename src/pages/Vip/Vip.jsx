@@ -1,150 +1,214 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../utils/apiClient';
 import { formatInr } from '../../utils/walletBalance';
 import {
+  LOYALTY_POINTS_PER_100_STANDARD,
+  LOYALTY_POINTS_PER_100_VIP,
+  getBenefitsForTier,
+  VIP_TIER_POINTS,
+  MIN_DEPOSIT_INR,
+  MIN_WITHDRAW_INR,
+} from '../../utils/vipBenefits';
+import {
   FiCrown,
   FiZap,
-  FiUserCheck,
   FiGift,
   FiDollarSign,
-  FiCalendar,
   FiCheck,
   FiMinus,
   FiMessageSquare,
   FiStar,
-  FiShield,
   FiArrowRight,
   FiPhoneCall,
   FiAward,
+  FiClock,
+  FiTrendingUp,
 } from '../../icons';
 import './Vip.css';
 
 export default function Vip() {
-  const { user, isLoggedIn, openLoginModal, openDepositModal, showToast } = useAuth();
-  const [requestedTrial, setRequestedTrial] = useState(false);
-  const [requestingTrial, setRequestingTrial] = useState(false);
+  const { user, isLoggedIn, openLoginModal, openDepositModal, showToast, refreshWallet } = useAuth();
+  const [claimingCashback, setClaimingCashback] = useState(false);
+  const [claimingMonthly, setClaimingMonthly] = useState(false);
+  const [vipStatus, setVipStatus] = useState(null);
 
-  const coins = user?.coins ?? user?.loyaltyPoints ?? 0;
+  const benefits = vipStatus || getBenefitsForTier(user?.loyaltyTier);
+  const coins = user?.loyaltyPoints ?? user?.coins ?? 0;
   const balance = user?.balance ?? 0;
-  const vipRank = user?.loyaltyRank || 'Pre-VIP';
+  const vipRank = benefits.label || user?.loyaltyRank || 'Standard';
 
-  const handleRequestVipTrial = async () => {
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setVipStatus(null);
+      return undefined;
+    }
+    let cancelled = false;
+    apiFetch('/api/v1/user/vip/status')
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled && data?.vip) setVipStatus(data.vip);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [isLoggedIn, user?.loyaltyPoints]);
+
+  const handleClaimCashback = async () => {
     if (!isLoggedIn) {
       openLoginModal();
       return;
     }
-    if (requestingTrial || requestedTrial) return;
-    setRequestingTrial(true);
+    if (claimingCashback) return;
+    setClaimingCashback(true);
     try {
-      const res = await apiFetch('/api/v1/support/tickets', {
-        method: 'POST',
-        body: JSON.stringify({
-          subject: 'VIP trial request',
-          category: 'VIP',
-          initialMessage: `${user?.email || user?.userId} requested the VIP trial program.`,
-        }),
-      });
+      const res = await apiFetch('/api/v1/user/vip/cashback', { method: 'POST' });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok && res.status !== 409) {
-        throw new Error(data.error || 'Could not submit VIP request.');
-      }
-      const ticket = data.ticket || data.conversation || data.activeTicket || {};
-      const ticketNumber = ticket.ticketNumber || ticket.conversationNumber || ticket.conversationId || data.ticketNumber;
-      setRequestedTrial(true);
-      showToast(
-        ticketNumber
-          ? `VIP request opened as ticket ${ticketNumber}.`
-          : 'VIP request submitted. Our team will review it.',
-        'success',
-      );
+      if (!res.ok) throw new Error(data.error || 'Could not claim cashback.');
+      await refreshWallet?.();
+      showToast(`${formatInr(data.cashbackAmount)} cashback credited from yesterday’s net losses.`, 'success');
     } catch (err) {
-      showToast(err.message || 'Could not submit VIP request.', 'error');
+      showToast(err.message || 'Could not claim cashback.', 'error');
     } finally {
-      setRequestingTrial(false);
+      setClaimingCashback(false);
+    }
+  };
+
+  const handleClaimMonthly = async () => {
+    if (!isLoggedIn) {
+      openLoginModal();
+      return;
+    }
+    if (claimingMonthly) return;
+    setClaimingMonthly(true);
+    try {
+      const res = await apiFetch('/api/v1/user/vip/monthly', { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Could not claim club credit.');
+      await refreshWallet?.();
+      setVipStatus((prev) => (prev ? { ...prev, monthlyClaimed: true } : prev));
+      const kind = data.rewardType === 'freebet' ? 'free bet' : data.rewardType === 'cash' ? 'cash' : 'bonus';
+      showToast(`${formatInr(data.amount)} ${kind} credited for this month.`, 'success');
+    } catch (err) {
+      showToast(err.message || 'Could not claim club credit.', 'error');
+    } finally {
+      setClaimingMonthly(false);
     }
   };
 
   const vipBenefits = [
     {
+      id: 'loyalty_boost',
+      icon: <FiStar style={{ color: '#f59e0b', fontSize: '1.8rem' }} />,
+      title: `${LOYALTY_POINTS_PER_100_VIP} points per ₹100`,
+      subtitle: `Standard players earn ${LOYALTY_POINTS_PER_100_STANDARD} · VIP club earns ${LOYALTY_POINTS_PER_100_VIP}`,
+      description: `Every cash, bonus, or free-bet stake earns loyalty points. Reach Silver (${VIP_TIER_POINTS.SILVER} pts) to join the VIP club and earn ${LOYALTY_POINTS_PER_100_VIP} points per ₹100 instead of ${LOYALTY_POINTS_PER_100_STANDARD}. 5 points = ₹1 cash.`,
+      badge: 'LIVE',
+    },
+    {
       id: 'priority_transactions',
       icon: <FiZap style={{ color: '#f59e0b', fontSize: '1.8rem' }} />,
-      title: 'Priority Transaction Services',
-      subtitle: 'Quicker Deposits & Express Withdrawals',
-      description: 'Enjoy zero-delay deposit processing and priority express withdrawal queues handled directly by senior finance officers.',
-      badge: 'SPEED',
-    },
-    {
-      id: 'dedicated_manager',
-      icon: <FiUserCheck style={{ color: '#8b5cf6', fontSize: '1.8rem' }} />,
-      title: 'Dedicated Account Managers',
-      subtitle: 'Personalized Assistance & Exclusive WhatsApp Line',
-      description: 'A dedicated Account Manager provides 24/7 1-on-1 assistance via a private direct WhatsApp communication channel.',
-      badge: '24/7 DIRECT',
-    },
-    {
-      id: 'tailored_offers',
-      icon: <FiCrown style={{ color: '#ec4899', fontSize: '1.8rem' }} />,
-      title: 'Tailored Exclusive Offers',
-      subtitle: 'Customized Deals to Elevate Your Betting',
-      description: 'Bespoke reload bonuses, enhanced odds multipliers, and tailored promotions designed specifically for your favourite sports & games.',
-      badge: 'CUSTOM',
+      title: 'Priority withdrawals',
+      subtitle: `Min ₹${MIN_WITHDRAW_INR.toLocaleString('en-IN')} · faster review at higher tiers`,
+      description: `Everyone has a ₹${MIN_WITHDRAW_INR.toLocaleString('en-IN')} minimum. VIP club jumps the finance queue. Review target: Silver 8h, Gold 4h, Platinum 2h, Diamond 1h. Max payout rises to ₹2.5L / ₹5L / ₹10L.`,
+      badge: 'QUEUE',
     },
     {
       id: 'daily_cashback',
       icon: <FiDollarSign style={{ color: '#10b981', fontSize: '1.8rem' }} />,
-      title: 'Daily Cashback (EVERY DAY)',
-      subtitle: 'Personalized to Your Game Preference',
-      description: 'Receive real money daily cashback credited automatically based on your gameplay across Sportsbook, Live Casino, and Slots.',
-      badge: 'DAILY CASH',
+      title: 'Daily cashback',
+      subtitle: 'A share of yesterday’s net losses',
+      description: 'Silver 2%, Gold 5%, Platinum 7.5%, Diamond 10% of net cash losses from the previous day, credited to your cash wallet. Claim once per day. Standard players have no cashback.',
+      badge: 'CASH',
+    },
+    {
+      id: 'better_cashout',
+      icon: <FiClock style={{ color: '#0ea5e9', fontSize: '1.8rem' }} />,
+      title: 'Better cashout',
+      subtitle: 'Keep more when you settle early',
+      description: 'Standard cashout is 85% of potential payout. Silver 88%, Gold 90%, Platinum 92%, Diamond 95%. Live on cash bets in My Bets.',
+      badge: 'LIVE',
+    },
+    {
+      id: 'odds_boost',
+      icon: <FiTrendingUp style={{ color: '#22c55e', fontSize: '1.8rem' }} />,
+      title: 'VIP odds boost',
+      subtitle: 'Gold+ cash bets land at better odds',
+      description: 'Gold +2%, Platinum +3%, Diamond +5% on accepted cash odds. The boosted price is what we settle. Bonus and free-bet stakes are not boosted.',
+      badge: 'GOLD+',
+    },
+    {
+      id: 'monthly_credit',
+      icon: <FiGift style={{ color: '#ec4899', fontSize: '1.8rem' }} />,
+      title: 'Monthly club credit',
+      subtitle: 'Claim once each calendar month',
+      description: 'Silver ₹100 free bet, Gold ₹250 bonus, Platinum ₹500 bonus, Diamond ₹1,000 cash. Claim on this page. One-time tier-up gifts land automatically when you first reach each level.',
+      badge: 'MONTHLY',
+    },
+    {
+      id: 'priority_support',
+      icon: <FiMessageSquare style={{ color: '#8b5cf6', fontSize: '1.8rem' }} />,
+      title: 'Priority support',
+      subtitle: 'Shorter first-response SLA',
+      description: 'Standard 15 minutes. Silver 10, Gold 5, Platinum 3, Diamond 2. Gold+ tickets open HIGH. Platinum and Diamond are URGENT on the VIP desk.',
+      badge: 'GOLD+',
+    },
+    {
+      id: 'spin_boost',
+      icon: <FiStar style={{ color: '#f59e0b', fontSize: '1.8rem' }} />,
+      title: 'Bigger daily spin',
+      subtitle: 'VIP multiplies the prize',
+      description: 'Gold 1.25×, Platinum 1.5×, Diamond 2× the daily spin credit. Same wheel, higher payout at your tier.',
+      badge: 'SPIN',
     },
     {
       id: 'gifting',
-      icon: <FiGift style={{ color: '#3b82f6', fontSize: '1.8rem' }} />,
-      title: 'Luxury Gifting',
-      subtitle: 'Tailormade Physical & Digital Gifts',
-      description: 'Receive exclusive tech gadgets, luxury gift hampers, event tickets, and tailormade rewards matching your personal preferences.',
-      badge: 'LUXURY',
-    },
-    {
-      id: 'birthday_gift',
-      icon: <FiCalendar style={{ color: '#f43f5e', fontSize: '1.8rem' }} />,
-      title: 'Birthday Gift',
-      subtitle: 'VIP Bonus & Cash to Celebrate Your Day',
-      description: 'Celebrate your special day with a customized high-value VIP birthday gift, cash bonus, and free spins packages.',
-      badge: 'ANNUAL BONUS',
+      icon: <FiCrown style={{ color: '#3b82f6', fontSize: '1.8rem' }} />,
+      title: 'Loyalty redeem',
+      subtitle: 'Turn points into withdrawable cash',
+      description: 'From 50 points, redeem in the wallet menu. Credit goes to cash winnings. Same 5 points = ₹1 rate for every player — VIP simply earns points faster.',
+      badge: 'REDEEM',
     },
   ];
 
   const comparisonData = [
-    { feature: 'Priority Transactions', all: false, preVip: true, vip: true },
-    { feature: 'Dedicated Account Manager', all: false, preVip: false, vip: true },
-    { feature: 'Tailored Exclusive Offers', all: false, preVip: false, vip: true },
-    { feature: 'Daily Cashback', all: false, preVip: true, vip: true },
-    { feature: 'Special Loyalty Bonus', all: false, preVip: true, vip: true },
-    { feature: 'Luxury Gifting', all: false, preVip: false, vip: true },
-    { feature: 'Birthday Gift', all: false, preVip: false, vip: true },
+    { feature: 'Loyalty points', all: `${LOYALTY_POINTS_PER_100_STANDARD} / ₹100`, preVip: `${LOYALTY_POINTS_PER_100_VIP} / ₹100`, vip: `${LOYALTY_POINTS_PER_100_VIP} / ₹100` },
+    { feature: 'Min deposit / withdraw', all: `₹${MIN_DEPOSIT_INR.toLocaleString('en-IN')}`, preVip: `₹${MIN_DEPOSIT_INR.toLocaleString('en-IN')}`, vip: `₹${MIN_DEPOSIT_INR.toLocaleString('en-IN')}` },
+    { feature: 'Max withdrawal', all: '₹50,000', preVip: '₹1,00,000', vip: '₹2.5L – ₹10L' },
+    { feature: 'Withdrawal review target', all: '24h', preVip: '8h', vip: '4h – 1h' },
+    { feature: 'Cashout of potential', all: '85%', preVip: '88%', vip: '90–95%' },
+    { feature: 'Odds boost', all: '—', preVip: '—', vip: '2–5%' },
+    { feature: 'Daily cashback', all: '—', preVip: '2%', vip: '5–10%' },
+    { feature: 'Monthly club credit', all: '—', preVip: '₹100 free bet', vip: '₹250 – ₹1,000' },
+    { feature: 'Daily spin multiplier', all: '1×', preVip: '1×', vip: '1.25–2×' },
+    { feature: 'Support first reply', all: '15 min', preVip: '10 min', vip: '5–2 min' },
+    { feature: 'Dedicated manager review', all: false, preVip: false, vip: true },
   ];
+
+  const cellValue = (value) => {
+    if (value === true) return <span className="vip-check vip-check--gold"><FiCheck /></span>;
+    if (value === false || value === '—') return <span className="vip-cross"><FiMinus /></span>;
+    return <span className="vip-cell-text">{value}</span>;
+  };
 
   const testimonials = [
     {
       name: 'Vikram S. (Mumbai)',
       role: 'VIP Diamond Member',
-      quote: 'The instant priority withdrawals and having a dedicated WhatsApp VIP manager make OddsYra unbeatable. Requests get handled in under 2 minutes!',
+      quote: 'Priority withdrawals and Diamond cashout at 95% make a real difference on live cricket.',
       stars: 5,
     },
     {
       name: 'Ananya P. (Bengaluru)',
       role: 'VIP Gold Member',
-      quote: 'The daily cashbacks and personalized birthday bonuses are truly high value. You really feel treated like royalty here.',
+      quote: 'Gold odds boost plus daily cashback and the monthly bonus actually credit. You feel the club benefits on every bet.',
       stars: 5,
     },
     {
       name: 'Rohan V. (Delhi)',
       role: 'VIP Platinum Member',
-      quote: 'Tailored exclusive odds on IPL and cricket matches along with express payouts. Best VIP program in India hands down.',
+      quote: 'Platinum support replies faster and the 1.5× daily spin is a nice extra on top of 7.5% cashback.',
       stars: 5,
     },
   ];
@@ -164,8 +228,20 @@ export default function Vip() {
               <span className="vip-user-stat__value vip-user-stat__value--tier">{vipRank}</span>
             </div>
             <div className="vip-user-stat">
-              <span className="vip-user-stat__label">🪙 Coins</span>
+              <span className="vip-user-stat__label">🪙 Points</span>
               <span className="vip-user-stat__value">{coins}</span>
+            </div>
+            <div className="vip-user-stat">
+              <span className="vip-user-stat__label">Earn rate</span>
+              <span className="vip-user-stat__value">{benefits.pointsPer100} / ₹100</span>
+            </div>
+            <div className="vip-user-stat">
+              <span className="vip-user-stat__label">Cashout</span>
+              <span className="vip-user-stat__value">{Math.round((benefits.cashoutPayoutPct || 0.85) * 100)}%</span>
+            </div>
+            <div className="vip-user-stat">
+              <span className="vip-user-stat__label">Odds boost</span>
+              <span className="vip-user-stat__value">{benefits.oddsBoostPct ? `+${benefits.oddsBoostPct}%` : '—'}</span>
             </div>
             <div className="vip-user-stat">
               <span className="vip-user-stat__label">💰 Cash Balance</span>
@@ -194,16 +270,18 @@ export default function Vip() {
             </div>
             <h1>VIP Benefits at OddsYra</h1>
             <p className="vip-hero__subtitle">
-              Unrivaled VIP experience · Excellent service and exclusive personalized benefits created for you
+              Standard players earn {LOYALTY_POINTS_PER_100_STANDARD} points per ₹100 staked.
+              Silver and above earn {LOYALTY_POINTS_PER_100_VIP}, plus cashback, better cashout, and monthly club credit.
+              Min deposit and withdrawal is ₹{MIN_DEPOSIT_INR.toLocaleString('en-IN')}.
             </p>
             <div className="vip-hero__actions">
               <button
                 type="button"
                 className="vip-btn-primary"
-                onClick={handleRequestVipTrial}
-                disabled={requestedTrial || requestingTrial}
+                onClick={handleClaimCashback}
+                disabled={claimingCashback || !benefits.cashbackPct}
               >
-                <FiPhoneCall /> {requestedTrial ? 'Request submitted' : requestingTrial ? 'Submitting…' : 'Request VIP review'}
+                <FiDollarSign /> {claimingCashback ? 'Claiming…' : benefits.cashbackPct ? 'Claim yesterday’s cashback' : 'Cashback from Silver'}
               </button>
               <a href="#comparison" className="vip-btn-outline">
                 Compare Tiers <FiArrowRight />
@@ -216,8 +294,8 @@ export default function Vip() {
         <section className="vip-section">
           <div className="vip-section__header">
             <span className="vip-section__badge">VIP ADVANTAGES</span>
-            <h2>Exclusive Personalized VIP Benefits For You</h2>
-            <p>Elevate your sports betting & casino gaming with white-glove personal treatment</p>
+            <h2>What VIP actually unlocks</h2>
+            <p>Faster points, higher withdrawal limits, daily cashback, and priority support — all live on sports bets.</p>
           </div>
 
           <div className="vip-benefits-grid">
@@ -248,11 +326,38 @@ export default function Vip() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <div className="vip-spotlight__badge">EXCLUSIVE OFFERS EVERY DAY</div>
-          <h2>Daily Cashback, Gifting & Birthday Bonuses</h2>
+          <div className="vip-spotlight__badge">DAILY CASHBACK</div>
+          <h2>A cut of yesterday’s net losses</h2>
           <p>
-            As a OddsYra VIP member, every day brings customized promotions tailored specifically to your gameplay. From zero-wagering daily cashbacks to luxury surprise gifts, experience top-tier gaming.
+            VIP club members can claim cashback once a day. It is {benefits.cashbackPct || 2}–10% of net cash losses
+            from the previous day, paid to your cash wallet. Standard accounts earn points only.
           </p>
+          {isLoggedIn && (
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 16 }}>
+              <button
+                type="button"
+                className="vip-btn-primary"
+                onClick={handleClaimCashback}
+                disabled={claimingCashback || !benefits.cashbackPct}
+              >
+                {claimingCashback ? 'Claiming…' : 'Claim cashback'}
+              </button>
+              <button
+                type="button"
+                className="vip-btn-outline"
+                onClick={handleClaimMonthly}
+                disabled={claimingMonthly || !benefits.monthlyReward?.amount || benefits.monthlyClaimed}
+              >
+                {claimingMonthly
+                  ? 'Claiming…'
+                  : benefits.monthlyClaimed
+                    ? 'Monthly credit claimed'
+                    : benefits.monthlyReward?.amount
+                      ? `Claim ${formatInr(benefits.monthlyReward.amount)} ${benefits.monthlyReward.type}`
+                      : 'Monthly credit from Silver'}
+              </button>
+            </div>
+          )}
         </motion.div>
 
         {/* How to Become a VIP Section */}
@@ -262,30 +367,32 @@ export default function Vip() {
               <FiPhoneCall />
             </div>
             <div className="vip-card-box__content">
-              <h2>How to become a VIP?</h2>
+              <h2>How to join the VIP club</h2>
               <p>
-                You will be invited to join our VIP trial program through a personalized call, message, or in-app pop-up from our VIP Management team.
+                Place sports bets. Standard accounts earn {LOYALTY_POINTS_PER_100_STANDARD} points per ₹100.
+                At {VIP_TIER_POINTS.SILVER} points you reach Silver (Pre-VIP) and the earn rate becomes {LOYALTY_POINTS_PER_100_VIP} per ₹100.
+                Gold starts at {VIP_TIER_POINTS.GOLD.toLocaleString('en-IN')} points, Platinum at {VIP_TIER_POINTS.PLATINUM.toLocaleString('en-IN')}, Diamond at {VIP_TIER_POINTS.DIAMOND.toLocaleString('en-IN')}.
               </p>
               <div className="vip-how-steps mt-4">
                 <div className="vip-step-item">
                   <span className="vip-step-num">1</span>
                   <div>
-                    <strong>Play & Earn Coins</strong>
-                    <p>Place bets on sports to accumulate loyalty coins. Casino play is not live yet.</p>
+                    <strong>Bet on sports</strong>
+                    <p>Every stake earns loyalty points at your current tier rate.</p>
                   </div>
                 </div>
                 <div className="vip-step-item">
                   <span className="vip-step-num">2</span>
                   <div>
-                    <strong>Get Personal Invitation</strong>
-                    <p>Our VIP Desk reviews account activity daily and dispatches personal invites via WhatsApp & phone.</p>
+                    <strong>Hit Silver ({VIP_TIER_POINTS.SILVER} pts)</strong>
+                    <p>Unlock 5 pts / ₹100, 2% daily cashback, and ₹1L max withdrawal.</p>
                   </div>
                 </div>
                 <div className="vip-step-item">
                   <span className="vip-step-num">3</span>
                   <div>
-                    <strong>Unlock Bespoke Privileges</strong>
-                    <p>Enjoy direct Account Manager contact, instant payouts, and tailored gifts.</p>
+                    <strong>Climb Gold+</strong>
+                    <p>Higher cashback, bigger withdrawal caps, and HIGH-priority support tickets.</p>
                   </div>
                 </div>
               </div>
@@ -317,27 +424,9 @@ export default function Vip() {
                     <td className="vip-feature-name">
                       <strong>{row.feature}</strong>
                     </td>
-                    <td>
-                      {row.all ? (
-                        <span className="vip-check"><FiCheck /></span>
-                      ) : (
-                        <span className="vip-cross"><FiMinus /></span>
-                      )}
-                    </td>
-                    <td>
-                      {row.preVip ? (
-                        <span className="vip-check"><FiCheck /></span>
-                      ) : (
-                        <span className="vip-cross"><FiMinus /></span>
-                      )}
-                    </td>
-                    <td className="vip-col-highlight">
-                      {row.vip ? (
-                        <span className="vip-check vip-check--gold"><FiCheck /></span>
-                      ) : (
-                        <span className="vip-cross"><FiMinus /></span>
-                      )}
-                    </td>
+                    <td>{cellValue(row.all)}</td>
+                    <td>{cellValue(row.preVip)}</td>
+                    <td className="vip-col-highlight">{cellValue(row.vip)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -378,8 +467,8 @@ export default function Vip() {
               <h2>👑 OddsYra Loyalty Club</h2>
               <p>Play more, earn more: unlock bigger rewards, freebets, and cash prizes!</p>
             </div>
-            <Link to="/marketplace" className="vip-btn-gold">
-              Explore Loyalty Rewards <FiAward />
+            <Link to="/profile" className="vip-btn-gold">
+              Redeem points <FiAward />
             </Link>
           </div>
         </div>

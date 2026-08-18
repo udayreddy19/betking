@@ -18,6 +18,30 @@ function isUsableShortName(value) {
   return s.length <= 8;
 }
 
+export function asDisplayText(value, fallback = '') {
+  if (value == null || value === '') return fallback;
+  const t = typeof value;
+  if (t === 'string' || t === 'number' || t === 'boolean') return String(value);
+  if (Array.isArray(value)) {
+    const joined = value.map((item) => asDisplayText(item, '')).filter(Boolean).join(' ');
+    return joined || fallback;
+  }
+  if (t === 'object') {
+    for (const key of ['name', 'title', 'label', 'text', 'displayName']) {
+      if (typeof value[key] === 'string' && value[key].trim()) return value[key].trim();
+    }
+  }
+  return fallback;
+}
+
+export function teamDisplayName(team, fallback = 'TBD') {
+  if (team == null || team === '') return fallback;
+  if (typeof team === 'string' || typeof team === 'number') return String(team);
+  const name = asDisplayText(team.name || team.shortName || team.displayName, '');
+  if (name) return name;
+  return fallback;
+}
+
 export function formatTeamShortName(name = '', existingShort = '', fallback = 'TBD') {
   if (isUsableShortName(existingShort)) return String(existingShort).trim();
 

@@ -58,7 +58,7 @@ function getSelectionName(match, selection, customName) {
 }
 
 export function BetSlipProvider({ children }) {
-  const { showToast, refreshWallet } = useAuth();
+  const { showToast, refreshWallet, user } = useAuth();
   const [bets, setBets] = useState([]);
   const [placedBets, setPlacedBets] = useState([]);
   const [stake, setStake] = useState('');
@@ -403,7 +403,7 @@ export function BetSlipProvider({ children }) {
         && bet.fundSource !== 'freebet',
     );
     if (!target) return null;
-    const offer = getCashoutOffer(target);
+    const offer = getCashoutOffer(target, user?.loyaltyTier);
     if (offer <= 0) return null;
     const cashed = {
       ...target,

@@ -1,15 +1,19 @@
 import { useNavigate } from 'react-router-dom';
 import { homeCategoryTiles } from '../../data/homePageData';
+import { CASINO_ENABLED } from '../../utils/featureFlags';
 import './HomeCategoryGrid.css';
 
 const TILE_IMAGE_FALLBACK = 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=600&q=80';
 
 export default function HomeCategoryGrid() {
   const navigate = useNavigate();
+  const tiles = CASINO_ENABLED
+    ? homeCategoryTiles
+    : homeCategoryTiles.filter((tile) => tile.id !== 'casino');
 
   return (
     <section className="home-category-grid" id="home-category-grid" aria-label="Quick links">
-      {homeCategoryTiles.map((tile) => (
+      {tiles.map((tile) => (
         <button
           key={tile.id}
           type="button"

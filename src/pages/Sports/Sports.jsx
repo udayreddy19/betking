@@ -23,7 +23,7 @@ import { useCentralizedMatchState } from '../../hooks/useCentralizedMatchState';
 import { centralizedMatchEngine } from '../../services/centralizedMatchStateEngine';
 import { filterMatches } from '../../utils/matchFilters';
 import { resolveLeagueId, getLeagueMeta, isSameLeague, groupMatchesByLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
-import { formatTeamShortName } from '../../utils/teamShortName';
+import { formatTeamShortName, teamDisplayName, asDisplayText } from '../../utils/teamShortName';
 import SrlLeaguePanel from '../../components/SrlLeaguePanel/SrlLeaguePanel';
 import {
   fetchAuthoritativeMatchOdds,
@@ -32,6 +32,7 @@ import {
   provisionalWinnerMarketsFromMatch,
 } from '../../services/oddsService';
 import { getMarketCategoriesForSport } from '../../utils/oddsMarketsGenerator';
+import { useMatchWatchlist } from '../../hooks/useMatchWatchlist';
 import { mediaQueryMatches, subscribeMediaQuery } from '../../utils/browserCompat';
 import './Sports.css';
 
@@ -150,15 +151,15 @@ function CricketGroupedMatches({ groups, onSelectMatch, getMatchScores, isBetSel
             const showDrawSlot = isCricketRow || sportKey === 'soccer' || sportKey === 'esoccer';
 
             const statusLabel = isLive
-              ? (m.liveDetails?.period
-                || m.liveDetails?.minute
-                || m.liveDetails?.currentSet
+              ? (asDisplayText(m.liveDetails?.period)
+                || asDisplayText(m.liveDetails?.minute)
+                || asDisplayText(m.liveDetails?.currentSet)
                 || (isCricketRow
                   ? (team2Score && team2Score !== '0/0' ? 'Second innings' : 'First innings')
                   : 'Live'))
               : isFinished
                 ? 'Match Ended'
-                : (m.time || 'Scheduled');
+                : (asDisplayText(m.time, 'Scheduled'));
 
             const oversDisplay = isCricketRow && isLive && overs2 && overs2 !== '0.0'
               ? `(${overs2} ov.)`
@@ -188,12 +189,12 @@ function CricketGroupedMatches({ groups, onSelectMatch, getMatchScores, isBetSel
                   <div className="sports-cricket-row__teams-btn">
                     <div className="sports-cricket-row__team">
                       <TeamJersey team={m.team1} size={22} isFlying={isLive && isTeamBattingInMatch(m, m.team1)} />
-                      <span className="sports-cricket-row__team-name">{m.team1.name}</span>
+                      <span className="sports-cricket-row__team-name">{teamDisplayName(m.team1)}</span>
                       {showScores && <strong className="sports-cricket-row__score">{team1Score || '–'}</strong>}
                     </div>
                     <div className="sports-cricket-row__team">
                       <TeamJersey team={m.team2} size={22} isFlying={isLive && isTeamBattingInMatch(m, m.team2)} />
-                      <span className="sports-cricket-row__team-name">{m.team2.name}</span>
+                      <span className="sports-cricket-row__team-name">{teamDisplayName(m.team2)}</span>
                       {showScores && <strong className="sports-cricket-row__score">{team2Score || '–'}</strong>}
                     </div>
                     {oversDisplay && (
@@ -210,7 +211,7 @@ function CricketGroupedMatches({ groups, onSelectMatch, getMatchScores, isBetSel
                       disabled={!(Number(m.odds?.team1) > 1)}
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (Number(m.odds?.team1) > 1) onQuickBet(m, '1', m.odds.team1, m.team1.name);
+                        if (Number(m.odds?.team1) > 1) onQuickBet(m, '1', m.odds.team1, teamDisplayName(m.team1));
                       }}
                     >
                       <span className="odds-label">1</span>
@@ -223,7 +224,7 @@ function CricketGroupedMatches({ groups, onSelectMatch, getMatchScores, isBetSel
                       disabled={!(Number(m.odds?.team2) > 1)}
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (Number(m.odds?.team2) > 1) onQuickBet(m, '2', m.odds.team2, m.team2.name);
+                        if (Number(m.odds?.team2) > 1) onQuickBet(m, '2', m.odds.team2, teamDisplayName(m.team2));
                       }}
                     >
                       <span className="odds-label">2</span>
@@ -278,6 +279,7 @@ export default function Sports() {
   const { tickerMessage, cricketSeries, scoresError, refreshScores, isScoresLoading } = useLiveSportsMeta();
   const { addBet, isBetSelected } = useBetSlip();
   const { user, showToast } = useAuth();
+  const { ids: watchlistIds, count: watchlistCount } = useMatchWatchlist();
   const isAdminUser = user?.role === 'admin' || user?.email === 'admin@oddsyra.com';
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
@@ -304,17 +306,21 @@ export default function Sports() {
 
 
   const isIplSrlView = isSameLeague(activeLeague, 'ipl-srl');
+  const watchlistOnly = searchParams.get('watchlist') === '1';
 
   const sportMatches = useMemo(() => {
-    const filtered = filterByLeague(
-      filterMatches(matches, {
-        sport: activeSport,
-        stateTab: isLiveBettingPage ? 'bettable' : 'all',
-        searchQuery,
-      }),
-      activeLeague,
-      cricketSeries,
-    );
+    const filtered = watchlistOnly
+      ? filterMatches(matches || [], { stateTab: isLiveBettingPage ? 'bettable' : 'all', searchQuery })
+        .filter((m) => watchlistIds.includes(String(m.id)))
+      : filterByLeague(
+        filterMatches(matches || [], {
+          sport: activeSport,
+          stateTab: isLiveBettingPage ? 'bettable' : 'all',
+          searchQuery,
+        }),
+        activeLeague,
+        cricketSeries,
+      );
 
     let list = filtered;
 
@@ -326,7 +332,7 @@ export default function Sports() {
       if (leagueCmp) return leagueCmp;
       return String(a.id || '').localeCompare(String(b.id || ''));
     });
-  }, [matches, activeSport, activeLeague, searchQuery, cricketSeries, isLiveBettingPage]);
+  }, [matches, activeSport, activeLeague, searchQuery, cricketSeries, isLiveBettingPage, watchlistOnly, watchlistIds]);
 
   const liveMatches = useMemo(
     () => sportMatches.filter((m) => getMatchState(m) === 'in'),
@@ -516,6 +522,7 @@ export default function Sports() {
       if (resolved) next.set('league', resolved);
       else next.delete('league');
       next.delete('match');
+      next.delete('watchlist');
       return next;
     }, { replace: true });
     requestAnimationFrame(() => {
@@ -562,6 +569,7 @@ export default function Sports() {
       next.set('sport', sportId);
       next.set('league', 'all');
       next.delete('match');
+      next.delete('watchlist');
       return next;
     }, { replace: true });
   }, [setSearchParams]);
@@ -569,6 +577,18 @@ export default function Sports() {
   const handleLeagueChange = useCallback((leagueId) => {
     showLeagueOverview(leagueId);
   }, [showLeagueOverview]);
+
+  const toggleWatchlistFilter = useCallback(() => {
+    setViewMode('league');
+    setSelectedMatchId(null);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('match');
+      if (next.get('watchlist') === '1') next.delete('watchlist');
+      else next.set('watchlist', '1');
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
 
   useEffect(() => {
     const sport = searchParams.get('sport');
@@ -596,7 +616,10 @@ export default function Sports() {
     : 'Scheduled';
 
   const activeLeagueMeta = getLeagueMeta(activeLeague, cricketSeries);
-  const breadcrumbLeague = activeLeagueMeta?.breadcrumb || activeLeagueMeta?.name || activeMatch?.league || 'All Leagues';
+  const breadcrumbLeague = asDisplayText(
+    activeLeagueMeta?.breadcrumb || activeLeagueMeta?.name || activeMatch?.league,
+    'All Leagues',
+  );
   const sportLabel = sportsCategories.find(s => s.id === activeSport)?.name || 'Cricket';
   const leagueChips = featuredLeagues.filter(l => l.sport === activeSport);
   const canBetActive = activeMatch ? isMatchBettable(activeMatch) : false;
@@ -618,8 +641,8 @@ export default function Sports() {
 
   const sportCounts = useMemo(() => {
     const pool = isLiveBettingPage
-      ? filterMatches(matches, { stateTab: 'bettable' })
-      : matches;
+      ? filterMatches(matches || [], { stateTab: 'bettable' })
+      : (matches || []);
     const map = {};
     for (const cat of sportsCategories) {
       map[cat.id] = pool.filter((m) => {
@@ -674,7 +697,7 @@ export default function Sports() {
                 ← {breadcrumbLeague}
               </button>
               <span className="sports-mobile-match-title">
-                {activeMatch.team1.shortName || activeMatch.team1.name} v {activeMatch.team2.shortName || activeMatch.team2.name}
+                {teamDisplayName(activeMatch.team1, activeMatch.team1?.shortName)} v {teamDisplayName(activeMatch.team2, activeMatch.team2?.shortName)}
               </span>
             </div>
           ) : (
@@ -702,7 +725,7 @@ export default function Sports() {
                   </button>
                   <span className="sports-breadcrumb-sep">›</span>
                   <span className="sports-breadcrumb-current">
-                    {activeMatch.team1.name} vs. {activeMatch.team2.name}
+                    {teamDisplayName(activeMatch.team1)} vs. {teamDisplayName(activeMatch.team2)}
                   </span>
                 </>
               ) : (
@@ -719,11 +742,17 @@ export default function Sports() {
             className="filter-chips-row sports-sport-chips"
           />
 
-          {leagueChips.length > 0 && (
-            <div className="sports-league-chips sports-league-chips--browse">
+          <div className="sports-league-chips sports-league-chips--browse">
               <button
                 type="button"
-                className={`sports-league-chip ${activeLeague === 'all' ? 'active' : ''}`}
+                className={`sports-league-chip ${watchlistOnly ? 'active' : ''}`}
+                onClick={toggleWatchlistFilter}
+              >
+                ★ Watchlist{watchlistCount ? ` (${watchlistCount})` : ''}
+              </button>
+              <button
+                type="button"
+                className={`sports-league-chip ${!watchlistOnly && activeLeague === 'all' ? 'active' : ''}`}
                 onClick={() => handleLeagueChange('all')}
               >
                 All Leagues
@@ -732,7 +761,7 @@ export default function Sports() {
                 <button
                   key={league.id}
                   type="button"
-                  className={`sports-league-chip ${isSameLeague(activeLeague, league.id) ? 'active' : ''}`}
+                  className={`sports-league-chip ${!watchlistOnly && isSameLeague(activeLeague, league.id) ? 'active' : ''}`}
                   onClick={() => handleLeagueChange(league.id)}
                 >
                   {league.icon && (
@@ -742,7 +771,6 @@ export default function Sports() {
                 </button>
               ))}
             </div>
-          )}
 
           {isAdminUser && (
             <div className={`sports-live-status sports-live-status--${liveStatusClass} sports-live-status-bar`} role="status">
@@ -787,7 +815,9 @@ export default function Sports() {
             {sportMatches.length === 0 ? (
               <div className="sports-ticker-empty">
                 <p>
-                  {isLiveBettingPage
+                  {watchlistOnly
+                    ? 'No watchlist matches are on the board right now. Star a match from Sports or Home to save it.'
+                    : isLiveBettingPage
                     ? `No ${sportsCategories.find((s) => s.id === activeSport)?.name?.toLowerCase() || 'sport'} matches available. Try another sport or check back soon.`
                     : `No matches found${searchQuery ? ` for "${searchQuery}"` : ''}.`}
                 </p>
@@ -815,11 +845,11 @@ export default function Sports() {
                   onClick={() => selectMatch(m.id)}
                 >
                   <div className="sports-ticker-row">
-                    <span title={m.team1.name}>{formatTeamShortName(m.team1.name, m.team1.shortName)}</span>
+                    <span title={teamDisplayName(m.team1)}>{formatTeamShortName(teamDisplayName(m.team1), m.team1?.shortName)}</span>
                     <span>{team1Score || ''}</span>
                   </div>
                   <div className="sports-ticker-row">
-                    <span title={m.team2.name}>{formatTeamShortName(m.team2.name, m.team2.shortName)}</span>
+                    <span title={teamDisplayName(m.team2)}>{formatTeamShortName(teamDisplayName(m.team2), m.team2?.shortName)}</span>
                     <span>{team2Score || ''}</span>
                   </div>
                   {isLive && <span className="sports-ticker-live">LIVE</span>}
@@ -842,18 +872,18 @@ export default function Sports() {
                       onClick={() => selectMatch(m.id)}
                     >
                       <div className="sports-league-overview-card-top">
-                        <span className="sports-league-overview-time">{m.league}</span>
+                        <span className="sports-league-overview-time">{asDisplayText(m.league)}</span>
                         {isLive && <span className="sports-league-overview-live">LIVE</span>}
                       </div>
                       <div className="sports-league-overview-teams">
                         <div className="sports-league-overview-team">
                           <TeamJersey team={m.team1} size={22} isFlying={isLive && isTeamBattingInMatch(m, m.team1)} />
-                          <span>{m.team1.name}</span>
+                          <span>{teamDisplayName(m.team1)}</span>
                           <strong>{team1Score || '–'}</strong>
                         </div>
                         <div className="sports-league-overview-team">
                           <TeamJersey team={m.team2} size={22} isFlying={isLive && isTeamBattingInMatch(m, m.team2)} />
-                          <span>{m.team2.name}</span>
+                          <span>{teamDisplayName(m.team2)}</span>
                           <strong>{team2Score || '–'}</strong>
                         </div>
                       </div>
@@ -907,18 +937,18 @@ export default function Sports() {
                       onClick={() => selectMatch(m.id)}
                     >
                       <div className="sports-league-overview-card-top">
-                        <span className="sports-league-overview-time">{m.time}</span>
+                        <span className="sports-league-overview-time">{asDisplayText(m.time)}</span>
                         {isLive && <span className="sports-league-overview-live">LIVE</span>}
                       </div>
                       <div className="sports-league-overview-teams">
                         <div className="sports-league-overview-team">
                           <TeamJersey team={m.team1} size={22} isFlying={isLive && isTeamBattingInMatch(m, m.team1)} />
-                          <span>{m.team1.name}</span>
+                          <span>{teamDisplayName(m.team1)}</span>
                           <strong>{team1Score || '–'}</strong>
                         </div>
                         <div className="sports-league-overview-team">
                           <TeamJersey team={m.team2} size={22} isFlying={isLive && isTeamBattingInMatch(m, m.team2)} />
-                          <span>{m.team2.name}</span>
+                          <span>{teamDisplayName(m.team2)}</span>
                           <strong>{team2Score || '–'}</strong>
                         </div>
                       </div>
@@ -989,7 +1019,7 @@ export default function Sports() {
                     <div className="sports-match-banner-teams">
                       <div className="sports-match-banner-team-col">
                         <TeamJersey team={activeMatch.team1} size={48} isFlying={isLive && isTeamBattingInMatch(activeMatch, activeMatch.team1)} />
-                        <span className="sports-match-banner-team">{activeMatch.team1.name}</span>
+                        <span className="sports-match-banner-team">{teamDisplayName(activeMatch.team1)}</span>
                         {(isLive || isFinished) && team1Score && (
                           <strong className="sports-match-banner-score">{team1Score}</strong>
                         )}
@@ -999,7 +1029,7 @@ export default function Sports() {
 
                       <div className="sports-match-banner-team-col">
                         <TeamJersey team={activeMatch.team2} size={48} isFlying={isLive && isTeamBattingInMatch(activeMatch, activeMatch.team2)} />
-                        <span className="sports-match-banner-team">{activeMatch.team2.name}</span>
+                        <span className="sports-match-banner-team">{teamDisplayName(activeMatch.team2)}</span>
                         {(isLive || isFinished) && team2Score && (
                           <strong className="sports-match-banner-score">{team2Score}</strong>
                         )}

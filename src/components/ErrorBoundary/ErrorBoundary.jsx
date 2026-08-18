@@ -38,10 +38,8 @@ export default class ErrorBoundary extends React.Component {
           textAlign: 'center',
         }}>
           <h2>Something went wrong loading this section</h2>
-          <p style={{ color: '#9ca3af', margin: '1rem 0' }}>
-            {import.meta.env.PROD
-              ? 'An unexpected rendering error occurred. Please refresh the page.'
-              : (this.state.error?.message || 'An unexpected rendering error occurred.')}
+          <p style={{ color: '#9ca3af', margin: '1rem 0', wordBreak: 'break-word' }}>
+            {this.state.error?.message || 'An unexpected rendering error occurred. Please refresh the page.'}
           </p>
           <button
             type="button"

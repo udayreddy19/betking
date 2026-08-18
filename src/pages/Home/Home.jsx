@@ -10,9 +10,13 @@ import { homePromoSlides } from '../../data/homePageData';
 import { useLiveMatches, useLiveSportsMeta } from '../../context/LiveSportsContext';
 import { filterMatches } from '../../utils/matchFilters';
 import { getLeagueMeta, isSameLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
+import { useMatchWatchlist } from '../../hooks/useMatchWatchlist';
 import BoostedOddsWidget from '../../components/BoostedOddsWidget/BoostedOddsWidget';
 import AnimatedMotionGiftIcon from '../../components/AnimatedMotionGiftIcon/AnimatedMotionGiftIcon';
+import ErrorBoundary from '../../components/ErrorBoundary/ErrorBoundary';
 import './Home.css';
+
+const HOME_MATCH_LIMIT = 12;
 
 function filterByLeague(matchList, leagueId) {
   if (!leagueId) return matchList;
@@ -29,6 +33,8 @@ export default function Home() {
   const [activeLeague, setActiveLeague] = useState(null);
   const [promoIndex, setPromoIndex] = useState(0);
   const matchScrollRef = useRef(null);
+  const watchlistScrollRef = useRef(null);
+  const { ids: watchlistIds, count: watchlistCount } = useMatchWatchlist();
 
   const leagueChips = useMemo(
     () => featuredLeagues.filter((l) => l.sport === activeSport),
@@ -77,6 +83,11 @@ export default function Home() {
     setActiveLeague(null);
   };
 
+  const watchlistMatches = useMemo(() => {
+    const idSet = new Set(watchlistIds);
+    return (matches || []).filter((m) => idSet.has(String(m.id)));
+  }, [matches, watchlistIds]);
+
   const promo = homePromoSlides[promoIndex];
 
   return (
@@ -109,6 +120,38 @@ export default function Home() {
       </button>
 
       <HomeCategoryGrid />
+
+      {watchlistCount > 0 && (
+        <section className="home-section home-watchlist" id="watchlist-section">
+          <div className="section-header">
+            <h2>Your watchlist</h2>
+            <div className="section-header-actions">
+              <button type="button" className="carousel-view-all" onClick={() => navigate('/sports?watchlist=1')}>
+                View all
+              </button>
+              <button type="button" className="carousel-nav-btn" onClick={() => scroll(watchlistScrollRef, 'left')} aria-label="Scroll watchlist left">
+                <FiChevronLeft />
+              </button>
+              <button type="button" className="carousel-nav-btn" onClick={() => scroll(watchlistScrollRef, 'right')} aria-label="Scroll watchlist right">
+                <FiChevronRight />
+              </button>
+            </div>
+          </div>
+          <div className="match-cards-scroll scroll-row-bleed" ref={watchlistScrollRef}>
+            {watchlistMatches.length > 0 ? (
+              watchlistMatches.slice(0, HOME_MATCH_LIMIT).map((match) => (
+                <ErrorBoundary key={match.id} resetKey={match.id} fallback={null}>
+                  <MatchCard match={match} variant="home" />
+                </ErrorBoundary>
+              ))
+            ) : (
+              <div className="no-matches-empty">
+                <p>Saved matches are not on the board right now. They’ll show here again when they return.</p>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       <BoostedOddsWidget />
 
@@ -156,8 +199,10 @@ export default function Home() {
 
         <div className="match-cards-scroll scroll-row-bleed" ref={matchScrollRef} key={`${activeSport}-${activeLeague}`}>
           {sportMatches.length > 0 ? (
-            sportMatches.map((match) => (
-              <MatchCard key={match.id} match={match} variant="home" />
+            sportMatches.slice(0, HOME_MATCH_LIMIT).map((match) => (
+              <ErrorBoundary key={match.id} resetKey={match.id} fallback={null}>
+                <MatchCard match={match} variant="home" />
+              </ErrorBoundary>
             ))
           ) : isScoresLoading ? (
             <div className="no-matches-empty">

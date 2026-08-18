@@ -58,9 +58,7 @@ app.use('/api/v1/rewards', rewardsRouter);
 import adminRouter from './routes/index.js';
 // Dev/admin bootstrap login — issued BEFORE the authenticated admin router.
 app.post('/api/auth/admin-login', loginRateLimiter, async (req, res) => {
-  const allowDevLogin =
-    process.env.NODE_ENV !== 'production'
-    || process.env.ADMIN_DEV_LOGIN === '1';
+  const allowDevLogin = process.env.NODE_ENV !== 'production';
 
   try {
     const { generateAdminToken, ADMIN_ROLES } = await import('./middleware/adminAuth.js');
@@ -1592,9 +1590,9 @@ app.post('/api/v1/admin/reports/export', async (req, res) => {
 // -----------------------------------------------------------------------------
 app.get('/api/v1/promotions', async (req, res) => {
   try {
-    const { query } = await import('../db/pg.js');
-    const promosRes = await query(`SELECT id, name, code, type, max_reward, min_odds, min_stake, wagering_multiplier, expires_at FROM promotions WHERE status = 'ACTIVE';`);
-    res.json({ success: true, count: promosRes.rows.length, promotions: promosRes.rows });
+    const { listPublicPromotionCatalog } = await import('../lib/promotionCatalog.mjs');
+    const promotions = await listPublicPromotionCatalog();
+    res.json({ success: true, count: promotions.length, promotions });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -1619,13 +1617,50 @@ app.get('/api/v1/user/bonuses', requireAuth, async (req, res) => {
   try {
     const { query } = await import('../db/pg.js');
     const bonusesRes = await query(`
-      SELECT ub.id, ub.bonus_amount, ub.wagering_required, ub.wagering_completed, ub.status, ub.expires_at, p.name AS promo_name
+      SELECT ub.id, ub.bonus_amount, ub.wagering_required, ub.wagering_completed, ub.status, ub.expires_at,
+             p.name AS promo_name, p.code
       FROM user_bonuses ub
       JOIN promotions p ON ub.promotion_id = p.id
       WHERE ub.user_id = $1
       ORDER BY ub.created_at DESC;
     `, [req.user.userId]);
     res.json({ success: true, count: bonusesRes.rows.length, bonuses: bonusesRes.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/v1/user/kyc', requireAuth, async (req, res) => {
+  try {
+    const { kycEngine } = await import('../lib/kycEngine.mjs');
+    const status = await kycEngine.getUserKycStatus(req.user.userId);
+    res.json({ success: true, ...status });
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message, code: err.code });
+  }
+});
+
+app.post('/api/v1/user/kyc', requireAuth, async (req, res) => {
+  try {
+    const { kycEngine } = await import('../lib/kycEngine.mjs');
+    const result = await kycEngine.submitKycVerification({
+      userId: req.user.userId,
+      documentType: req.body?.documentType,
+      documentNumber: req.body?.documentNumber,
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 400).json({ success: false, error: err.message, code: err.code });
+  }
+});
+
+app.get('/api/v1/user/transactions', requireAuth, async (req, res) => {
+  try {
+    const { fetchUserTransactions } = await import('../lib/userTransactions.mjs');
+    const limit = Math.min(parseInt(req.query.limit, 10) || 100, 200);
+    const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
+    const transactions = await fetchUserTransactions(req.user.userId, { limit, offset });
+    res.json({ success: true, count: transactions.length, transactions });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -2698,9 +2733,30 @@ app.get('/api/v1/vip/benefits', async (req, res) => {
 app.get('/api/v1/user/vip/status', requireAuth, async (req, res) => {
   try {
     const { getUserVipStatus } = await import('../lib/vipEngine.mjs');
-    res.json({ success: true, vip: getUserVipStatus(req.user.userId) });
+    const vip = await getUserVipStatus(req.user.userId);
+    res.json({ success: true, vip });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/v1/user/vip/cashback', requireAuth, async (req, res) => {
+  try {
+    const { claimDailyCashback } = await import('../lib/vipEngine.mjs');
+    const result = await claimDailyCashback(req.user.userId);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 400).json({ success: false, error: err.message, code: err.code });
+  }
+});
+
+app.post('/api/v1/user/vip/monthly', requireAuth, async (req, res) => {
+  try {
+    const { claimMonthlyClubReward } = await import('../lib/vipEngine.mjs');
+    const result = await claimMonthlyClubReward(req.user.userId);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 400).json({ success: false, error: err.message, code: err.code });
   }
 });
 
@@ -2824,18 +2880,18 @@ app.post('/api/v1/admin/rules', async (req, res) => {
 import { createServer } from 'http';
 import { initWebSocketServer } from '../lib/websocketEngine.mjs';
 
+try {
+  const { validateProductionEnvironment } = await import('../lib/devopsEngine.mjs');
+  validateProductionEnvironment();
+} catch (err) {
+  console.error('[Startup]', err.message);
+  if (isProduction) process.exit(1);
+}
+
 const httpServer = createServer(app);
 initWebSocketServer(httpServer);
 
 httpServer.listen(PORT, async () => {
-  try {
-    const { validateProductionEnvironment } = await import('../lib/devopsEngine.mjs');
-    validateProductionEnvironment();
-  } catch (err) {
-    console.error('[Startup]', err.message);
-    if (isProduction) process.exit(1);
-  }
-
   console.log(`🚀 OddsYra Backend listening on http://localhost:${PORT}`);
   console.log(`  - Webhook Route : http://localhost:${PORT}/api/webhooks/razorpay`);
   console.log(`  - WebSocket Route : ws://localhost:${PORT}/ws/support`);

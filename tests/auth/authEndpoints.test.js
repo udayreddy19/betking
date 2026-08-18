@@ -35,9 +35,24 @@ describe('Auth Service & Endpoints Test Suite', () => {
       const sql = text.trim();
 
       // SELECT FROM users WHERE email = $1
-      if (sql.startsWith('SELECT user_id FROM users WHERE email = $1')) {
+      if (sql.startsWith('SELECT user_id FROM users WHERE email = $1') || sql.includes('lower(email) = $1')) {
         const email = params[0];
-        const rows = mockDb.users.filter(u => u.email === email).map(u => ({ user_id: u.user_id }));
+        const exclude = params[1];
+        const rows = mockDb.users
+          .filter((u) => u.email === email && (!exclude || u.user_id !== exclude))
+          .map((u) => ({ user_id: u.user_id }));
+        return { rows, rowCount: rows.length };
+      }
+
+      if (sql.includes('right(regexp_replace(phone')) {
+        const digits = params[0];
+        const exclude = params[1];
+        const rows = mockDb.users
+          .filter((u) => {
+            const last10 = String(u.phone || '').replace(/\D/g, '').slice(-10);
+            return last10 === digits && (!exclude || u.user_id !== exclude);
+          })
+          .map((u) => ({ user_id: u.user_id }));
         return { rows, rowCount: rows.length };
       }
 
@@ -344,7 +359,7 @@ describe('Auth Service & Endpoints Test Suite', () => {
       expect(result.code).toBe('WEAK_PASSWORD');
     });
 
-    it('should reject duplicate email without leaking account details', async () => {
+    it('should reject duplicate email as already linked', async () => {
       await signup(mockQuery, mockWithTransaction, {
         email: 'duplicate@oddsyra.com',
         password: 'Password123!',
@@ -357,8 +372,28 @@ describe('Auth Service & Endpoints Test Suite', () => {
         firstName: 'Duplicate',
       });
 
-      expect(dupResult.error).toBeDefined();
-      expect(dupResult.code).toBe('SIGNUP_FAILED');
+      expect(dupResult.error).toMatch(/already linked to another account/i);
+      expect(dupResult.code).toBe('DUPLICATE_EMAIL');
+      expect(mockDb.users.length).toBe(1);
+    });
+
+    it('should reject duplicate mobile number as already linked', async () => {
+      await signup(mockQuery, mockWithTransaction, {
+        email: 'first@oddsyra.com',
+        password: 'Password123!',
+        firstName: 'First',
+        phone: '9876543210',
+      });
+
+      const dupResult = await signup(mockQuery, mockWithTransaction, {
+        email: 'second@oddsyra.com',
+        password: 'Password123!',
+        firstName: 'Second',
+        phone: '+91 98765 43210',
+      });
+
+      expect(dupResult.error).toMatch(/already linked to another account/i);
+      expect(dupResult.code).toBe('DUPLICATE_PHONE');
       expect(mockDb.users.length).toBe(1);
     });
   });

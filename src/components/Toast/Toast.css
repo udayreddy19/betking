@@ -33,6 +33,10 @@
   border-left: 4px solid #38bdf8;
 }
 
+.toast-card--warning {
+  border-left: 4px solid #f59e0b;
+}
+
 .toast-icon {
   font-size: 1.25rem;
   flex-shrink: 0;
@@ -41,6 +45,7 @@
 .toast-card--success .toast-icon { color: var(--color-success); }
 .toast-card--error .toast-icon { color: #f87171; }
 .toast-card--info .toast-icon { color: #38bdf8; }
+.toast-card--warning .toast-icon { color: #f59e0b; }
 
 .toast-message {
   flex: 1;

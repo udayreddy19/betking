@@ -3,7 +3,7 @@ import { IoClose, IoSettingsOutline } from '../../icons';
 import SportIcon from '../SportIcon/SportIcon';
 import { useBetSlip } from '../../context/BetSlipContext';
 import BetSlipFooter from './BetSlipFooter';
-import { MIN_STAKE_INR, BONUS_MIN_BET_ODDS, BONUS_MIN_WITHDRAW_ODDS } from '../../utils/wageringRules';
+import { MIN_STAKE_INR, BONUS_MIN_BET_ODDS } from '../../utils/wageringRules';
 import './BetSlip.css';
 
 function formatBetTime(timestamp) {
@@ -45,9 +45,9 @@ export default function BetSlip({ showFooter = true }) {
       {showSettings && (
         <div className="betslip-settings-panel">
           <p><strong>Min stake:</strong> ₹{MIN_STAKE_INR}</p>
-          <p><strong>Bonus/Freebet:</strong> odds ≥ {BONUS_MIN_BET_ODDS.toFixed(2)}</p>
-          <p><strong>Withdrawable bonus wins:</strong> odds ≥ {BONUS_MIN_WITHDRAW_ODDS.toFixed(2)}</p>
-          <p>Deposits must be wagered before withdrawal. Only Winnings can be withdrawn.</p>
+          <p><strong>Bonus:</strong> odds ≥ {BONUS_MIN_BET_ODDS.toFixed(2)}, rotate 5× before withdrawing winnings</p>
+          <p><strong>Free bet:</strong> any odds, like cash (profit only)</p>
+          <p>Verify Aadhaar and PAN to withdraw. Bonus itself cannot be withdrawn.</p>
         </div>
       )}
 

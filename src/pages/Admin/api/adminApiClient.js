@@ -35,6 +35,8 @@ async function requestAdminLogin(body, userToken) {
   return data;
 }
 
+const IS_PROD_CLIENT = import.meta.env.PROD;
+
 /**
  * Ensure a valid admin JWT exists.
  * Dev can bootstrap without a password. Production requires an admin account.
@@ -60,9 +62,21 @@ export async function ensureAdminSession(roleOverride, credentials) {
   if (!sessionPromise) {
     sessionPromise = (async () => {
       try {
+        const userToken = getAccessToken();
+        if (userToken) {
+          const data = await requestAdminLogin({ role: desiredRole }, userToken);
+          return storeAdminSession(data, desiredRole);
+        }
+
+        if (IS_PROD_CLIENT) {
+          const err = new Error('Sign in with an admin account to continue.');
+          err.code = 'ADMIN_LOGIN_REQUIRED';
+          throw err;
+        }
+
         const data = await requestAdminLogin(
           { role: desiredRole, adminId: 'admin_local' },
-          getAccessToken(),
+          null,
         );
         return storeAdminSession(data, desiredRole);
       } catch (err) {

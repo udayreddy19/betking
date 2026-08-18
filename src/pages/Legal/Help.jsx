@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom';
 import {
   BONUS_MIN_BET_ODDS,
-  BONUS_MIN_WITHDRAW_ODDS,
   MIN_STAKE_INR,
 } from '../../utils/wageringRules';
-import { LOYALTY_MIN_REDEEM_POINTS, LOYALTY_POINTS_PER_100, LOYALTY_POINTS_PER_RUPEE } from '../../utils/loyaltyPoints';
+import { MIN_DEPOSIT_INR, MIN_WITHDRAW_INR } from '../../utils/vipBenefits';
+import { LOYALTY_MIN_REDEEM_POINTS, LOYALTY_POINTS_PER_100_STANDARD, LOYALTY_POINTS_PER_100_VIP, LOYALTY_POINTS_PER_RUPEE } from '../../utils/loyaltyPoints';
 import './LegalPage.css';
 
 export default function Help() {
@@ -23,32 +23,34 @@ export default function Help() {
       <section>
         <h2>Wallet & withdrawals</h2>
         <ul>
-          <li><strong>Deposits</strong> are locked until you wager that amount on bets.</li>
-          <li><strong>Winnings</strong> from bets can be withdrawn (UPI, min ₹500).</li>
-          <li><strong>Bonus</strong> and <strong>Freebets</strong> cannot be withdrawn directly.</li>
+          <li><strong>Deposits</strong> are locked until you wager that amount on bets. Minimum deposit is ₹{MIN_DEPOSIT_INR.toLocaleString('en-IN')}.</li>
+          <li><strong>Winnings</strong> from bets can be withdrawn after Aadhaar and PAN verification (UPI, min ₹{MIN_WITHDRAW_INR.toLocaleString('en-IN')}; max depends on VIP tier).</li>
+          <li><strong>Bonus</strong> cannot be withdrawn. Withdrawing winnings while bonus is still in your wallet sets that bonus to ₹0.</li>
+          <li><strong>Free bets</strong> play like cash at any odds; winnings are profit only.</li>
         </ul>
       </section>
       <section>
         <h2>Bonus & freebet rules</h2>
         <ul>
-          <li>Can only be used on selections with odds ≥ {BONUS_MIN_BET_ODDS.toFixed(2)}.</li>
-          <li>Winnings become withdrawable only when odds ≥ {BONUS_MIN_WITHDRAW_ODDS.toFixed(2)}.</li>
-          <li>Freebets pay profit only (stake is not returned).</li>
-          <li>Lower-odds wins return funds to bonus/freebet — not to winnings.</li>
+          <li>Bonus can only be used on selections with odds ≥ {BONUS_MIN_BET_ODDS.toFixed(2)} and must rotate 5 times.</li>
+          <li>After 5× rotation, bonus winnings can be withdrawn. The bonus itself cannot.</li>
+          <li>Free bets play like cash at any odds and pay profit only (stake is not returned).</li>
+          <li>Each promo code can be used once per user, linked to Aadhaar and PAN.</li>
         </ul>
       </section>
       <section>
         <h2>Loyalty points</h2>
         <p>
-          Earn {LOYALTY_POINTS_PER_100} points per ₹100 spent. {LOYALTY_POINTS_PER_RUPEE} points = ₹1.
-          Redeem from {LOYALTY_MIN_REDEEM_POINTS}+ points in the wallet menu — credit goes to Winnings.
+          Standard players earn {LOYALTY_POINTS_PER_100_STANDARD} points per ₹100 staked.
+          Silver VIP club and above earn {LOYALTY_POINTS_PER_100_VIP} points per ₹100.
+          {LOYALTY_POINTS_PER_RUPEE} points = ₹1. Redeem from {LOYALTY_MIN_REDEEM_POINTS}+ points in the wallet menu — credit goes to cash winnings.
         </p>
       </section>
       <section>
         <h2>Cash out</h2>
         <p>
-          Open My Bets and cash out eligible pending cash bets early for an offered amount
-          (credited to Winnings). Bonus and freebet bets cannot be cashed out.
+          Open My Bets and cash out eligible pending cash bets early. Standard players get 85% of potential
+          payout; VIP club rates go up to 95% at Diamond. Bonus and freebet bets cannot be cashed out.
         </p>
       </section>
       <section>

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBetSlip } from '../../context/BetSlipContext';
+import { useAuth } from '../../context/AuthContext';
+import { useMatchWatchlist } from '../../hooks/useMatchWatchlist';
 import MatchDetailModal from '../MatchDetailModal/MatchDetailModal';
 import SportIcon from '../SportIcon/SportIcon';
 import TeamJersey from '../TeamJersey/TeamJersey';
@@ -10,6 +12,7 @@ import { resolveCricketTeamScores } from '../../utils/cricketScores';
 import { isTeamBattingInMatch } from '../../utils/teamFlags';
 import { isTestMatch, getTestMatchDayLabel, formatMatchCountdown } from '../../utils/cricketFormat';
 import { enrichFromPoller } from '../../services/matchDetailPoller';
+import { teamDisplayName, asDisplayText } from '../../utils/teamShortName';
 import './MatchCard.css';
 
 const sportLabels = {
@@ -48,9 +51,25 @@ function leagueIconKey(league) {
 
 export default function MatchCard({ match, variant = 'default' }) {
   const { addBet, isBetSelected } = useBetSlip();
+  const { showToast } = useAuth();
+  const { isSaved, toggle } = useMatchWatchlist();
   const navigate = useNavigate();
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const isHome = variant === 'home';
+  if (!match?.id) return null;
+  const saved = isSaved(match.id);
+  const team1Name = teamDisplayName(match.team1, 'Team 1');
+  const team2Name = teamDisplayName(match.team2, 'Team 2');
+
+  const handleWatchlist = (e) => {
+    e.stopPropagation();
+    const next = toggle(match);
+    const nowSaved = next.some((item) => item.id === String(match.id));
+    showToast?.(
+      nowSaved ? 'Added to your watchlist' : 'Removed from watchlist',
+      'success',
+    );
+  };
 
   const displayMatch = enrichFromPoller(match) || match;
   const isLiveNow = isMatchLive(displayMatch);
@@ -109,12 +128,12 @@ export default function MatchCard({ match, variant = 'default' }) {
   const testDayBadge = isTest ? getTestMatchDayLabel(match) : null;
   const countdownText = !isLiveNow && !isFinished ? formatMatchCountdown(match) : null;
 
-  const sportLabel = sportLabels[match.sport] || match.sport;
+  const sportLabel = sportLabels[match.sport] || asDisplayText(match.sport, 'Sport');
   const timeLabel = isLiveNow
     ? `LIVE${inlineScore ? ` · ${inlineScore}` : ''}`
     : isFinished
       ? 'Finished'
-      : (countdownText || match.time || 'Scheduled');
+      : (countdownText || asDisplayText(match.time, 'Scheduled'));
 
   const jerseySize = isHome ? 52 : 46;
 
@@ -137,12 +156,23 @@ export default function MatchCard({ match, variant = 'default' }) {
         <div className="match-card-header">
           <span className="match-card-league">
             <SportIcon icon={leagueIconKey(match.league)} sport={match.sport} className="league-flag" />
-            {match.league}
+            {asDisplayText(match.league)}
           </span>
-          <span className={`match-card-sport-tag ${isHome ? 'match-card-sport-tag--home' : ''}`} style={isHome ? undefined : { background: match.sportColor }}>
-            <SportIcon sport={match.sport} className="match-card-sport-icon" />
-            {isTest ? (testDayBadge ? `TEST (${testDayBadge.split('·')[0].trim()})` : 'TEST') : (isHome ? sportLabel : match.sport)}
-          </span>
+          <div className="match-card-header-actions">
+            <button
+              type="button"
+              className={`match-watchlist-btn ${saved ? 'is-saved' : ''}`}
+              onClick={handleWatchlist}
+              aria-label={saved ? 'Remove from watchlist' : 'Add to watchlist'}
+              title={saved ? 'Remove from watchlist' : 'Add to watchlist'}
+            >
+              {saved ? '★' : '☆'}
+            </button>
+            <span className={`match-card-sport-tag ${isHome ? 'match-card-sport-tag--home' : ''}`} style={isHome ? undefined : { background: match.sportColor }}>
+              <SportIcon sport={match.sport} className="match-card-sport-icon" />
+              {isTest ? (testDayBadge ? `TEST (${testDayBadge.split('·')[0].trim()})` : 'TEST') : (isHome ? sportLabel : match.sport)}
+            </span>
+          </div>
         </div>
 
         <div className={`match-card-time ${isLiveNow ? 'live' : ''} ${isFinished ? 'finished' : ''}`}>
@@ -169,7 +199,7 @@ export default function MatchCard({ match, variant = 'default' }) {
         <div className="match-card-teams">
           <div className="match-card-team">
             <TeamJersey team={match.team1} size={jerseySize} isFlying={isLiveNow && isTeamBattingInMatch(match, match.team1)} />
-            <span className="team-name">{match.team1?.name || match.team1 || 'Team 1'}</span>
+            <span className="team-name">{team1Name}</span>
             {!isHome && (isLiveNow || isFinished) && team1Score && (
               <span className="team-score">{team1Score}</span>
             )}
@@ -177,7 +207,7 @@ export default function MatchCard({ match, variant = 'default' }) {
           {!isHome && <span className="vs-text">VS</span>}
           <div className="match-card-team">
             <TeamJersey team={match.team2} size={jerseySize} isFlying={isLiveNow && isTeamBattingInMatch(match, match.team2)} />
-            <span className="team-name">{match.team2?.name || match.team2 || 'Team 2'}</span>
+            <span className="team-name">{team2Name}</span>
             {!isHome && (isLiveNow || isFinished) && team2Score && (
               <span className="team-score">{team2Score}</span>
             )}

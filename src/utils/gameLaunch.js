@@ -6,7 +6,7 @@ function getLobbyReturnUrl() {
   if (typeof window !== 'undefined') {
     return `${window.location.origin}/casino`;
   }
-  return 'https://oddsyra-two.vercel.app/casino';
+  return 'https://oddsyra.com/casino';
 }
 
 /** Apply current site as return/lobby URL on a launch config */

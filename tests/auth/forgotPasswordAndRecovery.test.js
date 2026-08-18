@@ -31,9 +31,20 @@ describe('Production-Grade Forgot Password & Account Recovery Suite (Req 1-30)',
       const sql = text.trim();
 
       // SELECT FROM users WHERE email = $1
-      if (sql.includes('FROM users WHERE email = $1')) {
+      if (sql.includes('FROM users WHERE email = $1') || sql.includes('lower(email) = $1')) {
         const email = params[0];
-        const rows = mockDb.users.filter(u => u.email === email);
+        const exclude = params[1];
+        const rows = mockDb.users.filter((u) => u.email === email && (!exclude || u.user_id !== exclude));
+        return { rows, rowCount: rows.length };
+      }
+
+      if (sql.includes('right(regexp_replace(phone')) {
+        const digits = params[0];
+        const exclude = params[1];
+        const rows = mockDb.users.filter((u) => {
+          const last10 = String(u.phone || '').replace(/\D/g, '').slice(-10);
+          return last10 === digits && last10 && (!exclude || u.user_id !== exclude);
+        });
         return { rows, rowCount: rows.length };
       }
 

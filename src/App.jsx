@@ -22,6 +22,7 @@ import GamePlayModal from './components/GamePlayModal/GamePlayModal';
 import LiveChatSupportWidget from './components/LiveChatSupportWidget/LiveChatSupportWidget';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import { getAdminSessionState } from './utils/adminSession';
+import { CASINO_ENABLED } from './utils/featureFlags';
 
 import Home from './pages/Home/Home';
 import Register from './pages/Register/Register';
@@ -46,6 +47,10 @@ const ApiDocs = lazy(() => import('./pages/ApiDocs/ApiDocs'));
 const Vip = lazy(() => import('./pages/Vip/Vip'));
 const IPLSRLAdmin = lazy(() => import('./pages/Admin/IPLSRL/IPLSRLAdmin'));
 
+function CasinoComingSoon() {
+  return <Navigate to="/sports" replace />;
+}
+
 function PageLoader() {
   return <div className="page-loader" role="status">Loading…</div>;
 }
@@ -69,11 +74,13 @@ function AppLayout() {
   const isAdminRoute = location.pathname.startsWith('/admin');
   const isDevRoute = location.pathname.startsWith('/developer') || location.pathname.startsWith('/api-docs');
   const isSportsRoute = location.pathname === '/sports' || location.pathname === '/live-betting';
+  const isRegisterRoute = location.pathname === '/register';
   const mainClass = [
     'app-main',
     isAdminRoute ? 'app-main--admin' : '',
     isDevRoute ? 'app-main--developer' : '',
     isSportsRoute ? 'app-main--sports' : '',
+    isRegisterRoute ? 'app-main--register' : '',
   ].filter(Boolean).join(' ');
 
   return (
@@ -87,8 +94,8 @@ function AppLayout() {
       <GamePlayModal />
       <BetSettlementRunner />
       <MobileBetSlip />
-      {!isAdminRoute && !isDevRoute && <MobileBottomBar />}
-      {!isAdminRoute && !isDevRoute && <GlobalBetBar />}
+      {!isAdminRoute && !isDevRoute && !isRegisterRoute && <MobileBottomBar />}
+      {!isAdminRoute && !isDevRoute && !isRegisterRoute && <GlobalBetBar />}
       <main className={mainClass}>
         <ErrorBoundary resetKey={location.pathname}>
           <Suspense fallback={<PageLoader />}>
@@ -96,8 +103,8 @@ function AppLayout() {
               <Route path="/" element={<Home />} />
               <Route path="/live-betting" element={<Sports />} />
               <Route path="/sports" element={<Sports />} />
-              <Route path="/casino" element={<Casino />} />
-              <Route path="/live-casino" element={<LiveCasino />} />
+              <Route path="/casino" element={CASINO_ENABLED ? <Casino /> : <CasinoComingSoon />} />
+              <Route path="/live-casino" element={CASINO_ENABLED ? <LiveCasino /> : <CasinoComingSoon />} />
               <Route path="/fantasy" element={<Fantasy />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/register" element={<Register />} />
@@ -153,8 +160,8 @@ function AppLayout() {
           </Suspense>
         </ErrorBoundary>
       </main>
-      {!isAdminRoute && !isDevRoute && <Footer />}
-      {!isAdminRoute && !isDevRoute && <LiveChatSupportWidget />}
+      {!isAdminRoute && !isDevRoute && !isRegisterRoute && <Footer />}
+      {!isAdminRoute && !isDevRoute && !isRegisterRoute && <LiveChatSupportWidget />}
     </>
   );
 }

@@ -1,16 +1,18 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import {
-  HiOutlineHome,
-  HiOutlineTrophy,
-  HiOutlineCube,
-  MdOutlineStorefront,
-  FiCrown,
-  HiOutlineDocumentText,
-  FiMenu,
-} from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
+import { CASINO_ENABLED } from '../../utils/featureFlags';
+import {
+  NavHomeIcon,
+  NavSportsIcon,
+  NavLiveIcon,
+  NavCasinoIcon,
+  NavPromotionsIcon,
+  NavVipIcon,
+  NavMenuIcon,
+  NavBetslipIcon,
+} from './MobileNavIcons';
 import './MobileBottomBar.css';
 
 export default function MobileBottomBar() {
@@ -20,11 +22,13 @@ export default function MobileBottomBar() {
   const { betCount, openMobileBetslip } = useBetSlip();
 
   const navItems = [
-    { label: 'Home', path: '/', icon: HiOutlineHome },
-    { label: 'Sports', path: '/sports', icon: HiOutlineTrophy },
-    { label: 'Live', path: '/live-betting', icon: HiOutlineCube, badge: 'LIVE' },
-    { label: 'Casino', path: '/casino', icon: MdOutlineStorefront },
-    { label: 'VIP', path: '/vip', icon: FiCrown, isVip: true },
+    { label: 'Home', path: '/', icon: NavHomeIcon },
+    { label: 'Sports', path: '/sports', icon: NavSportsIcon },
+    { label: 'Live', path: '/live-betting', icon: NavLiveIcon, badge: 'LIVE' },
+    CASINO_ENABLED
+      ? { label: 'Casino', path: '/casino', icon: NavCasinoIcon }
+      : { label: 'Promos', path: '/promotions', icon: NavPromotionsIcon },
+    { label: 'VIP', path: '/vip', icon: NavVipIcon, isVip: true },
   ];
 
   return (
@@ -58,7 +62,6 @@ export default function MobileBottomBar() {
           );
         })}
 
-        {/* Betslip Quick Button */}
         <motion.button
           type="button"
           className={`mobile-bar-item betslip-item ${betCount > 0 ? 'has-bets' : ''}`}
@@ -66,7 +69,7 @@ export default function MobileBottomBar() {
           whileTap={{ scale: 0.88 }}
         >
           <div className="mobile-bar-icon-wrap">
-            {betCount > 0 ? <HiOutlineDocumentText className="mobile-bar-icon" /> : <FiMenu className="mobile-bar-icon" />}
+            {betCount > 0 ? <NavBetslipIcon className="mobile-bar-icon" /> : <NavMenuIcon className="mobile-bar-icon" />}
             {betCount > 0 && <span className="mobile-bar-bet-count">{betCount}</span>}
           </div>
           <span className="mobile-bar-label">{betCount > 0 ? 'Betslip' : 'Menu'}</span>

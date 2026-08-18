@@ -19,5 +19,7 @@ describe('daily spin prizes', () => {
     expect(loyaltyTierFromPoints(500)).toBe('SILVER');
     expect(loyaltyTierFromPoints(2000)).toBe('GOLD');
     expect(loyaltyTierFromPoints(10000)).toBe('PLATINUM');
+    expect(loyaltyTierFromPoints(24999)).toBe('PLATINUM');
+    expect(loyaltyTierFromPoints(25000)).toBe('DIAMOND');
   });
 });

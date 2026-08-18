@@ -5,7 +5,6 @@ import { getWalletBreakdown, formatInr } from '../../utils/walletBalance';
 import { getLoyaltySummary, LOYALTY_MIN_REDEEM_POINTS } from '../../utils/loyaltyPoints';
 import {
   BONUS_MIN_BET_ODDS,
-  BONUS_MIN_WITHDRAW_ODDS,
 } from '../../utils/wageringRules';
 import {
   DEFAULT_DAILY_DEPOSIT_LIMIT,
@@ -13,6 +12,7 @@ import {
 } from '../../utils/responsibleGaming';
 import { FiDownload, FiShield, FiSliders, FiList, FiAlertTriangle, FiMessageSquare } from '../../icons';
 import ProfileSupportTab from './ProfileSupportTab';
+import ProfileKycCard from './ProfileKycCard';
 import '../Legal/LegalPage.css';
 import './Profile.css';
 
@@ -224,7 +224,7 @@ export default function Profile() {
 
             <div className="profile-loyalty-box">
               <div className="profile-loyalty-head">
-                <span>Loyalty · {user.loyaltyRank} Lv.{user.loyaltyLevel}</span>
+                <span>Loyalty · {loyalty.tierLabel} · {loyalty.pointsPer100} pts / ₹100</span>
                 <strong>{loyalty.points} pts</strong>
               </div>
               <div className="profile-loyalty-bar">
@@ -264,7 +264,7 @@ export default function Profile() {
                   type="text"
                   value={promoCode}
                   onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                  placeholder="WELCOME100"
+                  placeholder="SPORTS500"
                   maxLength={32}
                   autoCapitalize="characters"
                   autoComplete="off"
@@ -275,9 +275,11 @@ export default function Profile() {
               </div>
             </form>
 
+            <ProfileKycCard />
+
             <p className="profile-rules">
-              Deposits must be wagered before withdrawal. Bonus bets need odds ≥ {BONUS_MIN_BET_ODDS.toFixed(2)};
-              bonus winnings withdraw at ≥ {BONUS_MIN_WITHDRAW_ODDS.toFixed(2)}. Only Winnings can be withdrawn.
+              Bonus bets need odds ≥ {BONUS_MIN_BET_ODDS.toFixed(2)} and must rotate 5 times. Withdrawing winnings while bonus is still in your wallet sets that bonus to ₹0.
+              Free bets play like cash at any odds. Promo codes are once per Aadhaar/PAN. Verify identity to withdraw.
             </p>
 
             <div className="profile-actions">

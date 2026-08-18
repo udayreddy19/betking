@@ -4,7 +4,6 @@ import { useAuth } from '../../context/AuthContext';
 import { getWalletBreakdown, formatInr } from '../../utils/walletBalance';
 import {
   BONUS_MIN_BET_ODDS,
-  BONUS_MIN_WITHDRAW_ODDS,
   MIN_STAKE_INR,
   canBetWithBonusOnLegs,
 } from '../../utils/wageringRules';
@@ -30,8 +29,8 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
   const bonusAvailable = wallet.bonus;
   const freebetAvailable = wallet.freebets;
   const canUsePromoFunds = canBetWithBonusOnLegs(bets);
-  const canUseBonus = bonusAvailable > 0 && canUsePromoFunds;
-  const canUseFreebet = freebetAvailable > 0 && canUsePromoFunds;
+  const canUseBonus = bonusAvailable > 0 && canBetWithBonusOnLegs(bets);
+  const canUseFreebet = freebetAvailable > 0;
 
   let activeSource = 'cash';
   if (stakeSource === 'bonus' && canUseBonus) activeSource = 'bonus';
@@ -56,19 +55,20 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
       return;
     }
 
-    if (activeSource === 'bonus' || activeSource === 'freebet') {
+    if (activeSource === 'bonus') {
       if (!canUsePromoFunds) {
         showToast(
-          `Bonus/Freebet requires odds of ${BONUS_MIN_BET_ODDS.toFixed(2)} or higher on every selection.`,
+          `Bonus requires odds of ${BONUS_MIN_BET_ODDS.toFixed(2)} or higher on every selection.`,
           'error',
         );
         return;
       }
-      if (activeSource === 'bonus' && bonusAvailable < amountToDeduct) {
+      if (bonusAvailable < amountToDeduct) {
         showToast('Insufficient bonus balance.', 'error');
         return;
       }
-      if (activeSource === 'freebet' && freebetAvailable < amountToDeduct) {
+    } else if (activeSource === 'freebet') {
+      if (freebetAvailable < amountToDeduct) {
         showToast('Insufficient freebet balance.', 'error');
         return;
       }
@@ -159,17 +159,19 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
           </button>
         )}
       </div>
-      {(stakeSource === 'bonus' || stakeSource === 'freebet') && !canUsePromoFunds && (
+      {stakeSource === 'bonus' && !canUsePromoFunds && (
         <p className="betslip-stake-source__warn">
-          Requires odds ≥ {BONUS_MIN_BET_ODDS.toFixed(2)}. Winnings withdrawable at ≥
-          {BONUS_MIN_WITHDRAW_ODDS.toFixed(2)}.
+          Bonus requires odds ≥ {BONUS_MIN_BET_ODDS.toFixed(2)} on every selection. Rotate 5× before withdrawing winnings.
         </p>
       )}
-      {(activeSource === 'bonus' || activeSource === 'freebet') && canUsePromoFunds && (
+      {activeSource === 'bonus' && canUsePromoFunds && (
         <p className="betslip-stake-source__hint">
-          {activeSource === 'freebet'
-            ? `Freebet pays profit only. Withdrawable at odds ≥ ${BONUS_MIN_WITHDRAW_ODDS.toFixed(2)}.`
-            : `Winnings withdrawable only when odds are ≥ ${BONUS_MIN_WITHDRAW_ODDS.toFixed(2)}.`}
+          Bonus must be rotated 5 times at {BONUS_MIN_BET_ODDS.toFixed(2)}+ odds. Winnings can be withdrawn after that — not the bonus.
+        </p>
+      )}
+      {activeSource === 'freebet' && (
+        <p className="betslip-stake-source__hint">
+          Free bet plays like cash at any odds. Winning pays profit only.
         </p>
       )}
     </div>

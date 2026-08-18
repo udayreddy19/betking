@@ -11,6 +11,11 @@ describe('Phase 10 Mandatory 5x Wagering & Incomplete Release Guard Tests', () =
     await query(`INSERT INTO users (user_id, email, password_hash) VALUES ($1, $2, 'hash') ON CONFLICT (user_id) DO NOTHING;`, [userId, `${userId}@example.com`]);
     await query(`INSERT INTO user_profiles (user_id, account_status, kyc_status) VALUES ($1, 'ACTIVE', 'VERIFIED') ON CONFLICT (user_id) DO NOTHING;`, [userId]);
     await query(`INSERT INTO wallets (wallet_id, user_id, balance, bonus_balance, currency) VALUES ($1, $2, 5000.00, 0.00, 'INR') ON CONFLICT (wallet_id) DO NOTHING;`, [`wal_${userId}`, userId]);
+    await query(
+      `INSERT INTO transactions (transaction_id, user_id, type, amount, status)
+       VALUES ($1, $2, 'DEPOSIT', 100.00, 'SUCCESS')`,
+      [`tx_dep_${userId}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, userId],
+    );
 
     await query(`DELETE FROM user_bonuses WHERE user_id = $1;`, [userId]);
     await query(`DELETE FROM ledger_entries WHERE wallet_id = $1;`, [`wal_${userId}`]);
@@ -52,22 +57,20 @@ describe('Phase 10 Mandatory 5x Wagering & Incomplete Release Guard Tests', () =
     const dbBonus = await query('SELECT status FROM user_bonuses WHERE id = $1', [bonusId]);
     expect(dbBonus.rows[0].status).toBe('COMPLETED');
 
-    // 5. Release Bonus Funds to Cash Wallet
-    const initialWal = await query('SELECT balance FROM wallets WHERE user_id = $1', [userId]);
+    // 5. Unlock winnings only — bonus is never converted to cash
+    const initialWal = await query('SELECT balance, bonus_balance FROM wallets WHERE user_id = $1', [userId]);
     const initialBal = parseFloat(initialWal.rows[0].balance);
+    const initialBonus = parseFloat(initialWal.rows[0].bonus_balance);
 
     const releaseRes = await releaseCompletedBonus({ userId, bonusId });
     expect(releaseRes.success).toBe(true);
     expect(releaseRes.status).toBe('RELEASED');
-    expect(releaseRes.releaseAmount).toBe(100.00);
-    expect(releaseRes.newCashBalance).toBe(initialBal + 100.00);
+    expect(releaseRes.releaseAmount).toBe(0);
 
-    // Verify double-entry ledger record
-    const dbLedger = await query('SELECT * FROM ledger_entries WHERE wallet_id = $1 AND description LIKE \'%Bonus Release%\'', [`wal_${userId}`]);
-    expect(dbLedger.rows.length).toBe(1);
-    expect(parseFloat(dbLedger.rows[0].amount)).toBe(100.00);
+    const afterWal = await query('SELECT balance, bonus_balance FROM wallets WHERE user_id = $1', [userId]);
+    expect(parseFloat(afterWal.rows[0].balance)).toBe(initialBal);
+    expect(parseFloat(afterWal.rows[0].bonus_balance)).toBe(initialBonus);
 
-    // Verify Idempotent Second Release Request -> Returns ALREADY_RELEASED without duplicate credit
     const secondRelease = await releaseCompletedBonus({ userId, bonusId });
     expect(secondRelease.status).toBe('ALREADY_RELEASED');
   });
@@ -96,7 +99,31 @@ describe('Phase 10 Mandatory 5x Wagering & Incomplete Release Guard Tests', () =
     expect(res.wageringCompleted).toBe(500.00); // Capped at required ₹500.00
     expect(res.isCompleted).toBe(true);
 
+    const before = await query('SELECT balance FROM wallets WHERE user_id = $1', [userId]);
     const releaseRes = await releaseCompletedBonus({ userId, bonusId });
     expect(releaseRes.status).toBe('RELEASED');
+    const after = await query('SELECT balance FROM wallets WHERE user_id = $1', [userId]);
+    expect(parseFloat(after.rows[0].balance)).toBe(parseFloat(before.rows[0].balance));
+  });
+
+  it('does not count stakes below 1.75 odds or freebet stakes toward 5x rotation', async () => {
+    await claimPromotionBonus({ userId, promoCode, depositAmount: 100.00 });
+
+    const low = await processBonusWageringProgress({ userId, betStake: 100.00, betOdds: 1.74 });
+    expect(low.updated).toBe(false);
+    expect(low.skipped).toBe('odds');
+
+    const free = await processBonusWageringProgress({
+      userId,
+      betStake: 100.00,
+      betOdds: 2.00,
+      fundSource: 'freebet',
+    });
+    expect(free.updated).toBe(false);
+    expect(free.skipped).toBe('freebet');
+
+    const ok = await processBonusWageringProgress({ userId, betStake: 100.00, betOdds: 1.75, fundSource: 'bonus' });
+    expect(ok.updated).toBe(true);
+    expect(ok.wageringCompleted).toBe(100.00);
   });
 });

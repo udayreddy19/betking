@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
+import { CASINO_ENABLED } from '../../utils/featureFlags';
 import {
   IoClose,
   FiChevronRight,
@@ -101,10 +102,12 @@ export default function Sidebar() {
                 <HiOutlineCube className="tab-icon" />
                 Live
               </button>
-              <button className="sidebar-tab sidebar-tab--page-nav" onClick={() => { closeSidebar(); navigate('/casino'); }}>
-                <MdOutlineStorefront className="tab-icon" />
-                Casino
-              </button>
+              {CASINO_ENABLED && (
+                <button className="sidebar-tab sidebar-tab--page-nav" onClick={() => { closeSidebar(); navigate('/casino'); }}>
+                  <MdOutlineStorefront className="tab-icon" />
+                  Casino
+                </button>
+              )}
             </div>
 
             <div className="sidebar-content">

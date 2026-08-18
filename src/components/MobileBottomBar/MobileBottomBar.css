@@ -61,7 +61,10 @@
 }
 
 .mobile-bar-icon {
-  font-size: 1.25rem;
+  display: block;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
   transition: transform 0.15s ease;
 }
 

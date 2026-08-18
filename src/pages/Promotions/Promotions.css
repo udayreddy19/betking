@@ -57,6 +57,19 @@
   position: relative;
   line-height: 1.2;
 }
+.promo-item-tag {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-3);
+  z-index: 2;
+  font-size: var(--text-xs);
+  font-weight: var(--font-bold);
+  letter-spacing: 0.04em;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-full);
+}
 .promo-item-body {
   padding: var(--space-5);
 }
@@ -84,6 +97,33 @@
 }
 .promo-item-btn:hover {
   background: var(--color-primary-dark);
+}
+
+.promotions-empty-state {
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  padding: var(--space-8);
+  box-shadow: var(--shadow-card);
+  margin-bottom: var(--space-8);
+}
+
+.promotions-empty-state h2 {
+  font-size: var(--text-xl);
+  margin-bottom: var(--space-3);
+}
+
+.promotions-empty-state p {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-5);
+}
+
+.promotions-active-bonuses {
+  margin-bottom: var(--space-8);
+}
+
+.promotions-active-bonuses h2 {
+  font-size: var(--text-xl);
+  margin-bottom: var(--space-4);
 }
 
 @media (max-width: 768px) {

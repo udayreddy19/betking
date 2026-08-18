@@ -155,6 +155,34 @@
   opacity: 0.95;
 }
 
+.fin-bonus-forfeit-warn {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(220, 38, 38, 0.08);
+  border: 1px solid #f87171;
+  color: #b91c1c;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.fin-bonus-forfeit-warn p {
+  margin: 6px 0 10px;
+}
+
+.fin-bonus-forfeit-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-weight: 700;
+  color: #991b1b;
+  cursor: pointer;
+}
+
+.fin-bonus-forfeit-check input {
+  margin-top: 3px;
+}
+
 @media (max-width: 640px) {
   .fin-modal-card {
     max-width: 95%;

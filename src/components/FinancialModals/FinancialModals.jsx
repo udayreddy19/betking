@@ -6,8 +6,8 @@ import { useBetSlip } from '../../context/BetSlipContext';
 import { getWalletBreakdown, formatInr } from '../../utils/walletBalance';
 import {
   BONUS_MIN_BET_ODDS,
-  BONUS_MIN_WITHDRAW_ODDS,
 } from '../../utils/wageringRules';
+import { getBenefitsForTier, MIN_WITHDRAW_INR } from '../../utils/vipBenefits';
 import './FinancialModals.css';
 
 function statusColor(status) {
@@ -32,21 +32,32 @@ export default function FinancialModals({ modalType, onClose }) {
   const [withdrawStatus, setWithdrawStatus] = useState(null);
   const [pendingWithdrawals, setPendingWithdrawals] = useState([]);
   const [lastSubmittedDetails, setLastSubmittedDetails] = useState('');
+  const [acceptBonusForfeit, setAcceptBonusForfeit] = useState(false);
+  const [forfeitedBonusAmount, setForfeitedBonusAmount] = useState(0);
 
   if (!modalType || !user) return null;
 
   const notify = (msg) => showToast(msg);
+  const vipLimits = getBenefitsForTier(user?.loyaltyTier);
 
   const handleRazorpayWithdraw = async (e) => {
     e.preventDefault();
     const amt = parseFloat(withdrawAmount);
-    if (isNaN(amt) || amt < 100) return notify('Minimum withdrawal is ₹100');
+    if (isNaN(amt) || amt < vipLimits.minWithdraw) {
+      return notify(`Minimum withdrawal is ${formatInr(vipLimits.minWithdraw)}`);
+    }
+    if (amt > vipLimits.maxWithdraw) {
+      return notify(`Your ${vipLimits.label} max withdrawal is ${formatInr(vipLimits.maxWithdraw)}`);
+    }
     if (amt > wallet.withdrawable) {
       return notify(
         wallet.lockedDeposit > 0
           ? `Only ${formatInr(wallet.withdrawable)} available after holds. Deposits must be wagered first.`
           : `Only ${formatInr(wallet.withdrawable)} can be withdrawn.`,
       );
+    }
+    if (wallet.bonus > 0 && !acceptBonusForfeit) {
+      return notify(`Withdrawing winnings will set your remaining bonus of ${formatInr(wallet.bonus)} to ₹0. Tick the confirmation below to continue.`);
     }
 
     let detailsString = '';
@@ -78,12 +89,13 @@ export default function FinancialModals({ modalType, onClose }) {
     setWithdrawStatus('processing');
     setLastSubmittedDetails(detailsString);
 
-    const { success, withdrawalId, error } = await withdrawFunds(amt, methodLabel, detailsString);
+    const { success, withdrawalId, error, forfeitedBonus } = await withdrawFunds(amt, methodLabel, detailsString);
     if (!success) {
       setWithdrawStatus(null);
       notify(error || 'Withdrawal failed. Please check your available balance.');
       return;
     }
+    setForfeitedBonusAmount(Number(forfeitedBonus || (acceptBonusForfeit ? wallet.bonus : 0)));
     setWithdrawStatus('success');
     setPendingWithdrawals(prev => [
       {
@@ -134,6 +146,11 @@ export default function FinancialModals({ modalType, onClose }) {
                 <p className="fin-muted" style={{ fontSize: '0.85rem', marginTop: '6px' }}>
                   ₹{withdrawAmount} requested via <strong>{withdrawMethod === 'BANK_TRANSFER' ? 'Direct Bank Transfer' : withdrawMethod === 'PAYTM' ? 'Paytm Wallet' : 'UPI'}</strong>.
                 </p>
+                {forfeitedBonusAmount > 0 && (
+                  <div className="fin-bonus-forfeit-warn" style={{ marginTop: '12px', textAlign: 'left' }}>
+                    Remaining bonus of <strong>{formatInr(forfeitedBonusAmount)}</strong> has been set to ₹0 because you withdrew winnings.
+                  </div>
+                )}
                 <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
                   Details: <code>{lastSubmittedDetails}</code>
                 </div>
@@ -170,9 +187,21 @@ export default function FinancialModals({ modalType, onClose }) {
                     </p>
                   )}
                   {wallet.bonus > 0 && (
-                    <p className="fin-muted" style={{ fontSize: '0.8rem', marginTop: '4px' }}>
-                      Bonus {formatInr(wallet.bonus)}: bet at {BONUS_MIN_BET_ODDS}+ odds; winnings at {BONUS_MIN_WITHDRAW_ODDS}+
-                    </p>
+                    <div className="fin-bonus-forfeit-warn">
+                      <strong>Bonus in wallet: {formatInr(wallet.bonus)}</strong>
+                      <p>
+                        If you withdraw winnings now, this remaining bonus will be set to <strong>₹0</strong> and cannot be used again.
+                        Finish 5× playthrough at {BONUS_MIN_BET_ODDS}+ odds first if you want to keep the bonus.
+                      </p>
+                      <label className="fin-bonus-forfeit-check">
+                        <input
+                          type="checkbox"
+                          checked={acceptBonusForfeit}
+                          onChange={(e) => setAcceptBonusForfeit(e.target.checked)}
+                        />
+                        I understand my remaining bonus of {formatInr(wallet.bonus)} will become ₹0
+                      </label>
+                    </div>
                   )}
                 </div>
 
@@ -288,7 +317,7 @@ export default function FinancialModals({ modalType, onClose }) {
                   <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px' }}>Withdrawal Amount (₹)</label>
                   <input
                     type="number"
-                    min="10"
+                    min={vipLimits.minWithdraw || MIN_WITHDRAW_INR}
                     max={wallet.withdrawable}
                     value={withdrawAmount}
                     onChange={e => setWithdrawAmount(e.target.value)}
@@ -296,18 +325,18 @@ export default function FinancialModals({ modalType, onClose }) {
                     required
                   />
                   <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
-                    {['100', '500', '1000', '2500'].map(val => (
+                    {['1000', '2500', '5000', '10000'].map(val => (
                       <button
                         type="button"
                         key={val}
                         onClick={() => setWithdrawAmount(val)}
                         className="fin-chip-btn"
-                        disabled={Number(val) > wallet.withdrawable}
+                        disabled={Number(val) > wallet.withdrawable || Number(val) < vipLimits.minWithdraw}
                       >
                         ₹{val}
                       </button>
                     ))}
-                    {wallet.withdrawable >= 100 && (
+                    {wallet.withdrawable >= vipLimits.minWithdraw && (
                       <button
                         type="button"
                         onClick={() => setWithdrawAmount(String(Math.floor(wallet.withdrawable)))}
@@ -319,7 +348,11 @@ export default function FinancialModals({ modalType, onClose }) {
                   </div>
                 </div>
 
-                <button type="submit" className="fin-btn-primary" disabled={withdrawStatus === 'processing' || wallet.withdrawable < 100}>
+                <button
+                  type="submit"
+                  className="fin-btn-primary"
+                  disabled={withdrawStatus === 'processing' || wallet.withdrawable < vipLimits.minWithdraw || (wallet.bonus > 0 && !acceptBonusForfeit)}
+                >
                   {withdrawStatus === 'processing' ? 'Submitting Request...' : `Request ${withdrawMethod === 'BANK_TRANSFER' ? 'Bank Transfer' : withdrawMethod === 'PAYTM' ? 'Paytm' : 'UPI'} Withdrawal`}
                 </button>
               </form>
@@ -441,9 +474,9 @@ export default function FinancialModals({ modalType, onClose }) {
               <strong>Bonus rules</strong>
               <ul style={{ margin: '8px 0 0', paddingLeft: '18px' }}>
                 <li>Bonus can only be used on odds ≥ {BONUS_MIN_BET_ODDS.toFixed(2)}</li>
-                <li>Bonus winnings are withdrawable only when odds ≥ {BONUS_MIN_WITHDRAW_ODDS.toFixed(2)}</li>
-                <li>Lower-odds bonus wins return to your bonus balance</li>
-                <li>Deposits stay locked until wagered; only Winnings can be withdrawn</li>
+                <li>Bonus must rotate 5 times; then winnings can be withdrawn, not the bonus</li>
+                <li>Free bets play like cash at any odds (profit only)</li>
+                <li>Verify Aadhaar and PAN to withdraw. Promos are once per identity.</li>
               </ul>
             </div>
           </div>

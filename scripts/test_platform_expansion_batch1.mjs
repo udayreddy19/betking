@@ -181,14 +181,12 @@ await runTest(7, 'Customer Segmentation — PG-Backed Segments & Evaluation', as
 // TEST 8: VIP Engine — Tier Evaluation & Benefits Catalog
 // ============================================================
 await runTest(8, 'VIP Engine — Tier Evaluation & Benefits Catalog', async () => {
-  const { evaluateUserVipTier, getVipBenefitsCatalog, getUserVipStatus } = await import('../lib/vipEngine.mjs');
-  const result = await evaluateUserVipTier('test_exp_user', 3000000);
-  if (result.tier !== 'PLATINUM') throw new Error(`Expected PLATINUM, got ${result.tier}`);
-  if (result.cashbackRatePct !== 7.5) throw new Error(`Expected 7.5% cashback, got ${result.cashbackRatePct}`);
-
+  const { getVipBenefitsCatalog, getUserVipStatus } = await import('../lib/vipEngine.mjs');
   const catalog = getVipBenefitsCatalog();
   if (catalog.tiers.length !== 5) throw new Error('Benefits catalog incomplete');
-  log(`   → User evaluated as ${result.tier} (₹30L turnover, ${result.cashbackRatePct}% cashback). ${catalog.tiers.length} tiers in catalog.`);
+  const status = await getUserVipStatus('test_exp_user');
+  if (![2, 5].includes(status.pointsPer100)) throw new Error(`Unexpected points rate ${status.pointsPer100}`);
+  log(`   → User ${status.tier} earns ${status.pointsPer100} pts/₹100, cashback ${status.cashbackPct}%. ${catalog.tiers.length} tiers in catalog.`);
 });
 
 // ============================================================

@@ -1,6 +1,5 @@
 import { FiZap, FiFlame, FiClock, FiPlusCircle, FiCheck } from '../../icons';
 import { useBetSlip } from '../../context/BetSlipContext';
-import { useAuth } from '../../context/AuthContext';
 import './BoostedOddsWidget.css';
 
 const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1' || import.meta.env.DEV;
@@ -49,13 +48,12 @@ const BOOSTED_PROMOS = [
 
 export default function BoostedOddsWidget() {
   const { addBet, isBetSelected } = useBetSlip();
-  const { showToast } = useAuth();
+
+  if (!DEMO_MODE) {
+    return null;
+  }
 
   const handleAddBoost = (boost) => {
-    if (!DEMO_MODE) {
-      showToast('Odds boosts are not live yet. Add selections from live Sports markets.', 'info');
-      return;
-    }
     const fakeMatch = {
       id: boost.matchId,
       team1: { name: boost.matchName.split(' vs ')[0] || 'Team 1' },

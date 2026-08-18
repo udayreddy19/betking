@@ -6,5 +6,17 @@
   flex-shrink: 0;
   line-height: 0;
   filter: drop-shadow(0 2px 6px rgba(124, 58, 237, 0.25));
-  cursor: pointer;
+  animation: gift-bob 2.8s ease-in-out infinite;
+}
+
+@keyframes gift-bob {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-2px) rotate(-4deg); }
+  75% { transform: translateY(2px) rotate(4deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aesthetic-motion-gift {
+    animation: none;
+  }
 }

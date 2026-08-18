@@ -1,15 +1,38 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { IoClose } from '../../icons';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { promotions } from '../../data/mockData';
+import { fetchUserBonuses, usePromotionCatalog } from '../../hooks/usePromotionCatalog';
+import { DEMO_MODE } from '../../utils/featureFlags';
 import './PromotionsPanel.css';
-
-const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1' || import.meta.env.DEV;
 
 export default function PromotionsPanel({ isOpen, onClose }) {
   const { isLoggedIn, openLoginModal, claimPromotion, isPromotionClaimed } = useAuth();
   const panelRef = useRef(null);
+  const { catalog, loading } = usePromotionCatalog();
+  const [activeBonuses, setActiveBonuses] = useState([]);
+  const [claimedCodes, setClaimedCodes] = useState(() => new Set());
+  const [claimingCode, setClaimingCode] = useState(null);
+
+  useEffect(() => {
+    if (!isOpen || !isLoggedIn) {
+      if (!isOpen) setActiveBonuses([]);
+      return undefined;
+    }
+
+    let cancelled = false;
+    fetchUserBonuses()
+      .then((bonuses) => {
+        if (!cancelled) setActiveBonuses(bonuses);
+      })
+      .catch(() => {
+        if (!cancelled) setActiveBonuses([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, isLoggedIn]);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -33,56 +56,100 @@ export default function PromotionsPanel({ isOpen, onClose }) {
     };
   }, [isOpen, onClose]);
 
-  const handleClaim = (promo) => {
+  const claimedPromoCodes = useMemo(() => {
+    const codes = new Set(claimedCodes);
+    activeBonuses.forEach((bonus) => {
+      if (bonus.code) codes.add(String(bonus.code).toUpperCase());
+    });
+    return codes;
+  }, [activeBonuses, claimedCodes]);
+
+  const handleClaim = async (promo) => {
     if (!isLoggedIn) {
       openLoginModal();
       return;
     }
-    if (!DEMO_MODE) return;
-    claimPromotion(promo);
+    setClaimingCode(promo.code);
+    const result = await claimPromotion(promo);
+    setClaimingCode(null);
+    if (result?.ok && promo.code) {
+      setClaimedCodes((prev) => new Set(prev).add(String(promo.code).toUpperCase()));
+      if (!DEMO_MODE) {
+        const bonuses = await fetchUserBonuses();
+        setActiveBonuses(bonuses);
+      }
+    }
+  };
+
+  const isClaimed = (promo) => {
+    if (DEMO_MODE) return isPromotionClaimed(promo.id);
+    if (promo.code && claimedPromoCodes.has(String(promo.code).toUpperCase())) return true;
+    return false;
   };
 
   if (!isOpen) return null;
+
+  const promoCount = catalog.length;
 
   return (
     <>
       <div className="promotions-panel-backdrop" onClick={onClose} aria-hidden="true" />
       <div className="promotions-panel" ref={panelRef} role="dialog" aria-modal="true" aria-label="Promotions">
         <div className="promotions-panel-header">
-          <h3>Promotions <span className="promotions-panel-count">{promotions.length}</span></h3>
+          <h3>
+            Promotions {promoCount > 0 && <span className="promotions-panel-count">{promoCount}</span>}
+          </h3>
           <button type="button" className="promotions-panel-close" onClick={onClose} aria-label="Close promotions">
             <IoClose />
           </button>
         </div>
 
         <div className="promotions-panel-body">
-          {promotions.map((promo) => {
-            const claimed = isPromotionClaimed(promo.id);
+          {loading && !DEMO_MODE && (
+            <div className="promotions-panel-empty">
+              <p>Loading promotions…</p>
+            </div>
+          )}
+
+          {!loading && catalog.length > 0 && catalog.map((promo) => {
+            const claimed = isClaimed(promo);
             return (
-            <article key={promo.id} className="promotions-panel-card" style={{ background: promo.bgColor || promo.gradient }}>
-              <span className="promotions-panel-tag">{promo.tag || 'PROMOTION'}</span>
-              <h4>{promo.title}</h4>
-              <p>{promo.description}</p>
-              {promo.code && (
-                <div className="promotions-panel-code">Code: <strong>{promo.code}</strong></div>
-              )}
-              {DEMO_MODE ? (
+              <article
+                key={promo.id || promo.code}
+                className="promotions-panel-card"
+                style={{ background: promo.bgColor || promo.gradient }}
+              >
+                <span className="promotions-panel-tag">{promo.tag || 'PROMOTION'}</span>
+                <h4>{promo.title}</h4>
+                <p>{promo.description || promo.subtitle}</p>
+                {promo.code && (
+                  <div className="promotions-panel-code">Code: <strong>{promo.code}</strong></div>
+                )}
                 <button
                   type="button"
                   className="promotions-panel-claim"
                   onClick={() => handleClaim(promo)}
-                  disabled={claimed}
+                  disabled={claimed || claimingCode === promo.code}
                 >
-                  {claimed ? 'Claimed' : 'Claim now'}
+                  {claimed ? 'Claimed' : claimingCode === promo.code ? 'Claiming…' : 'Claim now'}
                 </button>
-              ) : (
-                <Link to={isLoggedIn ? '/profile' : '/register'} className="promotions-panel-claim" onClick={onClose}>
-                  {isLoggedIn ? 'Enter promo code' : 'Sign up with a code'}
-                </Link>
-              )}
-            </article>
+              </article>
             );
           })}
+
+          {!loading && catalog.length === 0 && (
+            <div className="promotions-panel-empty">
+              <p>No active promotions right now.</p>
+              <p>Enter a promo code in your profile when you receive one.</p>
+              <Link
+                to={isLoggedIn ? '/profile' : '/register'}
+                className="promotions-panel-claim"
+                onClick={onClose}
+              >
+                {isLoggedIn ? 'Enter promo code' : 'Sign up with a code'}
+              </Link>
+            </div>
+          )}
         </div>
 
         <div className="promotions-panel-footer">

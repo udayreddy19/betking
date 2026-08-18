@@ -64,6 +64,8 @@ jobs:
         run: npm test
 
       - name: Build Frontend Application (Vite)
+        env:
+          VITE_DEMO_MODE: '0'
         run: npm run build
 
   container-build:

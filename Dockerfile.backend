@@ -8,6 +8,8 @@ RUN apk add --no-cache postgresql-client wget curl
 
 WORKDIR /app
 
+ENV NODE_ENV=production
+
 # Copy dependency manifests
 COPY package*.json ./
 

@@ -365,6 +365,12 @@ input, select, textarea {
   padding: 0;
 }
 
+.app-main--register {
+  padding: 0;
+  min-height: calc(100vh - var(--header-height));
+  min-height: calc(var(--app-height) - var(--header-height));
+}
+
 .app-main:has(.admin-shell),
 .app-main--admin {
   padding: 0;

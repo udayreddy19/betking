@@ -1,16 +1,36 @@
-/** Loyalty: 5 points per ₹100 spent; 5 points = ₹1; redeemable from 50 points */
-export const LOYALTY_POINTS_PER_100 = 5;
-export const LOYALTY_POINTS_PER_RUPEE = 5;
-export const LOYALTY_MIN_REDEEM_POINTS = 50;
+/** Loyalty: standard 2 pts / ₹100, VIP club 5 pts / ₹100; 5 points = ₹1; redeemable from 50 points */
+import {
+  LOYALTY_POINTS_PER_100_STANDARD,
+  LOYALTY_POINTS_PER_100_VIP,
+  LOYALTY_POINTS_PER_RUPEE,
+  LOYALTY_MIN_REDEEM_POINTS,
+  getBenefitsForTier,
+  isVipClubTier,
+  pointsFromSpendAtTier,
+  pointsPer100ForTier,
+} from './vipBenefits';
+
+export {
+  LOYALTY_POINTS_PER_100_STANDARD,
+  LOYALTY_POINTS_PER_100_VIP,
+  LOYALTY_POINTS_PER_RUPEE,
+  LOYALTY_MIN_REDEEM_POINTS,
+};
+export const LOYALTY_POINTS_PER_100 = LOYALTY_POINTS_PER_100_VIP;
 
 export function getUserLoyaltyPoints(user) {
   return user?.loyaltyPoints ?? user?.coins ?? 0;
 }
 
-export function pointsFromSpend(amountRupees) {
-  const amount = Number(amountRupees) || 0;
-  if (amount <= 0) return 0;
-  return Math.floor((amount / 100) * LOYALTY_POINTS_PER_100);
+export function getUserLoyaltyTier(user) {
+  return getBenefitsForTier(user?.loyaltyTier || user?.loyaltyRank).tier;
+}
+
+export function pointsFromSpend(amountRupees, userOrTier) {
+  const tier = typeof userOrTier === 'string' || !userOrTier
+    ? userOrTier
+    : (userOrTier.loyaltyTier || userOrTier.loyaltyRank);
+  return pointsFromSpendAtTier(amountRupees, tier);
 }
 
 export function pointsToRupees(points) {
@@ -23,6 +43,7 @@ export function canRedeemLoyaltyPoints(points) {
 
 export function getLoyaltySummary(user) {
   const points = getUserLoyaltyPoints(user);
+  const benefits = getBenefitsForTier(user?.loyaltyTier || user?.loyaltyRank);
   const redeemValue = pointsToRupees(points);
   const canRedeem = canRedeemLoyaltyPoints(points);
   const progress = Math.min(100, (points / LOYALTY_MIN_REDEEM_POINTS) * 100);
@@ -35,5 +56,10 @@ export function getLoyaltySummary(user) {
     progress,
     pointsToUnlock,
     minRedeem: LOYALTY_MIN_REDEEM_POINTS,
+    tier: benefits.tier,
+    tierLabel: benefits.label,
+    isVip: isVipClubTier(benefits.tier),
+    pointsPer100: pointsPer100ForTier(benefits.tier),
+    benefits,
   };
 }

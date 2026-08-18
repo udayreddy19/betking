@@ -20,7 +20,7 @@ const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1' || import.meta.env.DEV;
 
 export default function MyBetsPanel() {
   const { placedBets, myBetsCount, isMyBetsOpen, closeMyBets, cashOutBet, adminSettleBet } = useBetSlip();
-  const { creditCashout, showToast } = useAuth();
+  const { creditCashout, showToast, user } = useAuth();
   const liveMatches = useLiveMatches() || [];
   const navigate = useNavigate();
   const panelRef = useRef(null);
@@ -116,7 +116,7 @@ export default function MyBetsPanel() {
   }, [placedBets, filter]);
 
   const handleCashout = async (bet) => {
-    const offer = getCashoutOffer(bet);
+    const offer = getCashoutOffer(bet, user?.loyaltyTier);
     if (offer <= 0) {
       showToast('Cash out not available for this bet.', 'info');
       return;
@@ -209,7 +209,7 @@ export default function MyBetsPanel() {
             </div>
           ) : (
             filtered.map((placed) => {
-              const cashoutOffer = getCashoutOffer(placed);
+              const cashoutOffer = getCashoutOffer(placed, user?.loyaltyTier);
               return (
                 <div className={`my-bets-card my-bets-card--${placed.status || 'pending'}`} key={placed.id}>
                   <div className="my-bets-card-top">

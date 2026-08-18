@@ -9,6 +9,7 @@ import {
 } from '../../lib/devopsEngine.mjs';
 
 describe('Phase 15 DevOps, Health Probes & Operations Tests', () => {
+  const PROD_JWT = 'abcdefghijklmnopqrstuvwxyz0123456789AB';
   it('Liveness probe returns alive: true with ISO timestamp', () => {
     const liveness = getLivenessStatus();
     expect(liveness.alive).toBe(true);
@@ -48,7 +49,7 @@ describe('Phase 15 DevOps, Health Probes & Operations Tests', () => {
     const valid = validateProductionEnvironment({
       NODE_ENV: 'production',
       DATABASE_URL: 'postgresql://usr:pass@localhost:5432/db',
-      JWT_SECRET: 'secret',
+      JWT_SECRET: PROD_JWT,
       FRONTEND_URL: 'https://oddsyra.com',
       CORS_ORIGIN: 'https://oddsyra.com',
       RAZORPAY_KEY_ID: 'rzp_live_test',
@@ -77,16 +78,24 @@ describe('Phase 15 DevOps, Health Probes & Operations Tests', () => {
       validateProductionEnvironment({
         ...base,
         JWT_SECRET: 'oddsyra_jwt_secret_dev_key_2026',
-        RAZORPAY_WEBHOOK_SECRET: 'wh_secret',
+        RAZORPAY_WEBHOOK_SECRET: 'wh_secret_long_enough_for_validation',
       })
     ).toThrow('Unsafe JWT_SECRET');
     expect(() =>
       validateProductionEnvironment({
         ...base,
-        JWT_SECRET: 'a-real-production-secret',
+        JWT_SECRET: PROD_JWT,
         RAZORPAY_WEBHOOK_SECRET: 'oddsyra_wh_secret_2026',
       })
     ).toThrow('Unsafe RAZORPAY_WEBHOOK_SECRET');
+    expect(() =>
+      validateProductionEnvironment({
+        ...base,
+        DATABASE_URL: 'postgresql://oddsyra_app:oddsyra_dev_pass@localhost:5432/oddsyra',
+        JWT_SECRET: PROD_JWT,
+        RAZORPAY_WEBHOOK_SECRET: 'wh_secret_long_enough_for_validation',
+      })
+    ).toThrow('Unsafe DATABASE_URL');
   });
 
   it('Incident logger creates SEV-1/SEV-2 incident record', async () => {

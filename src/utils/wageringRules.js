@@ -1,18 +1,27 @@
-/** Bonus / freebet odds gates; only winnings are withdrawable */
-export const BONUS_MIN_BET_ODDS = 1.80;
-export const BONUS_MIN_WITHDRAW_ODDS = 1.85;
+import { cashoutAmountFromPotential } from './vipBenefits';
+
+export const BONUS_MIN_BET_ODDS = 1.75;
+export const BONUS_WAGERING_MULTIPLIER = 5;
 export const MIN_STAKE_INR = 10;
-/** Early cashout pays this fraction of stake */
-export const CASHOUT_OFFER_RATIO = 0.72;
+
+export function getCashoutOffer(bet, tier = 'BRONZE') {
+  const status = String(bet?.status || '').toLowerCase();
+  if (!bet || (status !== 'pending' && status !== 'accepted' && status !== 'open')) return 0;
+  if (bet.fundSource === 'bonus' || bet.fundSource === 'freebet') return 0;
+  const stake = Number(bet.stake) || 0;
+  if (stake <= 0) return 0;
+  const potential = Number(bet.potentialPayout || bet.potentialReturn || bet.payout || 0)
+    || Number((stake * (Number(bet.odds) || 1)).toFixed(2));
+  return cashoutAmountFromPotential(potential, tier);
+}
 
 export function canBetWithBonusOnLegs(legs) {
   if (!legs?.length) return false;
   return legs.every((leg) => Number(leg.odds) >= BONUS_MIN_BET_ODDS);
 }
 
-export function qualifiesForBonusWithdrawal(bet) {
-  if (!bet?.legs?.length) return false;
-  return bet.legs.every((leg) => Number(leg.odds) >= BONUS_MIN_WITHDRAW_ODDS);
+export function canBetWithFreebetOnLegs(legs) {
+  return Array.isArray(legs) && legs.length > 0;
 }
 
 export function getWinningsAmount(user) {
@@ -28,15 +37,6 @@ export function getWithdrawableAmount(user) {
 
 export function getLockedDepositAmount(user) {
   return Math.max(0, user?.lockedDepositBalance ?? 0);
-}
-
-export function getCashoutOffer(bet) {
-  const status = String(bet?.status || '').toLowerCase();
-  if (!bet || (status !== 'pending' && status !== 'accepted' && status !== 'open')) return 0;
-  if (bet.fundSource === 'bonus' || bet.fundSource === 'freebet') return 0;
-  const stake = Number(bet.stake) || 0;
-  if (stake <= 0) return 0;
-  return Math.round(stake * CASHOUT_OFFER_RATIO * 100) / 100;
 }
 
 /**
@@ -83,24 +83,17 @@ export function splitBetWinPayout(bet) {
 
   if (bonusStake > 0) {
     const bonusShare = (bonusStake / stake) * payout;
-    if (qualifiesForBonusWithdrawal(bet)) {
-      const profit = Math.max(0, bonusShare - bonusStake);
-      cashCredit += profit;
-      winningsCredit += profit;
-    } else {
-      bonusCredit += bonusShare;
-    }
+    const profit = Math.max(0, bonusShare - bonusStake);
+    cashCredit += profit;
+    winningsCredit += profit;
+    bonusCredit += bonusStake;
   }
 
   if (freebetStake > 0) {
     const freeShare = (freebetStake / stake) * payout;
     const profit = Math.max(0, freeShare - freebetStake);
-    if (qualifiesForBonusWithdrawal(bet)) {
-      cashCredit += profit;
-      winningsCredit += profit;
-    } else {
-      freebetCredit += freebetStake;
-    }
+    cashCredit += profit;
+    winningsCredit += profit;
   }
 
   if (cashStake > 0) {

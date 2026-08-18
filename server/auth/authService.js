@@ -55,11 +55,17 @@ export async function signup(queryFn, withTransaction, data) {
     return { error: 'First name is required.', code: 'MISSING_NAME', status: 400 };
   }
 
-  // ── Check existing user ──
-  const existing = await queryFn('SELECT user_id FROM users WHERE email = $1', [normalizedEmail]);
-  if (existing.rows.length > 0) {
-    // Generic message — do not reveal whether email exists
-    return { error: 'Unable to create account. Please try again or contact support.', code: 'SIGNUP_FAILED', status: 400 };
+  const { normalizeIndianPhone, assertEmailAvailable, assertPhoneAvailable } = await import('../../lib/userIdentity.mjs');
+  const normalizedPhone = phone ? normalizeIndianPhone(phone) : null;
+  if (phone && String(phone).trim() && !normalizedPhone) {
+    return { error: 'Enter a valid 10-digit Indian mobile number.', code: 'INVALID_PHONE', status: 400 };
+  }
+
+  try {
+    await assertEmailAvailable(normalizedEmail, null, queryFn);
+    if (normalizedPhone) await assertPhoneAvailable(normalizedPhone, null, queryFn);
+  } catch (err) {
+    return { error: err.message, code: err.code || 'SIGNUP_FAILED', status: err.status || 409 };
   }
 
   // ── Hash password ──
@@ -77,7 +83,7 @@ export async function signup(queryFn, withTransaction, data) {
         [
           userId,
           normalizedEmail,
-          phone?.trim() || null,
+          normalizedPhone,
           passwordHash,
           trimmedFirstName,
           trimmedLastName || null,
@@ -108,6 +114,15 @@ export async function signup(queryFn, withTransaction, data) {
   } catch (err) {
     if (err.status && err.code) {
       return { error: err.message, code: err.code, status: err.status };
+    }
+    if (err.code === '23505') {
+      const detail = `${err.constraint || ''} ${err.detail || ''}`.toLowerCase();
+      if (detail.includes('phone')) {
+        return { error: 'This mobile number is already linked to another account.', code: 'DUPLICATE_PHONE', status: 409 };
+      }
+      if (detail.includes('email')) {
+        return { error: 'This email is already linked to another account.', code: 'DUPLICATE_EMAIL', status: 409 };
+      }
     }
     throw err;
   }
@@ -551,7 +566,8 @@ export async function getMe(queryFn, userId) {
             p.display_name, p.kyc_status, p.risk_tier, p.account_status,
             w.balance, w.bonus_balance, COALESCE(w.freebet_balance, 0) AS freebet_balance,
             COALESCE(w.reserved_balance, 0) AS reserved_balance,
-            COALESCE(l.points, 0) AS loyalty_points
+            COALESCE(l.points, 0) AS loyalty_points,
+            COALESCE(l.tier, 'BRONZE') AS loyalty_tier
      FROM users u
      LEFT JOIN user_profiles p ON p.user_id = u.user_id
      LEFT JOIN wallets w ON w.user_id = u.user_id
@@ -586,6 +602,7 @@ export async function getMe(queryFn, userId) {
       freebetBalance: parseFloat(u.freebet_balance || 0),
       reservedBalance: parseFloat(u.reserved_balance || 0),
       loyaltyPoints: parseFloat(u.loyalty_points || 0),
+      loyaltyTier: u.loyalty_tier || 'BRONZE',
       createdAt: u.created_at,
       lastLoginAt: u.last_login_at,
     },

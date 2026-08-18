@@ -14,7 +14,7 @@ describe('Phase 9 KYC Security & Authorization Tests', () => {
     const subRes = await kycEngine.submitKycVerification({
       userId,
       documentType: 'PAN',
-      documentNumber: 'ABCDE1234F',
+      documentNumber: 'SECKY1234F',
     });
 
     await expect(kycEngine.verifyKycCase({
