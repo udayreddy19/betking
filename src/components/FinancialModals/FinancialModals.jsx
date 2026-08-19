@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import { IoClose, IoCheckmarkCircle, BiWallet, BiMoneyWithdraw, BiHistory, BiTransfer, BiGift } from '../../icons';
+import { IoCheckmarkCircle, BiWallet, BiMoneyWithdraw, BiHistory, BiTransfer, BiGift } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { getWalletBreakdown, formatInr } from '../../utils/walletBalance';
@@ -39,6 +39,8 @@ export default function FinancialModals({ modalType, onClose }) {
 
   const notify = (msg) => showToast(msg);
   const vipLimits = getBenefitsForTier(user?.loyaltyTier);
+  const minWithdraw = vipLimits.minWithdraw || MIN_WITHDRAW_INR;
+  const canWithdraw = wallet.withdrawable >= minWithdraw;
 
   const handleRazorpayWithdraw = async (e) => {
     e.preventDefault();
@@ -132,8 +134,8 @@ export default function FinancialModals({ modalType, onClose }) {
             {modalType === 'bonuses' && <><BiGift style={{ color: '#a855f7', fontSize: '1.4rem' }} /> My Bonuses & Rules</>}
             {modalType === 'marketplace' && <><BiWallet style={{ color: '#eab308', fontSize: '1.4rem' }} /> Loyalty Rewards Marketplace</>}
           </div>
-          <button className="fin-modal-close" onClick={onClose}>
-            <IoClose />
+          <button className="fin-modal-close" onClick={onClose} aria-label="Close">
+            <span aria-hidden="true">×</span>
           </button>
         </div>
 
@@ -176,6 +178,22 @@ export default function FinancialModals({ modalType, onClose }) {
                   Done
                 </button>
               </div>
+            ) : !canWithdraw ? (
+              <>
+                <div className="fin-balance-box">
+                  <div className="fin-balance-label">Winnings (withdrawable)</div>
+                  <div className="fin-balance-amount">{formatInr(wallet.winnings)}</div>
+                  <p className="fin-withdraw-need">
+                    You need {formatInr(minWithdraw)} in winnings to withdraw.
+                    {wallet.lockedDeposit > 0
+                      ? ` ${formatInr(wallet.lockedDeposit)} from deposits is locked until you wager it.`
+                      : ' Place a bet first — deposits stay locked until they are wagered.'}
+                  </p>
+                </div>
+                <button type="button" className="fin-btn-secondary" onClick={onClose}>
+                  Close
+                </button>
+              </>
             ) : (
               <form onSubmit={handleRazorpayWithdraw}>
                 <div className="fin-balance-box">
@@ -351,9 +369,11 @@ export default function FinancialModals({ modalType, onClose }) {
                 <button
                   type="submit"
                   className="fin-btn-primary"
-                  disabled={withdrawStatus === 'processing' || wallet.withdrawable < vipLimits.minWithdraw || (wallet.bonus > 0 && !acceptBonusForfeit)}
+                  disabled={withdrawStatus === 'processing' || (wallet.bonus > 0 && !acceptBonusForfeit)}
                 >
-                  {withdrawStatus === 'processing' ? 'Submitting Request...' : `Request ${withdrawMethod === 'BANK_TRANSFER' ? 'Bank Transfer' : withdrawMethod === 'PAYTM' ? 'Paytm' : 'UPI'} Withdrawal`}
+                  {withdrawStatus === 'processing'
+                    ? 'Submitting Request...'
+                    : `Request ${withdrawMethod === 'BANK_TRANSFER' ? 'Bank Transfer' : withdrawMethod === 'PAYTM' ? 'Paytm' : 'UPI'} Withdrawal`}
                 </button>
               </form>
             )}

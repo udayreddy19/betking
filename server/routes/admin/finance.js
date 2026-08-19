@@ -6,12 +6,11 @@
 
 import express from 'express';
 import { query, withTransaction } from '../../../db/pg.js';
-import { adminAuth, requirePermission } from '../middleware/adminAuth.js';
+import { requirePermission } from '../../middleware/adminAuth.js';
 import { withdrawalEngine } from '../../../lib/withdrawalEngine.mjs';
 import { financialReconciliationEngine } from '../../../lib/financialReconciliationEngine.mjs';
 
 const router = express.Router();
-router.use(adminAuth);
 
 /** GET /api/admin/finance/wallets */
 router.get('/wallets', requirePermission('finance'), async (req, res) => {

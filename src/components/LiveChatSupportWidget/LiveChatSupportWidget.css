@@ -8,6 +8,56 @@
 
 .live-chat-support-wrapper--open {
   z-index: 450;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  padding: 12px;
+  padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+}
+
+.live-chat-backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: rgba(15, 23, 42, 0.45);
+  cursor: pointer;
+}
+
+.live-chat-container {
+  position: relative;
+  z-index: 1;
+}
+
+.live-chat-close-btn {
+  width: auto !important;
+  min-width: 72px;
+  min-height: 36px;
+  padding: 0 12px;
+  gap: 4px;
+  background: rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 800;
+  border-radius: 8px;
+}
+
+.live-chat-close-btn span {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+[data-theme='dark'] .live-chat-close-btn {
+  background: rgba(255, 255, 255, 0.12);
+  color: #f8fafc;
+}
+
+.live-chat-send-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke: #ffffff;
 }
 
 .live-chat-support-wrapper--hidden {
@@ -490,6 +540,12 @@
     bottom: calc(76px + env(safe-area-inset-bottom, 0px));
     left: 10px;
     right: auto;
+  }
+
+  .live-chat-support-wrapper--open {
+    inset: 0;
+    padding: 12px;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
   }
 
   .live-chat-floating-btn {

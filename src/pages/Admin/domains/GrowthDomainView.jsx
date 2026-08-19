@@ -373,9 +373,69 @@ function SignupPromoCodesPanel() {
   );
 }
 
+function VipTiersPanel() {
+  const [tiers, setTiers] = useState([]);
+  const [limits, setLimits] = useState({ minDeposit: null, minWithdraw: null });
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    adminApiClient.get('/growth/vip-tiers')
+      .then((data) => {
+        if (cancelled) return;
+        setTiers(data.tiers || []);
+        setLimits({ minDeposit: data.minDeposit, minWithdraw: data.minWithdraw });
+        setError(null);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setTiers([]);
+        setError(err.message || 'Failed to load VIP tier catalog');
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  return (
+    <div>
+      <div style={{ marginBottom: '20px' }}>
+        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>08 · VIP Loyalty Tiers</h2>
+        <p style={{ margin: '4px 0 0', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+          Authoritative VIP benefits catalog (min deposit ₹{limits.minDeposit?.toLocaleString() ?? '1,000'} · min withdraw ₹{limits.minWithdraw?.toLocaleString() ?? '1,000'}).
+        </p>
+        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.82rem' }}>{error}</p>}
+      </div>
+
+      <AdminDataTable
+        title="VIP Tier Benefits Matrix"
+        emptyMessage="No VIP tiers configured"
+        data={tiers}
+        columns={[
+          { header: 'Tier', key: 'tier' },
+          { header: 'Label', key: 'label' },
+          { header: 'Points Required', key: 'pointsRequired', render: (r) => (r.pointsRequired != null ? r.pointsRequired.toLocaleString() : '—') },
+          { header: 'Pts / ₹100', key: 'pointsPer100' },
+          { header: 'Cashback %', key: 'cashbackPct', render: (r) => (r.cashbackPct ? `${r.cashbackPct}%` : '—') },
+          { header: 'Cashout %', key: 'cashoutPayoutPct' },
+          { header: 'Odds Boost %', key: 'oddsBoostPct', render: (r) => (r.oddsBoostPct ? `${r.oddsBoostPct}%` : '—') },
+          { header: 'Spin Mult.', key: 'spinMultiplier' },
+          { header: 'Max Withdraw', key: 'maxWithdraw', render: (r) => money(r.maxWithdraw) },
+          { header: 'Support SLA', key: 'supportSlaMinutes', render: (r) => `${r.supportSlaMinutes}m` },
+          { header: 'Withdraw Review', key: 'withdrawReviewHours', render: (r) => `${r.withdrawReviewHours}h` },
+          { header: 'Priority WD', key: 'priorityWithdraw' },
+          { header: 'Priority Support', key: 'prioritySupport' },
+          { header: 'Dedicated Mgr', key: 'dedicatedManager' },
+        ]}
+      />
+    </div>
+  );
+}
+
 export default function GrowthDomainView({ subModule = 'promotions' }) {
   if (subModule === 'bonus-codes') {
     return <SignupPromoCodesPanel />;
+  }
+  if (subModule === 'vip-tiers') {
+    return <VipTiersPanel />;
   }
   return <PromotionsPanel />;
 }

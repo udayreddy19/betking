@@ -107,6 +107,9 @@ adminRouter.use('/tasks', tasksRouter);
 import financialRouter from './admin/financialReconstruction.js';
 adminRouter.use('/financial', financialRouter);
 
+import financeRouter from './admin/finance.js';
+adminRouter.use('/finance', financeRouter);
+
 // Phase 22: Odds Pricing Debug
 import oddsDebugRouter from './admin/oddsDebug.js';
 adminRouter.use('/odds', oddsDebugRouter);

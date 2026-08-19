@@ -33,19 +33,33 @@
   color: var(--color-text);
 }
 
+.fin-btn-secondary {
+  width: 100%;
+  min-height: 46px;
+  padding: 12px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
 .fin-modal-close {
-  background: transparent;
-  border: none;
-  font-size: 1.4rem;
-  color: var(--color-text-secondary);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--color-text);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  transition: background 0.15s ease;
+  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
 }
 .fin-modal-close:hover {
   background: var(--color-border);
@@ -151,8 +165,27 @@
   transition: opacity 0.15s ease;
   min-height: 46px;
 }
-.fin-btn-primary:hover {
+.fin-btn-primary:hover:not(:disabled) {
   opacity: 0.95;
+}
+.fin-btn-primary:disabled {
+  background: #9aa3ad;
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.fin-chip-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.fin-withdraw-need {
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
 }
 
 .fin-bonus-forfeit-warn {

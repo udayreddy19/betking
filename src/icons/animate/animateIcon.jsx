@@ -1,9 +1,13 @@
 import { forwardRef, useRef, useCallback } from 'react';
 import { motion } from 'motion/react';
 
+function isRenderableIcon(Icon) {
+  return typeof Icon === 'function' || (typeof Icon === 'object' && Icon !== null && typeof Icon.render === 'function');
+}
+
 /** Wrap @animateicons/react icons with Framer Motion hover feedback & animations. */
 export function withAnimatedIcon(Icon) {
-  if (typeof Icon !== 'function') {
+  if (!isRenderableIcon(Icon)) {
     const Fallback = forwardRef(function MissingIcon(props, forwardedRef) {
       return <span ref={forwardedRef} className={props.className} aria-hidden="true" />;
     });

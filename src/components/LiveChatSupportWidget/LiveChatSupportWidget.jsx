@@ -10,7 +10,6 @@ import {
 } from '../../../lib/supportAssistant.mjs';
 import {
   FiMessageSquare,
-  FiX,
   FiSend,
   FiShield,
 } from '../../icons';
@@ -266,6 +265,15 @@ export default function LiveChatSupportWidget() {
         </motion.button>
       )}
 
+      {isOpen && (
+        <button
+          type="button"
+          className="live-chat-backdrop"
+          aria-label="Close chat"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -291,12 +299,13 @@ export default function LiveChatSupportWidget() {
               <div className="live-chat-header-actions">
                 <button
                   type="button"
-                  className="live-chat-control-btn"
+                  className="live-chat-control-btn live-chat-close-btn"
                   onClick={() => setIsOpen(false)}
                   title="Close Chat"
                   aria-label="Close chat"
                 >
-                  <FiX />
+                  <span aria-hidden="true">×</span>
+                  Close
                 </button>
               </div>
             </div>
@@ -377,7 +386,7 @@ export default function LiveChatSupportWidget() {
                       onClick={() => handleSendMessage()}
                       disabled={!inputText.trim() || isTyping}
                     >
-                      <FiSend />
+                      <FiSend size={18} color="#ffffff" />
                     </button>
                   </div>
 

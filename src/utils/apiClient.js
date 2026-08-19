@@ -1,4 +1,5 @@
 import { storageGet, storageSet, storageRemove } from './browserCompat.js';
+import { getPointsToNextTier } from './loyaltyPoints.js';
 
 const ACCESS_TOKEN_KEY = 'bk_access_token';
 
@@ -75,6 +76,8 @@ export function mapServerUserToSession(serverUser, previous = null) {
   const loyaltyPoints = Number(serverUser.loyaltyPoints) || 0;
   const reservedBalance = Number(serverUser.reservedBalance) || 0;
   const available = Math.max(0, balance - reservedBalance);
+  const loyaltyTier = serverUser.loyaltyTier || previous?.loyaltyTier || 'BRONZE';
+  const nextTier = getPointsToNextTier({ loyaltyPoints, loyaltyTier });
   return {
     ...(previous || {}),
     userId: serverUser.userId,
@@ -90,8 +93,11 @@ export function mapServerUserToSession(serverUser, previous = null) {
     freebetBalance,
     loyaltyPoints,
     coins: loyaltyPoints,
-    loyaltyTier: serverUser.loyaltyTier || previous?.loyaltyTier || 'BRONZE',
-    loyaltyRank: serverUser.loyaltyTier || previous?.loyaltyRank || 'BRONZE',
+    loyaltyTier,
+    loyaltyRank: loyaltyTier,
+    loyaltyLevel: previous?.loyaltyLevel ?? 1,
+    xpToNext: nextTier.pointsToNext,
+    notifications: previous?.notifications ?? 0,
     emailVerified: !!serverUser.emailVerified,
     role: serverUser.role || previous?.role || 'USER',
     kycStatus: serverUser.kycStatus,

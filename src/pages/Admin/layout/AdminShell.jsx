@@ -1192,7 +1192,7 @@ function AdminShellInner() {
               transition={{ duration: 0.2, ease: 'easeOut' }}
               onAnimationComplete={scrollContentToTop}
             >
-              <AdminRBACGate requiredRole={currentDomainObj?.role}>
+              <AdminRBACGate requiredRole={currentDomainObj?.role} domainId={activeDomain}>
                 {renderActiveDomainView()}
               </AdminRBACGate>
             </motion.div>

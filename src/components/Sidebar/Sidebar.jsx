@@ -21,6 +21,7 @@ import {
 } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
+import { getLoyaltySummary } from '../../utils/loyaltyPoints';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
 import './Sidebar.css';
 
@@ -57,13 +58,19 @@ export default function Sidebar() {
     openFinModal(type);
   };
 
+  const firstName = String(user?.displayName || user?.email || 'there').split(/[\s@]/)[0];
+  const loyalty = getLoyaltySummary(user);
+  const loyaltyProgress = loyalty.nextTier
+    ? `${Number(loyalty.points || 0).toLocaleString('en-IN')} pts · ${Number(loyalty.pointsToNext || 0).toLocaleString('en-IN')} to ${loyalty.nextLabel}`
+    : `${Number(loyalty.points || 0).toLocaleString('en-IN')} pts · Diamond`;
+
   return (
     <>
       <div className={`sidebar-overlay ${isSidebarOpen ? 'open' : ''}`} onClick={closeSidebar} />
       <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`} id="sidebar">
         <div className="sidebar-header">
           <span style={{ fontWeight: 700, fontSize: 'var(--text-lg)' }}>
-            {isLoggedIn ? `Hi, ${user.displayName.split(' ')[0]}` : 'Menu'}
+            {isLoggedIn ? `Hi, ${firstName}` : 'Menu'}
           </span>
           <motion.button
             className="sidebar-close"
@@ -115,8 +122,8 @@ export default function Sidebar() {
               <div className="sidebar-loyalty">
                 <HiOutlineTrophy className="loyalty-avatar-icon" aria-hidden />
                 <div className="loyalty-info">
-                  <h4>{user.loyaltyRank}</h4>
-                  <p>Level {user.loyaltyLevel} · {user.xpToNext.toLocaleString()} XP to Level {user.loyaltyLevel + 1}</p>
+                  <h4>{loyalty.tierLabel || user?.loyaltyRank || 'Standard'}</h4>
+                  <p>{loyaltyProgress}</p>
                 </div>
                 <div className="loyalty-ring" />
               </div>
@@ -128,7 +135,7 @@ export default function Sidebar() {
                   <h4>Notifications center</h4>
                   <p>Updates will appear here</p>
                 </div>
-                <span className="notif-badge">{user.notifications}</span>
+                <span className="notif-badge">{user?.notifications || 0}</span>
                 <FiChevronRight className="notif-arrow" />
               </div>
 

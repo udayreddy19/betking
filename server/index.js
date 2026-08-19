@@ -1217,6 +1217,15 @@ app.post('/api/admin/finance/withdrawals/:id/reject', async (req, res) => {
   }
 });
 
+app.get('/api/admin/finance/gateways', async (req, res) => {
+  try {
+    const { listPaymentGatewayStatus } = await import('../lib/adminDomainData.mjs');
+    res.json(listPaymentGatewayStatus());
+  } catch (err) {
+    res.status(500).json({ gateways: [], error: err.message });
+  }
+});
+
 app.get('/api/admin/support/tickets', async (req, res) => {
   try {
     const { listSupportTickets } = await import('../lib/adminDomainData.mjs');
@@ -1262,6 +1271,15 @@ app.get('/api/admin/growth/promotions', async (req, res) => {
     res.json(await listPromotions({ limit: 200 }));
   } catch (err) {
     res.status(500).json({ promotions: [], error: err.message });
+  }
+});
+
+app.get('/api/admin/growth/vip-tiers', async (req, res) => {
+  try {
+    const { listVipTierCatalog } = await import('../lib/adminDomainData.mjs');
+    res.json(await listVipTierCatalog());
+  } catch (err) {
+    res.status(500).json({ tiers: [], error: err.message });
   }
 });
 
@@ -1956,6 +1974,15 @@ app.get('/api/admin/outbox/metrics', async (req, res) => {
     res.json({ success: true, metrics });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/admin/outbox/events', async (req, res) => {
+  try {
+    const { listOutboxQueueEvents } = await import('../lib/adminDomainData.mjs');
+    res.json(await listOutboxQueueEvents({ limit: 100 }));
+  } catch (err) {
+    res.status(500).json({ events: [], error: err.message });
   }
 });
 

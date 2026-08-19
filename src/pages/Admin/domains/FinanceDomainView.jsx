@@ -8,7 +8,25 @@ function money(n) {
   return `₹${Number(n).toLocaleString()}`;
 }
 
-export default function FinanceDomainView({ subModule = 'maker-checker' }) {
+function statusBadge(status) {
+  const s = String(status || 'UNKNOWN').toUpperCase();
+  const ok = s === 'CONFIGURED' || s === 'ACTIVE' || s === 'VERIFIED';
+  const bad = s === 'NOT_CONFIGURED' || s === 'MISSING' || s === 'DOWN';
+  return (
+    <span style={{
+      padding: '2px 8px',
+      borderRadius: '4px',
+      fontSize: '0.75rem',
+      fontWeight: 700,
+      background: ok ? 'rgba(16, 185, 129, 0.2)' : bad ? 'rgba(239, 68, 68, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+      color: ok ? '#10b981' : bad ? '#f87171' : '#f59e0b',
+    }}>
+      {s}
+    </span>
+  );
+}
+
+function MakerCheckerPanel() {
   const [withdrawals, setWithdrawals] = useState([]);
   const [error, setError] = useState(null);
   const { showToast } = useAdminToast();
@@ -47,30 +65,20 @@ export default function FinanceDomainView({ subModule = 'maker-checker' }) {
       .catch((err) => showToast(err.message || 'Rejection failed', 'error'));
   };
 
-  const title = subModule === 'ledger'
-    ? '06 · Double-Entry Ledger'
-    : '06 · Maker-Checker Withdrawal Approvals';
-
-  const hint = subModule === 'ledger'
-    ? 'Ledger view currently surfaces pending cash-out requests awaiting finance action.'
-    : 'Pending withdrawals from PostgreSQL. Approve or reject with an audit trail.';
-
-  const rows = useMemo(() => withdrawals, [withdrawals]);
-
   return (
     <div>
       <div style={{ marginBottom: '20px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>{title}</h2>
+        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>06 · Maker-Checker Withdrawal Approvals</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted, var(--color-text-muted))', fontSize: '0.85rem' }}>
-          {hint}
+          Pending withdrawals from PostgreSQL. Approve or reject with an audit trail.
         </p>
         {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.82rem' }}>{error}</p>}
       </div>
 
       <AdminDataTable
-        title={subModule === 'ledger' ? 'Cash Movement Queue' : 'Pending Withdrawal Requests'}
+        title="Pending Withdrawal Requests"
         emptyMessage="No pending withdrawals"
-        data={rows}
+        data={withdrawals}
         columns={[
           { header: 'Request ID', key: 'id' },
           { header: 'User ID', key: 'userId' },
@@ -106,4 +114,110 @@ export default function FinanceDomainView({ subModule = 'maker-checker' }) {
       />
     </div>
   );
+}
+
+function LedgerPanel() {
+  const [entries, setEntries] = useState([]);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    adminApiClient.get('/finance/ledger?limit=100')
+      .then((data) => {
+        if (cancelled) return;
+        setEntries(data.ledgerEntries || data.entries || []);
+        setError(data.note || data.error || null);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setEntries([]);
+        setError(err.message || 'Failed to load ledger entries');
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  return (
+    <div>
+      <div style={{ marginBottom: '20px' }}>
+        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>06 · Double-Entry Ledger</h2>
+        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted, var(--color-text-muted))', fontSize: '0.85rem' }}>
+          Authoritative wallet ledger entries from PostgreSQL (most recent first).
+        </p>
+        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.82rem' }}>{error}</p>}
+      </div>
+
+      <AdminDataTable
+        title="Ledger Entries"
+        emptyMessage="No ledger entries recorded yet"
+        data={entries}
+        columns={[
+          { header: 'Entry ID', key: 'id', render: (r) => r.id || r.entry_id },
+          { header: 'Wallet ID', key: 'walletId', render: (r) => r.walletId || r.wallet_id },
+          { header: 'Transaction ID', key: 'transactionId', render: (r) => r.transactionId || r.transaction_id },
+          { header: 'Type', key: 'type' },
+          { header: 'Amount (₹)', key: 'amount', render: (r) => money(r.amount) },
+          { header: 'Balance After', key: 'balanceAfter', render: (r) => money(r.balanceAfter ?? r.balance_after) },
+          { header: 'Description', key: 'description' },
+          { header: 'Created At', key: 'createdAt', render: (r) => r.createdAt || r.created_at },
+        ]}
+      />
+    </div>
+  );
+}
+
+function PaymentGatewaysPanel() {
+  const [gateways, setGateways] = useState([]);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    adminApiClient.get('/finance/gateways')
+      .then((data) => {
+        if (cancelled) return;
+        setGateways(data.gateways || []);
+        setError(null);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setGateways([]);
+        setError(err.message || 'Failed to load payment gateway status');
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  return (
+    <div>
+      <div style={{ marginBottom: '20px' }}>
+        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>06 · Razorpay & Bank Gateways</h2>
+        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted, var(--color-text-muted))', fontSize: '0.85rem' }}>
+          Payment provider configuration status from server environment (no secrets shown).
+        </p>
+        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.82rem' }}>{error}</p>}
+      </div>
+
+      <AdminDataTable
+        title="Payment Gateway Status"
+        emptyMessage="No gateway configuration detected"
+        data={gateways}
+        columns={[
+          { header: 'Gateway ID', key: 'id' },
+          { header: 'Provider', key: 'name' },
+          { header: 'Methods', key: 'methods' },
+          { header: 'Status', key: 'status', render: (r) => statusBadge(r.status) },
+          { header: 'Webhook', key: 'webhook', render: (r) => statusBadge(r.webhook) },
+          { header: 'Detail', key: 'detail' },
+        ]}
+      />
+    </div>
+  );
+}
+
+export default function FinanceDomainView({ subModule = 'maker-checker' }) {
+  const view = useMemo(() => {
+    if (subModule === 'ledger') return <LedgerPanel />;
+    if (subModule === 'payment-gateways') return <PaymentGatewaysPanel />;
+    return <MakerCheckerPanel />;
+  }, [subModule]);
+
+  return view;
 }

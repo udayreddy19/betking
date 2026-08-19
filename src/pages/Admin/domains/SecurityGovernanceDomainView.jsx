@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { adminApiClient } from '../api/adminApiClient';
 import AdminDataTable from '../components/AdminDataTable';
-import { ADMIN_ROLES } from '../permissions/AdminRBACGate';
+import { ADMIN_ROLES, ROLE_ALLOWED_DOMAINS } from '../permissions/AdminRBACGate';
 
-export default function SecurityGovernanceDomainView() {
+export default function SecurityGovernanceDomainView({ subModule = 'audit-trail' }) {
   const [auditLogs, setAuditLogs] = useState([]);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (subModule === 'rbac-matrix') return undefined;
     let cancelled = false;
     adminApiClient.get('/security/audit')
       .then((data) => {
@@ -21,33 +22,51 @@ export default function SecurityGovernanceDomainView() {
         setError(err.message || 'Failed to load audit logs');
       });
     return () => { cancelled = true; };
-  }, []);
+  }, [subModule]);
 
-  const rbacRows = Object.keys(ADMIN_ROLES).map((role) => ({
-    id: role,
-    role,
-    access: role === 'SUPER_ADMIN' ? 'ALL DOMAINS' : 'SCOPED',
-  }));
+  const rbacRows = Object.keys(ADMIN_ROLES).map((role) => {
+    const allowed = ROLE_ALLOWED_DOMAINS[role];
+    return {
+      id: role,
+      role,
+      access: role === 'SUPER_ADMIN'
+        ? 'ALL DOMAINS'
+        : (allowed?.length ? allowed.join(', ') : 'ROLE-MATCHED DOMAINS ONLY'),
+    };
+  });
+
+  if (subModule === 'rbac-matrix') {
+    return (
+      <div>
+        <div style={{ marginBottom: '20px' }}>
+          <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>13 · RBAC Role Matrix</h2>
+          <p style={{ margin: '4px 0 0', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+            Role-to-domain access map used by the admin shell gate. Domains with no required role are open to all authenticated admins.
+          </p>
+        </div>
+
+        <AdminDataTable
+          title="RBAC Role Matrix"
+          searchable={false}
+          data={rbacRows}
+          columns={[
+            { header: 'Role', key: 'role' },
+            { header: 'Allowed Domains', key: 'access' },
+          ]}
+        />
+      </div>
+    );
+  }
 
   return (
     <div>
       <div style={{ marginBottom: '20px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>13 · Security, RBAC & Enterprise Audit Explorer</h2>
+        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>13 · Enterprise Audit Explorer</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
           Audit trail from `audit_events` (plus in-memory fallback if the table is empty).
         </p>
         {error && <p style={{ margin: '8px 0 0', color: '#fbbf24', fontSize: '0.82rem' }}>{error}</p>}
       </div>
-
-      <AdminDataTable
-        title="RBAC Role Matrix"
-        searchable={false}
-        data={rbacRows}
-        columns={[
-          { header: 'Role', key: 'role' },
-          { header: 'Access Model', key: 'access' },
-        ]}
-      />
 
       <AdminDataTable
         title="Enterprise Operational Audit Explorer"

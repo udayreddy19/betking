@@ -265,6 +265,16 @@
   color: var(--color-text);
 }
 
+.sidebar-action .action-icon,
+.sidebar-action .action-icon svg,
+.loyalty-avatar-icon svg,
+.tab-icon svg,
+.notif-icon svg,
+.link-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
 .action-label {
   display: block;
   width: 100%;

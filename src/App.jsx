@@ -86,7 +86,9 @@ function AppLayout() {
   return (
     <>
       <Header />
-      <Sidebar />
+      <ErrorBoundary fallback={null}>
+        <Sidebar />
+      </ErrorBoundary>
       <LoginModal />
       <DepositModal />
       <AppFinancialModals />

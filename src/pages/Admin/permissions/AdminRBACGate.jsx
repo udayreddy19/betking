@@ -16,11 +16,6 @@ export const ADMIN_ROLES = {
   OPERATIONS_ADMIN: 'OPERATIONS_ADMIN',
 };
 
-/**
- * Role → allowed domains mapping.
- * SUPER_ADMIN can access everything.
- * Other roles can access their own domains + any domain with role: null.
- */
 const ROLE_ALLOWED_DOMAINS = {
   [ADMIN_ROLES.SUPER_ADMIN]: null, // null = all
   [ADMIN_ROLES.FINANCE_ADMIN]: ['finance', 'betting'],
@@ -30,6 +25,8 @@ const ROLE_ALLOWED_DOMAINS = {
   [ADMIN_ROLES.MARKETING_ADMIN]: ['growth', 'communications', 'analytics'],
   [ADMIN_ROLES.OPERATIONS_ADMIN]: ['operations', 'platform', 'analytics'],
 };
+
+export { ROLE_ALLOWED_DOMAINS };
 
 export const PERMISSIONS = {
   VIEW_CUSTOMERS: 'VIEW_CUSTOMERS',
@@ -107,11 +104,11 @@ export function useAdminRole() {
 
 // ── Gate Component ──
 
-export default function AdminRBACGate({ requiredPermission, requiredRole, children, fallback }) {
+export default function AdminRBACGate({ requiredPermission, requiredRole, domainId, children, fallback }) {
   const { activeRole } = useAdminRole();
 
   // Role-based domain gate
-  if (requiredRole && !canAccessDomain(activeRole, null, requiredRole)) {
+  if (requiredRole && !canAccessDomain(activeRole, domainId, requiredRole)) {
     return fallback || (
       <div style={{
         padding: '48px 32px',

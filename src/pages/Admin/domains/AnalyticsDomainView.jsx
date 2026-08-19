@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { adminApiClient } from '../api/adminApiClient';
 import AdminDataTable from '../components/AdminDataTable';
+import { useAdminToast } from '../components/AdminToastContext';
 
-export default function AnalyticsDomainView() {
+export default function AnalyticsDomainView({ subModule = 'turnover-ggr' }) {
   const [reports, setReports] = useState([]);
   const [error, setError] = useState(null);
+  const { showToast } = useAdminToast();
 
   useEffect(() => {
     let cancelled = false;
@@ -22,20 +24,42 @@ export default function AnalyticsDomainView() {
     return () => { cancelled = true; };
   }, []);
 
+  const turnoverReports = reports.filter((r) => /turnover|ggr|stake|open.?bet/i.test(`${r.name} ${r.id}`));
+  const displayReports = subModule === 'bi-exporter' ? reports : turnoverReports;
+
+  const exportReport = (report) => {
+    const payload = JSON.stringify(report, null, 2);
+    const blob = new Blob([payload], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${report.id || 'report'}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(`Exported ${report.name || report.id}`, 'success');
+  };
+
+  const heading = subModule === 'bi-exporter'
+    ? '10 · Custom BI Data Exporter'
+    : '10 · Turnover & GGR Reports';
+  const hint = subModule === 'bi-exporter'
+    ? 'Export operational snapshots as JSON for downstream BI pipelines.'
+    : 'Stake turnover and open-bets exposure from live Postgres queries.';
+
   return (
     <div>
       <div style={{ marginBottom: '20px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>10 · Business Intelligence & Executive Analytics</h2>
+        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>{heading}</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-          On-demand operational reports from live feeds + ledger tables (no fabricated GGR).
+          {hint}
         </p>
         {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.82rem' }}>{error}</p>}
       </div>
 
       <AdminDataTable
-        title="Operational Analytics Reports"
-        emptyMessage="No analytics available"
-        data={reports}
+        title={subModule === 'bi-exporter' ? 'Exportable Operational Reports' : 'Turnover & Exposure Reports'}
+        emptyMessage={subModule === 'bi-exporter' ? 'No analytics available' : 'No turnover reports available yet'}
+        data={displayReports}
         columns={[
           { header: 'Report ID', key: 'id' },
           { header: 'Report Name', key: 'name' },
@@ -58,6 +82,29 @@ export default function AnalyticsDomainView() {
               </span>
             ),
           },
+          ...(subModule === 'bi-exporter' ? [{
+            header: 'Export',
+            key: 'export',
+            sortable: false,
+            render: (r) => (
+              <button
+                type="button"
+                onClick={() => exportReport(r)}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '4px',
+                  border: '1px solid var(--admin-border, var(--color-border))',
+                  background: 'var(--admin-panel, var(--color-panel))',
+                  color: '#60a5fa',
+                  cursor: 'pointer',
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                }}
+              >
+                Download JSON
+              </button>
+            ),
+          }] : []),
         ]}
       />
     </div>
