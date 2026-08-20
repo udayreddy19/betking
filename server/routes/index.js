@@ -107,6 +107,12 @@ adminRouter.use('/tasks', tasksRouter);
 import financialRouter from './admin/financialReconstruction.js';
 adminRouter.use('/financial', financialRouter);
 
+import kycRouter from './admin/kyc.js';
+adminRouter.use('/kyc', kycRouter);
+
+import riskRouter from './admin/risk.js';
+adminRouter.use('/risk', riskRouter);
+
 import financeRouter from './admin/finance.js';
 adminRouter.use('/finance', financeRouter);
 

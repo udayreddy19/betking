@@ -4,6 +4,7 @@
  */
 
 import { getAccessToken } from '../../../utils/apiClient';
+import { getAdminSessionState } from '../../../utils/adminSession';
 
 const API_BASE = '/api/admin';
 
@@ -16,6 +17,16 @@ function storeAdminSession(data, desiredRole) {
   return data.token;
 }
 
+function throwAdminAuthError(res, data) {
+  const error = new Error(data.error || `Admin session bootstrap failed (${res.status})`);
+  error.status = res.status;
+  error.code = data.code;
+  error.mfaToken = data.mfaToken;
+  error.secret = data.secret;
+  error.otpauthUrl = data.otpauthUrl;
+  throw error;
+}
+
 async function requestAdminLogin(body, userToken) {
   const headers = { 'Content-Type': 'application/json' };
   if (userToken) headers.Authorization = `Bearer ${userToken}`;
@@ -26,12 +37,20 @@ async function requestAdminLogin(body, userToken) {
     body: JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const error = new Error(data.error || `Admin session bootstrap failed (${res.status})`);
-    error.status = res.status;
-    error.code = data.code;
-    throw error;
-  }
+  if (!res.ok) throwAdminAuthError(res, data);
+  return data;
+}
+
+async function requestAdminMfa({ mfaToken, code, enroll }) {
+  const path = enroll ? '/api/auth/admin-mfa/confirm' : '/api/auth/admin-mfa/verify';
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ mfaToken, code }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throwAdminAuthError(res, data);
   return data;
 }
 
@@ -43,11 +62,30 @@ const IS_PROD_CLIENT = import.meta.env.PROD;
  */
 export async function ensureAdminSession(roleOverride, credentials) {
   const existing = localStorage.getItem('adminToken');
-  const currentRole = localStorage.getItem('adminRole') || 'SUPER_ADMIN';
+  const session = getAdminSessionState(existing);
+  const currentRole = session.valid
+    ? session.payload.role
+    : (localStorage.getItem('adminRole') || 'SUPER_ADMIN');
   const desiredRole = roleOverride || currentRole || 'SUPER_ADMIN';
 
-  if (existing && !credentials && (!roleOverride || currentRole === desiredRole)) {
+  if (session.valid && !credentials && (!roleOverride || currentRole === desiredRole)) {
+    if (localStorage.getItem('adminRole') !== currentRole) {
+      localStorage.setItem('adminRole', currentRole);
+    }
     return existing;
+  }
+
+  if (existing && !session.valid) {
+    localStorage.removeItem('adminToken');
+  }
+
+  if (credentials?.totpCode && credentials?.mfaToken) {
+    const data = await requestAdminMfa({
+      mfaToken: credentials.mfaToken,
+      code: credentials.totpCode,
+      enroll: !!credentials.enroll,
+    });
+    return storeAdminSession(data, desiredRole);
   }
 
   if (credentials?.email && credentials?.password) {
@@ -94,7 +132,11 @@ export async function ensureAdminSession(roleOverride, credentials) {
 }
 
 async function request(endpoint, options = {}) {
-  let token = localStorage.getItem('adminToken') || localStorage.getItem('oddsyra_token');
+  let token = localStorage.getItem('adminToken');
+  if (token && !getAdminSessionState(token).valid) {
+    localStorage.removeItem('adminToken');
+    token = null;
+  }
   if (!token) {
     try {
       token = await ensureAdminSession();
@@ -115,6 +157,7 @@ async function request(endpoint, options = {}) {
 
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
+    credentials: 'include',
     headers,
   });
 

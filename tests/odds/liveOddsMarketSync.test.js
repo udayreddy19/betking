@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { evaluateMarketAgainstMatchState } from '../../lib/marketEvaluationEngine.mjs';
 import { marketStateMachine, MARKET_STATES } from '../../lib/marketStateMachine.mjs';
 import { betPlacementEngine } from '../../lib/betPlacementEngine.mjs';
-import { generateMatchMarkets } from '../../src/utils/oddsMarketsGenerator.js';
 
 describe('CRITICAL Live Odds / Market State / Score Synchronization Tests — Exact Screenshot Verification', () => {
   // Shared match state representing exact screenshot:
@@ -163,34 +162,18 @@ describe('CRITICAL Live Odds / Market State / Score Synchronization Tests — Ex
     await expect(betAttempt).rejects.toThrow();
   });
 
-  it('Test 8: generateMatchMarkets generates dynamic lines and marks determined lines', () => {
-    const match = {
-      id: 'm_aus_sa_live',
-      sport: 'cricket',
-      isLive: true,
-      matchState: 'in',
-      team1: { name: 'Australia', shortName: 'AUS' },
-      team2: { name: 'South Africa', shortName: 'SA' },
-      liveDetails: {
-        runs: 178,
-        wickets: 5,
-        overs: '19.2',
-        score2: 156,
-        wickets2: 7,
-        inningsId: 2,
-        chaseTeamName: 'South Africa',
-        firstTeamName: 'Australia',
-      },
+  it('Test 8: determined team totals stay closed without any client-side odds generator', () => {
+    const market = {
+      key: 'team1_runs',
+      title: 'Australia Total Runs',
+      line: 165.5,
+      options: [
+        { selection: 'T1Runs:Over 165.5', name: 'Over 165.5', line: 165.5 },
+        { selection: 'T1Runs:Under 165.5', name: 'Under 165.5', line: 165.5 },
+      ],
     };
-
-    const markets = generateMatchMarkets(match);
-    const t1Market = markets.find(m => m.key === 'team1_runs');
-    const t2Market = markets.find(m => m.key === 'team2_runs');
-    const ppMarket = markets.find(m => m.key === 'powerplay_total');
-
-    expect(t1Market).toBeDefined();
-    expect(t2Market).toBeDefined();
-    expect(ppMarket).toBeDefined();
-    expect(ppMarket.status).toBe('DETERMINED');
+    const res = evaluateMarketAgainstMatchState(market, matchState);
+    expect(res.status).toBe('DETERMINED');
+    expect(res.options.every((o) => o.bettable === false)).toBe(true);
   });
 });

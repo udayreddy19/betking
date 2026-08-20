@@ -1,8 +1,7 @@
 import { FiZap, FiFlame, FiClock, FiPlusCircle, FiCheck } from '../../icons';
 import { useBetSlip } from '../../context/BetSlipContext';
+import { DEMO_MODE } from '../../utils/featureFlags';
 import './BoostedOddsWidget.css';
-
-const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1' || import.meta.env.DEV;
 
 const BOOSTED_PROMOS = [
   {

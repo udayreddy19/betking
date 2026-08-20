@@ -1,4 +1,15 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+vi.mock('../../lib/oddsQuoteService.mjs', () => ({
+  resolveServerOdds: vi.fn(async ({ clientOdds }) => {
+    const serverOdds = 1.85;
+    if (clientOdds != null && Math.abs(Number(clientOdds) - serverOdds) / serverOdds > 0.02) {
+      throw new Error(`ODDS_CHANGED: Requested odds ${clientOdds} differs from authoritative server odds ${serverOdds}`);
+    }
+    return serverOdds;
+  }),
+}));
+
 import { betPlacementEngine } from '../../lib/betPlacementEngine.mjs';
 import { query } from '../../db/pg.js';
 import { marketSuspensionEngine } from '../../lib/marketSuspensionEngine.mjs';
@@ -11,6 +22,7 @@ describe('Phase 5 Bet Placement Validation Tests', () => {
   const selectionId = 'sel_val_101';
 
   beforeEach(async () => {
+    await query(`ALTER TABLE bets ADD COLUMN IF NOT EXISTS vip_boost_pct NUMERIC(5,2) DEFAULT 0`);
     // Setup test user and wallet in DB
     await query(`INSERT INTO users (user_id, email, password_hash) VALUES ($1, $2, 'hash') ON CONFLICT (user_id) DO NOTHING;`, [testUserId, `${testUserId}@example.com`]);
     await query(`INSERT INTO wallets (wallet_id, user_id, balance, currency) VALUES ($1, $2, 1000.00, 'INR') ON CONFLICT (wallet_id) DO UPDATE SET balance = 1000.00;`, [walletId, testUserId]);

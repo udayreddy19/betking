@@ -1,4 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+vi.mock('../../lib/oddsQuoteService.mjs', () => ({
+  resolveServerOdds: vi.fn(async ({ clientOdds, odds }) => Number(clientOdds ?? odds)),
+}));
+
 import { accumulatorEngine } from '../../lib/accumulatorEngine.mjs';
 import { marketSuspensionEngine } from '../../lib/marketSuspensionEngine.mjs';
 

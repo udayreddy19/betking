@@ -1,15 +1,14 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { IoClose, IoChevronBack, FiArrowRight, FiAlertCircle, FiCheck } from '../../icons';
+import { IoClose, FiArrowRight, FiAlertCircle, FiCheck } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { MIN_DEPOSIT_INR, MAX_DEPOSIT_INR } from '../../utils/vipBenefits';
 import RazorpayModal from '../RazorpayModal/RazorpayModal';
 import { UpiLogo, GPayLogo, PhonePeLogo, PaytmLogo, BhimLogo } from '../PaymentLogos/PaymentLogos';
 import RupeeSymbol from '../RupeeSymbol/RupeeSymbol';
 import { apiFetch, fetchMe } from '../../utils/apiClient';
+import { DEMO_MODE } from '../../utils/featureFlags';
 import './DepositModal.css';
-
-const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1' || import.meta.env.DEV;
 
 async function waitForWalletCredit(refreshWallet, startBalance, attempts = 12) {
   for (let count = 0; count < attempts; count += 1) {
@@ -22,7 +21,7 @@ async function waitForWalletCredit(refreshWallet, startBalance, attempts = 12) {
 }
 
 export default function DepositModal() {
-  const { isDepositModalOpen, closeDepositModal, refreshWallet, user } = useAuth();
+  const { isDepositModalOpen, closeDepositModal, refreshWallet, addFunds, user } = useAuth();
   const [amount, setAmount] = useState('1000');
   const [upiId, setUpiId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -70,7 +69,7 @@ export default function DepositModal() {
       setIsLoading(false);
       const options = {
         key: activeKey,
-        amount: depositAmt * 100,
+        amount: Number(orderData.amount) || depositAmt * 100,
         currency: 'INR',
         name: 'OddsYra Gaming',
         description: 'Account Deposit',
@@ -110,10 +109,15 @@ export default function DepositModal() {
     }
   };
 
-  const handleRazorpayModalSuccess = () => {
+  const handleRazorpayModalSuccess = async () => {
     setIsRzpModalOpen(false);
+    const amt = parseFloat(amount);
+    if (DEMO_MODE && Number.isFinite(amt) && amt > 0) {
+      await addFunds?.(amt, 'Razorpay');
+    } else {
+      await refreshWallet?.();
+    }
     setIsSuccess(true);
-    refreshWallet?.();
   };
 
   const handleDepositSubmit = (e) => {

@@ -7,10 +7,10 @@ import {
   MIN_STAKE_INR,
   canBetWithBonusOnLegs,
 } from '../../utils/wageringRules';
+import { DEMO_MODE } from '../../utils/featureFlags';
 import './BetSlipFooter.css';
 
 const QUICK_STAKES = [100, 500, 1000];
-const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1' || import.meta.env.DEV;
 
 export default function BetSlipFooter({ variant = 'default', onPlaced }) {
   const {

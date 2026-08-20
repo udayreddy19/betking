@@ -8,6 +8,7 @@ import HomeCategoryGrid from '../../components/HomeCategoryGrid/HomeCategoryGrid
 import { sportsCategories, featuredLeagues } from '../../data/mockData';
 import { homePromoSlides } from '../../data/homePageData';
 import { useLiveMatches, useLiveSportsMeta } from '../../context/LiveSportsContext';
+import LiveScoresFeedBanner from '../../components/LiveScoresFeedBanner/LiveScoresFeedBanner';
 import { filterMatches } from '../../utils/matchFilters';
 import { getLeagueMeta, isSameLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
 import { useMatchWatchlist } from '../../hooks/useMatchWatchlist';
@@ -27,7 +28,7 @@ function filterByLeague(matchList, leagueId) {
 
 export default function Home() {
   const matches = useLiveMatches();
-  const { isScoresLoading } = useLiveSportsMeta();
+  const { isScoresLoading, scoresError, refreshScores } = useLiveSportsMeta();
   const navigate = useNavigate();
   const [activeSport, setActiveSport] = useState('cricket');
   const [activeLeague, setActiveLeague] = useState(null);
@@ -92,6 +93,11 @@ export default function Home() {
 
   return (
     <div className="home-page container" id="home-page">
+      <LiveScoresFeedBanner
+        message={scoresError}
+        onRetry={() => refreshScores({ force: true })}
+        retrying={isScoresLoading}
+      />
       <button
         type="button"
         className="home-promo-banner"

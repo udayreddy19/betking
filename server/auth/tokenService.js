@@ -9,70 +9,22 @@
  */
 
 import crypto from 'crypto';
-import { getJwtSecret } from '../../lib/jwtSecret.mjs';
-import { timingSafeEqualStrings } from '../../lib/cryptoUtils.mjs';
+import { signHs256, verifyHs256 } from '../../lib/jwtHs256.mjs';
 
-const JWT_SECRET = getJwtSecret();
 const ACCESS_TOKEN_EXPIRY_SECONDS = 15 * 60; // 15 minutes
 const REFRESH_TOKEN_EXPIRY_DAYS = 7;
 
-// ─── JWT Helpers (HS256) ───
-
-/**
- * Generate a signed JWT access token.
- * @param {string} userId
- * @param {string} role — 'USER' | 'ADMIN' | admin role
- * @param {string} tenantId
- * @returns {string} — JWT string
- */
 export function generateAccessToken(userId, role = 'USER', tenantId = 'oddsyra_in') {
-  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
-  const now = Math.floor(Date.now() / 1000);
-  const payload = Buffer.from(JSON.stringify({
+  return signHs256({
     sub: userId,
     role,
     tenant: tenantId,
     type: 'access',
-    iat: now,
-    exp: now + ACCESS_TOKEN_EXPIRY_SECONDS,
-  })).toString('base64url');
-
-  const signature = crypto
-    .createHmac('sha256', JWT_SECRET)
-    .update(`${header}.${payload}`)
-    .digest('base64url');
-
-  return `${header}.${payload}.${signature}`;
+  }, `${ACCESS_TOKEN_EXPIRY_SECONDS}s`);
 }
 
-/**
- * Verify and decode a JWT access token.
- * @param {string} token
- * @returns {object|null} — decoded payload or null if invalid/expired
- */
 export function verifyAccessToken(token) {
-  try {
-    if (!token || typeof token !== 'string') return null;
-    const parts = token.split('.');
-    if (parts.length !== 3) return null;
-
-    const [headerB64, payloadB64, signatureB64] = parts;
-    const expectedSig = crypto
-      .createHmac('sha256', JWT_SECRET)
-      .update(`${headerB64}.${payloadB64}`)
-      .digest('base64url');
-
-    if (!timingSafeEqualStrings(expectedSig, signatureB64)) return null;
-
-    const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString());
-
-    // Check expiry
-    if (payload.exp && Date.now() / 1000 > payload.exp) return null;
-
-    return payload;
-  } catch {
-    return null;
-  }
+  return verifyHs256(token);
 }
 
 // ─── Refresh Token Helpers ───

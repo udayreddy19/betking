@@ -1,0 +1,30 @@
+.live-scores-feed-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 10px 12px;
+  margin-bottom: var(--space-3);
+  border-radius: 8px;
+  background: var(--color-status-error-bg);
+  border: 1px solid var(--color-status-error-border);
+  color: var(--color-status-error-text);
+  font-size: var(--text-sm);
+}
+
+.live-scores-feed-banner__retry {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  background: var(--color-danger);
+  color: var(--color-on-primary);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+}
+
+.live-scores-feed-banner__retry:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

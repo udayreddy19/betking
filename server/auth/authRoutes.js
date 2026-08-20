@@ -9,6 +9,7 @@
  */
 
 import { Router } from 'express';
+import crypto from 'crypto';
 import { query, withTransaction } from '../../db/pg.js';
 import {
   signup,
@@ -20,7 +21,9 @@ import {
   getMe,
   resendEmailVerification,
   changePassword,
+  loginWithGoogle,
 } from './authService.js';
+import { buildGoogleAuthUrl, exchangeGoogleCode, getGoogleOAuthConfig } from './googleOAuthService.js';
 import { rotateRefreshToken } from './tokenService.js';
 import { requireAuth } from '../middleware/userAuth.js';
 import {
@@ -29,11 +32,14 @@ import {
   forgotPasswordRateLimiter,
   authGeneralRateLimiter,
 } from '../middleware/rateLimiter.js';
+import { issueCsrfCookie, clearCsrfCookie, requireCsrfWhenCookies } from '../middleware/csrf.js';
 
 const router = Router();
 
 const REFRESH_TOKEN_COOKIE = 'bk_refresh';
+const GOOGLE_OAUTH_STATE_COOKIE = 'bk_google_oauth_state';
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const inFlightGoogleCallbacks = new Map();
 
 function setRefreshCookie(res, token) {
   res.cookie(REFRESH_TOKEN_COOKIE, token, {
@@ -54,6 +60,117 @@ function clearRefreshCookie(res) {
   });
 }
 
+// ── GET /api/auth/providers ──
+router.get('/providers', (req, res) => {
+  res.json({
+    google: getGoogleOAuthConfig().enabled,
+  });
+});
+
+// ── GET /api/auth/google/start ──
+router.get('/google/start', authGeneralRateLimiter, (req, res) => {
+  const config = getGoogleOAuthConfig();
+  if (!config.enabled) {
+    return res.status(503).json({ error: 'Google sign-in is not configured.', code: 'GOOGLE_NOT_CONFIGURED' });
+  }
+
+  const state = crypto.randomBytes(24).toString('hex');
+  res.cookie(GOOGLE_OAUTH_STATE_COOKIE, state, {
+    httpOnly: true,
+    secure: IS_PRODUCTION,
+    sameSite: IS_PRODUCTION ? 'strict' : 'lax',
+    maxAge: 10 * 60 * 1000,
+    path: '/api/auth',
+  });
+
+  res.redirect(buildGoogleAuthUrl(state));
+});
+
+// ── POST /api/auth/google/callback ──
+router.post('/google/callback', authGeneralRateLimiter, async (req, res) => {
+  try {
+    const config = getGoogleOAuthConfig();
+    if (!config.enabled) {
+      return res.status(503).json({ error: 'Google sign-in is not configured.', code: 'GOOGLE_NOT_CONFIGURED' });
+    }
+
+    const { code, state } = req.body || {};
+    const expectedState = req.cookies?.[GOOGLE_OAUTH_STATE_COOKIE];
+    const callbackKey = code && state ? `${code}:${state}` : '';
+
+    if (!code || !state || !expectedState || state !== expectedState) {
+      res.clearCookie(GOOGLE_OAUTH_STATE_COOKIE, { path: '/api/auth' });
+      return res.status(400).json({ error: 'Invalid Google sign-in session.', code: 'GOOGLE_STATE_INVALID' });
+    }
+
+    if (callbackKey && inFlightGoogleCallbacks.has(callbackKey)) {
+      const shared = await inFlightGoogleCallbacks.get(callbackKey);
+      if (shared.error) {
+        return res.status(shared.status || 400).json({ error: shared.error, code: shared.code });
+      }
+      setRefreshCookie(res, shared.refreshToken);
+      const csrfToken = issueCsrfCookie(res);
+      return res.json({
+        success: true,
+        accessToken: shared.accessToken,
+        csrfToken,
+        isNewUser: shared.isNewUser,
+        user: shared.user,
+      });
+    }
+
+    const work = (async () => {
+      res.clearCookie(GOOGLE_OAUTH_STATE_COOKIE, { path: '/api/auth' });
+
+      const profile = await exchangeGoogleCode(code);
+      if (profile.error) {
+        return profile;
+      }
+
+      const result = await loginWithGoogle(query, withTransaction, {
+        ...profile,
+        ip: req.ip || req.headers['x-forwarded-for'],
+        userAgent: req.headers['user-agent'],
+      });
+
+      if (result.error) {
+        return result;
+      }
+
+      return result;
+    })();
+
+    if (callbackKey) inFlightGoogleCallbacks.set(callbackKey, work);
+
+    let result;
+    try {
+      result = await work;
+    } finally {
+      if (callbackKey) {
+        setTimeout(() => inFlightGoogleCallbacks.delete(callbackKey), 60_000);
+      }
+    }
+
+    if (result.error) {
+      return res.status(result.status || 502).json({ error: result.error, code: result.code });
+    }
+
+    setRefreshCookie(res, result.refreshToken);
+    const csrfToken = issueCsrfCookie(res);
+
+    res.json({
+      success: true,
+      accessToken: result.accessToken,
+      csrfToken,
+      isNewUser: result.isNewUser,
+      user: result.user,
+    });
+  } catch (err) {
+    console.error('[Auth] Google callback error:', IS_PRODUCTION ? 'Internal error' : err.message);
+    res.status(500).json({ error: 'An unexpected error occurred.', code: 'INTERNAL_ERROR' });
+  }
+});
+
 // ── POST /api/auth/signup ──
 router.post('/signup', registerRateLimiter, async (req, res) => {
   try {
@@ -68,10 +185,12 @@ router.post('/signup', registerRateLimiter, async (req, res) => {
     }
 
     setRefreshCookie(res, result.refreshToken);
+    const csrfToken = issueCsrfCookie(res);
 
     res.status(201).json({
       success: true,
       accessToken: result.accessToken,
+      csrfToken,
       user: {
         userId: result.userId,
         email: result.email,
@@ -102,10 +221,12 @@ router.post('/login', loginRateLimiter, async (req, res) => {
     }
 
     setRefreshCookie(res, result.refreshToken);
+    const csrfToken = issueCsrfCookie(res);
 
     res.json({
       success: true,
       accessToken: result.accessToken,
+      csrfToken,
       user: result.user,
     });
   } catch (err) {
@@ -115,7 +236,7 @@ router.post('/login', loginRateLimiter, async (req, res) => {
 });
 
 // ── POST /api/auth/logout ──
-router.post('/logout', async (req, res) => {
+router.post('/logout', requireCsrfWhenCookies, async (req, res) => {
   try {
     const refreshToken = req.cookies?.[REFRESH_TOKEN_COOKIE];
     // Try to get userId from authorization header
@@ -133,17 +254,19 @@ router.post('/logout', async (req, res) => {
 
     await logout(query, refreshToken, userId);
     clearRefreshCookie(res);
+    clearCsrfCookie(res);
 
     res.json({ success: true, message: 'Logged out successfully.' });
   } catch (err) {
     console.error('[Auth] Logout error:', IS_PRODUCTION ? 'Internal error' : err.message);
     clearRefreshCookie(res);
+    clearCsrfCookie(res);
     res.json({ success: true, message: 'Logged out.' });
   }
 });
 
 // ── POST /api/auth/refresh ──
-router.post('/refresh', authGeneralRateLimiter, async (req, res) => {
+router.post('/refresh', authGeneralRateLimiter, requireCsrfWhenCookies, async (req, res) => {
   try {
     const oldToken = req.cookies?.[REFRESH_TOKEN_COOKIE] || req.body?.refreshToken;
     if (!oldToken) {
@@ -161,10 +284,12 @@ router.post('/refresh', authGeneralRateLimiter, async (req, res) => {
     }
 
     setRefreshCookie(res, result.refreshToken);
+    const csrfToken = issueCsrfCookie(res);
 
     res.json({
       success: true,
       accessToken: result.accessToken,
+      csrfToken,
     });
   } catch (err) {
     console.error('[Auth] Refresh error:', IS_PRODUCTION ? 'Internal error' : err.message);

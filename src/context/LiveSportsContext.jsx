@@ -9,7 +9,8 @@ import {
 } from 'react';
 import { normalizeApiMatches } from '../utils/matchFilters';
 import { fetchLiveScores } from '../services/liveScoresService';
-import { LIVE_SCORES_POLL_MS } from '../config/livePolling';
+import { subscribeLiveChannel, isLiveFeedSocketOpen } from '../services/liveFeedSocket';
+import { LIVE_SCORES_POLL_MS, LIVE_SCORES_WS_FALLBACK_POLL_MS } from '../config/livePolling';
 import { getIplSrlMatches } from '../../lib/iplSrlSimulator.mjs';
 import { cricketScoreWeight, cricketSourceRank } from '../../lib/matchPairKey.mjs';
 
@@ -221,6 +222,77 @@ export function LiveSportsProvider({ children }) {
   const pollMsRef = useRef(LIVE_SCORES_POLL_MS);
   const mountedRef = useRef(true);
 
+  const applyScoresPayload = useCallback((data) => {
+    if (!data || !mountedRef.current) return;
+
+    if (data.pollIntervalMs && data.pollIntervalMs > 0) {
+      pollMsRef.current = data.pollIntervalMs;
+    }
+    const apiMatches = attachOdds(data.matches || []);
+    const normalized = normalizeApiMatches(apiMatches);
+    const nextSeries = data.series || [];
+    const nextSeriesSignature = seriesSignature(nextSeries);
+
+    if (nextSeriesSignature !== seriesSummaryRef.current) {
+      seriesSummaryRef.current = nextSeriesSignature;
+      setCricketSeries(nextSeries);
+    }
+
+    if (normalized.length > 0) {
+      const withSrl = mergeSrlMatches(normalized);
+      const nextSummary = summarizeMatches(withSrl);
+
+      if (nextSummary !== matchesSummaryRef.current) {
+        matchesSummaryRef.current = nextSummary;
+        setMatches((prev) => mergeMatchesStable(prev, withSrl));
+      }
+
+      const { counts = {}, sources } = data;
+      const okSources = Object.entries(sources || {})
+        .filter(([, status]) => status === 'ok')
+        .map(([name]) => name);
+
+      const primarySource = okSources.includes('cricbuzz') ? 'CRICBUZZ'
+        : okSources.includes('fancode') ? 'FanCode'
+        : okSources.includes('espn') ? 'ESPN'
+        : 'API';
+
+      const emoji = okSources.includes('cricbuzz') ? '🟢' : '🟡';
+
+      const sportNames = ['cricket', 'soccer', 'basketball', 'tennis', 'american-football'];
+      const sportParts = sportNames
+        .filter((s) => counts[s] > 0)
+        .map((s) => `${counts[s]} ${s}`);
+
+      const total = counts.total ?? normalized.length;
+      const live = counts.live ?? 0;
+      const nextTicker = `${emoji} ${primarySource} LIVE — ${total} events (${live} live${sportParts.length ? ' · ' + sportParts.join(', ') : ''})`;
+      setTickerMessage((prev) => (prev === nextTicker ? prev : nextTicker));
+    } else {
+      setMatches((prev) => {
+        if (prev && prev.length > 0) {
+          return prev;
+        }
+        const withSrl = mergeSrlMatches([]);
+        matchesSummaryRef.current = summarizeMatches(withSrl);
+        return withSrl;
+      });
+    }
+
+    if (data.feedError?.message) {
+      setScoresError((prev) => (prev === data.feedError.message ? prev : data.feedError.message));
+      setTickerMessage((prev) => (prev === '⚠️ Live score feeds unavailable' ? prev : '⚠️ Live score feeds unavailable'));
+    } else if (data.httpOk === false && !(data.matches || []).length) {
+      setScoresError((prev) => {
+        const next = 'Could not reach live score API — check connection and tap Retry.';
+        return prev === next ? prev : next;
+      });
+      setTickerMessage((prev) => (prev === '⚠️ Live score sync failed' ? prev : '⚠️ Live score sync failed'));
+    } else {
+      setScoresError((prev) => (prev === null ? prev : null));
+    }
+  }, []);
+
   const refreshScores = useCallback(async (options = {}) => {
     const { force = false } = options;
     const isInitialLoad = !hasLoadedRef.current;
@@ -228,63 +300,7 @@ export function LiveSportsProvider({ children }) {
 
     try {
       const data = await fetchLiveScores({ force });
-      if (!mountedRef.current) return;
-
-      if (data.pollIntervalMs && data.pollIntervalMs > 0) {
-        pollMsRef.current = data.pollIntervalMs;
-      }
-      const apiMatches = attachOdds(data.matches || []);
-      const normalized = normalizeApiMatches(apiMatches);
-      const nextSeries = data.series || [];
-      const nextSeriesSignature = seriesSignature(nextSeries);
-
-      if (nextSeriesSignature !== seriesSummaryRef.current) {
-        seriesSummaryRef.current = nextSeriesSignature;
-        setCricketSeries(nextSeries);
-      }
-
-      if (normalized.length > 0) {
-        const withSrl = mergeSrlMatches(normalized);
-        const nextSummary = summarizeMatches(withSrl);
-
-        if (nextSummary !== matchesSummaryRef.current) {
-          matchesSummaryRef.current = nextSummary;
-          setMatches((prev) => mergeMatchesStable(prev, withSrl));
-        }
-
-        setScoresError((prev) => (prev === null ? prev : null));
-
-        const { counts = {}, sources } = data;
-        const okSources = Object.entries(sources || {})
-          .filter(([, status]) => status === 'ok')
-          .map(([name]) => name);
-
-        const primarySource = okSources.includes('cricbuzz') ? 'CRICBUZZ'
-          : okSources.includes('fancode') ? 'FanCode'
-          : okSources.includes('espn') ? 'ESPN'
-          : 'API';
-
-        const emoji = okSources.includes('cricbuzz') ? '🟢' : '🟡';
-
-        const sportNames = ['cricket', 'soccer', 'basketball', 'tennis', 'american-football'];
-        const sportParts = sportNames
-          .filter((s) => counts[s] > 0)
-          .map((s) => `${counts[s]} ${s}`);
-
-        const total = counts.total ?? normalized.length;
-        const live = counts.live ?? 0;
-        const nextTicker = `${emoji} ${primarySource} LIVE — ${total} events (${live} live${sportParts.length ? ' · ' + sportParts.join(', ') : ''})`;
-        setTickerMessage((prev) => (prev === nextTicker ? prev : nextTicker));
-      } else {
-        setMatches((prev) => {
-          if (prev && prev.length > 0) {
-            return prev;
-          }
-          const withSrl = mergeSrlMatches([]);
-          matchesSummaryRef.current = summarizeMatches(withSrl);
-          return withSrl;
-        });
-      }
+      applyScoresPayload(data);
     } catch (error) {
       if (!mountedRef.current) return;
       console.warn('Live scores fetch error:', error);
@@ -299,7 +315,7 @@ export function LiveSportsProvider({ children }) {
       hasLoadedRef.current = true;
       setIsScoresLoading(false);
     }
-  }, []);
+  }, [applyScoresPayload]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -308,7 +324,9 @@ export function LiveSportsProvider({ children }) {
 
     const scheduleNext = () => {
       if (cancelled) return;
-      const ms = pollMsRef.current || LIVE_SCORES_POLL_MS;
+      const ms = isLiveFeedSocketOpen()
+        ? LIVE_SCORES_WS_FALLBACK_POLL_MS
+        : (pollMsRef.current || LIVE_SCORES_POLL_MS);
       intervalId = setTimeout(async () => {
         if (cancelled) return;
         if (!document.hidden) {
@@ -322,6 +340,11 @@ export function LiveSportsProvider({ children }) {
       if (!cancelled) scheduleNext();
     });
 
+    const unsubScores = subscribeLiveChannel('scores:live', (msg) => {
+      if (cancelled || !msg?.payload) return;
+      applyScoresPayload(msg.payload);
+    });
+
     const onVisibility = () => {
       if (!document.hidden) refreshScores();
     };
@@ -330,10 +353,11 @@ export function LiveSportsProvider({ children }) {
     return () => {
       cancelled = true;
       mountedRef.current = false;
+      unsubScores();
       if (intervalId) clearTimeout(intervalId);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [refreshScores]);
+  }, [refreshScores, applyScoresPayload]);
 
   useEffect(() => {
     const tickSrl = () => {

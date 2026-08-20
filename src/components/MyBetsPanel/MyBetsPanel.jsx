@@ -7,6 +7,7 @@ import { useLiveMatches } from '../../context/LiveSportsContext';
 import { getCashoutOffer } from '../../utils/wageringRules';
 import { formatInr } from '../../utils/walletBalance';
 import { teamNameMatches } from '../../utils/cricketScores';
+import { DEMO_MODE } from '../../utils/featureFlags';
 import './MyBetsPanel.css';
 
 const FILTERS = [
@@ -16,7 +17,6 @@ const FILTERS = [
   { id: 'lost', label: 'Lost' },
   { id: 'cashed_out', label: 'Cash out' },
 ];
-const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1' || import.meta.env.DEV;
 
 export default function MyBetsPanel() {
   const { placedBets, myBetsCount, isMyBetsOpen, closeMyBets, cashOutBet, adminSettleBet } = useBetSlip();

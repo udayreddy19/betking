@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { requirePermission } from '../../middleware/adminAuth.js';
 import { kycEngine } from '../../../lib/kycEngine.mjs';
-import { query } from '../../../db/pg.js';
+import { queryRead } from '../../../db/pg.js';
 
 const router = Router();
 
 // POST /api/admin/kyc/verify — Admin KYC verification review
-router.post('/verify', requirePermission('kyc', 'admin'), async (req, res) => {
+router.post('/verify', requirePermission('kyc', 'customers', 'risk'), async (req, res) => {
   const { caseId, decision, notes } = req.body;
   try {
     const result = await kycEngine.verifyKycCase({
@@ -22,11 +22,11 @@ router.post('/verify', requirePermission('kyc', 'admin'), async (req, res) => {
 });
 
 // GET /api/admin/kyc/cases — List pending KYC cases
-router.get('/cases', requirePermission('kyc', 'admin'), async (req, res) => {
+router.get('/cases', requirePermission('kyc', 'customers', 'risk'), async (req, res) => {
   const { status = 'UNDER_REVIEW', page = 1, limit = 25 } = req.query;
   try {
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    const result = await query(
+    const result = await queryRead(
       `SELECT case_id, user_id, status, pan_number, aadhaar_number, reviewed_by, updated_at
        FROM kyc_cases
        WHERE status = $1

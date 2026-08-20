@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { adminAuth, requirePermission, requireRole, generateAdminToken, ADMIN_ROLES } from '../../server/middleware/adminAuth.js';
+import { adminAuth, requirePermission, requireRole, generateAdminToken, generateAdminMfaPendingToken, ADMIN_ROLES } from '../../server/middleware/adminAuth.js';
 import { generateAccessToken } from '../../server/auth/tokenService.js';
 
 describe('Admin Authentication & RBAC Middleware', () => {
@@ -28,6 +28,19 @@ describe('Admin Authentication & RBAC Middleware', () => {
     expect(next).toHaveBeenCalled();
     expect(req.admin.id).toBe('finance_user');
     expect(req.admin.role).toBe(ADMIN_ROLES.FINANCE_ADMIN);
+  });
+
+  it('rejects MFA pending tokens on admin APIs', () => {
+    const token = generateAdminMfaPendingToken('admin_mfa_pending', ADMIN_ROLES.SUPER_ADMIN);
+    const req = { headers: { authorization: `Bearer ${token}` } };
+    const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
+    const next = vi.fn();
+
+    adminAuth(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(next).not.toHaveBeenCalled();
+    expect(req.admin).toBeUndefined();
   });
 
   it('rejects a normal user access JWT', () => {

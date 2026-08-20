@@ -14,6 +14,7 @@ export default function ProfileKycCard() {
   const [kyc, setKyc] = useState(null);
   const [pan, setPan] = useState('');
   const [aadhaar, setAadhaar] = useState('');
+  const [dob, setDob] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(null);
 
@@ -50,6 +51,27 @@ export default function ProfileKycCard() {
     }
   };
 
+  const submitDob = async () => {
+    setError('');
+    setSaving('DOB');
+    try {
+      const res = await apiFetch('/api/v1/user/kyc', {
+        method: 'POST',
+        body: JSON.stringify({ dateOfBirth: dob }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || 'Could not save date of birth.');
+        showToast(data.error || 'Could not save date of birth.', 'error');
+        return;
+      }
+      showToast('Date of birth saved.', 'success');
+      await load();
+    } finally {
+      setSaving(null);
+    }
+  };
+
   const panLocked = Boolean(kyc?.panMasked) && kyc?.status === 'VERIFIED';
   const aadhaarLocked = Boolean(kyc?.aadhaarMasked) && kyc?.status === 'VERIFIED';
 
@@ -63,7 +85,31 @@ export default function ProfileKycCard() {
       </div>
       <p className="profile-loyalty-meta">
         Each Aadhaar, PAN, email, and mobile number can be used on one account only.
+        Real-money deposits and cash bets require verified KYC and a date of birth proving you are 18 or older.
       </p>
+
+      <form
+        className="profile-promo-row profile-kyc-row"
+        onSubmit={(e) => {
+          e.preventDefault();
+          submitDob();
+        }}
+      >
+        <input
+          type="date"
+          value={dob}
+          onChange={(e) => setDob(e.target.value)}
+          max={new Date().toISOString().slice(0, 10)}
+          disabled={Boolean(kyc?.hasDateOfBirth && kyc?.ageEligible) || saving === 'DOB'}
+        />
+        <button
+          type="submit"
+          className="profile-link-btn"
+          disabled={Boolean(kyc?.hasDateOfBirth && kyc?.ageEligible) || saving === 'DOB' || !dob}
+        >
+          {kyc?.hasDateOfBirth ? (kyc.ageEligible ? 'Age saved' : 'Update DOB') : saving === 'DOB' ? 'Saving…' : 'Save date of birth'}
+        </button>
+      </form>
 
       {error && <div className="profile-kyc-error" role="alert">{error}</div>}
 

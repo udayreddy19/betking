@@ -2,9 +2,14 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { liveScoresApiPlugin } from './vite-plugins/liveScoresApi.js'
 import { sportsApiPlatformPlugin } from './vite-plugins/sportsApiPlatform.js'
+import rejectDemoModeProductionPlugin from './vite-plugins/rejectDemoModeProduction.js'
+
+const cdnOrigin = (process.env.VITE_CDN_ASSET_ORIGIN || '').replace(/\/$/, '');
+const assetBase = cdnOrigin ? `${cdnOrigin}/` : '/';
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: assetBase,
   resolve: {
     dedupe: ['react', 'react-dom', 'motion'],
   },
@@ -33,7 +38,7 @@ export default defineConfig({
       },
     },
   },
-  plugins: [react(), liveScoresApiPlugin(), sportsApiPlatformPlugin()],
+  plugins: [react(), liveScoresApiPlugin(), sportsApiPlatformPlugin(), rejectDemoModeProductionPlugin()],
   build: {
     target: ['es2019', 'safari13', 'chrome80', 'firefox78', 'edge88'],
     cssTarget: ['safari13', 'chrome80', 'firefox78', 'edge88'],
@@ -59,6 +64,26 @@ export default defineConfig({
             return 'icons-itshover';
           }
         },
+      },
+    },
+  },
+  test: {
+    exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**', '**/coverage/**'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json-summary', 'lcov'],
+      reportsDirectory: './coverage',
+      include: [
+        'lib/betPlacementEngine.mjs',
+        'lib/withdrawalEngine.mjs',
+        'lib/depositEngine.mjs',
+        'lib/odds-v3/OddsEngineV3.mjs',
+      ],
+      thresholds: {
+        lines: 60,
+        functions: 70,
+        statements: 60,
+        branches: 45,
       },
     },
   },

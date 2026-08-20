@@ -16,11 +16,26 @@ export function clearAccessToken() {
   storageRemove(ACCESS_TOKEN_KEY, 'session');
 }
 
-async function refreshAccessToken() {
+export function getCsrfToken() {
+  if (typeof document === 'undefined') return '';
+  const match = document.cookie.match(/(?:^|; )bk_csrf=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : '';
+}
+
+function withCsrfHeaders(headers) {
+  const csrf = getCsrfToken();
+  if (csrf && !headers.has('X-CSRF-Token')) {
+    headers.set('X-CSRF-Token', csrf);
+  }
+  return headers;
+}
+
+export async function refreshAccessToken() {
+  const headers = withCsrfHeaders(new Headers({ 'Content-Type': 'application/json' }));
   const res = await fetch('/api/auth/refresh', {
     method: 'POST',
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
   });
   if (!res.ok) return null;
   const data = await res.json();
@@ -35,7 +50,7 @@ async function refreshAccessToken() {
  * Authenticated fetch with automatic token refresh on 401.
  */
 export async function apiFetch(path, options = {}, { retry = true } = {}) {
-  const headers = new Headers(options.headers || {});
+  const headers = withCsrfHeaders(new Headers(options.headers || {}));
   if (!headers.has('Content-Type') && options.body && typeof options.body === 'string') {
     headers.set('Content-Type', 'application/json');
   }

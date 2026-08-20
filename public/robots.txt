@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /trader
+Disallow: /developer
+Disallow: /api-docs
+Disallow: /_oauth/
+
+Sitemap: https://oddsyra.com/sitemap.xml

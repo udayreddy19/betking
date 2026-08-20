@@ -94,6 +94,7 @@ const DOMAIN_GROUPS = [
         role: ADMIN_ROLES.TRADING_ADMIN,
         subModules: [
           { id: 'exposure', label: 'Live Exposure & Risk Desk' },
+          { id: 'ggr-liability', label: 'GGR / Hold / Liability' },
           { id: 'suspension', label: 'Market Suspension Controls' },
           { id: 'fraud-signals', label: 'Fraud & Anomaly Signals' },
         ],
@@ -256,6 +257,11 @@ function AdminShellInner() {
   const [signingIn, setSigningIn] = useState(false);
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
+  const [adminTotp, setAdminTotp] = useState('');
+  const [mfaToken, setMfaToken] = useState('');
+  const [mfaSecret, setMfaSecret] = useState('');
+  const [mfaOtpauth, setMfaOtpauth] = useState('');
+  const [mfaStep, setMfaStep] = useState('password');
   const [liveAlerts, setLiveAlerts] = useState([]);
   const [alertsMenuPos, setAlertsMenuPos] = useState({ top: 56, right: 16 });
   const contentScrollRef = useRef(null);
@@ -300,6 +306,20 @@ function AdminShellInner() {
       .catch((err) => {
         if (cancelled) return;
         setSessionReady(false);
+        if (err.code === 'MFA_REQUIRED' && err.mfaToken) {
+          setMfaToken(err.mfaToken);
+          setMfaStep('otp');
+          setSessionError('Enter the 6-digit code from your authenticator app.');
+          return;
+        }
+        if (err.code === 'MFA_SETUP_REQUIRED' && err.mfaToken) {
+          setMfaToken(err.mfaToken);
+          setMfaSecret(err.secret || '');
+          setMfaOtpauth(err.otpauthUrl || '');
+          setMfaStep('setup');
+          setSessionError('Scan or enter this secret in your authenticator, then confirm the code.');
+          return;
+        }
         setSessionError(err.message || 'Sign in with an admin account to continue.');
       })
       .finally(() => {
@@ -479,11 +499,35 @@ function AdminShellInner() {
     setSigningIn(true);
     setSessionError('');
     try {
-      await ensureAdminSession(activeRole, { email: adminEmail, password: adminPassword });
+      if (mfaStep !== 'password') {
+        await ensureAdminSession(activeRole, {
+          totpCode: adminTotp,
+          mfaToken,
+          enroll: mfaStep === 'setup',
+        });
+      } else {
+        await ensureAdminSession(activeRole, { email: adminEmail, password: adminPassword });
+      }
       setSessionReady(true);
+      setAdminTotp('');
+      setMfaToken('');
+      setMfaSecret('');
+      setMfaStep('password');
     } catch (err) {
-      setSessionReady(false);
-      setSessionError(err.message || 'Could not sign in to admin.');
+      if (err.code === 'MFA_REQUIRED' && err.mfaToken) {
+        setMfaToken(err.mfaToken);
+        setMfaStep('otp');
+        setSessionError('Enter the 6-digit code from your authenticator app.');
+      } else if (err.code === 'MFA_SETUP_REQUIRED' && err.mfaToken) {
+        setMfaToken(err.mfaToken);
+        setMfaSecret(err.secret || '');
+        setMfaOtpauth(err.otpauthUrl || '');
+        setMfaStep('setup');
+        setSessionError('Scan or enter this secret in your authenticator, then confirm the code.');
+      } else {
+        setSessionReady(false);
+        setSessionError(err.message || 'Could not sign in to admin.');
+      }
     } finally {
       setSigningIn(false);
     }
@@ -494,11 +538,15 @@ function AdminShellInner() {
     localStorage.removeItem('adminRole');
     setSessionReady(false);
     setSessionError('');
+    setAdminTotp('');
+    setMfaToken('');
+    setMfaSecret('');
+    setMfaOtpauth('');
+    setMfaStep('password');
   };
 
   const handleRoleChange = (newRole) => {
     setActiveRole(newRole);
-    ensureAdminSession(newRole).catch(() => {});
   };
 
   useEffect(() => {
@@ -686,6 +734,8 @@ function AdminShellInner() {
             )}
 
             <form onSubmit={handleAdminSignIn} style={{ display: 'grid', gap: '16px' }}>
+              {mfaStep === 'password' && (
+                <>
               <label style={{ display: 'grid', gap: '6px', fontSize: '0.78rem', fontWeight: 700, color: 'var(--admin-text-muted)' }}>
                 ADMIN EMAIL
                 <input
@@ -728,6 +778,79 @@ function AdminShellInner() {
                   }}
                 />
               </label>
+                </>
+              )}
+
+              {mfaStep !== 'password' && (
+                <>
+                  {mfaStep === 'setup' && mfaSecret && (
+                    <div style={{
+                      padding: '12px 14px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--admin-border)',
+                      background: 'var(--admin-bg)',
+                      fontSize: '0.8rem',
+                      color: 'var(--admin-text)',
+                      wordBreak: 'break-all',
+                    }}>
+                      <div style={{ fontWeight: 800, marginBottom: 8 }}>Authenticator secret</div>
+                      <code>{mfaSecret}</code>
+                      {mfaOtpauth && (
+                        <div style={{ marginTop: 8, color: 'var(--admin-text-muted)', fontSize: '0.72rem' }}>
+                          Add this account in Google Authenticator / 1Password using the secret above.
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <label style={{ display: 'grid', gap: '6px', fontSize: '0.78rem', fontWeight: 700, color: 'var(--admin-text-muted)' }}>
+                    AUTHENTICATOR CODE
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      required
+                      autoFocus
+                      maxLength={8}
+                      placeholder="123456"
+                      value={adminTotp}
+                      onChange={(e) => setAdminTotp(e.target.value.replace(/\s/g, ''))}
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--admin-border)',
+                        background: 'var(--admin-bg)',
+                        color: 'var(--admin-text)',
+                        fontSize: '0.9rem',
+                        outline: 'none',
+                        letterSpacing: '0.2em',
+                      }}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMfaStep('password');
+                      setAdminTotp('');
+                      setMfaToken('');
+                      setMfaSecret('');
+                      setMfaOtpauth('');
+                      setSessionError('');
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--admin-text-muted)',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      padding: 0,
+                    }}
+                  >
+                    Back to email and password
+                  </button>
+                </>
+              )}
 
               <button
                 type="submit"
@@ -747,7 +870,13 @@ function AdminShellInner() {
                   opacity: signingIn ? 0.75 : 1,
                 }}
               >
-                {signingIn ? 'Verifying credentials…' : 'Sign In to Operations Console'}
+                {signingIn
+                  ? 'Verifying…'
+                  : mfaStep === 'setup'
+                    ? 'Confirm authenticator'
+                    : mfaStep === 'otp'
+                      ? 'Verify code'
+                      : 'Sign In to Operations Console'}
               </button>
             </form>
 

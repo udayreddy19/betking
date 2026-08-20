@@ -1,0 +1,13 @@
+-- Admin TOTP secrets (encrypted at rest)
+
+CREATE TABLE IF NOT EXISTS admin_mfa (
+  user_id VARCHAR(64) PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
+  secret_ciphertext TEXT NOT NULL,
+  secret_iv VARCHAR(64) NOT NULL,
+  secret_tag VARCHAR(64) NOT NULL,
+  enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  enrolled_at TIMESTAMP WITH TIME ZONE,
+  last_used_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);

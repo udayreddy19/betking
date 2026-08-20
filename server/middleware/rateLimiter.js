@@ -1,120 +1,121 @@
 /**
  * Reusable Rate Limiter Middleware — OddsYra Sportsbook Platform
- * 
- * Supports configurable window sizes, request thresholds per IP/key,
- * Redis caching integration with safe in-memory fallback.
+ *
+ * Redis sliding window with in-memory fallback. Used by auth HTTP middleware
+ * and the developer public API (authenticateApiKey).
  */
 
 import { checkRedisHealth, redis } from '../../db/redis.js';
 
-// In-memory fallback sliding window map (ip:endpoint -> timestamp[])
 const memoryRateLimitMap = new Map();
 
-/**
- * Cleanup expired in-memory rate limit entries periodically
- */
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, timestamps] of memoryRateLimitMap.entries()) {
-    const valid = timestamps.filter(ts => now - ts < 15 * 60 * 1000);
-    if (valid.length === 0) {
-      memoryRateLimitMap.delete(key);
-    } else {
-      memoryRateLimitMap.set(key, valid);
+if (process.env.NODE_ENV !== 'test') {
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, timestamps] of memoryRateLimitMap.entries()) {
+      const valid = timestamps.filter((ts) => now - ts < 15 * 60 * 1000);
+      if (valid.length === 0) memoryRateLimitMap.delete(key);
+      else memoryRateLimitMap.set(key, valid);
     }
-  }
-}, 5 * 60 * 1000);
+  }, 5 * 60 * 1000).unref?.();
+}
 
 /**
- * Configurable rate limiter factory middleware
+ * Consume one slot in a sliding window.
+ * @returns {Promise<{ allowed: boolean, count: number, remaining: number, retryAfterSeconds: number, limit: number, windowSeconds: number }>}
  */
+export async function consumeRateLimitSlot({
+  key,
+  windowSeconds = 60,
+  maxRequests = 10,
+  prefix = 'rl',
+} = {}) {
+  const windowMs = windowSeconds * 1000;
+  const now = Date.now();
+  const redisKey = `${prefix}:${key}`;
+  const retryAfterSeconds = Math.ceil(windowSeconds);
+  const base = { limit: maxRequests, windowSeconds, retryAfterSeconds };
+
+  try {
+    const redisHealth = await checkRedisHealth();
+    if (redisHealth.connected) {
+      const tx = redis.multi();
+      tx.zremrangebyscore(redisKey, 0, now - windowMs);
+      tx.zadd(redisKey, now, `${now}-${Math.random()}`);
+      tx.zcard(redisKey);
+      tx.expire(redisKey, windowSeconds);
+      const results = await tx.exec();
+      const count = Number(results[2][1]);
+      const remaining = Math.max(0, maxRequests - count);
+      if (count > maxRequests) {
+        return { allowed: false, count, remaining: 0, ...base };
+      }
+      return { allowed: true, count, remaining, ...base };
+    }
+  } catch {
+    // memory fallback
+  }
+
+  const timestamps = (memoryRateLimitMap.get(redisKey) || []).filter((ts) => now - ts < windowMs);
+  if (timestamps.length >= maxRequests) {
+    return { allowed: false, count: timestamps.length, remaining: 0, ...base };
+  }
+  timestamps.push(now);
+  memoryRateLimitMap.set(redisKey, timestamps);
+  const count = timestamps.length;
+  return { allowed: true, count, remaining: Math.max(0, maxRequests - count), ...base };
+}
+
 export function createRateLimiter({
-  windowSeconds = parseInt(process.env.AUTH_RATE_LIMIT_WINDOW) || 60,
+  windowSeconds = parseInt(process.env.AUTH_RATE_LIMIT_WINDOW, 10) || 60,
   maxRequests = 10,
   prefix = 'rl',
   keyGenerator = (req) => req.ip || req.headers['x-forwarded-for'] || 'unknown_ip',
 } = {}) {
   return async (req, res, next) => {
     const clientKey = keyGenerator(req);
-    const windowMs = windowSeconds * 1000;
-    const now = Date.now();
-    const redisKey = `${prefix}:${clientKey}`;
-
-    // Attempt Redis sliding window rate limiting
-    try {
-      const redisHealth = await checkRedisHealth();
-      if (redisHealth.connected) {
-        const tx = redis.multi();
-        tx.zremrangebyscore(redisKey, 0, now - windowMs);
-        tx.zadd(redisKey, now, `${now}-${Math.random()}`);
-        tx.zcard(redisKey);
-        tx.expire(redisKey, windowSeconds);
-        const results = await tx.exec();
-
-        const requestCount = results[2][1];
-        if (requestCount > maxRequests) {
-          const retryAfterSeconds = Math.ceil(windowSeconds);
-          res.setHeader('Retry-After', retryAfterSeconds);
-          return res.status(429).json({
-            error: 'Too many requests. Please try again later.',
-            code: 'RATE_LIMIT_EXCEEDED',
-            retryAfterSeconds,
-            limit: maxRequests,
-            windowSeconds,
-          });
-        }
-        return next();
-      }
-    } catch (err) {
-      // Fall through to in-memory check if Redis fails
-    }
-
-    // In-memory sliding window fallback
-    const key = `${prefix}:${clientKey}`;
-    const timestamps = memoryRateLimitMap.get(key) || [];
-    const validTimestamps = timestamps.filter(ts => now - ts < windowMs);
-
-    if (validTimestamps.length >= maxRequests) {
-      const retryAfterSeconds = Math.ceil(windowSeconds);
-      res.setHeader('Retry-After', retryAfterSeconds);
+    const result = await consumeRateLimitSlot({
+      key: clientKey,
+      windowSeconds,
+      maxRequests,
+      prefix,
+    });
+    if (!result.allowed) {
+      res.setHeader('Retry-After', result.retryAfterSeconds);
       return res.status(429).json({
         error: 'Too many requests. Please try again later.',
         code: 'RATE_LIMIT_EXCEEDED',
-        retryAfterSeconds,
+        retryAfterSeconds: result.retryAfterSeconds,
         limit: maxRequests,
         windowSeconds,
       });
     }
-
-    validTimestamps.push(now);
-    memoryRateLimitMap.set(key, validTimestamps);
     return next();
   };
 }
 
-/** Pre-configured rate limiters for authentication endpoints */
 export const loginRateLimiter = createRateLimiter({
   prefix: 'rl:login',
-  maxRequests: parseInt(process.env.AUTH_LOGIN_RATE_LIMIT) || 5,
-  windowSeconds: parseInt(process.env.AUTH_RATE_LIMIT_WINDOW) || 60,
+  maxRequests: parseInt(process.env.AUTH_LOGIN_RATE_LIMIT, 10) || 5,
+  windowSeconds: parseInt(process.env.AUTH_RATE_LIMIT_WINDOW, 10) || 60,
 });
 
 export const registerRateLimiter = createRateLimiter({
   prefix: 'rl:register',
-  maxRequests: parseInt(process.env.AUTH_REGISTER_RATE_LIMIT) || 10,
-  windowSeconds: parseInt(process.env.AUTH_RATE_LIMIT_WINDOW) || 60,
+  maxRequests: parseInt(process.env.AUTH_REGISTER_RATE_LIMIT, 10) || 10,
+  windowSeconds: parseInt(process.env.AUTH_RATE_LIMIT_WINDOW, 10) || 60,
 });
 
 export const forgotPasswordRateLimiter = createRateLimiter({
   prefix: 'rl:forgot_password',
   maxRequests: 3,
-  windowSeconds: 15 * 60, // 15 minutes
+  windowSeconds: 15 * 60,
 });
 
 export const verifyEmailRateLimiter = createRateLimiter({
   prefix: 'rl:verify_email',
   maxRequests: 5,
-  windowSeconds: 15 * 60, // 15 minutes
+  windowSeconds: 15 * 60,
 });
 
 export const authGeneralRateLimiter = createRateLimiter({
@@ -128,4 +129,3 @@ export const rewardsClaimRateLimiter = createRateLimiter({
   maxRequests: 10,
   windowSeconds: 60,
 });
-

@@ -55,6 +55,7 @@ services:
       NODE_ENV: production
       PORT: 5001
       DATABASE_URL: postgresql://${POSTGRES_USER:-oddsyra_app}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-oddsyra}
+      DATABASE_READ_URL: ${DATABASE_READ_URL:-}
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET}
       RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID}

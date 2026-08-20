@@ -31,8 +31,10 @@ import {
   matchOddsStateKey,
   provisionalWinnerMarketsFromMatch,
 } from '../../services/oddsService';
-import { getMarketCategoriesForSport } from '../../utils/oddsMarketsGenerator';
+import { subscribeLiveChannel } from '../../services/liveFeedSocket';
+import { getMarketCategoriesForSport } from '../../utils/marketCategoryLabels';
 import { useMatchWatchlist } from '../../hooks/useMatchWatchlist';
+import LiveScoresFeedBanner from '../../components/LiveScoresFeedBanner/LiveScoresFeedBanner';
 import { mediaQueryMatches, subscribeMediaQuery } from '../../utils/browserCompat';
 import './Sports.css';
 
@@ -422,36 +424,28 @@ export default function Sports() {
     };
 
     loadOdds();
-    const poll = setInterval(loadOdds, 2000);
+    let lastOddsWs = 0;
+    const poll = setInterval(() => {
+      if (Date.now() - lastOddsWs < 4000) return;
+      loadOdds();
+    }, 2000);
 
-    let ws;
-    try {
-      const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      ws = new WebSocket(`${proto}//${window.location.host}/ws/support`);
-      ws.addEventListener('open', () => {
-        ws.send(JSON.stringify({ type: 'subscribe', channel: `odds:match:${matchId}` }));
-      });
-      ws.addEventListener('message', (ev) => {
-        try {
-          const msg = JSON.parse(ev.data);
-          if (isCancelled) return;
-          const markets = msg.payload?.markets;
-          if (msg.eventType === 'odds.updated' && Array.isArray(markets) && markets.length > 0) {
-            if (msg.matchId && msg.matchId !== matchId) return;
-            setMatchMarkets(markets);
-          }
-        } catch {
-          // ignore malformed frames
-        }
-      });
-    } catch {
-      // HTTP poll remains the fallback
-    }
+    const unsubOdds = subscribeLiveChannel(`odds:match:${matchId}`, (msg) => {
+      if (isCancelled) return;
+      const markets = msg.payload?.markets;
+      if (msg.eventType === 'odds.updated' && Array.isArray(markets) && markets.length > 0) {
+        if (msg.matchId && msg.matchId !== matchId) return;
+        lastOddsWs = Date.now();
+        setMatchMarkets(markets);
+      }
+    });
+    const unsubScores = subscribeLiveChannel(`scores:match:${matchId}`, () => {});
 
     return () => {
       isCancelled = true;
       clearInterval(poll);
-      try { ws?.close(); } catch { /* ignore */ }
+      unsubOdds();
+      unsubScores();
     };
   }, [activeMatch?.id, activeMatch?.matchId, activeMatch?.matchState, activeMatch?.isLive]);
 
@@ -779,19 +773,11 @@ export default function Sports() {
             </div>
           )}
 
-          {isAdminUser && scoresError && (
-            <div className="sports-scores-error" role="alert">
-              <span>{scoresError}</span>
-              <button
-                type="button"
-                className="sports-scores-retry"
-                onClick={() => refreshScores({ force: true })}
-                disabled={isScoresLoading}
-              >
-                {isScoresLoading ? 'Retrying…' : 'Retry'}
-              </button>
-            </div>
-          )}
+          <LiveScoresFeedBanner
+            message={scoresError}
+            onRetry={() => refreshScores({ force: true })}
+            retrying={isScoresLoading}
+          />
 
           <div className="sports-search sports-search--mobile">
             <div className="sports-search-wrapper">

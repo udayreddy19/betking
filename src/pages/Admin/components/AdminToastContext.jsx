@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { CircleCheckIcon, InfoIcon, XIcon, ShieldCheckIcon } from '../../../icons/animate/index';
 
 const AdminToastContext = createContext({
-  showToast: (message, type = 'success') => {},
+  showToast: (_message, _type = 'success') => {},
 });
 
 export function AdminToastProvider({ children }) {

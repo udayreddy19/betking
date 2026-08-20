@@ -4,10 +4,10 @@ import { getCashoutOffer } from '../utils/wageringRules';
 import { playBetSound, playWinSound } from '../utils/soundEffects';
 import { isMatchBettable } from '../utils/matchBetting';
 import { apiFetch } from '../utils/apiClient';
-
-const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1' || import.meta.env.DEV;
+import { DEMO_MODE } from '../utils/featureFlags';
 
 const BetSlipContext = createContext(null);
+const PLACED_BETS_KEY = 'oddsyra_placed_bets';
 
 async function fetchMyBetsFromServer() {
   const res = await apiFetch('/api/bets/mine');
@@ -39,14 +39,6 @@ function mapServerBetToPlaced(row) {
   };
 }
 
-function loadPlacedBets() {
-  try {
-    return JSON.parse(localStorage.getItem(PLACED_BETS_KEY) || '[]');
-  } catch {
-    return [];
-  }
-}
-
 function getSelectionName(match, selection, customName) {
   if (customName) return customName;
   if (selection === '1') return match.team1.name;
@@ -70,7 +62,7 @@ export function BetSlipProvider({ children }) {
   useEffect(() => {
     if (DEMO_MODE) {
       try {
-        const saved = JSON.parse(localStorage.getItem('oddsyra_placed_bets') || '[]');
+        const saved = JSON.parse(localStorage.getItem(PLACED_BETS_KEY) || '[]');
         setPlacedBets(saved);
       } catch {
         setPlacedBets([]);

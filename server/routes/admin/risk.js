@@ -5,7 +5,7 @@ import { query } from '../../../db/pg.js';
 const router = Router();
 
 // GET /api/admin/risk/signals — Admin risk signals list
-router.get('/signals', requirePermission('security', 'risk', 'admin'), async (req, res) => {
+router.get('/signals', requirePermission('security', 'risk', 'fraud'), async (req, res) => {
   const { userId, severity, signalType, status = 'NEW', page = 1, limit = 25 } = req.query;
   try {
     const conds = [];

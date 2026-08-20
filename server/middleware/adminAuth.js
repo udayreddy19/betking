@@ -5,9 +5,7 @@
  * and ensures tenant isolation for all admin API routes.
  */
 
-import crypto from 'crypto';
-import { getJwtSecret } from '../../lib/jwtSecret.mjs';
-import { timingSafeEqualStrings } from '../../lib/cryptoUtils.mjs';
+import { signHs256, verifyHs256 } from '../../lib/jwtHs256.mjs';
 
 // Admin roles mirror the frontend RBAC system
 const ADMIN_ROLES = {
@@ -25,66 +23,32 @@ const ROLE_PERMISSIONS = {
   SUPER_ADMIN: '*', // all permissions
   FINANCE_ADMIN: ['finance', 'betting', 'reconciliation', 'withdrawal', 'wallet'],
   TRADING_ADMIN: ['trading', 'betting', 'sports', 'markets', 'odds', 'risk'],
-  SUPPORT_AGENT: ['support', 'customers', 'tickets', 'cases'],
-  RISK_ANALYST: ['risk', 'fraud', 'analytics', 'security', 'reconciliation'],
+  SUPPORT_AGENT: ['support', 'customers', 'tickets', 'cases', 'kyc'],
+  RISK_ANALYST: ['risk', 'fraud', 'analytics', 'security', 'reconciliation', 'kyc'],
   MARKETING_ADMIN: ['growth', 'promotions', 'communications', 'analytics'],
-  OPERATIONS_ADMIN: ['operations', 'platform', 'providers', 'emergency', 'incidents', 'analytics'],
+  OPERATIONS_ADMIN: ['operations', 'platform', 'providers', 'emergency', 'incidents', 'analytics', 'kyc'],
 };
 
-/**
- * JWT Secret — in production this comes from env/secrets manager
- */
-const JWT_SECRET = getJwtSecret();
-
-/**
- * Simple JWT verification (HS256)
- * In production, use a proper JWT library (jsonwebtoken).
- * This is a lightweight implementation for the admin panel.
- */
-function verifyJWT(token) {
-  try {
-    const parts = token.split('.');
-    if (parts.length !== 3) return null;
-
-    const [headerB64, payloadB64, signatureB64] = parts;
-    const expectedSig = crypto
-      .createHmac('sha256', JWT_SECRET)
-      .update(`${headerB64}.${payloadB64}`)
-      .digest('base64url');
-
-    if (!timingSafeEqualStrings(expectedSig, signatureB64)) return null;
-
-    const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString());
-
-    // Check expiry
-    if (payload.exp && Date.now() / 1000 > payload.exp) return null;
-
-    return payload;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Generate a signed JWT for admin users
- */
 export function generateAdminToken(adminId, role, tenantId = 'oddsyra_in') {
-  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
-  const payload = Buffer.from(JSON.stringify({
+  return signHs256({
     sub: adminId,
     role: role || ADMIN_ROLES.SUPER_ADMIN,
     tenant: tenantId,
     type: 'admin',
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + (8 * 60 * 60), // 8 hours
-  })).toString('base64url');
+  }, '8h');
+}
 
-  const signature = crypto
-    .createHmac('sha256', JWT_SECRET)
-    .update(`${header}.${payload}`)
-    .digest('base64url');
+export function generateAdminMfaPendingToken(adminId, role, tenantId = 'oddsyra_in') {
+  return signHs256({
+    sub: adminId,
+    role: role || ADMIN_ROLES.SUPER_ADMIN,
+    tenant: tenantId,
+    type: 'admin_mfa_pending',
+  }, '5m');
+}
 
-  return `${header}.${payload}.${signature}`;
+export function verifyAdminToken(token) {
+  return verifyHs256(token);
 }
 
 /**
@@ -98,7 +62,7 @@ export function adminAuth(req, res, next) {
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
   if (token) {
-    const decoded = verifyJWT(token);
+    const decoded = verifyAdminToken(token);
     if (!decoded) {
       return res.status(401).json({ error: 'Invalid token', code: 'INVALID_TOKEN' });
     }

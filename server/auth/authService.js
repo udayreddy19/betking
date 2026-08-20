@@ -224,6 +224,14 @@ export async function login(queryFn, data) {
   }
 
   // ── Verify password ──
+  if (!user.password_hash) {
+    return {
+      error: 'This account uses Google sign-in. Continue with Google instead.',
+      code: 'OAUTH_ONLY_ACCOUNT',
+      status: 401,
+    };
+  }
+
   const { valid, needsUpgrade } = await verifyPassword(password, user.password_hash);
 
   if (!valid) {
@@ -280,6 +288,13 @@ export async function login(queryFn, data) {
   });
 
   await safeAuditLog(queryFn, user.user_id, user.user_id, 'LOGIN_SUCCESS', { ip });
+
+  try {
+    const { responsibleGamingEngine } = await import('../../lib/responsibleGaming.mjs');
+    await responsibleGamingEngine.startSession(user.user_id);
+  } catch {
+    // Login must not fail if RG session write is unavailable.
+  }
 
   return {
     success: true,
@@ -690,6 +705,178 @@ function sanitizeAuditDetails(details) {
 export { MAX_FAILED_ATTEMPTS, LOCKOUT_DURATION_MINUTES, MIN_PASSWORD_LENGTH };
 
 /**
+ * Sign in or register via Google OAuth profile.
+ */
+export async function loginWithGoogle(queryFn, withTransaction, data) {
+  const {
+    googleSub,
+    email,
+    emailVerified,
+    firstName,
+    lastName,
+    displayName,
+    avatarUrl,
+    ip,
+    userAgent,
+  } = data;
+
+  if (!googleSub || !email) {
+    return { error: 'Invalid Google sign-in response.', code: 'GOOGLE_PROFILE_INVALID', status: 400 };
+  }
+
+  let user = null;
+  let isNewUser = false;
+
+  const byGoogle = await queryFn(
+    `SELECT user_id, email, phone, first_name, last_name, role, status, email_verified_at
+     FROM users WHERE google_sub = $1`,
+    [googleSub]
+  );
+
+  if (byGoogle.rows.length > 0) {
+    user = byGoogle.rows[0];
+  } else {
+    const byEmail = await queryFn(
+      `SELECT user_id, email, phone, first_name, last_name, role, status, email_verified_at, google_sub
+       FROM users WHERE LOWER(email) = $1`,
+      [email]
+    );
+
+    if (byEmail.rows.length > 0) {
+      user = byEmail.rows[0];
+      if (user.google_sub && user.google_sub !== googleSub) {
+        return {
+          error: 'This email is linked to a different Google account.',
+          code: 'GOOGLE_ACCOUNT_MISMATCH',
+          status: 409,
+        };
+      }
+
+      await queryFn(
+        `UPDATE users
+         SET google_sub = $1,
+             avatar_url = COALESCE($2, avatar_url),
+             first_name = COALESCE(NULLIF(first_name, ''), $3),
+             last_name = COALESCE(NULLIF(last_name, ''), $4),
+             email_verified_at = CASE WHEN $5 THEN COALESCE(email_verified_at, NOW()) ELSE email_verified_at END,
+             updated_at = NOW()
+         WHERE user_id = $6`,
+        [googleSub, avatarUrl, firstName || null, lastName || null, emailVerified, user.user_id]
+      );
+    } else {
+      isNewUser = true;
+      const userId = `usr_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+      const walletId = `wal_${userId}`;
+      const resolvedFirstName = firstName || displayName?.split(' ')[0] || email.split('@')[0];
+      const resolvedLastName = lastName || displayName?.split(' ').slice(1).join(' ') || null;
+      const profileName = displayName || [resolvedFirstName, resolvedLastName].filter(Boolean).join(' ');
+
+      try {
+        await withTransaction(async (client) => {
+          await client.query(
+            `INSERT INTO users (
+               user_id, email, password_hash, first_name, last_name, country, currency,
+               role, status, google_sub, avatar_url, email_verified_at
+             ) VALUES ($1, $2, NULL, $3, $4, 'India', 'INR', 'USER', 'ACTIVE', $5, $6, $7)`,
+            [
+              userId,
+              email,
+              resolvedFirstName,
+              resolvedLastName,
+              googleSub,
+              avatarUrl,
+              emailVerified ? new Date() : null,
+            ]
+          );
+
+          await client.query(
+            `INSERT INTO user_profiles (user_id, display_name, account_status)
+             VALUES ($1, $2, 'ACTIVE')
+             ON CONFLICT (user_id) DO NOTHING`,
+            [userId, profileName]
+          );
+
+          await client.query(
+            `INSERT INTO wallets (wallet_id, user_id, balance, bonus_balance, currency)
+             VALUES ($1, $2, 0.00, 0.00, 'INR')
+             ON CONFLICT (user_id) DO NOTHING`,
+            [walletId, userId]
+          );
+        });
+      } catch (err) {
+        if (err.code === '23505') {
+          return { error: 'This email is already linked to another account.', code: 'DUPLICATE_EMAIL', status: 409 };
+        }
+        throw err;
+      }
+
+      await safeAuditLog(queryFn, userId, userId, 'USER_SIGNUP_GOOGLE', { email, ip });
+
+      const created = await queryFn(
+        `SELECT user_id, email, phone, first_name, last_name, role, status, email_verified_at
+         FROM users WHERE user_id = $1`,
+        [userId]
+      );
+      user = created.rows[0];
+    }
+  }
+
+  if (user.status === 'BANNED') {
+    return { error: 'This account has been permanently suspended. Contact support.', code: 'ACCOUNT_BANNED', status: 403 };
+  }
+  if (user.status === 'SUSPENDED') {
+    return { error: 'This account is suspended. Contact support for assistance.', code: 'ACCOUNT_SUSPENDED', status: 403 };
+  }
+
+  await queryFn(
+    `UPDATE users
+     SET failed_login_attempts = 0,
+         locked_until = NULL,
+         last_login_at = NOW(),
+         avatar_url = COALESCE($2, avatar_url),
+         updated_at = NOW()
+     WHERE user_id = $1`,
+    [user.user_id, avatarUrl]
+  );
+
+  const accessToken = generateAccessToken(user.user_id, user.role || 'USER');
+  const { rawToken: refreshToken, tokenHash } = generateRefreshToken();
+  await storeRefreshToken(queryFn, {
+    tokenHash,
+    userId: user.user_id,
+    deviceInfo: { userAgent: userAgent || null, provider: 'google' },
+    ipAddress: ip || null,
+  });
+
+  await safeAuditLog(queryFn, user.user_id, user.user_id, isNewUser ? 'GOOGLE_SIGNUP_SUCCESS' : 'GOOGLE_LOGIN_SUCCESS', { ip });
+
+  try {
+    const { responsibleGamingEngine } = await import('../../lib/responsibleGaming.mjs');
+    await responsibleGamingEngine.startSession(user.user_id);
+  } catch {
+    // Login must not fail if RG session write is unavailable.
+  }
+
+  return {
+    success: true,
+    isNewUser,
+    accessToken,
+    refreshToken,
+    user: {
+      userId: user.user_id,
+      email: user.email,
+      phone: user.phone,
+      displayName: [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      role: user.role || 'USER',
+      status: user.status || 'ACTIVE',
+      emailVerified: !!user.email_verified_at,
+    },
+  };
+}
+
+/**
  * Change password for authenticated user.
  */
 export async function changePassword(queryFn, userId, currentPassword, newPassword) {
@@ -709,6 +896,13 @@ export async function changePassword(queryFn, userId, currentPassword, newPasswo
   }
 
   const row = result.rows[0];
+  if (!row.password_hash) {
+    return {
+      error: 'This account uses Google sign-in. Set a password from your profile first.',
+      code: 'OAUTH_PASSWORDLESS',
+      status: 400,
+    };
+  }
   const valid = await verifyPassword(currentPassword, row.password_hash);
   if (!valid.ok) {
     return { error: 'Current password is incorrect.', code: 'INVALID_PASSWORD', status: 401 };

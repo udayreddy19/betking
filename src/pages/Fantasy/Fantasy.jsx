@@ -3,9 +3,8 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { formatInr } from '../../utils/walletBalance';
 import { FANTASY_CONTESTS, loadFantasyEntries, saveFantasyEntry } from '../../data/fantasyContests';
+import { DEMO_MODE, FANTASY_JOIN_ENABLED } from '../../utils/featureFlags';
 import './Fantasy.css';
-
-const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1' || import.meta.env.DEV;
 
 export default function Fantasy() {
   const { user, isLoggedIn, openLoginModal, showToast } = useAuth();
@@ -21,6 +20,10 @@ export default function Fantasy() {
   const handleJoin = (contest) => {
     if (!isLoggedIn) {
       openLoginModal();
+      return;
+    }
+    if (!FANTASY_JOIN_ENABLED) {
+      showToast('Fantasy contests are not live yet. Place sports bets from the Sports page.', 'info');
       return;
     }
     if (!DEMO_MODE || contest.entryFee > 0) {
@@ -97,14 +100,18 @@ export default function Fantasy() {
                 <div className="fantasy-fill" aria-hidden>
                   <div style={{ width: `${fillPct}%` }} />
                 </div>
-                <button
-                  type="button"
-                  className="fantasy-join"
-                  disabled={joined || full || joiningId === contest.id}
-                  onClick={() => handleJoin(contest)}
-                >
-                  {joined ? 'Joined' : full ? 'Contest full' : joiningId === contest.id ? 'Joining…' : DEMO_MODE && contest.entryFee === 0 ? 'Join contest' : 'Coming soon'}
-                </button>
+                {FANTASY_JOIN_ENABLED ? (
+                  <button
+                    type="button"
+                    className="fantasy-join"
+                    disabled={joined || full || joiningId === contest.id}
+                    onClick={() => handleJoin(contest)}
+                  >
+                    {joined ? 'Joined' : full ? 'Contest full' : joiningId === contest.id ? 'Joining…' : DEMO_MODE && contest.entryFee === 0 ? 'Join contest' : 'Coming soon'}
+                  </button>
+                ) : (
+                  <p className="fantasy-join-note">Join opens when licensed contests go live. Bet on Sports in the meantime.</p>
+                )}
               </article>
             );
           })}

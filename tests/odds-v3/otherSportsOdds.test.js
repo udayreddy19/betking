@@ -18,10 +18,19 @@ function soccerMatch(overrides = {}) {
 }
 
 describe('Other sports odds', () => {
-  it('prices soccer 1X2 including draw for list cards', () => {
+  it('suspends non-cricket markets when provider odds are missing', () => {
     const snap = generateOtherSportsSnapshot(soccerMatch(), { winnerOnly: true });
+    expect(snap.status).toBe('SUSPENDED');
+    expect(snap.markets).toEqual([]);
+  });
+
+  it('prices soccer 1X2 including draw for list cards when provider odds exist', () => {
+    const match = soccerMatch({
+      odds: { home: 2.1, away: 3.4, draw: 3.2, team1: 2.1, team2: 3.4 },
+    });
+    const snap = generateOtherSportsSnapshot(match, { winnerOnly: true });
     expect(snap.status).toBe('OK');
-    const winner = extractMatchWinnerOdds(snap, soccerMatch());
+    const winner = extractMatchWinnerOdds(snap, match);
     expect(winner.team1).toBeGreaterThan(1);
     expect(winner.team2).toBeGreaterThan(1);
     expect(winner.draw).toBeGreaterThan(1);
@@ -38,8 +47,11 @@ describe('Other sports odds', () => {
   });
 
   it('builds soccer extra markets for match detail', () => {
-    const snap = generate(soccerMatch());
-    const publicSnap = adaptV3SnapshotToPublicContract(snap, soccerMatch());
+    const match = soccerMatch({
+      odds: { home: 2.1, away: 3.4, draw: 3.2, team1: 2.1, team2: 3.4 },
+    });
+    const snap = generate(match);
+    const publicSnap = adaptV3SnapshotToPublicContract(snap, match);
     const ids = publicSnap.markets.map((m) => m.marketId);
     expect(ids).toContain('match_winner');
     expect(ids).toContain('btts');
@@ -60,6 +72,7 @@ describe('Other sports odds', () => {
       team1: { name: 'Lakers' },
       team2: { name: 'Celtics' },
       liveDetails: { score1: 88, score2: 81 },
+      odds: { home: 1.72, away: 2.15, team1: 1.72, team2: 2.15 },
     };
     const winner = extractMatchWinnerOdds(generate(match, { winnerOnly: true }), match);
     expect(winner.team1).toBeGreaterThan(1);
@@ -79,6 +92,7 @@ describe('Other sports odds', () => {
       team1: { name: 'Alcaraz' },
       team2: { name: 'Sinner' },
       liveDetails: { score1: 0, score2: 0 },
+      odds: { home: 1.65, away: 2.25, team1: 1.65, team2: 2.25 },
     };
     const winner = extractMatchWinnerOdds(generate(match, { winnerOnly: true }), match);
     expect(winner.team1).toBeGreaterThan(1);

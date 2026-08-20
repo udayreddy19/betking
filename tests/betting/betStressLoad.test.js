@@ -1,4 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+vi.mock('../../lib/oddsQuoteService.mjs', () => ({
+  resolveServerOdds: vi.fn(async ({ clientOdds }) => Number(clientOdds) || 1.8),
+}));
+
 import { betPlacementEngine } from '../../lib/betPlacementEngine.mjs';
 import { query } from '../../db/pg.js';
 
@@ -10,6 +15,7 @@ describe('Phase 5 Concurrency Stress & Load Tests', () => {
   const selectionId = 'sel_stress_101';
 
   beforeEach(async () => {
+    await query(`ALTER TABLE bets ADD COLUMN IF NOT EXISTS vip_boost_pct NUMERIC(5,2) DEFAULT 0`);
     await query(`INSERT INTO users (user_id, email, password_hash) VALUES ($1, $2, 'hash') ON CONFLICT (user_id) DO NOTHING;`, [stressUserId, `${stressUserId}@example.com`]);
     await query(`DELETE FROM ledger_entries WHERE wallet_id IN (SELECT wallet_id FROM wallets WHERE user_id = $1);`, [stressUserId]);
     await query(`DELETE FROM bets WHERE user_id = $1;`, [stressUserId]);

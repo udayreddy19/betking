@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticateApiKey } from '../../../lib/developerPlatformEngine.mjs';
-import { query } from '../../../db/pg.js';
+import { queryRead } from '../../../db/pg.js';
 
 const router = Router();
 
@@ -119,7 +119,7 @@ router.get('/odds', publicApiAuth, async (req, res) => {
 
     const whereStr = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
-    const oddsRes = await query(`
+    const oddsRes = await queryRead(`
       SELECT
         m.match_id,
         m.start_time,
@@ -141,7 +141,7 @@ router.get('/odds', publicApiAuth, async (req, res) => {
       LIMIT $${paramIdx++} OFFSET $${paramIdx++};
     `, [...params, limitNum, offset]);
 
-    const countRes = await query(`SELECT COUNT(*) FROM matches m ${whereStr};`, params);
+    const countRes = await queryRead(`SELECT COUNT(*) FROM matches m ${whereStr};`, params);
     const totalRecords = parseInt(countRes.rows[0].count, 10);
 
     const publicData = oddsRes.rows.map(r => ({

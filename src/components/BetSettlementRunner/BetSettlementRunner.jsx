@@ -4,8 +4,7 @@ import { useBetSlip } from '../../context/BetSlipContext';
 import { useAuth } from '../../context/AuthContext';
 import { settleAllPlacedBets } from '../../utils/betSettlement';
 import { formatInr } from '../../utils/walletBalance';
-
-const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1' || import.meta.env.DEV;
+import { DEMO_MODE } from '../../utils/featureFlags';
 
 /** Settles pending bets when live score data marks matches complete. */
 export default function BetSettlementRunner() {

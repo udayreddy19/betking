@@ -9,6 +9,7 @@
  */
 
 import nodemailer from 'nodemailer';
+import { logger } from '../../lib/logger.mjs';
 
 const FRONTEND_URL = process.env.FRONTEND_URL || process.env.APP_URL || 'http://localhost:5173';
 const isProduction = process.env.NODE_ENV === 'production';
@@ -30,6 +31,40 @@ const quotaState = {
   primarySent: 0,
   primaryExhaustedUntil: 0,
 };
+
+const deliveryMetrics = {
+  primarySuccess: 0,
+  fallbackSuccess: 0,
+  primaryFailure: 0,
+  fallbackFailure: 0,
+  lastProvider: null,
+  lastError: null,
+  lastAt: null,
+};
+
+export function getEmailDeliveryMetrics() {
+  return {
+    ...deliveryMetrics,
+    fallbackConfigured: Boolean(envAccount('SMTP_FALLBACK_')),
+    primaryConfigured: Boolean(envAccount('SMTP_')),
+    monitored: Boolean(envAccount('SMTP_FALLBACK_')),
+  };
+}
+
+/** SMS/push wait until Brevo fallback SMTP is configured so failover can be observed. */
+export function isEmailFailoverMonitored() {
+  return Boolean(envAccount('SMTP_FALLBACK_'));
+}
+
+export function resetEmailDeliveryMetricsForTests() {
+  deliveryMetrics.primarySuccess = 0;
+  deliveryMetrics.fallbackSuccess = 0;
+  deliveryMetrics.primaryFailure = 0;
+  deliveryMetrics.fallbackFailure = 0;
+  deliveryMetrics.lastProvider = null;
+  deliveryMetrics.lastError = null;
+  deliveryMetrics.lastAt = null;
+}
 
 function utcDayKey(now = Date.now()) {
   return new Date(now).toISOString().slice(0, 10);
@@ -216,10 +251,20 @@ async function sendMailWithFailover({ to, subject, html, text }) {
         text,
       });
       if (account.name === 'primary') markPrimarySuccess();
+      if (account.name === 'primary') deliveryMetrics.primarySuccess += 1;
+      else deliveryMetrics.fallbackSuccess += 1;
+      deliveryMetrics.lastProvider = account.name;
+      deliveryMetrics.lastError = null;
+      deliveryMetrics.lastAt = new Date().toISOString();
+      logger.info('email_sent', { provider: account.name });
       return { success: true, messageId: info.messageId, provider: account.name };
     } catch (err) {
       lastError = err;
-      console.error(`[EmailService] ${account.name} send failed:`, err.message);
+      if (account.name === 'primary') deliveryMetrics.primaryFailure += 1;
+      else deliveryMetrics.fallbackFailure += 1;
+      deliveryMetrics.lastError = err.message;
+      deliveryMetrics.lastAt = new Date().toISOString();
+      logger.warn('email_send_failed', { provider: account.name, error: err.message });
       if (account.name === 'primary' && isQuotaOrRateLimitError(err)) {
         markPrimaryQuotaHit();
         continue;

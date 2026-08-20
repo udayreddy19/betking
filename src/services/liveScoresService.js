@@ -17,7 +17,12 @@ export async function fetchLiveScores(options = {}) {
 
   try {
     const [legacyRes, gatewayCricket, gatewayFootball, gatewayBasketball, gatewayTennis, gatewayF1, gatewayHockey, gatewayAmericanFootball] = await Promise.all([
-      fetch(url, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : { matches: [] })).catch(() => ({ matches: [] })),
+      fetch(url, { cache: 'no-store' })
+        .then(async (r) => {
+          const data = await r.json().catch(() => ({}));
+          return { httpOk: r.ok, ...data };
+        })
+        .catch(() => ({ matches: [], httpOk: false, feedError: { code: 'LIVE_SCORES_UNREACHABLE', message: 'Could not reach live score API. Tap Retry.' } })),
       sportsGatewayClient.getCricket('live'),
       sportsGatewayClient.getFootball('live'),
       sportsGatewayClient.getBasketball('live'),
@@ -166,6 +171,8 @@ export async function fetchLiveScores(options = {}) {
         ...(legacyRes.sources || {}),
         gateway: 'ok',
       },
+      feedError: legacyRes.feedError || null,
+      status: legacyRes.status,
       fetchedAt: new Date().toISOString(),
       cached: false,
     };

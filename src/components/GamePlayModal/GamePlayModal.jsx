@@ -5,8 +5,7 @@ import GamePlayer from '../GamePlayer/GamePlayer';
 import { useCasino } from '../../context/CasinoContext';
 import './GamePlayModal.css';
 import '../GamePlayer/GamePlayer.css';
-
-const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1' || import.meta.env.DEV;
+import { DEMO_MODE } from '../../utils/featureFlags';
 
 export default function GamePlayModal() {
   const { isLoggedIn, openLoginModal, showToast, user } = useAuth();

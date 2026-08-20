@@ -12,6 +12,7 @@ import Footer from './components/Footer/Footer';
 import Sidebar from './components/Sidebar/Sidebar';
 import LoginModal from './components/LoginModal/LoginModal';
 import DepositModal from './components/DepositModal/DepositModal';
+import RealityCheckModal from './components/RealityCheckModal/RealityCheckModal';
 import Toast from './components/Toast/Toast';
 import FinancialModals from './components/FinancialModals/FinancialModals';
 import MobileBetSlip from './components/MobileBetSlip/MobileBetSlip';
@@ -21,6 +22,7 @@ import BetSettlementRunner from './components/BetSettlementRunner/BetSettlementR
 import GamePlayModal from './components/GamePlayModal/GamePlayModal';
 import LiveChatSupportWidget from './components/LiveChatSupportWidget/LiveChatSupportWidget';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
+import RouteSeo from './components/RouteSeo/RouteSeo';
 import { getAdminSessionState } from './utils/adminSession';
 import { CASINO_ENABLED } from './utils/featureFlags';
 
@@ -37,6 +39,7 @@ import NotFound from './pages/Legal/NotFound';
 
 const VerifyEmailPage = lazy(() => import('./pages/Auth/VerifyEmailPage'));
 const ResetPasswordPage = lazy(() => import('./pages/Auth/ResetPasswordPage'));
+const OAuthGoogleCallback = lazy(() => import('./pages/Auth/OAuthGoogleCallback'));
 
 const Sports = lazy(() => import('./pages/Sports/Sports'));
 const Casino = lazy(() => import('./pages/Casino/Casino'));
@@ -58,10 +61,7 @@ function PageLoader() {
 function AdminProtectedRoute({ children }) {
   const session = getAdminSessionState();
   if (session.valid) return children;
-  if (session.reason === 'expired') {
-    return <Navigate to="/admin" replace />;
-  }
-  return <Navigate to="/" replace />;
+  return <Navigate to="/admin" replace />;
 }
 
 function AppFinancialModals() {
@@ -85,12 +85,14 @@ function AppLayout() {
 
   return (
     <>
+      <RouteSeo />
       <Header />
       <ErrorBoundary fallback={null}>
         <Sidebar />
       </ErrorBoundary>
       <LoginModal />
       <DepositModal />
+      <RealityCheckModal />
       <AppFinancialModals />
       <Toast />
       <GamePlayModal />
@@ -110,6 +112,7 @@ function AppLayout() {
               <Route path="/fantasy" element={<Fantasy />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/_oauth/google" element={<OAuthGoogleCallback />} />
               <Route path="/verify-email" element={<VerifyEmailPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/promotions" element={<Promotions />} />

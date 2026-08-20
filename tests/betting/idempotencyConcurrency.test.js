@@ -1,4 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+vi.mock('../../lib/oddsQuoteService.mjs', () => ({
+  resolveServerOdds: vi.fn(async ({ clientOdds }) => Number(clientOdds) || 1.9),
+}));
+
 import { betPlacementEngine } from '../../lib/betPlacementEngine.mjs';
 import { query } from '../../db/pg.js';
 
@@ -10,6 +15,7 @@ describe('Phase 5 Idempotency & Duplicate Request Tests', () => {
   const selectionId = 'sel_idem_101';
 
   beforeEach(async () => {
+    await query(`ALTER TABLE bets ADD COLUMN IF NOT EXISTS vip_boost_pct NUMERIC(5,2) DEFAULT 0`);
     await query(`INSERT INTO users (user_id, email, password_hash) VALUES ($1, $2, 'hash') ON CONFLICT (user_id) DO NOTHING;`, [userId, `${userId}@example.com`]);
     await query(`DELETE FROM bets WHERE user_id = $1;`, [userId]);
     await query(`INSERT INTO wallets (wallet_id, user_id, balance, currency) VALUES ($1, $2, 1000.00, 'INR') ON CONFLICT (wallet_id) DO UPDATE SET balance = 1000.00;`, [walletId, userId]);

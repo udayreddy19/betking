@@ -57,22 +57,17 @@ describe('Book integrity', () => {
   });
 
   it('prices soccer 1X2 instead of inventing cricket markets', () => {
-    const snap = generateV3(createCanonicalMatchState({
+    const snap = generateV3({
       matchId: 'soccer_1',
-      sport: 'SOCCER',
-      format: 'T20',
-      status: 'LIVE',
-      team1: { id: 'A', name: 'Arsenal', runs: 1, wickets: 0, balls: 0 },
-      team2: { id: 'B', name: 'Chelsea', runs: 0, wickets: 0, balls: 0 },
-      currentInnings: 1,
-      battingTeamId: 'A',
-      bowlingTeamId: 'B',
-      ballsPerInnings: 120,
-      ballsCompleted: 0,
-      ballsRemaining: 120,
-      providerTimestamp: Date.now(),
+      sport: 'soccer',
+      isLive: true,
+      matchState: 'in',
+      team1: { name: 'Arsenal' },
+      team2: { name: 'Chelsea' },
+      liveDetails: { score1: 1, score2: 0, minute: "62'" },
+      odds: { home: 2.1, away: 3.4, draw: 3.2, team1: 2.1, team2: 3.4 },
       stateVersion: 1,
-    }));
+    });
     expect(snap.status).toBe('OK');
     const winner = snap.markets.find((m) => m.marketId === 'match_winner');
     expect(winner).toBeTruthy();

@@ -42,6 +42,9 @@ export default function Profile() {
   const [stakeLimit, setStakeLimit] = useState(
     () => user?.dailyStakeLimit || DEFAULT_DAILY_STAKE_LIMIT,
   );
+  const [lossLimitDaily, setLossLimitDaily] = useState(() => user?.lossLimitDaily || 25000);
+  const [lossLimitWeekly, setLossLimitWeekly] = useState(() => user?.lossLimitWeekly || 100000);
+  const [realityMins, setRealityMins] = useState(() => user?.realityCheckIntervalMins || 60);
   const [selfExcludeDays, setSelfExcludeDays] = useState('7');
   const [promoCode, setPromoCode] = useState('');
   const [claimingPromo, setClaimingPromo] = useState(false);
@@ -85,28 +88,35 @@ export default function Profile() {
     return <Navigate to="/" replace />;
   }
 
-  const handleSaveLimits = (e) => {
+  const handleSaveLimits = async (e) => {
     e.preventDefault();
-    updateRgLimits({
-      dailyDepositLimit: Number(depositLimit),
-      dailyStakeLimit: Number(stakeLimit),
-    });
-  };
-
-  const handleSelfExclude = () => {
-    const days = Number(selfExcludeDays) || 7;
-    if (window.confirm(`Are you sure you want to self-exclude your account for ${days} days? Betting and deposits will be blocked.`)) {
-      selfExcludeAccount(days);
+    try {
+      await updateRgLimits({
+        dailyDepositLimit: Number(depositLimit),
+        dailyStakeLimit: Number(stakeLimit),
+        lossLimitDaily: Number(lossLimitDaily),
+        lossLimitWeekly: Number(lossLimitWeekly),
+        realityCheckIntervalMins: Number(realityMins),
+      });
+    } catch (err) {
+      showToast(err.message || 'Could not save responsible gaming limits.', 'error');
     }
   };
 
-  const handleChangePassword = (e) => {
+  const handleSelfExclude = async () => {
+    const days = Number(selfExcludeDays) || 7;
+    if (window.confirm(`Are you sure you want to self-exclude your account for ${days} days? Betting and deposits will be blocked.`)) {
+      await selfExcludeAccount(days);
+    }
+  };
+
+  const handleChangePassword = async (e) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
       showToast('New passwords do not match.', 'error');
       return;
     }
-    const result = changePassword(currentPassword, newPassword);
+    const result = await changePassword(currentPassword, newPassword);
     if (!result.ok) {
       showToast(result.error, 'error');
       return;
@@ -294,8 +304,8 @@ export default function Profile() {
         {activeTab === 'rg' && (
           <div className="profile-rg-section">
             <div className="rg-card-box">
-              <h3><FiSliders /> Daily Wagering & Deposit Limits</h3>
-              <p>Set custom daily deposit and stake limits to maintain safe play.</p>
+              <h3><FiSliders /> Daily Wagering, Loss & Deposit Limits</h3>
+              <p>Server-enforced limits. Cash bets stop when net losses hit your daily or weekly cap. A reality check pauses play after the interval you set.</p>
 
               <form onSubmit={handleSaveLimits} className="rg-form">
                 <div className="rg-form-group">
@@ -320,6 +330,40 @@ export default function Profile() {
                     onChange={(e) => setStakeLimit(e.target.value)}
                   />
                   <small>Daily used: ₹{(user.dailyStakeUsed || 0).toLocaleString()} / ₹{Number(stakeLimit).toLocaleString()}</small>
+                </div>
+
+                <div className="rg-form-group">
+                  <label>Daily loss limit (₹)</label>
+                  <input
+                    type="number"
+                    min="500"
+                    step="500"
+                    value={lossLimitDaily}
+                    onChange={(e) => setLossLimitDaily(e.target.value)}
+                  />
+                </div>
+
+                <div className="rg-form-group">
+                  <label>Weekly loss limit (₹)</label>
+                  <input
+                    type="number"
+                    min="1000"
+                    step="1000"
+                    value={lossLimitWeekly}
+                    onChange={(e) => setLossLimitWeekly(e.target.value)}
+                  />
+                </div>
+
+                <div className="rg-form-group">
+                  <label>Reality check interval (minutes)</label>
+                  <input
+                    type="number"
+                    min="15"
+                    step="15"
+                    value={realityMins}
+                    onChange={(e) => setRealityMins(e.target.value)}
+                  />
+                  <small>Minimum 15 minutes. Deposits and bets pause until you confirm.</small>
                 </div>
 
                 <button type="submit" className="profile-link-btn">Save Limits</button>

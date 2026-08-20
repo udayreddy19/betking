@@ -1,0 +1,46 @@
+.reality-check-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(15, 23, 42, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.reality-check-card {
+  width: min(420px, 100%);
+  background: var(--color-surface, #111827);
+  color: var(--color-text, #f8fafc);
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid var(--color-border, #334155);
+}
+
+.reality-check-card h2 {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+}
+
+.reality-check-card p {
+  margin: 0 0 20px;
+  color: var(--color-text-muted, #cbd5e1);
+  line-height: 1.45;
+}
+
+.reality-check-btn {
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--color-primary, #22c55e);
+  color: #052e16;
+}
+
+.reality-check-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}

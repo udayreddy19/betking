@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { IoClose, IoEyeOutline, IoEyeOffOutline } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import BrandLogo, { BrandWordmark } from '../BrandLogo/BrandLogo';
+import SocialAuthButtons, { SocialAuthDivider } from '../SocialAuthButtons/SocialAuthButtons';
+import '../SocialAuthButtons/SocialAuthButtons.css';
 import './LoginModal.css';
 
 export default function LoginModal() {
@@ -163,6 +165,13 @@ export default function LoginModal() {
           </div>
         ) : (
           <form className="modal-form" onSubmit={handleSubmit}>
+            {mode === 'login' && (
+              <>
+                <SocialAuthButtons disabled={loading} />
+                <SocialAuthDivider />
+              </>
+            )}
+
             {/* Email input for Login & Forgot password */}
             {mode !== 'reset' && (
               <div className="form-group">

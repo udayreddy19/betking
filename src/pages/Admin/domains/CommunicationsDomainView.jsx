@@ -53,7 +53,12 @@ export default function CommunicationsDomainView({ subModule = 'dispatch-logs' }
   );
 
   const handleRetry = (log) => {
-    showToast(`Retry queued for ${log.id} (webhook re-dispatch pending backend wiring).`, 'info');
+    adminApiClient.post(`/communications/logs/${encodeURIComponent(log.id)}/retry`)
+      .then(() => {
+        showToast(`Retry queued for ${log.id}`, 'success');
+        setLogs((prev) => prev.map((row) => (row.id === log.id ? { ...row, status: 'QUEUED' } : row)));
+      })
+      .catch((err) => showToast(err.message || 'Retry failed', 'error'));
   };
 
   const titles = {

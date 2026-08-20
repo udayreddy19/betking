@@ -5,7 +5,7 @@
  */
 
 import express from 'express';
-import { query, withTransaction } from '../../../db/pg.js';
+import { query, queryRead, withTransaction } from '../../../db/pg.js';
 import { requirePermission } from '../../middleware/adminAuth.js';
 import { withdrawalEngine } from '../../../lib/withdrawalEngine.mjs';
 import { financialReconciliationEngine } from '../../../lib/financialReconciliationEngine.mjs';
@@ -17,7 +17,7 @@ router.get('/wallets', requirePermission('finance'), async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 50;
     const offset = parseInt(req.query.offset) || 0;
-    const result = await query(
+    const result = await queryRead(
       `SELECT wallet_id, user_id, balance, COALESCE(reserved_balance, 0.00) as reserved_balance, currency, updated_at
        FROM wallets ORDER BY updated_at DESC LIMIT $1 OFFSET $2`,
       [limit, offset]
@@ -33,7 +33,7 @@ router.get('/ledger', requirePermission('finance'), async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 50;
     const offset = parseInt(req.query.offset) || 0;
-    const result = await query(
+    const result = await queryRead(
       `SELECT entry_id, wallet_id, transaction_id, type, amount, balance_after, description, created_at
        FROM ledger_entries ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
       [limit, offset]
@@ -56,7 +56,7 @@ router.get('/withdrawals', requirePermission('finance'), async (req, res) => {
     }
     queryStr += ' ORDER BY created_at DESC LIMIT 50';
 
-    const result = await query(queryStr, params);
+    const result = await queryRead(queryStr, params);
     res.json({ withdrawals: result.rows });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch withdrawals', message: err.message });

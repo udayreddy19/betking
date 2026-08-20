@@ -8,6 +8,7 @@ import {
   matchOddsStateKey,
   provisionalWinnerMarketsFromMatch,
 } from '../../services/oddsService';
+import { subscribeLiveChannel } from '../../services/liveFeedSocket';
 import { resolveCricketTeamScores, isCricketSecondInnings, resolveCricketTossText } from '../../utils/cricketScores';
 import { isTeamBattingInMatch } from '../../utils/teamFlags';
 import { getChaseText } from '../../utils/liveMatchWidgetData';
@@ -42,6 +43,10 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
     return Math.max(1.10, Math.round(product * discount * 100) / 100);
   }, [builderLegs]);
 
+  const [matchMarkets, setMatchMarkets] = useState([]);
+  const oddsStateKey = matchOddsStateKey(match);
+  const team1Name = match?.team1?.name;
+  const team2Name = match?.team2?.name;
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -55,20 +60,8 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen || !match) return null;
-
-  const canBet = isMatchBettable(match);
-  const isLiveNow = isMatchLive(match);
-
-  const team1Name = match.team1.name;
-  const team2Name = match.team2.name;
-  const sport = match.sport || 'cricket';
-
-  const [matchMarkets, setMatchMarkets] = useState([]);
-  const oddsStateKey = matchOddsStateKey(match);
-
   useEffect(() => {
-    if (!match?.id && !match?.matchId) {
+    if (!isOpen || (!match?.id && !match?.matchId)) {
       setMatchMarkets([]);
       return undefined;
     }
@@ -91,13 +84,35 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
     };
 
     loadOdds();
-    const poll = setInterval(loadOdds, 2000);
+    let lastOddsWs = 0;
+    const poll = setInterval(() => {
+      if (Date.now() - lastOddsWs < 4000) return;
+      loadOdds();
+    }, 2000);
+
+    const unsubOdds = subscribeLiveChannel(`odds:match:${matchId}`, (msg) => {
+      if (isCancelled) return;
+      const markets = msg.payload?.markets;
+      if (msg.eventType === 'odds.updated' && Array.isArray(markets) && markets.length > 0) {
+        lastOddsWs = Date.now();
+        setMatchMarkets(markets);
+      }
+    });
+    const unsubScores = subscribeLiveChannel(`scores:match:${matchId}`, () => {});
 
     return () => {
       isCancelled = true;
       clearInterval(poll);
+      unsubOdds();
+      unsubScores();
     };
-  }, [match?.id, match?.matchId, oddsStateKey, team1Name, team2Name, match]);
+  }, [isOpen, match?.id, match?.matchId, oddsStateKey, team1Name, team2Name, match]);
+
+  if (!isOpen || !match) return null;
+
+  const canBet = isMatchBettable(match);
+  const isLiveNow = isMatchLive(match);
+  const sport = match.sport || 'cricket';
 
   const liveBatter1 = match?.liveDetails?.batter1;
   const liveBatter2 = match?.liveDetails?.batter2;

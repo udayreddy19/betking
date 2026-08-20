@@ -4,6 +4,8 @@ import { IoEyeOutline, IoEyeOffOutline } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { DEMO_MODE } from '../../utils/featureFlags';
 import BrandLogo, { BrandWordmark } from '../../components/BrandLogo/BrandLogo';
+import SocialAuthButtons, { SocialAuthDivider } from '../../components/SocialAuthButtons/SocialAuthButtons';
+import '../../components/SocialAuthButtons/SocialAuthButtons.css';
 import './Register.css';
 
 const PROMO_CHIPS = [
@@ -115,6 +117,9 @@ export default function Register() {
           </p>
 
           {error && <div className="register-error" role="alert">{error}</div>}
+
+          <SocialAuthButtons disabled={loading} />
+          <SocialAuthDivider />
 
           <form className="register-form" onSubmit={handleSubmit} noValidate>
             <div className="form-group">

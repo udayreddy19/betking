@@ -55,13 +55,20 @@ jobs:
       - name: Run Oxlint
         run: npx oxlint .
 
-      - name: Run Full Test Suite (Vitest)
+      - name: Run Full Test Suite with coverage
         env:
           NODE_ENV: test
           DATABASE_URL: postgresql://oddsyra_app:oddsyra_dev_pass@127.0.0.1:5432/oddsyra
           REDIS_URL: redis://127.0.0.1:6379
           JWT_SECRET: oddsyra_jwt_secret_dev_key_2026
-        run: npm test
+        run: npm run test:coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-lcov
+          path: coverage/lcov.info
+          if-no-files-found: error
 
       - name: Build Frontend Application (Vite)
         env:
@@ -86,3 +93,44 @@ jobs:
           file: ./Dockerfile.backend
           push: false
           tags: oddsyra-backend:latest
+
+  deploy-vps:
+    name: Deploy to VPS (gated)
+    needs: [lint-and-test, container-build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.ENABLE_VPS_DEPLOY == 'true'
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fast-forward pull and compose deploy
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            cd /opt/betking
+            git fetch origin
+            git checkout main
+            git pull --ff-only origin main
+            bash scripts/deploy_vps.sh
+
+  e2e-staging:
+    name: Playwright staging E2E (gated)
+    needs: lint-and-test
+    if: vars.ENABLE_E2E == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Run staging Playwright flows
+        env:
+          E2E_API_URL: ${{ secrets.E2E_API_URL }}
+          E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+        run: npm run test:e2e
+
