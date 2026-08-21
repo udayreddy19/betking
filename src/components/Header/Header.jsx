@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { HiOutlineMenu, HiOutlineClipboardList, IoGiftOutline, FiChevronDown, FiZap, FiShield } from '../../icons';
+import { HiOutlineMenu, HiOutlineClipboardList, HiOutlineUser, IoGiftOutline, FiChevronDown, FiZap, FiShield, IoNotifications } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { getWalletBreakdown, formatInr } from '../../utils/walletBalance';
@@ -15,6 +15,7 @@ import AnimatedMotionGiftIcon from '../AnimatedMotionGiftIcon/AnimatedMotionGift
 import { ODDS_FORMAT_OPTIONS } from '../../utils/oddsFormatter';
 import { storageGet, storageSet } from '../../utils/browserCompat';
 import { hasValidAdminSession } from '../../utils/adminSession';
+import { apiFetch } from '../../utils/apiClient';
 import '../MyBetsPanel/MyBetsPanel.css';
 import '../PromotionsPanel/PromotionsPanel.css';
 import BrandLogo, { BrandWordmark } from '../BrandLogo/BrandLogo';
@@ -31,11 +32,11 @@ const navLinks = withoutCasinoLinks([
 ]);
 
 const moreLinks = withoutCasinoLinks([
+  { to: '/profile', label: 'My Profile' },
   { to: '/admin', label: '🛡️ Admin Portal' },
   { to: '/help', label: 'Help Center' },
   { to: '/promotions', label: 'Promotions' },
   { to: '/casino', label: 'Casino' },
-  { to: '/profile', label: 'My Profile' },
   { to: '/responsible-gaming', label: 'Responsible Gaming' },
 ]);
 
@@ -46,6 +47,8 @@ function Header() {
   const [isSpinOpen, setIsSpinOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [userNotifications, setUserNotifications] = useState([]);
   const [oddsFormat, setOddsFormat] = useState(() => storageGet('oddsyra_odds_format') || 'decimal');
 
   const handleOddsFormatChange = (e) => {
@@ -57,6 +60,7 @@ function Header() {
 
   const moreRef = useRef(null);
   const walletRef = useRef(null);
+  const notifRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
   const loyalty = getLoyaltySummary(user);
@@ -66,6 +70,7 @@ function Header() {
   const isDevRoute = location.pathname.startsWith('/developer') || location.pathname.startsWith('/api-docs');
   const isRegisterPage = location.pathname === '/register';
   const hasAdminSession = hasValidAdminSession();
+  const unreadNotifCount = userNotifications.filter((n) => !n.is_read).length;
 
   useEffect(() => {
     if (loyalty.points > 0) {
@@ -75,6 +80,31 @@ function Header() {
       });
     }
   }, [loyalty.points]);
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setUserNotifications([]);
+      return undefined;
+    }
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await apiFetch('/api/v1/user/notifications');
+        const data = await res.json().catch(() => ({}));
+        if (!cancelled && res.ok) {
+          setUserNotifications(Array.isArray(data.notifications) ? data.notifications : []);
+        }
+      } catch {
+        if (!cancelled) setUserNotifications([]);
+      }
+    };
+    load();
+    const timer = setInterval(load, 20000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [isLoggedIn, user?.userId]);
 
   useEffect(() => {
     if (!isMoreOpen) return undefined;
@@ -95,6 +125,15 @@ function Header() {
   }, [isWalletOpen]);
 
   useEffect(() => {
+    if (!isNotifOpen) return undefined;
+    const close = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) setIsNotifOpen(false);
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [isNotifOpen]);
+
+  useEffect(() => {
     const openSpin = () => setIsSpinOpen(true);
     window.addEventListener('oddsyra:open-daily-spin', openSpin);
     return () => window.removeEventListener('oddsyra:open-daily-spin', openSpin);
@@ -111,8 +150,31 @@ function Header() {
 
   const handleMyBetsToggle = useCallback(() => {
     closePromos();
+    setIsNotifOpen(false);
     toggleMyBets();
   }, [closePromos, toggleMyBets]);
+
+  const handleNotifToggle = useCallback(() => {
+    closePromos();
+    closeMyBets();
+    setIsNotifOpen((open) => !open);
+  }, [closePromos, closeMyBets]);
+
+  const handleOpenNotification = useCallback(async (notif) => {
+    if (notif?.id && !notif.is_read) {
+      try {
+        await apiFetch('/api/v1/user/notifications/read', {
+          method: 'POST',
+          body: JSON.stringify({ notificationId: notif.id }),
+        });
+        setUserNotifications((prev) => prev.map((n) => (n.id === notif.id ? { ...n, is_read: true } : n)));
+      } catch {
+        // ignore
+      }
+    }
+    setIsNotifOpen(false);
+    navigate('/profile?tab=support');
+  }, [navigate]);
 
   const handleRedeemLoyalty = useCallback((pts) => {
     redeemLoyaltyPoints(pts);
@@ -223,6 +285,65 @@ function Header() {
                 <HiOutlineClipboardList className="header-my-bets-icon" aria-hidden="true" />
                 {myBetsCount > 0 && <span className="header-my-bets-badge">{myBetsCount}</span>}
               </motion.button>
+              <div className="header-notif-wrap" ref={notifRef}>
+                <motion.button
+                  type="button"
+                  className={`header-action-icon-btn ${isNotifOpen ? 'active' : ''}`}
+                  onClick={handleNotifToggle}
+                  aria-expanded={isNotifOpen}
+                  aria-haspopup="dialog"
+                  aria-label="Notifications"
+                  title="Notifications"
+                  whileHover={{ scale: 1.15 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <IoNotifications size={18} aria-hidden="true" />
+                  {unreadNotifCount > 0 && <span className="header-my-bets-badge">{unreadNotifCount}</span>}
+                </motion.button>
+                <AnimatePresence>
+                  {isNotifOpen && (
+                    <motion.div
+                      className="header-notif-menu"
+                      role="dialog"
+                      aria-label="Notifications"
+                      initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 4, scale: 0.96 }}
+                      transition={{ duration: 0.15 }}
+                    >
+                      <div className="header-notif-menu__head">
+                        <strong>Notifications</strong>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsNotifOpen(false);
+                            navigate('/profile?tab=support');
+                          }}
+                        >
+                          Support
+                        </button>
+                      </div>
+                      <div className="header-notif-menu__list">
+                        {userNotifications.length === 0 ? (
+                          <p className="header-notif-empty">No notifications yet</p>
+                        ) : (
+                          userNotifications.slice(0, 12).map((notif) => (
+                            <button
+                              key={notif.id}
+                              type="button"
+                              className={`header-notif-item ${notif.is_read ? '' : 'unread'}`}
+                              onClick={() => handleOpenNotification(notif)}
+                            >
+                              <span className="header-notif-item__title">{notif.subject || notif.event_type}</span>
+                              <span className="header-notif-item__body">{notif.body}</span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
               <motion.button
                 type="button"
                 className="header-action-icon-btn header-spin-icon-btn"
@@ -254,6 +375,18 @@ function Header() {
                 whileTap={{ scale: 0.9 }}
               >
                 <AnimatedMotionGiftIcon size={18} />
+              </motion.button>
+              <motion.button
+                type="button"
+                className={`header-action-icon-btn ${location.pathname.startsWith('/profile') ? 'active' : ''}`}
+                id="header-profile-btn"
+                aria-label="My Profile"
+                title="My Profile"
+                onClick={() => navigate('/profile')}
+                whileHover={{ scale: 1.15 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <HiOutlineUser className="header-profile-icon" aria-hidden="true" />
               </motion.button>
             </>
           ) : null}
@@ -442,6 +575,16 @@ function Header() {
                           }}
                         >
                           Withdraw
+                        </button>
+                        <button
+                          type="button"
+                          className="header-wallet-menu__profile"
+                          onClick={() => {
+                            setIsWalletOpen(false);
+                            navigate('/profile');
+                          }}
+                        >
+                          My Profile
                         </button>
                       </div>
                     </motion.div>

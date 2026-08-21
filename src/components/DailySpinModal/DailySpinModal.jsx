@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../../context/AuthContext';
 import { formatInr } from '../../utils/walletBalance';
@@ -31,6 +32,8 @@ export default function DailySpinModal({ isOpen, onClose }) {
 
   useEffect(() => {
     if (!isOpen) return undefined;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     let cancelled = false;
     (async () => {
       try {
@@ -49,10 +52,11 @@ export default function DailySpinModal({ isOpen, onClose }) {
     })();
     return () => {
       cancelled = true;
+      document.body.style.overflow = prevOverflow;
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === 'undefined') return null;
 
   const numSectors = WHEEL_SECTORS.length;
   const sectorAngle = 360 / numSectors;
@@ -111,18 +115,21 @@ export default function DailySpinModal({ isOpen, onClose }) {
     }
   };
 
-  return (
+  return createPortal(
     <AnimatePresence>
-      <div className="daily-spin-backdrop" onClick={onClose}>
+      <div className="daily-spin-backdrop" onClick={onClose} role="presentation">
         <motion.div
           className="daily-spin-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="daily-spin-title"
           onClick={(e) => e.stopPropagation()}
-          initial={{ opacity: 0, scale: 0.85, y: 30 }}
+          initial={{ opacity: 0, scale: 0.92, y: 16 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.85, y: 30 }}
-          transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+          exit={{ opacity: 0, scale: 0.92, y: 16 }}
+          transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
         >
-          <button className="spin-close-btn" onClick={onClose}>
+          <button type="button" className="spin-close-btn" onClick={onClose} aria-label="Close spin wheel">
             <FiX />
           </button>
 
@@ -130,7 +137,7 @@ export default function DailySpinModal({ isOpen, onClose }) {
             <div className="spin-badge">
               <FiZap /> DAILY VIP REWARD WHEEL
             </div>
-            <h2>Spin & Win Free Bonus Rewards!</h2>
+            <h2 id="daily-spin-title">Spin & Win Free Bonus Rewards!</h2>
             <p>Spin daily to win Bonus Balance, Freebet Vouchers, and VIP Loyalty XP.</p>
           </div>
 
@@ -245,6 +252,7 @@ export default function DailySpinModal({ isOpen, onClose }) {
           </div>
         </motion.div>
       </div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

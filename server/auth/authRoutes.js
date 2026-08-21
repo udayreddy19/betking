@@ -22,6 +22,7 @@ import {
   resendEmailVerification,
   changePassword,
   loginWithGoogle,
+  completeProfile,
 } from './authService.js';
 import { buildGoogleAuthUrl, exchangeGoogleCode, getGoogleOAuthConfig } from './googleOAuthService.js';
 import { rotateRefreshToken } from './tokenService.js';
@@ -399,6 +400,25 @@ router.post('/change-password', requireAuth, authGeneralRateLimiter, async (req,
     res.json(result);
   } catch (err) {
     console.error('[Auth] ChangePassword error:', IS_PRODUCTION ? 'Internal error' : err.message);
+    res.status(500).json({ error: 'An unexpected error occurred.', code: 'INTERNAL_ERROR' });
+  }
+});
+
+// ── POST /api/auth/complete-profile ──
+router.post('/complete-profile', requireAuth, authGeneralRateLimiter, async (req, res) => {
+  try {
+    const result = await completeProfile(query, req.user.userId, {
+      phone: req.body?.phone,
+      promoCode: req.body?.promoCode,
+    });
+
+    if (result.error) {
+      return res.status(result.status || 400).json({ error: result.error, code: result.code });
+    }
+
+    res.json(result);
+  } catch (err) {
+    console.error('[Auth] CompleteProfile error:', IS_PRODUCTION ? 'Internal error' : err.message);
     res.status(500).json({ error: 'An unexpected error occurred.', code: 'INTERNAL_ERROR' });
   }
 });

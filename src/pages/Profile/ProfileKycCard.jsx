@@ -76,7 +76,7 @@ export default function ProfileKycCard() {
   const aadhaarLocked = Boolean(kyc?.aadhaarMasked) && kyc?.status === 'VERIFIED';
 
   return (
-    <div className="profile-loyalty-box">
+    <div className="profile-loyalty-box" id="kyc">
       <div className="profile-loyalty-head">
         <span>Identity (KYC)</span>
         <strong className={`profile-kyc-pill profile-kyc-pill--${(kyc?.status || 'NOT_STARTED').toLowerCase()}`}>
@@ -85,7 +85,7 @@ export default function ProfileKycCard() {
       </div>
       <p className="profile-loyalty-meta">
         Each Aadhaar, PAN, email, and mobile number can be used on one account only.
-        Real-money deposits and cash bets require verified KYC and a date of birth proving you are 18 or older.
+        Withdrawals require verified KYC and a date of birth proving you are 18 or older. You can deposit and place bets without KYC.
       </p>
 
       <form

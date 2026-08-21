@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { STARTING_BALANCE, WELCOME_BONUS } from '../../data/mockData';
 import { formatInr } from '../../utils/walletBalance';
+import { cleanKycMessage, isKycError, KYC_PROFILE_PATH } from '../../utils/kycUi';
 import {
   getWithdrawableAmount,
   splitBetWinPayout,
@@ -56,10 +57,11 @@ export function AuthProvider({ children }) {
     setToast(null);
   }, []);
 
-  const showToast = useCallback((msg, variant = 'success') => {
+  const showToast = useCallback((msg, variant = 'success', options = null) => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setToast({ message: msg, variant });
-    toastTimerRef.current = setTimeout(() => setToast(null), 4500);
+    const action = options?.action || null;
+    setToast({ message: msg, variant, action });
+    toastTimerRef.current = setTimeout(() => setToast(null), action ? 8000 : 4500);
   }, []);
 
   const setUser = useCallback((next) => {
@@ -400,6 +402,7 @@ export function AuthProvider({ children }) {
         userId: userPayload.userId,
         email: userPayload.email,
         displayName: userPayload.displayName || userPayload.email.split('@')[0],
+        phone: userPayload.phone || '',
         balance: 0,
         winningsBalance: 0,
       })
@@ -422,6 +425,35 @@ export function AuthProvider({ children }) {
     void syncTransactions(userPayload?.email || sessionUser?.email);
     return true;
   }, [setUser, syncTransactions]);
+
+  const completeAccountProfile = useCallback(async ({ phone, promoCode } = {}) => {
+    const normalizedPhone = String(phone || '').replace(/\D/g, '');
+    if (normalizedPhone.length !== 10) {
+      return { ok: false, error: 'Enter a valid 10-digit Indian mobile number.' };
+    }
+    try {
+      const res = await apiFetch('/api/auth/complete-profile', {
+        method: 'POST',
+        body: JSON.stringify({
+          phone: normalizedPhone,
+          promoCode: String(promoCode || '').trim() || undefined,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        return { ok: false, error: data.error || 'Could not save your details.' };
+      }
+      if (data.user) {
+        setUser((prev) => mapServerUserToSession(data.user, prev));
+      } else {
+        const me = await fetchMe();
+        if (me) setUser(mapServerUserToSession(me));
+      }
+      return { ok: true, promoReward: data.promoReward || null, user: data.user };
+    } catch {
+      return { ok: false, error: 'Unable to reach auth service.' };
+    }
+  }, [setUser]);
 
   const forgotPassword = useCallback(async (email) => {
     const normalizedEmail = String(email || '').trim().toLowerCase();
@@ -938,7 +970,13 @@ export function AuthProvider({ children }) {
         const data = await res.json().catch(() => ({}));
         if (!res.ok || data.success === false) {
           const message = data.error || 'Withdrawal failed.';
-          showToast(message, 'error');
+          if (isKycError(message)) {
+            showToast(cleanKycMessage(message) || 'Verify your identity to withdraw.', 'error', {
+              action: { label: 'Proceed to KYC', path: KYC_PROFILE_PATH },
+            });
+          } else {
+            showToast(message, 'error');
+          }
           return { success: false, maxWithdrawable: 0, status: 'FAILED', error: message };
         }
         await refreshWallet();
@@ -1167,6 +1205,7 @@ export function AuthProvider({ children }) {
     isPromotionClaimed,
     login,
     completeGoogleAuth,
+    completeAccountProfile,
     forgotPassword,
     resetPassword,
     verifyEmail,
@@ -1212,6 +1251,7 @@ export function AuthProvider({ children }) {
     isPromotionClaimed,
     login,
     completeGoogleAuth,
+    completeAccountProfile,
     forgotPassword,
     resetPassword,
     verifyEmail,

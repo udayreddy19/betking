@@ -9,12 +9,15 @@ export default function IPLSRLAdmin() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Persist intended submodule for AdminShell to pick up on mount.
     try {
       sessionStorage.setItem('adminLandingDomain', 'sports');
       sessionStorage.setItem('adminLandingSubModule', 'iplsrl-console');
+      sessionStorage.setItem('adminNavLocation', JSON.stringify({
+        domainId: 'sports',
+        subModuleId: 'iplsrl-console',
+      }));
     } catch { /* ignore */ }
-    navigate('/admin', { replace: true });
+    navigate('/admin/sports/iplsrl-console', { replace: true });
   }, [navigate]);
 
   return (

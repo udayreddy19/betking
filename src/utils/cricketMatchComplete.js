@@ -1,4 +1,5 @@
-import { getMatchMaxBalls, isTestMatch } from './cricketFormat.js';
+import { getMatchMaxBalls, isTestMatch, oversToBallsForMatch } from './cricketFormat.js';
+import { teamNameMatches } from './cricketScores.js';
 
 function parseRuns(value) {
   if (value == null || value === '') return 0;
@@ -17,12 +18,20 @@ function parseWickets(value, fallback = 0) {
   return fallback;
 }
 
-function parseBalls(overs) {
-  const str = String(overs ?? '0');
-  const parts = str.split('.');
-  const whole = parseInt(parts[0], 10) || 0;
-  const ball = parseInt(parts[1], 10) || 0;
-  return whole * 6 + ball;
+function parseBalls(overs, match) {
+  return oversToBallsForMatch(overs ?? '0', match);
+}
+
+function whichTeam(label, t1Name, t2Name) {
+  if (!label) return null;
+  const m1 = teamNameMatches(t1Name, label);
+  const m2 = teamNameMatches(t2Name, label);
+  if (m1 && !m2) return 1;
+  if (m2 && !m1) return 2;
+  const l = String(label).toLowerCase().trim();
+  if (String(t1Name).toLowerCase().trim() === l) return 1;
+  if (String(t2Name).toLowerCase().trim() === l) return 2;
+  return null;
 }
 
 function statusText(match) {
@@ -46,13 +55,30 @@ function isCricketSport(match) {
 }
 
 function isSecondInningsStarted(match, ld) {
-  if ((Number(ld.inningsId) || 0) >= 2) return true;
-  if (Number(ld.chaseRuns) > 0 || Number(ld.chaseWickets) > 0) return true;
-  if (Number(ld.score2) > 0 || Number(ld.wickets2) > 0) return true;
-  if (parseRuns(match?.team1?.runs ?? match?.score1) > 0 && parseRuns(match?.team2?.runs ?? match?.score2) > 0) {
+  const inningsId = Number(ld.inningsId) || 0;
+  if (inningsId >= 2) return true;
+  const chaseProgress = Number(ld.chaseRuns) > 0 || Number(ld.chaseWickets) > 0;
+  const bothTeamsScored = parseRuns(match?.team1?.runs ?? match?.score1 ?? ld.score1) > 0
+    && parseRuns(match?.team2?.runs ?? match?.score2) > 0;
+
+  if (inningsId === 1) {
+    if (chaseProgress) return true;
+    if (bothTeamsScored) return true;
+    return false;
+  }
+  if (chaseProgress) return true;
+  // Named chase with overs clock (incl. "0.0") — not chaseTeamName / overs2 alone
+  if (ld.chaseTeamName && ld.chaseOvers != null && String(ld.chaseOvers).trim() !== '') {
     return true;
   }
-  if (ld.chaseOvers && ld.chaseOvers !== '0' && ld.chaseOvers !== '0.0') return true;
+  if (ld.chaseOvers != null
+    && String(ld.chaseOvers).trim() !== ''
+    && ld.chaseOvers !== '0'
+    && ld.chaseOvers !== '0.0'
+    && parseRuns(ld.firstRuns) > 0) {
+    return true;
+  }
+  if (bothTeamsScored) return true;
   if (/need\s+\d+\s+runs|chasing|target/i.test(String(ld.commentary || ''))) {
     return parseRuns(ld.firstRuns) > 0 || parseRuns(match?.score1) > 0;
   }
@@ -68,35 +94,72 @@ function firstAndChaseScores(match) {
 
   let firstRuns = parseRuns(ld.firstRuns);
   let firstWickets = parseWickets(ld.firstWickets, 0);
-  let chaseRuns = parseRuns(ld.chaseRuns ?? ld.score2);
-  let chaseWickets = parseWickets(ld.chaseWickets ?? ld.wickets2, 0);
-  let chaseBalls = parseBalls(ld.chaseOvers || ld.overs2 || (Number(ld.inningsId) >= 2 ? ld.overs : '0'));
+  // Prefer explicit chase fields — never treat team-aligned score2 as chase by default.
+  let chaseRuns = parseRuns(ld.chaseRuns);
+  let chaseWickets = parseWickets(ld.chaseWickets, 0);
+  let chaseBalls = 0;
+  if (ld.chaseOvers != null && String(ld.chaseOvers).trim() !== '') {
+    chaseBalls = parseBalls(ld.chaseOvers, match);
+  } else if (ld.overs2 != null && String(ld.overs2).trim() !== '') {
+    chaseBalls = parseBalls(ld.overs2, match);
+  } else if (Number(ld.inningsId) >= 2) {
+    // At chase start (0/0), do not treat leftover first-innings overs as chase exhaustion.
+    if (chaseRuns === 0 && chaseWickets === 0) {
+      chaseBalls = 0;
+    } else {
+      chaseBalls = parseBalls(ld.overs || '0', match);
+    }
+  }
+
+  const maxBallsForFormat = getMatchMaxBalls(match) || 120;
+  if (chaseRuns === 0 && chaseWickets === 0 && chaseBalls >= maxBallsForFormat) {
+    chaseBalls = 0;
+  }
 
   if (firstRuns <= 0 && team1Runs > 0 && team2Runs > 0) {
-    const chaseName = String(ld.chaseTeamName || '');
-    const firstName = String(ld.firstTeamName || '');
     const t1 = String(match.team1?.name || match.team1 || '');
     const t2 = String(match.team2?.name || match.team2 || '');
-    const chaseIsTeam1 = chaseName && t1 && t1.toLowerCase().includes(chaseName.toLowerCase().slice(0, 6));
-    const firstIsTeam2 = firstName && t2 && t2.toLowerCase().includes(firstName.toLowerCase().slice(0, 6));
-    if (chaseIsTeam1 || firstIsTeam2) {
+    const chaseSide = whichTeam(ld.chaseTeamName, t1, t2);
+    const firstSide = whichTeam(ld.firstTeamName, t1, t2);
+    if (chaseSide === 1 || firstSide === 2) {
       firstRuns = team2Runs;
       firstWickets = team2Wkts;
       chaseRuns = team1Runs;
       chaseWickets = team1Wkts;
-    } else {
+    } else if (chaseSide === 2 || firstSide === 1) {
       firstRuns = team1Runs;
       firstWickets = team1Wkts;
       chaseRuns = team2Runs;
       chaseWickets = team2Wkts;
+    } else {
+      // Unlabeled team-aligned: finished/fuller innings is first; the other is chase.
+      const maxBalls = getMatchMaxBalls(match) || 120;
+      const t1Balls = parseBalls(match.team1?.overs || ld.overs1 || '0', match);
+      const t2Balls = parseBalls(match.team2?.overs || ld.overs2 || ld.overs || '0', match);
+      const t1Done = t1Balls >= maxBalls || team1Wkts >= 10;
+      const t2Done = t2Balls >= maxBalls || team2Wkts >= 10;
+      if (t2Done && !t1Done) {
+        firstRuns = team2Runs;
+        firstWickets = team2Wkts;
+        chaseRuns = team1Runs;
+        chaseWickets = team1Wkts;
+        chaseBalls = t1Balls;
+      } else {
+        firstRuns = team1Runs;
+        firstWickets = team1Wkts;
+        chaseRuns = team2Runs;
+        chaseWickets = team2Wkts;
+        chaseBalls = t2Balls || chaseBalls;
+      }
     }
   } else if (firstRuns <= 0) {
     firstRuns = team1Runs;
     firstWickets = team1Wkts || firstWickets;
   }
 
-  if (chaseRuns <= 0) {
-    chaseRuns = parseRuns(ld.chaseRuns) || team2Runs;
+  if (chaseRuns <= 0 && ld.chaseRuns == null) {
+    // Only fall back to team2 when we still have no chase total after mapping
+    chaseRuns = team2Runs;
   }
 
   return { firstRuns, firstWickets, chaseRuns, chaseWickets, chaseBalls };
@@ -112,29 +175,34 @@ export function isCricketMatchCompleted(match) {
   const text = statusText(match);
   if (/innings\s*break/.test(text)) return false;
 
+  // Only true match-result phrases — not commentary like "won the race" / "beat the bat" / "won the review".
   const withoutToss = text.replace(/won the toss/g, ' ');
   if (
-    /\b(won by|have won|won with|won the match)\b/.test(text)
-    || /\b(beat|defeated)\b/.test(text)
-    || /match over|match completed|completed match|target reached/.test(text)
-    || /\bwon\b/.test(withoutToss)
+    /\b(won by|won with|won the match|match won|have won by|has won by)\b/.test(withoutToss)
+    || /\b(defeated)\b/.test(withoutToss)
+    || /\bbeat\s+[A-Z(]/.test(withoutToss)
+    || /match over|match completed|completed match|target reached|chase (?:complete|successful)/i.test(text)
   ) {
     return true;
   }
   if (/need\s+0\s+(?:more\s+)?runs/.test(text)) return true;
 
   const ld = match.liveDetails || {};
-  if (ld.runsRequired != null && Number(ld.runsRequired) <= 0 && isSecondInningsStarted(match, ld)) {
-    return true;
+  const test = isTestMatch(match) || (ld.testInnings?.length > 2);
+
+  // Ignore stale runsRequired<=0 unless the chase score actually reached/passed first innings.
+  // Never apply this limited-overs heuristic to Tests (4th innings target ≠ 1st innings + 1).
+  if (!test && ld.runsRequired != null && Number(ld.runsRequired) <= 0 && isSecondInningsStarted(match, ld)) {
+    const { firstRuns, chaseRuns } = firstAndChaseScores(match);
+    if (firstRuns > 0 && chaseRuns >= firstRuns + 1) return true;
   }
 
   if (!isSecondInningsStarted(match, ld)) return false;
 
+  // Tests only complete on explicit result language / need-0 above — not score heuristics.
+  if (test) return false;
+
   const { firstRuns, chaseRuns, chaseWickets, chaseBalls } = firstAndChaseScores(match);
-  const test = isTestMatch(match) || (ld.testInnings?.length > 2);
-  if (test && Number(ld.inningsId) !== 4 && !/need\s+0/.test(text)) {
-    return false;
-  }
 
   if (firstRuns > 0 && chaseRuns >= firstRuns + 1) return true;
   if (chaseWickets >= 10) return true;

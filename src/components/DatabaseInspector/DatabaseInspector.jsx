@@ -1,246 +1,394 @@
-import { useState, useEffect } from 'react';
-import { HiOutlineChartBar, FiActivity, FiDatabase, FiRefreshCw, FiSearch, FiCheckCircle } from '../../icons';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { FiDatabase, FiRefreshCw, FiSearch } from '../../icons';
+import { adminApiClient } from '../../pages/Admin/api/adminApiClient';
 import './DatabaseInspector.css';
+
+function formatCell(val) {
+  if (val === null || val === undefined) return null;
+  if (typeof val === 'object') return JSON.stringify(val);
+  return String(val);
+}
+
+function toInputValue(val) {
+  if (val === null || val === undefined) return '';
+  if (typeof val === 'object') return JSON.stringify(val);
+  if (typeof val === 'boolean') return val ? 'true' : 'false';
+  return String(val);
+}
+
+function rowKey(row, primaryKey, fallbackIdx) {
+  if (!primaryKey?.length) return String(fallbackIdx);
+  return primaryKey.map((k) => `${k}:${String(row[k])}`).join('|');
+}
+
+function compareCellValues(a, b) {
+  const aNull = a === null || a === undefined;
+  const bNull = b === null || b === undefined;
+  if (aNull && bNull) return 0;
+  if (aNull) return 1;
+  if (bNull) return -1;
+
+  if (typeof a === 'number' && typeof b === 'number') return a - b;
+  if (typeof a === 'boolean' && typeof b === 'boolean') return Number(a) - Number(b);
+
+  const aNum = typeof a === 'string' && a.trim() !== '' && !Number.isNaN(Number(a)) ? Number(a) : null;
+  const bNum = typeof b === 'string' && b.trim() !== '' && !Number.isNaN(Number(b)) ? Number(b) : null;
+  if (aNum !== null && bNum !== null) return aNum - bNum;
+
+  const aTime = a instanceof Date ? a.getTime() : (typeof a === 'string' && /^\d{4}-\d{2}-\d{2}/.test(a) ? Date.parse(a) : NaN);
+  const bTime = b instanceof Date ? b.getTime() : (typeof b === 'string' && /^\d{4}-\d{2}-\d{2}/.test(b) ? Date.parse(b) : NaN);
+  if (!Number.isNaN(aTime) && !Number.isNaN(bTime)) return aTime - bTime;
+
+  const aStr = typeof a === 'object' ? JSON.stringify(a) : String(a);
+  const bStr = typeof b === 'object' ? JSON.stringify(b) : String(b);
+  return aStr.localeCompare(bStr, undefined, { numeric: true, sensitivity: 'base' });
+}
+
+function csvEscape(val) {
+  if (val === null || val === undefined) return '';
+  const text = typeof val === 'object' ? JSON.stringify(val) : String(val);
+  if (/[",\n\r]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
+  return text;
+}
+
+function downloadCsv(filename, columns, rows) {
+  const header = columns.map((c) => csvEscape(c.column_name)).join(',');
+  const lines = rows.map((row) => columns.map((c) => csvEscape(row[c.column_name])).join(','));
+  const blob = new Blob([[header, ...lines].join('\n')], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
 
 export default function DatabaseInspector() {
   const [tables, setTables] = useState([]);
-  const [selectedTable, setSelectedTable] = useState('users');
-  const [tableData, setTableData] = useState({ columns: [], rows: [], totalCount: 0 });
-  const [loading, setLoading] = useState(false);
+  const [selectedTable, setSelectedTable] = useState('');
+  const [tableData, setTableData] = useState({
+    columns: [],
+    rows: [],
+    totalCount: 0,
+    primaryKey: [],
+    editable: false,
+    deletable: false,
+  });
+  const [meta, setMeta] = useState({ totalDbSize: '—', availableDiskStorage: '—' });
+  const [loadingTables, setLoadingTables] = useState(false);
+  const [loadingRows, setLoadingRows] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deletingKey, setDeletingKey] = useState('');
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [dbStatus, setDbStatus] = useState({ postgres: 'UP', redis: 'UP' });
+  const [tableFilter, setTableFilter] = useState('');
+  const [tableListSort, setTableListSort] = useState('name-asc');
+  const [sortColumn, setSortColumn] = useState('');
+  const [sortDir, setSortDir] = useState('asc');
+  const [editRow, setEditRow] = useState(null);
+  const [editDraft, setEditDraft] = useState({});
+  const [deleteRow, setDeleteRow] = useState(null);
 
-  // Initial default seed table fallback data for instant rendering
-  const SEED_TABLES_FALLBACK = [
-    { tableName: 'users', rowCount: 1 },
-    { tableName: 'user_profiles', rowCount: 1 },
-    { tableName: 'wallets', rowCount: 1 },
-    { tableName: 'support_conversations', rowCount: 1 },
-    { tableName: 'support_messages', rowCount: 3 },
-    { tableName: 'match_players', rowCount: 3 },
-    { tableName: 'matches', rowCount: 1 },
-    { tableName: 'teams', rowCount: 2 },
-    { tableName: 'players', rowCount: 3 },
-    { tableName: 'sports', rowCount: 2 },
-    { tableName: 'competitions', rowCount: 1 },
-    { tableName: 'transactions', rowCount: 1 },
-    { tableName: 'ledger_entries', rowCount: 1 },
-    { tableName: 'support_feedback', rowCount: 1 },
-    { tableName: 'support_internal_notes', rowCount: 0 },
-    { tableName: 'kyc_cases', rowCount: 0 },
-    { tableName: 'bets', rowCount: 0 },
-    { tableName: 'markets', rowCount: 0 },
-    { tableName: 'selections', rowCount: 0 },
-    { tableName: 'audit_events', rowCount: 0 },
-    { tableName: 'schema_migrations', rowCount: 2 },
-  ];
-
-  const SEED_ROWS_MAP = {
-    users: {
-      columns: [
-        { column_name: 'user_id', data_type: 'character varying' },
-        { column_name: 'email', data_type: 'character varying' },
-        { column_name: 'phone', data_type: 'character varying' },
-        { column_name: 'tenant_id', data_type: 'character varying' },
-        { column_name: 'created_at', data_type: 'timestamp with time zone' },
-      ],
-      rows: [
-        { user_id: 'user_demo_101', email: 'demo@oddsyra.com', phone: '+919876543210', tenant_id: 'oddsyra_in', created_at: '2026-08-10T03:54:50.000Z' },
-      ],
-    },
-    user_profiles: {
-      columns: [
-        { column_name: 'user_id', data_type: 'character varying' },
-        { column_name: 'display_name', data_type: 'character varying' },
-        { column_name: 'kyc_status', data_type: 'character varying' },
-        { column_name: 'kyc_details', data_type: 'text' },
-        { column_name: 'risk_tier', data_type: 'character varying' },
-        { column_name: 'lifetime_value', data_type: 'numeric' },
-      ],
-      rows: [
-        { user_id: 'user_demo_101', display_name: 'John Doe', kyc_status: 'VERIFIED', kyc_details: 'Aadhaar & PAN verified on 2026-08-01', risk_tier: 'LOW_RISK', lifetime_value: 15000.00 },
-      ],
-    },
-    wallets: {
-      columns: [
-        { column_name: 'wallet_id', data_type: 'character varying' },
-        { column_name: 'user_id', data_type: 'character varying' },
-        { column_name: 'balance', data_type: 'numeric' },
-        { column_name: 'bonus_balance', data_type: 'numeric' },
-        { column_name: 'currency', data_type: 'character varying' },
-      ],
-      rows: [
-        { wallet_id: 'w_demo_101', user_id: 'user_demo_101', balance: 12500.00, bonus_balance: 500.00, currency: 'INR' },
-      ],
-    },
-    match_players: {
-      columns: [
-        { column_name: 'id', data_type: 'integer' },
-        { column_name: 'match_id', data_type: 'character varying' },
-        { column_name: 'team_id', data_type: 'character varying' },
-        { column_name: 'player_id', data_type: 'character varying' },
-        { column_name: 'provider_player_id', data_type: 'character varying' },
-        { column_name: 'status', data_type: 'character varying' },
-      ],
-      rows: [
-        { id: 1, match_id: 'match_wi_pak_2026', team_id: 'team_wi', player_id: 'p_wi_1', provider_player_id: 'prov_wi_1', status: 'ACTIVE' },
-        { id: 2, match_id: 'match_wi_pak_2026', team_id: 'team_pak', player_id: 'p_pak_1', provider_player_id: 'prov_pak_1', status: 'ACTIVE' },
-        { id: 3, match_id: 'match_wi_pak_2026', team_id: 'team_pak', player_id: 'p_pak_2', provider_player_id: 'prov_pak_2', status: 'ACTIVE' },
-      ],
-    },
-    support_conversations: {
-      columns: [
-        { column_name: 'conversation_id', data_type: 'character varying' },
-        { column_name: 'user_id', data_type: 'character varying' },
-        { column_name: 'assigned_agent', data_type: 'character varying' },
-        { column_name: 'category', data_type: 'character varying' },
-        { column_name: 'status', data_type: 'character varying' },
-      ],
-      rows: [
-        { conversation_id: 'conv_demo_9912', user_id: 'user_demo_101', assigned_agent: 'Priya Sharma', category: 'WITHDRAWAL', status: 'OPEN' },
-      ],
-    },
-    support_messages: {
-      columns: [
-        { column_name: 'message_id', data_type: 'character varying' },
-        { column_name: 'conversation_id', data_type: 'character varying' },
-        { column_name: 'sender', data_type: 'character varying' },
-        { column_name: 'agent_name', data_type: 'character varying' },
-        { column_name: 'text', data_type: 'text' },
-      ],
-      rows: [
-        { message_id: 'msg_seed_1', conversation_id: 'conv_demo_9912', sender: 'customer', agent_name: null, text: 'I want to know the status of my kyc' },
-        { message_id: 'msg_seed_2', conversation_id: 'conv_demo_9912', sender: 'agent', agent_name: 'Priya Sharma', text: 'Your KYC status is VERIFIED ✅. Account is fully unlocked for instant withdrawals!' },
-        { message_id: 'msg_test_1770695717366', conversation_id: 'conv_demo_9912', sender: 'customer', agent_name: null, text: 'Test persistent support message in PostgreSQL' },
-      ],
-    },
-  };
-
-  // Fetch list of PostgreSQL tables with multi-port attempt & fallback
-  const fetchTables = async () => {
-    const urls = ['/api/admin/db/tables', 'http://127.0.0.1:5001/api/admin/db/tables', 'http://localhost:5001/api/admin/db/tables'];
-    for (const url of urls) {
-      try {
-        const res = await fetch(url);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && data.tables?.length > 0) {
-            setTables(data.tables);
-            if (!selectedTable) setSelectedTable(data.tables[0].tableName);
-            return;
-          }
-        }
-      } catch (err) {
-        // Try next URL
-      }
+  const fetchTables = useCallback(async () => {
+    setLoadingTables(true);
+    setError('');
+    try {
+      const data = await adminApiClient.get('/db/tables');
+      const list = Array.isArray(data?.tables) ? data.tables : [];
+      setTables(list);
+      setMeta({
+        totalDbSize: data?.totalDbSize || '—',
+        availableDiskStorage: data?.availableDiskStorage || '—',
+      });
+      setSelectedTable((prev) => {
+        if (prev && list.some((t) => t.tableName === prev)) return prev;
+        return list[0]?.tableName || '';
+      });
+    } catch (err) {
+      setTables([]);
+      setError(err.message || 'Failed to load database tables');
+    } finally {
+      setLoadingTables(false);
     }
+  }, []);
 
-    // Use seed tables fallback if live fetch fails
-    setTables([]);
-  };
-
-  // Fetch rows & schema for selected table with fallback
-  const fetchTableData = async (tableName) => {
+  const fetchTableData = useCallback(async (tableName) => {
     if (!tableName) return;
-    setLoading(true);
-
-    const urls = [
-      `/api/admin/db/tables/${tableName}`,
-      `http://127.0.0.1:5001/api/admin/db/tables/${tableName}`,
-      `http://localhost:5001/api/admin/db/tables/${tableName}`,
-    ];
-
-    for (const url of urls) {
-      try {
-        const res = await fetch(url);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && data.columns) {
-            setTableData({
-              columns: data.columns || [],
-              rows: data.rows || [],
-              totalCount: data.totalCount || data.rows?.length || 0,
-            });
-            setLoading(false);
-            return;
-          }
-        }
-      } catch (err) {
-        // Try next URL
-      }
+    setLoadingRows(true);
+    setError('');
+    setEditRow(null);
+    try {
+      const data = await adminApiClient.get(`/db/tables/${encodeURIComponent(tableName)}`);
+      setTableData({
+        columns: data?.columns || [],
+        rows: data?.rows || [],
+        totalCount: Number(data?.totalCount ?? data?.rows?.length ?? 0),
+        primaryKey: data?.primaryKey || [],
+        editable: Boolean(data?.editable),
+        deletable: Boolean(data?.deletable),
+      });
+    } catch (err) {
+      setTableData({ columns: [], rows: [], totalCount: 0, primaryKey: [], editable: false, deletable: false });
+      setError(err.message || `Failed to load table ${tableName}`);
+    } finally {
+      setLoadingRows(false);
     }
-
-    // Fallback data for table
-    const fbData = { columns: [], rows: [] };
-    setTableData({
-      columns: fbData.columns,
-      rows: fbData.rows,
-      totalCount: 0,
-    });
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchTables();
   }, []);
 
   useEffect(() => {
+    fetchTables();
+  }, [fetchTables]);
+
+  useEffect(() => {
     if (selectedTable) {
+      setSortColumn('');
+      setSortDir('asc');
       fetchTableData(selectedTable);
     }
-  }, [selectedTable]);
+  }, [selectedTable, fetchTableData]);
 
-  // Filter rows based on search
-  const filteredRows = tableData.rows.filter((row) => {
-    if (!searchQuery) return true;
-    const str = JSON.stringify(row).toLowerCase();
-    return str.includes(searchQuery.toLowerCase());
-  });
+  const visibleTables = useMemo(() => {
+    const q = tableFilter.trim().toLowerCase();
+    const filtered = q
+      ? tables.filter((t) => String(t.tableName || '').toLowerCase().includes(q))
+      : [...tables];
+
+    filtered.sort((a, b) => {
+      if (tableListSort === 'rows-desc') return (b.rowCount || 0) - (a.rowCount || 0);
+      if (tableListSort === 'rows-asc') return (a.rowCount || 0) - (b.rowCount || 0);
+      if (tableListSort === 'name-desc') {
+        return String(b.tableName || '').localeCompare(String(a.tableName || ''), undefined, { sensitivity: 'base' });
+      }
+      return String(a.tableName || '').localeCompare(String(b.tableName || ''), undefined, { sensitivity: 'base' });
+    });
+    return filtered;
+  }, [tables, tableFilter, tableListSort]);
+
+  const filteredRows = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    let rows = q
+      ? tableData.rows.filter((row) => JSON.stringify(row).toLowerCase().includes(q))
+      : [...tableData.rows];
+
+    if (sortColumn) {
+      const dir = sortDir === 'desc' ? -1 : 1;
+      rows = [...rows].sort((ra, rb) => dir * compareCellValues(ra[sortColumn], rb[sortColumn]));
+    }
+    return rows;
+  }, [tableData.rows, searchQuery, sortColumn, sortDir]);
+
+  const toggleSort = (columnName) => {
+    if (sortColumn === columnName) {
+      if (sortDir === 'asc') setSortDir('desc');
+      else {
+        setSortColumn('');
+        setSortDir('asc');
+      }
+      return;
+    }
+    setSortColumn(columnName);
+    setSortDir('asc');
+  };
+
+  const editableColumns = useMemo(
+    () => tableData.columns.filter((c) => c.editable !== false && !tableData.primaryKey.includes(c.column_name)),
+    [tableData.columns, tableData.primaryKey],
+  );
+
+  const openEditor = (row) => {
+    if (!tableData.editable) {
+      setError('This table has no primary key, so rows cannot be edited safely.');
+      return;
+    }
+    const draft = {};
+    editableColumns.forEach((col) => {
+      draft[col.column_name] = toInputValue(row[col.column_name]);
+    });
+    setEditRow(row);
+    setEditDraft(draft);
+    setNotice('');
+    setError('');
+  };
+
+  const saveEdit = async () => {
+    if (!editRow || !selectedTable) return;
+    const primaryKey = {};
+    tableData.primaryKey.forEach((col) => {
+      primaryKey[col] = editRow[col];
+    });
+
+    const updates = {};
+    editableColumns.forEach((col) => {
+      const next = editDraft[col.column_name];
+      const prev = toInputValue(editRow[col.column_name]);
+      if (String(next ?? '') !== String(prev ?? '')) {
+        updates[col.column_name] = next === '' ? null : next;
+      }
+    });
+
+    if (!Object.keys(updates).length) {
+      setNotice('No changes to save.');
+      return;
+    }
+
+    setSaving(true);
+    setError('');
+    setNotice('');
+    try {
+      const data = await adminApiClient.patch(`/db/tables/${encodeURIComponent(selectedTable)}`, {
+        primaryKey,
+        updates,
+      });
+      const updated = data?.row;
+      if (updated) {
+        setTableData((prev) => ({
+          ...prev,
+          rows: prev.rows.map((r) => (
+            rowKey(r, prev.primaryKey, 0) === rowKey(editRow, prev.primaryKey, 0) ? { ...r, ...updated } : r
+          )),
+        }));
+      } else {
+        await fetchTableData(selectedTable);
+      }
+      setEditRow(null);
+      setNotice('Row updated successfully.');
+    } catch (err) {
+      setError(err.message || 'Failed to update row');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const exportRows = (format) => {
+    if (!selectedTable || !filteredRows.length) {
+      setNotice('Nothing to export.');
+      return;
+    }
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+    if (format === 'json') {
+      const blob = new Blob([JSON.stringify(filteredRows, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${selectedTable}-${stamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setNotice(`Exported ${filteredRows.length} rows as JSON.`);
+      return;
+    }
+    downloadCsv(`${selectedTable}-${stamp}.csv`, tableData.columns, filteredRows);
+    setNotice(`Exported ${filteredRows.length} rows as CSV.`);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteRow || !selectedTable) return;
+    const primaryKey = {};
+    tableData.primaryKey.forEach((col) => {
+      primaryKey[col] = deleteRow[col];
+    });
+    const key = rowKey(deleteRow, tableData.primaryKey, 0);
+    setDeletingKey(key);
+    setError('');
+    setNotice('');
+    try {
+      await adminApiClient.delete(`/db/tables/${encodeURIComponent(selectedTable)}`, {
+        body: JSON.stringify({ primaryKey }),
+      });
+      setTableData((prev) => ({
+        ...prev,
+        rows: prev.rows.filter((r) => rowKey(r, prev.primaryKey, 0) !== key),
+        totalCount: Math.max(0, (prev.totalCount || 1) - 1),
+      }));
+      setTables((prev) => prev.map((t) => (
+        t.tableName === selectedTable
+          ? { ...t, rowCount: Math.max(0, (t.rowCount || 1) - 1) }
+          : t
+      )));
+      setDeleteRow(null);
+      setNotice('Row deleted.');
+    } catch (err) {
+      setError(err.message || 'Failed to delete row');
+    } finally {
+      setDeletingKey('');
+    }
+  };
 
   return (
     <div className="db-inspector-container">
-      {/* HEADER BAR */}
       <div className="db-inspector-header">
         <div className="db-inspector-title">
-          <FiDatabase className="db-icon text-blue-400 flex-shrink-0" />
+          <FiDatabase className="db-icon" />
           <div>
-            <h3 className="font-bold text-slate-100 text-sm whitespace-nowrap">PostgreSQL & Redis Live Database Inspector</h3>
-            <p className="text-xs text-slate-400 whitespace-nowrap">Authoritative Tables, Schemas & Live Rows</p>
+            <h3 className="db-inspector-heading">Database Tables</h3>
+            <p className="db-inspector-sub">
+              Browse and edit live PostgreSQL rows. Sensitive columns stay hidden.
+            </p>
           </div>
         </div>
 
         <div className="db-status-pills">
           <span className="status-pill status-pill--pg">
-            <span className="live-dot" /> PostgreSQL 16: ACTIVE (8.7 MB)
-          </span>
-          <span className="status-pill status-pill--outbox">
-            ⚡ Outbox: 0
-          </span>
-          <span className="status-pill status-pill--recon">
-            🔍 Recon: 0
+            <span className="live-dot" /> DB size: {meta.totalDbSize}
           </span>
           <span className="status-pill status-pill--disk">
-            💾 Disk: 13 GB / 228 GB (48%)
+            Disk: {meta.availableDiskStorage}
           </span>
-          <span className="status-pill status-pill--redis">
-            <span className="live-dot" /> Redis 7: PONG
+          <span className="status-pill status-pill--recon">
+            {tables.length} tables
           </span>
-          <button type="button" className="refresh-btn" onClick={() => fetchTableData(selectedTable)} title="Refresh Data">
-            <FiRefreshCw className={loading ? 'animate-spin' : ''} />
+          <button
+            type="button"
+            className="refresh-btn"
+            onClick={() => {
+              fetchTables();
+              if (selectedTable) fetchTableData(selectedTable);
+            }}
+            title="Refresh"
+          >
+            <FiRefreshCw className={loadingTables || loadingRows ? 'animate-spin' : ''} />
           </button>
         </div>
       </div>
 
-      {/* BODY WORKSPACE */}
+      {error && <div className="db-inspector-error" role="alert">{error}</div>}
+      {notice && <div className="db-inspector-notice" role="status">{notice}</div>}
+
       <div className="db-inspector-workspace">
-        {/* LEFT SIDEBAR: TABLES LIST */}
         <div className="db-tables-sidebar">
           <div className="sidebar-title">
-            <span>📚 PostgreSQL Tables ({tables.length})</span>
+            <span>Tables ({visibleTables.length})</span>
           </div>
-
+          <div className="db-table-filter">
+            <FiSearch />
+            <input
+              type="search"
+              placeholder="Filter tables…"
+              value={tableFilter}
+              onChange={(e) => setTableFilter(e.target.value)}
+            />
+          </div>
+          <label className="db-table-sort">
+            <span>Sort</span>
+            <select value={tableListSort} onChange={(e) => setTableListSort(e.target.value)}>
+              <option value="name-asc">Name A–Z</option>
+              <option value="name-desc">Name Z–A</option>
+              <option value="rows-desc">Rows high → low</option>
+              <option value="rows-asc">Rows low → high</option>
+            </select>
+          </label>
           <div className="tables-list">
-            {tables.map((t) => (
+            {loadingTables && tables.length === 0 && (
+              <div className="db-sidebar-empty">Loading tables…</div>
+            )}
+            {!loadingTables && visibleTables.length === 0 && (
+              <div className="db-sidebar-empty">No tables found</div>
+            )}
+            {visibleTables.map((t) => (
               <button
                 key={t.tableName}
                 type="button"
@@ -248,78 +396,153 @@ export default function DatabaseInspector() {
                 onClick={() => setSelectedTable(t.tableName)}
                 title={`${t.tableName} (${t.rowCount ?? 0} rows)`}
               >
-                <span className="font-mono text-slate-200 table-name-text">{t.tableName}</span>
-                <span className="table-count-badge">{t.rowCount ?? 0} {t.rowCount === 1 ? 'row' : 'rows'}</span>
+                <span className="table-name-text">{t.tableName}</span>
+                <span className="table-count-badge">
+                  {t.rowCount ?? 0}
+                  {t.tableSize ? ` · ${t.tableSize}` : ''}
+                </span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* RIGHT PANEL: TABLE SCHEMA & ROWS */}
         <div className="db-table-viewer">
-          {/* SEARCH BAR */}
           <div className="table-viewer-header">
             <div className="table-info">
-              <span className="font-bold text-slate-100 text-sm font-mono">{selectedTable}</span>
-              <span className="text-xs text-slate-400 ml-2">({tableData.columns.length} columns, {tableData.totalCount} rows)</span>
+              <span className="table-info-name">{selectedTable || '—'}</span>
+              <span className="table-info-meta">
+                {tableData.columns.length} columns · showing {filteredRows.length}
+                {tableData.totalCount ? ` of ${tableData.totalCount}` : ''} rows
+                {sortColumn ? ` · sorted by ${sortColumn} ${sortDir === 'desc' ? '↓' : '↑'}` : ''}
+                {tableData.editable
+                  ? ` · PK: ${tableData.primaryKey.join(', ')}`
+                  : ' · not editable (no primary key)'}
+              </span>
             </div>
-
-            <div className="table-search-bar">
-              <FiSearch className="text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search rows in table..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+            <div className="table-viewer-tools">
+              {sortColumn && (
+                <button
+                  type="button"
+                  className="db-clear-sort-btn"
+                  onClick={() => { setSortColumn(''); setSortDir('asc'); }}
+                >
+                  Clear sort
+                </button>
+              )}
+              <button
+                type="button"
+                className="db-export-btn"
+                disabled={!filteredRows.length}
+                onClick={() => exportRows('csv')}
+                title="Export visible rows as CSV"
+              >
+                Export CSV
+              </button>
+              <button
+                type="button"
+                className="db-export-btn"
+                disabled={!filteredRows.length}
+                onClick={() => exportRows('json')}
+                title="Export visible rows as JSON"
+              >
+                Export JSON
+              </button>
+              <div className="table-search-bar">
+                <FiSearch />
+                <input
+                  type="search"
+                  placeholder="Search loaded rows…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
-          {/* TABLE ROWS VIEWER */}
           <div className="table-rows-wrap">
-            {loading ? (
+            {loadingRows ? (
               <div className="loading-state">
-                <FiRefreshCw className="animate-spin text-blue-400 text-2xl" />
-                <span>Loading table records from PostgreSQL...</span>
+                <FiRefreshCw className="animate-spin" />
+                <span>Loading rows…</span>
               </div>
+            ) : !selectedTable ? (
+              <div className="empty-state">Select a table to inspect</div>
             ) : filteredRows.length === 0 ? (
               <div className="empty-state">
-                No rows found in table <code className="text-blue-400 font-mono">{selectedTable}</code>.
+                No rows in <code>{selectedTable}</code>
+                {searchQuery ? ' matching this search' : ''}.
               </div>
             ) : (
               <table className="db-data-table">
                 <thead>
                   <tr>
-                    {tableData.columns.map((col) => (
-                      <th key={col.column_name}>
-                        <div className="col-header">
-                          <span className="col-name">{col.column_name}</span>
-                          <span className="col-type">{col.data_type}</span>
-                        </div>
-                      </th>
-                    ))}
+                    {tableData.columns.map((col) => {
+                      const active = sortColumn === col.column_name;
+                      const ariaSort = !active ? 'none' : (sortDir === 'desc' ? 'descending' : 'ascending');
+                      return (
+                        <th key={col.column_name} aria-sort={ariaSort}>
+                          <button
+                            type="button"
+                            className={`col-header col-header--sortable${active ? ' is-active' : ''}`}
+                            onClick={() => toggleSort(col.column_name)}
+                            title={`Sort by ${col.column_name}`}
+                          >
+                            <span className="col-name-row">
+                              <span className="col-name">{col.column_name}</span>
+                              <span className="col-sort-indicator" aria-hidden="true">
+                                {active ? (sortDir === 'desc' ? '↓' : '↑') : '↕'}
+                              </span>
+                            </span>
+                            <span className="col-type">{col.data_type}</span>
+                          </button>
+                        </th>
+                      );
+                    })}
+                    <th className="db-actions-col">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredRows.map((row, idx) => (
-                    <tr key={idx}>
+                    <tr key={rowKey(row, tableData.primaryKey, idx)}>
                       {tableData.columns.map((col) => {
                         const val = row[col.column_name];
-                        const isObject = typeof val === 'object' && val !== null;
+                        const text = formatCell(val);
                         return (
-                          <td key={col.column_name} className="font-mono text-xs">
-                            {isObject ? (
-                              <code className="json-code">{JSON.stringify(val)}</code>
-                            ) : val === null || val === undefined ? (
+                          <td key={col.column_name}>
+                            {text === null ? (
                               <span className="null-val">NULL</span>
-                            ) : String(val).startsWith('user_') || String(val).startsWith('match_') || String(val).startsWith('tx_') ? (
-                              <code className="id-code">{String(val)}</code>
+                            ) : typeof val === 'object' ? (
+                              <code className="json-code">{text}</code>
                             ) : (
-                              String(val)
+                              text
                             )}
                           </td>
                         );
                       })}
+                      <td className="db-actions-col">
+                        <div className="db-row-actions">
+                          <button
+                            type="button"
+                            className="db-edit-btn"
+                            disabled={!tableData.editable}
+                            onClick={() => openEditor(row)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="db-delete-btn"
+                            disabled={!tableData.deletable || deletingKey === rowKey(row, tableData.primaryKey, idx)}
+                            onClick={() => {
+                              setDeleteRow(row);
+                              setError('');
+                              setNotice('');
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -328,6 +551,96 @@ export default function DatabaseInspector() {
           </div>
         </div>
       </div>
+
+      {editRow && (
+        <div className="db-edit-overlay" role="presentation" onClick={() => !saving && setEditRow(null)}>
+          <div
+            className="db-edit-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="db-edit-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="db-edit-header">
+              <h4 id="db-edit-title">Edit row · {selectedTable}</h4>
+              <button type="button" className="db-edit-close" onClick={() => setEditRow(null)} disabled={saving}>
+                ✕
+              </button>
+            </div>
+            <p className="db-edit-pk">
+              Primary key:{' '}
+              {tableData.primaryKey.map((col) => `${col}=${String(editRow[col])}`).join(', ')}
+            </p>
+            <div className="db-edit-fields">
+              {editableColumns.map((col) => (
+                <label key={col.column_name} className="db-edit-field">
+                  <span>
+                    {col.column_name}
+                    <em>{col.data_type}</em>
+                  </span>
+                  <input
+                    type="text"
+                    value={editDraft[col.column_name] ?? ''}
+                    onChange={(e) => setEditDraft((prev) => ({ ...prev, [col.column_name]: e.target.value }))}
+                    disabled={saving}
+                  />
+                </label>
+              ))}
+              {editableColumns.length === 0 && (
+                <p className="db-sidebar-empty">No editable columns on this table.</p>
+              )}
+            </div>
+            <div className="db-edit-actions">
+              <button type="button" className="db-edit-cancel" onClick={() => setEditRow(null)} disabled={saving}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="db-edit-save"
+                onClick={saveEdit}
+                disabled={saving || editableColumns.length === 0}
+              >
+                {saving ? 'Saving…' : 'Save changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {deleteRow && (
+        <div className="db-edit-overlay" role="presentation" onClick={() => !deletingKey && setDeleteRow(null)}>
+          <div
+            className="db-edit-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="db-delete-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="db-edit-header">
+              <h4 id="db-delete-title">Delete row · {selectedTable}</h4>
+              <button type="button" className="db-edit-close" onClick={() => setDeleteRow(null)} disabled={!!deletingKey}>
+                ✕
+              </button>
+            </div>
+            <p className="db-edit-pk">
+              This permanently deletes the row with primary key:{' '}
+              {tableData.primaryKey.map((col) => `${col}=${String(deleteRow[col])}`).join(', ')}
+            </p>
+            <div className="db-edit-actions">
+              <button type="button" className="db-edit-cancel" onClick={() => setDeleteRow(null)} disabled={!!deletingKey}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="db-delete-confirm"
+                onClick={confirmDelete}
+                disabled={!!deletingKey}
+              >
+                {deletingKey ? 'Deleting…' : 'Delete permanently'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -42,7 +42,11 @@ export default function ProfileSupportTab({ onOpenChat }) {
     loadTickets();
     const refresh = () => loadTickets();
     window.addEventListener('oddsyra:support-ticket-created', refresh);
-    return () => window.removeEventListener('oddsyra:support-ticket-created', refresh);
+    const timer = setInterval(refresh, 12000);
+    return () => {
+      window.removeEventListener('oddsyra:support-ticket-created', refresh);
+      clearInterval(timer);
+    };
   }, [loadTickets]);
 
   const selected = tickets.find((t) => (t.conversationId || t.id) === selectedId) || null;
@@ -127,15 +131,16 @@ export default function ProfileSupportTab({ onOpenChat }) {
                 </div>
                 <div className="profile-support-messages">
                   {(selected.messages || []).map((msg) => {
-                    const sender = msg.senderType || msg.sender_type || msg.sender || 'user';
+                    const sender = String(msg.senderType || msg.sender_type || msg.sender || 'user').toLowerCase();
                     const when = msg.createdAt || msg.created_at || msg.deliveredAt || msg.delivered_at;
+                    const agentLabel = msg.agentName || msg.agent_name || 'OddsYra Support';
                     return (
                     <article
                       key={msg.messageId || msg.message_id || msg.id}
-                      className={`profile-support-msg profile-support-msg--${sender}`}
+                      className={`profile-support-msg profile-support-msg--${sender === 'admin' ? 'admin' : sender === 'system' ? 'system' : 'user'}`}
                     >
                       <header>
-                        {sender === 'admin' ? (msg.agentName || msg.agent_name || 'Support') : sender === 'system' ? 'System' : 'You'}
+                        {sender === 'admin' ? agentLabel : sender === 'system' ? 'System' : 'You'}
                         <time>{formatTime(when)}</time>
                       </header>
                       <p>{msg.text}</p>

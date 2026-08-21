@@ -14,7 +14,7 @@ import { useLiveMatches, useLiveSportsMeta } from '../../context/LiveSportsConte
 import { useBetSlip } from '../../context/BetSlipContext';
 import { useAuth } from '../../context/AuthContext';
 import { isMatchBettable, isTrulyLiveMatch, getMatchState, isMatchFinished } from '../../utils/matchBetting';
-import { resolveCricketTeamScores, resolveCricketTossText } from '../../utils/cricketScores';
+import { resolveCricketTeamScores, resolveCricketTossText, isCricketSecondInnings } from '../../utils/cricketScores';
 import { isTeamBattingInMatch } from '../../utils/teamFlags';
 import { isTestMatch, getTestMatchDayLabel, formatMatchCountdown, resolveCricketOversFormat } from '../../utils/cricketFormat';
 import { prefetchMatchDetail, enrichFromPoller, subscribeGlobalMatchDetails, getGlobalMatchDetailVersion } from '../../services/matchDetailPoller';
@@ -157,15 +157,20 @@ function CricketGroupedMatches({ groups, onSelectMatch, getMatchScores, isBetSel
                 || asDisplayText(m.liveDetails?.minute)
                 || asDisplayText(m.liveDetails?.currentSet)
                 || (isCricketRow
-                  ? (team2Score && team2Score !== '0/0' ? 'Second innings' : 'First innings')
+                  ? (isCricketSecondInnings(m, m.liveDetails || {}) ? 'Second innings' : 'First innings')
                   : 'Live'))
               : isFinished
                 ? 'Match Ended'
                 : (asDisplayText(m.time, 'Scheduled'));
 
-            const oversDisplay = isCricketRow && isLive && overs2 && overs2 !== '0.0'
-              ? `(${overs2} ov.)`
-              : (isCricketRow && isLive && m.liveDetails?.overs && m.liveDetails.overs !== '0.0' ? `(${m.liveDetails.overs} ov.)` : null);
+            const battingOvers = isCricketRow && isLive
+              ? (isCricketSecondInnings(m, m.liveDetails || {})
+                ? (m.liveDetails?.chaseOvers || m.liveDetails?.overs || null)
+                : (m.liveDetails?.firstOvers || m.liveDetails?.overs || null))
+              : null;
+            const oversDisplay = battingOvers && battingOvers !== '0.0'
+              ? `(${battingOvers} ov.)`
+              : null;
 
             const marketCount = 22 + ((m.id?.length || 0) % 15);
 
@@ -623,14 +628,14 @@ export default function Sports() {
       ? 'loading'
       : 'live';
 
-  const placeBet = (selection, odds, selectionName, marketName) => {
+  const placeBet = (selection, odds, selectionName, marketName, marketId) => {
     if (!activeMatch || !(Number(odds) > 1)) return;
-    addBet(activeMatch, selection, odds, selectionName, { marketName });
+    addBet(activeMatch, selection, odds, selectionName, { marketName, marketId });
   };
 
-  const quickBet = (match, selection, odds, selectionName) => {
+  const quickBet = (match, selection, odds, selectionName, marketId = 'match_winner') => {
     if (odds == null || Number.isNaN(Number(odds))) return;
-    addBet(match, selection, odds, selectionName, { marketName: 'Match Winner' });
+    addBet(match, selection, odds, selectionName, { marketName: 'Match Winner', marketId });
   };
 
   const sportCounts = useMemo(() => {
@@ -1085,7 +1090,13 @@ export default function Sports() {
                               key={opt.selection}
                               type="button"
                               className={oddsBtnClass(opt.selection)}
-                              onClick={() => placeBet(opt.selection, opt.odds, opt.name, market.title)}
+                              onClick={() => placeBet(
+                                opt.selectionId || opt.selection,
+                                opt.odds,
+                                opt.name,
+                                market.title || market.name,
+                                market.marketId || market.id || market.key,
+                              )}
                             >
                               <span>{opt.name}</span>
                               <span className="odds-val">{Number(opt.odds).toFixed(2)}</span>

@@ -15,15 +15,18 @@ function callbackStorageKey(code, state) {
 export default function OAuthGoogleCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { completeGoogleAuth, showToast, isLoggedIn } = useAuth();
+  const { completeGoogleAuth, showToast, isLoggedIn, user } = useAuth();
   const [error, setError] = useState('');
 
-  // Already signed in (e.g. callback succeeded but navigate was interrupted).
+  // Already signed in with a phone — leave the callback page.
+  // Missing-phone users are sent to /complete-profile by the success path / PhoneRequiredGate.
   useEffect(() => {
-    if (isLoggedIn) {
+    if (!isLoggedIn) return;
+    const phoneDigits = String(user?.phone || '').replace(/\D/g, '');
+    if (phoneDigits.length >= 10) {
       navigate('/', { replace: true });
     }
-  }, [isLoggedIn, navigate]);
+  }, [isLoggedIn, user?.phone, navigate]);
 
   useEffect(() => {
     const code = searchParams.get('code');
@@ -75,12 +78,13 @@ export default function OAuthGoogleCallback() {
 
         await completeGoogleAuth(data.user, { isNewUser: data.isNewUser });
 
+        const needsPhone = !String(data.user?.phone || '').replace(/\D/g, '');
         showToast(
           data.isNewUser
             ? 'Welcome to OddsYra!'
             : `Welcome back, ${data.user?.displayName || 'player'}!`,
         );
-        navigate('/', { replace: true });
+        navigate(needsPhone ? '/complete-profile?welcome=1' : '/', { replace: true });
       } catch {
         sessionStorage.removeItem(storageKey);
         setError('Google sign-in failed. Please try again.');

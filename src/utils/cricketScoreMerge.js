@@ -1,6 +1,6 @@
-import { normalizeCricbuzzOvers, oversToBalls } from './oversUtils';
-import { flattenCricketTeamScores, resolveCricketTeamScores } from './cricketScores';
-import { isPlaceholderPlayerName } from './cricketPlayers';
+import { normalizeCricbuzzOvers, oversToBalls } from './oversUtils.js';
+import { flattenCricketTeamScores, isCricketSecondInnings, resolveCricketTeamScores } from './cricketScores.js';
+import { isPlaceholderPlayerName } from './cricketPlayers.js';
 
 function batterStatWeight(player) {
   if (!player || typeof player === 'string') return 0;
@@ -67,22 +67,25 @@ function pickMonotonicInt(prev, next) {
 export function mergeCricketLiveDetails(prev = {}, next = {}, match = null) {
   const merged = { ...prev, ...next };
 
-  // Check if second innings has genuinely started
-  const isSecondInnings = (next.inningsId != null && next.inningsId >= 2)
-    || (prev.inningsId != null && prev.inningsId >= 2)
-    || (next.chaseRuns != null && next.chaseRuns > 0)
-    || (prev.chaseRuns != null && prev.chaseRuns > 0)
-    || (next.chaseOvers && next.chaseOvers !== '0.0')
-    || (next.wickets2 != null && next.wickets2 > 0)
-    || (prev.wickets2 != null && prev.wickets2 > 0);
+  // Never treat wickets2/score2 alone as chase (away batting first)
+  const probe = { liveDetails: merged, team1: match?.team1, team2: match?.team2, matchState: match?.matchState, isLive: match?.isLive };
+  const isSecondInnings = isCricketSecondInnings(probe, merged)
+    || (Number(next.inningsId) >= 2)
+    || (Number(prev.inningsId) >= 2)
+    || (Number(next.chaseRuns) > 0)
+    || (Number(prev.chaseRuns) > 0);
 
   if (!isSecondInnings) {
     merged.chaseRuns = undefined;
     merged.chaseWickets = undefined;
     merged.chaseOvers = undefined;
-    merged.score2 = 0;
-    merged.wickets2 = 0;
-    merged.overs2 = '0.0';
+    if (Number(merged.inningsId) !== 2) merged.chaseTeamName = undefined;
+    // Keep team-aligned score2/wickets2; never invent chase from them
+    merged.score2 = next.score2 ?? prev.score2 ?? 0;
+    merged.wickets2 = next.wickets2 ?? prev.wickets2 ?? 0;
+    merged.overs2 = (Number(merged.inningsId) === 1 || merged.inningsId == null)
+      ? '0.0'
+      : (next.overs2 ?? prev.overs2 ?? '0.0');
 
     const prevFirst = prev.firstRuns ?? prev.runs;
     const nextFirst = next.firstRuns ?? next.runs;
@@ -105,7 +108,17 @@ export function mergeCricketLiveDetails(prev = {}, next = {}, match = null) {
     merged.score2 = merged.chaseRuns ?? 0;
     merged.wickets2 = merged.chaseWickets;
     merged.overs2 = normalizeCricbuzzOvers(merged.chaseOvers);
-    merged.chaseBallNbr = next.chaseBallNbr ?? prev.chaseBallNbr;
+    // Reset stale first-innings chaseBallNbr when chase is at 0.0 / 0 runs
+    const chaseOversStr = String(merged.chaseOvers || '').trim();
+    const chaseAtStart = (chaseOversStr === '0' || chaseOversStr === '0.0')
+      && Number(merged.chaseRuns || 0) === 0;
+    if (next.chaseBallNbr != null) {
+      merged.chaseBallNbr = next.chaseBallNbr;
+    } else if (chaseAtStart) {
+      merged.chaseBallNbr = 0;
+    } else {
+      merged.chaseBallNbr = prev.chaseBallNbr;
+    }
     merged.inningsId = next.inningsId ?? prev.inningsId ?? 2;
     merged.runs = merged.firstRuns ?? prev.runs;
     merged.wickets = merged.firstWickets ?? prev.wickets;

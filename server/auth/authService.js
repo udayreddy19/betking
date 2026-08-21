@@ -918,3 +918,70 @@ export async function changePassword(queryFn, userId, currentPassword, newPasswo
 
   return { success: true, message: 'Password changed successfully.' };
 }
+
+/**
+ * Complete missing profile fields after Google sign-in (phone required, promo optional).
+ */
+export async function completeProfile(queryFn, userId, { phone, promoCode } = {}) {
+  if (!userId) {
+    return { error: 'Authentication required.', code: 'AUTH_REQUIRED', status: 401 };
+  }
+
+  const existing = await queryFn(
+    `SELECT user_id, phone FROM users WHERE user_id = $1`,
+    [userId],
+  );
+  if (!existing.rows.length) {
+    return { error: 'User not found.', code: 'USER_NOT_FOUND', status: 404 };
+  }
+
+  const currentPhone = existing.rows[0].phone;
+  let promoReward = null;
+
+  try {
+    const { normalizeIndianPhone, assertPhoneAvailable } = await import('../../lib/userIdentity.mjs');
+
+    if (!currentPhone || !String(currentPhone).trim()) {
+      const normalizedPhone = normalizeIndianPhone(phone);
+      if (!normalizedPhone) {
+        return {
+          error: 'Enter a valid 10-digit Indian mobile number.',
+          code: 'INVALID_PHONE',
+          status: 400,
+        };
+      }
+      await assertPhoneAvailable(normalizedPhone, userId);
+      await queryFn(
+        `UPDATE users SET phone = $1, updated_at = NOW() WHERE user_id = $2`,
+        [normalizedPhone, userId],
+      );
+      await safeAuditLog(queryFn, userId, userId, 'PROFILE_PHONE_SET', {
+        phoneLast4: normalizedPhone.slice(-4),
+      });
+    }
+
+    if (String(promoCode || '').trim()) {
+      const { claimSignupPromo } = await import('../../lib/signupPromoCodes.mjs');
+      promoReward = await claimSignupPromo(userId, promoCode);
+    }
+  } catch (err) {
+    if (err.status && err.code) {
+      return { error: err.message, code: err.code, status: err.status };
+    }
+    if (err.code === '23505') {
+      return {
+        error: 'This mobile number is already linked to another account.',
+        code: 'DUPLICATE_PHONE',
+        status: 409,
+      };
+    }
+    throw err;
+  }
+
+  const me = await getMe(queryFn, userId);
+  return {
+    success: true,
+    user: me.user,
+    promoReward,
+  };
+}

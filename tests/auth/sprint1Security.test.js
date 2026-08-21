@@ -13,6 +13,13 @@ describe('Sprint 1 admin TOTP', () => {
     expect(verifyTotp(secret, '000000')).toBe(false);
   });
 
+  it('accepts codes within a ±2 step window', () => {
+    const secret = generateTotpSecret();
+    const at = Date.now();
+    const skewed = generateTotp(secret, { at: at - 60_000 });
+    expect(verifyTotp(secret, skewed, { at })).toBe(true);
+  });
+
   it('round-trips encrypted MFA secrets', () => {
     const secret = generateTotpSecret();
     const boxed = encryptSecret(secret);

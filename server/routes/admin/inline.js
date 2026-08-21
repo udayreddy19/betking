@@ -452,40 +452,202 @@ router.get('/api/admin/db/tables', async (req, res) => {
 
 router.get('/api/admin/db/tables/:tableName', async (req, res) => {
   const tableName = String(req.params.tableName || '');
-  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(tableName)) {
-    return res.status(400).json({ error: 'Invalid table name', code: 'INVALID_TABLE' });
-  }
   try {
     const { query } = await import('../../../db/pg.js');
-    const exists = await query(
-      `SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = $1`,
-      [tableName],
-    );
-    if (!exists.rows.length) {
-      return res.status(404).json({ error: 'Table not found' });
-    }
+    const {
+      assertPublicTable,
+      getTableColumns,
+      getPrimaryKeyColumns,
+      HIDDEN_COLUMNS,
+      DELETE_BLOCKED_TABLES,
+    } = await import('../../../lib/adminDbBrowser.mjs');
 
-    // Column definitions
-    const colsRes = await query(`
-      SELECT column_name, data_type 
-      FROM information_schema.columns 
-      WHERE table_schema = 'public' AND table_name = $1
-      ORDER BY ordinal_position ASC;
-    `, [tableName]);
-
-    const safeCols = colsRes.rows.filter((col) => !['password_hash', 'password', 'refresh_token_hash'].includes(col.column_name));
+    await assertPublicTable(query, tableName);
+    const allCols = await getTableColumns(query, tableName);
+    const primaryKey = await getPrimaryKeyColumns(query, tableName);
+    const safeCols = allCols.filter((col) => !HIDDEN_COLUMNS.has(col.column_name));
     const colList = safeCols.map((col) => `"${col.column_name}"`).join(', ') || '*';
-    const rowsRes = await query(`SELECT ${colList} FROM "${tableName}" LIMIT 100`);
+    const countRes = await query(`SELECT COUNT(*)::int AS c FROM "${tableName}"`);
+    const rowsRes = await query(`SELECT ${colList} FROM "${tableName}" LIMIT 200`);
+    const canMutate = primaryKey.length > 0;
 
     res.json({
       success: true,
       tableName,
       columns: safeCols,
+      primaryKey,
+      editable: canMutate,
+      deletable: canMutate && !DELETE_BLOCKED_TABLES.has(tableName),
       rows: rowsRes.rows,
-      totalCount: rowsRes.rows.length,
+      totalCount: countRes.rows[0]?.c ?? rowsRes.rows.length,
+      limit: 200,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+router.patch('/api/admin/db/tables/:tableName', adminAuth, requireRole('SUPER_ADMIN'), async (req, res) => {
+  const tableName = String(req.params.tableName || '');
+  const primaryKey = req.body?.primaryKey && typeof req.body.primaryKey === 'object'
+    ? req.body.primaryKey
+    : null;
+  const updates = req.body?.updates && typeof req.body.updates === 'object'
+    ? req.body.updates
+    : null;
+
+  if (!primaryKey || !updates || !Object.keys(updates).length) {
+    return res.status(400).json({ error: 'primaryKey and updates are required' });
+  }
+
+  try {
+    const { query } = await import('../../../db/pg.js');
+    const {
+      assertPublicTable,
+      getTableColumns,
+      getPrimaryKeyColumns,
+      coerceCellValue,
+      HIDDEN_COLUMNS,
+      READONLY_COLUMNS,
+      isSafeIdent,
+    } = await import('../../../lib/adminDbBrowser.mjs');
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+
+    await assertPublicTable(query, tableName);
+    const pkCols = await getPrimaryKeyColumns(query, tableName);
+    if (!pkCols.length) {
+      return res.status(400).json({ error: 'This table has no primary key and cannot be edited safely.' });
+    }
+    for (const col of pkCols) {
+      if (!(col in primaryKey)) {
+        return res.status(400).json({ error: `Missing primary key field: ${col}` });
+      }
+    }
+
+    const columns = await getTableColumns(query, tableName);
+    const colMap = Object.fromEntries(columns.map((c) => [c.column_name, c]));
+    const setCols = [];
+    const values = [];
+
+    for (const [key, raw] of Object.entries(updates)) {
+      if (!isSafeIdent(key) || !colMap[key]) {
+        return res.status(400).json({ error: `Unknown column: ${key}` });
+      }
+      if (HIDDEN_COLUMNS.has(key) || READONLY_COLUMNS.has(key) || pkCols.includes(key)) {
+        return res.status(400).json({ error: `Column is not editable: ${key}` });
+      }
+      values.push(coerceCellValue(raw, colMap[key].data_type));
+      setCols.push(`"${key}" = $${values.length}`);
+    }
+
+    if (!setCols.length) {
+      return res.status(400).json({ error: 'No editable fields provided' });
+    }
+
+    const whereParts = [];
+    for (const col of pkCols) {
+      values.push(primaryKey[col]);
+      whereParts.push(`"${col}" = $${values.length}`);
+    }
+
+    const returningCols = columns
+      .filter((c) => !HIDDEN_COLUMNS.has(c.column_name))
+      .map((c) => `"${c.column_name}"`)
+      .join(', ');
+
+    const sql = `
+      UPDATE "${tableName}"
+      SET ${setCols.join(', ')}
+      WHERE ${whereParts.join(' AND ')}
+      RETURNING ${returningCols || '*'}
+    `;
+    const result = await query(sql, values);
+    if (!result.rows.length) {
+      return res.status(404).json({ error: 'Row not found' });
+    }
+
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: tableName,
+      action: 'DB_TABLE_ROW_UPDATE',
+      details: {
+        tableName,
+        primaryKey,
+        updatedColumns: Object.keys(updates),
+      },
+    }).catch(() => null);
+
+    res.json({ success: true, tableName, row: result.rows[0] });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+router.delete('/api/admin/db/tables/:tableName', adminAuth, requireRole('SUPER_ADMIN'), async (req, res) => {
+  const tableName = String(req.params.tableName || '');
+  const primaryKey = req.body?.primaryKey && typeof req.body.primaryKey === 'object'
+    ? req.body.primaryKey
+    : null;
+
+  if (!primaryKey || !Object.keys(primaryKey).length) {
+    return res.status(400).json({ error: 'primaryKey is required' });
+  }
+
+  try {
+    const { query } = await import('../../../db/pg.js');
+    const {
+      assertPublicTable,
+      assertTableDeletable,
+      getPrimaryKeyColumns,
+      HIDDEN_COLUMNS,
+      getTableColumns,
+    } = await import('../../../lib/adminDbBrowser.mjs');
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+
+    await assertPublicTable(query, tableName);
+    assertTableDeletable(tableName);
+
+    const pkCols = await getPrimaryKeyColumns(query, tableName);
+    if (!pkCols.length) {
+      return res.status(400).json({ error: 'This table has no primary key and cannot be deleted safely.' });
+    }
+    for (const col of pkCols) {
+      if (!(col in primaryKey)) {
+        return res.status(400).json({ error: `Missing primary key field: ${col}` });
+      }
+    }
+
+    const values = [];
+    const whereParts = [];
+    for (const col of pkCols) {
+      values.push(primaryKey[col]);
+      whereParts.push(`"${col}" = $${values.length}`);
+    }
+
+    const columns = await getTableColumns(query, tableName);
+    const returningCols = columns
+      .filter((c) => !HIDDEN_COLUMNS.has(c.column_name))
+      .map((c) => `"${c.column_name}"`)
+      .join(', ');
+
+    const result = await query(
+      `DELETE FROM "${tableName}" WHERE ${whereParts.join(' AND ')} RETURNING ${returningCols || '*'}`,
+      values,
+    );
+    if (!result.rows.length) {
+      return res.status(404).json({ error: 'Row not found' });
+    }
+
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: tableName,
+      action: 'DB_TABLE_ROW_DELETE',
+      details: { tableName, primaryKey },
+    }).catch(() => null);
+
+    res.json({ success: true, tableName, deleted: result.rows[0] });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
   }
 });
 
@@ -830,31 +992,51 @@ router.get('/api/admin/support/tickets', async (req, res) => {
   }
 });
 
+router.get('/api/admin/support/tickets/:id', async (req, res) => {
+  try {
+    const { supportEngine } = await import('../../../lib/supportEngine.mjs');
+    const conversation = await supportEngine.getConversationById(req.params.id, 'admin');
+    if (!conversation) return res.status(404).json({ success: false, error: 'Ticket not found' });
+    res.json({ success: true, ticket: conversation, conversation });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 router.post('/api/admin/support/tickets/:id/reply', async (req, res) => {
   const { id } = req.params;
   const { text } = req.body;
   if (!text?.trim()) return res.status(400).json({ success: false, error: 'text required' });
   try {
-    const { query } = await import('../../../db/pg.js');
-    await query(
-      `INSERT INTO support_messages (message_id, conversation_id, sender_type, sender_id, body, created_at)
-       VALUES ($1, $2, 'ADMIN', $3, $4, NOW())`,
-      [`msg_${Date.now()}`, id, req.admin?.id || 'admin', text],
-    ).catch(async () => {
-      await query(
-        `INSERT INTO support_messages (id, conversation_id, sender, message, created_at)
-         VALUES ($1, $2, $3, $4, NOW())`,
-        [`msg_${Date.now()}`, id, req.admin?.id || 'admin', text],
-      ).catch(() => null);
+    const { supportEngine } = await import('../../../lib/supportEngine.mjs');
+    const message = await supportEngine.addMessage(id, {
+      senderId: req.admin?.id || 'admin',
+      senderType: 'admin',
+      messageType: 'ADMIN_MESSAGE',
+      agentName: req.body?.agentName
+        || req.admin?.displayName
+        || req.admin?.name
+        || req.admin?.email
+        || (req.admin?.role === 'SUPPORT_AGENT' ? 'OddsYra Support Agent' : 'OddsYra Support'),
+      text: String(text).trim(),
     });
+    if (!message) {
+      return res.status(404).json({ success: false, error: 'Ticket not found' });
+    }
     const { logAdminAction } = await import('../../middleware/auditLogger.js');
     await logAdminAction({
       actorId: req.admin?.id || 'admin',
       targetId: id,
       action: 'SUPPORT_REPLY',
-      details: { textPreview: String(text).slice(0, 120) },
+      details: { textPreview: String(text).slice(0, 120), messageId: message.messageId || message.id },
     });
-    res.json({ success: true, ticketId: id, reply: text, timestamp: new Date().toISOString() });
+    res.json({
+      success: true,
+      ticketId: id,
+      message,
+      reply: text,
+      timestamp: new Date().toISOString(),
+    });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

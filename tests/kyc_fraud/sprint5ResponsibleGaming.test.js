@@ -50,14 +50,18 @@ describe('Sprint 5 loss limits and reality checks', () => {
 });
 
 describe('Sprint 5 wiring', () => {
-  it('enforces KYC age and RG on cash deposit and bet placement', () => {
+  it('enforces KYC age on withdrawals only (not cash bets or deposits), and RG on deposit and bet placement', () => {
     const place = fs.readFileSync(path.resolve(process.cwd(), 'lib/betPlacementEngine.mjs'), 'utf8');
-    expect(place).toContain('assertRealMoneyKycAge');
+    expect(place).not.toContain('assertRealMoneyKycAge');
     expect(place).toContain('validateBetPlacementAttempt');
 
     const deposit = fs.readFileSync(path.resolve(process.cwd(), 'lib/depositEngine.mjs'), 'utf8');
-    expect(deposit).toContain('assertRealMoneyKycAge');
+    expect(deposit).not.toContain('assertRealMoneyKycAge');
     expect(deposit).toContain('validateDepositAttempt');
+
+    const withdraw = fs.readFileSync(path.resolve(process.cwd(), 'lib/withdrawalEngine.mjs'), 'utf8');
+    expect(withdraw).toContain('assertRealMoneyKycAge');
+    expect(withdraw).toContain('requireVerifiedIdentity');
 
     const auth = fs.readFileSync(path.resolve(process.cwd(), 'server/auth/authService.js'), 'utf8');
     expect(auth).toContain('startSession');

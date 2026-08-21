@@ -57,6 +57,14 @@ export default function Profile() {
     if (tab) setActiveTab(tab);
   }, [searchParams]);
 
+  useEffect(() => {
+    if (window.location.hash !== '#kyc') return undefined;
+    const timer = window.setTimeout(() => {
+      document.getElementById('kyc')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [activeTab]);
+
   const selectTab = (tab) => {
     setActiveTab(tab);
     const next = new URLSearchParams(searchParams);

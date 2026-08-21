@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { adminApiClient } from '../api/adminApiClient';
 import AdminDataTable from '../components/AdminDataTable';
 import { useAdminToast } from '../components/AdminToastContext';
+import DatabaseInspector from '../../../components/DatabaseInspector/DatabaseInspector';
 
 export default function PlatformDomainView({ subModule = 'feature-flags' }) {
   const [apiKeys, setApiKeys] = useState([]);
@@ -10,6 +11,7 @@ export default function PlatformDomainView({ subModule = 'feature-flags' }) {
   const { showToast } = useAdminToast();
 
   useEffect(() => {
+    if (subModule === 'database-tables') return undefined;
     let cancelled = false;
     adminApiClient.get('/platform/apikeys')
       .then((data) => {
@@ -25,7 +27,7 @@ export default function PlatformDomainView({ subModule = 'feature-flags' }) {
         setError(err.message || 'Failed to load platform config');
       });
     return () => { cancelled = true; };
-  }, []);
+  }, [subModule]);
 
   const toggleFlag = (flagKey) => {
     const current = featureFlags.find((f) => f.key === flagKey);
@@ -38,6 +40,21 @@ export default function PlatformDomainView({ subModule = 'feature-flags' }) {
         showToast(err.message || 'Flag toggle failed', 'error');
       });
   };
+
+  if (subModule === 'database-tables') {
+    return (
+      <div>
+        <div style={{ marginBottom: '16px' }}>
+          <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>11 · Database Tables</h2>
+          <p style={{ margin: '4px 0 0', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+            Browse and edit live PostgreSQL tables. Sensitive auth columns stay hidden;
+            Edit is available on rows with a primary key (SUPER_ADMIN).
+          </p>
+        </div>
+        <DatabaseInspector />
+      </div>
+    );
+  }
 
   const heading = subModule === 'api-keys'
     ? '11 · Developer API Keys'

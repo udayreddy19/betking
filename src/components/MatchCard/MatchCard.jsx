@@ -79,7 +79,7 @@ export default function MatchCard({ match, variant = 'default' }) {
   const handleOddsClick = (e, selection, odds) => {
     e.stopPropagation();
     if (!canBet) return;
-    addBet(match, selection, Number(odds));
+    addBet(match, selection, Number(odds), undefined, { marketId: 'match_winner', marketName: 'Match Winner' });
   };
 
   const openDetails = (e) => {

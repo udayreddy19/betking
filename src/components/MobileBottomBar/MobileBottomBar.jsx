@@ -13,12 +13,13 @@ import {
   NavMenuIcon,
   NavBetslipIcon,
 } from './MobileNavIcons';
+import { HiOutlineUser } from '../../icons';
 import './MobileBottomBar.css';
 
 export default function MobileBottomBar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { toggleSidebar } = useAuth();
+  const { isLoggedIn, toggleSidebar } = useAuth();
   const { betCount, openMobileBetslip } = useBetSlip();
 
   const navItems = [
@@ -28,7 +29,9 @@ export default function MobileBottomBar() {
     CASINO_ENABLED
       ? { label: 'Casino', path: '/casino', icon: NavCasinoIcon }
       : { label: 'Promos', path: '/promotions', icon: NavPromotionsIcon },
-    { label: 'VIP', path: '/vip', icon: NavVipIcon, isVip: true },
+    isLoggedIn
+      ? { label: 'Profile', path: '/profile', icon: HiOutlineUser, isProfile: true }
+      : { label: 'VIP', path: '/vip', icon: NavVipIcon, isVip: true },
   ];
 
   return (
@@ -42,7 +45,7 @@ export default function MobileBottomBar() {
             <motion.button
               key={item.path}
               type="button"
-              className={`mobile-bar-item ${isActive ? 'active' : ''} ${item.isVip ? 'vip-item' : ''}`}
+              className={`mobile-bar-item ${isActive ? 'active' : ''} ${item.isVip ? 'vip-item' : ''} ${item.isProfile ? 'profile-item' : ''}`}
               onClick={() => navigate(item.path)}
               whileTap={{ scale: 0.88 }}
             >

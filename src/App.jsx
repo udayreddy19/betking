@@ -23,6 +23,7 @@ import GamePlayModal from './components/GamePlayModal/GamePlayModal';
 import LiveChatSupportWidget from './components/LiveChatSupportWidget/LiveChatSupportWidget';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import RouteSeo from './components/RouteSeo/RouteSeo';
+import PhoneRequiredGate from './components/PhoneRequiredGate/PhoneRequiredGate';
 import { getAdminSessionState } from './utils/adminSession';
 import { CASINO_ENABLED } from './utils/featureFlags';
 
@@ -40,6 +41,7 @@ import NotFound from './pages/Legal/NotFound';
 const VerifyEmailPage = lazy(() => import('./pages/Auth/VerifyEmailPage'));
 const ResetPasswordPage = lazy(() => import('./pages/Auth/ResetPasswordPage'));
 const OAuthGoogleCallback = lazy(() => import('./pages/Auth/OAuthGoogleCallback'));
+const CompleteProfile = lazy(() => import('./pages/Auth/CompleteProfile'));
 
 const Sports = lazy(() => import('./pages/Sports/Sports'));
 const Casino = lazy(() => import('./pages/Casino/Casino'));
@@ -74,7 +76,7 @@ function AppLayout() {
   const isAdminRoute = location.pathname.startsWith('/admin');
   const isDevRoute = location.pathname.startsWith('/developer') || location.pathname.startsWith('/api-docs');
   const isSportsRoute = location.pathname === '/sports' || location.pathname === '/live-betting';
-  const isRegisterRoute = location.pathname === '/register';
+  const isRegisterRoute = location.pathname === '/register' || location.pathname === '/complete-profile';
   const mainClass = [
     'app-main',
     isAdminRoute ? 'app-main--admin' : '',
@@ -86,6 +88,7 @@ function AppLayout() {
   return (
     <>
       <RouteSeo />
+      <PhoneRequiredGate />
       <Header />
       <ErrorBoundary fallback={null}>
         <Sidebar />
@@ -112,6 +115,7 @@ function AppLayout() {
               <Route path="/fantasy" element={<Fantasy />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/complete-profile" element={<CompleteProfile />} />
               <Route path="/_oauth/google" element={<OAuthGoogleCallback />} />
               <Route path="/verify-email" element={<VerifyEmailPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />

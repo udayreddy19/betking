@@ -16,27 +16,77 @@ async function fetchMyBetsFromServer() {
   return data.bets || [];
 }
 
+function humanizeMarketId(marketId) {
+  const id = String(marketId || '').trim();
+  if (!id) return 'Market';
+  const known = {
+    match_winner: 'Match Winner',
+    match_winner_super_over: 'Match Winner (incl. Super Over)',
+  };
+  if (known[id]) return known[id];
+  return id
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function humanizeSelectionId(selectionId, selectionName) {
+  const name = String(selectionName || '').trim();
+  const id = String(selectionId || '').trim();
+  if (name && !/^sel[_-]/i.test(name) && name !== id) return name;
+  if (id === '1') return 'Home';
+  if (id === '2') return 'Away';
+  if (id === 'X') return 'Draw';
+  if (name && !/^sel[_-]/i.test(name)) return name;
+  return name || id || 'Selection';
+}
+
 function mapServerBetToPlaced(row) {
   const rawStatus = String(row.status || 'pending').toLowerCase();
-  const status = rawStatus === 'accepted' ? 'pending' : rawStatus;
+  let status = rawStatus;
+  if (rawStatus === 'accepted' || rawStatus === 'pending' || rawStatus === 'open') status = 'pending';
+  else if (rawStatus === 'won' || rawStatus === 'win') status = 'won';
+  else if (rawStatus === 'lost' || rawStatus === 'loss') status = 'lost';
+  else if (rawStatus === 'void' || rawStatus === 'push' || rawStatus === 'refunded') status = 'void';
+  else if (rawStatus === 'cashed_out' || rawStatus === 'cashout') status = 'cashed_out';
+  else if (rawStatus === 'settled') {
+    // Legacy rows marked SETTLED without outcome — treat as lost display unless payout implies win
+    const payout = Number(row.potential_payout || 0);
+    status = payout > Number(row.stake || 0) ? 'won' : 'lost';
+  }
+
+  const matchName = row.match_name
+    || row.matchName
+    || (String(row.match_id || '').startsWith('10cric_') ? 'Live match' : null)
+    || (isProviderMatchId(row.match_id) ? 'Live match' : row.match_id);
+  const selectionLabel = humanizeSelectionId(row.selection_id, row.selection_name);
+  const isWon = status === 'won';
+  const isVoid = status === 'void';
   return {
     id: row.bet_id,
     type: row.bet_type === 'ACCUMULATOR' ? 'multi' : 'single',
     legs: [{
+      id: `${row.bet_id}-leg-0`,
       matchId: row.match_id,
-      matchName: row.match_id,
+      matchName,
+      sport: row.sport || 'cricket',
       selection: row.selection_id,
-      selectionName: row.selection_id,
-      marketName: row.market_id,
+      selectionName: selectionLabel,
+      marketName: humanizeMarketId(row.market_id),
+      marketId: row.market_id,
       odds: Number(row.accepted_odds || row.odds),
     }],
     stake: Number(row.stake),
     totalOdds: Number(row.accepted_odds || row.odds),
     potentialReturn: Number(row.potential_payout),
+    payout: isWon ? Number(row.potential_payout || 0) : (isVoid ? Number(row.stake || 0) : 0),
     status,
     placedAt: row.created_at,
     fundSource: row.fund_source || 'cash',
   };
+}
+
+function isProviderMatchId(matchId) {
+  return /^(10cric_|cb_|crex_|fancode_|espn_)/i.test(String(matchId || ''));
 }
 
 function getSelectionName(match, selection, customName) {
@@ -54,7 +104,7 @@ export function BetSlipProvider({ children }) {
   const [bets, setBets] = useState([]);
   const [placedBets, setPlacedBets] = useState([]);
   const [stake, setStake] = useState('');
-  const [betType, setBetType] = useState('multi');
+  const [betType, setBetType] = useState('singles');
   const [singlesStakes, setSinglesStakes] = useState({});
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMyBetsOpen, setIsMyBetsOpen] = useState(false);
@@ -67,11 +117,34 @@ export function BetSlipProvider({ children }) {
       } catch {
         setPlacedBets([]);
       }
-      return;
+      return undefined;
     }
-    fetchMyBetsFromServer().then((rows) => {
+
+    let cancelled = false;
+    const load = async () => {
+      if (!user?.userId && !user?.email) {
+        setPlacedBets([]);
+        return;
+      }
+      try {
+        const rows = await fetchMyBetsFromServer();
+        if (!cancelled) setPlacedBets(rows.map(mapServerBetToPlaced));
+      } catch {
+        if (!cancelled) setPlacedBets([]);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [user?.userId, user?.email]);
+
+  const refreshMyBets = useCallback(async () => {
+    if (DEMO_MODE) return;
+    try {
+      const rows = await fetchMyBetsFromServer();
       setPlacedBets(rows.map(mapServerBetToPlaced));
-    }).catch(() => {});
+    } catch {
+      // keep existing list
+    }
   }, []);
 
   useEffect(() => {
@@ -87,7 +160,8 @@ export function BetSlipProvider({ children }) {
   const openMyBets = useCallback(() => {
     setIsMyBetsOpen(true);
     setIsMobileOpen(false);
-  }, []);
+    void refreshMyBets();
+  }, [refreshMyBets]);
 
   const closeMyBets = useCallback(() => {
     setIsMyBetsOpen(false);
@@ -144,6 +218,7 @@ export function BetSlipProvider({ children }) {
       sport: match.sport,
       selection,
       selectionName: label,
+      marketId: options.marketId || null,
       marketName: options.marketName || 'Match Winner',
       matchTime: options.matchTime || match.time || new Date().toISOString(),
       odds: Number(odds),
@@ -228,7 +303,28 @@ export function BetSlipProvider({ children }) {
 
     if (!DEMO_MODE) {
       try {
-        if (betType === 'multi') {
+        const placeSingle = async (bet, stakeAmount) => {
+          const res = await apiFetch('/api/bets/place', {
+            method: 'POST',
+            headers: { 'X-Idempotency-Key': `single-${bet.id}-${Date.now()}` },
+            body: JSON.stringify({
+              matchId: bet.matchId,
+              marketId: bet.marketId || 'match_winner',
+              selectionId: bet.selection,
+              selectionName: bet.selectionName,
+              stake: stakeAmount,
+              clientOdds: bet.odds,
+              fundSource: stakeSource,
+            }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            return { success: false, error: data.error || 'Bet placement failed' };
+          }
+          return { success: true, data };
+        };
+
+        if (betType === 'multi' && bets.length >= 2) {
           const stakeAmount = parseFloat(stake);
           if (!stakeAmount || stakeAmount <= 0) {
             return { success: false, error: 'Enter a valid stake amount' };
@@ -248,32 +344,19 @@ export function BetSlipProvider({ children }) {
               })),
             }),
           });
-          const data = await res.json();
+          const data = await res.json().catch(() => ({}));
           if (!res.ok) {
             return { success: false, error: data.error || 'Bet placement failed' };
           }
         } else {
+          // Singles mode, or multi with only one leg — place as singles.
           for (const bet of bets) {
             const stakeAmount = parseFloat(singlesStakes[bet.id] || stake || 0);
             if (!stakeAmount || stakeAmount <= 0) {
               return { success: false, error: `Enter stake for "${bet.selectionName}"` };
             }
-            const res = await apiFetch('/api/bets/place', {
-              method: 'POST',
-              headers: { 'X-Idempotency-Key': `single-${bet.id}-${Date.now()}` },
-              body: JSON.stringify({
-                matchId: bet.matchId,
-                marketId: bet.marketId || 'match_winner',
-                selectionId: bet.selection,
-                stake: stakeAmount,
-                clientOdds: bet.odds,
-                fundSource: stakeSource,
-              }),
-            });
-            const data = await res.json();
-            if (!res.ok) {
-              return { success: false, error: data.error || 'Bet placement failed' };
-            }
+            const placed = await placeSingle(bet, stakeAmount);
+            if (!placed.success) return placed;
           }
         }
 
@@ -462,6 +545,7 @@ export function BetSlipProvider({ children }) {
     openMyBets,
     closeMyBets,
     toggleMyBets,
+    refreshMyBets,
   }), [
     bets,
     placedBets,
@@ -486,6 +570,7 @@ export function BetSlipProvider({ children }) {
     openMyBets,
     closeMyBets,
     toggleMyBets,
+    refreshMyBets,
   ]);
 
   return (

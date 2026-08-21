@@ -41,15 +41,49 @@ router.get('/api/bets/mine', requireAuth, async (req, res) => {
   try {
     const { queryRead } = await import('../../db/pg.js');
     const result = await queryRead(
-      `SELECT bet_id, user_id, match_id, market_id, selection_id, stake, odds, accepted_odds,
-              potential_payout, bet_type, status, created_at, COALESCE(fund_source, 'cash') AS fund_source
-       FROM bets
-       WHERE user_id = $1
-       ORDER BY created_at DESC
+      `SELECT b.bet_id, b.user_id, b.match_id, b.market_id, b.selection_id, b.stake, b.odds, b.accepted_odds,
+              b.potential_payout, b.bet_type, b.status, b.created_at, COALESCE(b.fund_source, 'cash') AS fund_source,
+              bs.selection_name AS selection_name
+       FROM bets b
+       LEFT JOIN LATERAL (
+         SELECT selection_name
+         FROM bet_selections
+         WHERE bet_id = b.bet_id
+         ORDER BY created_at ASC
+         LIMIT 1
+       ) bs ON TRUE
+       WHERE b.user_id = $1
+       ORDER BY b.created_at DESC
        LIMIT 100`,
       [req.user.userId],
     );
-    res.json({ success: true, bets: result.rows });
+
+    // Best-effort match titles from live feed (so UI never shows raw provider IDs like 10cric_…).
+    let matchTitles = {};
+    try {
+      const { getCachedAggregatedLiveScores } = await import('../../lib/aggregator.mjs');
+      const list = Array.isArray(getCachedAggregatedLiveScores()?.matches)
+        ? getCachedAggregatedLiveScores().matches
+        : [];
+      for (const m of list) {
+        const id = String(m.id || m.matchId || '');
+        if (!id) continue;
+        const t1 = m.team1?.name || m.team1?.shortName || m.homeTeam?.name;
+        const t2 = m.team2?.name || m.team2?.shortName || m.awayTeam?.name;
+        if (t1 && t2) matchTitles[id] = `${t1} vs ${t2}`;
+        else if (m.league) matchTitles[id] = String(m.league);
+      }
+    } catch {
+      matchTitles = {};
+    }
+
+    const bets = (result.rows || []).map((row) => ({
+      ...row,
+      match_name: matchTitles[row.match_id] || null,
+      selection_name: row.selection_name || row.selection_id,
+    }));
+
+    res.json({ success: true, bets });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -77,8 +111,18 @@ router.post(['/api/bets/place', '/api/v1/bet/place'], requireAuth, async (req, r
     }
     res.status(statusCode).json({
       error: err.message || 'Bet placement failed',
-      code: err.message?.split(':')[0] || 'BET_PLACEMENT_FAILED',
+      code: err.code || err.message?.split(':')[0] || 'BET_PLACEMENT_FAILED',
     });
+  }
+});
+
+router.post(['/api/bets/sync-settlement', '/api/v1/bets/sync-settlement'], requireAuth, async (req, res) => {
+  try {
+    const { settleOpenBetsFromLiveScores } = await import('../../lib/liveMatchSettlement.mjs');
+    const result = await settleOpenBetsFromLiveScores({ limit: 100 });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

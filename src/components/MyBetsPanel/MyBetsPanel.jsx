@@ -10,11 +10,36 @@ import { teamNameMatches } from '../../utils/cricketScores';
 import { DEMO_MODE } from '../../utils/featureFlags';
 import './MyBetsPanel.css';
 
+function parseOversCompleted(oversStr) {
+  const m = String(oversStr ?? '').trim().match(/^(\d+)(?:\.(\d+))?$/);
+  if (!m) return null;
+  return Number(m[1]);
+}
+
+function isOverMarketExpired(placed, liveMatches) {
+  const leg = placed?.legs?.[0];
+  if (!leg) return false;
+  const market = String(leg.marketId || leg.marketName || '');
+  const nextOver = market.match(/next_over_(\d+)/i) || String(leg.marketName || '').match(/Next Over\s*\((\d+)\)/i);
+  if (!nextOver) return false;
+  const overNum = Number(nextOver[1]);
+  const match = (liveMatches || []).find((m) => String(m.id) === String(leg.matchId));
+  if (!match) return false;
+  const ld = match.liveDetails || {};
+  // Prefer batting overs for current innings — never leaked chase overs in 1st dig
+  const oversStr = (Number(ld.inningsId) >= 2 || Number(ld.chaseRuns) > 0)
+    ? (ld.chaseOvers ?? ld.overs ?? ld.overs2 ?? ld.firstOvers)
+    : (ld.firstOvers ?? ld.overs ?? ld.chaseOvers);
+  const completed = parseOversCompleted(oversStr);
+  return completed != null && completed >= overNum;
+}
+
 const FILTERS = [
   { id: 'all', label: 'All' },
   { id: 'pending', label: 'Open' },
   { id: 'won', label: 'Won' },
   { id: 'lost', label: 'Lost' },
+  { id: 'void', label: 'Void' },
   { id: 'cashed_out', label: 'Cash out' },
 ];
 
@@ -132,10 +157,48 @@ export default function MyBetsPanel() {
     showToast(`Cashed out for ${formatInr(cashed.cashoutAmount || offer)}`, 'success');
   };
 
+  const resolveLegMatch = (leg) => liveMatches.find((m) =>
+    String(m.id) === String(leg.matchId)
+    || String(m.matchId) === String(leg.matchId)
+  );
+
+  const getLegDisplayName = (leg) => {
+    const match = resolveLegMatch(leg);
+    if (match) {
+      const t1 = match.team1?.name || match.team1?.shortName;
+      const t2 = match.team2?.name || match.team2?.shortName;
+      if (t1 && t2) return `${t1} vs ${t2}`;
+      if (match.matchName) return match.matchName;
+    }
+    const raw = String(leg.matchName || '');
+    if (/^(10cric_|cb_|crex_|fancode_)/i.test(raw) || raw === leg.matchId) {
+      return 'Live match';
+    }
+    return leg.matchName || 'Match';
+  };
+
+  const getLegSelectionLabel = (leg) => {
+    const match = resolveLegMatch(leg);
+    const id = String(leg.selection || '');
+    if (match) {
+      if (id === '1' && match.team1?.name) return match.team1.name;
+      if (id === '2' && match.team2?.name) return match.team2.name;
+      if (id === 'X') return 'Draw';
+      const markets = match.markets || match.odds?.markets || [];
+      for (const market of markets) {
+        const sels = market.selections || market.outcomes || [];
+        const hit = sels.find((s) => String(s.id || s.selectionId) === id);
+        if (hit?.name || hit?.label) return hit.name || hit.label;
+      }
+    }
+    const name = String(leg.selectionName || '');
+    if (name && !/^sel[_-]/i.test(name)) return name;
+    return name || id || 'Selection';
+  };
+
   const getLegScoreText = (leg) => {
-    const match = liveMatches.find((m) =>
-      String(m.id) === String(leg.matchId) ||
-      m.matchName?.toLowerCase().includes(leg.matchName?.toLowerCase())
+    const match = resolveLegMatch(leg) || liveMatches.find((m) =>
+      m.matchName?.toLowerCase().includes(String(leg.matchName || '').toLowerCase())
     );
 
     const ld = match?.liveDetails || leg.liveDetails || {};
@@ -209,7 +272,8 @@ export default function MyBetsPanel() {
             </div>
           ) : (
             filtered.map((placed) => {
-              const cashoutOffer = getCashoutOffer(placed, user?.loyaltyTier);
+              const expiredOverMarket = isOverMarketExpired(placed, liveMatches);
+              const cashoutOffer = expiredOverMarket ? 0 : getCashoutOffer(placed, user?.loyaltyTier);
               return (
                 <div className={`my-bets-card my-bets-card--${placed.status || 'pending'}`} key={placed.id}>
                   <div className="my-bets-card-top">
@@ -238,11 +302,11 @@ export default function MyBetsPanel() {
                       >
                         <div className="my-bets-market">{leg.marketName}</div>
                         <div className="my-bets-selection-row">
-                          <span className="my-bets-selection">{leg.selectionName}</span>
+                          <span className="my-bets-selection">{getLegSelectionLabel(leg)}</span>
                           <span className="my-bets-odds">{Number(leg.odds).toFixed(2)}</span>
                         </div>
                         <div className="my-bets-match-row">
-                          <span className="my-bets-match-name">{leg.matchName}</span>
+                          <span className="my-bets-match-name">{getLegDisplayName(leg)}</span>
                           {scoreText && <span className="my-bets-score-badge">{scoreText}</span>}
                           <span className="my-bets-match-link-icon">↗</span>
                         </div>
@@ -268,6 +332,12 @@ export default function MyBetsPanel() {
                     <div className="my-bets-summary my-bets-summary--won">
                       <span className="label">Payout</span>
                       <span className="value">₹{placed.payout.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {placed.status === 'void' && (
+                    <div className="my-bets-summary my-bets-summary--won">
+                      <span className="label">Refunded</span>
+                      <span className="value">₹{(placed.payout || placed.stake || 0).toFixed(2)}</span>
                     </div>
                   )}
                   {placed.status === 'cashed_out' && (

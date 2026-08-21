@@ -8,6 +8,7 @@ import {
   canBetWithBonusOnLegs,
 } from '../../utils/wageringRules';
 import { DEMO_MODE } from '../../utils/featureFlags';
+import { cleanKycMessage, isKycError, KYC_PROFILE_PATH } from '../../utils/kycUi';
 import './BetSlipFooter.css';
 
 const QUICK_STAKES = [100, 500, 1000];
@@ -103,7 +104,13 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
             winningsSpent: deducted.winningsSpent,
           });
         }
-        showToast(result.error || 'Could not place bet.', 'error');
+        if (isKycError(result.error)) {
+          showToast(cleanKycMessage(result.error) || 'Verify your identity before withdrawing.', 'error', {
+            action: { label: 'Proceed to KYC', path: KYC_PROFILE_PATH },
+          });
+        } else {
+          showToast(result.error || 'Could not place bet.', 'error');
+        }
         return;
       }
 

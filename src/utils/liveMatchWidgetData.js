@@ -291,8 +291,23 @@ export function buildStatsOvers(_fieldState, match) {
   const rows = apiOverHistoryRows(match);
   const ld = match?.liveDetails || {};
   const isChasing = isCricketSecondInnings(match, ld);
-  const battingScore = isChasing ? (ld.score2 ?? ld.chaseRuns ?? 0) : (ld.runs ?? ld.firstRuns ?? 0);
-  const battingWickets = isChasing ? (ld.wickets2 ?? ld.chaseWickets ?? 0) : (ld.wickets ?? ld.firstWickets ?? 0);
+  const resolved = resolveCricketTeamScores(match, ld);
+  let battingSide = resolved.team1;
+  if (isChasing) {
+    if (ld.chaseTeamName && teamNameMatches(resolved.team1.name || resolved.team1.token, ld.chaseTeamName)) {
+      battingSide = resolved.team1;
+    } else if (ld.chaseTeamName && teamNameMatches(resolved.team2.name || resolved.team2.token, ld.chaseTeamName)) {
+      battingSide = resolved.team2;
+    } else if (ld.firstTeamName && teamNameMatches(resolved.team1.name || resolved.team1.token, ld.firstTeamName)) {
+      battingSide = resolved.team2;
+    } else {
+      battingSide = resolved.team2.runs > 0 || resolved.team2.balls > 0 ? resolved.team2 : resolved.team1;
+    }
+  } else if ((resolved.team2.runs > 0 || resolved.team2.balls > 0) && resolved.team1.runs === 0) {
+    battingSide = resolved.team2;
+  }
+  const battingScore = Number(ld.chaseRuns ?? ld.runs ?? battingSide.runs) || battingSide.runs || 0;
+  const battingWickets = Number(ld.chaseWickets ?? ld.wickets ?? battingSide.wickets) || battingSide.wickets || 0;
 
   if (rows.length) {
     return rows.slice(-4).reverse().map((row) => {

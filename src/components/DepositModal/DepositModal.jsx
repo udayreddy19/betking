@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { IoClose, FiArrowRight, FiAlertCircle, FiCheck } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
@@ -8,6 +9,7 @@ import { UpiLogo, GPayLogo, PhonePeLogo, PaytmLogo, BhimLogo } from '../PaymentL
 import RupeeSymbol from '../RupeeSymbol/RupeeSymbol';
 import { apiFetch, fetchMe } from '../../utils/apiClient';
 import { DEMO_MODE } from '../../utils/featureFlags';
+import { cleanKycMessage, isKycError, KYC_PROFILE_PATH } from '../../utils/kycUi';
 import './DepositModal.css';
 
 async function waitForWalletCredit(refreshWallet, startBalance, attempts = 12) {
@@ -22,6 +24,7 @@ async function waitForWalletCredit(refreshWallet, startBalance, attempts = 12) {
 
 export default function DepositModal() {
   const { isDepositModalOpen, closeDepositModal, refreshWallet, addFunds, user } = useAuth();
+  const navigate = useNavigate();
   const [amount, setAmount] = useState('1000');
   const [upiId, setUpiId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -41,6 +44,20 @@ export default function DepositModal() {
     closeDepositModal();
   };
 
+  const goToKyc = () => {
+    handleClose();
+    navigate(KYC_PROFILE_PATH);
+  };
+
+  const kycIncomplete = String(user?.kycStatus || '').toUpperCase() !== 'VERIFIED';
+  const isKycBanner = isKycError(errorMsg) || (!errorMsg && kycIncomplete && !isSuccess);
+  const bannerText = isKycError(errorMsg)
+    ? cleanKycMessage(errorMsg)
+    : (errorMsg || (kycIncomplete && !isSuccess
+      ? 'Verify your identity (KYC) before withdrawing winnings.'
+      : ''));
+  const showKycCta = isKycBanner;
+
   const openRazorpayRealPayment = async (depositAmt) => {
     setErrorMsg('');
     setIsLoading(true);
@@ -58,7 +75,8 @@ export default function DepositModal() {
       });
       const orderData = await orderRes.json();
       if (!orderRes.ok) {
-        throw new Error(orderData.error || 'Unable to create deposit order');
+        const apiError = orderData.error || orderData.code || 'Unable to create deposit order';
+        throw new Error(apiError);
       }
 
       const activeKey = orderData.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID;
@@ -168,10 +186,17 @@ export default function DepositModal() {
           </div>
 
           <div className="deposit-body">
-            {errorMsg && (
-              <div className="deposit-error-banner">
+            {bannerText && (
+              <div className={`deposit-error-banner${isKycBanner ? ' deposit-error-banner--kyc' : ''}`}>
                 <FiAlertCircle style={{ flexShrink: 0 }} />
-                <span>{errorMsg}</span>
+                <div className="deposit-error-banner-copy">
+                  <span>{bannerText}</span>
+                  {showKycCta && (
+                    <button type="button" className="deposit-kyc-cta" onClick={goToKyc}>
+                      Proceed to KYC <FiArrowRight />
+                    </button>
+                  )}
+                </div>
               </div>
             )}
 
@@ -251,7 +276,7 @@ export default function DepositModal() {
                     whileTap={{ scale: 0.98 }}
                   >
                     {isLoading ? 'Creating secure order…' : (
-                      <>Pay ₹{parseFloat(amount || 0).toLocaleString()} via Razorpay <FiArrowRight /></>
+                      <>Pay ₹{parseFloat(amount || 0).toLocaleString()} <FiArrowRight /></>
                     )}
                   </motion.button>
 

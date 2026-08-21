@@ -81,14 +81,48 @@ describe('OddsEngineV3 — MatchStateValidator', () => {
     expect(result.reason).toContain('runsRequired');
   });
 
-  it('rejects mismatched balls sum', () => {
+  it('detects DETERMINED when target is surpassed (winning six overshoot)', () => {
     const state = createCanonicalMatchState({
       ...baseInput,
-      ballsCompleted: 58,
-      ballsRemaining: 50, // 58 + 50 = 108 != 100
+      team2: { id: 'TRT', name: 'Trent Rockets', runs: 148, wickets: 3, balls: 85 },
+      runsRequired: 0,
+      ballsCompleted: 85,
+      ballsRemaining: 15,
     });
     const result = validateMatchState(state);
-    expect(result.valid).toBe(false);
-    expect(result.reason).toContain('ballsCompleted');
+    expect(result.valid).toBe(true);
+    expect(result.determined).toBe(true);
+    expect(result.winnerId).toBe('TRT');
+  });
+
+  it('detects DETERMINED when chase is mathematically impossible', () => {
+    const state = createCanonicalMatchState({
+      ...baseInput,
+      team2: { id: 'TRT', name: 'Trent Rockets', runs: 98, wickets: 3, balls: 95 },
+      runsRequired: 45,
+      ballsCompleted: 95,
+      ballsRemaining: 5,
+    });
+    const result = validateMatchState(state);
+    expect(result.valid).toBe(true);
+    expect(result.determined).toBe(true);
+    expect(result.winnerId).toBe('OVI');
+  });
+
+  it('detects TIE when scores are level with no balls remaining', () => {
+    const state = createCanonicalMatchState({
+      ...baseInput,
+      team1: { id: 'OVI', name: 'Oval Invincibles', runs: 142, wickets: 5, balls: 100 },
+      team2: { id: 'TRT', name: 'Trent Rockets', runs: 142, wickets: 8, balls: 100 },
+      target: 143,
+      runsRequired: 1,
+      ballsCompleted: 100,
+      ballsRemaining: 0,
+    });
+    const result = validateMatchState(state);
+    expect(result.valid).toBe(true);
+    expect(result.determined).toBe(true);
+    expect(result.tied).toBe(true);
+    expect(result.winnerId).toBeNull();
   });
 });

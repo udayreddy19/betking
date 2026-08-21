@@ -57,7 +57,9 @@ function inferT10FromLive(match) {
   const firstOvers = ld.firstOvers || ((Number(ld.inningsId) || 0) >= 2 ? null : ld.overs);
   if (!oversIsExactly(firstOvers, 10)) return false;
   if ((Number(ld.inningsId) || 0) >= 2) return true;
-  if (Number(ld.chaseRuns) > 0 || Number(ld.score2) > 0) return true;
+  if (Number(ld.chaseRuns) > 0) return true;
+  // Do not use score2 alone — away batting first populates it in innings 1
+  if ((Number(ld.inningsId) || 0) >= 2) return true;
   if (/innings\s*break|end of (?:the )?innings|all out/i.test(String(ld.commentary || ''))) return true;
   return false;
 }

@@ -163,12 +163,16 @@ async function request(endpoint, options = {}) {
 
   if (response.status === 401 && !options._retried) {
     try {
-      // Force a fresh token on 401
       localStorage.removeItem('adminToken');
-      await ensureAdminSession(localStorage.getItem('adminRole') || 'SUPER_ADMIN');
+      // Force bootstrap even if a stale-looking token was cached client-side
+      token = await ensureAdminSession(localStorage.getItem('adminRole') || 'SUPER_ADMIN');
+      if (!token) throw new Error('Admin session bootstrap failed');
       return request(endpoint, { ...options, _retried: true });
-    } catch {
-      // continue to throw below
+    } catch (err) {
+      const error = new Error(err.message || 'Authentication required');
+      error.status = 401;
+      error.code = err.code || 'AUTH_REQUIRED';
+      throw error;
     }
   }
 

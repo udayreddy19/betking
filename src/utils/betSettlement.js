@@ -43,8 +43,17 @@ export function isLegWinner(leg, match) {
     return total <= line;
   }
 
-  const seed = `${leg.id}-${match.id}`.split('').reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
-  return seed % 3 !== 0;
+  const sel = String(leg.selectionName || leg.selection || '');
+  const t1 = match.team1?.name || '';
+  const t2 = match.team2?.name || '';
+  if (t1 && (sel.toLowerCase().includes(String(t1).toLowerCase().slice(0, 3)) || String(leg.selection).toLowerCase().includes('t1'))) {
+    return winner === '1';
+  }
+  if (t2 && (sel.toLowerCase().includes(String(t2).toLowerCase().slice(0, 3)) || String(leg.selection).toLowerCase().includes('t2'))) {
+    return winner === '2';
+  }
+
+  return null;
 }
 
 export function settlePlacedBet(placed, matchesById) {

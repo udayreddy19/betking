@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal, flushSync } from 'react-dom';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ActivityIcon,
@@ -27,6 +27,7 @@ import CommandPalette from '../features/CommandPalette/CommandPalette';
 import ThemeToggle from '../../../components/ThemeToggle/ThemeToggle';
 import { useTheme } from '../../../context/ThemeContext';
 import { startVisibleInterval } from '../utils/visibleInterval';
+import AdminMfaQr from '../components/AdminMfaQr';
 import ControlTowerView from '../domains/ControlTowerView';
 import CustomersDomainView from '../domains/CustomersDomainView';
 import SportsDomainView from '../domains/SportsDomainView';
@@ -182,6 +183,7 @@ const DOMAIN_GROUPS = [
         subModules: [
           { id: 'feature-flags', label: 'System Feature Flags' },
           { id: 'api-keys', label: 'Developer API Keys' },
+          { id: 'database-tables', label: 'Database Tables' },
         ],
       },
       {
@@ -209,6 +211,58 @@ const DOMAIN_GROUPS = [
 ];
 
 const ALL_DOMAINS = DOMAIN_GROUPS.flatMap((g) => g.items);
+const DEFAULT_ADMIN_DOMAIN = 'control-tower';
+const DEFAULT_ADMIN_SUB = 'overview';
+const ADMIN_NAV_STORAGE_KEY = 'adminNavLocation';
+
+function resolveAdminNav(domainId, subModuleId) {
+  const domain = ALL_DOMAINS.find((d) => d.id === domainId) || ALL_DOMAINS.find((d) => d.id === DEFAULT_ADMIN_DOMAIN);
+  const resolvedDomain = domain?.id || DEFAULT_ADMIN_DOMAIN;
+  const subs = domain?.subModules || [];
+  const resolvedSub = subs.some((s) => s.id === subModuleId)
+    ? subModuleId
+    : (subs[0]?.id || DEFAULT_ADMIN_SUB);
+  return { domainId: resolvedDomain, subModuleId: resolvedSub };
+}
+
+function parseAdminPath(pathname) {
+  const parts = String(pathname || '')
+    .replace(/^\/admin\/?/, '')
+    .split('/')
+    .filter(Boolean)
+    .map((p) => decodeURIComponent(p));
+  return {
+    domainId: parts[0] || null,
+    subModuleId: parts[1] || null,
+  };
+}
+
+function adminPathFor(domainId, subModuleId) {
+  return `/admin/${encodeURIComponent(domainId)}/${encodeURIComponent(subModuleId)}`;
+}
+
+function readStoredAdminNav() {
+  try {
+    const raw = sessionStorage.getItem(ADMIN_NAV_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed?.domainId) return resolveAdminNav(parsed.domainId, parsed.subModuleId);
+  } catch { /* ignore */ }
+  try {
+    const domainId = sessionStorage.getItem('adminLandingDomain');
+    const subModuleId = sessionStorage.getItem('adminLandingSubModule');
+    if (domainId) return resolveAdminNav(domainId, subModuleId);
+  } catch { /* ignore */ }
+  return null;
+}
+
+function persistAdminNav(domainId, subModuleId) {
+  try {
+    sessionStorage.setItem(ADMIN_NAV_STORAGE_KEY, JSON.stringify({ domainId, subModuleId }));
+    sessionStorage.setItem('adminLandingDomain', domainId);
+    sessionStorage.setItem('adminLandingSubModule', subModuleId);
+  } catch { /* ignore */ }
+}
 
 export default function AdminShell() {
   return (
@@ -221,29 +275,51 @@ export default function AdminShell() {
 }
 
 function AdminShellInner() {
-  const [activeDomain, setActiveDomain] = useState(() => {
-    try { return sessionStorage.getItem('adminLandingDomain') || 'control-tower'; } catch { return 'control-tower'; }
-  });
-  const [activeSubModule, setActiveSubModule] = useState(() => {
-    try { return sessionStorage.getItem('adminLandingSubModule') || 'overview'; } catch { return 'overview'; }
-  });
-  const [expandedDomains, setExpandedDomains] = useState(() => {
-    const landing = (() => {
-      try { return sessionStorage.getItem('adminLandingDomain'); } catch { return null; }
-    })();
-    return {
-      'control-tower': true,
-      customers: true,
-      ...(landing ? { [landing]: true } : {}),
-    };
-  });
+  const location = useLocation();
+  const navigate = useNavigate();
 
+  const initialNav = (() => {
+    const fromUrl = parseAdminPath(location.pathname);
+    if (fromUrl.domainId) return resolveAdminNav(fromUrl.domainId, fromUrl.subModuleId);
+    return readStoredAdminNav() || resolveAdminNav(DEFAULT_ADMIN_DOMAIN, DEFAULT_ADMIN_SUB);
+  })();
+
+  const [activeDomain, setActiveDomain] = useState(initialNav.domainId);
+  const [activeSubModule, setActiveSubModule] = useState(initialNav.subModuleId);
+  const [expandedDomains, setExpandedDomains] = useState(() => ({
+    'control-tower': true,
+    customers: true,
+    [initialNav.domainId]: true,
+  }));
+
+  const syncAdminLocation = useCallback((domainId, subModuleId, { replace = false } = {}) => {
+    const next = resolveAdminNav(domainId, subModuleId);
+    persistAdminNav(next.domainId, next.subModuleId);
+    const target = adminPathFor(next.domainId, next.subModuleId);
+    if (location.pathname !== target) {
+      navigate(target, { replace });
+    }
+    return next;
+  }, [location.pathname, navigate]);
+
+  // Keep React state aligned when URL changes (refresh, back/forward, deep links).
   useEffect(() => {
-    try {
-      sessionStorage.removeItem('adminLandingDomain');
-      sessionStorage.removeItem('adminLandingSubModule');
-    } catch { /* ignore */ }
-  }, []);
+    const fromUrl = parseAdminPath(location.pathname);
+    if (!fromUrl.domainId) {
+      const stored = readStoredAdminNav() || resolveAdminNav(DEFAULT_ADMIN_DOMAIN, DEFAULT_ADMIN_SUB);
+      syncAdminLocation(stored.domainId, stored.subModuleId, { replace: true });
+      return;
+    }
+    const next = resolveAdminNav(fromUrl.domainId, fromUrl.subModuleId);
+    setActiveDomain(next.domainId);
+    setActiveSubModule(next.subModuleId);
+    setExpandedDomains((prev) => ({ ...prev, [next.domainId]: true }));
+    persistAdminNav(next.domainId, next.subModuleId);
+    const canonical = adminPathFor(next.domainId, next.subModuleId);
+    if (location.pathname !== canonical) {
+      navigate(canonical, { replace: true });
+    }
+  }, [location.pathname, navigate, syncAdminLocation]);
 
   const { activeRole, setActiveRole } = useAdminRole();
   const { isDark } = useTheme();
@@ -334,8 +410,11 @@ function AdminShellInner() {
     let cancelled = false;
     const loadAlerts = () => {
       ensureAdminSession(activeRole)
-        .then(() => adminApiClient.get('/control-tower/metrics'))
-        .then((data) => {
+        .then(() => Promise.all([
+          adminApiClient.get('/control-tower/metrics').catch(() => ({})),
+          adminApiClient.get('/notifications/v2/notifications?unreadOnly=true&limit=40').catch(() => ({ notifications: [] })),
+        ]))
+        .then(([data, notifPayload]) => {
           if (cancelled) return;
           const alerts = [];
           Object.entries(data.providerSources || {}).forEach(([name, status]) => {
@@ -362,15 +441,15 @@ function AdminShellInner() {
               type: 'HIGH',
             });
           }
-          if ((data.openTickets || 0) > 10) {
+          if ((data.openTickets || 0) > 0) {
             alerts.push({
               id: 'tickets',
-              title: 'Support backlog rising',
-              desc: `${data.openTickets} open tickets`,
+              title: 'Open support tickets',
+              desc: `${data.openTickets} ticket(s) awaiting attention`,
               category: 'support',
               domainId: 'support',
               subModuleId: 'ticket-queue',
-              type: 'INFO',
+              type: (data.openTickets || 0) > 10 ? 'HIGH' : 'INFO',
             });
           }
           if ((data.riskAlerts || 0) > 0) {
@@ -384,7 +463,30 @@ function AdminShellInner() {
               type: 'CRITICAL',
             });
           }
-          setLiveAlerts(alerts);
+
+          (notifPayload.notifications || []).forEach((n) => {
+            const isSupport = String(n.category || '').toUpperCase() === 'SUPPORT'
+              || String(n.action_target_type || '') === 'support_conversation';
+            alerts.push({
+              id: n.notification_id,
+              title: n.title || 'Admin alert',
+              desc: n.message || '',
+              category: isSupport ? 'support' : String(n.category || 'ops').toLowerCase(),
+              domainId: isSupport ? 'support' : 'control-tower',
+              subModuleId: isSupport ? 'ticket-queue' : 'overview',
+              type: String(n.priority || 'HIGH').toUpperCase() === 'URGENT' ? 'CRITICAL' : 'HIGH',
+              notificationId: n.notification_id,
+              conversationId: n.action_target_id || null,
+            });
+          });
+
+          // De-dupe by id while keeping newest support alerts visible
+          const seen = new Set();
+          setLiveAlerts(alerts.filter((a) => {
+            if (seen.has(a.id)) return false;
+            seen.add(a.id);
+            return true;
+          }));
         })
         .catch(() => {
           if (!cancelled) setLiveAlerts([]);
@@ -428,17 +530,21 @@ function AdminShellInner() {
       return;
     }
 
+    const nextSub = hasSub ? domain.subModules[0].id : activeSubModule;
     setActiveDomain(domain.id);
     if (hasSub) {
-      setActiveSubModule(domain.subModules[0].id);
+      setActiveSubModule(nextSub);
       setExpandedDomains((prev) => ({ ...prev, [domain.id]: true }));
     }
+    syncAdminLocation(domain.id, nextSub);
     scrollContentToTop();
   };
 
   const handleSubModuleSelect = (domainId, subModuleId) => {
     setActiveDomain(domainId);
     setActiveSubModule(subModuleId);
+    setExpandedDomains((prev) => ({ ...prev, [domainId]: true }));
+    syncAdminLocation(domainId, subModuleId);
     scrollContentToTop();
   };
 
@@ -470,6 +576,7 @@ function AdminShellInner() {
       setActiveSubModule(nextSub);
       setIsAlertsOpen(false);
     });
+    syncAdminLocation(domainId, nextSub);
     scrollContentToTop();
   };
 
@@ -487,6 +594,10 @@ function AdminShellInner() {
   const handleAlertClick = (event, alert) => {
     event.preventDefault();
     event.stopPropagation();
+    if (alert?.notificationId) {
+      adminApiClient.post(`/notifications/v2/notifications/${alert.notificationId}/read`).catch(() => {});
+      setLiveAlerts((prev) => prev.filter((a) => a.id !== alert.id));
+    }
     if (!alert?.domainId) return;
     handleCommandNavigate({
       domainId: alert.domainId,
@@ -793,13 +904,23 @@ function AdminShellInner() {
                       color: 'var(--admin-text)',
                       wordBreak: 'break-all',
                     }}>
-                      <div style={{ fontWeight: 800, marginBottom: 8 }}>Authenticator secret</div>
-                      <code>{mfaSecret}</code>
+                      <div style={{ fontWeight: 800, marginBottom: 10 }}>Set up authenticator</div>
                       {mfaOtpauth && (
-                        <div style={{ marginTop: 8, color: 'var(--admin-text-muted)', fontSize: '0.72rem' }}>
-                          Add this account in Google Authenticator / 1Password using the secret above.
+                        <div style={{ marginBottom: 12 }}>
+                          <AdminMfaQr otpauthUrl={mfaOtpauth} size={200} />
+                          <div style={{ marginTop: 8, color: 'var(--admin-text-muted)', fontSize: '0.72rem', textAlign: 'center' }}>
+                            Scan with Google Authenticator, 1Password, or Authy
+                          </div>
                         </div>
                       )}
+                      <div style={{ fontWeight: 700, marginBottom: 6, fontSize: '0.72rem', color: 'var(--admin-text-muted)' }}>
+                        Or enter this secret manually
+                      </div>
+                      <code style={{ display: 'block', fontSize: '0.78rem' }}>{mfaSecret}</code>
+                      <div style={{ marginTop: 8, color: 'var(--admin-text-muted)', fontSize: '0.72rem' }}>
+                        Delete any old OddsYra Admin entries first, then scan or paste the secret.
+                        Wait for a fresh 6-digit code before confirming.
+                      </div>
                     </div>
                   )}
                   <label style={{ display: 'grid', gap: '6px', fontSize: '0.78rem', fontWeight: 700, color: 'var(--admin-text-muted)' }}>
@@ -813,7 +934,7 @@ function AdminShellInner() {
                       maxLength={8}
                       placeholder="123456"
                       value={adminTotp}
-                      onChange={(e) => setAdminTotp(e.target.value.replace(/\s/g, ''))}
+                      onChange={(e) => setAdminTotp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                       style={{
                         padding: '10px 12px',
                         borderRadius: '8px',
@@ -1167,6 +1288,7 @@ function AdminShellInner() {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
+                            adminApiClient.post('/notifications/v2/notifications/read-all').catch(() => {});
                             setLiveAlerts([]);
                           }}
                           style={{ background: 'none', border: 'none', color: '#60a5fa', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}

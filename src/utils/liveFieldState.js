@@ -1,6 +1,6 @@
-import { isPlaceholderPlayerName } from './cricketPlayers';
-import { isCricketSecondInnings, resolveCricketTeamScores } from './cricketScores';
-import { oversToBalls } from './oversUtils';
+import { isPlaceholderPlayerName } from './cricketPlayers.js';
+import { isCricketSecondInnings, resolveCricketTeamScores } from './cricketScores.js';
+import { oversToBalls } from './oversUtils.js';
 import { getRosterForTeam } from '../data/cricketRosters';
 
 const RUN_SEQUENCE = [1, 0, 2, 1, 4, 1, 0, 1, 2, 6, 1, 1, 4, 0, 2, 1, 3, 1, 0, 4];
@@ -94,12 +94,19 @@ function getBattingTeamIndex(match) {
 
   const { team1, team2 } = resolveCricketTeamScores(match, ld);
   if (isCricketSecondInnings(match, ld)) {
+    // Chase: side with active balls / named chase team
+    const chase = String(ld.chaseTeamName || '').toLowerCase();
+    if (chase && team1.name && chase === String(team1.name).toLowerCase()) return 1;
+    if (chase && team2.name && chase === String(team2.name).toLowerCase()) return 2;
     return oversToBalls(team2.overs) > oversToBalls(team1.overs) ? 2 : 1;
   }
 
   if (team2.balls > 0 && team1.balls === 0) return 2;
-  if (team1.balls > 0) return 1;
-  return (ld.score2 ?? 0) > 0 ? 2 : 1;
+  if (team1.balls > 0 && team2.balls === 0) return 1;
+  // Prefer team card runs — never ld.score2 alone (away-first trap)
+  if ((Number(match?.team2?.runs) || 0) > 0 && (Number(match?.team1?.runs) || 0) === 0) return 2;
+  if ((Number(match?.team1?.runs) || 0) > 0) return 1;
+  return 1;
 }
 
 export function generateOverBalls(matchId, overNum) {

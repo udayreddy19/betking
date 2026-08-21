@@ -149,7 +149,12 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
     e?.stopPropagation?.();
     if (!canBet) return;
     const marketName = typeof arg1 === 'string' && !arg1?.stopPropagation ? arg1 : 'Match Winner';
-    addBet(match, selection, odds, selectionName, { singlePerMatch: true, skipMobileOpen: true, marketName });
+    addBet(match, selection, odds, selectionName, {
+      singlePerMatch: true,
+      skipMobileOpen: true,
+      marketName,
+      marketId: marketName === 'Match Winner' ? 'match_winner' : undefined,
+    });
   };
 
   const propOddsBtnClass = (marketName, label) => {
@@ -423,7 +428,16 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
                             type="button"
                             className={`${propOddsBtnClass(m.title, opt.name)} ${!isOptBettable ? 'locked disabled' : ''}`}
                             disabled={!isOptBettable}
-                            onClick={(e) => isOptBettable && handleOddsClick(e, opt.selection, opt.odds, opt.name)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!isOptBettable) return;
+                              addBet(match, opt.selectionId || opt.selection, opt.odds, opt.name, {
+                                singlePerMatch: true,
+                                skipMobileOpen: true,
+                                marketName: m.title || m.name || 'Match Winner',
+                                marketId: m.marketId || m.id || m.key || 'match_winner',
+                              });
+                            }}
                             style={!isOptBettable ? { opacity: 0.6, cursor: 'not-allowed', background: '#1a2234' } : {}}
                           >
                             <span className="market-label">{opt.name}</span>

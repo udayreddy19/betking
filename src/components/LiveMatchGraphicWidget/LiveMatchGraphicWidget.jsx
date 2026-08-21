@@ -61,6 +61,16 @@ function getInningsInfo(match, team1, team2, resolved) {
     } else if (ld.firstTeamName) {
       // Chasing team is whoever didn't bat first
       battingTeam = teamNameMatches(team1, ld.firstTeamName) ? team2 : team1;
+    } else {
+      // Infer from which side has chase progress on the card
+      const t1Active = (team1Score.runs ?? 0) > 0 || oversToBalls(team1Score.overs) > 0;
+      const t2Active = (team2Score.runs ?? 0) > 0 || oversToBalls(team2Score.overs) > 0;
+      if (t1Active && !t2Active) battingTeam = team1;
+      else if (t2Active && !t1Active) battingTeam = team2;
+      else if ((team1Score.runs ?? 0) > 0 && (team2Score.runs ?? 0) > 0) {
+        // Both scored: lower balls / still batting is chase — prefer team with fewer completed overs if first finished
+        battingTeam = oversToBalls(team1Score.overs) < oversToBalls(team2Score.overs) ? team1 : team2;
+      }
     }
 
     const battingScore = battingTeam === team1 ? team1Score : team2Score;
