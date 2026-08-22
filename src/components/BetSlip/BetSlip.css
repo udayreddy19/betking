@@ -459,6 +459,200 @@
   color: var(--color-text-muted);
 }
 
+/* 10CRIC-inspired betslip enhancements */
+.betslip-settings-panel {
+  margin: 0 10px 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.betslip-settings-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.betslip-settings-panel__head strong {
+  font-size: 0.85rem;
+}
+
+.betslip-settings-panel__close {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+}
+
+.betslip-settings-panel__info {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border-light);
+  font-size: 0.74rem;
+  color: var(--color-text-secondary);
+}
+
+.betslip-settings-panel__info p {
+  margin: 0 0 6px;
+}
+
+.betslip-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.betslip-toggle {
+  width: 42px;
+  height: 24px;
+  border-radius: 999px;
+  border: none;
+  background: var(--color-border);
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+
+.betslip-toggle.is-on {
+  background: var(--color-primary);
+}
+
+.betslip-toggle__knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s ease;
+}
+
+.betslip-toggle.is-on .betslip-toggle__knob {
+  transform: translateX(18px);
+}
+
+.betslip-bet--conflict {
+  opacity: 0.88;
+}
+
+.betslip-bet--odds-updated {
+  border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-border));
+}
+
+.betslip-bet-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  background: #fde8ea;
+  color: #b42318;
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+.betslip-bet-alert--info {
+  background: #e8f4fd;
+  color: #1565a8;
+}
+
+.betslip-bet-alert__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #b42318;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: var(--font-bold);
+  flex-shrink: 0;
+}
+
+.betslip-bet-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
+}
+
+.betslip-bet-match {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+
+.betslip-bet-clear-btn {
+  width: 100%;
+  margin-top: 8px;
+  min-height: 36px;
+  border-radius: 8px;
+  border: 1.5px solid var(--color-text);
+  background: transparent;
+  font-size: 0.82rem;
+  font-weight: var(--font-bold);
+}
+
+.betslip-bet-stake-block {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.betslip-bet-quick-stakes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.betslip-bet-quick-stake {
+  min-height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  font-size: 0.78rem;
+  font-weight: var(--font-bold);
+}
+
+.betslip-bet-quick-stake.is-active {
+  border-color: var(--color-accent, #f5c400);
+  background: color-mix(in srgb, var(--color-accent, #f5c400) 15%, var(--color-surface));
+}
+
+.betslip-bet-winnings {
+  margin: 6px 0 0;
+  text-align: right;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+
+.betslip-bet-winnings strong {
+  color: var(--color-primary);
+}
+
+@media (max-width: 1024px) {
+  .betslip {
+    display: none;
+  }
+}
+
 @media (max-width: 1024px) {
   .betslip {
     display: none;

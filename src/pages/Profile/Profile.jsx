@@ -227,8 +227,12 @@ export default function Profile() {
                 <span className="value">{formatInr(wallet.total)}</span>
               </div>
               <div className="profile-stat">
-                <span className="label">Winnings</span>
-                <span className="value profile-stat__winnings">{formatInr(wallet.winnings)}</span>
+                <span className="label">Cash balance</span>
+                <span className="value">{formatInr(wallet.cashBalance)}</span>
+              </div>
+              <div className="profile-stat">
+                <span className="label">Net profit (lifetime)</span>
+                <span className="value profile-stat__winnings">{formatInr(wallet.netProfit)}</span>
               </div>
               <div className="profile-stat">
                 <span className="label">Bonus / Freebets</span>

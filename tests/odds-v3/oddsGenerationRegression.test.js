@@ -837,7 +837,7 @@ describe('Odds generation regressions', () => {
     expect(ok?.odds).toBe(1.9);
   });
 
-  it('removes Team Total Runs once second innings has started', () => {
+  it('caps Team / Match Total Runs in second innings (chase) instead of removing them', () => {
     const state = buildCanonicalFromMatch({
       id: 'leic_glam',
       sport: 'cricket',
@@ -863,10 +863,16 @@ describe('Odds generation regressions', () => {
     expect(state.battingTeamId).toBe('GLAM');
 
     const snap = generate(state);
-    expect((snap.markets || []).some((m) => m.marketId === 'team_total' && m.status === 'OPEN')).toBe(false);
-    expect((snap.markets || []).some((m) => m.marketId === 'match_total' && m.status === 'OPEN')).toBe(false);
+    expect((snap.markets || []).some((m) => m.marketId === 'team_total' && m.status === 'OPEN')).toBe(true);
+    expect((snap.markets || []).some((m) => m.marketId === 'match_total' && m.status === 'OPEN')).toBe(true);
+    const teamTotal = snap.markets.find((m) => m.marketId === 'team_total' && m.status === 'OPEN');
+    const matchTotal = snap.markets.find((m) => m.marketId === 'match_total' && m.status === 'OPEN');
+    expect(teamTotal?.line).toBeDefined();
+    expect(matchTotal?.line).toBeDefined();
+    if (state.target != null) {
+      expect(teamTotal.line).toBeLessThanOrEqual(state.target + 2.5);
+      expect(matchTotal.line).toBeLessThanOrEqual((state.team1?.runs || 0) + (state.team2?.runs || 0) + state.target + 2.5);
+    }
     expect((snap.markets || []).some((m) => /^team_total_alt_/i.test(m.marketId || '') && m.status === 'OPEN')).toBe(false);
-    expect((snap.markets || []).some((m) => /^(Glamorgan|Leicestershire) Total Runs$/i.test(m.name || '') && m.status === 'OPEN')).toBe(false);
-    expect((snap.markets || []).some((m) => /Total Match Runs/i.test(m.name || '') && m.status === 'OPEN')).toBe(false);
   });
 });

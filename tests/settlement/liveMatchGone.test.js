@@ -176,7 +176,7 @@ describe('next-delivery live settlement', () => {
     expect(res.reason).toBe('delivery_over_past_format');
   });
 
-  it('voids next-delivery when the fixture is no longer in play', () => {
+  it('voids next-delivery when the fixture is scheduled and never started', () => {
     const res = evaluateDeliveryMarketBet({
       market_id: 'i2_next_delivery_wicket_39_1',
       selection_id: 'sel_wkt_no',
@@ -186,9 +186,25 @@ describe('next-delivery live settlement', () => {
       isLive: false,
       matchState: 'pre',
       matchType: 'T20',
+      time: 'Today 18:00',
     });
     expect(res?.outcome).toBe('VOID');
     expect(res.reason).toBe('delivery_not_in_play');
+  });
+
+  it('keeps delivery pending when feed hydration returns an empty pre-match stub', () => {
+    const res = evaluateDeliveryMarketBet({
+      market_id: 'i2_next_delivery_runs_6_4',
+      selection_id: 'sel_del_2',
+      selection_name: '2 Runs',
+    }, {
+      id: 'oy_dc873391-82c6-375f-b63d-9e890a94f193',
+      sport: 'cricket',
+      isLive: false,
+      matchState: 'pre',
+      liveDetails: {},
+    });
+    expect(res).toBeNull();
   });
 
   it('keeps next-delivery open when off ticker but overs/score exist', () => {

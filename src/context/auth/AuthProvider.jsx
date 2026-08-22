@@ -29,7 +29,17 @@ import {
   refreshAccessToken,
 } from '../../utils/apiClient';
 import { DEMO_MODE } from '../../utils/featureFlags';
+import { subscribeLiveChannel } from '../../services/liveFeedSocket';
+import {
+  isFinancialEventForUser,
+  isFinancialWsEventType,
+  shouldApplyFinancialWsEvent,
+} from '../../utils/wsFinancialEvents';
 import { AuthContext } from './authContext';
+import {
+  fetchAuthProviders,
+  getInitialAuthProviders,
+} from '../../utils/authProviders';
 import {
   SESSION_KEY,
   ensureSeedUser,
@@ -50,6 +60,7 @@ export function AuthProvider({ children }) {
   const [finModalType, setFinModalType] = useState(null);
   const [toast, setToast] = useState(null);
   const [transactions, setTransactions] = useState([]);
+  const [authProviders, setAuthProviders] = useState(getInitialAuthProviders);
   const toastTimerRef = useRef(null);
 
   const dismissToast = useCallback(() => {
@@ -62,6 +73,31 @@ export function AuthProvider({ children }) {
     const action = options?.action || null;
     setToast({ message: msg, variant, action });
     toastTimerRef.current = setTimeout(() => setToast(null), action ? 8000 : 4500);
+  }, []);
+
+  useEffect(() => {
+    if (DEMO_MODE) return undefined;
+
+    let cancelled = false;
+    const controller = new AbortController();
+
+    const loadProviders = async (attempt = 0) => {
+      try {
+        const data = await fetchAuthProviders({ signal: controller.signal });
+        if (!cancelled) setAuthProviders(data);
+      } catch (err) {
+        if (cancelled || err?.name === 'AbortError') return;
+        if (attempt < 4) {
+          window.setTimeout(() => loadProviders(attempt + 1), 350 * (attempt + 1));
+        }
+      }
+    };
+
+    loadProviders();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, []);
 
   const setUser = useCallback((next) => {
@@ -162,6 +198,26 @@ export function AuthProvider({ children }) {
     await syncTransactions(session.email);
     return true;
   }, [setUser, syncTransactions]);
+
+  // Authoritative wallet refresh on financial WebSocket events (server is source of truth).
+  useEffect(() => {
+    if (DEMO_MODE || !user?.userId) return undefined;
+    const channel = `user:${user.userId}`;
+    const seenEvents = new Set();
+    const lastTsRef = { current: 0 };
+    return subscribeLiveChannel(channel, (msg) => {
+      const t = msg?.eventType;
+      if (t === 'WS_RECONNECTED') {
+        void refreshWallet();
+        return;
+      }
+      if (!isFinancialWsEventType(t)) return;
+      if (!isFinancialEventForUser(msg, user.userId)) return;
+      const decision = shouldApplyFinancialWsEvent(msg, seenEvents, lastTsRef);
+      if (!decision.apply) return;
+      void refreshWallet();
+    });
+  }, [user?.userId, refreshWallet]);
 
   const register = useCallback(async ({ email, password, displayName, phone, promoCode }) => {
     const normalizedEmail = email.trim().toLowerCase();
@@ -691,7 +747,6 @@ export function AuthProvider({ children }) {
         bonusBalance: (prev.bonusBalance ?? 0) - bonus,
         freebetBalance: (prev.freebetBalance ?? 0) - freebet,
         lockedDepositBalance: (prev.lockedDepositBalance ?? 0) - allocation.fromLocked,
-        winningsBalance: Math.max(0, (prev.winningsBalance ?? 0) - allocation.fromWinnings),
         loyaltyPoints: nextPoints,
         coins: nextPoints,
         rgDayKey: rg.rgDayKey,
@@ -731,7 +786,6 @@ export function AuthProvider({ children }) {
         bonusBalance: (prev.bonusBalance ?? 0) + bonus,
         freebetBalance: (prev.freebetBalance ?? 0) + freebet,
         lockedDepositBalance: (prev.lockedDepositBalance ?? 0) + wagering,
-        winningsBalance: (prev.winningsBalance ?? 0) + winnings,
       };
     });
   }, [setUser]);
@@ -928,9 +982,11 @@ export function AuthProvider({ children }) {
     return { cashCredit, bonusCredit, freebetCredit, winningsCredit };
   }, [setUser, recordTx]);
 
-  const creditCashout = useCallback((amount, betId) => {
+  const creditCashout = useCallback((amount, betId, stake = 0) => {
     const amt = Number(amount) || 0;
+    const st = Number(stake) || 0;
     if (amt <= 0) return false;
+    const profit = parseFloat((amt - st).toFixed(2));
     let email = null;
     setUser(prev => {
       if (!prev) return prev;
@@ -938,7 +994,7 @@ export function AuthProvider({ children }) {
       return {
         ...prev,
         balance: prev.balance + amt,
-        winningsBalance: (prev.winningsBalance ?? 0) + amt,
+        winningsBalance: (prev.winningsBalance ?? 0) + profit,
       };
     });
     if (email) {
@@ -1016,7 +1072,6 @@ export function AuthProvider({ children }) {
       return {
         ...prev,
         balance: prev.balance - amt,
-        winningsBalance: Math.max(0, (prev.winningsBalance ?? 0) - amt),
         bonusBalance: 0,
       };
     });
@@ -1059,7 +1114,7 @@ export function AuthProvider({ children }) {
       return {
         ...prev,
         balance: prev.balance + amt,
-        winningsBalance: (prev.winningsBalance ?? 0) + amt,
+        reservedBalance: Math.max(0, (prev.reservedBalance ?? 0) - amt),
       };
     });
     if (email) {
@@ -1227,6 +1282,7 @@ export function AuthProvider({ children }) {
     addBonus,
     addFreebet,
     transactions,
+    authProviders,
     toast,
     showToast,
     dismissToast,
@@ -1273,6 +1329,7 @@ export function AuthProvider({ children }) {
     addBonus,
     addFreebet,
     transactions,
+    authProviders,
     toast,
     showToast,
     dismissToast,

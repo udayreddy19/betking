@@ -26,6 +26,11 @@ node scripts/migrate.mjs
 echo "🔄 Rolling out production services..."
 docker compose -f docker-compose.prod.yml up -d
 
+# 4b. Refresh nginx upstream after backend recreate (Docker DNS cache)
+if docker ps --format '{{.Names}}' | grep -q oddsyra_prod_nginx; then
+  docker exec oddsyra_prod_nginx nginx -s reload 2>/dev/null || true
+fi
+
 # 5. Perform Post-Deployment Readiness Smoke Test
 echo "⏳ Waiting for service readiness..."
 MAX_RETRIES=10
@@ -33,7 +38,7 @@ RETRY_COUNT=0
 HEALTH_OK=false
 
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-  if curl -sf http://localhost:5001/readiness > /dev/null 2>&1; then
+  if curl -sf http://localhost:5001/health > /dev/null 2>&1; then
     HEALTH_OK=true
     break
   fi

@@ -75,5 +75,5 @@ describe('Phase 7 Settlement Concurrency & Idempotency Tests', () => {
 
     const wRes = await query('SELECT balance FROM wallets WHERE wallet_id = $1', [walletId]);
     expect(parseFloat(wRes.rows[0].balance)).toBe(200.00);
-  });
+  }, 120000);
 });

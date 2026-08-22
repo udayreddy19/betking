@@ -651,6 +651,44 @@ router.delete('/api/admin/db/tables/:tableName', adminAuth, requireRole('SUPER_A
   }
 });
 
+router.post('/api/admin/db/query', adminAuth, requireRole('SUPER_ADMIN'), async (req, res) => {
+  try {
+    const { validateReadOnlySql, fieldsFromResult, rowsFromResult, sqlWithRowCap, MAX_SQL_ROWS } = await import('../../../lib/adminSqlConsole.mjs');
+    const { queryRead } = await import('../../../db/pg.js');
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+
+    const validated = validateReadOnlySql(req.body?.sql);
+    const sql = sqlWithRowCap(validated);
+    const started = Date.now();
+    const result = await queryRead(sql);
+    const { rows, truncated } = rowsFromResult(result, MAX_SQL_ROWS);
+
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: 'sql_console',
+      action: 'DB_SQL_CONSOLE_EXEC',
+      details: {
+        rowCount: rows.length,
+        truncated,
+        durationMs: Date.now() - started,
+        sqlPreview: validated.slice(0, 240),
+      },
+    }).catch(() => null);
+
+    res.json({
+      success: true,
+      fields: fieldsFromResult(result),
+      rows,
+      rowCount: rows.length,
+      truncated,
+      command: result.command,
+      durationMs: Date.now() - started,
+    });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
 router.get('/api/admin/financial/reconciliation', async (req, res) => {
   try {
     const { runFullReconciliationAudit } = await import('../../../lib/reconciliationEngine.mjs');

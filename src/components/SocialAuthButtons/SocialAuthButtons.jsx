@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useAuth } from '../../context/auth/authContext';
 import './SocialAuthButtons.css';
 
 function GoogleIcon() {
@@ -25,25 +26,13 @@ function GoogleIcon() {
 }
 
 export default function SocialAuthButtons({ disabled = false }) {
-  const [googleEnabled, setGoogleEnabled] = useState(false);
+  const { authProviders } = useAuth();
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
+  const googleKnown = authProviders?.google !== null && authProviders?.google !== undefined;
+  const googleEnabled = authProviders?.google !== false;
 
-    fetch('/api/auth/providers')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!cancelled && data?.google) setGoogleEnabled(true);
-      })
-      .catch(() => {});
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  if (!googleEnabled) return null;
+  if (googleKnown && authProviders.google === false) return null;
 
   const handleGoogle = () => {
     if (disabled || loading) return;
@@ -67,9 +56,25 @@ export default function SocialAuthButtons({ disabled = false }) {
 }
 
 export function SocialAuthDivider() {
+  const { authProviders } = useAuth();
+  const googleKnown = authProviders?.google !== null && authProviders?.google !== undefined;
+  if (googleKnown && authProviders.google === false) return null;
   return (
     <div className="social-auth-divider" aria-hidden="true">
       <span>or</span>
     </div>
+  );
+}
+
+/** Google button + divider; hides both when Google sign-in is disabled server-side. */
+export function SocialAuthBlock({ disabled = false }) {
+  const { authProviders } = useAuth();
+  const googleKnown = authProviders?.google !== null && authProviders?.google !== undefined;
+  if (googleKnown && authProviders.google === false) return null;
+  return (
+    <>
+      <SocialAuthButtons disabled={disabled} />
+      <SocialAuthDivider />
+    </>
   );
 }

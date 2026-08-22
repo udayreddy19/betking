@@ -12,7 +12,12 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "fetch-itshover-icons": "node scripts/fetch-itshover-icons.mjs"
+    "fetch-itshover-icons": "node scripts/fetch-itshover-icons.mjs",
+    "financial:reconcile": "node scripts/financial-reconcile.mjs",
+    "settlement:integrity-scan": "node scripts/settlement-integrity-scan.mjs",
+    "financial:document-opening-gaps": "node scripts/document-ledger-opening-gaps.mjs",
+    "financial:reconcile-legacy-opening": "node scripts/reconcile-legacy-opening-balances.mjs",
+    "financial:audit-winnings-reporting": "node scripts/audit-winnings-reporting.mjs"
   },
   "browserslist": [
     "chrome >= 80",

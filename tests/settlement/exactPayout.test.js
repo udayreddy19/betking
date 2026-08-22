@@ -17,7 +17,7 @@ describe('Phase 7 Exact Payout Acceptance Tests', () => {
     await query(`ALTER TABLE bets ADD COLUMN IF NOT EXISTS settled_at TIMESTAMPTZ`);
     await query(`ALTER TABLE bets ADD COLUMN IF NOT EXISTS actual_payout NUMERIC(14,2)`);
     await query(`ALTER TABLE bets ADD COLUMN IF NOT EXISTS settlement_reason TEXT`);
-    await query(`ALTER TABLE bets ADD COLUMN IF NOT EXISTS settlement_version INT DEFAULT 0`);
+    await query(`ALTER TABLE bets ADD COLUMN IF NOT EXISTS winnings_credited NUMERIC(14,2)`);
     await query(`ALTER TABLE bets ADD COLUMN IF NOT EXISTS placement_snapshot JSONB`);
     await query(`INSERT INTO users (user_id, email, password_hash) VALUES ($1, $2, 'hash') ON CONFLICT (user_id) DO NOTHING;`, [userId, `${userId}@example.com`]);
     await query(`DELETE FROM ledger_entries WHERE wallet_id IN (SELECT wallet_id FROM wallets WHERE user_id = $1);`, [userId]);
@@ -34,6 +34,7 @@ describe('Phase 7 Exact Payout Acceptance Tests', () => {
     { stake: 100.00, odds: 1.50, expectedPayout: 150.00 },
     { stake: 100.00, odds: 2.00, expectedPayout: 200.00 },
     { stake: 100.00, odds: 2.50, expectedPayout: 250.00 },
+    { stake: 500.00, odds: 1.06, expectedPayout: 530.00 },
     { stake: 1000.00, odds: 10.00, expectedPayout: 10000.00 },
   ];
 

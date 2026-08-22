@@ -63,6 +63,7 @@ function clearRefreshCookie(res) {
 
 // ── GET /api/auth/providers ──
 router.get('/providers', (req, res) => {
+  res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
   res.json({
     google: getGoogleOAuthConfig().enabled,
   });

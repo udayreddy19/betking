@@ -25,6 +25,7 @@ const dummyAuthFallback = {
   addFreebet: () => { },
   transactions: [],
   finModalType: null,
+  authProviders: { google: null },
 };
 
 export function useAuth() {

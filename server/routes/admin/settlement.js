@@ -146,6 +146,17 @@ router.get('/api/admin/settlement/bet/:betId', requireRole(['ADMIN', 'SUPER_ADMI
   }
 });
 
+router.post('/api/admin/settlement/bet/:betId/repair-winnings', requireRole(['ADMIN', 'SUPER_ADMIN']), async (req, res) => {
+  try {
+    const { withTransaction } = await import('../../../db/pg.js');
+    const { repairUnderCreditedWinningsForBet } = await import('../../../lib/walletSettlement.mjs');
+    const result = await withTransaction((client) => repairUnderCreditedWinningsForBet(req.params.betId, client));
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get('/api/admin/settlement/pending', requireRole(['ADMIN', 'SUPER_ADMIN']), async (req, res) => {
   try {
     const limit = Math.min(Number(req.query.limit) || 100, 500);
@@ -281,6 +292,40 @@ router.post('/api/admin/settlement/reversal/:correctionId/reject', requireRole([
     res.json(result);
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/api/admin/settlement/jobs/:jobId/retry', requireRole(['ADMIN', 'SUPER_ADMIN']), async (req, res) => {
+  try {
+    const { retrySettlementJob } = await import('../../../lib/settlement/settlementQueue.mjs');
+    const row = await retrySettlementJob(req.params.jobId);
+    if (!row) return res.status(404).json({ error: 'Job not found or not retryable' });
+    res.json({ success: true, jobId: row.job_id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/api/admin/settlement/recover-dead-letters', requireRole(['ADMIN', 'SUPER_ADMIN']), async (req, res) => {
+  try {
+    const jobLimit = Math.min(Number(req.body?.jobLimit) || 50, 200);
+    const openBetLimit = Math.min(Number(req.body?.openBetLimit) || 200, 500);
+    const { runSettlementDeadLetterRecovery } = await import('../../../lib/settlement/settlementDeadLetterRecovery.mjs');
+    const result = await runSettlementDeadLetterRecovery({ jobLimit, openBetLimit });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/api/admin/settlement/orphan-open-bets', requireRole(['ADMIN', 'SUPER_ADMIN']), async (req, res) => {
+  try {
+    const limit = Math.min(Number(req.query.limit) || 100, 500);
+    const { findOrphanOpenSettlementBets } = await import('../../../lib/settlement/settlementHealth.mjs');
+    const rows = await findOrphanOpenSettlementBets({ limit });
+    res.json({ count: rows.length, bets: rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

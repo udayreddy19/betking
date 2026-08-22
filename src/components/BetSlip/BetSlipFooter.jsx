@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { useAuth } from '../../context/AuthContext';
 import { getWalletBreakdown, formatInr } from '../../utils/walletBalance';
@@ -17,12 +17,38 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
   const {
     bets, betCount, stake, setStake, totalOdds, potentialReturn, placeBets, clearAll,
     betType, totalStakeAmount, setSingleStake,
+    hasBlockingConflicts, singlesStakes,
   } = useBetSlip();
   const {
     user, isLoggedIn, deductStake, refundStake, showToast, openLoginModal,
   } = useAuth();
   const [isPlacing, setIsPlacing] = useState(false);
   const [stakeSource, setStakeSource] = useState('cash');
+  const [placementNotice, setPlacementNotice] = useState(null);
+  const hasOddsUpdates = bets.some((bet) => bet.oddsChanged);
+
+  useEffect(() => {
+    if (!hasOddsUpdates) {
+      setPlacementNotice(null);
+    }
+  }, [hasOddsUpdates]);
+
+  const oddsNotice = placementNotice
+    || (hasOddsUpdates ? 'Odds updated — review the new prices and tap Place again.' : null);
+
+  const singlesStakeInputValue = (() => {
+    if (betType === 'multi') return stake;
+    const values = bets.map((b) => singlesStakes[b.id]).filter((v) => v != null && v !== '');
+    if (values.length === 0) return stake;
+    const allSame = values.length === bets.length
+      && values.every((v) => String(v) === String(values[0]));
+    return allSame ? String(values[0]) : '';
+  })();
+  const singlesStakePlaceholder = betType === 'singles'
+    && bets.some((b) => singlesStakes[b.id])
+    && !singlesStakeInputValue
+    ? 'Mixed'
+    : '0.00';
 
   if (betCount === 0) return null;
 
@@ -78,7 +104,13 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
       return;
     }
 
+    if (hasBlockingConflicts) {
+      showToast('Some selections are related and cannot be combined in a Multi.', 'error');
+      return;
+    }
+
     setIsPlacing(true);
+    setPlacementNotice(null);
     try {
       const cashAmount = activeSource === 'cash' ? amountToDeduct : 0;
       const bonusAmount = activeSource === 'bonus' ? amountToDeduct : 0;
@@ -108,6 +140,10 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
           showToast(cleanKycMessage(result.error) || 'Verify your identity before withdrawing.', 'error', {
             action: { label: 'Proceed to KYC', path: KYC_PROFILE_PATH },
           });
+        } else if (result.oddsUpdated) {
+          const msg = result.error || 'Odds have been updated. Tap Place again to continue.';
+          setPlacementNotice(msg);
+          showToast(msg, 'info');
         } else {
           showToast(result.error || 'Could not place bet.', 'error');
         }
@@ -210,8 +246,8 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
         </span>
         <input
           type="number"
-          placeholder="0.00"
-          value={stake}
+          placeholder={singlesStakePlaceholder}
+          value={betType === 'multi' ? stake : singlesStakeInputValue}
           onChange={(e) => {
             const value = e.target.value;
             if (betType === 'multi') {
@@ -251,6 +287,12 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
 
         {stakeSourceToggle}
 
+        {oddsNotice && (
+          <div className="betslip-footer-notice" role="status">
+            {oddsNotice}
+          </div>
+        )}
+
         <div className="betslip-modal-row betslip-modal-actions">
           <div className="betslip-modal-quick-stakes">
             {QUICK_STAKES.map(amount => (
@@ -276,7 +318,7 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
           />
           <button
             className={`betslip-place-btn betslip-modal-place-btn ${isPlacing ? 'is-placing' : ''}`}
-            disabled={!stake || parseFloat(stake) < MIN_STAKE_INR || isPlacing}
+            disabled={!stake || parseFloat(stake) < MIN_STAKE_INR || isPlacing || hasBlockingConflicts}
             type="button"
             onClick={handlePlaceBet}
           >
@@ -311,9 +353,15 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
         </div>
       </div>
 
+      {oddsNotice && (
+        <div className="betslip-footer-notice" role="status">
+          {oddsNotice}
+        </div>
+      )}
+
       <button
         className={`betslip-place-btn ${isPlacing ? 'is-placing' : ''}`}
-        disabled={(betType === 'multi' ? (!stake || parseFloat(stake) < MIN_STAKE_INR) : totalStakeAmount < MIN_STAKE_INR) || isPlacing}
+        disabled={(betType === 'multi' ? (!stake || parseFloat(stake) < MIN_STAKE_INR) : totalStakeAmount < MIN_STAKE_INR) || isPlacing || hasBlockingConflicts}
         type="button"
         onClick={handlePlaceBet}
       >

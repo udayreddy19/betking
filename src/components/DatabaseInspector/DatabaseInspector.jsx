@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { FiDatabase, FiRefreshCw, FiSearch } from '../../icons';
 import { adminApiClient } from '../../pages/Admin/api/adminApiClient';
+import DatabaseSqlTerminal from './DatabaseSqlTerminal';
 import './DatabaseInspector.css';
 
 function formatCell(val) {
@@ -551,6 +552,8 @@ export default function DatabaseInspector() {
           </div>
         </div>
       </div>
+
+      <DatabaseSqlTerminal selectedTable={selectedTable} />
 
       {editRow && (
         <div className="db-edit-overlay" role="presentation" onClick={() => !saving && setEditRow(null)}>

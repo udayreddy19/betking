@@ -456,14 +456,141 @@
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
-  width: 280px;
-  max-width: 90vw;
+  width: 300px;
+  max-width: 92vw;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 16px;
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25);
-  padding: 14px;
+  padding: 12px;
   z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.header-wallet-menu__hero {
+  padding: 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-primary) 5%, var(--color-bg));
+  border: 1px solid color-mix(in srgb, var(--color-primary) 10%, var(--color-border));
+}
+
+.header-wallet-menu__hero-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: 2px;
+}
+
+.header-wallet-menu__hero-amount {
+  display: block;
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  margin-bottom: 8px;
+}
+
+.header-wallet-menu__hero-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.header-wallet-menu__chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-light);
+  color: var(--color-text-secondary);
+}
+
+.header-wallet-menu__chip--bonus {
+  color: var(--color-primary);
+  border-color: color-mix(in srgb, var(--color-primary) 25%, var(--color-border));
+}
+
+.header-wallet-menu__chip--freebet {
+  color: #0284c7;
+  border-color: color-mix(in srgb, #0284c7 25%, var(--color-border));
+}
+
+.header-wallet-menu__chip--locked {
+  color: #d97706;
+  border-color: color-mix(in srgb, #f59e0b 30%, var(--color-border));
+  background: color-mix(in srgb, #f59e0b 8%, var(--color-bg));
+}
+
+.header-wallet-menu__withdraw-card {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-light);
+}
+
+.header-wallet-menu__withdraw-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.header-wallet-menu__withdraw-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.header-wallet-menu__withdraw-amount {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #16a34a;
+  font-variant-numeric: tabular-nums;
+}
+
+.header-wallet-menu__withdraw-note {
+  margin: 6px 0 0;
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: var(--color-text-muted, #64748b);
+}
+
+.header-wallet-menu__loyalty--compact {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-light);
+}
+
+.header-wallet-menu__loyalty-compact-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.header-wallet-menu__loyalty-compact-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.header-wallet-menu__loyalty-compact-meta {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  white-space: nowrap;
 }
 
 .header-wallet-menu__row {
@@ -520,8 +647,8 @@
 .header-wallet-menu__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: var(--space-3);
+  gap: 8px;
+  margin-top: 2px;
 }
 
 .header-wallet-menu__deposit,
@@ -579,6 +706,40 @@
   height: 1px;
   background: var(--color-border-light);
   margin: var(--space-2) 0;
+}
+
+.header-wallet-menu__wagering-hint {
+  margin: 0 0 var(--space-2);
+  padding: 0 2px;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--color-text-muted, #64748b);
+}
+
+.header-wallet-menu__total-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 6px 0 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-primary) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+
+.header-wallet-menu__total-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.header-wallet-menu__total-line span:last-child {
+  font-weight: 700;
+  color: var(--color-text);
 }
 
 .header-wallet-menu__loyalty {

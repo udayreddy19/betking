@@ -22,6 +22,7 @@ import {
   FiZap,
 } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
+import { isAdminEligibleUser } from '../../utils/isAdminEligibleUser';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { getLoyaltySummary } from '../../utils/loyaltyPoints';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
@@ -98,7 +99,7 @@ export default function Sidebar() {
                 <HiOutlineDocumentText className="tab-icon" />
                 Account
               </button>
-              {(user?.role === 'admin' || user?.email === 'admin@oddsyra.com') && (
+              {(isAdminEligibleUser(user)) && (
                 <button className="sidebar-tab" onClick={() => { closeSidebar(); navigate('/admin'); }}>
                   <HiOutlineDocumentText className="tab-icon" />
                   Admin

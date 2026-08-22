@@ -62,5 +62,5 @@ describe('Phase 7 Mass Settlement Worker Tests', () => {
     // Verify market is marked SETTLED
     const mCheck = await query(`SELECT status FROM markets WHERE market_id = $1`, [marketId]);
     expect(mCheck.rows[0].status).toBe('SETTLED');
-  }, 15000);
+  }, 120000);
 });

@@ -36,9 +36,9 @@ describe('OddsEngineV3 — Integration & Snapshot Generation', () => {
 
     const marketTypes = snapshot.markets.map(m => m.marketType);
     expect(marketTypes).toContain('MATCH_WINNER');
-    // Team / Match Total Runs are first-innings only — must not stay OPEN in chase
-    expect(snapshot.markets.some((m) => m.marketType === 'TEAM_TOTAL' && m.status === 'OPEN')).toBe(false);
-    expect(snapshot.markets.some((m) => (m.marketType === 'MATCH_TOTAL' || m.marketId === 'match_total') && m.status === 'OPEN')).toBe(false);
+    // Team / Match Total Runs stay OPEN in chase with target-capped lines (AUD-012 / live capping)
+    expect(snapshot.markets.some((m) => m.marketType === 'TEAM_TOTAL' && m.status === 'OPEN')).toBe(true);
+    expect(snapshot.markets.some((m) => (m.marketType === 'MATCH_TOTAL' || m.marketId === 'match_total') && m.status === 'OPEN')).toBe(true);
     expect(marketTypes).toContain('NEXT_DELIVERY_RUNS');
     expect(marketTypes).toContain('PLAYER_SCORE_25');
     // H2H / top batter skipped from compact live until settlement exists (ID reuse risk)

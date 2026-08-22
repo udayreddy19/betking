@@ -15,7 +15,7 @@ test.describe('Staging money flow (register → deposit sandbox → bet → with
         email,
         password,
         firstName: 'E2E Player',
-        phone: '9876543210',
+        phone: `98${String(stamp).slice(-8)}`,
       },
     });
     expect([200, 201]).toContain(signup.status());

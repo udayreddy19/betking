@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { IoCheckmarkCircle, BiWallet, BiMoneyWithdraw, BiHistory, BiTransfer, BiGift } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
-import { getWalletBreakdown, formatInr } from '../../utils/walletBalance';
+import { getWalletBreakdown, formatInr, getWithdrawableHint } from '../../utils/walletBalance';
 import {
   BONUS_MIN_BET_ODDS,
 } from '../../utils/wageringRules';
@@ -20,6 +20,7 @@ export default function FinancialModals({ modalType, onClose }) {
   const { user, withdrawFunds, refundWithdrawal, showToast, transactions } = useAuth();
   const { placedBets } = useBetSlip();
   const wallet = getWalletBreakdown(user);
+  const withdrawableHint = getWithdrawableHint(wallet);
 
   const [withdrawMethod, setWithdrawMethod] = useState('UPI'); // 'UPI' | 'BANK_TRANSFER' | 'PAYTM'
   const [upiId, setUpiId] = useState('');
@@ -181,13 +182,13 @@ export default function FinancialModals({ modalType, onClose }) {
             ) : !canWithdraw ? (
               <>
                 <div className="fin-balance-box">
-                  <div className="fin-balance-label">Winnings (withdrawable)</div>
-                  <div className="fin-balance-amount">{formatInr(wallet.winnings)}</div>
+                  <div className="fin-balance-label">Total balance</div>
+                  <div className="fin-balance-amount">{formatInr(wallet.total)}</div>
                   <p className="fin-withdraw-need">
-                    You need {formatInr(minWithdraw)} in winnings to withdraw.
+                    Withdrawable: {formatInr(wallet.withdrawable)} · minimum {formatInr(minWithdraw)}
                     {wallet.lockedDeposit > 0
-                      ? ` ${formatInr(wallet.lockedDeposit)} from deposits is locked until you wager it.`
-                      : ' Place a bet first — deposits stay locked until they are wagered.'}
+                      ? ` · ${formatInr(wallet.lockedDeposit)} locked until wagered`
+                      : ''}
                   </p>
                 </div>
                 <button type="button" className="fin-btn-secondary" onClick={onClose}>
@@ -197,11 +198,12 @@ export default function FinancialModals({ modalType, onClose }) {
             ) : (
               <form onSubmit={handleRazorpayWithdraw}>
                 <div className="fin-balance-box">
-                  <div className="fin-balance-label">Winnings (withdrawable)</div>
-                  <div className="fin-balance-amount">{formatInr(wallet.winnings)}</div>
-                  {wallet.lockedDeposit > 0 && (
-                    <p className="fin-muted" style={{ fontSize: '0.8rem', marginTop: '6px' }}>
-                      {formatInr(wallet.lockedDeposit)} deposited — wager before it can become winnings
+                  <div className="fin-balance-label">Withdrawable balance</div>
+                  <div className="fin-balance-amount">{formatInr(wallet.withdrawable)}</div>
+                  <p className="fin-balance-hint">{withdrawableHint}</p>
+                  {wallet.freebets > 0 && (
+                    <p className="fin-muted fin-balance-sub">
+                      Includes {formatInr(wallet.freebets)} freebet (not withdrawable).
                     </p>
                   )}
                   {wallet.bonus > 0 && (

@@ -287,6 +287,9 @@ export default function DepositModal() {
                     <span>•</span>
                     <span className="deposit-trust-item">🛡️ Razorpay</span>
                   </div>
+                  <p className="deposit-wager-note">
+                    Deposited funds must be wagered once before they can be withdrawn.
+                  </p>
                 </motion.form>
               )}
             </AnimatePresence>

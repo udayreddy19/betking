@@ -6,6 +6,7 @@ const resolveServerOdds = vi.fn();
 vi.mock('../../lib/oddsQuoteService.mjs', () => ({
   resolveServerOdds: (...args) => resolveServerOdds(...args),
   unwrapServerOddsQuote: (quote) => (quote?.odds != null ? Number(quote.odds) : Number(quote)),
+  loadLiveOddsSnapshot: vi.fn(async () => ({ status: 'OK', markets: [] })),
 }));
 
 vi.mock('../../lib/marketSuspensionEngine.mjs', () => ({

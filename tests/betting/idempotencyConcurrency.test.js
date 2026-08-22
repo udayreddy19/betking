@@ -1,7 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 vi.mock('../../lib/oddsQuoteService.mjs', () => ({
-  resolveServerOdds: vi.fn(async ({ clientOdds }) => Number(clientOdds) || 1.9),
+  resolveServerOdds: vi.fn(async ({ clientOdds }) => ({
+    odds: Number(clientOdds) || 1.9,
+    changed: false,
+    previousOdds: clientOdds != null ? Number(clientOdds) : null,
+  })),
+  unwrapServerOddsQuote: (quote) => (quote?.odds != null ? Number(quote.odds) : Number(quote)),
+  loadLiveOddsSnapshot: vi.fn(async () => ({ status: 'OK', markets: [] })),
 }));
 
 import { betPlacementEngine } from '../../lib/betPlacementEngine.mjs';

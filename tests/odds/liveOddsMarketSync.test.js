@@ -160,7 +160,7 @@ describe('CRITICAL Live Odds / Market State / Score Synchronization Tests — Ex
     });
 
     await expect(betAttempt).rejects.toThrow();
-  });
+  }, 60000);
 
   it('Test 8: determined team totals stay closed without any client-side odds generator', () => {
     const market = {

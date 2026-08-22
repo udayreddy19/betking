@@ -9,6 +9,7 @@
 
 import crypto from 'crypto';
 import { hashPassword, verifyPassword } from './passwordHasher.js';
+import { getWithdrawableAmount, getAvailableBalance } from '../../lib/wageringRules.mjs';
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -623,11 +624,23 @@ export async function getMe(queryFn, userId) {
       currency: u.currency,
       kycStatus: u.kyc_status,
       balance: parseFloat(u.balance || 0),
+      cashBalance: parseFloat(u.balance || 0),
       bonusBalance: parseFloat(u.bonus_balance || 0),
       freebetBalance: parseFloat(u.freebet_balance || 0),
       reservedBalance: parseFloat(u.reserved_balance || 0),
       winningsBalance: parseFloat(u.winnings_balance || 0),
+      winnings: parseFloat(u.winnings_balance || 0),
       lockedDepositBalance: parseFloat(u.locked_deposit_balance || 0),
+      availableBalance: getAvailableBalance({
+        balance: parseFloat(u.balance || 0),
+        reservedBalance: parseFloat(u.reserved_balance || 0),
+      }),
+      withdrawableBalance: getWithdrawableAmount({
+        balance: parseFloat(u.balance || 0),
+        reservedBalance: parseFloat(u.reserved_balance || 0),
+        lockedDepositBalance: parseFloat(u.locked_deposit_balance || 0),
+      }),
+      pendingWithdrawal: parseFloat(u.reserved_balance || 0),
       loyaltyPoints: parseFloat(u.loyalty_points || 0),
       loyaltyTier: u.loyalty_tier || 'BRONZE',
       createdAt: u.created_at,

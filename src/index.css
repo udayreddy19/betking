@@ -117,7 +117,8 @@
   --z-fixed: 300;
   --z-overlay: 400;
   --z-modal: 500;
-  --z-toast: 600;
+  --z-betslip: 1450;
+  --z-toast: 1600;
 
   /* Panels (sports widgets, scorecards) */
   --color-panel: #ffffff;

@@ -109,6 +109,23 @@
   font-size: var(--text-sm);
 }
 
+.profile-stat--wide {
+  grid-column: 1 / -1;
+}
+
+.profile-total-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.profile-total-breakdown__line {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
 .profile-stat__winnings {
   color: #22c55e;
 }

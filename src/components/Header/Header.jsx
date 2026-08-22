@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { HiOutlineMenu, HiOutlineClipboardList, HiOutlineUser, IoGiftOutline, FiChevronDown, FiZap, FiShield, IoNotifications } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
-import { getWalletBreakdown, formatInr } from '../../utils/walletBalance';
+import { getWalletBreakdown, formatInr, getWalletBreakdownLines, getWithdrawableHint } from '../../utils/walletBalance';
 import { getLoyaltySummary, LOYALTY_MIN_REDEEM_POINTS } from '../../utils/loyaltyPoints';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
 import MyBetsPanel from '../MyBetsPanel/MyBetsPanel';
@@ -15,6 +15,7 @@ import AnimatedMotionGiftIcon from '../AnimatedMotionGiftIcon/AnimatedMotionGift
 import { ODDS_FORMAT_OPTIONS } from '../../utils/oddsFormatter';
 import { storageGet, storageSet } from '../../utils/browserCompat';
 import { hasValidAdminSession } from '../../utils/adminSession';
+import { isAdminEligibleUser } from '../../utils/isAdminEligibleUser';
 import { apiFetch } from '../../utils/apiClient';
 import '../MyBetsPanel/MyBetsPanel.css';
 import '../PromotionsPanel/PromotionsPanel.css';
@@ -183,11 +184,11 @@ function Header() {
 
   if (isAdminPage) return null;
 
-  const isAdminUser = ['admin', 'ADMIN', 'SUPER_ADMIN'].includes(user?.role)
-    || user?.email === 'admin@oddsyra.com'
-    || hasAdminSession;
+  const isAdminUser = isLoggedIn && isAdminEligibleUser(user);
   const showAdminCleanHeader = false;
   const wallet = getWalletBreakdown(user);
+  const walletBreakdownLines = getWalletBreakdownLines(wallet);
+  const withdrawableHint = getWithdrawableHint(wallet);
 
   const activeMoreLinks = moreLinks.filter((link) => {
     if (link.to === '/admin') return isAdminUser;
@@ -443,124 +444,100 @@ function Header() {
                         exit={{ opacity: 0, y: -4 }}
                         transition={{ duration: 0.18, ease: 'easeOut' }}
                       >
-                      <div className="header-wallet-menu__loyalty">
-                        <div className="header-wallet-menu__loyalty-head">
-                          <span className="header-wallet-menu__loyalty-title">
-                            <span className="header-loyalty-icon" aria-hidden="true">⭐</span>
-                            Loyalty points
-                          </span>
-                          <span className="header-wallet-menu__loyalty-points">{loyalty.points}</span>
-                        </div>
-                        <p className="header-wallet-menu__loyalty-hint">
-                          Earn 5 pts per ₹100 spent · 5 pts = ₹1
-                        </p>
-                        <div className="header-wallet-menu__loyalty-progress" aria-hidden="true">
-                          <div
-                            className="header-wallet-menu__loyalty-progress-bar"
-                            style={{ width: `${loyalty.progress}%` }}
-                          />
-                        </div>
-                        <p className="header-wallet-menu__loyalty-meta">
-                          {loyalty.canRedeem
-                            ? `Redeem for cash (${loyalty.pointsPer100} pts / ₹100 · 5 pts = ₹1)`
-                            : `${loyalty.pointsToUnlock} pts to unlock redemption (${LOYALTY_MIN_REDEEM_POINTS} pts min)`}
-                        </p>
-                        {loyalty.canRedeem && (
-                          <div className="loyalty-slider-section">
-                            <div className="loyalty-slider-header">
-                              <span className="loyalty-slider-label">Redeem amount:</span>
-                              <span className="loyalty-slider-value">
-                                <strong>{sliderPoints} pts</strong>
-                                <span className="loyalty-slider-rupees">(= ₹{(sliderPoints / 5).toFixed(2)})</span>
+                      <div className={`header-wallet-menu__loyalty${loyalty.canRedeem ? '' : ' header-wallet-menu__loyalty--compact'}`}>
+                        {loyalty.canRedeem ? (
+                          <>
+                            <div className="header-wallet-menu__loyalty-head">
+                              <span className="header-wallet-menu__loyalty-title">
+                                <span className="header-loyalty-icon" aria-hidden="true">⭐</span>
+                                Loyalty points
                               </span>
+                              <span className="header-wallet-menu__loyalty-points">{loyalty.points}</span>
                             </div>
+                            <p className="header-wallet-menu__loyalty-hint">
+                              5 pts per ₹100 spent · redeem at 50 pts min
+                            </p>
+                            <div className="loyalty-slider-section">
+                              <div className="loyalty-slider-header">
+                                <span className="loyalty-slider-label">Redeem</span>
+                                <span className="loyalty-slider-value">
+                                  <strong>{sliderPoints} pts</strong>
+                                  <span className="loyalty-slider-rupees">₹{(sliderPoints / 5).toFixed(2)}</span>
+                                </span>
+                              </div>
 
-                            <input
-                              type="range"
-                              min={Math.min(LOYALTY_MIN_REDEEM_POINTS, loyalty.points)}
-                              max={loyalty.points}
-                              step={5}
-                              value={sliderPoints}
-                              onChange={(e) => setSliderPoints(Number(e.target.value))}
-                              className="loyalty-range-input"
-                              id="loyalty-points-slider"
-                            />
+                              <input
+                                type="range"
+                                min={Math.min(LOYALTY_MIN_REDEEM_POINTS, loyalty.points)}
+                                max={loyalty.points}
+                                step={5}
+                                value={sliderPoints}
+                                onChange={(e) => setSliderPoints(Number(e.target.value))}
+                                className="loyalty-range-input"
+                                id="loyalty-points-slider"
+                              />
 
-                            <div className="loyalty-slider-limits">
-                              <span>50 pts (₹10)</span>
-                              <span>{loyalty.points} pts (₹{(loyalty.points / 5).toFixed(2)})</span>
+                              <div className="loyalty-slider-presets">
+                                {[0.25, 0.5, 0.75, 1].map((pct) => {
+                                  const targetPts = Math.max(50, Math.floor((loyalty.points * pct) / 5) * 5);
+                                  return (
+                                    <button
+                                      key={pct}
+                                      type="button"
+                                      className={`loyalty-preset-chip ${sliderPoints === targetPts ? 'active' : ''}`}
+                                      onClick={() => setSliderPoints(targetPts)}
+                                    >
+                                      {pct === 1 ? 'Max' : `${pct * 100}%`}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+
+                              <button
+                                type="button"
+                                className="header-wallet-menu__redeem header-wallet-menu__redeem--slider"
+                                onClick={() => handleRedeemLoyalty(sliderPoints)}
+                              >
+                                Redeem {sliderPoints} pts
+                              </button>
                             </div>
-
-                            <div className="loyalty-slider-presets">
-                              {[0.25, 0.5, 0.75, 1].map((pct) => {
-                                const targetPts = Math.max(50, Math.floor((loyalty.points * pct) / 5) * 5);
-                                return (
-                                  <button
-                                    key={pct}
-                                    type="button"
-                                    className={`loyalty-preset-chip ${sliderPoints === targetPts ? 'active' : ''}`}
-                                    onClick={() => setSliderPoints(targetPts)}
-                                  >
-                                    {pct === 1 ? 'Max' : `${pct * 100}%`}
-                                  </button>
-                                );
-                              })}
-                            </div>
-
-                            <button
-                              type="button"
-                              className="header-wallet-menu__redeem header-wallet-menu__redeem--slider"
-                              onClick={() => handleRedeemLoyalty(sliderPoints)}
-                            >
-                              Redeem {sliderPoints} pts (₹{(sliderPoints / 5).toFixed(2)})
-                            </button>
+                          </>
+                        ) : (
+                          <div className="header-wallet-menu__loyalty-compact-row">
+                            <span className="header-wallet-menu__loyalty-compact-label">
+                              <span className="header-loyalty-icon" aria-hidden="true">⭐</span>
+                              {loyalty.points} pts
+                            </span>
+                            <span className="header-wallet-menu__loyalty-compact-meta">
+                              {loyalty.pointsToUnlock} more to redeem
+                            </span>
                           </div>
                         )}
                       </div>
 
-                      <div className="header-wallet-menu__divider" />
-
-                      <div className="header-wallet-menu__row">
-                        <span className="header-wallet-menu__label">Cash Balance</span>
-                        <span className="header-wallet-menu__value">{formatInr(wallet.cashBalance)}</span>
-                      </div>
-                      <div className="header-wallet-menu__row">
-                        <span className="header-wallet-menu__label flex-center gap-1">
-                          <AnimatedMotionGiftIcon size={13} /> Bonus Wallet
-                        </span>
-                        <span className="header-wallet-menu__value header-wallet-menu__value--bonus">
-                          {formatInr(wallet.bonus)}
-                        </span>
-                      </div>
-                      <div className="header-wallet-menu__row">
-                        <span className="header-wallet-menu__label flex-center gap-1">
-                          <FiZap size={13} style={{ color: '#0284c7' }} /> Freebet Vouchers
-                        </span>
-                        <span className="header-wallet-menu__value header-wallet-menu__value--freebet">
-                          {formatInr(wallet.freebets)}
-                        </span>
-                      </div>
-                      {wallet.lockedDeposit > 0 && (
-                        <div className="header-wallet-menu__row">
-                          <span className="header-wallet-menu__label">Deposited (locked)</span>
-                          <span className="header-wallet-menu__value header-wallet-menu__value--locked">
-                            {formatInr(wallet.lockedDeposit)}
-                          </span>
+                      <div className="header-wallet-menu__hero">
+                        <span className="header-wallet-menu__hero-label">Total balance</span>
+                        <span className="header-wallet-menu__hero-amount">{formatInr(wallet.total)}</span>
+                        <div className="header-wallet-menu__hero-chips">
+                          {walletBreakdownLines.map((line) => (
+                            <span
+                              key={line.key}
+                              className={`header-wallet-menu__chip header-wallet-menu__chip--${line.tone}`}
+                            >
+                              {line.label} {formatInr(line.value)}
+                            </span>
+                          ))}
                         </div>
-                      )}
-
-                      <div className="header-wallet-menu__divider" />
-
-                      <div className="header-wallet-menu__row">
-                        <span className="header-wallet-menu__label">Winnings</span>
-                        <span className="header-wallet-menu__value header-wallet-menu__value--winnings">
-                          {formatInr(wallet.winnings)}
-                        </span>
                       </div>
-                      <div className="header-wallet-menu__row header-wallet-menu__row--highlight">
-                        <span className="header-wallet-menu__label">Withdrawable</span>
-                        <span className="header-wallet-menu__value">{formatInr(wallet.withdrawable)}</span>
+
+                      <div className="header-wallet-menu__withdraw-card">
+                        <div className="header-wallet-menu__withdraw-head">
+                          <span className="header-wallet-menu__withdraw-label">Withdrawable</span>
+                          <span className="header-wallet-menu__withdraw-amount">{formatInr(wallet.withdrawable)}</span>
+                        </div>
+                        <p className="header-wallet-menu__withdraw-note">{withdrawableHint}</p>
                       </div>
+
                       <div className="header-wallet-menu__actions">
                         <button
                           type="button"

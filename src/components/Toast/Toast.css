@@ -92,9 +92,23 @@
 
 @media (max-width: 768px) {
   .toast-container {
-    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    top: calc(var(--header-height, 56px) + var(--space-2, 8px));
+    bottom: auto;
     right: var(--space-4);
     left: var(--space-4);
     max-width: none;
+    z-index: var(--z-toast);
+    animation: slideInDown 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

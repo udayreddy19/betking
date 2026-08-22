@@ -1,62 +1,61 @@
-.floating-betslip-root {
-  --floating-betslip-fab-size: 56px;
-  --floating-betslip-offset-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-  --floating-betslip-offset-right: 20px;
+/* Floating betslip: FAB bubble + sheets (mobile bottom sheet, desktop floating panel) */
+.mobile-betslip-root {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 1450;
+  z-index: var(--z-betslip);
 }
 
-.floating-betslip-fab {
+/* ── Floating bubble (opens full 10CRIC sheet) ── */
+.mobile-betslip-fab {
   pointer-events: auto;
   position: fixed;
-  bottom: var(--floating-betslip-offset-bottom);
-  right: var(--floating-betslip-offset-right);
-  z-index: 1452;
-  width: var(--floating-betslip-fab-size);
-  height: var(--floating-betslip-fab-size);
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  right: 14px;
+  z-index: calc(var(--z-betslip) + 2);
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--color-primary);
   color: #fff;
   box-shadow:
-    0 4px 16px rgba(124, 58, 237, 0.4),
+    0 4px 16px rgba(31, 138, 76, 0.4),
     0 2px 6px rgba(15, 23, 42, 0.12);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.floating-betslip-fab.is-open {
+.mobile-betslip-fab.is-open {
   box-shadow:
-    0 6px 22px rgba(124, 58, 237, 0.5),
+    0 6px 22px rgba(31, 138, 76, 0.5),
     0 2px 8px rgba(15, 23, 42, 0.14);
 }
 
-.floating-betslip-fab.is-new {
-  animation: betslipFabPulse 0.85s ease;
+.mobile-betslip-fab.is-new {
+  animation: mobileBetslipFabPulse 0.85s ease;
 }
 
-@keyframes betslipFabPulse {
+@keyframes mobileBetslipFabPulse {
   0% { transform: scale(1); }
   35% { transform: scale(1.08); }
   100% { transform: scale(1); }
 }
 
-.floating-betslip-fab-icon {
+.mobile-betslip-fab-icon {
   width: 24px;
   height: 24px;
 }
 
-.floating-betslip-badge {
+.mobile-betslip-fab-badge {
   position: absolute;
   top: -2px;
   right: -2px;
   min-width: 20px;
   height: 20px;
   padding: 0 5px;
-  border-radius: var(--radius-full);
+  border-radius: 999px;
   background: var(--color-surface);
   color: var(--color-primary);
   border: 2px solid var(--color-primary);
@@ -68,60 +67,155 @@
   line-height: 1;
 }
 
-.floating-betslip-backdrop {
+/* ── Shared backdrop + bottom sheet ── */
+.mobile-betslip-backdrop {
   pointer-events: auto;
   position: fixed;
   inset: 0;
-  z-index: 1450;
+  z-index: var(--z-betslip);
   border: none;
-  padding: 0;
-  margin: 0;
-  background: rgba(15, 23, 42, 0.12);
+  background: rgba(0, 0, 0, 0.45);
   cursor: pointer;
 }
 
-.floating-betslip-panel {
+.mobile-betslip-sheet {
   pointer-events: auto;
   position: fixed;
-  z-index: 1451;
-  bottom: calc(var(--floating-betslip-offset-bottom) + var(--floating-betslip-fab-size) + 10px);
-  right: var(--floating-betslip-offset-right);
-  width: min(360px, calc(100vw - 24px));
-  max-height: min(480px, calc(100dvh - var(--floating-betslip-offset-bottom) - var(--floating-betslip-fab-size) - 32px));
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: calc(var(--z-betslip) + 1);
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  box-shadow:
-    0 16px 48px rgba(15, 23, 42, 0.18),
-    0 4px 12px rgba(15, 23, 42, 0.08);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.18);
 }
 
-.floating-betslip-close {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 2;
-  width: 30px;
-  height: 30px;
+.mobile-betslip-sheet__handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--color-border);
+  margin: 10px auto 0;
+}
+
+.mobile-betslip-sheet__head {
+  padding: 8px 16px 0;
+}
+
+.mobile-betslip-sheet__head-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mobile-betslip-sheet__head-row strong {
+  font-size: 1rem;
+}
+
+.mobile-betslip-sheet__market {
+  margin: 4px 0 0;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.mobile-betslip-sheet__close {
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-text-muted);
   background: var(--color-bg);
+  color: var(--color-text-muted);
+  flex-shrink: 0;
 }
 
-.floating-betslip-main {
+.mobile-betslip-quick-odds {
+  margin-left: 6px;
+}
+
+/* Quick bet sheet */
+.mobile-betslip-sheet--quick {
+  padding: 0 16px calc(16px + env(safe-area-inset-bottom, 0px));
+}
+
+.mobile-betslip-promo {
+  width: 100%;
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+  color: var(--color-primary);
+  font-size: 0.78rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mobile-betslip-quick-stakes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 16px 0 12px;
+}
+
+.mobile-betslip-quick-stake {
+  min-height: 44px;
+  border-radius: 10px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-bg);
+  font-weight: var(--font-bold);
+  font-size: 0.9rem;
+}
+
+.mobile-betslip-quick-stake.is-active {
+  border-color: var(--color-accent, #f5c400);
+  background: color-mix(in srgb, var(--color-accent, #f5c400) 18%, var(--color-surface));
+}
+
+.mobile-betslip-place-btn {
+  width: 100%;
+  min-height: 48px;
+  border: none;
+  border-radius: 10px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: var(--font-bold);
+}
+
+.mobile-betslip-place-btn:disabled {
+  opacity: 0.55;
+}
+
+.mobile-betslip-return-hint {
+  margin: 10px 0 0;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+}
+
+.mobile-betslip-return-hint strong {
+  color: var(--color-primary);
+}
+
+/* Full betslip sheet */
+.mobile-betslip-sheet--full {
+  display: flex;
+  flex-direction: column;
+  max-height: min(88dvh, 720px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.mobile-betslip-sheet__scroll {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
 
-.floating-betslip-main .betslip {
+.mobile-betslip-sheet__scroll .betslip {
   display: flex !important;
   flex-direction: column;
   position: static;
@@ -134,67 +228,95 @@
   overflow: visible;
 }
 
-.floating-betslip-main .betslip-header {
-  padding-right: 42px;
-}
-
-.floating-betslip-main .betslip-body {
+.mobile-betslip-sheet__scroll .betslip-body {
   flex: none;
-  max-height: min(240px, 38vh);
-  overflow-y: auto;
+  max-height: none;
+  overflow: visible;
 }
 
-.floating-betslip-cta {
+.mobile-betslip-sheet__footer {
   flex: 0 0 auto;
-  flex-shrink: 0;
-  background: var(--color-surface);
   border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
   box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.06);
 }
 
-.floating-betslip-cta .betslip-footer-panel--floating {
-  padding: 8px 10px 10px;
-}
-
-.floating-betslip-cta .betslip-footer-panel {
-  padding: 10px 12px 12px;
-}
-
-.floating-betslip-cta .betslip-place-btn {
-  width: 100%;
-  margin-top: 8px;
-}
-
-@media (max-width: 768px) {
-  .floating-betslip-root {
-    --floating-betslip-fab-size: 54px;
-    --floating-betslip-offset-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
-    --floating-betslip-offset-right: 14px;
-  }
-
-  .floating-betslip-backdrop {
-    display: none;
-  }
-
-  .floating-betslip-panel {
-    width: min(320px, calc(100vw - 28px));
-    max-height: min(340px, calc(100dvh - var(--floating-betslip-offset-bottom) - var(--floating-betslip-fab-size) - 20px));
-    border-radius: 14px;
-  }
-
-  .floating-betslip-main .betslip-body {
-    max-height: min(180px, 34vh);
-  }
-
-  .floating-betslip-cta .betslip-footer-panel {
-    padding: 8px 10px 10px;
-  }
+.mobile-betslip-sheet__footer .betslip-footer-panel--floating {
+  padding: 8px 12px 12px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .floating-betslip-fab,
-  .floating-betslip-fab.is-new {
+  .mobile-betslip-fab,
+  .mobile-betslip-fab.is-new {
     animation: none;
     transition: none;
+  }
+}
+
+.mobile-betslip-notice {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--color-status-warning-bg);
+  border: 1px solid var(--color-status-warning-border);
+  color: var(--color-status-warning-text);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+}
+
+/* ── Desktop / laptop: floating panel anchored to FAB ── */
+@media (min-width: 1025px) {
+  .mobile-betslip-fab {
+    bottom: 24px;
+    right: 24px;
+    width: 58px;
+    height: 58px;
+    box-shadow:
+      0 8px 24px rgba(31, 138, 76, 0.35),
+      0 4px 12px rgba(15, 23, 42, 0.12);
+  }
+
+  .mobile-betslip-fab-badge {
+    min-width: 22px;
+    height: 22px;
+    font-size: 0.72rem;
+  }
+
+  .mobile-betslip-backdrop {
+    background: rgba(15, 23, 42, 0.32);
+  }
+
+  .mobile-betslip-sheet {
+    left: auto;
+    right: 24px;
+    bottom: 96px;
+    width: min(400px, calc(100vw - 48px));
+    border-radius: 16px;
+    box-shadow:
+      0 20px 50px rgba(15, 23, 42, 0.22),
+      0 0 0 1px rgba(15, 23, 42, 0.06);
+  }
+
+  .mobile-betslip-sheet__handle {
+    display: none;
+  }
+
+  .mobile-betslip-sheet--full {
+    max-height: min(72vh, 680px);
+    padding-bottom: 0;
+  }
+
+  .mobile-betslip-sheet--quick {
+    padding: 16px;
+  }
+
+  .mobile-betslip-sheet__scroll .betslip {
+    border-radius: 16px 16px 0 0;
+  }
+
+  .mobile-betslip-sheet__footer {
+    border-radius: 0 0 16px 16px;
   }
 }

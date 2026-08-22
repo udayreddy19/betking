@@ -17,6 +17,7 @@ import RealityCheckModal from './components/RealityCheckModal/RealityCheckModal'
 import Toast from './components/Toast/Toast';
 import FinancialModals from './components/FinancialModals/FinancialModals';
 import MobileBetSlip from './components/MobileBetSlip/MobileBetSlip';
+import GlobalBetBar from './components/GlobalBetBar/GlobalBetBar';
 import MobileBottomBar from './components/MobileBottomBar/MobileBottomBar';
 import BetSettlementRunner from './components/BetSettlementRunner/BetSettlementRunner';
 import GamePlayModal from './components/GamePlayModal/GamePlayModal';
@@ -101,6 +102,7 @@ function AppLayout() {
       <GamePlayModal />
       <BetSettlementRunner />
       <MobileBetSlip />
+      <GlobalBetBar />
       {!isAdminRoute && !isDevRoute && !isRegisterRoute && <MobileBottomBar />}
       <main className={mainClass}>
         <ErrorBoundary resetKey={location.pathname}>

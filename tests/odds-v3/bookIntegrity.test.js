@@ -12,7 +12,7 @@ import { riskAdjustmentEngine } from '../../lib/engines/riskAdjustmentEngine.mjs
 describe('Book integrity', () => {
   it('accepts lock prices rejection and returns server odds when client drifts', () => {
     expect(() => assertBettableQuote(1.00, 1.50)).toThrow(/ODDS_LOCKED/);
-    expect(assertBettableQuote(1.85, 2.50)).toBe(1.85);
+    expect(() => assertBettableQuote(1.85, 2.50)).toThrow(/STALE_ODDS/);
     expect(assertBettableQuote(1.85, 1.85)).toBe(1.85);
     expect(assertBettableQuote(1.85, 1.87)).toBe(1.85);
     expect(oddsQuoteChanged(1.85, 2.50)).toBe(true);

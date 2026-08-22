@@ -18,9 +18,11 @@ router.get('/health', async (req, res) => {
 router.get('/readiness', async (req, res) => {
   try {
     const { getReadinessStatus } = await import('../../lib/devopsEngine.mjs');
+    const { getSettlementWorkerHealth } = await import('../../lib/settlement/settlementHealth.mjs');
     const readiness = await getReadinessStatus();
-    const statusCode = readiness.ready ? 200 : 503;
-    res.status(statusCode).json(readiness);
+    const settlement = await getSettlementWorkerHealth();
+    const statusCode = readiness.ready && settlement.settlementWorker.healthy !== false ? 200 : 503;
+    res.status(statusCode).json({ ...readiness, ...settlement });
   } catch (err) {
     res.status(503).json({ ready: false, error: err.message });
   }

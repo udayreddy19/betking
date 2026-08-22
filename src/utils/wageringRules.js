@@ -24,47 +24,46 @@ export function canBetWithFreebetOnLegs(legs) {
   return Array.isArray(legs) && legs.length > 0;
 }
 
+/** Cumulative lifetime net profit/loss — reporting only, not a separate spendable wallet */
 export function getWinningsAmount(user) {
-  return Math.max(0, Number(user?.winningsBalance ?? 0));
-}
-
-/** Cash available for withdrawal (winnings minus pending withdrawal holds) */
-export function getWithdrawableAmount(user) {
-  const winnings = getWinningsAmount(user);
-  const reserved = Number(user?.reservedBalance ?? 0);
-  return Math.max(0, winnings - reserved);
+  return Number(user?.winningsBalance ?? 0);
 }
 
 export function getLockedDepositAmount(user) {
-  return Math.max(0, user?.lockedDepositBalance ?? 0);
+  return Math.max(0, Number(user?.lockedDepositBalance ?? 0));
+}
+
+/** Playable cash — balance is authoritative (pending withdrawals already debited on request). */
+export function getAvailableBalance(user) {
+  const balance = Number(user?.balance ?? 0);
+  return Math.max(0, parseFloat(balance.toFixed(2)));
+}
+
+/** Cash available for withdrawal (excludes locked deposit wagering requirement). */
+export function getWithdrawableAmount(user) {
+  const balance = Number(user?.balance ?? 0);
+  const locked = getLockedDepositAmount(user);
+  return Math.max(0, parseFloat((balance - locked).toFixed(2)));
 }
 
 /**
- * Split a cash stake across locked deposits, playable cash, then winnings.
- * Locked deposits are wagered first to clear playthrough.
+ * Split a cash stake across locked deposits first, then remaining balance.
  */
 export function allocateCashStake(user, cashAmount) {
   const cash = Math.max(0, Number(cashAmount) || 0);
-  const balance = user?.balance ?? 0;
   const locked = getLockedDepositAmount(user);
-  const winnings = getWinningsAmount(user);
-  const unlockedNonWinnings = Math.max(0, balance - locked - winnings);
-
   const fromLocked = Math.min(cash, locked);
-  let remaining = cash - fromLocked;
-  const fromNonWinnings = Math.min(remaining, unlockedNonWinnings);
-  remaining -= fromNonWinnings;
-  const fromWinnings = Math.min(remaining, winnings);
+  const fromNonWinnings = cash - fromLocked;
 
   return {
     fromLocked,
     fromNonWinnings,
-    fromWinnings,
-    total: fromLocked + fromNonWinnings + fromWinnings,
+    fromWinnings: 0,
+    total: fromLocked + fromNonWinnings,
   };
 }
 
-/** Split bet win payout: balance (playable), bonus recycle, freebet profit, winnings */
+/** Split bet win payout: full payout → balance; net profit → cumulative winnings */
 export function splitBetWinPayout(bet) {
   const payout = Number(bet.payout) || 0;
   const stake = Number(bet.stake) || 0;
@@ -98,10 +97,13 @@ export function splitBetWinPayout(bet) {
 
   if (cashStake > 0) {
     const cashPayout = (cashStake / stake) * payout;
-    const profit = Math.max(0, cashPayout - cashStake);
     cashCredit += cashPayout;
-    winningsCredit += profit;
+    winningsCredit += parseFloat((cashPayout - cashStake).toFixed(2));
   }
 
   return { cashCredit, bonusCredit, freebetCredit, winningsCredit };
+}
+
+export function computeBetProfit(payout, stake) {
+  return parseFloat(((Number(payout) || 0) - (Number(stake) || 0)).toFixed(2));
 }

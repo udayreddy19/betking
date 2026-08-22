@@ -54,6 +54,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5001
+      NODE_OPTIONS: "--max-old-space-size=768"
       DATABASE_URL: postgresql://${POSTGRES_USER:-oddsyra_app}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-oddsyra}
       DATABASE_READ_URL: ${DATABASE_READ_URL:-}
       REDIS_URL: redis://redis:6379
@@ -67,6 +68,7 @@ services:
       ADMIN_EMAILS: ${ADMIN_EMAILS:-}
       ADMIN_DEV_LOGIN: "0"
       RUN_BACKGROUND_WORKERS: "false"
+      REQUIRE_DEDICATED_SETTLEMENT_WORKER: "1"
     env_file:
       - .env
     depends_on:
@@ -77,7 +79,7 @@ services:
     networks:
       - oddsyra-prod-net
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5001/readiness || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5001/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -102,6 +104,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       ADMIN_DEV_LOGIN: "0"
       RUN_BACKGROUND_WORKERS: "true"
+      WORKER_PROCESS: "1"
     env_file:
       - .env
     depends_on:

@@ -7,11 +7,19 @@ import { isMatchBettable } from '../utils/matchBetting';
 import { apiFetch } from '../utils/apiClient';
 import { DEMO_MODE } from '../utils/featureFlags';
 import { subscribeLiveChannel } from '../services/liveFeedSocket';
+import {
+  isFinancialEventForUser,
+  isFinancialWsEventType,
+  shouldApplyFinancialWsEvent,
+} from '../utils/wsFinancialEvents';
 import { formatMarketDisplayName, resolveMarketDisplayName } from '../utils/marketDisplayName.js';
+import { loadBetslipPrefs, saveBetslipPrefs, shouldAutoAcceptOddsUpdate } from '../utils/betslipPrefs';
+import { analyzeMultiConflicts, hasMultiConflicts } from '../utils/betslipValidation';
 
 const BetSlipContext = createContext(null);
 const PLACED_BETS_KEY = 'oddsyra_placed_bets';
 const PENDING_BETSLIP_KEY = 'oddsyra_pending_betslip';
+const ODDS_SYNC_FRESH_MS = 8000;
 
 function loadPendingBetslip() {
   try {
@@ -38,19 +46,90 @@ function applyOddsUpdatesToBets(currentBets, updates = []) {
       previousOdds: hit.previousOdds ?? bet.odds,
       odds: Number(hit.odds),
       oddsChanged: true,
+      ...(hit.marketId ? { marketId: hit.marketId } : {}),
+      ...(hit.selectionId ? { selection: hit.selectionId } : {}),
     };
   });
 }
 
+function mergeQuotedSelectionsIntoBets(currentBets, quotedSelections = [], updates = []) {
+  if (!quotedSelections.length) return currentBets;
+  return currentBets.map((bet) => {
+    const row = quotedSelections.find((q) => (
+      q.matchId === bet.matchId
+      && (q.selectionId === bet.selection || q.selectionId === bet.selectionId)
+    ));
+    if (!row) return bet;
+    const changed = updates.some((u) => (
+      u.matchId === bet.matchId
+      && (u.selectionId === bet.selection || u.selectionId === bet.selectionId)
+    ));
+    return {
+      ...bet,
+      odds: Number(row.odds),
+      ...(row.marketId ? { marketId: row.marketId } : {}),
+      ...(row.selectionId ? { selection: row.selectionId } : {}),
+      ...(changed ? {
+        previousOdds: row.previousOdds ?? bet.odds,
+        oddsChanged: true,
+      } : {}),
+    };
+  });
+}
+
+function isOddsRefreshError(error) {
+  const msg = String(error || '').toLowerCase();
+  return msg.includes('odds are temporarily unavailable')
+    || msg.includes('odds have been updated')
+    || msg.includes('temporarily unavailable');
+}
+
+function clearOddsChangedFlagsOnBets(bets) {
+  return bets.map(({ oddsChanged, previousOdds, ...rest }) => rest);
+}
+
+async function fetchSyncedBetsFromServer(currentBets) {
+  if (!currentBets.length) {
+    return { bets: currentBets, updates: [], quoted: false };
+  }
+
+  try {
+    const res = await apiFetch('/api/bets/quote-selections', {
+      method: 'POST',
+      body: JSON.stringify({
+        selections: currentBets.map((bet) => ({
+          matchId: bet.matchId,
+          marketId: bet.marketId || 'match_winner',
+          selectionId: bet.selection,
+          selectionName: bet.selectionName,
+          odds: bet.odds,
+        })),
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) {
+      return { bets: currentBets, updates: [], quoted: false, error: data.error };
+    }
+
+    const updates = data.updates || [];
+    const bets = mergeQuotedSelectionsIntoBets(currentBets, data.selections || [], updates);
+    return { bets, updates, quoted: true, syncedAt: Date.now() };
+  } catch {
+    return { bets: currentBets, updates: [], quoted: false };
+  }
+}
+
 function formatOddsUpdatesToast(updates, placed = false) {
   if (!updates?.length) return null;
-  const prefix = placed ? 'Odds updated — bet placed at new price' : 'Odds updated in betslip';
+  const prefix = placed
+    ? 'Odds updated — bet placed at new price'
+    : 'Odds updated — you can place your bet at the new price';
   if (updates.length === 1) {
     const u = updates[0];
     const label = u.selectionName || 'Selection';
     return `${prefix}: ${label} ${Number(u.previousOdds).toFixed(2)} → ${Number(u.odds).toFixed(2)}`;
   }
-  return `${prefix}s on ${updates.length} selections`;
+  return `${prefix} on ${updates.length} selections`;
 }
 
 async function fetchMyBetsFromServer() {
@@ -104,6 +183,11 @@ function mapServerBetToPlaced(row) {
   const isMulti = row.bet_type === 'ACCUMULATOR';
   const isWon = status === 'won';
   const isVoid = status === 'void';
+  const payoutAmount = isWon
+    ? Number(row.actual_payout ?? row.potential_payout ?? 0)
+    : (isVoid ? Number(row.actual_payout ?? row.stake ?? 0) : 0);
+  const stakeAmount = Number(row.stake || 0);
+  const profitAmount = isWon ? Math.max(0, payoutAmount - stakeAmount) : 0;
 
   const legs = selectionRows.length > 0
     ? selectionRows.map((sel, idx) => {
@@ -143,10 +227,11 @@ function mapServerBetToPlaced(row) {
     id: row.bet_id,
     type: isMulti ? 'multi' : 'single',
     legs,
-    stake: Number(row.stake),
+    stake: stakeAmount,
     totalOdds: Number(row.accepted_odds || row.odds),
     potentialReturn: Number(row.potential_payout),
-    payout: isWon ? Number(row.potential_payout || 0) : (isVoid ? Number(row.stake || 0) : 0),
+    payout: payoutAmount,
+    profit: profitAmount,
     status,
     placedAt: row.created_at,
     fundSource: row.fund_source || 'cash',
@@ -180,6 +265,10 @@ export function BetSlipProvider({ children }) {
   const [myBetsLoading, setMyBetsLoading] = useState(false);
   const myBetsFetchSeq = useRef(0);
   const betsRef = useRef(bets);
+  const lastOddsSyncAt = useRef(0);
+  const oddsConfirmPendingRef = useRef(false);
+  const [betslipPrefs, setBetslipPrefsState] = useState(() => loadBetslipPrefs());
+  const [quickBet, setQuickBet] = useState(null);
 
   useEffect(() => {
     betsRef.current = bets;
@@ -248,16 +337,24 @@ export function BetSlipProvider({ children }) {
     if (DEMO_MODE || !user?.userId) return undefined;
     const channel = `user:${user.userId}`;
     const seenEvents = new Set();
+    const lastTsRef = { current: 0 };
     const unsub = subscribeLiveChannel(channel, (msg) => {
-      if (msg?.eventType !== 'BET_SETTLED') return;
-      const eventId = msg?.payload?.eventId || msg?.eventId;
-      if (eventId && seenEvents.has(eventId)) return;
-      if (eventId) seenEvents.add(eventId);
+      const eventType = msg?.eventType;
+      if (eventType === 'WS_RECONNECTED') {
+        refreshMyBets();
+        void refreshWallet?.();
+        return;
+      }
+      if (!isFinancialWsEventType(eventType)) return;
+      if (!isFinancialEventForUser(msg, user.userId)) return;
+      const decision = shouldApplyFinancialWsEvent(msg, seenEvents, lastTsRef);
+      if (!decision.apply) return;
       refreshMyBets();
-      if (msg?.payload?.status === 'WON') playWinSound();
+      void refreshWallet?.();
+      if (eventType === 'BET_SETTLED' && msg?.payload?.status === 'WON') playWinSound();
     });
     return unsub;
-  }, [user?.userId, refreshMyBets]);
+  }, [user?.userId, refreshMyBets, refreshWallet]);
 
   useEffect(() => {
     try {
@@ -281,43 +378,21 @@ export function BetSlipProvider({ children }) {
     const current = betsRef.current;
     if (DEMO_MODE || current.length === 0) return { updated: false, updates: [] };
 
-    try {
-      const res = await apiFetch('/api/bets/quote-selections', {
-        method: 'POST',
-        body: JSON.stringify({
-          selections: current.map((bet) => ({
-            matchId: bet.matchId,
-            marketId: bet.marketId || 'match_winner',
-            selectionId: bet.selection,
-            selectionName: bet.selectionName,
-            odds: bet.odds,
-          })),
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.success) return { updated: false, updates: [] };
+    const sync = await fetchSyncedBetsFromServer(current);
+    if (!sync.quoted) return { updated: false, updates: [] };
 
-      const updates = data.updates || [];
-      if (updates.length > 0) {
-        setBets((prev) => applyOddsUpdatesToBets(prev, updates));
-        if (!silent) {
-          showToast(formatOddsUpdatesToast(updates), 'info');
-        }
-        return { updated: true, updates };
-      }
+    betsRef.current = sync.bets;
+    setBets(sync.bets);
+    lastOddsSyncAt.current = sync.syncedAt || Date.now();
 
-      if (Array.isArray(data.selections) && data.selections.length > 0) {
-        setBets((prev) => prev.map((bet) => {
-          const quoted = data.selections.find((row) => (
-            row.matchId === bet.matchId && row.selectionId === bet.selection
-          ));
-          return quoted ? { ...bet, odds: Number(quoted.odds) } : bet;
-        }));
+    if (sync.updates.length > 0) {
+      if (!silent) {
+        showToast(formatOddsUpdatesToast(sync.updates), 'info');
       }
-      return { updated: false, updates: [] };
-    } catch {
-      return { updated: false, updates: [] };
+      return { updated: true, updates: sync.updates };
     }
+
+    return { updated: false, updates: [] };
   }, [showToast]);
 
   useEffect(() => {
@@ -417,7 +492,14 @@ export function BetSlipProvider({ children }) {
       return next;
     });
 
-    showToast(`Added to betslip: ${label} @ ${Number(odds).toFixed(2)}`, 'success');
+    const silentAdd = !!(options.silentAdd ?? options.quickBet);
+
+    if (silentAdd) {
+      setQuickBet(null);
+      setIsMobileOpen(false);
+    } else {
+      showToast(`Added to betslip: ${label} @ ${Number(odds).toFixed(2)}`, 'success');
+    }
 
     return true;
   }, [bets, showToast, betType, stake]);
@@ -435,6 +517,7 @@ export function BetSlipProvider({ children }) {
     setBets([]);
     setStake('');
     setSinglesStakes({});
+    setQuickBet(null);
     try {
       localStorage.removeItem(PENDING_BETSLIP_KEY);
     } catch {
@@ -447,6 +530,43 @@ export function BetSlipProvider({ children }) {
   }, []);
 
   const openMobileBetslip = useCallback(() => setIsMobileOpen(true), []);
+
+  const closeQuickBet = useCallback(() => setQuickBet(null), []);
+
+  const openQuickBetPanel = useCallback(() => {
+    const list = betsRef.current;
+    if (!list.length) return;
+    const bet = list[list.length - 1];
+    setQuickBet({
+      bet: {
+        id: bet.id,
+        matchId: bet.matchId,
+        matchName: bet.matchName,
+        selection: bet.selection,
+        selectionName: bet.selectionName,
+        marketId: bet.marketId,
+        marketName: bet.marketName,
+        odds: bet.odds,
+      },
+      defaultStake: singlesStakes[bet.id] || stake || '500',
+    });
+    setIsMobileOpen(false);
+  }, [stake, singlesStakes]);
+
+  const setBetslipPref = useCallback((key, value) => {
+    setBetslipPrefsState((prev) => {
+      const next = { ...prev, [key]: value };
+      saveBetslipPrefs(next);
+      return next;
+    });
+  }, []);
+
+  const multiConflicts = useMemo(
+    () => (betType === 'multi' ? analyzeMultiConflicts(bets) : new Map()),
+    [bets, betType],
+  );
+
+  const hasBlockingConflicts = betType === 'multi' && hasMultiConflicts(bets);
 
   const isBetSelected = useCallback((matchId, selection) => {
     return bets.some(b => b.matchId === matchId && b.selection === selection);
@@ -487,14 +607,39 @@ export function BetSlipProvider({ children }) {
     const stakeSource = ['bonus', 'freebet'].includes(options.stakeSource)
       ? options.stakeSource
       : 'cash';
+    const prefs = loadBetslipPrefs();
+    const targetSingleId = options.singleBetId || null;
 
-    if (bets.length === 0) {
+    let slipBets = betsRef.current;
+    if (targetSingleId) {
+      slipBets = slipBets.filter((b) => b.id === targetSingleId);
+    }
+    if (slipBets.length === 0) {
       return { success: false, error: 'Your betslip is empty' };
+    }
+
+    if (betType === 'multi' && hasMultiConflicts(betsRef.current)) {
+      return { success: false, error: 'Some selections are related and cannot be combined.' };
     }
 
     if (!DEMO_MODE) {
       try {
         const allOddsUpdates = [];
+
+        const applySyncedBets = (sync, fallbackBets) => {
+          if (!sync?.quoted) return fallbackBets;
+          betsRef.current = sync.bets;
+          setBets(sync.bets);
+          return targetSingleId
+            ? sync.bets.filter((b) => b.id === targetSingleId)
+            : sync.bets;
+        };
+
+        const notifyOddsUpdates = (updates) => {
+          if (!updates.length) return;
+          if (shouldAutoAcceptOddsUpdate(updates, prefs)) return;
+          showToast(formatOddsUpdatesToast(updates), 'info');
+        };
 
         const placeSingle = async (bet, stakeAmount) => {
           const res = await apiFetch('/api/bets/place', {
@@ -512,7 +657,10 @@ export function BetSlipProvider({ children }) {
           });
           const data = await res.json().catch(() => ({}));
           if (!res.ok) {
-            return { success: false, error: data.error || 'Bet placement failed' };
+            const fallback = res.status >= 502
+              ? 'Betting service is temporarily unavailable. Please try again in a moment.'
+              : 'Bet placement failed';
+            return { success: false, error: data.error || fallback, code: data.code, status: res.status };
           }
           if (data.oddsUpdates?.length) {
             allOddsUpdates.push(...data.oddsUpdates);
@@ -520,7 +668,21 @@ export function BetSlipProvider({ children }) {
           return { success: true, data };
         };
 
-        if (betType === 'multi' && bets.length >= 2) {
+        const placeSingles = async (workingBets) => {
+          const placedIds = [];
+          for (const bet of workingBets) {
+            const stakeAmount = parseFloat(singlesStakes[bet.id] || stake || 0);
+            if (!stakeAmount || stakeAmount <= 0) {
+              return { success: false, error: `Enter stake for "${bet.selectionName}"` };
+            }
+            const result = await placeSingle(bet, stakeAmount);
+            if (!result.success) return result;
+            placedIds.push(bet.id);
+          }
+          return { success: true, placedIds };
+        };
+
+        const placeMulti = async (workingBets) => {
           const stakeAmount = parseFloat(stake);
           if (!stakeAmount || stakeAmount <= 0) {
             return { success: false, error: 'Enter a valid stake amount' };
@@ -531,7 +693,7 @@ export function BetSlipProvider({ children }) {
             body: JSON.stringify({
               stake: stakeAmount,
               fundSource: stakeSource,
-              selections: bets.map((bet) => ({
+              selections: workingBets.map((bet) => ({
                 matchId: bet.matchId,
                 marketId: bet.marketId || 'match_winner',
                 selectionId: bet.selection,
@@ -542,36 +704,122 @@ export function BetSlipProvider({ children }) {
           });
           const data = await res.json().catch(() => ({}));
           if (!res.ok) {
-            return { success: false, error: data.error || 'Bet placement failed' };
+            const fallback = res.status >= 502
+              ? 'Betting service is temporarily unavailable. Please try again in a moment.'
+              : 'Bet placement failed';
+            return { success: false, error: data.error || fallback, code: data.code, status: res.status };
           }
           if (data.oddsUpdates?.length) {
             allOddsUpdates.push(...data.oddsUpdates);
           }
-        } else {
-          // Singles mode, or multi with only one leg — place as singles.
-          for (const bet of bets) {
-            const stakeAmount = parseFloat(singlesStakes[bet.id] || stake || 0);
-            if (!stakeAmount || stakeAmount <= 0) {
-              return { success: false, error: `Enter stake for "${bet.selectionName}"` };
+          return { success: true };
+        };
+
+        const runPlacement = async (workingBets) => {
+          const useMulti = !targetSingleId && betType === 'multi' && workingBets.length >= 2;
+          return useMulti ? placeMulti(workingBets) : placeSingles(workingBets);
+        };
+
+        let workingBets = slipBets;
+        const skipPreSyncForAck = oddsConfirmPendingRef.current;
+        if (skipPreSyncForAck) {
+          oddsConfirmPendingRef.current = false;
+          const cleared = clearOddsChangedFlagsOnBets(betsRef.current);
+          betsRef.current = cleared;
+          setBets(cleared);
+          workingBets = targetSingleId
+            ? cleared.filter((b) => b.id === targetSingleId)
+            : cleared;
+        }
+
+        const oddsRecentlySynced = Date.now() - lastOddsSyncAt.current < ODDS_SYNC_FRESH_MS;
+        const slipFlagsChanged = betsRef.current.some((bet) => bet.oddsChanged);
+        const autoAcceptOdds = prefs.acceptAnyOddsChange || prefs.acceptHigherOdds;
+        const needsPreSync = !skipPreSyncForAck
+          && !autoAcceptOdds
+          && (!oddsRecentlySynced || slipFlagsChanged);
+
+        if (needsPreSync) {
+          const sync = await fetchSyncedBetsFromServer(betsRef.current);
+          workingBets = applySyncedBets(sync, slipBets);
+          if (sync.quoted) {
+            lastOddsSyncAt.current = sync.syncedAt || Date.now();
+          }
+          notifyOddsUpdates(sync.updates);
+        }
+
+        let placement = await runPlacement(workingBets);
+        if (!placement.success && isOddsRefreshError(placement.error)) {
+          if (autoAcceptOdds) {
+            placement = await runPlacement(workingBets);
+          } else {
+            const sync = await fetchSyncedBetsFromServer(betsRef.current);
+            workingBets = applySyncedBets(sync, workingBets);
+            if (sync.quoted) {
+              lastOddsSyncAt.current = sync.syncedAt || Date.now();
             }
-            const placed = await placeSingle(bet, stakeAmount);
-            if (!placed.success) return placed;
+            if (sync.updates.length > 0 && shouldAutoAcceptOddsUpdate(sync.updates, prefs)) {
+              placement = await runPlacement(workingBets);
+            } else {
+              notifyOddsUpdates(sync.updates);
+              if (sync.quoted) {
+                placement = await runPlacement(workingBets);
+              }
+            }
           }
         }
 
-        const serverBets = await fetchMyBetsFromServer();
-        setPlacedBets(serverBets.map(mapServerBetToPlaced));
-        if (allOddsUpdates.length > 0) {
+        if (!placement.success) {
+          if (isOddsRefreshError(placement.error) && !shouldAutoAcceptOddsUpdate(allOddsUpdates, prefs)) {
+            const cleared = clearOddsChangedFlagsOnBets(betsRef.current);
+            betsRef.current = cleared;
+            setBets(cleared);
+            oddsConfirmPendingRef.current = true;
+            return {
+              success: false,
+              oddsUpdated: true,
+              error: 'Odds have been updated. Tap Place again to continue.',
+            };
+          }
+          if (isOddsRefreshError(placement.error)) {
+            const cleared = clearOddsChangedFlagsOnBets(betsRef.current);
+            betsRef.current = cleared;
+            setBets(cleared);
+            oddsConfirmPendingRef.current = true;
+            return {
+              success: false,
+              oddsUpdated: true,
+              error: 'Odds have been updated. Tap Place again to continue.',
+            };
+          }
+          return placement;
+        }
+
+        if (allOddsUpdates.length > 0 && !shouldAutoAcceptOddsUpdate(allOddsUpdates, prefs)) {
           showToast(formatOddsUpdatesToast(allOddsUpdates, true), 'info');
         }
-        setBets([]);
-        setStake('');
-        setSinglesStakes({});
-        localStorage.removeItem(PENDING_BETSLIP_KEY);
+        if (targetSingleId) {
+          setBets((prev) => prev.filter((b) => b.id !== targetSingleId));
+          setSinglesStakes((s) => {
+            const next = { ...s };
+            delete next[targetSingleId];
+            return next;
+          });
+          setQuickBet(null);
+        } else {
+          setBets([]);
+          setStake('');
+          setSinglesStakes({});
+          setQuickBet(null);
+          localStorage.removeItem(PENDING_BETSLIP_KEY);
+        }
         setIsMyBetsOpen(true);
         setIsMobileOpen(false);
         playBetSound();
-        await refreshWallet?.();
+        void refreshWallet?.();
+        void fetchMyBetsFromServer()
+          .then((rows) => setPlacedBets(rows.map(mapServerBetToPlaced)))
+          .catch(() => {});
         return {
           success: true,
           potentialReturn: Number(potentialReturn),
@@ -613,6 +861,7 @@ export function BetSlipProvider({ children }) {
       setBets([]);
       setStake('');
       setSinglesStakes({});
+      setQuickBet(null);
       setIsMyBetsOpen(true);
       setIsMobileOpen(false);
       playBetSound();
@@ -644,6 +893,7 @@ export function BetSlipProvider({ children }) {
     setBets([]);
     setStake('');
     setSinglesStakes({});
+    setQuickBet(null);
     setIsMyBetsOpen(true);
     setIsMobileOpen(false);
     playBetSound();
@@ -750,6 +1000,13 @@ export function BetSlipProvider({ children }) {
     toggleMyBets,
     refreshMyBets,
     myBetsLoading,
+    betslipPrefs,
+    setBetslipPref,
+    multiConflicts,
+    hasBlockingConflicts,
+    quickBet,
+    closeQuickBet,
+    openQuickBetPanel,
     refreshSlipOdds,
   }), [
     bets,
@@ -777,6 +1034,12 @@ export function BetSlipProvider({ children }) {
     toggleMyBets,
     refreshMyBets,
     myBetsLoading,
+    betslipPrefs,
+    multiConflicts,
+    hasBlockingConflicts,
+    quickBet,
+    closeQuickBet,
+    openQuickBetPanel,
     refreshSlipOdds,
   ]);
 

@@ -18,7 +18,16 @@ describe('parlay settlement policy', () => {
     expect(r.outcome).toBe('LOST');
   });
 
-  it('WON + VOID voids the acca', () => {
+  it('VOID + PENDING stays pending until all legs resolve', () => {
+    const r = combineParlayLegOutcomes([
+      { outcome: 'VOID' },
+      { outcome: null },
+    ]);
+    expect(r.outcome).toBeNull();
+    expect(r.reason).toBe('acca_legs_pending');
+  });
+
+  it('WON + VOID voids the acca when no legs pending', () => {
     const r = combineParlayLegOutcomes([
       { outcome: 'WON' },
       { outcome: 'VOID' },

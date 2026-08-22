@@ -92,6 +92,13 @@ export function mapServerUserToSession(serverUser, previous = null) {
   const reservedBalance = Number(serverUser.reservedBalance) || 0;
   const winningsBalance = Number(serverUser.winningsBalance) || 0;
   const lockedDepositBalance = Number(serverUser.lockedDepositBalance) || 0;
+  // Server is authoritative. Fallbacks must match wageringRules: reserved is audit-only.
+  const availableBalance = Number(
+    serverUser.availableBalance ?? Math.max(0, balance),
+  ) || 0;
+  const withdrawableBalance = Number(
+    serverUser.withdrawableBalance ?? Math.max(0, balance - lockedDepositBalance),
+  ) || 0;
   const loyaltyTier = serverUser.loyaltyTier || previous?.loyaltyTier || 'BRONZE';
   const nextTier = getPointsToNextTier({ loyaltyPoints, loyaltyTier });
   return {
@@ -105,6 +112,9 @@ export function mapServerUserToSession(serverUser, previous = null) {
     reservedBalance,
     lockedDepositBalance,
     winningsBalance,
+    availableBalance,
+    withdrawableBalance,
+    pendingWithdrawal: Number(serverUser.pendingWithdrawal ?? reservedBalance) || 0,
     bonusBalance,
     freebetBalance,
     loyaltyPoints,

@@ -20,7 +20,7 @@ import { prefetchMatchDetail, enrichFromPoller, subscribeGlobalMatchDetails, get
 import { useMatchDetail } from '../../hooks/useMatchDetail';
 import { useCentralizedMatchState } from '../../hooks/useCentralizedMatchState';
 import { centralizedMatchEngine } from '../../services/centralizedMatchStateEngine';
-import { filterMatches } from '../../utils/matchFilters';
+import { filterMatches, countMatchesByStateTabs } from '../../utils/matchFilters';
 import { resolveLeagueId, getLeagueMeta, isSameLeague, groupMatchesByLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
 import { matchIdsEqual } from '../../../lib/matchIdPublic.mjs';
 import { formatTeamShortName, teamDisplayName, asDisplayText } from '../../utils/teamShortName';
@@ -35,6 +35,7 @@ import { subscribeLiveChannel } from '../../services/liveFeedSocket';
 import { getMarketCategoriesForSport } from '../../utils/marketCategoryLabels';
 import { useMatchWatchlist } from '../../hooks/useMatchWatchlist';
 import LiveScoresFeedBanner from '../../components/LiveScoresFeedBanner/LiveScoresFeedBanner';
+import SportsStateTabs from '../../components/SportsStateTabs/SportsStateTabs';
 import { mediaQueryMatches, subscribeMediaQuery } from '../../utils/browserCompat';
 import './Sports.css';
 
@@ -304,6 +305,7 @@ export default function Sports() {
   const [viewMode, setViewMode] = useState(initialMatchId ? 'match' : 'league');
   const [activeMarketCat, setActiveMarketCat] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [eventStateTab, setEventStateTab] = useState('live');
   const [selectedMatchId, setSelectedMatchId] = useState(initialMatchId);
   const [expandedMarkets, setExpandedMarkets] = useState({
     winner: true, tie: true, over10: true, delivery: false, partnership: false,
@@ -317,23 +319,27 @@ export default function Sports() {
   const isIplSrlView = isSameLeague(activeLeague, 'ipl-srl');
   const watchlistOnly = searchParams.get('watchlist') === '1';
 
+  const baseSportPool = useMemo(() => {
+    if (watchlistOnly) {
+      return filterMatches(matches || [], { stateTab: 'all', searchQuery })
+        .filter((m) => watchlistIds.includes(String(m.id)));
+    }
+    return filterByLeague(
+      filterMatches(matches || [], { sport: activeSport, stateTab: 'all', searchQuery }),
+      activeLeague,
+      cricketSeries,
+    );
+  }, [matches, activeSport, activeLeague, searchQuery, cricketSeries, watchlistOnly, watchlistIds]);
+
+  const stateTabCounts = useMemo(
+    () => countMatchesByStateTabs(baseSportPool),
+    [baseSportPool],
+  );
+
   const sportMatches = useMemo(() => {
-    const filtered = watchlistOnly
-      ? filterMatches(matches || [], { stateTab: isLiveBettingPage ? 'bettable' : 'all', searchQuery })
-        .filter((m) => watchlistIds.includes(String(m.id)))
-      : filterByLeague(
-        filterMatches(matches || [], {
-          sport: activeSport,
-          stateTab: isLiveBettingPage ? 'bettable' : 'all',
-          searchQuery,
-        }),
-        activeLeague,
-        cricketSeries,
-      );
+    const filtered = filterMatches(baseSportPool, { stateTab: eventStateTab });
 
-    let list = filtered;
-
-    return [...list].sort((a, b) => {
+    return [...filtered].sort((a, b) => {
       const liveA = getMatchState(a) === 'in' ? 0 : 1;
       const liveB = getMatchState(b) === 'in' ? 0 : 1;
       if (liveA !== liveB) return liveA - liveB;
@@ -341,17 +347,23 @@ export default function Sports() {
       if (leagueCmp) return leagueCmp;
       return String(a.id || '').localeCompare(String(b.id || ''));
     });
-  }, [matches, activeSport, activeLeague, searchQuery, cricketSeries, isLiveBettingPage, watchlistOnly, watchlistIds]);
+  }, [baseSportPool, eventStateTab]);
 
   const liveMatches = useMemo(
-    () => sportMatches.filter((m) => getMatchState(m) === 'in'),
-    [sportMatches],
+    () => baseSportPool.filter((m) => getMatchState(m) === 'in'),
+    [baseSportPool],
   );
 
   const upcomingMatches = useMemo(
-    () => sportMatches.filter((m) => getMatchState(m) === 'pre'),
-    [sportMatches],
+    () => baseSportPool.filter((m) => getMatchState(m) === 'pre'),
+    [baseSportPool],
   );
+
+  useEffect(() => {
+    if (stateTabCounts[eventStateTab] > 0) return;
+    const fallback = ['live', 'prelive', 'upcoming'].find((id) => stateTabCounts[id] > 0);
+    if (fallback) setEventStateTab(fallback);
+  }, [stateTabCounts, eventStateTab]);
 
   const cricketGroups = useMemo(() => groupMatchesByLeague(sportMatches), [sportMatches]);
 
@@ -637,18 +649,26 @@ export default function Sports() {
 
   const placeBet = (selection, odds, selectionName, marketName, marketId) => {
     if (!activeMatch || !(Number(odds) > 1)) return;
-    addBet(activeMatch, selection, odds, selectionName, { marketName, marketId });
+    addBet(activeMatch, selection, odds, selectionName, {
+      marketName,
+      marketId,
+      silentAdd: true,
+    });
   };
 
   const quickBet = (match, selection, odds, selectionName, marketId = 'match_winner') => {
     if (odds == null || Number.isNaN(Number(odds))) return;
-    addBet(match, selection, odds, selectionName, { marketName: 'Match Winner', marketId });
+    addBet(match, selection, odds, selectionName, {
+      marketName: 'Match Winner',
+      marketId,
+      silentAdd: true,
+    });
   };
 
   const sportCounts = useMemo(() => {
     const pool = isLiveBettingPage
       ? filterMatches(matches || [], { stateTab: 'bettable' })
-      : (matches || []);
+      : filterMatches(matches || [], { stateTab: 'all' });
     const map = {};
     for (const cat of sportsCategories) {
       map[cat.id] = pool.filter((m) => {
@@ -686,9 +706,9 @@ export default function Sports() {
             <div className="sports-page-heading">
               <h1>Live Betting</h1>
               <p>
-                {liveMatches.length > 0
-                  ? `${liveMatches.length} live · ${upcomingMatches.length} upcoming ${sportsCategories.find((s) => s.id === activeSport)?.name || 'events'}`
-                  : `No live ${sportsCategories.find((s) => s.id === activeSport)?.name?.toLowerCase() || 'events'} right now — ${upcomingMatches.length} upcoming`}
+                {stateTabCounts.live > 0
+                  ? `${stateTabCounts.live} live · ${stateTabCounts.prelive} pre-live · ${stateTabCounts.upcoming} upcoming ${sportsCategories.find((s) => s.id === activeSport)?.name || 'events'}`
+                  : `No live ${sportsCategories.find((s) => s.id === activeSport)?.name?.toLowerCase() || 'events'} right now — ${stateTabCounts.prelive + stateTabCounts.upcoming} scheduled`}
               </p>
             </div>
           )}
@@ -791,6 +811,15 @@ export default function Sports() {
             retrying={isScoresLoading}
           />
 
+          {viewMode === 'league' && (
+            <SportsStateTabs
+              activeId={eventStateTab}
+              onSelect={setEventStateTab}
+              counts={stateTabCounts}
+            />
+          )}
+
+          <div className={`sports-state-panel${viewMode === 'league' ? ' sports-state-panel--with-tabs' : ''}`}>
           <div className="sports-search sports-search--mobile">
             <div className="sports-search-wrapper">
               <FiSearch className="sports-search-icon" />
@@ -815,9 +844,13 @@ export default function Sports() {
                 <p>
                   {watchlistOnly
                     ? 'No watchlist matches are on the board right now. Star a match from Sports or Home to save it.'
+                    : eventStateTab === 'live'
+                    ? `No live matches right now${searchQuery ? ` for "${searchQuery}"` : ''}. Try Pre-live or Upcoming.`
+                    : eventStateTab === 'prelive'
+                    ? `No pre-live matches starting soon${searchQuery ? ` for "${searchQuery}"` : ''}.`
                     : isLiveBettingPage
                     ? `No ${sportsCategories.find((s) => s.id === activeSport)?.name?.toLowerCase() || 'sport'} matches available. Try another sport or check back soon.`
-                    : `No matches found${searchQuery ? ` for "${searchQuery}"` : ''}.`}
+                    : `No upcoming matches found${searchQuery ? ` for "${searchQuery}"` : ''}.`}
                 </p>
                 {isLiveBettingPage ? (
                   <Link to="/sports" className="sports-empty-action">
@@ -856,42 +889,6 @@ export default function Sports() {
             })}
           </div>
 
-          {viewMode === 'league' && isLiveBettingPage && liveMatches.length > 0 && cricketGroups.length === 0 && (
-            <section className="sports-live-section">
-              <h2 className="sports-section-heading">Live now</h2>
-              <div className="sports-league-overview-list">
-                {liveMatches.map((m) => {
-                  const { team1Score, team2Score, isLive } = getMatchScores(m);
-                  return (
-                    <button
-                      key={m.id}
-                      type="button"
-                      className="sports-league-overview-card"
-                      onClick={() => selectMatch(m.id)}
-                    >
-                      <div className="sports-league-overview-card-top">
-                        <span className="sports-league-overview-time">{asDisplayText(m.league)}</span>
-                        {isLive && <span className="sports-league-overview-live">LIVE</span>}
-                      </div>
-                      <div className="sports-league-overview-teams">
-                        <div className="sports-league-overview-team">
-                          <TeamJersey team={m.team1} size={22} isFlying={isLive && isTeamBattingInMatch(m, m.team1)} />
-                          <span>{teamDisplayName(m.team1)}</span>
-                          <strong>{team1Score || '–'}</strong>
-                        </div>
-                        <div className="sports-league-overview-team">
-                          <TeamJersey team={m.team2} size={22} isFlying={isLive && isTeamBattingInMatch(m, m.team2)} />
-                          <span>{teamDisplayName(m.team2)}</span>
-                          <strong>{team2Score || '–'}</strong>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-
           {viewMode === 'league' && isIplSrlView && (
             <SrlLeaguePanel
               matches={sportMatches}
@@ -913,19 +910,18 @@ export default function Sports() {
 
           {viewMode === 'league' && !isIplSrlView && sportMatches.length > 0 && cricketGroups.length === 0 && (
             <div className="sports-league-overview">
-              {isLiveBettingPage && upcomingMatches.length > 0 && (
+              {isLiveBettingPage ? (
                 <h2 className="sports-section-heading">
-                  {liveMatches.length > 0 ? 'Upcoming' : 'Matches'}
+                  {eventStateTab === 'live' ? 'Live now' : eventStateTab === 'prelive' ? 'Pre-live' : 'Upcoming'}
                 </h2>
-              )}
-              {!isLiveBettingPage && (
+              ) : (
                 <>
                   <h2 className="sports-league-overview-title">{breadcrumbLeague}</h2>
                   <p className="sports-league-overview-subtitle">Select a match to view markets and live scores</p>
                 </>
               )}
               <div className="sports-league-overview-list">
-                {(isLiveBettingPage ? upcomingMatches : sportMatches).map((m) => {
+                {sportMatches.map((m) => {
                   const { team1Score, team2Score, isLive } = getMatchScores(m);
                   return (
                     <button
@@ -956,6 +952,8 @@ export default function Sports() {
               </div>
             </div>
           )}
+
+          </div>
 
           {viewMode === 'match' && activeMatch ? (
             <>

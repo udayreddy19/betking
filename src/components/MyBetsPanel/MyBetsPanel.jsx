@@ -384,10 +384,18 @@ export default function MyBetsPanel() {
                     <span className="value">₹{placed.potentialReturn.toFixed(2)}</span>
                   </div>
                   {placed.status === 'won' && placed.payout > 0 && (
-                    <div className="my-bets-summary my-bets-summary--won">
-                      <span className="label">Payout</span>
-                      <span className="value">₹{placed.payout.toFixed(2)}</span>
-                    </div>
+                    <>
+                      <div className="my-bets-summary my-bets-summary--won">
+                        <span className="label">Payout</span>
+                        <span className="value">₹{placed.payout.toFixed(2)}</span>
+                      </div>
+                      {placed.profit > 0 && (
+                        <div className="my-bets-summary">
+                          <span className="label">Profit</span>
+                          <span className="value">₹{placed.profit.toFixed(2)}</span>
+                        </div>
+                      )}
+                    </>
                   )}
                   {placed.status === 'void' && (
                     <div className="my-bets-summary my-bets-summary--won">

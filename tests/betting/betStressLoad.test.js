@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 vi.mock('../../lib/oddsQuoteService.mjs', () => ({
   resolveServerOdds: vi.fn(async ({ clientOdds }) => Number(clientOdds) || 1.8),
+  unwrapServerOddsQuote: (quote) => (quote?.odds != null ? Number(quote.odds) : Number(quote)),
+  loadLiveOddsSnapshot: vi.fn(async () => ({ status: 'OK', markets: [] })),
 }));
 
 import { betPlacementEngine } from '../../lib/betPlacementEngine.mjs';

@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 import { IoClose, IoEyeOutline, IoEyeOffOutline } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import BrandLogo, { BrandWordmark } from '../BrandLogo/BrandLogo';
-import SocialAuthButtons, { SocialAuthDivider } from '../SocialAuthButtons/SocialAuthButtons';
+import { SocialAuthBlock } from '../SocialAuthButtons/SocialAuthButtons';
 import { springSheet } from '../../utils/motionPresets';
 import '../SocialAuthButtons/SocialAuthButtons.css';
 import './LoginModal.css';
@@ -181,8 +181,7 @@ export default function LoginModal() {
           <form className="modal-form" onSubmit={handleSubmit}>
             {mode === 'login' && (
               <>
-                <SocialAuthButtons disabled={loading} />
-                <SocialAuthDivider />
+                <SocialAuthBlock disabled={loading} />
               </>
             )}
 

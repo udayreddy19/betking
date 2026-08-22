@@ -21,6 +21,8 @@ describe('Phase 5 Bet Placement Validation Tests', () => {
   const selectionId = 'sel_val_101';
 
   beforeEach(async () => {
+    await marketSuspensionEngine.clearSuspensionCause(marketId, 'STALE_ODDS');
+    await marketSuspensionEngine.clearSuspensionCause(marketId, 'MANUAL_ADMIN');
     await query(`ALTER TABLE bets ADD COLUMN IF NOT EXISTS vip_boost_pct NUMERIC(5,2) DEFAULT 0`);
     // Setup test user and wallet in DB
     await query(`INSERT INTO users (user_id, email, password_hash) VALUES ($1, $2, 'hash') ON CONFLICT (user_id) DO NOTHING;`, [testUserId, `${testUserId}@example.com`]);
