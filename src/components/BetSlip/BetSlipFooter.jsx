@@ -16,7 +16,7 @@ const QUICK_STAKES = [100, 500, 1000];
 export default function BetSlipFooter({ variant = 'default', onPlaced }) {
   const {
     bets, betCount, stake, setStake, totalOdds, potentialReturn, placeBets, clearAll,
-    betType, totalStakeAmount,
+    betType, totalStakeAmount, setSingleStake,
   } = useBetSlip();
   const {
     user, isLoggedIn, deductStake, refundStake, showToast, openLoginModal,
@@ -184,6 +184,49 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
     </div>
   );
 
+  const applySinglesStake = (value) => {
+    setStake(value);
+    bets.forEach((bet) => setSingleStake(bet.id, value));
+  };
+
+  const stakeControls = (
+    <>
+      <div className="betslip-quick-stakes">
+        {QUICK_STAKES.map(amount => (
+          <button
+            key={amount}
+            type="button"
+            className="betslip-quick-stake-btn"
+            onClick={() => applySinglesStake(String(amount))}
+          >
+            ₹{amount}
+          </button>
+        ))}
+      </div>
+
+      <div className="betslip-stake betslip-stake--inline">
+        <span className="betslip-stake-label">
+          {betType === 'multi' ? 'Stake (₹)' : 'Stake each (₹)'}
+        </span>
+        <input
+          type="number"
+          placeholder="0.00"
+          value={stake}
+          onChange={(e) => {
+            const value = e.target.value;
+            if (betType === 'multi') {
+              setStake(value);
+            } else {
+              applySinglesStake(value);
+            }
+          }}
+          min={MIN_STAKE_INR}
+          id="stake-input"
+          aria-label={betType === 'multi' ? 'Stake amount' : 'Stake amount per single bet'}
+        />
+      </div>
+    </>
+  );
   const isModal = variant === 'modal';
   const placeLabel = betType === 'multi'
     ? 'Place Multi Bet'
@@ -215,7 +258,7 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
                 key={amount}
                 type="button"
                 className="betslip-quick-stake-btn"
-                onClick={() => setStake(String(amount))}
+                onClick={() => (betType === 'multi' ? setStake(String(amount)) : applySinglesStake(String(amount)))}
               >
                 ₹{amount}
               </button>
@@ -226,10 +269,10 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
             className="betslip-modal-stake-input"
             placeholder="Stake"
             value={stake}
-            onChange={e => setStake(e.target.value)}
+            onChange={(e) => (betType === 'multi' ? setStake(e.target.value) : applySinglesStake(e.target.value))}
             min={MIN_STAKE_INR}
             id="modal-stake-input"
-            aria-label="Stake amount"
+            aria-label={betType === 'multi' ? 'Stake amount' : 'Stake amount per single bet'}
           />
           <button
             className={`betslip-place-btn betslip-modal-place-btn ${isPlacing ? 'is-placing' : ''}`}
@@ -253,38 +296,11 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
     <div className={`betslip-footer-panel ${variant === 'floating' ? 'betslip-footer-panel--floating' : ''}`}>
       {stakeSourceToggle}
 
-      {betType === 'multi' && (
-        <>
-          <div className="betslip-quick-stakes">
-            {QUICK_STAKES.map(amount => (
-              <button
-                key={amount}
-                type="button"
-                className="betslip-quick-stake-btn"
-                onClick={() => setStake(String(amount))}
-              >
-                ₹{amount}
-              </button>
-            ))}
-          </div>
-
-          <div className="betslip-stake betslip-stake--inline">
-            <span className="betslip-stake-label">Stake (₹)</span>
-            <input
-              type="number"
-              placeholder="0.00"
-              value={stake}
-              onChange={e => setStake(e.target.value)}
-              min={MIN_STAKE_INR}
-              id="stake-input"
-            />
-          </div>
-        </>
-      )}
+      {stakeControls}
 
       <div className="betslip-footer-summary">
         <div className="betslip-summary">
-          <span className="label">{betType === 'multi' ? 'Odds' : 'Stake'}</span>
+          <span className="label">{betType === 'multi' ? 'Odds' : 'Total stake'}</span>
           <span className="value">
             {betType === 'multi' ? totalOdds : `₹${totalStakeAmount.toFixed(2)}`}
           </span>

@@ -334,6 +334,9 @@
 
 .betslip-stake--inline input {
   width: 120px;
+  min-width: 88px;
+  flex: 1;
+  max-width: 140px;
   height: 32px;
   padding: 4px 8px;
   font-size: 0.85rem;

@@ -135,5 +135,20 @@ describe('next-delivery live settlement', () => {
     expect(res?.outcome).toBe('VOID');
     expect(res.reason).toBe('delivery_not_in_play');
   });
+
+  it('keeps next-delivery open when off ticker but overs/score exist', () => {
+    const res = evaluateDeliveryMarketBet({
+      market_id: 'i1_next_delivery_wicket_18_2',
+      selection_id: 'sel_under',
+    }, {
+      id: 'oy_fixture_2',
+      sport: 'cricket',
+      isLive: false,
+      matchState: 'pre',
+      matchType: 'T20',
+      liveDetails: { overs: '17.4', firstRuns: 120, firstWickets: 3 },
+    });
+    expect(res).toBeNull();
+  });
 });
 

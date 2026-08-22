@@ -9,6 +9,11 @@ describe('Phase 7 Exact Payout Acceptance Tests', () => {
   const marketId = 'mkt_pay_101';
 
   beforeEach(async () => {
+    await query(`ALTER TABLE wallets ADD COLUMN IF NOT EXISTS winnings_balance NUMERIC(14,2) NOT NULL DEFAULT 0.00`);
+    await query(`ALTER TABLE wallets ADD COLUMN IF NOT EXISTS locked_deposit_balance NUMERIC(14,2) NOT NULL DEFAULT 0.00`);
+    await query(`ALTER TABLE bets ADD COLUMN IF NOT EXISTS stake_from_locked NUMERIC(14,2) NOT NULL DEFAULT 0.00`);
+    await query(`ALTER TABLE bets ADD COLUMN IF NOT EXISTS stake_from_winnings NUMERIC(14,2) NOT NULL DEFAULT 0.00`);
+    await query(`ALTER TABLE bets ADD COLUMN IF NOT EXISTS stake_from_cash NUMERIC(14,2) NOT NULL DEFAULT 0.00`);
     await query(`INSERT INTO users (user_id, email, password_hash) VALUES ($1, $2, 'hash') ON CONFLICT (user_id) DO NOTHING;`, [userId, `${userId}@example.com`]);
     await query(`DELETE FROM ledger_entries WHERE wallet_id IN (SELECT wallet_id FROM wallets WHERE user_id = $1);`, [userId]);
     await query(`DELETE FROM bets WHERE user_id = $1;`, [userId]);
@@ -48,10 +53,11 @@ describe('Phase 7 Exact Payout Acceptance Tests', () => {
       expect(result.outcome).toBe('WON');
       expect(result.payout).toBe(tc.expectedPayout);
 
-      const wRes = await query('SELECT balance FROM wallets WHERE wallet_id = $1', [walletId]);
+      const wRes = await query('SELECT balance, COALESCE(winnings_balance, 0) AS winnings_balance FROM wallets WHERE wallet_id = $1', [walletId]);
       expect(parseFloat(wRes.rows[0].balance)).toBe(tc.expectedPayout);
+      expect(parseFloat(wRes.rows[0].winnings_balance)).toBe(parseFloat((tc.expectedPayout - tc.stake).toFixed(2)));
 
-      await query('UPDATE wallets SET balance = 0.00 WHERE wallet_id = $1', [walletId]);
+      await query('UPDATE wallets SET balance = 0.00, winnings_balance = 0.00 WHERE wallet_id = $1', [walletId]);
     });
   }
 

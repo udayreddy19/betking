@@ -1,7 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useAuth } from '../../context/AuthContext';
-import { useBetSlip } from '../../context/BetSlipContext';
 import { CASINO_ENABLED } from '../../utils/featureFlags';
 import { pressScale, springTab } from '../../utils/motionPresets';
 import {
@@ -12,7 +11,6 @@ import {
   NavPromotionsIcon,
   NavVipIcon,
   NavMenuIcon,
-  NavBetslipIcon,
 } from './MobileNavIcons';
 import { HiOutlineUser } from '../../icons';
 import './MobileBottomBar.css';
@@ -20,8 +18,7 @@ import './MobileBottomBar.css';
 export default function MobileBottomBar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isLoggedIn, toggleSidebar } = useAuth();
-  const { betCount, openMobileBetslip } = useBetSlip();
+  const { isLoggedIn, toggleSidebar, closeSidebar } = useAuth();
 
   const navItems = [
     { label: 'Home', path: '/', icon: NavHomeIcon },
@@ -47,7 +44,10 @@ export default function MobileBottomBar() {
               key={item.path}
               type="button"
               className={`mobile-bar-item ${isActive ? 'active' : ''} ${item.isVip ? 'vip-item' : ''} ${item.isProfile ? 'profile-item' : ''}`}
-              onClick={() => navigate(item.path)}
+              onClick={() => {
+                closeSidebar();
+                navigate(item.path);
+              }}
               whileTap={{ scale: pressScale }}
               transition={springTab}
             >
@@ -69,16 +69,15 @@ export default function MobileBottomBar() {
 
         <motion.button
           type="button"
-          className={`mobile-bar-item betslip-item ${betCount > 0 ? 'has-bets' : ''}`}
-          onClick={betCount > 0 ? openMobileBetslip : toggleSidebar}
+          className="mobile-bar-item menu-item"
+          onClick={toggleSidebar}
           whileTap={{ scale: pressScale }}
           transition={springTab}
         >
           <div className="mobile-bar-icon-wrap">
-            {betCount > 0 ? <NavBetslipIcon className="mobile-bar-icon" /> : <NavMenuIcon className="mobile-bar-icon" />}
-            {betCount > 0 && <span className="mobile-bar-bet-count">{betCount}</span>}
+            <NavMenuIcon className="mobile-bar-icon" />
           </div>
-          <span className="mobile-bar-label">{betCount > 0 ? 'Betslip' : 'Menu'}</span>
+          <span className="mobile-bar-label">Menu</span>
         </motion.button>
       </div>
     </nav>

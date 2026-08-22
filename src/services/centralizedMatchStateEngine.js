@@ -139,9 +139,9 @@ class CentralizedMatchStateEngine {
       );
 
       if (isSecond) {
-        let firstRuns = ld.firstRuns ?? ld.score1 ?? ld.runs ?? 0;
-        let firstWkts = ld.firstWickets ?? ld.wickets ?? 10;
-        let firstOvs = ld.firstOvers ?? ld.overs ?? '50.0';
+        let firstRuns = ld.firstRuns ?? ld.score1 ?? 0;
+        let firstWkts = ld.firstWickets ?? ld.wickets1 ?? 0;
+        let firstOvs = ld.firstOvers ?? '50.0';
         let firstTeam = ld.firstTeamName || safePrevious.teams?.team1?.name || team1Name;
 
         let chaseRuns = ld.chaseRuns ?? ld.score2 ?? 0;
@@ -312,6 +312,12 @@ class CentralizedMatchStateEngine {
       chaseState, isSecondInnings: isChaseInnings, payload,
     });
 
+    const teamWickets = (innings) => {
+      if (innings.length === 0) return 0;
+      if (isTestMatch) return innings.reduce((s, i) => s + (i.wickets ?? 0), 0);
+      return innings[innings.length - 1]?.wickets ?? 0;
+    };
+
     return {
       matchId,
       matchFormat,
@@ -319,8 +325,8 @@ class CentralizedMatchStateEngine {
       matchState: payload.matchState || (payload.isLive ? 'in' : 'pre'),
       isLive: payload.isLive ?? true,
       teams: {
-        team1: { name: team1Name, shortName: team1Short, score: t1ScoreStr, runs: t1TotalRuns, wickets: team1Innings.reduce((s, i) => s + (i.wickets ?? 0), 0), overs: team1Innings[team1Innings.length - 1]?.overs || '0.0', innings: team1Innings },
-        team2: { name: team2Name, shortName: team2Short, score: t2ScoreStr, runs: t2TotalRuns, wickets: team2Innings.reduce((s, i) => s + (i.wickets ?? 0), 0), overs: team2Innings[team2Innings.length - 1]?.overs || '0.0', innings: team2Innings },
+        team1: { name: team1Name, shortName: team1Short, score: t1ScoreStr, runs: t1TotalRuns, wickets: teamWickets(team1Innings), overs: team1Innings[team1Innings.length - 1]?.overs || '0.0', innings: team1Innings },
+        team2: { name: team2Name, shortName: team2Short, score: t2ScoreStr, runs: t2TotalRuns, wickets: teamWickets(team2Innings), overs: team2Innings[team2Innings.length - 1]?.overs || '0.0', innings: team2Innings },
       },
       testInnings: inningsList,
       inningsHistory: inningsList,

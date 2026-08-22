@@ -24,7 +24,7 @@ describe('Phase 6 Withdrawal & Fund Reservation Security Tests', () => {
     await query(`DELETE FROM withdrawals WHERE user_id = $1;`, [userId]);
     await query(`DELETE FROM transactions WHERE user_id = $1;`, [userId]);
     await query(`DELETE FROM wallets WHERE user_id = $1;`, [userId]);
-    await query(`INSERT INTO wallets (wallet_id, user_id, balance, reserved_balance, currency) VALUES ($1, $2, 5000.00, 0.00, 'INR');`, [walletId, userId]);
+    await query(`INSERT INTO wallets (wallet_id, user_id, balance, reserved_balance, winnings_balance, currency) VALUES ($1, $2, 5000.00, 0.00, 5000.00, 'INR');`, [walletId, userId]);
   });
 
   it('should process valid withdrawal request and reserve funds', async () => {
@@ -35,7 +35,7 @@ describe('Phase 6 Withdrawal & Fund Reservation Security Tests', () => {
     expect(res.availableBalance).toBe(3000.00);
 
     const wRes = await query('SELECT balance, reserved_balance FROM wallets WHERE wallet_id = $1', [walletId]);
-    expect(parseFloat(wRes.rows[0].balance)).toBe(5000.00);
+    expect(parseFloat(wRes.rows[0].balance)).toBe(3000.00);
     expect(parseFloat(wRes.rows[0].reserved_balance)).toBe(2000.00);
   });
 
@@ -53,7 +53,7 @@ describe('Phase 6 Withdrawal & Fund Reservation Security Tests', () => {
     expect(rejected[0].reason.message).toContain('INSUFFICIENT_FUNDS');
 
     const wRes = await query('SELECT balance, reserved_balance FROM wallets WHERE wallet_id = $1', [walletId]);
-    expect(parseFloat(wRes.rows[0].balance)).toBe(5000.00);
+    expect(parseFloat(wRes.rows[0].balance)).toBe(1000.00);
     expect(parseFloat(wRes.rows[0].reserved_balance)).toBe(4000.00);
   });
 

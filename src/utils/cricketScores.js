@@ -1,6 +1,31 @@
 import { normalizeCricbuzzOvers, oversToBalls } from './oversUtils.js';
 import { normalizeMatchOvers, oversToBallsForMatch } from './cricketFormat.js';
 
+/** Wickets in a single innings cannot exceed 10 (except test multi-day formats). */
+export function clampInningsWickets(wickets, match) {
+  const w = Number(wickets) || 0;
+  if (w <= 0) return 0;
+  const format = String(
+    match?.liveDetails?.matchFormat
+    || match?.matchType
+    || match?.format
+    || '',
+  ).toLowerCase();
+  if (/test/.test(format)) return w;
+  return Math.min(w, 10);
+}
+
+function scoreEntry(token, runs, wickets, overs, match) {
+  const normalized = match ? normalizeMatchOvers(overs ?? '0.0', match) : normalizeCricbuzzOvers(overs ?? '0.0');
+  return {
+    token: token || '',
+    runs: runs ?? 0,
+    wickets: clampInningsWickets(wickets, match),
+    overs: normalized,
+    balls: match ? oversToBallsForMatch(overs ?? '0.0', match) : oversToBalls(overs ?? '0.0'),
+  };
+}
+
 function normalizeTeamToken(name = '') {
   return String(name)
     .toLowerCase()
@@ -45,17 +70,6 @@ export function pickPositiveScore(primary, fallback, lastResort = 0) {
   return lastResort;
 }
 
-function scoreEntry(token, runs, wickets, overs, match) {
-  const normalized = match ? normalizeMatchOvers(overs ?? '0.0', match) : normalizeCricbuzzOvers(overs ?? '0.0');
-  return {
-    token: token || '',
-    runs: runs ?? 0,
-    wickets: wickets ?? 0,
-    overs: normalized,
-    balls: match ? oversToBallsForMatch(overs ?? '0.0', match) : oversToBalls(overs ?? '0.0'),
-  };
-}
-
 function pickEntryForTeam(entries, teamName) {
   return entries.find((entry) => entry.token && teamNameMatches(teamName, entry.token)) || null;
 }
@@ -89,6 +103,7 @@ export function looksLikeMirroredFirstInnings(match, ld = {}) {
   if (distinctTotals || distinctOvers) return false;
   if (firstInningsLabel) return true;
   if (!sameScore) return false;
+  if (sameWkts && w1 > 10) return true;
   if (ld.chaseTeamName && Number(ld.chaseRuns) > 0 && Number(ld.firstRuns) > 0 && Number(ld.firstRuns) !== Number(ld.chaseRuns)) {
     return false;
   }
@@ -112,7 +127,6 @@ export function resolveCricketTeamScores(match, ld = {}) {
   const mirroredFirst = looksLikeMirroredFirstInnings(match, ld);
 
   // 2nd Innings ONLY with explicit chase signals — never score2/wickets2 alone
-  // (10Cric stores away/first-bat totals in those slots while still in innings 1).
   const hasSecondInningsData = !mirroredFirst && (
     (Number(ld.inningsId) >= 2)
     || Number(ld.chaseRuns) > 0
@@ -171,9 +185,9 @@ export function resolveCricketTeamScores(match, ld = {}) {
       ),
       Number(chaseTeamObj?.runs) || 0,
     );
-    const chaseWickets = Math.max(
-      Number(ld.chaseWickets ?? ld.wickets2 ?? 0) || 0,
-      Number(chaseTeamObj?.wickets) || 0,
+    const chaseWickets = clampInningsWickets(
+      pickPositiveScore(ld.chaseWickets, ld.wickets2, chaseTeamObj?.wickets),
+      match,
     );
     const chaseOvers = [ld.chaseOvers, ld.overs2, Number(ld.inningsId) >= 2 ? ld.overs : null, chaseTeamObj?.overs]
       .find((value) => value != null && value !== '' && value !== 0 && value !== '0' && value !== '0.0')

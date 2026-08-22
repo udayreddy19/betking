@@ -1,156 +1,200 @@
-.mobile-betslip-fab {
-  display: none;
+.floating-betslip-root {
+  --floating-betslip-fab-size: 56px;
+  --floating-betslip-offset-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  --floating-betslip-offset-right: 20px;
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1450;
+}
+
+.floating-betslip-fab {
+  pointer-events: auto;
+  position: fixed;
+  bottom: var(--floating-betslip-offset-bottom);
+  right: var(--floating-betslip-offset-right);
+  z-index: 1452;
+  width: var(--floating-betslip-fab-size);
+  height: var(--floating-betslip-fab-size);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary);
+  color: #fff;
+  box-shadow:
+    0 4px 16px rgba(124, 58, 237, 0.4),
+    0 2px 6px rgba(15, 23, 42, 0.12);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.floating-betslip-fab.is-open {
+  box-shadow:
+    0 6px 22px rgba(124, 58, 237, 0.5),
+    0 2px 8px rgba(15, 23, 42, 0.14);
+}
+
+.floating-betslip-fab.is-new {
+  animation: betslipFabPulse 0.85s ease;
+}
+
+@keyframes betslipFabPulse {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+.floating-betslip-fab-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.floating-betslip-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
+  font-size: 0.68rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.floating-betslip-backdrop {
+  pointer-events: auto;
+  position: fixed;
+  inset: 0;
+  z-index: 1450;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: rgba(15, 23, 42, 0.12);
+  cursor: pointer;
+}
+
+.floating-betslip-panel {
+  pointer-events: auto;
+  position: fixed;
+  z-index: 1451;
+  bottom: calc(var(--floating-betslip-offset-bottom) + var(--floating-betslip-fab-size) + 10px);
+  right: var(--floating-betslip-offset-right);
+  width: min(360px, calc(100vw - 24px));
+  max-height: min(480px, calc(100dvh - var(--floating-betslip-offset-bottom) - var(--floating-betslip-fab-size) - 32px));
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  box-shadow:
+    0 16px 48px rgba(15, 23, 42, 0.18),
+    0 4px 12px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.floating-betslip-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  background: var(--color-bg);
+}
+
+.floating-betslip-main {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.floating-betslip-main .betslip {
+  display: flex !important;
+  flex-direction: column;
+  position: static;
+  width: 100%;
+  max-height: none;
+  height: auto;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.floating-betslip-main .betslip-header {
+  padding-right: 42px;
+}
+
+.floating-betslip-main .betslip-body {
+  flex: none;
+  max-height: min(240px, 38vh);
+  overflow-y: auto;
+}
+
+.floating-betslip-cta {
+  flex: 0 0 auto;
+  flex-shrink: 0;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.06);
+}
+
+.floating-betslip-cta .betslip-footer-panel--floating {
+  padding: 8px 10px 10px;
+}
+
+.floating-betslip-cta .betslip-footer-panel {
+  padding: 10px 12px 12px;
+}
+
+.floating-betslip-cta .betslip-place-btn {
+  width: 100%;
+  margin-top: 8px;
 }
 
 @media (max-width: 768px) {
-  .mobile-betslip-fab,
-  .mobile-betslip-hint {
-    display: none !important;
+  .floating-betslip-root {
+    --floating-betslip-fab-size: 54px;
+    --floating-betslip-offset-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    --floating-betslip-offset-right: 14px;
   }
 
-  body.mobile-betslip-open .mobile-bottom-bar {
-    display: none !important;
-  }
-}
-
-@media (max-width: 1024px) {
-  .mobile-betslip-fab {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    position: fixed;
-    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-    right: 16px;
-    z-index: 1400;
-    padding: 14px 22px;
-    background: var(--color-primary);
-    color: white;
-    border-radius: var(--radius-full);
-    font-weight: var(--font-bold);
-    font-size: var(--text-sm);
-    box-shadow: 0 4px 20px rgba(124, 58, 237, 0.45);
-  }
-
-  .mobile-betslip-badge {
-    background: var(--color-surface);
-    color: var(--color-primary);
-    min-width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.7rem;
-    font-weight: 800;
-  }
-
-  .mobile-betslip-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 2000;
-    display: flex;
-    align-items: flex-end;
-  }
-
-  .mobile-betslip-sheet {
-    width: 100%;
-    max-height: min(90dvh, calc(100dvh - 8px));
-    background: var(--color-surface);
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    overflow: hidden;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    animation: slideUp 0.25s ease;
-  }
-
-  .mobile-betslip-main {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .mobile-betslip-main .betslip {
-    display: flex !important;
-    flex-direction: column;
-    position: static;
-    width: 100%;
-    max-height: none;
-    height: auto;
-    border-radius: 0;
-    box-shadow: none;
-    overflow: visible;
-  }
-
-  .mobile-betslip-main .betslip-body {
-    flex: none;
-    max-height: none;
-    overflow: visible;
-  }
-
-  .mobile-betslip-cta {
-    flex: 0 0 auto;
-    background: var(--color-surface);
-    border-top: 1px solid var(--color-border);
-    box-shadow: 0 -8px 20px rgba(15, 23, 42, 0.08);
-  }
-
-  .mobile-betslip-cta .betslip-footer-panel {
-    padding: 10px 12px calc(12px + env(safe-area-inset-bottom, 0px));
-  }
-
-  .mobile-betslip-cta .betslip-place-btn {
-    display: block;
-    width: 100%;
-    height: 44px;
-    margin-top: 8px;
-    background: var(--color-primary);
-    color: #fff;
-    font-weight: 800;
-    border-radius: 10px;
-  }
-
-  .mobile-betslip-close {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    z-index: 4;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: var(--color-bg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--color-text-muted);
-  }
-
-  .mobile-betslip-hint {
-    display: block;
-    position: fixed;
-    bottom: 72px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--color-text);
-    color: white;
-    padding: 6px 14px;
-    border-radius: var(--radius-full);
-    font-size: 0.7rem;
-    z-index: 1200;
-    white-space: nowrap;
-  }
-}
-
-@keyframes slideUp {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
-}
-
-@media (min-width: 1025px) {
-  .mobile-betslip-hint {
+  .floating-betslip-backdrop {
     display: none;
+  }
+
+  .floating-betslip-panel {
+    width: min(320px, calc(100vw - 28px));
+    max-height: min(340px, calc(100dvh - var(--floating-betslip-offset-bottom) - var(--floating-betslip-fab-size) - 20px));
+    border-radius: 14px;
+  }
+
+  .floating-betslip-main .betslip-body {
+    max-height: min(180px, 34vh);
+  }
+
+  .floating-betslip-cta .betslip-footer-panel {
+    padding: 8px 10px 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floating-betslip-fab,
+  .floating-betslip-fab.is-new {
+    animation: none;
+    transition: none;
   }
 }

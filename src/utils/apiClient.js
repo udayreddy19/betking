@@ -90,7 +90,8 @@ export function mapServerUserToSession(serverUser, previous = null) {
   const freebetBalance = Number(serverUser.freebetBalance) || 0;
   const loyaltyPoints = Number(serverUser.loyaltyPoints) || 0;
   const reservedBalance = Number(serverUser.reservedBalance) || 0;
-  const available = Math.max(0, balance - reservedBalance);
+  const winningsBalance = Number(serverUser.winningsBalance) || 0;
+  const lockedDepositBalance = Number(serverUser.lockedDepositBalance) || 0;
   const loyaltyTier = serverUser.loyaltyTier || previous?.loyaltyTier || 'BRONZE';
   const nextTier = getPointsToNextTier({ loyaltyPoints, loyaltyTier });
   return {
@@ -102,8 +103,8 @@ export function mapServerUserToSession(serverUser, previous = null) {
     phone: serverUser.phone || previous?.phone || '',
     balance,
     reservedBalance,
-    lockedDepositBalance: 0,
-    winningsBalance: available,
+    lockedDepositBalance,
+    winningsBalance,
     bonusBalance,
     freebetBalance,
     loyaltyPoints,

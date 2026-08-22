@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { getCashoutOffer } from '../utils/wageringRules';
+import { computeAccumulatorPayout } from '../utils/accumulatorPayout.js';
 import { playBetSound, playWinSound } from '../utils/soundEffects';
 import { isMatchBettable } from '../utils/matchBetting';
 import { apiFetch } from '../utils/apiClient';
@@ -54,28 +55,51 @@ function mapServerBetToPlaced(row) {
     status = payout > Number(row.stake || 0) ? 'won' : 'lost';
   }
 
-  const matchName = row.match_name
-    || row.matchName
-    || (String(row.match_id || '').startsWith('10cric_') || String(row.match_id || '').startsWith('oy_')
-      ? 'Live match' : null)
-    || (isProviderMatchId(row.match_id) ? 'Live match' : row.match_id);
-  const selectionLabel = humanizeSelectionId(row.selection_id, row.selection_name);
+  const selectionRows = Array.isArray(row.selections)
+    ? row.selections
+    : [];
+  const isMulti = row.bet_type === 'ACCUMULATOR';
   const isWon = status === 'won';
   const isVoid = status === 'void';
-  return {
-    id: row.bet_id,
-    type: row.bet_type === 'ACCUMULATOR' ? 'multi' : 'single',
-    legs: [{
+
+  const legs = selectionRows.length > 0
+    ? selectionRows.map((sel, idx) => {
+      const matchId = sel.match_id || row.match_id;
+      const matchName = row.match_name
+        || (String(matchId || '').startsWith('10cric_') || String(matchId || '').startsWith('oy_')
+          ? 'Live match' : null)
+        || (isProviderMatchId(matchId) ? 'Live match' : matchId);
+      return {
+        id: `${row.bet_id}-leg-${idx}`,
+        matchId,
+        matchName,
+        sport: row.sport || 'cricket',
+        selection: sel.selection_id,
+        selectionName: humanizeSelectionId(sel.selection_id, sel.selection_name),
+        marketName: humanizeMarketId(sel.market_id),
+        marketId: sel.market_id,
+        odds: Number(sel.odds),
+      };
+    })
+    : [{
       id: `${row.bet_id}-leg-0`,
       matchId: row.match_id,
-      matchName,
+      matchName: row.match_name
+        || (String(row.match_id || '').startsWith('10cric_') || String(row.match_id || '').startsWith('oy_')
+          ? 'Live match' : null)
+        || (isProviderMatchId(row.match_id) ? 'Live match' : row.match_id),
       sport: row.sport || 'cricket',
       selection: row.selection_id,
-      selectionName: selectionLabel,
+      selectionName: humanizeSelectionId(row.selection_id, row.selection_name),
       marketName: humanizeMarketId(row.market_id),
       marketId: row.market_id,
       odds: Number(row.accepted_odds || row.odds),
-    }],
+    }];
+
+  return {
+    id: row.bet_id,
+    type: isMulti ? 'multi' : 'single',
+    legs,
     stake: Number(row.stake),
     totalOdds: Number(row.accepted_odds || row.odds),
     potentialReturn: Number(row.potential_payout),
@@ -239,10 +263,6 @@ export function BetSlipProvider({ children }) {
 
     showToast(`Added to betslip: ${label} @ ${Number(odds).toFixed(2)}`, 'success');
 
-    if (typeof window !== 'undefined' && window.innerWidth <= 1024 && !options.skipMobileOpen) {
-      setIsMobileOpen(true);
-    }
-
     return true;
   }, [bets, showToast, betType, stake]);
 
@@ -272,8 +292,13 @@ export function BetSlipProvider({ children }) {
   }, [bets]);
 
   const multiOdds = useMemo(
-    () => bets.reduce((acc, bet) => acc * bet.odds, 1),
-    [bets]
+    () => computeAccumulatorPayout(1, bets.map((bet) => bet.odds)).fullCombinedOdds,
+    [bets],
+  );
+
+  const multiDisplayOdds = useMemo(
+    () => computeAccumulatorPayout(1, bets.map((bet) => bet.odds)).combinedOdds,
+    [bets],
   );
 
   const totalStakeAmount = useMemo(() => {
@@ -288,7 +313,7 @@ export function BetSlipProvider({ children }) {
     if (bets.length === 0) return '0.00';
     if (betType === 'multi') {
       const s = parseFloat(stake) || 0;
-      return (s * multiOdds).toFixed(2);
+      return computeAccumulatorPayout(s, bets.map((bet) => bet.odds)).potentialPayout.toFixed(2);
     }
     const total = bets.reduce((sum, bet) => {
       const s = parseFloat(singlesStakes[bet.id] || stake || 0) || 0;
@@ -405,8 +430,8 @@ export function BetSlipProvider({ children }) {
         type: 'multi',
         legs: [...bets],
         stake: stakeAmount,
-        totalOdds: multiOdds,
-        potentialReturn: stakeAmount * multiOdds,
+        totalOdds: multiDisplayOdds,
+        potentialReturn: computeAccumulatorPayout(stakeAmount, bets.map((b) => b.odds)).potentialPayout,
         status: 'pending',
         placedAt: new Date().toISOString(),
       }, stakeAmount);
@@ -538,7 +563,7 @@ export function BetSlipProvider({ children }) {
     setBetType,
     singlesStakes,
     setSingleStake,
-    totalOdds: betType === 'multi' ? multiOdds.toFixed(2) : '—',
+    totalOdds: betType === 'multi' ? multiDisplayOdds.toFixed(2) : '—',
     potentialReturn,
     totalStakeAmount,
     betCount: bets.length,

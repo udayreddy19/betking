@@ -13,6 +13,7 @@ export function getWalletBreakdown(user) {
   const freebets = user?.freebetBalance ?? 0;
   const bonusAndFreebets = bonus + freebets;
   const cashBalance = user?.balance ?? 0;
+  const playableCash = Math.max(0, cashBalance - lockedDeposit - winnings);
   const total = cashBalance + bonusAndFreebets;
 
   return {
@@ -21,6 +22,7 @@ export function getWalletBreakdown(user) {
     winnings,
     lockedDeposit,
     cashBalance,
+    playableCash,
     bonus,
     freebets,
     bonusAndFreebets,

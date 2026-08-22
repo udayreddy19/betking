@@ -18,7 +18,6 @@ import Toast from './components/Toast/Toast';
 import FinancialModals from './components/FinancialModals/FinancialModals';
 import MobileBetSlip from './components/MobileBetSlip/MobileBetSlip';
 import MobileBottomBar from './components/MobileBottomBar/MobileBottomBar';
-import GlobalBetBar from './components/GlobalBetBar/GlobalBetBar';
 import BetSettlementRunner from './components/BetSettlementRunner/BetSettlementRunner';
 import GamePlayModal from './components/GamePlayModal/GamePlayModal';
 import LiveChatSupportWidget from './components/LiveChatSupportWidget/LiveChatSupportWidget';
@@ -103,7 +102,6 @@ function AppLayout() {
       <BetSettlementRunner />
       <MobileBetSlip />
       {!isAdminRoute && !isDevRoute && !isRegisterRoute && <MobileBottomBar />}
-      {!isAdminRoute && !isDevRoute && !isRegisterRoute && <GlobalBetBar />}
       <main className={mainClass}>
         <ErrorBoundary resetKey={location.pathname}>
           <Suspense fallback={<PageLoader />}>

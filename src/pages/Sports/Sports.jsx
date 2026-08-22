@@ -5,7 +5,6 @@ import FilterChips from '../../components/FilterChips/FilterChips';
 import SportIcon from '../../components/SportIcon/SportIcon';
 import TeamJersey from '../../components/TeamJersey/TeamJersey';
 import MatchCountdownTimer from '../../components/MatchCountdownTimer/MatchCountdownTimer';
-import BetSlip from '../../components/BetSlip/BetSlip';
 import LiveMatchGraphicWidget from '../../components/LiveMatchGraphicWidget/LiveMatchGraphicWidget';
 import ErrorBoundary from '../../components/ErrorBoundary/ErrorBoundary';
 import SportsLeagueSidebar from '../../components/SportsLeagueSidebar/SportsLeagueSidebar';
@@ -1144,7 +1143,6 @@ export default function Sports() {
         </div>
 
         <aside className="sports-right">
-          <BetSlip />
           {isWideLayout && activeMatch && (
             <div className="sports-desktop-live-widget">
               <ErrorBoundary resetKey={activeMatch?.id}>

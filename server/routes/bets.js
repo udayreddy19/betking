@@ -44,16 +44,23 @@ router.get('/api/bets/mine', requireAuth, async (req, res) => {
     const result = await queryRead(
       `SELECT b.bet_id, b.user_id, b.match_id, b.market_id, b.selection_id, b.stake, b.odds, b.accepted_odds,
               b.potential_payout, b.bet_type, b.status, b.created_at, COALESCE(b.fund_source, 'cash') AS fund_source,
-              bs.selection_name AS selection_name
+              COALESCE(
+                json_agg(
+                  json_build_object(
+                    'match_id', bs.match_id,
+                    'market_id', bs.market_id,
+                    'selection_id', bs.selection_id,
+                    'selection_name', bs.selection_name,
+                    'odds', bs.odds
+                  ) ORDER BY bs.created_at ASC
+                ) FILTER (WHERE bs.id IS NOT NULL),
+                '[]'::json
+              ) AS selections
        FROM bets b
-       LEFT JOIN LATERAL (
-         SELECT selection_name
-         FROM bet_selections
-         WHERE bet_id = b.bet_id
-         ORDER BY created_at ASC
-         LIMIT 1
-       ) bs ON TRUE
+       LEFT JOIN bet_selections bs ON bs.bet_id = b.bet_id
        WHERE b.user_id = $1
+       GROUP BY b.bet_id, b.user_id, b.match_id, b.market_id, b.selection_id, b.stake, b.odds, b.accepted_odds,
+                b.potential_payout, b.bet_type, b.status, b.created_at, b.fund_source
        ORDER BY b.created_at DESC
        LIMIT 100`,
       [req.user.userId],
@@ -78,11 +85,18 @@ router.get('/api/bets/mine', requireAuth, async (req, res) => {
       matchTitles = {};
     }
 
-    const bets = (result.rows || []).map((row) => ({
-      ...row,
-      match_name: matchTitles[row.match_id] || null,
-      selection_name: row.selection_name || row.selection_id,
-    }));
+    const bets = (result.rows || []).map((row) => {
+      const selections = Array.isArray(row.selections)
+        ? row.selections
+        : (typeof row.selections === 'string' ? JSON.parse(row.selections) : []);
+      const primarySelection = selections[0] || null;
+      return {
+        ...row,
+        selections,
+        match_name: matchTitles[row.match_id] || null,
+        selection_name: primarySelection?.selection_name || row.selection_name || row.selection_id,
+      };
+    });
 
     res.json({ success: true, bets });
   } catch (err) {

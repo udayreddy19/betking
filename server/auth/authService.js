@@ -589,6 +589,8 @@ export async function getMe(queryFn, userId) {
             p.display_name, p.kyc_status, p.risk_tier, p.account_status,
             w.balance, w.bonus_balance, COALESCE(w.freebet_balance, 0) AS freebet_balance,
             COALESCE(w.reserved_balance, 0) AS reserved_balance,
+            COALESCE(w.winnings_balance, 0) AS winnings_balance,
+            COALESCE(w.locked_deposit_balance, 0) AS locked_deposit_balance,
             COALESCE(l.points, 0) AS loyalty_points,
             COALESCE(l.tier, 'BRONZE') AS loyalty_tier
      FROM users u
@@ -624,6 +626,8 @@ export async function getMe(queryFn, userId) {
       bonusBalance: parseFloat(u.bonus_balance || 0),
       freebetBalance: parseFloat(u.freebet_balance || 0),
       reservedBalance: parseFloat(u.reserved_balance || 0),
+      winningsBalance: parseFloat(u.winnings_balance || 0),
+      lockedDepositBalance: parseFloat(u.locked_deposit_balance || 0),
       loyaltyPoints: parseFloat(u.loyalty_points || 0),
       loyaltyTier: u.loyalty_tier || 'BRONZE',
       createdAt: u.created_at,

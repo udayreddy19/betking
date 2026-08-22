@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { CASINO_ENABLED } from '../../utils/featureFlags';
@@ -36,6 +37,10 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const isAdminPage = location.pathname.startsWith('/admin');
   const isDevRoute = location.pathname.startsWith('/developer') || location.pathname.startsWith('/api-docs');
+
+  useEffect(() => {
+    closeSidebar();
+  }, [location.pathname, closeSidebar]);
 
   if (isAdminPage || isDevRoute) return null;
 

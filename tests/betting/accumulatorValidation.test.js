@@ -23,8 +23,8 @@ describe('Phase 5 Accumulator (Multiple) Bet Validation Tests', () => {
 
   it('should validate valid accumulator selections and compute combined odds', async () => {
     const selections = [
-      { matchId: match1, marketId: market1, selectionId: sel1, name: 'India', odds: 1.50 },
-      { matchId: match2, marketId: market2, selectionId: sel2, name: 'Arsenal', odds: 2.00 },
+      { matchId: match1, marketId: market1, selectionId: sel1, selectionName: 'India', odds: 1.50 },
+      { matchId: match2, marketId: market2, selectionId: sel2, selectionName: 'Arsenal', odds: 2.00 },
     ];
 
     const result = await accumulatorEngine.validateAccumulator(500.00, selections);

@@ -12,7 +12,7 @@ function formatBetTime(timestamp) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
-export default function BetSlip({ showFooter = true }) {
+export default function BetSlip({ showFooter = true, hidePerBetStakes = false }) {
   const {
     bets, removeBet, clearAll,
     betCount,
@@ -90,7 +90,7 @@ export default function BetSlip({ showFooter = true }) {
                 <span className="betslip-bet-selection">{bet.selectionName}</span>
                 <span className="betslip-bet-odds">{Number(bet.odds).toFixed(2)}</span>
               </div>
-              {betType === 'singles' && (
+              {betType === 'singles' && !hidePerBetStakes && (
                 <div className="betslip-bet-stake-row">
                   <label htmlFor={`stake-${bet.id}`}>Stake</label>
                   <input
