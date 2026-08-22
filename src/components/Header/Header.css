@@ -851,9 +851,16 @@
   }
 
   .header-theme-toggle,
-  .header-action-icon-btn,
+  .header-action-icon-btn:not(.header-my-bets-btn),
   .header-odds-format-select {
     display: none;
+  }
+
+  .header-my-bets-btn {
+    display: flex;
+    width: 36px;
+    height: 36px;
+    font-size: 1.05rem;
   }
 
   .header-balance {

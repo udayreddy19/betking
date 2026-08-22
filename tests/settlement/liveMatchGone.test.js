@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   evaluateBetAfterMatchOver,
   evaluateDeliveryMarketBet,
+  evaluateAccumulatorBet,
   evaluateOpenBetOutcome,
   buildSettlementMatchState,
 } from '../../lib/liveMatchSettlement.mjs';
@@ -96,13 +97,67 @@ describe('next-delivery live settlement', () => {
     expect(res).toBeNull();
   });
 
-  it('voids once the live over/ball has moved past the market slot', () => {
+  it('settles WON/LOST once the live over/ball has moved past the market slot', () => {
+    const res = evaluateDeliveryMarketBet({
+      market_id: 'i1_next_delivery_wicket_39_1',
+      selection_id: 'sel_wkt_no',
+      selection_name: 'No',
+    }, liveMatch('38.1', {
+      matchType: 'ODI',
+      league: 'One-Day Cup',
+      overHistory: [{ overNum: 39, balls: ['1', '•'], isCurrent: true }],
+    }));
+    expect(res?.outcome).toBe('WON');
+    expect(res.reason).toMatch(/delivery_wicket=false/);
+  });
+
+  it('settles next delivery runs markets from over history', () => {
+    const res = evaluateDeliveryMarketBet({
+      market_id: 'i2_next_delivery_runs_8_5',
+      selection_id: 'sel_del_2',
+      selection_name: '2 Runs',
+    }, liveMatch('7.5', {
+      liveDetails: {
+        overs: '7.5',
+        chaseOvers: '7.5',
+        chaseRuns: 90,
+        chaseWickets: 3,
+        firstRuns: 140,
+        inningsId: 2,
+        currentOverBalls: ['1', '4', '•', '1', '2'],
+      },
+      overHistory: [{ overNum: 8, balls: ['1', '4', '•', '1', '2'], isCurrent: true }],
+    }));
+    expect(res?.outcome).toBe('WON');
+    expect(res.reason).toBe('delivery_runs=2');
+  });
+
+  it('marks next delivery runs LOST when a different outcome was bowled', () => {
+    const res = evaluateDeliveryMarketBet({
+      market_id: 'i2_next_delivery_runs_8_5',
+      selection_id: 'sel_del_0',
+      selection_name: '0 Runs (Dot)',
+    }, liveMatch('7.5', {
+      liveDetails: {
+        overs: '7.5',
+        chaseOvers: '7.5',
+        chaseRuns: 90,
+        chaseWickets: 3,
+        firstRuns: 140,
+        inningsId: 2,
+      },
+      overHistory: [{ overNum: 8, balls: ['1', '4', '•', '1', '2'], isCurrent: true }],
+    }));
+    expect(res?.outcome).toBe('LOST');
+    expect(res.reason).toBe('delivery_runs=2');
+  });
+
+  it('keeps delivery pending when ball passed but no authoritative feed yet', () => {
     const res = evaluateDeliveryMarketBet({
       market_id: 'i1_next_delivery_wicket_39_1',
       selection_id: 'sel_wkt_no',
     }, liveMatch('38.1', { matchType: 'ODI', league: 'One-Day Cup' }));
-    expect(res?.outcome).toBe('VOID');
-    expect(res.reason).toMatch(/delivery_ball_passed/);
+    expect(res).toBeNull();
   });
 
   it('voids a T20 next-delivery market whose over is past the format', () => {
@@ -149,6 +204,30 @@ describe('next-delivery live settlement', () => {
       liveDetails: { overs: '17.4', firstRuns: 120, firstWickets: 3 },
     });
     expect(res).toBeNull();
+  });
+
+  it('settles accumulator LOST when one delivery leg loses', async () => {
+    const match = liveMatch('7.5', {
+      liveDetails: {
+        overs: '7.5',
+        firstOvers: '7.5',
+        firstRuns: 90,
+        firstWickets: 3,
+        inningsId: 1,
+      },
+      overHistory: [{ overNum: 8, balls: ['1', '4', '•', '1', '2'], isCurrent: true }],
+    });
+    const res = await evaluateAccumulatorBet({
+      bet_id: 'bet_acca_1',
+      bet_type: 'ACCUMULATOR',
+      match_id: 'oy_fixture_1',
+      selections: [
+        { market_id: 'i1_next_delivery_runs_8_5', selection_id: 'sel_del_2', selection_name: '2 Runs' },
+        { market_id: 'i1_next_delivery_runs_8_5', selection_id: 'sel_del_0', selection_name: '0 Runs (Dot)' },
+      ],
+    }, match);
+    expect(res?.outcome).toBe('LOST');
+    expect(res.reason).toBe('acca_leg_lost');
   });
 });
 

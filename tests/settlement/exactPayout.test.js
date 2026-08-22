@@ -14,6 +14,11 @@ describe('Phase 7 Exact Payout Acceptance Tests', () => {
     await query(`ALTER TABLE bets ADD COLUMN IF NOT EXISTS stake_from_locked NUMERIC(14,2) NOT NULL DEFAULT 0.00`);
     await query(`ALTER TABLE bets ADD COLUMN IF NOT EXISTS stake_from_winnings NUMERIC(14,2) NOT NULL DEFAULT 0.00`);
     await query(`ALTER TABLE bets ADD COLUMN IF NOT EXISTS stake_from_cash NUMERIC(14,2) NOT NULL DEFAULT 0.00`);
+    await query(`ALTER TABLE bets ADD COLUMN IF NOT EXISTS settled_at TIMESTAMPTZ`);
+    await query(`ALTER TABLE bets ADD COLUMN IF NOT EXISTS actual_payout NUMERIC(14,2)`);
+    await query(`ALTER TABLE bets ADD COLUMN IF NOT EXISTS settlement_reason TEXT`);
+    await query(`ALTER TABLE bets ADD COLUMN IF NOT EXISTS settlement_version INT DEFAULT 0`);
+    await query(`ALTER TABLE bets ADD COLUMN IF NOT EXISTS placement_snapshot JSONB`);
     await query(`INSERT INTO users (user_id, email, password_hash) VALUES ($1, $2, 'hash') ON CONFLICT (user_id) DO NOTHING;`, [userId, `${userId}@example.com`]);
     await query(`DELETE FROM ledger_entries WHERE wallet_id IN (SELECT wallet_id FROM wallets WHERE user_id = $1);`, [userId]);
     await query(`DELETE FROM bets WHERE user_id = $1;`, [userId]);

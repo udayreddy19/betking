@@ -55,7 +55,16 @@ function cashoutOfferForBet(placed, liveMatches, tier) {
 }
 
 export default function MyBetsPanel() {
-  const { placedBets, myBetsCount, isMyBetsOpen, closeMyBets, cashOutBet, adminSettleBet } = useBetSlip();
+  const {
+    placedBets,
+    myBetsCount,
+    isMyBetsOpen,
+    closeMyBets,
+    cashOutBet,
+    adminSettleBet,
+    refreshMyBets,
+    myBetsLoading,
+  } = useBetSlip();
   const { creditCashout, showToast, user } = useAuth();
   const liveMatches = useLiveMatches() || [];
   const navigate = useNavigate();
@@ -75,6 +84,7 @@ export default function MyBetsPanel() {
 
     // Default to 'Open' (pending) tab every time My Bets panel is opened
     setFilter('pending');
+    void refreshMyBets();
 
     const handleEscape = (event) => {
       if (event.key === 'Escape') closeMyBets();
@@ -93,7 +103,7 @@ export default function MyBetsPanel() {
       document.removeEventListener('keydown', handleEscape);
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isMyBetsOpen, closeMyBets]);
+  }, [isMyBetsOpen, closeMyBets, refreshMyBets]);
 
   // Auto-settle pending bets when matches complete
   useEffect(() => {
@@ -299,7 +309,12 @@ export default function MyBetsPanel() {
         </div>
 
         <div className="my-bets-body">
-          {filtered.length === 0 ? (
+          {myBetsLoading && filtered.length === 0 ? (
+            <div className="my-bets-loading" aria-live="polite">
+              <div className="my-bets-loading-spinner" aria-hidden="true" />
+              <p>Loading your bets…</p>
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="my-bets-empty">
               <div className="my-bets-empty-icon">📋</div>
               <h4>No bets here</h4>

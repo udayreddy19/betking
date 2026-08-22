@@ -102,6 +102,7 @@ import growthRouter from './routes/growth.js';
 import liveScoresPublicRouter from './routes/public/liveScores.js';
 import publicOddsRouter from './routes/public/odds.js';
 import adminInlineRouter from './routes/admin/inline.js';
+import adminSettlementRouter from './routes/admin/settlement.js';
 
 app.use(authInlineRouter);
 app.use(liveRouter);
@@ -121,6 +122,7 @@ app.use('/api/v1/admin', adminAuth);
 app.use('/api/admin', adminAuth);
 
 app.use(adminInlineRouter);
+app.use(adminSettlementRouter);
 
 import { createServer } from 'http';
 import { initWebSocketServer } from '../lib/websocketEngine.mjs';

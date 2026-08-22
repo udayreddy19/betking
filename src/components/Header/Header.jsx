@@ -272,7 +272,7 @@ function Header() {
             <>
               <motion.button
                 type="button"
-                className={`header-action-icon-btn ${isMyBetsOpen ? 'active' : ''}`}
+                className={`header-action-icon-btn header-my-bets-btn ${isMyBetsOpen ? 'active' : ''}`}
                 data-my-bets-trigger
                 onClick={handleMyBetsToggle}
                 aria-expanded={isMyBetsOpen}

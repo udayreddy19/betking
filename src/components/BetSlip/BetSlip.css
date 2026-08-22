@@ -251,6 +251,19 @@
   color: var(--color-primary);
 }
 
+.betslip-bet-odds--updated {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.betslip-bet-odds-old {
+  text-decoration: line-through;
+  opacity: 0.55;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
 .betslip-bet-stake-row {
   display: flex;
   align-items: center;

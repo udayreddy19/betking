@@ -3,11 +3,10 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 vi.mock('../../lib/oddsQuoteService.mjs', () => ({
   resolveServerOdds: vi.fn(async ({ clientOdds }) => {
     const serverOdds = 1.85;
-    if (clientOdds != null && Math.abs(Number(clientOdds) - serverOdds) / serverOdds > 0.02) {
-      throw new Error(`ODDS_CHANGED: Requested odds ${clientOdds} differs from authoritative server odds ${serverOdds}`);
-    }
-    return serverOdds;
+    const changed = clientOdds != null && Math.abs(Number(clientOdds) - serverOdds) / serverOdds > 0.02;
+    return { odds: serverOdds, changed, previousOdds: clientOdds != null ? Number(clientOdds) : null };
   }),
+  unwrapServerOddsQuote: (quote) => (quote?.odds != null ? Number(quote.odds) : Number(quote)),
 }));
 
 import { betPlacementEngine } from '../../lib/betPlacementEngine.mjs';
@@ -79,16 +78,20 @@ describe('Phase 5 Bet Placement Validation Tests', () => {
     await query(`UPDATE user_account_controls SET account_state = 'ACTIVE' WHERE user_id = $1;`, [testUserId]);
   });
 
-  it('CRITICAL: invalid or changed odds must REJECT bet placement', async () => {
-    // Client submits odds 2.50, server authoritative odds are 1.85
-    await expect(betPlacementEngine.placeBet({
+  it('accepts placement at server odds when client odds drift', async () => {
+    const res = await betPlacementEngine.placeBet({
       userId: testUserId,
       matchId,
       marketId,
       selectionId,
       stake: 100.00,
       clientOdds: 2.50,
-    })).rejects.toThrow('ODDS_CHANGED');
+    });
+
+    expect(res.success).toBe(true);
+    expect(res.acceptedOdds).toBe(1.85);
+    expect(res.oddsChanged).toBe(true);
+    expect(res.oddsUpdates?.[0]?.previousOdds).toBe(2.5);
   });
 
   it('CRITICAL: invalid stake (<= 0 or > maxLimit) must REJECT bet placement', async () => {

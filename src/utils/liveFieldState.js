@@ -3,6 +3,8 @@ import { isCricketSecondInnings, resolveCricketTeamScores } from './cricketScore
 import { oversToBalls } from './oversUtils.js';
 import { getRosterForTeam } from '../data/cricketRosters';
 
+import { formatBallOutcome as formatBallOutcomeCore, isNonLegalDelivery as isNonLegalDeliveryCore } from '../../lib/cricketBallOutcome.mjs';
+
 const RUN_SEQUENCE = [1, 0, 2, 1, 4, 1, 0, 1, 2, 6, 1, 1, 4, 0, 2, 1, 3, 1, 0, 4];
 const EXTRA_OUTCOMES = ['wd', '1wd', '2wd', 'lb', '1lb', '2lb', 'nb', '1nb', 'W'];
 const WAGON_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315];
@@ -16,22 +18,7 @@ export function parseOvers(oversStr) {
 
 /** Format a ball outcome for display (runs, extras, wicket). */
 export function formatBallOutcome(outcome) {
-  if (outcome === 'W' || outcome === -1) return 'W';
-  if (outcome === 0 || outcome === '0' || outcome === '•') return '•';
-  if (typeof outcome === 'number') return String(outcome);
-
-  const s = String(outcome).toLowerCase().trim();
-  if (s === 'wd' || s === 'wide') return 'Wd';
-  if (s === 'lb' || s === 'legbye') return 'Lb';
-  if (s === 'nb' || s === 'noball') return 'Nb';
-  const wd = s.match(/^(\d+)wd$/);
-  if (wd) return `${wd[1]}Wd`;
-  const lb = s.match(/^(\d+)lb$/);
-  if (lb) return `${lb[1]}Lb`;
-  const nb = s.match(/^(\d+)nb$/);
-  if (nb) return `${nb[1]}Nb`;
-
-  return String(outcome);
+  return formatBallOutcomeCore(outcome);
 }
 
 /** @deprecated use formatBallOutcome */
@@ -40,8 +27,7 @@ export function formatBall(run) {
 }
 
 export function isNonLegalDelivery(label) {
-  const s = String(label).toLowerCase();
-  return s.includes('wd') || s.includes('nb') || s === 'wide' || s === 'noball';
+  return isNonLegalDeliveryCore(label);
 }
 
 export function getBallDisplayKind(ball) {

@@ -95,12 +95,29 @@ router.get('/api/bets/mine', requireAuth, async (req, res) => {
         selections,
         match_name: matchTitles[row.match_id] || null,
         selection_name: primarySelection?.selection_name || row.selection_name || row.selection_id,
+        settled_at: row.settled_at || null,
+        actual_payout: row.actual_payout != null ? Number(row.actual_payout) : null,
+        settlement_reason: row.settlement_reason || null,
       };
     });
 
     res.json({ success: true, bets });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+router.post(['/api/bets/quote-selections', '/api/v1/bets/quote-selections'], requireAuth, async (req, res) => {
+  try {
+    const { quoteBetslipSelections } = await import('../../lib/betslipQuoteService.mjs');
+    const selections = Array.isArray(req.body?.selections) ? req.body.selections : [];
+    if (selections.length === 0) {
+      return res.status(400).json({ error: 'No selections to quote' });
+    }
+    const result = await quoteBetslipSelections(selections);
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(400).json({ error: userFacingBetError(err), code: err.code || 'QUOTE_FAILED' });
   }
 });
 

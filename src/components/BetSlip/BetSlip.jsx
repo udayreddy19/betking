@@ -88,7 +88,12 @@ export default function BetSlip({ showFooter = true, hidePerBetStakes = false })
               </div>
               <div className="betslip-bet-selection-row">
                 <span className="betslip-bet-selection">{bet.selectionName}</span>
-                <span className="betslip-bet-odds">{Number(bet.odds).toFixed(2)}</span>
+                <span className={`betslip-bet-odds${bet.oddsChanged ? ' betslip-bet-odds--updated' : ''}`}>
+                  {bet.oddsChanged && bet.previousOdds != null && (
+                    <span className="betslip-bet-odds-old">{Number(bet.previousOdds).toFixed(2)}</span>
+                  )}
+                  {Number(bet.odds).toFixed(2)}
+                </span>
               </div>
               {betType === 'singles' && !hidePerBetStakes && (
                 <div className="betslip-bet-stake-row">

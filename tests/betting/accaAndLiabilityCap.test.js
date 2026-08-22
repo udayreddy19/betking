@@ -5,6 +5,7 @@ const resolveServerOdds = vi.fn();
 
 vi.mock('../../lib/oddsQuoteService.mjs', () => ({
   resolveServerOdds: (...args) => resolveServerOdds(...args),
+  unwrapServerOddsQuote: (quote) => (quote?.odds != null ? Number(quote.odds) : Number(quote)),
 }));
 
 vi.mock('../../lib/marketSuspensionEngine.mjs', () => ({
@@ -23,21 +24,24 @@ describe('Acca client-odds rejection', () => {
     resolveServerOdds.mockReset();
   });
 
-  it('rejects accumulator when any leg client odds drift > 2%', async () => {
+  it('reports odds drift on accumulator legs without rejecting placement', async () => {
     resolveServerOdds
-      .mockImplementationOnce(async ({ clientOdds }) => assertBettableQuote(1.50, clientOdds))
-      .mockImplementationOnce(async ({ clientOdds }) => assertBettableQuote(2.00, clientOdds));
+      .mockImplementationOnce(async ({ clientOdds }) => ({ odds: 1.50, changed: false, previousOdds: Number(clientOdds) }))
+      .mockImplementationOnce(async ({ clientOdds }) => ({ odds: 2.00, changed: true, previousOdds: Number(clientOdds) }));
 
-    await expect(accumulatorEngine.validateAccumulator(100, [
+    const result = await accumulatorEngine.validateAccumulator(100, [
       { matchId: 'm1', marketId: 'mw', selectionId: 's1', odds: 1.50 },
       { matchId: 'm2', marketId: 'mw', selectionId: 's2', odds: 3.50 },
-    ])).rejects.toThrow(/ODDS_CHANGED/);
+    ]);
+    expect(result.combinedOdds).toBe(3);
+    expect(result.oddsChanged).toBe(true);
+    expect(result.oddsUpdates).toHaveLength(1);
   });
 
   it('accepts accumulator when every leg matches server odds', async () => {
     resolveServerOdds
-      .mockImplementationOnce(async ({ clientOdds }) => assertBettableQuote(1.50, clientOdds))
-      .mockImplementationOnce(async ({ clientOdds }) => assertBettableQuote(2.00, clientOdds));
+      .mockImplementationOnce(async ({ clientOdds }) => ({ odds: 1.50, changed: false, previousOdds: Number(clientOdds) }))
+      .mockImplementationOnce(async ({ clientOdds }) => ({ odds: 2.00, changed: false, previousOdds: Number(clientOdds) }));
 
     const result = await accumulatorEngine.validateAccumulator(100, [
       { matchId: 'm1', marketId: 'mw', selectionId: 's1', odds: 1.50 },
@@ -98,7 +102,7 @@ describe('Cashout V3 re-price', () => {
 
   it('prices cashout from current odds ratio, not stored potential alone', async () => {
     // Backed at 2.00, current shortened to 1.50 → fair rises above stake
-    resolveServerOdds.mockResolvedValue(1.50);
+    resolveServerOdds.mockResolvedValue({ odds: 1.50, changed: false, previousOdds: null });
     const quote = await priceCashoutFromV3Snapshot({
       stake: 100,
       acceptedOdds: 2.0,

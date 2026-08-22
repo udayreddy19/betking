@@ -21,7 +21,15 @@ function dispatch(msg) {
       channels.push('scores:live');
     }
   }
+  if (msg.eventType === 'BET_SETTLED' && msg.payload?.userId) {
+    channels.push(`user:${msg.payload.userId}`);
+  }
+  if (msg.channel) channels.push(msg.channel);
+
+  const seen = new Set();
   for (const channel of channels) {
+    if (seen.has(channel)) continue;
+    seen.add(channel);
     const set = handlers.get(channel);
     if (!set) continue;
     for (const fn of set) {

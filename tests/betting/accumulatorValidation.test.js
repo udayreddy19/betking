@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 vi.mock('../../lib/oddsQuoteService.mjs', () => ({
+vi.mock('../../lib/oddsQuoteService.mjs', () => ({
   resolveServerOdds: vi.fn(async ({ clientOdds, odds }) => Number(clientOdds ?? odds)),
+  unwrapServerOddsQuote: (quote) => (quote?.odds != null ? Number(quote.odds) : Number(quote)),
+}));
 }));
 
 import { accumulatorEngine } from '../../lib/accumulatorEngine.mjs';

@@ -4,16 +4,18 @@ import { createCanonicalMatchState } from '../../lib/odds-v3/models/CanonicalMat
 import {
   alignWinnerMarkets,
   assertBettableQuote,
+  oddsQuoteChanged,
   suspendLockMarkets,
 } from '../../lib/odds-v3/bookIntegrity.mjs';
 import { riskAdjustmentEngine } from '../../lib/engines/riskAdjustmentEngine.mjs';
 
 describe('Book integrity', () => {
-  it('rejects lock prices and odds drift above 2%', () => {
+  it('accepts lock prices rejection and returns server odds when client drifts', () => {
     expect(() => assertBettableQuote(1.00, 1.50)).toThrow(/ODDS_LOCKED/);
-    expect(() => assertBettableQuote(1.85, 2.50)).toThrow(/ODDS_CHANGED/);
+    expect(assertBettableQuote(1.85, 2.50)).toBe(1.85);
     expect(assertBettableQuote(1.85, 1.85)).toBe(1.85);
     expect(assertBettableQuote(1.85, 1.87)).toBe(1.85);
+    expect(oddsQuoteChanged(1.85, 2.50)).toBe(true);
   });
 
   it('copies Match Winner prices onto Winner (incl. Super Over)', () => {
