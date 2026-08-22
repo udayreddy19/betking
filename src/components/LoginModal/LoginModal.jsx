@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { IoClose, IoEyeOutline, IoEyeOffOutline } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import BrandLogo, { BrandWordmark } from '../BrandLogo/BrandLogo';
@@ -9,7 +9,6 @@ import './LoginModal.css';
 
 export default function LoginModal() {
   const { isLoginModalOpen, closeLoginModal, login, forgotPassword, resetPassword, showToast } = useAuth();
-  const navigate = useNavigate();
   const [mode, setMode] = useState('login'); // 'login' | 'forgot' | 'reset'
   const [username, setUsername] = useState('');
   const [resetToken, setResetToken] = useState('');
@@ -110,7 +109,6 @@ export default function LoginModal() {
 
   const handleRegister = () => {
     handleClose();
-    navigate('/register');
   };
 
   const getTitle = () => {
@@ -282,9 +280,9 @@ export default function LoginModal() {
                   <button type="button" onClick={() => { resetForm(); setMode('forgot'); }}>
                     Forgot password?
                   </button>
-                  <button type="button" onClick={handleRegister}>
+                  <Link to="/register" onClick={handleRegister}>
                     Create account
-                  </button>
+                  </Link>
                 </>
               )}
             </div>

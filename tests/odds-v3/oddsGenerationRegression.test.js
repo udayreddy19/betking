@@ -173,8 +173,8 @@ describe('Odds generation regressions', () => {
     });
 
     const snap = generate(state);
-    expect(snap.markets.some((m) => m.marketId === 'wicket_in_current_over')).toBe(false);
-    expect(snap.markets.some((m) => m.marketId === 'wicket_in_next_over')).toBe(true);
+    expect(snap.markets.some((m) => /wicket_in_over_/i.test(m.marketId || ''))).toBe(false);
+    expect(snap.markets.some((m) => /wicket_in_next_over_/i.test(m.marketId || ''))).toBe(true);
   });
 
   it('when team2 batted first without chaseTeamName, team1 is the chasing side', () => {
@@ -655,7 +655,7 @@ describe('Odds generation regressions', () => {
     const dismissal = (snap.markets || []).filter((m) => /dismissal/i.test(m.marketId || m.name || ''));
     expect(dismissal.some((m) => /Spain/i.test(m.name))).toBe(false);
     expect(dismissal.some((m) => /1st Dismissal/i.test(m.name))).toBe(false);
-    const next = dismissal.find((m) => m.marketId === 'team_score_at_2_dismissal');
+    const next = dismissal.find((m) => m.marketId === 'i1_team_score_at_2_dismissal' || m.marketId === 'team_score_at_2_dismissal');
     expect(next).toBeTruthy();
     expect(next.name).toMatch(/Portugal Total at 2nd Dismissal/i);
     expect(next.status).toBe('OPEN');
@@ -689,7 +689,7 @@ describe('Odds generation regressions', () => {
     expect(state.team2.wickets).toBe(2);
 
     const snap = generate(state);
-    const dismissal = (snap.markets || []).find((m) => m.marketId === 'team_score_at_3_dismissal');
+    const dismissal = (snap.markets || []).find((m) => m.marketId === 'i1_team_score_at_3_dismissal' || m.marketId === 'team_score_at_3_dismissal');
     expect(dismissal?.name).toMatch(/Portugal Total at 3rd Dismissal/i);
     expect((snap.markets || []).some((m) => /1st Dismissal/i.test(m.name))).toBe(false);
   });
@@ -716,8 +716,8 @@ describe('Odds generation regressions', () => {
     });
     expect(state.ballsCompleted).toBe(0);
     const snap = generate(state);
-    const nextOver = (snap.markets || []).find((m) => /^next_over_\d+_total$/i.test(m.marketId || ''));
-    expect(nextOver?.marketId).toBe('next_over_1_total');
+    const nextOver = (snap.markets || []).find((m) => /next_over_\d+_total$/i.test(m.marketId || ''));
+    expect(nextOver?.marketId).toMatch(/^(?:i1_)?next_over_1_total$/);
     expect(nextOver?.name).toMatch(/Next Over \(1\)/);
   });
 
@@ -810,5 +810,63 @@ describe('Odds generation regressions', () => {
     const snap2 = generate(chase);
     expect((snap2.markets || []).some((m) => m.marketId === 'i2_overs_0_5_total')).toBe(true);
     expect((snap2.markets || []).some((m) => m.marketId === 'i1_overs_0_5_total')).toBe(false);
+  });
+
+  it('line-scopes team_total selection ids so bumped lines cannot cash out old bets', async () => {
+    const { findQuotedSelection } = await import('../../lib/odds-v3/bookIntegrity.mjs');
+    const snap = {
+      markets: [{
+        marketId: 'team_total',
+        status: 'OPEN',
+        line: 143.5,
+        selections: [
+          { selectionId: 'sel_over_143.5', name: 'Over 143.5', odds: 1.9, bettable: true },
+          { selectionId: 'sel_under_143.5', name: 'Under 143.5', odds: 1.9, bettable: true },
+        ],
+      }],
+    };
+    expect(() => findQuotedSelection(snap, 'team_total', 'sel_under', {
+      selectionName: 'Under 100.5',
+      acceptedLine: 100.5,
+    })).toThrow(/MARKET_ALREADY_DETERMINED/);
+
+    const ok = findQuotedSelection(snap, 'team_total', 'sel_under_143.5', {
+      selectionName: 'Under 143.5',
+      acceptedLine: 143.5,
+    });
+    expect(ok?.odds).toBe(1.9);
+  });
+
+  it('removes Team Total Runs once second innings has started', () => {
+    const state = buildCanonicalFromMatch({
+      id: 'leic_glam',
+      sport: 'cricket',
+      isLive: true,
+      matchState: 'in',
+      matchFormat: 'TEST',
+      team1: { name: 'Leicestershire', shortName: 'LEIC', runs: 151, wickets: 10 },
+      team2: { name: 'Glamorgan', shortName: 'GLAM', runs: 97, wickets: 6 },
+      liveDetails: {
+        inningsId: 2,
+        firstRuns: 151,
+        firstWickets: 10,
+        firstOvers: '45.0',
+        firstTeamName: 'Leicestershire',
+        chaseRuns: 97,
+        chaseWickets: 6,
+        chaseOvers: '30.0',
+        chaseTeamName: 'Glamorgan',
+        commentary: '1st Day · Second innings',
+      },
+    });
+    expect(state.currentInnings).toBe(2);
+    expect(state.battingTeamId).toBe('GLAM');
+
+    const snap = generate(state);
+    expect((snap.markets || []).some((m) => m.marketId === 'team_total' && m.status === 'OPEN')).toBe(false);
+    expect((snap.markets || []).some((m) => m.marketId === 'match_total' && m.status === 'OPEN')).toBe(false);
+    expect((snap.markets || []).some((m) => /^team_total_alt_/i.test(m.marketId || '') && m.status === 'OPEN')).toBe(false);
+    expect((snap.markets || []).some((m) => /^(Glamorgan|Leicestershire) Total Runs$/i.test(m.name || '') && m.status === 'OPEN')).toBe(false);
+    expect((snap.markets || []).some((m) => /Total Match Runs/i.test(m.name || '') && m.status === 'OPEN')).toBe(false);
   });
 });

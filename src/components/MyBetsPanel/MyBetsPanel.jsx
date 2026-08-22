@@ -8,6 +8,7 @@ import { getCashoutOffer } from '../../utils/wageringRules';
 import { formatInr } from '../../utils/walletBalance';
 import { teamNameMatches } from '../../utils/cricketScores';
 import { DEMO_MODE } from '../../utils/featureFlags';
+import { matchIdsEqual } from '../../../lib/matchIdPublic.mjs';
 import './MyBetsPanel.css';
 
 function parseOversCompleted(oversStr) {
@@ -20,10 +21,13 @@ function isOverMarketExpired(placed, liveMatches) {
   const leg = placed?.legs?.[0];
   if (!leg) return false;
   const market = String(leg.marketId || leg.marketName || '');
-  const nextOver = market.match(/next_over_(\d+)/i) || String(leg.marketName || '').match(/Next Over\s*\((\d+)\)/i);
+  const nextOver = market.match(/(?:i\d+_)?next_over_(\d+)/i) || String(leg.marketName || '').match(/Next Over\s*\((\d+)\)/i);
   if (!nextOver) return false;
   const overNum = Number(nextOver[1]);
-  const match = (liveMatches || []).find((m) => String(m.id) === String(leg.matchId));
+  const match = (liveMatches || []).find((m) =>
+    String(m.id) === String(leg.matchId)
+    || matchIdsEqual(m.id || m.matchId, leg.matchId)
+  );
   if (!match) return false;
   const ld = match.liveDetails || {};
   // Prefer batting overs for current innings — never leaked chase overs in 1st dig
@@ -40,8 +44,13 @@ const FILTERS = [
   { id: 'won', label: 'Won' },
   { id: 'lost', label: 'Lost' },
   { id: 'void', label: 'Void' },
-  { id: 'cashed_out', label: 'Cash out' },
+  { id: 'cashout', label: 'Cash out' },
 ];
+
+function cashoutOfferForBet(placed, liveMatches, tier) {
+  if (isOverMarketExpired(placed, liveMatches)) return 0;
+  return getCashoutOffer(placed, tier);
+}
 
 export default function MyBetsPanel() {
   const { placedBets, myBetsCount, isMyBetsOpen, closeMyBets, cashOutBet, adminSettleBet } = useBetSlip();
@@ -137,8 +146,11 @@ export default function MyBetsPanel() {
 
   const filtered = useMemo(() => {
     if (filter === 'all') return placedBets;
+    if (filter === 'cashout') {
+      return placedBets.filter((b) => cashoutOfferForBet(b, liveMatches, user?.loyaltyTier) > 0);
+    }
     return placedBets.filter((b) => (b.status || 'pending') === filter);
-  }, [placedBets, filter]);
+  }, [placedBets, filter, liveMatches, user?.loyaltyTier]);
 
   const handleCashout = async (bet) => {
     const offer = getCashoutOffer(bet, user?.loyaltyTier);
@@ -160,6 +172,7 @@ export default function MyBetsPanel() {
   const resolveLegMatch = (leg) => liveMatches.find((m) =>
     String(m.id) === String(leg.matchId)
     || String(m.matchId) === String(leg.matchId)
+    || matchIdsEqual(m.id || m.matchId, leg.matchId)
   );
 
   const getLegDisplayName = (leg) => {
@@ -171,7 +184,7 @@ export default function MyBetsPanel() {
       if (match.matchName) return match.matchName;
     }
     const raw = String(leg.matchName || '');
-    if (/^(10cric_|cb_|crex_|fancode_)/i.test(raw) || raw === leg.matchId) {
+    if (/^(oy_|10cric_|cb_|crex_|fancode_)/i.test(raw) || raw === leg.matchId) {
       return 'Live match';
     }
     return leg.matchName || 'Match';
@@ -268,12 +281,17 @@ export default function MyBetsPanel() {
             <div className="my-bets-empty">
               <div className="my-bets-empty-icon">📋</div>
               <h4>No bets here</h4>
-              <p>{filter === 'all' ? 'Your placed bets will appear here' : `No ${filter.replace('_', ' ')} bets`}</p>
+              <p>{
+                filter === 'all'
+                  ? 'Your placed bets will appear here'
+                  : filter === 'cashout'
+                    ? 'No bets available to cash out'
+                    : `No ${filter.replace('_', ' ')} bets`
+              }</p>
             </div>
           ) : (
             filtered.map((placed) => {
-              const expiredOverMarket = isOverMarketExpired(placed, liveMatches);
-              const cashoutOffer = expiredOverMarket ? 0 : getCashoutOffer(placed, user?.loyaltyTier);
+              const cashoutOffer = cashoutOfferForBet(placed, liveMatches, user?.loyaltyTier);
               return (
                 <div className={`my-bets-card my-bets-card--${placed.status || 'pending'}`} key={placed.id}>
                   <div className="my-bets-card-top">

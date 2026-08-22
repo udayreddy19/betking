@@ -130,7 +130,11 @@ function canPoll(match) {
   if (match.espnEventId && match.espnPath) return true;
   if (match.fancodeMatchId || match.source === 'fancode') return true;
   if (match.source === 'srl' || match.id?.startsWith('srl_ipl_')) return true;
-  if (match.source === '10cric2026' || match.source === '10cric' || match.id?.startsWith('10cric_')) return true;
+  if (
+    match.source === '10cric2026' || match.source === '10cric' || match.source === 'live'
+    || match.id?.startsWith('10cric_') || match.id?.startsWith('oy_')
+    || match.tencricEventId
+  ) return true;
   if (match.source === 'crex' || match.id?.startsWith('crex_')) return true;
   return true;
 }

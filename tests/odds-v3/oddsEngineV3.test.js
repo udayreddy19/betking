@@ -36,11 +36,13 @@ describe('OddsEngineV3 — Integration & Snapshot Generation', () => {
 
     const marketTypes = snapshot.markets.map(m => m.marketType);
     expect(marketTypes).toContain('MATCH_WINNER');
-    expect(marketTypes).toContain('TEAM_TOTAL');
-    expect(marketTypes).toContain('MATCH_TOTAL');
+    // Team / Match Total Runs are first-innings only — must not stay OPEN in chase
+    expect(snapshot.markets.some((m) => m.marketType === 'TEAM_TOTAL' && m.status === 'OPEN')).toBe(false);
+    expect(snapshot.markets.some((m) => (m.marketType === 'MATCH_TOTAL' || m.marketId === 'match_total') && m.status === 'OPEN')).toBe(false);
     expect(marketTypes).toContain('NEXT_DELIVERY_RUNS');
     expect(marketTypes).toContain('PLAYER_SCORE_25');
-    expect(marketTypes).toContain('BATTER_HEAD_TO_HEAD');
+    // H2H / top batter skipped from compact live until settlement exists (ID reuse risk)
+    expect(marketTypes).not.toContain('BATTER_HEAD_TO_HEAD');
   });
 
   it('dynamically recalculates odds as match state moves from State A to State B to State C to State D', () => {

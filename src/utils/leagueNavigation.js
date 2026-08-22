@@ -71,7 +71,9 @@ export function matchBelongsToLeague(match, leagueMeta) {
         || (
           match.league === 'OddsYra SRL'
           && match.source !== '10cric2026'
+          && match.source !== 'live'
           && !String(match.id || '').startsWith('10cric_')
+          && !String(match.id || '').startsWith('oy_')
         );
     }
   }

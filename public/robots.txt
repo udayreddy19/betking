@@ -1,9 +1,14 @@
 User-agent: *
 Allow: /
 Disallow: /admin
+Disallow: /admin/
 Disallow: /trader
 Disallow: /developer
 Disallow: /api-docs
 Disallow: /_oauth/
+Disallow: /profile
+Disallow: /complete-profile
+Disallow: /verify-email
+Disallow: /reset-password
 
 Sitemap: https://oddsyra.com/sitemap.xml

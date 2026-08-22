@@ -105,11 +105,6 @@ export async function signup(queryFn, withTransaction, data) {
          ON CONFLICT (user_id) DO NOTHING`,
         [walletId, userId, currency || 'INR']
       );
-
-      if (String(promoCode || '').trim()) {
-        const { applySignupPromoInTransaction } = await import('../../lib/signupPromoCodes.mjs');
-        promoReward = await applySignupPromoInTransaction(client, { userId, promoCode });
-      }
     });
   } catch (err) {
     if (err.status && err.code) {
@@ -125,6 +120,19 @@ export async function signup(queryFn, withTransaction, data) {
       }
     }
     throw err;
+  }
+
+  if (String(promoCode || '').trim()) {
+    try {
+      const { claimSignupPromo } = await import('../../lib/signupPromoCodes.mjs');
+      promoReward = await claimSignupPromo(userId, promoCode);
+    } catch (promoErr) {
+      promoReward = {
+        skipped: true,
+        code: String(promoCode || '').trim().toUpperCase(),
+        error: promoErr.message || 'Promo code could not be applied.',
+      };
+    }
   }
 
   // ── Generate tokens ──

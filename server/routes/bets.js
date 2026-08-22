@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/userAuth.js';
+import { userFacingBetError } from '../../lib/userFacingErrors.mjs';
 
 const router = Router();
 
@@ -13,7 +14,7 @@ router.get('/api/bet/cashout/quote', requireAuth, async (req, res) => {
   } catch (err) {
     res.status(err.message?.includes('BET_NOT_FOUND') ? 404 : 400).json({
       success: false,
-      error: err.message,
+      error: userFacingBetError(err),
       available: false,
       cashoutValue: 0,
     });
@@ -33,7 +34,7 @@ router.post('/api/bet/cashout', requireAuth, async (req, res) => {
     });
     res.json(result);
   } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
+    res.status(400).json({ success: false, error: userFacingBetError(err) });
   }
 });
 
@@ -110,7 +111,7 @@ router.post(['/api/bets/place', '/api/v1/bet/place'], requireAuth, async (req, r
       statusCode = 401;
     }
     res.status(statusCode).json({
-      error: err.message || 'Bet placement failed',
+      error: userFacingBetError(err),
       code: err.code || err.message?.split(':')[0] || 'BET_PLACEMENT_FAILED',
     });
   }

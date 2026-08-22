@@ -23,6 +23,7 @@ import { useCentralizedMatchState } from '../../hooks/useCentralizedMatchState';
 import { centralizedMatchEngine } from '../../services/centralizedMatchStateEngine';
 import { filterMatches } from '../../utils/matchFilters';
 import { resolveLeagueId, getLeagueMeta, isSameLeague, groupMatchesByLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
+import { matchIdsEqual } from '../../../lib/matchIdPublic.mjs';
 import { formatTeamShortName, teamDisplayName, asDisplayText } from '../../utils/teamShortName';
 import SrlLeaguePanel from '../../components/SrlLeaguePanel/SrlLeaguePanel';
 import {
@@ -63,7 +64,9 @@ function filterByLeague(matchList, activeLeague, cricketSeries = []) {
           || (
             match.league === 'OddsYra SRL'
             && match.source !== '10cric2026'
+            && match.source !== 'live'
             && !String(match.id || '').startsWith('10cric_')
+            && !String(match.id || '').startsWith('oy_')
           );
       }
       return true;
@@ -364,8 +367,13 @@ export default function Sports() {
       || sportMatches[0]?.id;
     if (!targetId) return null;
 
-    let match = sportMatches.find(m => m.id === targetId)
-      || matches.find(m => m.id === targetId);
+    const findById = (list, id) => (list || []).find((m) =>
+      m.id === id || m.matchId === id || matchIdsEqual(m.id || m.matchId, id)
+    );
+
+    let match = findById(sportMatches, targetId)
+      || findById(matches, targetId)
+      || findById(liveMatches, targetId);
 
     if (match) {
       lastActiveMatchRef.current = match;
@@ -505,7 +513,7 @@ export default function Sports() {
       next.set('match', matchId);
       return next;
     });
-    const found = sportMatches.find((m) => m.id === matchId);
+    const found = sportMatches.find((m) => m.id === matchId || matchIdsEqual(m.id || m.matchId, matchId));
     if (found) prefetchMatchDetail(found, { priority: true });
   }, [activeSport, activeLeague, setSearchParams, sportMatches]);
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { IoEyeOutline, IoEyeOffOutline } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
@@ -21,7 +21,7 @@ function digitsOnly(value) {
 
 export default function Register() {
   const navigate = useNavigate();
-  const { openLoginModal, closeLoginModal, register, login, showToast, isLoggedIn } = useAuth();
+  const { openLoginModal, closeLoginModal, register, showToast, isLoggedIn } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState('');
@@ -31,10 +31,15 @@ export default function Register() {
   const [phone, setPhone] = useState('');
   const [promoCode, setPromoCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const errorRef = useRef(null);
 
   useEffect(() => {
     closeLoginModal?.();
   }, [closeLoginModal]);
+
+  useEffect(() => {
+    if (error) errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [error]);
 
   if (isLoggedIn) {
     return <Navigate to="/sports" replace />;
@@ -44,6 +49,10 @@ export default function Register() {
     e.preventDefault();
     setError('');
 
+    if (!email.trim() || !email.includes('@')) {
+      setError('Enter a valid email address.');
+      return;
+    }
     if (displayName.trim().length < 2) {
       setError('Enter your full name as it appears on Aadhaar.');
       return;
@@ -71,11 +80,12 @@ export default function Register() {
         promoCode,
       });
       if (!result.ok) {
-        setError(result.error);
+        setError(result.error || 'Could not create your account. Try again.');
         return;
       }
-      await login(email, password);
-      if (result.promoReward?.deferred) {
+      if (result.promoReward?.error) {
+        showToast(result.promoReward.error, 'info');
+      } else if (result.promoReward?.deferred) {
         showToast(
           `${result.promoReward.code} is a deposit bonus. Claim it on Promotions after your first deposit.`,
           'info',
@@ -96,6 +106,8 @@ export default function Register() {
         showToast('Account created. You can start betting on Sports.', 'success');
       }
       navigate('/sports');
+    } catch (err) {
+      setError(err?.message || 'Could not create your account. Try again.');
     } finally {
       setLoading(false);
     }
@@ -116,7 +128,7 @@ export default function Register() {
               : 'Join OddsYra to bet on live cricket, football, and more. 18+ only.'}
           </p>
 
-          {error && <div className="register-error" role="alert">{error}</div>}
+          {error && <div className="register-error" role="alert" ref={errorRef}>{error}</div>}
 
           <SocialAuthButtons disabled={loading} />
           <SocialAuthDivider />
@@ -264,7 +276,7 @@ export default function Register() {
             <button
               type="submit"
               className="register-submit-btn"
-              disabled={!agreed || loading}
+              disabled={loading}
               id="register-submit"
             >
               {loading ? 'Creating account…' : 'Create account'}

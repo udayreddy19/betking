@@ -6,9 +6,11 @@
   <url><loc>https://oddsyra.com/register</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://oddsyra.com/promotions</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://oddsyra.com/fantasy</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://oddsyra.com/casino</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://oddsyra.com/live-casino</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
   <url><loc>https://oddsyra.com/vip</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://oddsyra.com/help</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://oddsyra.com/responsible-gaming</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
   <url><loc>https://oddsyra.com/terms</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
   <url><loc>https://oddsyra.com/privacy</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
-  <url><loc>https://oddsyra.com/responsible-gaming</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
-  <url><loc>https://oddsyra.com/help</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 </urlset>

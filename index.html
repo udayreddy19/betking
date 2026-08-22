@@ -14,14 +14,18 @@
     <meta name="application-name" content="OddsYra" />
     <meta name="msapplication-TileColor" content="#0b0e12" />
     <meta name="format-detection" content="telephone=no" />
-    <meta name="description" content="Bet on live cricket, football, tennis and more with real-time odds, fast UPI deposits, and responsible gaming tools. 18+ only." />
-    <meta name="robots" content="index,follow" />
+    <meta name="description" content="OddsYra — live cricket betting, football, tennis and more. Real-time odds, fast UPI deposits, welcome offers, and responsible gaming tools. 18+ only." />
+    <meta name="keywords" content="OddsYra, live cricket betting, online sportsbook, live odds, football betting, tennis betting, UPI deposit betting India" />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+    <meta name="author" content="OddsYra" />
     <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_IN" />
     <meta property="og:site_name" content="OddsYra" />
     <meta property="og:title" content="OddsYra — Live Sportsbook &amp; Betting" />
     <meta property="og:description" content="Live cricket, football, tennis and more. Real-time odds, UPI deposits, welcome bonuses. 18+ only." />
     <meta property="og:url" content="https://oddsyra.com/" />
     <meta property="og:image" content="https://oddsyra.com/oddsyra-logo.png" />
+    <meta property="og:image:alt" content="OddsYra logo" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="OddsYra — Live Sportsbook &amp; Betting" />
     <meta name="twitter:description" content="Live cricket, football, tennis and more. Real-time odds, UPI deposits, welcome bonuses. 18+ only." />
@@ -35,19 +39,35 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <title>OddsYra — Live Sportsbook</title>
+    <title>OddsYra — Live Cricket Betting &amp; Sportsbook</title>
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "WebSite",
-        "name": "OddsYra",
-        "url": "https://oddsyra.com/",
-        "description": "Live sportsbook for cricket, football, tennis and more with real-time odds.",
-        "potentialAction": {
-          "@type": "SearchAction",
-          "target": "https://oddsyra.com/sports?q={search_term_string}",
-          "query-input": "required name=search_term_string"
-        }
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://oddsyra.com/#website",
+            "name": "OddsYra",
+            "url": "https://oddsyra.com/",
+            "description": "Live sportsbook for cricket, football, tennis and more with real-time odds.",
+            "publisher": { "@id": "https://oddsyra.com/#organization" },
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": "https://oddsyra.com/sports?q={search_term_string}",
+              "query-input": "required name=search_term_string"
+            }
+          },
+          {
+            "@type": "Organization",
+            "@id": "https://oddsyra.com/#organization",
+            "name": "OddsYra",
+            "url": "https://oddsyra.com/",
+            "logo": "https://oddsyra.com/oddsyra-logo.png",
+            "description": "OddsYra is an online sportsbook offering live cricket, football, tennis and more with real-time odds and UPI deposits. 18+ only.",
+            "areaServed": "IN",
+            "sameAs": []
+          }
+        ]
       }
     </script>
     <script>

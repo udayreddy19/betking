@@ -151,7 +151,7 @@ export default function CompleteProfile() {
               </p>
             </div>
 
-            <button type="submit" className="register-submit" disabled={loading}>
+            <button type="submit" className="register-submit-btn" disabled={loading}>
               {loading ? 'Saving…' : 'Continue'}
             </button>
           </form>

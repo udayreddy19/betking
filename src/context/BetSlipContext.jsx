@@ -56,7 +56,8 @@ function mapServerBetToPlaced(row) {
 
   const matchName = row.match_name
     || row.matchName
-    || (String(row.match_id || '').startsWith('10cric_') ? 'Live match' : null)
+    || (String(row.match_id || '').startsWith('10cric_') || String(row.match_id || '').startsWith('oy_')
+      ? 'Live match' : null)
     || (isProviderMatchId(row.match_id) ? 'Live match' : row.match_id);
   const selectionLabel = humanizeSelectionId(row.selection_id, row.selection_name);
   const isWon = status === 'won';
@@ -86,7 +87,7 @@ function mapServerBetToPlaced(row) {
 }
 
 function isProviderMatchId(matchId) {
-  return /^(10cric_|cb_|crex_|fancode_|espn_)/i.test(String(matchId || ''));
+  return /^(oy_|10cric_|cb_|crex_|fancode_|espn_)/i.test(String(matchId || ''));
 }
 
 function getSelectionName(match, selection, customName) {
@@ -134,7 +135,11 @@ export function BetSlipProvider({ children }) {
       }
     };
     load();
-    return () => { cancelled = true; };
+    const timer = setInterval(load, 15000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
   }, [user?.userId, user?.email]);
 
   const refreshMyBets = useCallback(async () => {
