@@ -31,9 +31,10 @@
 | Check | Result |
 |-------|--------|
 | Pre-commit HEAD | `c91ce993cc9c69243f52a72eca0f52fa4148d86e` |
-| **Release commit SHA** | `2c5cc6b48f3051b706e9ad3b3331fd927751d80e` |
-| **Release tag** | `release-prod-2026-08-22` |
-| Working tree at report | Clean after release commit (verify with `git status`) |
+| **Release commit SHA (code)** | `2c5cc6b48f3051b706e9ad3b3331fd927751d80e` |
+| **Release tip SHA (incl. reports)** | `2f0aded130080eb1fc0fe3d10473ca6b2ed1975c` |
+| **Release tag** | `release-prod-2026-08-22` → tip SHA |
+| Working tree at report | Clean after release commits |
 | `npm test` | **559/559 PASS** (147 files) — 2026-08-22T17:20Z |
 | `npm run build` | **PASS** |
 | `npm run lint` | **PASS** (warnings only; no new errors introduced for gate) |
