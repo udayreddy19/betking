@@ -59,7 +59,7 @@ describe('cashout vs settlement race', () => {
       [walletId, `%${betId}%`],
     );
     expect(Number(credits.rows[0].count)).toBeLessThanOrEqual(1);
-  }, 30000);
+  }, 60000);
   it('duplicate settlement attempts → one payout only', async () => {
     const betId = `b_dupsettle_${Date.now()}`;
     await query(

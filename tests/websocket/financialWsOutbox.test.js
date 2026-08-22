@@ -2,6 +2,20 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const sendToUser = vi.fn(() => ({ sent: 1, broadcastedCount: 1 }));
 
+vi.mock('../../db/redis.js', () => ({
+  redis: {
+    status: 'ready',
+    publish: vi.fn(async () => 1),
+    duplicate: vi.fn(() => ({
+      on: vi.fn(),
+      subscribe: vi.fn(async () => {}),
+      connect: vi.fn(async () => {}),
+    })),
+    del: vi.fn(async () => 1),
+    connect: vi.fn(async () => {}),
+  },
+}));
+
 vi.mock('../../lib/websocketEngine.mjs', async (importOriginal) => {
   const actual = await importOriginal();
   return {

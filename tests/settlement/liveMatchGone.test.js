@@ -22,13 +22,13 @@ describe('live settlement when match is over / gone', () => {
     expect(buildSettlementMatchState(null).matchId).toBe(null);
   });
 
-  it('voids match winner when the fixture is gone and winner is unknown', () => {
+  it('keeps match winner awaiting evidence when fixture is gone and winner unknown', () => {
     const res = evaluateBetAfterMatchOver({
       market_id: 'match_winner',
       selection_id: 'Outer Delhi Warriors',
       selection_name: 'Outer Delhi Warriors',
     });
-    expect(res.outcome).toBe('VOID');
+    expect(res).toBeNull();
   });
 
   it('settles match winner when the completed match has a result', () => {
@@ -51,7 +51,7 @@ describe('live settlement when match is over / gone', () => {
     expect(res.outcome).toBe('WON');
   });
 
-  it('voids match winner when complete but winner cannot be resolved', () => {
+  it('does not VOID match winner when complete but winner cannot be resolved', () => {
     const match = {
       id: 'oy_test',
       matchState: 'post',
@@ -65,7 +65,7 @@ describe('live settlement when match is over / gone', () => {
       selection_id: 'A',
       selection_name: 'A',
     }, state);
-    expect(res.outcome).toBe('VOID');
+    expect(res).toBeNull();
   });
 });
 

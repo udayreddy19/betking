@@ -4,7 +4,7 @@ import { query } from '../../../db/pg.js';
 
 const router = Router();
 
-router.get('/api/admin/settlement/bet/:betId', requireRole(['ADMIN', 'SUPER_ADMIN']), async (req, res) => {
+router.get('/api/admin/settlement/bet/:betId', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN', 'TRADING_ADMIN'), async (req, res) => {
   try {
     const betId = req.params.betId;
     const betRes = await query('SELECT * FROM bets WHERE bet_id = $1', [betId]);
@@ -146,7 +146,7 @@ router.get('/api/admin/settlement/bet/:betId', requireRole(['ADMIN', 'SUPER_ADMI
   }
 });
 
-router.post('/api/admin/settlement/bet/:betId/repair-winnings', requireRole(['ADMIN', 'SUPER_ADMIN']), async (req, res) => {
+router.post('/api/admin/settlement/bet/:betId/repair-winnings', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN', 'TRADING_ADMIN'), async (req, res) => {
   try {
     const { withTransaction } = await import('../../../db/pg.js');
     const { repairUnderCreditedWinningsForBet } = await import('../../../lib/walletSettlement.mjs');
@@ -157,7 +157,7 @@ router.post('/api/admin/settlement/bet/:betId/repair-winnings', requireRole(['AD
   }
 });
 
-router.get('/api/admin/settlement/pending', requireRole(['ADMIN', 'SUPER_ADMIN']), async (req, res) => {
+router.get('/api/admin/settlement/pending', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN', 'TRADING_ADMIN'), async (req, res) => {
   try {
     const limit = Math.min(Number(req.query.limit) || 100, 500);
     const betsRes = await query(
@@ -174,7 +174,7 @@ router.get('/api/admin/settlement/pending', requireRole(['ADMIN', 'SUPER_ADMIN']
   }
 });
 
-router.get('/api/admin/settlement/failed', requireRole(['ADMIN', 'SUPER_ADMIN']), async (req, res) => {
+router.get('/api/admin/settlement/failed', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN', 'TRADING_ADMIN'), async (req, res) => {
   try {
     const limit = Math.min(Number(req.query.limit) || 100, 500);
     const { getFailedSettlementJobs } = await import('../../../lib/settlement/settlementQueue.mjs');
@@ -191,7 +191,7 @@ router.get('/api/admin/settlement/failed', requireRole(['ADMIN', 'SUPER_ADMIN'])
   }
 });
 
-router.post('/api/admin/settlement/retry/:jobId', requireRole(['ADMIN', 'SUPER_ADMIN']), async (req, res) => {
+router.post('/api/admin/settlement/retry/:jobId', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN', 'TRADING_ADMIN'), async (req, res) => {
   try {
     const { retrySettlementJob } = await import('../../../lib/settlement/settlementQueue.mjs');
     const row = await retrySettlementJob(req.params.jobId);
@@ -202,7 +202,7 @@ router.post('/api/admin/settlement/retry/:jobId', requireRole(['ADMIN', 'SUPER_A
   }
 });
 
-router.get('/api/admin/settlement/replay/:betId', requireRole(['ADMIN', 'SUPER_ADMIN']), async (req, res) => {
+router.get('/api/admin/settlement/replay/:betId', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN', 'TRADING_ADMIN'), async (req, res) => {
   try {
     const betRes = await query('SELECT * FROM bets WHERE bet_id = $1', [req.params.betId]);
     if (!betRes.rows[0]) return res.status(404).json({ error: 'Bet not found' });
@@ -227,7 +227,7 @@ router.get('/api/admin/settlement/replay/:betId', requireRole(['ADMIN', 'SUPER_A
   }
 });
 
-router.get('/api/admin/settlement/reversals', requireRole(['ADMIN', 'SUPER_ADMIN']), async (req, res) => {
+router.get('/api/admin/settlement/reversals', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN', 'TRADING_ADMIN'), async (req, res) => {
   try {
     const { listPendingReversals } = await import('../../../lib/settlement/settlementReversal.mjs');
     const rows = await listPendingReversals(Number(req.query.limit) || 100);
@@ -237,7 +237,7 @@ router.get('/api/admin/settlement/reversals', requireRole(['ADMIN', 'SUPER_ADMIN
   }
 });
 
-router.post('/api/admin/settlement/reversal/request', requireRole(['ADMIN', 'SUPER_ADMIN']), async (req, res) => {
+router.post('/api/admin/settlement/reversal/request', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN', 'TRADING_ADMIN'), async (req, res) => {
   try {
     const { betId, reason, newResult } = req.body || {};
     const { requestSettlementReversal } = await import('../../../lib/settlement/settlementReversal.mjs');
@@ -253,7 +253,7 @@ router.post('/api/admin/settlement/reversal/request', requireRole(['ADMIN', 'SUP
   }
 });
 
-router.post('/api/admin/settlement/reversal/:correctionId/approve', requireRole(['ADMIN', 'SUPER_ADMIN']), async (req, res) => {
+router.post('/api/admin/settlement/reversal/:correctionId/approve', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN', 'TRADING_ADMIN'), async (req, res) => {
   try {
     const { approveSettlementReversal } = await import('../../../lib/settlement/settlementReversal.mjs');
     const row = await approveSettlementReversal({
@@ -268,7 +268,7 @@ router.post('/api/admin/settlement/reversal/:correctionId/approve', requireRole(
   }
 });
 
-router.post('/api/admin/settlement/reversal/:correctionId/execute', requireRole(['ADMIN', 'SUPER_ADMIN']), async (req, res) => {
+router.post('/api/admin/settlement/reversal/:correctionId/execute', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN', 'TRADING_ADMIN'), async (req, res) => {
   try {
     const { executeSettlementReversal } = await import('../../../lib/settlement/settlementReversal.mjs');
     const result = await executeSettlementReversal({
@@ -281,7 +281,7 @@ router.post('/api/admin/settlement/reversal/:correctionId/execute', requireRole(
   }
 });
 
-router.post('/api/admin/settlement/reversal/:correctionId/reject', requireRole(['ADMIN', 'SUPER_ADMIN']), async (req, res) => {
+router.post('/api/admin/settlement/reversal/:correctionId/reject', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN', 'TRADING_ADMIN'), async (req, res) => {
   try {
     const { rejectSettlementReversal } = await import('../../../lib/settlement/settlementReversal.mjs');
     const result = await rejectSettlementReversal({
@@ -295,7 +295,7 @@ router.post('/api/admin/settlement/reversal/:correctionId/reject', requireRole([
   }
 });
 
-router.post('/api/admin/settlement/jobs/:jobId/retry', requireRole(['ADMIN', 'SUPER_ADMIN']), async (req, res) => {
+router.post('/api/admin/settlement/jobs/:jobId/retry', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN', 'TRADING_ADMIN'), async (req, res) => {
   try {
     const { retrySettlementJob } = await import('../../../lib/settlement/settlementQueue.mjs');
     const row = await retrySettlementJob(req.params.jobId);
@@ -306,7 +306,7 @@ router.post('/api/admin/settlement/jobs/:jobId/retry', requireRole(['ADMIN', 'SU
   }
 });
 
-router.post('/api/admin/settlement/recover-dead-letters', requireRole(['ADMIN', 'SUPER_ADMIN']), async (req, res) => {
+router.post('/api/admin/settlement/recover-dead-letters', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN', 'TRADING_ADMIN'), async (req, res) => {
   try {
     const jobLimit = Math.min(Number(req.body?.jobLimit) || 50, 200);
     const openBetLimit = Math.min(Number(req.body?.openBetLimit) || 200, 500);
@@ -318,7 +318,7 @@ router.post('/api/admin/settlement/recover-dead-letters', requireRole(['ADMIN', 
   }
 });
 
-router.get('/api/admin/settlement/orphan-open-bets', requireRole(['ADMIN', 'SUPER_ADMIN']), async (req, res) => {
+router.get('/api/admin/settlement/orphan-open-bets', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN', 'TRADING_ADMIN'), async (req, res) => {
   try {
     const limit = Math.min(Number(req.query.limit) || 100, 500);
     const { findOrphanOpenSettlementBets } = await import('../../../lib/settlement/settlementHealth.mjs');

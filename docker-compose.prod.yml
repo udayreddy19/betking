@@ -114,6 +114,17 @@ services:
         condition: service_healthy
     networks:
       - oddsyra-prod-net
+    healthcheck:
+      test: ["CMD-SHELL", "kill -0 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 768M
 
   # 5. Production Nginx Reverse Proxy (Exposed 80/443)
   nginx:

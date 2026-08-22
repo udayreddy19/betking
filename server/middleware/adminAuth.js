@@ -136,6 +136,7 @@ export function requirePermission(...domains) {
  * Usage: router.post('/route', adminAuth, requireRole('SUPER_ADMIN', 'FINANCE_ADMIN'), handler)
  */
 export function requireRole(...roles) {
+  const flatRoles = roles.flat(Infinity).map(String);
   return (req, res, next) => {
     const adminRole = req.admin?.role;
     if (!adminRole) {
@@ -145,11 +146,11 @@ export function requireRole(...roles) {
     // SUPER_ADMIN always allowed
     if (adminRole === ADMIN_ROLES.SUPER_ADMIN) return next();
 
-    if (!roles.includes(adminRole)) {
+    if (!flatRoles.includes(adminRole)) {
       return res.status(403).json({
-        error: `Role ${adminRole} is not authorized. Required: [${roles.join(', ')}]`,
+        error: `Role ${adminRole} is not authorized. Required: [${flatRoles.join(', ')}]`,
         code: 'ROLE_DENIED',
-        requiredRoles: roles,
+        requiredRoles: flatRoles,
         currentRole: adminRole,
       });
     }
