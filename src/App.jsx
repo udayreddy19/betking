@@ -6,6 +6,7 @@ import { BetSlipProvider } from './context/BetSlipContext';
 import { LiveSportsProvider } from './context/LiveSportsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CasinoProvider } from './context/CasinoContext';
+import { springUi } from './utils/motionPresets';
 
 import Header from './components/Header/Header';
 import Footer from './components/Footer/Footer';
@@ -180,7 +181,7 @@ export default function App() {
     <ErrorBoundary>
       <MotionConfig
         reducedMotion="user"
-        transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+        transition={springUi}
       >
         <ThemeProvider>
           <BrowserRouter>

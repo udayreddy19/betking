@@ -13,6 +13,7 @@ import {
   FiSend,
   FiShield,
 } from '../../icons';
+import { hoverScale, pressScale, springUi } from '../../utils/motionPresets';
 import './LiveChatSupportWidget.css';
 
 function storageKey(userId) {
@@ -252,8 +253,9 @@ export default function LiveChatSupportWidget() {
       {!isOpen && (
         <motion.button
           className="live-chat-floating-btn"
-          whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.94 }}
+          whileHover={{ scale: hoverScale }}
+          whileTap={{ scale: pressScale }}
+          transition={springUi}
           onClick={() => {
             setIsOpen(true);
           }}

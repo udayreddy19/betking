@@ -2,24 +2,26 @@
   position: fixed;
   top: 0; left: 0;
   width: 100%; height: 100%;
-  background: rgba(0,0,0,0.55);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: var(--material-scrim, rgba(0,0,0,0.55));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   z-index: var(--z-modal);
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: fadeIn 200ms ease;
 }
 .modal-card {
-  background: var(--color-surface);
+  background: var(--material-fill-heavy, var(--color-surface));
+  backdrop-filter: blur(var(--material-blur, 20px)) saturate(var(--material-saturate, 180%));
+  -webkit-backdrop-filter: blur(var(--material-blur, 20px)) saturate(var(--material-saturate, 180%));
+  border: 1px solid var(--material-edge, var(--color-border));
   border-radius: var(--radius-xl);
   width: 90%;
   max-width: 420px;
   padding: var(--space-8);
   box-shadow: var(--shadow-xl);
-  animation: scaleIn 250ms ease;
   position: relative;
+  will-change: transform, opacity;
 }
 .modal-close {
   position: absolute;
@@ -121,4 +123,16 @@
 }
 .modal-logo .brand-wordmark {
   font-size: 1.35rem;
+}
+.modal-sent-title {
+  color: var(--color-text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.modal-sent-copy {
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  margin-bottom: 24px;
 }

@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'motion/react';
 import { IoClose, IoEyeOutline, IoEyeOffOutline } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import BrandLogo, { BrandWordmark } from '../BrandLogo/BrandLogo';
 import SocialAuthButtons, { SocialAuthDivider } from '../SocialAuthButtons/SocialAuthButtons';
+import { springSheet } from '../../utils/motionPresets';
 import '../SocialAuthButtons/SocialAuthButtons.css';
 import './LoginModal.css';
 
@@ -118,8 +120,22 @@ export default function LoginModal() {
   };
 
   return (
-    <div className="modal-overlay" onClick={handleClose} id="login-modal">
-      <div className="modal-card" onClick={e => e.stopPropagation()}>
+    <motion.div
+      className="modal-overlay apple-scrim"
+      onClick={handleClose}
+      id="login-modal"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+    >
+      <motion.div
+        className="modal-card apple-material--heavy"
+        onClick={e => e.stopPropagation()}
+        initial={{ opacity: 0, y: 12, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={springSheet}
+      >
         <button className="modal-close" onClick={handleClose}>
           <IoClose />
         </button>
@@ -135,11 +151,11 @@ export default function LoginModal() {
 
         {mode === 'sent' ? (
           <div className="modal-sent-state">
-            <div style={{ fontSize: '42px', marginBottom: '16px' }}>📧</div>
-            <p style={{ color: '#e6edf3', fontSize: '15px', fontWeight: '600', marginBottom: '8px' }}>
+            <div style={{ fontSize: '42px', marginBottom: '16px' }} aria-hidden="true">📧</div>
+            <p className="modal-sent-title">
               Check your inbox
             </p>
-            <p style={{ color: '#8b949e', fontSize: '13px', lineHeight: '1.5', marginBottom: '24px' }}>
+            <p className="modal-sent-copy">
               We've sent a password reset link to <strong>{username}</strong>. Click the link in the email to set your new password.
             </p>
             <button
@@ -288,8 +304,8 @@ export default function LoginModal() {
             </div>
           </form>
         )}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
 

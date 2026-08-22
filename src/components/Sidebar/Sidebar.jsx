@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { CASINO_ENABLED } from '../../utils/featureFlags';
+import { hoverScale, pressScale, springUi } from '../../utils/motionPresets';
 import {
   IoClose,
   FiChevronRight,
@@ -76,8 +77,9 @@ export default function Sidebar() {
             className="sidebar-close"
             onClick={closeSidebar}
             id="sidebar-close"
-            whileHover={{ scale: 1.15, rotate: 90 }}
-            whileTap={{ scale: 0.85 }}
+            whileHover={{ scale: hoverScale }}
+            whileTap={{ scale: pressScale }}
+            transition={springUi}
           >
             <IoClose />
           </motion.button>

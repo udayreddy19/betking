@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { CASINO_ENABLED } from '../../utils/featureFlags';
+import { pressScale, springTab } from '../../utils/motionPresets';
 import {
   NavHomeIcon,
   NavSportsIcon,
@@ -47,7 +48,8 @@ export default function MobileBottomBar() {
               type="button"
               className={`mobile-bar-item ${isActive ? 'active' : ''} ${item.isVip ? 'vip-item' : ''} ${item.isProfile ? 'profile-item' : ''}`}
               onClick={() => navigate(item.path)}
-              whileTap={{ scale: 0.88 }}
+              whileTap={{ scale: pressScale }}
+              transition={springTab}
             >
               <div className="mobile-bar-icon-wrap">
                 <Icon className="mobile-bar-icon" />
@@ -58,7 +60,7 @@ export default function MobileBottomBar() {
                 <motion.div
                   className="mobile-bar-active-pill"
                   layoutId="mobileActiveTab"
-                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  transition={springTab}
                 />
               )}
             </motion.button>
@@ -69,7 +71,8 @@ export default function MobileBottomBar() {
           type="button"
           className={`mobile-bar-item betslip-item ${betCount > 0 ? 'has-bets' : ''}`}
           onClick={betCount > 0 ? openMobileBetslip : toggleSidebar}
-          whileTap={{ scale: 0.88 }}
+          whileTap={{ scale: pressScale }}
+          transition={springTab}
         >
           <div className="mobile-bar-icon-wrap">
             {betCount > 0 ? <NavBetslipIcon className="mobile-bar-icon" /> : <NavMenuIcon className="mobile-bar-icon" />}

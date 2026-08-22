@@ -4,13 +4,13 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--material-scrim, rgba(0, 0, 0, 0.5));
   z-index: var(--z-overlay);
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--transition-base);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
+  transition: opacity var(--spring-response, 300ms cubic-bezier(0.32, 0.72, 0, 1));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 .sidebar-overlay.open {
   opacity: 1;
@@ -27,13 +27,17 @@
   height: 100dvh;
   height: var(--app-height);
   padding-top: var(--safe-top);
-  background: var(--color-surface);
+  background: var(--material-fill-heavy, var(--color-surface));
+  backdrop-filter: blur(var(--material-blur, 20px)) saturate(var(--material-saturate, 180%));
+  -webkit-backdrop-filter: blur(var(--material-blur, 20px)) saturate(var(--material-saturate, 180%));
   z-index: var(--z-modal);
   transform: translateX(-100%);
-  transition: transform var(--transition-base);
+  transition: transform var(--spring-response, 300ms cubic-bezier(0.32, 0.72, 0, 1));
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  will-change: transform;
+  border-right: 1px solid var(--material-edge, var(--color-border-light));
 }
 .sidebar.open {
   transform: translateX(0);

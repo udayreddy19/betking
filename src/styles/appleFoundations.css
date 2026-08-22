@@ -1,0 +1,182 @@
+/**
+ * Apple Design foundations for OddsYra — response, materials, type, a11y.
+ * Preserves Night Pitch brand tokens; improves feel and accessibility.
+ */
+
+:root {
+  --material-blur: 20px;
+  --material-saturate: 180%;
+  --material-fill: rgba(251, 248, 242, 0.72);
+  --material-fill-heavy: rgba(251, 248, 242, 0.88);
+  --material-edge: rgba(255, 255, 255, 0.45);
+  --material-scrim: rgba(11, 14, 18, 0.4);
+  --press-scale: 0.97;
+  --spring-response: 300ms cubic-bezier(0.32, 0.72, 0, 1);
+  --tracking-display: -0.025em;
+  --tracking-body: 0.005em;
+  --leading-display: 1.12;
+  --leading-body: 1.55;
+}
+
+[data-theme='dark'] {
+  --material-fill: rgba(21, 27, 34, 0.72);
+  --material-fill-heavy: rgba(21, 27, 34, 0.88);
+  --material-edge: rgba(255, 255, 255, 0.08);
+  --material-scrim: rgba(0, 0, 0, 0.55);
+}
+
+/* —— Typography (size-specific tracking / leading) —— */
+body {
+  letter-spacing: var(--tracking-body);
+  line-height: var(--leading-body);
+}
+
+h1, h2, h3,
+.modal-title,
+.register-form-section h1,
+.sports-empty h3 {
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-display);
+  font-optical-sizing: auto;
+}
+
+/* —— Instant press feedback (pointer-down, not click) —— */
+button:not(:disabled):not(.no-press),
+.header-login-btn,
+.header-join-btn,
+.header-deposit-btn,
+.header-action-icon-btn,
+.header-menu-btn,
+.modal-submit-btn,
+.register-submit-btn,
+.my-bets-cashout-btn,
+.my-bets-filter,
+.filter-chip,
+.sports-market-odds-btn,
+.social-auth-btn {
+  transition:
+    transform 100ms ease-out,
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    opacity var(--transition-fast);
+}
+
+button:not(:disabled):not(.no-press):active,
+.header-login-btn:active,
+.header-join-btn:active,
+.header-deposit-btn:active,
+.header-action-icon-btn:active,
+.header-menu-btn:active,
+.modal-submit-btn:active,
+.register-submit-btn:active:not(:disabled),
+.my-bets-cashout-btn:active,
+.my-bets-filter:active,
+.filter-chip:active,
+.sports-market-odds-btn:active,
+.social-auth-btn:active:not(:disabled) {
+  transform: scale(var(--press-scale));
+}
+
+/* —— Floating materials —— */
+.apple-material {
+  background: var(--material-fill);
+  backdrop-filter: blur(var(--material-blur)) saturate(var(--material-saturate));
+  -webkit-backdrop-filter: blur(var(--material-blur)) saturate(var(--material-saturate));
+  border: 1px solid var(--material-edge);
+}
+
+.apple-material--heavy {
+  background: var(--material-fill-heavy);
+}
+
+.apple-scrim {
+  background: var(--material-scrim);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* Scroll-edge fade instead of a hard hairline under sticky chrome */
+.apple-scroll-edge::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -12px;
+  height: 12px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--color-bg) 55%, transparent), transparent);
+  opacity: 0.9;
+}
+
+/* —— Reduced motion: keep feedback, drop vestibular motion —— */
+@media (prefers-reduced-motion: reduce) {
+  html:not(.theme-switching) *:not([data-allow-motion]),
+  html:not(.theme-switching) *:not([data-allow-motion])::before,
+  html:not(.theme-switching) *:not([data-allow-motion])::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 120ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  button:not(:disabled):active,
+  .header-login-btn:active,
+  .header-join-btn:active,
+  .modal-submit-btn:active,
+  .register-submit-btn:active,
+  .sports-market-odds-btn:active {
+    transform: none;
+    opacity: 0.88;
+  }
+
+  .sidebar.open {
+    transform: none;
+  }
+
+  .sidebar:not(.open) {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+/* —— Reduced transparency: solid chrome —— */
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --material-fill: var(--color-surface);
+    --material-fill-heavy: var(--color-surface);
+    --header-bg: var(--color-surface);
+  }
+
+  .header,
+  .mobile-bottom-bar,
+  .apple-material,
+  .my-bets-panel,
+  .modal-card {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: var(--color-surface) !important;
+  }
+
+  .modal-overlay,
+  .my-bets-backdrop,
+  .sidebar-overlay,
+  .apple-scrim {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+/* —— Higher contrast —— */
+@media (prefers-contrast: more) {
+  .header,
+  .mobile-bottom-bar,
+  .my-bets-panel,
+  .modal-card,
+  .sidebar {
+    border-color: var(--color-text) !important;
+    background: var(--color-surface) !important;
+    backdrop-filter: none !important;
+  }
+}

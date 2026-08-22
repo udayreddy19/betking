@@ -20,6 +20,7 @@ import '../MyBetsPanel/MyBetsPanel.css';
 import '../PromotionsPanel/PromotionsPanel.css';
 import BrandLogo, { BrandWordmark } from '../BrandLogo/BrandLogo';
 import { withoutCasinoLinks } from '../../utils/featureFlags';
+import { hoverScale, pressScale, springUi } from '../../utils/motionPresets';
 import './Header.css';
 
 const navLinks = withoutCasinoLinks([
@@ -279,8 +280,9 @@ function Header() {
                 aria-label="My bets"
                 id="header-my-bets-btn"
                 title="My Bets"
-                whileHover={{ scale: 1.15, rotate: -5 }}
-                whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: hoverScale }}
+                whileTap={{ scale: pressScale }}
+                transition={springUi}
               >
                 <HiOutlineClipboardList className="header-my-bets-icon" aria-hidden="true" />
                 {myBetsCount > 0 && <span className="header-my-bets-badge">{myBetsCount}</span>}
@@ -294,8 +296,9 @@ function Header() {
                   aria-haspopup="dialog"
                   aria-label="Notifications"
                   title="Notifications"
-                  whileHover={{ scale: 1.15 }}
-                  whileTap={{ scale: 0.9 }}
+                  whileHover={{ scale: hoverScale }}
+                  whileTap={{ scale: pressScale }}
+                  transition={springUi}
                 >
                   <IoNotifications size={18} aria-hidden="true" />
                   {unreadNotifCount > 0 && <span className="header-my-bets-badge">{unreadNotifCount}</span>}
@@ -350,8 +353,9 @@ function Header() {
                 id="daily-spin-btn"
                 title="Spin & Win Daily Rewards"
                 onClick={() => setIsSpinOpen(true)}
-                whileHover={{ scale: 1.2, rotate: 15 }}
-                whileTap={{ scale: 0.85 }}
+                whileHover={{ scale: hoverScale }}
+                whileTap={{ scale: pressScale }}
+                transition={springUi}
               >
                 <motion.div
                   animate={{ scale: [1, 1.25, 1], rotate: [0, -10, 10, 0] }}
@@ -371,8 +375,9 @@ function Header() {
                 aria-haspopup="dialog"
                 onClick={togglePromos}
                 title="Promotions"
-                whileHover={{ scale: 1.15 }}
-                whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: hoverScale }}
+                whileTap={{ scale: pressScale }}
+                transition={springUi}
               >
                 <AnimatedMotionGiftIcon size={18} />
               </motion.button>
@@ -383,8 +388,9 @@ function Header() {
                 aria-label="My Profile"
                 title="My Profile"
                 onClick={() => navigate('/profile')}
-                whileHover={{ scale: 1.15 }}
-                whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: hoverScale }}
+                whileTap={{ scale: pressScale }}
+                transition={springUi}
               >
                 <HiOutlineUser className="header-profile-icon" aria-hidden="true" />
               </motion.button>

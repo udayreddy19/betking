@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'motion/react';
 import { IoClose } from '../../icons';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { useAuth } from '../../context/AuthContext';
@@ -9,6 +10,7 @@ import { formatInr } from '../../utils/walletBalance';
 import { teamNameMatches } from '../../utils/cricketScores';
 import { DEMO_MODE } from '../../utils/featureFlags';
 import { matchIdsEqual } from '../../../lib/matchIdPublic.mjs';
+import { springSheet } from '../../utils/motionPresets';
 import './MyBetsPanel.css';
 
 function parseOversCompleted(oversStr) {
@@ -250,12 +252,32 @@ export default function MyBetsPanel() {
     return null;
   };
 
-  if (!isMyBetsOpen) return null;
-
   return (
-    <>
-      <div className="my-bets-backdrop" onClick={closeMyBets} aria-hidden="true" />
-      <div className="my-bets-panel" ref={panelRef} role="dialog" aria-modal="true" aria-label="My bets">
+    <AnimatePresence>
+      {isMyBetsOpen ? (
+        <>
+          <motion.div
+            key="my-bets-backdrop"
+            className="my-bets-backdrop apple-scrim"
+            onClick={closeMyBets}
+            aria-hidden="true"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          />
+          <motion.div
+            key="my-bets-panel"
+            className="my-bets-panel apple-material--heavy"
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="My bets"
+            initial={{ opacity: 0, y: -8, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.98 }}
+            transition={springSheet}
+          >
         <div className="my-bets-header">
           <h3>My bets <span className="my-bets-count">{myBetsCount}</span></h3>
           <button type="button" className="my-bets-close" onClick={closeMyBets} aria-label="Close my bets">
@@ -383,7 +405,9 @@ export default function MyBetsPanel() {
             })
           )}
         </div>
-      </div>
-    </>
+          </motion.div>
+        </>
+      ) : null}
+    </AnimatePresence>
   );
 }
