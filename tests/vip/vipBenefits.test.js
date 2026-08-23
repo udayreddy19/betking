@@ -8,18 +8,24 @@ import {
   cashoutAmountFromPotential,
   crossedVipTiers,
   LOYALTY_POINTS_PER_100_STANDARD,
+  LOYALTY_POINTS_PER_100_SILVER,
+  LOYALTY_POINTS_PER_100_GOLD,
   LOYALTY_POINTS_PER_100_VIP,
 } from '../../lib/vipBenefits.mjs';
 import { addLoyaltyPoints } from '../../lib/referralLoyaltyEngine.mjs';
 import { query } from '../../db/pg.js';
 
 describe('VIP vs standard benefits', () => {
-  it('gives standard players 2 points per ₹100 and VIP club 5', () => {
+  it('uses tier-specific earn rates and VIP point thresholds', () => {
     expect(LOYALTY_POINTS_PER_100_STANDARD).toBe(2);
+    expect(LOYALTY_POINTS_PER_100_SILVER).toBe(3);
+    expect(LOYALTY_POINTS_PER_100_GOLD).toBe(4);
     expect(LOYALTY_POINTS_PER_100_VIP).toBe(5);
     expect(pointsFromSpendAtTier(1000, 'BRONZE')).toBe(20);
-    expect(pointsFromSpendAtTier(1000, 'SILVER')).toBe(50);
-    expect(pointsFromSpendAtTier(1000, 'GOLD')).toBe(50);
+    expect(pointsFromSpendAtTier(1000, 'SILVER')).toBe(30);
+    expect(pointsFromSpendAtTier(1000, 'GOLD')).toBe(40);
+    expect(pointsFromSpendAtTier(1000, 'PLATINUM')).toBe(50);
+    expect(pointsFromSpendAtTier(1000, 'DIAMOND')).toBe(50);
     expect(isVipClubTier('BRONZE')).toBe(false);
     expect(isVipClubTier('GOLD')).toBe(true);
     expect(getBenefitsForTier('DIAMOND').maxWithdraw).toBe(1000000);
@@ -33,8 +39,9 @@ describe('VIP vs standard benefits', () => {
     expect(cashoutAmountFromPotential(1000, 'DIAMOND')).toBe(950);
     expect(crossedVipTiers('BRONZE', 'GOLD')).toEqual(['SILVER', 'GOLD']);
     expect(getBenefitsForTier('GOLD').cashbackPct).toBe(5);
-    expect(loyaltyTierFromPoints(24999)).toBe('PLATINUM');
-    expect(loyaltyTierFromPoints(25000)).toBe('DIAMOND');
+    expect(loyaltyTierFromPoints(24999)).toBe('GOLD');
+    expect(loyaltyTierFromPoints(25000)).toBe('PLATINUM');
+    expect(loyaltyTierFromPoints(50000)).toBe('DIAMOND');
   });
 
   it('awards stake points at the user current tier', async () => {
@@ -45,7 +52,8 @@ describe('VIP vs standard benefits', () => {
       [standardId, `${standardId}@example.com`, vipId, `${vipId}@example.com`],
     );
     await query(
-      `INSERT INTO user_loyalty (user_id, points, tier) VALUES ($1, 0, 'BRONZE'), ($2, 600, 'SILVER')`,
+      `INSERT INTO user_loyalty (user_id, points, vip_points, tier)
+       VALUES ($1, 0, 0, 'BRONZE'), ($2, 2500, 2500, 'SILVER')`,
       [standardId, vipId],
     );
 
@@ -53,7 +61,7 @@ describe('VIP vs standard benefits', () => {
     const vip = await addLoyaltyPoints({ userId: vipId, stakeAmount: 1000 });
 
     expect(std.earnedPoints).toBe(20);
-    expect(vip.earnedPoints).toBe(50);
+    expect(vip.earnedPoints).toBe(30);
 
     await query(`DELETE FROM user_loyalty WHERE user_id IN ($1, $2)`, [standardId, vipId]);
     await query(`DELETE FROM users WHERE user_id IN ($1, $2)`, [standardId, vipId]);

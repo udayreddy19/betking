@@ -1,6 +1,8 @@
 /** Loyalty: standard 2 pts / ₹100, VIP club 5 pts / ₹100; 5 points = ₹1; redeemable from 50 points */
 import {
   LOYALTY_POINTS_PER_100_STANDARD,
+  LOYALTY_POINTS_PER_100_SILVER,
+  LOYALTY_POINTS_PER_100_GOLD,
   LOYALTY_POINTS_PER_100_VIP,
   LOYALTY_POINTS_PER_RUPEE,
   LOYALTY_MIN_REDEEM_POINTS,
@@ -20,6 +22,8 @@ const NEXT_TIER_THRESHOLDS = [
 
 export {
   LOYALTY_POINTS_PER_100_STANDARD,
+  LOYALTY_POINTS_PER_100_SILVER,
+  LOYALTY_POINTS_PER_100_GOLD,
   LOYALTY_POINTS_PER_100_VIP,
   LOYALTY_POINTS_PER_RUPEE,
   LOYALTY_MIN_REDEEM_POINTS,
@@ -27,7 +31,12 @@ export {
 export const LOYALTY_POINTS_PER_100 = LOYALTY_POINTS_PER_100_VIP;
 
 export function getUserLoyaltyPoints(user) {
-  return user?.loyaltyPoints ?? user?.coins ?? 0;
+  return Number(user?.loyaltyPoints ?? user?.coins ?? 0);
+}
+
+/** Lifetime VIP progression — not reduced when loyalty points are redeemed. */
+export function getUserVipPoints(user) {
+  return Number(user?.vipPoints ?? user?.loyaltyPoints ?? user?.coins ?? 0);
 }
 
 export function getUserLoyaltyTier(user) {
@@ -50,7 +59,7 @@ export function canRedeemLoyaltyPoints(points) {
 }
 
 export function getPointsToNextTier(user) {
-  const points = Number(getUserLoyaltyPoints(user)) || 0;
+  const points = Number(getUserVipPoints(user)) || 0;
   const next = NEXT_TIER_THRESHOLDS.find(([, threshold]) => points < threshold);
   if (!next) {
     return { pointsToNext: 0, nextTier: null, nextLabel: null };
@@ -64,6 +73,7 @@ export function getPointsToNextTier(user) {
 
 export function getLoyaltySummary(user) {
   const points = getUserLoyaltyPoints(user);
+  const vipPoints = getUserVipPoints(user);
   const benefits = getBenefitsForTier(user?.loyaltyTier || user?.loyaltyRank);
   const redeemValue = pointsToRupees(points);
   const canRedeem = canRedeemLoyaltyPoints(points);
@@ -73,6 +83,7 @@ export function getLoyaltySummary(user) {
 
   return {
     points,
+    vipPoints,
     redeemValue,
     canRedeem,
     progress,

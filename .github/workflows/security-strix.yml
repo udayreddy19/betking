@@ -1,0 +1,35 @@
+name: Security Scan (Strix)
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  strix-scan:
+    name: Strix diff-scoped pentest
+    runs-on: ubuntu-latest
+    if: vars.ENABLE_STRIX_SCAN == 'true'
+    permissions:
+      contents: read
+      security-events: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Strix quick scan (self-hosted CLI)
+        env:
+          STRIX_LLM_API_KEY: ${{ secrets.STRIX_LLM_API_KEY }}
+        run: |
+          if ! command -v strix >/dev/null 2>&1; then
+            echo "Strix CLI not installed on runner — skipping. Set ENABLE_STRIX_SCAN=true and install CLI, or use app.strix.ai GitHub App."
+            exit 0
+          fi
+          strix scan --mode quick --target . --format sarif --output strix-results.sarif
+
+      - name: Upload SARIF
+        if: always() && hashFiles('strix-results.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: strix-results.sarif

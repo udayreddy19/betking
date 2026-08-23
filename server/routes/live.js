@@ -17,12 +17,30 @@ router.get('/health', async (req, res) => {
 
 router.get('/readiness', async (req, res) => {
   try {
-    const { getReadinessStatus } = await import('../../lib/devopsEngine.mjs');
-    const { getSettlementWorkerHealth } = await import('../../lib/settlement/settlementHealth.mjs');
+    const { getReadinessStatus, getPublicReadinessStatus } = await import('../../lib/devopsEngine.mjs');
     const readiness = await getReadinessStatus();
-    const settlement = await getSettlementWorkerHealth();
-    const statusCode = readiness.ready && settlement.settlementWorker.healthy !== false ? 200 : 503;
-    res.status(statusCode).json({ ...readiness, ...settlement });
+    const publicBody = getPublicReadinessStatus(readiness);
+    const statusCode = publicBody.ready ? 200 : 503;
+    res.status(statusCode).json(publicBody);
+  } catch (err) {
+    res.status(503).json({ ready: false, error: err.message });
+  }
+});
+
+router.get('/internal/readiness', async (req, res) => {
+  try {
+    const token = process.env.READINESS_TOKEN || process.env.ADMIN_SECRET_KEY;
+    const provided = req.headers['x-readiness-token'] || req.query.token;
+    const isLocal = ['127.0.0.1', '::1', 'localhost'].includes(req.hostname)
+      || req.ip === '127.0.0.1'
+      || req.ip === '::1';
+    if (!isLocal && token && provided !== token) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    const { getDetailedReadinessStatus } = await import('../../lib/devopsEngine.mjs');
+    const body = await getDetailedReadinessStatus();
+    const statusCode = body.ready && body.settlementWorker?.healthy !== false ? 200 : 503;
+    res.status(statusCode).json(body);
   } catch (err) {
     res.status(503).json({ ready: false, error: err.message });
   }

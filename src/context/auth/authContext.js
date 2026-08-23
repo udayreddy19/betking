@@ -5,6 +5,8 @@ export const AuthContext = createContext(null);
 const dummyAuthFallback = {
   user: null,
   isLoggedIn: false,
+  authStatus: 'anonymous',
+  isAuthReady: true,
   login: () => false,
   resetPassword: () => ({ ok: false, error: 'Not available.' }),
   changePassword: () => ({ ok: false, error: 'Not available.' }),

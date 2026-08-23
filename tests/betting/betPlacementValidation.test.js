@@ -80,20 +80,36 @@ describe('Phase 5 Bet Placement Validation Tests', () => {
     await query(`UPDATE user_account_controls SET account_state = 'ACTIVE' WHERE user_id = $1;`, [testUserId]);
   });
 
-  it('accepts placement at server odds when client odds drift', async () => {
+  it('rejects placement with ODDS_CHANGED when client odds drift', async () => {
+    const walletBefore = await query(`SELECT balance FROM wallets WHERE user_id = $1`, [testUserId]);
+    const balanceBefore = Number(walletBefore.rows[0]?.balance || 0);
+
+    await expect(betPlacementEngine.placeBet({
+      userId: testUserId,
+      matchId,
+      marketId,
+      selectionId,
+      stake: 100.00,
+      clientOdds: 2.10,
+    })).rejects.toMatchObject({ code: 'ODDS_CHANGED' });
+
+    const walletAfter = await query(`SELECT balance FROM wallets WHERE user_id = $1`, [testUserId]);
+    expect(Number(walletAfter.rows[0]?.balance || 0)).toBe(balanceBefore);
+  });
+
+  it('accepts placement when client odds match server quote', async () => {
     const res = await betPlacementEngine.placeBet({
       userId: testUserId,
       matchId,
       marketId,
       selectionId,
       stake: 100.00,
-      clientOdds: 2.50,
+      clientOdds: 1.85,
     });
 
     expect(res.success).toBe(true);
     expect(res.acceptedOdds).toBe(1.85);
-    expect(res.oddsChanged).toBe(true);
-    expect(res.oddsUpdates?.[0]?.previousOdds).toBe(2.5);
+    expect(res.oddsChanged).toBe(false);
   });
 
   it('CRITICAL: invalid stake (<= 0 or > maxLimit) must REJECT bet placement', async () => {

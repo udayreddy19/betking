@@ -119,6 +119,7 @@ const DOMAIN_GROUPS = [
         subModules: [
           { id: 'maker-checker', label: 'Maker-Checker Approvals' },
           { id: 'ledger', label: 'Double-Entry Ledger' },
+          { id: 'legacy-ledger', label: 'Legacy Ledger Gaps' },
           { id: 'payment-gateways', label: 'Razorpay & Bank Gateways' },
         ],
       },

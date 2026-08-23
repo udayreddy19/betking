@@ -30,7 +30,10 @@ function withCsrfHeaders(headers) {
   return headers;
 }
 
-export async function refreshAccessToken() {
+/** One in-flight refresh at a time — parallel 401s must not rotate the cookie twice. */
+let refreshInFlight = null;
+
+async function performRefreshAccessToken() {
   const headers = withCsrfHeaders(new Headers({ 'Content-Type': 'application/json' }));
   const res = await fetch('/api/auth/refresh', {
     method: 'POST',
@@ -44,6 +47,15 @@ export async function refreshAccessToken() {
     return data.accessToken;
   }
   return null;
+}
+
+export function refreshAccessToken() {
+  if (!refreshInFlight) {
+    refreshInFlight = performRefreshAccessToken().finally(() => {
+      refreshInFlight = null;
+    });
+  }
+  return refreshInFlight;
 }
 
 /**
@@ -66,7 +78,7 @@ export async function apiFetch(path, options = {}, { retry = true } = {}) {
     credentials: options.credentials ?? 'include',
   });
 
-  if (res.status === 401 && retry && token) {
+  if (res.status === 401 && retry) {
     const newToken = await refreshAccessToken();
     if (newToken) {
       return apiFetch(path, options, { retry: false });
@@ -80,7 +92,11 @@ export async function fetchMe() {
   const res = await apiFetch('/api/auth/me');
   if (!res.ok) return null;
   const data = await res.json();
-  return data.user || null;
+  const user = data.user || null;
+  if (user && data.spinGrants) {
+    user.spinGrants = data.spinGrants;
+  }
+  return user;
 }
 
 export function mapServerUserToSession(serverUser, previous = null) {
@@ -88,7 +104,8 @@ export function mapServerUserToSession(serverUser, previous = null) {
   const balance = Number(serverUser.balance) || 0;
   const bonusBalance = Number(serverUser.bonusBalance) || 0;
   const freebetBalance = Number(serverUser.freebetBalance) || 0;
-  const loyaltyPoints = Number(serverUser.loyaltyPoints) || 0;
+  const loyaltyPoints = Number(serverUser.loyaltyPoints ?? previous?.loyaltyPoints) || 0;
+  const vipPoints = Number(serverUser.vipPoints ?? serverUser.loyaltyPoints ?? previous?.vipPoints) || 0;
   const reservedBalance = Number(serverUser.reservedBalance) || 0;
   const winningsBalance = Number(serverUser.winningsBalance) || 0;
   const lockedDepositBalance = Number(serverUser.lockedDepositBalance) || 0;
@@ -100,7 +117,7 @@ export function mapServerUserToSession(serverUser, previous = null) {
     serverUser.withdrawableBalance ?? Math.max(0, balance - lockedDepositBalance),
   ) || 0;
   const loyaltyTier = serverUser.loyaltyTier || previous?.loyaltyTier || 'BRONZE';
-  const nextTier = getPointsToNextTier({ loyaltyPoints, loyaltyTier });
+  const nextTier = getPointsToNextTier({ vipPoints, loyaltyPoints, loyaltyTier });
   return {
     ...(previous || {}),
     userId: serverUser.userId,
@@ -118,11 +135,13 @@ export function mapServerUserToSession(serverUser, previous = null) {
     bonusBalance,
     freebetBalance,
     loyaltyPoints,
+    vipPoints,
     coins: loyaltyPoints,
     loyaltyTier,
     loyaltyRank: loyaltyTier,
     loyaltyLevel: previous?.loyaltyLevel ?? 1,
     xpToNext: nextTier.pointsToNext,
+    spinGrants: serverUser.spinGrants || previous?.spinGrants || null,
     notifications: previous?.notifications ?? 0,
     emailVerified: !!serverUser.emailVerified,
     role: serverUser.role || previous?.role || 'USER',

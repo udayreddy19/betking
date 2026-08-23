@@ -20,9 +20,10 @@ import { prefetchMatchDetail, enrichFromPoller, subscribeGlobalMatchDetails, get
 import { useMatchDetail } from '../../hooks/useMatchDetail';
 import { useCentralizedMatchState } from '../../hooks/useCentralizedMatchState';
 import { centralizedMatchEngine } from '../../services/centralizedMatchStateEngine';
-import { filterMatches, countMatchesByStateTabs } from '../../utils/matchFilters';
+import { filterMatches } from '../../utils/matchFilters';
 import { resolveLeagueId, getLeagueMeta, isSameLeague, groupMatchesByLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
 import { matchIdsEqual } from '../../../lib/matchIdPublic.mjs';
+import { findLiveMatch } from '../../utils/findLiveMatch';
 import { formatTeamShortName, teamDisplayName, asDisplayText } from '../../utils/teamShortName';
 import SrlLeaguePanel from '../../components/SrlLeaguePanel/SrlLeaguePanel';
 import {
@@ -35,7 +36,6 @@ import { subscribeLiveChannel } from '../../services/liveFeedSocket';
 import { getMarketCategoriesForSport } from '../../utils/marketCategoryLabels';
 import { useMatchWatchlist } from '../../hooks/useMatchWatchlist';
 import LiveScoresFeedBanner from '../../components/LiveScoresFeedBanner/LiveScoresFeedBanner';
-import SportsStateTabs from '../../components/SportsStateTabs/SportsStateTabs';
 import { mediaQueryMatches, subscribeMediaQuery } from '../../utils/browserCompat';
 import './Sports.css';
 
@@ -78,18 +78,18 @@ function filterByLeague(matchList, activeLeague, cricketSeries = []) {
       || series.name === activeLeague
       || `cb-series-${series.seriesId}` === activeLeague
   );
-  if (dynamicSeries) {
-    const res = matchList.filter((match) =>
-      match.league === dynamicSeries.name
-      || match.seriesName === dynamicSeries.rawName
-      || match.cricbuzzSeriesId === dynamicSeries.seriesId
-    );
-    if (res.length > 0) return res;
-  }
-
   const leagueMeta = getLeagueMeta(activeLeague, cricketSeries);
-  if (leagueMeta) {
-    const res = matchList.filter((match) => matchBelongsToLeague(match, leagueMeta));
+
+  if (dynamicSeries || leagueMeta) {
+    const res = matchList.filter((match) => {
+      if (dynamicSeries) {
+        if (match.cricbuzzSeriesId === dynamicSeries.seriesId) return true;
+        if (match.league === dynamicSeries.name) return true;
+        if (match.seriesName === dynamicSeries.rawName) return true;
+      }
+      if (leagueMeta && matchBelongsToLeague(match, leagueMeta)) return true;
+      return false;
+    });
     if (res.length > 0) return res;
   }
 
@@ -305,7 +305,6 @@ export default function Sports() {
   const [viewMode, setViewMode] = useState(initialMatchId ? 'match' : 'league');
   const [activeMarketCat, setActiveMarketCat] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [eventStateTab, setEventStateTab] = useState('live');
   const [selectedMatchId, setSelectedMatchId] = useState(initialMatchId);
   const [expandedMarkets, setExpandedMarkets] = useState({
     winner: true, tie: true, over10: true, delivery: false, partnership: false,
@@ -316,7 +315,7 @@ export default function Sports() {
 
 
 
-  const isIplSrlView = isSameLeague(activeLeague, 'ipl-srl');
+  const isIplSrlView = isSameLeague(activeLeague, 'ipl-srl', cricketSeries);
   const watchlistOnly = searchParams.get('watchlist') === '1';
 
   const baseSportPool = useMemo(() => {
@@ -331,15 +330,8 @@ export default function Sports() {
     );
   }, [matches, activeSport, activeLeague, searchQuery, cricketSeries, watchlistOnly, watchlistIds]);
 
-  const stateTabCounts = useMemo(
-    () => countMatchesByStateTabs(baseSportPool),
-    [baseSportPool],
-  );
-
   const sportMatches = useMemo(() => {
-    const filtered = filterMatches(baseSportPool, { stateTab: eventStateTab });
-
-    return [...filtered].sort((a, b) => {
+    return [...baseSportPool].sort((a, b) => {
       const liveA = getMatchState(a) === 'in' ? 0 : 1;
       const liveB = getMatchState(b) === 'in' ? 0 : 1;
       if (liveA !== liveB) return liveA - liveB;
@@ -347,52 +339,82 @@ export default function Sports() {
       if (leagueCmp) return leagueCmp;
       return String(a.id || '').localeCompare(String(b.id || ''));
     });
-  }, [baseSportPool, eventStateTab]);
+  }, [baseSportPool]);
 
   const liveMatches = useMemo(
     () => baseSportPool.filter((m) => getMatchState(m) === 'in'),
     [baseSportPool],
   );
 
-  const upcomingMatches = useMemo(
-    () => baseSportPool.filter((m) => getMatchState(m) === 'pre'),
-    [baseSportPool],
-  );
-
-  useEffect(() => {
-    if (stateTabCounts[eventStateTab] > 0) return;
-    const fallback = ['live', 'prelive', 'upcoming'].find((id) => stateTabCounts[id] > 0);
-    if (fallback) setEventStateTab(fallback);
-  }, [stateTabCounts, eventStateTab]);
-
   const cricketGroups = useMemo(() => groupMatchesByLeague(sportMatches), [sportMatches]);
 
   const lastActiveMatchRef = useRef(null);
 
-  // Find the selected match in the full matches array (not just filtered sportMatches)
-  // Persist lastActiveMatchRef so background API refreshes never flash 'Match not found'
+  // Prefer the current league pool. Deep-linked match ids search the full feed (any league).
+  const matchDeepLinkId = searchParams.get('match');
+  const matchTeamsHint = searchParams.get('teams');
+
   const baseActiveMatch = useMemo(() => {
-    const targetId = selectedMatchId
-      || lastActiveMatchRef.current?.id
-      || liveMatches[0]?.id
-      || sportMatches[0]?.id;
-    if (!targetId) return null;
+    const targetId = selectedMatchId || matchDeepLinkId;
+    if (targetId) {
+      const selected = findLiveMatch(matches, {
+        matchId: targetId,
+        matchName: matchTeamsHint,
+      })
+        || findLiveMatch(sportMatches, { matchId: targetId, matchName: matchTeamsHint })
+        || findLiveMatch(liveMatches, { matchId: targetId, matchName: matchTeamsHint });
+      if (selected) {
+        lastActiveMatchRef.current = selected;
+        return selected;
+      }
+      // Keep waiting while scores load — avoid flashing "Match not found"
+      if (isScoresLoading) return lastActiveMatchRef.current;
 
-    const findById = (list, id) => (list || []).find((m) =>
-      m.id === id || m.matchId === id || matchIdsEqual(m.id || m.matchId, id)
-    );
-
-    let match = findById(sportMatches, targetId)
-      || findById(matches, targetId)
-      || findById(liveMatches, targetId);
-
-    if (match) {
-      lastActiveMatchRef.current = match;
-      return match;
+      // Bet deep-link for a fixture that left the live board — still open match view.
+      const parts = String(matchTeamsHint || '')
+        .split(/\s+vs\.?\s+/i)
+        .map((p) => p.trim())
+        .filter(Boolean);
+      const t1 = parts.length >= 2 ? parts[0] : (parts[0] || 'Open bet');
+      const t2 = parts.length >= 2 ? parts[1] : 'Fixture';
+      const stub = {
+        id: targetId,
+        matchId: targetId,
+        sport: activeSport || 'cricket',
+        team1: { name: t1 },
+        team2: { name: t2 },
+        matchName: parts.length >= 2 ? `${t1} vs ${t2}` : undefined,
+        league: 'Open bet',
+        matchState: 'post',
+        isLive: false,
+        isCompleted: true,
+        time: 'Left live board',
+        liveDetails: {
+          commentary: 'This fixture is no longer listed on the live board. Your bet stays open until settlement.',
+        },
+        _betDeepLinkStub: true,
+      };
+      lastActiveMatchRef.current = stub;
+      return stub;
     }
 
-    return lastActiveMatchRef.current || null;
-  }, [sportMatches, matches, selectedMatchId, liveMatches]);
+    const fromPool = liveMatches[0] || sportMatches[0] || null;
+    if (fromPool) {
+      lastActiveMatchRef.current = fromPool;
+      return fromPool;
+    }
+
+    return null;
+  }, [
+    sportMatches,
+    matches,
+    selectedMatchId,
+    liveMatches,
+    matchDeepLinkId,
+    matchTeamsHint,
+    isScoresLoading,
+    activeSport,
+  ]);
 
   const activeMatch = useMatchDetail(baseActiveMatch);
 
@@ -529,7 +551,7 @@ export default function Sports() {
   }, [activeSport, activeLeague, setSearchParams, sportMatches]);
 
   const showLeagueOverview = useCallback((leagueId = activeLeague) => {
-    const resolved = resolveLeagueId(leagueId);
+    const resolved = resolveLeagueId(leagueId, cricketSeries);
     setActiveLeague(resolved);
     setViewMode('league');
     setSelectedMatchId(null);
@@ -546,7 +568,7 @@ export default function Sports() {
     requestAnimationFrame(() => {
       document.getElementById('sports-match-ticker')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     });
-  }, [activeSport, activeLeague, setSearchParams]);
+  }, [activeSport, activeLeague, setSearchParams, cricketSeries]);
 
   const goBackFromMatch = useCallback(() => {
     const historyIndex = window.history.state?.idx;
@@ -614,16 +636,19 @@ export default function Sports() {
     const match = searchParams.get('match');
 
     if (sport) setActiveSport(sport);
-    if (league) setActiveLeague(resolveLeagueId(league));
 
     if (match) {
       setSelectedMatchId(match);
       setViewMode('match');
+      // Always resolve league from URL when opening a match. Missing league → all
+      // so My Bets deep-links are not stuck behind a previous league filter.
+      setActiveLeague(league ? resolveLeagueId(league, cricketSeries) : 'all');
     } else {
       setSelectedMatchId(null);
       setViewMode('league');
+      if (league) setActiveLeague(resolveLeagueId(league, cricketSeries));
     }
-  }, [searchParams]);
+  }, [searchParams, cricketSeries]);
 
   const matchTimeLabel = activeMatch
     ? (isTrulyLiveMatch(activeMatch)
@@ -706,9 +731,9 @@ export default function Sports() {
             <div className="sports-page-heading">
               <h1>Live Betting</h1>
               <p>
-                {stateTabCounts.live > 0
-                  ? `${stateTabCounts.live} live · ${stateTabCounts.prelive} pre-live · ${stateTabCounts.upcoming} upcoming ${sportsCategories.find((s) => s.id === activeSport)?.name || 'events'}`
-                  : `No live ${sportsCategories.find((s) => s.id === activeSport)?.name?.toLowerCase() || 'events'} right now — ${stateTabCounts.prelive + stateTabCounts.upcoming} scheduled`}
+                {sportMatches.length > 0
+                  ? `${sportMatches.length} ${sportsCategories.find((s) => s.id === activeSport)?.name || 'events'}`
+                  : `No ${sportsCategories.find((s) => s.id === activeSport)?.name?.toLowerCase() || 'events'} right now`}
               </p>
             </div>
           )}
@@ -787,7 +812,7 @@ export default function Sports() {
                 <button
                   key={league.id}
                   type="button"
-                  className={`sports-league-chip ${!watchlistOnly && isSameLeague(activeLeague, league.id) ? 'active' : ''}`}
+                  className={`sports-league-chip ${!watchlistOnly && isSameLeague(activeLeague, league.id, cricketSeries) ? 'active' : ''}`}
                   onClick={() => handleLeagueChange(league.id)}
                 >
                   {league.icon && (
@@ -811,15 +836,7 @@ export default function Sports() {
             retrying={isScoresLoading}
           />
 
-          {viewMode === 'league' && (
-            <SportsStateTabs
-              activeId={eventStateTab}
-              onSelect={setEventStateTab}
-              counts={stateTabCounts}
-            />
-          )}
-
-          <div className={`sports-state-panel${viewMode === 'league' ? ' sports-state-panel--with-tabs' : ''}`}>
+          <div className="sports-state-panel">
           <div className="sports-search sports-search--mobile">
             <div className="sports-search-wrapper">
               <FiSearch className="sports-search-icon" />
@@ -844,13 +861,7 @@ export default function Sports() {
                 <p>
                   {watchlistOnly
                     ? 'No watchlist matches are on the board right now. Star a match from Sports or Home to save it.'
-                    : eventStateTab === 'live'
-                    ? `No live matches right now${searchQuery ? ` for "${searchQuery}"` : ''}. Try Pre-live or Upcoming.`
-                    : eventStateTab === 'prelive'
-                    ? `No pre-live matches starting soon${searchQuery ? ` for "${searchQuery}"` : ''}.`
-                    : isLiveBettingPage
-                    ? `No ${sportsCategories.find((s) => s.id === activeSport)?.name?.toLowerCase() || 'sport'} matches available. Try another sport or check back soon.`
-                    : `No upcoming matches found${searchQuery ? ` for "${searchQuery}"` : ''}.`}
+                    : `No matches found${searchQuery ? ` for "${searchQuery}"` : ''}.`}
                 </p>
                 {isLiveBettingPage ? (
                   <Link to="/sports" className="sports-empty-action">
@@ -911,9 +922,7 @@ export default function Sports() {
           {viewMode === 'league' && !isIplSrlView && sportMatches.length > 0 && cricketGroups.length === 0 && (
             <div className="sports-league-overview">
               {isLiveBettingPage ? (
-                <h2 className="sports-section-heading">
-                  {eventStateTab === 'live' ? 'Live now' : eventStateTab === 'prelive' ? 'Pre-live' : 'Upcoming'}
-                </h2>
+                <h2 className="sports-section-heading">Matches</h2>
               ) : (
                 <>
                   <h2 className="sports-league-overview-title">{breadcrumbLeague}</h2>
@@ -959,9 +968,31 @@ export default function Sports() {
             <>
               {!isWideLayout && (
                 <div className="sports-mobile-live-widget">
-                  <ErrorBoundary resetKey={activeMatch?.id}>
-                    <LiveMatchGraphicWidget match={activeMatch} />
-                  </ErrorBoundary>
+                  {activeMatch._betDeepLinkStub ? (
+                    <div className="live-graphic-card-10cric" style={{ padding: '28px 18px', textAlign: 'center' }}>
+                      <div className="live-widget-inn-badge" style={{ marginBottom: 12 }}>OPEN BET</div>
+                      <div className="live-widget-teams-row" style={{ marginBottom: 12 }}>
+                        <span className="live-widget-team">{teamDisplayName(activeMatch.team1)}</span>
+                        <span className="live-widget-scoreline live-widget-scoreline--vs">VS</span>
+                        <span className="live-widget-team">{teamDisplayName(activeMatch.team2)}</span>
+                      </div>
+                      <p className="live-widget-prematch-status">
+                        This fixture left the live board. Your bet stays open until it is settled.
+                      </p>
+                      <button
+                        type="button"
+                        className="sports-empty-action"
+                        style={{ marginTop: 14 }}
+                        onClick={() => showLeagueOverview('all')}
+                      >
+                        Browse live matches
+                      </button>
+                    </div>
+                  ) : (
+                    <ErrorBoundary resetKey={activeMatch?.id}>
+                      <LiveMatchGraphicWidget match={activeMatch} />
+                    </ErrorBoundary>
+                  )}
                 </div>
               )}
 
@@ -1062,14 +1093,27 @@ export default function Sports() {
                 ))}
               </div>
 
-              {(!canBetActive || isMatchFinished(activeMatch)) && (
-                <MarketsSuspended />
-              )}
-              {canBetActive && !isMatchFinished(activeMatch) && matchMarkets.length === 0 && (
-                <p className="sports-empty">No bettable markets for this match yet. Odds will appear when the book is open.</p>
-              )}
+              {activeMatch._betDeepLinkStub ? (
+                <div className="sports-empty" style={{ marginTop: 12 }}>
+                  <h3>Fixture left the live board</h3>
+                  <p>
+                    Your open bet is still active and will settle when the result is confirmed.
+                    Live odds for this listing are no longer available.
+                  </p>
+                  <button type="button" className="sports-empty-action" onClick={() => showLeagueOverview('all')}>
+                    Browse live matches
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {(!canBetActive || isMatchFinished(activeMatch)) && (
+                    <MarketsSuspended />
+                  )}
+                  {canBetActive && !isMatchFinished(activeMatch) && matchMarkets.length === 0 && (
+                    <p className="sports-empty">No bettable markets for this match yet. Odds will appear when the book is open.</p>
+                  )}
 
-              {canBetActive && !isMatchFinished(activeMatch) && matchMarkets.map((market) => {
+                  {canBetActive && !isMatchFinished(activeMatch) && matchMarkets.map((market) => {
                 if (!showCategory(market.category)) return null;
                 if (market.status && market.status !== 'OPEN') return null;
                 const options = (market.options || market.selections || []).filter(
@@ -1113,27 +1157,38 @@ export default function Sports() {
                   </div>
                 );
               })}
+                </>
+              )}
 
             </>
           ) : viewMode === 'match' ? (
             <div className="sports-empty">
-              <h3>Match not found</h3>
-              <p>This match is no longer available</p>
-              <button type="button" className="sports-empty-action" onClick={() => showLeagueOverview(activeLeague)}>
-                Back to {breadcrumbLeague}
-              </button>
+              {isScoresLoading ? (
+                <>
+                  <h3>Loading match…</h3>
+                  <p>Fetching the live board</p>
+                </>
+              ) : (
+                <>
+                  <h3>Match not found</h3>
+                  <p>This match is no longer available</p>
+                  <button type="button" className="sports-empty-action" onClick={() => showLeagueOverview('all')}>
+                    Back to All Leagues
+                  </button>
+                </>
+              )}
             </div>
           ) : sportMatches.length === 0 ? (
             <div className="sports-empty">
-              <h3>{isLiveBettingPage ? 'No live events' : 'No matches in this league'}</h3>
+              <h3>No matches in this league</h3>
               <p>
                 {isLiveBettingPage
-                  ? 'There are no in-play matches at the moment.'
+                  ? 'There are no matches available at the moment.'
                   : 'Select another league or sport'}
               </p>
               {isLiveBettingPage && (
                 <Link to="/sports" className="sports-empty-action">
-                  View upcoming matches
+                  Browse all sports
                 </Link>
               )}
             </div>
@@ -1143,9 +1198,23 @@ export default function Sports() {
         <aside className="sports-right">
           {isWideLayout && activeMatch && (
             <div className="sports-desktop-live-widget">
-              <ErrorBoundary resetKey={activeMatch?.id}>
-                <LiveMatchGraphicWidget match={activeMatch} />
-              </ErrorBoundary>
+              {activeMatch._betDeepLinkStub ? (
+                <div className="live-graphic-card-10cric" style={{ padding: '28px 18px', textAlign: 'center' }}>
+                  <div className="live-widget-inn-badge" style={{ marginBottom: 12 }}>OPEN BET</div>
+                  <div className="live-widget-teams-row" style={{ marginBottom: 12 }}>
+                    <span className="live-widget-team">{teamDisplayName(activeMatch.team1)}</span>
+                    <span className="live-widget-scoreline live-widget-scoreline--vs">VS</span>
+                    <span className="live-widget-team">{teamDisplayName(activeMatch.team2)}</span>
+                  </div>
+                  <p className="live-widget-prematch-status">
+                    This fixture left the live board. Your bet stays open until it is settled.
+                  </p>
+                </div>
+              ) : (
+                <ErrorBoundary resetKey={activeMatch?.id}>
+                  <LiveMatchGraphicWidget match={activeMatch} />
+                </ErrorBoundary>
+              )}
             </div>
           )}
           <div className="sports-search sports-search--desktop">

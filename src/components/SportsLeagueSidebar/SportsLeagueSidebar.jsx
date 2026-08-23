@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { HiChevronDown, HiChevronRight } from '../../icons';
 import SportIcon from '../SportIcon/SportIcon';
 import { featuredLeagues, leagueGroups } from '../../data/mockData';
-import { resolveLeagueId, isSameLeague } from '../../utils/leagueNavigation';
+import { resolveLeagueId, isSameLeague, seriesCoveredByFeatured } from '../../utils/leagueNavigation';
 import './SportsLeagueSidebar.css';
 
 export default function SportsLeagueSidebar({ activeSport, activeLeague, cricketSeries = [], onSelectLeague }) {
@@ -16,7 +16,11 @@ export default function SportsLeagueSidebar({ activeSport, activeLeague, cricket
       sportLeagues.flatMap((league) => [league.name, ...(league.matchLeagues || [])])
     );
     return cricketSeries
-      .filter((series) => !knownNames.has(series.name) && !knownNames.has(series.rawName))
+      .filter((series) => {
+        if (knownNames.has(series.name) || knownNames.has(series.rawName)) return false;
+        // Hide "CPL" / "TNPL" when featured "Caribbean Premier League" / TNPL already covers them
+        return !seriesCoveredByFeatured(series, sportLeagues);
+      })
       .map((series) => ({
         id: series.id,
         name: series.name,
@@ -47,7 +51,7 @@ export default function SportsLeagueSidebar({ activeSport, activeLeague, cricket
             <li key={league.id}>
               <button
                 type="button"
-                className={`sports-league-item ${isSameLeague(activeLeague, league.id) ? 'active' : ''}`}
+                className={`sports-league-item ${isSameLeague(activeLeague, league.id, cricketSeries) ? 'active' : ''}`}
                 onClick={() => onSelectLeague(league.id)}
               >
                 <SportIcon sport={league.sport} icon={league.icon || 'trophy'} className="sports-league-item-icon" />
@@ -59,8 +63,8 @@ export default function SportsLeagueSidebar({ activeSport, activeLeague, cricket
             <li key={league.id}>
               <button
                 type="button"
-                className={`sports-league-item ${activeLeague === league.id ? 'active' : ''}`}
-                onClick={() => onSelectLeague(league.id)}
+                className={`sports-league-item ${isSameLeague(activeLeague, league.id, cricketSeries) ? 'active' : ''}`}
+                onClick={() => onSelectLeague(resolveLeagueId(league.id, cricketSeries))}
               >
                 <SportIcon sport={activeSport} icon={league.icon} className="sports-league-item-icon" />
                 <span className="sports-league-item-label">{league.name}</span>
@@ -89,8 +93,8 @@ export default function SportsLeagueSidebar({ activeSport, activeLeague, cricket
                   <li key={name}>
                     <button
                       type="button"
-                      className={`sports-league-subitem ${isSameLeague(activeLeague, name) ? 'active' : ''}`}
-                      onClick={() => onSelectLeague(resolveLeagueId(name) || name)}
+                      className={`sports-league-subitem ${isSameLeague(activeLeague, name, cricketSeries) ? 'active' : ''}`}
+                      onClick={() => onSelectLeague(resolveLeagueId(name, cricketSeries) || name)}
                     >
                       {name}
                     </button>

@@ -44,6 +44,7 @@ router.get('/api/bets/mine', requireAuth, async (req, res) => {
     const result = await queryRead(
       `SELECT b.bet_id, b.user_id, b.match_id, b.market_id, b.selection_id, b.stake, b.odds, b.accepted_odds,
               b.potential_payout, b.bet_type, b.status, b.created_at, COALESCE(b.fund_source, 'cash') AS fund_source,
+              b.placement_snapshot,
               COALESCE(
                 json_agg(
                   json_build_object(
@@ -60,7 +61,7 @@ router.get('/api/bets/mine', requireAuth, async (req, res) => {
        LEFT JOIN bet_selections bs ON bs.bet_id = b.bet_id
        WHERE b.user_id = $1
        GROUP BY b.bet_id, b.user_id, b.match_id, b.market_id, b.selection_id, b.stake, b.odds, b.accepted_odds,
-                b.potential_payout, b.bet_type, b.status, b.created_at, b.fund_source
+                b.potential_payout, b.bet_type, b.status, b.created_at, b.fund_source, b.placement_snapshot
        ORDER BY b.created_at DESC
        LIMIT 100`,
       [req.user.userId],
@@ -70,30 +71,67 @@ router.get('/api/bets/mine', requireAuth, async (req, res) => {
     let matchTitles = {};
     try {
       const { getCachedAggregatedLiveScores } = await import('../../lib/aggregator.mjs');
+      const { matchIdsEqual, matchIdAliases } = await import('../../lib/matchIdPublic.mjs');
       const list = Array.isArray(getCachedAggregatedLiveScores()?.matches)
         ? getCachedAggregatedLiveScores().matches
         : [];
+      const titleById = new Map();
       for (const m of list) {
         const id = String(m.id || m.matchId || '');
         if (!id) continue;
         const t1 = m.team1?.name || m.team1?.shortName || m.homeTeam?.name;
         const t2 = m.team2?.name || m.team2?.shortName || m.awayTeam?.name;
-        if (t1 && t2) matchTitles[id] = `${t1} vs ${t2}`;
-        else if (m.league) matchTitles[id] = String(m.league);
+        const title = (t1 && t2) ? `${t1} vs ${t2}` : (m.league ? String(m.league) : null);
+        if (!title) continue;
+        for (const alias of matchIdAliases(id)) titleById.set(alias, title);
+        titleById.set(id, title);
       }
+      const resolveTitle = (matchId) => {
+        if (!matchId) return null;
+        const key = String(matchId);
+        if (titleById.has(key)) return titleById.get(key);
+        for (const [id, title] of titleById) {
+          if (matchIdsEqual(id, key)) return title;
+        }
+        return null;
+      };
+      matchTitles = { resolve: resolveTitle };
     } catch {
-      matchTitles = {};
+      matchTitles = { resolve: () => null };
     }
+
+    const titleFromSnapshot = (row) => {
+      let snap = row.placement_snapshot;
+      if (!snap) return null;
+      if (typeof snap === 'string') {
+        try { snap = JSON.parse(snap); } catch { return null; }
+      }
+      const leg = Array.isArray(snap?.legs) ? snap.legs[0] : null;
+      if (!leg) return null;
+      if (leg.matchName && !/^live match$/i.test(leg.matchName)) return String(leg.matchName);
+      if (leg.team1Name && leg.team2Name) return `${leg.team1Name} vs ${leg.team2Name}`;
+      return null;
+    };
 
     const bets = (result.rows || []).map((row) => {
       const selections = Array.isArray(row.selections)
         ? row.selections
         : (typeof row.selections === 'string' ? JSON.parse(row.selections) : []);
       const primarySelection = selections[0] || null;
+      let snap = row.placement_snapshot;
+      if (typeof snap === 'string') {
+        try { snap = JSON.parse(snap); } catch { snap = null; }
+      }
+      const snapLeg = Array.isArray(snap?.legs) ? snap.legs[0] : null;
       return {
         ...row,
         selections,
-        match_name: matchTitles[row.match_id] || null,
+        placement_snapshot: snap,
+        match_name: matchTitles.resolve?.(row.match_id) || titleFromSnapshot(row) || null,
+        team1_name: snapLeg?.team1Name || null,
+        team2_name: snapLeg?.team2Name || null,
+        league: snapLeg?.league || null,
+        sport: snapLeg?.sport || null,
         selection_name: primarySelection?.selection_name || row.selection_name || row.selection_id,
         settled_at: row.settled_at || null,
         actual_payout: row.actual_payout != null ? Number(row.actual_payout) : null,
@@ -131,19 +169,29 @@ router.post(['/api/bets/place', '/api/v1/bet/place'], requireAuth, async (req, r
       idempotencyKey,
     }, req.correlationId);
 
-    res.json({ version: 'v1', ...result });
+    res.json({ version: 'v1', success: true, ...result });
   } catch (err) {
-    let statusCode = 400;
-    if (err.message?.includes('ACCOUNT_RESTRICTED') || err.message?.includes('ACCOUNT_SUSPENDED')
+    let statusCode = err.httpStatus || 400;
+    const code = err.code || err.message?.split(':')[0] || 'BET_PLACEMENT_FAILED';
+    if (code === 'ODDS_CHANGED' || code === 'STALE_ODDS' || code === 'ODDS_EXPIRED') {
+      statusCode = 409;
+    } else if (err.message?.includes('ACCOUNT_RESTRICTED') || err.message?.includes('ACCOUNT_SUSPENDED')
       || err.code === 'KYC_AGE_REQUIRED' || err.code === 'REALITY_CHECK_REQUIRED' || err.code === 'LOSS_LIMIT_EXCEEDED'
       || err.message?.includes('KYC_AGE_REQUIRED') || err.message?.includes('REALITY_CHECK_REQUIRED') || err.message?.includes('LOSS_LIMIT_EXCEEDED')) {
       statusCode = 403;
     } else if (err.message?.includes('UNAUTHENTICATED')) {
       statusCode = 401;
+    } else if (code === 'MARKET_SUSPENDED' || code === 'MARKET_ALREADY_DETERMINED'
+      || code === 'SELECTION_UNAVAILABLE' || code === 'ODDS_UNAVAILABLE' || code === 'ODDS_LOCKED') {
+      statusCode = 409;
     }
     res.status(statusCode).json({
+      success: false,
       error: userFacingBetError(err),
-      code: err.code || err.message?.split(':')[0] || 'BET_PLACEMENT_FAILED',
+      message: userFacingBetError(err),
+      code,
+      data: err.data || null,
+      oddsUpdates: err.oddsUpdates || (err.data ? [err.data].flat() : undefined),
     });
   }
 });

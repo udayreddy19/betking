@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getWalletBreakdown, formatInr } from '../../utils/walletBalance';
+import { buildSpinGrantNotice } from '../../utils/spinGrantUi';
 import { getLoyaltySummary, LOYALTY_MIN_REDEEM_POINTS } from '../../utils/loyaltyPoints';
 import {
   BONUS_MIN_BET_ODDS,
@@ -89,6 +90,10 @@ export default function Profile() {
 
   // Compute wallet, loyalty and excluded before early return to satisfy Rules of Hooks
   const wallet = useMemo(() => user ? getWalletBreakdown(user) : null, [user]);
+  const spinGrantNotice = useMemo(
+    () => (user?.spinGrants ? buildSpinGrantNotice(user.spinGrants) : null),
+    [user?.spinGrants],
+  );
   const loyalty = useMemo(() => user ? getLoyaltySummary(user) : null, [user]);
   const excluded = user?.selfExcludedUntil && new Date(user.selfExcludedUntil) > new Date();
 
@@ -244,11 +249,21 @@ export default function Profile() {
               </div>
             </div>
 
+            {spinGrantNotice && (
+              <div className={`profile-spin-expiry${spinGrantNotice.urgent ? ' profile-spin-expiry--urgent' : ''}`} role="status">
+                {spinGrantNotice.message}
+              </div>
+            )}
+
             <div className="profile-loyalty-box">
               <div className="profile-loyalty-head">
                 <span>Loyalty · {loyalty.tierLabel} · {loyalty.pointsPer100} pts / ₹100</span>
-                <strong>{loyalty.points} pts</strong>
+                <strong>{loyalty.points} redeemable</strong>
               </div>
+              <p className="profile-loyalty-meta">
+                VIP progress: {loyalty.vipPoints} lifetime pts
+                {loyalty.nextTier ? ` · ${loyalty.pointsToNext} to ${loyalty.nextLabel}` : ' · top tier'}
+              </p>
               <div className="profile-loyalty-bar">
                 <div style={{ width: `${loyalty.progress}%` }} />
               </div>

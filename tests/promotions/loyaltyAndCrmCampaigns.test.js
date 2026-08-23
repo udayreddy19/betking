@@ -35,14 +35,14 @@ describe('Phase 10 Loyalty Points & CRM Campaign Execution Tests', () => {
   });
 
   it('Loyalty Points & Tier Progression -> awards points and progresses tier to SILVER/GOLD/PLATINUM', async () => {
-    const res1 = await addLoyaltyPoints(userId, 600); // 600 points -> SILVER
+    const res1 = await addLoyaltyPoints(userId, 2000); // 2000 VIP pts -> SILVER
     expect(res1.tier).toBe('SILVER');
 
-    const res2 = await addLoyaltyPoints(userId, 10000); // 10,600 points -> PLATINUM
+    const res2 = await addLoyaltyPoints(userId, 23000); // 25,000 VIP pts -> PLATINUM
     expect(res2.tier).toBe('PLATINUM');
 
     const status = await getLoyaltyStatus(userId);
-    expect(status.points).toBe(10600);
+    expect(status.points).toBe(25000);
     expect(status.tier).toBe('PLATINUM');
   });
 

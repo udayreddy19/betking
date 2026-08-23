@@ -17,7 +17,9 @@
     "settlement:integrity-scan": "node scripts/settlement-integrity-scan.mjs",
     "financial:document-opening-gaps": "node scripts/document-ledger-opening-gaps.mjs",
     "financial:reconcile-legacy-opening": "node scripts/reconcile-legacy-opening-balances.mjs",
-    "financial:audit-winnings-reporting": "node scripts/audit-winnings-reporting.mjs"
+    "financial:audit-winnings-reporting": "node scripts/audit-winnings-reporting.mjs",
+    "release:record-sha": "node scripts/record-release-sha.mjs",
+    "perf:baseline": "node scripts/perf-baseline.mjs"
   },
   "browserslist": [
     "chrome >= 80",

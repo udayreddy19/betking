@@ -10,12 +10,13 @@ import {
 import { riskAdjustmentEngine } from '../../lib/engines/riskAdjustmentEngine.mjs';
 
 describe('Book integrity', () => {
-  it('accepts lock prices rejection and returns server odds when client drifts', () => {
+  it('accepts lock prices rejection and detects exact odds changes', () => {
     expect(() => assertBettableQuote(1.00, 1.50)).toThrow(/ODDS_LOCKED/);
-    expect(() => assertBettableQuote(1.85, 2.50)).toThrow(/STALE_ODDS/);
     expect(assertBettableQuote(1.85, 1.85)).toBe(1.85);
-    expect(assertBettableQuote(1.85, 1.87)).toBe(1.85);
-    expect(oddsQuoteChanged(1.85, 2.50)).toBe(true);
+    expect(assertBettableQuote(1.85, 1.850)).toBe(1.85);
+    expect(oddsQuoteChanged(1.85, 1.87)).toBe(true);
+    expect(oddsQuoteChanged(1.85, 1.85)).toBe(false);
+    expect(oddsQuoteChanged(1.85, 1.850)).toBe(false);
   });
 
   it('copies Match Winner prices onto Winner (incl. Super Over)', () => {

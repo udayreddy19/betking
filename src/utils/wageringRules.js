@@ -1,18 +1,40 @@
-import { cashoutAmountFromPotential } from './vipBenefits.js';
+import { getBenefitsForTier } from './vipBenefits.js';
 
 export const BONUS_MIN_BET_ODDS = 1.75;
 export const BONUS_WAGERING_MULTIPLIER = 5;
 export const MIN_STAKE_INR = 10;
 
-export function getCashoutOffer(bet, tier = 'BRONZE') {
+/** House take applied on fair cashout value before VIP payout %. Matches server. */
+export const CASHOUT_HOUSE_MARGIN = 0.04;
+
+/**
+ * Live cashout offer from accepted vs current odds.
+ * fair = stake × (accepted / current), then house margin + VIP %.
+ *
+ * IMPORTANT: Never use VIP% × potential payout — that pays nearly a full win
+ * the moment a bet is placed.
+ *
+ * @param {object} bet
+ * @param {string} [tier]
+ * @param {number|null} [currentOdds] live selection odds; required for a real offer
+ */
+export function getCashoutOffer(bet, tier = 'BRONZE', currentOdds = null) {
   const status = String(bet?.status || '').toLowerCase();
   if (!bet || (status !== 'pending' && status !== 'accepted' && status !== 'open')) return 0;
   if (bet.fundSource === 'bonus' || bet.fundSource === 'freebet') return 0;
   const stake = Number(bet.stake) || 0;
-  if (stake <= 0) return 0;
-  const potential = Number(bet.potentialPayout || bet.potentialReturn || bet.payout || 0)
-    || Number((stake * (Number(bet.odds) || 1)).toFixed(2));
-  return cashoutAmountFromPotential(potential, tier);
+  const acceptedOdds = Number(bet.odds || bet.totalOdds || bet.acceptedOdds) || 0;
+  if (stake <= 0 || acceptedOdds < 1.01) return 0;
+
+  const liveOdds = Number(currentOdds);
+  if (!(liveOdds >= 1.01)) return 0;
+
+  const fairCashout = stake * (acceptedOdds / liveOdds);
+  const afterHouse = fairCashout * (1 - CASHOUT_HOUSE_MARGIN);
+  const vipPct = getBenefitsForTier(tier).cashoutPayoutPct || 0.85;
+  const potentialPayout = stake * acceptedOdds;
+  const cashoutValue = Math.max(0, Math.min(potentialPayout * 0.98, afterHouse * vipPct));
+  return Number(cashoutValue.toFixed(2));
 }
 
 export function canBetWithBonusOnLegs(legs) {

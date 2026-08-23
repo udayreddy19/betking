@@ -91,6 +91,23 @@
   margin-bottom: var(--space-5);
 }
 
+.profile-spin-expiry {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: #f59e0b;
+}
+
+.profile-spin-expiry--urgent {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #ef4444;
+}
+
 .profile-stat {
   background: var(--color-bg);
   border-radius: var(--radius-md);

@@ -14,19 +14,21 @@ import {
   LOYALTY_MIN_REDEEM_POINTS,
   canRedeemLoyaltyPoints,
   getUserLoyaltyPoints,
+  getUserVipPoints,
 } from '../../utils/loyaltyPoints';
+import { loyaltyTierFromPoints } from '../../utils/vipBenefits';
 import {
   canDepositAmount,
   canStakeAmount,
 } from '../../utils/responsibleGaming';
-import { storageGet, storageRemove } from '../../utils/browserCompat';
+import { storageRemove } from '../../utils/browserCompat';
 import {
   apiFetch,
   fetchMe,
   mapServerUserToSession,
   setAccessToken,
   clearAccessToken,
-  refreshAccessToken,
+  getAccessToken,
 } from '../../utils/apiClient';
 import { DEMO_MODE } from '../../utils/featureFlags';
 import { subscribeLiveChannel } from '../../services/liveFeedSocket';
@@ -50,10 +52,22 @@ import {
   syncStoredUser,
   getClaimedPromos,
   saveClaimedPromo,
+  readCachedSession,
 } from './localSessionStore';
 
+let sessionRestorePromise = null;
+
+function initialAuthStatus() {
+  if (DEMO_MODE) return 'anonymous';
+  if (readCachedSession() || getAccessToken()) return 'loading';
+  return 'anonymous';
+}
+
 export function AuthProvider({ children }) {
-  const [user, setUserState] = useState(null);
+  const [user, setUserState] = useState(() => (
+    DEMO_MODE ? null : readCachedSession()
+  ));
+  const [authStatus, setAuthStatus] = useState(initialAuthStatus);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -131,53 +145,56 @@ export function AuthProvider({ children }) {
     if (DEMO_MODE) ensureSeedUser();
 
     const restoreSession = async () => {
-      const token = sessionStorage.getItem('bk_access_token');
-      if (token) {
-        const me = await fetchMe();
-        if (me) {
-          const session = mapServerUserToSession(me);
-          setUserState(session);
-          await syncTransactions(session.email);
-          return;
-        }
-        clearAccessToken();
+      const applySession = async (me) => {
+        const session = mapServerUserToSession(me);
+        if (!session) return false;
+        setUserState(session);
+        persistSession(session);
+        syncStoredUser(session);
+        await syncTransactions(session.email);
+        setAuthStatus('authenticated');
+        return true;
+      };
+
+      const res = await apiFetch('/api/auth/me');
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data.user && await applySession(data.user)) return;
       }
 
-      if (!DEMO_MODE) {
-        const refreshed = await refreshAccessToken();
-        if (refreshed) {
-          const me = await fetchMe();
-          if (me) {
-            const session = mapServerUserToSession(me);
-            setUserState(session);
-            await syncTransactions(session.email);
-            return;
-          }
-        }
+      if (res.status === 401) {
+        clearAccessToken();
         storageRemove(SESSION_KEY);
+        setUserState(null);
+        setAuthStatus('anonymous');
         return;
       }
 
-      try {
-        const saved = storageGet(SESSION_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          const session = {
-            ...parsed,
-            winningsBalance: parsed.winningsBalance ?? Math.max(
-              0,
-              (parsed.balance ?? 0) - (parsed.lockedDepositBalance ?? 0),
-            ),
-          };
-          setUserState(session);
-          setTransactions(loadTransactions(session.email));
+      if (DEMO_MODE) {
+        const cached = readCachedSession();
+        if (cached) {
+          setUserState(cached);
+          setTransactions(loadTransactions(cached.email));
+          setAuthStatus('authenticated');
+          return;
         }
-      } catch {
-        storageRemove(SESSION_KEY);
+        setAuthStatus('anonymous');
+        return;
       }
+
+      // Transient error — keep cached session so wallet/header do not flash logged out.
+      const cached = readCachedSession();
+      if (cached) setUserState(cached);
+      setAuthStatus(cached ? 'authenticated' : 'anonymous');
     };
 
-    restoreSession();
+    if (!sessionRestorePromise) {
+      sessionRestorePromise = restoreSession().finally(() => {
+        sessionRestorePromise = null;
+      });
+    }
+
+    void sessionRestorePromise;
 
     return () => {
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -278,6 +295,7 @@ export function AuthProvider({ children }) {
       }
 
       setUser(sessionUser);
+      setAuthStatus('authenticated');
       return { ok: true, welcomeCredit: 0, promoReward: data.promoReward || null };
     } catch {
       if (!DEMO_MODE) {
@@ -314,6 +332,7 @@ export function AuthProvider({ children }) {
       const sessionUser = toSessionUser(stored);
       persistSession(sessionUser);
       setUser(sessionUser);
+      setAuthStatus('authenticated');
       return { ok: true, welcomeCredit };
     }
   }, []);
@@ -426,6 +445,7 @@ export function AuthProvider({ children }) {
           });
 
         setUser(sessionUser);
+        setAuthStatus('authenticated');
         await syncTransactions(sessionUser.email);
         setIsLoginModalOpen(false);
         showToast(`Welcome back, ${sessionUser.displayName}!`);
@@ -446,6 +466,7 @@ export function AuthProvider({ children }) {
 
     const sessionUser = toSessionUser(stored);
     setUser(sessionUser);
+    setAuthStatus('authenticated');
     setTransactions(loadTransactions(sessionUser.email));
     setIsLoginModalOpen(false);
     showToast(`Welcome back, ${sessionUser.displayName}!`);
@@ -466,6 +487,7 @@ export function AuthProvider({ children }) {
 
     if (sessionUser) {
       setUser(sessionUser);
+      setAuthStatus('authenticated');
       setIsLoginModalOpen(false);
     }
 
@@ -609,6 +631,7 @@ export function AuthProvider({ children }) {
       }
       clearAccessToken();
       setUser(null);
+      setAuthStatus('anonymous');
       return { ok: true, message: data.message };
     } catch {
       if (!DEMO_MODE) {
@@ -639,6 +662,7 @@ export function AuthProvider({ children }) {
       // ignore
     }
     setUser(null);
+    setAuthStatus('anonymous');
     setTransactions([]);
     setIsSidebarOpen(false);
     showToast('You have been logged out.', 'info');
@@ -734,6 +758,9 @@ export function AuthProvider({ children }) {
       const pointsEarned = DEMO_MODE ? pointsFromSpend(spendTotal, prev) : 0;
       const currentPoints = getUserLoyaltyPoints(prev);
       const nextPoints = currentPoints + pointsEarned;
+      const currentVip = getUserVipPoints(prev);
+      const nextVip = currentVip + pointsEarned;
+      const nextTier = loyaltyTierFromPoints(nextVip);
       const rg = rgCheck.rg;
 
       result.success = true;
@@ -748,7 +775,10 @@ export function AuthProvider({ children }) {
         freebetBalance: (prev.freebetBalance ?? 0) - freebet,
         lockedDepositBalance: (prev.lockedDepositBalance ?? 0) - allocation.fromLocked,
         loyaltyPoints: nextPoints,
+        vipPoints: nextVip,
         coins: nextPoints,
+        loyaltyTier: nextTier,
+        loyaltyRank: nextTier,
         rgDayKey: rg.rgDayKey,
         dailyDepositLimit: rg.dailyDepositLimit,
         dailyStakeLimit: rg.dailyStakeLimit,
@@ -813,14 +843,17 @@ export function AuthProvider({ children }) {
         setUser((prev) => {
           if (!prev) return prev;
           const nextPoints = Number(data.remainingPoints ?? data.wallet?.loyaltyPoints ?? 0);
+          const nextVipPoints = Number(data.vipPoints ?? data.wallet?.vipPoints ?? prev.vipPoints ?? prev.loyaltyPoints ?? 0);
           const nextBalance = Number(data.wallet?.balance ?? prev.balance);
-          const credited = Number(data.rupeesCredited || 0);
           return {
             ...prev,
             balance: nextBalance,
             reservedBalance: prev.reservedBalance ?? 0,
             loyaltyPoints: nextPoints,
+            vipPoints: nextVipPoints,
             coins: nextPoints,
+            loyaltyTier: data.loyaltyTier ?? prev.loyaltyTier,
+            loyaltyRank: data.loyaltyTier ?? prev.loyaltyRank,
             bonusBalance: Number(data.wallet?.bonusBalance ?? prev.bonusBalance ?? 0),
             freebetBalance: Number(data.wallet?.freebetBalance ?? prev.freebetBalance ?? 0),
           };
@@ -861,12 +894,14 @@ export function AuthProvider({ children }) {
       creditedRupees = pointsToRupees(pointsToRedeem);
       email = prev.email;
       const remainingPoints = availablePoints - pointsToRedeem;
+      const vipPoints = getUserVipPoints(prev);
 
       return {
         ...prev,
         balance: prev.balance + creditedRupees,
         winningsBalance: (prev.winningsBalance ?? 0) + creditedRupees,
         loyaltyPoints: remainingPoints,
+        vipPoints,
         coins: remainingPoints,
       };
     });
@@ -1255,6 +1290,8 @@ export function AuthProvider({ children }) {
   const value = useMemo(() => ({
     user,
     isLoggedIn: !!user,
+    authStatus,
+    isAuthReady: authStatus !== 'loading',
     register,
     claimPromotion,
     isPromotionClaimed,
@@ -1302,6 +1339,7 @@ export function AuthProvider({ children }) {
     selfExcludeAccount,
   }), [
     user,
+    authStatus,
     register,
     claimPromotion,
     isPromotionClaimed,

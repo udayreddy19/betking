@@ -57,4 +57,69 @@ router.put('/exceptions/:id/resolve', requirePermission('finance', 'reconciliati
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// GET /reconciliation/legacy-wallets — wallets with ledger gaps
+router.get('/legacy-wallets', requirePermission('finance', 'reconciliation'), async (req, res) => {
+  try {
+    const { listLegacyWalletGaps } = await import('../../../lib/legacyLedgerReconciliation.mjs');
+    const gaps = await listLegacyWalletGaps({ limit: Number(req.query.limit) || 50 });
+    res.json({ gaps, count: gaps.length });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// GET /reconciliation/legacy-wallets/:userId
+router.get('/legacy-wallets/:userId', requirePermission('finance', 'reconciliation'), async (req, res) => {
+  try {
+    const { investigateLegacyWallet } = await import('../../../lib/legacyLedgerReconciliation.mjs');
+    const row = await investigateLegacyWallet(req.params.userId);
+    if (!row) return res.status(404).json({ error: 'Wallet not found' });
+    res.json(row);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /reconciliation/legacy-wallets/:userId/accept-exception
+router.post('/legacy-wallets/:userId/accept-exception', requirePermission('finance', 'reconciliation'), async (req, res) => {
+  try {
+    const { reason } = req.body || {};
+    if (!reason?.trim()) return res.status(400).json({ error: 'reason is required' });
+    const { acceptLegacyWalletException } = await import('../../../lib/legacyLedgerReconciliation.mjs');
+    const result = await acceptLegacyWalletException({
+      userId: req.params.userId,
+      actor: req.admin.email || req.admin.id,
+      reason: reason.trim(),
+    });
+    await logAdminAction({
+      actorId: req.admin.id,
+      targetId: req.params.userId,
+      action: 'LEGACY_LEDGER_EXCEPTION_ACCEPTED',
+      details: { caseId: result.caseId, difference: result.difference },
+    });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+// POST /reconciliation/legacy-wallets/:userId/apply-opening-ledger
+router.post('/legacy-wallets/:userId/apply-opening-ledger', requirePermission('finance', 'reconciliation'), async (req, res) => {
+  try {
+    const { reason } = req.body || {};
+    if (!reason?.trim()) return res.status(400).json({ error: 'reason is required' });
+    const { applyLegacyOpeningLedger } = await import('../../../lib/legacyLedgerReconciliation.mjs');
+    const result = await applyLegacyOpeningLedger({
+      userId: req.params.userId,
+      actor: req.admin.email || req.admin.id,
+      reason: reason.trim(),
+    });
+    await logAdminAction({
+      actorId: req.admin.id,
+      targetId: req.params.userId,
+      action: 'LEGACY_OPENING_LEDGER_APPLIED',
+      details: { transactionId: result.transactionId, credited: result.credited },
+    });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
 export default router;

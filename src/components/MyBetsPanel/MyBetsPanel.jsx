@@ -9,7 +9,9 @@ import { getCashoutOffer } from '../../utils/wageringRules';
 import { formatInr } from '../../utils/walletBalance';
 import { teamNameMatches } from '../../utils/cricketScores';
 import { DEMO_MODE } from '../../utils/featureFlags';
+import { apiFetch } from '../../utils/apiClient';
 import { matchIdsEqual } from '../../../lib/matchIdPublic.mjs';
+import { findLiveMatch } from '../../utils/findLiveMatch';
 import { springSheet } from '../../utils/motionPresets';
 import './MyBetsPanel.css';
 
@@ -49,9 +51,14 @@ const FILTERS = [
   { id: 'cashout', label: 'Cash out' },
 ];
 
-function cashoutOfferForBet(placed, liveMatches, tier) {
+function cashoutOfferForBet(placed, liveMatches, tier, quoteByBetId = {}) {
   if (isOverMarketExpired(placed, liveMatches)) return 0;
-  return getCashoutOffer(placed, tier);
+  const quoted = quoteByBetId[placed.id];
+  if (quoted != null) return Number(quoted) || 0;
+  // Demo / offline fallback only — never invent VIP% of potential payout.
+  if (!DEMO_MODE) return 0;
+  const legOdds = Number(placed?.legs?.[0]?.odds || placed?.odds);
+  return getCashoutOffer(placed, tier, legOdds);
 }
 
 export default function MyBetsPanel() {
@@ -70,14 +77,7 @@ export default function MyBetsPanel() {
   const navigate = useNavigate();
   const panelRef = useRef(null);
   const [filter, setFilter] = useState('pending');
-
-  const handleLegClick = (leg) => {
-    if (!leg) return;
-    const matchId = leg.matchId || leg.id;
-    const sport = leg.sport || 'cricket';
-    closeMyBets();
-    navigate(`/sports?sport=${encodeURIComponent(sport)}&match=${encodeURIComponent(matchId)}`);
-  };
+  const [cashoutQuotes, setCashoutQuotes] = useState({});
 
   useEffect(() => {
     if (!isMyBetsOpen) return undefined;
@@ -104,6 +104,46 @@ export default function MyBetsPanel() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isMyBetsOpen, closeMyBets, refreshMyBets]);
+
+  // Live cashout quotes from server (accepted/current odds) — not VIP% of potential.
+  useEffect(() => {
+    if (!isMyBetsOpen || DEMO_MODE) return undefined;
+
+    const pendingCash = placedBets.filter((bet) => {
+      const status = String(bet.status || '').toLowerCase();
+      if (status !== 'pending' && status !== 'accepted' && status !== 'open') return false;
+      if (bet.fundSource === 'bonus' || bet.fundSource === 'freebet') return false;
+      return Boolean(bet.id);
+    });
+
+    if (pendingCash.length === 0) {
+      setCashoutQuotes({});
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    const refreshQuotes = async () => {
+      const entries = await Promise.all(pendingCash.map(async (bet) => {
+        try {
+          const res = await apiFetch(`/api/bet/cashout/quote?betId=${encodeURIComponent(bet.id)}`);
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || data.available === false) return [bet.id, 0];
+          return [bet.id, Number(data.cashoutValue) || 0];
+        } catch {
+          return [bet.id, 0];
+        }
+      }));
+      if (!cancelled) setCashoutQuotes(Object.fromEntries(entries));
+    };
+
+    void refreshQuotes();
+    const timer = setInterval(refreshQuotes, 8_000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [isMyBetsOpen, placedBets]);
 
   // Auto-settle pending bets when matches complete
   useEffect(() => {
@@ -159,18 +199,18 @@ export default function MyBetsPanel() {
   const filtered = useMemo(() => {
     if (filter === 'all') return placedBets;
     if (filter === 'cashout') {
-      return placedBets.filter((b) => cashoutOfferForBet(b, liveMatches, user?.loyaltyTier) > 0);
+      return placedBets.filter((b) => cashoutOfferForBet(b, liveMatches, user?.loyaltyTier, cashoutQuotes) > 0);
     }
     return placedBets.filter((b) => (b.status || 'pending') === filter);
-  }, [placedBets, filter, liveMatches, user?.loyaltyTier]);
+  }, [placedBets, filter, liveMatches, user?.loyaltyTier, cashoutQuotes]);
 
   const handleCashout = async (bet) => {
-    const offer = getCashoutOffer(bet, user?.loyaltyTier);
+    const offer = cashoutOfferForBet(bet, liveMatches, user?.loyaltyTier, cashoutQuotes);
     if (offer <= 0) {
       showToast('Cash out not available for this bet.', 'info');
       return;
     }
-    const cashed = await cashOutBet(bet.id);
+    const cashed = await cashOutBet(bet.id, offer);
     if (!cashed) {
       showToast('Could not cash out.', 'error');
       return;
@@ -181,11 +221,10 @@ export default function MyBetsPanel() {
     showToast(`Cashed out for ${formatInr(cashed.cashoutAmount || offer)}`, 'success');
   };
 
-  const resolveLegMatch = (leg) => liveMatches.find((m) =>
-    String(m.id) === String(leg.matchId)
-    || String(m.matchId) === String(leg.matchId)
-    || matchIdsEqual(m.id || m.matchId, leg.matchId)
-  );
+  const resolveLegMatch = (leg) => findLiveMatch(liveMatches, {
+    matchId: leg?.matchId,
+    matchName: leg?.matchName,
+  });
 
   const getLegDisplayName = (leg) => {
     const match = resolveLegMatch(leg);
@@ -195,11 +234,61 @@ export default function MyBetsPanel() {
       if (t1 && t2) return `${t1} vs ${t2}`;
       if (match.matchName) return match.matchName;
     }
-    const raw = String(leg.matchName || '');
-    if (/^(oy_|10cric_|cb_|crex_|fancode_)/i.test(raw) || raw === leg.matchId) {
-      return 'Live match';
+    if (leg.team1Name && leg.team2Name) return `${leg.team1Name} vs ${leg.team2Name}`;
+    const raw = String(leg.matchName || '').trim();
+    if (raw && !/^live match$/i.test(raw) && !/^(oy_|10cric_|cb_|crex_|fancode_|fc_|espn_|api_|srl_)/i.test(raw)) {
+      return raw;
     }
-    return leg.matchName || 'Match';
+    return 'Open bet fixture';
+  };
+
+  const handleLegClick = (leg) => {
+    if (!leg) return;
+    const live = resolveLegMatch(leg)
+      || findLiveMatch(liveMatches, {
+        matchId: leg.matchId,
+        matchName: leg.team1Name && leg.team2Name
+          ? `${leg.team1Name} vs ${leg.team2Name}`
+          : leg.matchName,
+      });
+    // Also try matching when matchName is a single team (match-winner selection)
+    const byTeam = !live && leg.selectionName
+      ? (liveMatches || []).find((m) => {
+        const t1 = String(m.team1?.name || '').toLowerCase();
+        const t2 = String(m.team2?.name || '').toLowerCase();
+        const tip = String(leg.selectionName || '').toLowerCase();
+        return tip.length > 2 && (t1.includes(tip) || t2.includes(tip) || tip.includes(t1) || tip.includes(t2));
+      })
+      : null;
+    const resolved = live || byTeam;
+    const matchId = resolved?.id || leg.matchId;
+    if (!matchId || String(matchId).includes('-leg-')) {
+      showToast?.('This match is no longer on the board.', 'info');
+      return;
+    }
+    const rawSport = String(resolved?.sport || leg.sport || 'cricket').toLowerCase();
+    const sport = rawSport === 'football' ? 'soccer' : rawSport;
+    const displayName = resolved
+      ? `${resolved.team1?.name || resolved.team1} vs ${resolved.team2?.name || resolved.team2}`
+      : getLegDisplayName(leg);
+    closeMyBets();
+    const params = new URLSearchParams({
+      sport,
+      league: 'all',
+      match: String(matchId),
+    });
+    if (
+      displayName
+      && !/^live match$/i.test(displayName)
+      && displayName !== 'Open bet fixture'
+      && displayName !== 'Match'
+      && /\svs\.?\s/i.test(displayName)
+    ) {
+      params.set('teams', displayName);
+    } else if (leg.team1Name && leg.team2Name) {
+      params.set('teams', `${leg.team1Name} vs ${leg.team2Name}`);
+    }
+    navigate(`/sports?${params.toString()}`);
   };
 
   const getLegSelectionLabel = (leg) => {
@@ -328,7 +417,7 @@ export default function MyBetsPanel() {
             </div>
           ) : (
             filtered.map((placed) => {
-              const cashoutOffer = cashoutOfferForBet(placed, liveMatches, user?.loyaltyTier);
+              const cashoutOffer = cashoutOfferForBet(placed, liveMatches, user?.loyaltyTier, cashoutQuotes);
               return (
                 <div className={`my-bets-card my-bets-card--${placed.status || 'pending'}`} key={placed.id}>
                   <div className="my-bets-card-top">

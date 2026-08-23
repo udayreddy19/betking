@@ -91,11 +91,9 @@ export function hasCricketPlayStarted(match) {
 /** Cricket tracker / scorecard after play starts — including the final innings of a completed match. */
 export function isCricketTrackerLive(match) {
   if (!match) return false;
-  if (hasCricketPlayStarted(match)) return true;
-  const state = getMatchState(match);
-  if (state === 'pre') return false;
-  if (state === 'in') return true;
-  return false;
+  // Never open the live tracker just because the book marked the event "live"
+  // (toss / markets open). Require real scoreboard evidence.
+  return hasCricketPlayStarted(match);
 }
 
 export function getMatchState(match) {

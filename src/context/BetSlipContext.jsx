@@ -15,6 +15,17 @@ import {
 import { formatMarketDisplayName, resolveMarketDisplayName } from '../utils/marketDisplayName.js';
 import { loadBetslipPrefs, saveBetslipPrefs, shouldAutoAcceptOddsUpdate } from '../utils/betslipPrefs';
 import { analyzeMultiConflicts, hasMultiConflicts } from '../utils/betslipValidation';
+import {
+  acceptOddsForBet,
+  acceptAllChangedOdds,
+  applyOddsChangedToBets,
+  handleOddsChangedResponse,
+  hasPendingOddsAcceptance,
+  isNonAcceptableMarketError,
+  isOddsChangedResponse,
+  normalizeOddsUpdates,
+  ODDS_STATUS,
+} from '../utils/oddsChangeHandler';
 
 const BetSlipContext = createContext(null);
 const PLACED_BETS_KEY = 'oddsyra_placed_bets';
@@ -189,20 +200,40 @@ function mapServerBetToPlaced(row) {
   const stakeAmount = Number(row.stake || 0);
   const profitAmount = isWon ? Math.max(0, payoutAmount - stakeAmount) : 0;
 
+  let snap = row.placement_snapshot;
+  if (typeof snap === 'string') {
+    try { snap = JSON.parse(snap); } catch { snap = null; }
+  }
+  const snapLegs = Array.isArray(snap?.legs) ? snap.legs : [];
+
+  const resolveMatchName = (matchId, snapLeg, selectionName) => {
+    if (row.match_name && !/^live match$/i.test(row.match_name)) return row.match_name;
+    if (snapLeg?.matchName && !/^live match$/i.test(snapLeg.matchName)) return snapLeg.matchName;
+    if (snapLeg?.team1Name && snapLeg?.team2Name) return `${snapLeg.team1Name} vs ${snapLeg.team2Name}`;
+    if (row.team1_name && row.team2_name) return `${row.team1_name} vs ${row.team2_name}`;
+    // Match-winner selections often store the team name — useful when fixture left the board
+    const sel = String(selectionName || '').trim();
+    if (sel && !/^(over|under|draw|sel[_-])/i.test(sel) && !/^\d+(\.\d+)?$/.test(sel)) {
+      return sel;
+    }
+    return null;
+  };
+
   const legs = selectionRows.length > 0
     ? selectionRows.map((sel, idx) => {
       const matchId = sel.match_id || row.match_id;
-      const matchName = row.match_name
-        || (String(matchId || '').startsWith('10cric_') || String(matchId || '').startsWith('oy_')
-          ? 'Live match' : null)
-        || (isProviderMatchId(matchId) ? 'Live match' : matchId);
+      const snapLeg = snapLegs.find((l) => String(l.matchId) === String(matchId)) || snapLegs[idx] || null;
+      const selectionName = humanizeSelectionId(sel.selection_id, sel.selection_name);
       return {
         id: `${row.bet_id}-leg-${idx}`,
         matchId,
-        matchName,
-        sport: row.sport || 'cricket',
+        matchName: resolveMatchName(matchId, snapLeg, selectionName),
+        team1Name: snapLeg?.team1Name || row.team1_name || null,
+        team2Name: snapLeg?.team2Name || row.team2_name || null,
+        league: snapLeg?.league || row.league || null,
+        sport: snapLeg?.sport || row.sport || 'cricket',
         selection: sel.selection_id,
-        selectionName: humanizeSelectionId(sel.selection_id, sel.selection_name),
+        selectionName,
         marketName: humanizeMarketId(sel.market_id, row),
         marketId: sel.market_id,
         odds: Number(sel.odds),
@@ -211,11 +242,11 @@ function mapServerBetToPlaced(row) {
     : [{
       id: `${row.bet_id}-leg-0`,
       matchId: row.match_id,
-      matchName: row.match_name
-        || (String(row.match_id || '').startsWith('10cric_') || String(row.match_id || '').startsWith('oy_')
-          ? 'Live match' : null)
-        || (isProviderMatchId(row.match_id) ? 'Live match' : row.match_id),
-      sport: row.sport || 'cricket',
+      matchName: resolveMatchName(row.match_id, snapLegs[0], row.selection_name || row.selection_id),
+      team1Name: snapLegs[0]?.team1Name || row.team1_name || null,
+      team2Name: snapLegs[0]?.team2Name || row.team2_name || null,
+      league: snapLegs[0]?.league || row.league || null,
+      sport: snapLegs[0]?.sport || row.sport || 'cricket',
       selection: row.selection_id,
       selectionName: humanizeSelectionId(row.selection_id, row.selection_name),
       marketName: humanizeMarketId(row.market_id, row),
@@ -236,10 +267,6 @@ function mapServerBetToPlaced(row) {
     placedAt: row.created_at,
     fundSource: row.fund_source || 'cash',
   };
-}
-
-function isProviderMatchId(matchId) {
-  return /^(oy_|10cric_|cb_|crex_|fancode_|espn_)/i.test(String(matchId || ''));
 }
 
 function getSelectionName(match, selection, customName) {
@@ -472,7 +499,9 @@ export function BetSlipProvider({ children }) {
     setBets([...filtered, {
       id: betId,
       matchId: match.id,
-      matchName: `${match.team1.name} vs ${match.team2.name}`,
+      matchName: `${match.team1?.name || match.team1} vs ${match.team2?.name || match.team2}`,
+      team1Name: match.team1?.name || match.team1 || null,
+      team2Name: match.team2?.name || match.team2 || null,
       league: match.league,
       sport: match.sport,
       selection,
@@ -624,23 +653,6 @@ export function BetSlipProvider({ children }) {
 
     if (!DEMO_MODE) {
       try {
-        const allOddsUpdates = [];
-
-        const applySyncedBets = (sync, fallbackBets) => {
-          if (!sync?.quoted) return fallbackBets;
-          betsRef.current = sync.bets;
-          setBets(sync.bets);
-          return targetSingleId
-            ? sync.bets.filter((b) => b.id === targetSingleId)
-            : sync.bets;
-        };
-
-        const notifyOddsUpdates = (updates) => {
-          if (!updates.length) return;
-          if (shouldAutoAcceptOddsUpdate(updates, prefs)) return;
-          showToast(formatOddsUpdatesToast(updates), 'info');
-        };
-
         const placeSingle = async (bet, stakeAmount) => {
           const res = await apiFetch('/api/bets/place', {
             method: 'POST',
@@ -650,6 +662,11 @@ export function BetSlipProvider({ children }) {
               marketId: bet.marketId || 'match_winner',
               selectionId: bet.selection,
               selectionName: bet.selectionName,
+              matchName: bet.matchName || null,
+              team1Name: bet.team1Name || null,
+              team2Name: bet.team2Name || null,
+              league: bet.league || null,
+              sport: bet.sport || null,
               stake: stakeAmount,
               clientOdds: bet.odds,
               fundSource: stakeSource,
@@ -660,10 +677,15 @@ export function BetSlipProvider({ children }) {
             const fallback = res.status >= 502
               ? 'Betting service is temporarily unavailable. Please try again in a moment.'
               : 'Bet placement failed';
-            return { success: false, error: data.error || fallback, code: data.code, status: res.status };
-          }
-          if (data.oddsUpdates?.length) {
-            allOddsUpdates.push(...data.oddsUpdates);
+            return {
+              success: false,
+              error: data.message || data.error || fallback,
+              code: data.code,
+              status: res.status,
+              data: data.data,
+              oddsUpdates: data.oddsUpdates,
+              payload: data,
+            };
           }
           return { success: true, data };
         };
@@ -699,6 +721,11 @@ export function BetSlipProvider({ children }) {
                 selectionId: bet.selection,
                 odds: bet.odds,
                 selectionName: bet.selectionName,
+                matchName: bet.matchName || null,
+                team1Name: bet.team1Name || null,
+                team2Name: bet.team2Name || null,
+                league: bet.league || null,
+                sport: bet.sport || null,
               })),
             }),
           });
@@ -707,12 +734,44 @@ export function BetSlipProvider({ children }) {
             const fallback = res.status >= 502
               ? 'Betting service is temporarily unavailable. Please try again in a moment.'
               : 'Bet placement failed';
-            return { success: false, error: data.error || fallback, code: data.code, status: res.status };
-          }
-          if (data.oddsUpdates?.length) {
-            allOddsUpdates.push(...data.oddsUpdates);
+            return {
+              success: false,
+              error: data.message || data.error || fallback,
+              code: data.code,
+              status: res.status,
+              data: data.data,
+              oddsUpdates: data.oddsUpdates,
+              payload: data,
+            };
           }
           return { success: true };
+        };
+
+        const handlePlacementOddsRejection = (result, workingBets) => {
+          if (isNonAcceptableMarketError(result)) {
+            return {
+              success: false,
+              error: result.error || 'This market is not available right now.',
+              code: result.code,
+            };
+          }
+          if (!isOddsChangedResponse(result)) return result;
+
+          const handled = handleOddsChangedResponse(workingBets, result.payload || result);
+          let nextBets = handled.bets;
+          if (shouldAutoAcceptOddsUpdate(handled.updates, prefs)) {
+            nextBets = acceptAllChangedOdds(nextBets);
+          }
+          betsRef.current = nextBets;
+          setBets(nextBets);
+          return {
+            success: false,
+            oddsUpdated: true,
+            requiresAcceptance: hasPendingOddsAcceptance(nextBets),
+            code: handled.code,
+            error: handled.message || 'The odds have changed. Please review the new odds.',
+            updates: handled.updates,
+          };
         };
 
         const runPlacement = async (workingBets) => {
@@ -721,82 +780,22 @@ export function BetSlipProvider({ children }) {
         };
 
         let workingBets = slipBets;
-        const skipPreSyncForAck = oddsConfirmPendingRef.current;
-        if (skipPreSyncForAck) {
-          oddsConfirmPendingRef.current = false;
-          const cleared = clearOddsChangedFlagsOnBets(betsRef.current);
-          betsRef.current = cleared;
-          setBets(cleared);
-          workingBets = targetSingleId
-            ? cleared.filter((b) => b.id === targetSingleId)
-            : cleared;
-        }
-
-        const oddsRecentlySynced = Date.now() - lastOddsSyncAt.current < ODDS_SYNC_FRESH_MS;
-        const slipFlagsChanged = betsRef.current.some((bet) => bet.oddsChanged);
-        const autoAcceptOdds = prefs.acceptAnyOddsChange || prefs.acceptHigherOdds;
-        const needsPreSync = !skipPreSyncForAck
-          && !autoAcceptOdds
-          && (!oddsRecentlySynced || slipFlagsChanged);
-
-        if (needsPreSync) {
-          const sync = await fetchSyncedBetsFromServer(betsRef.current);
-          workingBets = applySyncedBets(sync, slipBets);
-          if (sync.quoted) {
-            lastOddsSyncAt.current = sync.syncedAt || Date.now();
-          }
-          notifyOddsUpdates(sync.updates);
+        if (hasPendingOddsAcceptance(betsRef.current)) {
+          return {
+            success: false,
+            oddsUpdated: true,
+            requiresAcceptance: true,
+            error: 'Please accept the updated odds before placing your bet.',
+          };
         }
 
         let placement = await runPlacement(workingBets);
-        if (!placement.success && isOddsRefreshError(placement.error)) {
-          if (autoAcceptOdds) {
-            placement = await runPlacement(workingBets);
-          } else {
-            const sync = await fetchSyncedBetsFromServer(betsRef.current);
-            workingBets = applySyncedBets(sync, workingBets);
-            if (sync.quoted) {
-              lastOddsSyncAt.current = sync.syncedAt || Date.now();
-            }
-            if (sync.updates.length > 0 && shouldAutoAcceptOddsUpdate(sync.updates, prefs)) {
-              placement = await runPlacement(workingBets);
-            } else {
-              notifyOddsUpdates(sync.updates);
-              if (sync.quoted) {
-                placement = await runPlacement(workingBets);
-              }
-            }
-          }
+        if (!placement.success && isOddsChangedResponse(placement)) {
+          return handlePlacementOddsRejection(placement, workingBets);
         }
 
         if (!placement.success) {
-          if (isOddsRefreshError(placement.error) && !shouldAutoAcceptOddsUpdate(allOddsUpdates, prefs)) {
-            const cleared = clearOddsChangedFlagsOnBets(betsRef.current);
-            betsRef.current = cleared;
-            setBets(cleared);
-            oddsConfirmPendingRef.current = true;
-            return {
-              success: false,
-              oddsUpdated: true,
-              error: 'Odds have been updated. Tap Place again to continue.',
-            };
-          }
-          if (isOddsRefreshError(placement.error)) {
-            const cleared = clearOddsChangedFlagsOnBets(betsRef.current);
-            betsRef.current = cleared;
-            setBets(cleared);
-            oddsConfirmPendingRef.current = true;
-            return {
-              success: false,
-              oddsUpdated: true,
-              error: 'Odds have been updated. Tap Place again to continue.',
-            };
-          }
           return placement;
-        }
-
-        if (allOddsUpdates.length > 0 && !shouldAutoAcceptOddsUpdate(allOddsUpdates, prefs)) {
-          showToast(formatOddsUpdatesToast(allOddsUpdates, true), 'info');
         }
         if (targetSingleId) {
           setBets((prev) => prev.filter((b) => b.id !== targetSingleId));
@@ -900,13 +899,16 @@ export function BetSlipProvider({ children }) {
     return { success: true, placed: placements, totalDeducted, stakeSource };
   }, [bets, betType, stake, singlesStakes, multiOdds, refreshWallet, potentialReturn]);
 
-  const cashOutBet = useCallback(async (betId) => {
+  const cashOutBet = useCallback(async (betId, requestedCashoutValue = null) => {
     if (!DEMO_MODE) {
       try {
         const res = await apiFetch('/api/bet/cashout', {
           method: 'POST',
           headers: { 'X-Idempotency-Key': `cashout-${betId}-${Date.now()}` },
-          body: JSON.stringify({ betId }),
+          body: JSON.stringify({
+            betId,
+            ...(requestedCashoutValue != null ? { requestedCashoutValue } : {}),
+          }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || data.success === false) return null;
@@ -931,7 +933,10 @@ export function BetSlipProvider({ children }) {
         && bet.fundSource !== 'freebet',
     );
     if (!target) return null;
-    const offer = getCashoutOffer(target, user?.loyaltyTier);
+    const legOdds = Number(target?.legs?.[0]?.odds || target?.odds);
+    const offer = requestedCashoutValue != null
+      ? Number(requestedCashoutValue)
+      : getCashoutOffer(target, user?.loyaltyTier, legOdds);
     if (offer <= 0) return null;
     const cashed = {
       ...target,
@@ -943,7 +948,7 @@ export function BetSlipProvider({ children }) {
     setPlacedBets((prev) => prev.map((bet) => (bet.id === betId ? cashed : bet)));
     playWinSound();
     return cashed;
-  }, [placedBets, refreshWallet]);
+  }, [placedBets, refreshWallet, user?.loyaltyTier]);
 
   const applySettledBets = useCallback((nextBets) => {
     setPlacedBets(nextBets);
@@ -967,6 +972,26 @@ export function BetSlipProvider({ children }) {
       return settledItem;
     }));
     return settledItem;
+  }, []);
+
+  const acceptOddsChange = useCallback((betId) => {
+    setBets((prev) => {
+      const next = prev.map((bet) => (
+        bet.id === betId && bet.oddsStatus === ODDS_STATUS.CHANGED
+          ? acceptOddsForBet(bet)
+          : bet
+      ));
+      betsRef.current = next;
+      return next;
+    });
+  }, []);
+
+  const acceptAllOddsChanges = useCallback(() => {
+    setBets((prev) => {
+      const next = acceptAllChangedOdds(prev);
+      betsRef.current = next;
+      return next;
+    });
   }, []);
 
   const value = useMemo(() => ({
@@ -1008,6 +1033,9 @@ export function BetSlipProvider({ children }) {
     closeQuickBet,
     openQuickBetPanel,
     refreshSlipOdds,
+    acceptOddsChange,
+    acceptAllOddsChanges,
+    hasPendingOddsAcceptance: hasPendingOddsAcceptance(bets),
   }), [
     bets,
     placedBets,
@@ -1041,6 +1069,8 @@ export function BetSlipProvider({ children }) {
     closeQuickBet,
     openQuickBetPanel,
     refreshSlipOdds,
+    acceptOddsChange,
+    acceptAllOddsChanges,
   ]);
 
   return (

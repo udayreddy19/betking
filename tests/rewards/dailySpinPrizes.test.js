@@ -16,10 +16,13 @@ describe('daily spin prizes', () => {
 
   it('maps loyalty points to tiers', () => {
     expect(loyaltyTierFromPoints(0)).toBe('BRONZE');
-    expect(loyaltyTierFromPoints(500)).toBe('SILVER');
-    expect(loyaltyTierFromPoints(2000)).toBe('GOLD');
-    expect(loyaltyTierFromPoints(10000)).toBe('PLATINUM');
-    expect(loyaltyTierFromPoints(24999)).toBe('PLATINUM');
-    expect(loyaltyTierFromPoints(25000)).toBe('DIAMOND');
+    expect(loyaltyTierFromPoints(1999)).toBe('BRONZE');
+    expect(loyaltyTierFromPoints(2000)).toBe('SILVER');
+    expect(loyaltyTierFromPoints(9999)).toBe('SILVER');
+    expect(loyaltyTierFromPoints(10000)).toBe('GOLD');
+    expect(loyaltyTierFromPoints(24999)).toBe('GOLD');
+    expect(loyaltyTierFromPoints(25000)).toBe('PLATINUM');
+    expect(loyaltyTierFromPoints(49999)).toBe('PLATINUM');
+    expect(loyaltyTierFromPoints(50000)).toBe('DIAMOND');
   });
 });

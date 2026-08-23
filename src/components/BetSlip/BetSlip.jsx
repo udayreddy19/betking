@@ -3,6 +3,7 @@ import { IoClose, IoSettingsOutline } from '../../icons';
 import { useBetSlip } from '../../context/BetSlipContext';
 import BetSlipFooter from './BetSlipFooter';
 import { MIN_STAKE_INR, BONUS_MIN_BET_ODDS } from '../../utils/wageringRules';
+import { formatOddsChangeAnnouncement, ODDS_STATUS } from '../../utils/oddsChangeHandler';
 import './BetSlip.css';
 
 const PER_BET_QUICK_STAKES = [500, 1500, 5000];
@@ -37,8 +38,12 @@ export default function BetSlip({ showFooter = true, hidePerBetStakes = false })
     betType, setBetType, singlesStakes, setSingleStake,
     betslipPrefs, setBetslipPref,
     multiConflicts,
+    acceptOddsChange,
+    acceptAllOddsChanges,
+    hasPendingOddsAcceptance,
   } = useBetSlip();
   const [showSettings, setShowSettings] = useState(false);
+  const pendingOddsCount = bets.filter((b) => b.oddsStatus === ODDS_STATUS.CHANGED).length;
 
   if (betCount === 0) return null;
 
@@ -115,6 +120,19 @@ export default function BetSlip({ showFooter = true, hidePerBetStakes = false })
         </div>
       )}
 
+      {pendingOddsCount > 1 && hasPendingOddsAcceptance && (
+        <div className="betslip-accept-all-row">
+          <p>Odds changed on {pendingOddsCount} selections</p>
+          <button
+            type="button"
+            className="betslip-accept-all-btn"
+            onClick={acceptAllOddsChanges}
+          >
+            Accept all updated odds
+          </button>
+        </div>
+      )}
+
       <div className="betslip-body">
         {bets.map((bet) => {
           const conflict = multiConflicts.get(bet.id);
@@ -134,7 +152,23 @@ export default function BetSlip({ showFooter = true, hidePerBetStakes = false })
                 </div>
               )}
 
-              {bet.oddsChanged && !conflict && (
+              {bet.oddsStatus === ODDS_STATUS.CHANGED && !conflict && (
+                <div
+                  className="betslip-bet-alert betslip-bet-alert--odds-changed"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <strong>Odds changed</strong>
+                  <span className="betslip-bet-alert__detail">
+                    {formatOddsChangeAnnouncement(bet)}
+                  </span>
+                  <span className="betslip-bet-alert__detail">
+                    The odds have changed. Please review the new odds.
+                  </span>
+                </div>
+              )}
+
+              {bet.oddsChanged && bet.oddsStatus !== ODDS_STATUS.CHANGED && !conflict && (
                 <div className="betslip-bet-alert betslip-bet-alert--info" role="status">
                   Odds updated — review the new price below
                 </div>
@@ -151,13 +185,28 @@ export default function BetSlip({ showFooter = true, hidePerBetStakes = false })
 
               <div className="betslip-bet-selection-row">
                 <span className="betslip-bet-selection">{bet.selectionName}</span>
-                <span className={`betslip-bet-odds${bet.oddsChanged ? ' betslip-bet-odds--updated' : ''}`}>
-                  {bet.oddsChanged && bet.previousOdds != null && (
-                    <span className="betslip-bet-odds-old">{Number(bet.previousOdds).toFixed(2)}</span>
+                <span className={`betslip-bet-odds${bet.oddsStatus === ODDS_STATUS.CHANGED ? ' betslip-bet-odds--updated' : ''}`}>
+                  {bet.oddsStatus === ODDS_STATUS.CHANGED && bet.previousOdds != null && (
+                    <>
+                      <span className="betslip-bet-odds-old" aria-hidden="true">
+                        {Number(bet.previousOdds).toFixed(2)}
+                      </span>
+                      <span className="betslip-bet-odds-arrow" aria-hidden="true">→</span>
+                    </>
                   )}
-                  {Number(bet.odds).toFixed(2)}
+                  <strong>{Number(bet.odds).toFixed(2)}</strong>
                 </span>
               </div>
+
+              {bet.oddsStatus === ODDS_STATUS.CHANGED && (
+                <button
+                  type="button"
+                  className="betslip-accept-odds-btn"
+                  onClick={() => acceptOddsChange(bet.id)}
+                >
+                  Accept {Number(bet.odds).toFixed(2)}
+                </button>
+              )}
 
               <div className="betslip-bet-match">{bet.matchName}</div>
 

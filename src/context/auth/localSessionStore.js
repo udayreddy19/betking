@@ -61,6 +61,7 @@ export function toSessionUser(stored) {
     xpToNext: stored.xpToNext ?? 1000,
     notifications: stored.notifications ?? 0,
     loyaltyPoints: stored.loyaltyPoints ?? stored.coins ?? 0,
+    vipPoints: stored.vipPoints ?? stored.loyaltyPoints ?? stored.coins ?? 0,
     coins: stored.loyaltyPoints ?? stored.coins ?? 0,
     ...normalizeRgState(stored),
   };
@@ -71,6 +72,25 @@ export function persistSession(user) {
     storageSet(SESSION_KEY, JSON.stringify(user));
   } else {
     storageRemove(SESSION_KEY);
+  }
+}
+
+/** Last known session snapshot for optimistic UI while tokens revalidate. */
+export function readCachedSession() {
+  try {
+    const saved = storageGet(SESSION_KEY);
+    if (!saved) return null;
+    const parsed = JSON.parse(saved);
+    if (!parsed?.email && !parsed?.userId) return null;
+    return {
+      ...parsed,
+      winningsBalance: parsed.winningsBalance ?? Math.max(
+        0,
+        (parsed.balance ?? 0) - (parsed.lockedDepositBalance ?? 0),
+      ),
+    };
+  } catch {
+    return null;
   }
 }
 
@@ -93,6 +113,7 @@ export function syncStoredUser(sessionUser) {
     xpToNext: sessionUser.xpToNext,
     notifications: sessionUser.notifications,
     loyaltyPoints: sessionUser.loyaltyPoints ?? sessionUser.coins ?? users[idx].loyaltyPoints ?? users[idx].coins ?? 0,
+    vipPoints: sessionUser.vipPoints ?? sessionUser.loyaltyPoints ?? users[idx].vipPoints ?? users[idx].loyaltyPoints ?? 0,
     coins: sessionUser.loyaltyPoints ?? sessionUser.coins ?? users[idx].loyaltyPoints ?? users[idx].coins ?? 0,
     dailyDepositLimit: sessionUser.dailyDepositLimit ?? users[idx].dailyDepositLimit,
     dailyStakeLimit: sessionUser.dailyStakeLimit ?? users[idx].dailyStakeLimit,

@@ -6,12 +6,15 @@ import { apiFetch } from '../../utils/apiClient';
 import { formatInr } from '../../utils/walletBalance';
 import {
   LOYALTY_POINTS_PER_100_STANDARD,
+  LOYALTY_POINTS_PER_100_SILVER,
+  LOYALTY_POINTS_PER_100_GOLD,
   LOYALTY_POINTS_PER_100_VIP,
   getBenefitsForTier,
   VIP_TIER_POINTS,
   MIN_DEPOSIT_INR,
   MIN_WITHDRAW_INR,
 } from '../../utils/vipBenefits';
+import { getUserLoyaltyPoints, getUserVipPoints } from '../../utils/loyaltyPoints';
 import {
   FiCrown,
   FiZap,
@@ -36,7 +39,8 @@ export default function Vip() {
   const [vipStatus, setVipStatus] = useState(null);
 
   const benefits = vipStatus || getBenefitsForTier(user?.loyaltyTier);
-  const coins = user?.loyaltyPoints ?? user?.coins ?? 0;
+  const redeemablePoints = getUserLoyaltyPoints(user);
+  const vipPoints = getUserVipPoints(user);
   const balance = user?.balance ?? 0;
   const vipRank = benefits.label || user?.loyaltyRank || 'Standard';
 
@@ -53,7 +57,7 @@ export default function Vip() {
       })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [isLoggedIn, user?.loyaltyPoints]);
+  }, [isLoggedIn, user?.loyaltyPoints, user?.vipPoints]);
 
   const handleClaimCashback = async () => {
     if (!isLoggedIn) {
@@ -101,9 +105,9 @@ export default function Vip() {
     {
       id: 'loyalty_boost',
       icon: <FiStar style={{ color: '#f59e0b', fontSize: '1.8rem' }} />,
-      title: `${LOYALTY_POINTS_PER_100_VIP} points per ₹100`,
-      subtitle: `Standard players earn ${LOYALTY_POINTS_PER_100_STANDARD} · VIP club earns ${LOYALTY_POINTS_PER_100_VIP}`,
-      description: `Every cash, bonus, or free-bet stake earns loyalty points. Reach Silver (${VIP_TIER_POINTS.SILVER} pts) to join the VIP club and earn ${LOYALTY_POINTS_PER_100_VIP} points per ₹100 instead of ${LOYALTY_POINTS_PER_100_STANDARD}. 5 points = ₹1 cash.`,
+      title: 'Tiered loyalty earn',
+      subtitle: `Bronze ${LOYALTY_POINTS_PER_100_STANDARD} · Silver ${LOYALTY_POINTS_PER_100_SILVER} · Gold ${LOYALTY_POINTS_PER_100_GOLD} · Platinum/Diamond ${LOYALTY_POINTS_PER_100_VIP} per ₹100`,
+      description: `Every cash, bonus, or free-bet stake earns loyalty and VIP points. Reach Silver at ${VIP_TIER_POINTS.SILVER.toLocaleString('en-IN')} VIP points (Pre-VIP). Gold ${VIP_TIER_POINTS.GOLD.toLocaleString('en-IN')}+, Platinum ${VIP_TIER_POINTS.PLATINUM.toLocaleString('en-IN')}+, Diamond ${VIP_TIER_POINTS.DIAMOND.toLocaleString('en-IN')}+. 5 points = ₹1 cash when you redeem.`,
       badge: 'LIVE',
     },
     {
@@ -127,7 +131,7 @@ export default function Vip() {
       icon: <FiClock style={{ color: '#0ea5e9', fontSize: '1.8rem' }} />,
       title: 'Better cashout',
       subtitle: 'Keep more when you settle early',
-      description: 'Standard cashout is 85% of potential payout. Silver 88%, Gold 90%, Platinum 92%, Diamond 95%. Live on cash bets in My Bets.',
+      description: 'Cashout is priced from live odds (fair value), then paid at 85% Standard / 88% Silver / 90% Gold / 92% Platinum / 95% Diamond. Live on cash bets in My Bets.',
       badge: 'LIVE',
     },
     {
@@ -173,7 +177,7 @@ export default function Vip() {
   ];
 
   const comparisonData = [
-    { feature: 'Loyalty points', all: `${LOYALTY_POINTS_PER_100_STANDARD} / ₹100`, preVip: `${LOYALTY_POINTS_PER_100_VIP} / ₹100`, vip: `${LOYALTY_POINTS_PER_100_VIP} / ₹100` },
+    { feature: 'Loyalty points', all: `${LOYALTY_POINTS_PER_100_STANDARD} / ₹100`, preVip: `${LOYALTY_POINTS_PER_100_SILVER} / ₹100`, vip: `${LOYALTY_POINTS_PER_100_GOLD}–${LOYALTY_POINTS_PER_100_VIP} / ₹100` },
     { feature: 'Min deposit / withdraw', all: `₹${MIN_DEPOSIT_INR.toLocaleString('en-IN')}`, preVip: `₹${MIN_DEPOSIT_INR.toLocaleString('en-IN')}`, vip: `₹${MIN_DEPOSIT_INR.toLocaleString('en-IN')}` },
     { feature: 'Max withdrawal', all: '₹50,000', preVip: '₹1,00,000', vip: '₹2.5L – ₹10L' },
     { feature: 'Withdrawal review target', all: '24h', preVip: '8h', vip: '4h – 1h' },
@@ -228,8 +232,12 @@ export default function Vip() {
               <span className="vip-user-stat__value vip-user-stat__value--tier">{vipRank}</span>
             </div>
             <div className="vip-user-stat">
-              <span className="vip-user-stat__label">🪙 Points</span>
-              <span className="vip-user-stat__value">{coins}</span>
+              <span className="vip-user-stat__label">🏆 VIP points</span>
+              <span className="vip-user-stat__value">{vipPoints}</span>
+            </div>
+            <div className="vip-user-stat">
+              <span className="vip-user-stat__label">⭐ Redeemable</span>
+              <span className="vip-user-stat__value">{redeemablePoints}</span>
             </div>
             <div className="vip-user-stat">
               <span className="vip-user-stat__label">Earn rate</span>
@@ -270,8 +278,9 @@ export default function Vip() {
             </div>
             <h1>VIP Benefits at OddsYra</h1>
             <p className="vip-hero__subtitle">
-              Standard players earn {LOYALTY_POINTS_PER_100_STANDARD} points per ₹100 staked.
-              Silver and above earn {LOYALTY_POINTS_PER_100_VIP}, plus cashback, better cashout, and monthly club credit.
+              Standard (Bronze) players earn {LOYALTY_POINTS_PER_100_STANDARD} points per ₹100 staked.
+              Silver earns {LOYALTY_POINTS_PER_100_SILVER}, Gold {LOYALTY_POINTS_PER_100_GOLD}, and Platinum/Diamond {LOYALTY_POINTS_PER_100_VIP}.
+              Plus cashback, better cashout, and monthly club credit from Silver upward.
               Min deposit and withdrawal is ₹{MIN_DEPOSIT_INR.toLocaleString('en-IN')}.
             </p>
             <div className="vip-hero__actions">
@@ -369,9 +378,12 @@ export default function Vip() {
             <div className="vip-card-box__content">
               <h2>How to join the VIP club</h2>
               <p>
-                Place sports bets. Standard accounts earn {LOYALTY_POINTS_PER_100_STANDARD} points per ₹100.
-                At {VIP_TIER_POINTS.SILVER} points you reach Silver (Pre-VIP) and the earn rate becomes {LOYALTY_POINTS_PER_100_VIP} per ₹100.
-                Gold starts at {VIP_TIER_POINTS.GOLD.toLocaleString('en-IN')} points, Platinum at {VIP_TIER_POINTS.PLATINUM.toLocaleString('en-IN')}, Diamond at {VIP_TIER_POINTS.DIAMOND.toLocaleString('en-IN')}.
+                Place sports bets. Bronze accounts earn {LOYALTY_POINTS_PER_100_STANDARD} points per ₹100.
+                At {VIP_TIER_POINTS.SILVER.toLocaleString('en-IN')} VIP points you reach Silver (Pre-VIP) and earn {LOYALTY_POINTS_PER_100_SILVER} per ₹100.
+                Gold starts at {VIP_TIER_POINTS.GOLD.toLocaleString('en-IN')} ({LOYALTY_POINTS_PER_100_GOLD}/₹100),
+                Platinum at {VIP_TIER_POINTS.PLATINUM.toLocaleString('en-IN')} ({LOYALTY_POINTS_PER_100_VIP}/₹100),
+                Diamond at {VIP_TIER_POINTS.DIAMOND.toLocaleString('en-IN')} ({LOYALTY_POINTS_PER_100_VIP}/₹100).
+                Redeeming loyalty points for cash does not reduce your VIP tier.
               </p>
               <div className="vip-how-steps mt-4">
                 <div className="vip-step-item">
@@ -384,8 +396,8 @@ export default function Vip() {
                 <div className="vip-step-item">
                   <span className="vip-step-num">2</span>
                   <div>
-                    <strong>Hit Silver ({VIP_TIER_POINTS.SILVER} pts)</strong>
-                    <p>Unlock 5 pts / ₹100, 2% daily cashback, and ₹1L max withdrawal.</p>
+                    <strong>Hit Silver ({VIP_TIER_POINTS.SILVER.toLocaleString('en-IN')} VIP pts)</strong>
+                    <p>Unlock {LOYALTY_POINTS_PER_100_SILVER} pts / ₹100, 2% daily cashback, and ₹1L max withdrawal.</p>
                   </div>
                 </div>
                 <div className="vip-step-item">

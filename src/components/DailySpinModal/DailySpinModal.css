@@ -178,6 +178,17 @@
   color: var(--color-text-secondary);
 }
 
+.spin-expiry-note {
+  margin-top: 6px !important;
+  font-size: 0.78rem !important;
+  font-weight: 700;
+  color: #f59e0b;
+}
+
+.spin-expiry-note--expired {
+  color: #ef4444;
+}
+
 .spin-action-row {
   width: 100%;
 }

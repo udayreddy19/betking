@@ -61,8 +61,7 @@ describe('AUTHORITATIVE ODDS ARCHITECTURE & ANTI-REGRESSION TESTS', () => {
       const content = fs.readFileSync(path.resolve(process.cwd(), rel), 'utf8');
       expect(content.includes('oddsEngine.mjs'), rel).toBe(false);
     });
-    const legacy = fs.readFileSync(path.resolve(process.cwd(), 'lib/oddsEngine.mjs'), 'utf8');
-    expect(legacy.includes('@deprecated')).toBe(true);
+    expect(fs.existsSync(path.resolve(process.cwd(), 'lib/oddsEngine.mjs'))).toBe(false);
   });
 
   it('TEST 6: DEMO_MODE is not implied by Vite DEV', () => {

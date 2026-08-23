@@ -28,7 +28,17 @@ services:
     image: redis:7-alpine
     container_name: oddsyra_prod_redis
     restart: always
-    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy volatile-lru
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    command:
+      - sh
+      - -c
+      - |
+        if [ -n "$$REDIS_PASSWORD" ]; then
+          exec redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy volatile-lru --requirepass "$$REDIS_PASSWORD"
+        else
+          exec redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy volatile-lru
+        fi
     volumes:
       - redis_data:/data
     networks:
@@ -57,7 +67,7 @@ services:
       NODE_OPTIONS: "--max-old-space-size=768"
       DATABASE_URL: postgresql://${POSTGRES_USER:-oddsyra_app}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-oddsyra}
       DATABASE_READ_URL: ${DATABASE_READ_URL:-}
-      REDIS_URL: redis://redis:6379
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       JWT_SECRET: ${JWT_SECRET}
       RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID}
       RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET}
@@ -100,7 +110,7 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://${POSTGRES_USER:-oddsyra_app}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-oddsyra}
-      REDIS_URL: redis://redis:6379
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       JWT_SECRET: ${JWT_SECRET}
       ADMIN_DEV_LOGIN: "0"
       RUN_BACKGROUND_WORKERS: "true"

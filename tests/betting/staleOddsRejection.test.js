@@ -10,14 +10,26 @@ vi.mock('../../lib/oddsQuoteService.mjs', () => ({
   loadLiveOddsSnapshot: vi.fn(async () => ({ status: 'OK', markets: [] })),
 }));
 
-import { assertBettableQuote } from '../../lib/odds-v3/bookIntegrity.mjs';
+import { validatePlacementOdds } from '../../lib/oddsPlacementValidation.mjs';
 
 describe('AUD-016 — stale odds rejection at placement', () => {
   it('throws STALE_ODDS when client quote drifts beyond MAX_ODDS_DRIFT_PCT', () => {
-    expect(() => assertBettableQuote(1.85, 2.5)).toThrow(/STALE_ODDS/);
+    expect(() => validatePlacementOdds({
+      serverOdds: 1.85,
+      clientOdds: 2.5,
+      matchId: 'm1',
+      marketId: 'mw',
+      selectionId: '1',
+    })).toThrow(/STALE_ODDS/);
   });
 
-  it('allows small drift within threshold', () => {
-    expect(assertBettableQuote(1.85, 1.87)).toBe(1.85);
+  it('throws ODDS_CHANGED for moderate drift', () => {
+    expect(() => validatePlacementOdds({
+      serverOdds: 1.85,
+      clientOdds: 1.87,
+      matchId: 'm1',
+      marketId: 'mw',
+      selectionId: '1',
+    })).toThrow(/ODDS_CHANGED/);
   });
 });

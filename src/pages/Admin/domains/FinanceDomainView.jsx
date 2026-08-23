@@ -212,9 +212,102 @@ function PaymentGatewaysPanel() {
   );
 }
 
+function LegacyLedgerPanel() {
+  const [gaps, setGaps] = useState([]);
+  const [error, setError] = useState(null);
+  const [busyUserId, setBusyUserId] = useState(null);
+  const { showToast } = useAdminToast();
+
+  const load = () => {
+    adminApiClient.get('/reconciliation/legacy-wallets')
+      .then((data) => {
+        setGaps(data.gaps || []);
+        setError(null);
+      })
+      .catch((err) => {
+        setGaps([]);
+        setError(err.message || 'Failed to load legacy ledger gaps');
+      });
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const runAction = async (userId, action) => {
+    const reason = window.prompt('Reason (required for audit trail):', '');
+    if (!reason?.trim()) return;
+    setBusyUserId(userId);
+    try {
+      await adminApiClient.post(`/reconciliation/legacy-wallets/${userId}/${action}`, { reason: reason.trim() });
+      showToast(`Legacy ledger ${action.replace(/-/g, ' ')} recorded.`, 'success');
+      load();
+    } catch (err) {
+      showToast(err.message || 'Action failed', 'error');
+    } finally {
+      setBusyUserId(null);
+    }
+  };
+
+  return (
+    <div>
+      <div style={{ marginBottom: '20px' }}>
+        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>06 · Legacy Ledger Gaps</h2>
+        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted, var(--color-text-muted))', fontSize: '0.85rem' }}>
+          Wallets where stored balance does not match ledger sum. Accept exception (no balance mutation) or apply opening ledger credit.
+        </p>
+        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.82rem' }}>{error}</p>}
+      </div>
+
+      <AdminDataTable
+        title="Legacy Wallet Gaps"
+        emptyMessage="No legacy ledger gaps detected"
+        data={gaps}
+        columns={[
+          { header: 'User ID', key: 'userId' },
+          { header: 'Wallet ID', key: 'walletId' },
+          { header: 'Stored (₹)', key: 'storedBalance', render: (r) => money(r.storedBalance) },
+          { header: 'Ledger (₹)', key: 'ledgerSum', render: (r) => money(r.ledgerSum) },
+          { header: 'Gap (₹)', key: 'difference', render: (r) => money(r.difference) },
+          { header: 'Class', key: 'classification' },
+          {
+            header: 'Accepted',
+            key: 'acceptedException',
+            render: (r) => (r.acceptedException ? 'YES' : '—'),
+          },
+          {
+            header: 'Actions',
+            key: 'actions',
+            sortable: false,
+            render: (r) => (
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  disabled={busyUserId === r.userId}
+                  onClick={() => runAction(r.userId, 'accept-exception')}
+                  style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--admin-border, var(--color-border))', background: 'rgba(245, 158, 11, 0.14)', color: '#f59e0b', fontWeight: 700, cursor: 'pointer', fontSize: '0.78rem' }}
+                >
+                  Accept exception
+                </button>
+                <button
+                  type="button"
+                  disabled={busyUserId === r.userId}
+                  onClick={() => runAction(r.userId, 'apply-opening-ledger')}
+                  style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--admin-border, var(--color-border))', background: 'rgba(16, 185, 129, 0.18)', color: '#10b981', fontWeight: 700, cursor: 'pointer', fontSize: '0.78rem' }}
+                >
+                  Opening ledger
+                </button>
+              </div>
+            ),
+          },
+        ]}
+      />
+    </div>
+  );
+}
+
 export default function FinanceDomainView({ subModule = 'maker-checker' }) {
   const view = useMemo(() => {
     if (subModule === 'ledger') return <LedgerPanel />;
+    if (subModule === 'legacy-ledger') return <LegacyLedgerPanel />;
     if (subModule === 'payment-gateways') return <PaymentGatewaysPanel />;
     return <MakerCheckerPanel />;
   }, [subModule]);

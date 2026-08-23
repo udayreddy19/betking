@@ -232,8 +232,8 @@ export default function MobileBetSlip() {
       if (result.success) {
         closeQuickBet();
         showToast('Bet placed!', 'success');
-      } else if (result.oddsUpdated) {
-        const msg = result.error || 'Odds have been updated. Tap Place again to continue.';
+      } else if (result.oddsUpdated || result.requiresAcceptance) {
+        const msg = result.error || 'The odds have changed. Please review the new odds.';
         setPlacementNotice(msg);
         showToast(msg, 'info');
       } else {

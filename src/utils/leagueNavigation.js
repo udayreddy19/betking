@@ -1,15 +1,74 @@
 import { featuredLeagues } from '../data/mockData';
 
+/** Alternate feed / sidebar labels that refer to the same competition. */
+const LEAGUE_ALIAS_GROUPS = [
+  ['cpl', 'caribbean premier league'],
+  ['tnpl', 'tamil nadu premier league'],
+  ['dpl', 'delhi premier league', 't20 delhi premier league'],
+  ['lpl', 'lanka premier league', 't20 lanka premier league'],
+  [
+    'bangladesh tour of australia',
+    'test series australia vs bangladesh',
+    'australia vs bangladesh',
+  ],
+  [
+    'sri lanka vs india',
+    'test series sri lanka vs india',
+    'india tour of sri lanka',
+    'sri lanka xi vs india',
+  ],
+  [
+    'test series west indies vs pakistan',
+    'west indies v pakistan',
+    'pakistan tour of west indies',
+  ],
+  [
+    'pakistan tour of england',
+    'test series england vs pakistan',
+    'england vs pakistan',
+  ],
+  [
+    't20 series sri lanka vs pakistan women',
+    'pakistan women tour of sri lanka',
+  ],
+  [
+    'kenya vs bahrain',
+    't20 series kenya vs bahrain',
+    'bahrain tour of kenya',
+  ],
+  ['the hundred', 'the hundred men', 'the hundred mens competition'],
+  ['the hundred women', 'the hundred womens competition'],
+];
+
 function normalizeLeagueText(value = '') {
   return String(value)
     .toLowerCase()
     .replace(/\(men\)|\(women\)/gi, '')
+    .replace(/\b20\d{2}\b/g, '')
     .replace(/[^a-z0-9\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
 
-function textsMatch(a, b) {
+function aliasSetFor(normalized) {
+  const keys = new Set([normalized]);
+  if (!normalized) return keys;
+
+  for (const group of LEAGUE_ALIAS_GROUPS) {
+    const norms = group.map(normalizeLeagueText).filter(Boolean);
+    const hit = norms.some((n) => {
+      if (n === normalized) return true;
+      const multi = n.split(' ').length >= 2 && normalized.split(' ').length >= 2;
+      return multi && (n.includes(normalized) || normalized.includes(n));
+    });
+    if (hit) {
+      norms.forEach((n) => keys.add(n));
+    }
+  }
+  return keys;
+}
+
+export function textsMatch(a, b) {
   if (!a || !b) return false;
   const na = normalizeLeagueText(a);
   const nb = normalizeLeagueText(b);
@@ -17,10 +76,18 @@ function textsMatch(a, b) {
 
   if (na === nb) return true;
 
+  const aliasesA = aliasSetFor(na);
+  const aliasesB = aliasSetFor(nb);
+  for (const x of aliasesA) {
+    for (const y of aliasesB) {
+      if (x === y) return true;
+    }
+  }
+
   const wordsA = na.split(' ').filter(Boolean);
   const wordsB = nb.split(' ').filter(Boolean);
 
-  // If one of the strings is a single short word (e.g. "india"), require exact match to avoid matching "indian premier league"
+  // Short single-token labels (e.g. "india") must match exactly — aliases handled above
   if (wordsA.length === 1 || wordsB.length === 1) {
     return na === nb;
   }
@@ -28,23 +95,58 @@ function textsMatch(a, b) {
   return na.includes(nb) || nb.includes(na);
 }
 
-/** Map sidebar label, breadcrumb text, or id → featured league id */
-export function resolveLeagueId(key) {
-  if (!key || key === 'all') return 'all';
-  const featured = featuredLeagues.find(
-    (l) => l.id === key
-      || l.name === key
-      || l.breadcrumb === key
-      || l.matchLeagues?.includes(key)
-  );
-  return featured?.id ?? key;
+/** True when a dynamic series name is already represented by a featured league. */
+export function seriesCoveredByFeatured(series, featuredList = featuredLeagues) {
+  if (!series) return false;
+  const names = [series.name, series.rawName].filter(Boolean);
+  return featuredList.some((league) => {
+    const candidates = [league.name, league.breadcrumb, ...(league.matchLeagues || [])].filter(Boolean);
+    return names.some((seriesName) =>
+      candidates.some((candidate) => textsMatch(seriesName, candidate)),
+    );
+  });
 }
 
-export function isSameLeague(activeLeague, key) {
+/** Map sidebar label, breadcrumb text, or id → featured league id */
+export function resolveLeagueId(key, cricketSeries = []) {
+  if (!key || key === 'all') return 'all';
+
+  const featuredById = featuredLeagues.find((l) => l.id === key);
+  if (featuredById) return featuredById.id;
+
+  const featuredByLabel = featuredLeagues.find(
+    (l) => l.name === key
+      || l.breadcrumb === key
+      || l.matchLeagues?.includes(key)
+      || textsMatch(l.name, key)
+      || l.matchLeagues?.some((ml) => textsMatch(ml, key)),
+  );
+  if (featuredByLabel) return featuredByLabel.id;
+
+  const dynamic = cricketSeries.find(
+    (series) => series.id === key
+      || series.name === key
+      || `cb-series-${series.seriesId}` === key,
+  );
+  if (dynamic) {
+    const featuredForSeries = featuredLeagues.find((l) =>
+      textsMatch(l.name, dynamic.name)
+      || textsMatch(l.name, dynamic.rawName)
+      || (l.matchLeagues || []).some(
+        (ml) => textsMatch(ml, dynamic.name) || textsMatch(ml, dynamic.rawName),
+      ),
+    );
+    if (featuredForSeries) return featuredForSeries.id;
+  }
+
+  return key;
+}
+
+export function isSameLeague(activeLeague, key, cricketSeries = []) {
   if (!activeLeague || activeLeague === 'all' || !key || key === 'all') {
     return activeLeague === key;
   }
-  return resolveLeagueId(activeLeague) === resolveLeagueId(key);
+  return resolveLeagueId(activeLeague, cricketSeries) === resolveLeagueId(key, cricketSeries);
 }
 
 export function matchBelongsToLeague(match, leagueMeta) {
@@ -103,14 +205,26 @@ export function getLeagueMeta(leagueKey, cricketSeries = []) {
     return { id: 'all', name: 'All Leagues', breadcrumb: 'All Leagues', sport: 'cricket' };
   }
 
-  const id = resolveLeagueId(leagueKey);
+  const id = resolveLeagueId(leagueKey, cricketSeries);
   const staticMeta = featuredLeagues.find((league) => league.id === id);
   if (staticMeta) return staticMeta;
 
   const dynamic = cricketSeries.find(
-    (series) => series.id === leagueKey || series.name === leagueKey || series.id === id,
+    (series) => series.id === leagueKey
+      || series.name === leagueKey
+      || series.id === id
+      || `cb-series-${series.seriesId}` === leagueKey,
   );
   if (dynamic) {
+    const featuredForSeries = featuredLeagues.find((l) =>
+      textsMatch(l.name, dynamic.name)
+      || textsMatch(l.name, dynamic.rawName)
+      || (l.matchLeagues || []).some(
+        (ml) => textsMatch(ml, dynamic.name) || textsMatch(ml, dynamic.rawName),
+      ),
+    );
+    if (featuredForSeries) return featuredForSeries;
+
     return {
       id: dynamic.id,
       name: dynamic.name,
@@ -132,7 +246,7 @@ export function canonicalLeagueName(leagueName) {
     }
   }
 
-  return leagueName.replace(/,\s*2026$/, '').replace(/\s*2026$/, '').trim();
+  return leagueName.replace(/,\s*20\d{2}$/, '').replace(/\s*20\d{2}$/, '').trim();
 }
 
 export function groupMatchesByLeague(matches) {

@@ -9,6 +9,7 @@ import {
 } from '../../utils/wageringRules';
 import { DEMO_MODE } from '../../utils/featureFlags';
 import { cleanKycMessage, isKycError, KYC_PROFILE_PATH } from '../../utils/kycUi';
+import { buildSpinGrantNotice } from '../../utils/spinGrantUi';
 import './BetSlipFooter.css';
 
 const QUICK_STAKES = [100, 500, 1000];
@@ -18,6 +19,7 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
     bets, betCount, stake, setStake, totalOdds, potentialReturn, placeBets, clearAll,
     betType, totalStakeAmount, setSingleStake,
     hasBlockingConflicts, singlesStakes,
+    hasPendingOddsAcceptance,
   } = useBetSlip();
   const {
     user, isLoggedIn, deductStake, refundStake, showToast, openLoginModal,
@@ -25,7 +27,8 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
   const [isPlacing, setIsPlacing] = useState(false);
   const [stakeSource, setStakeSource] = useState('cash');
   const [placementNotice, setPlacementNotice] = useState(null);
-  const hasOddsUpdates = bets.some((bet) => bet.oddsChanged);
+  const hasOddsUpdates = bets.some((bet) => bet.oddsChanged || bet.oddsStatus === 'ODDS_CHANGED');
+  const needsOddsAcceptance = hasPendingOddsAcceptance;
 
   useEffect(() => {
     if (!hasOddsUpdates) {
@@ -34,7 +37,9 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
   }, [hasOddsUpdates]);
 
   const oddsNotice = placementNotice
-    || (hasOddsUpdates ? 'Odds updated — review the new prices and tap Place again.' : null);
+    || (needsOddsAcceptance
+      ? 'Odds changed — accept the updated price(s) before placing your bet.'
+      : (hasOddsUpdates ? 'Odds updated — review the new prices and tap Place again.' : null));
 
   const singlesStakeInputValue = (() => {
     if (betType === 'multi') return stake;
@@ -62,6 +67,9 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
   let activeSource = 'cash';
   if (stakeSource === 'bonus' && canUseBonus) activeSource = 'bonus';
   else if (stakeSource === 'freebet' && canUseFreebet) activeSource = 'freebet';
+
+  const spinGrantNotice = buildSpinGrantNotice(user?.spinGrants);
+  const showSpinExpiry = spinGrantNotice && (activeSource === 'bonus' || activeSource === 'freebet');
 
   const handlePlaceBet = async () => {
     if (isPlacing) return;
@@ -140,8 +148,8 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
           showToast(cleanKycMessage(result.error) || 'Verify your identity before withdrawing.', 'error', {
             action: { label: 'Proceed to KYC', path: KYC_PROFILE_PATH },
           });
-        } else if (result.oddsUpdated) {
-          const msg = result.error || 'Odds have been updated. Tap Place again to continue.';
+        } else if (result.oddsUpdated || result.requiresAcceptance) {
+          const msg = result.error || 'The odds have changed. Please review the new odds.';
           setPlacementNotice(msg);
           showToast(msg, 'info');
         } else {
@@ -287,6 +295,11 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
 
         {stakeSourceToggle}
 
+        {showSpinExpiry && (
+          <div className="betslip-footer-notice betslip-footer-notice--spin-expiry" role="status">
+            {spinGrantNotice.message}
+          </div>
+        )}
         {oddsNotice && (
           <div className="betslip-footer-notice" role="status">
             {oddsNotice}
@@ -353,6 +366,12 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
         </div>
       </div>
 
+      {showSpinExpiry && (
+        <div className="betslip-footer-notice betslip-footer-notice--spin-expiry" role="status">
+          {spinGrantNotice.message}
+        </div>
+      )}
+
       {oddsNotice && (
         <div className="betslip-footer-notice" role="status">
           {oddsNotice}
@@ -361,7 +380,7 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
 
       <button
         className={`betslip-place-btn ${isPlacing ? 'is-placing' : ''}`}
-        disabled={(betType === 'multi' ? (!stake || parseFloat(stake) < MIN_STAKE_INR) : totalStakeAmount < MIN_STAKE_INR) || isPlacing || hasBlockingConflicts}
+        disabled={(betType === 'multi' ? (!stake || parseFloat(stake) < MIN_STAKE_INR) : totalStakeAmount < MIN_STAKE_INR) || isPlacing || hasBlockingConflicts || needsOddsAcceptance}
         type="button"
         onClick={handlePlaceBet}
       >

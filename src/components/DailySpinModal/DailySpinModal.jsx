@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../../context/AuthContext';
 import { formatInr } from '../../utils/walletBalance';
 import { apiFetch } from '../../utils/apiClient';
-import { DAILY_SPIN_PRIZES } from '../../../lib/dailySpinPrizes.mjs';
+import { DAILY_SPIN_PRIZES, SPIN_PRIZE_TTL_HOURS } from '../../../lib/dailySpinPrizes.mjs';
 import { FiX, FiZap } from '../../icons';
 import AnimatedMotionGiftIcon from '../AnimatedMotionGiftIcon/AnimatedMotionGiftIcon';
 import './DailySpinModal.css';
@@ -13,11 +13,27 @@ import { playWinSound } from '../../utils/soundEffects';
 
 const WHEEL_SECTORS = DAILY_SPIN_PRIZES;
 
+function formatExpiryLabel(prize) {
+  if (!prize || prize.type === 'xp') return null;
+  if (prize.expired) return 'Expired — unused spin credit was removed';
+  if (prize.expiresAt) {
+    const dt = new Date(prize.expiresAt);
+    return `Use within ${SPIN_PRIZE_TTL_HOURS}h · expires ${dt.toLocaleString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      day: 'numeric',
+      month: 'short',
+    })}`;
+  }
+  return `Use bonus/freebet within ${SPIN_PRIZE_TTL_HOURS} hours or it expires`;
+}
+
 export default function DailySpinModal({ isOpen, onClose }) {
   const { updateUser, showToast } = useAuth();
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotationDegree, setRotationDegree] = useState(0);
   const [wonPrize, setWonPrize] = useState(null);
+  const [prizeMeta, setPrizeMeta] = useState(null);
   const [hasSpunToday, setHasSpunToday] = useState(false);
 
   const applyWallet = (wallet) => {
@@ -44,6 +60,7 @@ export default function DailySpinModal({ isOpen, onClose }) {
         applyWallet(data.wallet);
         if (data.hasSpunToday && data.prize) {
           setHasSpunToday(true);
+          setPrizeMeta(data.prize);
           setWonPrize(WHEEL_SECTORS[data.prize.index] || data.prize);
         }
       } catch {
@@ -88,11 +105,14 @@ export default function DailySpinModal({ isOpen, onClose }) {
       const prize = WHEEL_SECTORS[data.prize.index] || data.prize;
       applyWallet(data.wallet);
       setHasSpunToday(true);
+      setPrizeMeta(data.prize);
 
       if (data.alreadySpun) {
         setIsSpinning(false);
         setWonPrize(prize);
-        showToast('You already spun today. Prize is in your wallet.', 'info');
+        showToast(data.prize?.expired
+          ? 'Your spin prize expired after 24 hours.'
+          : 'You already spun today. Prize is in your wallet.', 'info');
         return;
       }
 
@@ -102,9 +122,9 @@ export default function DailySpinModal({ isOpen, onClose }) {
         setWonPrize(prize);
         playWinSound();
         if (prize.type === 'bonus') {
-          showToast(`You won ${formatInr(prize.value)} Bonus Credit!`, 'success');
+          showToast(`You won ${formatInr(prize.value)} bonus — use within ${SPIN_PRIZE_TTL_HOURS}h!`, 'success');
         } else if (prize.type === 'freebet') {
-          showToast(`You unlocked a ${formatInr(prize.value)} Freebet Voucher!`, 'success');
+          showToast(`You won ${formatInr(prize.value)} freebet — use within ${SPIN_PRIZE_TTL_HOURS}h!`, 'success');
         } else {
           showToast(`You gained ${prize.value} VIP Loyalty XP!`, 'info');
         }
@@ -138,7 +158,7 @@ export default function DailySpinModal({ isOpen, onClose }) {
               <FiZap /> DAILY VIP REWARD WHEEL
             </div>
             <h2 id="daily-spin-title">Spin & Win Free Bonus Rewards!</h2>
-            <p>Spin daily to win Bonus Balance, Freebet Vouchers, and VIP Loyalty XP.</p>
+            <p>Bonus and freebet prizes must be used within {SPIN_PRIZE_TTL_HOURS} hours or they expire. Loyalty XP is credited instantly.</p>
           </div>
 
           <div className="wheel-wrapper">
@@ -228,12 +248,19 @@ export default function DailySpinModal({ isOpen, onClose }) {
               <div>
                 <h4>YOU WON {wonPrize.amount} {wonPrize.subtitle}!</h4>
                 <p>
-                  {wonPrize.type === 'freebet'
-                    ? 'Added to your freebet balance.'
-                    : wonPrize.type === 'xp'
-                      ? 'Added to your loyalty XP.'
-                      : 'Added to your bonus wallet balance.'}
+                  {prizeMeta?.expired
+                    ? 'This spin credit expired after 24 hours without being used.'
+                    : wonPrize.type === 'freebet'
+                      ? 'Added to your freebet balance.'
+                      : wonPrize.type === 'xp'
+                        ? 'Added to your loyalty XP.'
+                        : 'Added to your bonus wallet balance.'}
                 </p>
+                {formatExpiryLabel(prizeMeta || wonPrize) && (
+                  <p className={`spin-expiry-note${prizeMeta?.expired ? ' spin-expiry-note--expired' : ''}`}>
+                    {formatExpiryLabel(prizeMeta || wonPrize)}
+                  </p>
+                )}
               </div>
             </motion.div>
           )}

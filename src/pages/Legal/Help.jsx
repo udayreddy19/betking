@@ -4,7 +4,7 @@ import {
   MIN_STAKE_INR,
 } from '../../utils/wageringRules';
 import { MIN_DEPOSIT_INR, MIN_WITHDRAW_INR } from '../../utils/vipBenefits';
-import { LOYALTY_MIN_REDEEM_POINTS, LOYALTY_POINTS_PER_100_STANDARD, LOYALTY_POINTS_PER_100_VIP, LOYALTY_POINTS_PER_RUPEE } from '../../utils/loyaltyPoints';
+import { LOYALTY_MIN_REDEEM_POINTS, LOYALTY_POINTS_PER_100_STANDARD, LOYALTY_POINTS_PER_100_SILVER, LOYALTY_POINTS_PER_100_GOLD, LOYALTY_POINTS_PER_100_VIP, LOYALTY_POINTS_PER_RUPEE } from '../../utils/loyaltyPoints';
 import './LegalPage.css';
 
 export default function Help() {
@@ -41,9 +41,10 @@ export default function Help() {
       <section>
         <h2>Loyalty points</h2>
         <p>
-          Standard players earn {LOYALTY_POINTS_PER_100_STANDARD} points per ₹100 staked.
-          Silver VIP club and above earn {LOYALTY_POINTS_PER_100_VIP} points per ₹100.
+          Standard (Bronze) players earn {LOYALTY_POINTS_PER_100_STANDARD} points per ₹100 staked.
+          Silver earns {LOYALTY_POINTS_PER_100_SILVER}, Gold {LOYALTY_POINTS_PER_100_GOLD}, and Platinum/Diamond {LOYALTY_POINTS_PER_100_VIP} points per ₹100.
           {LOYALTY_POINTS_PER_RUPEE} points = ₹1. Redeem from {LOYALTY_MIN_REDEEM_POINTS}+ points in the wallet menu — credit goes to cash winnings.
+          VIP tier progress uses lifetime VIP points and is not reduced when you redeem.
         </p>
       </section>
       <section>

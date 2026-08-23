@@ -195,17 +195,20 @@ export function getTestMatchDayLabel(match) {
     dayNum = parseInt(match.liveDetails.day, 10);
   }
 
-  // 2. Infer from cumulative overs if not explicitly stated
+  // 2. Infer from cumulative overs if not explicitly stated (only with real scoring)
   if (!dayNum && (match.liveDetails?.overs || match.liveDetails?.overs2 || match.liveDetails?.runs)) {
-    const ov1 = parseFloat(match.liveDetails.runs ? match.liveDetails.overs : 0) || 0;
-    const ov2 = parseFloat(match.liveDetails.score2 ? match.liveDetails.overs2 : 0) || 0;
+    const runs = Number(match.liveDetails?.runs) || 0;
+    const score2 = Number(match.liveDetails?.score2) || 0;
+    const ov1 = parseFloat(runs > 0 || Number(match.liveDetails?.wickets) > 0 ? match.liveDetails.overs : 0) || 0;
+    const ov2 = parseFloat(score2 > 0 || Number(match.liveDetails?.wickets2) > 0 ? match.liveDetails.overs2 : 0) || 0;
     const totalOvers = ov1 + ov2;
     if (totalOvers > 0) {
       dayNum = Math.min(5, Math.floor(totalOvers / 90) + 1);
     }
   }
 
-  if (!dayNum) dayNum = 4; // Default realistic day for active demo Test match
+  // Unknown day — do not invent "4th Day"
+  if (!dayNum) return null;
 
   const ordinals = ['1st', '2nd', '3rd', '4th', '5th'];
   const ordinalStr = ordinals[dayNum - 1] || `${dayNum}th`;

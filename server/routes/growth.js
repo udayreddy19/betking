@@ -31,7 +31,11 @@ router.post('/api/v1/promotions/claim', requireAuth, async (req, res) => {
 router.get('/api/v1/user/loyalty', requireAuth, async (req, res) => {
   try {
     const { query } = await import('../../db/pg.js');
-    const lRes = await query(`SELECT points, tier, updated_at FROM user_loyalty WHERE user_id = $1;`, [req.user.userId]);
+    const lRes = await query(
+      `SELECT points, COALESCE(vip_points, points) AS vip_points, tier, updated_at
+       FROM user_loyalty WHERE user_id = $1;`,
+      [req.user.userId],
+    );
     const lData = lRes.rows[0] || { points: 0, tier: 'BRONZE' };
     res.json({ success: true, userId: req.user.userId, loyalty: lData });
   } catch (err) {

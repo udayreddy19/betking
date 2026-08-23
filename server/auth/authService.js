@@ -583,6 +583,13 @@ export async function verifyEmail(queryFn, token) {
  * @param {string} userId
  */
 export async function getMe(queryFn, userId) {
+  try {
+    const { refreshSpinGrantsForUser } = await import('../../lib/spinGrantEngine.mjs');
+    await refreshSpinGrantsForUser(userId);
+  } catch {
+    // Spin grant table may not exist on older DB snapshots.
+  }
+
   const result = await queryFn(
     `SELECT u.user_id, u.email, u.phone, u.first_name, u.last_name,
             u.role, u.status, u.email_verified_at, u.phone_verified_at,
@@ -593,6 +600,7 @@ export async function getMe(queryFn, userId) {
             COALESCE(w.winnings_balance, 0) AS winnings_balance,
             COALESCE(w.locked_deposit_balance, 0) AS locked_deposit_balance,
             COALESCE(l.points, 0) AS loyalty_points,
+            COALESCE(l.vip_points, l.points, 0) AS vip_points,
             COALESCE(l.tier, 'BRONZE') AS loyalty_tier
      FROM users u
      LEFT JOIN user_profiles p ON p.user_id = u.user_id
@@ -607,8 +615,18 @@ export async function getMe(queryFn, userId) {
   }
 
   const u = result.rows[0];
+
+  let spinGrants = null;
+  try {
+    const { getActiveSpinGrantSummary } = await import('../../lib/spinGrantEngine.mjs');
+    spinGrants = await getActiveSpinGrantSummary(queryFn, userId);
+  } catch {
+    spinGrants = null;
+  }
+
   return {
     success: true,
+    spinGrants,
     user: {
       userId: u.user_id,
       email: u.email,
@@ -642,6 +660,7 @@ export async function getMe(queryFn, userId) {
       }),
       pendingWithdrawal: parseFloat(u.reserved_balance || 0),
       loyaltyPoints: parseFloat(u.loyalty_points || 0),
+      vipPoints: parseFloat(u.vip_points ?? u.loyalty_points ?? 0),
       loyaltyTier: u.loyalty_tier || 'BRONZE',
       createdAt: u.created_at,
       lastLoginAt: u.last_login_at,
