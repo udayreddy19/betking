@@ -1,0 +1,6 @@
+{
+  "sha": "79ab4f9a072ff8bcece13f9374e835810ddc60d9",
+  "branch": "main",
+  "recordedAt": "2026-08-23T15:22:20.393Z",
+  "message": "Rebuild Docker images from this SHA before production deploy."
+}
