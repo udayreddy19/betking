@@ -9,10 +9,10 @@ import {
   buildTicketPayload,
 } from '../../../lib/supportAssistant.mjs';
 import {
-  FiMessageSquare,
   FiSend,
   FiShield,
 } from '../../icons';
+import SupportHeadsetIcon from '../../icons/SupportHeadsetIcon';
 import { hoverScale, pressScale, springUi } from '../../utils/motionPresets';
 import './LiveChatSupportWidget.css';
 
@@ -104,9 +104,18 @@ export default function LiveChatSupportWidget() {
         setIntake((prev) => ({ ...prev, conversationId, ticketCreated: true }));
       }
     };
+    const closeChat = () => setIsOpen(false);
     window.addEventListener('oddsyra:open-support-chat', openChat);
-    return () => window.removeEventListener('oddsyra:open-support-chat', openChat);
+    window.addEventListener('oddsyra:close-support-chat', closeChat);
+    return () => {
+      window.removeEventListener('oddsyra:open-support-chat', openChat);
+      window.removeEventListener('oddsyra:close-support-chat', closeChat);
+    };
   }, []);
+
+  useEffect(() => {
+    setIsOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     if (isOpen) {
@@ -171,7 +180,7 @@ export default function LiveChatSupportWidget() {
         {
           id: `tck_msg_${Date.now()}`,
           sender: 'system',
-          text: `Ticket ${ticketNumber || conversationId} is open. You’ll find it under Profile → Support.`,
+          text: `Ticket ${ticketNumber || conversationId} is open.\n\nYour ticket number: ${ticketNumber || conversationId}\n\nYou’ll find it under Profile → Support, and we’ve emailed you a confirmation.`,
           actions: [{ label: 'View my tickets', path: '/profile?tab=support' }],
           timestamp: nowStamp(),
         },
@@ -243,7 +252,10 @@ export default function LiveChatSupportWidget() {
     if (act.actionType === 'ESCALATE') handleCreateTicket();
     else if (act.actionType === 'LOGIN') openLoginModal?.();
     else if (act.actionType === 'QUERY') handleSendMessage(act.query);
-    else if (act.path) navigate(act.path);
+    else if (act.path) {
+      setIsOpen(false);
+      navigate(act.path);
+    }
   };
 
   if (isAdminRoute) return null;
@@ -259,11 +271,11 @@ export default function LiveChatSupportWidget() {
           onClick={() => {
             setIsOpen(true);
           }}
-          aria-label="Open OddsYra assistant"
+          aria-label="Open OddsYra support"
         >
           <span className="live-chat-pulse-dot" />
-          <FiMessageSquare className="live-chat-icon" />
-          <span className="live-chat-floating-text">Help</span>
+          <SupportHeadsetIcon className="live-chat-icon" size={22} />
+          <span className="live-chat-floating-text">Support</span>
         </motion.button>
       )}
 
@@ -280,10 +292,10 @@ export default function LiveChatSupportWidget() {
         {isOpen && (
           <motion.div
             className="live-chat-container"
-            initial={{ opacity: 0, y: 30, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 30, scale: 0.95 }}
-            transition={{ duration: 0.25 }}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 16 }}
+            transition={{ duration: 0.18 }}
           >
             <div className="live-chat-header">
               <div className="live-chat-header-info">

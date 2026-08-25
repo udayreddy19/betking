@@ -31,6 +31,7 @@ import {
   loginRateLimiter,
   registerRateLimiter,
   forgotPasswordRateLimiter,
+  resetPasswordRateLimiter,
   authGeneralRateLimiter,
 } from '../middleware/rateLimiter.js';
 import { issueCsrfCookie, clearCsrfCookie, requireCsrfWhenCookies } from '../middleware/csrf.js';
@@ -329,7 +330,7 @@ router.post('/forgot-password', forgotPasswordRateLimiter, async (req, res) => {
 });
 
 // ── POST /api/auth/reset-password ──
-router.post('/reset-password', authGeneralRateLimiter, async (req, res) => {
+router.post('/reset-password', resetPasswordRateLimiter, async (req, res) => {
   try {
     const result = await resetPassword(query, withTransaction, {
       token: req.body.token,

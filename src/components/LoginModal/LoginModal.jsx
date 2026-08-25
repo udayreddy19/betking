@@ -64,8 +64,8 @@ export default function LoginModal() {
 
     // STEP 2: Reset Password (Verify code + Set new password)
     if (mode === 'reset') {
-      if (!resetToken) {
-        setError('Please enter the verification reset code.');
+      if (!resetToken || resetToken.length !== 6) {
+        setError('Please enter the 6-digit reset code from your email.');
         return;
       }
       if (!password || password.length < 6) {
@@ -156,7 +156,8 @@ export default function LoginModal() {
               Check your inbox
             </p>
             <p className="modal-sent-copy">
-              We've sent a password reset link to <strong>{username}</strong>. Click the link in the email to set your new password.
+              We've sent a password reset <strong>link</strong> and a <strong>6-digit code</strong> to <strong>{username}</strong>.
+              Open the link, or tap below and enter the code from the email.
             </p>
             <button
               type="button"
@@ -205,14 +206,18 @@ export default function LoginModal() {
             {/* Reset Code input for Step 2 */}
             {mode === 'reset' && (
               <div className="form-group">
-                <label className="form-label" htmlFor="login-reset-token">Verification / Reset code</label>
+                <label className="form-label" htmlFor="login-reset-token">6-digit reset code</label>
                 <input
                   className="form-input"
                   id="login-reset-token"
                   type="text"
-                  placeholder="Enter the code sent to your email"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  pattern="[0-9]{6}"
+                  placeholder="Enter 6-digit code"
                   value={resetToken}
-                  onChange={e => setResetToken(e.target.value)}
+                  onChange={e => setResetToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   required
                 />
               </div>

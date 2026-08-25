@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { FiDatabase, FiRefreshCw, FiSearch } from '../../icons';
 import { adminApiClient } from '../../pages/Admin/api/adminApiClient';
 import DatabaseSqlTerminal from './DatabaseSqlTerminal';
+import KycReminderUsersPanel from './KycReminderUsersPanel';
 import './DatabaseInspector.css';
 
 function formatCell(val) {
@@ -460,6 +461,18 @@ export default function DatabaseInspector() {
             </div>
           </div>
 
+          {selectedTable === 'kyc_reminder_log' && (
+            <KycReminderUsersPanel
+              compact
+              title="Send KYC completion emails"
+              onSent={() => {
+                fetchTableData(selectedTable);
+                fetchTables();
+                setNotice('KYC reminder recorded — refreshing kyc_reminder_log…');
+              }}
+            />
+          )}
+
           <div className="table-rows-wrap">
             {loadingRows ? (
               <div className="loading-state">
@@ -470,8 +483,16 @@ export default function DatabaseInspector() {
               <div className="empty-state">Select a table to inspect</div>
             ) : filteredRows.length === 0 ? (
               <div className="empty-state">
-                No rows in <code>{selectedTable}</code>
-                {searchQuery ? ' matching this search' : ''}.
+                {selectedTable === 'kyc_reminder_log' ? (
+                  <>
+                    No reminder rows yet. Use <strong>Send mail notification</strong> above — this table fills after emails are queued/sent.
+                  </>
+                ) : (
+                  <>
+                    No rows in <code>{selectedTable}</code>
+                    {searchQuery ? ' matching this search' : ''}.
+                  </>
+                )}
               </div>
             ) : (
               <table className="db-data-table">

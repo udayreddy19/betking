@@ -54,6 +54,7 @@ export const heroCategories = [
 ];
 
 export const sportsCategories = [
+  { id: 'all', name: 'All', color: '#60a5fa' },
   { id: 'cricket', name: 'Cricket', color: '#f97316' },
   { id: 'soccer', name: 'Soccer', color: '#22c55e' },
   { id: 'basketball', name: 'Basketball', color: '#f59e0b' },

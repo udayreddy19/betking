@@ -340,9 +340,18 @@ export function normalizeTeamKey(name = '') {
     .toLowerCase();
 }
 
+/** Women's / virtual sides must not inherit men's IPL or international XIs. */
+export function isWomensOrVirtualSide(name = '') {
+  const str = typeof name === 'object' && name ? (name.name || '') : String(name || '');
+  if (/\b(women'?s?|wmn)\b/i.test(str) || /\(\s*w\s*\)/i.test(str)) return true;
+  if (/\(\s*v\s*\)/i.test(str) || /\bvirtual\b/i.test(str)) return true;
+  return false;
+}
+
+const EMPTY_ROSTER = { batters: [], bowlers: [] };
+
 export function getRosterForTeam(teamName) {
-  const empty = { batters: [], bowlers: [] };
-  if (!teamName) return empty;
+  if (!teamName) return EMPTY_ROSTER;
   const rawStr = typeof teamName === 'object' && teamName ? (teamName.name || '') : String(teamName || '');
   const cleanStr = rawStr
     .replace(/\s*\([a-z0-9\s-]+\)/gi, '')
@@ -352,29 +361,26 @@ export function getRosterForTeam(teamName) {
   const exact = cleanStr.replace(/\s+srl$/i, '').trim();
 
   const withPlayers = (roster) => {
-    if (!roster || typeof roster !== 'object') return empty;
+    if (!roster || typeof roster !== 'object') return EMPTY_ROSTER;
     return {
       batters: Array.isArray(roster.batters) ? roster.batters : [],
       bowlers: Array.isArray(roster.bowlers) ? roster.bowlers : [],
     };
   };
 
+  if (isWomensOrVirtualSide(rawStr)) return EMPTY_ROSTER;
+
   if (ROSTERS[key]) return withPlayers(ROSTERS[key]);
   if (ROSTERS[exact.toLowerCase()]) return withPlayers(ROSTERS[exact.toLowerCase()]);
 
-  let best = null;
-  let bestLen = 0;
   for (const [rosterKey, roster] of Object.entries(ROSTERS)) {
     const normRosterKey = rosterKey.replace(/\s+/g, '');
-    if (normRosterKey.length < 3) continue;
-    if (key === normRosterKey || (key.length >= 4 && (key.includes(normRosterKey) || normRosterKey.includes(key)))) {
-      if (normRosterKey.length > bestLen) {
-        best = roster;
-        bestLen = normRosterKey.length;
-      }
+    if (normRosterKey.length < 6) continue;
+    if (key === normRosterKey) return withPlayers(roster);
+    if (key.length >= normRosterKey.length && key.includes(normRosterKey)) {
+      return withPlayers(roster);
     }
   }
-  if (best) return withPlayers(best);
 
   if (/^(wi|west indies|windies)$/i.test(exact)) return withPlayers(ROSTERS['west indies']);
   if (/^(pak|pakistan)$/i.test(exact)) return withPlayers(ROSTERS['pakistan']);
@@ -384,34 +390,20 @@ export function getRosterForTeam(teamName) {
   if (/^(sa|south africa)$/i.test(exact)) return withPlayers(ROSTERS['south africa']);
   if (/^(nz|new zealand|kiwis)$/i.test(exact)) return withPlayers(ROSTERS['new zealand']);
   if (/^(sl|sri lanka)$/i.test(exact)) return withPlayers(ROSTERS['sri lanka']);
-  if (/^(rr|rajasthan royals|rajasthan|raja)$/i.test(exact)) return withPlayers(ROSTERS['rajasthan royals']);
-  if (/^(srh|sunrisers hyderabad|hyderabad|hyde)$/i.test(exact)) return withPlayers(ROSTERS['sunrisers hyderabad']);
-  if (/^(csk|chennai super kings|chennai|cskl)$/i.test(exact)) return withPlayers(ROSTERS['chennai super kings']);
-  if (/^(mi|mumbai indians|mumbai)$/i.test(exact)) return withPlayers(ROSTERS['mumbai indians']);
-  if (/^(rcb|royal challengers bengaluru|royal challengers bangalore|bengaluru|bangalore|beng)$/i.test(exact)) return withPlayers(ROSTERS['royal challengers bengaluru']);
-  if (/^(kkr|kolkata knight riders|kolkata|kolk)$/i.test(exact)) return withPlayers(ROSTERS['kolkata knight riders']);
-  if (/^(dc|delhi capitals|delhi|dcl)$/i.test(exact)) return withPlayers(ROSTERS['delhi capitals']);
-  if (/^(pbks|punjab kings|punjab|punj)$/i.test(exact)) return withPlayers(ROSTERS['punjab kings']);
-  if (/^(gt|gujarat titans|gujarat|guja)$/i.test(exact)) return withPlayers(ROSTERS['gujarat titans']);
-  if (/^(lsg|lucknow super giants|lucknow|luck)$/i.test(exact)) return withPlayers(ROSTERS['lucknow super giants']);
+  if (/^(rr|rajasthan royals|rajasthan)$/i.test(exact)) return withPlayers(ROSTERS['rajasthan royals']);
+  if (/^(srh|sunrisers hyderabad)$/i.test(exact)) return withPlayers(ROSTERS['sunrisers hyderabad']);
+  if (/^(csk|chennai super kings|chennai)$/i.test(exact)) return withPlayers(ROSTERS['chennai super kings']);
+  if (/^(mi|mumbai indians)$/i.test(exact)) return withPlayers(ROSTERS['mumbai indians']);
+  if (/^(rcb|royal challengers bengaluru|royal challengers bangalore)$/i.test(exact)) {
+    return withPlayers(ROSTERS['royal challengers bengaluru']);
+  }
+  if (/^(kkr|kolkata knight riders|kolkata)$/i.test(exact)) return withPlayers(ROSTERS['kolkata knight riders']);
+  if (/^(dc|delhi capitals)$/i.test(exact)) return withPlayers(ROSTERS['delhi capitals']);
+  if (/^(pbks|punjab kings)$/i.test(exact)) return withPlayers(ROSTERS['punjab kings']);
+  if (/^(gt|gujarat titans)$/i.test(exact)) return withPlayers(ROSTERS['gujarat titans']);
+  if (/^(lsg|lucknow super giants|lucknow)$/i.test(exact)) return withPlayers(ROSTERS['lucknow super giants']);
 
-  // Generic clean fallback names for unmapped custom / fantasy / virtual teams
-  const cleanTeamLabel = cleanStr || teamName;
-  return {
-    batters: [
-      `${cleanTeamLabel} Opener A`,
-      `${cleanTeamLabel} Opener B`,
-      `${cleanTeamLabel} Top Order`,
-      `${cleanTeamLabel} Batter 4`,
-      `${cleanTeamLabel} All-Rounder`,
-    ],
-    bowlers: [
-      `${cleanTeamLabel} Lead Bowler`,
-      `${cleanTeamLabel} Spinner`,
-      `${cleanTeamLabel} Pacer`,
-      `${cleanTeamLabel} Strike Bowler`,
-    ],
-  };
+  return EMPTY_ROSTER;
 }
 
 export { ROSTERS };

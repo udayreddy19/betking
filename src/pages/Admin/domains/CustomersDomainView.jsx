@@ -2,10 +2,26 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { adminApiClient } from '../api/adminApiClient';
 import AdminDataTable from '../components/AdminDataTable';
 import { useAdminToast } from '../components/AdminToastContext';
+import KycReminderUsersPanel from '../../../components/DatabaseInspector/KycReminderUsersPanel';
 
 function money(n) {
   if (n == null || Number.isNaN(Number(n))) return '—';
   return `₹${Number(n).toLocaleString()}`;
+}
+
+function formatReminderAt(value) {
+  if (!value) return '—';
+  try {
+    return new Date(value).toLocaleString(undefined, {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  } catch {
+    return String(value);
+  }
 }
 
 function kycBadge(status) {
@@ -27,6 +43,23 @@ function kycBadge(status) {
   );
 }
 
+const KYC_FILTERS = [
+  { value: 'ALL', label: 'All' },
+  { value: 'NEEDS_KYC', label: 'Needs KYC' },
+  { value: 'VERIFIED', label: 'KYC Completed' },
+  { value: 'NOT_STARTED', label: 'KYC Not Started' },
+  { value: 'PENDING', label: 'KYC Pending' },
+  { value: 'UNDER_REVIEW', label: 'Under Review' },
+  { value: 'REJECTED', label: 'KYC Rejected' },
+  { value: 'RESUBMISSION_REQUIRED', label: 'Resubmission Required' },
+  { value: 'EXPIRED', label: 'KYC Expired' },
+];
+
+function needsReminder(user) {
+  const k = String(user?.kyc || '').toUpperCase();
+  return k !== 'VERIFIED' && k !== 'APPROVED';
+}
+
 export default function CustomersDomainView({ subModule = 'directory' }) {
   const [users, setUsers] = useState([]);
   const [kycCases, setKycCases] = useState([]);
@@ -35,11 +68,29 @@ export default function CustomersDomainView({ subModule = 'directory' }) {
   const [error, setError] = useState(null);
   const [kycLoading, setKycLoading] = useState(false);
   const [actingId, setActingId] = useState(null);
+  const [kycFilter, setKycFilter] = useState(subModule === 'kyc-reminders' ? 'NEEDS_KYC' : 'ALL');
+  const [searchQ, setSearchQ] = useState('');
+  const [debouncedQ, setDebouncedQ] = useState('');
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [confirm, setConfirm] = useState(null);
   const { showToast } = useAdminToast();
+
+  useEffect(() => {
+    if (subModule === 'kyc-reminders') setKycFilter('NEEDS_KYC');
+  }, [subModule]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(searchQ.trim()), 350);
+    return () => clearTimeout(t);
+  }, [searchQ]);
 
   const loadCustomers = useCallback(() => {
     let cancelled = false;
-    adminApiClient.get('/customers')
+    const params = new URLSearchParams();
+    params.set('limit', '200');
+    if (kycFilter && kycFilter !== 'ALL') params.set('kyc', kycFilter);
+    if (debouncedQ) params.set('q', debouncedQ);
+    adminApiClient.get(`/customers?${params.toString()}`)
       .then((data) => {
         if (cancelled) return;
         setUsers(data.users || []);
@@ -51,7 +102,7 @@ export default function CustomersDomainView({ subModule = 'directory' }) {
         if (subModule !== 'kyc-queue') setError(err.message || 'Failed to load customers');
       });
     return () => { cancelled = true; };
-  }, [subModule]);
+  }, [subModule, kycFilter, debouncedQ]);
 
   const loadKycQueue = useCallback(() => {
     if (subModule !== 'kyc-queue') return undefined;
@@ -76,6 +127,7 @@ export default function CustomersDomainView({ subModule = 'directory' }) {
 
   useEffect(() => loadCustomers(), [loadCustomers]);
   useEffect(() => loadKycQueue(), [loadKycQueue]);
+  useEffect(() => { setSelectedIds(new Set()); }, [kycFilter, debouncedQ, subModule]);
 
   const open360 = (user) => {
     setSelectedUser(user);
@@ -122,6 +174,66 @@ export default function CustomersDomainView({ subModule = 'directory' }) {
       .catch((err) => showToast(err.message || 'Restrict failed', 'error'));
   };
 
+  const toggleSelect = (userId, checked) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(userId);
+      else next.delete(userId);
+      return next;
+    });
+  };
+
+  const sendSingleReminder = async (user) => {
+    setActingId(user.id);
+    const idem = `kyc_rem_${user.id}_${Date.now()}`;
+    try {
+      const res = await adminApiClient.post(
+        `/kyc/users/${encodeURIComponent(user.id)}/reminder`,
+        {},
+        { headers: { 'X-Idempotency-Key': idem } },
+      );
+      showToast(res.message || 'KYC reminder queued.', 'success');
+      loadCustomers();
+    } catch (err) {
+      const code = err?.code || err?.data?.code;
+      const msg = err?.data?.message || err?.data?.error || err.message;
+      showToast(
+        code === 'KYC_REMINDER_COOLDOWN'
+          ? (msg || 'Reminder already sent recently.')
+          : (msg || 'Failed to send KYC reminder'),
+        'error',
+      );
+    } finally {
+      setActingId(null);
+      setConfirm(null);
+    }
+  };
+
+  const sendBulkReminders = async (ids) => {
+    setActingId('bulk');
+    const idem = `kyc_bulk_${Date.now()}`;
+    try {
+      const res = await adminApiClient.post(
+        '/kyc/reminders',
+        { userIds: ids },
+        { headers: { 'X-Idempotency-Key': idem } },
+      );
+      const parts = [
+        `${res.sent || 0} queued`,
+        res.skipped ? `${res.skipped} skipped` : null,
+        res.failed ? `${res.failed} failed` : null,
+      ].filter(Boolean);
+      showToast(parts.join(', ') + '.', res.failed ? 'warning' : 'success');
+      setSelectedIds(new Set());
+      loadCustomers();
+    } catch (err) {
+      showToast(err.message || 'Bulk KYC reminders failed', 'error');
+    } finally {
+      setActingId(null);
+      setConfirm(null);
+    }
+  };
+
   const filtered = useMemo(() => {
     if (subModule === 'kyc-queue') {
       if (kycCases.length) {
@@ -161,14 +273,46 @@ export default function CustomersDomainView({ subModule = 'directory' }) {
   }, [users, subModule, kycCases]);
 
   const titles = {
-    directory: ['02 · Customer Directory', 'Live customer directory from PostgreSQL.', 'Customer Directory'],
+    directory: ['02 · Customer Directory', 'Live customer directory from PostgreSQL. Filter by KYC and send completion reminders.', 'Customer Directory'],
+    'kyc-reminders': ['02 · KYC Reminders & Email', 'Users who have not completed KYC. Send Zoho/SMTP completion emails — delivery is logged in kyc_reminder_log.', 'Needs KYC'],
     'kyc-queue': ['02 · KYC Verification Queue', 'Review submitted PAN / Aadhaar and approve or reject identity verification.', 'KYC Queue'],
     restrictions: ['02 · Account Restrictions', 'Restricted / suspended accounts requiring review.', 'Restricted Accounts'],
     'responsible-gaming': ['02 · Responsible Gaming Safeguards', 'High-risk or self-exclusion related accounts.', 'RG Watchlist'],
   };
   const [heading, hint, tableTitle] = titles[subModule] || titles.directory;
+  const showReminderUi = subModule === 'directory';
 
-  const columns = [
+  const eligibleForReminder = useMemo(
+    () => (showReminderUi
+      ? filtered.filter((u) => needsReminder(u) && u.reminderEligible !== false)
+      : []),
+    [filtered, showReminderUi],
+  );
+
+  if (subModule === 'kyc-reminders') {
+    return (
+      <div>
+        <div style={{ marginBottom: '20px' }}>
+          <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, color: 'var(--admin-text)' }}>
+            02 · KYC Reminders & Email
+          </h2>
+          <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.85rem' }}>
+            Users who have not completed KYC. Send Zoho/SMTP completion emails — delivery is logged in kyc_reminder_log.
+          </p>
+          {error && <p style={{ margin: '8px 0 0', color: '#b91c1c', fontSize: '0.82rem' }}>{error}</p>}
+        </div>
+        <KycReminderUsersPanel
+          title="Send KYC completion emails"
+          onSent={() => loadCustomers()}
+        />
+      </div>
+    );
+  }
+
+  const columns = [];
+  // no checkbox column — use Send to all for bulk
+
+  columns.push(
     { header: 'User ID', key: 'id' },
     { header: 'Full Name', key: 'name' },
     { header: 'Contact Email', key: 'email' },
@@ -179,7 +323,27 @@ export default function CustomersDomainView({ subModule = 'directory' }) {
       key: 'kyc',
       render: (r) => kycBadge(r.kyc),
     },
-  ];
+  );
+
+  if (showReminderUi) {
+    columns.push(
+      {
+        header: 'Last Reminder',
+        key: 'lastReminderAt',
+        render: (r) => formatReminderAt(r.lastReminderAt),
+      },
+      {
+        header: 'Reminder Status',
+        key: 'lastReminderStatus',
+        render: (r) => (r.lastReminderStatus ? String(r.lastReminderStatus) : (needsReminder(r) ? '—' : 'KYC Completed')),
+      },
+      {
+        header: 'Reminders',
+        key: 'reminderCount',
+        render: (r) => (r.reminderCount != null ? r.reminderCount : 0),
+      },
+    );
+  }
 
   if (subModule === 'kyc-queue') {
     columns.push(
@@ -196,7 +360,7 @@ export default function CustomersDomainView({ subModule = 'directory' }) {
     key: 'actions',
     sortable: false,
     render: (r) => {
-      const busy = actingId && (actingId === r.caseId || actingId === r.id || actingId === r.userId);
+      const busy = actingId && (actingId === r.caseId || actingId === r.id || actingId === r.userId || actingId === 'bulk');
       return (
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
           <button
@@ -225,6 +389,14 @@ export default function CustomersDomainView({ subModule = 'directory' }) {
                 Reject
               </button>
             </>
+          )}
+          {showReminderUi && !needsReminder(r) && (
+            <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 700, alignSelf: 'center' }}>KYC Completed</span>
+          )}
+          {showReminderUi && needsReminder(r) && r.reminderEligible === false && (
+            <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', fontWeight: 700, alignSelf: 'center' }}>
+              Cooldown
+            </span>
           )}
           {subModule !== 'kyc-queue' && (
             <button
@@ -261,12 +433,127 @@ export default function CustomersDomainView({ subModule = 'directory' }) {
         {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.82rem' }}>{error}</p>}
       </div>
 
+      {showReminderUi && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '12px', alignItems: 'center' }}>
+          <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--admin-text-muted)' }}>
+            KYC filter
+            <select
+              value={kycFilter}
+              onChange={(e) => setKycFilter(e.target.value)}
+              style={{
+                marginLeft: '8px',
+                padding: '6px 10px',
+                borderRadius: '6px',
+                border: '1px solid var(--admin-border)',
+                background: 'var(--admin-input-bg, var(--admin-panel))',
+                color: 'var(--admin-text)',
+              }}
+            >
+              {KYC_FILTERS.map((f) => (
+                <option key={f.value} value={f.value}>{f.label}</option>
+              ))}
+            </select>
+          </label>
+          <input
+            type="search"
+            placeholder="Search name, email, phone, user ID…"
+            value={searchQ}
+            onChange={(e) => setSearchQ(e.target.value)}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '6px',
+              border: '1px solid var(--admin-border)',
+              background: 'var(--admin-input-bg, var(--admin-panel))',
+              color: 'var(--admin-text)',
+              minWidth: '240px',
+              fontSize: '0.82rem',
+            }}
+          />
+          <button
+            type="button"
+            disabled={eligibleForReminder.length === 0 || actingId === 'bulk'}
+            onClick={() => {
+              const ids = eligibleForReminder.map((u) => u.id);
+              setConfirm({ type: 'bulk', users: eligibleForReminder, ids });
+            }}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '6px',
+              border: '1px solid rgba(245, 158, 11, 0.4)',
+              background: eligibleForReminder.length ? 'rgba(245, 158, 11, 0.18)' : 'var(--admin-panel)',
+              color: '#b45309',
+              cursor: eligibleForReminder.length ? 'pointer' : 'not-allowed',
+              fontSize: '0.8rem',
+              fontWeight: 800,
+              opacity: eligibleForReminder.length ? 1 : 0.5,
+            }}
+          >
+            Send to all ({eligibleForReminder.length})
+          </button>
+          <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)' }}>
+            Only users not reminded in the last 24h. Button disables until cooldown ends.
+          </span>
+        </div>
+      )}
+
       <AdminDataTable
         title={tableTitle}
         emptyMessage={kycLoading ? 'Loading KYC cases…' : (subModule === 'kyc-queue' ? 'No KYC submissions waiting for review' : 'No matching customers')}
         data={filtered}
         columns={columns}
+        searchPlaceholder="Filter this page…"
       />
+
+      {confirm && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1200,
+            padding: '16px',
+          }}
+        >
+          <div style={{
+            background: 'var(--admin-surface, #1a1f2e)',
+            border: '1px solid var(--admin-border)',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '440px',
+            width: '100%',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.45)',
+          }}
+          >
+            <h3 style={{ margin: '0 0 8px', fontSize: '1.1rem', color: 'var(--admin-text)' }}>
+              Send KYC reminders to all {confirm.ids.length} eligible users?
+            </h3>
+            <p style={{ margin: '0 0 16px', fontSize: '0.85rem', color: 'var(--admin-text-muted)' }}>
+              After send, those users leave the eligible list for 24 hours. Server cooldown is enforced.
+            </p>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setConfirm(null)}
+                style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid var(--admin-border)', background: 'transparent', color: 'var(--admin-text)', cursor: 'pointer', fontWeight: 700 }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => sendBulkReminders(confirm.ids)}
+                style={{ padding: '8px 14px', borderRadius: '8px', border: 'none', background: '#f59e0b', color: '#111', cursor: 'pointer', fontWeight: 800 }}
+              >
+                Send to all
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {selectedUser && (
         <div style={{ marginTop: '24px', padding: '20px', background: 'var(--admin-surface, var(--color-surface))', border: '1px solid var(--admin-border, var(--color-border))', borderRadius: '12px', boxShadow: 'var(--admin-shadow)' }}>
@@ -277,6 +564,9 @@ export default function CustomersDomainView({ subModule = 'directory' }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', margin: '16px 0' }}>
             <div><strong>Registration:</strong> {selectedUser.regDate || '—'}</div>
             <div><strong>KYC:</strong> {selectedUser.kyc}</div>
+            <div><strong>Last Reminder:</strong> {formatReminderAt(selectedUser.lastReminderAt)}</div>
+            <div><strong>Reminder Status:</strong> {selectedUser.lastReminderStatus || '—'}</div>
+            <div><strong>Reminders Sent:</strong> {selectedUser.reminderCount ?? 0}</div>
             <div><strong>PAN:</strong> {selectedUser.panNumber || '—'}</div>
             <div><strong>Aadhaar:</strong> {selectedUser.aadhaarNumber || '—'}</div>
             <div><strong>DOB:</strong> {selectedUser.dateOfBirth || '—'}</div>

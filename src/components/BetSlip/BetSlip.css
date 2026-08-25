@@ -32,3 +32,38 @@
   color: #f59e0b;
   font-weight: 700;
 }
+
+.betslip-bet-odds {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.betslip-bet-odds-old {
+  text-decoration: line-through;
+  color: var(--color-text-muted, #6b7280);
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.betslip-bet-odds-arrow {
+  color: var(--color-text-muted, #6b7280);
+  font-weight: 600;
+}
+
+.betslip-bet-odds--updated strong {
+  color: #b45309;
+}
+
+.betslip-accept-odds-btn {
+  margin-top: 8px;
+  border: none;
+  border-radius: var(--radius-md, 8px);
+  padding: 8px 12px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+  background: #f59e0b;
+  color: #111827;
+}

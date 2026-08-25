@@ -1011,8 +1011,11 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
   const isUnlimitedOvers = maxOvers == null;
   const timelineOvers = maxOvers ?? Math.max(20, parseInt(String(displayOversNormalized).split('.')[0], 10) + 5);
   const timelineTicks = useMemo(() => {
-    const max = Math.max(1, timelineOvers);
-    const step = max <= 10 ? 1 : max <= 20 ? 2 : 5;
+    const max = Math.max(1, Number(timelineOvers) || 1);
+    let step = max <= 10 ? 1 : max <= 20 ? 2 : max <= 50 ? 10 : 20;
+    while (Math.floor(max / step) > 6 && step < max) {
+      step += max <= 50 ? 5 : 10;
+    }
     const ticks = [];
     for (let i = 0; i <= max; i += step) ticks.push(i);
     if (ticks[ticks.length - 1] !== max) ticks.push(max);
@@ -1136,11 +1139,22 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
 
           <div className="live-widget-timeline" aria-hidden="true">
             <div className="live-widget-timeline-track">
-              {timelineTicks.map((val) => (
-                <span key={val} className="live-widget-timeline-axis-label" style={{ left: `${(val / timelineOvers) * 100}%` }}>
-                  {val}
-                </span>
-              ))}
+              {timelineTicks.map((val) => {
+                const atStart = val === 0;
+                const atEnd = val === timelineOvers;
+                return (
+                  <span
+                    key={val}
+                    className="live-widget-timeline-axis-label"
+                    style={{
+                      left: `${(val / timelineOvers) * 100}%`,
+                      transform: atStart ? 'none' : atEnd ? 'translateX(-100%)' : 'translateX(-50%)',
+                    }}
+                  >
+                    {val}
+                  </span>
+                );
+              })}
               {Array.from(wicketOvers).map((wktOver) => {
                 const leftPct = Math.min(96, Math.max(4, (wktOver / timelineOvers) * 100));
                 return (

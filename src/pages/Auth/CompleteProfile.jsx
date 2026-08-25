@@ -147,7 +147,7 @@ export default function CompleteProfile() {
                 ))}
               </div>
               <p className="register-lead" style={{ marginTop: 8, fontSize: '0.82rem' }}>
-                Skip the promo for now if you prefer — you can still claim one later on Profile.
+                Skip the promo for now if you prefer — you can still claim one later on Profile. Only one of SPORTS500, VIP1000, or LIVE100.
               </p>
             </div>
 

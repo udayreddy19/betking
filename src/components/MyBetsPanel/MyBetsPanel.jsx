@@ -357,7 +357,7 @@ export default function MyBetsPanel() {
         <>
           <motion.div
             key="my-bets-backdrop"
-            className="my-bets-backdrop apple-scrim"
+            className="my-bets-backdrop"
             onClick={closeMyBets}
             aria-hidden="true"
             initial={{ opacity: 0 }}
@@ -367,7 +367,7 @@ export default function MyBetsPanel() {
           />
           <motion.div
             key="my-bets-panel"
-            className="my-bets-panel apple-material--heavy"
+            className="my-bets-panel"
             ref={panelRef}
             role="dialog"
             aria-modal="true"

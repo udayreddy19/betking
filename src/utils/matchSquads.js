@@ -1,13 +1,27 @@
-import { normalizeTeamKey, getRosterForTeam } from '../data/cricketRosters';
+import { normalizeTeamKey, getRosterForTeam, isWomensOrVirtualSide } from '../data/cricketRosters';
 import { isPlaceholderPlayerName } from './cricketPlayers';
+
+function genderToken(name) {
+  const s = String(name || '');
+  if (/\b(women'?s?|wmn)\b/i.test(s) || /\(\s*w\s*\)/i.test(s)) return 'W';
+  if (/\b(men'?s?)\b/i.test(s) || /\(\s*m\s*\)/i.test(s)) return 'M';
+  return '';
+}
 
 function teamsMatch(teamA, teamB) {
   if (!teamA || !teamB) return false;
+  const ga = genderToken(teamA);
+  const gb = genderToken(teamB);
+  if (ga && gb && ga !== gb) return false;
+  if (isWomensOrVirtualSide(teamA) !== isWomensOrVirtualSide(teamB)
+    && (isWomensOrVirtualSide(teamA) || isWomensOrVirtualSide(teamB))) {
+    return false;
+  }
   const a = normalizeTeamKey(teamA).replace(/\s+/g, '');
   const b = normalizeTeamKey(teamB).replace(/\s+/g, '');
   if (!a || !b) return false;
   if (a === b) return true;
-  if (a.length >= 4 && b.length >= 4 && (b.includes(a) || a.includes(b))) return true;
+  if (a.length >= 6 && b.length >= 6 && (b.includes(a) || a.includes(b))) return true;
   return false;
 }
 

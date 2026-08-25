@@ -99,7 +99,7 @@
 }
 
 .mobile-betslip-sheet__head {
-  padding: 8px 16px 0;
+  padding: 8px 0 0;
 }
 
 .mobile-betslip-sheet__head-row {
@@ -120,8 +120,9 @@
 }
 
 .mobile-betslip-sheet__close {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
+  border: none;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -129,15 +130,55 @@
   background: var(--color-bg);
   color: var(--color-text-muted);
   flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-betslip-sheet__actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 0 0;
+}
+
+.mobile-betslip-clear-all {
+  min-height: 36px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .mobile-betslip-quick-odds {
   margin-left: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.mobile-betslip-quick-odds-old {
+  text-decoration: line-through;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  opacity: 0.72;
+}
+
+.mobile-betslip-quick-odds-new {
+  font-weight: 800;
+  color: #b45309;
 }
 
 /* Quick bet sheet */
 .mobile-betslip-sheet--quick {
-  padding: 0 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  padding: 0 16px calc(16px + env(safe-area-inset-bottom, 0px) + var(--kb-inset, 0px));
+  max-height: min(92dvh, calc(100dvh - var(--kb-inset, 0px)));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .mobile-betslip-promo {
@@ -155,9 +196,64 @@
 
 .mobile-betslip-quick-stakes {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
-  margin: 16px 0 12px;
+  margin: 0 0 12px;
+}
+
+.mobile-betslip-stake-row {
+  margin: 12px 0 10px;
+}
+
+.mobile-betslip-stake-source {
+  margin: 4px 0 2px;
+}
+
+.mobile-betslip-stake-source .betslip-stake-source__tabs {
+  flex-wrap: wrap;
+}
+
+.mobile-betslip-stake-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: var(--font-semibold, 600);
+  color: var(--color-text-muted);
+  margin-bottom: 6px;
+}
+
+.mobile-betslip-stake-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.mobile-betslip-stake-prefix {
+  font-weight: var(--font-bold);
+  color: var(--color-text-muted);
+  font-size: 1rem;
+}
+
+.mobile-betslip-stake-input-wrap input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  font-weight: var(--font-bold);
+  color: var(--color-text);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.mobile-betslip-stake-input-wrap input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.7;
 }
 
 .mobile-betslip-quick-stake {
@@ -167,11 +263,27 @@
   background: var(--color-bg);
   font-weight: var(--font-bold);
   font-size: 0.9rem;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .mobile-betslip-quick-stake.is-active {
   border-color: var(--color-accent, #f5c400);
   background: color-mix(in srgb, var(--color-accent, #f5c400) 18%, var(--color-surface));
+}
+
+.mobile-betslip-accept-odds {
+  width: 100%;
+  min-height: 44px;
+  margin: 10px 0 8px;
+  border: none;
+  border-radius: 10px;
+  background: #f59e0b;
+  color: #111827;
+  font-size: 0.95rem;
+  font-weight: 800;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .mobile-betslip-place-btn {
@@ -183,6 +295,8 @@
   color: #fff;
   font-size: 1rem;
   font-weight: var(--font-bold);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .mobile-betslip-place-btn:disabled {
@@ -204,8 +318,9 @@
 .mobile-betslip-sheet--full {
   display: flex;
   flex-direction: column;
-  max-height: min(88dvh, 720px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  max-height: min(88dvh, calc(100dvh - var(--kb-inset, 0px)));
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--kb-inset, 0px));
+  overscroll-behavior: contain;
 }
 
 .mobile-betslip-sheet__scroll {
@@ -232,6 +347,11 @@
   flex: none;
   max-height: none;
   overflow: visible;
+}
+
+.mobile-betslip-sheet input[type="text"],
+.mobile-betslip-sheet input[inputmode="decimal"] {
+  font-size: 16px !important;
 }
 
 .mobile-betslip-sheet__footer {

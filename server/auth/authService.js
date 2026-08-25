@@ -17,12 +17,15 @@ import {
   revokeSingleToken,
   revokeAllUserTokens,
   generateSecureToken,
+  generatePasswordResetCode,
+  normalizePasswordResetCode,
 } from './tokenService.js';
 import {
   sendVerificationEmail,
   sendPasswordResetEmail,
   sendPasswordChangedNotificationEmail,
 } from './emailService.js';
+import { allocateReadableUserId } from '../../lib/userIdFormat.mjs';
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MINUTES = 30;
@@ -71,7 +74,7 @@ export async function signup(queryFn, withTransaction, data) {
 
   // ── Hash password ──
   const passwordHash = await hashPassword(password);
-  const userId = `usr_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+  const userId = await allocateReadableUserId(queryFn, trimmedFirstName);
   const walletId = `wal_${userId}`;
   let promoReward = null;
 
@@ -368,8 +371,8 @@ export async function forgotPassword(queryFn, email, ip) {
     [userId]
   );
 
-  // Generate new token
-  const { rawToken, tokenHash } = generateSecureToken();
+  // Generate new 6-digit reset code (hashed at rest)
+  const { rawToken, tokenHash } = generatePasswordResetCode();
   const expiresAt = new Date(Date.now() + PASSWORD_RESET_EXPIRY_MINUTES * 60 * 1000);
 
   await queryFn(
@@ -443,7 +446,7 @@ export async function resetPassword(queryFn, arg2, arg3) {
     return { error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`, code: 'WEAK_PASSWORD', status: 400 };
   }
 
-  const tokenHash = crypto.createHash('sha256').update(String(token).trim()).digest('hex');
+  const tokenHash = crypto.createHash('sha256').update(normalizePasswordResetCode(token)).digest('hex');
 
   // ── Atomic Token Claim (Requirement 7 & 23: Concurrent Reset Protection) ──
   // Only ONE request will successfully update used_at = NOW()
@@ -809,9 +812,9 @@ export async function loginWithGoogle(queryFn, withTransaction, data) {
       );
     } else {
       isNewUser = true;
-      const userId = `usr_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
-      const walletId = `wal_${userId}`;
       const resolvedFirstName = firstName || displayName?.split(' ')[0] || email.split('@')[0];
+      const userId = await allocateReadableUserId(queryFn, resolvedFirstName);
+      const walletId = `wal_${userId}`;
       const resolvedLastName = lastName || displayName?.split(' ').slice(1).join(' ') || null;
       const profileName = displayName || [resolvedFirstName, resolvedLastName].filter(Boolean).join(' ');
 

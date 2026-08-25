@@ -8,7 +8,6 @@ import {
   ChartBarIcon,
   FileTextIcon,
   WalletIcon,
-  MessageCircleIcon,
   ZapIcon,
   BellRingIcon,
   SettingsIcon,
@@ -21,6 +20,7 @@ import {
   LockIcon,
   LogOutIcon,
 } from '../../../icons/animate/index';
+import SupportHeadsetIcon from '../../../icons/SupportHeadsetIcon';
 import BrandLogo from '../../../components/BrandLogo/BrandLogo';
 import AdminRBACGate, { ADMIN_ROLES, AdminRoleProvider, useAdminRole } from '../permissions/AdminRBACGate';
 import CommandPalette from '../features/CommandPalette/CommandPalette';
@@ -66,6 +66,7 @@ const DOMAIN_GROUPS = [
         role: null,
         subModules: [
           { id: 'directory', label: 'Customer Directory' },
+          { id: 'kyc-reminders', label: 'KYC Reminders & Email' },
           { id: 'kyc-queue', label: 'KYC Verification Queue' },
           { id: 'restrictions', label: 'Account Restrictions' },
           { id: 'responsible-gaming', label: 'Responsible Gaming Safeguards' },
@@ -106,8 +107,8 @@ const DOMAIN_GROUPS = [
         Icon: FileTextIcon,
         role: null,
         subModules: [
-          { id: 'bets-registry', label: 'All Bets Registry' },
-          { id: 'settlement-engine', label: 'Idempotent Settlement' },
+          { id: 'bets-registry', label: 'All Bets' },
+          { id: 'settlement-engine', label: 'Pending & Declare' },
           { id: 'cashout-reconciliation', label: 'Cashout Reconciliation' },
         ],
       },
@@ -131,7 +132,7 @@ const DOMAIN_GROUPS = [
       {
         id: 'support',
         label: '07 · Support',
-        Icon: MessageCircleIcon,
+        Icon: SupportHeadsetIcon,
         role: ADMIN_ROLES.SUPPORT_AGENT,
         subModules: [
           { id: 'ticket-queue', label: 'Active Support Ticket Queue' },

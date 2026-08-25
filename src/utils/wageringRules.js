@@ -4,6 +4,19 @@ export const BONUS_MIN_BET_ODDS = 1.75;
 export const BONUS_WAGERING_MULTIPLIER = 5;
 export const MIN_STAKE_INR = 10;
 
+/** Quick stake chips shown on betslip / quick-bet sheets. */
+export const QUICK_STAKE_PRESETS = [100, 200, 500, 1000];
+
+/** Allow empty so users can clear and retype; keep digits + one decimal. */
+export function sanitizeStakeInput(raw) {
+  const s = String(raw ?? '');
+  if (s === '') return '';
+  const cleaned = s.replace(/[^\d.]/g, '');
+  const [whole, ...rest] = cleaned.split('.');
+  if (rest.length === 0) return whole;
+  return `${whole}.${rest.join('').slice(0, 2)}`;
+}
+
 /** House take applied on fair cashout value before VIP payout %. Matches server. */
 export const CASHOUT_HOUSE_MARGIN = 0.04;
 

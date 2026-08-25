@@ -435,7 +435,7 @@ router.get('/api/admin/db/tables', async (req, res) => {
     const tablesWithCounts = await Promise.all(
       tablesRes.rows.map(async (row) => {
         const countRes = await query(`SELECT COUNT(*) FROM "${row.table_name}"`);
-        const sizeRes = await query(`SELECT pg_size_pretty(pg_total_relation_size('${row.table_name}')) AS table_size`);
+        const sizeRes = await query(`SELECT pg_size_pretty(pg_total_relation_size('"${row.table_name}"')) AS table_size`);
         return {
           tableName: row.table_name,
           rowCount: parseInt(countRes.rows[0].count, 10),
@@ -811,7 +811,11 @@ router.get('/api/admin/control-tower/metrics', async (req, res) => {
 router.get('/api/admin/customers', async (req, res) => {
   try {
     const { listCustomers } = await import('../../../lib/adminDomainData.mjs');
-    res.json(await listCustomers({ limit: 200 }));
+    res.json(await listCustomers({
+      limit: Math.min(Number(req.query.limit) || 200, 500),
+      kycFilter: req.query.kyc || req.query.kycFilter || null,
+      q: req.query.q || req.query.search || null,
+    }));
   } catch (err) {
     res.status(500).json({ users: [], error: err.message });
   }
@@ -921,35 +925,60 @@ router.post('/api/admin/trading/resume-market', adminAuth, requireRole('SUPER_AD
 router.get('/api/admin/betting/bets', async (req, res) => {
   try {
     const { listBets } = await import('../../../lib/adminDomainData.mjs');
-    res.json(await listBets({ limit: 200 }));
+    const pendingOnly = req.query.pendingOnly === '1' || req.query.pendingOnly === 'true';
+    res.json(await listBets({
+      limit: Number(req.query.limit) || 200,
+      status: req.query.status || null,
+      betType: req.query.betType || null,
+      q: req.query.q || null,
+      pendingOnly,
+    }));
   } catch (err) {
     res.status(500).json({ bets: [], error: err.message });
   }
 });
 
-router.post('/api/admin/betting/settle', async (req, res) => {
-  const { betId, outcome } = req.body;
+router.post('/api/admin/betting/settle', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'TRADING_ADMIN', 'OPERATIONS_ADMIN'), async (req, res) => {
+  const { betId, outcome, reason } = req.body;
   if (!betId || !outcome) {
     return res.status(400).json({ success: false, error: 'betId and outcome required' });
   }
   try {
-    const { query } = await import('../../../db/pg.js');
-    const status = String(outcome).toUpperCase().startsWith('WIN') ? 'WON' : 'LOST';
-    const result = await query(
-      `UPDATE bets SET status = $1 WHERE bet_id = $2 RETURNING bet_id, status`,
-      [status, betId],
-    );
-    if (!result.rows.length) {
-      return res.status(404).json({ success: false, error: 'Bet not found' });
+    const normOutcome = String(outcome).toUpperCase();
+    const forcedOutcome = (
+      normOutcome === 'WON' || normOutcome === 'WIN'
+    ) ? 'WON'
+      : (normOutcome === 'LOST' || normOutcome === 'LOSE' || normOutcome === 'LOSS') ? 'LOST'
+      : (normOutcome === 'VOID' || normOutcome === 'PUSH' || normOutcome === 'REFUND') ? 'VOID'
+      : null;
+    if (!forcedOutcome) {
+      return res.status(400).json({ success: false, error: 'outcome must be WON, LOST, or VOID' });
     }
+
+    const { betSettlementEngine } = await import('../../../lib/betSettlementEngine.mjs');
+    const adminReason = String(reason || '').trim().slice(0, 240);
+    const result = await betSettlementEngine.settleSingleBet({
+      betId,
+      matchState: {
+        status: 'COMPLETED',
+        __forcedOutcome: forcedOutcome,
+        __settlementReason: adminReason
+          || `Admin manual settlement by ${req.admin?.id || 'admin'}`,
+      },
+    }, req.correlationId);
+
+    if (!result || result.status === 'ALREADY_SETTLED') {
+      return res.json({ success: true, betId, outcome: result?.outcome || forcedOutcome, status: 'ALREADY_SETTLED' });
+    }
+
     const { logAdminAction } = await import('../../middleware/auditLogger.js');
     await logAdminAction({
       actorId: req.admin?.id || 'admin',
       targetId: betId,
       action: 'BET_SETTLED',
-      details: { outcome, status },
+      details: { outcome: forcedOutcome, payout: result.payout, reason: adminReason || null },
     });
-    res.json({ success: true, betId, outcome, status: `SETTLED_${status}`, timestamp: new Date().toISOString() });
+    res.json({ success: true, betId, outcome: forcedOutcome, status: `SETTLED_${forcedOutcome}`, payout: result.payout, timestamp: new Date().toISOString() });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -1077,6 +1106,28 @@ router.post('/api/admin/support/tickets/:id/reply', async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/api/admin/support/tickets/:id/close', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { supportEngine } = await import('../../../lib/supportEngine.mjs');
+    const closed = await supportEngine.adminCloseTicket(id, {
+      closedBy: req.admin?.id || req.admin?.email || 'admin',
+      resolutionCode: req.body?.resolutionCode || 'INFORMATION_PROVIDED',
+      resolutionSummary: String(req.body?.resolutionSummary || 'Closed by OddsYra support.').trim(),
+    });
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: id,
+      action: 'SUPPORT_TICKET_CLOSED',
+      details: { status: closed?.status, resolutionCode: closed?.resolutionCode },
+    });
+    res.json({ success: true, ticketId: id, ticket: closed, conversation: closed });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
   }
 });
 

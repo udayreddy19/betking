@@ -112,6 +112,13 @@ export const forgotPasswordRateLimiter = createRateLimiter({
   windowSeconds: 15 * 60,
 });
 
+/** Stricter limit — password reset uses a 6-digit code. */
+export const resetPasswordRateLimiter = createRateLimiter({
+  prefix: 'rl:reset_password',
+  maxRequests: 5,
+  windowSeconds: 15 * 60,
+});
+
 export const verifyEmailRateLimiter = createRateLimiter({
   prefix: 'rl:verify_email',
   maxRequests: 5,

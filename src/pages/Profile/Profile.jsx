@@ -11,7 +11,8 @@ import {
   DEFAULT_DAILY_DEPOSIT_LIMIT,
   DEFAULT_DAILY_STAKE_LIMIT,
 } from '../../utils/responsibleGaming';
-import { FiDownload, FiShield, FiSliders, FiList, FiAlertTriangle, FiMessageSquare } from '../../icons';
+import { FiDownload, FiShield, FiSliders, FiList, FiAlertTriangle } from '../../icons';
+import SupportHeadsetIcon from '../../icons/SupportHeadsetIcon';
 import ProfileSupportTab from './ProfileSupportTab';
 import ProfileKycCard from './ProfileKycCard';
 import '../Legal/LegalPage.css';
@@ -45,7 +46,6 @@ export default function Profile() {
   );
   const [lossLimitDaily, setLossLimitDaily] = useState(() => user?.lossLimitDaily || 25000);
   const [lossLimitWeekly, setLossLimitWeekly] = useState(() => user?.lossLimitWeekly || 100000);
-  const [realityMins, setRealityMins] = useState(() => user?.realityCheckIntervalMins || 60);
   const [selfExcludeDays, setSelfExcludeDays] = useState('7');
   const [promoCode, setPromoCode] = useState('');
   const [claimingPromo, setClaimingPromo] = useState(false);
@@ -109,7 +109,6 @@ export default function Profile() {
         dailyStakeLimit: Number(stakeLimit),
         lossLimitDaily: Number(lossLimitDaily),
         lossLimitWeekly: Number(lossLimitWeekly),
-        realityCheckIntervalMins: Number(realityMins),
       });
     } catch (err) {
       showToast(err.message || 'Could not save responsible gaming limits.', 'error');
@@ -219,7 +218,7 @@ export default function Profile() {
             className={`profile-tab-btn ${activeTab === 'support' ? 'active' : ''}`}
             onClick={() => selectTab('support')}
           >
-            <FiMessageSquare /> Support
+            <SupportHeadsetIcon size={18} /> Support
           </button>
         </div>
 
@@ -295,7 +294,7 @@ export default function Profile() {
               <div className="profile-loyalty-head">
                 <span>Promo code</span>
               </div>
-              <p className="profile-loyalty-meta">Enter a code to credit bonus, free bet, or cash. Limits are set per code.</p>
+              <p className="profile-loyalty-meta">Enter a code to credit bonus, free bet, or cash. SPORTS500, VIP1000, and LIVE100 — only one of these three per account.</p>
               <div className="profile-promo-row">
                 <input
                   type="text"
@@ -316,7 +315,7 @@ export default function Profile() {
 
             <p className="profile-rules">
               Bonus bets need odds ≥ {BONUS_MIN_BET_ODDS.toFixed(2)} and must rotate 5 times. Withdrawing winnings while bonus is still in your wallet sets that bonus to ₹0.
-              Free bets play like cash at any odds. Promo codes are once per Aadhaar/PAN. Verify identity to withdraw.
+              Free bets play like cash at any odds. Promo codes are once per Aadhaar/PAN. Welcome codes SPORTS500 / VIP1000 / LIVE100 are one per account. Verify identity to withdraw.
             </p>
 
             <div className="profile-actions">
@@ -332,7 +331,7 @@ export default function Profile() {
           <div className="profile-rg-section">
             <div className="rg-card-box">
               <h3><FiSliders /> Daily Wagering, Loss & Deposit Limits</h3>
-              <p>Server-enforced limits. Cash bets stop when net losses hit your daily or weekly cap. A reality check pauses play after the interval you set.</p>
+              <p>Server-enforced limits. Cash bets stop when net losses hit your daily or weekly cap. You are logged out after 30 minutes of inactivity.</p>
 
               <form onSubmit={handleSaveLimits} className="rg-form">
                 <div className="rg-form-group">
@@ -379,18 +378,6 @@ export default function Profile() {
                     value={lossLimitWeekly}
                     onChange={(e) => setLossLimitWeekly(e.target.value)}
                   />
-                </div>
-
-                <div className="rg-form-group">
-                  <label>Reality check interval (minutes)</label>
-                  <input
-                    type="number"
-                    min="15"
-                    step="15"
-                    value={realityMins}
-                    onChange={(e) => setRealityMins(e.target.value)}
-                  />
-                  <small>Minimum 15 minutes. Deposits and bets pause until you confirm.</small>
                 </div>
 
                 <button type="submit" className="profile-link-btn">Save Limits</button>

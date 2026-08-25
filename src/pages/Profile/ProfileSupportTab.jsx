@@ -21,8 +21,8 @@ export default function ProfileSupportTab({ onOpenChat }) {
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
 
-  const loadTickets = useCallback(async () => {
-    setLoading(true);
+  const loadTickets = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     setError('');
     try {
       const res = await apiFetch('/api/v1/support/tickets');
@@ -34,7 +34,7 @@ export default function ProfileSupportTab({ onOpenChat }) {
       setTickets([]);
       setError(err.message || 'Could not load tickets.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
@@ -42,7 +42,7 @@ export default function ProfileSupportTab({ onOpenChat }) {
     loadTickets();
     const refresh = () => loadTickets();
     window.addEventListener('oddsyra:support-ticket-created', refresh);
-    const timer = setInterval(refresh, 12000);
+    const timer = setInterval(() => loadTickets({ silent: true }), 30000);
     return () => {
       window.removeEventListener('oddsyra:support-ticket-created', refresh);
       clearInterval(timer);
@@ -78,11 +78,16 @@ export default function ProfileSupportTab({ onOpenChat }) {
       <div className="profile-support-head">
         <div>
           <h2>Support tickets</h2>
-          <p>Tickets opened from chat, with the details you provided.</p>
+          <p>Open a ticket from chat, track replies here, and check your email for updates from OddsYra Support.</p>
         </div>
-        <button type="button" className="profile-link-btn" onClick={onOpenChat}>
-          Open assistant
-        </button>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button type="button" className="profile-link-btn" onClick={onOpenChat}>
+            Open assistant
+          </button>
+          <a className="profile-link-btn" href="mailto:support@oddsyra.com">
+            Email support@
+          </a>
+        </div>
       </div>
 
       {error && <p className="profile-support-error">{error}</p>}

@@ -21,13 +21,13 @@ describe('Sprint 5 KYC age gate', () => {
   });
 });
 
-describe('Sprint 5 loss limits and reality checks', () => {
+describe('Sprint 5 loss limits', () => {
   it('computes net cash loss as staked minus returns, never negative', () => {
     expect(netCashLossFromTotals(1000, 400)).toBe(600);
     expect(netCashLossFromTotals(1000, 1500)).toBe(0);
   });
 
-  it('marks a reality check due only after the interval from last ack', () => {
+  it('keeps isRealityCheckDue helper for legacy interval math', () => {
     const now = Date.parse('2026-08-19T12:00:00Z');
     expect(isRealityCheckDue({
       lastAckAt: '2026-08-19T11:00:00Z',
@@ -67,6 +67,10 @@ describe('Sprint 5 wiring', () => {
     expect(auth).toContain('startSession');
 
     const ui = fs.readFileSync(path.resolve(process.cwd(), 'src/App.jsx'), 'utf8');
-    expect(ui).toContain('RealityCheckModal');
+    expect(ui).toContain('SessionIdleLogout');
+    expect(ui).not.toContain('RealityCheckModal');
+
+    const rg = fs.readFileSync(path.resolve(process.cwd(), 'lib/responsibleGaming.mjs'), 'utf8');
+    expect(rg).not.toContain("reason: 'REALITY_CHECK_REQUIRED'");
   });
 });

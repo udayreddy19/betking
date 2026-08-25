@@ -83,7 +83,7 @@ export default function AdminDataTable({
   return (
     <div style={{ background: 'var(--admin-surface)', border: '1px solid var(--admin-border)', borderRadius: '12px', overflow: 'hidden', margin: '16px 0', boxShadow: 'var(--admin-shadow)' }}>
       <div style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid var(--admin-border)' }}>
-        {title && <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#fff' }}>{title}</h3>}
+        {title && <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--admin-text, #0f172a)' }}>{title}</h3>}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto' }}>
           {searchable && (
@@ -151,7 +151,7 @@ export default function AdminDataTable({
                   }}
                 >
                   {col.header}
-                  {sortKey === col.key && (sortDirection === 'asc' ? ' 🔼' : ' 🔽')}
+                  {typeof col.header === 'string' && sortKey === col.key && (sortDirection === 'asc' ? ' 🔼' : ' 🔽')}
                 </th>
               ))}
             </tr>
@@ -216,7 +216,7 @@ export default function AdminDataTable({
             >
               Previous
             </motion.button>
-            <span style={{ padding: '4px 10px', fontWeight: 700, color: '#fff' }}>
+            <span style={{ padding: '4px 10px', fontWeight: 700, color: 'var(--admin-text, #0f172a)' }}>
               Page {currentPage} of {totalPages}
             </span>
             <motion.button

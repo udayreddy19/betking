@@ -254,7 +254,7 @@ export default function Register() {
                 </div>
               </div>
               <p className="form-hint">
-                Each code is once per Aadhaar/PAN. Verify KYC to withdraw cash winnings.
+                Pick only one of SPORTS500, VIP1000, or LIVE100. Each code is once per Aadhaar/PAN. Verify KYC to withdraw cash winnings.
               </p>
             </div>
 

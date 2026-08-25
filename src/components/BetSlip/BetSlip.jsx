@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { IoClose, IoSettingsOutline } from '../../icons';
 import { useBetSlip } from '../../context/BetSlipContext';
 import BetSlipFooter from './BetSlipFooter';
-import { MIN_STAKE_INR, BONUS_MIN_BET_ODDS } from '../../utils/wageringRules';
+import { MIN_STAKE_INR, BONUS_MIN_BET_ODDS, QUICK_STAKE_PRESETS, sanitizeStakeInput } from '../../utils/wageringRules';
 import { formatOddsChangeAnnouncement, ODDS_STATUS } from '../../utils/oddsChangeHandler';
 import './BetSlip.css';
 
-const PER_BET_QUICK_STAKES = [500, 1500, 5000];
+const PER_BET_QUICK_STAKES = QUICK_STAKE_PRESETS;
 
 function formatBetTime(timestamp) {
   const d = new Date(timestamp || Date.now());
@@ -234,11 +234,12 @@ export default function BetSlip({ showFooter = true, hidePerBetStakes = false })
                     <span>Bet Total: ₹</span>
                     <input
                       id={`stake-${bet.id}`}
-                      type="number"
-                      min={MIN_STAKE_INR}
+                      type="text"
+                      inputMode="decimal"
+                      autoComplete="off"
                       value={stakeVal}
-                      onChange={(e) => setSingleStake(bet.id, e.target.value)}
-                      placeholder="0"
+                      onChange={(e) => setSingleStake(bet.id, sanitizeStakeInput(e.target.value))}
+                      placeholder="Enter amount"
                     />
                   </label>
                   <p className="betslip-bet-winnings">

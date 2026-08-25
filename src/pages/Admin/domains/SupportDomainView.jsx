@@ -100,10 +100,33 @@ export default function SupportDomainView({ subModule = 'ticket-queue' }) {
     setThreadMessages([]);
   };
 
-  const closeTicket = () => {
+  const dismissTicket = () => {
     setSelectedTicket(null);
     setReplyMessage('');
     setThreadMessages([]);
+  };
+
+  const isTicketClosed = (ticket) => {
+    const s = String(ticket?.status || '').toUpperCase();
+    return s === 'CLOSED' || s === 'RESOLVED';
+  };
+
+  const handleCloseTicket = (ticket) => {
+    if (!ticket?.id || sending) return;
+    setSending(true);
+    adminApiClient.post(`/support/tickets/${ticket.id}/close`, {
+      resolutionSummary: 'Closed by OddsYra support.',
+    })
+      .then(async () => {
+        showToast(`Ticket ${ticket.id} closed.`, 'success');
+        if (selectedTicket?.id === ticket.id) {
+          setSelectedTicket((prev) => (prev ? { ...prev, status: 'CLOSED' } : prev));
+          await loadThread(ticket.id);
+        }
+        loadTickets();
+      })
+      .catch((err) => showToast(err.message || 'Could not close ticket', 'error'))
+      .finally(() => setSending(false));
   };
 
   const handleSendReply = () => {
@@ -183,25 +206,48 @@ export default function SupportDomainView({ subModule = 'ticket-queue' }) {
             key: 'actions',
             sortable: false,
             render: (r) => (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openTicket(r);
-                }}
-                style={{
-                  padding: '4px 10px',
-                  borderRadius: '4px',
-                  border: '1px solid var(--admin-border, var(--color-border))',
-                  background: 'var(--admin-panel, var(--color-panel))',
-                  color: '#60a5fa',
-                  cursor: 'pointer',
-                  fontSize: '0.78rem',
-                  fontWeight: 700,
-                }}
-              >
-                Open Ticket
-              </button>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openTicket(r);
+                  }}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: '4px',
+                    border: '1px solid var(--admin-border, var(--color-border))',
+                    background: 'var(--admin-panel, var(--color-panel))',
+                    color: '#60a5fa',
+                    cursor: 'pointer',
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                  }}
+                >
+                  Open
+                </button>
+                {!isTicketClosed(r) && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCloseTicket(r);
+                    }}
+                    style={{
+                      padding: '4px 10px',
+                      borderRadius: '4px',
+                      border: '1px solid rgba(34, 197, 94, 0.45)',
+                      background: 'rgba(34, 197, 94, 0.12)',
+                      color: '#4ade80',
+                      cursor: 'pointer',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                    }}
+                  >
+                    Close ticket
+                  </button>
+                )}
+              </div>
             ),
           },
         ]}
@@ -217,7 +263,7 @@ export default function SupportDomainView({ subModule = 'ticket-queue' }) {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                onClick={closeTicket}
+                onClick={dismissTicket}
                 style={{
                   position: 'fixed',
                   inset: 0,
@@ -272,7 +318,7 @@ export default function SupportDomainView({ subModule = 'ticket-queue' }) {
                   </div>
                   <button
                     type="button"
-                    onClick={closeTicket}
+                    onClick={dismissTicket}
                     style={{
                       width: 34,
                       height: 34,
@@ -378,7 +424,7 @@ export default function SupportDomainView({ subModule = 'ticket-queue' }) {
                   <div style={{ display: 'flex', gap: 10 }}>
                     <button
                       type="button"
-                      onClick={closeTicket}
+                      onClick={dismissTicket}
                       style={{
                         flex: 1,
                         padding: '11px 14px',
@@ -390,21 +436,40 @@ export default function SupportDomainView({ subModule = 'ticket-queue' }) {
                         cursor: 'pointer',
                       }}
                     >
-                      Close
+                      Dismiss
                     </button>
+                    {!isTicketClosed(selectedTicket) && (
+                      <button
+                        type="button"
+                        onClick={() => handleCloseTicket(selectedTicket)}
+                        disabled={sending}
+                        style={{
+                          flex: 1,
+                          padding: '11px 14px',
+                          borderRadius: 10,
+                          border: 'none',
+                          background: sending ? '#475569' : '#15803d',
+                          color: '#fff',
+                          fontWeight: 750,
+                          cursor: sending ? 'not-allowed' : 'pointer',
+                        }}
+                      >
+                        Close ticket
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={handleSendReply}
-                      disabled={sending || !replyMessage.trim()}
+                      disabled={sending || !replyMessage.trim() || isTicketClosed(selectedTicket)}
                       style={{
                         flex: 1.4,
                         padding: '11px 14px',
                         borderRadius: 10,
                         border: 'none',
-                        background: sending || !replyMessage.trim() ? '#475569' : '#2563eb',
+                        background: sending || !replyMessage.trim() || isTicketClosed(selectedTicket) ? '#475569' : '#2563eb',
                         color: '#fff',
                         fontWeight: 750,
-                        cursor: sending || !replyMessage.trim() ? 'not-allowed' : 'pointer',
+                        cursor: sending || !replyMessage.trim() || isTicketClosed(selectedTicket) ? 'not-allowed' : 'pointer',
                       }}
                     >
                       {sending ? 'Sending…' : 'Send Response'}

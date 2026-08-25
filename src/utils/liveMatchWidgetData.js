@@ -176,9 +176,10 @@ export function buildScorecardInnings(match, teamName, roster, fieldState, isBat
       players = mergeLiveBatterStats(players, ld);
       const fieldPlayers = battersFromFieldState(fieldState);
       for (const fp of fieldPlayers) {
-        if (!players.some((p) => p.name.toLowerCase() === fp.name.toLowerCase())) {
-          players.push(fp);
-        }
+        if (players.some((p) => p.name.toLowerCase() === fp.name.toLowerCase())) continue;
+        // Do not leak the other innings' crease onto this team's card.
+        if (apiInnings?.batters?.length) continue;
+        players.push(fp);
       }
       players = players.map((p) => ({
         ...p,

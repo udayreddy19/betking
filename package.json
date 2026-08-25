@@ -19,7 +19,8 @@
     "financial:reconcile-legacy-opening": "node scripts/reconcile-legacy-opening-balances.mjs",
     "financial:audit-winnings-reporting": "node scripts/audit-winnings-reporting.mjs",
     "release:record-sha": "node scripts/record-release-sha.mjs",
-    "perf:baseline": "node scripts/perf-baseline.mjs"
+    "perf:baseline": "node scripts/perf-baseline.mjs",
+    "ballfeed:sync": "node scripts/sync-ball-feed.mjs"
   },
   "browserslist": [
     "chrome >= 80",

@@ -476,7 +476,7 @@ export function BetSlipProvider({ children }) {
         delete next[existing.id];
         return next;
       });
-      showToast('Removed from betslip', 'info');
+      setQuickBet((prev) => (prev?.bet?.id === existing.id ? null : prev));
       return false;
     }
 
@@ -495,8 +495,8 @@ export function BetSlipProvider({ children }) {
     const removedIds = bets
       .filter(b => !filtered.includes(b))
       .map(b => b.id);
-
-    setBets([...filtered, {
+    const defaultStake = stake || '100';
+    const newBet = {
       id: betId,
       matchId: match.id,
       matchName: `${match.team1?.name || match.team1} vs ${match.team2?.name || match.team2}`,
@@ -512,22 +512,42 @@ export function BetSlipProvider({ children }) {
       matchTime: options.matchTime || match.time || new Date().toISOString(),
       odds: Number(odds),
       timestamp: Date.now(),
-    }]);
+    };
+
+    setBets([...filtered, newBet]);
 
     setSinglesStakes(s => {
       const next = { ...s };
       for (const id of removedIds) delete next[id];
-      next[betId] = next[betId] || stake || '100';
+      next[betId] = next[betId] || defaultStake;
       return next;
     });
 
     const silentAdd = !!(options.silentAdd ?? options.quickBet);
+    const skipMobileOpen = !!options.skipMobileOpen;
+    const isPhone = typeof window !== 'undefined'
+      && window.matchMedia('(max-width: 1024px)').matches;
 
-    if (silentAdd) {
-      setQuickBet(null);
+    if ((isPhone || silentAdd) && !skipMobileOpen) {
+      setQuickBet({
+        bet: {
+          id: newBet.id,
+          matchId: newBet.matchId,
+          matchName: newBet.matchName,
+          selection: newBet.selection,
+          selectionName: newBet.selectionName,
+          marketId: newBet.marketId,
+          marketName: newBet.marketName,
+          odds: newBet.odds,
+        },
+        defaultStake,
+      });
       setIsMobileOpen(false);
-    } else {
+    } else if (!skipMobileOpen) {
       showToast(`Added to betslip: ${label} @ ${Number(odds).toFixed(2)}`, 'success');
+    } else {
+      // Modal / embedded slip already visible — don't stack the quick sheet.
+      setIsMobileOpen(false);
     }
 
     return true;
@@ -577,7 +597,7 @@ export function BetSlipProvider({ children }) {
         marketName: bet.marketName,
         odds: bet.odds,
       },
-      defaultStake: singlesStakes[bet.id] || stake || '500',
+      defaultStake: singlesStakes[bet.id] || stake || '100',
     });
     setIsMobileOpen(false);
   }, [stake, singlesStakes]);
@@ -764,6 +784,12 @@ export function BetSlipProvider({ children }) {
           }
           betsRef.current = nextBets;
           setBets(nextBets);
+          setQuickBet((prev) => {
+            if (!prev?.bet) return prev;
+            const updated = nextBets.find((b) => b.id === prev.bet.id);
+            if (!updated) return prev;
+            return { ...prev, bet: updated };
+          });
           return {
             success: false,
             oddsUpdated: true,
@@ -983,6 +1009,11 @@ export function BetSlipProvider({ children }) {
       ));
       betsRef.current = next;
       return next;
+    });
+    setQuickBet((prev) => {
+      if (!prev?.bet || prev.bet.id !== betId) return prev;
+      if (prev.bet.oddsStatus !== ODDS_STATUS.CHANGED) return prev;
+      return { ...prev, bet: acceptOddsForBet(prev.bet) };
     });
   }, []);
 

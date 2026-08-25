@@ -193,6 +193,7 @@
 
 .mc-odds-btn {
   flex: 1;
+  min-width: 0;
   background: var(--color-bg-alt);
   border: 1px solid var(--color-border);
   color: var(--color-text);
@@ -200,13 +201,28 @@
   border-radius: 6px;
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  gap: 8px;
   font-weight: 700;
   cursor: pointer;
+  overflow: hidden;
+}
+
+.mc-odds-btn > span:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
 }
 
 .mc-odds-btn .odds-val {
+  flex: 0 0 auto;
   color: #f97316;
   font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .commentary-feed {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildScorecardInnings } from '../../src/utils/liveMatchWidgetData.js';
+import { getRosterForTeam } from '../../src/data/cricketRosters.js';
 
 describe('scorecard roster updates', () => {
   it('fills the batting scorecard from liveDetails when scorecardInnings is missing', () => {
@@ -79,5 +80,40 @@ describe('scorecard roster updates', () => {
       'MISRL',
     );
     expect(players.map((p) => p.name)).toEqual(['Hardik Pandya SRL', 'Tim David SRL']);
+  });
+});
+
+describe('women / virtual roster isolation', () => {
+  it('does not map Bengaluru Women onto RCB men', () => {
+    const roster = getRosterForTeam('Bengaluru Women (V)');
+    expect(roster.batters).toEqual([]);
+    expect(roster.batters.join(' ')).not.toMatch(/Kohli|du Plessis/i);
+  });
+
+  it('does not map Gujarat Women onto Gujarat Titans men', () => {
+    const roster = getRosterForTeam('Gujarat Women (V)');
+    expect(roster.batters).toEqual([]);
+    expect(roster.batters.join(' ')).not.toMatch(/Gill|Miller/i);
+  });
+
+  it('still returns the RCB men XI for the IPL side', () => {
+    expect(getRosterForTeam('Royal Challengers Bengaluru').batters[0]).toBe('Virat Kohli');
+    expect(getRosterForTeam('RCB').batters[0]).toBe('Virat Kohli');
+  });
+
+  it('does not invent RCB names on a Gujarat Women scorecard', () => {
+    const players = buildScorecardInnings(
+      {
+        team1: { name: 'Bengaluru Women (V)' },
+        team2: { name: 'Gujarat Women (V)' },
+        liveDetails: {},
+      },
+      'Gujarat Women (V)',
+      getRosterForTeam('Gujarat Women (V)'),
+      null,
+      true,
+      'GUJ',
+    );
+    expect(players).toEqual([]);
   });
 });

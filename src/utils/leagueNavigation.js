@@ -1,4 +1,5 @@
 import { featuredLeagues } from '../data/mockData';
+import { cricketBoardActivity } from './matchFilters';
 
 /** Alternate feed / sidebar labels that refer to the same competition. */
 const LEAGUE_ALIAS_GROUPS = [
@@ -265,13 +266,20 @@ export function groupMatchesByLeague(matches) {
         const liveA = a.matchState === 'in' ? 0 : 1;
         const liveB = b.matchState === 'in' ? 0 : 1;
         if (liveA !== liveB) return liveA - liveB;
-        return String(a.time).localeCompare(String(b.time));
+        const actA = cricketBoardActivity(a);
+        const actB = cricketBoardActivity(b);
+        if (actA.started !== actB.started) return actA.started ? -1 : 1;
+        if (actA.totalRuns !== actB.totalRuns) return actB.totalRuns - actA.totalRuns;
+        return String(a.time || '').localeCompare(String(b.time || ''));
       }),
     }))
     .sort((a, b) => {
       const liveA = a.matches.some((m) => m.matchState === 'in') ? 0 : 1;
       const liveB = b.matches.some((m) => m.matchState === 'in') ? 0 : 1;
       if (liveA !== liveB) return liveA - liveB;
+      const scoredA = a.matches.some((m) => cricketBoardActivity(m).started) ? 0 : 1;
+      const scoredB = b.matches.some((m) => cricketBoardActivity(m).started) ? 0 : 1;
+      if (scoredA !== scoredB) return scoredA - scoredB;
       return a.league.localeCompare(b.league);
     });
 }

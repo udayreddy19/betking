@@ -231,16 +231,24 @@ describe('Production-Grade Forgot Password & Account Recovery Suite (Req 1-30)',
   });
 
   describe('1. Token Generation, Storage & Entropy', () => {
-    it('generates a 48-byte cryptographically secure random token and stores only SHA-256 hash', () => {
+    it('generates a 48-byte cryptographically secure token for email verification', () => {
       const { rawToken, tokenHash } = generateSecureToken();
 
       expect(rawToken).toBeDefined();
       expect(rawToken.length).toBe(96); // 48 bytes = 96 hex chars
       expect(tokenHash.length).toBe(64); // SHA-256 = 64 hex chars
 
-      // Re-hash to confirm correctness
       const computed = crypto.createHash('sha256').update(rawToken).digest('hex');
       expect(computed).toBe(tokenHash);
+    });
+
+    it('generates a 6-digit password reset code and stores only SHA-256 hash', async () => {
+      const { generatePasswordResetCode } = await import('../../server/auth/tokenService.js');
+      const { rawToken, tokenHash } = generatePasswordResetCode();
+
+      expect(rawToken).toMatch(/^\d{6}$/);
+      expect(tokenHash.length).toBe(64);
+      expect(crypto.createHash('sha256').update(rawToken).digest('hex')).toBe(tokenHash);
     });
   });
 

@@ -54,6 +54,21 @@ router.post('/promo/claim', requireAuth, rewardsClaimRateLimiter, async (req, re
       success: false,
       error: err.message,
       code: err.code || 'PROMO_CLAIM_FAILED',
+      claimedCode: err.claimedCode,
+    });
+  }
+});
+
+router.get('/promo/claims', requireAuth, async (req, res) => {
+  try {
+    const { listUserSignupPromoClaims } = await import('../../lib/signupPromoCodes.mjs');
+    const claims = await listUserSignupPromoClaims(req.user.userId);
+    res.json({ success: true, claims });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message,
+      code: 'PROMO_CLAIMS_FAILED',
     });
   }
 });

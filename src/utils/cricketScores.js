@@ -304,14 +304,9 @@ function resolveTestMatchTeamScores(match, ld) {
   const team2Name = match?.team2?.name || '';
   const testInnings = ld.testInnings || [];
 
-  const team1Innings = testInnings.filter((i) => {
-    const bt = (i.batTeam || '').toLowerCase();
-    return bt.includes(team1Name.toLowerCase().slice(0, 4)) || team1Name.toLowerCase().includes(bt.slice(0, 4));
-  });
-  const team2Innings = testInnings.filter((i) => {
-    const bt = (i.batTeam || '').toLowerCase();
-    return bt.includes(team2Name.toLowerCase().slice(0, 4)) || team2Name.toLowerCase().includes(bt.slice(0, 4));
-  });
+  // batTeam is often an ICC code (SL, IND) — use teamNameMatches, not raw substring/slice.
+  const team1Innings = testInnings.filter((i) => teamNameMatches(team1Name, i.batTeam || i.team || ''));
+  const team2Innings = testInnings.filter((i) => teamNameMatches(team2Name, i.batTeam || i.team || ''));
 
   // Use latest innings overs/wickets for display, but sum runs
   const team1Latest = team1Innings[team1Innings.length - 1];

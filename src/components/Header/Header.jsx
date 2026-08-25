@@ -35,6 +35,7 @@ const navLinks = withoutCasinoLinks([
 
 const moreLinks = withoutCasinoLinks([
   { to: '/profile', label: 'My Profile' },
+  { to: '/profile?tab=support', label: 'Support tickets' },
   { to: '/admin', label: '🛡️ Admin Portal' },
   { to: '/help', label: 'Help Center' },
   { to: '/promotions', label: 'Promotions' },
@@ -150,6 +151,15 @@ function Header() {
 
   const closePromos = useCallback(() => setIsPromosOpen(false), []);
 
+  const closeHeaderOverlays = useCallback(() => {
+    closePromos();
+    closeMyBets();
+    setIsNotifOpen(false);
+    setIsWalletOpen(false);
+    setIsMoreOpen(false);
+    setIsSpinOpen(false);
+  }, [closePromos, closeMyBets]);
+
   const handleMyBetsToggle = useCallback(() => {
     closePromos();
     setIsNotifOpen(false);
@@ -175,12 +185,17 @@ function Header() {
       }
     }
     setIsNotifOpen(false);
+    closeHeaderOverlays();
     navigate('/profile?tab=support');
-  }, [navigate]);
+  }, [navigate, closeHeaderOverlays]);
 
   const handleRedeemLoyalty = useCallback((pts) => {
     redeemLoyaltyPoints(pts);
   }, [redeemLoyaltyPoints]);
+
+  useEffect(() => {
+    closeHeaderOverlays();
+  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (isAdminPage) return null;
 
@@ -388,7 +403,10 @@ function Header() {
                 id="header-profile-btn"
                 aria-label="My Profile"
                 title="My Profile"
-                onClick={() => navigate('/profile')}
+                onClick={() => {
+                  closeHeaderOverlays();
+                  navigate('/profile');
+                }}
                 whileHover={{ scale: hoverScale }}
                 whileTap={{ scale: pressScale }}
                 transition={springUi}

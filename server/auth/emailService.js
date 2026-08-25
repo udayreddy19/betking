@@ -223,14 +223,21 @@ function markPrimaryQuotaHit() {
   quotaState.primaryExhaustedUntil = Date.now() + 6 * 60 * 60 * 1000;
 }
 
-async function sendMailWithFailover({ to, subject, html, text }) {
+async function sendMailWithFailover({ to, subject, html, text, replyTo }) {
   const accounts = configuredAccounts();
   if (accounts.length === 0) {
     if (isProduction) {
       throw new Error('SMTP is not configured (missing host, user, or password)');
     }
     const tx = createTransport(null);
-    const info = await tx.sendMail({ from: SMTP_FROM, to, subject, html, text });
+    const info = await tx.sendMail({
+      from: SMTP_FROM,
+      to,
+      subject,
+      html,
+      text,
+      ...(replyTo ? { replyTo } : {}),
+    });
     return { success: true, messageId: info.messageId, provider: 'dev-json' };
   }
 
@@ -249,6 +256,7 @@ async function sendMailWithFailover({ to, subject, html, text }) {
         subject,
         html,
         text,
+        ...(replyTo ? { replyTo } : {}),
       });
       if (account.name === 'primary') markPrimarySuccess();
       if (account.name === 'primary') deliveryMetrics.primarySuccess += 1;
@@ -310,25 +318,53 @@ export async function sendVerificationEmail({ email, name, token }) {
 }
 
 /**
- * Send a Password Reset link to the user
+ * Send a Password Reset link + 6-digit code for manual entry.
  */
 export async function sendPasswordResetEmail({ email, name, token }) {
   const resetLink = `${FRONTEND_URL}/reset-password?token=${encodeURIComponent(token)}`;
+  const safeCode = escapeHtml(token);
 
   const html = renderTransactionalEmail({
     heading: 'Reset Your Password',
     greetingName: name || 'Valued Player',
-    introHtml: 'We received a request to reset the password for your OddsYra account. Click the button below to choose a new password:',
+    introHtml: 'We received a request to reset the password for your OddsYra account. Click the button below, or enter the 6-digit code in the app:',
     ctaLabel: 'Reset My Password',
     ctaHref: resetLink,
-    noteHtml: 'This link will expire in 60 minutes. If you did not request a password reset, your account is safe and you can ignore this email.',
+    extraHtml: `
+          <tr>
+            <td class="oy-td" style="padding:8px 24px 0;font-size:14px;line-height:1.5;color:#5c6570;text-align:center;">
+              Or enter this 6-digit code on OddsYra:
+            </td>
+          </tr>
+          <tr>
+            <td class="oy-td" align="center" style="padding:12px 24px 0;">
+              <div style="display:inline-block;background-color:#f0ebe3;border:1px dashed #c4b8a4;border-radius:10px;padding:16px 28px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:28px;font-weight:700;letter-spacing:0.35em;color:#14181f;">
+                ${safeCode}
+              </div>
+            </td>
+          </tr>`,
+    noteHtml: 'This link and code expire in 60 minutes. If you did not request a password reset, your account is safe and you can ignore this email.',
   });
+
+  const text = [
+    `Hi ${name || 'Valued Player'},`,
+    '',
+    'Reset your OddsYra password using this link:',
+    resetLink,
+    '',
+    'Or enter this 6-digit code on OddsYra (Enter Code Manually):',
+    token,
+    '',
+    'This link and code expire in 60 minutes.',
+    'If you did not request a password reset, you can ignore this email.',
+  ].join('\n');
 
   try {
     const info = await sendMailWithFailover({
       to: email,
       subject: 'Reset your OddsYra password',
       html,
+      text,
     });
 
     if (!isProduction) {
@@ -382,6 +418,365 @@ export async function sendPasswordChangedNotificationEmail({ email, name }) {
     return { success: true, messageId: info.messageId, provider: info.provider };
   } catch (err) {
     console.error('[EmailService] Failed to send password changed notification:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Alert the support inbox when a user opens a ticket.
+ * Default recipient: support@oddsyra.com (override with SUPPORT_INBOX_EMAIL).
+ */
+export async function sendSupportTicketAlertEmail({
+  ticketNumber,
+  conversationId,
+  userId,
+  userEmail,
+  subject,
+  category,
+  priority,
+  message,
+  createdAt,
+}) {
+  const inbox = process.env.SUPPORT_INBOX_EMAIL || 'support@oddsyra.com';
+  const ticketLabel = escapeHtml(ticketNumber || conversationId || 'New ticket');
+  const safeSubject = escapeHtml(subject || 'Support request');
+  const safeCategory = escapeHtml(category || 'General');
+  const safePriority = escapeHtml(priority || 'NORMAL');
+  const safeUserId = escapeHtml(userId || 'unknown');
+  const safeUserEmail = escapeHtml(userEmail || 'n/a');
+  const safeMessage = escapeHtml(String(message || '').slice(0, 2000));
+  const safeCreated = escapeHtml(createdAt || new Date().toISOString());
+  const adminUrl = `${FRONTEND_URL}/admin`;
+
+  const html = renderTransactionalEmail({
+    heading: `New ticket ${ticketLabel}`,
+    greetingName: 'OddsYra Support',
+    introHtml: `A player just opened a support ticket. Review it in Admin → Support.`,
+    ctaLabel: 'Open Admin',
+    ctaHref: adminUrl,
+    extraHtml: `
+          <tr>
+            <td class="oy-td" style="padding:16px 24px 0;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f0ebe3;border:1px solid #ddd4c4;border-radius:8px;">
+                <tr><td style="padding:12px 14px;font-size:14px;color:#14181f;"><strong>Ticket</strong><br>${ticketLabel}</td></tr>
+                <tr><td style="padding:0 14px 12px;font-size:14px;color:#14181f;"><strong>Subject</strong><br>${safeSubject}</td></tr>
+                <tr><td style="padding:0 14px 12px;font-size:14px;color:#14181f;"><strong>Category / Priority</strong><br>${safeCategory} · ${safePriority}</td></tr>
+                <tr><td style="padding:0 14px 12px;font-size:14px;color:#14181f;"><strong>User</strong><br>${safeUserEmail}<br><span style="color:#5c6570;">${safeUserId}</span></td></tr>
+                <tr><td style="padding:0 14px 12px;font-size:14px;color:#14181f;"><strong>Opened</strong><br>${safeCreated}</td></tr>
+                <tr><td style="padding:0 14px 14px;font-size:14px;color:#14181f;"><strong>Message</strong><br>${safeMessage || '—'}</td></tr>
+              </table>
+            </td>
+          </tr>`,
+    noteHtml: 'Automated alert from OddsYra. Reply to the player from Admin → Support.',
+  });
+
+  const text = [
+    `New OddsYra support ticket: ${ticketNumber || conversationId}`,
+    `Subject: ${subject || 'Support request'}`,
+    `Category: ${category || 'General'} | Priority: ${priority || 'NORMAL'}`,
+    `User: ${userEmail || 'n/a'} (${userId || 'unknown'})`,
+    `Opened: ${createdAt || new Date().toISOString()}`,
+    '',
+    String(message || '').slice(0, 2000),
+    '',
+    `Admin: ${adminUrl}`,
+  ].join('\n');
+
+  try {
+    const info = await sendMailWithFailover({
+      to: inbox,
+      subject: `[OddsYra Support] ${ticketNumber || 'New ticket'} — ${subject || 'Support request'}`,
+      html,
+      text,
+      replyTo: userEmail || undefined,
+    });
+    return { success: true, messageId: info.messageId, provider: info.provider, to: inbox };
+  } catch (err) {
+    console.error('[EmailService] Failed to send support ticket alert:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+function supportTicketCta() {
+  return { ctaLabel: 'View my tickets', ctaHref: `${FRONTEND_URL}/profile?tab=support` };
+}
+
+/** Player confirmation when a ticket is opened. */
+export async function sendSupportTicketCreatedUserEmail({
+  email,
+  name,
+  ticketNumber,
+  subject,
+  category,
+}) {
+  if (!email) return { success: false, error: 'missing_email' };
+  const ticketLabel = escapeHtml(ticketNumber || 'your ticket');
+  const html = renderTransactionalEmail({
+    heading: `Ticket ${ticketLabel} received`,
+    greetingName: name || 'Valued Player',
+    introHtml: `We received your support request${subject ? ` (<strong>${escapeHtml(subject)}</strong>)` : ''}. Our team will reply soon.`,
+    ...supportTicketCta(),
+    extraHtml: `
+          <tr>
+            <td class="oy-td" style="padding:16px 24px 0;font-size:15px;color:#14181f;">
+              <strong>Ticket:</strong> ${ticketLabel}<br>
+              <strong>Category:</strong> ${escapeHtml(category || 'General')}
+            </td>
+          </tr>`,
+    noteHtml: 'You can also follow this ticket in Profile → Support on OddsYra.',
+  });
+  try {
+    const info = await sendMailWithFailover({
+      to: email,
+      subject: `OddsYra Support — ticket ${ticketNumber || ''} received`.trim(),
+      html,
+      text: `Ticket ${ticketNumber} received. Category: ${category || 'General'}. View: ${FRONTEND_URL}/profile?tab=support`,
+      replyTo: process.env.SUPPORT_INBOX_EMAIL || 'support@oddsyra.com',
+    });
+    return { success: true, messageId: info.messageId, provider: info.provider };
+  } catch (err) {
+    console.error('[EmailService] ticket created user mail:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+/** Player email when support replies. */
+export async function sendSupportAdminReplyEmail({
+  email,
+  name,
+  ticketNumber,
+  preview,
+}) {
+  if (!email) return { success: false, error: 'missing_email' };
+  const ticketLabel = escapeHtml(ticketNumber || 'your ticket');
+  const html = renderTransactionalEmail({
+    heading: `New reply on ${ticketLabel}`,
+    greetingName: name || 'Valued Player',
+    introHtml: 'OddsYra Support replied to your ticket:',
+    ...supportTicketCta(),
+    extraHtml: `
+          <tr>
+            <td class="oy-td" style="padding:16px 24px 0;">
+              <div style="background:#f0ebe3;border-radius:8px;padding:14px 16px;font-size:15px;color:#14181f;line-height:1.5;">
+                ${escapeHtml(String(preview || '').slice(0, 800)) || 'Open OddsYra to read the full reply.'}
+              </div>
+            </td>
+          </tr>`,
+    noteHtml: 'Reply from Profile → Support. Do not share passwords or OTPs by email.',
+  });
+  try {
+    const info = await sendMailWithFailover({
+      to: email,
+      subject: `OddsYra Support replied — ${ticketNumber || 'ticket'}`,
+      html,
+      text: `Support replied on ${ticketNumber}:\n\n${String(preview || '').slice(0, 800)}\n\n${FRONTEND_URL}/profile?tab=support`,
+      replyTo: process.env.SUPPORT_INBOX_EMAIL || 'support@oddsyra.com',
+    });
+    return { success: true, messageId: info.messageId, provider: info.provider };
+  } catch (err) {
+    console.error('[EmailService] admin reply mail:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+/** Player email when a ticket is closed. */
+export async function sendSupportTicketClosedEmail({
+  email,
+  name,
+  ticketNumber,
+  resolutionSummary,
+}) {
+  if (!email) return { success: false, error: 'missing_email' };
+  const ticketLabel = escapeHtml(ticketNumber || 'your ticket');
+  const html = renderTransactionalEmail({
+    heading: `Ticket ${ticketLabel} closed`,
+    greetingName: name || 'Valued Player',
+    introHtml: 'Your OddsYra support ticket has been closed.',
+    ...supportTicketCta(),
+    extraHtml: resolutionSummary
+      ? `<tr><td class="oy-td" style="padding:16px 24px 0;font-size:15px;color:#14181f;"><strong>Summary:</strong> ${escapeHtml(String(resolutionSummary).slice(0, 500))}</td></tr>`
+      : '',
+    noteHtml: 'Need more help? Open a new ticket from Profile → Support or the chat widget.',
+  });
+  try {
+    const info = await sendMailWithFailover({
+      to: email,
+      subject: `OddsYra Support — ticket ${ticketNumber || ''} closed`.trim(),
+      html,
+      text: `Ticket ${ticketNumber} closed. ${resolutionSummary || ''}\n${FRONTEND_URL}/profile?tab=support`,
+      replyTo: process.env.SUPPORT_INBOX_EMAIL || 'support@oddsyra.com',
+    });
+    return { success: true, messageId: info.messageId, provider: info.provider };
+  } catch (err) {
+    console.error('[EmailService] ticket closed mail:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+/** SLA reminder to support inbox. */
+export async function sendSupportSlaReminderEmail({
+  ticketNumber,
+  conversationId,
+  userEmail,
+  subject,
+  category,
+  slaStatus,
+  slaDueAt,
+}) {
+  const inbox = process.env.SUPPORT_INBOX_EMAIL || 'support@oddsyra.com';
+  const label = escapeHtml(ticketNumber || conversationId || 'ticket');
+  const html = renderTransactionalEmail({
+    heading: `SLA ${escapeHtml(slaStatus || 'ALERT')} — ${label}`,
+    greetingName: 'OddsYra Support',
+    introHtml: `Ticket <strong>${label}</strong> needs attention (${escapeHtml(slaStatus || 'APPROACHING_SLA')}).`,
+    ctaLabel: 'Open Admin',
+    ctaHref: `${FRONTEND_URL}/admin`,
+    extraHtml: `
+          <tr>
+            <td class="oy-td" style="padding:16px 24px 0;font-size:14px;color:#14181f;">
+              <strong>Subject:</strong> ${escapeHtml(subject || '—')}<br>
+              <strong>Category:</strong> ${escapeHtml(category || '—')}<br>
+              <strong>Player:</strong> ${escapeHtml(userEmail || 'n/a')}<br>
+              <strong>SLA due:</strong> ${escapeHtml(slaDueAt || '—')}
+            </td>
+          </tr>`,
+    noteHtml: 'Automated SLA reminder from OddsYra.',
+  });
+  try {
+    const info = await sendMailWithFailover({
+      to: inbox,
+      subject: `[SLA ${slaStatus || 'ALERT'}] ${ticketNumber || conversationId}`,
+      html,
+      text: `SLA ${slaStatus} for ${ticketNumber}. Due ${slaDueAt}. Player ${userEmail}.`,
+    });
+    return { success: true, messageId: info.messageId, provider: info.provider };
+  } catch (err) {
+    console.error('[EmailService] SLA reminder:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+/** Deposit captured successfully. */
+export async function sendDepositCompletedEmail({ email, name, amount, paymentId, newBalance }) {
+  if (!email) return { success: false, error: 'missing_email' };
+  const amt = Number(amount);
+  const bal = Number(newBalance);
+  const html = renderTransactionalEmail({
+    heading: 'Deposit successful',
+    greetingName: name || 'Valued Player',
+    introHtml: `Your deposit of <strong>₹${escapeHtml(Number.isFinite(amt) ? amt.toFixed(2) : amount)}</strong> was credited to your OddsYra wallet.`,
+    ctaLabel: 'Open OddsYra',
+    ctaHref: FRONTEND_URL,
+    extraHtml: `
+          <tr>
+            <td class="oy-td" style="padding:16px 24px 0;font-size:14px;color:#14181f;">
+              ${paymentId ? `<strong>Reference:</strong> ${escapeHtml(paymentId)}<br>` : ''}
+              ${Number.isFinite(bal) ? `<strong>New balance:</strong> ₹${escapeHtml(bal.toFixed(2))}` : ''}
+            </td>
+          </tr>`,
+    noteHtml: 'Deposits may need wagering before withdrawal. Contact support@oddsyra.com if this looks wrong.',
+  });
+  try {
+    const info = await sendMailWithFailover({
+      to: email,
+      subject: `OddsYra deposit ₹${Number.isFinite(amt) ? amt.toFixed(2) : amount} successful`,
+      html,
+      text: `Deposit ₹${amount} successful. Ref ${paymentId || ''}. Balance ₹${newBalance ?? ''}.`,
+      replyTo: process.env.SUPPORT_INBOX_EMAIL || 'support@oddsyra.com',
+    });
+    return { success: true, messageId: info.messageId, provider: info.provider };
+  } catch (err) {
+    console.error('[EmailService] deposit mail:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+/** Withdrawal approved or rejected. */
+export async function sendWithdrawalStatusEmail({
+  email,
+  name,
+  amount,
+  status,
+  withdrawalId,
+  reason,
+}) {
+  if (!email) return { success: false, error: 'missing_email' };
+  const approved = String(status).toUpperCase() === 'APPROVED';
+  const amt = Number(amount);
+  const html = renderTransactionalEmail({
+    heading: approved ? 'Withdrawal approved' : 'Withdrawal update',
+    greetingName: name || 'Valued Player',
+    introHtml: approved
+      ? `Your withdrawal of <strong>₹${escapeHtml(Number.isFinite(amt) ? amt.toFixed(2) : amount)}</strong> was approved and is being processed.`
+      : `Your withdrawal of <strong>₹${escapeHtml(Number.isFinite(amt) ? amt.toFixed(2) : amount)}</strong> was not approved.`,
+    ctaLabel: 'Open wallet',
+    ctaHref: `${FRONTEND_URL}/profile`,
+    extraHtml: `
+          <tr>
+            <td class="oy-td" style="padding:16px 24px 0;font-size:14px;color:#14181f;">
+              ${withdrawalId ? `<strong>Reference:</strong> ${escapeHtml(withdrawalId)}<br>` : ''}
+              <strong>Status:</strong> ${escapeHtml(status)}<br>
+              ${reason && !approved ? `<strong>Reason:</strong> ${escapeHtml(String(reason).slice(0, 300))}` : ''}
+            </td>
+          </tr>`,
+    noteHtml: 'Questions? Open a ticket in Profile → Support or email support@oddsyra.com.',
+  });
+  try {
+    const info = await sendMailWithFailover({
+      to: email,
+      subject: approved
+        ? `OddsYra withdrawal ₹${Number.isFinite(amt) ? amt.toFixed(2) : amount} approved`
+        : `OddsYra withdrawal update — ${status}`,
+      html,
+      text: `Withdrawal ${status}: ₹${amount}. Ref ${withdrawalId || ''}. ${reason || ''}`,
+      replyTo: process.env.SUPPORT_INBOX_EMAIL || 'support@oddsyra.com',
+    });
+    return { success: true, messageId: info.messageId, provider: info.provider };
+  } catch (err) {
+    console.error('[EmailService] withdrawal mail:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * KYC completion reminder — reuses existing Zoho/SMTP transactional pipeline.
+ * Never includes PAN, Aadhaar, documents, or tokens.
+ */
+export async function sendKycReminderEmail({ email, name }) {
+  if (!email) return { success: false, error: 'missing_email' };
+  const kycUrl = `${FRONTEND_URL}/profile#kyc`;
+  const html = renderTransactionalEmail({
+    heading: 'Complete your KYC verification',
+    greetingName: name || 'there',
+    introHtml:
+      'To continue using all available features of your OddsYra account, please complete your KYC verification.',
+    ctaLabel: 'Complete KYC',
+    ctaHref: kycUrl,
+    extraHtml: `
+          <tr>
+            <td class="oy-td" style="padding:16px 24px 0;font-size:15px;color:#14181f;line-height:1.5;">
+              Please log in to your account and complete the KYC verification process.
+              If you have already completed KYC, you can ignore this email.
+            </td>
+          </tr>`,
+    noteHtml: 'Need help? Open Profile → Support or email support@oddsyra.com.',
+  });
+  try {
+    const info = await sendMailWithFailover({
+      to: email,
+      subject: 'Complete your KYC verification',
+      html,
+      text:
+        `Hi ${name || 'there'},\n\n`
+        + 'Please complete your KYC verification on OddsYra.\n'
+        + `Open: ${kycUrl}\n\n`
+        + 'If you already completed KYC, you can ignore this email.\n\n'
+        + '— OddsYra Team',
+      replyTo: process.env.SUPPORT_INBOX_EMAIL || 'support@oddsyra.com',
+    });
+    return { success: true, messageId: info.messageId, provider: info.provider };
+  } catch (err) {
+    console.error('[EmailService] KYC reminder mail:', err.message);
     return { success: false, error: err.message };
   }
 }

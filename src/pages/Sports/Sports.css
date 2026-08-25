@@ -561,12 +561,24 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
   cursor: pointer;
   font-weight: 600;
   font-size: var(--text-sm);
   color: var(--color-text);
   transition: all var(--transition-fast);
   min-height: 52px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.sports-market-odds-btn > span:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
 }
 
 .sports-market-odds-btn:hover {
@@ -579,9 +591,12 @@
 }
 
 .sports-market-odds-btn .odds-val {
+  flex: 0 0 auto;
   color: var(--color-text);
   font-weight: 800;
   font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .sports-market-odds-btn.selected .odds-val {
@@ -1184,10 +1199,14 @@
 
   .sports-cricket-odds-card {
     flex: 1;
+    min-height: 44px;
+    height: 48px;
+    min-width: 0;
   }
 
   .sports-cricket-markets-capsule {
     margin-left: auto;
+    min-height: 44px;
   }
 }
 
@@ -1392,15 +1411,12 @@
   .sports-market-odds-btn {
     padding: 10px 8px;
     min-height: 52px;
+    gap: 6px;
   }
 
-  .sports-market-odds-btn span:first-child {
-    display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 100%;
+  .sports-market-odds-btn > span:first-child {
     font-size: 0.72rem;
+    line-height: 1.25;
   }
 
   .sports-market-odds-btn .odds-val {

@@ -2,8 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { IoClose } from '../../icons';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { fetchUserBonuses, usePromotionCatalog } from '../../hooks/usePromotionCatalog';
+import { fetchUserBonuses, fetchUserSignupPromoClaims, usePromotionCatalog } from '../../hooks/usePromotionCatalog';
 import { DEMO_MODE } from '../../utils/featureFlags';
+import {
+  findClaimedExclusiveSignupPromo,
+  isExclusiveSignupPromoLocked,
+} from '../../../lib/exclusiveSignupPromos.mjs';
 import './PromotionsPanel.css';
 
 export default function PromotionsPanel({ isOpen, onClose }) {
@@ -16,14 +20,18 @@ export default function PromotionsPanel({ isOpen, onClose }) {
 
   useEffect(() => {
     if (!isOpen || !isLoggedIn) {
-      if (!isOpen) setActiveBonuses([]);
+      if (!isOpen) {
+        setActiveBonuses([]);
+      }
       return undefined;
     }
 
     let cancelled = false;
-    fetchUserBonuses()
-      .then((bonuses) => {
-        if (!cancelled) setActiveBonuses(bonuses);
+    Promise.all([fetchUserBonuses(), fetchUserSignupPromoClaims()])
+      .then(([bonuses, claims]) => {
+        if (cancelled) return;
+        setActiveBonuses(bonuses);
+        setClaimedCodes(new Set((claims || []).map((c) => String(c.code || '').toUpperCase()).filter(Boolean)));
       })
       .catch(() => {
         if (!cancelled) setActiveBonuses([]);
@@ -64,6 +72,11 @@ export default function PromotionsPanel({ isOpen, onClose }) {
     return codes;
   }, [activeBonuses, claimedCodes]);
 
+  const exclusiveClaimed = useMemo(
+    () => findClaimedExclusiveSignupPromo([...claimedPromoCodes]),
+    [claimedPromoCodes],
+  );
+
   const handleClaim = async (promo) => {
     if (!isLoggedIn) {
       openLoginModal();
@@ -75,16 +88,28 @@ export default function PromotionsPanel({ isOpen, onClose }) {
     if (result?.ok && promo.code) {
       setClaimedCodes((prev) => new Set(prev).add(String(promo.code).toUpperCase()));
       if (!DEMO_MODE) {
-        const bonuses = await fetchUserBonuses();
+        const [bonuses, claims] = await Promise.all([fetchUserBonuses(), fetchUserSignupPromoClaims()]);
         setActiveBonuses(bonuses);
+        setClaimedCodes(new Set((claims || []).map((c) => String(c.code || '').toUpperCase()).filter(Boolean)));
       }
     }
   };
 
-  const isClaimed = (promo) => {
-    if (DEMO_MODE) return isPromotionClaimed(promo.id);
-    if (promo.code && claimedPromoCodes.has(String(promo.code).toUpperCase())) return true;
-    return false;
+  const claimState = (promo) => {
+    if (DEMO_MODE) {
+      return { disabled: isPromotionClaimed(promo.id), label: isPromotionClaimed(promo.id) ? 'Claimed' : 'Claim now' };
+    }
+    const code = promo.code ? String(promo.code).toUpperCase() : '';
+    if (code && claimedPromoCodes.has(code)) {
+      return { disabled: true, label: 'Claimed' };
+    }
+    if (code && isExclusiveSignupPromoLocked(code, claimedPromoCodes)) {
+      return {
+        disabled: true,
+        label: exclusiveClaimed ? `Used ${exclusiveClaimed}` : 'Unavailable',
+      };
+    }
+    return { disabled: false, label: 'Claim now' };
   };
 
   if (!isOpen) return null;
@@ -112,7 +137,7 @@ export default function PromotionsPanel({ isOpen, onClose }) {
           )}
 
           {!loading && catalog.length > 0 && catalog.map((promo) => {
-            const claimed = isClaimed(promo);
+            const { disabled, label } = claimState(promo);
             return (
               <article
                 key={promo.id || promo.code}
@@ -129,9 +154,9 @@ export default function PromotionsPanel({ isOpen, onClose }) {
                   type="button"
                   className="promotions-panel-claim"
                   onClick={() => handleClaim(promo)}
-                  disabled={claimed || claimingCode === promo.code}
+                  disabled={disabled || claimingCode === promo.code}
                 >
-                  {claimed ? 'Claimed' : claimingCode === promo.code ? 'Claiming…' : 'Claim now'}
+                  {claimingCode === promo.code ? 'Claiming…' : label}
                 </button>
               </article>
             );

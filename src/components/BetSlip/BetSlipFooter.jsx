@@ -5,6 +5,8 @@ import { getWalletBreakdown, formatInr } from '../../utils/walletBalance';
 import {
   BONUS_MIN_BET_ODDS,
   MIN_STAKE_INR,
+  QUICK_STAKE_PRESETS,
+  sanitizeStakeInput,
   canBetWithBonusOnLegs,
 } from '../../utils/wageringRules';
 import { DEMO_MODE } from '../../utils/featureFlags';
@@ -12,7 +14,7 @@ import { cleanKycMessage, isKycError, KYC_PROFILE_PATH } from '../../utils/kycUi
 import { buildSpinGrantNotice } from '../../utils/spinGrantUi';
 import './BetSlipFooter.css';
 
-const QUICK_STAKES = [100, 500, 1000];
+const QUICK_STAKES = QUICK_STAKE_PRESETS;
 
 export default function BetSlipFooter({ variant = 'default', onPlaced }) {
   const {
@@ -253,18 +255,19 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
           {betType === 'multi' ? 'Stake (₹)' : 'Stake each (₹)'}
         </span>
         <input
-          type="number"
+          type="text"
+          inputMode="decimal"
+          autoComplete="off"
           placeholder={singlesStakePlaceholder}
           value={betType === 'multi' ? stake : singlesStakeInputValue}
           onChange={(e) => {
-            const value = e.target.value;
+            const value = sanitizeStakeInput(e.target.value);
             if (betType === 'multi') {
               setStake(value);
             } else {
               applySinglesStake(value);
             }
           }}
-          min={MIN_STAKE_INR}
           id="stake-input"
           aria-label={betType === 'multi' ? 'Stake amount' : 'Stake amount per single bet'}
         />

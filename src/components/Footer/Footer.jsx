@@ -29,8 +29,15 @@ export default function Footer() {
           <div className="footer-section">
             <h4>Support</h4>
             <Link to="/help">Help Center</Link>
-            <Link to="/help">FAQ</Link>
-            <Link to="/promotions">Promotions</Link>
+            <Link to="/profile?tab=support">My support tickets</Link>
+            <a href="mailto:support@oddsyra.com">Email support@oddsyra.com</a>
+            <button
+              type="button"
+              className="footer-link-btn"
+              onClick={() => window.dispatchEvent(new CustomEvent('oddsyra:open-support-chat'))}
+            >
+              Live chat
+            </button>
           </div>
           <div className="footer-section">
             <h4>About</h4>

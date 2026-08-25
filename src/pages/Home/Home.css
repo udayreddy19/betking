@@ -360,9 +360,30 @@
 }
 
 @media (max-width: 768px) {
+  .home-page {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .home-promo-banner { order: 1; }
+  .home-quick-links { order: 2; }
+  .home-sports-action { order: 3; }
+  .home-watchlist { order: 4; }
+  .home-boosted { order: 5; }
+
   .home-promo-banner {
-    padding: var(--space-4);
-    min-height: 88px;
+    padding: 12px 14px;
+    min-height: 0;
+    gap: 12px;
+    margin-bottom: var(--space-4);
+  }
+
+  .home-promo-banner::before {
+    display: none;
+  }
+
+  .carousel-nav-btn {
+    display: none;
   }
 
   .home-promo-banner__coin {

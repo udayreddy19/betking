@@ -20,7 +20,7 @@ import { prefetchMatchDetail, enrichFromPoller, subscribeGlobalMatchDetails, get
 import { useMatchDetail } from '../../hooks/useMatchDetail';
 import { useCentralizedMatchState } from '../../hooks/useCentralizedMatchState';
 import { centralizedMatchEngine } from '../../services/centralizedMatchStateEngine';
-import { filterMatches } from '../../utils/matchFilters';
+import { filterMatches, compareMatchesForSportsBoard } from '../../utils/matchFilters';
 import { resolveLeagueId, getLeagueMeta, isSameLeague, groupMatchesByLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
 import { matchIdsEqual } from '../../../lib/matchIdPublic.mjs';
 import { findLiveMatch } from '../../utils/findLiveMatch';
@@ -285,7 +285,7 @@ function MarketsSuspended() {
 
 export default function Sports() {
   const matches = useLiveMatches();
-  useSyncExternalStore(subscribeGlobalMatchDetails, getGlobalMatchDetailVersion, () => 0);
+  const matchDetailVersion = useSyncExternalStore(subscribeGlobalMatchDetails, getGlobalMatchDetailVersion, () => 0);
   const { tickerMessage, cricketSeries, scoresError, refreshScores, isScoresLoading } = useLiveSportsMeta();
   const { addBet, isBetSelected } = useBetSlip();
   const { user, showToast } = useAuth();
@@ -296,7 +296,7 @@ export default function Sports() {
   const navigate = useNavigate();
   const isLiveBettingPage = location.pathname === '/live-betting';
 
-  const initialSport = searchParams.get('sport') || 'cricket';
+  const initialSport = searchParams.get('sport') || 'all';
   const initialLeague = resolveLeagueId(searchParams.get('league')) || 'all';
   const initialMatchId = searchParams.get('match');
 
@@ -331,19 +331,12 @@ export default function Sports() {
   }, [matches, activeSport, activeLeague, searchQuery, cricketSeries, watchlistOnly, watchlistIds]);
 
   const sportMatches = useMemo(() => {
-    return [...baseSportPool].sort((a, b) => {
-      const liveA = getMatchState(a) === 'in' ? 0 : 1;
-      const liveB = getMatchState(b) === 'in' ? 0 : 1;
-      if (liveA !== liveB) return liveA - liveB;
-      const leagueCmp = String(a.league || '').localeCompare(String(b.league || ''));
-      if (leagueCmp) return leagueCmp;
-      return String(a.id || '').localeCompare(String(b.id || ''));
-    });
-  }, [baseSportPool]);
+    return [...baseSportPool].sort((a, b) => compareMatchesForSportsBoard(a, b, getMatchScores));
+  }, [baseSportPool, matchDetailVersion]);
 
   const liveMatches = useMemo(
-    () => baseSportPool.filter((m) => getMatchState(m) === 'in'),
-    [baseSportPool],
+    () => sportMatches.filter((m) => getMatchState(m) === 'in'),
+    [sportMatches],
   );
 
   const cricketGroups = useMemo(() => groupMatchesByLeague(sportMatches), [sportMatches]);
@@ -580,7 +573,11 @@ export default function Sports() {
   }, [navigate, showLeagueOverview, activeLeague]);
 
   const toggleMarket = (key) => {
-    setExpandedMarkets(prev => ({ ...prev, [key]: !prev[key] }));
+    setExpandedMarkets((prev) => {
+      // Unset keys render expanded (`!== false`), so treat undefined as open.
+      const currentlyExpanded = prev[key] !== false;
+      return { ...prev, [key]: !currentlyExpanded };
+    });
   };
 
   const showCategory = (cat) => {
@@ -696,6 +693,7 @@ export default function Sports() {
       : filterMatches(matches || [], { stateTab: 'all' });
     const map = {};
     for (const cat of sportsCategories) {
+      if (cat.id === 'all') { map['all'] = pool.length; continue; }
       map[cat.id] = pool.filter((m) => {
         const s = String(m.sport || '').toLowerCase();
         if (cat.id === 'cricket') return s === 'cricket';
@@ -877,7 +875,7 @@ export default function Sports() {
                   </button>
                 )}
               </div>
-            ) : sportMatches.slice(0, 24).map(m => {
+            ) : sportMatches.map(m => {
               const { team1Score, team2Score, isLive } = getMatchScores(m);
               return (
                 <button

@@ -93,36 +93,79 @@
   justify-content: center;
 }
 
-@media (max-width: 900px) {
-  .home-category-grid {
-    grid-template-columns: 1fr 1fr;
-    grid-template-areas:
-      "sports sports"
-      "live live"
-      "instant vip"
-      "promos loyalty";
-    min-height: auto;
-  }
-
-  .home-cat-tile--large,
-  .home-cat-tile--tall {
-    min-height: 140px;
-  }
-
-  .home-cat-tile--small {
-    min-height: 100px;
-  }
+.home-quick-links {
+  display: none;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 900px) {
   .home-category-grid {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "sports"
-      "live"
-      "instant"
-      "vip"
-      "promos"
-      "loyalty";
+    display: none;
+  }
+
+  .home-quick-links {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin: 0 0 var(--space-5);
+  }
+
+  .home-quick-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 4px 8px;
+    border: none;
+    background: transparent;
+    color: var(--color-text);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .home-quick-link-icon {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+  }
+
+  .home-quick-link-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .home-quick-link-count {
+    position: absolute;
+    top: -5px;
+    right: -6px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--color-primary);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+
+  .home-quick-link-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: var(--color-text);
+  }
+
+  .home-quick-link:active .home-quick-link-icon {
+    transform: scale(0.94);
   }
 }

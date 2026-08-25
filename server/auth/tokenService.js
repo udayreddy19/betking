@@ -159,13 +159,29 @@ export async function revokeSingleToken(queryFn, rawToken) {
 }
 
 /**
- * Generate a secure random token for password resets or email verification.
+ * Generate a secure random token for email verification (long opaque).
  * @returns {{ rawToken: string, tokenHash: string }}
  */
 export function generateSecureToken() {
   const rawToken = crypto.randomBytes(48).toString('hex');
   const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
   return { rawToken, tokenHash };
+}
+
+/**
+ * Generate a 6-digit password-reset code (for email + manual entry).
+ * Stored as SHA-256 hash only — same claim/expiry rules as long tokens.
+ * @returns {{ rawToken: string, tokenHash: string }}
+ */
+export function generatePasswordResetCode() {
+  const rawToken = String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+  return { rawToken, tokenHash };
+}
+
+/** Normalize user-entered reset code (spaces/dashes stripped). */
+export function normalizePasswordResetCode(token = '') {
+  return String(token || '').replace(/[\s-]/g, '').trim();
 }
 
 export { ACCESS_TOKEN_EXPIRY_SECONDS, REFRESH_TOKEN_EXPIRY_DAYS };

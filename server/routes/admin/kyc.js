@@ -2,10 +2,18 @@ import { Router } from 'express';
 import { requirePermission } from '../../middleware/adminAuth.js';
 import { kycEngine, maskPan, maskAadhaar } from '../../../lib/kycEngine.mjs';
 import { query, queryRead } from '../../../db/pg.js';
+import { createRateLimiter } from '../../middleware/rateLimiter.js';
 
 const router = Router();
 
 const PENDING_STATUSES = new Set(['UNDER_REVIEW', 'PENDING', 'RESUBMISSION_REQUIRED']);
+
+const kycReminderRateLimiter = createRateLimiter({
+  prefix: 'rl:admin_kyc_reminder',
+  maxRequests: parseInt(process.env.KYC_REMINDER_ADMIN_RATE_LIMIT || '30', 10) || 30,
+  windowSeconds: 60,
+  keyGenerator: (req) => req.admin?.id || req.ip || 'unknown',
+});
 
 async function resolveCaseId({ caseId, userId }) {
   if (caseId) return caseId;
@@ -104,5 +112,109 @@ router.get('/cases', requirePermission('kyc', 'customers', 'risk'), async (req, 
     res.status(500).json({ error: err.message, cases: [] });
   }
 });
+
+// POST /api/admin/kyc/reminders — single or bulk
+router.post(
+  '/reminders',
+  requirePermission('kyc', 'customers', 'risk'),
+  kycReminderRateLimiter,
+  async (req, res) => {
+    try {
+      const { sendKycReminderForUser, sendKycRemindersBulk } = await import('../../../lib/kycReminder.mjs');
+      const adminId = req.admin?.id || 'admin';
+      const idempotencyKey = req.get('x-idempotency-key') || req.body?.idempotencyKey || null;
+      const bypassCooldown = req.admin?.role === 'SUPER_ADMIN' && req.body?.bypassCooldown === true;
+
+      if (Array.isArray(req.body?.userIds)) {
+        const result = await sendKycRemindersBulk({
+          userIds: req.body.userIds,
+          adminId,
+          idempotencyKeyPrefix: idempotencyKey || `bulk_${Date.now()}`,
+          bypassCooldown,
+        });
+        return res.json({
+          success: true,
+          ...result,
+          message: `${result.sent} reminder(s) queued/sent, ${result.skipped} skipped, ${result.failed} failed.`,
+        });
+      }
+
+      const userId = req.body?.userId || req.body?.id;
+      const result = await sendKycReminderForUser({
+        userId,
+        adminId,
+        idempotencyKey,
+        bypassCooldown,
+      });
+      return res.status(result.success || result.duplicate || result.status === 'QUEUED' ? 200 : 502).json({
+        success: Boolean(result.success || result.duplicate || result.status === 'QUEUED'),
+        status: result.status,
+        notificationId: result.notificationId,
+        message: result.message,
+        code: result.duplicate ? 'IDEMPOTENT' : undefined,
+      });
+    } catch (err) {
+      res.status(err.status || 500).json({
+        success: false,
+        error: err.message,
+        message: err.message,
+        code: err.code || 'KYC_REMINDER_FAILED',
+      });
+    }
+  },
+);
+
+// POST /api/admin/kyc/users/:userId/reminder
+router.post(
+  '/users/:userId/reminder',
+  requirePermission('kyc', 'customers', 'risk'),
+  kycReminderRateLimiter,
+  async (req, res) => {
+    try {
+      const { sendKycReminderForUser } = await import('../../../lib/kycReminder.mjs');
+      const result = await sendKycReminderForUser({
+        userId: req.params.userId,
+        adminId: req.admin?.id || 'admin',
+        idempotencyKey: req.get('x-idempotency-key') || req.body?.idempotencyKey || null,
+        bypassCooldown: req.admin?.role === 'SUPER_ADMIN' && req.body?.bypassCooldown === true,
+      });
+      return res.status(result.success || result.duplicate || result.status === 'QUEUED' ? 200 : 502).json({
+        success: Boolean(result.success || result.duplicate || result.status === 'QUEUED'),
+        status: result.status,
+        notificationId: result.notificationId,
+        message: result.message,
+      });
+    } catch (err) {
+      res.status(err.status || 500).json({
+        success: false,
+        error: err.message,
+        message: err.message,
+        code: err.code || 'KYC_REMINDER_FAILED',
+      });
+    }
+  },
+);
+
+// POST /api/admin/kyc/reminders/:reminderId/retry
+router.post(
+  '/reminders/:reminderId/retry',
+  requirePermission('kyc', 'customers', 'risk'),
+  kycReminderRateLimiter,
+  async (req, res) => {
+    try {
+      const { processKycReminderRetries } = await import('../../../lib/kycReminder.mjs');
+      await query(
+        `UPDATE kyc_reminder_log
+         SET next_retry_at = NOW(), delivery_status = 'QUEUED', updated_at = NOW()
+         WHERE reminder_id = $1 AND delivery_status IN ('FAILED', 'QUEUED')`,
+        [req.params.reminderId],
+      );
+      const result = await processKycReminderRetries({ limit: 5 });
+      res.json({ success: true, ...result });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  },
+);
 
 export default router;

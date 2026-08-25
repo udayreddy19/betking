@@ -13,7 +13,7 @@ import Footer from './components/Footer/Footer';
 import Sidebar from './components/Sidebar/Sidebar';
 import LoginModal from './components/LoginModal/LoginModal';
 import DepositModal from './components/DepositModal/DepositModal';
-import RealityCheckModal from './components/RealityCheckModal/RealityCheckModal';
+import SessionIdleLogout from './components/SessionIdleLogout/SessionIdleLogout';
 import Toast from './components/Toast/Toast';
 import FinancialModals from './components/FinancialModals/FinancialModals';
 import MobileBetSlip from './components/MobileBetSlip/MobileBetSlip';
@@ -96,7 +96,7 @@ function AppLayout() {
       </ErrorBoundary>
       <LoginModal />
       <DepositModal />
-      <RealityCheckModal />
+      <SessionIdleLogout />
       <AppFinancialModals />
       <Toast />
       <GamePlayModal />

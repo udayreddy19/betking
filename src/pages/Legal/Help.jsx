@@ -36,6 +36,7 @@ export default function Help() {
           <li>After 5× rotation, bonus winnings can be withdrawn. The bonus itself cannot.</li>
           <li>Free bets play like cash at any odds and pay profit only (stake is not returned).</li>
           <li>Each promo code can be used once per user, linked to Aadhaar and PAN.</li>
+          <li>SPORTS500, VIP1000, and LIVE100 are welcome offers — only one of these three can be claimed per user.</li>
         </ul>
       </section>
       <section>
@@ -56,14 +57,23 @@ export default function Help() {
       </section>
       <section>
         <h2>Contact</h2>
-        <p>For account or payment issues, chat with the assistant, open a ticket, and follow it in Profile → Support, or email support@oddsyra.com.</p>
-        <button
-          type="button"
-          className="legal-chat-btn"
-          onClick={() => window.dispatchEvent(new CustomEvent('oddsyra:open-support-chat'))}
-        >
-          Open support chat
-        </button>
+        <p>
+          Chat with the assistant, open a ticket (you’ll get an email with your ticket number),
+          follow it in <Link to="/profile?tab=support">Profile → Support</Link>, or email{' '}
+          <a href="mailto:support@oddsyra.com">support@oddsyra.com</a>.
+        </p>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="legal-chat-btn"
+            onClick={() => window.dispatchEvent(new CustomEvent('oddsyra:open-support-chat'))}
+          >
+            Open support chat
+          </button>
+          <Link to="/profile?tab=support" className="legal-chat-btn">
+            My tickets
+          </Link>
+        </div>
       </section>
       <p><Link to="/">← Back to home</Link></p>
     </div>

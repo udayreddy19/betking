@@ -1,16 +1,26 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import { useLocation } from 'react-router-dom';
 import { useBetSlip } from '../../context/BetSlipContext';
+import { ODDS_STATUS, formatOddsChangeAnnouncement } from '../../utils/oddsChangeHandler';
 import { useAuth } from '../../context/AuthContext';
 import BetSlip from '../BetSlip/BetSlip';
 import BetSlipFooter from '../BetSlip/BetSlipFooter';
 import { NavBetslipIcon } from '../MobileBottomBar/MobileNavIcons';
-import { MIN_STAKE_INR } from '../../utils/wageringRules';
+import { getWalletBreakdown, formatInr } from '../../utils/walletBalance';
+import {
+  BONUS_MIN_BET_ODDS,
+  MIN_STAKE_INR,
+  QUICK_STAKE_PRESETS,
+  sanitizeStakeInput,
+  canBetWithBonusOnLegs,
+} from '../../utils/wageringRules';
 import { springSheet, pressScale } from '../../utils/motionPresets';
 import { IoClose } from '../../icons';
+import '../BetSlip/BetSlipFooter.css';
 import './MobileBetSlip.css';
 
-const QUICK_STAKES = [500, 1500, 5000];
+const QUICK_STAKES = QUICK_STAKE_PRESETS;
 
 function subscribeDesktopMq(onChange) {
   if (typeof window === 'undefined') return () => {};
@@ -41,11 +51,49 @@ const sheetMotionDesktop = {
 };
 
 function QuickBetPanel({
-  bet, stake, betCount, isPlacing, placementNotice, onStake, onPlace, onClose, onOpenFull, isDesktop,
+  bet,
+  stake,
+  stakeSource,
+  onStakeSource,
+  betCount,
+  isPlacing,
+  placementNotice,
+  onStake,
+  onPlace,
+  onClose,
+  onRemove,
+  onClearAll,
+  onOpenFull,
+  onAcceptOdds,
+  isDesktop,
 }) {
+  const { user } = useAuth();
+  const wallet = getWalletBreakdown(user);
+  const bonusAvailable = wallet.bonus;
+  const freebetAvailable = wallet.freebets;
+  const canUseBonus = bonusAvailable > 0 && canBetWithBonusOnLegs([bet]);
+  const canUseFreebet = freebetAvailable > 0;
+
+  let activeSource = 'cash';
+  if (stakeSource === 'bonus' && canUseBonus) activeSource = 'bonus';
+  else if (stakeSource === 'freebet' && canUseFreebet) activeSource = 'freebet';
+
   const stakeNum = parseFloat(stake) || 0;
-  const potentialReturn = stakeNum > 0 ? (stakeNum * Number(bet.odds)).toFixed(2) : '0.00';
+  const odds = Number(bet.odds) || 0;
+  const potentialReturn = stakeNum > 0 && odds > 0
+    ? (activeSource === 'freebet'
+      ? Math.max(0, stakeNum * (odds - 1))
+      : stakeNum * odds).toFixed(2)
+    : '0.00';
+  const showStakeSource = bonusAvailable > 0 || freebetAvailable > 0;
   const sheetMotion = isDesktop ? sheetMotionDesktop : sheetMotionMobile;
+  const oldOdds = Number(bet.previousOdds ?? bet.oldOdds);
+  const newOdds = Number(bet.odds);
+  const oddsChanged = bet.oddsStatus === ODDS_STATUS.CHANGED;
+  const showStrike = oddsChanged && Number.isFinite(oldOdds);
+  const noticeText = oddsChanged
+    ? (formatOddsChangeAnnouncement(bet) || placementNotice || 'Please accept the updated odds before placing your bet.')
+    : placementNotice;
 
   return (
     <>
@@ -71,14 +119,34 @@ function QuickBetPanel({
         <div className="mobile-betslip-sheet__head">
           <div className="mobile-betslip-sheet__head-row">
             <div>
-              <strong>{bet.selectionName}</strong>
-              <span className="mobile-betslip-quick-odds">• {Number(bet.odds).toFixed(2)}</span>
+              <strong>{bet.selectionName || bet.selection}</strong>
+              <span className="mobile-betslip-quick-odds">
+                •
+                {showStrike ? (
+                  <>
+                    <span className="mobile-betslip-quick-odds-old">{oldOdds.toFixed(2)}</span>
+                    <span className="mobile-betslip-quick-odds-new">{Number.isFinite(newOdds) ? newOdds.toFixed(2) : ''}</span>
+                  </>
+                ) : (
+                  <span>{Number.isFinite(newOdds) ? newOdds.toFixed(2) : ''}</span>
+                )}
+              </span>
             </div>
-            <button type="button" className="mobile-betslip-sheet__close" onClick={onClose} aria-label="Close">
+            <button type="button" className="mobile-betslip-sheet__close" onClick={onRemove} aria-label="Remove selection">
               <IoClose />
             </button>
           </div>
           <p className="mobile-betslip-sheet__market">{bet.marketName}</p>
+        </div>
+
+        <div className="mobile-betslip-sheet__actions">
+          <button
+            type="button"
+            className="mobile-betslip-clear-all"
+            onClick={onClearAll}
+          >
+            Clear all{betCount > 1 ? ` (${betCount})` : ''}
+          </button>
         </div>
 
         {betCount >= 2 && (
@@ -87,33 +155,118 @@ function QuickBetPanel({
           </button>
         )}
 
+        {showStakeSource && (
+          <div className="betslip-stake-source mobile-betslip-stake-source">
+            <span className="betslip-stake-source__label">Stake from</span>
+            <div className="betslip-stake-source__tabs">
+              <button
+                type="button"
+                className={`betslip-stake-source__tab ${activeSource === 'cash' ? 'active' : ''}`}
+                onClick={() => onStakeSource('cash')}
+              >
+                Cash {formatInr(wallet.cashBalance)}
+              </button>
+              {bonusAvailable > 0 && (
+                <button
+                  type="button"
+                  className={`betslip-stake-source__tab ${activeSource === 'bonus' ? 'active' : ''}`}
+                  onClick={() => onStakeSource('bonus')}
+                  disabled={!canUseBonus}
+                >
+                  Bonus {formatInr(bonusAvailable)}
+                </button>
+              )}
+              {freebetAvailable > 0 && (
+                <button
+                  type="button"
+                  className={`betslip-stake-source__tab ${activeSource === 'freebet' ? 'active' : ''}`}
+                  onClick={() => onStakeSource('freebet')}
+                  disabled={!canUseFreebet}
+                >
+                  Freebet {formatInr(freebetAvailable)}
+                </button>
+              )}
+            </div>
+            {stakeSource === 'bonus' && !canUseBonus && (
+              <p className="betslip-stake-source__warn">
+                Bonus requires odds ≥ {BONUS_MIN_BET_ODDS.toFixed(2)}. Rotate 5× before withdrawing winnings.
+              </p>
+            )}
+            {activeSource === 'bonus' && canUseBonus && (
+              <p className="betslip-stake-source__hint">
+                Bonus must be rotated 5 times at {BONUS_MIN_BET_ODDS.toFixed(2)}+ odds. Winnings can be withdrawn after that — not the bonus.
+              </p>
+            )}
+            {activeSource === 'freebet' && (
+              <p className="betslip-stake-source__hint">
+                Free bet plays like cash at any odds. Winning pays profit only.
+              </p>
+            )}
+          </div>
+        )}
+
+        <div className="mobile-betslip-stake-row">
+          <label className="mobile-betslip-stake-label" htmlFor="mobile-quick-stake-input">
+            Stake (₹)
+          </label>
+          <div className="mobile-betslip-stake-input-wrap">
+            <span className="mobile-betslip-stake-prefix" aria-hidden="true">₹</span>
+            <input
+              id="mobile-quick-stake-input"
+              type="text"
+              inputMode="decimal"
+              enterKeyHint="done"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              value={stake}
+              onChange={(e) => onStake(sanitizeStakeInput(e.target.value))}
+              placeholder="Enter amount"
+              aria-label="Enter stake amount"
+            />
+          </div>
+        </div>
+
         <div className="mobile-betslip-quick-stakes">
           {QUICK_STAKES.map((amount) => (
             <button
               key={amount}
               type="button"
               className={`mobile-betslip-quick-stake${String(amount) === String(stake) ? ' is-active' : ''}`}
-              onClick={() => onStake(amount)}
+              onClick={() => onStake(String(amount))}
             >
               ₹{amount >= 1000 ? `${amount / 1000}K` : amount}
             </button>
           ))}
         </div>
 
-        {placementNotice && (
-          <p className="mobile-betslip-notice" role="status">{placementNotice}</p>
+        {noticeText && (
+          <p className="mobile-betslip-notice" role="status">{noticeText}</p>
+        )}
+
+        {oddsChanged && (
+          <button
+            type="button"
+            className="mobile-betslip-accept-odds"
+            onClick={onAcceptOdds}
+          >
+            Accept {Number.isFinite(newOdds) ? newOdds.toFixed(2) : 'new odds'}
+          </button>
         )}
 
         <button
           type="button"
           className={`mobile-betslip-place-btn${isPlacing ? ' is-placing' : ''}`}
-          disabled={stakeNum < MIN_STAKE_INR || isPlacing}
+          disabled={stakeNum < MIN_STAKE_INR || isPlacing || oddsChanged}
           onClick={onPlace}
         >
           {isPlacing ? 'Placing…' : 'Place bet'}
         </button>
         <p className="mobile-betslip-return-hint">
-          Potential return <strong>₹{potentialReturn}</strong>
+          {activeSource === 'freebet' ? 'Potential profit' : 'Potential return'}
+          {' '}
+          <strong>₹{potentialReturn}</strong>
         </p>
       </motion.div>
     </>
@@ -161,22 +314,31 @@ export default function MobileBetSlip() {
     betCount,
     isMobileOpen,
     setIsMobileOpen,
+    bets,
     quickBet,
     closeQuickBet,
     openQuickBetPanel,
     placeBets,
     setSingleStake,
     singlesStakes,
+    removeBet,
+    clearAll,
+    acceptOddsChange,
   } = useBetSlip();
-  const { isLoggedIn, openLoginModal, showToast, dismissToast } = useAuth();
+  const { isLoggedIn, openLoginModal, showToast, dismissToast, user } = useAuth();
+  const location = useLocation();
   const isDesktop = useDesktopBetslipLayout();
   const [isPlacing, setIsPlacing] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
   const [placementNotice, setPlacementNotice] = useState(null);
+  const [stakeSource, setStakeSource] = useState('cash');
   const prevBetCountRef = useRef(betCount);
 
-  const bet = quickBet?.bet;
-  const stake = bet ? (singlesStakes[bet.id] || quickBet.defaultStake || '500') : '';
+  const bet = !quickBet?.bet
+    ? null
+    : (bets.find((item) => item.id === quickBet.bet.id) || quickBet.bet);
+  // Use ?? so an emptied field ('') is not replaced by the default 100.
+  const stake = !bet ? '' : (singlesStakes[bet.id] ?? quickBet.defaultStake ?? '100');
 
   useEffect(() => {
     if (betCount > prevBetCountRef.current) {
@@ -202,6 +364,11 @@ export default function MobileBetSlip() {
   }, [isMobileOpen, quickBet, dismissToast]);
 
   useEffect(() => {
+    closeQuickBet();
+    setIsMobileOpen(false);
+  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
     if (!isMobileOpen && !quickBet) return undefined;
     const onKey = (event) => {
       if (event.key === 'Escape') {
@@ -212,6 +379,42 @@ export default function MobileBetSlip() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [isMobileOpen, quickBet, closeQuickBet, setIsMobileOpen]);
+
+  useEffect(() => {
+    if (!isMobileOpen && !quickBet) return undefined;
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtml = html.style.overflow;
+    const prevBody = body.style.overflow;
+    html.style.overflow = 'hidden';
+    body.style.overflow = 'hidden';
+    return () => {
+      html.style.overflow = prevHtml;
+      body.style.overflow = prevBody;
+    };
+  }, [isMobileOpen, quickBet]);
+
+  useEffect(() => {
+    if (!isMobileOpen && !quickBet) return undefined;
+    const vv = window.visualViewport;
+    if (!vv) return undefined;
+    const syncKeyboard = () => {
+      const covered = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      document.documentElement.style.setProperty('--kb-inset', `${covered}px`);
+    };
+    syncKeyboard();
+    vv.addEventListener('resize', syncKeyboard);
+    vv.addEventListener('scroll', syncKeyboard);
+    return () => {
+      vv.removeEventListener('resize', syncKeyboard);
+      vv.removeEventListener('scroll', syncKeyboard);
+      document.documentElement.style.setProperty('--kb-inset', '0px');
+    };
+  }, [isMobileOpen, quickBet]);
+
+  useEffect(() => {
+    if (!quickBet) setStakeSource('cash');
+  }, [quickBet]);
 
   const handleQuickPlace = async () => {
     if (isPlacing || !bet) return;
@@ -225,17 +428,50 @@ export default function MobileBetSlip() {
       showToast(`Minimum stake is ₹${MIN_STAKE_INR}.`, 'error');
       return;
     }
+
+    const wallet = getWalletBreakdown(user);
+    let activeSource = 'cash';
+    if (stakeSource === 'bonus' && wallet.bonus > 0 && canBetWithBonusOnLegs([bet])) {
+      activeSource = 'bonus';
+    } else if (stakeSource === 'freebet' && wallet.freebets > 0) {
+      activeSource = 'freebet';
+    }
+
+    if (activeSource === 'bonus' && !canBetWithBonusOnLegs([bet])) {
+      showToast(
+        `Bonus requires odds of ${BONUS_MIN_BET_ODDS.toFixed(2)} or higher.`,
+        'error',
+      );
+      return;
+    }
+    if (activeSource === 'bonus' && wallet.bonus < stakeNum) {
+      showToast('Insufficient bonus balance.', 'error');
+      return;
+    }
+    if (activeSource === 'freebet' && wallet.freebets < stakeNum) {
+      showToast('Insufficient freebet balance.', 'error');
+      return;
+    }
+    if (activeSource === 'cash' && wallet.cashBalance < stakeNum) {
+      showToast('Insufficient cash balance. Please deposit funds.', 'error');
+      return;
+    }
+
     setIsPlacing(true);
     setPlacementNotice(null);
     try {
-      const result = await placeBets({ stakeSource: 'cash', singleBetId: bet.id });
+      const result = await placeBets({ stakeSource: activeSource, singleBetId: bet.id });
       if (result.success) {
         closeQuickBet();
         showToast('Bet placed!', 'success');
       } else if (result.oddsUpdated || result.requiresAcceptance) {
-        const msg = result.error || 'The odds have changed. Please review the new odds.';
+        const update = result.updates?.[0];
+        const oldPrice = Number(update?.oldOdds ?? update?.previousOdds);
+        const newPrice = Number(update?.newOdds ?? update?.odds);
+        const msg = Number.isFinite(oldPrice) && Number.isFinite(newPrice)
+          ? `Odds changed from ${oldPrice.toFixed(2)} to ${newPrice.toFixed(2)}.`
+          : (result.error || 'The odds have changed. Please review the new odds.');
         setPlacementNotice(msg);
-        showToast(msg, 'info');
       } else {
         showToast(result.error || 'Could not place bet.', 'error');
       }
@@ -265,13 +501,23 @@ export default function MobileBetSlip() {
           <QuickBetPanel
             bet={bet}
             stake={stake}
+            stakeSource={stakeSource}
+            onStakeSource={setStakeSource}
             betCount={betCount}
             isPlacing={isPlacing}
             placementNotice={placementNotice}
             onStake={(amount) => setSingleStake(bet.id, String(amount))}
             onPlace={handleQuickPlace}
             onClose={closeQuickBet}
+            onRemove={() => { removeBet(bet.id); closeQuickBet(); }}
+            onClearAll={() => { clearAll(); closeQuickBet(); }}
             onOpenFull={openFullFromQuick}
+            onAcceptOdds={() => {
+              if (bet) {
+                acceptOddsChange(bet.id);
+                setPlacementNotice(null);
+              }
+            }}
             isDesktop={isDesktop}
           />
         )}

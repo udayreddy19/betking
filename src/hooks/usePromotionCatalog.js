@@ -62,3 +62,10 @@ export async function fetchUserBonuses() {
   const data = await res.json();
   return data?.bonuses ?? [];
 }
+
+export async function fetchUserSignupPromoClaims() {
+  const res = await apiFetch('/api/v1/rewards/promo/claims');
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data?.claims ?? [];
+}

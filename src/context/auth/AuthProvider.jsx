@@ -648,7 +648,7 @@ export function AuthProvider({ children }) {
     }
   }, [user]);
 
-  const logout = useCallback(async () => {
+  const logout = useCallback(async (opts = {}) => {
     try {
       await apiFetch('/api/auth/logout', { method: 'POST' });
     } catch {
@@ -665,7 +665,7 @@ export function AuthProvider({ children }) {
     setAuthStatus('anonymous');
     setTransactions([]);
     setIsSidebarOpen(false);
-    showToast('You have been logged out.', 'info');
+    showToast(opts.message || 'You have been logged out.', opts.toastType || 'info');
   }, [setUser, showToast]);
 
 

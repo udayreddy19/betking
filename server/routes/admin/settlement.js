@@ -245,7 +245,7 @@ router.post('/api/admin/settlement/reversal/request', requireRole('SUPER_ADMIN',
       betId,
       reason,
       newResult,
-      requestedBy: req.admin?.sub || req.user?.userId || 'admin',
+      requestedBy: req.admin?.id || req.user?.userId || 'admin',
     });
     res.json(result);
   } catch (err) {

@@ -12,7 +12,7 @@ import { fetchLiveScores } from '../services/liveScoresService';
 import { subscribeLiveChannel, isLiveFeedSocketOpen } from '../services/liveFeedSocket';
 import { LIVE_SCORES_POLL_MS, LIVE_SCORES_WS_FALLBACK_POLL_MS } from '../config/livePolling';
 import { getIplSrlMatches } from '../../lib/iplSrlSimulator.mjs';
-import { cricketScoreWeight, cricketSourceRank } from '../../lib/matchPairKey.mjs';
+import { cricketScoreWeight, cricketSourceRank, getCanonicalMatchPairKey } from '../../lib/matchPairKey.mjs';
 
 const LiveMatchesContext = createContext([]);
 const LiveSportsMetaContext = createContext(null);
@@ -44,16 +44,24 @@ function attachOdds(matches) {
   });
 }
 
-function normalizeTeamKey(name = '') {
-  return String(name)
-    .replace(/\s*(1st|2nd|3rd|4th|inns|innings|xi|t20|test)\b/gi, '')
-    .replace(/[^a-z0-9]/gi, '')
-    .trim()
-    .toLowerCase();
-}
-
 function isSrlMatch(match) {
   return String(match?.id || '').startsWith('srl_') || match?.source === 'srl';
+}
+
+function preferMatchEntity(existing, incoming) {
+  if (!existing) return incoming;
+  if (!incoming) return existing;
+  const existingRank = cricketSourceRank(existing);
+  const incomingRank = cricketSourceRank(incoming);
+  let primary = incomingRank >= existingRank ? incoming : existing;
+  let secondary = incomingRank >= existingRank ? existing : incoming;
+  if (cricketScoreWeight(primary) === 0 && cricketScoreWeight(secondary) > 0) {
+    return secondary;
+  }
+  if (incomingRank !== existingRank) {
+    return primary;
+  }
+  return cricketScoreWeight(incoming) > cricketScoreWeight(existing) ? incoming : existing;
 }
 
 function mergeSrlMatches(matches) {
@@ -67,33 +75,24 @@ function mergeSrlMatches(matches) {
 
   const pushUnique = (match, { allowSrl = false } = {}) => {
     if (!match?.id || seenIds.has(match.id)) return;
-    const t1 = normalizeTeamKey(match?.team1?.name || match?.team1 || '');
-    const t2 = normalizeTeamKey(match?.team2?.name || match?.team2 || '');
-    const blob = `${match?.team1?.name || ''} ${match?.team2?.name || ''} ${match?.league || ''} ${match?.id || ''}`;
-    const gender = /\bwomen\b|\(women\)/i.test(blob) ? 'w' : 'm';
-    const srlTag = allowSrl
-      || String(match.id || '').startsWith('srl_')
-      || match.source === 'srl'
-      || /\bsrl\b/i.test(blob)
-      ? 'srl'
-      : 'real';
-    const pairKey = (t1 && t2) ? `${gender}|${srlTag}|${[t1, t2].sort().join('::')}` : null;
-    if (pairKey && seenPairs.has(pairKey)) {
-      const existingIdx = seenPairs.get(pairKey);
+    const pairKey = getCanonicalMatchPairKey(match);
+    // Force SRL sims into their own bucket even when team names collide with real fixtures
+    const keyed = allowSrl || isSrlMatch(match)
+      ? `srl|${pairKey}`
+      : pairKey;
+    if (keyed && seenPairs.has(keyed)) {
+      const existingIdx = seenPairs.get(keyed);
       const existing = result[existingIdx];
       if (existing) {
-        const rankBetter = cricketSourceRank(match) > cricketSourceRank(existing);
-        const rankTied = cricketSourceRank(match) === cricketSourceRank(existing);
-        const scoreBetter = cricketScoreWeight(match) > cricketScoreWeight(existing);
-        if (rankBetter || (rankTied && scoreBetter)) {
-          result[existingIdx] = match;
-          seenIds.add(match.id);
-        }
+        const preferred = preferMatchEntity(existing, match);
+        result[existingIdx] = preferred;
+        seenIds.add(match.id);
+        if (preferred?.id) seenIds.add(preferred.id);
       }
       return;
     }
     seenIds.add(match.id);
-    if (pairKey) seenPairs.set(pairKey, result.length);
+    if (keyed) seenPairs.set(keyed, result.length);
     result.push(match);
   };
 
@@ -173,31 +172,54 @@ function mergeMatchesStable(prev, next) {
   const prevById = new Map(prev.map((m) => [m.id, m]));
   const processedIds = new Set();
   const merged = [];
+  const seenPairs = new Map();
+
+  const rememberPair = (match, index) => {
+    const key = getCanonicalMatchPairKey(match);
+    if (key) seenPairs.set(key, index);
+  };
 
   for (const candidate of next) {
     processedIds.add(candidate.id);
     const previous = prevById.get(candidate.id);
+    let chosen;
     if (!previous) {
-      merged.push(candidate);
+      chosen = candidate;
     } else if (matchDisplayKey(previous) === matchDisplayKey(candidate)) {
-      merged.push(previous);
+      chosen = previous;
     } else {
-      merged.push({
+      chosen = {
         ...candidate,
         liveDetails: mergeLiveDetailsPreservePlayers(previous.liveDetails, candidate.liveDetails),
         squads: candidate.squads?.length ? candidate.squads : previous.squads,
         scorecardInnings: candidate.scorecardInnings?.length
           ? candidate.scorecardInnings
           : previous.scorecardInnings,
-      });
+      };
     }
+
+    const pairKey = getCanonicalMatchPairKey(chosen);
+    if (pairKey && seenPairs.has(pairKey)) {
+      const existingIdx = seenPairs.get(pairKey);
+      merged[existingIdx] = preferMatchEntity(merged[existingIdx], chosen);
+      continue;
+    }
+    rememberPair(chosen, merged.length);
+    merged.push(chosen);
   }
 
-  // Retain active matches from prev if omitted in next during transient provider delay
+  // Retain active matches from prev if omitted in next during transient provider delay,
+  // but never keep a second copy of the same fixture (pair key).
   for (const previous of prev) {
-    if (!processedIds.has(previous.id)) {
-      merged.push(previous);
+    if (processedIds.has(previous.id)) continue;
+    const pairKey = getCanonicalMatchPairKey(previous);
+    if (pairKey && seenPairs.has(pairKey)) {
+      const existingIdx = seenPairs.get(pairKey);
+      merged[existingIdx] = preferMatchEntity(merged[existingIdx], previous);
+      continue;
     }
+    rememberPair(previous, merged.length);
+    merged.push(previous);
   }
 
   return merged;

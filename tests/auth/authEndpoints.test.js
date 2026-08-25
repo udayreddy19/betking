@@ -323,7 +323,8 @@ describe('Auth Service & Endpoints Test Suite', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.userId).toBeDefined();
+      expect(result.userId).toMatch(/^[a-z0-9]+_\d{2}_\d{2}_\d{4}_\d{6}$/);
+      expect(result.userId.startsWith('virat_')).toBe(true);
       expect(result.accessToken).toBeDefined();
       expect(result.refreshToken).toBeDefined();
       expect(result.emailVerificationToken).toBeDefined();

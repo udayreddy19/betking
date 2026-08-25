@@ -9,7 +9,8 @@ import { sportsCategories, featuredLeagues } from '../../data/mockData';
 import { homePromoSlides } from '../../data/homePageData';
 import { useLiveMatches, useLiveSportsMeta } from '../../context/LiveSportsContext';
 import LiveScoresFeedBanner from '../../components/LiveScoresFeedBanner/LiveScoresFeedBanner';
-import { filterMatches } from '../../utils/matchFilters';
+import { filterMatches, compareMatchesForSportsBoard } from '../../utils/matchFilters';
+import { getMatchState } from '../../utils/matchBetting';
 import { getLeagueMeta, isSameLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
 import { useMatchWatchlist } from '../../hooks/useMatchWatchlist';
 import BoostedOddsWidget from '../../components/BoostedOddsWidget/BoostedOddsWidget';
@@ -44,8 +45,14 @@ export default function Home() {
 
   const sportMatches = useMemo(() => {
     const bySport = filterMatches(matches || [], { sport: activeSport, stateTab: 'bettable' });
-    return activeLeague ? filterByLeague(bySport, activeLeague) : bySport;
+    const filtered = activeLeague ? filterByLeague(bySport, activeLeague) : bySport;
+    return [...filtered].sort(compareMatchesForSportsBoard);
   }, [matches, activeSport, activeLeague]);
+
+  const liveCount = useMemo(
+    () => (matches || []).filter((m) => getMatchState(m) === 'in').length,
+    [matches],
+  );
 
   const sportCounts = useMemo(() => {
     const map = {};
@@ -125,7 +132,7 @@ export default function Home() {
         </div>
       </button>
 
-      <HomeCategoryGrid />
+      <HomeCategoryGrid liveCount={liveCount} />
 
       {watchlistCount > 0 && (
         <section className="home-section home-watchlist" id="watchlist-section">
@@ -159,7 +166,9 @@ export default function Home() {
         </section>
       )}
 
-      <BoostedOddsWidget />
+      <section className="home-section home-boosted">
+        <BoostedOddsWidget />
+      </section>
 
       <section className="home-section home-sports-action" id="sports-action-section">
         <div className="section-header">

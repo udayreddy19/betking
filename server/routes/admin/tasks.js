@@ -51,7 +51,6 @@ router.put('/:id/status', async (req, res) => {
     const { status } = req.body;
     const validStatuses = ['OPEN','IN_PROGRESS','BLOCKED','COMPLETED','CANCELLED'];
     if (!validStatuses.includes(status)) return res.status(400).json({ error: `Invalid status. Valid: ${validStatuses.join(', ')}` });
-    const completedAt = status === 'COMPLETED' ? 'NOW()' : 'NULL';
     await q(`UPDATE operational_tasks SET status = $1, completed_at = ${status === 'COMPLETED' ? 'NOW()' : 'NULL'}, updated_at = NOW() WHERE task_id = $2`, [status, req.params.id]);
     await logAdminAction({ actorId: req.admin.id, targetId: req.params.id, action: 'TASK_STATUS_CHANGED', details: { status } });
     res.json({ taskId: req.params.id, status });

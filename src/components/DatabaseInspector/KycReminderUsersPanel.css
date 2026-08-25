@@ -1,0 +1,206 @@
+.kyc-reminder-panel {
+  margin-bottom: 16px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, #f59e0b 45%, var(--admin-border, #cbd5e1));
+  background: color-mix(in srgb, #f59e0b 10%, var(--admin-surface, #ffffff));
+  color: var(--admin-text, #0f172a);
+}
+
+.kyc-reminder-panel--compact {
+  margin-bottom: 12px;
+  padding: 12px;
+}
+
+.kyc-reminder-panel__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.kyc-reminder-panel__title {
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: var(--admin-text, #0f172a);
+}
+
+.admin-shell--light .kyc-reminder-panel__title,
+html[data-theme="light"] .kyc-reminder-panel__title {
+  color: #0f172a;
+}
+
+.admin-shell--dark .kyc-reminder-panel__title,
+html[data-theme="dark"] .kyc-reminder-panel__title {
+  color: #fbbf24;
+}
+
+.kyc-reminder-panel__sub {
+  font-size: 0.75rem;
+  color: var(--admin-text-muted, #475569);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.kyc-reminder-panel__sub code {
+  font-size: 0.72rem;
+  color: var(--admin-text, #0f172a);
+}
+
+.kyc-reminder-panel__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.kyc-reminder-panel__error {
+  color: #b91c1c;
+  font-size: 0.8rem;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.admin-shell--dark .kyc-reminder-panel__error {
+  color: #fca5a5;
+}
+
+.kyc-reminder-panel__notice {
+  color: #047857;
+  font-size: 0.8rem;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.admin-shell--dark .kyc-reminder-panel__notice {
+  color: #6ee7b7;
+}
+
+.kyc-reminder-panel__empty {
+  color: var(--admin-text-muted, #475569);
+  font-size: 0.82rem;
+}
+
+.kyc-reminder-panel__table-wrap {
+  overflow-x: auto;
+  max-height: 420px;
+  overflow-y: auto;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border, #e2e8f0);
+  background: var(--admin-panel, var(--admin-surface, #ffffff));
+}
+
+.kyc-reminder-panel--compact .kyc-reminder-panel__table-wrap {
+  max-height: 280px;
+}
+
+.kyc-reminder-panel__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  color: var(--admin-text, #0f172a);
+}
+
+.kyc-reminder-panel__table th {
+  padding: 8px 10px;
+  text-align: left;
+  font-weight: 800;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--admin-text-muted, #475569);
+  background: color-mix(in srgb, var(--admin-text, #0f172a) 4%, transparent);
+  border-bottom: 1px solid var(--admin-border, #e2e8f0);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.kyc-reminder-panel__table td {
+  padding: 10px;
+  vertical-align: middle;
+  color: var(--admin-text, #0f172a);
+  border-top: 1px solid var(--admin-border, #e2e8f0);
+}
+
+.kyc-reminder-panel__cell-strong {
+  font-weight: 600;
+  color: var(--admin-text, #0f172a) !important;
+}
+
+.kyc-reminder-panel__kyc {
+  color: #b45309;
+  font-weight: 800;
+}
+
+.admin-shell--dark .kyc-reminder-panel__kyc {
+  color: #fbbf24;
+}
+
+.kyc-reminder-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 0.75rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.kyc-reminder-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.kyc-reminder-btn--primary {
+  border: none;
+  background: #f59e0b;
+  color: #111827;
+}
+
+.kyc-reminder-btn--secondary {
+  border: 1px solid var(--admin-border, #cbd5e1);
+  background: var(--admin-panel, transparent);
+  color: var(--admin-text, #0f172a);
+}
+
+.kyc-reminder-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1300;
+  padding: 16px;
+}
+
+.kyc-reminder-modal {
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--admin-border, #e2e8f0);
+  border-radius: 12px;
+  padding: 20px;
+  max-width: 440px;
+  width: 100%;
+  color: var(--admin-text, #0f172a);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+}
+
+.kyc-reminder-modal h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  color: var(--admin-text, #0f172a);
+}
+
+.kyc-reminder-modal p {
+  margin: 0 0 6px;
+  color: var(--admin-text-muted, #475569);
+  font-size: 0.85rem;
+}
+
+.kyc-reminder-modal__footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}

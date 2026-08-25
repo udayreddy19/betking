@@ -23,8 +23,8 @@ export default function ResetPasswordPage() {
     e.preventDefault();
     setError('');
 
-    if (!token.trim()) {
-      setError('Please provide a valid reset token or use the link sent to your email.');
+    if (!token.trim() || !/^\d{6}$/.test(token.replace(/[\s-]/g, ''))) {
+      setError('Please enter the 6-digit code from your email.');
       return;
     }
 
@@ -87,13 +87,16 @@ export default function ResetPasswordPage() {
             <form onSubmit={handleSubmit} className="auth-form">
               {!tokenFromUrl && (
                 <div className="auth-form-group">
-                  <label>Reset Token / Code</label>
+                  <label>6-digit reset code</label>
                   <input
                     type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
                     className="auth-input"
-                    placeholder="Enter reset code"
+                    placeholder="Enter 6-digit code"
                     value={token}
-                    onChange={(e) => setToken(e.target.value)}
+                    onChange={(e) => setToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     required
                   />
                 </div>

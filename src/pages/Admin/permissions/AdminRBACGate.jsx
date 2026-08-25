@@ -23,7 +23,7 @@ const ROLE_ALLOWED_DOMAINS = {
   [ADMIN_ROLES.SUPPORT_AGENT]: ['support', 'customers'],
   [ADMIN_ROLES.RISK_ANALYST]: ['trading-risk', 'analytics', 'security-governance'],
   [ADMIN_ROLES.MARKETING_ADMIN]: ['growth', 'communications', 'analytics'],
-  [ADMIN_ROLES.OPERATIONS_ADMIN]: ['operations', 'platform', 'analytics'],
+  [ADMIN_ROLES.OPERATIONS_ADMIN]: ['operations', 'platform', 'analytics', 'betting', 'support'],
 };
 
 export { ROLE_ALLOWED_DOMAINS };
@@ -49,9 +49,12 @@ export function hasPermission(role, permission) {
     case PERMISSIONS.MANAGE_TRADING:
       return role === ADMIN_ROLES.TRADING_ADMIN;
     case PERMISSIONS.SETTLE_BETS:
-      return role === ADMIN_ROLES.TRADING_ADMIN || role === ADMIN_ROLES.FINANCE_ADMIN;
+      return role === ADMIN_ROLES.TRADING_ADMIN
+        || role === ADMIN_ROLES.FINANCE_ADMIN
+        || role === ADMIN_ROLES.OPERATIONS_ADMIN;
     case PERMISSIONS.MANAGE_SUPPORT:
-      return role === ADMIN_ROLES.SUPPORT_AGENT;
+      return role === ADMIN_ROLES.SUPPORT_AGENT
+        || role === ADMIN_ROLES.OPERATIONS_ADMIN;
     case PERMISSIONS.MANAGE_MARKETING:
       return role === ADMIN_ROLES.MARKETING_ADMIN;
     case PERMISSIONS.VIEW_SECURITY:
