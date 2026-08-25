@@ -3,11 +3,9 @@ import { processPendingOutboxEvents, ensureAdminNotificationTable } from '../../
 import { query } from '../../db/pg.js';
 
 describe('Phase 11 Admin Realtime Alerts & Header Bell Tests', () => {
-  const eventId = `evt_fraud_${Date.now()}`;
-
   beforeEach(async () => {
     await ensureAdminNotificationTable();
-    await query(`DELETE FROM admin_notifications;`);
+    await query(`DELETE FROM admin_notifications WHERE title = 'Alert: fraud.signal.created';`);
     await query(`DELETE FROM outbox_events WHERE event_type = 'fraud.signal.created';`);
   });
 
@@ -24,7 +22,7 @@ describe('Phase 11 Admin Realtime Alerts & Header Bell Tests', () => {
     expect(res.success).toBe(true);
 
     // 3. Verify admin_notifications entry created
-    const dbAlert = await query('SELECT * FROM admin_notifications WHERE notification_id LIKE \'anot_%\' ORDER BY created_at DESC');
+    const dbAlert = await query("SELECT * FROM admin_notifications WHERE title = 'Alert: fraud.signal.created' ORDER BY created_at DESC");
     expect(dbAlert.rows.length).toBeGreaterThanOrEqual(1);
     expect(dbAlert.rows[0].title).toBe('Alert: fraud.signal.created');
     expect(dbAlert.rows[0].is_read).toBe(false);
