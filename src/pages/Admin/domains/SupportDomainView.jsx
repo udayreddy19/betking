@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'motion/react';
 import { adminApiClient } from '../api/adminApiClient';
 import AdminDataTable from '../components/AdminDataTable';
 import { useAdminToast } from '../components/AdminToastContext';
+import { StatusBadge } from '../components/AdminBadge';
+import AdminDrawer from '../components/AdminDrawer';
+import AdminCard from '../components/AdminCard';
 
 function formatMsgTime(value) {
   if (!value) return '';
@@ -79,19 +80,8 @@ export default function SupportDomainView({ subModule = 'ticket-queue' }) {
 
   useEffect(() => {
     if (!selectedTicket) return undefined;
-    const onKey = (e) => {
-      if (e.key === 'Escape') {
-        setSelectedTicket(null);
-        setReplyMessage('');
-        setThreadMessages([]);
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    const t = setTimeout(() => replyRef.current?.focus(), 120);
-    return () => {
-      window.removeEventListener('keydown', onKey);
-      clearTimeout(t);
-    };
+    const t = setTimeout(() => replyRef.current?.focus(), 150);
+    return () => clearTimeout(t);
   }, [selectedTicket]);
 
   const openTicket = (ticket) => {
@@ -165,12 +155,12 @@ export default function SupportDomainView({ subModule = 'ticket-queue' }) {
 
   return (
     <div>
-      <div style={{ marginBottom: '20px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>{heading}</h2>
-        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted, var(--color-text-muted))', fontSize: '0.85rem' }}>
+      <div style={{ marginBottom: '16px' }}>
+        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>{heading}</h2>
+        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           {hint}
         </p>
-        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.82rem' }}>{error}</p>}
+        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
       </div>
 
       <AdminDataTable
@@ -178,73 +168,46 @@ export default function SupportDomainView({ subModule = 'ticket-queue' }) {
         emptyMessage="No support tickets in this view"
         data={filteredTickets}
         onRowClick={openTicket}
+        onRefresh={loadTickets}
         columns={[
-          { header: 'Ticket ID', key: 'id' },
-          { header: 'Customer', key: 'userName', render: (r) => r.userName || r.userId },
+          { header: 'Ticket ID', key: 'id', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.id}</span> },
+          { header: 'Customer', key: 'userName', render: (r) => <span style={{ fontWeight: 700 }}>{r.userName || r.userId}</span> },
           { header: 'Subject', key: 'subject' },
-          { header: 'Category', key: 'category' },
+          { header: 'Category', key: 'category', render: (r) => <span className="admin-badge admin-badge--neutral">{r.category}</span> },
           {
             header: 'Priority',
             key: 'priority',
-            render: (r) => (
-              <span style={{
-                padding: '2px 8px',
-                borderRadius: '4px',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                background: r.priority === 'HIGH' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.2)',
-                color: r.priority === 'HIGH' ? '#ef4444' : '#60a5fa',
-              }}>
-                {r.priority}
-              </span>
-            ),
+            render: (r) => <StatusBadge status={r.priority} />,
           },
-          { header: 'Status', key: 'status' },
-          { header: 'Assigned Agent', key: 'agent' },
+          { header: 'Status', key: 'status', render: (r) => <StatusBadge status={r.status} /> },
+          { header: 'Assigned Agent', key: 'agent', render: (r) => r.agent || 'Unassigned' },
           {
             header: 'Actions',
             key: 'actions',
             sortable: false,
             render: (r) => (
-              <div style={{ display: 'flex', gap: 6 }}>
+              <div style={{ display: 'flex', gap: 5 }}>
                 <button
                   type="button"
+                  className="admin-btn admin-btn--secondary admin-btn--sm"
                   onClick={(e) => {
                     e.stopPropagation();
                     openTicket(r);
                   }}
-                  style={{
-                    padding: '4px 10px',
-                    borderRadius: '4px',
-                    border: '1px solid var(--admin-border, var(--color-border))',
-                    background: 'var(--admin-panel, var(--color-panel))',
-                    color: '#60a5fa',
-                    cursor: 'pointer',
-                    fontSize: '0.78rem',
-                    fontWeight: 700,
-                  }}
+                  style={{ color: '#60a5fa' }}
                 >
                   Open
                 </button>
                 {!isTicketClosed(r) && (
                   <button
                     type="button"
+                    className="admin-btn admin-btn--success admin-btn--sm"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleCloseTicket(r);
                     }}
-                    style={{
-                      padding: '4px 10px',
-                      borderRadius: '4px',
-                      border: '1px solid rgba(34, 197, 94, 0.45)',
-                      background: 'rgba(34, 197, 94, 0.12)',
-                      color: '#4ade80',
-                      cursor: 'pointer',
-                      fontSize: '0.78rem',
-                      fontWeight: 700,
-                    }}
                   >
-                    Close ticket
+                    Close
                   </button>
                 )}
               </div>
@@ -253,235 +216,132 @@ export default function SupportDomainView({ subModule = 'ticket-queue' }) {
         ]}
       />
 
-      {typeof document !== 'undefined' && createPortal(
-        <AnimatePresence>
-          {selectedTicket && (
-            <>
-              <motion.button
-                type="button"
-                aria-label="Close ticket drawer"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={dismissTicket}
-                style={{
-                  position: 'fixed',
-                  inset: 0,
-                  border: 'none',
-                  background: 'rgba(2, 6, 23, 0.55)',
-                  backdropFilter: 'blur(3px)',
-                  zIndex: 120000,
-                  cursor: 'pointer',
-                }}
-              />
-              <motion.aside
-                role="dialog"
-                aria-modal="true"
-                aria-label={`Ticket ${selectedTicket.id}`}
-                initial={{ x: '100%', opacity: 0.6 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: '100%', opacity: 0.6 }}
-                transition={{ type: 'spring', stiffness: 380, damping: 34 }}
-                style={{
-                  position: 'fixed',
-                  top: 0,
-                  right: 0,
-                  height: '100vh',
-                  width: 'min(480px, 100vw)',
-                  zIndex: 120001,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  background: 'var(--admin-panel)',
-                  borderLeft: '1px solid var(--admin-border)',
-                  boxShadow: 'var(--admin-shadow)',
-                  color: 'var(--admin-text)',
-                }}
-              >
-                <div style={{
-                  padding: '18px 20px',
-                  borderBottom: '1px solid var(--admin-border)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  gap: '12px',
-                  alignItems: 'flex-start',
-                }}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--admin-text-muted)' }}>
-                      Support ticket
-                    </div>
-                    <h3 style={{ margin: '6px 0 0', fontSize: '1.05rem', fontWeight: 800, lineHeight: 1.3 }}>
-                      {selectedTicket.subject}
-                    </h3>
-                    <div style={{ marginTop: '6px', fontSize: '0.75rem', color: 'var(--admin-text-muted)', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>
-                      {selectedTicket.id}
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={dismissTicket}
+      {/* Support Thread Drawer */}
+      <AdminDrawer
+        isOpen={!!selectedTicket}
+        onClose={dismissTicket}
+        title={selectedTicket?.subject || 'Support Ticket'}
+        subtitle={selectedTicket ? `${selectedTicket.id} · ${selectedTicket.userName || selectedTicket.userId || ''}` : ''}
+        width="520px"
+        actions={
+          !isTicketClosed(selectedTicket) && (
+            <button
+              type="button"
+              className="admin-btn admin-btn--success admin-btn--sm"
+              onClick={() => handleCloseTicket(selectedTicket)}
+              disabled={sending}
+            >
+              Close Ticket
+            </button>
+          )
+        }
+      >
+        {selectedTicket && (
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '12px' }}>
+            {/* Meta summary */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', padding: '10px', borderRadius: 'var(--admin-radius-sm)', background: 'var(--admin-bg)', border: '1px solid var(--admin-border)', fontSize: '0.78rem' }}>
+              <div><span style={{ color: 'var(--admin-text-muted)' }}>Customer:</span> <strong>{selectedTicket.userName || selectedTicket.userId || '—'}</strong></div>
+              <div><span style={{ color: 'var(--admin-text-muted)' }}>Category:</span> <strong>{selectedTicket.category || '—'}</strong></div>
+              <div><span style={{ color: 'var(--admin-text-muted)' }}>Status:</span> <StatusBadge status={selectedTicket.status} /></div>
+              <div><span style={{ color: 'var(--admin-text-muted)' }}>Agent:</span> <strong>{selectedTicket.agent || selectedTicket.assignedAgentName || 'Unassigned'}</strong></div>
+            </div>
+
+            {/* Messages feed */}
+            <div style={{
+              flex: 1,
+              minHeight: '260px',
+              maxHeight: '400px',
+              overflowY: 'auto',
+              padding: '12px',
+              borderRadius: 'var(--admin-radius-sm)',
+              background: 'var(--admin-bg)',
+              border: '1px solid var(--admin-border)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+            }}>
+              {loadingThread && threadMessages.length === 0 && (
+                <p style={{ color: 'var(--admin-text-muted)', fontSize: '0.82rem', margin: 'auto' }}>Loading conversation…</p>
+              )}
+              {!loadingThread && threadMessages.length === 0 && (
+                <p style={{ color: 'var(--admin-text-muted)', fontSize: '0.82rem', margin: 'auto' }}>No messages yet.</p>
+              )}
+              {threadMessages.map((msg) => {
+                const sender = String(msg.senderType || msg.sender_type || msg.sender || 'user').toLowerCase();
+                const isAdmin = sender === 'admin';
+                return (
+                  <div
+                    key={msg.messageId || msg.message_id || msg.id}
                     style={{
-                      width: 34,
-                      height: 34,
-                      borderRadius: 10,
-                      border: '1px solid var(--admin-border)',
-                      background: 'var(--admin-input-bg)',
-                      color: 'var(--admin-text)',
-                      cursor: 'pointer',
-                      fontSize: '1rem',
-                      flexShrink: 0,
+                      alignSelf: isAdmin ? 'flex-end' : 'flex-start',
+                      maxWidth: '85%',
+                      padding: '8px 12px',
+                      borderRadius: 'var(--admin-radius-md)',
+                      background: isAdmin ? 'rgba(99, 102, 241, 0.15)' : 'var(--admin-surface)',
+                      border: `1px solid ${isAdmin ? 'rgba(99, 102, 241, 0.35)' : 'var(--admin-border)'}`,
                     }}
                   >
-                    ✕
-                  </button>
-                </div>
-
-                <div style={{ padding: '12px 20px', display: 'grid', gap: 8, borderBottom: '1px solid var(--admin-border)' }}>
-                  {[
-                    ['Customer', selectedTicket.userName || selectedTicket.userId || '—'],
-                    ['Category', selectedTicket.category || '—'],
-                    ['Status', selectedTicket.status || '—'],
-                    ['Agent', selectedTicket.agent || selectedTicket.assignedAgentName || 'Unassigned'],
-                  ].map(([label, value]) => (
-                    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: '0.8rem' }}>
-                      <span style={{ color: 'var(--admin-text-muted)', fontWeight: 600 }}>{label}</span>
-                      <strong style={{ textAlign: 'right' }}>{value}</strong>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      gap: 8,
+                      marginBottom: 3,
+                      fontSize: '0.68rem',
+                      color: 'var(--admin-text-muted)',
+                      fontWeight: 700,
+                    }}>
+                      <span style={{ color: isAdmin ? '#818cf8' : 'var(--admin-text)' }}>
+                        {isAdmin ? (msg.agentName || msg.agent_name || 'OddsYra Support') : 'Customer'}
+                      </span>
+                      <span>{formatMsgTime(msg.createdAt || msg.created_at || msg.deliveredAt)}</span>
                     </div>
-                  ))}
-                </div>
-
-                <div style={{
-                  flex: 1,
-                  minHeight: 0,
-                  overflowY: 'auto',
-                  padding: '14px 20px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 10,
-                  background: 'rgba(15, 23, 42, 0.25)',
-                }}>
-                  {loadingThread && threadMessages.length === 0 && (
-                    <p style={{ color: 'var(--admin-text-muted)', fontSize: '0.85rem' }}>Loading conversation…</p>
-                  )}
-                  {!loadingThread && threadMessages.length === 0 && (
-                    <p style={{ color: 'var(--admin-text-muted)', fontSize: '0.85rem' }}>No messages yet.</p>
-                  )}
-                  {threadMessages.map((msg) => {
-                    const sender = String(msg.senderType || msg.sender_type || msg.sender || 'user').toLowerCase();
-                    const isAdmin = sender === 'admin';
-                    return (
-                      <div
-                        key={msg.messageId || msg.message_id || msg.id}
-                        style={{
-                          alignSelf: isAdmin ? 'flex-end' : 'flex-start',
-                          maxWidth: '88%',
-                          padding: '10px 12px',
-                          borderRadius: 12,
-                          background: isAdmin ? 'rgba(37, 99, 235, 0.25)' : 'rgba(148, 163, 184, 0.15)',
-                          border: `1px solid ${isAdmin ? 'rgba(37, 99, 235, 0.45)' : 'var(--admin-border)'}`,
-                        }}
-                      >
-                        <div style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          gap: 10,
-                          marginBottom: 4,
-                          fontSize: '0.7rem',
-                          color: 'var(--admin-text-muted)',
-                          fontWeight: 700,
-                        }}>
-                          <span>{isAdmin ? (msg.agentName || msg.agent_name || 'OddsYra Support') : 'Customer'}</span>
-                          <span>{formatMsgTime(msg.createdAt || msg.created_at || msg.deliveredAt)}</span>
-                        </div>
-                        <div style={{ fontSize: '0.88rem', lineHeight: 1.45, whiteSpace: 'pre-wrap' }}>
-                          {msg.text}
-                        </div>
-                      </div>
-                    );
-                  })}
-                  <div ref={threadEndRef} />
-                </div>
-
-                <div style={{ padding: '14px 20px', borderTop: '1px solid var(--admin-border)', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <textarea
-                    ref={replyRef}
-                    value={replyMessage}
-                    onChange={(e) => setReplyMessage(e.target.value)}
-                    rows={4}
-                    placeholder="Type your support response…"
-                    style={{
-                      width: '100%',
-                      padding: '12px 14px',
-                      borderRadius: 10,
-                      border: '1px solid var(--admin-border)',
-                      background: 'var(--admin-input-bg)',
-                      color: 'var(--admin-text)',
-                      fontSize: '0.9rem',
-                      lineHeight: 1.45,
-                      resize: 'vertical',
-                      outline: 'none',
-                    }}
-                  />
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <button
-                      type="button"
-                      onClick={dismissTicket}
-                      style={{
-                        flex: 1,
-                        padding: '11px 14px',
-                        borderRadius: 10,
-                        border: '1px solid var(--admin-border)',
-                        background: 'transparent',
-                        color: 'var(--admin-text)',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Dismiss
-                    </button>
-                    {!isTicketClosed(selectedTicket) && (
-                      <button
-                        type="button"
-                        onClick={() => handleCloseTicket(selectedTicket)}
-                        disabled={sending}
-                        style={{
-                          flex: 1,
-                          padding: '11px 14px',
-                          borderRadius: 10,
-                          border: 'none',
-                          background: sending ? '#475569' : '#15803d',
-                          color: '#fff',
-                          fontWeight: 750,
-                          cursor: sending ? 'not-allowed' : 'pointer',
-                        }}
-                      >
-                        Close ticket
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={handleSendReply}
-                      disabled={sending || !replyMessage.trim() || isTicketClosed(selectedTicket)}
-                      style={{
-                        flex: 1.4,
-                        padding: '11px 14px',
-                        borderRadius: 10,
-                        border: 'none',
-                        background: sending || !replyMessage.trim() || isTicketClosed(selectedTicket) ? '#475569' : '#2563eb',
-                        color: '#fff',
-                        fontWeight: 750,
-                        cursor: sending || !replyMessage.trim() || isTicketClosed(selectedTicket) ? 'not-allowed' : 'pointer',
-                      }}
-                    >
-                      {sending ? 'Sending…' : 'Send Response'}
-                    </button>
+                    <div style={{ fontSize: '0.84rem', lineHeight: 1.45, whiteSpace: 'pre-wrap', color: 'var(--admin-text)' }}>
+                      {msg.text}
+                    </div>
                   </div>
-                </div>
-              </motion.aside>
-            </>
-          )}
-        </AnimatePresence>,
-        document.body,
-      )}
+                );
+              })}
+              <div ref={threadEndRef} />
+            </div>
+
+            {/* Reply composer */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <textarea
+                ref={replyRef}
+                value={replyMessage}
+                onChange={(e) => setReplyMessage(e.target.value)}
+                rows={3}
+                placeholder={isTicketClosed(selectedTicket) ? 'Ticket is closed.' : 'Type your support response…'}
+                disabled={isTicketClosed(selectedTicket)}
+                className="admin-input"
+                style={{
+                  width: '100%',
+                  resize: 'vertical',
+                  fontSize: '0.84rem',
+                  lineHeight: 1.45,
+                }}
+              />
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--secondary"
+                  onClick={dismissTicket}
+                >
+                  Dismiss
+                </button>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--primary"
+                  onClick={handleSendReply}
+                  disabled={sending || !replyMessage.trim() || isTicketClosed(selectedTicket)}
+                >
+                  {sending ? 'Sending…' : 'Send Response'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </AdminDrawer>
     </div>
   );
 }

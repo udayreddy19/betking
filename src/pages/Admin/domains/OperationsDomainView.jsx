@@ -1,25 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { adminApiClient } from '../api/adminApiClient';
 import AdminDataTable from '../components/AdminDataTable';
+import { StatusBadge } from '../components/AdminBadge';
+import AdminKPI from '../components/AdminKPI';
 import { startVisibleInterval } from '../utils/visibleInterval';
-
-function statusBadge(status) {
-  const s = String(status || 'UNKNOWN').toUpperCase();
-  const ok = s === 'HEALTHY' || s === 'OK' || s === 'CONFIGURED' || s === 'ACTIVE';
-  const bad = s === 'DOWN' || s === 'DEGRADED' || s === 'ERROR' || s === 'FAILED' || s === 'NOT_CONFIGURED';
-  return (
-    <span style={{
-      padding: '2px 8px',
-      borderRadius: '4px',
-      fontSize: '0.75rem',
-      fontWeight: 700,
-      background: ok ? 'rgba(16, 185, 129, 0.2)' : bad ? 'rgba(239, 68, 68, 0.2)' : 'rgba(148, 163, 184, 0.2)',
-      color: ok ? '#10b981' : bad ? '#f87171' : '#94a3b8',
-    }}>
-      {s}
-    </span>
-  );
-}
 
 export default function OperationsDomainView({ subModule = 'health-matrix' }) {
   const [services, setServices] = useState([]);
@@ -78,41 +62,38 @@ export default function OperationsDomainView({ subModule = 'health-matrix' }) {
 
   if (subModule === 'outbox-queue') {
     const metricRows = metrics ? [
-      { label: 'Pending', value: metrics.pending },
-      { label: 'Processing', value: metrics.processing },
-      { label: 'Processed', value: metrics.processed },
-      { label: 'Failed', value: metrics.failed },
-      { label: 'Dead Letter', value: metrics.deadLetter },
-      { label: 'Total Events', value: metrics.totalEvents },
+      { label: 'Pending', value: metrics.pending, accent: '#fbbf24' },
+      { label: 'Processing', value: metrics.processing, accent: '#38bdf8' },
+      { label: 'Processed', value: metrics.processed, accent: '#34d399' },
+      { label: 'Failed', value: metrics.failed, accent: '#f43f5e' },
+      { label: 'Dead Letter', value: metrics.deadLetter, accent: '#f87171' },
+      { label: 'Total Events', value: metrics.totalEvents, accent: '#818cf8' },
     ] : [];
 
     return (
       <div>
-        <div style={{ marginBottom: '20px' }}>
-          <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>12 · Outbox Worker Telemetry</h2>
-          <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted, var(--color-text-muted))', fontSize: '0.85rem' }}>
+        <div style={{ marginBottom: '16px' }}>
+          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>12 · Outbox Worker Telemetry</h2>
+          <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
             Transactional outbox queue depth and in-flight events. Refreshes every 30s.
           </p>
-          {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.82rem' }}>{error}</p>}
+          {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
         </div>
 
         {metricRows.length > 0 && (
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
             gap: 12,
-            marginBottom: 24,
+            marginBottom: 20,
           }}>
             {metricRows.map((m) => (
-              <div key={m.label} style={{
-                padding: '14px 16px',
-                borderRadius: 10,
-                border: '1px solid var(--admin-border, var(--color-border))',
-                background: 'var(--admin-panel, var(--color-panel))',
-              }}>
-                <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--admin-text-muted)', textTransform: 'uppercase' }}>{m.label}</div>
-                <div style={{ marginTop: 6, fontSize: '1.35rem', fontWeight: 800 }}>{m.value ?? '—'}</div>
-              </div>
+              <AdminKPI
+                key={m.label}
+                label={m.label}
+                value={m.value ?? '—'}
+                accent={m.accent}
+              />
             ))}
           </div>
         )}
@@ -122,11 +103,11 @@ export default function OperationsDomainView({ subModule = 'health-matrix' }) {
           emptyMessage="No pending or failed outbox events"
           data={outboxEvents}
           columns={[
-            { header: 'Event ID', key: 'id' },
-            { header: 'Type', key: 'eventType' },
+            { header: 'Event ID', key: 'id', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.id}</span> },
+            { header: 'Type', key: 'eventType', render: (r) => <span className="admin-badge admin-badge--neutral">{r.eventType}</span> },
             { header: 'Aggregate', key: 'aggregateType' },
-            { header: 'Aggregate ID', key: 'aggregateId' },
-            { header: 'Status', key: 'status', render: (r) => statusBadge(r.status) },
+            { header: 'Aggregate ID', key: 'aggregateId', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.aggregateId}</span> },
+            { header: 'Status', key: 'status', render: (r) => <StatusBadge status={r.status} /> },
             { header: 'Created At', key: 'createdAt' },
           ]}
         />
@@ -136,12 +117,12 @@ export default function OperationsDomainView({ subModule = 'health-matrix' }) {
 
   return (
     <div>
-      <div style={{ marginBottom: '20px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>12 · Infrastructure Health Matrix</h2>
-        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted, var(--color-text-muted))', fontSize: '0.85rem' }}>
+      <div style={{ marginBottom: '16px' }}>
+        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>12 · Infrastructure Health Matrix</h2>
+        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           Live Postgres ping + aggregator provider status. Unknown services stay UNKNOWN (not faked healthy).
         </p>
-        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.82rem' }}>{error}</p>}
+        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
       </div>
 
       <AdminDataTable
@@ -149,9 +130,9 @@ export default function OperationsDomainView({ subModule = 'health-matrix' }) {
         emptyMessage="No health signals yet"
         data={services}
         columns={[
-          { header: 'Service / Dependency', key: 'service' },
-          { header: 'Health Status', key: 'status', render: (r) => statusBadge(r.status) },
-          { header: 'Latency / Mode', key: 'latency' },
+          { header: 'Service / Dependency', key: 'service', render: (r) => <span style={{ fontWeight: 700 }}>{r.service}</span> },
+          { header: 'Health Status', key: 'status', render: (r) => <StatusBadge status={r.status} /> },
+          { header: 'Latency / Mode', key: 'latency', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.latency}</span> },
           { header: 'Detail', key: 'uptime' },
         ]}
       />

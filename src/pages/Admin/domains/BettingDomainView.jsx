@@ -3,6 +3,9 @@ import { adminApiClient } from '../api/adminApiClient';
 import AdminDataTable from '../components/AdminDataTable';
 import { useAdminToast } from '../components/AdminToastContext';
 import { useAdminRole, hasPermission, PERMISSIONS } from '../permissions/AdminRBACGate';
+import { StatusBadge } from '../components/AdminBadge';
+import AdminConfirmDialog from '../components/AdminConfirmDialog';
+import AdminFilterBar, { FilterSelect, FilterSearch } from '../components/AdminFilterBar';
 
 function money(n) {
   if (n == null || Number.isNaN(Number(n))) return '—';
@@ -31,33 +34,6 @@ const TYPE_OPTIONS = [
   { value: 'SYSTEM', label: 'System' },
 ];
 
-const filterBarStyle = {
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: '10px',
-  marginBottom: '16px',
-  alignItems: 'center',
-};
-
-const inputStyle = {
-  padding: '8px 10px',
-  borderRadius: '8px',
-  border: '1px solid var(--admin-border, var(--color-border))',
-  background: 'var(--admin-surface, #0f172a)',
-  color: 'var(--admin-text, #e2e8f0)',
-  fontSize: '0.82rem',
-  minWidth: '140px',
-};
-
-const btnBase = {
-  padding: '4px 8px',
-  borderRadius: '4px',
-  border: '1px solid var(--admin-border, var(--color-border))',
-  cursor: 'pointer',
-  fontSize: '0.72rem',
-  fontWeight: 700,
-};
-
 export default function BettingDomainView({ subModule = 'bets-registry' }) {
   const [bets, setBets] = useState([]);
   const [error, setError] = useState(null);
@@ -67,6 +43,7 @@ export default function BettingDomainView({ subModule = 'bets-registry' }) {
   const [search, setSearch] = useState('');
   const [searchDraft, setSearchDraft] = useState('');
   const [settlingId, setSettlingId] = useState(null);
+  const [declareConfirm, setDeclareConfirm] = useState(null);
   const { showToast } = useAdminToast();
   const { activeRole } = useAdminRole();
   const canSettle = hasPermission(activeRole, PERMISSIONS.SETTLE_BETS);
@@ -103,31 +80,32 @@ export default function BettingDomainView({ subModule = 'bets-registry' }) {
 
   useEffect(() => { load(); }, [load]);
 
-  const declareBet = (bet, outcome) => {
+  const handleDeclare = async () => {
+    if (!declareConfirm) return;
+    const { bet, outcome } = declareConfirm;
+    setSettlingId(bet.id);
+    try {
+      const res = await adminApiClient.post('/betting/settle', {
+        betId: bet.id,
+        outcome,
+        reason: `Admin declare ${outcome} (${subModule})`,
+      });
+      showToast(`Bet ${bet.id} → ${res.outcome || outcome}${res.status === 'ALREADY_SETTLED' ? ' (already settled)' : ''}`, 'success');
+      load();
+    } catch (err) {
+      showToast(err.message || 'Declare failed', 'error');
+    } finally {
+      setSettlingId(null);
+      setDeclareConfirm(null);
+    }
+  };
+
+  const openDeclare = (bet, outcome) => {
     if (!canSettle) {
       showToast('Your role cannot declare bet outcomes.', 'error');
       return;
     }
-    const label = outcome === 'WON' ? 'Win' : outcome === 'LOST' ? 'Loss' : 'Void (refund)';
-    const ok = window.confirm(
-      `Declare bet ${bet.id} as ${label}?\n\n`
-      + `User: ${bet.userName || bet.userId}\nMatch: ${bet.match}\nMarket: ${bet.market}\n`
-      + `Selection: ${bet.selection}\nStake: ${money(bet.stake)}\n\nThis pays or refunds immediately.`,
-    );
-    if (!ok) return;
-
-    setSettlingId(bet.id);
-    adminApiClient.post('/betting/settle', {
-      betId: bet.id,
-      outcome,
-      reason: `Admin declare ${outcome} (${subModule})`,
-    })
-      .then((res) => {
-        showToast(`Bet ${bet.id} → ${res.outcome || outcome}${res.status === 'ALREADY_SETTLED' ? ' (already settled)' : ''}`, 'success');
-        load();
-      })
-      .catch((err) => showToast(err.message || 'Declare failed', 'error'))
-      .finally(() => setSettlingId(null));
+    setDeclareConfirm({ bet, outcome });
   };
 
   const filtered = useMemo(() => {
@@ -149,72 +127,64 @@ export default function BettingDomainView({ subModule = 'bets-registry' }) {
   };
   const [heading, hint, tableTitle] = titles[subModule] || titles['bets-registry'];
 
+  const outcomeLabel = declareConfirm?.outcome === 'WON' ? 'Win' : declareConfirm?.outcome === 'LOST' ? 'Loss' : 'Void (refund)';
+  const outcomeVariant = declareConfirm?.outcome === 'WON' ? 'success' : declareConfirm?.outcome === 'LOST' ? 'danger' : 'warning';
+  const outcomeIcon = declareConfirm?.outcome === 'WON' ? '🏆' : declareConfirm?.outcome === 'LOST' ? '❌' : '↩️';
+
   return (
     <div>
-      <div style={{ marginBottom: '20px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>{heading}</h2>
-        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted, var(--color-text-muted))', fontSize: '0.85rem' }}>
+      {/* Header */}
+      <div style={{ marginBottom: '16px' }}>
+        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>{heading}</h2>
+        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           {hint}
           {loading ? ' Loading…' : ` · ${filtered.length} shown · ${openCount} open`}
         </p>
-        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.82rem' }}>{error}</p>}
+        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
         {!canSettle && (
-          <p style={{ margin: '8px 0 0', color: '#fbbf24', fontSize: '0.82rem' }}>
+          <p style={{ margin: '8px 0 0', color: '#fbbf24', fontSize: '0.78rem' }}>
             View only — Trading / Finance / Operations / Super Admin can declare outcomes.
           </p>
         )}
       </div>
 
-      <div style={filterBarStyle}>
-        <select
+      {/* Filter Bar */}
+      <AdminFilterBar label="Filters">
+        <FilterSelect
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          style={inputStyle}
-          aria-label="Status filter"
-        >
-          {STATUS_OPTIONS.map((o) => (
-            <option key={o.value || 'all'} value={o.value}>{o.label}</option>
-          ))}
-        </select>
-        <select
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-          style={inputStyle}
-          aria-label="Bet type filter"
-        >
-          {TYPE_OPTIONS.map((o) => (
-            <option key={o.value || 'all-types'} value={o.value}>{o.label}</option>
-          ))}
-        </select>
-        <input
-          value={searchDraft}
-          onChange={(e) => setSearchDraft(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') setSearch(searchDraft); }}
-          placeholder="Search bet / user / match / market"
-          style={{ ...inputStyle, minWidth: '220px', flex: 1 }}
+          onChange={setStatusFilter}
+          options={STATUS_OPTIONS}
+          placeholder=""
         />
-        <button
-          type="button"
-          onClick={() => setSearch(searchDraft)}
-          style={{ ...btnBase, background: 'rgba(59, 130, 246, 0.2)', color: '#93c5fd', padding: '8px 12px' }}
-        >
+        <FilterSelect
+          value={typeFilter}
+          onChange={setTypeFilter}
+          options={TYPE_OPTIONS}
+          placeholder=""
+        />
+        <FilterSearch
+          value={searchDraft}
+          onChange={setSearchDraft}
+          placeholder="Search bet / user / match / market"
+          style={{ flex: 1 }}
+        />
+        <button type="button" className="admin-btn admin-btn--primary admin-btn--sm" onClick={() => setSearch(searchDraft)}>
           Search
         </button>
-        <button
-          type="button"
-          onClick={load}
-          style={{ ...btnBase, background: 'rgba(148, 163, 184, 0.15)', color: '#cbd5e1', padding: '8px 12px' }}
-        >
-          Refresh
+        <button type="button" className="admin-btn admin-btn--secondary admin-btn--sm" onClick={load}>
+          ↻ Refresh
         </button>
-      </div>
+      </AdminFilterBar>
 
+      {/* Data Table */}
       <AdminDataTable
         title={tableTitle}
         emptyMessage="No bets in this view"
         data={filtered}
+        loading={loading}
+        onRefresh={load}
         columns={[
-          { header: 'Bet ID', key: 'id' },
+          { header: 'Bet ID', key: 'id', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.id}</span> },
           {
             header: 'User',
             key: 'userName',
@@ -226,26 +196,14 @@ export default function BettingDomainView({ subModule = 'bets-registry' }) {
           { header: 'Market', key: 'market' },
           { header: 'Type', key: 'betType' },
           { header: 'Selection', key: 'selection' },
-          { header: 'Stake', key: 'stake', render: (r) => money(r.stake) },
+          { header: 'Stake', key: 'stake', render: (r) => <span style={{ fontWeight: 700 }}>{money(r.stake)}</span> },
           { header: 'Odds', key: 'odds', render: (r) => (r.odds != null ? Number(r.odds).toFixed(2) : '—') },
           { header: 'Payout', key: 'payout', render: (r) => money(r.payout) },
           { header: 'Placed', key: 'date' },
           {
             header: 'Status',
             key: 'status',
-            render: (r) => {
-              const s = String(r.status || '');
-              const won = s === 'WON';
-              const open = isOpenStatus(s);
-              const voided = s === 'VOID' || s === 'REFUNDED';
-              const color = won ? '#10b981' : open ? '#60a5fa' : voided ? '#fbbf24' : '#ef4444';
-              const bg = won ? 'rgba(16, 185, 129, 0.2)' : open ? 'rgba(59, 130, 246, 0.2)' : voided ? 'rgba(251, 191, 36, 0.2)' : 'rgba(239, 68, 68, 0.2)';
-              return (
-                <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 700, background: bg, color }}>
-                  {s}
-                </span>
-              );
-            },
+            render: (r) => <StatusBadge status={r.status} />,
           },
           {
             header: 'Declare',
@@ -255,39 +213,24 @@ export default function BettingDomainView({ subModule = 'bets-registry' }) {
               const open = isOpenStatus(r.status);
               if (!open) {
                 return (
-                  <span style={{ color: 'var(--admin-text-muted)', fontSize: '0.75rem' }}>
+                  <span style={{ color: 'var(--admin-text-muted)', fontSize: '0.73rem', fontVariantNumeric: 'tabular-nums' }}>
                     {r.settledAt || 'Settled'}
                   </span>
                 );
               }
               if (!canSettle) {
-                return <span style={{ color: 'var(--admin-text-muted)', fontSize: '0.75rem' }}>No access</span>;
+                return <span style={{ color: 'var(--admin-text-dim)', fontSize: '0.73rem' }}>No access</span>;
               }
               const busy = settlingId === r.id;
               return (
                 <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => declareBet(r, 'WON')}
-                    style={{ ...btnBase, background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', opacity: busy ? 0.5 : 1 }}
-                  >
+                  <button type="button" disabled={busy} className="admin-btn admin-btn--success admin-btn--sm" onClick={() => openDeclare(r, 'WON')}>
                     Win
                   </button>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => declareBet(r, 'LOST')}
-                    style={{ ...btnBase, background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', opacity: busy ? 0.5 : 1 }}
-                  >
+                  <button type="button" disabled={busy} className="admin-btn admin-btn--danger admin-btn--sm" onClick={() => openDeclare(r, 'LOST')}>
                     Lose
                   </button>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => declareBet(r, 'VOID')}
-                    style={{ ...btnBase, background: 'rgba(251, 191, 36, 0.15)', color: '#fbbf24', opacity: busy ? 0.5 : 1 }}
-                  >
+                  <button type="button" disabled={busy} className="admin-btn admin-btn--secondary admin-btn--sm" onClick={() => openDeclare(r, 'VOID')} style={{ color: '#fbbf24' }}>
                     Void
                   </button>
                 </div>
@@ -295,6 +238,32 @@ export default function BettingDomainView({ subModule = 'bets-registry' }) {
             },
           },
         ]}
+      />
+
+      {/* Declare Outcome Confirm */}
+      <AdminConfirmDialog
+        isOpen={!!declareConfirm}
+        variant={outcomeVariant}
+        icon={outcomeIcon}
+        title={`Declare bet as ${outcomeLabel}?`}
+        description={declareConfirm?.outcome === 'VOID'
+          ? 'The stake will be refunded to the user\'s wallet. This action is logged and irreversible.'
+          : declareConfirm?.outcome === 'WON'
+            ? 'The payout will be credited to the user\'s wallet immediately. This action is logged and irreversible.'
+            : 'The user\'s stake is forfeited. This action is logged and irreversible.'}
+        details={declareConfirm ? [
+          { label: 'Bet ID', value: declareConfirm.bet.id },
+          { label: 'User', value: declareConfirm.bet.userName || declareConfirm.bet.userId || '—' },
+          { label: 'Match', value: declareConfirm.bet.match || '—' },
+          { label: 'Market', value: declareConfirm.bet.market || '—' },
+          { label: 'Selection', value: declareConfirm.bet.selection || '—' },
+          { label: 'Stake', value: money(declareConfirm.bet.stake) },
+          { label: 'Potential Payout', value: money(declareConfirm.bet.payout) },
+        ] : []}
+        confirmLabel={`Declare ${outcomeLabel}`}
+        onConfirm={handleDeclare}
+        onCancel={() => setDeclareConfirm(null)}
+        loading={!!settlingId}
       />
     </div>
   );

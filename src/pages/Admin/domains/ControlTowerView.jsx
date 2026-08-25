@@ -3,60 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { adminApiClient } from '../api/adminApiClient';
 import AdminDataTable from '../components/AdminDataTable';
+import AdminKPI from '../components/AdminKPI';
+import AdminTabs from '../components/AdminTabs';
+import AdminCard from '../components/AdminCard';
+import { StatusBadge } from '../components/AdminBadge';
 import { startVisibleInterval } from '../utils/visibleInterval';
 
 function formatMetric(value, prefix = '') {
   if (value == null || Number.isNaN(Number(value))) return '—';
   return `${prefix}${Number(value).toLocaleString()}`;
-}
-
-function MetricCard({ label, value, hint, source, color, delay = 0, onClick }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, delay }}
-      whileHover={{ y: -3 }}
-      className="telemetry-card"
-      role={onClick ? 'button' : undefined}
-      tabIndex={onClick ? 0 : undefined}
-      onClick={onClick}
-      onKeyDown={onClick ? (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onClick();
-        }
-      } : undefined}
-      style={{
-        '--card-accent': color,
-        padding: '18px 18px 16px 22px',
-        cursor: onClick ? 'pointer' : 'default',
-      }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-        <span className="telemetry-label">{label}</span>
-        {source && (
-          <span style={{
-            fontSize: '0.62rem',
-            fontWeight: 800,
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-            padding: '2px 7px',
-            borderRadius: '999px',
-            background: source === 'LIVE' ? 'rgba(236, 72, 153, 0.15)' : (source === 'DOCS' ? 'rgba(168, 85, 247, 0.15)' : 'rgba(59, 130, 246, 0.15)'),
-            color: source === 'LIVE' ? '#f472b6' : (source === 'DOCS' ? '#c084fc' : '#60a5fa'),
-            border: `1px solid ${source === 'LIVE' ? 'rgba(236, 72, 153, 0.3)' : (source === 'DOCS' ? 'rgba(168, 85, 247, 0.3)' : 'rgba(59, 130, 246, 0.3)')}`,
-          }}>
-            {source}
-          </span>
-        )}
-      </div>
-      <div className="telemetry-value" style={{ color, marginTop: '10px' }}>{value}</div>
-      <div style={{ fontSize: '0.74rem', fontWeight: 600, color: 'var(--admin-text-muted)', marginTop: '4px', lineHeight: 1.35 }}>
-        {hint}
-      </div>
-    </motion.div>
-  );
 }
 
 export default function ControlTowerView({ subModule = 'overview', onSubModuleChange, onNavigate }) {
@@ -176,35 +131,33 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
   }, [metrics, lastRefreshAt]);
 
   const statusColor = metrics.systemStatus === 'HEALTHY'
-    ? { bg: 'rgba(16, 185, 129, 0.18)', fg: '#34d399', border: 'rgba(16, 185, 129, 0.35)' }
+    ? 'success'
     : metrics.systemStatus === 'ERROR'
-      ? { bg: 'rgba(239, 68, 68, 0.18)', fg: '#f87171', border: 'rgba(239, 68, 68, 0.35)' }
-      : { bg: 'rgba(245, 158, 11, 0.18)', fg: '#fbbf24', border: 'rgba(245, 158, 11, 0.35)' };
+      ? 'danger'
+      : 'warning';
 
   const overviewCards = [
-    { label: 'Live Matches', value: formatMetric(metrics.liveMatches), hint: 'From aggregator cache', source: 'LIVE', color: '#f472b6', domainId: 'sports', subModuleId: 'catalog' },
-    { label: 'Priced Coverage', value: pricedCoverage == null ? '—' : `${pricedCoverage}%`, hint: `${formatMetric(metrics.matchesWithOdds)} of ${formatMetric(metrics.liveMatches)} live`, source: 'LIVE', color: '#fbbf24', domainId: 'trading-risk', subModuleId: 'exposure' },
-    { label: 'Open Bets', value: formatMetric(metrics.openBets), hint: 'Pending / open in ledger', source: 'DB', color: '#60a5fa', domainId: 'betting', subModuleId: 'bets-registry' },
-    { label: 'Registered Users', value: formatMetric(metrics.registeredUsers ?? metrics.activeUsers), hint: 'Total accounts in Postgres', source: 'DB', color: '#34d399', domainId: 'customers', subModuleId: 'directory' },
+    { label: 'Live Matches', value: formatMetric(metrics.liveMatches), source: 'LIVE', accent: '#f472b6', domainId: 'sports', subModuleId: 'catalog' },
+    { label: 'Priced Coverage', value: pricedCoverage == null ? '—' : `${pricedCoverage}%`, trendLabel: `${formatMetric(metrics.matchesWithOdds)} of ${formatMetric(metrics.liveMatches)}`, source: 'LIVE', accent: '#fbbf24', domainId: 'trading-risk', subModuleId: 'exposure' },
+    { label: 'Open Bets', value: formatMetric(metrics.openBets), source: 'DB', accent: '#60a5fa', domainId: 'betting', subModuleId: 'bets-registry' },
+    { label: 'Registered Users', value: formatMetric(metrics.registeredUsers ?? metrics.activeUsers), source: 'DB', accent: '#34d399', domainId: 'customers', subModuleId: 'directory' },
     {
       label: metrics.turnoverScope === 'today' ? 'Today Turnover' : 'Stake Turnover',
       value: formatMetric(metrics.todayTurnover, '₹'),
-      hint: metrics.turnoverScope === 'today' ? 'Stakes placed today' : 'All-time stake sum',
       source: 'DB',
-      color: '#38bdf8',
+      accent: '#38bdf8',
       domainId: 'finance',
       subModuleId: 'ledger',
     },
-    { label: 'Approx GGR', value: formatMetric(metrics.ggr, '₹'), hint: metrics.ggrNote || 'Settled stake − payouts', source: 'DB', color: '#a78bfa', domainId: 'analytics', subModuleId: 'turnover-ggr' },
-    { label: 'Pending Withdrawals', value: formatMetric(metrics.pendingWithdrawals), hint: 'Awaiting finance approval', source: 'DB', color: '#f87171', domainId: 'finance', subModuleId: 'maker-checker' },
-    { label: 'Open Support Tickets', value: formatMetric(metrics.openTickets), hint: 'Unresolved conversations', source: 'DB', color: '#22d3ee', domainId: 'support', subModuleId: 'ticket-queue' },
-    { label: 'IPLSRL Console', value: 'Desk', hint: 'Script winner → start → control balls', source: 'SRL', color: '#fb923c', domainId: 'sports', subModuleId: 'iplsrl-console' },
+    { label: 'Approx GGR', value: formatMetric(metrics.ggr, '₹'), trendLabel: metrics.ggrNote || 'Settled stake − payouts', source: 'DB', accent: '#a78bfa', domainId: 'analytics', subModuleId: 'turnover-ggr' },
+    { label: 'Pending Withdrawals', value: formatMetric(metrics.pendingWithdrawals), source: 'DB', accent: '#f87171', domainId: 'finance', subModuleId: 'maker-checker' },
+    { label: 'Open Support Tickets', value: formatMetric(metrics.openTickets), source: 'DB', accent: '#22d3ee', domainId: 'support', subModuleId: 'ticket-queue' },
+    { label: 'IPLSRL Console', value: 'Desk', source: 'SRL', accent: '#fb923c', domainId: 'sports', subModuleId: 'iplsrl-console' },
     {
       label: 'Developer API Hub',
       value: 'Gateway',
-      hint: 'REST APIs, Live Stream & Sandbox',
       source: 'DOCS',
-      color: '#a855f7',
+      accent: '#a855f7',
       onClick: () => navigate('/developer'),
     },
   ];
@@ -222,6 +175,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
 
   return (
     <div>
+      {/* Sticky Header */}
       <div style={{
         position: 'sticky',
         top: 0,
@@ -231,87 +185,59 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
         background: 'var(--admin-sticky-bg)',
         backdropFilter: 'blur(8px)',
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap' }}>
+        <div className="admin-flex-between" style={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: 'var(--admin-text)' }}>
+            <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: 'var(--admin-text)' }}>
               Control Tower · {titleBySub[subModule] || 'Operational Overview'}
             </h2>
-            <p style={{ margin: '6px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.85rem', maxWidth: '720px' }}>
+            <p style={{ margin: '5px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem', maxWidth: '720px' }}>
               {metrics.note || 'Live sportsbook telemetry from aggregator + Postgres.'}
               {lastRefreshAt ? ` · Updated ${new Date(lastRefreshAt).toLocaleTimeString()}` : ''}
             </p>
             {error && (
-              <p style={{ margin: '6px 0 0', color: '#f87171', fontSize: '0.8rem' }}>{error}</p>
+              <p style={{ margin: '5px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>
             )}
           </div>
-          <span
-            style={{
-              padding: '7px 14px',
-              borderRadius: '999px',
-              background: statusColor.bg,
-              color: statusColor.fg,
-              fontWeight: 800,
-              fontSize: '0.78rem',
-              border: `1px solid ${statusColor.border}`,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {metrics.systemStatus}
-          </span>
+          <StatusBadge status={metrics.systemStatus} />
         </div>
 
-        <div style={{
-          display: 'flex',
-          gap: '8px',
-          marginTop: '14px',
-          flexWrap: 'wrap',
-        }}>
-          {tabs.map((tab) => {
-            const active = subModule === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => onSubModuleChange?.(tab.id)}
-                style={{
-                  padding: '8px 14px',
-                  borderRadius: '999px',
-                  border: active ? '1px solid rgba(59, 130, 246, 0.55)' : '1px solid var(--admin-border)',
-                  background: active ? 'rgba(59, 130, 246, 0.14)' : 'var(--admin-chip-bg)',
-                  color: active ? 'var(--admin-accent-blue, #3b82f6)' : 'var(--admin-text-muted)',
-                  fontWeight: 700,
-                  fontSize: '0.8rem',
-                  cursor: 'pointer',
-                }}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
+        <div style={{ marginTop: '12px' }}>
+          <AdminTabs
+            tabs={tabs}
+            active={subModule}
+            onChange={(id) => onSubModuleChange?.(id)}
+          />
         </div>
       </div>
 
+      {/* KPI Grid */}
       {showMetrics && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '14px', marginBottom: '22px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '20px' }}>
           {overviewCards.map((card, i) => (
-            <MetricCard
+            <motion.div
               key={card.label}
-              label={card.label}
-              value={card.value}
-              hint={card.hint}
-              source={card.source}
-              color={card.color}
-              delay={i * 0.03}
-              onClick={card.onClick
-                ? card.onClick
-                : (card.domainId && onNavigate
-                  ? () => onNavigate({ domainId: card.domainId, subModuleId: card.subModuleId })
-                  : undefined)}
-            />
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2, delay: i * 0.025 }}
+            >
+              <AdminKPI
+                label={card.label}
+                value={card.value}
+                accent={card.accent}
+                source={card.source}
+                trendLabel={card.trendLabel}
+                onClick={card.onClick
+                  ? card.onClick
+                  : (card.domainId && onNavigate
+                    ? () => onNavigate({ domainId: card.domainId, subModuleId: card.subModuleId })
+                    : undefined)}
+              />
+            </motion.div>
           ))}
         </div>
       )}
 
+      {/* Provider Status Table */}
       {showProviders && (
         <AdminDataTable
           title="Provider Feed Status"
@@ -322,18 +248,11 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
             {
               header: 'Health',
               key: 'severity',
-              render: (r) => (
-                <span style={{
-                  padding: '3px 10px',
-                  borderRadius: '12px',
-                  fontSize: '0.74rem',
-                  fontWeight: 800,
-                  background: r.severity === 'HIGH' ? 'rgba(239, 68, 68, 0.2)' : r.severity === 'OK' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                  color: r.severity === 'HIGH' ? '#f87171' : r.severity === 'OK' ? '#34d399' : '#fbbf24',
-                }}>
-                  {r.severity}
-                </span>
-              ),
+              render: (r) => <StatusBadge status={r.severity} customMap={{
+                success: ['OK'],
+                warning: ['WATCH'],
+                danger: ['HIGH'],
+              }} />,
             },
             { header: 'Status', key: 'status' },
             { header: 'Snapshot', key: 'time' },
@@ -341,6 +260,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
         />
       )}
 
+      {/* Incidents Table */}
       {showIncidents && (
         <AdminDataTable
           title={subModule === 'overview' ? 'Incidents Snapshot' : 'Operational Incidents & Queues'}
@@ -356,18 +276,11 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
             {
               header: 'Severity',
               key: 'severity',
-              render: (r) => (
-                <span style={{
-                  padding: '3px 10px',
-                  borderRadius: '12px',
-                  fontSize: '0.74rem',
-                  fontWeight: 800,
-                  background: r.severity === 'HIGH' ? 'rgba(239, 68, 68, 0.2)' : r.severity === 'OK' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                  color: r.severity === 'HIGH' ? '#f87171' : r.severity === 'OK' ? '#34d399' : '#fbbf24',
-                }}>
-                  {r.severity}
-                </span>
-              ),
+              render: (r) => <StatusBadge status={r.severity} customMap={{
+                success: ['OK'],
+                warning: ['MEDIUM', 'WATCH'],
+                danger: ['HIGH', 'CRITICAL'],
+              }} />,
             },
             { header: 'Status', key: 'status' },
             { header: 'Context', key: 'time' },
@@ -375,55 +288,32 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
         />
       )}
 
+      {/* Quick Nav Buttons */}
       {subModule === 'overview' && (
-        <div style={{ display: 'flex', gap: '10px', marginTop: '8px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
           <button
             type="button"
+            className="admin-btn admin-btn--secondary"
             onClick={() => onSubModuleChange?.('telemetry')}
-            style={{
-              padding: '8px 14px',
-              borderRadius: '8px',
-              border: '1px solid rgba(59, 130, 246, 0.35)',
-              background: 'rgba(59, 130, 246, 0.12)',
-              color: '#93c5fd',
-              fontWeight: 700,
-              fontSize: '0.8rem',
-              cursor: 'pointer',
-            }}
+            style={{ color: '#93c5fd' }}
           >
             Open Telemetry →
           </button>
           <button
             type="button"
+            className="admin-btn admin-btn--secondary"
             onClick={() => onSubModuleChange?.('incidents')}
-            style={{
-              padding: '8px 14px',
-              borderRadius: '8px',
-              border: '1px solid rgba(245, 158, 11, 0.35)',
-              background: 'rgba(245, 158, 11, 0.12)',
-              color: '#fbbf24',
-              fontWeight: 700,
-              fontSize: '0.8rem',
-              cursor: 'pointer',
-            }}
+            style={{ color: '#fbbf24' }}
           >
             Open Incidents →
           </button>
           <button
             type="button"
+            className="admin-btn admin-btn--secondary"
             onClick={() => navigate('/developer')}
-            style={{
-              padding: '8px 14px',
-              borderRadius: '8px',
-              border: '1px solid rgba(168, 85, 247, 0.35)',
-              background: 'rgba(168, 85, 247, 0.12)',
-              color: '#c084fc',
-              fontWeight: 700,
-              fontSize: '0.8rem',
-              cursor: 'pointer',
-            }}
+            style={{ color: '#c084fc' }}
           >
-            Developer API Gateway (/developer) ↗
+            Developer API Gateway ↗
           </button>
         </div>
       )}

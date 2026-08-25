@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { adminApiClient } from '../api/adminApiClient';
 import AdminDataTable from '../components/AdminDataTable';
 import { useAdminToast } from '../components/AdminToastContext';
+import { StatusBadge } from '../components/AdminBadge';
+import AdminKPI from '../components/AdminKPI';
+import AdminCard from '../components/AdminCard';
+import AdminConfirmDialog from '../components/AdminConfirmDialog';
 
 function moneyOrDash(value) {
   if (value == null || Number.isNaN(Number(value))) return '—';
@@ -27,6 +31,8 @@ export default function TradingRiskDomainView({ subModule }) {
   const [fraudSignals, setFraudSignals] = useState([]);
   const [deskMetrics, setDeskMetrics] = useState(null);
   const [error, setError] = useState(null);
+  const [suspendTarget, setSuspendTarget] = useState(null);
+  const [suspending, setSuspending] = useState(false);
   const { showToast } = useAdminToast();
 
   const showOddsDesk = !subModule || subModule === 'exposure' || subModule === 'suspension' || subModule === 'fraud-signals';
@@ -124,15 +130,23 @@ export default function TradingRiskDomainView({ subModule }) {
     return () => { cancelled = true; };
   }, [selectedMatchId, showGgrDesk]);
 
-  const handleMarketSuspend = (row) => {
-    adminApiClient.post('/trading/suspend-market', {
-      matchId: row.matchId,
-      marketId: `${row.matchId}:match_winner`,
-      marketKey: row.market,
-      reason: 'MANUAL_ADMIN',
-    })
-      .then(() => showToast(`Market suspended for ${row.match}`, 'success'))
-      .catch((err) => showToast(err.message || 'Suspend failed', 'error'));
+  const handleMarketSuspend = async (reason) => {
+    if (!suspendTarget) return;
+    setSuspending(true);
+    try {
+      await adminApiClient.post('/trading/suspend-market', {
+        matchId: suspendTarget.matchId,
+        marketId: `${suspendTarget.matchId}:match_winner`,
+        marketKey: suspendTarget.market,
+        reason: reason || 'MANUAL_ADMIN',
+      });
+      showToast(`Market suspended for ${suspendTarget.match}`, 'success');
+      setSuspendTarget(null);
+    } catch (err) {
+      showToast(err.message || 'Suspend failed', 'error');
+    } finally {
+      setSuspending(false);
+    }
   };
 
   const winnerMarket = (oddsDebug?.markets || []).find((m) => m.marketId === 'match_winner');
@@ -146,57 +160,53 @@ export default function TradingRiskDomainView({ subModule }) {
 
   return (
     <div>
-      <div style={{ marginBottom: '20px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>{heading}</h2>
-        <p style={{ margin: '4px 0 0', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+      <div style={{ marginBottom: '16px' }}>
+        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>{heading}</h2>
+        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           {hint}
         </p>
-        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.82rem' }}>{error}</p>}
+        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
       </div>
 
       {showGgrDesk && deskMetrics && (
         <>
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
             gap: '12px',
             marginBottom: '20px',
           }}>
             {[
-              { label: 'GGR', value: moneyOrDash(deskMetrics.ggr), hint: 'Handle − paid out' },
-              { label: 'Hold %', value: pctOrDash(deskMetrics.holdPct), hint: 'GGR / handle' },
-              { label: 'Handle', value: moneyOrDash(deskMetrics.handle), hint: 'BET_STAKE total' },
-              { label: 'Paid out', value: moneyOrDash(deskMetrics.paidOut), hint: 'Wins + cashouts + voids' },
-              { label: 'Open liability', value: moneyOrDash(deskMetrics.openLiability), hint: `${deskMetrics.openBets || 0} open bets` },
-              { label: 'Stored liability', value: moneyOrDash(deskMetrics.storedMarketLiability), hint: 'market_selection_liability' },
-              { label: 'Mem worst-case', value: moneyOrDash(deskMetrics.memoryWorstCaseLoss), hint: 'In-process exposure' },
-              { label: 'Cashouts', value: `${deskMetrics.cashouts?.count || 0}`, hint: moneyOrDash(deskMetrics.cashouts?.stake) },
+              { label: 'GGR', value: moneyOrDash(deskMetrics.ggr), hint: 'Handle − paid out', accent: '#a78bfa' },
+              { label: 'Hold %', value: pctOrDash(deskMetrics.holdPct), hint: 'GGR / handle', accent: '#34d399' },
+              { label: 'Handle', value: moneyOrDash(deskMetrics.handle), hint: 'BET_STAKE total', accent: '#38bdf8' },
+              { label: 'Paid out', value: moneyOrDash(deskMetrics.paidOut), hint: 'Wins + cashouts + voids', accent: '#fb923c' },
+              { label: 'Open liability', value: moneyOrDash(deskMetrics.openLiability), hint: `${deskMetrics.openBets || 0} open bets`, accent: '#f87171' },
+              { label: 'Stored liability', value: moneyOrDash(deskMetrics.storedMarketLiability), hint: 'market_selection_liability', accent: '#fbbf24' },
+              { label: 'Mem worst-case', value: moneyOrDash(deskMetrics.memoryWorstCaseLoss), hint: 'In-process exposure', accent: '#f43f5e' },
+              { label: 'Cashouts', value: `${deskMetrics.cashouts?.count || 0}`, hint: moneyOrDash(deskMetrics.cashouts?.stake), accent: '#818cf8' },
             ].map((card) => (
-              <div
+              <AdminKPI
                 key={card.label}
-                style={{
-                  padding: '14px',
-                  borderRadius: '10px',
-                  border: '1px solid var(--admin-border, #1f2937)',
-                  background: 'var(--admin-surface, rgba(15, 23, 42, 0.85))',
-                }}
-              >
-                <div style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>{card.label}</div>
-                <div style={{ marginTop: '6px', fontSize: '1.15rem', fontWeight: 800 }}>{card.value}</div>
-                <div style={{ marginTop: '4px', fontSize: '0.75rem', color: '#64748b' }}>{card.hint}</div>
-              </div>
+                label={card.label}
+                value={card.value}
+                trendLabel={card.hint}
+                accent={card.accent}
+              />
             ))}
           </div>
 
           <AdminDataTable
-            title="Top selection liabilities (persisted)"
+            title="Top Selection Liabilities (Persisted)"
             emptyMessage="No persisted market liability yet — place bets to populate"
             data={deskMetrics.topLiabilities || []}
             columns={[
               { header: 'Market', key: 'marketId' },
               { header: 'Selection', key: 'selectionId' },
-              { header: 'Net liability', key: 'netLiability', render: (r) => moneyOrDash(r.netLiability) },
-              { header: 'Total stake', key: 'totalStake', render: (r) => moneyOrDash(r.totalStake) },
+              { header: 'Net Liability', key: 'netLiability', render: (r) => (
+                <span style={{ fontWeight: 800, color: 'var(--admin-text)' }}>{moneyOrDash(r.netLiability)}</span>
+              )},
+              { header: 'Total Stake', key: 'totalStake', render: (r) => moneyOrDash(r.totalStake) },
               { header: 'Updated', key: 'updatedAt' },
             ]}
           />
@@ -205,16 +215,16 @@ export default function TradingRiskDomainView({ subModule }) {
 
       {subModule === 'fraud-signals' && (
         <AdminDataTable
-          title="Fraud / risk signals"
+          title="Fraud / Risk Signals"
           emptyMessage="No risk signals recorded"
           data={fraudSignals}
           columns={[
-            { header: 'ID', key: 'id' },
+            { header: 'ID', key: 'id', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.id}</span> },
             { header: 'User', key: 'user_id' },
             { header: 'Type', key: 'signal_type' },
-            { header: 'Severity', key: 'severity' },
-            { header: 'Score', key: 'score' },
-            { header: 'Status', key: 'status' },
+            { header: 'Severity', key: 'severity', render: (r) => <StatusBadge status={r.severity} /> },
+            { header: 'Score', key: 'score', render: (r) => <span style={{ fontWeight: 700 }}>{r.score}</span> },
+            { header: 'Status', key: 'status', render: (r) => <StatusBadge status={r.status} /> },
             { header: 'Created', key: 'created_at' },
           ]}
         />
@@ -225,47 +235,37 @@ export default function TradingRiskDomainView({ subModule }) {
           title="Live Matches · Pricing Risk Monitor"
           data={liveExposures}
           columns={[
-            { header: 'Match ID', key: 'matchId' },
-            { header: 'Match', key: 'match' },
+            { header: 'Match ID', key: 'matchId', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.matchId}</span> },
+            { header: 'Match', key: 'match', render: (r) => <span style={{ fontWeight: 700 }}>{r.match}</span> },
             { header: 'Market', key: 'market' },
-            { header: 'Odds 1', key: 'oddsTeam1', render: (r) => oddsOrDash(r.oddsTeam1) },
-            { header: 'Odds 2', key: 'oddsTeam2', render: (r) => oddsOrDash(r.oddsTeam2) },
-            { header: 'Source', key: 'oddsSource', render: (r) => r.oddsSource || r.source || '—' },
+            { header: 'Odds 1', key: 'oddsTeam1', render: (r) => <span style={{ fontWeight: 800, color: '#38bdf8' }}>{oddsOrDash(r.oddsTeam1)}</span> },
+            { header: 'Odds 2', key: 'oddsTeam2', render: (r) => <span style={{ fontWeight: 800, color: '#38bdf8' }}>{oddsOrDash(r.oddsTeam2)}</span> },
+            { header: 'Source', key: 'oddsSource', render: (r) => <span className="admin-badge admin-badge--neutral">{r.oddsSource || r.source || '—'}</span> },
             { header: 'Exposure', key: 'exposure', render: (r) => moneyOrDash(r.exposure) },
-            { header: 'Liability', key: 'liability', render: (r) => moneyOrDash(r.liability) },
+            { header: 'Liability', key: 'liability', render: (r) => <span style={{ fontWeight: 700, color: '#fb7185' }}>{moneyOrDash(r.liability)}</span> },
             {
               header: 'Risk',
               key: 'riskScore',
-              render: (r) => (
-                <span style={{
-                  padding: '2px 8px',
-                  borderRadius: '4px',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  background: r.riskScore === 'HIGH' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(245, 158, 11, 0.2)',
-                  color: r.riskScore === 'HIGH' ? '#ef4444' : '#f59e0b',
-                }}>
-                  {r.riskScore}
-                </span>
-              ),
+              render: (r) => <StatusBadge status={r.riskScore} />,
             },
             {
               header: 'Action',
               key: 'action',
               sortable: false,
               render: (r) => (
-                <div style={{ display: 'flex', gap: '6px' }}>
+                <div style={{ display: 'flex', gap: '5px' }}>
                   <button
                     type="button"
+                    className="admin-btn admin-btn--secondary admin-btn--sm"
                     onClick={() => setSelectedMatchId(r.matchId)}
-                    style={{ padding: '4px 10px', borderRadius: '4px', border: '1px solid var(--color-border)', background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', cursor: 'pointer', fontSize: '0.78rem' }}
+                    style={{ color: '#60a5fa' }}
                   >
                     Debug Odds
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleMarketSuspend(r)}
-                    style={{ padding: '4px 10px', borderRadius: '4px', border: '1px solid var(--color-border)', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', cursor: 'pointer', fontSize: '0.78rem' }}
+                    className="admin-btn admin-btn--danger admin-btn--sm"
+                    onClick={() => setSuspendTarget(r)}
                   >
                     Suspend
                   </button>
@@ -277,32 +277,17 @@ export default function TradingRiskDomainView({ subModule }) {
       )}
 
       {showOddsDesk && !showGgrDesk && (
-        <div style={{
-          marginTop: '24px',
-          padding: '18px',
-          borderRadius: '12px',
-          border: '1px solid var(--admin-border)',
-          background: 'var(--admin-surface)',
-          boxShadow: 'var(--admin-shadow)',
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: '14px' }}>
-            <div>
-              <h3 style={{ margin: 0, fontSize: '1.05rem', color: 'var(--admin-text)' }}>Odds Desk · V3 Pricing Debug</h3>
-              <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.8rem' }}>
-                Inspect live canonical state, winner line, market count, and engine status — no invented prices.
-              </p>
-            </div>
+        <AdminCard
+          title="Odds Desk · V3 Pricing Debug"
+          subtitle="Inspect live canonical state, winner line, market count, and engine status — no invented prices."
+          accent="#818cf8"
+          style={{ marginTop: '20px' }}
+          actions={
             <select
               value={selectedMatchId || ''}
               onChange={(e) => setSelectedMatchId(e.target.value || null)}
-              style={{
-                minWidth: '280px',
-                padding: '8px 12px',
-                borderRadius: '8px',
-                border: '1px solid var(--admin-border)',
-                background: 'var(--admin-input-bg)',
-                color: 'var(--admin-text)',
-              }}
+              className="admin-select"
+              style={{ minWidth: '260px' }}
             >
               <option value="">Select live match…</option>
               {oddsMatches.map((m) => (
@@ -311,49 +296,71 @@ export default function TradingRiskDomainView({ subModule }) {
                 </option>
               ))}
             </select>
-          </div>
-
-          {loadingDebug && <p style={{ color: '#94a3b8' }}>Loading authoritative odds snapshot…</p>}
+          }
+        >
+          {loadingDebug && <p style={{ color: 'var(--admin-text-muted)', margin: '8px 0' }}>Loading authoritative odds snapshot…</p>}
 
           {!loadingDebug && oddsDebug && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
-              <div style={{ padding: '12px', borderRadius: '8px', background: 'rgba(15, 23, 42, 0.8)', border: '1px solid #1f2937' }}>
-                <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>Match</div>
-                <div style={{ marginTop: '6px', fontWeight: 700 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginTop: '12px' }}>
+              <div style={{ padding: '12px', borderRadius: 'var(--admin-radius-sm)', background: 'var(--admin-bg)', border: '1px solid var(--admin-border)' }}>
+                <div style={{ fontSize: '0.7rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Match</div>
+                <div style={{ marginTop: '6px', fontWeight: 700, color: 'var(--admin-text)' }}>
                   {oddsDebug.match?.team1} vs {oddsDebug.match?.team2}
                 </div>
-                <div style={{ marginTop: '4px', fontSize: '0.8rem', color: '#94a3b8' }}>
+                <div style={{ marginTop: '4px', fontSize: '0.78rem', color: 'var(--admin-text-dim)' }}>
                   {oddsDebug.match?.source || 'n/a'} · {oddsDebug.match?.league || '—'}
                 </div>
               </div>
-              <div style={{ padding: '12px', borderRadius: '8px', background: 'rgba(15, 23, 42, 0.8)', border: '1px solid #1f2937' }}>
-                <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>Winner Odds</div>
-                <div style={{ marginTop: '6px', fontWeight: 800, fontSize: '1.1rem' }}>
+              <div style={{ padding: '12px', borderRadius: 'var(--admin-radius-sm)', background: 'var(--admin-bg)', border: '1px solid var(--admin-border)' }}>
+                <div style={{ fontSize: '0.7rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Winner Odds</div>
+                <div style={{ marginTop: '6px', fontWeight: 800, fontSize: '1.1rem', color: '#38bdf8' }}>
                   {oddsOrDash(oddsDebug.winnerOdds?.team1)} / {oddsOrDash(oddsDebug.winnerOdds?.team2)}
                 </div>
-                <div style={{ marginTop: '4px', fontSize: '0.8rem', color: '#94a3b8' }}>
+                <div style={{ marginTop: '4px', fontSize: '0.78rem', color: 'var(--admin-text-dim)' }}>
                   status {oddsDebug.winnerOdds?.status || oddsDebug.status} · v{oddsDebug.oddsVersion ?? '—'}
                 </div>
               </div>
-              <div style={{ padding: '12px', borderRadius: '8px', background: 'rgba(15, 23, 42, 0.8)', border: '1px solid #1f2937' }}>
-                <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>Canonical</div>
-                <div style={{ marginTop: '6px', fontSize: '0.85rem', lineHeight: 1.5 }}>
+              <div style={{ padding: '12px', borderRadius: 'var(--admin-radius-sm)', background: 'var(--admin-bg)', border: '1px solid var(--admin-border)' }}>
+                <div style={{ fontSize: '0.7rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Canonical</div>
+                <div style={{ marginTop: '6px', fontSize: '0.82rem', lineHeight: 1.5, color: 'var(--admin-text)' }}>
                   innings {oddsDebug.canonical?.currentInnings ?? '—'} · target {oddsDebug.canonical?.target ?? '—'}
                   <br />
                   need {oddsDebug.canonical?.runsRequired ?? '—'} off {oddsDebug.canonical?.ballsRemaining ?? '—'} balls
                 </div>
               </div>
-              <div style={{ padding: '12px', borderRadius: '8px', background: 'rgba(15, 23, 42, 0.8)', border: '1px solid #1f2937' }}>
-                <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>Markets</div>
-                <div style={{ marginTop: '6px', fontWeight: 800, fontSize: '1.1rem' }}>{oddsDebug.marketsCount ?? 0}</div>
-                <div style={{ marginTop: '4px', fontSize: '0.8rem', color: '#94a3b8' }}>
+              <div style={{ padding: '12px', borderRadius: 'var(--admin-radius-sm)', background: 'var(--admin-bg)', border: '1px solid var(--admin-border)' }}>
+                <div style={{ fontSize: '0.7rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Markets</div>
+                <div style={{ marginTop: '6px', fontWeight: 800, fontSize: '1.1rem', color: 'var(--admin-text)' }}>{oddsDebug.marketsCount ?? 0}</div>
+                <div style={{ marginTop: '4px', fontSize: '0.78rem', color: 'var(--admin-text-dim)' }}>
                   {winnerMarket ? `${winnerMarket.selections?.length || 0} winner selections` : 'winner market unavailable'}
                 </div>
               </div>
             </div>
           )}
-        </div>
+        </AdminCard>
       )}
+
+      {/* Market Suspend Confirm */}
+      <AdminConfirmDialog
+        isOpen={!!suspendTarget}
+        variant="danger"
+        icon="⛔"
+        title={`Suspend Market for ${suspendTarget?.match}?`}
+        description="This will immediately freeze betting and odds intake for this market across all active customers."
+        requireReason
+        reasonPlaceholder="Suspension reason (e.g. Unusual betting pattern, Feed anomaly)..."
+        reasonDefault="MANUAL_ADMIN"
+        details={suspendTarget ? [
+          { label: 'Match', value: suspendTarget.match },
+          { label: 'Market', value: suspendTarget.market },
+          { label: 'Exposure', value: moneyOrDash(suspendTarget.exposure) },
+          { label: 'Liability', value: moneyOrDash(suspendTarget.liability) },
+        ] : []}
+        confirmLabel="Suspend Market"
+        onConfirm={handleMarketSuspend}
+        onCancel={() => setSuspendTarget(null)}
+        loading={suspending}
+      />
     </div>
   );
 }

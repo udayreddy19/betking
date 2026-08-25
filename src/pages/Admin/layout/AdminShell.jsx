@@ -28,6 +28,10 @@ import ThemeToggle from '../../../components/ThemeToggle/ThemeToggle';
 import { useTheme } from '../../../context/ThemeContext';
 import { startVisibleInterval } from '../utils/visibleInterval';
 import AdminMfaQr from '../components/AdminMfaQr';
+import AdminSidebar from './AdminSidebar';
+import AdminTopbar from './AdminTopbar';
+import AdminLogin from './AdminLogin';
+import AdminStatusBar from '../components/AdminStatusBar';
 import ControlTowerView from '../domains/ControlTowerView';
 import CustomersDomainView from '../domains/CustomersDomainView';
 import SportsDomainView from '../domains/SportsDomainView';
@@ -341,6 +345,8 @@ function AdminShellInner() {
   const [mfaOtpauth, setMfaOtpauth] = useState('');
   const [mfaStep, setMfaStep] = useState('password');
   const [liveAlerts, setLiveAlerts] = useState([]);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [alertsMenuPos, setAlertsMenuPos] = useState({ top: 56, right: 16 });
   const contentScrollRef = useRef(null);
   const alertsBellRef = useRef(null);
@@ -372,6 +378,7 @@ function AdminShellInner() {
     scrollContentToTop();
   }, [activeDomain, activeSubModule]);
 
+  // Session bootstrap
   React.useEffect(() => {
     let cancelled = false;
     setSessionChecking(true);
@@ -407,6 +414,7 @@ function AdminShellInner() {
     return () => { cancelled = true; };
   }, [activeRole]);
 
+  // Live alerts polling
   React.useEffect(() => {
     if (!sessionReady) return undefined;
     let cancelled = false;
@@ -482,7 +490,7 @@ function AdminShellInner() {
             });
           });
 
-          // De-dupe by id while keeping newest support alerts visible
+          // De-dupe by id
           const seen = new Set();
           setLiveAlerts(alerts.filter((a) => {
             if (seen.has(a.id)) return false;
@@ -501,6 +509,7 @@ function AdminShellInner() {
     };
   }, [sessionReady, activeRole]);
 
+  // Command palette hotkey
   React.useEffect(() => {
     if (!sessionReady) return undefined;
     const handleKeyDown = (e) => {
@@ -514,6 +523,7 @@ function AdminShellInner() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [globalSearch, isCommandPaletteOpen, sessionReady]);
 
+  // ─── Navigation Handlers (unchanged) ───
   const toggleDomainExpand = (domainId) => {
     setExpandedDomains((prev) => ({
       ...prev,
@@ -526,7 +536,6 @@ function AdminShellInner() {
     const isAlreadyActive = activeDomain === domain.id;
     const isExpanded = !!expandedDomains[domain.id];
 
-    // Re-clicking an expanded active domain collapses it (accordion behavior).
     if (hasSub && isAlreadyActive && isExpanded) {
       setExpandedDomains((prev) => ({ ...prev, [domain.id]: false }));
       return;
@@ -540,6 +549,7 @@ function AdminShellInner() {
     }
     syncAdminLocation(domain.id, nextSub);
     scrollContentToTop();
+    setMobileSidebarOpen(false);
   };
 
   const handleSubModuleSelect = (domainId, subModuleId) => {
@@ -548,6 +558,7 @@ function AdminShellInner() {
     setExpandedDomains((prev) => ({ ...prev, [domainId]: true }));
     syncAdminLocation(domainId, subModuleId);
     scrollContentToTop();
+    setMobileSidebarOpen(false);
   };
 
   const openCommandPalette = (seed = globalSearch) => {
@@ -586,7 +597,7 @@ function AdminShellInner() {
     const rect = alertsBellRef.current?.getBoundingClientRect();
     if (rect) {
       setAlertsMenuPos({
-        top: Math.round(rect.bottom + 10),
+        top: Math.round(rect.bottom + 8),
         right: Math.max(12, Math.round(window.innerWidth - rect.right)),
       });
     }
@@ -662,6 +673,7 @@ function AdminShellInner() {
     setActiveRole(newRole);
   };
 
+  // Close alerts popover on outside click / Escape
   useEffect(() => {
     if (!isAlertsOpen) return undefined;
     const onPointerDown = (event) => {
@@ -681,7 +693,7 @@ function AdminShellInner() {
     };
   }, [isAlertsOpen]);
 
-  // If initial session verification is underway and not ready yet, show sleek spinner
+  // ─── Loading State ───
   if (sessionChecking && !sessionReady) {
     return (
       <div
@@ -692,21 +704,21 @@ function AdminShellInner() {
           alignItems: 'center',
           justifyContent: 'center',
           minHeight: '100vh',
-          background: 'var(--admin-bg, #0b0f19)',
-          color: 'var(--admin-text, #f9fafb)',
-          fontFamily: 'system-ui, -apple-system, sans-serif',
-          gap: '16px',
+          background: 'var(--admin-bg)',
+          color: 'var(--admin-text)',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif',
+          gap: '14px',
         }}
       >
         <motion.div
           animate={{ scale: [1, 1.08, 1], opacity: [0.8, 1, 0.8] }}
           transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
         >
-          <BrandLogo size={52} />
+          <BrandLogo size={48} />
         </motion.div>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '1.1rem', fontWeight: 900, letterSpacing: '0.6px' }}>ODDSYRA ADMIN</div>
-          <div style={{ fontSize: '0.76rem', color: 'var(--admin-text-muted)', marginTop: '4px' }}>
+          <div style={{ fontSize: '1rem', fontWeight: 900, letterSpacing: '0.5px' }}>ODDSYRA ADMIN</div>
+          <div style={{ fontSize: '0.74rem', color: 'var(--admin-text-muted)', marginTop: '4px' }}>
             Verifying security session…
           </div>
         </div>
@@ -714,317 +726,36 @@ function AdminShellInner() {
     );
   }
 
-  // If unauthenticated, render a clean, secure login screen without sidebar or profile
+  // ─── Login Screen ───
   if (!sessionReady) {
     return (
-      <div
-        className={`admin-shell ${isDark ? 'admin-shell--dark' : 'admin-shell--light'}`}
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: '100vh',
-          height: '100vh',
-          background: 'var(--admin-bg, #0b0f19)',
-          color: 'var(--admin-text, #f9fafb)',
-          fontFamily: 'system-ui, -apple-system, sans-serif',
-          overflow: 'auto',
+      <AdminLogin
+        isDark={isDark}
+        sessionError={sessionError}
+        signingIn={signingIn}
+        adminEmail={adminEmail}
+        setAdminEmail={setAdminEmail}
+        adminPassword={adminPassword}
+        setAdminPassword={setAdminPassword}
+        adminTotp={adminTotp}
+        setAdminTotp={setAdminTotp}
+        mfaStep={mfaStep}
+        mfaSecret={mfaSecret}
+        mfaOtpauth={mfaOtpauth}
+        onSubmit={handleAdminSignIn}
+        onResetMfa={() => {
+          setMfaStep('password');
+          setAdminTotp('');
+          setMfaToken('');
+          setMfaSecret('');
+          setMfaOtpauth('');
+          setSessionError('');
         }}
-      >
-        {/* Top Navbar */}
-        <header
-          style={{
-            height: '60px',
-            flexShrink: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '0 24px',
-            borderBottom: '1px solid var(--admin-border)',
-            background: 'var(--admin-panel)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <BrandLogo size={34} />
-            <div>
-              <div style={{ fontSize: '0.96rem', fontWeight: 900, letterSpacing: '0.4px', color: 'var(--admin-text)' }}>
-                ODDSYRA ADMIN
-              </div>
-              <div style={{ fontSize: '0.68rem', color: '#10b981', fontWeight: 800, letterSpacing: '0.3px' }}>
-                OPERATIONS CONTROL CENTER
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <ThemeToggle />
-            <Link
-              to="/"
-              style={{
-                fontSize: '0.82rem',
-                fontWeight: 700,
-                color: 'var(--admin-text-muted)',
-                textDecoration: 'none',
-                padding: '6px 12px',
-                borderRadius: '8px',
-                border: '1px solid var(--admin-border)',
-                background: 'var(--admin-surface)',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              ← Back to Sportsbook
-            </Link>
-          </div>
-        </header>
-
-        {/* Center Login Container */}
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '32px 16px',
-          }}
-        >
-          <motion.div
-            initial={{ opacity: 0, y: 16, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
-            style={{
-              width: '100%',
-              maxWidth: '440px',
-              background: 'var(--admin-panel)',
-              border: '1px solid var(--admin-border)',
-              borderRadius: '16px',
-              padding: '32px 28px',
-              boxShadow: 'var(--admin-shadow)',
-            }}
-          >
-            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-              <div
-                style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '12px',
-                  background: 'rgba(59, 130, 246, 0.12)',
-                  border: '1px solid rgba(59, 130, 246, 0.3)',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#3b82f6',
-                  marginBottom: '14px',
-                }}
-              >
-                <LockIcon size={24} />
-              </div>
-              <h2 style={{ margin: '0 0 6px', fontSize: '1.25rem', fontWeight: 800, color: 'var(--admin-text)' }}>
-                Admin Sign In
-              </h2>
-              <p style={{ margin: 0, color: 'var(--admin-text-muted)', fontSize: '0.86rem', lineHeight: 1.45 }}>
-                Sign in with an authorized administrator account to open the Operations Control Center.
-              </p>
-            </div>
-
-            {sessionError && (
-              <div
-                style={{
-                  marginBottom: '18px',
-                  padding: '10px 14px',
-                  borderRadius: '8px',
-                  background: 'rgba(239, 68, 68, 0.12)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  color: '#f87171',
-                  fontSize: '0.82rem',
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
-              >
-                <span>⚠️</span>
-                <span>{sessionError}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleAdminSignIn} style={{ display: 'grid', gap: '16px' }}>
-              {mfaStep === 'password' && (
-                <>
-              <label style={{ display: 'grid', gap: '6px', fontSize: '0.78rem', fontWeight: 700, color: 'var(--admin-text-muted)' }}>
-                ADMIN EMAIL
-                <input
-                  type="email"
-                  required
-                  autoFocus
-                  autoComplete="username"
-                  placeholder="admin@oddsyra.com"
-                  value={adminEmail}
-                  onChange={(e) => setAdminEmail(e.target.value)}
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid var(--admin-border)',
-                    background: 'var(--admin-bg)',
-                    color: 'var(--admin-text)',
-                    fontSize: '0.9rem',
-                    outline: 'none',
-                  }}
-                />
-              </label>
-
-              <label style={{ display: 'grid', gap: '6px', fontSize: '0.78rem', fontWeight: 700, color: 'var(--admin-text-muted)' }}>
-                PASSWORD
-                <input
-                  type="password"
-                  required
-                  autoComplete="current-password"
-                  placeholder="••••••••••••"
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid var(--admin-border)',
-                    background: 'var(--admin-bg)',
-                    color: 'var(--admin-text)',
-                    fontSize: '0.9rem',
-                    outline: 'none',
-                  }}
-                />
-              </label>
-                </>
-              )}
-
-              {mfaStep !== 'password' && (
-                <>
-                  {mfaStep === 'setup' && mfaSecret && (
-                    <div style={{
-                      padding: '12px 14px',
-                      borderRadius: '8px',
-                      border: '1px solid var(--admin-border)',
-                      background: 'var(--admin-bg)',
-                      fontSize: '0.8rem',
-                      color: 'var(--admin-text)',
-                      wordBreak: 'break-all',
-                    }}>
-                      <div style={{ fontWeight: 800, marginBottom: 10 }}>Set up authenticator</div>
-                      {mfaOtpauth && (
-                        <div style={{ marginBottom: 12 }}>
-                          <AdminMfaQr otpauthUrl={mfaOtpauth} size={200} />
-                          <div style={{ marginTop: 8, color: 'var(--admin-text-muted)', fontSize: '0.72rem', textAlign: 'center' }}>
-                            Scan with Google Authenticator, 1Password, or Authy
-                          </div>
-                        </div>
-                      )}
-                      <div style={{ fontWeight: 700, marginBottom: 6, fontSize: '0.72rem', color: 'var(--admin-text-muted)' }}>
-                        Or enter this secret manually
-                      </div>
-                      <code style={{ display: 'block', fontSize: '0.78rem' }}>{mfaSecret}</code>
-                      <div style={{ marginTop: 8, color: 'var(--admin-text-muted)', fontSize: '0.72rem' }}>
-                        Delete any old OddsYra Admin entries first, then scan or paste the secret.
-                        Wait for a fresh 6-digit code before confirming.
-                      </div>
-                    </div>
-                  )}
-                  <label style={{ display: 'grid', gap: '6px', fontSize: '0.78rem', fontWeight: 700, color: 'var(--admin-text-muted)' }}>
-                    AUTHENTICATOR CODE
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                      required
-                      autoFocus
-                      maxLength={8}
-                      placeholder="123456"
-                      value={adminTotp}
-                      onChange={(e) => setAdminTotp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      style={{
-                        padding: '10px 12px',
-                        borderRadius: '8px',
-                        border: '1px solid var(--admin-border)',
-                        background: 'var(--admin-bg)',
-                        color: 'var(--admin-text)',
-                        fontSize: '0.9rem',
-                        outline: 'none',
-                        letterSpacing: '0.2em',
-                      }}
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMfaStep('password');
-                      setAdminTotp('');
-                      setMfaToken('');
-                      setMfaSecret('');
-                      setMfaOtpauth('');
-                      setSessionError('');
-                    }}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--admin-text-muted)',
-                      fontSize: '0.78rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      padding: 0,
-                    }}
-                  >
-                    Back to email and password
-                  </button>
-                </>
-              )}
-
-              <button
-                type="submit"
-                disabled={signingIn}
-                style={{
-                  marginTop: '8px',
-                  padding: '12px 16px',
-                  border: 'none',
-                  borderRadius: '8px',
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                  color: '#fff',
-                  fontWeight: 800,
-                  fontSize: '0.92rem',
-                  cursor: signingIn ? 'wait' : 'pointer',
-                  boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)',
-                  transition: 'all 0.15s ease',
-                  opacity: signingIn ? 0.75 : 1,
-                }}
-              >
-                {signingIn
-                  ? 'Verifying…'
-                  : mfaStep === 'setup'
-                    ? 'Confirm authenticator'
-                    : mfaStep === 'otp'
-                      ? 'Verify code'
-                      : 'Sign In to Operations Console'}
-              </button>
-            </form>
-
-            <div
-              style={{
-                marginTop: '22px',
-                paddingTop: '16px',
-                borderTop: '1px solid var(--admin-border)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                color: 'var(--admin-text-muted)',
-                fontSize: '0.74rem',
-              }}
-            >
-              <ShieldCheckIcon size={14} style={{ color: '#10b981' }} />
-              <span>RBAC &amp; Audit Logging Enforced</span>
-            </div>
-          </motion.div>
-        </div>
-      </div>
+      />
     );
   }
 
+  // ─── Domain View Router ───
   const renderActiveDomainView = () => {
     switch (activeDomain) {
       case 'control-tower': return (
@@ -1056,393 +787,159 @@ function AdminShellInner() {
   };
 
   const currentDomainObj = ALL_DOMAINS.find((d) => d.id === activeDomain);
+  const currentSubObj = currentDomainObj?.subModules?.find((s) => s.id === activeSubModule);
 
+  // ─── Main Authenticated Layout ───
   return (
-    <div className={`admin-shell ${isDark ? 'admin-shell--dark' : 'admin-shell--light'}`} style={{ color: 'var(--admin-text, #f9fafb)', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div className={`admin-shell ${isDark ? 'admin-shell--dark' : 'admin-shell--light'}`} style={{ color: 'var(--admin-text)', fontFamily: '-apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif' }}>
 
-      {/* Animated Left Sidebar Navigation */}
-      <motion.aside
-        className="admin-shell__sidebar"
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.25, ease: 'easeOut' }}
-        style={{ background: 'var(--admin-panel)', borderRight: '1px solid var(--admin-border)' }}
-      >
-        <div style={{ padding: '20px 16px', borderBottom: '1px solid var(--admin-border)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <BrandLogo size={36} />
-          <div>
-            <h1 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 900, letterSpacing: '0.5px', color: 'var(--admin-text)' }}>ODDSYRA ADMIN</h1>
-            <span style={{ fontSize: '0.70rem', color: '#10b981', fontWeight: 800, letterSpacing: '0.4px' }}>OPERATIONS CONTROL CENTER</span>
-          </div>
-        </div>
+      {/* Sidebar */}
+      <AdminSidebar
+        domainGroups={DOMAIN_GROUPS}
+        activeDomain={activeDomain}
+        activeSubModule={activeSubModule}
+        expandedDomains={expandedDomains}
+        onDomainSelect={handleDomainSelect}
+        onSubModuleSelect={handleSubModuleSelect}
+        onToggleExpand={toggleDomainExpand}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed((p) => !p)}
+        isMobileOpen={mobileSidebarOpen}
+        onCloseMobile={() => setMobileSidebarOpen(false)}
+      />
 
-        <nav className="admin-shell__sidebar-nav" style={{ padding: '12px 10px' }}>
-          {DOMAIN_GROUPS.map((group, idx) => (
-            <div key={idx} style={{ marginBottom: '18px' }}>
-              <div style={{ padding: '4px 10px 8px', fontSize: '0.66rem', fontWeight: 800, color: 'var(--admin-text-muted)', letterSpacing: '0.9px', textTransform: 'uppercase' }}>
-                {group.title}
-              </div>
-              {group.items.map((domain) => {
-                const isActive = activeDomain === domain.id;
-                const isExpanded = !!expandedDomains[domain.id];
-                const DomainIcon = domain.Icon;
-                const hasSub = domain.subModules && domain.subModules.length > 0;
-
-                return (
-                  <div key={domain.id} className="admin-nav-item">
-                    <div className="admin-nav-domain-row">
-                      <button
-                        type="button"
-                        className={`admin-nav-domain${isActive ? ' is-active' : ''}`}
-                        onClick={() => handleDomainSelect(domain)}
-                        aria-expanded={hasSub ? isExpanded : undefined}
-                      >
-                        <DomainIcon className="admin-nav-domain__icon" />
-                        <span className="admin-nav-domain__label">{domain.label}</span>
-                      </button>
-                      {hasSub && (
-                        <button
-                          type="button"
-                          className={`admin-nav-chevron${isExpanded ? ' is-open' : ''}${isActive ? ' is-active' : ''}`}
-                          aria-label={isExpanded ? `Collapse ${domain.label}` : `Expand ${domain.label}`}
-                          onClick={() => toggleDomainExpand(domain.id)}
-                        >
-                          {isExpanded ? <ChevronDownIcon /> : <ChevronRightIcon />}
-                        </button>
-                      )}
-                    </div>
-
-                    {isExpanded && hasSub && (
-                      <div className="admin-nav-subs">
-                        {domain.subModules.map((sub) => {
-                          const isSubActive = isActive && activeSubModule === sub.id;
-                          return (
-                            <button
-                              key={sub.id}
-                              type="button"
-                              className={`admin-nav-sub${isSubActive ? ' is-active' : ''}`}
-                              onClick={() => handleSubModuleSelect(domain.id, sub.id)}
-                            >
-                              {sub.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </nav>
-
-        <div style={{ padding: '12px 16px', borderTop: '1px solid var(--admin-border)', fontSize: '0.75rem', color: 'var(--admin-text-muted)' }}>
-          <div>Brand Context: <strong style={{ color: '#10b981' }}>MAIN_SPORTSBOOK</strong></div>
-          <div>Server Time: <strong>{new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC</strong></div>
-        </div>
-      </motion.aside>
-
-      {/* Main Content Area */}
+      {/* Main Column */}
       <div className="admin-shell__column">
 
-        {/* Animated Top Header */}
-        <header style={{ height: '64px', flexShrink: 0, background: 'var(--admin-panel)', borderBottom: '1px solid var(--admin-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', gap: '12px' }}>
+        {/* Topbar */}
+        <AdminTopbar
+          globalSearch={globalSearch}
+          onSearchChange={(e) => {
+            const next = e.target.value;
+            setGlobalSearch(next);
+            if (next.trim().length >= 2) openCommandPalette(next.trim());
+          }}
+          onSearchKeyDown={handleGlobalSearchKeyDown}
+          onSearchClick={() => openCommandPalette(globalSearch)}
+          activeRole={activeRole}
+          onRoleChange={handleRoleChange}
+          liveAlerts={liveAlerts}
+          alertsBellRef={alertsBellRef}
+          onToggleAlerts={() => {
+            if (isAlertsOpen) setIsAlertsOpen(false);
+            else openAlertsMenu();
+          }}
+          isAlertsOpen={isAlertsOpen}
+          onLogout={handleAdminLogout}
+          onOpenMobileSidebar={() => setMobileSidebarOpen(true)}
+          currentDomainLabel={currentDomainObj?.label}
+          currentSubLabel={currentSubObj?.label}
+        />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0, flex: 1 }}>
-            {/* Global Search Input with Animated Search Icon */}
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', minWidth: '220px', flex: 1, maxWidth: '320px' }}>
-              <span style={{
-                position: 'absolute',
-                left: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '16px',
-                height: '16px',
-                color: 'var(--admin-text-muted, #9ca3af)',
-                pointerEvents: 'none',
-                zIndex: 2,
-              }}>
-                <SearchIcon size={16} style={{ width: '16px', height: '16px', display: 'block' }} />
-              </span>
-              <motion.input
-                whileFocus={{ scale: 1.01, borderColor: '#3b82f6', boxShadow: '0 0 10px rgba(59, 130, 246, 0.4)' }}
-                type="search"
-                placeholder="Global Search (⌘K / Ctrl+K)..."
-                value={globalSearch}
-                onChange={(e) => {
-                  const next = e.target.value;
-                  setGlobalSearch(next);
-                  if (next.trim().length >= 2) openCommandPalette(next.trim());
-                }}
-                onKeyDown={handleGlobalSearchKeyDown}
-                onClick={() => openCommandPalette(globalSearch)}
-                style={{
-                  padding: '7px 12px 7px 38px',
-                  borderRadius: '20px',
-                  border: '1px solid var(--admin-border)',
-                  background: 'var(--admin-bg)',
-                  color: 'var(--admin-text)',
-                  fontSize: '0.80rem',
-                  width: '100%',
-                  outline: 'none',
-                  cursor: 'text',
-                  transition: 'all 0.15s ease',
-                }}
-              />
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
-            <ThemeToggle />
-
-            {/* Live Alerts Bell Icon Button & Interactive Popover */}
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <motion.button
-                ref={alertsBellRef}
-                type="button"
-                onClick={() => {
-                  if (isAlertsOpen) setIsAlertsOpen(false);
-                  else openAlertsMenu();
-                }}
-                whileHover={{ scale: 1.08 }}
-                whileTap={{ scale: 0.92 }}
-                title={liveAlerts.length ? `Live Operational Alerts (${liveAlerts.length})` : 'No operational alerts'}
-                aria-expanded={isAlertsOpen}
-                aria-haspopup="dialog"
-                style={{
-                  position: 'relative',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '50%',
-                  background: isAlertsOpen
-                    ? (liveAlerts.length ? 'rgba(239, 68, 68, 0.3)' : 'rgba(59, 130, 246, 0.25)')
-                    : (liveAlerts.length ? 'rgba(239, 68, 68, 0.15)' : 'rgba(59, 130, 246, 0.12)'),
-                  color: liveAlerts.length ? '#ef4444' : '#60a5fa',
-                  border: liveAlerts.length ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(59, 130, 246, 0.35)',
-                  cursor: 'pointer',
-                  outline: 'none',
-                  flexShrink: 0,
-                  boxShadow: isAlertsOpen && liveAlerts.length ? '0 0 12px rgba(239, 68, 68, 0.4)' : 'none',
-                }}
-              >
-                <BellRingIcon size={18} style={{ width: '18px', height: '18px', display: 'block' }} />
-                {liveAlerts.length > 0 && (
-                  <span
-                    style={{
-                      position: 'absolute',
-                      top: '-2px',
-                      right: '-2px',
-                      background: '#ef4444',
-                      color: '#fff',
-                      fontSize: '0.65rem',
-                      fontWeight: 900,
-                      width: '18px',
-                      height: '18px',
-                      borderRadius: '50%',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      border: '2px solid var(--admin-panel)',
-                      boxShadow: '0 2px 6px rgba(239, 68, 68, 0.5)',
-                      pointerEvents: 'none',
-                    }}
-                  >
-                    {liveAlerts.length}
-                  </span>
-                )}
-              </motion.button>
-
-              {typeof document !== 'undefined' && createPortal(
-                <AnimatePresence>
-                  {isAlertsOpen && (
-                    <motion.div
-                      ref={alertsMenuRef}
-                      role="dialog"
-                      aria-label="Live Operational Alerts"
-                      initial={{ opacity: 0, y: 8, scale: 0.96 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 4, scale: 0.96 }}
-                      transition={{ duration: 0.16, ease: 'easeOut' }}
-                      style={{
-                        position: 'fixed',
-                        top: alertsMenuPos.top,
-                        right: alertsMenuPos.right,
-                        width: '340px',
-                        maxWidth: 'calc(100vw - 24px)',
-                        background: 'var(--admin-panel)',
-                        border: '1px solid var(--admin-border)',
-                        borderRadius: '12px',
-                        boxShadow: 'var(--admin-shadow)',
-                        padding: '16px',
-                        zIndex: 100000,
-                        color: 'var(--admin-text)',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid var(--admin-border)', paddingBottom: '8px' }}>
-                        <span style={{ fontSize: '0.86rem', fontWeight: 800 }}>Live Operational Alerts</span>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            adminApiClient.post('/notifications/v2/notifications/read-all').catch(() => {});
-                            setLiveAlerts([]);
-                          }}
-                          style={{ background: 'none', border: 'none', color: '#60a5fa', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
-                        >
-                          Clear All
-                        </button>
-                      </div>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '320px', overflowY: 'auto' }}>
-                        {liveAlerts.length > 0 ? (
-                          liveAlerts.map((alert) => (
-                            <button
-                              key={alert.id}
-                              type="button"
-                              onClick={(e) => handleAlertClick(e, alert)}
-                              style={{
-                                display: 'block',
-                                width: '100%',
-                                textAlign: 'left',
-                                padding: '12px',
-                                borderRadius: '10px',
-                                background: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(15, 23, 42, 0.03)',
-                                border: '1px solid var(--admin-border)',
-                                cursor: 'pointer',
-                                color: 'inherit',
-                              }}
-                            >
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: alert.type === 'CRITICAL' ? '#ef4444' : (alert.type === 'HIGH' ? '#f59e0b' : '#60a5fa') }}>
-                                  {alert.type}
-                                </span>
-                                <span style={{ fontSize: '0.68rem', color: 'var(--admin-text-muted)' }}>{alert.category || 'ops'}</span>
-                              </div>
-                              <div style={{ fontSize: '0.84rem', fontWeight: 750, color: 'var(--admin-text)' }}>{alert.title}</div>
-                              <div style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', marginTop: '2px' }}>{alert.desc}</div>
-                              <div style={{ fontSize: '0.7rem', color: '#60a5fa', marginTop: '10px', fontWeight: 750 }}>
-                                Go to {alert.category || 'section'} →
-                              </div>
-                            </button>
-                          ))
-                        ) : (
-                          <div style={{ padding: '16px', textAlign: 'center', color: 'var(--admin-text-muted)', fontSize: '0.8rem' }}>
-                            No active operational alerts
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>,
-                document.body,
-              )}
-            </div>
-
-            {/* RBAC Role Switcher */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-              <span style={{ fontSize: '0.76rem', color: 'var(--admin-text-muted)', fontWeight: 600 }}>Role:</span>
-              <select
-                value={activeRole}
-                onChange={(e) => handleRoleChange(e.target.value)}
-                style={{
-                  padding: '4px 8px',
-                  borderRadius: '6px',
-                  border: '1px solid var(--admin-border)',
-                  background: 'var(--admin-surface)',
-                  color: 'var(--admin-text)',
-                  fontSize: '0.78rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  outline: 'none',
-                }}
-              >
-                {Object.values(ADMIN_ROLES).map((role) => (
-                  <option key={role} value={role}>{role}</option>
-                ))}
-              </select>
-            </div>
-
-            <span style={{ width: '1px', height: '18px', background: 'var(--admin-border)' }} />
-
-            {/* Authenticated Admin Profile Avatar & Sign Out */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+        {/* Alerts Popover (portal) */}
+        {typeof document !== 'undefined' && createPortal(
+          <AnimatePresence>
+            {isAlertsOpen && (
               <motion.div
-                whileHover={{ scale: 1.05 }}
+                ref={alertsMenuRef}
+                role="dialog"
+                aria-label="Operational Alerts"
+                initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 4, scale: 0.96 }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
                 style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                  color: '#fff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 800,
-                  fontSize: '0.82rem',
-                  boxShadow: '0 2px 8px rgba(59, 130, 246, 0.4)',
-                  flexShrink: 0,
+                  position: 'fixed',
+                  top: alertsMenuPos.top,
+                  right: alertsMenuPos.right,
+                  width: '340px',
+                  maxWidth: 'calc(100vw - 24px)',
+                  background: 'var(--admin-panel)',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
+                  border: '1px solid var(--admin-border-bright)',
+                  borderRadius: 'var(--admin-radius-lg)',
+                  boxShadow: 'var(--admin-shadow-lg)',
+                  padding: '14px',
+                  zIndex: 100000,
+                  color: 'var(--admin-text)',
                 }}
               >
-                UR
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', borderBottom: '1px solid var(--admin-border)', paddingBottom: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: liveAlerts.length ? '#f43f5e' : '#10b981' }} />
+                    <span style={{ fontSize: '0.84rem', fontWeight: 800 }}>Operational Alerts</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      adminApiClient.post('/notifications/v2/notifications/read-all').catch(() => {});
+                      setLiveAlerts([]);
+                    }}
+                    className="admin-btn admin-btn--ghost admin-btn--sm"
+                    style={{ color: '#818cf8' }}
+                  >
+                    Clear All
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
+                  {liveAlerts.length > 0 ? (
+                    liveAlerts.map((alert) => (
+                      <button
+                        key={alert.id}
+                        type="button"
+                        onClick={(e) => handleAlertClick(e, alert)}
+                        className="admin-card"
+                        style={{
+                          display: 'block',
+                          width: '100%',
+                          textAlign: 'left',
+                          padding: '10px 12px',
+                          cursor: 'pointer',
+                          color: 'inherit',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
+                          <span className={`admin-badge admin-badge--${alert.type === 'CRITICAL' ? 'danger' : alert.type === 'HIGH' ? 'warning' : 'info'}`}>
+                            <span className="admin-badge--dot" style={{
+                              background: alert.type === 'CRITICAL' ? '#f43f5e' : alert.type === 'HIGH' ? '#fbbf24' : '#818cf8',
+                            }} />
+                            {alert.type}
+                          </span>
+                          <span style={{ fontSize: '0.66rem', color: 'var(--admin-text-dim)', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                            {alert.category || 'ops'}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--admin-text)' }}>{alert.title}</div>
+                        <div style={{ fontSize: '0.74rem', color: 'var(--admin-text-muted)', marginTop: '2px', lineHeight: 1.35 }}>{alert.desc}</div>
+                        <div style={{ fontSize: '0.7rem', color: '#818cf8', marginTop: '6px', fontWeight: 700 }}>
+                          Go to {alert.category || 'section'} →
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <div style={{ padding: '20px 14px', textAlign: 'center', color: 'var(--admin-text-muted)', fontSize: '0.8rem' }}>
+                      ✓ No active operational alerts
+                    </div>
+                  )}
+                </div>
               </motion.div>
-              <div style={{ fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
-                <div style={{ fontWeight: 700, color: 'var(--admin-text)' }}>Superuser</div>
-                <div style={{ fontSize: '0.70rem', color: 'var(--admin-text-muted)' }}>{activeRole}</div>
-              </div>
+            )}
+          </AnimatePresence>,
+          document.body,
+        )}
 
-              <motion.button
-                type="button"
-                onClick={handleAdminLogout}
-                whileHover={{ scale: 1.06 }}
-                whileTap={{ scale: 0.94 }}
-                title="Sign out of Admin Console"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '30px',
-                  height: '30px',
-                  marginLeft: '4px',
-                  borderRadius: '6px',
-                  border: '1px solid var(--admin-border)',
-                  background: 'var(--admin-surface)',
-                  color: 'var(--admin-text-muted)',
-                  cursor: 'pointer',
-                  outline: 'none',
-                  transition: 'all 0.15s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = '#ef4444';
-                  e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.4)';
-                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.12)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = 'var(--admin-text-muted)';
-                  e.currentTarget.style.borderColor = 'var(--admin-border)';
-                  e.currentTarget.style.background = 'var(--admin-surface)';
-                }}
-              >
-                <LogOutIcon size={14} />
-              </motion.button>
-            </div>
-          </div>
-        </header>
-
-        {/* Animated Domain View Content Container */}
+        {/* Domain View Content */}
         <main ref={contentScrollRef} className="admin-shell__main">
           <AnimatePresence mode="wait">
             <motion.div
               key={`${activeDomain}-${activeSubModule}`}
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
               onAnimationComplete={scrollContentToTop}
             >
               <AdminRBACGate requiredRole={currentDomainObj?.role} domainId={activeDomain}>
@@ -1451,6 +948,9 @@ function AdminShellInner() {
             </motion.div>
           </AnimatePresence>
         </main>
+
+        {/* Status Bar */}
+        <AdminStatusBar />
       </div>
 
       <CommandPalette
@@ -1462,4 +962,3 @@ function AdminShellInner() {
     </div>
   );
 }
-

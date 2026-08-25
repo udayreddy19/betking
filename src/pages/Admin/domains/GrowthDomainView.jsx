@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { adminApiClient } from '../api/adminApiClient';
 import AdminDataTable from '../components/AdminDataTable';
 import { useAdminToast } from '../components/AdminToastContext';
+import { StatusBadge } from '../components/AdminBadge';
+import AdminCard from '../components/AdminCard';
 
 function money(n) {
   if (n == null || Number.isNaN(Number(n))) return '—';
@@ -46,12 +48,12 @@ function PromotionsPanel() {
 
   return (
     <div>
-      <div style={{ marginBottom: '20px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>08 · Growth, Campaigns & VIP Loyalty Systems</h2>
-        <p style={{ margin: '4px 0 0', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+      <div style={{ marginBottom: '16px' }}>
+        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>08 · Growth, Campaigns & VIP Loyalty Systems</h2>
+        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           Promotions from PostgreSQL. Empty list means no campaigns configured yet.
         </p>
-        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.82rem' }}>{error}</p>}
+        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
       </div>
 
       <AdminDataTable
@@ -59,9 +61,9 @@ function PromotionsPanel() {
         emptyMessage="No promotions configured"
         data={promos}
         columns={[
-          { header: 'Promo ID', key: 'id' },
-          { header: 'Campaign Name', key: 'name' },
-          { header: 'Promo Code', key: 'code' },
+          { header: 'Promo ID', key: 'id', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.id}</span> },
+          { header: 'Campaign Name', key: 'name', render: (r) => <span style={{ fontWeight: 700 }}>{r.name}</span> },
+          { header: 'Promo Code', key: 'code', render: (r) => <span className="admin-badge admin-badge--neutral">{r.code}</span> },
           { header: 'Type', key: 'type', render: (r) => r.type || '—' },
           { header: 'Bonus %', key: 'bonusPct', render: (r) => (r.bonusPct != null ? `${r.bonusPct}%` : '—') },
           { header: 'Max Bonus', key: 'maxBonus', render: (r) => money(r.maxBonus) },
@@ -69,11 +71,7 @@ function PromotionsPanel() {
           {
             header: 'Status',
             key: 'status',
-            render: (r) => (
-              <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(16, 185, 129, 0.2)', color: '#10b981' }}>
-                {r.status}
-              </span>
-            ),
+            render: (r) => <StatusBadge status={r.status} />,
           },
         ]}
       />
@@ -159,186 +157,142 @@ function SignupPromoCodesPanel() {
       });
   };
 
-  const fieldStyle = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '6px',
-    minWidth: 0,
-  };
-  const inputStyle = {
-    padding: '8px 10px',
-    borderRadius: '8px',
-    border: '1px solid var(--color-border)',
-    background: 'var(--color-panel)',
-    color: 'var(--color-text)',
-    fontSize: '0.85rem',
-  };
-  const labelStyle = {
-    fontSize: '0.75rem',
-    fontWeight: 700,
-    color: 'var(--color-text-muted)',
-    textTransform: 'uppercase',
-    letterSpacing: '0.04em',
-  };
-
   return (
     <div>
-      <div style={{ marginBottom: '20px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>Signup Promo Codes</h2>
-        <p style={{ margin: '4px 0 0', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+      <div style={{ marginBottom: '16px' }}>
+        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Signup Promo Codes</h2>
+        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           Create a code, then enable it. Set how many times one account can claim it, and optionally a total cap across all users.
         </p>
-        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.82rem' }}>{error}</p>}
+        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
       </div>
 
-      <form
-        onSubmit={handleCreate}
-        style={{
-          marginBottom: '24px',
-          padding: '20px',
-          background: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
-          borderRadius: '12px',
-        }}
-      >
-        <h3 style={{ margin: '0 0 16px', fontSize: '1.05rem' }}>Create promo code</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
-          <label style={fieldStyle}>
-            <span style={labelStyle}>Code</span>
-            <input
-              style={{ ...inputStyle, textTransform: 'uppercase' }}
-              value={form.code}
-              onChange={(e) => updateField('code', e.target.value.toUpperCase())}
-              placeholder="VIP1000"
-              required
-              minLength={3}
-              maxLength={32}
-            />
-          </label>
-          <label style={fieldStyle}>
-            <span style={labelStyle}>Name</span>
-            <input
-              style={inputStyle}
-              value={form.name}
-              onChange={(e) => updateField('name', e.target.value)}
-              placeholder="Welcome offer"
-            />
-          </label>
-          <label style={fieldStyle}>
-            <span style={labelStyle}>Reward type</span>
-            <select
-              style={inputStyle}
-              value={form.rewardType}
-              onChange={(e) => updateField('rewardType', e.target.value)}
-            >
-              <option value="bonus">Bonus</option>
-              <option value="freebet">Free bet</option>
-              <option value="cash">Real money</option>
-            </select>
-          </label>
-          <label style={fieldStyle}>
-            <span style={labelStyle}>Amount (₹)</span>
-            <input
-              style={inputStyle}
-              type="number"
-              min="1"
-              step="1"
-              value={form.amount}
-              onChange={(e) => updateField('amount', e.target.value)}
-              placeholder="500"
-              required
-            />
-          </label>
-          <label style={fieldStyle}>
-            <span style={labelStyle}>Max total claims</span>
-            <input
-              style={inputStyle}
-              type="number"
-              min="1"
-              step="1"
-              value={form.maxRedemptions}
-              onChange={(e) => updateField('maxRedemptions', e.target.value)}
-              placeholder="Unlimited"
-            />
-          </label>
-          <label style={fieldStyle}>
-            <span style={labelStyle}>Max per user</span>
-            <input
-              style={inputStyle}
-              type="number"
-              min="1"
-              step="1"
-              value={form.maxPerUser}
-              onChange={(e) => updateField('maxPerUser', e.target.value)}
-              placeholder="1"
-              required
-            />
-          </label>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '16px', flexWrap: 'wrap' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={form.isActive}
-              onChange={(e) => updateField('isActive', e.target.checked)}
-            />
-            Start enabled (users can use it immediately)
-          </label>
-          <button
-            type="submit"
-            disabled={saving}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '8px',
-              border: 'none',
-              background: '#d4a853',
-              color: '#111',
-              fontWeight: 800,
-              cursor: saving ? 'wait' : 'pointer',
-              fontSize: '0.85rem',
-            }}
-          >
-            {saving ? 'Saving…' : 'Add code'}
-          </button>
-          <button
-            type="button"
-            onClick={loadCodes}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '8px',
-              border: '1px solid var(--color-border)',
-              background: 'transparent',
-              color: 'var(--color-text)',
-              fontWeight: 700,
-              cursor: 'pointer',
-              fontSize: '0.85rem',
-            }}
-          >
-            Refresh
-          </button>
-        </div>
-      </form>
+      <AdminCard title="Create Promo Code" accent="#6366f1" style={{ marginBottom: '20px' }}>
+        <form onSubmit={handleCreate}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
+            <div className="admin-form-group">
+              <label className="admin-form-label">Code</label>
+              <input
+                className="admin-input"
+                style={{ textTransform: 'uppercase' }}
+                value={form.code}
+                onChange={(e) => updateField('code', e.target.value.toUpperCase())}
+                placeholder="VIP1000"
+                required
+                minLength={3}
+                maxLength={32}
+              />
+            </div>
+            <div className="admin-form-group">
+              <label className="admin-form-label">Name</label>
+              <input
+                className="admin-input"
+                value={form.name}
+                onChange={(e) => updateField('name', e.target.value)}
+                placeholder="Welcome offer"
+              />
+            </div>
+            <div className="admin-form-group">
+              <label className="admin-form-label">Reward Type</label>
+              <select
+                className="admin-select"
+                value={form.rewardType}
+                onChange={(e) => updateField('rewardType', e.target.value)}
+              >
+                <option value="bonus">Bonus</option>
+                <option value="freebet">Free bet</option>
+                <option value="cash">Real money</option>
+              </select>
+            </div>
+            <div className="admin-form-group">
+              <label className="admin-form-label">Amount (₹)</label>
+              <input
+                className="admin-input"
+                type="number"
+                min="1"
+                step="1"
+                value={form.amount}
+                onChange={(e) => updateField('amount', e.target.value)}
+                placeholder="500"
+                required
+              />
+            </div>
+            <div className="admin-form-group">
+              <label className="admin-form-label">Max Total Claims</label>
+              <input
+                className="admin-input"
+                type="number"
+                min="1"
+                step="1"
+                value={form.maxRedemptions}
+                onChange={(e) => updateField('maxRedemptions', e.target.value)}
+                placeholder="Unlimited"
+              />
+            </div>
+            <div className="admin-form-group">
+              <label className="admin-form-label">Max Per User</label>
+              <input
+                className="admin-input"
+                type="number"
+                min="1"
+                step="1"
+                value={form.maxPerUser}
+                onChange={(e) => updateField('maxPerUser', e.target.value)}
+                placeholder="1"
+                required
+              />
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '16px', flexWrap: 'wrap' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', cursor: 'pointer', color: 'var(--admin-text)' }}>
+              <input
+                type="checkbox"
+                checked={form.isActive}
+                onChange={(e) => updateField('isActive', e.target.checked)}
+                style={{ accentColor: '#6366f1' }}
+              />
+              Start enabled (users can use it immediately)
+            </label>
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={loadCodes}
+                className="admin-btn admin-btn--secondary"
+              >
+                ↻ Refresh
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="admin-btn admin-btn--primary"
+              >
+                {saving ? 'Saving…' : 'Add Code'}
+              </button>
+            </div>
+          </div>
+        </form>
+      </AdminCard>
 
       <AdminDataTable
-        title="Signup codes"
+        title="Signup Codes"
         emptyMessage="No signup promo codes yet"
         data={codes}
         columns={[
-          { header: 'Code', key: 'code' },
+          { header: 'Code', key: 'code', render: (r) => <span className="admin-text-mono" style={{ fontWeight: 800 }}>{r.code}</span> },
           { header: 'Name', key: 'name' },
           {
             header: 'Reward',
             key: 'rewardType',
             render: (r) => REWARD_LABELS[r.rewardType] || r.rewardType,
           },
-          { header: 'Amount', key: 'amount', render: (r) => money(r.amount) },
+          { header: 'Amount', key: 'amount', render: (r) => <span style={{ fontWeight: 700 }}>{money(r.amount)}</span> },
           {
             header: 'Claims',
             key: 'redemptionCount',
             render: (r) => `${r.redemptionCount || 0}${r.maxRedemptions != null ? ` / ${r.maxRedemptions}` : ''}`,
           },
           {
-            header: 'Per user',
+            header: 'Per User',
             key: 'maxPerUser',
             render: (r) => (r.maxPerUser != null ? `${r.maxPerUser}×` : 'Unlimited'),
           },
@@ -352,18 +306,9 @@ function SignupPromoCodesPanel() {
                   e.stopPropagation();
                   toggleCode(r);
                 }}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  background: r.isActive ? '#10b981' : '#6b7280',
-                  color: '#fff',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  fontSize: '0.8rem',
-                }}
+                className={`admin-btn admin-btn--sm ${r.isActive ? 'admin-btn--success' : 'admin-btn--secondary'}`}
               >
-                {r.isActive ? 'ENABLED' : 'DISABLED'}
+                {r.isActive ? '● ENABLED' : '○ DISABLED'}
               </button>
             ),
           },
@@ -397,12 +342,12 @@ function VipTiersPanel() {
 
   return (
     <div>
-      <div style={{ marginBottom: '20px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>08 · VIP Loyalty Tiers</h2>
-        <p style={{ margin: '4px 0 0', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+      <div style={{ marginBottom: '16px' }}>
+        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>08 · VIP Loyalty Tiers</h2>
+        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           Authoritative VIP benefits catalog (min deposit ₹{limits.minDeposit?.toLocaleString() ?? '1,000'} · min withdraw ₹{limits.minWithdraw?.toLocaleString() ?? '1,000'}).
         </p>
-        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.82rem' }}>{error}</p>}
+        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
       </div>
 
       <AdminDataTable
@@ -410,8 +355,8 @@ function VipTiersPanel() {
         emptyMessage="No VIP tiers configured"
         data={tiers}
         columns={[
-          { header: 'Tier', key: 'tier' },
-          { header: 'Label', key: 'label' },
+          { header: 'Tier', key: 'tier', render: (r) => <span className="admin-text-mono" style={{ fontWeight: 800 }}>{r.tier}</span> },
+          { header: 'Label', key: 'label', render: (r) => <span style={{ fontWeight: 700 }}>{r.label}</span> },
           { header: 'Points Required', key: 'pointsRequired', render: (r) => (r.pointsRequired != null ? r.pointsRequired.toLocaleString() : '—') },
           { header: 'Pts / ₹100', key: 'pointsPer100' },
           { header: 'Cashback %', key: 'cashbackPct', render: (r) => (r.cashbackPct ? `${r.cashbackPct}%` : '—') },

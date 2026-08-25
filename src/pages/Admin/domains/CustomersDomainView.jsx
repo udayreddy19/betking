@@ -2,6 +2,12 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { adminApiClient } from '../api/adminApiClient';
 import AdminDataTable from '../components/AdminDataTable';
 import { useAdminToast } from '../components/AdminToastContext';
+import { StatusBadge } from '../components/AdminBadge';
+import AdminDrawer from '../components/AdminDrawer';
+import AdminConfirmDialog from '../components/AdminConfirmDialog';
+import AdminFilterBar, { FilterSelect, FilterSearch } from '../components/AdminFilterBar';
+import AdminTabs from '../components/AdminTabs';
+import AdminCard from '../components/AdminCard';
 import KycReminderUsersPanel from '../../../components/DatabaseInspector/KycReminderUsersPanel';
 
 function money(n) {
@@ -24,23 +30,14 @@ function formatReminderAt(value) {
   }
 }
 
-function kycBadge(status) {
-  const s = String(status || '').toUpperCase();
-  const ok = s.includes('VERIF') || s === 'APPROVED';
-  const rejected = s === 'REJECTED';
-  return (
-    <span style={{
-      padding: '2px 8px',
-      borderRadius: '4px',
-      fontSize: '0.75rem',
-      fontWeight: 700,
-      background: ok ? 'rgba(16, 185, 129, 0.2)' : rejected ? 'rgba(239, 68, 68, 0.15)' : 'rgba(245, 158, 11, 0.2)',
-      color: ok ? '#10b981' : rejected ? '#ef4444' : '#f59e0b',
-    }}
-    >
-      {status || '—'}
-    </span>
-  );
+function maskPAN(pan) {
+  if (!pan) return '—';
+  return pan.length > 4 ? `${pan.slice(0, 2)}●●●●${pan.slice(-2)}` : pan;
+}
+
+function maskAadhaar(num) {
+  if (!num) return '—';
+  return num.length > 4 ? `●●●● ●●●● ${num.slice(-4)}` : num;
 }
 
 const KYC_FILTERS = [
@@ -73,6 +70,8 @@ export default function CustomersDomainView({ subModule = 'directory' }) {
   const [debouncedQ, setDebouncedQ] = useState('');
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [confirm, setConfirm] = useState(null);
+  const [restrictConfirm, setRestrictConfirm] = useState(null);
+  const [kycRejectConfirm, setKycRejectConfirm] = useState(null);
   const { showToast } = useAdminToast();
 
   useEffect(() => {
@@ -137,19 +136,14 @@ export default function CustomersDomainView({ subModule = 'directory' }) {
       .catch(() => setUser360(null));
   };
 
-  const handleKycDecision = async (row, decision) => {
+  const handleKycDecision = async (row, decision, notes = '') => {
     const caseId = row.caseId || row.id;
     const userId = row.userId || row.id;
-    let notes = decision === 'VERIFIED' ? 'Approved from KYC queue' : '';
-    if (decision === 'REJECTED') {
-      const reason = window.prompt('Rejection reason (shown in audit log):', 'Documents could not be verified');
-      if (reason == null) return;
-      notes = reason.trim() || 'Rejected from KYC queue';
-    }
+    const finalNotes = notes || (decision === 'VERIFIED' ? 'Approved from KYC queue' : 'Rejected from KYC queue');
 
     setActingId(caseId || userId);
     try {
-      await adminApiClient.post('/kyc/verify', { caseId, userId, decision, notes });
+      await adminApiClient.post('/kyc/verify', { caseId, userId, decision, notes: finalNotes });
       showToast(
         decision === 'VERIFIED'
           ? `KYC approved for ${row.name || userId}`
@@ -162,16 +156,20 @@ export default function CustomersDomainView({ subModule = 'directory' }) {
       showToast(err.message || 'KYC decision failed', 'error');
     } finally {
       setActingId(null);
+      setKycRejectConfirm(null);
     }
   };
 
-  const handleRestrict = (user) => {
-    adminApiClient.post(`/customers/${user.id}/restrict`, { action: 'TEMPORARY_RESTRICTION', reason: 'Risk Audit' })
-      .then(() => {
-        showToast(`User ${user.id} restricted.`, 'success');
-        setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, status: 'RESTRICTED' } : u)));
-      })
-      .catch((err) => showToast(err.message || 'Restrict failed', 'error'));
+  const handleRestrict = async (user, reason) => {
+    try {
+      await adminApiClient.post(`/customers/${user.id}/restrict`, { action: 'TEMPORARY_RESTRICTION', reason: reason || 'Risk Audit' });
+      showToast(`User ${user.id} restricted.`, 'success');
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, status: 'RESTRICTED' } : u)));
+    } catch (err) {
+      showToast(err.message || 'Restrict failed', 'error');
+    } finally {
+      setRestrictConfirm(null);
+    }
   };
 
   const toggleSelect = (userId, checked) => {
@@ -293,13 +291,13 @@ export default function CustomersDomainView({ subModule = 'directory' }) {
     return (
       <div>
         <div style={{ marginBottom: '20px' }}>
-          <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, color: 'var(--admin-text)' }}>
+          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: 'var(--admin-text)' }}>
             02 · KYC Reminders & Email
           </h2>
-          <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.85rem' }}>
+          <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
             Users who have not completed KYC. Send Zoho/SMTP completion emails — delivery is logged in kyc_reminder_log.
           </p>
-          {error && <p style={{ margin: '8px 0 0', color: '#b91c1c', fontSize: '0.82rem' }}>{error}</p>}
+          {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.82rem' }}>{error}</p>}
         </div>
         <KycReminderUsersPanel
           title="Send KYC completion emails"
@@ -310,7 +308,6 @@ export default function CustomersDomainView({ subModule = 'directory' }) {
   }
 
   const columns = [];
-  // no checkbox column — use Send to all for bulk
 
   columns.push(
     { header: 'User ID', key: 'id' },
@@ -321,7 +318,7 @@ export default function CustomersDomainView({ subModule = 'directory' }) {
     {
       header: 'KYC Status',
       key: 'kyc',
-      render: (r) => kycBadge(r.kyc),
+      render: (r) => <StatusBadge status={r.kyc} />,
     },
   );
 
@@ -348,11 +345,11 @@ export default function CustomersDomainView({ subModule = 'directory' }) {
   if (subModule === 'kyc-queue') {
     columns.push(
       { header: 'DOB', key: 'dateOfBirth', render: (r) => r.dateOfBirth || '—' },
-      { header: 'PAN', key: 'panNumber', render: (r) => r.panNumber || '—' },
-      { header: 'Aadhaar', key: 'aadhaarNumber', render: (r) => r.aadhaarNumber || '—' },
+      { header: 'PAN', key: 'panNumber', render: (r) => maskPAN(r.panNumber) },
+      { header: 'Aadhaar', key: 'aadhaarNumber', render: (r) => maskAadhaar(r.aadhaarNumber) },
     );
   } else {
-    columns.push({ header: 'Account Status', key: 'status' });
+    columns.push({ header: 'Account Status', key: 'status', render: (r) => <StatusBadge status={r.status} /> });
   }
 
   columns.push({
@@ -362,47 +359,41 @@ export default function CustomersDomainView({ subModule = 'directory' }) {
     render: (r) => {
       const busy = actingId && (actingId === r.caseId || actingId === r.id || actingId === r.userId || actingId === 'bulk');
       return (
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            onClick={() => open360(r)}
-            style={{ padding: '4px 10px', borderRadius: '4px', border: '1px solid var(--admin-border, var(--color-border))', background: 'var(--admin-panel, var(--color-panel))', color: '#60a5fa', cursor: 'pointer', fontSize: '0.78rem' }}
-          >
-            Customer 360
+        <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+          <button type="button" className="admin-btn admin-btn--ghost admin-btn--sm" onClick={() => open360(r)} style={{ color: '#60a5fa' }}>
+            360°
           </button>
           {subModule === 'kyc-queue' && (
             <>
               <button
                 type="button"
                 disabled={busy}
+                className="admin-btn admin-btn--success admin-btn--sm"
                 onClick={() => handleKycDecision(r, 'VERIFIED')}
-                style={{ padding: '4px 10px', borderRadius: '4px', border: '1px solid rgba(16, 185, 129, 0.35)', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', cursor: busy ? 'wait' : 'pointer', fontSize: '0.78rem', fontWeight: 700 }}
               >
-                {busy ? '…' : 'Approve KYC'}
+                {busy ? '…' : 'Approve'}
               </button>
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => handleKycDecision(r, 'REJECTED')}
-                style={{ padding: '4px 10px', borderRadius: '4px', border: '1px solid rgba(239, 68, 68, 0.35)', background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444', cursor: busy ? 'wait' : 'pointer', fontSize: '0.78rem', fontWeight: 700 }}
+                className="admin-btn admin-btn--danger admin-btn--sm"
+                onClick={() => setKycRejectConfirm(r)}
               >
                 Reject
               </button>
             </>
           )}
           {showReminderUi && !needsReminder(r) && (
-            <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 700, alignSelf: 'center' }}>KYC Completed</span>
+            <span style={{ fontSize: '0.73rem', color: '#10b981', fontWeight: 700, alignSelf: 'center' }}>KYC Done</span>
           )}
           {showReminderUi && needsReminder(r) && r.reminderEligible === false && (
-            <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', fontWeight: 700, alignSelf: 'center' }}>
-              Cooldown
-            </span>
+            <span style={{ fontSize: '0.73rem', color: 'var(--admin-text-muted)', fontWeight: 700, alignSelf: 'center' }}>Cooldown</span>
           )}
           {subModule !== 'kyc-queue' && (
             <button
               type="button"
-              onClick={() => handleRestrict(r)}
-              style={{ padding: '4px 10px', borderRadius: '4px', border: '1px solid var(--admin-border, var(--color-border))', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', cursor: 'pointer', fontSize: '0.78rem' }}
+              className="admin-btn admin-btn--danger admin-btn--sm"
+              onClick={() => setRestrictConfirm(r)}
             >
               Restrict
             </button>
@@ -414,184 +405,160 @@ export default function CustomersDomainView({ subModule = 'directory' }) {
 
   return (
     <div>
-      <div style={{ marginBottom: '20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-          <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>{heading}</h2>
+      {/* Header */}
+      <div style={{ marginBottom: '16px' }}>
+        <div className="admin-flex-between" style={{ flexWrap: 'wrap' }}>
+          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>{heading}</h2>
           {subModule === 'kyc-queue' && (
-            <button
-              type="button"
-              onClick={() => loadKycQueue()}
-              style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--admin-border, var(--color-border))', background: 'var(--admin-panel, var(--color-panel))', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700 }}
-            >
-              {kycLoading ? 'Refreshing…' : 'Refresh queue'}
+            <button type="button" className="admin-btn admin-btn--secondary" onClick={() => loadKycQueue()}>
+              {kycLoading ? 'Refreshing…' : '↻ Refresh queue'}
             </button>
           )}
         </div>
-        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted, var(--color-text-muted))', fontSize: '0.85rem' }}>
-          {hint}
-        </p>
-        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.82rem' }}>{error}</p>}
+        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>{hint}</p>
+        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
       </div>
 
+      {/* Filter Bar */}
       {showReminderUi && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '12px', alignItems: 'center' }}>
-          <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--admin-text-muted)' }}>
-            KYC filter
-            <select
-              value={kycFilter}
-              onChange={(e) => setKycFilter(e.target.value)}
-              style={{
-                marginLeft: '8px',
-                padding: '6px 10px',
-                borderRadius: '6px',
-                border: '1px solid var(--admin-border)',
-                background: 'var(--admin-input-bg, var(--admin-panel))',
-                color: 'var(--admin-text)',
-              }}
-            >
-              {KYC_FILTERS.map((f) => (
-                <option key={f.value} value={f.value}>{f.label}</option>
-              ))}
-            </select>
-          </label>
-          <input
-            type="search"
-            placeholder="Search name, email, phone, user ID…"
+        <AdminFilterBar label="Filters">
+          <FilterSelect
+            value={kycFilter}
+            onChange={setKycFilter}
+            options={KYC_FILTERS}
+            placeholder=""
+          />
+          <FilterSearch
             value={searchQ}
-            onChange={(e) => setSearchQ(e.target.value)}
-            style={{
-              padding: '6px 12px',
-              borderRadius: '6px',
-              border: '1px solid var(--admin-border)',
-              background: 'var(--admin-input-bg, var(--admin-panel))',
-              color: 'var(--admin-text)',
-              minWidth: '240px',
-              fontSize: '0.82rem',
-            }}
+            onChange={setSearchQ}
+            placeholder="Search name, email, phone, user ID…"
           />
           <button
             type="button"
             disabled={eligibleForReminder.length === 0 || actingId === 'bulk'}
+            className="admin-btn admin-btn--primary admin-btn--sm"
             onClick={() => {
               const ids = eligibleForReminder.map((u) => u.id);
               setConfirm({ type: 'bulk', users: eligibleForReminder, ids });
             }}
-            style={{
-              padding: '6px 12px',
-              borderRadius: '6px',
-              border: '1px solid rgba(245, 158, 11, 0.4)',
-              background: eligibleForReminder.length ? 'rgba(245, 158, 11, 0.18)' : 'var(--admin-panel)',
-              color: '#b45309',
-              cursor: eligibleForReminder.length ? 'pointer' : 'not-allowed',
-              fontSize: '0.8rem',
-              fontWeight: 800,
-              opacity: eligibleForReminder.length ? 1 : 0.5,
-            }}
           >
             Send to all ({eligibleForReminder.length})
           </button>
-          <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)' }}>
-            Only users not reminded in the last 24h. Button disables until cooldown ends.
+          <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-dim)' }}>
+            Only users not reminded in the last 24h.
           </span>
-        </div>
+        </AdminFilterBar>
       )}
 
+      {/* Data Table */}
       <AdminDataTable
         title={tableTitle}
         emptyMessage={kycLoading ? 'Loading KYC cases…' : (subModule === 'kyc-queue' ? 'No KYC submissions waiting for review' : 'No matching customers')}
         data={filtered}
         columns={columns}
         searchPlaceholder="Filter this page…"
+        loading={kycLoading && subModule === 'kyc-queue'}
       />
 
-      {confirm && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.55)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1200,
-            padding: '16px',
-          }}
-        >
-          <div style={{
-            background: 'var(--admin-surface, #1a1f2e)',
-            border: '1px solid var(--admin-border)',
-            borderRadius: '12px',
-            padding: '24px',
-            maxWidth: '440px',
-            width: '100%',
-            boxShadow: '0 20px 50px rgba(0,0,0,0.45)',
-          }}
-          >
-            <h3 style={{ margin: '0 0 8px', fontSize: '1.1rem', color: 'var(--admin-text)' }}>
-              Send KYC reminders to all {confirm.ids.length} eligible users?
-            </h3>
-            <p style={{ margin: '0 0 16px', fontSize: '0.85rem', color: 'var(--admin-text-muted)' }}>
-              After send, those users leave the eligible list for 24 hours. Server cooldown is enforced.
-            </p>
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-              <button
-                type="button"
-                onClick={() => setConfirm(null)}
-                style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid var(--admin-border)', background: 'transparent', color: 'var(--admin-text)', cursor: 'pointer', fontWeight: 700 }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => sendBulkReminders(confirm.ids)}
-                style={{ padding: '8px 14px', borderRadius: '8px', border: 'none', background: '#f59e0b', color: '#111', cursor: 'pointer', fontWeight: 800 }}
-              >
-                Send to all
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Bulk Reminder Confirm */}
+      <AdminConfirmDialog
+        isOpen={!!confirm}
+        variant="warning"
+        icon="📧"
+        title={`Send KYC reminders to all ${confirm?.ids?.length || 0} eligible users?`}
+        description="After send, those users leave the eligible list for 24 hours. Server cooldown is enforced."
+        details={[
+          { label: 'Eligible Users', value: confirm?.ids?.length || 0 },
+          { label: 'Delivery', value: 'Zoho / SMTP' },
+        ]}
+        confirmLabel="Send to all"
+        onConfirm={() => confirm?.ids && sendBulkReminders(confirm.ids)}
+        onCancel={() => setConfirm(null)}
+        loading={actingId === 'bulk'}
+      />
 
-      {selectedUser && (
-        <div style={{ marginTop: '24px', padding: '20px', background: 'var(--admin-surface, var(--color-surface))', border: '1px solid var(--admin-border, var(--color-border))', borderRadius: '12px', boxShadow: 'var(--admin-shadow)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Customer 360: {selectedUser.name} ({selectedUser.id})</h3>
-            <button type="button" onClick={() => { setSelectedUser(null); setUser360(null); }} style={{ background: 'none', border: 'none', color: 'var(--admin-text-muted)', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
+      {/* Restrict Confirm */}
+      <AdminConfirmDialog
+        isOpen={!!restrictConfirm}
+        variant="danger"
+        icon="🚫"
+        title={`Restrict user ${restrictConfirm?.name || restrictConfirm?.id}?`}
+        description="This will apply a temporary restriction to this account. The action is logged in the audit trail."
+        requireReason
+        reasonPlaceholder="Restriction reason (e.g. Risk Audit)..."
+        reasonDefault="Risk Audit"
+        details={[
+          { label: 'User ID', value: restrictConfirm?.id || '—' },
+          { label: 'Email', value: restrictConfirm?.email || '—' },
+          { label: 'KYC', value: restrictConfirm?.kyc || '—' },
+        ]}
+        confirmLabel="Apply Restriction"
+        onConfirm={(reason) => restrictConfirm && handleRestrict(restrictConfirm, reason)}
+        onCancel={() => setRestrictConfirm(null)}
+      />
+
+      {/* KYC Reject Confirm */}
+      <AdminConfirmDialog
+        isOpen={!!kycRejectConfirm}
+        variant="danger"
+        icon="❌"
+        title={`Reject KYC for ${kycRejectConfirm?.name || kycRejectConfirm?.id}?`}
+        description="The rejection reason will be visible in the audit log. The user will need to resubmit documents."
+        requireReason
+        reasonPlaceholder="Rejection reason (e.g. Documents could not be verified)..."
+        reasonDefault="Documents could not be verified"
+        details={[
+          { label: 'User', value: kycRejectConfirm?.name || '—' },
+          { label: 'PAN', value: maskPAN(kycRejectConfirm?.panNumber) },
+        ]}
+        confirmLabel="Reject KYC"
+        onConfirm={(reason) => kycRejectConfirm && handleKycDecision(kycRejectConfirm, 'REJECTED', reason)}
+        onCancel={() => setKycRejectConfirm(null)}
+      />
+
+      {/* Customer 360 Drawer */}
+      <AdminDrawer
+        isOpen={!!selectedUser}
+        onClose={() => { setSelectedUser(null); setUser360(null); }}
+        title={`Customer 360`}
+        subtitle={selectedUser ? `${selectedUser.name} · ${selectedUser.id}` : ''}
+        actions={subModule === 'kyc-queue' && selectedUser ? (
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <button type="button" className="admin-btn admin-btn--success admin-btn--sm" onClick={() => handleKycDecision(selectedUser, 'VERIFIED')}>Approve KYC</button>
+            <button type="button" className="admin-btn admin-btn--danger admin-btn--sm" onClick={() => setKycRejectConfirm(selectedUser)}>Reject KYC</button>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', margin: '16px 0' }}>
-            <div><strong>Registration:</strong> {selectedUser.regDate || '—'}</div>
-            <div><strong>KYC:</strong> {selectedUser.kyc}</div>
-            <div><strong>Last Reminder:</strong> {formatReminderAt(selectedUser.lastReminderAt)}</div>
-            <div><strong>Reminder Status:</strong> {selectedUser.lastReminderStatus || '—'}</div>
-            <div><strong>Reminders Sent:</strong> {selectedUser.reminderCount ?? 0}</div>
-            <div><strong>PAN:</strong> {selectedUser.panNumber || '—'}</div>
-            <div><strong>Aadhaar:</strong> {selectedUser.aadhaarNumber || '—'}</div>
-            <div><strong>DOB:</strong> {selectedUser.dateOfBirth || '—'}</div>
-            <div><strong>Balance:</strong> {money(user360?.wallet?.balance ?? selectedUser.balance)}</div>
-          </div>
-          {subModule === 'kyc-queue' && (
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button
-                type="button"
-                onClick={() => handleKycDecision(selectedUser, 'VERIFIED')}
-                style={{ padding: '8px 14px', borderRadius: '8px', border: 'none', background: '#10b981', color: '#fff', fontWeight: 800, cursor: 'pointer' }}
-              >
-                Approve KYC
-              </button>
-              <button
-                type="button"
-                onClick={() => handleKycDecision(selectedUser, 'REJECTED')}
-                style={{ padding: '8px 14px', borderRadius: '8px', border: 'none', background: '#ef4444', color: '#fff', fontWeight: 800, cursor: 'pointer' }}
-              >
-                Reject KYC
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+        ) : null}
+      >
+        {selectedUser && (
+          <>
+            <AdminCard title="Profile" accent="var(--admin-info)" style={{ marginBottom: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '0.82rem' }}>
+                <div><span style={{ color: 'var(--admin-text-muted)', fontWeight: 600 }}>Registration</span><div style={{ fontWeight: 700 }}>{selectedUser.regDate || '—'}</div></div>
+                <div><span style={{ color: 'var(--admin-text-muted)', fontWeight: 600 }}>Email</span><div style={{ fontWeight: 700 }}>{selectedUser.email || '—'}</div></div>
+                <div><span style={{ color: 'var(--admin-text-muted)', fontWeight: 600 }}>Phone</span><div style={{ fontWeight: 700 }}>{selectedUser.phone || '—'}</div></div>
+                <div><span style={{ color: 'var(--admin-text-muted)', fontWeight: 600 }}>DOB</span><div style={{ fontWeight: 700 }}>{selectedUser.dateOfBirth || '—'}</div></div>
+              </div>
+            </AdminCard>
+
+            <AdminCard title="KYC & Identity" accent="var(--admin-warning)" style={{ marginBottom: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '0.82rem' }}>
+                <div><span style={{ color: 'var(--admin-text-muted)', fontWeight: 600 }}>KYC Status</span><div><StatusBadge status={selectedUser.kyc} /></div></div>
+                <div><span style={{ color: 'var(--admin-text-muted)', fontWeight: 600 }}>PAN</span><div style={{ fontWeight: 700, fontFamily: 'monospace' }}>{maskPAN(selectedUser.panNumber)}</div></div>
+                <div><span style={{ color: 'var(--admin-text-muted)', fontWeight: 600 }}>Aadhaar</span><div style={{ fontWeight: 700, fontFamily: 'monospace' }}>{maskAadhaar(selectedUser.aadhaarNumber)}</div></div>
+                <div><span style={{ color: 'var(--admin-text-muted)', fontWeight: 600 }}>Reminders Sent</span><div style={{ fontWeight: 700 }}>{selectedUser.reminderCount ?? 0}</div></div>
+              </div>
+            </AdminCard>
+
+            <AdminCard title="Wallet" accent="var(--admin-success)" style={{ marginBottom: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '0.82rem' }}>
+                <div><span style={{ color: 'var(--admin-text-muted)', fontWeight: 600 }}>Balance</span><div style={{ fontWeight: 800, fontSize: '1.1rem' }}>{money(user360?.wallet?.balance ?? selectedUser.balance)}</div></div>
+                <div><span style={{ color: 'var(--admin-text-muted)', fontWeight: 600 }}>Last Reminder</span><div style={{ fontWeight: 700 }}>{formatReminderAt(selectedUser.lastReminderAt)}</div></div>
+                <div><span style={{ color: 'var(--admin-text-muted)', fontWeight: 600 }}>Reminder Status</span><div style={{ fontWeight: 700 }}>{selectedUser.lastReminderStatus || '—'}</div></div>
+              </div>
+            </AdminCard>
+          </>
+        )}
+      </AdminDrawer>
     </div>
   );
 }

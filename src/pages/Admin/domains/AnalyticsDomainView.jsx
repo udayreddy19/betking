@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { adminApiClient } from '../api/adminApiClient';
 import AdminDataTable from '../components/AdminDataTable';
 import { useAdminToast } from '../components/AdminToastContext';
+import { StatusBadge } from '../components/AdminBadge';
 
 export default function AnalyticsDomainView({ subModule = 'turnover-ggr' }) {
   const [reports, setReports] = useState([]);
@@ -48,12 +49,12 @@ export default function AnalyticsDomainView({ subModule = 'turnover-ggr' }) {
 
   return (
     <div>
-      <div style={{ marginBottom: '20px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>{heading}</h2>
-        <p style={{ margin: '4px 0 0', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+      <div style={{ marginBottom: '16px' }}>
+        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>{heading}</h2>
+        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           {hint}
         </p>
-        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.82rem' }}>{error}</p>}
+        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
       </div>
 
       <AdminDataTable
@@ -61,26 +62,15 @@ export default function AnalyticsDomainView({ subModule = 'turnover-ggr' }) {
         emptyMessage={subModule === 'bi-exporter' ? 'No analytics available' : 'No turnover reports available yet'}
         data={displayReports}
         columns={[
-          { header: 'Report ID', key: 'id' },
-          { header: 'Report Name', key: 'name' },
-          { header: 'Frequency', key: 'frequency' },
+          { header: 'Report ID', key: 'id', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.id}</span> },
+          { header: 'Report Name', key: 'name', render: (r) => <span style={{ fontWeight: 700 }}>{r.name}</span> },
+          { header: 'Frequency', key: 'frequency', render: (r) => <span className="admin-badge admin-badge--neutral">{r.frequency}</span> },
           { header: 'Detail', key: 'detail', render: (r) => r.detail || r.format || '—' },
           { header: 'Last Generated', key: 'lastGenerated' },
           {
             header: 'Status',
             key: 'status',
-            render: (r) => (
-              <span style={{
-                padding: '2px 8px',
-                borderRadius: '4px',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                background: r.status === 'READY' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
-                color: r.status === 'READY' ? '#10b981' : '#f59e0b',
-              }}>
-                {r.status}
-              </span>
-            ),
+            render: (r) => <StatusBadge status={r.status} />,
           },
           ...(subModule === 'bi-exporter' ? [{
             header: 'Export',
@@ -90,18 +80,9 @@ export default function AnalyticsDomainView({ subModule = 'turnover-ggr' }) {
               <button
                 type="button"
                 onClick={() => exportReport(r)}
-                style={{
-                  padding: '4px 10px',
-                  borderRadius: '4px',
-                  border: '1px solid var(--admin-border, var(--color-border))',
-                  background: 'var(--admin-panel, var(--color-panel))',
-                  color: '#60a5fa',
-                  cursor: 'pointer',
-                  fontSize: '0.78rem',
-                  fontWeight: 700,
-                }}
+                className="admin-btn admin-btn--primary admin-btn--sm"
               >
-                Download JSON
+                Export JSON
               </button>
             ),
           }] : []),

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { adminApiClient } from '../api/adminApiClient';
 import AdminDataTable from '../components/AdminDataTable';
 import { useAdminToast } from '../components/AdminToastContext';
+import { StatusBadge } from '../components/AdminBadge';
 
 const FAILED_STATUSES = new Set(['FAILED', 'ERROR', 'DEAD_LETTER', 'DLQ', 'BOUNCED', 'REJECTED']);
 
@@ -70,12 +71,12 @@ export default function CommunicationsDomainView({ subModule = 'dispatch-logs' }
 
   return (
     <div>
-      <div style={{ marginBottom: '20px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>{heading}</h2>
-        <p style={{ margin: '4px 0 0', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+      <div style={{ marginBottom: '16px' }}>
+        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>{heading}</h2>
+        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           {hint}
         </p>
-        {error && <p style={{ margin: '8px 0 0', color: '#fbbf24', fontSize: '0.82rem' }}>{error}</p>}
+        {error && <p style={{ margin: '8px 0 0', color: '#fbbf24', fontSize: '0.78rem' }}>{error}</p>}
       </div>
 
       {subModule === 'templates' ? (
@@ -84,10 +85,10 @@ export default function CommunicationsDomainView({ subModule = 'dispatch-logs' }
           emptyMessage="No templates found in delivery logs yet"
           data={data}
           columns={[
-            { header: 'Template ID', key: 'template' },
-            { header: 'Channel', key: 'channel' },
+            { header: 'Template ID', key: 'template', render: (r) => <span className="admin-text-mono" style={{ fontWeight: 700 }}>{r.template}</span> },
+            { header: 'Channel', key: 'channel', render: (r) => <span className="admin-badge admin-badge--neutral">{r.channel}</span> },
             { header: 'Provider', key: 'provider' },
-            { header: 'Deliveries', key: 'deliveries' },
+            { header: 'Deliveries', key: 'deliveries', render: (r) => <span style={{ fontWeight: 700 }}>{r.deliveries}</span> },
             { header: 'Last Sent', key: 'lastSent' },
           ]}
         />
@@ -97,26 +98,15 @@ export default function CommunicationsDomainView({ subModule = 'dispatch-logs' }
           emptyMessage={subModule === 'dlq-retry' ? 'No failed deliveries in DLQ' : 'No notification deliveries recorded yet'}
           data={data}
           columns={[
-            { header: 'Message ID', key: 'id' },
-            { header: 'Channel', key: 'channel' },
-            { header: 'Recipient', key: 'recipient' },
+            { header: 'Message ID', key: 'id', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.id}</span> },
+            { header: 'Channel', key: 'channel', render: (r) => <span className="admin-badge admin-badge--neutral">{r.channel}</span> },
+            { header: 'Recipient', key: 'recipient', render: (r) => <span style={{ fontWeight: 600 }}>{r.recipient}</span> },
             { header: 'Template', key: 'template' },
             { header: 'Provider', key: 'provider' },
             {
               header: 'Status',
               key: 'status',
-              render: (r) => (
-                <span style={{
-                  padding: '2px 8px',
-                  borderRadius: '4px',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  background: r.status === 'DELIVERED' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                  color: r.status === 'DELIVERED' ? '#10b981' : '#f87171',
-                }}>
-                  {r.status}
-                </span>
-              ),
+              render: (r) => <StatusBadge status={r.status} />,
             },
             { header: 'Sent At', key: 'sentAt' },
             ...(subModule === 'dlq-retry' ? [{
@@ -127,16 +117,7 @@ export default function CommunicationsDomainView({ subModule = 'dispatch-logs' }
                 <button
                   type="button"
                   onClick={() => handleRetry(r)}
-                  style={{
-                    padding: '4px 10px',
-                    borderRadius: '4px',
-                    border: '1px solid var(--admin-border, var(--color-border))',
-                    background: 'rgba(59, 130, 246, 0.15)',
-                    color: '#60a5fa',
-                    cursor: 'pointer',
-                    fontSize: '0.78rem',
-                    fontWeight: 700,
-                  }}
+                  className="admin-btn admin-btn--primary admin-btn--sm"
                 >
                   Queue Retry
                 </button>

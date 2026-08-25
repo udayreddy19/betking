@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { adminApiClient } from '../api/adminApiClient';
 import AdminDataTable from '../components/AdminDataTable';
 import { useAdminToast } from '../components/AdminToastContext';
+import { StatusBadge } from '../components/AdminBadge';
+import AdminCard from '../components/AdminCard';
 import DatabaseInspector from '../../../components/DatabaseInspector/DatabaseInspector';
 
 export default function PlatformDomainView({ subModule = 'feature-flags' }) {
@@ -45,8 +47,8 @@ export default function PlatformDomainView({ subModule = 'feature-flags' }) {
     return (
       <div>
         <div style={{ marginBottom: '16px' }}>
-          <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>11 · Database Tables</h2>
-          <p style={{ margin: '4px 0 0', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>11 · Database Tables</h2>
+          <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
             Browse and edit live PostgreSQL tables. Sensitive auth columns stay hidden;
             Edit is available on rows with a primary key (SUPER_ADMIN).
           </p>
@@ -65,47 +67,48 @@ export default function PlatformDomainView({ subModule = 'feature-flags' }) {
 
   return (
     <div>
-      <div style={{ marginBottom: '20px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>{heading}</h2>
-        <p style={{ margin: '4px 0 0', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+      <div style={{ marginBottom: '16px' }}>
+        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>{heading}</h2>
+        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           {hint}
         </p>
-        {error && <p style={{ margin: '8px 0 0', color: '#fbbf24', fontSize: '0.82rem' }}>{error}</p>}
+        {error && <p style={{ margin: '8px 0 0', color: '#fbbf24', fontSize: '0.78rem' }}>{error}</p>}
       </div>
 
       {subModule === 'feature-flags' && (
-        <div style={{ marginBottom: '24px', padding: '20px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '12px' }}>
-          <h3 style={{ margin: '0 0 16px', fontSize: '1.05rem' }}>System Feature Flags</h3>
-          <div style={{ display: 'grid', gap: '12px' }}>
+        <AdminCard title="System Feature Flags" accent="#6366f1" style={{ marginBottom: '20px' }}>
+          <div style={{ display: 'grid', gap: '8px' }}>
             {featureFlags.length === 0 && (
-              <p style={{ color: 'var(--color-text-muted)', margin: 0 }}>No flags loaded.</p>
+              <p style={{ color: 'var(--admin-text-muted)', margin: 0 }}>No flags loaded.</p>
             )}
             {featureFlags.map((flag) => (
-              <div key={flag.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--color-panel)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+              <div
+                key={flag.key}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '12px 16px',
+                  background: 'var(--admin-bg)',
+                  borderRadius: 'var(--admin-radius-sm)',
+                  border: '1px solid var(--admin-border)',
+                }}
+              >
                 <div>
-                  <strong style={{ fontSize: '0.9rem' }}>{flag.key}</strong>
-                  <p style={{ margin: '2px 0 0', color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>{flag.description}</p>
+                  <strong className="admin-text-mono" style={{ fontSize: '0.84rem', color: 'var(--admin-text)' }}>{flag.key}</strong>
+                  <p style={{ margin: '3px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.76rem' }}>{flag.description}</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => toggleFlag(flag.key)}
-                  style={{
-                    padding: '6px 14px',
-                    borderRadius: '6px',
-                    border: 'none',
-                    background: flag.enabled ? '#10b981' : '#6b7280',
-                    color: '#fff',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    fontSize: '0.8rem',
-                  }}
+                  className={`admin-btn admin-btn--sm ${flag.enabled ? 'admin-btn--success' : 'admin-btn--secondary'}`}
                 >
-                  {flag.enabled ? 'ENABLED' : 'DISABLED'}
+                  {flag.enabled ? '● ENABLED' : '○ DISABLED'}
                 </button>
               </div>
             ))}
           </div>
-        </div>
+        </AdminCard>
       )}
 
       {subModule === 'api-keys' && (
@@ -114,19 +117,15 @@ export default function PlatformDomainView({ subModule = 'feature-flags' }) {
           emptyMessage="No API keys registered"
           data={apiKeys}
           columns={[
-            { header: 'Key ID', key: 'id' },
-            { header: 'Key Name', key: 'name' },
-            { header: 'Key Prefix', key: 'prefix' },
+            { header: 'Key ID', key: 'id', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.id}</span> },
+            { header: 'Key Name', key: 'name', render: (r) => <span style={{ fontWeight: 700 }}>{r.name}</span> },
+            { header: 'Key Prefix', key: 'prefix', render: (r) => <span className="admin-badge admin-badge--neutral">{r.prefix}</span> },
             { header: 'Scopes', key: 'scope' },
             { header: 'Created Date', key: 'createdAt' },
             {
               header: 'Status',
               key: 'status',
-              render: (r) => (
-                <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(16, 185, 129, 0.2)', color: '#10b981' }}>
-                  {r.status}
-                </span>
-              ),
+              render: (r) => <StatusBadge status={r.status || 'ACTIVE'} />,
             },
           ]}
         />
