@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { FiDatabase, FiRefreshCw, FiSearch } from '../../icons';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { adminApiClient } from '../../pages/Admin/api/adminApiClient';
+import AdminModal from '../../pages/Admin/components/AdminModal';
+import AdminConfirmDialog from '../../pages/Admin/components/AdminConfirmDialog';
+import AdminEmptyState from '../../pages/Admin/components/AdminEmptyState';
 import DatabaseSqlTerminal from './DatabaseSqlTerminal';
 import KycReminderUsersPanel from './KycReminderUsersPanel';
 import './DatabaseInspector.css';
@@ -38,7 +40,7 @@ function compareCellValues(a, b) {
   if (aNum !== null && bNum !== null) return aNum - bNum;
 
   const aTime = a instanceof Date ? a.getTime() : (typeof a === 'string' && /^\d{4}-\d{2}-\d{2}/.test(a) ? Date.parse(a) : NaN);
-  const bTime = b instanceof Date ? b.getTime() : (typeof b === 'string' && /^\d{4}-\d{2}-\d{2}/.test(b) ? Date.parse(b) : NaN);
+  const bTime = b instanceof Date ? b.getTime() : (typeof b === 'string' && /^\d{4}-\d{2}-\d{2}/.test(a) ? Date.parse(b) : NaN);
   if (!Number.isNaN(aTime) && !Number.isNaN(bTime)) return aTime - bTime;
 
   const aStr = typeof a === 'object' ? JSON.stringify(a) : String(a);
@@ -322,20 +324,21 @@ export default function DatabaseInspector() {
 
   return (
     <div className="db-inspector-container">
+      {/* Top Header & Telemetry */}
       <div className="db-inspector-header">
         <div className="db-inspector-title">
-          <FiDatabase className="db-icon" />
+          <div className="db-inspector-icon-wrap">🗄️</div>
           <div>
-            <h3 className="db-inspector-heading">Database Tables</h3>
+            <h2 className="db-inspector-heading">Database Tables</h2>
             <p className="db-inspector-sub">
-              Browse and edit live PostgreSQL rows. Sensitive columns stay hidden.
+              Browse and edit live PostgreSQL schema and rows. Sensitive auth columns stay hidden.
             </p>
           </div>
         </div>
 
         <div className="db-status-pills">
           <span className="status-pill status-pill--pg">
-            <span className="live-dot" /> DB size: {meta.totalDbSize}
+            <span className="live-dot" /> DB Size: {meta.totalDbSize}
           </span>
           <span className="status-pill status-pill--disk">
             Disk: {meta.availableDiskStorage}
@@ -350,23 +353,39 @@ export default function DatabaseInspector() {
               fetchTables();
               if (selectedTable) fetchTableData(selectedTable);
             }}
-            title="Refresh"
+            title="Refresh tables and schema"
           >
-            <FiRefreshCw className={loadingTables || loadingRows ? 'animate-spin' : ''} />
+            ↻
           </button>
         </div>
       </div>
 
-      {error && <div className="db-inspector-error" role="alert">{error}</div>}
-      {notice && <div className="db-inspector-notice" role="status">{notice}</div>}
+      {error && (
+        <div className="db-inspector-error" role="alert">
+          <span>⚠</span>
+          <span>{error}</span>
+        </div>
+      )}
+      {notice && (
+        <div className="db-inspector-notice" role="status">
+          <span>✓</span>
+          <span>{notice}</span>
+        </div>
+      )}
 
+      {/* Workspace: Sidebar + Table Studio */}
       <div className="db-inspector-workspace">
+        {/* Left Sidebar (Table List) */}
         <div className="db-tables-sidebar">
           <div className="sidebar-title">
-            <span>Tables ({visibleTables.length})</span>
+            <span className="sidebar-title-text">TABLES ({visibleTables.length})</span>
           </div>
+
           <div className="db-table-filter">
-            <FiSearch />
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="m21 21-4.3-4.3"/>
+            </svg>
             <input
               type="search"
               placeholder="Filter tables…"
@@ -374,53 +393,66 @@ export default function DatabaseInspector() {
               onChange={(e) => setTableFilter(e.target.value)}
             />
           </div>
-          <label className="db-table-sort">
-            <span>Sort</span>
+
+          <div className="db-table-sort">
+            <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', fontWeight: 700 }}>Sort</span>
             <select value={tableListSort} onChange={(e) => setTableListSort(e.target.value)}>
               <option value="name-asc">Name A–Z</option>
               <option value="name-desc">Name Z–A</option>
               <option value="rows-desc">Rows high → low</option>
               <option value="rows-asc">Rows low → high</option>
             </select>
-          </label>
+          </div>
+
           <div className="tables-list">
             {loadingTables && tables.length === 0 && (
               <div className="db-sidebar-empty">Loading tables…</div>
             )}
             {!loadingTables && visibleTables.length === 0 && (
-              <div className="db-sidebar-empty">No tables found</div>
+              <div className="db-sidebar-empty">No tables matching "{tableFilter}"</div>
             )}
-            {visibleTables.map((t) => (
-              <button
-                key={t.tableName}
-                type="button"
-                className={`table-item-btn ${selectedTable === t.tableName ? 'active' : ''}`}
-                onClick={() => setSelectedTable(t.tableName)}
-                title={`${t.tableName} (${t.rowCount ?? 0} rows)`}
-              >
-                <span className="table-name-text">{t.tableName}</span>
-                <span className="table-count-badge">
-                  {t.rowCount ?? 0}
-                  {t.tableSize ? ` · ${t.tableSize}` : ''}
-                </span>
-              </button>
-            ))}
+            {visibleTables.map((t) => {
+              const isSelected = selectedTable === t.tableName;
+              return (
+                <button
+                  key={t.tableName}
+                  type="button"
+                  className={`table-item-btn ${isSelected ? 'active' : ''}`}
+                  onClick={() => setSelectedTable(t.tableName)}
+                  title={`${t.tableName} (${t.rowCount ?? 0} rows)`}
+                >
+                  <span className="table-name-text">{t.tableName}</span>
+                  <span className="table-count-badge">
+                    {t.rowCount ?? 0}{t.tableSize ? ` · ${t.tableSize}` : ''}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
+        {/* Right Panel (Table Studio Viewer) */}
         <div className="db-table-viewer">
           <div className="table-viewer-header">
             <div className="table-info">
               <span className="table-info-name">{selectedTable || '—'}</span>
-              <span className="table-info-meta">
-                {tableData.columns.length} columns · showing {filteredRows.length}
-                {tableData.totalCount ? ` of ${tableData.totalCount}` : ''} rows
-                {sortColumn ? ` · sorted by ${sortColumn} ${sortDir === 'desc' ? '↓' : '↑'}` : ''}
-                {tableData.editable
-                  ? ` · PK: ${tableData.primaryKey.join(', ')}`
-                  : ' · not editable (no primary key)'}
+              <span className="admin-badge admin-badge--neutral">
+                {tableData.columns.length} cols
               </span>
+              <span className="admin-badge admin-badge--neutral">
+                {filteredRows.length}{tableData.totalCount ? ` / ${tableData.totalCount}` : ''} rows
+              </span>
+              {tableData.primaryKey.length > 0 ? (
+                <span className="admin-badge admin-badge--info">
+                  PK: {tableData.primaryKey.join(', ')}
+                </span>
+              ) : (
+                <span className="admin-badge admin-badge--warning">
+                  No PK (Read-only)
+                </span>
+              )}
             </div>
+
             <div className="table-viewer-tools">
               {sortColumn && (
                 <button
@@ -428,9 +460,21 @@ export default function DatabaseInspector() {
                   className="db-clear-sort-btn"
                   onClick={() => { setSortColumn(''); setSortDir('asc'); }}
                 >
-                  Clear sort
+                  Clear sort ({sortColumn} {sortDir === 'desc' ? '↓' : '↑'})
                 </button>
               )}
+              <div className="table-search-bar">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8"/>
+                  <path d="m21 21-4.3-4.3"/>
+                </svg>
+                <input
+                  type="search"
+                  placeholder="Search loaded rows…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
               <button
                 type="button"
                 className="db-export-btn"
@@ -449,50 +493,47 @@ export default function DatabaseInspector() {
               >
                 Export JSON
               </button>
-              <div className="table-search-bar">
-                <FiSearch />
-                <input
-                  type="search"
-                  placeholder="Search loaded rows…"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
             </div>
           </div>
 
           {selectedTable === 'kyc_reminder_log' && (
-            <KycReminderUsersPanel
-              compact
-              title="Send KYC completion emails"
-              onSent={() => {
-                fetchTableData(selectedTable);
-                fetchTables();
-                setNotice('KYC reminder recorded — refreshing kyc_reminder_log…');
-              }}
-            />
+            <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--admin-border)' }}>
+              <KycReminderUsersPanel
+                compact
+                title="Send KYC completion emails"
+                onSent={() => {
+                  fetchTableData(selectedTable);
+                  fetchTables();
+                  setNotice('KYC reminder recorded — refreshing kyc_reminder_log…');
+                }}
+              />
+            </div>
           )}
 
           <div className="table-rows-wrap">
             {loadingRows ? (
               <div className="loading-state">
-                <FiRefreshCw className="animate-spin" />
-                <span>Loading rows…</span>
+                <span className="admin-badge admin-badge--info">↻ Loading rows from PostgreSQL…</span>
               </div>
             ) : !selectedTable ? (
-              <div className="empty-state">Select a table to inspect</div>
+              <div className="empty-state">
+                <AdminEmptyState
+                  icon="🗄️"
+                  title="Select a Table"
+                  description="Choose any PostgreSQL table from the left explorer to inspect and edit live rows."
+                />
+              </div>
             ) : filteredRows.length === 0 ? (
               <div className="empty-state">
-                {selectedTable === 'kyc_reminder_log' ? (
-                  <>
-                    No reminder rows yet. Use <strong>Send mail notification</strong> above — this table fills after emails are queued/sent.
-                  </>
-                ) : (
-                  <>
-                    No rows in <code>{selectedTable}</code>
-                    {searchQuery ? ' matching this search' : ''}.
-                  </>
-                )}
+                <AdminEmptyState
+                  icon="🔍"
+                  title={`No rows in ${selectedTable}`}
+                  description={searchQuery
+                    ? `No rows matching "${searchQuery}". Try clearing your search.`
+                    : selectedTable === 'kyc_reminder_log'
+                      ? 'No reminder rows yet. This table fills after KYC emails are queued/sent.'
+                      : 'This table currently contains 0 records in PostgreSQL.'}
+                />
               </div>
             ) : (
               <table className="db-data-table">
@@ -505,7 +546,7 @@ export default function DatabaseInspector() {
                         <th key={col.column_name} aria-sort={ariaSort}>
                           <button
                             type="button"
-                            className={`col-header col-header--sortable${active ? ' is-active' : ''}`}
+                            className={`col-header${active ? ' is-active' : ''}`}
                             onClick={() => toggleSort(col.column_name)}
                             title={`Sort by ${col.column_name}`}
                           >
@@ -530,7 +571,7 @@ export default function DatabaseInspector() {
                         const val = row[col.column_name];
                         const text = formatCell(val);
                         return (
-                          <td key={col.column_name}>
+                          <td key={col.column_name} title={text !== null ? text : 'NULL'}>
                             {text === null ? (
                               <span className="null-val">NULL</span>
                             ) : typeof val === 'object' ? (
@@ -574,97 +615,76 @@ export default function DatabaseInspector() {
         </div>
       </div>
 
+      {/* Interactive SQL Console */}
       <DatabaseSqlTerminal selectedTable={selectedTable} />
 
-      {editRow && (
-        <div className="db-edit-overlay" role="presentation" onClick={() => !saving && setEditRow(null)}>
-          <div
-            className="db-edit-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="db-edit-title"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="db-edit-header">
-              <h4 id="db-edit-title">Edit row · {selectedTable}</h4>
-              <button type="button" className="db-edit-close" onClick={() => setEditRow(null)} disabled={saving}>
-                ✕
-              </button>
-            </div>
-            <p className="db-edit-pk">
-              Primary key:{' '}
-              {tableData.primaryKey.map((col) => `${col}=${String(editRow[col])}`).join(', ')}
-            </p>
-            <div className="db-edit-fields">
-              {editableColumns.map((col) => (
-                <label key={col.column_name} className="db-edit-field">
-                  <span>
-                    {col.column_name}
-                    <em>{col.data_type}</em>
-                  </span>
-                  <input
-                    type="text"
-                    value={editDraft[col.column_name] ?? ''}
-                    onChange={(e) => setEditDraft((prev) => ({ ...prev, [col.column_name]: e.target.value }))}
-                    disabled={saving}
-                  />
-                </label>
-              ))}
-              {editableColumns.length === 0 && (
-                <p className="db-sidebar-empty">No editable columns on this table.</p>
-              )}
-            </div>
-            <div className="db-edit-actions">
-              <button type="button" className="db-edit-cancel" onClick={() => setEditRow(null)} disabled={saving}>
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="db-edit-save"
-                onClick={saveEdit}
-                disabled={saving || editableColumns.length === 0}
-              >
-                {saving ? 'Saving…' : 'Save changes'}
-              </button>
-            </div>
+      {/* Edit Row Modal */}
+      <AdminModal
+        isOpen={!!editRow}
+        onClose={() => !saving && setEditRow(null)}
+        title={`Edit Row · ${selectedTable}`}
+        subtitle={editRow && tableData.primaryKey.length > 0 ? `PK: ${tableData.primaryKey.map((col) => `${col}=${String(editRow[col])}`).join(', ')}` : ''}
+        actions={
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              type="button"
+              className="admin-btn admin-btn--secondary"
+              onClick={() => setEditRow(null)}
+              disabled={saving}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="admin-btn admin-btn--primary"
+              onClick={saveEdit}
+              disabled={saving || editableColumns.length === 0}
+            >
+              {saving ? 'Saving…' : 'Save Changes'}
+            </button>
           </div>
-        </div>
-      )}
-      {deleteRow && (
-        <div className="db-edit-overlay" role="presentation" onClick={() => !deletingKey && setDeleteRow(null)}>
-          <div
-            className="db-edit-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="db-delete-title"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="db-edit-header">
-              <h4 id="db-delete-title">Delete row · {selectedTable}</h4>
-              <button type="button" className="db-edit-close" onClick={() => setDeleteRow(null)} disabled={!!deletingKey}>
-                ✕
-              </button>
+        }
+      >
+        <div style={{ display: 'grid', gap: '12px' }}>
+          {editableColumns.map((col) => (
+            <div key={col.column_name} className="admin-form-group">
+              <label className="admin-form-label">
+                {col.column_name} <span style={{ color: 'var(--admin-text-dim)', textTransform: 'none' }}>({col.data_type})</span>
+              </label>
+              <input
+                type="text"
+                className="admin-input"
+                value={editDraft[col.column_name] ?? ''}
+                onChange={(e) => setEditDraft((prev) => ({ ...prev, [col.column_name]: e.target.value }))}
+                disabled={saving}
+                style={{ fontFamily: 'var(--admin-font-mono, monospace)' }}
+              />
             </div>
-            <p className="db-edit-pk">
-              This permanently deletes the row with primary key:{' '}
-              {tableData.primaryKey.map((col) => `${col}=${String(deleteRow[col])}`).join(', ')}
+          ))}
+          {editableColumns.length === 0 && (
+            <p style={{ color: 'var(--admin-text-muted)', fontSize: '0.84rem' }}>
+              No editable columns on this table.
             </p>
-            <div className="db-edit-actions">
-              <button type="button" className="db-edit-cancel" onClick={() => setDeleteRow(null)} disabled={!!deletingKey}>
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="db-delete-confirm"
-                onClick={confirmDelete}
-                disabled={!!deletingKey}
-              >
-                {deletingKey ? 'Deleting…' : 'Delete permanently'}
-              </button>
-            </div>
-          </div>
+          )}
         </div>
-      )}
+      </AdminModal>
+
+      {/* Delete Row Confirmation Dialog */}
+      <AdminConfirmDialog
+        isOpen={!!deleteRow}
+        variant="danger"
+        icon="🗑️"
+        title={`Delete row from ${selectedTable}?`}
+        description="This action permanently removes this record from the database. It cannot be undone."
+        details={deleteRow ? tableData.primaryKey.map((col) => ({
+          label: col,
+          value: String(deleteRow[col]),
+        })) : []}
+        confirmLabel="Delete Permanently"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteRow(null)}
+        loading={!!deletingKey}
+      />
     </div>
   );
 }

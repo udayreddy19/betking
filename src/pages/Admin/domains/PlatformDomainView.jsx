@@ -44,18 +44,7 @@ export default function PlatformDomainView({ subModule = 'feature-flags' }) {
   };
 
   if (subModule === 'database-tables') {
-    return (
-      <div>
-        <div style={{ marginBottom: '16px' }}>
-          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>11 · Database Tables</h2>
-          <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
-            Browse and edit live PostgreSQL tables. Sensitive auth columns stay hidden;
-            Edit is available on rows with a primary key (SUPER_ADMIN).
-          </p>
-        </div>
-        <DatabaseInspector />
-      </div>
-    );
+    return <DatabaseInspector />;
   }
 
   const heading = subModule === 'api-keys'
