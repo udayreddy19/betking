@@ -32,8 +32,9 @@ test.describe('Odds changed placement contract', () => {
     const auth = { Authorization: `Bearer ${token}` };
 
     const walletBefore = await request.get(`${apiUrl}/api/wallet`, { headers: auth });
-    const balanceBefore = walletBefore.ok()
-      ? Number((await walletBefore.json()).balance ?? (await walletBefore.json()).cashBalance ?? 0)
+    const walletBeforeJson = walletBefore.ok() ? await walletBefore.json() : null;
+    const balanceBefore = walletBeforeJson
+      ? Number(walletBeforeJson.balance ?? walletBeforeJson.cashBalance ?? 0)
       : null;
 
     const place = await request.post(`${apiUrl}/api/bets/place`, {

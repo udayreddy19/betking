@@ -337,7 +337,7 @@ export default function Register() {
             <button
               type="submit"
               className="register-submit-btn"
-              disabled={loading}
+              disabled={loading || !agreed}
               id="register-submit"
             >
               {loading ? 'Creating account…' : 'Create account'}

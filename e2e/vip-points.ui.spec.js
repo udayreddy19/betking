@@ -12,6 +12,8 @@ test.describe('VIP vs loyalty points display', () => {
 
   test('help documents separate VIP progression', async ({ page }) => {
     await page.goto('/help');
-    await expect(page.getByText(/vip|loyalty|points/i).first()).toBeVisible();
+    // Prefer main content — mobile nav also contains a hidden "VIP" label.
+    const main = page.locator('main, .help-page, #root').first();
+    await expect(main.getByText(/vip club|loyalty points|vip progression|vip tier/i).first()).toBeVisible({ timeout: 10000 });
   });
 });

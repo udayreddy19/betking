@@ -45,6 +45,12 @@ test.describe('Staging money flow (register → deposit sandbox → bet → with
       );
     }
 
+    const walletBefore = await request.get(`${apiUrl}/api/wallet`, { headers: auth });
+    const walletBeforeJson = walletBefore.ok() ? await walletBefore.json() : null;
+    const balanceBefore = walletBeforeJson
+      ? Number(walletBeforeJson.balance ?? walletBeforeJson.cashBalance ?? 0)
+      : null;
+
     const bet = await request.post(`${apiUrl}/api/bets/place`, {
       headers: { ...auth, 'X-Idempotency-Key': `e2e-${stamp}` },
       data: {
@@ -56,8 +62,34 @@ test.describe('Staging money flow (register → deposit sandbox → bet → with
         fundSource: 'cash',
       },
     });
-    expect([200, 400, 403]).toContain(bet.status());
+    // 409 ODDS_CHANGED is a valid gate: no debit until the client accepts new odds.
+    expect([200, 400, 403, 409]).toContain(bet.status());
     expect(bet.status()).not.toBe(401);
+    if (bet.status() === 409) {
+      const body = await bet.json();
+      expect(['ODDS_CHANGED', 'STALE_ODDS', 'ODDS_UNAVAILABLE', 'MARKET_SUSPENDED']).toContain(body.code);
+      if (balanceBefore != null && walletBefore.ok()) {
+        const walletAfter = await request.get(`${apiUrl}/api/wallet`, { headers: auth });
+        const balanceAfter = Number((await walletAfter.json()).balance ?? (await walletAfter.json()).cashBalance ?? 0);
+        expect(balanceAfter).toBe(balanceBefore);
+      }
+      if (body.code === 'ODDS_CHANGED' && body.data?.newOdds) {
+        const accepted = await request.post(`${apiUrl}/api/bets/place`, {
+          headers: { ...auth, 'X-Idempotency-Key': `e2e-accept-${stamp}` },
+          data: {
+            matchId: 'e2e_match',
+            marketId: 'match_winner',
+            selectionId: 'home',
+            stake: 10,
+            clientOdds: Number(body.data.newOdds),
+            acceptedOdds: Number(body.data.newOdds),
+            fundSource: 'cash',
+          },
+        });
+        expect([200, 400, 403, 409]).toContain(accepted.status());
+        expect(accepted.status()).not.toBe(401);
+      }
+    }
 
     const withdraw = await request.post(`${apiUrl}/api/v1/withdrawals/request`, {
       headers: auth,

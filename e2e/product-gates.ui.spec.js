@@ -18,7 +18,12 @@ test.describe('Casino and fantasy stay gated', () => {
 
   test('register still requires 18+ acknowledgement', async ({ page }) => {
     await page.goto('/register');
-    await expect(page.getByRole('checkbox', { name: /18 or older/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /create account/i })).toBeDisabled();
+    const ageBox = page.locator('#reg-agree');
+    await expect(ageBox).toBeVisible();
+    await expect(ageBox).not.toBeChecked();
+    // Scope to the register form submit — guest sidebar also has "Create account".
+    await expect(page.locator('#register-submit')).toBeDisabled();
+    await ageBox.check();
+    await expect(page.locator('#register-submit')).toBeEnabled();
   });
 });
