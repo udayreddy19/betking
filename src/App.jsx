@@ -52,6 +52,7 @@ const TraderConsole = lazy(() => import('./pages/Trader/TraderConsole'));
 const ApiDocs = lazy(() => import('./pages/ApiDocs/ApiDocs'));
 const Vip = lazy(() => import('./pages/Vip/Vip'));
 const IPLSRLAdmin = lazy(() => import('./pages/Admin/IPLSRL/IPLSRLAdmin'));
+const NotificationCenter = lazy(() => import('./pages/Notifications/NotificationCenter'));
 
 function CasinoComingSoon() {
   return <Navigate to="/sports" replace />;
@@ -121,6 +122,7 @@ function AppLayout() {
               <Route path="/verify-email" element={<VerifyEmailPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/promotions" element={<Promotions />} />
+              <Route path="/notifications" element={<NotificationCenter />} />
               <Route path="/vip" element={<Vip />} />
               <Route
                 path="/admin/iplsrl"

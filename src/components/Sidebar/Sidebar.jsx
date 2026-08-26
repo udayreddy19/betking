@@ -287,6 +287,11 @@ export default function Sidebar() {
                   <span>Profile</span>
                   <FiChevronRight className="sidebar-list-arrow" />
                 </button>
+                <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/notifications'); }}>
+                  <IoNotifications className="sidebar-list-icon" />
+                  <span>Notifications{unreadCount > 0 ? ` (${unreadCount > 99 ? '99+' : unreadCount})` : ''}</span>
+                  <FiChevronRight className="sidebar-list-arrow" />
+                </button>
                 <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/profile?tab=support'); }}>
                   <FiHelpCircle className="sidebar-list-icon" />
                   <span>Support</span>
