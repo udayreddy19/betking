@@ -1,6 +1,7 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useBetSlip } from '../../context/BetSlipContext';
 import { getWalletBreakdown, formatInr } from '../../utils/walletBalance';
 import { buildSpinGrantNotice } from '../../utils/spinGrantUi';
 import { getLoyaltySummary, LOYALTY_MIN_REDEEM_POINTS } from '../../utils/loyaltyPoints';
@@ -35,6 +36,7 @@ export default function Profile() {
     showToast,
     changePassword,
   } = useAuth();
+  const { openMyBets } = useBetSlip();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'overview');
   const [txFilter, setTxFilter] = useState('all');
@@ -95,6 +97,12 @@ export default function Profile() {
 
   // Compute wallet, loyalty and excluded before early return to satisfy Rules of Hooks
   const wallet = useMemo(() => user ? getWalletBreakdown(user) : null, [user]);
+
+  const openRelatedBet = useCallback((betId) => {
+    if (!betId) return;
+    openMyBets();
+    window.dispatchEvent(new CustomEvent('oddsyra:highlight-bet', { detail: { betId: String(betId) } }));
+  }, [openMyBets]);
   const spinGrantNotice = useMemo(
     () => (user?.spinGrants ? buildSpinGrantNotice(user.spinGrants) : null),
     [user?.spinGrants],
@@ -614,7 +622,18 @@ export default function Profile() {
                         <p className="history-mobile-card__refs">
                           Tx {tx.id}
                           {tx.ledgerEntryId ? ` · Ledger ${tx.ledgerEntryId}` : ''}
-                          {tx.relatedBetId ? ` · Bet ${tx.relatedBetId}` : ''}
+                          {tx.relatedBetId ? (
+                            <>
+                              {' · '}
+                              <button
+                                type="button"
+                                className="profile-tx-ref-link"
+                                onClick={() => openRelatedBet(tx.relatedBetId)}
+                              >
+                                Bet {tx.relatedBetId}
+                              </button>
+                            </>
+                          ) : null}
                           {tx.providerPaymentId ? ` · Pay ${tx.providerPaymentId}` : ''}
                           {tx.utr ? ` · UTR ${tx.utr}` : ''}
                         </p>
@@ -653,7 +672,18 @@ export default function Profile() {
                             <td className="tx-desc" style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
                               {tx.id}
                               {tx.ledgerEntryId ? ` · ${tx.ledgerEntryId}` : ''}
-                              {tx.relatedBetId ? ` · ${tx.relatedBetId}` : ''}
+                              {tx.relatedBetId ? (
+                                <>
+                                  {' · '}
+                                  <button
+                                    type="button"
+                                    className="profile-tx-ref-link"
+                                    onClick={() => openRelatedBet(tx.relatedBetId)}
+                                  >
+                                    Bet {tx.relatedBetId}
+                                  </button>
+                                </>
+                              ) : null}
                             </td>
                             <td className={`tx-amount ${isPositive ? 'positive' : 'negative'}`}>
                               {isPositive ? '+' : ''}{formatInr(tx.amount)}

@@ -43,12 +43,12 @@ function isOverMarketExpired(placed, liveMatches) {
 }
 
 const FILTERS = [
-  { id: 'all', label: 'All' },
   { id: 'pending', label: 'Open' },
   { id: 'won', label: 'Won' },
   { id: 'lost', label: 'Lost' },
   { id: 'void', label: 'Void' },
   { id: 'cashed_out', label: 'Cashed out' },
+  { id: 'all', label: 'All' },
   { id: 'settled', label: 'Settled' },
   { id: 'cashout', label: 'Cash out' },
 ];
@@ -123,12 +123,25 @@ export default function MyBetsPanel() {
   const panelRef = useRef(null);
   const [filter, setFilter] = useState('pending');
   const [cashoutQuotes, setCashoutQuotes] = useState({});
+  const [highlightBetId, setHighlightBetId] = useState(null);
+
+  useEffect(() => {
+    const onHighlight = (event) => {
+      const betId = event?.detail?.betId;
+      if (!betId) return;
+      setHighlightBetId(String(betId));
+      setFilter('all');
+    };
+    window.addEventListener('oddsyra:highlight-bet', onHighlight);
+    return () => window.removeEventListener('oddsyra:highlight-bet', onHighlight);
+  }, []);
 
   useEffect(() => {
     if (!isMyBetsOpen) return undefined;
 
-    // Default to 'Open' (pending) tab every time My Bets panel is opened
-    setFilter('pending');
+    // Default to 'Open' (pending) tab every time My Bets panel is opened,
+    // unless a transaction deep-link asked for a specific bet.
+    if (!highlightBetId) setFilter('pending');
     void refreshMyBets();
 
     const handleEscape = (event) => {
@@ -148,7 +161,11 @@ export default function MyBetsPanel() {
       document.removeEventListener('keydown', handleEscape);
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isMyBetsOpen, closeMyBets, refreshMyBets]);
+  }, [isMyBetsOpen, closeMyBets, refreshMyBets, highlightBetId]);
+
+  useEffect(() => {
+    if (!isMyBetsOpen) setHighlightBetId(null);
+  }, [isMyBetsOpen]);
 
   // Live cashout quotes from server (accepted/current odds) — not VIP% of potential.
   useEffect(() => {
@@ -470,7 +487,7 @@ export default function MyBetsPanel() {
             filtered.map((placed) => {
               const cashoutOffer = cashoutOfferForBet(placed, liveMatches, user?.loyaltyTier, cashoutQuotes);
               return (
-                <div className={`my-bets-card my-bets-card--${placed.status || 'pending'}`} key={placed.id}>
+                <div className={`my-bets-card my-bets-card--${placed.status || 'pending'}${highlightBetId && String(placed.id) === String(highlightBetId) ? ' my-bets-card--highlight' : ''}`} key={placed.id}>
                   <div className="my-bets-card-top">
                     <div className="my-bets-card-badges">
                       <span className="my-bets-type-badge">{placed.type === 'multi' ? 'MULTI' : 'SINGLE'}</span>

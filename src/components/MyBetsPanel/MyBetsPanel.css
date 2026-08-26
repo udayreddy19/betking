@@ -132,6 +132,12 @@
   background: var(--color-bg);
 }
 
+.my-bets-card--highlight {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
 .my-bets-card-top {
   display: flex;
   align-items: center;

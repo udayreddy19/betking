@@ -132,6 +132,36 @@ export default function ProfileKycCard() {
             Withdrawals require verified KYC and a date of birth proving you are 18 or older. You can deposit and place bets without KYC.
           </p>
 
+          <ol className="profile-kyc-progress" aria-label="KYC progress">
+            {[
+              { id: 'dob', label: 'Date of birth', done: dobSaved },
+              { id: 'pan', label: 'PAN', done: Boolean(kyc?.panMasked) },
+              { id: 'aadhaar', label: 'Aadhaar', done: Boolean(kyc?.aadhaarMasked) },
+              { id: 'review', label: 'Verification', done: kyc?.status === 'VERIFIED' },
+            ].map((step) => (
+              <li
+                key={step.id}
+                className={`profile-kyc-progress__step${step.done ? ' is-done' : ''}`}
+              >
+                <span className="profile-kyc-progress__mark" aria-hidden="true">{step.done ? '✓' : '·'}</span>
+                <span>{step.label}</span>
+                <span className="profile-kyc-progress__state">{step.done ? 'Complete' : 'Needed'}</span>
+              </li>
+            ))}
+          </ol>
+
+          {kyc?.status === 'REJECTED' && kyc?.rejectionReason && (
+            <div className="profile-kyc-error" role="alert">
+              Rejected: {kyc.rejectionReason}. You can resubmit corrected documents below.
+            </div>
+          )}
+
+          {kyc?.status !== 'VERIFIED' && (
+            <p className="profile-loyalty-meta" role="note">
+              Withdrawals stay locked until KYC is verified. Deposits and betting remain available.
+            </p>
+          )}
+
           <form
             className="profile-promo-row profile-kyc-row"
             onSubmit={(e) => {

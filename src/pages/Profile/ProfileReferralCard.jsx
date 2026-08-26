@@ -96,8 +96,14 @@ export default function ProfileReferralCard({ onLoaded } = {}) {
           Share
         </button>
       </div>
-      <p className="profile-loyalty-meta" style={{ marginTop: 10 }}>
-        Invited: {data.stats?.invited || 0} · Qualified: {data.stats?.qualified || 0} · Pending: {data.stats?.pending || 0}
+      <p className="profile-loyalty-meta" style={{ marginTop: 10, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+        <span><strong>{data.stats?.invited || 0}</strong><br />Invited</span>
+        <span><strong>{data.stats?.qualified || 0}</strong><br />Qualified</span>
+        <span><strong>{data.stats?.pending || 0}</strong><br />Pending</span>
+      </p>
+      <p className="profile-loyalty-meta">
+        Rewards earned: <strong>{formatInr(data.stats?.rewardsEarned || 0)}</strong>
+        {' '}· Free bet reward: ₹{Number(data.referredReward || data.referrerReward || 500)} (configured)
       </p>
       {Array.isArray(data.history) && data.history.length > 0 && (
         <ul className="profile-loyalty-meta" style={{ marginTop: 8, paddingLeft: 18 }}>

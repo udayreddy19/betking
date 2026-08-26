@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useLocation } from 'react-router-dom';
 import { useBetSlip } from '../../context/BetSlipContext';
-import { ODDS_STATUS, formatOddsChangeAnnouncement } from '../../utils/oddsChangeHandler';
+import { ODDS_STATUS } from '../../utils/oddsChangeHandler';
 import { useAuth } from '../../context/AuthContext';
 import BetSlip from '../BetSlip/BetSlip';
 import BetSlipFooter from '../BetSlip/BetSlipFooter';
@@ -92,7 +92,7 @@ function QuickBetPanel({
   const oddsChanged = bet.oddsStatus === ODDS_STATUS.CHANGED;
   const showStrike = oddsChanged && Number.isFinite(oldOdds);
   const noticeText = oddsChanged
-    ? (formatOddsChangeAnnouncement(bet) || placementNotice || 'Please accept the updated odds before placing your bet.')
+    ? 'Odds have changed.'
     : placementNotice;
 
   return (
@@ -246,13 +246,29 @@ function QuickBetPanel({
         )}
 
         {oddsChanged && (
-          <button
-            type="button"
-            className="mobile-betslip-accept-odds"
-            onClick={onAcceptOdds}
-          >
-            Accept {Number.isFinite(newOdds) ? newOdds.toFixed(2) : 'new odds'}
-          </button>
+          <div className="mobile-betslip-odds-actions">
+            {showStrike && (
+              <p className="mobile-betslip-odds-compare" aria-live="polite">
+                <s>{oldOdds.toFixed(2)}</s>
+                {' → '}
+                <strong>{Number.isFinite(newOdds) ? newOdds.toFixed(2) : '—'}</strong>
+              </p>
+            )}
+            <button
+              type="button"
+              className="mobile-betslip-accept-odds"
+              onClick={onAcceptOdds}
+            >
+              Accept New Odds
+            </button>
+            <button
+              type="button"
+              className="mobile-betslip-cancel-odds"
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+          </div>
         )}
 
         <button

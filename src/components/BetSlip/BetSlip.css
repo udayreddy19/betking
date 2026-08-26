@@ -67,3 +67,15 @@
   background: #f59e0b;
   color: #111827;
 }
+
+.betslip-odds-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  align-items: center;
+}
+
+.betslip-odds-actions .betslip-accept-odds-btn {
+  margin-top: 0;
+}

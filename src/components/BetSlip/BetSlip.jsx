@@ -152,25 +152,22 @@ export default function BetSlip({ showFooter = true, hidePerBetStakes = false })
                 </div>
               )}
 
-              {bet.oddsStatus === ODDS_STATUS.CHANGED && !conflict && (
+                  {bet.oddsStatus === ODDS_STATUS.CHANGED && !conflict && (
                 <div
                   className="betslip-bet-alert betslip-bet-alert--odds-changed"
                   role="status"
                   aria-live="polite"
                 >
-                  <strong>Odds changed</strong>
+                  <strong>Odds have changed.</strong>
                   <span className="betslip-bet-alert__detail">
                     {formatOddsChangeAnnouncement(bet)}
-                  </span>
-                  <span className="betslip-bet-alert__detail">
-                    The odds have changed. Please review the new odds.
                   </span>
                 </div>
               )}
 
               {bet.oddsChanged && bet.oddsStatus !== ODDS_STATUS.CHANGED && !conflict && (
                 <div className="betslip-bet-alert betslip-bet-alert--info" role="status">
-                  Odds updated — review the new price below
+                  Odds have changed. Review the new price below.
                 </div>
               )}
 
@@ -189,7 +186,7 @@ export default function BetSlip({ showFooter = true, hidePerBetStakes = false })
                   {bet.oddsStatus === ODDS_STATUS.CHANGED && bet.previousOdds != null && (
                     <>
                       <span className="betslip-bet-odds-old" aria-hidden="true">
-                        {Number(bet.previousOdds).toFixed(2)}
+                        <s>{Number(bet.previousOdds).toFixed(2)}</s>
                       </span>
                       <span className="betslip-bet-odds-arrow" aria-hidden="true">→</span>
                     </>
@@ -199,13 +196,22 @@ export default function BetSlip({ showFooter = true, hidePerBetStakes = false })
               </div>
 
               {bet.oddsStatus === ODDS_STATUS.CHANGED && (
-                <button
-                  type="button"
-                  className="betslip-accept-odds-btn"
-                  onClick={() => acceptOddsChange(bet.id)}
-                >
-                  Accept {Number(bet.odds).toFixed(2)}
-                </button>
+                <div className="betslip-odds-actions">
+                  <button
+                    type="button"
+                    className="betslip-accept-odds-btn"
+                    onClick={() => acceptOddsChange(bet.id)}
+                  >
+                    Accept New Odds
+                  </button>
+                  <button
+                    type="button"
+                    className="betslip-bet-clear-btn"
+                    onClick={() => removeBet(bet.id)}
+                  >
+                    Cancel
+                  </button>
+                </div>
               )}
 
               <div className="betslip-bet-match">{bet.matchName}</div>
