@@ -14,9 +14,15 @@
 
 .profile-header {
   display: flex;
+  flex-direction: row-reverse;
   align-items: center;
   gap: var(--space-4);
   margin-bottom: var(--space-6);
+}
+
+.profile-user-info {
+  flex: 1;
+  min-width: 0;
 }
 
 .profile-avatar {

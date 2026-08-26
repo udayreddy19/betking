@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { HiOutlineMenu, HiOutlineClipboardList, HiOutlineUser, IoGiftOutline, FiChevronDown, FiZap, FiShield, IoNotifications } from '../../icons';
+import { HiOutlineMenu, HiOutlineClipboardList, HiOutlineUser, IoGiftOutline, FiChevronDown, FiZap, FiShield, IoNotifications, IoEyeOutline, IoEyeOffOutline } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { getWalletBreakdown, formatInr, getWalletBreakdownLines, getWithdrawableHint } from '../../utils/walletBalance';
@@ -23,6 +23,8 @@ import BrandLogo, { BrandWordmark } from '../BrandLogo/BrandLogo';
 import { withoutCasinoLinks } from '../../utils/featureFlags';
 import { hoverScale, pressScale, springUi } from '../../utils/motionPresets';
 import './Header.css';
+
+const BALANCE_VISIBLE_KEY = 'oddsyra_balance_visible';
 
 const navLinks = withoutCasinoLinks([
   { to: '/live-betting', label: 'Live Betting' },
@@ -71,6 +73,36 @@ function Header() {
   const location = useLocation();
   const loyalty = getLoyaltySummary(user);
   const [sliderPoints, setSliderPoints] = useState(loyalty.points || 50);
+  const [balanceVisible, setBalanceVisible] = useState(() => {
+    const stored = storageGet(BALANCE_VISIBLE_KEY);
+    if (stored === '0' || stored === 'false') return false;
+    return true;
+  });
+
+  const toggleBalanceVisible = useCallback((e) => {
+    e?.stopPropagation?.();
+    e?.preventDefault?.();
+    setBalanceVisible((prev) => {
+      const next = !prev;
+      storageSet(BALANCE_VISIBLE_KEY, next ? '1' : '0');
+      return next;
+    });
+  }, []);
+
+  const formatBalanceAmount = useCallback((amount) => (
+    Number(amount).toLocaleString('en-IN', {
+      minimumFractionDigits: Number(amount) % 1 !== 0 ? 2 : 0,
+      maximumFractionDigits: 2,
+    })
+  ), []);
+
+  const maskedBalance = (
+    <span className="balance-masked" aria-hidden="true">
+      <span className="balance-mask-cell">✦</span>
+      <span className="balance-mask-cell">✦</span>
+      <span className="balance-mask-cell">✦</span>
+    </span>
+  );
 
   const isAdminPage = location.pathname.startsWith('/admin');
   const isDevRoute = location.pathname.startsWith('/developer') || location.pathname.startsWith('/api-docs');
@@ -453,10 +485,20 @@ function Header() {
                   >
                     <span className="balance-amount-text">
                       <RupeeSymbol size={20} />
-                      {Number(wallet.total).toLocaleString('en-IN', {
-                        minimumFractionDigits: wallet.total % 1 !== 0 ? 2 : 0,
-                        maximumFractionDigits: 2,
-                      })}
+                      {balanceVisible ? formatBalanceAmount(wallet.total) : maskedBalance}
+                    </span>
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      className="balance-visibility-btn"
+                      aria-label={balanceVisible ? 'Hide balance' : 'Show balance'}
+                      aria-pressed={balanceVisible}
+                      onClick={toggleBalanceVisible}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') toggleBalanceVisible(e);
+                      }}
+                    >
+                      {balanceVisible ? <IoEyeOutline size={16} /> : <IoEyeOffOutline size={16} />}
                     </span>
                     <FiChevronDown className={`balance-chevron ${isWalletOpen ? 'open' : ''}`} />
                   </button>
@@ -474,9 +516,6 @@ function Header() {
                         {loyalty.canRedeem ? (
                           <>
                             <div className="header-wallet-menu__loyalty-head">
-                              <span className="header-wallet-menu__loyalty-title">
-                                Your position
-                              </span>
                               <span className={`header-wallet-menu__loyalty-tier header-wallet-menu__loyalty-tier--${String(loyalty.tier || 'BRONZE').toLowerCase()}`}>
                                 {loyalty.tierLabel || 'Standard'}
                               </span>
@@ -549,14 +588,16 @@ function Header() {
 
                       <div className="header-wallet-menu__hero">
                         <span className="header-wallet-menu__hero-label">Total balance</span>
-                        <span className="header-wallet-menu__hero-amount">{formatInr(wallet.total)}</span>
+                        <span className="header-wallet-menu__hero-amount">
+                          {balanceVisible ? formatInr(wallet.total) : '₹ ✦✦✦'}
+                        </span>
                         <div className="header-wallet-menu__hero-chips">
                           {walletBreakdownLines.map((line) => (
                             <span
                               key={line.key}
                               className={`header-wallet-menu__chip header-wallet-menu__chip--${line.tone}`}
                             >
-                              {line.label} {formatInr(line.value)}
+                              {line.label} {balanceVisible ? formatInr(line.value) : '✦✦✦'}
                             </span>
                           ))}
                         </div>
@@ -565,7 +606,9 @@ function Header() {
                       <div className="header-wallet-menu__withdraw-card">
                         <div className="header-wallet-menu__withdraw-head">
                           <span className="header-wallet-menu__withdraw-label">Withdrawable</span>
-                          <span className="header-wallet-menu__withdraw-amount">{formatInr(wallet.withdrawable)}</span>
+                          <span className="header-wallet-menu__withdraw-amount">
+                            {balanceVisible ? formatInr(wallet.withdrawable) : '₹ ✦✦✦'}
+                          </span>
                         </div>
                         <p className="header-wallet-menu__withdraw-note">{withdrawableHint}</p>
                       </div>

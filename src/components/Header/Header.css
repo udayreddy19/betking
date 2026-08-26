@@ -491,6 +491,64 @@
   font-size: 0.65rem;
   color: white;
 }
+
+.balance-amount-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+.balance-masked {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.balance-mask-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.05em;
+  height: 1.05em;
+  min-width: 14px;
+  min-height: 14px;
+  font-size: 0.62rem;
+  line-height: 1;
+  color: var(--color-text);
+  border: 1px dotted color-mix(in srgb, var(--color-text) 28%, transparent);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+}
+
+.balance-visibility-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast), transform 0.12s ease;
+}
+
+.balance-visibility-btn:hover,
+.balance-visibility-btn:focus-visible {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  outline: none;
+}
+
+.balance-visibility-btn:active {
+  transform: scale(0.94);
+}
+
 .header-balance .balance-chevron {
   color: var(--color-text-muted);
   font-size: 0.7rem;
@@ -798,7 +856,7 @@
 .header-wallet-menu__loyalty-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: var(--space-2);
   margin-bottom: var(--space-1);
 }
@@ -820,7 +878,7 @@
 }
 
 .header-wallet-menu__loyalty-tier {
-  font-size: var(--text-base);
+  font-size: var(--text-lg);
   font-weight: var(--font-extrabold);
   letter-spacing: -0.02em;
   color: var(--color-primary);
@@ -1191,6 +1249,17 @@
   .header-balance {
     padding: 4px 8px;
     gap: 4px;
+  }
+
+  .balance-visibility-btn {
+    width: 22px;
+    height: 22px;
+  }
+
+  .balance-mask-cell {
+    min-width: 12px;
+    min-height: 12px;
+    font-size: 0.55rem;
   }
 
   .theme-toggle,
