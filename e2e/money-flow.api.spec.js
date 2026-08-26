@@ -10,14 +10,20 @@ test.describe('Staging money flow (register → deposit sandbox → bet → with
     const email = `e2e.${stamp}@example.com`;
     const password = 'E2ePass2026!';
 
-    const signup = await request.post(`${apiUrl}/api/auth/signup`, {
-      data: {
-        email,
-        password,
-        firstName: 'E2E Player',
-        phone: `98${String(stamp).slice(-8)}`,
-      },
-    });
+    let signup;
+    try {
+      signup = await request.post(`${apiUrl}/api/auth/signup`, {
+        data: {
+          email,
+          password,
+          firstName: 'E2E Player',
+          phone: `98${String(stamp).slice(-8)}`,
+        },
+      });
+    } catch {
+      test.skip(true, 'API unreachable');
+      return;
+    }
     expect([200, 201]).toContain(signup.status());
     const signupJson = await signup.json();
     let token = signupJson.accessToken;

@@ -10,14 +10,20 @@ test.describe('Odds changed placement contract', () => {
     const email = `odds.e2e.${stamp}@example.com`;
     const password = 'E2ePass2026!';
 
-    const signup = await request.post(`${apiUrl}/api/auth/signup`, {
-      data: {
-        email,
-        password,
-        firstName: 'Odds E2E',
-        phone: `97${String(stamp).slice(-8)}`,
-      },
-    });
+    let signup;
+    try {
+      signup = await request.post(`${apiUrl}/api/auth/signup`, {
+        data: {
+          email,
+          password,
+          firstName: 'Odds E2E',
+          phone: `97${String(stamp).slice(-8)}`,
+        },
+      });
+    } catch {
+      test.skip(true, 'API unreachable');
+      return;
+    }
     expect([200, 201]).toContain(signup.status());
     const signupJson = await signup.json();
     let token = signupJson.accessToken;

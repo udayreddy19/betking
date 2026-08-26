@@ -125,6 +125,10 @@ app.use('/api/admin', adminAuth);
 app.use(adminInlineRouter);
 app.use(adminSettlementRouter);
 
+// Non-prod E2E harness (404 unless NODE_ENV!==production && E2E_HARNESS=1)
+import e2eHarnessRouter from './routes/e2eHarness.js';
+app.use(e2eHarnessRouter);
+
 import { createServer } from 'http';
 import { initWebSocketServer } from '../lib/websocketEngine.mjs';
 

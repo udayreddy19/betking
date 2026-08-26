@@ -28,6 +28,7 @@ coverage
 playwright-report/
 test-results/
 blob-report/
+backups/
 
 # Markdown files ignored as per instruction
 *.md

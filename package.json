@@ -20,7 +20,8 @@
     "financial:audit-winnings-reporting": "node scripts/audit-winnings-reporting.mjs",
     "release:record-sha": "node scripts/record-release-sha.mjs",
     "perf:baseline": "node scripts/perf-baseline.mjs",
-    "ballfeed:sync": "node scripts/sync-ball-feed.mjs"
+    "ballfeed:sync": "node scripts/sync-ball-feed.mjs",
+    "odds:measure-freshness": "node scripts/measure_odds_freshness.mjs"
   },
   "browserslist": [
     "chrome >= 80",
@@ -59,5 +60,8 @@
     "oxlint": "^1.75.0",
     "vite": "^8.2.0",
     "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "nanoid": "3.3.18"
   }
 }
