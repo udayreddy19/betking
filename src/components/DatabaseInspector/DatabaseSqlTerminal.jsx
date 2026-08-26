@@ -16,7 +16,7 @@ function outputColumns(fields, rows) {
 }
 
 export default function DatabaseSqlTerminal({ selectedTable = '' }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const [sql, setSql] = useState('');
   const [running, setRunning] = useState(false);
   const [error, setError] = useState('');

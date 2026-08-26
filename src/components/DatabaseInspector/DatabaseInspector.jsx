@@ -327,21 +327,21 @@ export default function DatabaseInspector() {
       {/* Top Header & Telemetry */}
       <div className="db-inspector-header">
         <div className="db-inspector-title">
-          <div className="db-inspector-icon-wrap">🗄️</div>
           <div>
             <h2 className="db-inspector-heading">Database Tables</h2>
             <p className="db-inspector-sub">
-              Browse and edit live PostgreSQL schema and rows. Sensitive auth columns stay hidden.
+              Browse live PostgreSQL tables. Sensitive auth columns stay hidden.
             </p>
           </div>
         </div>
 
-        <div className="db-status-pills">
+        <div className="db-status-pills" aria-label="Database status">
           <span className="status-pill status-pill--pg">
-            <span className="live-dot" /> DB Size: {meta.totalDbSize}
+            <span className="live-dot" aria-hidden="true" />
+            DB {meta.totalDbSize}
           </span>
           <span className="status-pill status-pill--disk">
-            Disk: {meta.availableDiskStorage}
+            Disk {meta.availableDiskStorage}
           </span>
           <span className="status-pill status-pill--recon">
             {tables.length} tables
@@ -354,6 +354,7 @@ export default function DatabaseInspector() {
               if (selectedTable) fetchTableData(selectedTable);
             }}
             title="Refresh tables and schema"
+            aria-label="Refresh tables and schema"
           >
             ↻
           </button>
@@ -548,15 +549,14 @@ export default function DatabaseInspector() {
                             type="button"
                             className={`col-header${active ? ' is-active' : ''}`}
                             onClick={() => toggleSort(col.column_name)}
-                            title={`Sort by ${col.column_name}`}
+                            title={`${col.column_name} · ${col.data_type} — click to sort`}
                           >
                             <span className="col-name-row">
                               <span className="col-name">{col.column_name}</span>
                               <span className="col-sort-indicator" aria-hidden="true">
-                                {active ? (sortDir === 'desc' ? '↓' : '↑') : '↕'}
+                                {active ? (sortDir === 'desc' ? '↓' : '↑') : ''}
                               </span>
                             </span>
-                            <span className="col-type">{col.data_type}</span>
                           </button>
                         </th>
                       );
