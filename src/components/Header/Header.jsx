@@ -97,11 +97,7 @@ function Header() {
   ), []);
 
   const maskedBalance = (
-    <span className="balance-masked" aria-hidden="true">
-      <span className="balance-mask-cell">✦</span>
-      <span className="balance-mask-cell">✦</span>
-      <span className="balance-mask-cell">✦</span>
-    </span>
+    <span className="balance-masked" aria-hidden="true">✦✦✦</span>
   );
 
   const isAdminPage = location.pathname.startsWith('/admin');
@@ -484,7 +480,7 @@ function Header() {
                     aria-haspopup="true"
                   >
                     <span className="balance-amount-text">
-                      <RupeeSymbol size={20} />
+                      <RupeeSymbol size={14} />
                       {balanceVisible ? formatBalanceAmount(wallet.total) : maskedBalance}
                     </span>
                     <span
@@ -498,7 +494,7 @@ function Header() {
                         if (e.key === 'Enter' || e.key === ' ') toggleBalanceVisible(e);
                       }}
                     >
-                      {balanceVisible ? <IoEyeOutline size={16} /> : <IoEyeOffOutline size={16} />}
+                      {balanceVisible ? <IoEyeOutline size={14} /> : <IoEyeOffOutline size={14} />}
                     </span>
                     <FiChevronDown className={`balance-chevron ${isWalletOpen ? 'open' : ''}`} />
                   </button>

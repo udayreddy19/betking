@@ -467,11 +467,12 @@
 .header-balance {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
+  gap: 3px;
+  padding: 3px 6px 3px 8px;
+  max-width: min(46vw, 156px);
   background: var(--color-bg);
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 999px;
   transition: border-color var(--transition-fast), background var(--transition-fast);
 }
 
@@ -495,53 +496,53 @@
 .balance-amount-text {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-weight: 800;
+  gap: 1px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.78rem;
+  font-weight: 750;
+  line-height: 1;
   font-variant-numeric: tabular-nums;
   color: var(--color-text);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.balance-amount-text .rupee-symbol,
+.balance-amount-text svg {
+  flex-shrink: 0;
 }
 
 .balance-masked {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-}
-
-.balance-mask-cell {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.05em;
-  height: 1.05em;
-  min-width: 14px;
-  min-height: 14px;
-  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  font-size: 0.68rem;
+  font-weight: 800;
   line-height: 1;
   color: var(--color-text);
-  border: 1px dotted color-mix(in srgb, var(--color-text) 28%, transparent);
-  border-radius: 3px;
-  background: color-mix(in srgb, var(--color-text) 4%, transparent);
 }
 
 .balance-visibility-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
   border-radius: 50%;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text);
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
   cursor: pointer;
-  transition: border-color var(--transition-fast), background var(--transition-fast), transform 0.12s ease;
+  transition: color var(--transition-fast), background var(--transition-fast), transform 0.12s ease;
 }
 
 .balance-visibility-btn:hover,
 .balance-visibility-btn:focus-visible {
-  border-color: var(--color-primary);
   color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
   outline: none;
 }
 
@@ -551,7 +552,8 @@
 
 .header-balance .balance-chevron {
   color: var(--color-text-muted);
-  font-size: 0.7rem;
+  font-size: 0.58rem;
+  flex-shrink: 0;
   transition: transform 0.2s ease;
 }
 
@@ -1247,19 +1249,23 @@
   }
 
   .header-balance {
-    padding: 4px 8px;
-    gap: 4px;
+    padding: 2px 5px 2px 7px;
+    gap: 2px;
+    max-width: min(40vw, 132px);
+  }
+
+  .balance-amount-text {
+    font-size: 0.72rem;
   }
 
   .balance-visibility-btn {
-    width: 22px;
-    height: 22px;
+    width: 18px;
+    height: 18px;
   }
 
-  .balance-mask-cell {
-    min-width: 12px;
-    min-height: 12px;
-    font-size: 0.55rem;
+  .balance-masked {
+    font-size: 0.62rem;
+    letter-spacing: 0.04em;
   }
 
   .theme-toggle,
