@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { adminApiClient } from '../api/adminApiClient';
 import AdminDataTable from '../components/AdminDataTable';
 import { useAdminToast } from '../components/AdminToastContext';
@@ -22,6 +22,13 @@ function pctOrDash(value) {
   return `${Number(value).toFixed(2)}%`;
 }
 
+const FRAUD_CASE_ACTIONS = [
+  { status: 'INVESTIGATING', label: 'Review' },
+  { status: 'ESCALATED', label: 'Escalate' },
+  { status: 'CONFIRMED', label: 'Restrict' },
+  { status: 'DISMISSED', label: 'Dismiss' },
+];
+
 export default function TradingRiskDomainView({ subModule }) {
   const [liveExposures, setLiveExposures] = useState([]);
   const [oddsMatches, setOddsMatches] = useState([]);
@@ -29,14 +36,35 @@ export default function TradingRiskDomainView({ subModule }) {
   const [oddsDebug, setOddsDebug] = useState(null);
   const [loadingDebug, setLoadingDebug] = useState(false);
   const [fraudSignals, setFraudSignals] = useState([]);
+  const [fraudCases, setFraudCases] = useState([]);
+  const [suspensions, setSuspensions] = useState([]);
   const [deskMetrics, setDeskMetrics] = useState(null);
   const [error, setError] = useState(null);
   const [suspendTarget, setSuspendTarget] = useState(null);
+  const [resumeTarget, setResumeTarget] = useState(null);
   const [suspending, setSuspending] = useState(false);
+  const [resuming, setResuming] = useState(false);
   const { showToast } = useAdminToast();
 
   const showOddsDesk = !subModule || subModule === 'exposure' || subModule === 'suspension' || subModule === 'fraud-signals';
   const showGgrDesk = subModule === 'ggr-liability';
+  const showSuspensionQueue = subModule === 'suspension';
+  const showFraud = subModule === 'fraud-signals';
+
+  const loadSuspensions = useCallback(() => {
+    adminApiClient.get('/trading/suspended-markets')
+      .then((data) => setSuspensions(data.suspensions || []))
+      .catch(() => setSuspensions([]));
+  }, []);
+
+  const loadFraud = useCallback(() => {
+    adminApiClient.get('/fraud/signals')
+      .then((data) => setFraudSignals(data.signals || []))
+      .catch(() => setFraudSignals([]));
+    adminApiClient.get('/fraud/cases')
+      .then((data) => setFraudCases(data.cases || []))
+      .catch(() => setFraudCases([]));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,18 +99,16 @@ export default function TradingRiskDomainView({ subModule }) {
   }, [showGgrDesk]);
 
   useEffect(() => {
-    if (subModule !== 'fraud-signals') return undefined;
-    let cancelled = false;
-    adminApiClient.get('/fraud/signals')
-      .then((data) => {
-        if (cancelled) return;
-        setFraudSignals(data.signals || []);
-      })
-      .catch(() => {
-        if (!cancelled) setFraudSignals([]);
-      });
-    return () => { cancelled = true; };
-  }, [subModule]);
+    if (!showFraud) return undefined;
+    loadFraud();
+    return undefined;
+  }, [showFraud, loadFraud]);
+
+  useEffect(() => {
+    if (!showSuspensionQueue) return undefined;
+    loadSuspensions();
+    return undefined;
+  }, [showSuspensionQueue, loadSuspensions]);
 
   useEffect(() => {
     if (!showOddsDesk) return undefined;
@@ -142,6 +168,7 @@ export default function TradingRiskDomainView({ subModule }) {
       });
       showToast(`Market suspended for ${suspendTarget.match}`, 'success');
       setSuspendTarget(null);
+      if (showSuspensionQueue) loadSuspensions();
     } catch (err) {
       showToast(err.message || 'Suspend failed', 'error');
     } finally {
@@ -149,14 +176,60 @@ export default function TradingRiskDomainView({ subModule }) {
     }
   };
 
+  const handleMarketResume = async (reason) => {
+    if (!resumeTarget) return;
+    setResuming(true);
+    try {
+      const clearReason = reason || resumeTarget.reason || 'MANUAL_ADMIN';
+      const result = await adminApiClient.post('/trading/resume-market', {
+        marketId: resumeTarget.marketId,
+        reason: clearReason,
+      });
+      const remaining = result?.activeCauses?.length || 0;
+      showToast(
+        remaining > 0
+          ? `Cause cleared; market still suspended (${remaining} active cause${remaining === 1 ? '' : 's'})`
+          : `Market resumed: ${resumeTarget.marketId}`,
+        remaining > 0 ? 'info' : 'success',
+      );
+      setResumeTarget(null);
+      loadSuspensions();
+    } catch (err) {
+      showToast(err.message || 'Resume failed', 'error');
+    } finally {
+      setResuming(false);
+    }
+  };
+
+  const updateFraudCase = async (caseId, status) => {
+    try {
+      await adminApiClient.post(`/fraud/cases/${encodeURIComponent(caseId)}/update`, {
+        status,
+        notes: `Admin action: ${status}`,
+      });
+      showToast(`Case ${caseId} → ${status}`, 'success');
+      loadFraud();
+    } catch (err) {
+      showToast(err.message || 'Case update failed', 'error');
+    }
+  };
+
   const winnerMarket = (oddsDebug?.markets || []).find((m) => m.marketId === 'match_winner');
 
   const heading = showGgrDesk
     ? '04 · GGR / Hold % / Liability Desk'
-    : '04 · Trading Desk & Live Risk Exposure Console';
+    : showSuspensionQueue
+      ? '04 · Suspended Markets Queue'
+      : showFraud
+        ? '04 · Risk / Fraud Console'
+        : '04 · Trading Desk & Live Risk Exposure Console';
   const hint = showGgrDesk
     ? 'Ledger GGR, hold percentage, and open/persisted market liability for traders.'
-    : 'Live match pricing risk from OddsEngineV3. Stake liability shows once open bets are ledger-backed.';
+    : showSuspensionQueue
+      ? 'Active suspension causes. Resume clears one cause; market reopens only when none remain. Requires confirmation and audit.'
+      : showFraud
+        ? 'Risk signals and fraud cases. Flag / review / restrict / escalate — no auto-ban from weak signals.'
+        : 'Live match pricing risk from OddsEngineV3. Stake liability shows once open bets are ledger-backed.';
 
   return (
     <div>
@@ -213,24 +286,88 @@ export default function TradingRiskDomainView({ subModule }) {
         </>
       )}
 
-      {subModule === 'fraud-signals' && (
+      {showFraud && (
+        <>
+          <AdminDataTable
+            title="Fraud / Risk Signals"
+            emptyMessage="No risk signals recorded"
+            data={fraudSignals}
+            columns={[
+              { header: 'ID', key: 'id', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.id}</span> },
+              { header: 'User', key: 'user_id' },
+              { header: 'Type', key: 'signal_type' },
+              { header: 'Severity', key: 'severity', render: (r) => <StatusBadge status={r.severity} /> },
+              { header: 'Score', key: 'score', render: (r) => <span style={{ fontWeight: 700 }}>{r.score}</span> },
+              { header: 'Status', key: 'status', render: (r) => <StatusBadge status={r.status} /> },
+              { header: 'Created', key: 'created_at' },
+            ]}
+          />
+          <AdminDataTable
+            title="Fraud Cases · Investigate"
+            emptyMessage="No fraud cases — Data unavailable or none opened"
+            data={fraudCases}
+            columns={[
+              { header: 'Case', key: 'id', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.id}</span> },
+              { header: 'User', key: 'user_id' },
+              { header: 'Risk score', key: 'risk_score', render: (r) => <span style={{ fontWeight: 700 }}>{r.risk_score ?? '—'}</span> },
+              { header: 'Investigator', key: 'assigned_investigator', render: (r) => r.assigned_investigator || '—' },
+              { header: 'Status', key: 'status', render: (r) => <StatusBadge status={r.status} /> },
+              { header: 'Created', key: 'created_at' },
+              {
+                header: 'Action',
+                key: 'action',
+                sortable: false,
+                render: (r) => (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                    {FRAUD_CASE_ACTIONS.map((a) => (
+                      <button
+                        key={a.status}
+                        type="button"
+                        className="admin-btn admin-btn--secondary admin-btn--sm"
+                        onClick={() => updateFraudCase(r.id, a.status)}
+                      >
+                        {a.label}
+                      </button>
+                    ))}
+                  </div>
+                ),
+              },
+            ]}
+          />
+        </>
+      )}
+
+      {showSuspensionQueue && (
         <AdminDataTable
-          title="Fraud / Risk Signals"
-          emptyMessage="No risk signals recorded"
-          data={fraudSignals}
+          title="Active Suspension Causes"
+          emptyMessage="No active suspensions"
+          data={suspensions}
           columns={[
-            { header: 'ID', key: 'id', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.id}</span> },
-            { header: 'User', key: 'user_id' },
-            { header: 'Type', key: 'signal_type' },
-            { header: 'Severity', key: 'severity', render: (r) => <StatusBadge status={r.severity} /> },
-            { header: 'Score', key: 'score', render: (r) => <span style={{ fontWeight: 700 }}>{r.score}</span> },
-            { header: 'Status', key: 'status', render: (r) => <StatusBadge status={r.status} /> },
-            { header: 'Created', key: 'created_at' },
+            { header: 'Market', key: 'marketId', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.marketId}</span> },
+            { header: 'Reason', key: 'reason', render: (r) => <StatusBadge status={r.reason} /> },
+            { header: 'Source', key: 'source' },
+            { header: 'Actor', key: 'actor', render: (r) => r.actor || '—' },
+            { header: 'Market status', key: 'marketStatus', render: (r) => <StatusBadge status={r.marketStatus || 'UNKNOWN'} /> },
+            { header: 'Since', key: 'createdAt' },
+            {
+              header: 'Action',
+              key: 'action',
+              sortable: false,
+              render: (r) => (
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--success admin-btn--sm"
+                  onClick={() => setResumeTarget(r)}
+                >
+                  Resume
+                </button>
+              ),
+            },
           ]}
         />
       )}
 
-      {!showGgrDesk && (
+      {!showGgrDesk && !showFraud && (
         <AdminDataTable
           title="Live Matches · Pricing Risk Monitor"
           data={liveExposures}
@@ -276,7 +413,7 @@ export default function TradingRiskDomainView({ subModule }) {
         />
       )}
 
-      {showOddsDesk && !showGgrDesk && (
+      {showOddsDesk && !showGgrDesk && !showFraud && (
         <AdminCard
           title="Odds Desk · V3 Pricing Debug"
           subtitle="Inspect live canonical state, winner line, market count, and engine status — no invented prices."
@@ -340,7 +477,6 @@ export default function TradingRiskDomainView({ subModule }) {
         </AdminCard>
       )}
 
-      {/* Market Suspend Confirm */}
       <AdminConfirmDialog
         isOpen={!!suspendTarget}
         variant="danger"
@@ -360,6 +496,27 @@ export default function TradingRiskDomainView({ subModule }) {
         onConfirm={handleMarketSuspend}
         onCancel={() => setSuspendTarget(null)}
         loading={suspending}
+      />
+
+      <AdminConfirmDialog
+        isOpen={!!resumeTarget}
+        variant="warning"
+        icon="▶"
+        title={`Resume ${resumeTarget?.marketId}?`}
+        description="Clears this suspension cause. The market reopens only when no other active causes remain."
+        requireReason
+        reasonPlaceholder="Confirm cause to clear (must match active reason)…"
+        reasonDefault={resumeTarget?.reason || 'MANUAL_ADMIN'}
+        details={resumeTarget ? [
+          { label: 'Market', value: resumeTarget.marketId },
+          { label: 'Cause', value: resumeTarget.reason },
+          { label: 'Source', value: resumeTarget.source || '—' },
+          { label: 'Actor', value: resumeTarget.actor || '—' },
+        ] : []}
+        confirmLabel="Resume Market"
+        onConfirm={handleMarketResume}
+        onCancel={() => setResumeTarget(null)}
+        loading={resuming}
       />
     </div>
   );

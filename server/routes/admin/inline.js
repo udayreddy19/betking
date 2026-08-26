@@ -910,6 +910,18 @@ router.post('/api/admin/trading/suspend-market', adminAuth, requireRole('SUPER_A
   }
 });
 
+router.get('/api/admin/trading/suspended-markets', adminAuth, requireRole('SUPER_ADMIN', 'TRADING_ADMIN', 'RISK_ANALYST'), async (req, res) => {
+  try {
+    const { marketSuspensionEngine } = await import('../../../lib/marketSuspensionEngine.mjs');
+    const suspensions = await marketSuspensionEngine.listActiveSuspensions({
+      limit: Number(req.query.limit) || 200,
+    });
+    res.json({ success: true, count: suspensions.length, suspensions });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 router.post('/api/admin/trading/resume-market', adminAuth, requireRole('SUPER_ADMIN', 'TRADING_ADMIN', 'RISK_ANALYST'), async (req, res) => {
   try {
     const { marketId, marketKey, reason = 'MANUAL_ADMIN' } = req.body;
@@ -1290,6 +1302,37 @@ router.get('/api/admin/platform/apikeys', async (req, res) => {
     res.json({ ...keys, ...flags });
   } catch (err) {
     res.status(500).json({ keys: [], flags: [], error: err.message });
+  }
+});
+
+router.get('/api/admin/platform/feature-store', adminAuth, requireRole('SUPER_ADMIN', 'OPERATIONS_ADMIN'), async (req, res) => {
+  try {
+    const { getAllFeatureFlags } = await import('../../../lib/featureStore.mjs');
+    const result = await getAllFeatureFlags();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, flags: [], error: err.message });
+  }
+});
+
+router.post('/api/admin/platform/feature-store/upsert', adminAuth, requireRole('SUPER_ADMIN', 'OPERATIONS_ADMIN'), async (req, res) => {
+  try {
+    const { upsertFeatureFlag } = await import('../../../lib/featureStore.mjs');
+    const body = req.body || {};
+    const result = await upsertFeatureFlag({
+      ...body,
+      updatedBy: req.admin?.id || body.updatedBy || 'admin',
+    });
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: body.flagKey || 'feature_flag',
+      action: 'FEATURE_FLAG_UPSERT',
+      details: { flagKey: body.flagKey, enabled: body.enabled, rolloutPercentage: body.rolloutPercentage },
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
   }
 });
 
