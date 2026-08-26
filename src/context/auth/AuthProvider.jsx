@@ -1268,22 +1268,48 @@ export function AuthProvider({ children }) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        showToast(data.error || 'Could not self-exclude this account.', 'error');
+        showToast(data.error || 'Could not start self-exclusion.', 'error');
         return;
       }
       setUser((prev) => {
         if (!prev) return prev;
         return { ...prev, selfExcludedUntil: data.selfExcludedUntil };
       });
-      showToast(`Account self-excluded for ${Number(days) || 7} days.`, 'info');
+      showToast('Self-exclusion activated.', 'success');
       return;
     }
-    const until = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+    const until = new Date(Date.now() + (Number(days) || 7) * 86400000).toISOString();
     setUser((prev) => {
       if (!prev) return prev;
       return { ...prev, selfExcludedUntil: until };
     });
-    showToast(`Account self-excluded for ${days} days.`, 'info');
+    showToast('Self-exclusion activated.', 'success');
+  }, [setUser, showToast]);
+
+  const startCoolingOff = useCallback(async (hours = 24) => {
+    if (!DEMO_MODE) {
+      const res = await apiFetch('/api/v1/rg/cooling-off', {
+        method: 'POST',
+        body: JSON.stringify({ hours: Number(hours) || 24 }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.error || 'Could not start cooling-off.', 'error');
+        return;
+      }
+      setUser((prev) => {
+        if (!prev) return prev;
+        return { ...prev, coolingOffUntil: data.coolingOffUntil };
+      });
+      showToast('Cooling-off period started.', 'success');
+      return;
+    }
+    const until = new Date(Date.now() + (Number(hours) || 24) * 3600000).toISOString();
+    setUser((prev) => {
+      if (!prev) return prev;
+      return { ...prev, coolingOffUntil: until };
+    });
+    showToast('Cooling-off period started.', 'success');
   }, [setUser, showToast]);
 
   const openLoginModal = useCallback(() => setIsLoginModalOpen(true), []);
@@ -1346,6 +1372,7 @@ export function AuthProvider({ children }) {
     closeFinModal,
     updateRgLimits,
     selfExcludeAccount,
+    startCoolingOff,
   }), [
     user,
     authStatus,
@@ -1394,6 +1421,7 @@ export function AuthProvider({ children }) {
     closeFinModal,
     updateRgLimits,
     selfExcludeAccount,
+    startCoolingOff,
   ]);
 
   return (

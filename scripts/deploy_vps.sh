@@ -14,6 +14,10 @@ if [ ! -f .env ]; then
   exit 1
 fi
 
+# 1b. Record release identity (Git SHA) before image build
+echo "🪪 Recording release SHA..."
+npm run release:record-sha || node scripts/record-release-sha.mjs
+
 # 2. Build Production Containers
 echo "📦 Building Production Docker Images..."
 docker compose -f docker-compose.prod.yml build --no-cache

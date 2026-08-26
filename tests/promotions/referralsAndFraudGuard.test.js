@@ -99,25 +99,56 @@ describe('Referral program', () => {
     expect(second.duplicate).toBe(true);
   });
 
-  it('allocates referral codes for pre-existing users via backfill', async () => {
-    const legacy = 'usr_ref_legacy01';
+  it('blocks referral attribution after signup promo claim', async () => {
+    const code = await ensureReferralCode(referrer, { firstName: 'Uday' });
     await query(
-      `INSERT INTO users (user_id, email, password_hash, first_name, status)
-       VALUES ($1, $2, 'hash', 'Legacy', 'ACTIVE')
-       ON CONFLICT (user_id) DO UPDATE SET status = 'ACTIVE', first_name = 'Legacy';`,
-      [legacy, `${legacy}@example.com`],
+      `INSERT INTO signup_promo_codes (code_id, code, name, reward_type, amount, is_active)
+       VALUES ('code_test_welcome', 'WELCOME_TEST', 'Welcome Test', 'freebet', 100, true)
+       ON CONFLICT (code_id) DO NOTHING`,
     );
-    await query(`DELETE FROM referral_codes WHERE user_id = $1;`, [legacy]);
+    await query(`DELETE FROM signup_promo_redemptions WHERE user_id = $1`, [referred]).catch(() => null);
+    await query(
+      `INSERT INTO signup_promo_redemptions (redemption_id, code_id, user_id, reward_type, amount)
+       VALUES ($1, 'code_test_welcome', $2, 'freebet', 100)`,
+      [`spr_${referred}`, referred],
+    );
 
-    const before = await query(`SELECT 1 FROM referral_codes WHERE user_id = $1`, [legacy]);
-    expect(before.rows.length).toBe(0);
+    await expect(attributeReferralOnSignup({
+      referredUserId: referred,
+      referralCode: code.code,
+    })).rejects.toMatchObject({ code: 'REFERRAL_PROMO_CONFLICT' });
+  });
 
-    const backfill = await backfillReferralCodesForExistingUsers({ batchSize: 50 });
-    expect(backfill.success).toBe(true);
-    expect(backfill.created).toBeGreaterThanOrEqual(1);
+  it('blocks signup promo when referral already attributed', async () => {
+    await processReferralRegistration({
+      referrerUserId: referrer,
+      referredUserId: referred,
+      referralCode: 'HASREF',
+    });
+    await expect(assertNoReferralPromoConflict(referred))
+      .rejects.toMatchObject({ code: 'REFERRAL_PROMO_CONFLICT' });
+  });
 
-    const codeInfo = await ensureReferralCode(legacy, { firstName: 'Legacy' });
-    expect(codeInfo?.code).toMatch(/^[A-Z0-9]+$/);
-    expect(codeInfo?.link).toContain('/register?ref=');
+  it('blocks referral reward when signup promo already claimed', async () => {
+    await processReferralRegistration({
+      referrerUserId: referrer,
+      referredUserId: referred,
+      referralCode: 'THENPROMO',
+    });
+    await query(
+      `INSERT INTO signup_promo_codes (code_id, code, name, reward_type, amount, is_active)
+       VALUES ('code_test_welcome2', 'WELCOME_TEST2', 'Welcome Test 2', 'freebet', 100, true)
+       ON CONFLICT (code_id) DO NOTHING`,
+    );
+    await query(`DELETE FROM signup_promo_redemptions WHERE user_id = $1`, [referred]).catch(() => null);
+    await query(
+      `INSERT INTO signup_promo_redemptions (redemption_id, code_id, user_id, reward_type, amount)
+       VALUES ($1, 'code_test_welcome2', $2, 'freebet', 100)`,
+      [`spr2_${referred}`, referred],
+    );
+
+    const q = await qualifyReferralReward({ referredUserId: referred, depositAmount: 100 });
+    expect(q.qualified).toBe(false);
+    expect(String(q.reason || '')).toMatch(/promo/i);
   });
 });

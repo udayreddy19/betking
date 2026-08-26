@@ -48,8 +48,53 @@ const FILTERS = [
   { id: 'won', label: 'Won' },
   { id: 'lost', label: 'Lost' },
   { id: 'void', label: 'Void' },
+  { id: 'cashed_out', label: 'Cashed out' },
+  { id: 'settled', label: 'Settled' },
   { id: 'cashout', label: 'Cash out' },
 ];
+
+const SETTLED_STATUSES = new Set(['won', 'lost', 'void', 'cashed_out', 'settled', 'refunded']);
+
+function normalizeBetStatus(status) {
+  const s = String(status || 'pending').toLowerCase();
+  if (s === 'accepted' || s === 'open') return 'pending';
+  if (s === 'cashedout' || s === 'cashout') return 'cashed_out';
+  return s;
+}
+
+function buildSettlementTimeline(placed) {
+  const status = normalizeBetStatus(placed.status);
+  const placedAt = placed.createdAt || placed.placedAt;
+  const settledAt = placed.settledAt;
+  const steps = [
+    { id: 'placed', label: 'Bet placed', at: placedAt, done: true },
+    { id: 'accepted', label: 'Accepted', at: placedAt, done: true },
+  ];
+  if (placed.matchStartedAt || status !== 'pending') {
+    steps.push({
+      id: 'started',
+      label: 'Match started',
+      at: placed.matchStartedAt || null,
+      done: status !== 'pending' || Boolean(placed.matchStartedAt),
+    });
+  }
+  if (SETTLED_STATUSES.has(status)) {
+    steps.push({ id: 'result', label: 'Result confirmed', at: settledAt, done: true });
+    steps.push({ id: 'settlement', label: 'Settlement', at: settledAt, done: true });
+    if (status === 'won' || status === 'cashed_out' || status === 'void') {
+      steps.push({
+        id: 'wallet',
+        label: status === 'void' ? 'Stake refunded' : 'Wallet credited',
+        at: settledAt,
+        done: true,
+      });
+    }
+  } else {
+    steps.push({ id: 'result', label: 'Result confirmed', at: null, done: false });
+    steps.push({ id: 'settlement', label: 'Settlement', at: null, done: false });
+  }
+  return steps;
+}
 
 function cashoutOfferForBet(placed, liveMatches, tier, quoteByBetId = {}) {
   if (isOverMarketExpired(placed, liveMatches)) return 0;
@@ -201,7 +246,13 @@ export default function MyBetsPanel() {
     if (filter === 'cashout') {
       return placedBets.filter((b) => cashoutOfferForBet(b, liveMatches, user?.loyaltyTier, cashoutQuotes) > 0);
     }
-    return placedBets.filter((b) => (b.status || 'pending') === filter);
+    if (filter === 'settled') {
+      return placedBets.filter((b) => SETTLED_STATUSES.has(normalizeBetStatus(b.status)));
+    }
+    if (filter === 'pending') {
+      return placedBets.filter((b) => normalizeBetStatus(b.status) === 'pending');
+    }
+    return placedBets.filter((b) => normalizeBetStatus(b.status) === filter);
   }, [placedBets, filter, liveMatches, user?.loyaltyTier, cashoutQuotes]);
 
   const handleCashout = async (bet) => {
@@ -512,6 +563,26 @@ export default function MyBetsPanel() {
                       Settled {new Date(placed.settledAt).toLocaleString('en-IN')}
                     </div>
                   )}
+                  <ol className="my-bets-timeline" aria-label="Settlement timeline">
+                    {buildSettlementTimeline(placed).map((step) => (
+                      <li
+                        key={step.id}
+                        className={`my-bets-timeline__step${step.done ? ' my-bets-timeline__step--done' : ''}`}
+                      >
+                        <span className="my-bets-timeline__label">{step.label}</span>
+                        {step.at ? (
+                          <span className="my-bets-timeline__at">
+                            {new Date(step.at).toLocaleString('en-IN', {
+                              day: '2-digit',
+                              month: 'short',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ol>
                 </div>
               );
             })

@@ -413,6 +413,151 @@ function LegacyLedgerPanel() {
   );
 }
 
+function healthFlag(severity, status) {
+  const s = String(severity || status || '').toUpperCase();
+  if (s === 'CRITICAL' || s === 'HIGH') return 'CRITICAL';
+  if (s === 'MEDIUM' || s === 'WARNING' || s === 'DISCREPANCIES_DETECTED') return 'WARNING';
+  if (s === 'MISMATCH' || s === 'OPEN') return 'MISMATCH';
+  if (s === 'MATCHED' || s === 'RESOLVED' || s === 'HEALTHY_RECONCILED' || s === 'LOW') return 'MATCHED';
+  return s || 'WARNING';
+}
+
+function FinanceHealthPanel() {
+  const [exceptions, setExceptions] = useState([]);
+  const [audit, setAudit] = useState(null);
+  const [error, setError] = useState(null);
+  const [running, setRunning] = useState(false);
+  const { showToast } = useAdminToast();
+
+  const load = () => {
+    adminApiClient.get('/reconciliation/exceptions?limit=50')
+      .then((data) => {
+        setExceptions(data.exceptions || []);
+        setError(null);
+      })
+      .catch((err) => {
+        setExceptions([]);
+        setError(err.message || 'Failed to load finance health');
+      });
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const runAudit = async () => {
+    setRunning(true);
+    try {
+      const result = await adminApiClient.post('/reconciliation/run', {});
+      setAudit(result);
+      showToast(
+        result.overallStatus === 'HEALTHY_RECONCILED'
+          ? 'Reconciliation audit clean.'
+          : `Audit found ${result.totalNewCasesCreated || 0} case(s). No balances auto-repaired.`,
+        result.overallStatus === 'HEALTHY_RECONCILED' ? 'success' : 'warning',
+      );
+      load();
+    } catch (err) {
+      showToast(err.message || 'Audit failed', 'error');
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  const cards = [
+    {
+      label: 'Overall',
+      value: audit?.overallStatus || (exceptions.some((e) => e.status === 'OPEN') ? 'OPEN_CASES' : '—'),
+      flag: healthFlag(null, audit?.overallStatus || (exceptions.length ? 'WARNING' : 'MATCHED')),
+    },
+    {
+      label: 'Wallet vs Ledger',
+      value: audit?.financialResult
+        ? `${audit.financialResult.mismatchCount || 0} mismatch / ${audit.financialResult.totalAudited || 0}`
+        : 'Run audit',
+      flag: healthFlag(null, (audit?.financialResult?.mismatchCount || 0) > 0 ? 'MISMATCH' : 'MATCHED'),
+    },
+    {
+      label: 'Deposits / Payments',
+      value: audit?.paymentResult
+        ? `${audit.paymentResult.casesCreated || 0} new cases`
+        : 'Run audit',
+      flag: healthFlag(null, (audit?.paymentResult?.casesCreated || 0) > 0 ? 'WARNING' : 'MATCHED'),
+    },
+    {
+      label: 'Settlement',
+      value: audit?.settlementResult
+        ? `${audit.settlementResult.casesCreated || 0} new cases`
+        : 'Run audit',
+      flag: healthFlag(null, (audit?.settlementResult?.casesCreated || 0) > 0 ? 'WARNING' : 'MATCHED'),
+    },
+  ];
+
+  return (
+    <div>
+      <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>06 · Finance Health Center</h2>
+          <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
+            Wallet↔ledger, deposit, withdrawal, and settlement reconciliation. Flags only — never auto-repairs balances.
+          </p>
+          {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
+        </div>
+        <button
+          type="button"
+          className="admin-btn admin-btn--primary"
+          disabled={running}
+          onClick={runAudit}
+        >
+          {running ? 'Running audit…' : 'Run reconciliation audit'}
+        </button>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 16 }}>
+        {cards.map((c) => (
+          <div
+            key={c.label}
+            style={{
+              border: '1px solid var(--admin-border)',
+              borderRadius: 10,
+              padding: '12px 14px',
+              background: 'var(--admin-surface)',
+            }}
+          >
+            <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', fontWeight: 700 }}>{c.label}</div>
+            <div style={{ marginTop: 6, fontWeight: 800, fontSize: '0.95rem' }}>{c.value}</div>
+            <div style={{ marginTop: 8 }}><StatusBadge status={c.flag} /></div>
+          </div>
+        ))}
+      </div>
+
+      <AdminDataTable
+        title="Reconciliation cases"
+        emptyMessage="No reconciliation exceptions"
+        data={exceptions}
+        onRefresh={load}
+        columns={[
+          { header: 'Case ID', key: 'id' },
+          { header: 'Type', key: 'reconciliation_type' },
+          { header: 'Entity', key: 'entity_id' },
+          { header: 'Expected', key: 'expected_value', render: (r) => money(r.expected_value) },
+          { header: 'Actual', key: 'actual_value', render: (r) => money(r.actual_value) },
+          { header: 'Delta', key: 'difference', render: (r) => money(r.difference) },
+          {
+            header: 'Flag',
+            key: 'severity',
+            render: (r) => <StatusBadge status={healthFlag(r.severity, r.status)} />,
+          },
+          { header: 'Status', key: 'status', render: (r) => <StatusBadge status={r.status} /> },
+          {
+            header: 'Detected',
+            key: 'detected_at',
+            render: (r) => (r.detected_at ? new Date(r.detected_at).toLocaleString('en-IN') : '—'),
+          },
+        ]}
+      />
+    </div>
+  );
+}
+
 export default function FinanceDomainView({
   subModule = 'maker-checker',
   focusEntityId = null,
@@ -429,6 +574,7 @@ export default function FinanceDomainView({
         />
       );
     }
+    if (subModule === 'finance-health') return <FinanceHealthPanel />;
     if (subModule === 'legacy-ledger') return <LegacyLedgerPanel />;
     if (subModule === 'payment-gateways') return <PaymentGatewaysPanel />;
     return <MakerCheckerPanel />;

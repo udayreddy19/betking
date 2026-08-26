@@ -123,6 +123,7 @@ const DOMAIN_GROUPS = [
         role: ADMIN_ROLES.FINANCE_ADMIN,
         subModules: [
           { id: 'maker-checker', label: 'Maker-Checker Approvals' },
+          { id: 'finance-health', label: 'Finance Health Center' },
           { id: 'ledger', label: 'Double-Entry Ledger' },
           { id: 'legacy-ledger', label: 'Legacy Ledger Gaps' },
           { id: 'payment-gateways', label: 'Razorpay & Bank Gateways' },

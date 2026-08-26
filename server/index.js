@@ -8,7 +8,7 @@ import cookieParser from 'cookie-parser';
 import { CSP_REPORT_ONLY } from '../lib/contentSecurityPolicy.mjs';
 import { logger } from '../lib/logger.mjs';
 import { correlationId } from './middleware/correlationId.js';
-import { requestMetricsMiddleware, renderPrometheusMetrics } from '../lib/requestMetrics.mjs';
+import { requestMetricsMiddleware, renderPrometheusMetrics, renderExtendedPrometheusMetrics } from '../lib/requestMetrics.mjs';
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -66,7 +66,8 @@ app.get('/metrics', async (req, res) => {
   } catch {
     extra = '';
   }
-  res.end(`${renderPrometheusMetrics()}${extra ? `${extra}\n` : ''}`);
+  const body = await renderExtendedPrometheusMetrics().catch(() => renderPrometheusMetrics());
+  res.end(`${body}${extra ? `${extra}\n` : ''}`);
 });
 
 // Security Headers

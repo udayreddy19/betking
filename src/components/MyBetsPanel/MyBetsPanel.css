@@ -181,6 +181,39 @@
   color: var(--color-text-muted);
 }
 
+.my-bets-timeline {
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: var(--space-2) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top: 1px solid color-mix(in srgb, var(--color-border, #64748b) 35%, transparent);
+}
+
+.my-bets-timeline__step {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  opacity: 0.55;
+}
+
+.my-bets-timeline__step--done {
+  opacity: 1;
+  color: var(--color-text-secondary, var(--color-text));
+}
+
+.my-bets-timeline__label {
+  font-weight: var(--font-bold);
+}
+
+.my-bets-timeline__at {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
 .my-bets-type-badge {
   display: inline-flex;
   align-items: center;

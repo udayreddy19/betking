@@ -46,21 +46,39 @@ export function formatInr(amount) {
   return `₹${formatted}`;
 }
 
-/** Compact balance lines for wallet dropdown (hides zero buckets). */
-export function getWalletBreakdownLines(wallet) {
+/**
+ * Balance lines for wallet UI — labels match backend bucket semantics.
+ * Always show core buckets; hide promotional/reserved when zero.
+ */
+export function getWalletBreakdownLines(wallet, { compact = true } = {}) {
   const lines = [
-    { key: 'cash', label: 'Cash', value: wallet.cashBalance, tone: 'cash' },
+    { key: 'available', label: 'Available', value: wallet.availableBalance, tone: 'cash' },
+    { key: 'winnings', label: 'Winnings', value: wallet.winnings ?? wallet.netProfit, tone: 'cash' },
+    { key: 'withdrawable', label: 'Withdrawable', value: wallet.withdrawable, tone: 'cash' },
   ];
-  if (wallet.bonus > 0) {
+  if (!compact || wallet.lockedDeposit > 0) {
+    lines.push({ key: 'locked', label: 'Locked deposit', value: wallet.lockedDeposit, tone: 'locked' });
+  }
+  if (!compact || wallet.pendingWithdrawal > 0) {
+    lines.push({
+      key: 'reserved',
+      label: 'Reserved withdrawal',
+      value: wallet.pendingWithdrawal,
+      tone: 'locked',
+    });
+  }
+  if (!compact || wallet.bonus > 0) {
     lines.push({ key: 'bonus', label: 'Bonus', value: wallet.bonus, tone: 'bonus' });
   }
-  if (wallet.freebets > 0) {
-    lines.push({ key: 'freebet', label: 'Freebet', value: wallet.freebets, tone: 'freebet' });
-  }
-  if (wallet.lockedDeposit > 0) {
-    lines.push({ key: 'locked', label: 'Must wager', value: wallet.lockedDeposit, tone: 'locked' });
+  if (!compact || wallet.freebets > 0) {
+    lines.push({ key: 'freebet', label: 'Free bet', value: wallet.freebets, tone: 'freebet' });
   }
   return lines;
+}
+
+/** Full labeled bucket list for Profile (never merges bonus + freebet). */
+export function getWalletBucketRows(wallet) {
+  return getWalletBreakdownLines(wallet, { compact: false });
 }
 
 /** Short withdrawable helper copy for wallet UI. */

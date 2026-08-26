@@ -166,8 +166,11 @@ export default function KycReminderUsersPanel({
               <tr>
                 <th>Name</th>
                 <th>Email</th>
-                <th>KYC</th>
+                <th>KYC status</th>
                 <th>Last reminder</th>
+                <th>Count</th>
+                <th>Delivery</th>
+                <th>Cooldown</th>
               </tr>
             </thead>
             <tbody>
@@ -178,11 +181,13 @@ export default function KycReminderUsersPanel({
                   <td>
                     <span className="kyc-reminder-panel__kyc">{u.kyc || 'NOT_STARTED'}</span>
                   </td>
+                  <td>{u.lastReminderAt ? formatWhen(u.lastReminderAt) : '—'}</td>
+                  <td>{u.reminderCount != null ? u.reminderCount : 0}</td>
+                  <td>{u.lastReminderStatus || '—'}</td>
                   <td>
-                    {u.lastReminderAt
-                      ? formatWhen(u.lastReminderAt)
-                      : (u.lastReminderStatus || '—')}
-                    {u.reminderCount ? ` · ${u.reminderCount}x` : ''}
+                    {u.reminderEligible === false
+                      ? (u.nextEligibleAt ? `Until ${formatWhen(u.nextEligibleAt)}` : 'Active')
+                      : 'Eligible'}
                   </td>
                 </tr>
               ))}

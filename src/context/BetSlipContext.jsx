@@ -294,6 +294,7 @@ export function BetSlipProvider({ children }) {
   const betsRef = useRef(bets);
   const lastOddsSyncAt = useRef(0);
   const oddsConfirmPendingRef = useRef(false);
+  const placingInFlightRef = useRef(false);
   const [betslipPrefs, setBetslipPrefsState] = useState(() => loadBetslipPrefs());
   const [quickBet, setQuickBet] = useState(null);
 
@@ -653,6 +654,12 @@ export function BetSlipProvider({ children }) {
   }, [bets, betType, stake, singlesStakes, multiOdds]);
 
   const placeBets = useCallback(async (options = {}) => {
+    if (placingInFlightRef.current) {
+      return { success: false, error: 'Bet placement already in progress', code: 'PLACEMENT_IN_FLIGHT' };
+    }
+    placingInFlightRef.current = true;
+    const attemptId = `a${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+    try {
     const stakeSource = ['bonus', 'freebet'].includes(options.stakeSource)
       ? options.stakeSource
       : 'cash';
@@ -676,7 +683,7 @@ export function BetSlipProvider({ children }) {
         const placeSingle = async (bet, stakeAmount) => {
           const res = await apiFetch('/api/bets/place', {
             method: 'POST',
-            headers: { 'X-Idempotency-Key': `single-${bet.id}-${Date.now()}` },
+            headers: { 'X-Idempotency-Key': `single-${bet.id}-${attemptId}` },
             body: JSON.stringify({
               matchId: bet.matchId,
               marketId: bet.marketId || 'match_winner',
@@ -731,7 +738,7 @@ export function BetSlipProvider({ children }) {
           }
           const res = await apiFetch('/api/bets/place', {
             method: 'POST',
-            headers: { 'X-Idempotency-Key': `multi-${Date.now()}` },
+            headers: { 'X-Idempotency-Key': `multi-${attemptId}` },
             body: JSON.stringify({
               stake: stakeAmount,
               fundSource: stakeSource,
@@ -923,6 +930,9 @@ export function BetSlipProvider({ children }) {
     setIsMobileOpen(false);
     playBetSound();
     return { success: true, placed: placements, totalDeducted, stakeSource };
+    } finally {
+      placingInFlightRef.current = false;
+    }
   }, [bets, betType, stake, singlesStakes, multiOdds, refreshWallet, potentialReturn]);
 
   const cashOutBet = useCallback(async (betId, requestedCashoutValue = null) => {
@@ -930,7 +940,7 @@ export function BetSlipProvider({ children }) {
       try {
         const res = await apiFetch('/api/bet/cashout', {
           method: 'POST',
-          headers: { 'X-Idempotency-Key': `cashout-${betId}-${Date.now()}` },
+          headers: { 'X-Idempotency-Key': `cashout-${betId}-${Number(requestedCashoutValue) || 'req'}` },
           body: JSON.stringify({
             betId,
             ...(requestedCashoutValue != null ? { requestedCashoutValue } : {}),

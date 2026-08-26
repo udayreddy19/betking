@@ -89,6 +89,56 @@ router.post('/reconcile', requirePermission('finance'), async (req, res) => {
   }
 });
 
+/** POST /api/admin/finance/deposits/:depositId/refund — Razorpay refund + ledger reversal */
+router.post('/deposits/:depositId/refund', requirePermission('finance'), async (req, res) => {
+  try {
+    const { amount, reason, idempotencyKey } = req.body || {};
+    const key = idempotencyKey
+      || req.headers['x-idempotency-key']
+      || `admin_refund:${req.params.depositId}:${amount ?? 'full'}:${req.admin?.id || 'unknown'}`;
+    const { requestDepositRefund } = await import('../../../lib/razorpayRefundEngine.mjs');
+    const result = await requestDepositRefund({
+      depositId: req.params.depositId,
+      amount: amount == null || amount === '' ? null : Number(amount),
+      reason: reason || 'admin_refund',
+      actorId: req.admin?.id || req.admin?.email || null,
+      idempotencyKey: String(key),
+      correlationId: req.correlationId || null,
+    });
+    if (result.status === 'MANUAL_REVIEW_REQUIRED') {
+      return res.status(409).json(result);
+    }
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message, code: err.code });
+  }
+});
+
+/** GET /api/admin/finance/refunds/reconciliation */
+router.get('/refunds/reconciliation', requirePermission('finance'), async (req, res) => {
+  try {
+    const { reconcileDepositRefunds } = await import('../../../lib/refundReconciliation.mjs');
+    const result = await reconcileDepositRefunds({
+      depositId: req.query.depositId || null,
+      limit: Number(req.query.limit) || 50,
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/** GET /api/admin/finance/refunds/manual-review */
+router.get('/refunds/manual-review', requirePermission('finance'), async (req, res) => {
+  try {
+    const { listRefundManualReviews } = await import('../../../lib/refundReconciliation.mjs');
+    const result = await listRefundManualReviews({ limit: Number(req.query.limit) || 50 });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 /** POST /api/admin/finance/adjustments */
 router.post('/adjustments', requirePermission('finance'), async (req, res) => {
   try {

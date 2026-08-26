@@ -276,4 +276,18 @@ router.post('/api/v1/rg/self-exclude', requireAuth, async (req, res) => {
   }
 });
 
+router.post('/api/v1/rg/cooling-off', requireAuth, async (req, res) => {
+  try {
+    const { responsibleGamingEngine } = await import('../../lib/responsibleGaming.mjs');
+    const hours = Math.max(1, Math.min(168, Number(req.body?.hours) || 24));
+    const result = await responsibleGamingEngine.setCoolingOff(req.user.userId, {
+      hours,
+      reason: 'User requested cooling-off',
+    });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 export default router;

@@ -55,6 +55,9 @@ jobs:
       - name: Run Oxlint
         run: npx oxlint .
 
+      - name: npm audit (production deps)
+        run: npm audit --omit=dev
+
       - name: Run Full Test Suite with coverage
         env:
           NODE_ENV: test
@@ -74,6 +77,18 @@ jobs:
         env:
           VITE_DEMO_MODE: '0'
         run: npm run build
+
+      - name: Record release SHA artifact
+        run: npm run release:record-sha
+
+      - name: Upload release identity
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-sha
+          path: |
+            .release-sha
+            .release-deployed-at.pending
+          if-no-files-found: error
 
   container-build:
     name: Container Build & Vulnerability Scan

@@ -76,6 +76,7 @@ export function useResponsibleGaming() {
     user: a.user,
     updateRgLimits: a.updateRgLimits,
     selfExcludeAccount: a.selfExcludeAccount,
+    startCoolingOff: a.startCoolingOff,
     showToast: a.showToast,
   };
 }

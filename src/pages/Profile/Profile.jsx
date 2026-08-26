@@ -30,6 +30,7 @@ export default function Profile() {
     transactions,
     updateRgLimits,
     selfExcludeAccount,
+    startCoolingOff,
     showToast,
     changePassword,
   } = useAuth();
@@ -48,6 +49,7 @@ export default function Profile() {
   const [lossLimitDaily, setLossLimitDaily] = useState(() => user?.lossLimitDaily || 25000);
   const [lossLimitWeekly, setLossLimitWeekly] = useState(() => user?.lossLimitWeekly || 100000);
   const [selfExcludeDays, setSelfExcludeDays] = useState('7');
+  const [coolingOffHours, setCoolingOffHours] = useState('24');
   const [promoCode, setPromoCode] = useState('');
   const [claimingPromo, setClaimingPromo] = useState(false);
   const [joinedViaReferral, setJoinedViaReferral] = useState(false);
@@ -127,6 +129,13 @@ export default function Profile() {
     const days = Number(selfExcludeDays) || 7;
     if (window.confirm(`Are you sure you want to self-exclude your account for ${days} days? Betting and deposits will be blocked.`)) {
       await selfExcludeAccount(days);
+    }
+  };
+
+  const handleCoolingOff = async () => {
+    const hours = Number(coolingOffHours) || 24;
+    if (window.confirm(`Start a ${hours}-hour cooling-off? Betting and deposits will be blocked until it ends.`)) {
+      await startCoolingOff(hours);
     }
   };
 
@@ -231,7 +240,7 @@ export default function Profile() {
               <p className="profile-wallet-hero__label">Total balance</p>
               <p className="profile-wallet-hero__amount">{formatInr(wallet.total)}</p>
               <p className="profile-wallet-hero__meta">
-                Cash {formatInr(wallet.cashBalance)} · Bonus {formatInr(wallet.bonusAndFreebets)}
+                Available {formatInr(wallet.availableBalance)} · Withdrawable {formatInr(wallet.withdrawable)}
               </p>
               <div className="profile-wallet-hero__actions">
                 <button type="button" className="profile-link-btn" onClick={openDepositModal}>Deposit</button>
@@ -245,20 +254,32 @@ export default function Profile() {
                 <span className="value">{formatInr(wallet.total)}</span>
               </div>
               <div className="profile-stat">
-                <span className="label">Cash balance</span>
-                <span className="value">{formatInr(wallet.cashBalance)}</span>
+                <span className="label">Available</span>
+                <span className="value">{formatInr(wallet.availableBalance)}</span>
               </div>
               <div className="profile-stat">
-                <span className="label">Net profit (lifetime)</span>
-                <span className="value profile-stat__winnings">{formatInr(wallet.netProfit)}</span>
+                <span className="label">Winnings</span>
+                <span className="value profile-stat__winnings">{formatInr(wallet.winnings)}</span>
               </div>
               <div className="profile-stat">
-                <span className="label">Bonus / Freebets</span>
-                <span className="value profile-stat__bonus">{formatInr(wallet.bonusAndFreebets)}</span>
+                <span className="label">Withdrawable</span>
+                <span className="value">{formatInr(wallet.withdrawable)}</span>
               </div>
               <div className="profile-stat">
-                <span className="label">Deposited (locked)</span>
+                <span className="label">Locked deposit</span>
                 <span className="value profile-stat__locked">{formatInr(wallet.lockedDeposit)}</span>
+              </div>
+              <div className="profile-stat">
+                <span className="label">Reserved withdrawal</span>
+                <span className="value profile-stat__locked">{formatInr(wallet.pendingWithdrawal)}</span>
+              </div>
+              <div className="profile-stat">
+                <span className="label">Bonus</span>
+                <span className="value profile-stat__bonus">{formatInr(wallet.bonus)}</span>
+              </div>
+              <div className="profile-stat">
+                <span className="label">Free bet</span>
+                <span className="value profile-stat__bonus">{formatInr(wallet.freebets)}</span>
               </div>
             </div>
 
@@ -416,6 +437,36 @@ export default function Profile() {
             </div>
 
             <div className="rg-card-box warning">
+              <h3><FiShield /> Cooling-off</h3>
+              <p>
+                Take a short break. Cooling-off blocks deposits and bet placement until the period ends.
+                {user?.coolingOffUntil && new Date(user.coolingOffUntil) > new Date()
+                  ? ` Active until ${new Date(user.coolingOffUntil).toLocaleString('en-IN')}.`
+                  : ''}
+              </p>
+              <div className="rg-exclude-controls">
+                <select
+                  value={coolingOffHours}
+                  onChange={(e) => setCoolingOffHours(e.target.value)}
+                  className="rg-select"
+                >
+                  <option value="24">24 Hours</option>
+                  <option value="48">48 Hours</option>
+                  <option value="72">72 Hours</option>
+                  <option value="168">7 Days</option>
+                </select>
+                <button
+                  type="button"
+                  className="profile-link-btn outline"
+                  onClick={handleCoolingOff}
+                  disabled={Boolean(user?.coolingOffUntil && new Date(user.coolingOffUntil) > new Date())}
+                >
+                  Start cooling-off
+                </button>
+              </div>
+            </div>
+
+            <div className="rg-card-box warning">
               <h3><FiShield /> Self-Exclusion Tool</h3>
               <p>Take a break from betting. Self-exclusion immediately blocks all deposits and bet placement for the selected duration.</p>
 
@@ -551,6 +602,13 @@ export default function Profile() {
                         <p className={`history-mobile-card__amount ${isPositive ? 'positive' : 'negative'}`}>
                           {isPositive ? '+' : ''}{formatInr(tx.amount)}
                         </p>
+                        <p className="history-mobile-card__refs">
+                          Tx {tx.id}
+                          {tx.ledgerEntryId ? ` · Ledger ${tx.ledgerEntryId}` : ''}
+                          {tx.relatedBetId ? ` · Bet ${tx.relatedBetId}` : ''}
+                          {tx.providerPaymentId ? ` · Pay ${tx.providerPaymentId}` : ''}
+                          {tx.utr ? ` · UTR ${tx.utr}` : ''}
+                        </p>
                       </article>
                     );
                   })}
@@ -563,6 +621,7 @@ export default function Profile() {
                         <th>Time</th>
                         <th>Type</th>
                         <th>Description</th>
+                        <th>References</th>
                         <th>Amount</th>
                       </tr>
                     </thead>
@@ -582,6 +641,11 @@ export default function Profile() {
                               </span>
                             </td>
                             <td className="tx-desc">{tx.label}</td>
+                            <td className="tx-desc" style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
+                              {tx.id}
+                              {tx.ledgerEntryId ? ` · ${tx.ledgerEntryId}` : ''}
+                              {tx.relatedBetId ? ` · ${tx.relatedBetId}` : ''}
+                            </td>
                             <td className={`tx-amount ${isPositive ? 'positive' : 'negative'}`}>
                               {isPositive ? '+' : ''}{formatInr(tx.amount)}
                             </td>

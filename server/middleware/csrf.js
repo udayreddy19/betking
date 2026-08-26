@@ -55,5 +55,46 @@ export function requireCsrfWhenCookies(req, res, next) {
   if (!csrfTokensMatch(req)) {
     return res.status(403).json({ error: 'CSRF validation failed', code: 'CSRF_REJECTED' });
   }
+  if (!originAllowed(req)) {
+    return res.status(403).json({ error: 'Origin not allowed', code: 'ORIGIN_REJECTED' });
+  }
   return next();
+}
+
+/**
+ * Origin / Referer check for cookie-authenticated browser mutations.
+ * Bearer-only APIs (no refresh cookie) skip this.
+ */
+export function originAllowed(req) {
+  const hasRefresh = Boolean(req.cookies?.bk_refresh);
+  if (!hasRefresh) return true;
+
+  const allowed = String(process.env.CORS_ORIGIN || process.env.CORS_ALLOWED_ORIGINS || process.env.FRONTEND_URL || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (allowed.length === 0) {
+    // Non-production without configured origins: allow (dev).
+    return process.env.NODE_ENV !== 'production';
+  }
+
+  const origin = String(req.headers.origin || '');
+  if (origin && allowed.includes(origin)) return true;
+
+  const referer = String(req.headers.referer || '');
+  if (referer) {
+    try {
+      const refOrigin = new URL(referer).origin;
+      if (allowed.includes(refOrigin)) return true;
+    } catch {
+      /* ignore */
+    }
+  }
+
+  // Same-origin requests may omit Origin; require at least one trusted signal in production.
+  if (process.env.NODE_ENV === 'production' && !origin && !referer) {
+    return false;
+  }
+  if (!origin && !referer) return true;
+  return false;
 }
