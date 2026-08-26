@@ -22,6 +22,16 @@ function Svg({ size, color, children }) {
 const GLYPHS = {
   cricket: (
     <>
+      {/* Bat */}
+      <path d="M17.5 2.5c.8.8.8 2.1 0 2.9L8.2 14.7l-3.4.6.6-3.4L14.6 2.5c.8-.8 2.1-.8 2.9 0Z" />
+      <path d="M8.2 14.7 6.5 16.4" />
+      {/* Ball */}
+      <circle cx="7.5" cy="18.5" r="2.2" />
+      <path d="M6.2 17.2c.7.9 1.9 1.2 2.9.8" />
+    </>
+  ),
+  trophy: (
+    <>
       <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
       <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
       <path d="M4 22h16" />
@@ -90,8 +100,9 @@ const GLYPHS = {
 };
 
 const KEY_MAP = {
+  all: 'layers',
   cricket: 'cricket',
-  trophy: 'cricket',
+  trophy: 'trophy',
   soccer: 'globe',
   football: 'globe',
   globe: 'globe',

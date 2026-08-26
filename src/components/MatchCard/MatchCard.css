@@ -166,10 +166,23 @@
   background: var(--color-primary-bg);
   border-color: var(--color-primary);
 }
-.odds-btn.selected {
-  background: var(--color-primary);
-  color: var(--color-text-inverse);
-  border-color: var(--color-primary);
+.odds-btn.disabled,
+.odds-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+}
+.odds-btn.disabled:hover,
+.odds-btn:disabled:hover {
+  background: var(--color-bg);
+  border-color: var(--color-border);
+}
+.odds-btn.disabled .odds-value,
+.odds-btn:disabled .odds-value {
+  font-size: 0.72rem;
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.02em;
 }
 .odds-btn.selected .odds-label {
   color: color-mix(in srgb, var(--color-text-inverse) 72%, transparent);

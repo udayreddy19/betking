@@ -38,17 +38,6 @@ export default function Home() {
   const watchlistScrollRef = useRef(null);
   const { ids: watchlistIds, count: watchlistCount } = useMatchWatchlist();
 
-  const leagueChips = useMemo(
-    () => featuredLeagues.filter((l) => l.sport === activeSport),
-    [activeSport]
-  );
-
-  const sportMatches = useMemo(() => {
-    const bySport = filterMatches(matches || [], { sport: activeSport, stateTab: 'bettable' });
-    const filtered = activeLeague ? filterByLeague(bySport, activeLeague) : bySport;
-    return [...filtered].sort(compareMatchesForSportsBoard);
-  }, [matches, activeSport, activeLeague]);
-
   const liveCount = useMemo(
     () => (matches || []).filter((m) => getMatchState(m) === 'in').length,
     [matches],
@@ -73,6 +62,56 @@ export default function Home() {
     }
     return map;
   }, [matches]);
+
+  const leagueChips = useMemo(() => {
+    const all = featuredLeagues.filter((l) => l.sport === activeSport);
+    // Only leagues that currently have matches — keeps the chip row short
+    const withMatches = all.filter((league) => {
+      const meta = getLeagueMeta(league.id);
+      if (!meta) return false;
+      return (matches || []).some((m) => {
+        const s = String(m.sport || '').toLowerCase();
+        const sportOk = activeSport === 'all'
+          || s === activeSport
+          || (activeSport === 'soccer' && (s === 'soccer' || s === 'football'));
+        return sportOk && matchBelongsToLeague(m, meta);
+      });
+    });
+    return (withMatches.length > 0 ? withMatches : all).slice(0, 4);
+  }, [activeSport, matches]);
+
+  const homeSportChips = useMemo(() => {
+    const withAction = sportsCategories.filter((c) => c.id === 'all' || (sportCounts[c.id] || 0) > 0);
+    return withAction.length > 1 ? withAction : sportsCategories;
+  }, [sportCounts]);
+
+  const sectionTitle = useMemo(() => {
+    const sport = sportsCategories.find((c) => c.id === activeSport);
+    const name = sport?.name || 'Sports';
+    if (activeLeague) {
+      const league = featuredLeagues.find((l) => isSameLeague(activeLeague, l.id));
+      return league?.name || name;
+    }
+    if (activeSport === 'all') return liveCount > 0 ? 'Live now' : 'Sports';
+    return liveCount > 0 && (sportCounts[activeSport] || 0) > 0
+      ? `${name} · Live`
+      : name;
+  }, [activeSport, activeLeague, liveCount, sportCounts]);
+
+  const sportMatches = useMemo(() => {
+    const bySport = filterMatches(matches || [], { sport: activeSport, stateTab: 'bettable' });
+    const filtered = activeLeague ? filterByLeague(bySport, activeLeague) : bySport;
+    return [...filtered].sort((a, b) => {
+      const oddsScore = (m) => {
+        const o = m?.odds || m?.authoritativeOdds || {};
+        const n = [o.team1, o.team2, o.draw].filter((v) => v != null && Number(v) > 1).length;
+        return n;
+      };
+      const d = oddsScore(b) - oddsScore(a);
+      if (d !== 0) return d;
+      return compareMatchesForSportsBoard(a, b);
+    });
+  }, [matches, activeSport, activeLeague]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -110,8 +149,8 @@ export default function Home() {
         className="home-promo-banner"
         style={{ background: promo.gradient }}
         onClick={() => {
-          if (promo.id === 'sports') navigate('/sports');
-          else navigate('/profile');
+          if (promo.id === 'sports') navigate('/live-betting');
+          else navigate('/promotions');
         }}
       >
         <div className="home-promo-banner__coin">
@@ -172,7 +211,7 @@ export default function Home() {
 
       <section className="home-section home-sports-action" id="sports-action-section">
         <div className="section-header">
-          <h2>Sports action</h2>
+          <h2>{sectionTitle}</h2>
           <div className="section-header-actions">
             <button type="button" className="carousel-view-all" onClick={() => navigate('/sports')}>
               View All
@@ -187,7 +226,7 @@ export default function Home() {
         </div>
 
         <FilterChips
-          items={sportsCategories}
+          items={homeSportChips}
           activeId={activeSport}
           onSelect={handleSportChange}
           counts={sportCounts}

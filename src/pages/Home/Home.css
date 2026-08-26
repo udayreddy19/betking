@@ -247,6 +247,23 @@
   scrollbar-width: none;
 }
 
+@media (max-width: 900px) {
+  .home-league-chips {
+    margin-bottom: var(--space-2);
+  }
+
+  .home-league-chip {
+    padding: 6px 10px;
+    font-size: 0.68rem;
+  }
+
+  .home-promo-banner {
+    min-height: 112px;
+    padding: var(--space-5) var(--space-5) var(--space-8);
+    margin-bottom: var(--space-4);
+  }
+}
+
 .home-league-chips::-webkit-scrollbar {
   display: none;
 }

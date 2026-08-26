@@ -221,47 +221,58 @@ export default function MatchCard({ match, variant = 'default' }) {
         )}
 
         {canBet ? (
-          <div className={`match-card-odds ${isHome ? 'match-card-odds--home' : ''}`} onClick={(e) => e.stopPropagation()}>
-            {(() => {
-              const t1Odds = match.odds?.team1 ?? match.authoritativeOdds?.team1;
-              const t2Odds = match.odds?.team2 ?? match.authoritativeOdds?.team2;
-              const drawOdds = match.odds?.draw ?? match.authoritativeOdds?.draw;
-              const hasT1Odds = t1Odds != null && !Number.isNaN(Number(t1Odds));
-              const hasT2Odds = t2Odds != null && !Number.isNaN(Number(t2Odds));
-              const hasDrawOdds = drawOdds != null && !Number.isNaN(Number(drawOdds));
+          (() => {
+            const t1Odds = match.odds?.team1 ?? match.authoritativeOdds?.team1;
+            const t2Odds = match.odds?.team2 ?? match.authoritativeOdds?.team2;
+            const drawOdds = match.odds?.draw ?? match.authoritativeOdds?.draw;
+            const hasT1Odds = t1Odds != null && Number(t1Odds) > 1;
+            const hasT2Odds = t2Odds != null && Number(t2Odds) > 1;
+            const hasDrawOdds = drawOdds != null && Number(drawOdds) > 1;
+            const hasAnyOdds = hasT1Odds || hasT2Odds || hasDrawOdds;
+            const showDraw = !isHome && (hasDrawOdds || match.sport === 'soccer' || match.sport === 'esoccer');
 
+            if (!hasAnyOdds) {
               return (
-                <>
-                  <button
-                    className={`odds-btn ${isBetSelected(match.id, '1') ? 'selected' : ''} ${!hasT1Odds ? 'disabled' : ''}`}
-                    disabled={!hasT1Odds}
-                    onClick={(e) => hasT1Odds && handleOddsClick(e, '1', t1Odds)}
-                  >
-                    <span className="odds-label">1</span>
-                    <span className="odds-value">{hasT1Odds ? Number(t1Odds).toFixed(2) : '—'}</span>
-                  </button>
-                  {!isHome && (match.odds?.draw != null || match.sport === 'soccer' || match.sport === 'esoccer') && (
-                    <button
-                      className={`odds-btn ${isBetSelected(match.id, 'X') ? 'selected' : ''} ${!hasDrawOdds ? 'disabled' : ''}`}
-                      disabled={!hasDrawOdds}
-                      onClick={(e) => hasDrawOdds && handleOddsClick(e, 'X', drawOdds)}
-                    >
-                      <span className="odds-label">X</span>
-                      <span className="odds-value">{hasDrawOdds ? Number(drawOdds).toFixed(2) : '—'}</span>
-                    </button>
-                  )}
-                  <button
-                    className={`odds-btn ${isBetSelected(match.id, '2') ? 'selected' : ''} ${!hasT2Odds ? 'disabled' : ''}`}
-                    disabled={!hasT2Odds}
-                    onClick={(e) => hasT2Odds && handleOddsClick(e, '2', t2Odds)}
-                  >
-                    <span className="odds-label">2</span>
-                    <span className="odds-value">{hasT2Odds ? Number(t2Odds).toFixed(2) : '—'}</span>
-                  </button>
-                </>
+                <div className="match-card-odds-suspended" onClick={(e) => e.stopPropagation()}>
+                  Odds unavailable — open match
+                </div>
               );
-            })()}
-          </div>
+            }
+
+            return (
+              <div className={`match-card-odds ${isHome ? 'match-card-odds--home' : ''}`} onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  className={`odds-btn ${isBetSelected(match.id, '1') ? 'selected' : ''} ${!hasT1Odds ? 'disabled' : ''}`}
+                  disabled={!hasT1Odds}
+                  onClick={(e) => hasT1Odds && handleOddsClick(e, '1', t1Odds)}
+                >
+                  <span className="odds-label">1</span>
+                  <span className="odds-value">{hasT1Odds ? Number(t1Odds).toFixed(2) : 'Susp.'}</span>
+                </button>
+                {showDraw && (
+                  <button
+                    type="button"
+                    className={`odds-btn ${isBetSelected(match.id, 'X') ? 'selected' : ''} ${!hasDrawOdds ? 'disabled' : ''}`}
+                    disabled={!hasDrawOdds}
+                    onClick={(e) => hasDrawOdds && handleOddsClick(e, 'X', drawOdds)}
+                  >
+                    <span className="odds-label">X</span>
+                    <span className="odds-value">{hasDrawOdds ? Number(drawOdds).toFixed(2) : 'Susp.'}</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className={`odds-btn ${isBetSelected(match.id, '2') ? 'selected' : ''} ${!hasT2Odds ? 'disabled' : ''}`}
+                  disabled={!hasT2Odds}
+                  onClick={(e) => hasT2Odds && handleOddsClick(e, '2', t2Odds)}
+                >
+                  <span className="odds-label">2</span>
+                  <span className="odds-value">{hasT2Odds ? Number(t2Odds).toFixed(2) : 'Susp.'}</span>
+                </button>
+              </div>
+            );
+          })()
         ) : (
           <div className="match-card-odds-suspended" onClick={(e) => e.stopPropagation()}>
             {isFinished ? 'Markets closed — match finished' : 'Markets not open yet'}

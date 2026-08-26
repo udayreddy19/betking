@@ -3,16 +3,16 @@
 export const homePromoSlides = [
   {
     id: 'sports',
-    title: 'LIVE SPORTS',
-    subtitle: 'BET ON REAL MATCHES',
+    title: 'LIVE CRICKET',
+    subtitle: 'IN-PLAY MARKETS OPEN NOW',
     gradient: 'linear-gradient(135deg, #163028 0%, #1f8a4c 55%, #7dff6b 140%)',
     accent: '#7dff6b',
     emoji: '🏏',
   },
   {
     id: 'promo',
-    title: 'PROMO CODES',
-    subtitle: 'ENTER A CODE IN PROFILE',
+    title: 'BOOSTED ODDS',
+    subtitle: 'CLAIM OFFERS IN PROMOS',
     gradient: 'linear-gradient(135deg, #1c2a24 0%, #2a4a38 50%, #e07a2f 160%)',
     accent: '#e07a2f',
     emoji: '🎁',

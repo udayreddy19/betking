@@ -52,4 +52,57 @@ describe('userTransactions mapping', () => {
       created_at: '2026-01-01T10:00:00.000Z',
     }).amount).toBe(80);
   });
+
+  it('does not append default UPI on bet/wallet txs', () => {
+    const refund = mapTransactionRow({
+      transaction_id: 'tx_payout_bet_1',
+      type: 'BET_REFUND',
+      amount: 500,
+      method: 'UPI',
+      status: 'COMPLETED',
+      created_at: '2026-01-01T10:00:00.000Z',
+    });
+    expect(refund.type).toBe('refund');
+    expect(refund.amount).toBe(500);
+    expect(refund.label).toBe('Bet Refund');
+
+    const win = mapTransactionRow({
+      transaction_id: 'tx_payout_bet_2',
+      type: 'BET_PAYOUT',
+      amount: 19500,
+      method: 'UPI',
+      status: 'COMPLETED',
+      created_at: '2026-01-01T10:00:00.000Z',
+    });
+    expect(win.label).toBe('Bet Win');
+  });
+
+  it('keeps UPI on deposits/withdrawals and source tags on bonuses', () => {
+    expect(mapTransactionRow({
+      transaction_id: 'dep_1',
+      type: 'DEPOSIT',
+      amount: 1000,
+      method: 'UPI',
+      status: 'COMPLETED',
+      created_at: '2026-01-01T10:00:00.000Z',
+    }).label).toBe('Deposit · UPI');
+
+    expect(mapTransactionRow({
+      transaction_id: 'tx_rev_wdr_1',
+      type: 'WITHDRAWAL_REVERSAL',
+      amount: 1000,
+      method: 'UPI',
+      status: 'SUCCESS',
+      created_at: '2026-01-01T10:00:00.000Z',
+    }).label).toBe('Withdrawal Reversal');
+
+    expect(mapTransactionRow({
+      transaction_id: 'tx_lr_1',
+      type: 'BONUS_CLAIM',
+      amount: 64.4,
+      method: 'LOYALTY_REDEEM',
+      status: 'COMPLETED',
+      created_at: '2026-01-01T10:00:00.000Z',
+    }).label).toBe('Bonus · LOYALTY_REDEEM');
+  });
 });
