@@ -4,14 +4,20 @@ import { getWithdrawableAmount, allocateCashStake } from '../../lib/wageringRule
 
 describe('Deposit wagering lock — withdraw only after bet', () => {
   const walletId = 'wal_deposit_lock';
+  const userId = 'usr_deposit_lock';
 
   beforeEach(async () => {
     await query(`ALTER TABLE wallets ADD COLUMN IF NOT EXISTS locked_deposit_balance NUMERIC(14,2) NOT NULL DEFAULT 0.00`);
     await query(`DELETE FROM wallets WHERE wallet_id = $1`, [walletId]);
     await query(
+      `INSERT INTO users (user_id, email, password_hash) VALUES ($1, $2, 'hash')
+       ON CONFLICT (user_id) DO NOTHING`,
+      [userId, `${userId}@example.com`],
+    );
+    await query(
       `INSERT INTO wallets (wallet_id, user_id, balance, locked_deposit_balance, currency)
-       VALUES ($1, 'usr_deposit_lock', 0, 0, 'INR')`,
-      [walletId],
+       VALUES ($1, $2, 0, 0, 'INR')`,
+      [walletId, userId],
     );
   });
 

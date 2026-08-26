@@ -21,7 +21,10 @@ test.describe('Money lifecycle browser smoke', () => {
     }, authToken);
 
     await page.goto('/profile');
-    await expect(page.getByText(/total balance/i).first()).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText(/cash balance/i).first()).toBeVisible();
+    // Wait for session hydrate. Wallet hero is mobile-only; desktop uses the grid.
+    await expect(page).toHaveURL(/\/profile/, { timeout: 20000 });
+    await expect(page.locator('.profile-wallet-grid .label', { hasText: /^Available$/i }).first()).toBeVisible({ timeout: 20000 });
+    await expect(page.locator('.profile-wallet-grid .label', { hasText: /Withdrawable/i }).first()).toBeVisible();
+    await expect(page.locator('.profile-wallet-grid .label', { hasText: /Locked deposit/i }).first()).toBeVisible();
   });
 });

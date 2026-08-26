@@ -23,6 +23,7 @@ export default function Profile() {
   const {
     user,
     isLoggedIn,
+    isAuthReady,
     openDepositModal,
     openFinModal,
     redeemLoyaltyPoints,
@@ -106,6 +107,14 @@ export default function Profile() {
     if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
     return name.slice(0, 2).toUpperCase();
   }, [user?.displayName, user?.email]);
+
+  if (!isAuthReady) {
+    return (
+      <div className="legal-page profile-page">
+        <p className="profile-loading">Loading your profile…</p>
+      </div>
+    );
+  }
 
   if (!isLoggedIn) {
     return <Navigate to="/" replace />;
