@@ -475,13 +475,17 @@ function Header() {
                           <>
                             <div className="header-wallet-menu__loyalty-head">
                               <span className="header-wallet-menu__loyalty-title">
-                                <span className="header-loyalty-icon" aria-hidden="true">⭐</span>
-                                Loyalty points
+                                Your position
                               </span>
-                              <span className="header-wallet-menu__loyalty-points">{loyalty.points}</span>
+                              <span className={`header-wallet-menu__loyalty-tier header-wallet-menu__loyalty-tier--${String(loyalty.tier || 'BRONZE').toLowerCase()}`}>
+                                {loyalty.tierLabel || 'Standard'}
+                              </span>
                             </div>
                             <p className="header-wallet-menu__loyalty-hint">
-                              {loyalty.pointsPer100} pts per ₹100 spent · redeem at {loyalty.minRedeem} pts min
+                              {loyalty.points} pts · {loyalty.pointsPer100} / ₹100
+                              {loyalty.nextLabel
+                                ? ` · ${Number(loyalty.pointsToNext || 0).toLocaleString('en-IN')} to ${loyalty.nextLabel}`
+                                : ''}
                             </p>
                             <div className="loyalty-slider-section">
                               <div className="loyalty-slider-header">
@@ -532,11 +536,12 @@ function Header() {
                         ) : (
                           <div className="header-wallet-menu__loyalty-compact-row">
                             <span className="header-wallet-menu__loyalty-compact-label">
-                              <span className="header-loyalty-icon" aria-hidden="true">⭐</span>
-                              {loyalty.points} pts
+                              <span className={`header-wallet-menu__loyalty-tier header-wallet-menu__loyalty-tier--${String(loyalty.tier || 'BRONZE').toLowerCase()}`}>
+                                {loyalty.tierLabel || 'Standard'}
+                              </span>
                             </span>
                             <span className="header-wallet-menu__loyalty-compact-meta">
-                              {loyalty.pointsToUnlock} more to redeem
+                              {loyalty.points} pts · {loyalty.pointsToUnlock} more to redeem
                             </span>
                           </div>
                         )}

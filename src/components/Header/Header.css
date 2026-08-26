@@ -819,6 +819,34 @@
   font-variant-numeric: tabular-nums;
 }
 
+.header-wallet-menu__loyalty-tier {
+  font-size: var(--text-base);
+  font-weight: var(--font-extrabold);
+  letter-spacing: -0.02em;
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.header-wallet-menu__loyalty-tier--bronze {
+  color: #92400e;
+}
+
+.header-wallet-menu__loyalty-tier--silver {
+  color: #64748b;
+}
+
+.header-wallet-menu__loyalty-tier--gold {
+  color: #ca8a04;
+}
+
+.header-wallet-menu__loyalty-tier--platinum {
+  color: #475569;
+}
+
+.header-wallet-menu__loyalty-tier--diamond {
+  color: #0e7490;
+}
+
 .header-wallet-menu__loyalty-hint {
   font-size: var(--text-xs);
   color: var(--color-text-muted);
