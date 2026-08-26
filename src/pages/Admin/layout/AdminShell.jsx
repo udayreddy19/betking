@@ -154,6 +154,7 @@ const DOMAIN_GROUPS = [
           { id: 'promotions', label: 'Sportsbook Campaigns' },
           { id: 'bonus-codes', label: 'Signup Promo Codes' },
           { id: 'referrals', label: 'Referral Program' },
+          { id: 'crm-segments', label: 'CRM Segments' },
           { id: 'vip-tiers', label: 'VIP Loyalty Tiers' },
         ],
       },

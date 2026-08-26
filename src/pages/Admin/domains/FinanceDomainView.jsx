@@ -427,6 +427,8 @@ function FinanceHealthPanel() {
   const [audit, setAudit] = useState(null);
   const [error, setError] = useState(null);
   const [running, setRunning] = useState(false);
+  const [actingId, setActingId] = useState(null);
+  const [resolveTarget, setResolveTarget] = useState(null);
   const { showToast } = useAdminToast();
 
   const load = () => {
@@ -460,6 +462,59 @@ function FinanceHealthPanel() {
     } finally {
       setRunning(false);
     }
+  };
+
+  const investigate = async (row) => {
+    setActingId(row.id);
+    try {
+      await adminApiClient.put(`/reconciliation/exceptions/${encodeURIComponent(row.id)}/investigate`, {});
+      showToast(`Case ${row.id} → INVESTIGATING`, 'success');
+      load();
+    } catch (err) {
+      showToast(err.message || 'Investigate failed', 'error');
+    } finally {
+      setActingId(null);
+    }
+  };
+
+  const resolveCase = async (resolution) => {
+    if (!resolveTarget) return;
+    setActingId(resolveTarget.id);
+    try {
+      await adminApiClient.put(`/reconciliation/exceptions/${encodeURIComponent(resolveTarget.id)}/resolve`, {
+        resolution: resolution || 'Reviewed — no balance repair applied',
+      });
+      showToast(`Case ${resolveTarget.id} → RESOLVED (flag cleared; balances unchanged)`, 'success');
+      setResolveTarget(null);
+      load();
+    } catch (err) {
+      showToast(err.message || 'Resolve failed', 'error');
+    } finally {
+      setActingId(null);
+    }
+  };
+
+  const exportCsv = () => {
+    if (!exceptions.length) {
+      showToast('No cases to export', 'info');
+      return;
+    }
+    const headers = ['id', 'reconciliation_type', 'entity_id', 'expected_value', 'actual_value', 'difference', 'severity', 'status', 'detected_at'];
+    const lines = [
+      headers.join(','),
+      ...exceptions.map((e) => headers.map((h) => {
+        const v = e[h] == null ? '' : String(e[h]).replace(/"/g, '""');
+        return `"${v}"`;
+      }).join(',')),
+    ];
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `reconciliation-cases-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Exported reconciliation cases (audit snapshot only)', 'success');
   };
 
   const cards = [
@@ -501,14 +556,19 @@ function FinanceHealthPanel() {
           </p>
           {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
         </div>
-        <button
-          type="button"
-          className="admin-btn admin-btn--primary"
-          disabled={running}
-          onClick={runAudit}
-        >
-          {running ? 'Running audit…' : 'Run reconciliation audit'}
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button type="button" className="admin-btn admin-btn--secondary" onClick={exportCsv}>
+            Export CSV
+          </button>
+          <button
+            type="button"
+            className="admin-btn admin-btn--primary"
+            disabled={running}
+            onClick={runAudit}
+          >
+            {running ? 'Running audit…' : 'Run reconciliation audit'}
+          </button>
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 16 }}>
@@ -552,7 +612,58 @@ function FinanceHealthPanel() {
             key: 'detected_at',
             render: (r) => (r.detected_at ? new Date(r.detected_at).toLocaleString('en-IN') : '—'),
           },
+          {
+            header: 'Action',
+            key: 'action',
+            sortable: false,
+            render: (r) => {
+              const busy = actingId === r.id;
+              const closed = ['RESOLVED', 'DISMISSED', 'MATCHED'].includes(String(r.status || '').toUpperCase());
+              if (closed) return <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)' }}>Closed</span>;
+              return (
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn--secondary admin-btn--sm"
+                    disabled={busy}
+                    onClick={() => investigate(r)}
+                  >
+                    Investigate
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn--primary admin-btn--sm"
+                    disabled={busy}
+                    onClick={() => setResolveTarget(r)}
+                  >
+                    Resolve
+                  </button>
+                </div>
+              );
+            },
+          },
         ]}
+      />
+
+      <AdminConfirmDialog
+        isOpen={!!resolveTarget}
+        variant="warning"
+        icon="📋"
+        title={`Resolve case ${resolveTarget?.id}?`}
+        description="Marks the exception as reviewed. Does not change wallet or ledger balances."
+        requireReason
+        reasonPlaceholder="Resolution notes (required)…"
+        reasonDefault="Reviewed — no balance repair applied"
+        details={resolveTarget ? [
+          { label: 'Type', value: resolveTarget.reconciliation_type || '—' },
+          { label: 'Entity', value: resolveTarget.entity_id || '—' },
+          { label: 'Delta', value: money(resolveTarget.difference) },
+          { label: 'Status', value: resolveTarget.status || '—' },
+        ] : []}
+        confirmLabel="Resolve (no repair)"
+        onConfirm={resolveCase}
+        onCancel={() => setResolveTarget(null)}
+        loading={actingId === resolveTarget?.id}
       />
     </div>
   );

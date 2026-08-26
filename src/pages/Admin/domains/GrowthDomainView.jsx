@@ -385,7 +385,126 @@ export default function GrowthDomainView({ subModule = 'promotions' }) {
   if (subModule === 'referrals') {
     return <ReferralsAdminPanel />;
   }
+  if (subModule === 'crm-segments') {
+    return <CrmSegmentsPanel />;
+  }
   return <PromotionsPanel />;
+}
+
+const BUILTIN_SEGMENTS = [
+  'NEW', 'ACTIVE', 'INACTIVE', 'HIGH_VALUE', 'VIP', 'REFERRAL', 'PROMO_USERS', 'HIGH_RISK', 'RECENT_DEPOSIT', 'RECENT_WITHDRAWAL',
+];
+
+function CrmSegmentsPanel() {
+  const [segments, setSegments] = useState([]);
+  const [error, setError] = useState(null);
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [saving, setSaving] = useState(false);
+  const { showToast } = useAdminToast();
+
+  const load = useCallback(() => {
+    adminApiClient.get('/growth/segments')
+      .then((data) => {
+        setSegments(data.segments || []);
+        setError(null);
+      })
+      .catch((err) => {
+        setSegments([]);
+        setError(err.message || 'Data unavailable');
+      });
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const create = async (e) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setSaving(true);
+    try {
+      await adminApiClient.post('/growth/segments', {
+        name: name.trim().toUpperCase().replace(/\s+/g, '_'),
+        description: description.trim() || null,
+        rules: { conditions: [{ type: 'MANUAL' }] },
+      });
+      showToast(`Segment ${name.trim()} saved`, 'success');
+      setName('');
+      setDescription('');
+      load();
+    } catch (err) {
+      showToast(err.message || 'Create failed', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const seedBuiltin = async (segName) => {
+    try {
+      await adminApiClient.post('/growth/segments', {
+        name: segName,
+        description: `Built-in segment ${segName}`,
+        rules: { conditions: [{ type: 'BUILTIN', key: segName }] },
+      });
+      showToast(`${segName} created`, 'success');
+      load();
+    } catch (err) {
+      showToast(err.message || 'Seed failed', 'error');
+    }
+  };
+
+  const known = new Set(segments.map((s) => String(s.name || '').toUpperCase()));
+
+  return (
+    <div>
+      <div style={{ marginBottom: '16px' }}>
+        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>08 · CRM Segments</h2>
+        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
+          Customer segments from the existing CRM engine. Counts are live membership totals — not synthetic.
+        </p>
+        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
+      </div>
+
+      <AdminCard title="Create segment" accent="#6366f1" style={{ marginBottom: 16 }}>
+        <form onSubmit={create} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+          <div className="admin-form-group">
+            <label className="admin-form-label">Name</label>
+            <input className="admin-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="HIGH_VALUE" required />
+          </div>
+          <div className="admin-form-group">
+            <label className="admin-form-label">Description</label>
+            <input className="admin-input" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional" />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+            <button type="submit" className="admin-btn admin-btn--primary" disabled={saving}>
+              {saving ? 'Saving…' : 'Save segment'}
+            </button>
+          </div>
+        </form>
+        <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {BUILTIN_SEGMENTS.filter((s) => !known.has(s)).map((s) => (
+            <button key={s} type="button" className="admin-btn admin-btn--secondary admin-btn--sm" onClick={() => seedBuiltin(s)}>
+              + {s}
+            </button>
+          ))}
+        </div>
+      </AdminCard>
+
+      <AdminDataTable
+        title="Segments"
+        emptyMessage="No segments yet — Data unavailable or none created"
+        data={segments}
+        onRefresh={load}
+        columns={[
+          { header: 'ID', key: 'id', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.id}</span> },
+          { header: 'Name', key: 'name', render: (r) => <span style={{ fontWeight: 700 }}>{r.name}</span> },
+          { header: 'Description', key: 'description', render: (r) => r.description || '—' },
+          { header: 'Members', key: 'member_count', render: (r) => (r.member_count != null ? Number(r.member_count).toLocaleString() : '0') },
+          { header: 'Auto-eval', key: 'auto_evaluate', render: (r) => (r.auto_evaluate ? 'Yes' : 'No') },
+          { header: 'Updated', key: 'updated_at', render: (r) => (r.updated_at ? new Date(r.updated_at).toLocaleString('en-IN') : '—') },
+        ]}
+      />
+    </div>
+  );
 }
 
 function ReferralsAdminPanel() {

@@ -3,30 +3,45 @@ import { adminApiClient } from '../api/adminApiClient';
 import AdminDataTable from '../components/AdminDataTable';
 import { useAdminToast } from '../components/AdminToastContext';
 import { StatusBadge } from '../components/AdminBadge';
+import AdminKPI from '../components/AdminKPI';
+import AdminCard from '../components/AdminCard';
+
+function money(v) {
+  if (v == null || Number.isNaN(Number(v))) return 'Data unavailable';
+  return `₹${Number(v).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+}
+
+function num(v) {
+  if (v == null || Number.isNaN(Number(v))) return 'Data unavailable';
+  return Number(v).toLocaleString('en-IN');
+}
 
 export default function AnalyticsDomainView({ subModule = 'turnover-ggr' }) {
   const [reports, setReports] = useState([]);
+  const [overview, setOverview] = useState(null);
+  const [retention, setRetention] = useState(null);
+  const [funnel, setFunnel] = useState(null);
   const [error, setError] = useState(null);
   const { showToast } = useAdminToast();
 
   useEffect(() => {
     let cancelled = false;
-    adminApiClient.get('/analytics/reports')
-      .then((data) => {
-        if (cancelled) return;
-        setReports(data.reports || []);
-        setError(null);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        setReports([]);
-        setError(err.message || 'Failed to load analytics');
-      });
+    Promise.all([
+      adminApiClient.get('/analytics/overview').catch((err) => ({ __error: err.message })),
+      adminApiClient.get('/analytics/retention').catch((err) => ({ __error: err.message })),
+      adminApiClient.get('/analytics/funnel').catch((err) => ({ __error: err.message })),
+      adminApiClient.get('/analytics/reports').catch((err) => ({ __error: err.message, reports: [] })),
+    ]).then(([ov, ret, fun, rep]) => {
+      if (cancelled) return;
+      setOverview(ov?.__error ? null : ov);
+      setRetention(ret?.__error ? null : ret);
+      setFunnel(fun?.__error ? null : fun);
+      setReports(rep?.reports || []);
+      const errs = [ov, ret, fun, rep].map((x) => x?.__error).filter(Boolean);
+      setError(errs.length === 4 ? (errs[0] || 'Failed to load analytics') : null);
+    });
     return () => { cancelled = true; };
   }, []);
-
-  const turnoverReports = reports.filter((r) => /turnover|ggr|stake|open.?bet/i.test(`${r.name} ${r.id}`));
-  const displayReports = subModule === 'bi-exporter' ? reports : turnoverReports;
 
   const exportReport = (report) => {
     const payload = JSON.stringify(report, null, 2);
@@ -40,27 +55,108 @@ export default function AnalyticsDomainView({ subModule = 'turnover-ggr' }) {
     showToast(`Exported ${report.name || report.id}`, 'success');
   };
 
+  const exportOverview = () => {
+    if (!overview) {
+      showToast('Data unavailable', 'info');
+      return;
+    }
+    exportReport({ id: 'bi-overview', name: 'Executive BI Overview', ...overview });
+  };
+
   const heading = subModule === 'bi-exporter'
     ? '10 · Custom BI Data Exporter'
     : '10 · Turnover & GGR Reports';
   const hint = subModule === 'bi-exporter'
-    ? 'Export operational snapshots as JSON for downstream BI pipelines.'
-    : 'Stake turnover and open-bets exposure from live Postgres queries.';
+    ? 'Export live BI snapshots as JSON. Metrics come from PostgreSQL — never synthetic.'
+    : 'Users, turnover, GGR/NGR, retention, and funnel from authoritative BI queries.';
+
+  const betting = overview?.betting || {};
+  const users = overview?.users || {};
+  const finance = overview?.finance || {};
+
+  const kpiCards = [
+    { label: 'Users', value: num(users.total), accent: '#38bdf8' },
+    { label: 'Active users', value: num(users.active), accent: '#34d399' },
+    { label: 'Active bettors', value: num(users.activeBettors), accent: '#a78bfa' },
+    { label: 'Turnover', value: money(betting.turnover), accent: '#fb923c' },
+    { label: 'GGR', value: money(betting.ggr), accent: '#f87171' },
+    { label: 'NGR', value: money(betting.ngr), accent: '#fbbf24' },
+    { label: 'Avg stake', value: money(betting.totalBets > 0 ? betting.turnover / betting.totalBets : null), accent: '#818cf8' },
+    { label: 'Bet count', value: num(betting.totalBets), accent: '#60a5fa' },
+    { label: 'Deposits', value: money(finance.totalDeposits), accent: '#4ade80' },
+    { label: 'Withdrawals', value: money(finance.totalWithdrawals), accent: '#fb7185' },
+  ];
 
   return (
     <div>
-      <div style={{ marginBottom: '16px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>{heading}</h2>
-        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
-          {hint}
-        </p>
-        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
+      <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>{heading}</h2>
+          <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
+            {hint}
+          </p>
+          {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
+        </div>
+        {subModule === 'bi-exporter' && (
+          <button type="button" className="admin-btn admin-btn--primary" onClick={exportOverview}>
+            Export overview JSON
+          </button>
+        )}
+      </div>
+
+      {!overview && !error && (
+        <p style={{ color: 'var(--admin-text-muted)' }}>Loading BI metrics…</p>
+      )}
+      {!overview && error && (
+        <p style={{ color: 'var(--admin-text-muted)' }}>Data unavailable</p>
+      )}
+
+      {overview && (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+          gap: 10,
+          marginBottom: 20,
+        }}
+        >
+          {kpiCards.map((c) => (
+            <AdminKPI key={c.label} label={c.label} value={c.value} accent={c.accent} />
+          ))}
+        </div>
+      )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14, marginBottom: 20 }}>
+        <AdminCard title="Retention" accent="#34d399">
+          {!retention ? (
+            <p style={{ margin: 0, color: 'var(--admin-text-muted)' }}>Data unavailable</p>
+          ) : (
+            <ul style={{ margin: 0, paddingLeft: 18, fontSize: '0.84rem', color: 'var(--admin-text)' }}>
+              <li>Registered: {num(retention.totalRegistered)}</li>
+              <li>D1 active bettors: {num(retention.d1Active)}</li>
+              <li>D1 retention: {retention.d1RetentionPct != null ? `${retention.d1RetentionPct}%` : 'Data unavailable'}</li>
+              <li>Recent cohorts: {Array.isArray(retention.cohorts) ? retention.cohorts.length : 0}</li>
+            </ul>
+          )}
+        </AdminCard>
+        <AdminCard title="Funnel" accent="#818cf8">
+          {!funnel?.funnel?.length ? (
+            <p style={{ margin: 0, color: 'var(--admin-text-muted)' }}>Data unavailable</p>
+          ) : (
+            <ul style={{ margin: 0, paddingLeft: 18, fontSize: '0.84rem', color: 'var(--admin-text)' }}>
+              {funnel.funnel.map((stage) => (
+                <li key={stage.stage}>
+                  {stage.stage}: {num(stage.count)} ({stage.conversionRate || '—'})
+                </li>
+              ))}
+            </ul>
+          )}
+        </AdminCard>
       </div>
 
       <AdminDataTable
-        title={subModule === 'bi-exporter' ? 'Exportable Operational Reports' : 'Turnover & Exposure Reports'}
-        emptyMessage={subModule === 'bi-exporter' ? 'No analytics available' : 'No turnover reports available yet'}
-        data={displayReports}
+        title={subModule === 'bi-exporter' ? 'Exportable Operational Reports' : 'Operational Snapshots'}
+        emptyMessage="Data unavailable"
+        data={reports}
         columns={[
           { header: 'Report ID', key: 'id', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.id}</span> },
           { header: 'Report Name', key: 'name', render: (r) => <span style={{ fontWeight: 700 }}>{r.name}</span> },

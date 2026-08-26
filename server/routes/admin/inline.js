@@ -1295,6 +1295,111 @@ router.get('/api/admin/analytics/reports', async (req, res) => {
   }
 });
 
+router.get('/api/admin/analytics/overview', adminAuth, requireRole('SUPER_ADMIN', 'OPERATIONS_ADMIN', 'RISK_ANALYST', 'MARKETING_ADMIN', 'FINANCE_ADMIN'), async (req, res) => {
+  try {
+    const { getExecutiveDashboardMetrics } = await import('../../../lib/businessIntelligenceEngine.mjs');
+    res.json(await getExecutiveDashboardMetrics(req.query));
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.get('/api/admin/analytics/retention', adminAuth, requireRole('SUPER_ADMIN', 'OPERATIONS_ADMIN', 'RISK_ANALYST', 'MARKETING_ADMIN'), async (req, res) => {
+  try {
+    const { getRetentionAndCohortMetrics } = await import('../../../lib/businessIntelligenceEngine.mjs');
+    res.json(await getRetentionAndCohortMetrics());
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.get('/api/admin/analytics/funnel', adminAuth, requireRole('SUPER_ADMIN', 'OPERATIONS_ADMIN', 'RISK_ANALYST', 'MARKETING_ADMIN'), async (req, res) => {
+  try {
+    const { getUserFunnelMetrics } = await import('../../../lib/businessIntelligenceEngine.mjs');
+    res.json(await getUserFunnelMetrics());
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.get('/api/admin/growth/segments', adminAuth, requireRole('SUPER_ADMIN', 'MARKETING_ADMIN', 'OPERATIONS_ADMIN'), async (req, res) => {
+  try {
+    const { getAllCustomerSegments } = await import('../../../lib/crmEngine.mjs');
+    res.json(await getAllCustomerSegments());
+  } catch (err) {
+    res.status(500).json({ success: false, segments: [], error: err.message });
+  }
+});
+
+router.post('/api/admin/growth/segments', adminAuth, requireRole('SUPER_ADMIN', 'MARKETING_ADMIN'), async (req, res) => {
+  try {
+    const { createCustomerSegment } = await import('../../../lib/crmEngine.mjs');
+    const body = req.body || {};
+    const result = await createCustomerSegment({
+      ...body,
+      createdBy: req.admin?.id || body.createdBy || 'admin',
+    });
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: result.segmentId,
+      action: 'CRM_SEGMENT_UPSERT',
+      details: { name: body.name },
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+router.get('/api/admin/customers/rg-controls', adminAuth, requireRole('SUPER_ADMIN', 'SUPPORT_AGENT', 'OPERATIONS_ADMIN', 'RISK_ANALYST'), async (req, res) => {
+  try {
+    const { query } = await import('../../../db/pg.js');
+    const limit = Math.min(Math.max(Number(req.query.limit) || 100, 1), 300);
+    const resDb = await query(`
+      SELECT
+        r.user_id AS "userId",
+        COALESCE(
+          NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''),
+          split_part(u.email, '@', 1),
+          r.user_id
+        ) AS name,
+        u.email,
+        p.account_status AS "accountStatus",
+        p.risk_tier AS "riskTier",
+        r.deposit_limit_daily AS "depositLimitDaily",
+        r.loss_limit_daily AS "lossLimitDaily",
+        r.stake_limit_per_bet AS "stakeLimitPerBet",
+        r.session_limit_minutes AS "sessionLimitMinutes",
+        r.cooling_off_until AS "coolingOffUntil",
+        r.self_excluded_until AS "selfExcludedUntil",
+        r.reality_check_interval_mins AS "realityCheckIntervalMins",
+        r.updated_at AS "updatedAt"
+      FROM responsible_gaming_limits r
+      LEFT JOIN users u ON u.user_id = r.user_id
+      LEFT JOIN user_profiles p ON p.user_id = r.user_id
+      WHERE
+        (r.self_excluded_until IS NOT NULL AND r.self_excluded_until > NOW())
+        OR (r.cooling_off_until IS NOT NULL AND r.cooling_off_until > NOW())
+        OR COALESCE(r.deposit_limit_daily, 0) > 0
+        OR COALESCE(r.loss_limit_daily, 0) > 0
+        OR COALESCE(r.stake_limit_per_bet, 0) > 0
+        OR COALESCE(r.session_limit_minutes, 0) > 0
+      ORDER BY
+        CASE
+          WHEN r.self_excluded_until IS NOT NULL AND r.self_excluded_until > NOW() THEN 0
+          WHEN r.cooling_off_until IS NOT NULL AND r.cooling_off_until > NOW() THEN 1
+          ELSE 2
+        END,
+        r.updated_at DESC NULLS LAST
+      LIMIT $1;
+    `, [limit]);
+    res.json({ success: true, count: resDb.rows.length, controls: resDb.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, controls: [], error: err.message });
+  }
+});
+
 router.get('/api/admin/platform/apikeys', async (req, res) => {
   try {
     const { listApiKeys, listFeatureFlags } = await import('../../../lib/adminDomainData.mjs');

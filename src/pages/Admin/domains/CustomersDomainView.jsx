@@ -121,6 +121,70 @@ function DossierStat({ label, value, accent }) {
   );
 }
 
+function ResponsibleGamingAdminPanel() {
+  const [controls, setControls] = useState([]);
+  const [error, setError] = useState(null);
+  const { showToast } = useAdminToast();
+
+  const load = useCallback(() => {
+    adminApiClient.get('/customers/rg-controls?limit=150')
+      .then((data) => {
+        setControls(data.controls || []);
+        setError(null);
+      })
+      .catch((err) => {
+        setControls([]);
+        setError(err.message || 'Data unavailable');
+        showToast(err.message || 'Failed to load RG controls', 'error');
+      });
+  }, [showToast]);
+
+  useEffect(() => { load(); }, [load]);
+
+  return (
+    <div>
+      <div style={{ marginBottom: '16px' }}>
+        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>02 · Responsible Gaming Safeguards</h2>
+        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
+          Active player-set limits, cooling-off, and self-exclusion from `responsible_gaming_limits`. Read-only — never bypasses enforcement.
+        </p>
+        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
+      </div>
+      <AdminDataTable
+        title="Active RG controls"
+        emptyMessage="No active RG controls — Data unavailable or none set"
+        data={controls}
+        onRefresh={load}
+        columns={[
+          { header: 'User', key: 'userId', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.userId}</span> },
+          { header: 'Name', key: 'name' },
+          { header: 'Email', key: 'email', render: (r) => r.email || '—' },
+          { header: 'Account', key: 'accountStatus', render: (r) => <StatusBadge status={r.accountStatus || '—'} /> },
+          { header: 'Risk', key: 'riskTier', render: (r) => <StatusBadge status={r.riskTier || '—'} /> },
+          { header: 'Deposit/day', key: 'depositLimitDaily', render: (r) => money(r.depositLimitDaily) },
+          { header: 'Loss/day', key: 'lossLimitDaily', render: (r) => money(r.lossLimitDaily) },
+          { header: 'Stake/bet', key: 'stakeLimitPerBet', render: (r) => money(r.stakeLimitPerBet) },
+          {
+            header: 'Cooling-off',
+            key: 'coolingOffUntil',
+            render: (r) => (r.coolingOffUntil ? new Date(r.coolingOffUntil).toLocaleString('en-IN') : '—'),
+          },
+          {
+            header: 'Self-exclusion',
+            key: 'selfExcludedUntil',
+            render: (r) => (r.selfExcludedUntil ? new Date(r.selfExcludedUntil).toLocaleString('en-IN') : '—'),
+          },
+          {
+            header: 'Updated',
+            key: 'updatedAt',
+            render: (r) => (r.updatedAt ? new Date(r.updatedAt).toLocaleString('en-IN') : '—'),
+          },
+        ]}
+      />
+    </div>
+  );
+}
+
 export default function CustomersDomainView({
   subModule = 'directory',
   focusEntityId = null,
@@ -149,7 +213,7 @@ export default function CustomersDomainView({
   const [searchQ, setSearchQ] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
   const [searchBy, setSearchBy] = useState('all');
-  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [, setSelectedIds] = useState(() => new Set());
   const [confirm, setConfirm] = useState(null);
   const [restrictConfirm, setRestrictConfirm] = useState(null);
   const [unrestrictConfirm, setUnrestrictConfirm] = useState(null);
@@ -546,6 +610,10 @@ export default function CustomersDomainView({
     );
   }
 
+  if (subModule === 'responsible-gaming') {
+    return <ResponsibleGamingAdminPanel />;
+  }
+
   const columns = [];
 
   columns.push(
@@ -621,6 +689,16 @@ export default function CustomersDomainView({
                 Reject
               </button>
             </>
+          )}
+          {showReminderUi && needsReminder(r) && r.reminderEligible !== false && (
+            <button
+              type="button"
+              disabled={busy}
+              className="admin-btn admin-btn--primary admin-btn--sm"
+              onClick={() => setConfirm({ type: 'single', user: r, ids: [r.id], users: [r] })}
+            >
+              Remind
+            </button>
           )}
           {showReminderUi && !needsReminder(r) && (
             <span style={{ fontSize: '0.73rem', color: '#10b981', fontWeight: 700, alignSelf: 'center' }}>KYC Done</span>
@@ -809,17 +887,56 @@ export default function CustomersDomainView({
         isOpen={!!confirm}
         variant="warning"
         icon="📧"
-        title={`Send KYC reminders to all ${confirm?.ids?.length || 0} eligible users?`}
-        description="After send, those users leave the eligible list for 24 hours. Server cooldown is enforced."
+        title={confirm?.type === 'single'
+          ? `Send KYC reminder to ${confirm?.user?.name || confirm?.user?.id}?`
+          : `Send KYC reminders to ${confirm?.ids?.length || 0} eligible users?`}
+        description="Preview recipients below. After send, those users leave the eligible list for the server cooldown (typically 24h)."
         details={[
-          { label: 'Eligible Users', value: confirm?.ids?.length || 0 },
-          { label: 'Delivery', value: 'Zoho / SMTP' },
+          { label: 'Recipients', value: confirm?.ids?.length || 0 },
+          { label: 'Delivery', value: 'Zoho / SMTP (existing provider)' },
+          { label: 'Cooldown', value: 'Enforced server-side' },
         ]}
-        confirmLabel="Send to all"
-        onConfirm={() => confirm?.ids && sendBulkReminders(confirm.ids)}
+        confirmLabel={confirm?.type === 'single' ? 'Send reminder' : 'Send to all'}
+        onConfirm={() => {
+          if (!confirm?.ids?.length) return;
+          if (confirm.type === 'single' && confirm.user) {
+            sendSingleReminder(confirm.user);
+            return;
+          }
+          sendBulkReminders(confirm.ids);
+        }}
         onCancel={() => setConfirm(null)}
-        loading={actingId === 'bulk'}
-      />
+        loading={actingId === 'bulk' || (confirm?.user && actingId === confirm.user.id)}
+      >
+        {confirm?.users?.length > 0 && (
+          <div style={{
+            marginTop: 10,
+            maxHeight: 160,
+            overflow: 'auto',
+            border: '1px solid var(--admin-border)',
+            borderRadius: 8,
+            padding: '8px 10px',
+            fontSize: '0.76rem',
+            background: 'var(--admin-bg)',
+          }}
+          >
+            <strong style={{ display: 'block', marginBottom: 6 }}>Preview (up to 12)</strong>
+            <ul style={{ margin: 0, paddingLeft: 16 }}>
+              {confirm.users.slice(0, 12).map((u) => (
+                <li key={u.id}>
+                  {u.name || u.id}
+                  {' · '}
+                  {u.email || 'no email'}
+                  {u.cooldownUntil ? ` · cooldown until ${new Date(u.cooldownUntil).toLocaleString('en-IN')}` : ''}
+                </li>
+              ))}
+              {confirm.users.length > 12 && (
+                <li>…and {confirm.users.length - 12} more</li>
+              )}
+            </ul>
+          </div>
+        )}
+      </AdminConfirmDialog>
 
       <AdminConfirmDialog
         isOpen={!!restrictConfirm}
