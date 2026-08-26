@@ -78,6 +78,31 @@ router.post('/api/v1/withdrawals/request', requireAuth, async (req, res) => {
   }
 });
 
+router.get('/api/v1/withdrawals/pending', requireAuth, async (req, res) => {
+  try {
+    const { withdrawalEngine } = await import('../../lib/withdrawalEngine.mjs');
+    const result = await withdrawalEngine.listCancellableWithdrawals(req.user.userId, {
+      limit: Number(req.query.limit) || 50,
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message, code: err.code });
+  }
+});
+
+router.post('/api/v1/withdrawals/:id/cancel', requireAuth, async (req, res) => {
+  try {
+    const { withdrawalEngine } = await import('../../lib/withdrawalEngine.mjs');
+    const result = await withdrawalEngine.cancelWithdrawal({
+      userId: req.user.userId,
+      withdrawalId: req.params.id,
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 400).json({ success: false, error: err.message, code: err.code });
+  }
+});
+
 router.get('/api/v1/user/bonuses', requireAuth, async (req, res) => {
   try {
     const { query } = await import('../../db/pg.js');

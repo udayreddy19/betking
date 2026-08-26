@@ -117,4 +117,37 @@ describe('Phase 6 Withdrawal & Fund Reservation Security Tests', () => {
     const bonusRes = await query('SELECT status FROM user_bonuses WHERE user_id = $1', [userId]);
     expect(bonusRes.rows[0].status).toBe('FORFEITED');
   });
+
+  it('lists PENDING_REVIEW withdrawals for cancel UI and user cancel restores funds', async () => {
+    const reqRes = await withdrawalEngine.requestWithdrawal({ userId, amount: 1500.00, bankDetails: { method: 'UPI', details: 'user@upi' } });
+    const listed = await withdrawalEngine.listCancellableWithdrawals(userId);
+    expect(listed.count).toBe(1);
+    expect(listed.withdrawals[0].id).toBe(reqRes.withdrawalId);
+    expect(listed.withdrawals[0].status).toBe('PENDING_REVIEW');
+
+    const cancelRes = await withdrawalEngine.cancelWithdrawal({
+      userId,
+      withdrawalId: reqRes.withdrawalId,
+    });
+    expect(cancelRes.success).toBe(true);
+    expect(cancelRes.status).toBe('CANCELLED');
+
+    const wRes = await query('SELECT balance, reserved_balance FROM wallets WHERE wallet_id = $1', [walletId]);
+    expect(parseFloat(wRes.rows[0].balance)).toBe(5000.00);
+    expect(parseFloat(wRes.rows[0].reserved_balance)).toBe(0.00);
+
+    const after = await withdrawalEngine.listCancellableWithdrawals(userId);
+    expect(after.count).toBe(0);
+
+    await expect(
+      withdrawalEngine.cancelWithdrawal({ userId, withdrawalId: reqRes.withdrawalId }),
+    ).rejects.toThrow(/NOT_CANCELLABLE|already/);
+  });
+
+  it('refuses cancel for another user\'s withdrawal', async () => {
+    const reqRes = await withdrawalEngine.requestWithdrawal({ userId, amount: 1200.00 });
+    await expect(
+      withdrawalEngine.cancelWithdrawal({ userId: 'usr_other', withdrawalId: reqRes.withdrawalId }),
+    ).rejects.toThrow(/FORBIDDEN/);
+  });
 });

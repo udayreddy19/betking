@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { IoCheckmarkCircle, BiWallet, BiMoneyWithdraw, BiHistory, BiTransfer, BiGift } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
@@ -8,6 +8,8 @@ import {
   BONUS_MIN_BET_ODDS,
 } from '../../utils/wageringRules';
 import { getBenefitsForTier, MIN_WITHDRAW_INR } from '../../utils/vipBenefits';
+import { apiFetch } from '../../utils/apiClient';
+import { DEMO_MODE } from '../../utils/featureFlags';
 import './FinancialModals.css';
 
 function statusColor(status) {
@@ -16,8 +18,21 @@ function statusColor(status) {
   return '#2563eb';
 }
 
+function isCancellableWithdrawal(w) {
+  const s = String(w?.status || '').toUpperCase();
+  return s === 'PENDING_REVIEW' || s === 'PENDING' || s === 'PENDING_APPROVAL' || s === 'PROCESSING';
+}
+
+function formatWithdrawalStatus(status) {
+  const s = String(status || '').toUpperCase();
+  if (s === 'PENDING_REVIEW' || s === 'PENDING_APPROVAL') return 'Pending review';
+  if (s === 'PROCESSING') return 'Processing';
+  if (s === 'PENDING') return 'Pending';
+  return status || 'Pending';
+}
+
 export default function FinancialModals({ modalType, onClose }) {
-  const { user, withdrawFunds, refundWithdrawal, showToast, transactions } = useAuth();
+  const { user, withdrawFunds, showToast, transactions, refreshWallet } = useAuth();
   const { placedBets } = useBetSlip();
   const wallet = getWalletBreakdown(user);
   const withdrawableHint = getWithdrawableHint(wallet);
@@ -32,9 +47,37 @@ export default function FinancialModals({ modalType, onClose }) {
   const [withdrawAmount, setWithdrawAmount] = useState('1000');
   const [withdrawStatus, setWithdrawStatus] = useState(null);
   const [pendingWithdrawals, setPendingWithdrawals] = useState([]);
+  const [pendingLoading, setPendingLoading] = useState(false);
+  const [cancellingId, setCancellingId] = useState(null);
   const [lastSubmittedDetails, setLastSubmittedDetails] = useState('');
   const [acceptBonusForfeit, setAcceptBonusForfeit] = useState(false);
   const [forfeitedBonusAmount, setForfeitedBonusAmount] = useState(0);
+
+  const loadPendingWithdrawals = useCallback(async () => {
+    if (DEMO_MODE) return;
+    setPendingLoading(true);
+    try {
+      const res = await apiFetch('/api/v1/withdrawals/pending');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.error || 'Could not load pending withdrawals.', 'error');
+        setPendingWithdrawals([]);
+        return;
+      }
+      setPendingWithdrawals(Array.isArray(data.withdrawals) ? data.withdrawals : []);
+    } catch {
+      showToast('Unable to load pending withdrawals.', 'error');
+      setPendingWithdrawals([]);
+    } finally {
+      setPendingLoading(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => {
+    if (modalType === 'cancel-wd' && user) {
+      void loadPendingWithdrawals();
+    }
+  }, [modalType, user, loadPendingWithdrawals]);
 
   if (!modalType || !user) return null;
 
@@ -42,6 +85,7 @@ export default function FinancialModals({ modalType, onClose }) {
   const vipLimits = getBenefitsForTier(user?.loyaltyTier);
   const minWithdraw = vipLimits.minWithdraw || MIN_WITHDRAW_INR;
   const canWithdraw = wallet.withdrawable >= minWithdraw;
+  const cancellableWithdrawals = pendingWithdrawals.filter(isCancellableWithdrawal);
 
   const handleRazorpayWithdraw = async (e) => {
     e.preventDefault();
@@ -114,13 +158,39 @@ export default function FinancialModals({ modalType, onClose }) {
     ]);
   };
 
-  const handleCancelWithdrawal = (id, amount) => {
+  const handleCancelWithdrawal = async (id) => {
     const entry = pendingWithdrawals.find((w) => w.id === id);
-    if (!entry || entry.refunded || entry.status === 'completed') {
+    if (!entry || !isCancellableWithdrawal(entry)) {
       notify('This withdrawal can no longer be cancelled.');
       return;
     }
-    notify('Pending withdrawals are reviewed by finance and cannot be cancelled here.');
+
+    if (DEMO_MODE) {
+      setPendingWithdrawals((prev) => prev.filter((w) => w.id !== id));
+      notify(`Cancelled ${formatInr(entry.amount)}. Funds returned to your wallet.`);
+      return;
+    }
+
+    setCancellingId(id);
+    try {
+      const res = await apiFetch(`/api/v1/withdrawals/${encodeURIComponent(id)}/cancel`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.success === false) {
+        notify(data.error || 'Could not cancel withdrawal.');
+        await loadPendingWithdrawals();
+        return;
+      }
+      setPendingWithdrawals((prev) => prev.filter((w) => w.id !== id));
+      if (typeof refreshWallet === 'function') await refreshWallet();
+      notify(`Cancelled ${formatInr(data.amount ?? entry.amount)}. Funds returned to your wallet.`);
+    } catch {
+      notify('Unable to cancel withdrawal right now.');
+    } finally {
+      setCancellingId(null);
+    }
   };
 
   return (
@@ -384,25 +454,37 @@ export default function FinancialModals({ modalType, onClose }) {
 
         {modalType === 'cancel-wd' && (
           <div className="fin-modal-body">
-            {pendingWithdrawals.filter((w) => w.status === 'processing').length > 0 ? (
-              pendingWithdrawals.filter((w) => w.status === 'processing').map(w => (
+            {pendingLoading ? (
+              <p className="fin-muted" style={{ textAlign: 'center', padding: '20px' }}>
+                Loading pending withdrawals…
+              </p>
+            ) : cancellableWithdrawals.length > 0 ? (
+              cancellableWithdrawals.map((w) => (
                 <div key={w.id} className="fin-list-item">
                   <div>
                     <div style={{ fontWeight: 800, fontSize: '0.9rem' }}>{w.id} · {formatInr(w.amount)}</div>
-                    <div className="fin-muted" style={{ fontSize: '0.75rem' }}>{w.upi} · {w.date}</div>
-                    <div style={{ fontSize: '0.7rem', color: '#eab308', fontWeight: 700, marginTop: '2px' }}>Processing</div>
+                    <div className="fin-muted" style={{ fontSize: '0.75rem' }}>
+                      {w.method || 'UPI'}
+                      {w.details ? ` · ${w.details}` : ''}
+                      {w.createdAt ? ` · ${new Date(w.createdAt).toLocaleString('en-IN')}` : (w.date ? ` · ${w.date}` : '')}
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: '#eab308', fontWeight: 700, marginTop: '2px' }}>
+                      {formatWithdrawalStatus(w.status)}
+                    </div>
                   </div>
                   <button
-                    onClick={() => handleCancelWithdrawal(w.id, w.amount)}
-                    style={{ background: '#ef4444', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 800 }}
+                    type="button"
+                    disabled={cancellingId === w.id}
+                    onClick={() => handleCancelWithdrawal(w.id)}
+                    style={{ background: '#ef4444', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: cancellingId === w.id ? 'wait' : 'pointer', fontSize: '0.75rem', fontWeight: 800, opacity: cancellingId === w.id ? 0.7 : 1 }}
                   >
-                    Cancel & Refund
+                    {cancellingId === w.id ? 'Cancelling…' : 'Cancel & Refund'}
                   </button>
                 </div>
               ))
             ) : (
               <p className="fin-muted" style={{ textAlign: 'center', padding: '20px' }}>
-                No cancellable withdrawals. Completed payouts appear under Transactions.
+                No cancellable withdrawals. Only requests still pending finance review can be cancelled here. Completed payouts appear under Transactions.
               </p>
             )}
           </div>
