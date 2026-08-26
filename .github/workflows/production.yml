@@ -89,6 +89,7 @@ jobs:
             .release-sha
             .release-deployed-at.pending
           if-no-files-found: error
+          include-hidden-files: true
 
   container-build:
     name: Container Build & Vulnerability Scan
