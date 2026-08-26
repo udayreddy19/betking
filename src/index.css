@@ -152,9 +152,9 @@
   --color-surface: #151b22;
   --color-surface-hover: #1d252e;
 
-  --color-primary: #7dff6b;
-  --color-primary-dark: #5fe05a;
-  --color-primary-light: #a8ff96;
+  --color-primary: #4ade80;
+  --color-primary-dark: #22c55e;
+  --color-primary-light: #86efac;
   --color-primary-bg: #163024;
 
   --color-text: #f4f1ea;
@@ -197,7 +197,7 @@
   --color-match-card-home-end: #151b22;
   --color-match-card-home-border: #2a5a3c;
   --color-selected-text: #0b0e12;
-  --color-selected-tab: #7dff6b;
+  --color-selected-tab: #4ade80;
   --header-bg: rgba(21, 27, 34, 0.92);
 }
 

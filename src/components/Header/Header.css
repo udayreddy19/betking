@@ -280,7 +280,7 @@
   top: -2px;
   right: -2px;
   background: var(--color-primary);
-  color: #ffffff;
+  color: var(--color-on-primary);
   font-size: 0.68rem;
   font-weight: 900;
   height: 18px;
@@ -951,7 +951,7 @@
 
 .header-wallet-menu__redeem:hover:not(:disabled) {
   background: var(--color-primary);
-  color: #ffffff;
+  color: var(--color-on-primary);
 }
 
 .header-wallet-menu__redeem:disabled {
@@ -1105,7 +1105,7 @@
 
 .loyalty-preset-chip.active {
   background: var(--color-primary);
-  color: #ffffff;
+  color: var(--color-on-primary);
   border-color: var(--color-primary);
 }
 
@@ -1114,7 +1114,7 @@
   padding: 8px 12px;
   font-size: 0.78rem;
   background: var(--color-primary);
-  color: #ffffff;
+  color: var(--color-on-primary);
   border: none;
   border-radius: var(--radius-md);
   font-weight: 800;
@@ -1129,7 +1129,7 @@
 .header-deposit-btn {
   padding: 8px 16px;
   background: var(--color-primary);
-  color: var(--color-text-inverse);
+  color: var(--color-on-primary);
   border-radius: 8px;
   font-size: 0.78rem;
   font-weight: 750;
@@ -1162,7 +1162,7 @@
 .header-join-btn {
   padding: var(--space-2) var(--space-5);
   background: var(--color-primary);
-  color: var(--color-text-inverse);
+  color: var(--color-on-primary);
   border-radius: var(--radius-full);
   font-size: var(--text-sm);
   font-weight: var(--font-semibold);

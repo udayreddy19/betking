@@ -74,7 +74,7 @@ router.post('/api/v1/withdrawals/request', requireAuth, async (req, res) => {
     );
     res.json(result);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    res.status(err.status || 400).json({ success: false, error: err.message, code: err.code });
   }
 });
 

@@ -10,11 +10,23 @@ function money(n) {
   return `₹${Number(n).toLocaleString()}`;
 }
 
+function matchBadge(bm) {
+  if (!bm) return { label: '—', tone: 'neutral' };
+  if (bm.nameMatch === 'MATCHED') return { label: '✓ MATCHED', tone: 'ok' };
+  if (bm.nameMatch === 'MISMATCH') return { label: '✕ MISMATCH', tone: 'bad' };
+  if (bm.nameMatch === 'AMBIGUOUS') return { label: '⚠ AMBIGUOUS', tone: 'warn' };
+  if (bm.code === 'KYC_NOT_VERIFIED') return { label: 'KYC REQUIRED', tone: 'bad' };
+  if (bm.dependency) return { label: 'SOURCE UNAVAILABLE', tone: 'warn' };
+  return { label: bm.nameMatch || '—', tone: 'neutral' };
+}
+
 function MakerCheckerPanel() {
   const [withdrawals, setWithdrawals] = useState([]);
   const [error, setError] = useState(null);
   const [approveTarget, setApproveTarget] = useState(null);
   const [rejectTarget, setRejectTarget] = useState(null);
+  const [nameLookup, setNameLookup] = useState(null);
+  const [fetchingNameId, setFetchingNameId] = useState(null);
   const [processing, setProcessing] = useState(false);
   const { showToast } = useAdminToast();
 
@@ -31,6 +43,30 @@ function MakerCheckerPanel() {
   };
 
   useEffect(() => { load(); }, []);
+
+  const handleFetchName = async (row) => {
+    if (!row?.id || fetchingNameId) return;
+    setFetchingNameId(row.id);
+    try {
+      const data = await adminApiClient.get(`/finance/withdrawals/${encodeURIComponent(row.id)}/name`);
+      setNameLookup(data);
+      if (data.beneficiaryMatch) {
+        setWithdrawals((prev) => prev.map((w) => (
+          w.id === row.id ? { ...w, beneficiaryMatch: data.beneficiaryMatch } : w
+        )));
+      }
+      if (data.declaredAccountHolderName || data.verifiedBeneficiaryName) {
+        showToast(
+          `Name: ${data.declaredAccountHolderName || data.verifiedBeneficiaryName}`,
+          'success',
+        );
+      }
+    } catch (err) {
+      showToast(err.message || 'Could not fetch name', 'error');
+    } finally {
+      setFetchingNameId(null);
+    }
+  };
 
   const handleApproveWithdrawal = async () => {
     if (!approveTarget) return;
@@ -68,6 +104,8 @@ function MakerCheckerPanel() {
         <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>06 · Maker-Checker Withdrawal Approvals</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           Pending withdrawals from PostgreSQL. Approve or reject with an audit trail.
+          Beneficiary ↔ KYC name match is evaluated server-side from verified sources only.
+          Use Fetch name to view the declared account-holder name on the request.
         </p>
         {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
       </div>
@@ -85,6 +123,16 @@ function MakerCheckerPanel() {
             <span style={{ fontWeight: 800, color: 'var(--admin-text)' }}>{money(r.amount)}</span>
           )},
           { header: 'Method', key: 'method' },
+          {
+            header: 'Name match',
+            key: 'beneficiaryMatch',
+            sortable: false,
+            render: (r) => {
+              const b = matchBadge(r.beneficiaryMatch);
+              const color = b.tone === 'ok' ? '#16a34a' : b.tone === 'bad' ? '#dc2626' : b.tone === 'warn' ? '#ca8a04' : 'var(--admin-text-muted)';
+              return <span style={{ fontWeight: 700, fontSize: '0.72rem', color }}>{b.label}</span>;
+            },
+          },
           { header: 'UTR', key: 'utr', render: (r) => (
             <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.utr || '—'}</span>
           )},
@@ -100,6 +148,15 @@ function MakerCheckerPanel() {
                 </button>
                 <button type="button" className="admin-btn admin-btn--danger admin-btn--sm" onClick={() => setRejectTarget(r)}>
                   Reject
+                </button>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--secondary admin-btn--sm"
+                  disabled={fetchingNameId === r.id}
+                  onClick={() => handleFetchName(r)}
+                  title="Fetch declared / verified account-holder name"
+                >
+                  {fetchingNameId === r.id ? 'Fetching…' : 'Fetch name'}
                 </button>
               </div>
             ),
@@ -119,6 +176,21 @@ function MakerCheckerPanel() {
           { label: 'User', value: approveTarget?.userName || approveTarget?.userId || '—' },
           { label: 'Amount', value: money(approveTarget?.amount) },
           { label: 'Method', value: approveTarget?.method || '—' },
+          { label: 'KYC STATUS', value: approveTarget?.beneficiaryMatch?.kycVerified ? '✓ VERIFIED' : '✕ NOT VERIFIED' },
+          { label: 'BANK / BENEFICIARY', value: approveTarget?.beneficiaryMatch?.beneficiaryVerified ? '✓ VERIFIED' : '✕ NOT VERIFIED (no provider source)' },
+          { label: 'NAME MATCH', value: matchBadge(approveTarget?.beneficiaryMatch).label },
+          {
+            label: 'APPROVAL',
+            value: approveTarget?.beneficiaryMatch?.enforced
+              ? (approveTarget?.beneficiaryMatch?.approvalAllowed ? 'ALLOWED' : 'BLOCKED BY SERVER RULE')
+              : 'GATE OFF (WITHDRAWAL_REQUIRE_BENEFICIARY_KYC_MATCH≠1)',
+          },
+          ...(approveTarget?.beneficiaryMatch?.reason
+            ? [{ label: 'Detail', value: approveTarget.beneficiaryMatch.reason }]
+            : []),
+          ...(approveTarget?.beneficiaryMatch?.dependency
+            ? [{ label: 'Dependency', value: approveTarget.beneficiaryMatch.dependency }]
+            : []),
         ]}
         confirmLabel="Approve Withdrawal"
         onConfirm={handleApproveWithdrawal}
@@ -145,6 +217,42 @@ function MakerCheckerPanel() {
         onConfirm={handleRejectWithdrawal}
         onCancel={() => setRejectTarget(null)}
         loading={processing}
+      />
+
+      {/* Fetch name result */}
+      <AdminConfirmDialog
+        isOpen={!!nameLookup}
+        variant="warning"
+        icon="🪪"
+        title="Fetched account name"
+        description="Names below are returned by the server. Declared name is user-entered on the withdrawal request — not a bank name-enquiry result."
+        details={[
+          { label: 'Request ID', value: nameLookup?.withdrawalId || '—' },
+          { label: 'Customer', value: nameLookup?.userName || nameLookup?.userId || '—' },
+          { label: 'Method', value: nameLookup?.method || '—' },
+          {
+            label: 'DECLARED NAME',
+            value: nameLookup?.declaredAccountHolderName
+              ? `${nameLookup.declaredAccountHolderName} (user-entered)`
+              : '— not provided on this request',
+          },
+          {
+            label: 'VERIFIED BENEFICIARY',
+            value: nameLookup?.verifiedBeneficiaryName || '— not available (no bank provider)',
+          },
+          {
+            label: 'VERIFIED KYC NAME',
+            value: nameLookup?.verifiedKycName || '— not available on KYC record',
+          },
+          { label: 'NAME MATCH', value: matchBadge(nameLookup?.beneficiaryMatch).label },
+          { label: 'Bank details', value: nameLookup?.bankDetailsMasked || '—' },
+          ...(nameLookup?.note ? [{ label: 'Note', value: nameLookup.note }] : []),
+        ]}
+        confirmLabel="Close"
+        cancelLabel="Dismiss"
+        onConfirm={() => setNameLookup(null)}
+        onCancel={() => setNameLookup(null)}
+        auditNotice={false}
       />
     </div>
   );

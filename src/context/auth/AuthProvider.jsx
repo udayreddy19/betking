@@ -1069,9 +1069,18 @@ export function AuthProvider({ children }) {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || data.success === false) {
-          const message = data.error || 'Withdrawal failed.';
-          if (isKycError(message)) {
-            showToast(cleanKycMessage(message) || 'Verify your identity to withdraw.', 'error', {
+          const raw = data.error || data.code || 'Withdrawal failed.';
+          const code = String(data.code || raw).toUpperCase();
+          let message = raw;
+          if (
+            code.includes('BENEFICIARY')
+            || code.includes('KYC_IDENTITY_NAME')
+            || /BENEFICIARY_NAME_MISMATCH|BENEFICIARY_NOT_VERIFIED|KYC_IDENTITY_NAME_NOT_AVAILABLE/i.test(raw)
+          ) {
+            message = 'Your verified bank account holder name does not match your verified identity (or bank beneficiary verification is not yet available). Please update or verify your bank account details before requesting this withdrawal.';
+          }
+          if (isKycError(message) || isKycError(raw)) {
+            showToast(cleanKycMessage(raw) || 'Verify your identity to withdraw.', 'error', {
               action: { label: 'Proceed to KYC', path: KYC_PROFILE_PATH },
             });
           } else {

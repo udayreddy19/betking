@@ -1017,6 +1017,30 @@ router.get('/api/admin/finance/withdrawals/pending', async (req, res) => {
   }
 });
 
+/** Admin: fetch declared + verified names for a withdrawal (read-only). */
+router.get('/api/admin/finance/withdrawals/:id/name', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { lookupWithdrawalBeneficiaryName } = await import('../../../lib/adminDomainData.mjs');
+    const result = await lookupWithdrawalBeneficiaryName(id);
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: id,
+      action: 'WITHDRAWAL_NAME_LOOKUP',
+      details: {
+        hasDeclaredName: Boolean(result.declaredAccountHolderName),
+        hasVerifiedBeneficiary: Boolean(result.verifiedBeneficiaryName),
+        matchCode: result.beneficiaryMatch?.code || null,
+      },
+    });
+    res.json({ success: true, ...result, timestamp: new Date().toISOString() });
+  } catch (err) {
+    const status = err.status || (err.message?.includes('not found') ? 404 : 500);
+    res.status(status).json({ success: false, error: err.message });
+  }
+});
+
 router.post('/api/admin/finance/withdrawals/:id/approve', async (req, res) => {
   const { id } = req.params;
   try {

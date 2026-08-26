@@ -545,12 +545,16 @@ function Header() {
 
                               <div className="loyalty-slider-presets">
                                 {[0.25, 0.5, 0.75, 1].map((pct) => {
-                                  const targetPts = Math.max(50, Math.floor((loyalty.points * pct) / 5) * 5);
+                                  const rawPts = Math.floor((loyalty.points * pct) / 5) * 5;
+                                  const targetPts = Math.max(LOYALTY_MIN_REDEEM_POINTS, rawPts);
+                                  // Don't mark 25%/50% active when they only equal the min after clamping
+                                  const isExactPct = pct === 1 || rawPts >= LOYALTY_MIN_REDEEM_POINTS;
+                                  const isActive = sliderPoints === targetPts && isExactPct;
                                   return (
                                     <button
                                       key={pct}
                                       type="button"
-                                      className={`loyalty-preset-chip ${sliderPoints === targetPts ? 'active' : ''}`}
+                                      className={`loyalty-preset-chip ${isActive ? 'active' : ''}`}
                                       onClick={() => setSliderPoints(targetPts)}
                                     >
                                       {pct === 1 ? 'Max' : `${pct * 100}%`}
