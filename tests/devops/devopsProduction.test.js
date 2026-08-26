@@ -62,6 +62,25 @@ describe('Phase 15 DevOps, Health Probes & Operations Tests', () => {
     expect(valid.valid).toBe(true);
   });
 
+  it('rejects E2E_HARNESS in production', () => {
+    expect(() =>
+      validateProductionEnvironment({
+        NODE_ENV: 'production',
+        DATABASE_URL: 'postgresql://usr:pass@localhost:5432/db',
+        JWT_SECRET: PROD_JWT,
+        FRONTEND_URL: 'https://oddsyra.com',
+        CORS_ORIGIN: 'https://oddsyra.com',
+        RAZORPAY_KEY_ID: 'rzp_live_test',
+        RAZORPAY_KEY_SECRET: 'secret',
+        RAZORPAY_WEBHOOK_SECRET: 'wh_secret_long_enough_for_validation',
+        SMTP_HOST: 'smtp.example.com',
+        SMTP_USER: 'user',
+        SMTP_PASSWORD: 'pass',
+        E2E_HARNESS: '1',
+      })
+    ).toThrow(/E2E_HARNESS/);
+  });
+
   it('rejects example Razorpay webhook and JWT secrets in production', () => {
     const base = {
       NODE_ENV: 'production',
