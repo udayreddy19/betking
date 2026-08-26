@@ -399,45 +399,75 @@ body {
   margin: 2px 0 0;
 }
 
-/* Telemetry / KPI Metric Cards */
+/* Telemetry / KPI Metric Cards — dense ops console */
 .telemetry-card {
-  background: var(--admin-card-bg);
+  background: var(--admin-surface-elevated);
   border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-lg);
-  padding: 16px 18px 14px;
+  border-radius: var(--admin-radius);
+  padding: 12px 14px 10px;
   position: relative;
   overflow: hidden;
-  box-shadow: var(--admin-shadow-sm);
-  transition: all var(--admin-transition);
+  box-shadow: none;
+  transition: border-color var(--admin-transition-fast), background var(--admin-transition-fast);
   cursor: default;
 }
 .telemetry-card::before {
   content: '';
   position: absolute;
   top: 0; left: 0;
-  width: 100%; height: 3px;
-  background: linear-gradient(90deg, var(--card-accent, var(--admin-primary)) 0%, transparent 100%);
+  width: 3px; height: 100%;
+  background: var(--card-accent, var(--admin-primary));
+  opacity: 0.85;
 }
 .telemetry-card:hover {
-  transform: translateY(-2px);
+  transform: none;
   border-color: var(--admin-border-bright);
-  box-shadow: var(--admin-shadow);
+  background: var(--admin-surface-hover);
+  box-shadow: none;
 }
 .telemetry-label {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.55px;
   color: var(--admin-text-muted);
+  padding-left: 6px;
 }
 .telemetry-value {
-  font-size: 1.6rem;
+  font-size: 1.35rem;
   font-weight: 800;
-  margin: 6px 0 2px;
+  margin: 4px 0 2px;
   color: var(--admin-text);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
-  line-height: 1.15;
+  line-height: 1.2;
+  padding-left: 6px;
+  word-break: break-word;
+}
+
+.admin-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+  gap: 10px;
+}
+
+.admin-section-title {
+  margin: 0 0 10px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--admin-text-muted);
+}
+
+.admin-sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  margin: 0 0 16px;
+  padding: 0 0 12px;
+  background: var(--admin-bg);
+  border-bottom: 1px solid var(--admin-border);
 }
 
 /* ── 5. BADGES ── */

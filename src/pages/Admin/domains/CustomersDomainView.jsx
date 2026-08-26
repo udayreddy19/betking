@@ -7,8 +7,21 @@ import AdminDrawer from '../components/AdminDrawer';
 import AdminConfirmDialog from '../components/AdminConfirmDialog';
 import AdminFilterBar, { FilterSelect, FilterSearch } from '../components/AdminFilterBar';
 import AdminCard from '../components/AdminCard';
+import AdminTabs from '../components/AdminTabs';
 import KycReminderUsersPanel from '../../../components/DatabaseInspector/KycReminderUsersPanel';
 import { useAdminRole, canAccessDomain, hasPermission, PERMISSIONS } from '../permissions/AdminRBACGate';
+
+const DOSSIER_TABS = [
+  { id: 'profile', label: 'Profile' },
+  { id: 'kyc', label: 'KYC' },
+  { id: 'wallet', label: 'Wallet' },
+  { id: 'bets', label: 'Bets' },
+  { id: 'txns', label: 'Transactions' },
+  { id: 'referrals', label: 'Referrals' },
+  { id: 'support', label: 'Support' },
+  { id: 'audit', label: 'Audit' },
+  { id: 'timeline', label: 'Timeline' },
+];
 
 function money(n) {
   if (n == null || Number.isNaN(Number(n))) return '—';
@@ -127,6 +140,8 @@ export default function CustomersDomainView({
   const [user360, setUser360] = useState(null);
   const [user360Loading, setUser360Loading] = useState(false);
   const [user360Error, setUser360Error] = useState(null);
+  const [dossierTab, setDossierTab] = useState('profile');
+
   const [error, setError] = useState(null);
   const [kycLoading, setKycLoading] = useState(false);
   const [actingId, setActingId] = useState(null);
@@ -211,6 +226,7 @@ export default function CustomersDomainView({
   useEffect(() => { setSelectedIds(new Set()); }, [kycFilter, debouncedQ, searchBy, subModule]);
 
   const open360 = useCallback((user) => {
+    setDossierTab('profile');
     const id = user?.id || user?.userId || user?.user_id;
     if (!id) return;
     setSelectedUser({
@@ -976,6 +992,11 @@ export default function CustomersDomainView({
               </div>
             )}
 
+            <div style={{ marginBottom: 12 }}>
+              <AdminTabs tabs={DOSSIER_TABS} active={dossierTab} onChange={setDossierTab} />
+            </div>
+
+            {(dossierTab === 'profile') && (
             <AdminCard title="Personal details" accent="var(--admin-info)" style={{ marginBottom: '12px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <DossierField label="Name">{user360?.user?.name || selectedUser.name || '—'}</DossierField>
@@ -994,7 +1015,9 @@ export default function CustomersDomainView({
                 </DossierField>
               </div>
             </AdminCard>
+            )}
 
+            {(dossierTab === 'kyc') && (
             <AdminCard title="KYC & identity" accent="var(--admin-warning)" style={{ marginBottom: '12px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <DossierField label="KYC status">
@@ -1018,12 +1041,17 @@ export default function CustomersDomainView({
                 )}
               </div>
             </AdminCard>
+            )}
 
+            {(dossierTab === 'wallet') && (
+            <>
             <AdminCard title="Wallet & money" accent="var(--admin-success)" style={{ marginBottom: '12px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: 12 }}>
                 <DossierStat label="Present balance" value={money(user360?.money?.availableBalance ?? user360?.wallet?.balance ?? selectedUser.balance)} accent="#059669" />
                 <DossierStat label="Bonus" value={money(user360?.money?.bonusBalance ?? user360?.wallet?.bonusBalance)} />
                 <DossierStat label="Reserved" value={money(user360?.money?.reservedBalance ?? user360?.wallet?.reservedBalance)} />
+                <DossierStat label="Locked deposit" value={money(user360?.money?.lockedDepositBalance ?? user360?.wallet?.lockedDepositBalance)} />
+                <DossierStat label="Winnings" value={money(user360?.money?.winningsBalance ?? user360?.wallet?.winningsBalance)} />
                 <DossierStat label="Net deposits" value={money(user360?.money?.netDeposits)} />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -1062,7 +1090,10 @@ export default function CustomersDomainView({
                 </div>
               )}
             </AdminCard>
+            </>
+            )}
 
+            {(dossierTab === 'bets') && (
             <AdminCard title="Betting (lifetime)" accent="#6366f1" style={{ marginBottom: '12px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: 12 }}>
                 <DossierStat label="Bets placed" value={user360?.betting?.totalBets ?? '—'} />
@@ -1092,7 +1123,29 @@ export default function CustomersDomainView({
                 </div>
               )}
             </AdminCard>
+            )}
 
+            {(dossierTab === 'txns') && (
+            <AdminCard title="Recent transactions" accent="#059669" style={{ marginBottom: '12px' }}>
+              {!user360?.recentTransactions?.length ? (
+                <div style={{ fontSize: '0.82rem', color: 'var(--admin-text-muted)' }}>
+                  {user360Loading ? 'Loading…' : 'No transactions available.'}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 420, overflow: 'auto' }}>
+                  {user360.recentTransactions.slice(0, 40).map((t) => (
+                    <div key={t.transactionId || t.id || t.transaction_id} style={{ fontSize: '0.78rem', borderBottom: '1px solid var(--admin-border)', paddingBottom: 6 }}>
+                      <div style={{ fontWeight: 700 }}>{t.type || 'TXN'} · {money(t.amount)}</div>
+                      <div style={{ color: 'var(--admin-text-muted)' }}>{t.status || '—'} · {t.transactionId || t.id || t.transaction_id}</div>
+                      <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.7rem' }}>{formatDt(t.createdAt || t.created_at)}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </AdminCard>
+            )}
+
+            {(dossierTab === 'referrals') && (
             <AdminCard title="Referrals" accent="#ec4899" style={{ marginBottom: '12px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <DossierField label="Code" mono>{user360?.referrals?.code || '—'}</DossierField>
@@ -1101,7 +1154,10 @@ export default function CustomersDomainView({
                 <DossierField label="Qualified out">{user360?.referrals?.qualifiedOut ?? '—'}</DossierField>
               </div>
             </AdminCard>
+            )}
 
+            {(dossierTab === 'support') && (
+            <>
             <AdminCard title="Support tickets" accent="#f59e0b" style={{ marginBottom: '12px' }}>
               {!user360Loading && (!user360?.tickets || user360.tickets.length === 0) ? (
                 <div style={{ fontSize: '0.82rem', color: 'var(--admin-text-muted)' }}>No support tickets for this user.</div>
@@ -1165,7 +1221,10 @@ export default function CustomersDomainView({
                 </div>
               )}
             </AdminCard>
+            </>
+            )}
 
+            {(dossierTab === 'audit') && (
             <AdminCard title="Audit trail" accent="#64748b" style={{ marginBottom: '12px' }}>
               {!user360?.auditTrail?.length ? (
                 <div style={{ fontSize: '0.82rem', color: 'var(--admin-text-muted)' }}>
@@ -1184,7 +1243,9 @@ export default function CustomersDomainView({
                 </div>
               )}
             </AdminCard>
+            )}
 
+            {(dossierTab === 'timeline') && (
             <AdminCard title="Recent activity" accent="var(--admin-text-muted)" style={{ marginBottom: '12px' }}>
               {!user360?.timeline?.length ? (
                 <div style={{ fontSize: '0.82rem', color: 'var(--admin-text-muted)' }}>
@@ -1212,6 +1273,7 @@ export default function CustomersDomainView({
                 </div>
               )}
             </AdminCard>
+            )}
           </>
         )}
       </AdminDrawer>

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'motion/react';
 import { adminApiClient } from '../api/adminApiClient';
 import AdminDataTable from '../components/AdminDataTable';
 import AdminKPI from '../components/AdminKPI';
@@ -9,9 +8,41 @@ import AdminCard from '../components/AdminCard';
 import { StatusBadge } from '../components/AdminBadge';
 import { startVisibleInterval } from '../utils/visibleInterval';
 
-function formatMetric(value, prefix = '') {
-  if (value == null || Number.isNaN(Number(value))) return '—';
+/** Display helper — never invent metrics. */
+export function formatMetric(value, prefix = '') {
+  if (value == null || Number.isNaN(Number(value))) return 'Data unavailable';
   return `${prefix}${Number(value).toLocaleString()}`;
+}
+
+function Section({ title, children }) {
+  return (
+    <section style={{ marginBottom: 20 }} aria-label={title}>
+      <h3 className="admin-section-title">{title}</h3>
+      {children}
+    </section>
+  );
+}
+
+function KpiGrid({ cards, onNavigate }) {
+  return (
+    <div className="admin-kpi-grid">
+      {cards.map((card) => (
+        <AdminKPI
+          key={card.label}
+          label={card.label}
+          value={card.value}
+          accent={card.accent}
+          source={card.source}
+          trendLabel={card.trendLabel}
+          onClick={card.onClick
+            ? card.onClick
+            : (card.domainId && onNavigate
+              ? () => onNavigate({ domainId: card.domainId, subModuleId: card.subModuleId })
+              : undefined)}
+        />
+      ))}
+    </div>
+  );
 }
 
 export default function ControlTowerView({ subModule = 'overview', onSubModuleChange, onNavigate }) {
@@ -25,6 +56,12 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
     todayTurnover: null,
     ggr: null,
     pendingWithdrawals: null,
+    pendingKyc: null,
+    suspendedMarkets: null,
+    lockedDepositsTotal: null,
+    reservedFundsTotal: null,
+    openExposure: null,
+    openLiability: null,
     riskAlerts: 0,
     openTickets: null,
     systemStatus: 'LOADING',
@@ -37,6 +74,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
   const [error, setError] = useState(null);
   const [lastRefreshAt, setLastRefreshAt] = useState(null);
   const [observability, setObservability] = useState(null);
+  const [opsHealth, setOpsHealth] = useState(null);
 
   const tabs = [
     { id: 'overview', label: 'Operational Overview' },
@@ -68,24 +106,23 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
   }, []);
 
   useEffect(() => {
-    if (subModule !== 'telemetry') return undefined;
     let cancelled = false;
-    const loadObs = () => {
-      adminApiClient.get('/ops/observability')
-        .then((data) => {
-          if (cancelled) return;
-          setObservability(data);
-        })
-        .catch(() => {
-          if (!cancelled) setObservability(null);
-        });
+    const loadSide = () => {
+      Promise.allSettled([
+        adminApiClient.get('/ops/observability'),
+        adminApiClient.get('/operations/health'),
+      ]).then(([obs, health]) => {
+        if (cancelled) return;
+        setObservability(obs.status === 'fulfilled' ? obs.value : null);
+        setOpsHealth(health.status === 'fulfilled' ? health.value : null);
+      });
     };
-    const stop = startVisibleInterval(loadObs, 30000, { runImmediately: true });
+    const stop = startVisibleInterval(loadSide, 30000, { runImmediately: true });
     return () => {
       cancelled = true;
       stop();
     };
-  }, [subModule]);
+  }, []);
 
   const pricedCoverage = useMemo(() => {
     const live = Number(metrics.liveMatches) || 0;
@@ -139,6 +176,17 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
         subModuleId: 'ticket-queue',
       });
     }
+    if ((observability?.settlement?.failed_jobs || 0) > 0) {
+      rows.push({
+        id: 'settlement-fail',
+        title: `${observability.settlement.failed_jobs} settlement jobs failed`,
+        severity: 'HIGH',
+        status: 'OPEN',
+        time: 'operations',
+        domainId: 'operations',
+        subModuleId: 'settlement-queue',
+      });
+    }
     if ((metrics.riskAlerts || 0) === 0 && rows.length === 0) {
       rows.push({
         id: 'all-clear',
@@ -149,37 +197,104 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
       });
     }
     return rows;
-  }, [metrics, lastRefreshAt]);
+  }, [metrics, lastRefreshAt, observability]);
 
-  const statusColor = metrics.systemStatus === 'HEALTHY'
-    ? 'success'
-    : metrics.systemStatus === 'ERROR'
-      ? 'danger'
-      : 'warning';
-
-  const overviewCards = [
-    { label: 'Live Matches', value: formatMetric(metrics.liveMatches), source: 'LIVE', accent: '#f472b6', domainId: 'sports', subModuleId: 'catalog' },
-    { label: 'Priced Coverage', value: pricedCoverage == null ? '—' : `${pricedCoverage}%`, trendLabel: `${formatMetric(metrics.matchesWithOdds)} of ${formatMetric(metrics.liveMatches)}`, source: 'LIVE', accent: '#fbbf24', domainId: 'trading-risk', subModuleId: 'exposure' },
-    { label: 'Open Bets', value: formatMetric(metrics.openBets), source: 'DB', accent: '#60a5fa', domainId: 'betting', subModuleId: 'bets-registry' },
-    { label: 'Registered Users', value: formatMetric(metrics.registeredUsers ?? metrics.activeUsers), source: 'DB', accent: '#34d399', domainId: 'customers', subModuleId: 'directory' },
+  const systemCards = [
     {
-      label: metrics.turnoverScope === 'today' ? 'Today Turnover' : 'Stake Turnover',
+      label: 'System',
+      value: metrics.systemStatus || 'Data unavailable',
+      source: 'LIVE',
+      accent: metrics.systemStatus === 'HEALTHY' ? '#10b981' : '#f59e0b',
+      domainId: 'operations',
+      subModuleId: 'health-matrix',
+    },
+    {
+      label: 'API / Ops health',
+      value: opsHealth?.overall || opsHealth?.status || (opsHealth ? 'OK' : 'Data unavailable'),
+      source: 'OPS',
+      accent: '#38bdf8',
+      domainId: 'operations',
+      subModuleId: 'health-matrix',
+    },
+    {
+      label: 'Outbox pending',
+      value: formatMetric(observability?.outbox?.pending),
+      source: 'DB',
+      accent: '#f59e0b',
+      domainId: 'operations',
+      subModuleId: 'outbox',
+    },
+    {
+      label: 'Settlement failed',
+      value: formatMetric(observability?.settlement?.failed_jobs),
+      source: 'DB',
+      accent: '#f43f5e',
+      domainId: 'operations',
+      subModuleId: 'settlement-queue',
+    },
+    {
+      label: 'Provider errors',
+      value: formatMetric(metrics.riskAlerts),
+      source: 'FEED',
+      accent: '#fb7185',
+      domainId: 'sports',
+      subModuleId: 'providers',
+    },
+  ];
+
+  const businessCards = [
+    { label: 'Users', value: formatMetric(metrics.registeredUsers ?? metrics.activeUsers), source: 'DB', accent: '#34d399', domainId: 'customers', subModuleId: 'directory' },
+    {
+      label: metrics.turnoverScope === 'today' ? 'Turnover (today)' : 'Turnover',
       value: formatMetric(metrics.todayTurnover, '₹'),
       source: 'DB',
       accent: '#38bdf8',
-      domainId: 'finance',
-      subModuleId: 'ledger',
+      domainId: 'analytics',
+      subModuleId: 'turnover-ggr',
     },
-    { label: 'Approx GGR', value: formatMetric(metrics.ggr, '₹'), trendLabel: metrics.ggrNote || 'Settled stake − payouts', source: 'DB', accent: '#a78bfa', domainId: 'analytics', subModuleId: 'turnover-ggr' },
-    { label: 'Pending Withdrawals', value: formatMetric(metrics.pendingWithdrawals), source: 'DB', accent: '#f87171', domainId: 'finance', subModuleId: 'maker-checker' },
-    { label: 'Open Support Tickets', value: formatMetric(metrics.openTickets), source: 'DB', accent: '#22d3ee', domainId: 'support', subModuleId: 'ticket-queue' },
-    { label: 'IPLSRL Console', value: 'Desk', source: 'SRL', accent: '#fb923c', domainId: 'sports', subModuleId: 'iplsrl-console' },
+    { label: 'Approx GGR', value: formatMetric(metrics.ggr, '₹'), trendLabel: metrics.ggrNote || undefined, source: 'DB', accent: '#a78bfa', domainId: 'analytics', subModuleId: 'turnover-ggr' },
+    { label: 'Open bets', value: formatMetric(metrics.openBets), source: 'DB', accent: '#60a5fa', domainId: 'betting', subModuleId: 'bets-registry' },
+    { label: 'Open exposure', value: formatMetric(metrics.openExposure ?? metrics.openLiability, '₹'), source: 'DB', accent: '#f472b6', domainId: 'trading-risk', subModuleId: 'exposure' },
+    { label: 'Pending KYC', value: formatMetric(metrics.pendingKyc), source: 'DB', accent: '#fbbf24', domainId: 'customers', subModuleId: 'kyc-queue' },
+    { label: 'Pending withdrawals', value: formatMetric(metrics.pendingWithdrawals), source: 'DB', accent: '#f87171', domainId: 'finance', subModuleId: 'maker-checker' },
+  ];
+
+  const tradingCards = [
+    { label: 'Live matches', value: formatMetric(metrics.liveMatches), source: 'LIVE', accent: '#f472b6', domainId: 'sports', subModuleId: 'catalog' },
     {
-      label: 'Developer API Hub',
-      value: 'Gateway',
-      source: 'DOCS',
+      label: 'Priced coverage',
+      value: pricedCoverage == null ? 'Data unavailable' : `${pricedCoverage}%`,
+      trendLabel: `${formatMetric(metrics.matchesWithOdds)} of ${formatMetric(metrics.liveMatches)}`,
+      source: 'LIVE',
+      accent: '#fbbf24',
+      domainId: 'trading-risk',
+      subModuleId: 'exposure',
+    },
+    { label: 'Suspended markets', value: formatMetric(metrics.suspendedMarkets), source: 'DB', accent: '#fb923c', domainId: 'trading-risk', subModuleId: 'suspension' },
+  ];
+
+  const financeCards = [
+    { label: 'Locked deposits', value: formatMetric(metrics.lockedDepositsTotal, '₹'), source: 'DB', accent: '#22d3ee', domainId: 'finance', subModuleId: 'finance-health' },
+    { label: 'Reserved funds', value: formatMetric(metrics.reservedFundsTotal, '₹'), source: 'DB', accent: '#818cf8', domainId: 'finance', subModuleId: 'ledger' },
+    { label: 'Open support tickets', value: formatMetric(metrics.openTickets), source: 'DB', accent: '#22d3ee', domainId: 'support', subModuleId: 'ticket-queue' },
+  ];
+
+  const riskCards = [
+    {
+      label: 'Fraud / anomaly desk',
+      value: 'Review',
+      source: 'NAV',
+      accent: '#f43f5e',
+      domainId: 'trading-risk',
+      subModuleId: 'fraud-signals',
+    },
+    {
+      label: 'Referral / promo abuse',
+      value: 'Growth',
+      source: 'NAV',
       accent: '#a855f7',
-      onClick: () => navigate('/developer'),
+      domainId: 'growth',
+      subModuleId: 'referrals',
     },
   ];
 
@@ -189,129 +304,86 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
     incidents: 'Live System Incidents',
   };
 
-  const showMetrics = subModule === 'overview' || subModule === 'telemetry';
+  const showOverview = subModule === 'overview';
   const showProviders = subModule === 'telemetry';
   const showIncidents = subModule === 'incidents' || subModule === 'overview';
   const incidentData = subModule === 'overview' ? incidentRows.slice(0, 4) : incidentRows;
 
   return (
     <div>
-      {/* Sticky Header */}
-      <div style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 20,
-        margin: '0 0 16px',
-        padding: '0 0 12px',
-        background: 'var(--admin-sticky-bg)',
-        backdropFilter: 'blur(8px)',
-      }}>
-        <div className="admin-flex-between" style={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      <div className="admin-sticky-header">
+        <div className="admin-flex-between" style={{ alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: 'var(--admin-text)' }}>
+            <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: 'var(--admin-text)' }}>
               Control Tower · {titleBySub[subModule] || 'Operational Overview'}
             </h2>
-            <p style={{ margin: '5px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem', maxWidth: '720px' }}>
+            <p style={{ margin: '5px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem', maxWidth: 720 }}>
               {metrics.note || 'Live sportsbook telemetry from aggregator + Postgres.'}
               {lastRefreshAt ? ` · Updated ${new Date(lastRefreshAt).toLocaleTimeString()}` : ''}
             </p>
             {error && (
-              <p style={{ margin: '5px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>
+              <p style={{ margin: '5px 0 0', color: 'var(--admin-danger)', fontSize: '0.78rem' }}>{error}</p>
             )}
           </div>
           <StatusBadge status={metrics.systemStatus} />
         </div>
-
-        <div style={{ marginTop: '12px' }}>
-          <AdminTabs
-            tabs={tabs}
-            active={subModule}
-            onChange={(id) => onSubModuleChange?.(id)}
-          />
+        <div style={{ marginTop: 12 }}>
+          <AdminTabs tabs={tabs} active={subModule} onChange={(id) => onSubModuleChange?.(id)} />
         </div>
       </div>
 
-      {/* KPI Grid */}
-      {showMetrics && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '20px' }}>
-          {overviewCards.map((card, i) => (
-            <motion.div
-              key={card.label}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2, delay: i * 0.025 }}
-            >
-              <AdminKPI
-                label={card.label}
-                value={card.value}
-                accent={card.accent}
-                source={card.source}
-                trendLabel={card.trendLabel}
-                onClick={card.onClick
-                  ? card.onClick
-                  : (card.domainId && onNavigate
-                    ? () => onNavigate({ domainId: card.domainId, subModuleId: card.subModuleId })
-                    : undefined)}
-              />
-            </motion.div>
-          ))}
-        </div>
+      {showOverview && (
+        <>
+          <Section title="System health">
+            <KpiGrid cards={systemCards} onNavigate={onNavigate} />
+          </Section>
+          <Section title="Business">
+            <KpiGrid cards={businessCards} onNavigate={onNavigate} />
+          </Section>
+          <Section title="Trading">
+            <KpiGrid cards={tradingCards} onNavigate={onNavigate} />
+          </Section>
+          <Section title="Finance">
+            <KpiGrid cards={financeCards} onNavigate={onNavigate} />
+          </Section>
+          <Section title="Risk">
+            <KpiGrid cards={riskCards} onNavigate={onNavigate} />
+          </Section>
+        </>
       )}
 
-      {/* Provider Status Table */}
       {showProviders && (
         <>
-          {observability && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 16 }}>
+          <Section title="System health">
+            <KpiGrid cards={systemCards} onNavigate={onNavigate} />
+          </Section>
+          {observability ? (
+            <div className="admin-kpi-grid" style={{ marginBottom: 16 }}>
               <AdminCard title="Settlement" accent="#f43f5e" style={{ margin: 0 }}>
                 <div style={{ fontSize: '0.84rem', lineHeight: 1.5 }}>
-                  <div>Open jobs: <strong>{observability.settlement?.open_jobs ?? '—'}</strong></div>
-                  <div>Failed: <strong>{observability.settlement?.failed_jobs ?? '—'}</strong></div>
-                  <div>Completed 15m: <strong>{observability.settlement?.completed_15m ?? '—'}</strong></div>
-                  <button
-                    type="button"
-                    className="admin-btn admin-btn--secondary admin-btn--sm"
-                    style={{ marginTop: 8 }}
-                    onClick={() => onNavigate?.({ domainId: 'operations', subModuleId: 'settlement-queue' })}
-                  >
-                    Open settlement queue →
-                  </button>
-                </div>
-              </AdminCard>
-              <AdminCard title="Deposits" accent="#38bdf8" style={{ margin: 0 }}>
-                <div style={{ fontSize: '0.84rem', lineHeight: 1.5 }}>
-                  <div>Pending 1h: <strong>{observability.deposits?.pending_1h ?? '—'}</strong></div>
-                  <div>Captured 15m: <strong>{observability.deposits?.captured_15m ?? '—'}</strong></div>
+                  <div>Open jobs: <strong>{observability.settlement?.open_jobs ?? 'Data unavailable'}</strong></div>
+                  <div>Failed: <strong>{observability.settlement?.failed_jobs ?? 'Data unavailable'}</strong></div>
+                  <div>Completed 15m: <strong>{observability.settlement?.completed_15m ?? 'Data unavailable'}</strong></div>
                 </div>
               </AdminCard>
               <AdminCard title="Outbox" accent="#f59e0b" style={{ margin: 0 }}>
                 <div style={{ fontSize: '0.84rem', lineHeight: 1.5 }}>
-                  <div>Pending: <strong>{observability.outbox?.pending ?? '—'}</strong></div>
-                  <div>Failed: <strong>{observability.outbox?.failed ?? '—'}</strong></div>
+                  <div>Pending: <strong>{observability.outbox?.pending ?? 'Data unavailable'}</strong></div>
+                  <div>Failed: <strong>{observability.outbox?.failed ?? 'Data unavailable'}</strong></div>
                 </div>
               </AdminCard>
-              {(observability.alerts || []).length > 0 && (
-                <AdminCard title="Alerts" accent="#ef4444" style={{ margin: 0 }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {observability.alerts.map((a) => (
-                      <div key={a.code} style={{ fontSize: '0.78rem', color: a.severity === 'high' ? '#b91c1c' : '#b45309' }}>
-                        {a.message}
-                      </div>
-                    ))}
-                    <button
-                      type="button"
-                      className="admin-btn admin-btn--ghost admin-btn--sm"
-                      onClick={() => onNavigate?.({ domainId: 'operations', subModuleId: 'settlement-queue' })}
-                    >
-                      Investigate →
-                    </button>
-                  </div>
-                </AdminCard>
-              )}
+              <AdminCard title="Deposits (ops)" accent="#38bdf8" style={{ margin: 0 }}>
+                <div style={{ fontSize: '0.84rem', lineHeight: 1.5 }}>
+                  <div>Pending 1h: <strong>{observability.deposits?.pending_1h ?? 'Data unavailable'}</strong></div>
+                  <div>Captured 15m: <strong>{observability.deposits?.captured_15m ?? 'Data unavailable'}</strong></div>
+                </div>
+              </AdminCard>
             </div>
+          ) : (
+            <p style={{ color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>Observability: Data unavailable</p>
           )}
           <AdminDataTable
-            title="Provider Feed Status"
+            title="Provider feed status"
             emptyMessage="No provider status in current snapshot"
             data={sourceRows}
             columns={[
@@ -319,11 +391,12 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
               {
                 header: 'Health',
                 key: 'severity',
-                render: (r) => <StatusBadge status={r.severity} customMap={{
-                  success: ['OK'],
-                  warning: ['WATCH'],
-                  danger: ['HIGH'],
-                }} />,
+                render: (r) => (
+                  <StatusBadge
+                    status={r.severity}
+                    customMap={{ success: ['OK'], warning: ['WATCH'], danger: ['HIGH'] }}
+                  />
+                ),
               },
               { header: 'Status', key: 'status' },
               { header: 'Snapshot', key: 'time' },
@@ -332,10 +405,9 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
         </>
       )}
 
-      {/* Incidents Table */}
       {showIncidents && (
         <AdminDataTable
-          title={subModule === 'overview' ? 'Incidents Snapshot' : 'Operational Incidents & Queues'}
+          title={subModule === 'overview' ? 'Incidents snapshot' : 'Operational incidents & queues'}
           emptyMessage="No incidents"
           data={incidentData}
           onRowClick={(row) => {
@@ -348,11 +420,12 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
             {
               header: 'Severity',
               key: 'severity',
-              render: (r) => <StatusBadge status={r.severity} customMap={{
-                success: ['OK'],
-                warning: ['MEDIUM', 'WATCH'],
-                danger: ['HIGH', 'CRITICAL'],
-              }} />,
+              render: (r) => (
+                <StatusBadge
+                  status={r.severity}
+                  customMap={{ success: ['OK'], warning: ['MEDIUM', 'WATCH'], danger: ['HIGH', 'CRITICAL'] }}
+                />
+              ),
             },
             { header: 'Status', key: 'status' },
             { header: 'Context', key: 'time' },
@@ -360,32 +433,16 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
         />
       )}
 
-      {/* Quick Nav Buttons */}
       {subModule === 'overview' && (
-        <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            className="admin-btn admin-btn--secondary"
-            onClick={() => onSubModuleChange?.('telemetry')}
-            style={{ color: '#93c5fd' }}
-          >
-            Open Telemetry →
+        <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+          <button type="button" className="admin-btn admin-btn--secondary" onClick={() => onSubModuleChange?.('telemetry')}>
+            Open telemetry →
           </button>
-          <button
-            type="button"
-            className="admin-btn admin-btn--secondary"
-            onClick={() => onSubModuleChange?.('incidents')}
-            style={{ color: '#fbbf24' }}
-          >
-            Open Incidents →
+          <button type="button" className="admin-btn admin-btn--secondary" onClick={() => onSubModuleChange?.('incidents')}>
+            Open incidents →
           </button>
-          <button
-            type="button"
-            className="admin-btn admin-btn--secondary"
-            onClick={() => navigate('/developer')}
-            style={{ color: '#c084fc' }}
-          >
-            Developer API Gateway ↗
+          <button type="button" className="admin-btn admin-btn--secondary" onClick={() => navigate('/developer')}>
+            Developer API ↗
           </button>
         </div>
       )}
