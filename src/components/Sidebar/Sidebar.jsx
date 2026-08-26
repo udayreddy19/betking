@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { CASINO_ENABLED } from '../../utils/featureFlags';
 import { hoverScale, pressScale, springUi } from '../../utils/motionPresets';
 import {
@@ -9,7 +9,6 @@ import {
   HiOutlineDocumentText,
   HiOutlineUser,
   HiOutlineTrophy,
-  HiOutlineCube,
   BiWallet,
   BiMoneyWithdraw,
   BiHistory,
@@ -20,13 +19,29 @@ import {
   RiLogoutBoxRLine,
   IoNotifications,
   FiZap,
+  HiOutlineClipboardList,
+  FiShield,
+  FiHelpCircle,
 } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { isAdminEligibleUser } from '../../utils/isAdminEligibleUser';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { getLoyaltySummary } from '../../utils/loyaltyPoints';
+import { useUserNotifications } from '../../hooks/useUserNotifications';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
 import './Sidebar.css';
+
+function formatNotifTime(value) {
+  if (!value) return '';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
 
 export default function Sidebar() {
   const location = useLocation();
@@ -38,10 +53,21 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const isAdminPage = location.pathname.startsWith('/admin');
   const isDevRoute = location.pathname.startsWith('/developer') || location.pathname.startsWith('/api-docs');
+  const { notifications, unreadCount, refresh, markRead, markAllRead, clearNotification, clearAll } = useUserNotifications(isLoggedIn, user?.userId);
+  const [notifsExpanded, setNotifsExpanded] = useState(false);
 
   useEffect(() => {
     closeSidebar();
   }, [location.pathname, closeSidebar]);
+
+  useEffect(() => {
+    if (isSidebarOpen && isLoggedIn) {
+      refresh();
+    }
+    if (!isSidebarOpen) {
+      setNotifsExpanded(false);
+    }
+  }, [isSidebarOpen, isLoggedIn, refresh]);
 
   if (isAdminPage || isDevRoute) return null;
 
@@ -65,24 +91,39 @@ export default function Sidebar() {
     openFinModal(type);
   };
 
+  const handleOpenNotification = async (notif) => {
+    if (notif?.id && !notif.is_read) {
+      await markRead(notif.id);
+    }
+    closeSidebar();
+    navigate('/profile?tab=support');
+  };
+
   const firstName = String(user?.displayName || user?.email || 'there').split(/[\s@]/)[0];
   const loyalty = getLoyaltySummary(user);
-  const loyaltyProgress = loyalty.nextTier
-    ? `${Number(loyalty.points || 0).toLocaleString('en-IN')} pts · ${Number(loyalty.pointsToNext || 0).toLocaleString('en-IN')} to ${loyalty.nextLabel}`
-    : `${Number(loyalty.points || 0).toLocaleString('en-IN')} pts · Diamond`;
+  const isAdminUser = isLoggedIn && isAdminEligibleUser(user);
 
   return (
     <>
       <div className={`sidebar-overlay ${isSidebarOpen ? 'open' : ''}`} onClick={closeSidebar} />
       <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`} id="sidebar">
         <div className="sidebar-header">
-          <span style={{ fontWeight: 700, fontSize: 'var(--text-lg)' }}>
-            {isLoggedIn ? `Hi, ${firstName}` : 'Menu'}
-          </span>
+          <div className="sidebar-header-text">
+            <span className="sidebar-header-title">
+              {isLoggedIn ? `Hi, ${firstName}` : 'Menu'}
+            </span>
+            {isLoggedIn && (
+              <span className="sidebar-header-sub">
+                {loyalty.tierLabel || user?.loyaltyRank || 'Standard'}
+                {loyalty.points > 0 ? ` · ${Number(loyalty.points).toLocaleString('en-IN')} pts` : ''}
+              </span>
+            )}
+          </div>
           <motion.button
             className="sidebar-close"
             onClick={closeSidebar}
             id="sidebar-close"
+            aria-label="Close menu"
             whileHover={{ scale: hoverScale }}
             whileTap={{ scale: pressScale }}
             transition={springUi}
@@ -93,131 +134,189 @@ export default function Sidebar() {
 
         {isLoggedIn ? (
           <>
-            {/* Top Navigation Tabs */}
-            <div className="sidebar-tabs">
-              <button className="sidebar-tab active">
-                <HiOutlineDocumentText className="tab-icon" />
-                Account
-              </button>
-              {(isAdminEligibleUser(user)) && (
-                <button className="sidebar-tab" onClick={() => { closeSidebar(); navigate('/admin'); }}>
-                  <HiOutlineDocumentText className="tab-icon" />
-                  Admin
-                </button>
-              )}
-              <button className="sidebar-tab" onClick={() => { closeSidebar(); navigate('/profile'); }}>
-                <HiOutlineUser className="tab-icon" />
-                Profile
-              </button>
-              <button className="sidebar-tab sidebar-tab--page-nav" onClick={() => { closeSidebar(); navigate('/sports'); }}>
-                <HiOutlineTrophy className="tab-icon" />
-                Sports
-              </button>
-              <button className="sidebar-tab sidebar-tab--page-nav" onClick={() => { closeSidebar(); navigate('/live-betting'); }}>
-                <HiOutlineCube className="tab-icon" />
-                Live
-              </button>
-              {CASINO_ENABLED && (
-                <button className="sidebar-tab sidebar-tab--page-nav" onClick={() => { closeSidebar(); navigate('/casino'); }}>
-                  <MdOutlineStorefront className="tab-icon" />
-                  Casino
-                </button>
-              )}
-            </div>
-
             <div className="sidebar-content">
-              {/* Wicket Keeper Level Badge */}
-              <div className="sidebar-loyalty">
-                <HiOutlineTrophy className="loyalty-avatar-icon" aria-hidden />
-                <div className="loyalty-info">
-                  <h4>{loyalty.tierLabel || user?.loyaltyRank || 'Standard'}</h4>
-                  <p>{loyaltyProgress}</p>
-                </div>
-                <div className="loyalty-ring" />
+              <section className="sidebar-notif-panel">
+                <button
+                  type="button"
+                  className={`sidebar-notif-toggle ${notifsExpanded ? 'open' : ''}`}
+                  onClick={() => setNotifsExpanded((v) => !v)}
+                  aria-expanded={notifsExpanded}
+                >
+                  <span className="sidebar-notif-toggle__icon">
+                    <IoNotifications />
+                    {unreadCount > 0 && (
+                      <span className="sidebar-notif-toggle__dot" aria-hidden />
+                    )}
+                  </span>
+                  <span className="sidebar-notif-toggle__copy">
+                    <strong>Notifications</strong>
+                    <span>
+                      {unreadCount > 0
+                        ? `${unreadCount} unread`
+                        : (notifications.length ? 'You\'re all caught up' : 'No notifications yet')}
+                    </span>
+                  </span>
+                  {unreadCount > 0 && (
+                    <span className="sidebar-notif-count">{unreadCount > 99 ? '99+' : unreadCount}</span>
+                  )}
+                  <FiChevronRight className={`sidebar-notif-chevron ${notifsExpanded ? 'open' : ''}`} />
+                </button>
+
+                <AnimatePresence initial={false}>
+                  {notifsExpanded && (
+                    <motion.div
+                      className="sidebar-notif-list"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+                    >
+                      {notifications.length > 0 && (
+                        <div className="sidebar-notif-toolbar">
+                          {unreadCount > 0 && (
+                            <button type="button" onClick={() => markAllRead()}>
+                              Mark all read
+                            </button>
+                          )}
+                          <button type="button" className="sidebar-notif-toolbar__clear" onClick={() => clearAll()}>
+                            Clear all
+                          </button>
+                        </div>
+                      )}
+                      {notifications.length === 0 ? (
+                        <p className="sidebar-notif-empty">Nothing here yet. Bet updates and support replies will show up here.</p>
+                      ) : (
+                        notifications.slice(0, 10).map((notif) => (
+                          <div
+                            key={notif.id}
+                            className={`sidebar-notif-item ${notif.is_read ? '' : 'unread'}`}
+                          >
+                            <button
+                              type="button"
+                              className="sidebar-notif-item__main"
+                              onClick={() => handleOpenNotification(notif)}
+                            >
+                              <span className="sidebar-notif-item__title">
+                                {notif.subject || notif.event_type || 'Update'}
+                              </span>
+                              {notif.body && (
+                                <span className="sidebar-notif-item__body">{notif.body}</span>
+                              )}
+                              <span className="sidebar-notif-item__time">{formatNotifTime(notif.created_at)}</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="sidebar-notif-item__dismiss"
+                              aria-label="Clear notification"
+                              onClick={() => clearNotification(notif.id)}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </section>
+
+              <div className="sidebar-money-row">
+                <button
+                  type="button"
+                  className="sidebar-money-btn sidebar-money-btn--deposit"
+                  onClick={() => { closeSidebar(); openDepositModal(); }}
+                >
+                  <BiWallet />
+                  Deposit
+                </button>
+                <button
+                  type="button"
+                  className="sidebar-money-btn sidebar-money-btn--withdraw"
+                  onClick={() => handleFinModal('withdraw')}
+                >
+                  <BiMoneyWithdraw />
+                  Withdraw
+                </button>
               </div>
 
-              {/* Notifications */}
-              <div className="sidebar-notifications" onClick={() => handleFinModal('transactions')}>
-                <IoNotifications className="notif-icon" />
-                <div className="notif-info">
-                  <h4>Notifications center</h4>
-                  <p>Updates will appear here</p>
-                </div>
-                <span className="notif-badge">{user?.notifications || 0}</span>
-                <FiChevronRight className="notif-arrow" />
+              <div className="sidebar-section-label">Account</div>
+              <div className="sidebar-list">
+                <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); openMyBets(); }}>
+                  <HiOutlineClipboardList className="sidebar-list-icon" />
+                  <span>My Bets</span>
+                  <FiChevronRight className="sidebar-list-arrow" />
+                </button>
+                <button type="button" className="sidebar-list-item" onClick={() => handleFinModal('bets-history')}>
+                  <BiHistory className="sidebar-list-icon" />
+                  <span>Bet history</span>
+                  <FiChevronRight className="sidebar-list-arrow" />
+                </button>
+                <button type="button" className="sidebar-list-item" onClick={() => handleFinModal('transactions')}>
+                  <BiTransfer className="sidebar-list-icon" />
+                  <span>Transactions</span>
+                  <FiChevronRight className="sidebar-list-arrow" />
+                </button>
+                <button type="button" className="sidebar-list-item" onClick={() => handleFinModal('bonuses')}>
+                  <BiGift className="sidebar-list-icon" />
+                  <span>Bonuses</span>
+                  <FiChevronRight className="sidebar-list-arrow" />
+                </button>
+                <button
+                  type="button"
+                  className="sidebar-list-item"
+                  onClick={() => {
+                    closeSidebar();
+                    window.dispatchEvent(new Event('oddsyra:open-daily-spin'));
+                  }}
+                >
+                  <FiZap className="sidebar-list-icon" />
+                  <span>Daily spin</span>
+                  <FiChevronRight className="sidebar-list-arrow" />
+                </button>
+                <button type="button" className="sidebar-list-item" onClick={() => handleFinModal('cancel-wd')}>
+                  <MdOutlineCancel className="sidebar-list-icon" />
+                  <span>Cancel withdrawal</span>
+                  <FiChevronRight className="sidebar-list-arrow" />
+                </button>
               </div>
 
-              {/* Actions Grid */}
-              <div className="sidebar-actions">
-                <div className="sidebar-actions-row">
-                  <button className="sidebar-action" onClick={() => { closeSidebar(); openDepositModal(); }}>
-                    <span className="action-icon-wrap"><BiWallet className="action-icon" /></span>
-                    <span className="action-label">Deposit</span>
+              <div className="sidebar-section-label">Explore</div>
+              <div className="sidebar-list">
+                <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/profile'); }}>
+                  <HiOutlineUser className="sidebar-list-icon" />
+                  <span>Profile</span>
+                  <FiChevronRight className="sidebar-list-arrow" />
+                </button>
+                <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/profile?tab=support'); }}>
+                  <FiHelpCircle className="sidebar-list-icon" />
+                  <span>Support</span>
+                  <FiChevronRight className="sidebar-list-arrow" />
+                </button>
+                <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/promotions'); }}>
+                  <HiOutlineTrophy className="sidebar-list-icon" />
+                  <span>Promotions</span>
+                  <FiChevronRight className="sidebar-list-arrow" />
+                </button>
+                {CASINO_ENABLED && (
+                  <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/casino'); }}>
+                    <MdOutlineStorefront className="sidebar-list-icon" />
+                    <span>Casino</span>
+                    <FiChevronRight className="sidebar-list-arrow" />
                   </button>
-
-                  <button className="sidebar-action" onClick={() => handleFinModal('withdraw')}>
-                    <span className="action-icon-wrap"><BiMoneyWithdraw className="action-icon" /></span>
-                    <span className="action-label">Withdraw</span>
+                )}
+                <button type="button" className="sidebar-list-item" onClick={() => handleFinModal('marketplace')}>
+                  <MdOutlineStorefront className="sidebar-list-icon" />
+                  <span>Marketplace</span>
+                  <FiChevronRight className="sidebar-list-arrow" />
+                </button>
+                {isAdminUser && (
+                  <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/admin'); }}>
+                    <FiShield className="sidebar-list-icon" />
+                    <span>Admin portal</span>
+                    <FiChevronRight className="sidebar-list-arrow" />
                   </button>
-
-                  <button className="sidebar-action" onClick={() => handleFinModal('cancel-wd')} title="Cancel withdrawal">
-                    <span className="action-icon-wrap"><MdOutlineCancel className="action-icon" /></span>
-                    <span className="action-label">Cancel WD</span>
-                  </button>
-
-                  <button className="sidebar-action" onClick={() => { closeSidebar(); openMyBets(); }}>
-                    <span className="action-icon-wrap"><HiOutlineDocumentText className="action-icon" /></span>
-                    <span className="action-label">My Bets</span>
-                  </button>
-                </div>
-
-                <div className="sidebar-actions-row">
-                  <button className="sidebar-action" onClick={() => handleFinModal('bets-history')} title="Bets history">
-                    <span className="action-icon-wrap"><BiHistory className="action-icon" /></span>
-                    <span className="action-label">History</span>
-                  </button>
-
-                  <button className="sidebar-action" onClick={() => handleFinModal('transactions')} title="Transactions">
-                    <span className="action-icon-wrap"><BiTransfer className="action-icon" /></span>
-                    <span className="action-label">Activity</span>
-                  </button>
-
-                  <button className="sidebar-action" onClick={() => handleFinModal('bonuses')} title="My bonuses">
-                    <span className="action-icon-wrap"><BiGift className="action-icon" /></span>
-                    <span className="action-label">Bonuses</span>
-                  </button>
-
-                  <button
-                    className="sidebar-action"
-                    onClick={() => {
-                      closeSidebar();
-                      window.dispatchEvent(new Event('oddsyra:open-daily-spin'));
-                    }}
-                    title="Daily spin"
-                  >
-                    <span className="action-icon-wrap"><FiZap className="action-icon" /></span>
-                    <span className="action-label">Spin</span>
-                  </button>
-                </div>
+                )}
               </div>
-
-              {/* Marketplace Link */}
-              <button className="sidebar-link" onClick={() => handleFinModal('marketplace')}>
-                <span className="link-left">
-                  <MdOutlineStorefront className="link-icon" />
-                  Marketplace
-                </span>
-                <FiChevronRight className="link-arrow" />
-              </button>
-
-              {/* Loyalty Benefits Link */}
-              <button className="sidebar-link" onClick={() => handleFinModal('bonuses')}>
-                <span className="link-left">
-                  <HiOutlineTrophy className="link-icon" />
-                  Discover Loyalty Benefits
-                </span>
-                <FiChevronRight className="link-arrow" />
-              </button>
             </div>
 
             <div className="sidebar-theme">
@@ -234,10 +333,30 @@ export default function Sidebar() {
           </>
         ) : (
           <div className="sidebar-guest">
-            <h3>Welcome to OddsYra!</h3>
-            <p>Log in or create an account to start betting</p>
-            <button className="sidebar-guest-btn primary" onClick={handleLogin}>Log in</button>
-            <button className="sidebar-guest-btn outline" onClick={handleRegister}>Create Account</button>
+            <div className="sidebar-guest-mark">
+              <HiOutlineDocumentText />
+            </div>
+            <h3>Welcome to OddsYra</h3>
+            <p>Log in or create an account to deposit, bet, and track notifications.</p>
+            <button type="button" className="sidebar-guest-btn primary" onClick={handleLogin}>Log in</button>
+            <button type="button" className="sidebar-guest-btn outline" onClick={handleRegister}>Create account</button>
+            <div className="sidebar-list sidebar-list--guest">
+              <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/sports'); }}>
+                <HiOutlineTrophy className="sidebar-list-icon" />
+                <span>Sports</span>
+                <FiChevronRight className="sidebar-list-arrow" />
+              </button>
+              <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/live-betting'); }}>
+                <HiOutlineClipboardList className="sidebar-list-icon" />
+                <span>Live betting</span>
+                <FiChevronRight className="sidebar-list-arrow" />
+              </button>
+              <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/help'); }}>
+                <FiHelpCircle className="sidebar-list-icon" />
+                <span>Help center</span>
+                <FiChevronRight className="sidebar-list-arrow" />
+              </button>
+            </div>
             <div className="sidebar-theme sidebar-theme--guest">
               <ThemeToggle variant="sidebar" />
             </div>

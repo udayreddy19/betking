@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { adminApiClient } from '../api/adminApiClient';
 import AdminDataTable from '../components/AdminDataTable';
 import { useAdminToast } from '../components/AdminToastContext';
@@ -382,5 +382,145 @@ export default function GrowthDomainView({ subModule = 'promotions' }) {
   if (subModule === 'vip-tiers') {
     return <VipTiersPanel />;
   }
+  if (subModule === 'referrals') {
+    return <ReferralsAdminPanel />;
+  }
   return <PromotionsPanel />;
+}
+
+function ReferralsAdminPanel() {
+  const [rows, setRows] = useState([]);
+  const [metrics, setMetrics] = useState({});
+  const [error, setError] = useState(null);
+  const [status, setStatus] = useState('');
+  const [q, setQ] = useState('');
+  const { showToast } = useAdminToast();
+
+  const load = useCallback(() => {
+    const params = new URLSearchParams();
+    params.set('limit', '200');
+    if (status) params.set('status', status);
+    if (q.trim()) params.set('q', q.trim());
+    return adminApiClient.get(`/growth/referrals?${params}`)
+      .then((data) => {
+        setRows(data.referrals || []);
+        setMetrics(data.metrics || data.stats || {});
+        setError(data.error || null);
+      })
+      .catch((err) => {
+        setRows([]);
+        setError(err.message || 'Failed to load referrals');
+      });
+  }, [status, q]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const retry = (id) => {
+    adminApiClient.post(`/growth/referrals/${encodeURIComponent(id)}/retry-reward`, { reason: 'Admin retry' })
+      .then((res) => {
+        showToast(res.success ? 'Reward retry completed' : (res.reason || 'Not rewarded'), res.success ? 'success' : 'warning');
+        load();
+      })
+      .catch((err) => showToast(err.message || 'Retry failed', 'error'));
+  };
+
+  const rowCounts = useMemo(() => {
+    const total = rows.length;
+    let qualified = 0;
+    let pending = 0;
+    let rewarded = 0;
+    rows.forEach((r) => {
+      const s = String(r.status || '').toUpperCase();
+      if (s === 'QUALIFIED' || s === 'COMPLETED') qualified += 1;
+      else if (s === 'REGISTERED' || s === 'PENDING' || s === 'FRAUD_REVIEW') pending += 1;
+      if (s === 'REWARDED') {
+        rewarded += 1;
+        qualified += 1;
+      }
+    });
+    return { total, qualified, pending, rewarded };
+  }, [rows]);
+
+  const kpiTotal = metrics.total ?? metrics.total_count ?? rowCounts.total;
+  const kpiPending = metrics.pending ?? metrics.pending_count ?? rowCounts.pending;
+  const kpiQualified = metrics.qualified ?? metrics.qualified_count ?? rowCounts.qualified;
+  const kpiRewarded = metrics.rewarded ?? metrics.rewarded_count ?? rowCounts.rewarded;
+  const kpiRewardValue = metrics.reward_value ?? metrics.rewardValue;
+
+  return (
+    <div>
+      <h2 style={{ margin: '0 0 8px', fontSize: '1.25rem', fontWeight: 800, color: 'var(--admin-text)' }}>Referral Program</h2>
+      <p style={{ margin: '0 0 16px', color: 'var(--admin-text-muted)', fontSize: '0.85rem' }}>
+        User-to-user referrals. Free bet rewards grant after qualification (first deposit). Signup promos cannot combine with referral.
+      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 16 }}>
+        {[
+          ['Total', kpiTotal],
+          ['Pending', kpiPending],
+          ['Qualified', kpiQualified],
+          ['Rewarded', kpiRewarded],
+          ['Reward value', money(kpiRewardValue)],
+        ].map(([label, val]) => (
+          <div key={label} style={{ padding: 12, borderRadius: 10, border: '1px solid var(--admin-border)', background: 'var(--admin-surface)' }}>
+            <div style={{ fontSize: '0.7rem', color: 'var(--admin-text-muted)', fontWeight: 700 }}>{label}</div>
+            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--admin-text)' }}>{val ?? '—'}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+        <select value={status} onChange={(e) => setStatus(e.target.value)} style={{ padding: '6px 10px', borderRadius: 6 }}>
+          <option value="">All statuses</option>
+          {['REGISTERED', 'FRAUD_REVIEW', 'QUALIFIED', 'REWARDED', 'REJECTED'].map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search code, user, email…"
+          style={{ padding: '6px 10px', borderRadius: 6, minWidth: 220 }}
+        />
+        <button type="button" onClick={() => load()}>Refresh</button>
+      </div>
+      {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
+      <AdminDataTable
+        title="Referrals"
+        emptyMessage="No referrals yet"
+        data={rows.map((r) => ({
+          id: r.id,
+          referrer: r.referrer_name || r.referrer_user_id,
+          referred: r.referred_name || r.referred_user_id,
+          code: r.referral_code,
+          status: r.status,
+          kyc: r.referred_kyc,
+          referrerReward: money(r.referrer_reward_amount),
+          referredReward: money(r.referred_reward_amount),
+          created: r.created_at ? String(r.created_at).slice(0, 19) : '—',
+          rewarded: r.rewarded_at ? String(r.rewarded_at).slice(0, 19) : '—',
+          _raw: r,
+        }))}
+        columns={[
+          { header: 'ID', key: 'id' },
+          { header: 'Referrer', key: 'referrer' },
+          { header: 'Referred', key: 'referred' },
+          { header: 'Code', key: 'code' },
+          { header: 'Status', key: 'status' },
+          { header: 'KYC', key: 'kyc' },
+          { header: 'Referrer ₹', key: 'referrerReward' },
+          { header: 'Referred ₹', key: 'referredReward' },
+          { header: 'Created', key: 'created' },
+          {
+            header: 'Actions',
+            key: 'actions',
+            sortable: false,
+            render: (row) => (
+              <button type="button" onClick={() => retry(row.id)} style={{ fontSize: '0.75rem', fontWeight: 700 }}>
+                Retry reward
+              </button>
+            ),
+          },
+        ]}
+      />
+    </div>
+  );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { IoEyeOutline, IoEyeOffOutline } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { DEMO_MODE } from '../../utils/featureFlags';
@@ -21,6 +21,7 @@ function digitsOnly(value) {
 
 export default function Register() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { openLoginModal, closeLoginModal, register, showToast, isLoggedIn } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [agreed, setAgreed] = useState(false);
@@ -30,6 +31,7 @@ export default function Register() {
   const [displayName, setDisplayName] = useState('');
   const [phone, setPhone] = useState('');
   const [promoCode, setPromoCode] = useState('');
+  const [referralCode, setReferralCode] = useState(() => String(searchParams.get('ref') || '').trim().toUpperCase());
   const [loading, setLoading] = useState(false);
   const errorRef = useRef(null);
 
@@ -38,12 +40,36 @@ export default function Register() {
   }, [closeLoginModal]);
 
   useEffect(() => {
+    const ref = String(searchParams.get('ref') || '').trim().toUpperCase();
+    if (ref) {
+      setReferralCode(ref);
+      try {
+        sessionStorage.setItem('bk_pending_referral', ref);
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (referralCode.trim()) {
+      try {
+        sessionStorage.setItem('bk_pending_referral', referralCode.trim().toUpperCase());
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [referralCode]);
+
+  useEffect(() => {
     if (error) errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, [error]);
 
   if (isLoggedIn) {
     return <Navigate to="/sports" replace />;
   }
+
+  const referralActive = Boolean(referralCode.trim());
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -69,6 +95,10 @@ export default function Register() {
       setError('Please confirm you are 18+ and accept the terms.');
       return;
     }
+    if (referralActive && promoCode.trim()) {
+      setError('Referral and initial signup promotions cannot be combined. Clear the promo code or remove the referral.');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -77,13 +107,16 @@ export default function Register() {
         password,
         displayName,
         phone: digitsOnly(phone),
-        promoCode,
+        promoCode: referralActive ? '' : promoCode,
+        referralCode: referralCode.trim() || undefined,
       });
       if (!result.ok) {
         setError(result.error || 'Could not create your account. Try again.');
         return;
       }
-      if (result.promoReward?.error) {
+      if (result.referral?.success) {
+        showToast('Joined via referral. Free bet unlocks after your qualifying first deposit.', 'success');
+      } else if (result.promoReward?.error) {
         showToast(result.promoReward.error, 'info');
       } else if (result.promoReward?.deferred) {
         showToast(
@@ -210,30 +243,59 @@ export default function Register() {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="reg-promo">Promo code (optional)</label>
+              <label className="form-label" htmlFor="reg-ref">Referral code (optional)</label>
+              <input
+                className="form-input"
+                id="reg-ref"
+                type="text"
+                autoComplete="off"
+                placeholder="e.g. UDAY123"
+                value={referralCode}
+                onChange={(e) => {
+                  setReferralCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''));
+                  if (e.target.value.trim()) setPromoCode('');
+                }}
+                maxLength={24}
+              />
+              {referralActive && (
+                <p className="register-promo-hint" style={{ marginTop: 8 }}>
+                  You&apos;re joining through referral code <strong>{referralCode}</strong>.
+                  Referral reward applies after your first qualifying deposit.
+                  Initial signup promotions cannot be combined with this referral.
+                </p>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="reg-promo">
+                {referralActive ? 'Promo code (unavailable with referral)' : 'Promo code (optional)'}
+              </label>
               <input
                 className="form-input"
                 id="reg-promo"
                 type="text"
                 autoComplete="off"
-                placeholder="e.g. SPORTS500"
+                placeholder={referralActive ? 'Disabled — referral active' : 'e.g. SPORTS500'}
                 value={promoCode}
                 onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
                 maxLength={32}
+                disabled={referralActive}
               />
+              {!referralActive && (
               <div className="register-promo-chips">
                 {PROMO_CHIPS.map(({ code, kind }) => (
                   <button
                     key={code}
                     type="button"
                     className={`register-promo-chip ${promoCode === code ? 'active' : ''}`}
-                    onClick={() => setPromoCode(code)}
+                    onClick={() => { setPromoCode(code); setReferralCode(''); }}
                   >
                     {code}
                     <span>{kind}</span>
                   </button>
                 ))}
               </div>
+              )}
               <div className="register-credit-explain">
                 <div>
                   <strong>Bonus</strong>

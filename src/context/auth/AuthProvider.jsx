@@ -236,7 +236,7 @@ export function AuthProvider({ children }) {
     });
   }, [user?.userId, refreshWallet]);
 
-  const register = useCallback(async ({ email, password, displayName, phone, promoCode }) => {
+  const register = useCallback(async ({ email, password, displayName, phone, promoCode, referralCode }) => {
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail || !password || !displayName?.trim()) {
       return { ok: false, error: 'Please fill in all required fields.' };
@@ -253,12 +253,14 @@ export function AuthProvider({ children }) {
           firstName: displayName.trim(),
           phone: phone?.trim() || '',
           promoCode: promoCode?.trim() || undefined,
+          referralCode: referralCode?.trim() || undefined,
+          ref: referralCode?.trim() || undefined,
         }),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        return { ok: false, error: data.error || 'Registration failed.' };
+        return { ok: false, error: data.error || 'Registration failed.', code: data.code };
       }
 
       if (data.accessToken) {
@@ -296,7 +298,7 @@ export function AuthProvider({ children }) {
 
       setUser(sessionUser);
       setAuthStatus('authenticated');
-      return { ok: true, welcomeCredit: 0, promoReward: data.promoReward || null };
+      return { ok: true, welcomeCredit: 0, promoReward: data.promoReward || null, referral: data.referral || null };
     } catch {
       if (!DEMO_MODE) {
         return { ok: false, error: 'Unable to reach registration service.' };
@@ -504,7 +506,7 @@ export function AuthProvider({ children }) {
     return true;
   }, [setUser, syncTransactions]);
 
-  const completeAccountProfile = useCallback(async ({ phone, promoCode } = {}) => {
+  const completeAccountProfile = useCallback(async ({ phone, promoCode, referralCode } = {}) => {
     const normalizedPhone = String(phone || '').replace(/\D/g, '');
     if (normalizedPhone.length !== 10) {
       return { ok: false, error: 'Enter a valid 10-digit Indian mobile number.' };
@@ -515,11 +517,13 @@ export function AuthProvider({ children }) {
         body: JSON.stringify({
           phone: normalizedPhone,
           promoCode: String(promoCode || '').trim() || undefined,
+          referralCode: String(referralCode || '').trim() || undefined,
+          ref: String(referralCode || '').trim() || undefined,
         }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {
-        return { ok: false, error: data.error || 'Could not save your details.' };
+        return { ok: false, error: data.error || 'Could not save your details.', code: data.code };
       }
       if (data.user) {
         setUser((prev) => mapServerUserToSession(data.user, prev));
@@ -527,7 +531,12 @@ export function AuthProvider({ children }) {
         const me = await fetchMe();
         if (me) setUser(mapServerUserToSession(me));
       }
-      return { ok: true, promoReward: data.promoReward || null, user: data.user };
+      return {
+        ok: true,
+        promoReward: data.promoReward || null,
+        referral: data.referral || null,
+        user: data.user,
+      };
     } catch {
       return { ok: false, error: 'Unable to reach auth service.' };
     }

@@ -412,6 +412,8 @@ router.post('/complete-profile', requireAuth, authGeneralRateLimiter, async (req
     const result = await completeProfile(query, req.user.userId, {
       phone: req.body?.phone,
       promoCode: req.body?.promoCode,
+      referralCode: req.body?.referralCode || req.body?.ref,
+      ref: req.body?.ref,
     });
 
     if (result.error) {

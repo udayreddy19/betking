@@ -781,3 +781,38 @@ export async function sendKycReminderEmail({ email, name }) {
   }
 }
 
+/**
+ * Referral free-bet reward notification (Zoho/SMTP).
+ */
+export async function sendReferralRewardEmail({ email, name, amount, role = 'referred' }) {
+  if (!email) return { success: false, error: 'missing_email' };
+  const amt = Number(amount);
+  const isReferrer = role === 'referrer';
+  const html = renderTransactionalEmail({
+    heading: isReferrer ? 'You earned a referral reward' : 'Your referral reward is ready',
+    greetingName: name || 'there',
+    introHtml: isReferrer
+      ? `A friend you invited qualified. We've added <strong>₹${escapeHtml(Number.isFinite(amt) ? amt.toFixed(2) : amount)}</strong> free bet to your OddsYra wallet.`
+      : `Welcome to OddsYra via referral. We've added <strong>₹${escapeHtml(Number.isFinite(amt) ? amt.toFixed(2) : amount)}</strong> free bet to your wallet.`,
+    ctaLabel: 'Open OddsYra',
+    ctaHref: FRONTEND_URL,
+    noteHtml: 'Free bets follow OddsYra free-bet rules (profit only on wins).',
+  });
+  try {
+    const info = await sendMailWithFailover({
+      to: email,
+      subject: isReferrer ? 'You earned a referral reward' : 'Your referral reward is ready',
+      html,
+      text:
+        `Hi ${name || 'there'},\n\n`
+        + `₹${Number.isFinite(amt) ? amt.toFixed(2) : amount} free bet credited (${isReferrer ? 'referrer' : 'referral'} reward).\n`
+        + `${FRONTEND_URL}\n\n— OddsYra Team`,
+      replyTo: process.env.SUPPORT_INBOX_EMAIL || 'support@oddsyra.com',
+    });
+    return { success: true, messageId: info.messageId, provider: info.provider };
+  } catch (err) {
+    console.error('[EmailService] referral reward mail:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+

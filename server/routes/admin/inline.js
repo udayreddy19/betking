@@ -779,7 +779,18 @@ router.get('/api/admin/users/:userId/360', async (req, res) => {
   const { userId } = req.params;
   try {
     const { getUser360View } = await import('../../../lib/adminIntelligenceEngine.mjs');
-    const u360 = await getUser360View(userId);
+    const { adminCanViewFullPii } = await import('./customerDossier.js');
+    const canViewFullPii = adminCanViewFullPii(req.admin);
+    const u360 = await getUser360View(userId, { canViewFullPii });
+    if (canViewFullPii && (u360.kyc?.hasPan || u360.kyc?.hasAadhaar)) {
+      const { logAdminAction } = await import('../../middleware/auditLogger.js');
+      logAdminAction({
+        actorId: req.admin?.id || 'admin',
+        targetId: userId,
+        action: 'PII_INCLUDED_IN_360',
+        details: { hasPan: u360.kyc?.hasPan, hasAadhaar: u360.kyc?.hasAadhaar },
+      }).catch(() => {});
+    }
     res.json(u360);
   } catch (err) {
     res.status(404).json({ success: false, error: err.message });
@@ -815,6 +826,7 @@ router.get('/api/admin/customers', async (req, res) => {
       limit: Math.min(Number(req.query.limit) || 200, 500),
       kycFilter: req.query.kyc || req.query.kycFilter || null,
       q: req.query.q || req.query.search || null,
+      searchBy: req.query.searchBy || req.query.by || 'all',
     }));
   } catch (err) {
     res.status(500).json({ users: [], error: err.message });
@@ -1197,6 +1209,47 @@ router.patch('/api/admin/growth/signup-codes/:id/toggle', async (req, res) => {
       details: { code: updated.code, isActive: updated.isActive },
     });
     res.json({ success: true, code: updated });
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message, code: err.code });
+  }
+});
+
+router.get('/api/admin/growth/referrals', async (req, res) => {
+  try {
+    const { listReferralsAdmin } = await import('../../../lib/referralLoyaltyEngine.mjs');
+    res.json(await listReferralsAdmin({
+      limit: Number(req.query.limit) || 200,
+      status: req.query.status || null,
+      q: req.query.q || req.query.search || null,
+    }));
+  } catch (err) {
+    res.status(500).json({ referrals: [], error: err.message });
+  }
+});
+
+router.post('/api/admin/growth/referrals/:id/retry-reward', async (req, res) => {
+  try {
+    const { adminRetryReferralReward } = await import('../../../lib/referralLoyaltyEngine.mjs');
+    const result = await adminRetryReferralReward({
+      referralId: req.params.id,
+      adminId: req.admin?.id || 'admin',
+      reason: req.body?.reason || '',
+    });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message, code: err.code });
+  }
+});
+
+router.post('/api/admin/growth/referral-codes/:code/disable', async (req, res) => {
+  try {
+    const { disableReferralCode } = await import('../../../lib/referralLoyaltyEngine.mjs');
+    const row = await disableReferralCode({
+      code: req.params.code,
+      adminId: req.admin?.id || 'admin',
+      reason: req.body?.reason || '',
+    });
+    res.json({ success: true, code: row });
   } catch (err) {
     res.status(err.status || 500).json({ success: false, error: err.message, code: err.code });
   }

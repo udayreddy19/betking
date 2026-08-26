@@ -11,10 +11,11 @@ import {
   DEFAULT_DAILY_DEPOSIT_LIMIT,
   DEFAULT_DAILY_STAKE_LIMIT,
 } from '../../utils/responsibleGaming';
-import { FiDownload, FiShield, FiSliders, FiList, FiAlertTriangle } from '../../icons';
+import { FiDownload, FiShield, FiSliders, FiList, FiAlertTriangle, FiHome, FiLock } from '../../icons';
 import SupportHeadsetIcon from '../../icons/SupportHeadsetIcon';
 import ProfileSupportTab from './ProfileSupportTab';
 import ProfileKycCard from './ProfileKycCard';
+import ProfileReferralCard from './ProfileReferralCard';
 import '../Legal/LegalPage.css';
 import './Profile.css';
 
@@ -49,6 +50,7 @@ export default function Profile() {
   const [selfExcludeDays, setSelfExcludeDays] = useState('7');
   const [promoCode, setPromoCode] = useState('');
   const [claimingPromo, setClaimingPromo] = useState(false);
+  const [joinedViaReferral, setJoinedViaReferral] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -96,6 +98,12 @@ export default function Profile() {
   );
   const loyalty = useMemo(() => user ? getLoyaltySummary(user) : null, [user]);
   const excluded = user?.selfExcludedUntil && new Date(user.selfExcludedUntil) > new Date();
+  const initials = useMemo(() => {
+    const name = String(user?.displayName || user?.email || 'U').trim();
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+  }, [user?.displayName, user?.email]);
 
   if (!isLoggedIn) {
     return <Navigate to="/" replace />;
@@ -165,16 +173,27 @@ export default function Profile() {
     showToast('Transaction statement downloaded as CSV', 'success');
   };
 
+  const tabItems = [
+    { id: 'overview', label: 'Overview', short: 'Home', icon: FiHome },
+    { id: 'rg', label: 'Responsible Gaming', short: 'Limits', icon: FiShield },
+    { id: 'security', label: 'Security', short: 'Security', icon: FiLock },
+    { id: 'history', label: `Transactions (${transactions.length})`, short: 'History', icon: FiList },
+    { id: 'support', label: 'Support', short: 'Help', icon: SupportHeadsetIcon },
+  ];
+
   return (
     <div className="profile-page container" id="profile-page">
       <div className="profile-card">
 
         {/* Profile Top Bar */}
         <div className="profile-header">
-          <div className="profile-avatar">👤</div>
+          <div className="profile-avatar" aria-hidden="true">{initials}</div>
           <div className="profile-user-info">
             <h1>{user.displayName}</h1>
             <p className="profile-email">{user.email}</p>
+            {loyalty && (
+              <span className="profile-tier-chip">{loyalty.tierLabel}</span>
+            )}
             {excluded && (
               <span className="profile-badge-excluded">
                 <FiAlertTriangle /> Self-Excluded until {new Date(user.selfExcludedUntil).toLocaleDateString()}
@@ -184,49 +203,44 @@ export default function Profile() {
         </div>
 
         {/* Profile Tabs */}
-        <div className="profile-tabs-nav">
-          <button
-            type="button"
-            className={`profile-tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
-            onClick={() => selectTab('overview')}
-          >
-            Overview
-          </button>
-          <button
-            type="button"
-            className={`profile-tab-btn ${activeTab === 'rg' ? 'active' : ''}`}
-            onClick={() => selectTab('rg')}
-          >
-            <FiShield /> Responsible Gaming
-          </button>
-          <button
-            type="button"
-            className={`profile-tab-btn ${activeTab === 'security' ? 'active' : ''}`}
-            onClick={() => selectTab('security')}
-          >
-            Security
-          </button>
-          <button
-            type="button"
-            className={`profile-tab-btn ${activeTab === 'history' ? 'active' : ''}`}
-            onClick={() => selectTab('history')}
-          >
-            <FiList /> Transactions ({transactions.length})
-          </button>
-          <button
-            type="button"
-            className={`profile-tab-btn ${activeTab === 'support' ? 'active' : ''}`}
-            onClick={() => selectTab('support')}
-          >
-            <SupportHeadsetIcon size={18} /> Support
-          </button>
+        <div className="profile-tabs-nav" role="tablist" aria-label="Profile sections">
+          {tabItems.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              className={`profile-tab-btn ${activeTab === tab.id ? 'active' : ''}`}
+              onClick={() => selectTab(tab.id)}
+            >
+              {tab.icon ? (
+                <span className="profile-tab-icon" aria-hidden="true">
+                  <tab.icon size={18} />
+                </span>
+              ) : null}
+              <span className="profile-tab-text profile-tab-text--full">{tab.label}</span>
+              <span className="profile-tab-text profile-tab-text--short">{tab.short}</span>
+            </button>
+          ))}
         </div>
 
         {/* TAB 1: OVERVIEW */}
         {activeTab === 'overview' && (
           <>
+            <div className="profile-wallet-hero">
+              <p className="profile-wallet-hero__label">Total balance</p>
+              <p className="profile-wallet-hero__amount">{formatInr(wallet.total)}</p>
+              <p className="profile-wallet-hero__meta">
+                Cash {formatInr(wallet.cashBalance)} · Bonus {formatInr(wallet.bonusAndFreebets)}
+              </p>
+              <div className="profile-wallet-hero__actions">
+                <button type="button" className="profile-link-btn" onClick={openDepositModal}>Deposit</button>
+                <button type="button" className="profile-link-btn outline" onClick={() => openFinModal('withdraw')}>Withdraw</button>
+              </div>
+            </div>
+
             <div className="profile-wallet-grid">
-              <div className="profile-stat">
+              <div className="profile-stat profile-stat--hide-mobile">
                 <span className="label">Total balance</span>
                 <span className="value">{formatInr(wallet.total)}</span>
               </div>
@@ -281,10 +295,17 @@ export default function Profile() {
               </button>
             </div>
 
+            <ProfileReferralCard
+              onLoaded={(data) => {
+                if (data?.joinedViaReferral) setJoinedViaReferral(true);
+              }}
+            />
+
             <form
               className="profile-loyalty-box"
               onSubmit={async (e) => {
                 e.preventDefault();
+                if (joinedViaReferral) return;
                 setClaimingPromo(true);
                 const result = await claimSignupPromoCode(promoCode);
                 setClaimingPromo(false);
@@ -294,21 +315,33 @@ export default function Profile() {
               <div className="profile-loyalty-head">
                 <span>Promo code</span>
               </div>
-              <p className="profile-loyalty-meta">Enter a code to credit bonus, free bet, or cash. SPORTS500, VIP1000, and LIVE100 — only one of these three per account.</p>
-              <div className="profile-promo-row">
-                <input
-                  type="text"
-                  value={promoCode}
-                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                  placeholder="SPORTS500"
-                  maxLength={32}
-                  autoCapitalize="characters"
-                  autoComplete="off"
-                />
-                <button type="submit" className="profile-link-btn" disabled={claimingPromo || !promoCode.trim()}>
-                  {claimingPromo ? 'Claiming…' : 'Claim'}
-                </button>
-              </div>
+              {joinedViaReferral ? (
+                <p className="profile-loyalty-meta">
+                  Signup promo unavailable. Your account joined through a referral.
+                  Referral rewards are applied according to the referral program.
+                </p>
+              ) : (
+                <p className="profile-loyalty-meta">
+                  Enter a code to credit bonus, free bet, or cash. SPORTS500, VIP1000, and LIVE100 — only one of these three per account.
+                  Accounts that joined via referral cannot claim initial signup promotions.
+                </p>
+              )}
+              {!joinedViaReferral && (
+                <div className="profile-promo-row">
+                  <input
+                    type="text"
+                    value={promoCode}
+                    onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                    placeholder="SPORTS500"
+                    maxLength={32}
+                    autoCapitalize="characters"
+                    autoComplete="off"
+                  />
+                  <button type="submit" className="profile-link-btn" disabled={claimingPromo || !promoCode.trim()}>
+                    {claimingPromo ? 'Claiming…' : 'Claim'}
+                  </button>
+                </div>
+              )}
             </form>
 
             <ProfileKycCard />
@@ -318,10 +351,8 @@ export default function Profile() {
               Free bets play like cash at any odds. Promo codes are once per Aadhaar/PAN. Welcome codes SPORTS500 / VIP1000 / LIVE100 are one per account. Verify identity to withdraw.
             </p>
 
-            <div className="profile-actions">
-              <button type="button" className="profile-link-btn" onClick={openDepositModal}>Deposit</button>
-              <button type="button" className="profile-link-btn outline" onClick={() => openFinModal('withdraw')}>Withdraw</button>
-              <Link to="/sports" className="profile-link-btn outline">Sports</Link>
+            <div className="profile-actions profile-actions--overview">
+              <Link to="/sports" className="profile-link-btn outline profile-link-btn--block">Back to Sports</Link>
             </div>
           </>
         )}
@@ -500,41 +531,67 @@ export default function Profile() {
                 <p>No transactions found matching criteria.</p>
               </div>
             ) : (
-              <div className="history-table-wrapper">
-                <table className="history-table">
-                  <thead>
-                    <tr>
-                      <th>Time</th>
-                      <th>Type</th>
-                      <th>Description</th>
-                      <th>Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredTx.map((tx) => {
-                      const isPositive = ['deposit', 'bet_win', 'bonus', 'loyalty_redeem', 'cashout'].includes(tx.type);
-                      return (
-                        <tr key={tx.id}>
-                          <td className="tx-time">
+              <>
+                <div className="history-mobile-list" aria-label="Transaction list">
+                  {filteredTx.map((tx) => {
+                    const isPositive = ['deposit', 'bet_win', 'bonus', 'loyalty_redeem', 'cashout'].includes(tx.type);
+                    return (
+                      <article key={tx.id} className="history-mobile-card">
+                        <div className="history-mobile-card__top">
+                          <span className={`tx-tag tx-tag--${tx.type}`}>
+                            {tx.type.replace('_', ' ')}
+                          </span>
+                          <time className="history-mobile-card__time">
                             {tx.createdAt ? new Date(tx.createdAt).toLocaleDateString('en-IN', {
                               day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
                             }) : '–'}
-                          </td>
-                          <td className="tx-type">
-                            <span className={`tx-tag tx-tag--${tx.type}`}>
-                              {tx.type.replace('_', ' ')}
-                            </span>
-                          </td>
-                          <td className="tx-desc">{tx.label}</td>
-                          <td className={`tx-amount ${isPositive ? 'positive' : 'negative'}`}>
-                            {isPositive ? '+' : ''}{formatInr(tx.amount)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                          </time>
+                        </div>
+                        <p className="history-mobile-card__desc">{tx.label}</p>
+                        <p className={`history-mobile-card__amount ${isPositive ? 'positive' : 'negative'}`}>
+                          {isPositive ? '+' : ''}{formatInr(tx.amount)}
+                        </p>
+                      </article>
+                    );
+                  })}
+                </div>
+
+                <div className="history-table-wrapper">
+                  <table className="history-table">
+                    <thead>
+                      <tr>
+                        <th>Time</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredTx.map((tx) => {
+                        const isPositive = ['deposit', 'bet_win', 'bonus', 'loyalty_redeem', 'cashout'].includes(tx.type);
+                        return (
+                          <tr key={tx.id}>
+                            <td className="tx-time">
+                              {tx.createdAt ? new Date(tx.createdAt).toLocaleDateString('en-IN', {
+                                day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+                              }) : '–'}
+                            </td>
+                            <td className="tx-type">
+                              <span className={`tx-tag tx-tag--${tx.type}`}>
+                                {tx.type.replace('_', ' ')}
+                              </span>
+                            </td>
+                            <td className="tx-desc">{tx.label}</td>
+                            <td className={`tx-amount ${isPositive ? 'positive' : 'negative'}`}>
+                              {isPositive ? '+' : ''}{formatInr(tx.amount)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         )}

@@ -36,6 +36,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
   });
   const [error, setError] = useState(null);
   const [lastRefreshAt, setLastRefreshAt] = useState(null);
+  const [observability, setObservability] = useState(null);
 
   const tabs = [
     { id: 'overview', label: 'Operational Overview' },
@@ -65,6 +66,26 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
       stop();
     };
   }, []);
+
+  useEffect(() => {
+    if (subModule !== 'telemetry') return undefined;
+    let cancelled = false;
+    const loadObs = () => {
+      adminApiClient.get('/ops/observability')
+        .then((data) => {
+          if (cancelled) return;
+          setObservability(data);
+        })
+        .catch(() => {
+          if (!cancelled) setObservability(null);
+        });
+    };
+    const stop = startVisibleInterval(loadObs, 30000, { runImmediately: true });
+    return () => {
+      cancelled = true;
+      stop();
+    };
+  }, [subModule]);
 
   const pricedCoverage = useMemo(() => {
     const live = Number(metrics.liveMatches) || 0;
@@ -239,25 +260,76 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
 
       {/* Provider Status Table */}
       {showProviders && (
-        <AdminDataTable
-          title="Provider Feed Status"
-          emptyMessage="No provider status in current snapshot"
-          data={sourceRows}
-          columns={[
-            { header: 'Provider', key: 'title' },
-            {
-              header: 'Health',
-              key: 'severity',
-              render: (r) => <StatusBadge status={r.severity} customMap={{
-                success: ['OK'],
-                warning: ['WATCH'],
-                danger: ['HIGH'],
-              }} />,
-            },
-            { header: 'Status', key: 'status' },
-            { header: 'Snapshot', key: 'time' },
-          ]}
-        />
+        <>
+          {observability && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 16 }}>
+              <AdminCard title="Settlement" accent="#f43f5e" style={{ margin: 0 }}>
+                <div style={{ fontSize: '0.84rem', lineHeight: 1.5 }}>
+                  <div>Open jobs: <strong>{observability.settlement?.open_jobs ?? '—'}</strong></div>
+                  <div>Failed: <strong>{observability.settlement?.failed_jobs ?? '—'}</strong></div>
+                  <div>Completed 15m: <strong>{observability.settlement?.completed_15m ?? '—'}</strong></div>
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn--secondary admin-btn--sm"
+                    style={{ marginTop: 8 }}
+                    onClick={() => onNavigate?.({ domainId: 'operations', subModuleId: 'settlement-queue' })}
+                  >
+                    Open settlement queue →
+                  </button>
+                </div>
+              </AdminCard>
+              <AdminCard title="Deposits" accent="#38bdf8" style={{ margin: 0 }}>
+                <div style={{ fontSize: '0.84rem', lineHeight: 1.5 }}>
+                  <div>Pending 1h: <strong>{observability.deposits?.pending_1h ?? '—'}</strong></div>
+                  <div>Captured 15m: <strong>{observability.deposits?.captured_15m ?? '—'}</strong></div>
+                </div>
+              </AdminCard>
+              <AdminCard title="Outbox" accent="#f59e0b" style={{ margin: 0 }}>
+                <div style={{ fontSize: '0.84rem', lineHeight: 1.5 }}>
+                  <div>Pending: <strong>{observability.outbox?.pending ?? '—'}</strong></div>
+                  <div>Failed: <strong>{observability.outbox?.failed ?? '—'}</strong></div>
+                </div>
+              </AdminCard>
+              {(observability.alerts || []).length > 0 && (
+                <AdminCard title="Alerts" accent="#ef4444" style={{ margin: 0 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {observability.alerts.map((a) => (
+                      <div key={a.code} style={{ fontSize: '0.78rem', color: a.severity === 'high' ? '#b91c1c' : '#b45309' }}>
+                        {a.message}
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn--ghost admin-btn--sm"
+                      onClick={() => onNavigate?.({ domainId: 'operations', subModuleId: 'settlement-queue' })}
+                    >
+                      Investigate →
+                    </button>
+                  </div>
+                </AdminCard>
+              )}
+            </div>
+          )}
+          <AdminDataTable
+            title="Provider Feed Status"
+            emptyMessage="No provider status in current snapshot"
+            data={sourceRows}
+            columns={[
+              { header: 'Provider', key: 'title' },
+              {
+                header: 'Health',
+                key: 'severity',
+                render: (r) => <StatusBadge status={r.severity} customMap={{
+                  success: ['OK'],
+                  warning: ['WATCH'],
+                  danger: ['HIGH'],
+                }} />,
+              },
+              { header: 'Status', key: 'status' },
+              { header: 'Snapshot', key: 'time' },
+            ]}
+          />
+        </>
       )}
 
       {/* Incidents Table */}

@@ -34,7 +34,12 @@ const TYPE_OPTIONS = [
   { value: 'SYSTEM', label: 'System' },
 ];
 
-export default function BettingDomainView({ subModule = 'bets-registry' }) {
+export default function BettingDomainView({
+  subModule = 'bets-registry',
+  focusEntityId = null,
+  focusEntityType = null,
+  onFocusConsumed = null,
+}) {
   const [bets, setBets] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -42,6 +47,7 @@ export default function BettingDomainView({ subModule = 'bets-registry' }) {
   const [typeFilter, setTypeFilter] = useState('');
   const [search, setSearch] = useState('');
   const [searchDraft, setSearchDraft] = useState('');
+  const [highlightId, setHighlightId] = useState(null);
   const [settlingId, setSettlingId] = useState(null);
   const [declareConfirm, setDeclareConfirm] = useState(null);
   const { showToast } = useAdminToast();
@@ -55,7 +61,19 @@ export default function BettingDomainView({ subModule = 'bets-registry' }) {
     setTypeFilter('');
     setSearch('');
     setSearchDraft('');
+    setHighlightId(null);
   }, [subModule]);
+
+  useEffect(() => {
+    if (!focusEntityId) return undefined;
+    const type = String(focusEntityType || 'bet').toLowerCase();
+    if (type && !['bet', 'bets', ''].includes(type)) return undefined;
+    setSearch(String(focusEntityId));
+    setSearchDraft(String(focusEntityId));
+    setHighlightId(String(focusEntityId));
+    onFocusConsumed?.();
+    return undefined;
+  }, [focusEntityId, focusEntityType, onFocusConsumed]);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -109,14 +127,19 @@ export default function BettingDomainView({ subModule = 'bets-registry' }) {
   };
 
   const filtered = useMemo(() => {
+    let list = bets;
     if (subModule === 'cashout-reconciliation') {
-      return bets.filter((b) => {
+      list = bets.filter((b) => {
         const s = String(b.status || '').toUpperCase();
         return s.includes('CASH') || String(b.selection || '').toLowerCase().includes('cashout');
       });
     }
-    return bets;
-  }, [bets, subModule]);
+    if (highlightId) {
+      const hit = list.filter((b) => String(b.id) === String(highlightId));
+      if (hit.length) return hit;
+    }
+    return list;
+  }, [bets, subModule, highlightId]);
 
   const openCount = filtered.filter((b) => isOpenStatus(b.status)).length;
 
@@ -184,7 +207,18 @@ export default function BettingDomainView({ subModule = 'bets-registry' }) {
         loading={loading}
         onRefresh={load}
         columns={[
-          { header: 'Bet ID', key: 'id', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.id}</span> },
+          { header: 'Bet ID', key: 'id', render: (r) => (
+            <span
+              className="admin-text-mono"
+              style={{
+                fontSize: '0.76rem',
+                fontWeight: highlightId && String(r.id) === String(highlightId) ? 800 : 400,
+                color: highlightId && String(r.id) === String(highlightId) ? '#2563eb' : undefined,
+              }}
+            >
+              {r.id}
+            </span>
+          ) },
           {
             header: 'User',
             key: 'userName',

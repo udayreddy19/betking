@@ -624,8 +624,9 @@ export default function DatabaseInspector() {
         onClose={() => !saving && setEditRow(null)}
         title={`Edit Row · ${selectedTable}`}
         subtitle={editRow && tableData.primaryKey.length > 0 ? `PK: ${tableData.primaryKey.map((col) => `${col}=${String(editRow[col])}`).join(', ')}` : ''}
+        maxWidth="560px"
         actions={
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <>
             <button
               type="button"
               className="admin-btn admin-btn--secondary"
@@ -642,7 +643,7 @@ export default function DatabaseInspector() {
             >
               {saving ? 'Saving…' : 'Save Changes'}
             </button>
-          </div>
+          </>
         }
       >
         <div style={{ display: 'grid', gap: '12px' }}>

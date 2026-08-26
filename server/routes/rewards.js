@@ -73,4 +73,24 @@ router.get('/promo/claims', requireAuth, async (req, res) => {
   }
 });
 
+router.get('/referrals/me', requireAuth, async (req, res) => {
+  try {
+    const { getMyReferralDashboard } = await import('../../lib/referralLoyaltyEngine.mjs');
+    const data = await getMyReferralDashboard(req.user.userId);
+    res.json({ success: true, ...data });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message, code: 'REFERRAL_DASHBOARD_FAILED' });
+  }
+});
+
+router.post('/referrals/validate', async (req, res) => {
+  try {
+    const { validateReferralCode } = await import('../../lib/referralLoyaltyEngine.mjs');
+    const result = await validateReferralCode(req.body?.code || req.body?.referralCode || req.query?.ref);
+    res.status(result.valid ? 200 : 400).json({ success: result.valid, ...result });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message, code: err.code || 'REFERRAL_INVALID' });
+  }
+});
+
 export default router;

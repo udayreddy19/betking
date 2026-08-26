@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { CASINO_ENABLED } from '../../utils/featureFlags';
 import { pressScale, springTab } from '../../utils/motionPresets';
+import { useUserNotifications } from '../../hooks/useUserNotifications';
 import {
   NavHomeIcon,
   NavCasinoIcon,
@@ -18,8 +19,9 @@ import './MobileBottomBar.css';
 export default function MobileBottomBar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isLoggedIn, toggleSidebar, closeSidebar } = useAuth();
+  const { isLoggedIn, user, toggleSidebar, closeSidebar } = useAuth();
   const { closeMyBets, closeQuickBet, setIsMobileOpen } = useBetSlip();
+  const { unreadCount } = useUserNotifications(isLoggedIn, user?.userId);
 
   const navItems = useMemo(() => ([
     { label: 'Home', path: '/', icon: NavHomeIcon },
@@ -77,11 +79,15 @@ export default function MobileBottomBar() {
           type="button"
           className="mobile-bar-item menu-item"
           onClick={toggleSidebar}
+          aria-label={unreadCount > 0 ? `Menu, ${unreadCount} unread notifications` : 'Menu'}
           whileTap={{ scale: pressScale }}
           transition={springTab}
         >
           <div className="mobile-bar-icon-wrap">
             <NavMenuIcon className="mobile-bar-icon" />
+            {unreadCount > 0 && (
+              <span className="mobile-bar-notif-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+            )}
           </div>
           <span className="mobile-bar-label">Menu</span>
         </motion.button>

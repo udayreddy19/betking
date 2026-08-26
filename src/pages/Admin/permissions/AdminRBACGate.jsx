@@ -31,6 +31,7 @@ export { ROLE_ALLOWED_DOMAINS };
 export const PERMISSIONS = {
   VIEW_CUSTOMERS: 'VIEW_CUSTOMERS',
   EDIT_CUSTOMERS: 'EDIT_CUSTOMERS',
+  VIEW_PII: 'VIEW_PII',
   APPROVE_WITHDRAWAL: 'APPROVE_WITHDRAWAL',
   MANAGE_TRADING: 'MANAGE_TRADING',
   SETTLE_BETS: 'SETTLE_BETS',
@@ -44,6 +45,11 @@ export function hasPermission(role, permission) {
   if (!role || role === ADMIN_ROLES.SUPER_ADMIN) return true;
 
   switch (permission) {
+    case PERMISSIONS.VIEW_PII:
+      return role === ADMIN_ROLES.SUPER_ADMIN
+        || role === ADMIN_ROLES.SUPPORT_AGENT
+        || role === ADMIN_ROLES.RISK_ANALYST
+        || role === ADMIN_ROLES.OPERATIONS_ADMIN;
     case PERMISSIONS.APPROVE_WITHDRAWAL:
       return role === ADMIN_ROLES.FINANCE_ADMIN;
     case PERMISSIONS.MANAGE_TRADING:

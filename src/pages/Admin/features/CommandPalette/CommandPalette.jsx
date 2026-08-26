@@ -134,11 +134,17 @@ export default function CommandPalette({
   const handleResultClick = (item) => {
     const meta = ENTITY_META[item._category] || ENTITY_META[item._entityType];
     if (onNavigate && meta?.domain) {
+      const category = String(item._category || item._entityType || '').toLowerCase();
+      const isTicket = category === 'ticket' || category === 'tickets';
+      const isKyc = category === 'kyc_case' || category === 'kyc_cases';
+      let entityId = item._displayId;
+      if (isTicket) entityId = item.conversation_id || item._displayId;
+      else if (isKyc) entityId = item.user_id || item._displayId;
       onNavigate({
         domainId: meta.domain,
         subModuleId: meta.subModuleId,
         entityType: item._entityType || item._category,
-        entityId: item._displayId,
+        entityId,
         label: item._displayLabel,
       });
     }
@@ -309,13 +315,13 @@ export default function CommandPalette({
                 {!isSearching && !searchError && query.length >= 2 && totalCount === 0 && (
                   <div style={{ padding: '32px 20px', textAlign: 'center', color: textMuted }}>
                     <div style={{ fontSize: '0.9rem' }}>No results for “{query}”</div>
-                    <div style={{ fontSize: '0.75rem', marginTop: '6px' }}>Try a user id, email fragment, bet id, or team name</div>
+                    <div style={{ fontSize: '0.75rem', marginTop: '6px' }}>Try an email, mobile number, user id, bet id, or team name</div>
                   </div>
                 )}
 
                 {!isSearching && query.length < 2 && (
                   <div style={{ padding: '16px 20px', color: textMuted, fontSize: '0.82rem' }}>
-                    Type at least 2 characters to search across users, bets, tickets, and live matches.
+                    Type at least 2 characters — search users by email or mobile, plus bets, tickets, and matches.
                   </div>
                 )}
 

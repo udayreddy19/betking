@@ -65,21 +65,46 @@ router.post('/search', async (req, res) => {
 
     const dbQuery = await getQuery();
     const results = {};
+    const searchErrors = {};
     const searchPattern = `%${q}%`;
 
-    // Search Users
+    // Search Users (email, phone digits, name, user id)
     if (typesToSearch.includes('users')) {
       try {
-        const userRes = await dbQuery(
-          `SELECT user_id, email, phone, created_at FROM users
-           WHERE user_id ILIKE $1 OR email ILIKE $1 OR phone ILIKE $1
-           LIMIT $2`,
-          [searchPattern, limit]
-        );
-        results.users = userRes.rows.map(r => ({
-          ...r, _entityType: 'user', _displayId: r.user_id, _displayLabel: r.email,
-        }));
-      } catch { results.users = []; }
+        const { buildUserContactSearchClause } = await import('../../../lib/adminDomainData.mjs');
+        const contact = buildUserContactSearchClause(q, { startIdx: 1, searchBy: 'all' });
+        const userRes = contact.sql
+          ? await dbQuery(
+            `SELECT u.user_id,
+                    u.email,
+                    u.phone,
+                    u.first_name,
+                    u.last_name,
+                    p.display_name,
+                    u.created_at
+             FROM users u
+             LEFT JOIN user_profiles p ON p.user_id = u.user_id
+             WHERE ${contact.sql}
+             ORDER BY u.created_at DESC
+             LIMIT $${contact.params.length + 1}`,
+            [...contact.params, limit],
+          )
+          : { rows: [] };
+        results.users = userRes.rows.map((r) => {
+          const name = [r.display_name, [r.first_name, r.last_name].filter(Boolean).join(' ')]
+            .map((s) => String(s || '').trim())
+            .find(Boolean) || '';
+          return {
+            ...r,
+            _entityType: 'user',
+            _displayId: r.user_id,
+            _displayLabel: [name, r.email, r.phone].filter(Boolean).join(' · ') || r.user_id,
+          };
+        });
+      } catch (err) {
+        console.error('[command/search] users', err.message);
+        results.users = [];
+      }
     }
 
     // Search Bets
@@ -94,7 +119,7 @@ router.post('/search', async (req, res) => {
         results.bets = betRes.rows.map(r => ({
           ...r, _entityType: 'bet', _displayId: r.bet_id, _displayLabel: `₹${r.stake} @ ${r.odds}`,
         }));
-      } catch { results.bets = []; }
+      } catch (err) { console.warn('[command/search] bets', err.message); results.bets = []; searchErrors.bets = err.message; }
     }
 
     // Search Tickets
@@ -108,9 +133,9 @@ router.post('/search', async (req, res) => {
           [searchPattern, limit]
         );
         results.tickets = ticketRes.rows.map(r => ({
-          ...r, _entityType: 'ticket', _displayId: r.conversation_number || r.conversation_id, _displayLabel: r.subject || 'Support Ticket',
+          ...r, _entityType: 'ticket', _displayId: r.conversation_id, _displayLabel: r.subject || r.conversation_number || 'Support Ticket',
         }));
-      } catch { results.tickets = []; }
+      } catch (err) { console.warn('[command/search] tickets', err.message); results.tickets = []; searchErrors.tickets = err.message; }
     }
 
     // Search Matches (DB + live aggregator fallback)
@@ -129,9 +154,7 @@ router.post('/search', async (req, res) => {
         results.matches = matchRes.rows.map(r => ({
           ...r, _entityType: 'match', _displayId: r.match_id, _displayLabel: `${r.team1_name || '?'} vs ${r.team2_name || '?'}`,
         }));
-      } catch {
-        results.matches = [];
-      }
+      } catch (err) { console.warn('[command/search] matches', err.message); results.matches = []; searchErrors.matches = err.message; }
 
       try {
         const { getCachedAggregatedLiveScores, aggregateLiveScores } = await import('../../../lib/aggregator.mjs');
@@ -174,7 +197,7 @@ router.post('/search', async (req, res) => {
         results.markets = marketRes.rows.map(r => ({
           ...r, _entityType: 'market', _displayId: r.market_id, _displayLabel: r.name,
         }));
-      } catch { results.markets = []; }
+      } catch (err) { console.warn('[command/search] markets', err.message); results.markets = []; searchErrors.markets = err.message; }
     }
 
     // Search Transactions
@@ -189,7 +212,7 @@ router.post('/search', async (req, res) => {
         results.transactions = txRes.rows.map(r => ({
           ...r, _entityType: 'transaction', _displayId: r.transaction_id, _displayLabel: `${r.type} ₹${r.amount}`,
         }));
-      } catch { results.transactions = []; }
+      } catch (err) { console.warn('[command/search] transactions', err.message); results.transactions = []; searchErrors.transactions = err.message; }
     }
 
     // Search KYC Cases
@@ -204,7 +227,7 @@ router.post('/search', async (req, res) => {
         results.kyc_cases = kycRes.rows.map(r => ({
           ...r, _entityType: 'kyc_case', _displayId: r.case_id, _displayLabel: `KYC: ${r.status}`,
         }));
-      } catch { results.kyc_cases = []; }
+      } catch (err) { console.warn('[command/search] kyc_cases', err.message); results.kyc_cases = []; searchErrors.kyc_cases = err.message; }
     }
 
     // Search Fraud Cases
@@ -219,7 +242,7 @@ router.post('/search', async (req, res) => {
         results.fraud_cases = fraudRes.rows.map(r => ({
           ...r, _entityType: 'fraud_case', _displayId: r.id, _displayLabel: `Fraud: Risk ${r.risk_score}`,
         }));
-      } catch { results.fraud_cases = []; }
+      } catch (err) { console.warn('[command/search] fraud_cases', err.message); results.fraud_cases = []; searchErrors.fraud_cases = err.message; }
     }
 
     // Search Incidents
@@ -234,7 +257,7 @@ router.post('/search', async (req, res) => {
         results.incidents = incRes.rows.map(r => ({
           ...r, _entityType: 'incident', _displayId: r.id, _displayLabel: r.title,
         }));
-      } catch { results.incidents = []; }
+      } catch (err) { console.warn('[command/search] incidents', err.message); results.incidents = []; searchErrors.incidents = err.message; }
     }
 
     // Search Audit Events
@@ -250,7 +273,7 @@ router.post('/search', async (req, res) => {
         results.audit_events = auditRes.rows.map(r => ({
           ...r, _entityType: 'audit_event', _displayId: `AE-${r.event_id}`, _displayLabel: r.action,
         }));
-      } catch { results.audit_events = []; }
+      } catch (err) { console.warn('[command/search] audit_events', err.message); results.audit_events = []; searchErrors.audit_events = err.message; }
     }
 
     // Search withdrawals
@@ -266,7 +289,7 @@ router.post('/search', async (req, res) => {
         results.withdrawals = wdRes.rows.map(r => ({
           ...r, _entityType: 'withdrawal', _displayId: r.withdrawal_id, _displayLabel: `₹${r.amount} · ${r.status}`,
         }));
-      } catch { results.withdrawals = []; }
+      } catch (err) { console.warn('[command/search] withdrawals', err.message); results.withdrawals = []; searchErrors.withdrawals = err.message; }
     }
 
     // Calculate total
@@ -286,6 +309,7 @@ router.post('/search', async (req, res) => {
       totalCount,
       searchedTypes: typesToSearch,
       results,
+      ...(Object.keys(searchErrors).length ? { searchErrors } : {}),
       correlationId: req.correlationId,
     });
 

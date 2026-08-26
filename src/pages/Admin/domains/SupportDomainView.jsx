@@ -18,7 +18,12 @@ function formatMsgTime(value) {
   });
 }
 
-export default function SupportDomainView({ subModule = 'ticket-queue' }) {
+export default function SupportDomainView({
+  subModule = 'ticket-queue',
+  focusEntityId = null,
+  focusEntityType = null,
+  onFocusConsumed = null,
+}) {
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [threadMessages, setThreadMessages] = useState([]);
@@ -29,6 +34,7 @@ export default function SupportDomainView({ subModule = 'ticket-queue' }) {
   const { showToast } = useAdminToast();
   const replyRef = useRef(null);
   const threadEndRef = useRef(null);
+  const focusHandledRef = useRef(null);
 
   const loadTickets = useCallback(() => {
     adminApiClient.get('/support/tickets')
@@ -89,6 +95,26 @@ export default function SupportDomainView({ subModule = 'ticket-queue' }) {
     setReplyMessage('');
     setThreadMessages([]);
   };
+
+  useEffect(() => {
+    if (!focusEntityId) return undefined;
+    const type = String(focusEntityType || 'ticket').toLowerCase();
+    if (type && !['ticket', 'tickets', ''].includes(type)) return undefined;
+    if (focusHandledRef.current === focusEntityId) return undefined;
+
+    const match = tickets.find((t) => String(t.id) === String(focusEntityId));
+    if (match) {
+      focusHandledRef.current = focusEntityId;
+      openTicket(match);
+      onFocusConsumed?.();
+      return undefined;
+    }
+    // Open by id even if not yet in list
+    focusHandledRef.current = focusEntityId;
+    openTicket({ id: focusEntityId, subject: 'Support Ticket', status: 'OPEN' });
+    onFocusConsumed?.();
+    return undefined;
+  }, [focusEntityId, focusEntityType, tickets, onFocusConsumed]);
 
   const dismissTicket = () => {
     setSelectedTicket(null);

@@ -16,7 +16,7 @@ import { ODDS_FORMAT_OPTIONS } from '../../utils/oddsFormatter';
 import { storageGet, storageSet } from '../../utils/browserCompat';
 import { hasValidAdminSession } from '../../utils/adminSession';
 import { isAdminEligibleUser } from '../../utils/isAdminEligibleUser';
-import { apiFetch } from '../../utils/apiClient';
+import { useUserNotifications } from '../../hooks/useUserNotifications';
 import '../MyBetsPanel/MyBetsPanel.css';
 import '../PromotionsPanel/PromotionsPanel.css';
 import BrandLogo, { BrandWordmark } from '../BrandLogo/BrandLogo';
@@ -51,8 +51,11 @@ function Header() {
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
-  const [userNotifications, setUserNotifications] = useState([]);
   const [oddsFormat, setOddsFormat] = useState(() => storageGet('oddsyra_odds_format') || 'decimal');
+  const { notifications: userNotifications, unreadCount: unreadNotifCount, markRead, markAllRead, clearNotification, clearAll } = useUserNotifications(
+    isLoggedIn,
+    user?.userId,
+  );
 
   const handleOddsFormatChange = (e) => {
     const fmt = e.target.value;
@@ -73,7 +76,6 @@ function Header() {
   const isDevRoute = location.pathname.startsWith('/developer') || location.pathname.startsWith('/api-docs');
   const isRegisterPage = location.pathname === '/register';
   const hasAdminSession = hasValidAdminSession();
-  const unreadNotifCount = userNotifications.filter((n) => !n.is_read).length;
 
   useEffect(() => {
     if (loyalty.points > 0) {
@@ -85,37 +87,12 @@ function Header() {
   }, [loyalty.points]);
 
   useEffect(() => {
-    if (!isLoggedIn) {
-      setUserNotifications([]);
-      return undefined;
-    }
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const res = await apiFetch('/api/v1/user/notifications');
-        const data = await res.json().catch(() => ({}));
-        if (!cancelled && res.ok) {
-          setUserNotifications(Array.isArray(data.notifications) ? data.notifications : []);
-        }
-      } catch {
-        if (!cancelled) setUserNotifications([]);
-      }
-    };
-    load();
-    const timer = setInterval(load, 20000);
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-    };
-  }, [isLoggedIn, user?.userId]);
-
-  useEffect(() => {
     if (!isMoreOpen) return undefined;
     const close = (e) => {
       if (moreRef.current && !moreRef.current.contains(e.target)) setIsMoreOpen(false);
     };
-    document.addEventListener('mousedown', close);
-    return () => document.removeEventListener('mousedown', close);
+    document.addEventListener('pointerdown', close);
+    return () => document.removeEventListener('pointerdown', close);
   }, [isMoreOpen]);
 
   useEffect(() => {
@@ -123,8 +100,8 @@ function Header() {
     const close = (e) => {
       if (walletRef.current && !walletRef.current.contains(e.target)) setIsWalletOpen(false);
     };
-    document.addEventListener('mousedown', close);
-    return () => document.removeEventListener('mousedown', close);
+    document.addEventListener('pointerdown', close);
+    return () => document.removeEventListener('pointerdown', close);
   }, [isWalletOpen]);
 
   useEffect(() => {
@@ -132,8 +109,8 @@ function Header() {
     const close = (e) => {
       if (notifRef.current && !notifRef.current.contains(e.target)) setIsNotifOpen(false);
     };
-    document.addEventListener('mousedown', close);
-    return () => document.removeEventListener('mousedown', close);
+    document.addEventListener('pointerdown', close);
+    return () => document.removeEventListener('pointerdown', close);
   }, [isNotifOpen]);
 
   useEffect(() => {
@@ -174,20 +151,12 @@ function Header() {
 
   const handleOpenNotification = useCallback(async (notif) => {
     if (notif?.id && !notif.is_read) {
-      try {
-        await apiFetch('/api/v1/user/notifications/read', {
-          method: 'POST',
-          body: JSON.stringify({ notificationId: notif.id }),
-        });
-        setUserNotifications((prev) => prev.map((n) => (n.id === notif.id ? { ...n, is_read: true } : n)));
-      } catch {
-        // ignore
-      }
+      await markRead(notif.id);
     }
     setIsNotifOpen(false);
     closeHeaderOverlays();
     navigate('/profile?tab=support');
-  }, [navigate, closeHeaderOverlays]);
+  }, [navigate, closeHeaderOverlays, markRead]);
 
   const handleRedeemLoyalty = useCallback((pts) => {
     redeemLoyaltyPoints(pts);
@@ -219,7 +188,7 @@ function Header() {
         <div className="header-left">
           <button className="header-menu-btn" onClick={toggleSidebar} id="menu-toggle" aria-label="Menu">
             <HiOutlineMenu />
-            <span className="menu-dot" />
+            {isLoggedIn && unreadNotifCount > 0 && <span className="menu-dot" aria-hidden="true" />}
           </button>
 
           <NavLink to="/" className="header-logo" id="header-logo">
@@ -306,18 +275,20 @@ function Header() {
               <div className="header-notif-wrap" ref={notifRef}>
                 <motion.button
                   type="button"
-                  className={`header-action-icon-btn ${isNotifOpen ? 'active' : ''}`}
+                  className={`header-action-icon-btn header-notif-btn ${isNotifOpen ? 'active' : ''}`}
                   onClick={handleNotifToggle}
                   aria-expanded={isNotifOpen}
                   aria-haspopup="dialog"
-                  aria-label="Notifications"
+                  aria-label={unreadNotifCount > 0 ? `Notifications, ${unreadNotifCount} unread` : 'Notifications'}
                   title="Notifications"
                   whileHover={{ scale: hoverScale }}
                   whileTap={{ scale: pressScale }}
                   transition={springUi}
                 >
                   <IoNotifications size={18} aria-hidden="true" />
-                  {unreadNotifCount > 0 && <span className="header-my-bets-badge">{unreadNotifCount}</span>}
+                  {unreadNotifCount > 0 && (
+                    <span className="header-my-bets-badge">{unreadNotifCount > 99 ? '99+' : unreadNotifCount}</span>
+                  )}
                 </motion.button>
                 <AnimatePresence>
                   {isNotifOpen && (
@@ -332,30 +303,61 @@ function Header() {
                     >
                       <div className="header-notif-menu__head">
                         <strong>Notifications</strong>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsNotifOpen(false);
-                            navigate('/profile?tab=support');
-                          }}
-                        >
-                          Support
-                        </button>
+                        <div className="header-notif-menu__actions">
+                          {unreadNotifCount > 0 && (
+                            <button type="button" onClick={() => markAllRead()}>
+                              Mark all read
+                            </button>
+                          )}
+                          {userNotifications.length > 0 && (
+                            <button
+                              type="button"
+                              className="header-notif-menu__clear"
+                              onClick={() => clearAll()}
+                            >
+                              Clear all
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsNotifOpen(false);
+                              navigate('/profile?tab=support');
+                            }}
+                          >
+                            Support
+                          </button>
+                        </div>
                       </div>
                       <div className="header-notif-menu__list">
                         {userNotifications.length === 0 ? (
                           <p className="header-notif-empty">No notifications yet</p>
                         ) : (
                           userNotifications.slice(0, 12).map((notif) => (
-                            <button
+                            <div
                               key={notif.id}
-                              type="button"
                               className={`header-notif-item ${notif.is_read ? '' : 'unread'}`}
-                              onClick={() => handleOpenNotification(notif)}
                             >
-                              <span className="header-notif-item__title">{notif.subject || notif.event_type}</span>
-                              <span className="header-notif-item__body">{notif.body}</span>
-                            </button>
+                              <button
+                                type="button"
+                                className="header-notif-item__main"
+                                onClick={() => handleOpenNotification(notif)}
+                              >
+                                <span className="header-notif-item__title">{notif.subject || notif.event_type}</span>
+                                <span className="header-notif-item__body">{notif.body}</span>
+                              </button>
+                              <button
+                                type="button"
+                                className="header-notif-item__dismiss"
+                                aria-label="Clear notification"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  clearNotification(notif.id);
+                                }}
+                              >
+                                ×
+                              </button>
+                            </div>
                           ))
                         )}
                       </div>

@@ -32,6 +32,39 @@ router.post('/api/v1/user/notifications/read', requireAuth, async (req, res) => 
   }
 });
 
+router.post('/api/v1/user/notifications/read-all', requireAuth, async (req, res) => {
+  const userId = req.user.userId;
+  try {
+    const { query } = await import('../../db/pg.js');
+    const result = await query(
+      `UPDATE notifications SET is_read = TRUE WHERE user_id = $1 AND is_read = FALSE;`,
+      [userId],
+    );
+    res.json({ success: true, marked: result.rowCount || 0 });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/api/v1/user/notifications/clear', requireAuth, async (req, res) => {
+  const userId = req.user.userId;
+  const { notificationId } = req.body || {};
+  try {
+    const { query } = await import('../../db/pg.js');
+    if (notificationId) {
+      const result = await query(
+        `DELETE FROM notifications WHERE id = $1 AND user_id = $2;`,
+        [notificationId, userId],
+      );
+      return res.json({ success: true, cleared: result.rowCount || 0, notificationId });
+    }
+    const result = await query(`DELETE FROM notifications WHERE user_id = $1;`, [userId]);
+    res.json({ success: true, cleared: result.rowCount || 0 });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 router.get('/api/v1/user/notifications/preferences', requireAuth, async (req, res) => {
   const userId = req.user.userId;
   try {

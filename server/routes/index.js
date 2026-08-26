@@ -107,6 +107,9 @@ adminRouter.use('/tasks', tasksRouter);
 import financialRouter from './admin/financialReconstruction.js';
 adminRouter.use('/financial', financialRouter);
 
+import customerDossierRouter from './admin/customerDossier.js';
+adminRouter.use(customerDossierRouter);
+
 import kycRouter from './admin/kyc.js';
 adminRouter.use('/kyc', kycRouter);
 

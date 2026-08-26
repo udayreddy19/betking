@@ -63,7 +63,7 @@
   --admin-sidebar-width: 260px;
   --admin-sidebar-collapsed: 64px;
   --admin-topbar-height: 56px;
-  --admin-statusbar-height: 28px;
+  --admin-statusbar-height: 34px;
 
   /* Transitions */
   --admin-transition-fast: 0.12s cubic-bezier(0.16, 1, 0.3, 1);
@@ -152,7 +152,10 @@ body {
 
 .admin-shell {
   display: flex;
-  min-height: 100vh;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  max-height: 100%;
   background: var(--admin-bg);
   color: var(--admin-text);
 }
@@ -161,7 +164,8 @@ body {
 .admin-shell__sidebar {
   width: var(--admin-sidebar-width);
   flex-shrink: 0;
-  min-height: 100vh;
+  height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   background: var(--admin-panel);
@@ -230,25 +234,125 @@ body {
 .admin-shell__main {
   flex: 1 1 auto;
   min-width: 0;
-  padding: 20px 24px 48px;
+  min-height: 0;
+  padding: 20px 24px 24px;
   overflow-y: auto;
 }
 
-/* Status bar */
+/* Stretch dense studio views (DB inspector, etc.) to fill the viewport */
+.admin-shell__main:has(.db-inspector-container) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.admin-shell__main:has(.db-inspector-container) > * {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Status / health bar (footer) — unique class names to avoid Header.css .admin-status-dot collision */
+.admin-healthbar,
 .admin-shell__statusbar {
+  --admin-statusbar-height: 36px;
   height: var(--admin-statusbar-height);
+  min-height: var(--admin-statusbar-height);
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   padding: 0 16px;
   background: var(--admin-panel);
   border-top: 1px solid var(--admin-border);
-  font-size: 0.68rem;
-  font-weight: 600;
-  color: var(--admin-text-muted);
+  overflow: hidden;
+}
+
+.admin-healthbar__items,
+.admin-shell__statusbar-items {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
   overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 0;
+  scrollbar-width: thin;
+}
+
+.admin-healthbar__clock,
+.admin-shell__statusbar-clock {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--admin-text-muted);
   white-space: nowrap;
+  padding-left: 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.admin-health-chip {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 6px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--admin-surface, rgba(15, 23, 42, 0.04));
+  border: 1px solid var(--admin-border);
+  color: var(--admin-text);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.admin-health-chip__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: var(--admin-text-dim);
+}
+
+.admin-health-chip__name {
+  color: var(--admin-text);
+  text-transform: none;
+}
+
+.admin-health-chip__status {
+  color: var(--admin-text-muted);
+  font-size: 0.62rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.admin-health-chip--healthy .admin-health-chip__dot {
+  background: var(--admin-success, #22c55e);
+  box-shadow: 0 0 6px var(--admin-success, #22c55e);
+}
+
+.admin-health-chip--degraded .admin-health-chip__dot {
+  background: var(--admin-warning, #f59e0b);
+  box-shadow: 0 0 6px var(--admin-warning, #f59e0b);
+}
+
+.admin-health-chip--down .admin-health-chip__dot {
+  background: var(--admin-danger, #ef4444);
+  box-shadow: 0 0 6px var(--admin-danger, #ef4444);
+}
+
+.admin-health-chip--unknown .admin-health-chip__dot {
+  background: var(--admin-text-dim, #94a3b8);
 }
 
 /* Mobile sidebar overlay */
@@ -829,11 +933,17 @@ body {
   width: 100%;
   max-width: 480px;
   max-height: 90vh;
-  overflow-y: auto;
+  overflow: hidden;
   padding: 24px;
+  display: flex;
+  flex-direction: column;
+}
+.admin-modal--with-actions {
+  padding-bottom: 16px;
 }
 .admin-modal__header {
   margin-bottom: 16px;
+  flex-shrink: 0;
 }
 .admin-modal__title {
   font-size: 1.05rem;
@@ -847,11 +957,22 @@ body {
   line-height: 1.5;
   margin: 0;
 }
+.admin-modal__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 2px;
+}
 .admin-modal__actions {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   gap: 8px;
-  margin-top: 20px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--admin-border);
+  flex-shrink: 0;
+  background: var(--admin-panel);
 }
 
 /* ── 13. CONFIRM DIALOG ── */
@@ -1021,34 +1142,8 @@ body {
 
 /* ── 17. STATUS INDICATORS ── */
 
-.admin-status-dot {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.72rem;
-  font-weight: 700;
-}
-.admin-status-dot__circle {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.admin-status-dot--healthy .admin-status-dot__circle {
-  background: var(--admin-success);
-  box-shadow: 0 0 6px var(--admin-success);
-}
-.admin-status-dot--degraded .admin-status-dot__circle {
-  background: var(--admin-warning);
-  box-shadow: 0 0 6px var(--admin-warning);
-}
-.admin-status-dot--down .admin-status-dot__circle {
-  background: var(--admin-danger);
-  box-shadow: 0 0 6px var(--admin-danger);
-}
-.admin-status-dot--stale .admin-status-dot__circle {
-  background: var(--admin-text-dim);
-}
+/* legacy admin-status-dot rules removed — footer uses .admin-health-chip
+   (Header.css had a global .admin-status-dot that collapsed the footer pills) */
 
 /* ── 18. DATA TABLE ENHANCEMENTS ── */
 
@@ -1146,7 +1241,7 @@ body {
 /* Laptop: 1024–1439px */
 @media (max-width: 1439px) {
   .admin-shell__main {
-    padding: 16px 20px 40px;
+    padding: 16px 20px 20px;
   }
 }
 

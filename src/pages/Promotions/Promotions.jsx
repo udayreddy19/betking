@@ -1,9 +1,102 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { fetchUserBonuses, usePromotionCatalog } from '../../hooks/usePromotionCatalog';
+import {
+  fetchUserBonuses,
+  fetchUserSignupPromoClaims,
+  usePromotionCatalog,
+} from '../../hooks/usePromotionCatalog';
 import { DEMO_MODE } from '../../utils/featureFlags';
+import { isExclusiveSignupPromoLocked } from '../../../lib/exclusiveSignupPromos.mjs';
 import './Promotions.css';
+
+const FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'freebet', label: 'Free bets' },
+  { id: 'welcome', label: 'Welcome' },
+  { id: 'reload', label: 'Reload' },
+];
+
+function promoKind(promo) {
+  const tag = String(promo.tag || '').toUpperCase();
+  const type = String(promo.type || promo.rewardType || '').toLowerCase();
+  const code = String(promo.code || '').toUpperCase();
+  if (type === 'freebet' || tag.includes('FREE BET') || code === 'SPORTS500' || code === 'LIVE100') {
+    return 'freebet';
+  }
+  if (tag.includes('NEW') || tag.includes('VIP') || tag.includes('WELCOME') || code.startsWith('WELCOME') || code === 'VIP1000') {
+    return 'welcome';
+  }
+  if (tag.includes('RELOAD') || code.includes('RELOAD')) {
+    return 'reload';
+  }
+  return 'other';
+}
+
+function rewardLabel(promo) {
+  if (promo.bonusAmount) {
+    return `₹${Number(promo.bonusAmount).toLocaleString('en-IN')}`;
+  }
+  if (promo.maxReward) {
+    return `Up to ₹${Number(promo.maxReward).toLocaleString('en-IN')}`;
+  }
+  if (promo.matchPercent) {
+    return `${promo.matchPercent}% match`;
+  }
+  return null;
+}
+
+function isPromoUsed(promo, {
+  demoMode,
+  isPromotionClaimed,
+  claimedPromoCodes,
+}) {
+  if (demoMode) return Boolean(isPromotionClaimed?.(promo.id));
+  const code = promo.code ? String(promo.code).toUpperCase() : '';
+  if (!code) return false;
+  if (claimedPromoCodes.has(code)) return true;
+  if (isExclusiveSignupPromoLocked(code, claimedPromoCodes)) return true;
+  return false;
+}
+
+function PromoCard({ promo, claiming, onClaim }) {
+  const reward = rewardLabel(promo);
+  return (
+    <article className="promo-item" id={`promo-${promo.code || promo.id}`}>
+      <div className="promo-item-accent" style={{ background: promo.gradient || promo.bgColor }} aria-hidden="true" />
+      <div className="promo-item-banner" style={{ background: promo.gradient || promo.bgColor }}>
+        {promo.tag && <span className="promo-item-tag">{promo.tag}</span>}
+        <h3>{promo.title}</h3>
+        {reward && <p className="promo-item-banner-reward">{reward}</p>}
+      </div>
+      <div className="promo-item-body">
+        <div className="promo-item-body-top">
+          {promo.tag && <span className="promo-item-tag promo-item-tag--inline">{promo.tag}</span>}
+          {reward && <span className="promo-item-reward-pill">{reward}</span>}
+        </div>
+        <h3 className="promo-item-title-mobile">{promo.title}</h3>
+        {promo.subtitle && <h4>{promo.subtitle}</h4>}
+        <p>{promo.description}</p>
+        {promo.code && (
+          <p className="promo-bonus-amount">
+            Code: <strong>{promo.code}</strong>
+          </p>
+        )}
+        {DEMO_MODE && promo.bonusAmount && (
+          <p className="promo-bonus-amount">Demo credit: ₹{promo.bonusAmount.toLocaleString('en-IN')}</p>
+        )}
+        <button
+          type="button"
+          className="promo-item-btn"
+          onClick={() => onClaim(promo)}
+          disabled={claiming}
+        >
+          {claiming ? 'Claiming…' : 'Claim now'}
+        </button>
+      </div>
+    </article>
+  );
+}
 
 export default function Promotions() {
   const { openLoginModal, isLoggedIn, claimPromotion, isPromotionClaimed } = useAuth();
@@ -11,20 +104,26 @@ export default function Promotions() {
   const [activeBonuses, setActiveBonuses] = useState([]);
   const [claimedCodes, setClaimedCodes] = useState(() => new Set());
   const [claimingCode, setClaimingCode] = useState(null);
+  const [filter, setFilter] = useState('all');
 
   useEffect(() => {
     if (!isLoggedIn) {
       setActiveBonuses([]);
+      setClaimedCodes(new Set());
       return undefined;
     }
 
     let cancelled = false;
-    fetchUserBonuses()
-      .then((bonuses) => {
-        if (!cancelled) setActiveBonuses(bonuses);
+    Promise.all([fetchUserBonuses(), fetchUserSignupPromoClaims()])
+      .then(([bonuses, claims]) => {
+        if (cancelled) return;
+        setActiveBonuses(bonuses);
+        setClaimedCodes(new Set((claims || []).map((c) => String(c.code || '').toUpperCase()).filter(Boolean)));
       })
       .catch(() => {
-        if (!cancelled) setActiveBonuses([]);
+        if (!cancelled) {
+          setActiveBonuses([]);
+        }
       });
 
     return () => {
@@ -40,6 +139,20 @@ export default function Promotions() {
     return codes;
   }, [activeBonuses, claimedCodes]);
 
+  const availableCatalog = useMemo(
+    () => catalog.filter((promo) => !isPromoUsed(promo, {
+      demoMode: DEMO_MODE,
+      isPromotionClaimed,
+      claimedPromoCodes,
+    })),
+    [catalog, claimedPromoCodes, isPromotionClaimed],
+  );
+
+  const filteredCatalog = useMemo(() => {
+    if (filter === 'all') return availableCatalog;
+    return availableCatalog.filter((promo) => promoKind(promo) === filter);
+  }, [availableCatalog, filter]);
+
   const handleClaim = async (promo) => {
     if (!isLoggedIn) {
       openLoginModal();
@@ -51,28 +164,49 @@ export default function Promotions() {
     if (result?.ok && promo.code) {
       setClaimedCodes((prev) => new Set(prev).add(String(promo.code).toUpperCase()));
       if (!DEMO_MODE) {
-        const bonuses = await fetchUserBonuses();
+        const [bonuses, claims] = await Promise.all([fetchUserBonuses(), fetchUserSignupPromoClaims()]);
         setActiveBonuses(bonuses);
+        setClaimedCodes(new Set((claims || []).map((c) => String(c.code || '').toUpperCase()).filter(Boolean)));
       }
     }
   };
 
-  const isClaimed = (promo) => {
-    if (DEMO_MODE) return isPromotionClaimed(promo.id);
-    if (promo.code && claimedPromoCodes.has(String(promo.code).toUpperCase())) return true;
-    return false;
-  };
-
   return (
     <div className="promotions-page container" id="promotions-page">
-      <div className="promotions-header">
-        <h1>Promotions & Bonuses</h1>
-        <p>
-          {DEMO_MODE
-            ? 'Grab exclusive welcome offers, weekly reloads, free bets, and crypto bonuses!'
-            : 'Claim active sports offers below or enter a promo code in your profile.'}
-        </p>
-      </div>
+      <header className="promotions-header">
+        <div className="promotions-header-copy">
+          <p className="promotions-kicker">Offers</p>
+          <h1>Promotions</h1>
+          <p>
+            {DEMO_MODE
+              ? 'Grab exclusive welcome offers, weekly reloads, free bets, and crypto bonuses!'
+              : 'Claim sports offers below, or enter a promo code on your profile.'}
+          </p>
+        </div>
+        {!loading && availableCatalog.length > 0 && (
+          <div className="promotions-header-stat" aria-label="Available promotions">
+            <strong>{availableCatalog.length}</strong>
+            <span>live</span>
+          </div>
+        )}
+      </header>
+
+      {!loading && availableCatalog.length > 0 && (
+        <div className="promotions-filters" role="tablist" aria-label="Filter promotions">
+          {FILTERS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              role="tab"
+              aria-selected={filter === item.id}
+              className={`promotions-filter-chip${filter === item.id ? ' is-active' : ''}`}
+              onClick={() => setFilter(item.id)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {loading && !DEMO_MODE && (
         <div className="promotions-empty-state">
@@ -86,45 +220,36 @@ export default function Promotions() {
         </div>
       )}
 
-      {!loading && catalog.length > 0 && (
+      {!loading && filteredCatalog.length > 0 && (
         <div className="promotions-grid">
-          {catalog.map((promo) => {
-            const claimed = isClaimed(promo);
-            const rewardHint = promo.bonusAmount
-              ? `Up to ₹${Number(promo.bonusAmount).toLocaleString('en-IN')}`
-              : promo.maxReward
-                ? `Up to ₹${Number(promo.maxReward).toLocaleString('en-IN')}`
-                : null;
-            return (
-              <div key={promo.id || promo.code} className="promo-item" id={`promo-${promo.code || promo.id}`}>
-                <div className="promo-item-banner" style={{ background: promo.gradient || promo.bgColor }}>
-                  {promo.tag && <span className="promo-item-tag">{promo.tag}</span>}
-                  <h3>{promo.title}</h3>
-                </div>
-                <div className="promo-item-body">
-                  {promo.subtitle && <h4>{promo.subtitle}</h4>}
-                  <p>{promo.description}</p>
-                  {promo.code && (
-                    <p className="promo-bonus-amount">
-                      Code: <strong>{promo.code}</strong>
-                      {rewardHint ? ` · ${rewardHint}` : ''}
-                    </p>
-                  )}
-                  {DEMO_MODE && promo.bonusAmount && (
-                    <p className="promo-bonus-amount">Demo credit: ₹{promo.bonusAmount.toLocaleString('en-IN')}</p>
-                  )}
-                  <button
-                    type="button"
-                    className="promo-item-btn"
-                    onClick={() => handleClaim(promo)}
-                    disabled={claimed || claimingCode === promo.code}
-                  >
-                    {claimed ? 'Claimed' : claimingCode === promo.code ? 'Claiming…' : 'Claim now'}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+          {filteredCatalog.map((promo) => (
+            <PromoCard
+              key={promo.id || promo.code}
+              promo={promo}
+              claiming={claimingCode === promo.code}
+              onClaim={handleClaim}
+            />
+          ))}
+        </div>
+      )}
+
+      {!loading && availableCatalog.length > 0 && filteredCatalog.length === 0 && (
+        <div className="promotions-empty-state">
+          <h2>No offers in this filter</h2>
+          <p>Try another category or view all live promotions.</p>
+          <button type="button" className="promo-item-btn" onClick={() => setFilter('all')}>
+            Show all
+          </button>
+        </div>
+      )}
+
+      {!loading && !error && availableCatalog.length === 0 && catalog.length > 0 && (
+        <div className="promotions-empty-state">
+          <h2>You&apos;ve claimed the available offers</h2>
+          <p>Claimed promotions are removed from this list. Check active bonuses below, or enter a new code on your profile.</p>
+          <Link to={isLoggedIn ? '/profile' : '/register'} className="promo-item-btn">
+            {isLoggedIn ? 'Go to profile' : 'Create an account'}
+          </Link>
         </div>
       )}
 
@@ -140,25 +265,37 @@ export default function Promotions() {
 
       {!DEMO_MODE && isLoggedIn && activeBonuses.length > 0 && (
         <section className="promotions-active-bonuses">
-          <h2>Your active bonuses</h2>
-          <div className="promotions-grid">
-            {activeBonuses.map((bonus) => (
-              <div key={bonus.id} className="promo-item">
-                <div className="promo-item-body">
-                  <h4>{bonus.promo_name || bonus.name || 'Bonus'}</h4>
-                  <p>
-                    ₹{Number(bonus.bonus_amount || 0).toLocaleString('en-IN')} · Status: {bonus.status}
+          <div className="promotions-section-head">
+            <h2>Your active bonuses</h2>
+            <span>{activeBonuses.length}</span>
+          </div>
+          <div className="promotions-active-list">
+            {activeBonuses.map((bonus) => {
+              const required = Number(bonus.wagering_required || 0);
+              const done = Number(bonus.wagering_completed || 0);
+              const progress = required > 0 ? Math.min(100, Math.round((done / required) * 100)) : 0;
+              return (
+                <div key={bonus.id} className="promo-active-card">
+                  <div className="promo-active-card__top">
+                    <h4>{bonus.promo_name || bonus.name || 'Bonus'}</h4>
+                    <span className="promo-active-status">{bonus.status}</span>
+                  </div>
+                  <p className="promo-active-amount">
+                    ₹{Number(bonus.bonus_amount || 0).toLocaleString('en-IN')}
                   </p>
-                  {bonus.wagering_required != null && (
-                    <p className="promo-bonus-amount">
-                      Wagering: ₹{Number(bonus.wagering_completed || 0).toLocaleString('en-IN')}
-                      {' / '}
-                      ₹{Number(bonus.wagering_required || 0).toLocaleString('en-IN')}
-                    </p>
+                  {required > 0 && (
+                    <>
+                      <div className="promo-active-bar" aria-hidden="true">
+                        <div style={{ width: `${progress}%` }} />
+                      </div>
+                      <p className="promo-bonus-amount">
+                        Wagering ₹{done.toLocaleString('en-IN')} / ₹{required.toLocaleString('en-IN')}
+                      </p>
+                    </>
                   )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       )}

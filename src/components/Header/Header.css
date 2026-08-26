@@ -316,12 +316,21 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
   padding: 12px 14px;
   border-bottom: 1px solid var(--color-border);
 }
 
 .header-notif-menu__head strong {
   font-size: 0.86rem;
+  flex-shrink: 0;
+}
+
+.header-notif-menu__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px 10px;
 }
 
 .header-notif-menu__head button {
@@ -331,6 +340,11 @@
   font-size: 0.75rem;
   font-weight: 700;
   cursor: pointer;
+  padding: 0;
+}
+
+.header-notif-menu__clear {
+  color: var(--color-danger, #ef4444) !important;
 }
 
 .header-notif-menu__list {
@@ -348,16 +362,15 @@
 
 .header-notif-item {
   display: flex;
-  flex-direction: column;
+  align-items: flex-start;
   gap: 4px;
   width: 100%;
   text-align: left;
-  padding: 12px 14px;
+  padding: 0;
   border: none;
   border-bottom: 1px solid var(--color-border);
   background: transparent;
   color: inherit;
-  cursor: pointer;
 }
 
 .header-notif-item:hover {
@@ -366,6 +379,40 @@
 
 .header-notif-item.unread {
   background: rgba(31, 138, 76, 0.08);
+}
+
+.header-notif-item__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  padding: 12px 8px 12px 14px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.header-notif-item__dismiss {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  margin: 8px 8px 0 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.header-notif-item__dismiss:hover,
+.header-notif-item__dismiss:active {
+  background: rgba(127, 127, 127, 0.12);
+  color: var(--color-danger, #ef4444);
 }
 
 .header-notif-item__title {
@@ -403,12 +450,14 @@
   letter-spacing: 0.04em;
 }
 
-.admin-status-dot {
+/* Scoped under badge only — must NOT collide with admin footer health chips */
+.admin-status-badge .admin-status-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: #ef4444;
   box-shadow: 0 0 8px #ef4444;
+  flex-shrink: 0;
 }
 
 .header-wallet-group--guest .header-balance--static {
@@ -1012,16 +1061,36 @@
   }
 
   .header-theme-toggle,
-  .header-action-icon-btn:not(.header-my-bets-btn),
+  .header-action-icon-btn:not(.header-my-bets-btn):not(.header-notif-btn),
   .header-odds-format-select {
     display: none;
   }
 
-  .header-my-bets-btn {
+  .header-my-bets-btn,
+  .header-notif-btn {
     display: flex;
     width: 36px;
     height: 36px;
     font-size: 1.05rem;
+  }
+
+  .header-notif-wrap {
+    display: inline-flex;
+  }
+
+  .header-notif-menu {
+    position: fixed;
+    top: calc(var(--header-height, 56px) + 8px + env(safe-area-inset-top, 0px));
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-height: min(70vh, 480px);
+    border-radius: 16px;
+    z-index: 1300;
+  }
+
+  .header-notif-menu__list {
+    max-height: min(58vh, 400px);
   }
 
   .header-balance {

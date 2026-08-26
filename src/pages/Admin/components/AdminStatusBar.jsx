@@ -1,13 +1,47 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { adminApiClient } from '../api/adminApiClient';
 
 /**
- * Global system status strip showing API/DB/WebSocket/Settlement/Odds/Payments health.
- * Uses existing backend health endpoints.
+ * Global system status strip showing provider / infra health.
+ * Uses admin-health-* class names (not admin-status-dot) to avoid
+ * colliding with Header.css's tiny red .admin-status-dot indicator.
  */
+function normalizeServices(payload) {
+  if (!payload || typeof payload !== 'object') return [];
+
+  let raw = payload.providers || payload.matrix || payload.providerHealth || payload.services || null;
+
+  if (raw && !Array.isArray(raw) && typeof raw === 'object') {
+    raw = Object.entries(raw).map(([key, info]) => ({
+      name: key,
+      ...(typeof info === 'string' ? { status: info } : (info || {})),
+    }));
+  }
+
+  if (!Array.isArray(raw)) return [];
+
+  return raw
+    .map((svc, idx) => {
+      const name = String(
+        svc.providerName || svc.name || svc.service || svc.id || `Service ${idx + 1}`,
+      ).trim();
+      const status = String(svc.status || svc.state || svc.freshnessStatus || '').toUpperCase();
+      const isOk = ['OK', 'HEALTHY', 'UP', 'ACTIVE', 'CONFIGURED', 'FRESH'].includes(status);
+      const isDegraded = ['DEGRADED', 'SLOW', 'STALE', 'DELAYED'].includes(status);
+      const isDown = ['DOWN', 'OFFLINE', 'ERROR', 'FAILED', 'UNHEALTHY', 'UNREACHABLE'].includes(status);
+      let tone = 'unknown';
+      if (isOk) tone = 'healthy';
+      else if (isDegraded) tone = 'degraded';
+      else if (isDown || status) tone = 'down';
+      return { name, status: status || 'UNKNOWN', tone };
+    })
+    .filter((s) => s.name && !['success', 'timestamp', 'mappedMatches', 'activeFallback'].includes(s.name));
+}
+
 export default function AdminStatusBar() {
   const [health, setHealth] = useState(null);
-  const [serverTime, setServerTime] = useState(new Date().toISOString().slice(0, 16).replace('T', ' '));
+  const [loadError, setLoadError] = useState(false);
+  const [serverTime, setServerTime] = useState(() => new Date().toISOString().slice(0, 16).replace('T', ' '));
 
   useEffect(() => {
     let cancelled = false;
@@ -15,17 +49,19 @@ export default function AdminStatusBar() {
     const loadHealth = () => {
       adminApiClient.get('/providers/health-matrix')
         .then((data) => {
-          if (!cancelled) setHealth(data);
+          if (cancelled) return;
+          setHealth(data);
+          setLoadError(false);
         })
         .catch(() => {
-          if (!cancelled) setHealth(null);
+          if (cancelled) return;
+          setHealth(null);
+          setLoadError(true);
         });
     };
 
     loadHealth();
     const interval = setInterval(loadHealth, 30000);
-
-    // Update clock every 30s
     const clockInterval = setInterval(() => {
       setServerTime(new Date().toISOString().slice(0, 16).replace('T', ' '));
     }, 30000);
@@ -37,44 +73,34 @@ export default function AdminStatusBar() {
     };
   }, []);
 
-  const services = [];
-  if (health) {
-    const matrix = health.matrix || health;
-    const entries = Array.isArray(matrix) ? matrix : Object.entries(matrix).map(([name, info]) => ({
-      name,
-      ...(typeof info === 'string' ? { status: info } : info),
-    }));
-
-    entries.forEach((svc) => {
-      const name = svc.name || svc.service || 'Unknown';
-      const status = String(svc.status || svc.state || '').toUpperCase();
-      const isOk = status === 'OK' || status === 'HEALTHY' || status === 'UP' || status === 'ACTIVE' || status === 'CONFIGURED';
-      const isDegraded = status === 'DEGRADED' || status === 'SLOW';
-      services.push({
-        name,
-        className: isOk ? 'admin-status-dot--healthy' : isDegraded ? 'admin-status-dot--degraded' : 'admin-status-dot--down',
-      });
-    });
-  }
-
-  // Fallback defaults when health matrix unavailable
-  if (!services.length) {
-    ['API', 'Database', 'WebSocket'].forEach((name) => {
-      services.push({ name, className: 'admin-status-dot--stale' });
-    });
-  }
+  const services = useMemo(() => {
+    const parsed = normalizeServices(health);
+    if (parsed.length) return parsed;
+    const tone = loadError ? 'down' : 'unknown';
+    const status = loadError ? 'UNREACHABLE' : 'UNKNOWN';
+    return [
+      { name: 'API', status, tone },
+      { name: 'Database', status, tone },
+      { name: 'WebSocket', status, tone },
+    ];
+  }, [health, loadError]);
 
   return (
-    <div className="admin-shell__statusbar">
-      {services.map((svc) => (
-        <div key={svc.name} className={`admin-status-dot ${svc.className}`}>
-          <span className="admin-status-dot__circle" />
-          <span>{svc.name}</span>
-        </div>
-      ))}
-      <div style={{ marginLeft: 'auto', fontVariantNumeric: 'tabular-nums' }}>
-        {serverTime} UTC
+    <footer className="admin-healthbar" role="status" aria-label="System health">
+      <div className="admin-healthbar__items">
+        {services.map((svc) => (
+          <div
+            key={svc.name}
+            className={`admin-health-chip admin-health-chip--${svc.tone}`}
+            title={`${svc.name}: ${svc.status}`}
+          >
+            <span className="admin-health-chip__dot" aria-hidden="true" />
+            <span className="admin-health-chip__name">{svc.name}</span>
+            <span className="admin-health-chip__status">{svc.status}</span>
+          </div>
+        ))}
       </div>
-    </div>
+      <div className="admin-healthbar__clock">{serverTime} UTC</div>
+    </footer>
   );
 }

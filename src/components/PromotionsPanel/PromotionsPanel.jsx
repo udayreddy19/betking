@@ -77,6 +77,17 @@ export default function PromotionsPanel({ isOpen, onClose }) {
     [claimedPromoCodes],
   );
 
+  const availableCatalog = useMemo(() => {
+    return catalog.filter((promo) => {
+      if (DEMO_MODE) return !isPromotionClaimed(promo.id);
+      const code = promo.code ? String(promo.code).toUpperCase() : '';
+      if (!code) return true;
+      if (claimedPromoCodes.has(code)) return false;
+      if (isExclusiveSignupPromoLocked(code, claimedPromoCodes)) return false;
+      return true;
+    });
+  }, [catalog, claimedPromoCodes, isPromotionClaimed]);
+
   const handleClaim = async (promo) => {
     if (!isLoggedIn) {
       openLoginModal();
@@ -95,26 +106,9 @@ export default function PromotionsPanel({ isOpen, onClose }) {
     }
   };
 
-  const claimState = (promo) => {
-    if (DEMO_MODE) {
-      return { disabled: isPromotionClaimed(promo.id), label: isPromotionClaimed(promo.id) ? 'Claimed' : 'Claim now' };
-    }
-    const code = promo.code ? String(promo.code).toUpperCase() : '';
-    if (code && claimedPromoCodes.has(code)) {
-      return { disabled: true, label: 'Claimed' };
-    }
-    if (code && isExclusiveSignupPromoLocked(code, claimedPromoCodes)) {
-      return {
-        disabled: true,
-        label: exclusiveClaimed ? `Used ${exclusiveClaimed}` : 'Unavailable',
-      };
-    }
-    return { disabled: false, label: 'Claim now' };
-  };
-
   if (!isOpen) return null;
 
-  const promoCount = catalog.length;
+  const promoCount = availableCatalog.length;
 
   return (
     <>
@@ -136,36 +130,41 @@ export default function PromotionsPanel({ isOpen, onClose }) {
             </div>
           )}
 
-          {!loading && catalog.length > 0 && catalog.map((promo) => {
-            const { disabled, label } = claimState(promo);
-            return (
-              <article
-                key={promo.id || promo.code}
-                className="promotions-panel-card"
-                style={{ background: promo.bgColor || promo.gradient }}
+          {!loading && availableCatalog.length > 0 && availableCatalog.map((promo) => (
+            <article
+              key={promo.id || promo.code}
+              className="promotions-panel-card"
+              style={{ background: promo.bgColor || promo.gradient }}
+            >
+              <span className="promotions-panel-tag">{promo.tag || 'PROMOTION'}</span>
+              <h4>{promo.title}</h4>
+              <p>{promo.description || promo.subtitle}</p>
+              {promo.code && (
+                <div className="promotions-panel-code">Code: <strong>{promo.code}</strong></div>
+              )}
+              <button
+                type="button"
+                className="promotions-panel-claim"
+                onClick={() => handleClaim(promo)}
+                disabled={claimingCode === promo.code}
               >
-                <span className="promotions-panel-tag">{promo.tag || 'PROMOTION'}</span>
-                <h4>{promo.title}</h4>
-                <p>{promo.description || promo.subtitle}</p>
-                {promo.code && (
-                  <div className="promotions-panel-code">Code: <strong>{promo.code}</strong></div>
-                )}
-                <button
-                  type="button"
-                  className="promotions-panel-claim"
-                  onClick={() => handleClaim(promo)}
-                  disabled={disabled || claimingCode === promo.code}
-                >
-                  {claimingCode === promo.code ? 'Claiming…' : label}
-                </button>
-              </article>
-            );
-          })}
+                {claimingCode === promo.code ? 'Claiming…' : 'Claim now'}
+              </button>
+            </article>
+          ))}
 
-          {!loading && catalog.length === 0 && (
+          {!loading && availableCatalog.length === 0 && (
             <div className="promotions-panel-empty">
-              <p>No active promotions right now.</p>
-              <p>Enter a promo code in your profile when you receive one.</p>
+              <p>
+                {catalog.length > 0
+                  ? 'You have claimed the available promotions.'
+                  : 'No active promotions right now.'}
+              </p>
+              <p>
+                {exclusiveClaimed
+                  ? `Welcome offer ${exclusiveClaimed} is already on this account.`
+                  : 'Enter a promo code in your profile when you receive one.'}
+              </p>
               <Link
                 to={isLoggedIn ? '/profile' : '/register'}
                 className="promotions-panel-claim"

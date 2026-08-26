@@ -37,6 +37,12 @@ export default function SocialAuthButtons({ disabled = false }) {
   const handleGoogle = () => {
     if (disabled || loading) return;
     setLoading(true);
+    try {
+      const pending = String(sessionStorage.getItem('bk_pending_referral') || '').trim().toUpperCase();
+      if (pending) sessionStorage.setItem('bk_pending_referral', pending);
+    } catch {
+      /* ignore */
+    }
     window.location.href = '/api/auth/google/start';
   };
 

@@ -152,6 +152,7 @@ const DOMAIN_GROUPS = [
         subModules: [
           { id: 'promotions', label: 'Sportsbook Campaigns' },
           { id: 'bonus-codes', label: 'Signup Promo Codes' },
+          { id: 'referrals', label: 'Referral Program' },
           { id: 'vip-tiers', label: 'VIP Loyalty Tiers' },
         ],
       },
@@ -164,6 +165,7 @@ const DOMAIN_GROUPS = [
           { id: 'dispatch-logs', label: 'Notification Delivery Logs' },
           { id: 'templates', label: 'Message Templates' },
           { id: 'dlq-retry', label: 'Dead Letter Queue Retries' },
+          { id: 'broadcast', label: 'Broadcast Notification' },
         ],
       },
     ],
@@ -200,6 +202,7 @@ const DOMAIN_GROUPS = [
         subModules: [
           { id: 'health-matrix', label: 'Infrastructure Health Matrix' },
           { id: 'outbox-queue', label: 'Outbox Worker Telemetry' },
+          { id: 'settlement-queue', label: 'Settlement Queue' },
         ],
       },
       {
@@ -348,6 +351,7 @@ function AdminShellInner() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [alertsMenuPos, setAlertsMenuPos] = useState({ top: 56, right: 16 });
+  const [focusNav, setFocusNav] = useState(null); // { entityType, entityId }
   const contentScrollRef = useRef(null);
   const alertsBellRef = useRef(null);
   const alertsMenuRef = useRef(null);
@@ -577,17 +581,31 @@ function AdminShellInner() {
     }
   };
 
-  const handleCommandNavigate = ({ domainId, subModuleId }) => {
+  const handleCommandNavigate = ({ domainId, subModuleId, entityType, entityId }) => {
     if (!domainId) return;
     const domain = ALL_DOMAINS.find((d) => d.id === domainId);
     const nextSub = subModuleId
       || domain?.subModules?.[0]?.id
       || activeSubModule;
+    const type = String(entityType || '').toLowerCase();
+    const focusTypes = new Set([
+      'user', 'users',
+      'bet', 'bets',
+      'ticket', 'tickets',
+      'transaction', 'transactions',
+      'withdrawal', 'withdrawals',
+      'kyc_case', 'kyc_cases',
+    ]);
     flushSync(() => {
       setActiveDomain(domainId);
       setExpandedDomains((prev) => ({ ...prev, [domainId]: true }));
       setActiveSubModule(nextSub);
       setIsAlertsOpen(false);
+      if (entityId && focusTypes.has(type)) {
+        setFocusNav({ entityType: type, entityId: String(entityId) });
+      } else {
+        setFocusNav(null);
+      }
     });
     syncAdminLocation(domainId, nextSub);
     scrollContentToTop();
@@ -765,12 +783,41 @@ function AdminShellInner() {
           onNavigate={handleCommandNavigate}
         />
       );
-      case 'customers': return <CustomersDomainView subModule={activeSubModule} />;
+      case 'customers': return (
+        <CustomersDomainView
+          subModule={activeSubModule}
+          focusEntityId={focusNav?.entityId || null}
+          focusEntityType={focusNav?.entityType || null}
+          onFocusConsumed={() => setFocusNav(null)}
+          onNavigate={handleCommandNavigate}
+        />
+      );
       case 'sports': return <SportsDomainView subModule={activeSubModule} />;
       case 'trading-risk': return <TradingRiskDomainView subModule={activeSubModule} />;
-      case 'betting': return <BettingDomainView subModule={activeSubModule} />;
-      case 'finance': return <FinanceDomainView subModule={activeSubModule} />;
-      case 'support': return <SupportDomainView subModule={activeSubModule} />;
+      case 'betting': return (
+        <BettingDomainView
+          subModule={activeSubModule}
+          focusEntityId={focusNav?.entityId || null}
+          focusEntityType={focusNav?.entityType || null}
+          onFocusConsumed={() => setFocusNav(null)}
+        />
+      );
+      case 'finance': return (
+        <FinanceDomainView
+          subModule={activeSubModule}
+          focusEntityId={focusNav?.entityId || null}
+          focusEntityType={focusNav?.entityType || null}
+          onFocusConsumed={() => setFocusNav(null)}
+        />
+      );
+      case 'support': return (
+        <SupportDomainView
+          subModule={activeSubModule}
+          focusEntityId={focusNav?.entityId || null}
+          focusEntityType={focusNav?.entityType || null}
+          onFocusConsumed={() => setFocusNav(null)}
+        />
+      );
       case 'growth': return <GrowthDomainView subModule={activeSubModule} />;
       case 'communications': return <CommunicationsDomainView subModule={activeSubModule} />;
       case 'analytics': return <AnalyticsDomainView subModule={activeSubModule} />;

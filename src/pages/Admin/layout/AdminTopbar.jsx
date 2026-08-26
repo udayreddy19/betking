@@ -81,7 +81,7 @@ export default function AdminTopbar({
           <motion.input
             whileFocus={{ scale: 1.01, borderColor: '#6366f1', boxShadow: '0 0 0 3px rgba(99, 102, 241, 0.18)' }}
             type="search"
-            placeholder="Search commands, markets, users..."
+            placeholder="Search email, mobile, users, bets…"
             value={globalSearch}
             onChange={onSearchChange}
             onKeyDown={onSearchKeyDown}

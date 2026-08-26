@@ -150,9 +150,10 @@ function MakerCheckerPanel() {
   );
 }
 
-function LedgerPanel() {
+function LedgerPanel({ focusEntityId = null, focusEntityType = null, onFocusConsumed = null }) {
   const [entries, setEntries] = useState([]);
   const [error, setError] = useState(null);
+  const [filterQ, setFilterQ] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -170,6 +171,29 @@ function LedgerPanel() {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    if (!focusEntityId) return undefined;
+    const type = String(focusEntityType || '').toLowerCase();
+    if (type && !['transaction', 'transactions', 'user', 'users', 'withdrawal', 'withdrawals', ''].includes(type)) {
+      return undefined;
+    }
+    setFilterQ(String(focusEntityId));
+    onFocusConsumed?.();
+    return undefined;
+  }, [focusEntityId, focusEntityType, onFocusConsumed]);
+
+  const filtered = useMemo(() => {
+    if (!filterQ.trim()) return entries;
+    const q = filterQ.trim().toLowerCase();
+    return entries.filter((r) => {
+      const hay = [
+        r.id, r.entry_id, r.transactionId, r.transaction_id,
+        r.walletId, r.wallet_id, r.userId, r.user_id, r.description, r.type,
+      ].map((v) => String(v || '').toLowerCase()).join(' ');
+      return hay.includes(q);
+    });
+  }, [entries, filterQ]);
+
   return (
     <div>
       <div style={{ marginBottom: '16px' }}>
@@ -180,14 +204,40 @@ function LedgerPanel() {
         {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
       </div>
 
+      <div style={{ marginBottom: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        <input
+          className="admin-input"
+          value={filterQ}
+          onChange={(e) => setFilterQ(e.target.value)}
+          placeholder="Filter by txn / wallet / user id…"
+          style={{ minWidth: 240, flex: '1 1 200px' }}
+        />
+        {filterQ && (
+          <button type="button" className="admin-btn admin-btn--ghost admin-btn--sm" onClick={() => setFilterQ('')}>
+            Clear
+          </button>
+        )}
+      </div>
+
       <AdminDataTable
         title="Ledger Entries"
         emptyMessage="No ledger entries recorded yet"
-        data={entries}
+        data={filtered}
         columns={[
           { header: 'Entry ID', key: 'id', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.id || r.entry_id}</span> },
           { header: 'Wallet ID', key: 'walletId', render: (r) => r.walletId || r.wallet_id },
-          { header: 'Txn ID', key: 'transactionId', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.transactionId || r.transaction_id}</span> },
+          { header: 'Txn ID', key: 'transactionId', render: (r) => (
+            <span
+              className="admin-text-mono"
+              style={{
+                fontSize: '0.76rem',
+                fontWeight: filterQ && String(r.transactionId || r.transaction_id || '').includes(filterQ) ? 800 : 400,
+                color: filterQ && String(r.transactionId || r.transaction_id || '').includes(filterQ) ? '#2563eb' : undefined,
+              }}
+            >
+              {r.transactionId || r.transaction_id}
+            </span>
+          ) },
           { header: 'Type', key: 'type', render: (r) => <StatusBadge status={r.type} /> },
           { header: 'Amount (₹)', key: 'amount', render: (r) => <span style={{ fontWeight: 700 }}>{money(r.amount)}</span> },
           { header: 'Balance After', key: 'balanceAfter', render: (r) => money(r.balanceAfter ?? r.balance_after) },
@@ -363,13 +413,26 @@ function LegacyLedgerPanel() {
   );
 }
 
-export default function FinanceDomainView({ subModule = 'maker-checker' }) {
+export default function FinanceDomainView({
+  subModule = 'maker-checker',
+  focusEntityId = null,
+  focusEntityType = null,
+  onFocusConsumed = null,
+}) {
   const view = useMemo(() => {
-    if (subModule === 'ledger') return <LedgerPanel />;
+    if (subModule === 'ledger') {
+      return (
+        <LedgerPanel
+          focusEntityId={focusEntityId}
+          focusEntityType={focusEntityType}
+          onFocusConsumed={onFocusConsumed}
+        />
+      );
+    }
     if (subModule === 'legacy-ledger') return <LegacyLedgerPanel />;
     if (subModule === 'payment-gateways') return <PaymentGatewaysPanel />;
     return <MakerCheckerPanel />;
-  }, [subModule]);
+  }, [subModule, focusEntityId, focusEntityType, onFocusConsumed]);
 
   return view;
 }

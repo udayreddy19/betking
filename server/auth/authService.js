@@ -41,7 +41,7 @@ const MIN_PASSWORD_LENGTH = 8;
  * @returns {Promise<object>} — { success, userId, token, refreshToken } or { error, code }
  */
 export async function signup(queryFn, withTransaction, data) {
-  const { email, password, firstName, lastName, phone, country, currency, promoCode } = data;
+  const { email, password, firstName, lastName, phone, country, currency, promoCode, referralCode } = data;
 
   // ── Validation ──
   const normalizedEmail = String(email || '').trim().toLowerCase();
@@ -77,6 +77,18 @@ export async function signup(queryFn, withTransaction, data) {
   const userId = await allocateReadableUserId(queryFn, trimmedFirstName);
   const walletId = `wal_${userId}`;
   let promoReward = null;
+  let referralResult = null;
+  const rawReferral = String(referralCode || data.ref || '').trim();
+  const rawPromo = String(promoCode || '').trim();
+
+  // Cannot combine referral attribution with signup promo
+  if (rawReferral && rawPromo) {
+    return {
+      error: 'Referral and initial signup promotions cannot be combined. Remove the promo code or the referral.',
+      code: 'REFERRAL_PROMO_CONFLICT',
+      status: 400,
+    };
+  }
 
   // ── Create user + wallet + profile in a transaction ──
   try {
@@ -126,7 +138,37 @@ export async function signup(queryFn, withTransaction, data) {
     throw err;
   }
 
-  if (String(promoCode || '').trim()) {
+  // Allocate personal referral code for the new user
+  try {
+    const { ensureReferralCode } = await import('../../lib/referralLoyaltyEngine.mjs');
+    await ensureReferralCode(userId, { firstName: trimmedFirstName });
+  } catch {
+    /* non-fatal */
+  }
+
+  // Attribute inbound referral (server-side)
+  if (rawReferral) {
+    try {
+      const { attributeReferralOnSignup } = await import('../../lib/referralLoyaltyEngine.mjs');
+      referralResult = await attributeReferralOnSignup({
+        referredUserId: userId,
+        referralCode: rawReferral,
+        deviceHash: data.deviceInfo?.deviceHash || data.deviceHash || null,
+        ipAddress: data.ipAddress || null,
+      });
+    } catch (refErr) {
+      if (refErr.message?.includes('SELF_REFERRAL') || refErr.code === 'REFERRAL_INVALID' || refErr.code === 'REFERRAL_DISABLED') {
+        return {
+          error: refErr.message || 'Invalid referral code.',
+          code: refErr.code || 'REFERRAL_INVALID',
+          status: refErr.status || 400,
+        };
+      }
+      referralResult = { skipped: true, error: refErr.message };
+    }
+  }
+
+  if (rawPromo) {
     try {
       const { claimSignupPromo } = await import('../../lib/signupPromoCodes.mjs');
       promoReward = await claimSignupPromo(userId, promoCode);
@@ -135,6 +177,7 @@ export async function signup(queryFn, withTransaction, data) {
         skipped: true,
         code: String(promoCode || '').trim().toUpperCase(),
         error: promoErr.message || 'Promo code could not be applied.',
+        errorCode: promoErr.code,
       };
     }
   }
@@ -180,6 +223,7 @@ export async function signup(queryFn, withTransaction, data) {
     verifyLink: emailRes.verifyLink,
     emailVerificationToken: verifyToken,
     promoReward,
+    referral: referralResult,
   };
 }
 
@@ -300,6 +344,13 @@ export async function login(queryFn, data) {
   });
 
   await safeAuditLog(queryFn, user.user_id, user.user_id, 'LOGIN_SUCCESS', { ip });
+
+  try {
+    const { ensureReferralCode } = await import('../../lib/referralLoyaltyEngine.mjs');
+    await ensureReferralCode(user.user_id, { firstName: user.first_name });
+  } catch {
+    /* non-fatal */
+  }
 
   try {
     const { responsibleGamingEngine } = await import('../../lib/responsibleGaming.mjs');
@@ -627,6 +678,17 @@ export async function getMe(queryFn, userId) {
     spinGrants = null;
   }
 
+  let referralCode = null;
+  let referralLink = null;
+  try {
+    const { ensureReferralCode } = await import('../../lib/referralLoyaltyEngine.mjs');
+    const codeInfo = await ensureReferralCode(userId, { firstName: u.first_name });
+    referralCode = codeInfo?.code || null;
+    referralLink = codeInfo?.link || null;
+  } catch {
+    /* non-fatal — profile referral card can retry */
+  }
+
   return {
     success: true,
     spinGrants,
@@ -667,6 +729,8 @@ export async function getMe(queryFn, userId) {
       loyaltyTier: u.loyalty_tier || 'BRONZE',
       createdAt: u.created_at,
       lastLoginAt: u.last_login_at,
+      referralCode,
+      referralLink,
     },
   };
 }
@@ -859,6 +923,13 @@ export async function loginWithGoogle(queryFn, withTransaction, data) {
 
       await safeAuditLog(queryFn, userId, userId, 'USER_SIGNUP_GOOGLE', { email, ip });
 
+      try {
+        const { ensureReferralCode } = await import('../../lib/referralLoyaltyEngine.mjs');
+        await ensureReferralCode(userId, { firstName: resolvedFirstName });
+      } catch {
+        /* non-fatal — code allocated on first dashboard load if needed */
+      }
+
       const created = await queryFn(
         `SELECT user_id, email, phone, first_name, last_name, role, status, email_verified_at
          FROM users WHERE user_id = $1`,
@@ -896,6 +967,13 @@ export async function loginWithGoogle(queryFn, withTransaction, data) {
   });
 
   await safeAuditLog(queryFn, user.user_id, user.user_id, isNewUser ? 'GOOGLE_SIGNUP_SUCCESS' : 'GOOGLE_LOGIN_SUCCESS', { ip });
+
+  try {
+    const { ensureReferralCode } = await import('../../lib/referralLoyaltyEngine.mjs');
+    await ensureReferralCode(user.user_id, { firstName: user.first_name });
+  } catch {
+    /* non-fatal */
+  }
 
   try {
     const { responsibleGamingEngine } = await import('../../lib/responsibleGaming.mjs');
@@ -967,15 +1045,15 @@ export async function changePassword(queryFn, userId, currentPassword, newPasswo
 }
 
 /**
- * Complete missing profile fields after Google sign-in (phone required, promo optional).
+ * Complete missing profile fields after Google sign-in (phone required, promo/referral optional).
  */
-export async function completeProfile(queryFn, userId, { phone, promoCode } = {}) {
+export async function completeProfile(queryFn, userId, { phone, promoCode, referralCode, ref } = {}) {
   if (!userId) {
     return { error: 'Authentication required.', code: 'AUTH_REQUIRED', status: 401 };
   }
 
   const existing = await queryFn(
-    `SELECT user_id, phone FROM users WHERE user_id = $1`,
+    `SELECT user_id, phone, first_name FROM users WHERE user_id = $1`,
     [userId],
   );
   if (!existing.rows.length) {
@@ -984,6 +1062,17 @@ export async function completeProfile(queryFn, userId, { phone, promoCode } = {}
 
   const currentPhone = existing.rows[0].phone;
   let promoReward = null;
+  let referralResult = null;
+  const rawReferral = String(referralCode || ref || '').trim();
+  const rawPromo = String(promoCode || '').trim();
+
+  if (rawReferral && rawPromo) {
+    return {
+      error: 'Referral and initial signup promotions cannot be combined. Remove the promo code or the referral.',
+      code: 'REFERRAL_PROMO_CONFLICT',
+      status: 400,
+    };
+  }
 
   try {
     const { normalizeIndianPhone, assertPhoneAvailable } = await import('../../lib/userIdentity.mjs');
@@ -1007,11 +1096,33 @@ export async function completeProfile(queryFn, userId, { phone, promoCode } = {}
       });
     }
 
-    if (String(promoCode || '').trim()) {
+    try {
+      const { ensureReferralCode } = await import('../../lib/referralLoyaltyEngine.mjs');
+      await ensureReferralCode(userId, { firstName: existing.rows[0].first_name });
+    } catch {
+      /* non-fatal */
+    }
+
+    if (rawReferral) {
+      const { attributeReferralOnSignup } = await import('../../lib/referralLoyaltyEngine.mjs');
+      referralResult = await attributeReferralOnSignup({
+        referredUserId: userId,
+        referralCode: rawReferral,
+      });
+    }
+
+    if (rawPromo) {
       const { claimSignupPromo } = await import('../../lib/signupPromoCodes.mjs');
       promoReward = await claimSignupPromo(userId, promoCode);
     }
   } catch (err) {
+    if (err.message?.includes('SELF_REFERRAL') || err.code === 'REFERRAL_INVALID' || err.code === 'REFERRAL_DISABLED' || err.code === 'REFERRAL_PROMO_CONFLICT') {
+      return {
+        error: err.message || 'Invalid referral or promo.',
+        code: err.code || 'REFERRAL_INVALID',
+        status: err.status || 400,
+      };
+    }
     if (err.status && err.code) {
       return { error: err.message, code: err.code, status: err.status };
     }
@@ -1030,5 +1141,6 @@ export async function completeProfile(queryFn, userId, { phone, promoCode } = {}
     success: true,
     user: me.user,
     promoReward,
+    referral: referralResult,
   };
 }
