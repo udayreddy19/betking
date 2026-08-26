@@ -11,6 +11,11 @@ echo "🚀 STARTING ODDSYRA PRODUCTION VPS DEPLOYMENT PIPELINE..."
 # 0. Prefer deploying from a clean Git checkout (provenance)
 EXPECTED_SHA="${RELEASE_SHA:-}"
 if [ -d .git ]; then
+  # Deploy rewrites these provenance files every run — reset so the clean-tree
+  # gate only fails on real uncommitted source changes.
+  git checkout -- .release-sha .release-deployed-at.pending 2>/dev/null || true
+  rm -f .release-image-digests .release-deployed-at
+
   CURRENT_SHA="$(git rev-parse HEAD)"
   CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
   if [ -n "$(git status --porcelain)" ]; then
