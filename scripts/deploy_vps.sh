@@ -58,9 +58,24 @@ echo "🧬 Recording image digests..."
   docker image inspect betking-worker:latest --format 'worker={{.Id}}' 2>/dev/null || true
 } | tee .release-image-digests
 
+# 2c. Build frontend assets for nginx bind-mount (./dist)
+echo "🧱 Building frontend (Vite) for nginx..."
+npm ci
+npm run build
+if [ -f dist/index.html ]; then
+  {
+    echo "frontendBuiltAt=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    echo "frontendIndexSha256=$(sha256sum dist/index.html | awk '{print $1}')"
+  } | tee -a .release-image-digests
+fi
+
 # 3. Apply Database Migrations
 echo "🐘 Executing PostgreSQL Migrations..."
-node scripts/migrate.mjs
+# Prefer compose network hostname; fall back to docker run if host cannot resolve `postgres`
+if ! node scripts/migrate.mjs; then
+  echo "⚠️ Host migrate failed (often DNS for service name postgres). Retrying via compose..."
+  docker compose -f docker-compose.prod.yml run --rm --no-deps backend node scripts/migrate.mjs
+fi
 
 # 4. Deploy Up-To-Date Containers
 echo "🔄 Rolling out production services..."
@@ -78,7 +93,7 @@ RETRY_COUNT=0
 HEALTH_OK=false
 
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-  if curl -sf http://localhost:5001/health > /dev/null 2>&1; then
+  if curl -sf http://localhost/health > /dev/null 2>&1 || curl -sf http://localhost:5001/health > /dev/null 2>&1 || curl -sf https://localhost/health > /dev/null 2>&1; then
     HEALTH_OK=true
     break
   fi
@@ -90,6 +105,7 @@ done
 if [ "$HEALTH_OK" = true ]; then
   echo "====================================================================="
   echo "🎉 DEPLOYMENT SUCCESSFUL! OddsYra production containers are healthy."
+  echo "gitSha=$(git rev-parse HEAD 2>/dev/null || echo unknown)"
   echo "====================================================================="
   exit 0
 else
