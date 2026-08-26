@@ -139,10 +139,7 @@ export default function CommunicationsDomainView({ subModule = 'dispatch-logs' }
     return () => { cancelled = true; };
   }, [subModule]);
 
-  if (subModule === 'broadcast') {
-    return <BroadcastPanel />;
-  }
-
+  // Hooks must run unconditionally (before any early return).
   const templates = useMemo(() => {
     const map = new Map();
     logs.forEach((log) => {
@@ -168,6 +165,10 @@ export default function CommunicationsDomainView({ subModule = 'dispatch-logs' }
     () => logs.filter((log) => FAILED_STATUSES.has(String(log.status || '').toUpperCase())),
     [logs],
   );
+
+  if (subModule === 'broadcast') {
+    return <BroadcastPanel />;
+  }
 
   const handleRetry = (log) => {
     adminApiClient.post(`/communications/logs/${encodeURIComponent(log.id)}/retry`)
