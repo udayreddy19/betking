@@ -72,28 +72,35 @@ async function main() {
   report.prepareMs = Date.now() - tDrop;
 
   const tRestore = Date.now();
-  const sql = fs.readFileSync(backupFile, 'utf8');
-  psql(`-d ${restoreDb} -v ON_ERROR_STOP=1`, { input: sql });
+  // Stream file via psql -f (avoid loading entire dump into Node memory)
+  const env = { ...process.env, PGPASSWORD: dbPass };
+  execSync(
+    `psql -h ${dbHost} -p ${dbPort} -U ${dbUser} -d ${restoreDb} -v ON_ERROR_STOP=1 -f "${backupFile}"`,
+    { env, stdio: 'pipe', maxBuffer: 1024 * 1024 * 64 },
+  );
   report.restoreMs = Date.now() - tRestore;
   report.restoreSuccess = true;
 
-  const mig = psql(
-    `-d ${restoreDb} -t -A -c "SELECT COALESCE(MAX(filename), MAX(id::text), 'unknown') FROM schema_migrations LIMIT 1;"`,
-  ).trim();
-  // schema_migrations shapes vary — also try migration_name
-  let migrationHead = mig;
-  try {
-    const alt = psql(
-      `-d ${restoreDb} -t -A -c "SELECT column_name FROM information_schema.columns WHERE table_name='schema_migrations';"`,
-    );
-    report.schemaMigrationsColumns = alt.trim().split('\n').filter(Boolean);
-    if (alt.includes('filename')) {
-      migrationHead = psql(`-d ${restoreDb} -t -A -c "SELECT filename FROM schema_migrations ORDER BY filename DESC LIMIT 1;"`).trim();
-    } else if (alt.includes('id')) {
-      migrationHead = psql(`-d ${restoreDb} -t -A -c "SELECT id FROM schema_migrations ORDER BY id DESC LIMIT 1;"`).trim();
-    }
-  } catch {
-    migrationHead = mig || 'unknown';
+  const migCols = psql(
+    `-d ${restoreDb} -t -A -c "SELECT column_name FROM information_schema.columns WHERE table_name='schema_migrations' ORDER BY 1;"`,
+  )
+    .trim()
+    .split('\n')
+    .filter(Boolean);
+  report.schemaMigrationsColumns = migCols;
+  let migrationHead = 'unknown';
+  if (migCols.includes('version')) {
+    migrationHead = psql(
+      `-d ${restoreDb} -t -A -c "SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1;"`,
+    ).trim();
+  } else if (migCols.includes('filename')) {
+    migrationHead = psql(
+      `-d ${restoreDb} -t -A -c "SELECT filename FROM schema_migrations ORDER BY filename DESC LIMIT 1;"`,
+    ).trim();
+  } else if (migCols.includes('id')) {
+    migrationHead = psql(
+      `-d ${restoreDb} -t -A -c "SELECT id::text FROM schema_migrations ORDER BY id DESC LIMIT 1;"`,
+    ).trim();
   }
   report.migrationHead = migrationHead;
 
