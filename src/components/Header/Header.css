@@ -875,8 +875,8 @@
 
 .loyalty-slider-section {
   margin-top: 8px;
-  background: rgba(124, 58, 237, 0.05);
-  border: 1px solid rgba(124, 58, 237, 0.2);
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 28%, transparent);
   border-radius: var(--radius-md);
   padding: 10px 12px;
 }
@@ -908,12 +908,79 @@
 }
 
 .loyalty-range-input {
+  --loyalty-pct: 0%;
+  --loyalty-track: color-mix(in srgb, var(--color-primary) 18%, #e5e7eb);
+  --loyalty-fill: var(--color-primary);
   width: 100%;
-  accent-color: var(--color-primary);
-  height: 6px;
-  border-radius: 3px;
+  height: 28px;
+  margin: 2px 0 6px;
+  padding: 0;
   cursor: pointer;
-  margin: 4px 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  accent-color: var(--color-primary);
+}
+
+.loyalty-range-input:focus {
+  outline: none;
+}
+
+.loyalty-range-input:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 55%, transparent);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+.loyalty-range-input::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--loyalty-fill) 0%,
+    var(--loyalty-fill) var(--loyalty-pct),
+    var(--loyalty-track) var(--loyalty-pct),
+    var(--loyalty-track) 100%
+  );
+}
+
+.loyalty-range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -7px;
+  border-radius: 50%;
+  background: var(--loyalty-fill);
+  border: 2.5px solid #ffffff;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.28);
+  transition: transform 0.12s ease;
+}
+
+.loyalty-range-input:active::-webkit-slider-thumb {
+  transform: scale(1.08);
+}
+
+.loyalty-range-input::-moz-range-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--loyalty-track);
+  border: none;
+}
+
+.loyalty-range-input::-moz-range-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--loyalty-fill);
+}
+
+.loyalty-range-input::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--loyalty-fill);
+  border: 2.5px solid #ffffff;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.28);
 }
 
 .loyalty-slider-limits {

@@ -86,6 +86,12 @@ function Header() {
     }
   }, [loyalty.points]);
 
+  const loyaltySliderMin = Math.min(LOYALTY_MIN_REDEEM_POINTS, loyalty.points || LOYALTY_MIN_REDEEM_POINTS);
+  const loyaltySliderPct = (() => {
+    const span = Math.max(1, (loyalty.points || 0) - loyaltySliderMin);
+    return `${Math.round(((sliderPoints - loyaltySliderMin) / span) * 100)}%`;
+  })();
+
   useEffect(() => {
     if (!isMoreOpen) return undefined;
     const close = (e) => {
@@ -475,7 +481,7 @@ function Header() {
                               <span className="header-wallet-menu__loyalty-points">{loyalty.points}</span>
                             </div>
                             <p className="header-wallet-menu__loyalty-hint">
-                              5 pts per ₹100 spent · redeem at 50 pts min
+                              {loyalty.pointsPer100} pts per ₹100 spent · redeem at {loyalty.minRedeem} pts min
                             </p>
                             <div className="loyalty-slider-section">
                               <div className="loyalty-slider-header">
@@ -488,13 +494,14 @@ function Header() {
 
                               <input
                                 type="range"
-                                min={Math.min(LOYALTY_MIN_REDEEM_POINTS, loyalty.points)}
+                                min={loyaltySliderMin}
                                 max={loyalty.points}
                                 step={5}
                                 value={sliderPoints}
                                 onChange={(e) => setSliderPoints(Number(e.target.value))}
                                 className="loyalty-range-input"
                                 id="loyalty-points-slider"
+                                style={{ '--loyalty-pct': loyaltySliderPct }}
                               />
 
                               <div className="loyalty-slider-presets">
