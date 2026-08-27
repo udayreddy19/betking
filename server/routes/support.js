@@ -79,19 +79,27 @@ router.get('/api/v1/user/notifications/preferences', requireAuth, async (req, re
 
 router.put('/api/v1/user/notifications/preferences', requireAuth, async (req, res) => {
   const userId = req.user.userId;
-  const { marketingEmail, marketingSms, marketingPush } = req.body;
+  const { marketingEmail, marketingSms, marketingPush, source } = req.body;
   try {
-    const { query } = await import('../../db/pg.js');
-    await query(`
-      INSERT INTO user_notification_preferences (user_id, marketing_email, marketing_sms, marketing_push, updated_at)
-      VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
-      ON CONFLICT (user_id) DO UPDATE SET
-        marketing_email = EXCLUDED.marketing_email,
-        marketing_sms = EXCLUDED.marketing_sms,
-        marketing_push = EXCLUDED.marketing_push,
-        updated_at = CURRENT_TIMESTAMP;
-    `, [userId, marketingEmail ?? true, marketingSms ?? true, marketingPush ?? true]);
-    res.json({ success: true, userId, status: 'UPDATED' });
+    const { upsertUserMarketingPreferences } = await import('../../lib/notificationPreferencesEngine.mjs');
+    const preferences = await upsertUserMarketingPreferences(userId, {
+      marketingEmail,
+      marketingSms,
+      marketingPush,
+      source: source || 'profile',
+      actorId: userId,
+    });
+    res.json({
+      success: true,
+      userId,
+      status: 'UPDATED',
+      preferences: {
+        marketing_email: preferences.marketingEmail,
+        marketing_sms: preferences.marketingSms,
+        marketing_push: preferences.marketingPush,
+        transactional_email: preferences.transactionalEmail,
+      },
+    });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

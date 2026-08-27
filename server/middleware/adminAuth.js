@@ -80,8 +80,10 @@ export function adminAuth(req, res, next) {
     return res.status(403).json({ error: 'Admin access required', code: 'ADMIN_REQUIRED' });
   }
 
-  // Test-only fallback: ONLY permitted when process.env.NODE_ENV === 'test'
-  if (process.env.NODE_ENV === 'test') {
+  // Test-only fallback: never in production (even under Vitest security suites)
+  const allowTestAdminHeader = process.env.NODE_ENV !== 'production'
+    && (process.env.NODE_ENV === 'test' || process.env.VITEST === 'true');
+  if (allowTestAdminHeader) {
     const headerRole = req.headers['x-admin-role'];
     if (headerRole && Object.values(ADMIN_ROLES).includes(headerRole)) {
       req.admin = {
@@ -93,6 +95,9 @@ export function adminAuth(req, res, next) {
     }
   }
 
+  import('../../lib/requestMetrics.mjs')
+    .then(({ observeSecurityEvent }) => observeSecurityEvent('auth'))
+    .catch(() => null);
   return res.status(401).json({ error: 'Authentication required', code: 'AUTH_REQUIRED' });
 }
 
@@ -119,6 +124,9 @@ export function requirePermission(...domains) {
 
     const hasPermission = domains.some(d => allowed.includes(d));
     if (!hasPermission) {
+      import('../../lib/requestMetrics.mjs')
+        .then(({ observeSecurityEvent }) => observeSecurityEvent('authorization'))
+        .catch(() => null);
       return res.status(403).json({
         error: `Role ${role} does not have access to [${domains.join(', ')}]`,
         code: 'PERMISSION_DENIED',
@@ -147,6 +155,9 @@ export function requireRole(...roles) {
     if (adminRole === ADMIN_ROLES.SUPER_ADMIN) return next();
 
     if (!flatRoles.includes(adminRole)) {
+      import('../../lib/requestMetrics.mjs')
+        .then(({ observeSecurityEvent }) => observeSecurityEvent('authorization'))
+        .catch(() => null);
       return res.status(403).json({
         error: `Role ${adminRole} is not authorized. Required: [${flatRoles.join(', ')}]`,
         code: 'ROLE_DENIED',

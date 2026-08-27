@@ -48,6 +48,9 @@ export default function ProfileReferralCard({ onLoaded } = {}) {
 
   if (!data.enabled) return null;
 
+  const referredReward = Number(data.referredReward || 500);
+  const referrerReward = Number(data.referrerReward || 500);
+
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(data.link || data.code);
@@ -63,7 +66,7 @@ export default function ProfileReferralCard({ onLoaded } = {}) {
       try {
         await navigator.share({
           title: 'Join OddsYra',
-          text: `Use my referral code ${data.code} and get a free bet on OddsYra.`,
+          text: `Use my referral code ${data.code} and get a ₹${referredReward} free bet on OddsYra.`,
           url: data.link,
         });
       } catch { /* cancelled */ }
@@ -79,8 +82,8 @@ export default function ProfileReferralCard({ onLoaded } = {}) {
         <strong>{formatInr(data.stats?.rewardsEarned || 0)}</strong>
       </div>
       <p className="profile-loyalty-meta">
-        Invite friends with your link. They get ₹{Number(data.referredReward || 500)} free bet after their first qualifying deposit —
-        and so do you (₹{Number(data.referrerReward || 500)}). Signup promos cannot be combined with referral.
+        Invite friends with your link. They get ₹{referredReward} free bet when they sign up —
+        and so do you (₹{referrerReward}). Signup promos cannot be combined with referral.
       </p>
       <p className="profile-loyalty-meta" style={{ fontWeight: 700 }}>
         Code: {data.code || '—'}
@@ -103,7 +106,7 @@ export default function ProfileReferralCard({ onLoaded } = {}) {
       </p>
       <p className="profile-loyalty-meta">
         Rewards earned: <strong>{formatInr(data.stats?.rewardsEarned || 0)}</strong>
-        {' '}· Free bet reward: ₹{Number(data.referredReward || data.referrerReward || 500)} (configured)
+        {' '}· Free bet reward: ₹{referredReward}
       </p>
       {Array.isArray(data.history) && data.history.length > 0 && (
         <ul className="profile-loyalty-meta" style={{ marginTop: 8, paddingLeft: 18 }}>

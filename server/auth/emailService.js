@@ -24,6 +24,9 @@ function escapeHtml(value) {
 }
 
 const SMTP_FROM = process.env.SMTP_FROM || 'OddsYra Security <no-reply@oddsyra.com>';
+/** From-address for promo / marketing / freebet campaign mail */
+export const PROMOS_FROM = process.env.PROMOS_FROM || 'OddsYra Promotions <promos@oddsyra.com>';
+export const PROMOS_REPLY_TO = process.env.PROMOS_REPLY_TO || 'promos@oddsyra.com';
 const PRIMARY_DAILY_LIMIT = Math.max(0, parseInt(process.env.SMTP_PRIMARY_DAILY_LIMIT || '0', 10) || 0);
 
 const quotaState = {
@@ -108,6 +111,37 @@ function configuredAccounts() {
   if (primary) accounts.push(primary);
   if (fallback) accounts.push(fallback);
   return accounts;
+}
+
+/** Dedicated Zoho mailbox for promos@ — required when SMTP_USER is no-reply@. */
+function promosSmtpAccount() {
+  const user = process.env.SMTP_PROMOS_USER || process.env.PROMOS_SMTP_USER;
+  const pass = process.env.SMTP_PROMOS_PASSWORD || process.env.PROMOS_SMTP_PASSWORD
+    || process.env.SMTP_PROMOS_PASS || process.env.PROMOS_SMTP_PASS;
+  if (!user || !pass) return null;
+  const primary = envAccount('SMTP_');
+  const host = process.env.SMTP_PROMOS_HOST || process.env.PROMOS_SMTP_HOST || primary?.host;
+  if (!host) return null;
+  const port = parseInt(
+    process.env.SMTP_PROMOS_PORT || process.env.PROMOS_SMTP_PORT || String(primary?.port || 465),
+    10,
+  ) || 465;
+  const secureEnv = process.env.SMTP_PROMOS_SECURE || process.env.PROMOS_SMTP_SECURE;
+  const secure = secureEnv === 'true' || (secureEnv !== 'false' && port === 465);
+  const fromRaw = process.env.SMTP_PROMOS_FROM || process.env.PROMOS_FROM || PROMOS_FROM;
+  return {
+    name: 'promos',
+    host,
+    port,
+    secure,
+    user,
+    pass,
+    from: String(fromRaw || '').includes('@') ? fromRaw : PROMOS_FROM,
+  };
+}
+
+function isPromosFrom(from) {
+  return String(from || '').toLowerCase().includes('promos@oddsyra.com');
 }
 
 /**
@@ -223,15 +257,17 @@ function markPrimaryQuotaHit() {
   quotaState.primaryExhaustedUntil = Date.now() + 6 * 60 * 60 * 1000;
 }
 
-async function sendMailWithFailover({ to, subject, html, text, replyTo }) {
+async function sendMailWithFailover({ to, subject, html, text, replyTo, from }) {
   const accounts = configuredAccounts();
-  if (accounts.length === 0) {
+  const fromOverride = from && String(from).includes('@') ? from : null;
+  const promosAccount = isPromosFrom(fromOverride) ? promosSmtpAccount() : null;
+  if (accounts.length === 0 && !promosAccount) {
     if (isProduction) {
       throw new Error('SMTP is not configured (missing host, user, or password)');
     }
     const tx = createTransport(null);
     const info = await tx.sendMail({
-      from: SMTP_FROM,
+      from: fromOverride || SMTP_FROM,
       to,
       subject,
       html,
@@ -242,16 +278,17 @@ async function sendMailWithFailover({ to, subject, html, text, replyTo }) {
   }
 
   const skipPrimary = shouldSkipPrimary();
-  const ordered = skipPrimary && accounts.length > 1
+  let ordered = skipPrimary && accounts.length > 1
     ? [accounts[1], accounts[0]]
-    : accounts;
+    : [...accounts];
+  if (promosAccount) ordered = [promosAccount, ...ordered];
 
   let lastError = null;
   for (const account of ordered) {
     try {
       const tx = createTransport(account);
       const info = await tx.sendMail({
-        from: account.from,
+        from: fromOverride || account.from,
         to,
         subject,
         html,
@@ -260,16 +297,16 @@ async function sendMailWithFailover({ to, subject, html, text, replyTo }) {
       });
       if (account.name === 'primary') markPrimarySuccess();
       if (account.name === 'primary') deliveryMetrics.primarySuccess += 1;
-      else deliveryMetrics.fallbackSuccess += 1;
+      else if (account.name === 'fallback') deliveryMetrics.fallbackSuccess += 1;
       deliveryMetrics.lastProvider = account.name;
       deliveryMetrics.lastError = null;
       deliveryMetrics.lastAt = new Date().toISOString();
-      logger.info('email_sent', { provider: account.name });
+      logger.info('email_sent', { provider: account.name, from: fromOverride || account.from });
       return { success: true, messageId: info.messageId, provider: account.name };
     } catch (err) {
       lastError = err;
       if (account.name === 'primary') deliveryMetrics.primaryFailure += 1;
-      else deliveryMetrics.fallbackFailure += 1;
+      else if (account.name === 'fallback') deliveryMetrics.fallbackFailure += 1;
       deliveryMetrics.lastError = err.message;
       deliveryMetrics.lastAt = new Date().toISOString();
       logger.warn('email_send_failed', { provider: account.name, error: err.message });
@@ -807,12 +844,207 @@ export async function sendReferralRewardEmail({ email, name, amount, role = 'ref
         `Hi ${name || 'there'},\n\n`
         + `₹${Number.isFinite(amt) ? amt.toFixed(2) : amount} free bet credited (${isReferrer ? 'referrer' : 'referral'} reward).\n`
         + `${FRONTEND_URL}\n\n— OddsYra Team`,
-      replyTo: process.env.SUPPORT_INBOX_EMAIL || 'support@oddsyra.com',
+      from: PROMOS_FROM,
+      replyTo: PROMOS_REPLY_TO,
     });
     return { success: true, messageId: info.messageId, provider: info.provider };
   } catch (err) {
     console.error('[EmailService] referral reward mail:', err.message);
     return { success: false, error: err.message };
   }
+}
+
+/**
+ * Deposit-match free bet notification (reuses Zoho/SMTP failover).
+ * Sending email never creates the reward — grant must already exist.
+ */
+export async function sendDepositFreebetEmail({
+  email,
+  name,
+  freeBetAmount,
+  depositAmount,
+  promotionName,
+  expiryDate = null,
+} = {}) {
+  if (!email) return { success: false, error: 'missing_email' };
+  const fb = Number(freeBetAmount);
+  const dep = Number(depositAmount);
+  const fbLabel = Number.isFinite(fb) ? fb.toFixed(2) : String(freeBetAmount);
+  const depLabel = Number.isFinite(dep) ? dep.toFixed(2) : String(depositAmount);
+  const promo = String(promotionName || 'Deposit Free Bet');
+  const expiryLabel = expiryDate
+    ? new Date(expiryDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+    : null;
+  const html = renderTransactionalEmail({
+    heading: `Your ₹${escapeHtml(fbLabel)} Free Bet is Ready!`,
+    greetingName: name || 'there',
+    introHtml:
+      `Congratulations! Your deposit of <strong>₹${escapeHtml(depLabel)}</strong> has unlocked a `
+      + `<strong>₹${escapeHtml(fbLabel)}</strong> free bet from <strong>${escapeHtml(promo)}</strong>.`,
+    ctaLabel: 'Use Free Bet',
+    ctaHref: `${FRONTEND_URL}/sports`,
+    noteHtml: expiryLabel
+      ? `Status: Available · Expires ${escapeHtml(expiryLabel)}. Free bets follow OddsYra free-bet rules (profit only on wins). Terms apply.`
+      : 'Status: Available. Free bets follow OddsYra free-bet rules (profit only on wins). Terms apply.',
+  });
+  try {
+    const info = await sendMailWithFailover({
+      to: email,
+      subject: `Your ₹${fbLabel} Free Bet is Ready!`,
+      html,
+      text:
+        `Hi ${name || 'there'},\n\n`
+        + `Your deposit of ₹${depLabel} unlocked a ₹${fbLabel} free bet (${promo}).\n`
+        + (expiryLabel ? `Expires: ${expiryLabel}\n` : '')
+        + `Use it here: ${FRONTEND_URL}/sports\n\n— OddsYra Team`,
+      from: PROMOS_FROM,
+      replyTo: PROMOS_REPLY_TO,
+    });
+    return { success: true, messageId: info.messageId, provider: info.provider };
+  } catch (err) {
+    console.error('[EmailService] deposit freebet mail:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Invite-only promo code email — from promos@oddsyra.com.
+ */
+export async function sendPromoCodeInviteEmail({
+  email,
+  name,
+  promoCode,
+  promoName,
+  rewardType,
+  amount,
+} = {}) {
+  if (!email) return { success: false, error: 'missing_email' };
+  const code = String(promoCode || '').toUpperCase();
+  const amt = Number(amount);
+  const amtLabel = Number.isFinite(amt) ? amt.toFixed(2) : String(amount);
+  const typeLabel = rewardType === 'freebet' ? 'free bet' : rewardType === 'cash' ? 'cash credit' : 'bonus';
+  const html = renderTransactionalEmail({
+    heading: 'Your OddsYra promo code',
+    greetingName: name || 'there',
+    introHtml:
+      `You've been invited to claim <strong>${escapeHtml(promoName || code)}</strong>.`
+      + ` Use code <strong>${escapeHtml(code)}</strong> for a ₹${escapeHtml(amtLabel)} ${escapeHtml(typeLabel)}.`,
+    ctaLabel: 'Claim on OddsYra',
+    ctaHref: `${FRONTEND_URL}/register`,
+    noteHtml: 'This code is private — only invited players can redeem it. Do not share publicly.',
+  });
+  try {
+    const info = await sendMailWithFailover({
+      to: email,
+      subject: `Your promo code: ${code}`,
+      html,
+      text:
+        `Hi ${name || 'there'},\n\n`
+        + `Promo: ${promoName || code}\n`
+        + `Code: ${code}\n`
+        + `Reward: ₹${amtLabel} ${typeLabel}\n`
+        + `Claim: ${FRONTEND_URL}/register\n\n`
+        + `This code is invite-only.\n\n— OddsYra Promotions`,
+      from: PROMOS_FROM,
+      replyTo: PROMOS_REPLY_TO,
+    });
+    return { success: true, messageId: info.messageId, provider: info.provider };
+  } catch (err) {
+    console.error('[EmailService] promo invite mail:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Targeted deposit free-bet OFFER email (before deposit). From promos@oddsyra.com.
+ * Does NOT grant free bet — only invites the user to deposit.
+ */
+export async function sendTargetedDepositOfferEmail({
+  email,
+  name,
+  campaignName,
+  promoCode = null,
+  minimumDeposit,
+  freeBetPercentage,
+  maximumFreeBet,
+  expiryDate = null,
+  subject = null,
+  customBodyHtml = null,
+} = {}) {
+  if (!email) return { success: false, error: 'missing_email' };
+  const minLabel = Number(minimumDeposit).toLocaleString('en-IN');
+  const maxLabel = Number(maximumFreeBet).toLocaleString('en-IN');
+  const pct = Number(freeBetPercentage);
+  const code = String(promoCode || '').trim().toUpperCase() || null;
+  const expiryLabel = expiryDate
+    ? new Date(expiryDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+    : null;
+  const camp = String(campaignName || 'Deposit Free Bet');
+  const subj = subject || `100% Deposit Free Bet Offer Just for You`;
+  const intro = customBodyHtml || (
+    `You have been selected for an exclusive OddsYra promotion: <strong>${escapeHtml(camp)}</strong>.`
+    + (code ? `<br/><br/>Your promo code: <strong>${escapeHtml(code)}</strong>` : '')
+    + `<br/><br/>Deposit ₹${escapeHtml(minLabel)} or more and receive a ${escapeHtml(String(pct))}% free bet,`
+    + ` up to ₹${escapeHtml(maxLabel)}.`
+    + `<br/><br/>Example: Deposit ₹${escapeHtml(minLabel)} → Get ₹${escapeHtml(maxLabel)} Free Bet.`
+    + (expiryLabel ? `<br/><br/>Offer valid until ${escapeHtml(expiryLabel)}.` : '')
+  );
+  const html = renderTransactionalEmail({
+    heading: camp,
+    greetingName: name || 'there',
+    introHtml: intro,
+    ctaLabel: 'Deposit Now',
+    ctaHref: `${FRONTEND_URL}/`,
+    noteHtml: 'Terms & conditions apply. Free bets follow OddsYra free-bet rules (profit only on wins). This offer is personal to your account.',
+  });
+  try {
+    const info = await sendMailWithFailover({
+      to: email,
+      subject: subj,
+      html,
+      text:
+        `Hi ${name || 'there'},\n\n`
+        + `Selected for: ${camp}\n`
+        + (code ? `Promo code: ${code}\n` : '')
+        + `Deposit ₹${minLabel}+ and get ${pct}% free bet up to ₹${maxLabel}.\n`
+        + (expiryLabel ? `Valid until ${expiryLabel}\n` : '')
+        + `Deposit: ${FRONTEND_URL}/\n\n— OddsYra Promotions (${PROMOS_REPLY_TO})`,
+      from: PROMOS_FROM,
+      replyTo: PROMOS_REPLY_TO,
+    });
+    return { success: true, messageId: info.messageId, provider: info.provider };
+  } catch (err) {
+    console.error('[EmailService] targeted deposit offer mail:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Generic queued notification email (notification delivery worker).
+ * Does not invent delivery — requires configured SMTP.
+ */
+export async function sendGenericNotificationEmail({
+  to,
+  subject,
+  html,
+  text,
+  from = SMTP_FROM,
+  replyTo,
+} = {}) {
+  if (!to) {
+    return { delivered: false, skipped: true, reason: 'MISSING_RECIPIENT' };
+  }
+  if (!configuredAccounts().length) {
+    return { delivered: false, skipped: true, reason: 'SMTP_NOT_CONFIGURED' };
+  }
+  const info = await sendMailWithFailover({
+    to,
+    subject: subject || 'OddsYra notification',
+    html: html || `<p>${escapeHtml(text || '')}</p>`,
+    text: text || String(subject || ''),
+    from,
+    replyTo,
+  });
+  return { delivered: true, channel: 'EMAIL', messageId: info.messageId, provider: info.provider };
 }
 

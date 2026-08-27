@@ -123,4 +123,8 @@ adminRouter.use('/finance', financeRouter);
 import oddsDebugRouter from './admin/oddsDebug.js';
 adminRouter.use('/odds', oddsDebugRouter);
 
+// Phase 3 Operations — Control Tower / Alerts / Incidents / Health / Notifications
+import operationsRouter from './admin/operations.js';
+adminRouter.use('/operations', operationsRouter);
+
 export default adminRouter;

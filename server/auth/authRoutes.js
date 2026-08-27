@@ -369,7 +369,7 @@ router.post('/verify-email', authGeneralRateLimiter, async (req, res) => {
 });
 
 // ── POST /api/auth/resend-email-verification ──
-router.post('/resend-email-verification', requireAuth, authGeneralRateLimiter, async (req, res) => {
+router.post('/resend-email-verification', requireAuth, requireCsrfWhenCookies, authGeneralRateLimiter, async (req, res) => {
   try {
     const result = await resendEmailVerification(query, req.user.userId);
 
@@ -385,7 +385,7 @@ router.post('/resend-email-verification', requireAuth, authGeneralRateLimiter, a
 });
 
 // ── POST /api/auth/change-password ──
-router.post('/change-password', requireAuth, authGeneralRateLimiter, async (req, res) => {
+router.post('/change-password', requireAuth, requireCsrfWhenCookies, authGeneralRateLimiter, async (req, res) => {
   try {
     const result = await changePassword(
       query,
@@ -407,7 +407,7 @@ router.post('/change-password', requireAuth, authGeneralRateLimiter, async (req,
 });
 
 // ── POST /api/auth/complete-profile ──
-router.post('/complete-profile', requireAuth, authGeneralRateLimiter, async (req, res) => {
+router.post('/complete-profile', requireAuth, requireCsrfWhenCookies, authGeneralRateLimiter, async (req, res) => {
   try {
     const result = await completeProfile(query, req.user.userId, {
       phone: req.body?.phone,

@@ -40,6 +40,9 @@ export function requireCsrf(req, res, next) {
   if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') return next();
   if (!req.cookies?.[CSRF_COOKIE]) return next();
   if (!csrfTokensMatch(req)) {
+    import('../../lib/requestMetrics.mjs')
+      .then(({ observeSecurityEvent }) => observeSecurityEvent('csrf'))
+      .catch(() => null);
     return res.status(403).json({ error: 'CSRF validation failed', code: 'CSRF_REJECTED' });
   }
   return next();
@@ -53,6 +56,9 @@ export function requireCsrfWhenCookies(req, res, next) {
   const hasCsrf = Boolean(req.cookies?.[CSRF_COOKIE]);
   if (!hasRefresh && !hasCsrf) return next();
   if (!csrfTokensMatch(req)) {
+    import('../../lib/requestMetrics.mjs')
+      .then(({ observeSecurityEvent }) => observeSecurityEvent('csrf'))
+      .catch(() => null);
     return res.status(403).json({ error: 'CSRF validation failed', code: 'CSRF_REJECTED' });
   }
   if (!originAllowed(req)) {

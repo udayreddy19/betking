@@ -5,6 +5,7 @@ import { getWalletBreakdown, formatInr } from '../../utils/walletBalance';
 import {
   BONUS_MIN_BET_ODDS,
   MIN_STAKE_INR,
+  MAX_STAKE_INR,
   QUICK_STAKE_PRESETS,
   sanitizeStakeInput,
   canBetWithBonusOnLegs,
@@ -89,6 +90,10 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
     }
     if (amountToDeduct < MIN_STAKE_INR) {
       showToast(`Minimum stake is ${formatInr(MIN_STAKE_INR)}.`, 'error');
+      return;
+    }
+    if (amountToDeduct > MAX_STAKE_INR) {
+      showToast(`Maximum stake allowed is ${formatInr(MAX_STAKE_INR)} (server-enforced).`, 'error');
       return;
     }
 
@@ -334,11 +339,11 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
           />
           <button
             className={`betslip-place-btn betslip-modal-place-btn ${isPlacing ? 'is-placing' : ''}`}
-            disabled={!stake || parseFloat(stake) < MIN_STAKE_INR || isPlacing || hasBlockingConflicts}
+            disabled={!stake || parseFloat(stake) < MIN_STAKE_INR || isPlacing || hasBlockingConflicts || needsOddsAcceptance}
             type="button"
             onClick={handlePlaceBet}
           >
-            {isPlacing ? 'Placing…' : 'Place Bet'}
+            {isPlacing ? 'Placing…' : (needsOddsAcceptance ? 'Accept odds first' : 'Place Bet')}
           </button>
         </div>
 

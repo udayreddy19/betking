@@ -181,10 +181,19 @@ async function request(endpoint, options = {}) {
     try {
       errorData = await response.json();
     } catch {
-      errorData = { message: response.statusText || 'API Request failed' };
+      const fallback = (response.statusText || '').trim();
+      errorData = {
+        message: fallback
+          || `API request failed (HTTP ${response.status})`,
+      };
     }
-    const error = new Error(errorData.message || errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    const error = new Error(
+      errorData.error
+      || errorData.message
+      || `HTTP ${response.status}${response.statusText ? `: ${response.statusText}` : ''}`,
+    );
     error.status = response.status;
+    error.code = errorData.code;
     error.data = errorData;
     throw error;
   }

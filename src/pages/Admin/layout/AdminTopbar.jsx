@@ -29,6 +29,8 @@ export default function AdminTopbar({
   onOpenMobileSidebar,
   currentDomainLabel,
   currentSubLabel,
+  onBreadcrumbHome,
+  onBreadcrumbDomain,
 }) {
   return (
     <header className="admin-shell__topbar">
@@ -48,13 +50,29 @@ export default function AdminTopbar({
         {/* Breadcrumbs */}
         {currentDomainLabel && (
           <div className="admin-breadcrumbs" style={{ display: 'none' }} data-desktop-breadcrumbs>
-            <span style={{ color: 'var(--admin-text-dim)' }}>Admin</span>
+            {onBreadcrumbHome ? (
+              <button type="button" className="admin-breadcrumbs__link" onClick={onBreadcrumbHome}>
+                Admin
+              </button>
+            ) : (
+              <span style={{ color: 'var(--admin-text-dim)' }}>Admin</span>
+            )}
             <span className="admin-breadcrumbs__sep">›</span>
-            <span className="admin-breadcrumbs__current">{currentDomainLabel}</span>
+            {onBreadcrumbDomain ? (
+              <button
+                type="button"
+                className={currentSubLabel ? 'admin-breadcrumbs__link' : 'admin-breadcrumbs__current admin-breadcrumbs__link'}
+                onClick={onBreadcrumbDomain}
+              >
+                {currentDomainLabel}
+              </button>
+            ) : (
+              <span className="admin-breadcrumbs__current">{currentDomainLabel}</span>
+            )}
             {currentSubLabel && (
               <>
                 <span className="admin-breadcrumbs__sep">›</span>
-                <span style={{ color: 'var(--admin-text-secondary)' }}>{currentSubLabel}</span>
+                <span className="admin-breadcrumbs__current" style={{ color: 'var(--admin-text-secondary)' }}>{currentSubLabel}</span>
               </>
             )}
           </div>

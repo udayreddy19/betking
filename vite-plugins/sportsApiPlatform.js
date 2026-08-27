@@ -53,6 +53,18 @@ export function sportsApiPlatformPlugin() {
           return next();
         }
 
+        // Finance / wallet / auth live on the Express backend — never swallow them here.
+        // This plugin only owns sports-data gateway routes under /api/v1/.
+        if (
+          pathname.startsWith('/api/v1/payments')
+          || pathname.startsWith('/api/v1/withdrawals')
+          || pathname.startsWith('/api/v1/wallet')
+          || pathname.startsWith('/api/v1/bets')
+          || pathname.startsWith('/api/v1/ledger')
+        ) {
+          return next();
+        }
+
         // Enable CORS
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -285,7 +297,8 @@ export function sportsApiPlatformPlugin() {
             });
           }
 
-          sendJson({ error: 'Endpoint not found', path: pathname }, 404);
+          // Unknown /api/v1/* → fall through to Vite proxy → Express backend
+          return next();
         } catch (err) {
           console.error('[Sports API Gateway Error]', err);
           sendJson({ error: 'Internal Server Error', message: err.message }, 500);

@@ -61,7 +61,35 @@ router.post('/api/v1/payments/create-order', requireAuth, async (req, res) => {
     );
     res.json(result);
   } catch (err) {
-    res.status(err.status || 400).json({ error: err.message, code: err.code });
+    const message = err?.message || err?.error?.description || 'Unable to create deposit order';
+    res.status(err.status || err.statusCode || 400).json({
+      error: message,
+      code: err.code || err?.error?.code,
+    });
+  }
+});
+
+/** Confirm Checkout payment (signature + Razorpay fetch) and credit wallet — webhook fallback. */
+router.post('/api/v1/payments/confirm', requireAuth, async (req, res) => {
+  try {
+    const { depositEngine } = await import('../../lib/depositEngine.mjs');
+    const result = await depositEngine.confirmCheckoutPayment(
+      {
+        userId: req.user.userId,
+        razorpayOrderId: req.body?.razorpay_order_id || req.body?.orderId,
+        razorpayPaymentId: req.body?.razorpay_payment_id || req.body?.paymentId,
+        razorpaySignature: req.body?.razorpay_signature || req.body?.signature,
+      },
+      req.correlationId,
+    );
+    res.json({ success: true, ...result });
+  } catch (err) {
+    const message = err?.message || 'Unable to confirm deposit payment';
+    res.status(err.status || err.statusCode || 400).json({
+      success: false,
+      error: message,
+      code: err.code || err?.error?.code,
+    });
   }
 });
 

@@ -6,6 +6,11 @@ import AdminKPI from '../components/AdminKPI';
 import { useAdminToast } from '../components/AdminToastContext';
 import { startVisibleInterval } from '../utils/visibleInterval';
 
+function fmt(v) {
+  if (v == null || Number.isNaN(Number(v))) return 'N/A';
+  return Number(v).toLocaleString();
+}
+
 function ObservabilityKpis({ data }) {
   if (!data) return null;
   const rows = [
@@ -117,24 +122,6 @@ function SettlementQueuePanel() {
           Pending settlement jobs and open bets awaiting resolution. Refreshes every 30s.
         </p>
         {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
-        {obs?.alerts?.length > 0 && (
-          <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {obs.alerts.map((a) => (
-              <div
-                key={a.code}
-                style={{
-                  padding: '8px 10px',
-                  borderRadius: 8,
-                  fontSize: '0.8rem',
-                  background: a.severity === 'high' ? 'rgba(244,63,94,0.1)' : 'rgba(245,158,11,0.1)',
-                  color: a.severity === 'high' ? '#b91c1c' : '#b45309',
-                }}
-              >
-                {a.message}
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       <ObservabilityKpis data={obs} />
@@ -197,7 +184,493 @@ function SettlementQueuePanel() {
   );
 }
 
-export default function OperationsDomainView({ subModule = 'health-matrix' }) {
+function ControlTowerOpsPanel({ onNavigate }) {
+  const [tower, setTower] = useState(null);
+  const [error, setError] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [filter, setFilter] = useState('All');
+
+  const load = useCallback(() => {
+    adminApiClient.get('/operations/control-tower')
+      .then((data) => {
+        setTower(data);
+        setLastUpdated(data.lastUpdated || new Date().toISOString());
+        setError(data.liveDataUnavailable ? 'Live data unavailable' : null);
+      })
+      .catch((err) => {
+        setError(err.message || 'Live data unavailable');
+        setTower(null);
+      });
+  }, []);
+
+  useEffect(() => {
+    const stop = startVisibleInterval(load, 20000, { runImmediately: true });
+    return stop;
+  }, [load]);
+
+  const top = tower?.topCards || {};
+  const cards = [
+    { label: 'System Health', value: top.systemHealth || 'N/A', accent: '#34d399', cat: 'Infrastructure' },
+    { label: 'Open Critical Alerts', value: fmt(top.openCriticalAlerts), accent: '#f43f5e', nav: { domainId: 'operations', subModuleId: 'alerts' }, cat: 'Critical' },
+    { label: 'Pending Withdrawals', value: fmt(top.pendingWithdrawals), accent: '#f59e0b', nav: { domainId: 'finance', subModuleId: 'maker-checker' }, cat: 'Finance' },
+    { label: 'Pending Checker', value: fmt(top.pendingChecker), accent: '#fb923c', nav: { domainId: 'finance', subModuleId: 'maker-checker' }, cat: 'Finance' },
+    { label: 'Open Reconciliation', value: fmt(top.openReconciliation), accent: '#818cf8', nav: { domainId: 'finance', subModuleId: 'finance-health' }, cat: 'Finance' },
+    { label: 'Open Incidents', value: fmt(top.openIncidents), accent: '#f87171', nav: { domainId: 'operations', subModuleId: 'incidents' }, cat: 'Critical' },
+    { label: 'Promotion Abuse', value: fmt(top.promotionAbuse), accent: '#a855f7', nav: { domainId: 'growth', subModuleId: 'promo-abuse' }, cat: 'Promotions' },
+    { label: 'Settlement Issues', value: fmt(top.settlementIssues), accent: '#ef4444', nav: { domainId: 'operations', subModuleId: 'settlement-queue' }, cat: 'Betting' },
+  ].filter((c) => {
+    if (filter === 'All') return true;
+    if (filter === 'Critical') return c.cat === 'Critical' || String(c.value).toUpperCase() === 'CRITICAL';
+    if (filter === 'Healthy') return String(c.value).toUpperCase() === 'HEALTHY';
+    return c.cat === filter;
+  });
+
+  const section = (title, obj, keys, cat) => {
+    if (filter !== 'All' && filter !== cat && !['High', 'Warning', 'Healthy'].includes(filter)) {
+      if (filter === 'Critical' && cat !== 'Finance' && cat !== 'Betting') return null;
+      if (!['Critical', 'High', 'Warning', 'Healthy'].includes(filter) && filter !== cat) return null;
+    }
+    return (
+    <div style={{ marginBottom: 20 }}>
+      <h3 className="admin-section-title">{title}</h3>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
+        {keys.map(([label, key]) => (
+          <AdminKPI key={key} label={label} value={fmt(obj?.[key])} accent="#64748b" />
+        ))}
+      </div>
+    </div>
+    );
+  };
+
+  const FILTERS = ['All', 'Critical', 'High', 'Warning', 'Healthy', 'Finance', 'Betting', 'KYC', 'Promotions', 'Security', 'Infrastructure'];
+
+  return (
+    <div>
+      <div className="admin-flex-between" style={{ marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Operations Control Tower</h2>
+          <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
+            Last updated: {lastUpdated ? new Date(lastUpdated).toLocaleString() : '—'}
+            {error ? ` · ${error}` : ''}
+          </p>
+        </div>
+        <button type="button" className="admin-btn admin-btn--secondary admin-btn--sm" onClick={load}>↻ Refresh</button>
+      </div>
+
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
+        {FILTERS.map((f) => (
+          <button
+            key={f}
+            type="button"
+            className={`admin-btn admin-btn--sm ${filter === f ? 'admin-btn--primary' : 'admin-btn--secondary'}`}
+            onClick={() => setFilter(f)}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 24 }}>
+        {cards.map((c) => (
+          <AdminKPI
+            key={c.label}
+            label={c.label}
+            value={c.value}
+            accent={c.accent}
+            onClick={c.nav && onNavigate ? () => onNavigate(c.nav) : undefined}
+          />
+        ))}
+      </div>
+
+      {(filter === 'All' || filter === 'Finance') && section('Financial Operations', tower?.financial, [
+        ['Deposits today', 'depositsToday'],
+        ['Deposit failures', 'depositFailures'],
+        ['Pending WD', 'pendingWithdrawals'],
+        ['Approvals', 'withdrawalApprovals'],
+        ['Rejections', 'withdrawalRejections'],
+        ['HOLD', 'withdrawalHold'],
+        ['HIGH risk', 'highRiskWithdrawals'],
+        ['CRITICAL risk', 'criticalRiskWithdrawals'],
+        ['Checker', 'pendingCheckerApprovals'],
+        ['Open recon', 'openReconciliationCases'],
+      ], 'Finance')}
+
+      {(filter === 'All' || filter === 'Betting') && section('Betting Operations', tower?.betting, [
+        ['Live matches', 'liveMatches'],
+        ['Open bets', 'openBets'],
+        ['Bets today', 'betsPlacedToday'],
+        ['Rejected', 'betsRejectedToday'],
+        ['Settlement pending', 'settlementPending'],
+        ['Settlement failures', 'settlementFailures'],
+        ['Suspended markets', 'suspendedMarkets'],
+        ['Odds freshness issues', 'oddsFreshnessProblems'],
+      ], 'Betting')}
+
+      {(filter === 'All' || filter === 'Promotions') && section('Promotion Operations', tower?.promotions, [
+        ['Active campaigns', 'activeCampaigns'],
+        ['Freebets issued', 'freebetsIssuedToday'],
+        ['Freebets claimed', 'freebetsClaimedToday'],
+        ['Abuse blocks today', 'promotionAbuseBlocksToday'],
+        ['Open abuse alerts', 'openPromotionAbuseAlerts'],
+        ['Referrals today', 'referralActivityToday'],
+      ], 'Promotions')}
+
+      {(filter === 'All' || filter === 'KYC') && section('User / KYC', tower?.usersKyc, [
+        ['Registrations today', 'newRegistrationsToday'],
+        ['KYC pending', 'kycPending'],
+        ['KYC verified', 'kycVerified'],
+        ['Registered users', 'registeredUsers'],
+      ], 'KYC')}
+
+      <AdminDataTable
+        title="Admin Work Queue"
+        emptyMessage="No queue items"
+        data={(tower?.workQueue || []).map((q) => ({
+          id: q.id,
+          label: q.label,
+          count: fmt(q.count),
+          domainId: q.domainId,
+          subModuleId: q.subModuleId,
+        }))}
+        columns={[
+          { header: 'Queue', key: 'label' },
+          { header: 'Count', key: 'count' },
+          {
+            header: 'Open',
+            key: 'open',
+            sortable: false,
+            render: (r) => (
+              <button
+                type="button"
+                className="admin-btn admin-btn--secondary admin-btn--sm"
+                onClick={() => onNavigate?.({ domainId: r.domainId, subModuleId: r.subModuleId })}
+              >
+                Open
+              </button>
+            ),
+          },
+        ]}
+      />
+    </div>
+  );
+}
+
+function AlertsPanel() {
+  const [alerts, setAlerts] = useState([]);
+  const [status, setStatus] = useState('OPEN');
+  const [busy, setBusy] = useState(null);
+  const { showToast } = useAdminToast();
+
+  const load = useCallback(() => {
+    const q = status ? `?status=${encodeURIComponent(status)}&limit=50` : '?limit=50';
+    adminApiClient.get(`/operations/alerts${q}`)
+      .then((data) => setAlerts(data.alerts || []))
+      .catch(() => setAlerts([]));
+  }, [status]);
+
+  useEffect(() => {
+    const stop = startVisibleInterval(load, 20000, { runImmediately: true });
+    return stop;
+  }, [load]);
+
+  const act = async (id, action) => {
+    setBusy(`${id}:${action}`);
+    try {
+      await adminApiClient.post(`/operations/alerts/${id}/${action}`, {});
+      if (action === 'create-incident') showToast('Incident created', 'success');
+      load();
+    } catch (err) {
+      showToast(err.message || 'Action failed', 'error');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div>
+      <div className="admin-flex-between" style={{ marginBottom: 16 }}>
+        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Ops Alerts</h2>
+        <select value={status} onChange={(e) => setStatus(e.target.value)} className="admin-input" style={{ width: 160 }}>
+          <option value="OPEN">OPEN</option>
+          <option value="ACKNOWLEDGED">ACKNOWLEDGED</option>
+          <option value="RESOLVED">RESOLVED</option>
+          <option value="DISMISSED">DISMISSED</option>
+          <option value="">ALL</option>
+        </select>
+      </div>
+      <AdminDataTable
+        title="Alerts"
+        emptyMessage="No alerts"
+        data={alerts.map((a) => ({
+          id: a.notification_id,
+          title: a.title,
+          severity: a.severity || a.priority,
+          status: a.status || 'OPEN',
+          category: a.category,
+          occurrences: a.occurrence_count || 1,
+          createdAt: a.created_at,
+          entity: a.entity_id || a.action_target_id,
+        }))}
+        columns={[
+          { header: 'Title', key: 'title' },
+          { header: 'Severity', key: 'severity', render: (r) => <StatusBadge status={r.severity} /> },
+          { header: 'Status', key: 'status', render: (r) => <StatusBadge status={r.status} /> },
+          { header: 'Category', key: 'category' },
+          { header: 'Count', key: 'occurrences' },
+          { header: 'Entity', key: 'entity', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.72rem' }}>{r.entity || '—'}</span> },
+          {
+            header: 'Actions',
+            key: 'actions',
+            sortable: false,
+            render: (r) => (
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                <button type="button" className="admin-btn admin-btn--sm" disabled={busy} onClick={() => act(r.id, 'acknowledge')}>Ack</button>
+                <button type="button" className="admin-btn admin-btn--sm" disabled={busy} onClick={() => act(r.id, 'resolve')}>Resolve</button>
+                <button type="button" className="admin-btn admin-btn--sm" disabled={busy} onClick={() => act(r.id, 'dismiss')}>Dismiss</button>
+                <button type="button" className="admin-btn admin-btn--primary admin-btn--sm" disabled={busy} onClick={() => act(r.id, 'create-incident')}>Incident</button>
+              </div>
+            ),
+          },
+        ]}
+      />
+    </div>
+  );
+}
+
+function IncidentsPanel() {
+  const [incidents, setIncidents] = useState([]);
+  const [title, setTitle] = useState('');
+  const [severity, setSeverity] = useState('SEV-2');
+  const { showToast } = useAdminToast();
+
+  const load = useCallback(() => {
+    adminApiClient.get('/operations/incidents?limit=50')
+      .then((data) => setIncidents(data.incidents || []))
+      .catch(() => setIncidents([]));
+  }, []);
+
+  useEffect(() => {
+    const stop = startVisibleInterval(load, 30000, { runImmediately: true });
+    return stop;
+  }, [load]);
+
+  const create = async () => {
+    if (!title.trim()) return;
+    try {
+      await adminApiClient.post('/operations/incidents', { title, severity });
+      setTitle('');
+      showToast('Incident created', 'success');
+      load();
+    } catch (err) {
+      showToast(err.message || 'Create failed', 'error');
+    }
+  };
+
+  const resolve = async (id) => {
+    try {
+      await adminApiClient.post(`/operations/incidents/${id}/resolve`, {
+        resolutionSummary: 'Resolved from Operations UI',
+      });
+      load();
+    } catch (err) {
+      showToast(err.message || 'Resolve failed', 'error');
+    }
+  };
+
+  return (
+    <div>
+      <h2 style={{ margin: '0 0 12px', fontSize: '1.3rem', fontWeight: 800 }}>Incidents</h2>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+        <input className="admin-input" placeholder="Incident title" value={title} onChange={(e) => setTitle(e.target.value)} style={{ minWidth: 240 }} />
+        <select className="admin-input" value={severity} onChange={(e) => setSeverity(e.target.value)} style={{ width: 120 }}>
+          {['SEV-1', 'SEV-2', 'SEV-3', 'SEV-4'].map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <button type="button" className="admin-btn admin-btn--primary" onClick={create}>Create</button>
+      </div>
+      <AdminDataTable
+        title="Incident register"
+        emptyMessage="No incidents"
+        data={incidents.map((i) => ({
+          id: i.id,
+          number: i.incident_number || i.id,
+          title: i.title,
+          severity: i.severity,
+          status: i.status,
+          assigned: i.assigned_to || '—',
+          createdAt: i.created_at,
+        }))}
+        columns={[
+          { header: 'Number', key: 'number', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.72rem' }}>{r.number}</span> },
+          { header: 'Title', key: 'title' },
+          { header: 'Severity', key: 'severity', render: (r) => <StatusBadge status={r.severity} /> },
+          { header: 'Status', key: 'status', render: (r) => <StatusBadge status={r.status} /> },
+          { header: 'Assigned', key: 'assigned' },
+          { header: 'Created', key: 'createdAt' },
+          {
+            header: 'Resolve',
+            key: 'resolve',
+            sortable: false,
+            render: (r) => (
+              <button type="button" className="admin-btn admin-btn--sm" onClick={() => resolve(r.id)} disabled={['RESOLVED', 'CLOSED', 'POSTMORTEM'].includes(String(r.status).toUpperCase())}>
+                Resolve
+              </button>
+            ),
+          },
+        ]}
+      />
+    </div>
+  );
+}
+
+function ProductionHealthPanel() {
+  const [health, setHealth] = useState(null);
+  const [error, setError] = useState(null);
+
+  const load = useCallback(() => {
+    adminApiClient.get('/operations/production-health')
+      .then((data) => {
+        setHealth(data);
+        setError(null);
+      })
+      .catch((err) => {
+        setError(err.message || 'Live data unavailable');
+        setHealth(null);
+      });
+  }, []);
+
+  useEffect(() => {
+    const stop = startVisibleInterval(load, 30000, { runImmediately: true });
+    return stop;
+  }, [load]);
+
+  const block = (title, obj, fields) => (
+    <div style={{ marginBottom: 18 }}>
+      <h3 className="admin-section-title">{title} · {obj?.status || 'UNKNOWN'}</h3>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
+        {fields.map(([label, key]) => (
+          <AdminKPI key={key} label={label} value={fmt(obj?.[key])} accent="#64748b" />
+        ))}
+      </div>
+    </div>
+  );
+
+  return (
+    <div>
+      <div className="admin-flex-between" style={{ marginBottom: 16 }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Production Health</h2>
+          <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
+            Overall: {health?.overall || 'UNKNOWN'}
+            {health?.lastUpdated ? ` · Last updated: ${new Date(health.lastUpdated).toLocaleString()}` : ''}
+            {error ? ` · ${error}` : ''}
+          </p>
+        </div>
+        <button type="button" className="admin-btn admin-btn--secondary admin-btn--sm" onClick={load}>↻ Refresh</button>
+      </div>
+      {block('Application', health?.application, [
+        ['Uptime (s)', 'uptimeSeconds'], ['Requests', 'requestCount'], ['Errors', 'errorCount'],
+        ['Error rate', 'errorRate'], ['Avg latency ms', 'averageLatencyMs'], ['5xx', 'count5xx'], ['4xx', 'count4xx'],
+      ])}
+      {block('Database', health?.database, [
+        ['Connection', 'connectionStatus'], ['Latency ms', 'latencyMs'], ['Migrations', 'migrationStatus'], ['Redis', 'redisStatus'],
+      ])}
+      {block('Background Jobs', health?.backgroundJobs, [
+        ['Pending', 'pending'], ['Failed', 'failed'], ['Completed', 'completed'], ['Active', 'active'],
+      ])}
+      {block('Betting', health?.betting, [
+        ['Placement failures', 'betPlacementFailuresToday'], ['Settlement pending', 'settlementPending'],
+        ['Settlement failed', 'settlementFailed'],
+      ])}
+      {block('Finance', health?.finance, [
+        ['WD failures', 'withdrawalFailuresRecent'], ['Pending WD', 'pendingWithdrawals'],
+        ['Recon open', 'reconciliationDiscrepancies'], ['Deposit failures', 'depositFailuresToday'],
+      ])}
+      {block('Security', health?.security, [
+        ['Open critical alerts', 'openCriticalAlerts'],
+      ])}
+    </div>
+  );
+}
+
+function NotificationsPanel() {
+  const [rows, setRows] = useState([]);
+  const [unread, setUnread] = useState(0);
+  const { showToast } = useAdminToast();
+
+  const load = useCallback(() => {
+    adminApiClient.get('/operations/notifications?limit=50')
+      .then((data) => {
+        setRows(data.notifications || []);
+        setUnread(data.unreadCount || 0);
+      })
+      .catch(() => setRows([]));
+  }, []);
+
+  useEffect(() => {
+    const stop = startVisibleInterval(load, 20000, { runImmediately: true });
+    return stop;
+  }, [load]);
+
+  return (
+    <div>
+      <div className="admin-flex-between" style={{ marginBottom: 16 }}>
+        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>
+          Notification Center
+          {unread > 0 ? ` (${unread} unread)` : ''}
+        </h2>
+        <button
+          type="button"
+          className="admin-btn admin-btn--secondary admin-btn--sm"
+          onClick={async () => {
+            await adminApiClient.post('/operations/notifications/read-all', {});
+            showToast('All marked read', 'success');
+            load();
+          }}
+        >
+          Mark all read
+        </button>
+      </div>
+      <AdminDataTable
+        title="Notifications"
+        emptyMessage="No notifications"
+        data={rows.map((n) => ({
+          id: n.notification_id,
+          title: n.title,
+          severity: n.severity || n.priority,
+          category: n.category,
+          read: n.is_read ? 'Yes' : 'Unread',
+          createdAt: n.created_at,
+        }))}
+        columns={[
+          { header: 'Title', key: 'title' },
+          { header: 'Severity', key: 'severity', render: (r) => <StatusBadge status={r.severity} /> },
+          { header: 'Type', key: 'category' },
+          { header: 'Read', key: 'read' },
+          { header: 'Created', key: 'createdAt' },
+          {
+            header: 'Mark read',
+            key: 'mr',
+            sortable: false,
+            render: (r) => (
+              <button
+                type="button"
+                className="admin-btn admin-btn--sm"
+                onClick={async () => {
+                  await adminApiClient.post(`/operations/notifications/${r.id}/read`, {});
+                  load();
+                }}
+              >
+                Read
+              </button>
+            ),
+          },
+        ]}
+      />
+    </div>
+  );
+}
+
+export default function OperationsDomainView({ subModule = 'health-matrix', onNavigate }) {
   const [services, setServices] = useState([]);
   const [metrics, setMetrics] = useState(null);
   const [outboxEvents, setOutboxEvents] = useState([]);
@@ -207,7 +680,7 @@ export default function OperationsDomainView({ subModule = 'health-matrix' }) {
   useEffect(() => {
     let cancelled = false;
 
-    if (subModule === 'settlement-queue') {
+    if (['settlement-queue', 'control-tower', 'alerts', 'incidents', 'production-health', 'notifications'].includes(subModule)) {
       return undefined;
     }
 
@@ -263,9 +736,12 @@ export default function OperationsDomainView({ subModule = 'health-matrix' }) {
     };
   }, [subModule]);
 
-  if (subModule === 'settlement-queue') {
-    return <SettlementQueuePanel />;
-  }
+  if (subModule === 'control-tower') return <ControlTowerOpsPanel onNavigate={onNavigate} />;
+  if (subModule === 'alerts') return <AlertsPanel />;
+  if (subModule === 'incidents') return <IncidentsPanel />;
+  if (subModule === 'production-health') return <ProductionHealthPanel />;
+  if (subModule === 'notifications') return <NotificationsPanel />;
+  if (subModule === 'settlement-queue') return <SettlementQueuePanel />;
 
   if (subModule === 'outbox-queue') {
     const metricRows = metrics ? [

@@ -33,6 +33,9 @@ function dispatch(msg) {
   if (msg.eventType === 'BET_CASHED_OUT' && msg.payload?.userId) {
     channels.push(`user:${msg.payload.userId}`);
   }
+  if (msg.eventType === 'admin.alert.created' || msg.channel === 'admin:ops') {
+    channels.push('admin:ops');
+  }
   if (msg.channel) channels.push(msg.channel);
 
   const seen = new Set();

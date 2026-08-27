@@ -79,3 +79,25 @@
 .betslip-odds-actions .betslip-accept-odds-btn {
   margin-top: 0;
 }
+
+.betslip-bet--unavailable {
+  opacity: 0.92;
+  border-color: rgba(244, 63, 94, 0.35);
+}
+
+.betslip-bet-alert--unavailable {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(244, 63, 94, 0.1);
+  border: 1px solid rgba(244, 63, 94, 0.35);
+  color: #fb7185;
+  font-size: 0.78rem;
+}
+
+.betslip-bet-alert--unavailable .betslip-bet-clear-btn {
+  align-self: flex-start;
+}

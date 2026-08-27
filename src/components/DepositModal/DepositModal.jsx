@@ -12,9 +12,9 @@ import { DEMO_MODE } from '../../utils/featureFlags';
 import { cleanKycMessage, isKycError, KYC_PROFILE_PATH } from '../../utils/kycUi';
 import './DepositModal.css';
 
-async function waitForWalletCredit(refreshWallet, startBalance, attempts = 12) {
+async function waitForWalletCredit(refreshWallet, startBalance, attempts = 8) {
   for (let count = 0; count < attempts; count += 1) {
-    await new Promise((resolve) => setTimeout(resolve, 2500));
+    await new Promise((resolve) => setTimeout(resolve, 1500));
     await refreshWallet?.();
     const me = await fetchMe().catch(() => null);
     if (me && Number(me.balance) > Number(startBalance) + 0.009) return true;
@@ -26,7 +26,6 @@ export default function DepositModal() {
   const { isDepositModalOpen, closeDepositModal, refreshWallet, addFunds, user } = useAuth();
   const navigate = useNavigate();
   const [amount, setAmount] = useState('1000');
-  const [upiId, setUpiId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isRzpModalOpen, setIsRzpModalOpen] = useState(false);
@@ -50,10 +49,10 @@ export default function DepositModal() {
   };
 
   const kycIncomplete = String(user?.kycStatus || '').toUpperCase() !== 'VERIFIED';
-  const isKycBanner = isKycError(errorMsg) || (!errorMsg && kycIncomplete && !isSuccess);
+  const isKycBanner = isKycError(errorMsg) || (!errorMsg && kycIncomplete && !isSuccess && !isProcessing);
   const bannerText = isKycError(errorMsg)
     ? cleanKycMessage(errorMsg)
-    : (errorMsg || (kycIncomplete && !isSuccess
+    : (errorMsg || (kycIncomplete && !isSuccess && !isProcessing
       ? 'Verify your identity (KYC) before withdrawing winnings.'
       : ''));
   const showKycCta = isKycBanner;
@@ -84,45 +83,84 @@ export default function DepositModal() {
         throw new Error('Razorpay checkout is not available');
       }
 
+      // Razorpay Checkout expects amount in paise. Server returns rupees (+ amountPaise).
+      const amountPaise = Number(orderData.amountPaise)
+        || Math.round(Number(orderData.amount || depositAmt) * 100);
+
       setIsLoading(false);
+      // Never prefill email/phone/VPA — Safari throws
+      // "The string did not match the expected pattern" for .local emails / bad VPAs,
+      // and Razorpay Checkout validates prefill strictly.
       const options = {
         key: activeKey,
-        amount: Number(orderData.amount) || depositAmt * 100,
-        currency: 'INR',
+        amount: amountPaise,
+        currency: orderData.currency || 'INR',
         name: 'OddsYra Gaming',
         description: 'Account Deposit',
         order_id: orderData.orderId,
-        handler: async function () {
+        handler: async function (response) {
           setIsProcessing(true);
+          setErrorMsg('');
           const startBalance = Number(user?.balance || 0);
-          const credited = await waitForWalletCredit(refreshWallet, startBalance);
-          setIsProcessing(false);
-          if (credited) {
+          try {
+            const confirmRes = await apiFetch('/api/v1/payments/confirm', {
+              method: 'POST',
+              body: JSON.stringify({
+                razorpay_order_id: response?.razorpay_order_id || orderData.orderId,
+                razorpay_payment_id: response?.razorpay_payment_id,
+                razorpay_signature: response?.razorpay_signature,
+              }),
+            });
+            const confirmData = await confirmRes.json().catch(() => ({}));
+            if (!confirmRes.ok) {
+              throw new Error(confirmData.error || confirmData.code || 'Could not confirm payment');
+            }
+            await refreshWallet?.();
             setIsSuccess(true);
-          } else {
-            setErrorMsg('Payment submitted. Your wallet will update when the bank confirms it — this can take a minute.');
+          } catch (confirmErr) {
+            const credited = await waitForWalletCredit(refreshWallet, startBalance);
+            if (credited) {
+              setIsSuccess(true);
+            } else {
+              setErrorMsg(
+                confirmErr.message
+                || 'Payment submitted. Your wallet will update when confirmation completes.',
+              );
+            }
+          } finally {
+            setIsProcessing(false);
           }
         },
-        prefill: {
-          name: user?.displayName || '',
-          email: user?.email || '',
-          vpa: upiId.trim() || undefined,
-        },
-  theme: { color: '#1f8a4c' },
+        theme: { color: '#1f8a4c' },
         modal: {
           ondismiss: function () {
             setIsLoading(false);
+            setIsProcessing(false);
           },
         },
       };
 
+      if (!orderData.orderId || !String(orderData.orderId).startsWith('order_')) {
+        throw new Error('Invalid payment order from server. Please try again.');
+      }
+
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', function (response) {
-        setErrorMsg(`Payment failed: ${response.error.description || 'Transaction cancelled.'}`);
+        setIsProcessing(false);
+        setErrorMsg(`Payment failed: ${response.error?.description || 'Transaction cancelled.'}`);
       });
-      rzp.open();
+      try {
+        rzp.open();
+      } catch (openErr) {
+        const msg = String(openErr?.message || openErr || '');
+        if (/expected pattern|pattern/i.test(msg)) {
+          throw new Error('Could not open Razorpay Checkout. Refresh the page and try again.');
+        }
+        throw openErr;
+      }
     } catch (err) {
       setIsLoading(false);
+      setIsProcessing(false);
       setErrorMsg(err.message || 'Unable to start payment');
     }
   };
@@ -201,7 +239,7 @@ export default function DepositModal() {
             )}
 
             <AnimatePresence mode="wait">
-              {isSuccess ? (
+              {isSuccess || isProcessing ? (
                 <motion.div
                   key="success"
                   className="deposit-success"
@@ -210,20 +248,27 @@ export default function DepositModal() {
                   exit={{ opacity: 0 }}
                 >
                   <span className="deposit-success-icon">{isProcessing ? '⏳' : '🎉'}</span>
-                  <h3>₹{parseFloat(amount).toLocaleString()} payment received</h3>
+                  <h3>
+                    {isProcessing
+                      ? 'Confirming your payment…'
+                      : `₹${parseFloat(amount).toLocaleString()} payment received`}
+                  </h3>
                   <p>
                     {isProcessing
-                      ? 'Your wallet will update automatically once the payment is confirmed.'
+                      ? 'Please wait while we verify with Razorpay and credit your wallet.'
                       : 'Your deposit has been credited to your OddsYra wallet.'}
                   </p>
-                  <button type="button" className="deposit-pay-btn" onClick={handleClose}>
-                    <FiCheck /> Done
-                  </button>
+                  {!isProcessing && (
+                    <button type="button" className="deposit-pay-btn" onClick={handleClose}>
+                      <FiCheck /> Done
+                    </button>
+                  )}
                 </motion.div>
               ) : (
                 <motion.form
                   key="form"
                   onSubmit={handleDepositSubmit}
+                  noValidate
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
@@ -248,24 +293,24 @@ export default function DepositModal() {
                   <div className="deposit-input-wrap">
                     <span className="deposit-input-symbol">₹</span>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="off"
                       className="deposit-form-input"
                       value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
+                      onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ''))}
                       placeholder="Minimum ₹1,000"
-                      min={MIN_DEPOSIT_INR}
-                      max={MAX_DEPOSIT_INR}
-                      required
                     />
                   </div>
 
                   <div className="deposit-quick-apps-label">UPI apps</div>
                   <div className="deposit-quick-apps-bar">
-                    <UpiLogo height={36} width={118} onClick={() => setUpiId('john@upi')} />
-                    <GPayLogo height={36} width={118} onClick={() => setUpiId('john@okicici')} />
-                    <PhonePeLogo height={36} width={118} onClick={() => setUpiId('john@ybl')} />
-                    <PaytmLogo height={36} width={118} onClick={() => setUpiId('john@paytm')} />
-                    <BhimLogo height={36} width={118} onClick={() => setUpiId('john@bhim')} />
+                    {/* Logos are visual only — do not prefill fake VPAs (Safari/Razorpay reject them). */}
+                    <UpiLogo height={36} width={118} />
+                    <GPayLogo height={36} width={118} />
+                    <PhonePeLogo height={36} width={118} />
+                    <PaytmLogo height={36} width={118} />
+                    <BhimLogo height={36} width={118} />
                   </div>
 
                   <motion.button

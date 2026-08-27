@@ -17,6 +17,8 @@ import SupportHeadsetIcon from '../../icons/SupportHeadsetIcon';
 import ProfileSupportTab from './ProfileSupportTab';
 import ProfileKycCard from './ProfileKycCard';
 import ProfileReferralCard from './ProfileReferralCard';
+import ProfileDepositFreebetCard from './ProfileDepositFreebetCard';
+import ProfileMarketingPrefsCard from './ProfileMarketingPrefsCard';
 import '../Legal/LegalPage.css';
 import './Profile.css';
 
@@ -338,6 +340,8 @@ export default function Profile() {
                 if (data?.joinedViaReferral) setJoinedViaReferral(true);
               }}
             />
+            <ProfileDepositFreebetCard />
+            <ProfileMarketingPrefsCard />
 
             <form
               className="profile-loyalty-box"
@@ -356,7 +360,7 @@ export default function Profile() {
               {joinedViaReferral ? (
                 <p className="profile-loyalty-meta">
                   Signup promo unavailable. Your account joined through a referral.
-                  Referral rewards are applied according to the referral program.
+                  Referral free bets are credited when a friend signs up with your code.
                 </p>
               ) : (
                 <p className="profile-loyalty-meta">

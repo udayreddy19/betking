@@ -123,6 +123,7 @@ const DOMAIN_GROUPS = [
         role: ADMIN_ROLES.FINANCE_ADMIN,
         subModules: [
           { id: 'maker-checker', label: 'Maker-Checker Approvals' },
+          { id: 'deposits-review', label: 'Deposits Review' },
           { id: 'finance-health', label: 'Finance Health Center' },
           { id: 'ledger', label: 'Double-Entry Ledger' },
           { id: 'legacy-ledger', label: 'Legacy Ledger Gaps' },
@@ -151,10 +152,14 @@ const DOMAIN_GROUPS = [
         Icon: ZapIcon,
         role: ADMIN_ROLES.MARKETING_ADMIN,
         subModules: [
+          { id: 'overview', label: 'Growth Overview' },
           { id: 'promotions', label: 'Sportsbook Campaigns' },
+          { id: 'deposit-freebet', label: 'Deposit Free Bet' },
           { id: 'bonus-codes', label: 'Signup Promo Codes' },
           { id: 'referrals', label: 'Referral Program' },
+          { id: 'promo-abuse', label: 'Promo Abuse Alerts' },
           { id: 'crm-segments', label: 'CRM Segments' },
+          { id: 'promo-roi', label: 'Promotion ROI' },
           { id: 'vip-tiers', label: 'VIP Loyalty Tiers' },
         ],
       },
@@ -202,6 +207,11 @@ const DOMAIN_GROUPS = [
         Icon: KeyIcon,
         role: ADMIN_ROLES.OPERATIONS_ADMIN,
         subModules: [
+          { id: 'control-tower', label: 'Control Tower' },
+          { id: 'alerts', label: 'Alerts' },
+          { id: 'incidents', label: 'Incidents' },
+          { id: 'production-health', label: 'Production Health' },
+          { id: 'notifications', label: 'Notifications' },
           { id: 'health-matrix', label: 'Infrastructure Health Matrix' },
           { id: 'outbox-queue', label: 'Outbox Worker Telemetry' },
           { id: 'settlement-queue', label: 'Settlement Queue' },
@@ -230,8 +240,10 @@ function resolveAdminNav(domainId, subModuleId) {
   const domain = ALL_DOMAINS.find((d) => d.id === domainId) || ALL_DOMAINS.find((d) => d.id === DEFAULT_ADMIN_DOMAIN);
   const resolvedDomain = domain?.id || DEFAULT_ADMIN_DOMAIN;
   const subs = domain?.subModules || [];
-  const resolvedSub = subs.some((s) => s.id === subModuleId)
-    ? subModuleId
+  // Legacy URL: Targeted Deposit Free Bet was merged into Deposit Free Bet
+  const normalizedSub = subModuleId === 'targeted-deposit-freebet' ? 'deposit-freebet' : subModuleId;
+  const resolvedSub = subs.some((s) => s.id === normalizedSub)
+    ? normalizedSub
     : (subs[0]?.id || DEFAULT_ADMIN_SUB);
   return { domainId: resolvedDomain, subModuleId: resolvedSub };
 }
@@ -515,6 +527,40 @@ function AdminShellInner() {
     };
   }, [sessionReady, activeRole]);
 
+  // Live ops alerts via existing WebSocket (admin:ops) — polling remains fallback
+  React.useEffect(() => {
+    if (!sessionReady) return undefined;
+    let unsub = () => {};
+    import('../../../services/liveFeedSocket.js')
+      .then(({ subscribeLiveChannel }) => {
+        unsub = subscribeLiveChannel('admin:ops', (msg) => {
+          if (msg?.eventType !== 'admin.alert.created') return;
+          const p = msg.payload || {};
+          setLiveAlerts((prev) => {
+            const id = p.notificationId || `ws-${Date.now()}`;
+            if (prev.some((a) => a.id === id || a.notificationId === id)) return prev;
+            return [
+              {
+                id,
+                title: p.title || 'Ops alert',
+                desc: p.message || '',
+                category: String(p.category || 'ops').toLowerCase(),
+                domainId: 'operations',
+                subModuleId: 'alerts',
+                type: String(p.severity || p.priority || 'HIGH').toUpperCase(),
+                notificationId: p.notificationId || null,
+              },
+              ...prev,
+            ].slice(0, 60);
+          });
+        });
+      })
+      .catch(() => {});
+    return () => {
+      try { unsub(); } catch { /* ignore */ }
+    };
+  }, [sessionReady]);
+
   // Command palette hotkey
   React.useEffect(() => {
     if (!sessionReady) return undefined;
@@ -636,6 +682,20 @@ function AdminShellInner() {
       domainId: alert.domainId,
       subModuleId: alert.subModuleId,
     });
+  };
+
+  const handleAlertAction = (event, alert, action) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!alert?.notificationId) {
+      setLiveAlerts((prev) => prev.filter((a) => a.id !== alert.id));
+      return;
+    }
+    const path = action === 'resolve'
+      ? `/notifications/v2/notifications/${alert.notificationId}/resolve`
+      : `/notifications/v2/notifications/${alert.notificationId}/ack`;
+    adminApiClient.post(path, { note: `${action} from alert bell` }).catch(() => {});
+    setLiveAlerts((prev) => prev.filter((a) => a.id !== alert.id));
   };
 
   const handleAdminSignIn = async (event) => {
@@ -824,7 +884,7 @@ function AdminShellInner() {
       case 'communications': return <CommunicationsDomainView subModule={activeSubModule} />;
       case 'analytics': return <AnalyticsDomainView subModule={activeSubModule} />;
       case 'platform': return <PlatformDomainView subModule={activeSubModule} />;
-      case 'operations': return <OperationsDomainView subModule={activeSubModule} />;
+      case 'operations': return <OperationsDomainView subModule={activeSubModule} onNavigate={handleCommandNavigate} />;
       case 'security-governance': return <SecurityGovernanceDomainView subModule={activeSubModule} />;
       default: return (
         <ControlTowerView
@@ -883,6 +943,13 @@ function AdminShellInner() {
           onOpenMobileSidebar={() => setMobileSidebarOpen(true)}
           currentDomainLabel={currentDomainObj?.label}
           currentSubLabel={currentSubObj?.label}
+          onBreadcrumbHome={() => {
+            const home = DOMAIN_GROUPS[0]?.items?.[0];
+            if (home) handleDomainSelect(home);
+          }}
+          onBreadcrumbDomain={() => {
+            if (currentDomainObj) handleDomainSelect(currentDomainObj);
+          }}
         />
 
         {/* Alerts Popover (portal) */}
@@ -936,37 +1003,67 @@ function AdminShellInner() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
                   {liveAlerts.length > 0 ? (
                     liveAlerts.map((alert) => (
-                      <button
+                      <div
                         key={alert.id}
-                        type="button"
-                        onClick={(e) => handleAlertClick(e, alert)}
                         className="admin-card"
                         style={{
                           display: 'block',
                           width: '100%',
                           textAlign: 'left',
                           padding: '10px 12px',
-                          cursor: 'pointer',
                           color: 'inherit',
                         }}
                       >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
-                          <span className={`admin-badge admin-badge--${alert.type === 'CRITICAL' ? 'danger' : alert.type === 'HIGH' ? 'warning' : 'info'}`}>
-                            <span className="admin-badge--dot" style={{
-                              background: alert.type === 'CRITICAL' ? '#f43f5e' : alert.type === 'HIGH' ? '#fbbf24' : '#818cf8',
-                            }} />
-                            {alert.type}
-                          </span>
-                          <span style={{ fontSize: '0.66rem', color: 'var(--admin-text-dim)', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
-                            {alert.category || 'ops'}
-                          </span>
-                        </div>
-                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--admin-text)' }}>{alert.title}</div>
-                        <div style={{ fontSize: '0.74rem', color: 'var(--admin-text-muted)', marginTop: '2px', lineHeight: 1.35 }}>{alert.desc}</div>
-                        <div style={{ fontSize: '0.7rem', color: '#818cf8', marginTop: '6px', fontWeight: 700 }}>
-                          Go to {alert.category || 'section'} →
-                        </div>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleAlertClick(e, alert)}
+                          style={{
+                            display: 'block',
+                            width: '100%',
+                            textAlign: 'left',
+                            padding: 0,
+                            border: 'none',
+                            background: 'transparent',
+                            cursor: 'pointer',
+                            color: 'inherit',
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
+                            <span className={`admin-badge admin-badge--${alert.type === 'CRITICAL' ? 'danger' : alert.type === 'HIGH' ? 'warning' : 'info'}`}>
+                              <span className="admin-badge--dot" style={{
+                                background: alert.type === 'CRITICAL' ? '#f43f5e' : alert.type === 'HIGH' ? '#fbbf24' : '#818cf8',
+                              }} />
+                              {alert.type}
+                            </span>
+                            <span style={{ fontSize: '0.66rem', color: 'var(--admin-text-dim)', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                              {alert.category || 'ops'}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--admin-text)' }}>{alert.title}</div>
+                          <div style={{ fontSize: '0.74rem', color: 'var(--admin-text-muted)', marginTop: '2px', lineHeight: 1.35 }}>{alert.desc}</div>
+                          <div style={{ fontSize: '0.7rem', color: '#818cf8', marginTop: '6px', fontWeight: 700 }}>
+                            Go to {alert.category || 'section'} →
+                          </div>
+                        </button>
+                        {alert.notificationId && (
+                          <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                            <button
+                              type="button"
+                              className="admin-btn admin-btn--secondary admin-btn--sm"
+                              onClick={(e) => handleAlertAction(e, alert, 'ack')}
+                            >
+                              Ack
+                            </button>
+                            <button
+                              type="button"
+                              className="admin-btn admin-btn--primary admin-btn--sm"
+                              onClick={(e) => handleAlertAction(e, alert, 'resolve')}
+                            >
+                              Resolve
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     ))
                   ) : (
                     <div style={{ padding: '20px 14px', textAlign: 'center', color: 'var(--admin-text-muted)', fontSize: '0.8rem' }}>

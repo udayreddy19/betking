@@ -66,16 +66,17 @@ router.get('/withdrawals', requirePermission('finance'), async (req, res) => {
 /** POST /api/admin/finance/withdrawals/:id/review */
 router.post('/withdrawals/:id/review', requirePermission('finance'), async (req, res) => {
   try {
-    const { decision, reason } = req.body;
+    const { decision, reason, forceApprove } = req.body;
     const result = await withdrawalEngine.reviewWithdrawal({
       withdrawalId: req.params.id,
       adminId: req.admin?.id || req.user?.id || 'admin',
       decision,
       reason,
+      forceApprove: Boolean(forceApprove),
     });
     res.json(result);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    res.status(err.status || 400).json({ error: err.message, code: err.code });
   }
 });
 
@@ -86,6 +87,48 @@ router.post('/reconcile', requirePermission('finance'), async (req, res) => {
     res.json(report);
   } catch (err) {
     res.status(500).json({ error: 'Reconciliation scan failed', message: err.message });
+  }
+});
+
+/** GET /api/admin/finance/deposits — recent deposits for ops review */
+router.get('/deposits', requirePermission('finance'), async (req, res) => {
+  try {
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 200);
+    const status = req.query.status ? String(req.query.status).toUpperCase() : null;
+    const params = [];
+    let where = '';
+    if (status) {
+      params.push(status);
+      where = `WHERE UPPER(COALESCE(status, '')) = $${params.length}`;
+    }
+    params.push(limit);
+    const result = await queryRead(
+      `SELECT deposit_id, user_id, amount, currency, status,
+              payment_id, order_id, created_at, updated_at
+       FROM deposits
+       ${where}
+       ORDER BY created_at DESC
+       LIMIT $${params.length}`,
+      params,
+    );
+    res.json({
+      deposits: (result.rows || []).map((r) => ({
+        id: r.deposit_id,
+        depositId: r.deposit_id,
+        userId: r.user_id,
+        amount: Number(r.amount || 0),
+        currency: r.currency || 'INR',
+        status: String(r.status || '').toUpperCase(),
+        method: null,
+        razorpayPaymentId: r.payment_id || null,
+        razorpayOrderId: r.order_id || null,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+      })),
+      count: (result.rows || []).length,
+    });
+  } catch (err) {
+    res.status(500).json({ deposits: [], error: err.message });
   }
 });
 

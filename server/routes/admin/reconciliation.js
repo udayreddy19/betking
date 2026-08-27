@@ -36,6 +36,15 @@ router.post('/run', requirePermission('finance', 'reconciliation'), async (req, 
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// GET /reconciliation/wallet-buckets — read-only platform wallet bucket snapshot
+router.get('/wallet-buckets', requirePermission('finance', 'reconciliation'), async (req, res) => {
+  try {
+    const { getWalletBucketTotals } = await import('../../../lib/reconciliationEngine.mjs');
+    const walletBuckets = await getWalletBucketTotals();
+    res.json({ success: true, walletBuckets, timestamp: new Date().toISOString() });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // PUT /reconciliation/exceptions/:id/investigate
 router.put('/exceptions/:id/investigate', requirePermission('finance', 'reconciliation'), async (req, res) => {
   try {

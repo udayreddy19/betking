@@ -75,6 +75,8 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
   const [lastRefreshAt, setLastRefreshAt] = useState(null);
   const [observability, setObservability] = useState(null);
   const [opsHealth, setOpsHealth] = useState(null);
+  const [dbIncidents, setDbIncidents] = useState(null);
+  const [incidentsSource, setIncidentsSource] = useState('loading');
 
   const tabs = [
     { id: 'overview', label: 'Operational Overview' },
@@ -111,10 +113,19 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
       Promise.allSettled([
         adminApiClient.get('/ops/observability'),
         adminApiClient.get('/operations/health'),
-      ]).then(([obs, health]) => {
+        adminApiClient.get('/operations/incidents'),
+      ]).then(([obs, health, incidents]) => {
         if (cancelled) return;
         setObservability(obs.status === 'fulfilled' ? obs.value : null);
         setOpsHealth(health.status === 'fulfilled' ? health.value : null);
+        if (incidents.status === 'fulfilled') {
+          const rows = incidents.value?.incidents || [];
+          setDbIncidents(rows);
+          setIncidentsSource(rows.length ? 'database' : 'empty');
+        } else {
+          setDbIncidents(null);
+          setIncidentsSource('error');
+        }
       });
     };
     const stop = startVisibleInterval(loadSide, 30000, { runImmediately: true });
@@ -139,7 +150,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
     time: metrics.timestamp ? new Date(metrics.timestamp).toLocaleTimeString() : '—',
   }));
 
-  const incidentRows = useMemo(() => {
+  const syntheticIncidentRows = useMemo(() => {
     const rows = [];
     Object.entries(metrics.providerSources || {}).forEach(([name, status]) => {
       if (status === 'error') {
@@ -151,6 +162,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
           time: metrics.timestamp ? new Date(metrics.timestamp).toLocaleTimeString() : '—',
           domainId: 'sports',
           subModuleId: 'providers',
+          source: 'synthetic',
         });
       }
     });
@@ -163,6 +175,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
         time: 'finance',
         domainId: 'finance',
         subModuleId: 'maker-checker',
+        source: 'synthetic',
       });
     }
     if ((metrics.openTickets || 0) > 10) {
@@ -174,6 +187,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
         time: 'support',
         domainId: 'support',
         subModuleId: 'ticket-queue',
+        source: 'synthetic',
       });
     }
     if ((observability?.settlement?.failed_jobs || 0) > 0) {
@@ -185,19 +199,41 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
         time: 'operations',
         domainId: 'operations',
         subModuleId: 'settlement-queue',
-      });
-    }
-    if ((metrics.riskAlerts || 0) === 0 && rows.length === 0) {
-      rows.push({
-        id: 'all-clear',
-        title: 'No active operational incidents',
-        severity: 'OK',
-        status: 'CLEAR',
-        time: lastRefreshAt ? new Date(lastRefreshAt).toLocaleTimeString() : '—',
+        source: 'synthetic',
       });
     }
     return rows;
-  }, [metrics, lastRefreshAt, observability]);
+  }, [metrics, observability]);
+
+  const incidentRows = useMemo(() => {
+    const dbRows = (dbIncidents || []).map((inc) => ({
+      id: inc.id,
+      title: inc.title || 'Untitled incident',
+      severity: String(inc.severity || 'MEDIUM').toUpperCase(),
+      status: String(inc.status || 'OPEN').toUpperCase(),
+      time: inc.created_at
+        ? new Date(inc.created_at).toLocaleString()
+        : (inc.service || '—'),
+      service: inc.service || null,
+      rootCause: inc.root_cause || null,
+      domainId: 'operations',
+      subModuleId: 'health-matrix',
+      source: 'database',
+    }));
+
+    // Prefer DB incidents; use synthetic only when API empty/fails
+    if (dbRows.length > 0) return dbRows;
+    if (incidentsSource === 'loading') return [];
+    if (syntheticIncidentRows.length > 0) return syntheticIncidentRows;
+    return [{
+      id: 'all-clear',
+      title: 'No active operational incidents',
+      severity: 'OK',
+      status: 'CLEAR',
+      time: lastRefreshAt ? new Date(lastRefreshAt).toLocaleTimeString() : '—',
+      source: incidentsSource === 'error' ? 'fallback' : 'database',
+    }];
+  }, [dbIncidents, incidentsSource, syntheticIncidentRows, lastRefreshAt]);
 
   const systemCards = [
     {
@@ -423,12 +459,26 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
               render: (r) => (
                 <StatusBadge
                   status={r.severity}
-                  customMap={{ success: ['OK'], warning: ['MEDIUM', 'WATCH'], danger: ['HIGH', 'CRITICAL'] }}
+                  customMap={{
+                    success: ['OK'],
+                    warning: ['MEDIUM', 'WATCH', 'SEV-3', 'SEV-4'],
+                    danger: ['HIGH', 'CRITICAL', 'SEV-1', 'SEV-2'],
+                  }}
                 />
               ),
             },
             { header: 'Status', key: 'status' },
             { header: 'Context', key: 'time' },
+            {
+              header: 'Source',
+              key: 'source',
+              hideOnMobile: true,
+              render: (r) => (
+                <span className="admin-badge admin-badge--neutral" style={{ fontSize: '0.66rem' }}>
+                  {r.source === 'database' ? 'DB' : r.source === 'synthetic' ? 'LIVE' : '—'}
+                </span>
+              ),
+            },
           ]}
         />
       )}

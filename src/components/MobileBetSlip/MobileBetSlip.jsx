@@ -264,7 +264,7 @@ function QuickBetPanel({
             <button
               type="button"
               className="mobile-betslip-cancel-odds"
-              onClick={onClose}
+              onClick={onRemove || onClose}
             >
               Cancel
             </button>

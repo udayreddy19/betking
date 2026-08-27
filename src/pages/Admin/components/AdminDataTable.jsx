@@ -30,6 +30,7 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
  * Reusable, high-density Admin Data Table component
  * Supports searching, sorting, pagination, status badges, CSV export,
  * row selection, loading/error states, page-size selector, refresh, and sticky header.
+ * Columns may set `hideOnMobile` or `priority: 'low'` to hide on narrow screens.
  */
 export default function AdminDataTable({
   columns = [],
@@ -45,12 +46,35 @@ export default function AdminDataTable({
   error = null,
   onRefresh,
   lastUpdated,
+  /** Optional: render expanded detail panel for a row */
+  renderExpandedRow = null,
+  /** Prefer card layout under 767px instead of squeezed tables */
+  mobileCards = true,
+  /** Keys to show as primary fields on mobile cards (defaults to first 3 columns) */
+  mobilePrimaryKeys = null,
 }) {
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState(null);
   const [sortDirection, setSortDirection] = useState('asc');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(initialPageSize);
+  const [expandedIds, setExpandedIds] = useState(() => new Set());
+
+  const colClassName = (col) => {
+    const hide = col.hideOnMobile === true || col.priority === 'low';
+    return hide ? 'admin-table-col--hide-mobile' : undefined;
+  };
+
+  const toggleExpand = (row) => {
+    const id = row.id ?? row.key;
+    if (id == null) return;
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const filteredData = useMemo(() => {
     if (!search.trim()) return data;
@@ -90,6 +114,13 @@ export default function AdminDataTable({
     }
   };
 
+  const primaryCols = useMemo(() => {
+    if (Array.isArray(mobilePrimaryKeys) && mobilePrimaryKeys.length) {
+      return columns.filter((c) => mobilePrimaryKeys.includes(c.key));
+    }
+    return columns.filter((c) => !c.hideOnMobile && c.priority !== 'low').slice(0, 4);
+  }, [columns, mobilePrimaryKeys]);
+
   const exportCSV = () => {
     if (!data.length) return;
     const headers = columns.map((c) => c.header).join(',');
@@ -116,7 +147,7 @@ export default function AdminDataTable({
     Array.from({ length: 5 }).map((_, i) => (
       <tr key={`skel-${i}`} style={{ borderBottom: '1px solid var(--admin-border)' }}>
         {columns.map((col, ci) => (
-          <td key={ci} style={{ padding: '14px 18px' }}>
+          <td key={ci} className={colClassName(col)} style={{ padding: '14px 18px' }}>
             <div className="admin-skeleton admin-skeleton--line" style={{ width: ci === 0 ? '70%' : '50%' }} />
           </td>
         ))}
@@ -215,17 +246,81 @@ export default function AdminDataTable({
         </div>
       )}
 
-      {/* Table Content */}
-      <div style={{ overflowX: 'auto' }}>
+      {/* Mobile card list — preferred on narrow screens */}
+      {mobileCards && (
+        <div className="admin-table-mobile-cards" aria-label={title || 'Records'}>
+          {loading ? (
+            <div style={{ padding: 16 }}><div className="admin-skeleton admin-skeleton--card" style={{ height: 80 }} /></div>
+          ) : paginatedData.length === 0 ? (
+            <div className="admin-empty-state" style={{ padding: 24 }}>
+              <h3 className="admin-empty-state__title">{emptyMessage}</h3>
+            </div>
+          ) : (
+            paginatedData.map((row, idx) => {
+              const rid = row.id ?? row.key ?? idx;
+              const isOpen = expandedIds.has(rid);
+              return (
+                <div
+                  key={rid}
+                  className={`admin-table-card${onRowClick ? ' is-clickable' : ''}`}
+                  onClick={() => onRowClick && onRowClick(row)}
+                  onKeyDown={(e) => {
+                    if (onRowClick && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                      onRowClick(row);
+                    }
+                  }}
+                  role={onRowClick ? 'button' : undefined}
+                  tabIndex={onRowClick ? 0 : undefined}
+                >
+                  <div className="admin-table-card__primary">
+                    {primaryCols.map((col) => (
+                      <div key={col.key || col.header} className="admin-table-card__field">
+                        <span className="admin-table-card__label">{col.header}</span>
+                        <span className="admin-table-card__value">
+                          {col.render ? col.render(row) : (col.accessor ? col.accessor(row) : row[col.key])}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  {renderExpandedRow && (
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn--ghost admin-btn--sm"
+                      style={{ marginTop: 8 }}
+                      onClick={(e) => { e.stopPropagation(); toggleExpand(row); }}
+                      aria-expanded={isOpen}
+                    >
+                      {isOpen ? 'Hide details' : 'Show details'}
+                    </button>
+                  )}
+                  {isOpen && renderExpandedRow && (
+                    <div className="admin-table-card__expanded">
+                      {renderExpandedRow(row)}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {/* Desktop / tablet table */}
+      <div className={`admin-table-scroll${mobileCards ? ' admin-table-scroll--desktop' : ''}`} style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
           <thead>
             <tr style={{ background: 'var(--admin-surface)', borderBottom: '1px solid var(--admin-border)' }}>
+              {renderExpandedRow && (
+                <th style={{ width: 36, padding: '10px 8px' }} aria-label="Expand" />
+              )}
               {columns.map((col) => {
                 const isSorted = sortKey === col.key;
                 const isSortable = col.sortable !== false;
                 return (
                   <th
                     key={col.key || col.header}
+                    className={colClassName(col)}
                     onClick={() => isSortable && handleSort(col.key)}
                     style={{
                       padding: '10px 18px',
@@ -255,45 +350,72 @@ export default function AdminDataTable({
             {loading ? renderSkeletonRows() : (
               <AnimatePresence>
                 {paginatedData.length > 0 ? (
-                  paginatedData.map((row, idx) => (
-                    <motion.tr
-                      key={row.id || idx}
-                      initial={{ opacity: 0, y: 3 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.1, delay: idx * 0.01 }}
-                      whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.03)' }}
-                      onClick={() => onRowClick && onRowClick(row)}
-                      style={{
-                        borderBottom: '1px solid var(--admin-border)',
-                        cursor: onRowClick ? 'pointer' : 'default',
-                        transition: 'background-color 0.15s ease',
-                      }}
-                    >
-                      {columns.map((col) => (
-                        <td
-                          key={col.key || col.header}
+                  paginatedData.map((row, idx) => {
+                    const rid = row.id ?? row.key ?? idx;
+                    const isOpen = expandedIds.has(rid);
+                    return (
+                      <React.Fragment key={rid}>
+                        <motion.tr
+                          initial={{ opacity: 0, y: 3 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.1, delay: idx * 0.01 }}
+                          whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.03)' }}
+                          onClick={() => onRowClick && onRowClick(row)}
                           style={{
-                            padding: '11px 18px',
-                            color: 'var(--admin-text)',
-                            fontVariantNumeric: 'tabular-nums',
-                            verticalAlign: 'middle',
+                            borderBottom: '1px solid var(--admin-border)',
+                            cursor: onRowClick || renderExpandedRow ? 'pointer' : 'default',
+                            transition: 'background-color 0.15s ease',
                           }}
                         >
-                          {col.render ? col.render(row) : (col.accessor ? col.accessor(row) : row[col.key])}
-                        </td>
-                      ))}
-                    </motion.tr>
-                  ))
+                          {renderExpandedRow && (
+                            <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                              <button
+                                type="button"
+                                className="admin-btn admin-btn--ghost admin-btn--icon"
+                                aria-label={isOpen ? 'Collapse row' : 'Expand row'}
+                                aria-expanded={isOpen}
+                                onClick={(e) => { e.stopPropagation(); toggleExpand(row); }}
+                                style={{ width: 28, height: 28 }}
+                              >
+                                {isOpen ? '▾' : '▸'}
+                              </button>
+                            </td>
+                          )}
+                          {columns.map((col) => (
+                            <td
+                              key={col.key || col.header}
+                              className={colClassName(col)}
+                              style={{
+                                padding: '11px 18px',
+                                color: 'var(--admin-text)',
+                                fontVariantNumeric: 'tabular-nums',
+                                verticalAlign: 'middle',
+                              }}
+                            >
+                              {col.render ? col.render(row) : (col.accessor ? col.accessor(row) : row[col.key])}
+                            </td>
+                          ))}
+                        </motion.tr>
+                        {isOpen && renderExpandedRow && (
+                          <tr className="admin-table-expanded-row">
+                            <td colSpan={columns.length + 1} style={{ padding: '12px 18px', background: 'var(--admin-surface)' }}>
+                              {renderExpandedRow(row)}
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })
                 ) : (
                   <tr>
-                    <td colSpan={columns.length} style={{ padding: '40px 24px', textAlign: 'center' }}>
+                    <td colSpan={columns.length + (renderExpandedRow ? 1 : 0)} style={{ padding: '40px 24px', textAlign: 'center' }}>
                       <div className="admin-empty-state" style={{ padding: '16px' }}>
                         <div className="admin-empty-state__icon">🔍</div>
                         <h3 className="admin-empty-state__title">{emptyMessage}</h3>
                         {search && (
                           <p className="admin-empty-state__description">
-                            Try refining or clearing your search term "{search}"
+                            Try refining or clearing your search term &quot;{search}&quot;
                           </p>
                         )}
                       </div>

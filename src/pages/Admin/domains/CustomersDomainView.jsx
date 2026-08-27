@@ -14,9 +14,17 @@ import { useAdminRole, canAccessDomain, hasPermission, PERMISSIONS } from '../pe
 const DOSSIER_TABS = [
   { id: 'profile', label: 'Profile' },
   { id: 'kyc', label: 'KYC' },
+  { id: 'bank', label: 'Bank' },
   { id: 'wallet', label: 'Wallet' },
+  { id: 'recon', label: 'Recon' },
   { id: 'bets', label: 'Bets' },
   { id: 'txns', label: 'Transactions' },
+  { id: 'promotions', label: 'Promotions' },
+  { id: 'risk', label: 'Risk' },
+  { id: 'vip', label: 'VIP' },
+  { id: 'ops', label: 'Ops' },
+  { id: 'devices', label: 'Devices' },
+  { id: 'rg', label: 'RG' },
   { id: 'referrals', label: 'Referrals' },
   { id: 'support', label: 'Support' },
   { id: 'audit', label: 'Audit' },
@@ -1156,7 +1164,38 @@ export default function CustomersDomainView({
                     Full PAN/Aadhaar hidden — API permissions.canViewFullPii is false for this role.
                   </div>
                 )}
+                <DossierField label="Legal-name source">
+                  <StatusBadge status={user360?.kyc?.legalNameSource || 'UNAVAILABLE'} />
+                </DossierField>
+                <div style={{ gridColumn: '1 / -1', fontSize: '0.72rem', color: 'var(--admin-text-muted)' }}>
+                  {user360?.kyc?.legalNameNote
+                    || 'Aadhaar/PAN user-entered data is not OTP-verified identity without a KYC provider.'}
+                </div>
               </div>
+            </AdminCard>
+            )}
+
+            {(dossierTab === 'bank') && (
+            <AdminCard title="Bank / beneficiary" accent="#0ea5e9" style={{ marginBottom: '12px' }}>
+              {!user360?.bankBeneficiary ? (
+                <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.85rem' }}>
+                  {user360Loading ? 'Loading…' : 'No beneficiary snapshot.'}
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <DossierField label="Method">{user360.bankBeneficiary.method || '—'}</DossierField>
+                  <DossierField label="Name match">{user360.bankBeneficiary.nameMatch || user360.bankBeneficiary.nameMatchCode || '—'}</DossierField>
+                  <DossierField label="Declared holder">{user360.bankBeneficiary.declaredAccountHolderName || '—'}</DossierField>
+                  <DossierField label="Verified KYC name">{user360.bankBeneficiary.verifiedKycName || '—'}</DossierField>
+                  <DossierField label="Verified beneficiary">{user360.bankBeneficiary.verifiedBeneficiaryName || '—'}</DossierField>
+                  <DossierField label="Beneficiary verified">{user360.bankBeneficiary.beneficiaryVerified ? 'Yes' : 'No'}</DossierField>
+                  <DossierField label="UPI (masked)">{user360.bankBeneficiary.upiIdMasked || '—'}</DossierField>
+                  <DossierField label="Account (masked)">{user360.bankBeneficiary.accountMasked || '—'}</DossierField>
+                  <div style={{ gridColumn: '1 / -1', fontSize: '0.72rem', color: 'var(--admin-text-muted)' }}>
+                    {user360.bankBeneficiary.upiNote}
+                  </div>
+                </div>
+              )}
             </AdminCard>
             )}
 
@@ -1169,6 +1208,9 @@ export default function CustomersDomainView({
                 <DossierStat label="Reserved" value={money(user360?.money?.reservedBalance ?? user360?.wallet?.reservedBalance)} />
                 <DossierStat label="Locked deposit" value={money(user360?.money?.lockedDepositBalance ?? user360?.wallet?.lockedDepositBalance)} />
                 <DossierStat label="Winnings" value={money(user360?.money?.winningsBalance ?? user360?.wallet?.winningsBalance)} />
+                {(user360?.money?.freebetBalance != null || user360?.wallet?.freebetBalance != null) && (
+                  <DossierStat label="Freebet" value={money(user360?.money?.freebetBalance ?? user360?.wallet?.freebetBalance)} />
+                )}
                 <DossierStat label="Net deposits" value={money(user360?.money?.netDeposits)} />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -1187,27 +1229,78 @@ export default function CustomersDomainView({
                 <DossierField label="Pending withdrawal">{money(user360?.money?.pendingWithdrawal)}</DossierField>
               </div>
             </AdminCard>
+            </>
+            )}
 
-            <AdminCard title="Reconciliation" accent="#0ea5e9" style={{ marginBottom: '12px' }}>
+            {(dossierTab === 'recon') && (
+            <AdminCard title="Reconciliation (flag-only)" accent="#0ea5e9" style={{ marginBottom: '12px' }}>
               {!user360?.reconciliation ? (
                 <div style={{ fontSize: '0.82rem', color: 'var(--admin-text-muted)' }}>
                   {user360Loading ? 'Loading…' : 'No reconciliation snapshot.'}
                 </div>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                  <DossierStat
-                    label="Reconciled"
-                    value={user360.reconciliation.isReconciled ? 'Yes' : 'No'}
-                    accent={user360.reconciliation.isReconciled ? '#059669' : '#dc2626'}
-                  />
-                  <DossierStat label="Delta" value={money(user360.reconciliation.delta)} accent={user360.reconciliation.delta > 0 ? '#dc2626' : undefined} />
-                  <DossierField label="Current balance">{money(user360.reconciliation.currentBalance)}</DossierField>
-                  <DossierField label="Reconstructed">{money(user360.reconciliation.reconstructedBalance)}</DossierField>
-                  <DossierField label="Ledger entries">{user360.reconciliation.ledgerEntries ?? '—'}</DossierField>
-                </div>
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: 12 }}>
+                    <DossierStat
+                      label="Reconciled"
+                      value={user360.reconciliation.isReconciled ? 'Yes' : 'No'}
+                      accent={user360.reconciliation.isReconciled ? '#059669' : '#dc2626'}
+                    />
+                    <DossierStat label="Delta" value={money(user360.reconciliation.delta)} accent={user360.reconciliation.delta > 0 ? '#dc2626' : undefined} />
+                    <DossierField label="Current balance">{money(user360.reconciliation.currentBalance)}</DossierField>
+                    <DossierField label="Reconstructed">{money(user360.reconciliation.reconstructedBalance)}</DossierField>
+                    <DossierField label="Ledger entries">{user360.reconciliation.ledgerEntries ?? '—'}</DossierField>
+                    <DossierField label="Open recon cases">{user360.reconciliation.openCaseCount ?? 0}</DossierField>
+                    <DossierField label="Policy">{user360.reconciliation.note || 'Flag-only — never auto-repairs balances'}</DossierField>
+                  </div>
+                  {(user360.reconciliation.openCases || []).length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 280, overflow: 'auto' }}>
+                      {user360.reconciliation.openCases.slice(0, 20).map((c) => (
+                        <div key={c.id} style={{ fontSize: '0.76rem', borderBottom: '1px solid var(--admin-border)', paddingBottom: 4 }}>
+                          <div style={{ fontWeight: 700 }}>
+                            <StatusBadge status={c.severity || c.status || 'OPEN'} /> {c.id} · {c.type || '—'}
+                          </div>
+                          <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.7rem' }}>
+                            {c.status} · {formatDt(c.detected_at || c.detectedAt)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </AdminCard>
-            </>
+            )}
+
+            {(dossierTab === 'vip') && (
+            <AdminCard title="VIP" accent="#c084fc" style={{ marginBottom: '12px' }}>
+              {!user360?.vip ? (
+                <div style={{ fontSize: '0.82rem', color: 'var(--admin-text-muted)' }}>
+                  {user360Loading ? 'Loading…' : 'No VIP snapshot.'}
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: 12 }}>
+                    <DossierStat label="Tier" value={user360.vip.tier || 'BRONZE'} />
+                    <DossierStat label="VIP club" value={user360.vip.isVip ? 'Yes' : 'No'} />
+                    <DossierStat label="Points" value={user360.vip.points ?? 0} />
+                    <DossierStat label="VIP points" value={user360.vip.vipPoints ?? 0} />
+                    <DossierField label="Monthly period">{user360.vip.monthlyPeriod || '—'}</DossierField>
+                    <DossierField label="Monthly claimed">{user360.vip.monthlyClaimed ? 'Yes' : 'No'}</DossierField>
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', marginBottom: 10 }}>
+                    {user360.vip.note || 'VIP never bypasses KYC, withdrawal risk, fraud, maker-checker, RG, or RBAC.'}
+                  </div>
+                  {(user360.vip.history || []).slice(0, 10).map((h, i) => (
+                    <div key={`${h.changed_at || i}`} style={{ fontSize: '0.74rem', marginBottom: 4 }}>
+                      {(h.previous_tier || '?')} → <strong>{h.new_tier || '?'}</strong>
+                      {h.reason ? ` · ${h.reason}` : ''}
+                      <span style={{ color: 'var(--admin-text-muted)' }}> · {formatDt(h.changed_at)}</span>
+                    </div>
+                  ))}
+                </>
+              )}
+            </AdminCard>
             )}
 
             {(dossierTab === 'bets') && (
@@ -1257,6 +1350,191 @@ export default function CustomersDomainView({
                       <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.7rem' }}>{formatDt(t.createdAt || t.created_at)}</div>
                     </div>
                   ))}
+                </div>
+              )}
+            </AdminCard>
+            )}
+
+            {(dossierTab === 'promotions') && (
+            <AdminCard title="Promotions" accent="#8b5cf6" style={{ marginBottom: '12px' }}>
+              {!user360?.promotions ? (
+                <div style={{ fontSize: '0.82rem', color: 'var(--admin-text-muted)' }}>
+                  {user360Loading ? 'Loading…' : 'No promotion data.'}
+                </div>
+              ) : (
+                <>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 700, marginBottom: 6 }}>Bonuses</div>
+                  {!(user360.promotions.bonuses || []).length ? (
+                    <div style={{ fontSize: '0.78rem', color: 'var(--admin-text-muted)', marginBottom: 12 }}>No bonuses.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12, maxHeight: 180, overflow: 'auto' }}>
+                      {user360.promotions.bonuses.slice(0, 15).map((b) => (
+                        <div key={b.id || b.promotion_id} style={{ fontSize: '0.76rem', borderBottom: '1px solid var(--admin-border)', paddingBottom: 4 }}>
+                          <div style={{ fontWeight: 700 }}>{b.promo_code || b.promo_name || b.promotion_id || 'Bonus'} · {money(b.bonus_amount)}</div>
+                          <div style={{ color: 'var(--admin-text-muted)' }}>{b.status || '—'} · {formatDt(b.created_at)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div style={{ fontSize: '0.78rem', fontWeight: 700, marginBottom: 6 }}>Deposit freebet grants</div>
+                  {!(user360.promotions.freebetGrants || []).length ? (
+                    <div style={{ fontSize: '0.78rem', color: 'var(--admin-text-muted)', marginBottom: 12 }}>No freebet grants.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12, maxHeight: 180, overflow: 'auto' }}>
+                      {user360.promotions.freebetGrants.slice(0, 15).map((g) => (
+                        <div key={g.grant_id || g.id} style={{ fontSize: '0.76rem', borderBottom: '1px solid var(--admin-border)', paddingBottom: 4 }}>
+                          <div style={{ fontWeight: 700 }}>Freebet {money(g.freebet_amount)} · deposit {money(g.deposit_amount)}</div>
+                          <div style={{ color: 'var(--admin-text-muted)' }}>{g.status || '—'} · {formatDt(g.created_at)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div style={{ fontSize: '0.78rem', fontWeight: 700, marginBottom: 6 }}>Signup claims</div>
+                  {!(user360.promotions.signupClaims || []).length ? (
+                    <div style={{ fontSize: '0.78rem', color: 'var(--admin-text-muted)' }}>No signup promo claims.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 140, overflow: 'auto' }}>
+                      {user360.promotions.signupClaims.slice(0, 10).map((c) => (
+                        <div key={c.id || c.code} style={{ fontSize: '0.76rem', borderBottom: '1px solid var(--admin-border)', paddingBottom: 4 }}>
+                          <div style={{ fontWeight: 700 }}>{c.code || 'CODE'} · {c.reward_type || '—'} · {money(c.amount)}</div>
+                          <div style={{ color: 'var(--admin-text-muted)' }}>{formatDt(c.created_at)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </AdminCard>
+            )}
+
+            {(dossierTab === 'risk') && (
+            <AdminCard title="Risk" accent="#dc2626" style={{ marginBottom: '12px' }}>
+              {!user360?.risk ? (
+                <div style={{ fontSize: '0.82rem', color: 'var(--admin-text-muted)' }}>
+                  {user360Loading ? 'Loading…' : 'No risk snapshot.'}
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: 12 }}>
+                    <DossierStat label="Risk tier" value={user360.risk.riskTier || '—'} />
+                    <DossierStat label="Account status" value={user360.risk.accountStatus || '—'} />
+                    <DossierStat label="Open fraud cases" value={user360.risk.openFraudCases ?? '—'} accent={user360.risk.openFraudCases > 0 ? '#dc2626' : undefined} />
+                    <DossierStat label="Signals" value={(user360.risk.signals || []).length} />
+                  </div>
+                  {!(user360.risk.signals || []).length ? (
+                    <div style={{ fontSize: '0.78rem', color: 'var(--admin-text-muted)' }}>No recent risk signals.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 280, overflow: 'auto' }}>
+                      {user360.risk.signals.slice(0, 20).map((s) => (
+                        <div key={s.signal_id || `${s.signal_type}-${s.created_at}`} style={{ fontSize: '0.76rem', borderBottom: '1px solid var(--admin-border)', paddingBottom: 4 }}>
+                          <div style={{ fontWeight: 700 }}>{s.signal_type || 'SIGNAL'} · {s.severity || '—'}</div>
+                          <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.7rem' }}>{formatDt(s.created_at)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </AdminCard>
+            )}
+
+            {(dossierTab === 'ops') && (
+            <AdminCard title="Operations" accent="#f59e0b" style={{ marginBottom: '12px' }}>
+              {!user360 ? (
+                <div style={{ fontSize: '0.82rem', color: 'var(--admin-text-muted)' }}>
+                  {user360Loading ? 'Loading…' : 'No ops data.'}
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: 12 }}>
+                    <DossierStat label="Open ops alerts" value={(user360.ops?.openAlerts || []).length} accent={(user360.ops?.openAlerts || []).length ? '#dc2626' : undefined} />
+                    <DossierStat label="Open incidents" value={(user360.ops?.openIncidents || []).length} />
+                    <DossierStat label="Open withdrawals" value={(user360.ops?.openWithdrawals || []).length} />
+                    <DossierStat label="Promo abuse open" value={(user360.ops?.promoAbuseAlerts || []).length} />
+                    <DossierField label="Promo email" value={user360.marketingPreferences?.marketingEmail === false ? 'Opted out' : 'Opted in'} />
+                    <DossierField label="Transactional email" value="Always on (mandatory)" />
+                  </div>
+                  {(user360.ops?.openWithdrawals || []).slice(0, 8).map((w) => (
+                    <div key={w.withdrawalId} style={{ fontSize: '0.76rem', borderBottom: '1px solid var(--admin-border)', paddingBottom: 6, marginBottom: 6 }}>
+                      <div style={{ fontWeight: 700 }}>{w.withdrawalId} · ₹{Number(w.amount || 0).toLocaleString()} · {w.status}</div>
+                      <div style={{ color: 'var(--admin-text-muted)' }}>
+                        Risk {w.riskLevel || '—'} ({w.riskScore ?? '—'})
+                        {w.makerAdminId ? ` · Maker ${w.makerAdminId}` : ''}
+                        {w.checkerAdminId ? ` · Checker ${w.checkerAdminId}` : ''}
+                      </div>
+                      {Array.isArray(w.riskSignals) && w.riskSignals.length > 0 && (
+                        <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.7rem' }}>
+                          Signals: {w.riskSignals.map((s) => (typeof s === 'string' ? s : s.rule || s.code || JSON.stringify(s))).join(', ')}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {(user360.ops?.openAlerts || []).slice(0, 10).map((a) => (
+                    <div key={a.notification_id} style={{ fontSize: '0.76rem', marginBottom: 4 }}>
+                      <strong>{a.severity || 'ALERT'}</strong> {a.title} · {a.status}
+                    </div>
+                  ))}
+                  {(user360.ops?.openIncidents || []).slice(0, 8).map((i) => (
+                    <div key={i.id} style={{ fontSize: '0.76rem', marginBottom: 4 }}>
+                      <strong>{i.severity}</strong> {i.title} · {i.status}
+                    </div>
+                  ))}
+                </>
+              )}
+            </AdminCard>
+            )}
+
+            {(dossierTab === 'devices') && (
+            <AdminCard title="Devices & sessions" accent="#0ea5e9" style={{ marginBottom: '12px' }}>
+              {!user360?.devices?.length ? (
+                <div style={{ fontSize: '0.82rem', color: 'var(--admin-text-muted)' }}>
+                  {user360Loading ? 'Loading…' : 'No devices registered for this user.'}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {user360.devices.map((d) => (
+                    <div
+                      key={d.deviceId || d.device_id || d.id}
+                      style={{
+                        padding: '8px 10px',
+                        borderRadius: 8,
+                        border: '1px solid var(--admin-border)',
+                        fontSize: '0.78rem',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                        <strong>{d.deviceName || d.os || d.browser || d.deviceId || 'Device'}</strong>
+                        <StatusBadge status={d.isActiveSession || d.is_active_session ? 'ACTIVE' : 'IDLE'} />
+                      </div>
+                      <div style={{ color: 'var(--admin-text-muted)', marginTop: 4 }}>
+                        {[d.os, d.browser, d.ipAddress || d.ip_address].filter(Boolean).join(' · ') || '—'}
+                      </div>
+                      <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.7rem', marginTop: 2 }}>
+                        Last seen: {formatDt(d.lastSeenAt || d.last_seen_at || d.updatedAt)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </AdminCard>
+            )}
+
+            {(dossierTab === 'rg') && (
+            <AdminCard title="Responsible gaming" accent="#f59e0b" style={{ marginBottom: '12px' }}>
+              {!user360?.responsibleGaming ? (
+                <div style={{ fontSize: '0.82rem', color: 'var(--admin-text-muted)' }}>
+                  {user360Loading ? 'Loading…' : 'No RG limits configured for this user.'}
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <DossierField label="Deposit limit (daily)">{money(user360.responsibleGaming.depositLimitDaily)}</DossierField>
+                  <DossierField label="Loss limit (daily)">{money(user360.responsibleGaming.lossLimitDaily)}</DossierField>
+                  <DossierField label="Stake limit / bet">{money(user360.responsibleGaming.stakeLimitPerBet)}</DossierField>
+                  <DossierField label="Session limit">{user360.responsibleGaming.sessionLimitMinutes != null ? `${user360.responsibleGaming.sessionLimitMinutes}m` : '—'}</DossierField>
+                  <DossierField label="Reality check">{user360.responsibleGaming.realityCheckIntervalMins != null ? `${user360.responsibleGaming.realityCheckIntervalMins}m` : '—'}</DossierField>
+                  <DossierField label="Cooling off until">{formatDt(user360.responsibleGaming.coolingOffUntil)}</DossierField>
+                  <DossierField label="Self-excluded until">{formatDt(user360.responsibleGaming.selfExcludedUntil)}</DossierField>
+                  <DossierField label="Updated">{formatDt(user360.responsibleGaming.updatedAt)}</DossierField>
                 </div>
               )}
             </AdminCard>

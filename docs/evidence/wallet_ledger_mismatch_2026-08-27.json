@@ -1,0 +1,838 @@
+{
+  "event": "WALLET_LEDGER_MISMATCH_INVESTIGATION",
+  "scannedAt": "2026-08-27T16:06:08.656Z",
+  "totalMismatches": 102,
+  "sampleSize": 40,
+  "byType": {
+    "WALLET_ZERO_LEDGER_POSITIVE": 19,
+    "NEGATIVE_LEDGER_SUM": 8,
+    "WALLET_GT_LEDGER": 4,
+    "EMPTY_LEDGER_POSITIVE_WALLET": 7,
+    "WALLET_LT_LEDGER": 2
+  },
+  "byCause": {
+    "TEST_FIXTURE_RESET_WALLET_WITHOUT_LEDGER_REVERSAL": 18,
+    "TEST_DEBIT_WITHOUT_MATCHING_CREDIT_OR_BALANCE_RESET": 6,
+    "TEST_FIXTURE_IMBALANCE": 2,
+    "FIXTURE_OR_SEED_WITHOUT_LEDGER": 1,
+    "MISSING_LEDGER_EVENT_OR_OPENING_BALANCE": 3,
+    "MISSING_LEDGER_CREDIT_OR_DUPLICATE_DEBIT": 2,
+    "EXTRA_LEDGER_OR_UNAPPLIED_WALLET_DEBIT": 1,
+    "MISSING_WALLET_UPDATE_OR_EXTRA_LEDGER_CREDIT": 1,
+    "LEGACY_PRE_LEDGER_OR_MIGRATION": 6
+  },
+  "policy": "FLAG_ONLY_NO_AUTO_REPAIR",
+  "relatedTools": [
+    "scripts/document-ledger-opening-gaps.mjs",
+    "scripts/dr_restore_isolated.mjs",
+    "lib/reconciliationEngine.mjs"
+  ],
+  "rows": [
+    {
+      "user_id": "usr_dfb_test_01",
+      "wallet_id": "wal_usr_dfb_test_01",
+      "wallet_balance": 0,
+      "ledger_sum": 770000,
+      "delta": -770000,
+      "ledger_rows": 83,
+      "mismatchType": "WALLET_ZERO_LEDGER_POSITIVE",
+      "likelyCause": "TEST_FIXTURE_RESET_WALLET_WITHOUT_LEDGER_REVERSAL",
+      "financialRisk": "LOW",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "ADJUSTMENT",
+          "c": 12,
+          "sum": 120000
+        },
+        {
+          "type": "BONUS_CLAIM",
+          "c": 83,
+          "sum": 770000
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_tdfb_a",
+      "wallet_id": "wal_usr_tdfb_a",
+      "wallet_balance": 0,
+      "ledger_sum": 440000,
+      "delta": -440000,
+      "ledger_rows": 44,
+      "mismatchType": "WALLET_ZERO_LEDGER_POSITIVE",
+      "likelyCause": "TEST_FIXTURE_RESET_WALLET_WITHOUT_LEDGER_REVERSAL",
+      "financialRisk": "LOW",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "BONUS_CLAIM",
+          "c": 44,
+          "sum": 440000
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_tdfb_d",
+      "wallet_id": "wal_usr_tdfb_d",
+      "wallet_balance": 0,
+      "ledger_sum": 135000,
+      "delta": -135000,
+      "ledger_rows": 14,
+      "mismatchType": "WALLET_ZERO_LEDGER_POSITIVE",
+      "likelyCause": "TEST_FIXTURE_RESET_WALLET_WITHOUT_LEDGER_REVERSAL",
+      "financialRisk": "LOW",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "BONUS_CLAIM",
+          "c": 14,
+          "sum": 135000
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_conc_800",
+      "wallet_id": "w_conc_800",
+      "wallet_balance": 0,
+      "ledger_sum": -48600,
+      "delta": 48600,
+      "ledger_rows": 123,
+      "mismatchType": "NEGATIVE_LEDGER_SUM",
+      "likelyCause": "TEST_DEBIT_WITHOUT_MATCHING_CREDIT_OR_BALANCE_RESET",
+      "financialRisk": "LOW",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "BET_STAKE",
+          "c": 122,
+          "sum": 48800
+        },
+        {
+          "type": "VIP_TIER_UP",
+          "c": 1,
+          "sum": 200
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_mc_dual",
+      "wallet_id": "wal_mc_dual",
+      "wallet_balance": 50000,
+      "ledger_sum": 1500,
+      "delta": 48500,
+      "ledger_rows": 1,
+      "mismatchType": "WALLET_GT_LEDGER",
+      "likelyCause": "TEST_FIXTURE_IMBALANCE",
+      "financialRisk": "LOW",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "WITHDRAWAL",
+          "c": 1,
+          "sum": 1500
+        },
+        {
+          "type": "WITHDRAWAL_REVERSAL",
+          "c": 1,
+          "sum": 1500
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "user_conc_500",
+      "wallet_id": "wal_conc_500",
+      "wallet_balance": 100,
+      "ledger_sum": -30000,
+      "delta": 30100,
+      "ledger_rows": 75,
+      "mismatchType": "NEGATIVE_LEDGER_SUM",
+      "likelyCause": "TEST_DEBIT_WITHOUT_MATCHING_CREDIT_OR_BALANCE_RESET",
+      "financialRisk": "LOW",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "BET_STAKE",
+          "c": 75,
+          "sum": 30000
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_ref_b02",
+      "wallet_id": "wal_usr_ref_b02",
+      "wallet_balance": 0,
+      "ledger_sum": 26000,
+      "delta": -26000,
+      "ledger_rows": 52,
+      "mismatchType": "WALLET_ZERO_LEDGER_POSITIVE",
+      "likelyCause": "TEST_FIXTURE_RESET_WALLET_WITHOUT_LEDGER_REVERSAL",
+      "financialRisk": "LOW",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "BONUS_CLAIM",
+          "c": 52,
+          "sum": 26000
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_ref_a01",
+      "wallet_id": "wal_usr_ref_a01",
+      "wallet_balance": 0,
+      "ledger_sum": 26000,
+      "delta": -26000,
+      "ledger_rows": 52,
+      "mismatchType": "WALLET_ZERO_LEDGER_POSITIVE",
+      "likelyCause": "TEST_FIXTURE_RESET_WALLET_WITHOUT_LEDGER_REVERSAL",
+      "financialRisk": "LOW",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "BONUS_CLAIM",
+          "c": 52,
+          "sum": 26000
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_conc_500",
+      "wallet_id": "w_conc_500",
+      "wallet_balance": 100,
+      "ledger_sum": -24000,
+      "delta": 24100,
+      "ledger_rows": 60,
+      "mismatchType": "NEGATIVE_LEDGER_SUM",
+      "likelyCause": "TEST_DEBIT_WITHOUT_MATCHING_CREDIT_OR_BALANCE_RESET",
+      "financialRisk": "LOW",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "BET_STAKE",
+          "c": 60,
+          "sum": 24000
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_val_test_101",
+      "wallet_id": "w_val_test_101",
+      "wallet_balance": 1000,
+      "ledger_sum": -21900,
+      "delta": 22900,
+      "ledger_rows": 141,
+      "mismatchType": "NEGATIVE_LEDGER_SUM",
+      "likelyCause": "TEST_DEBIT_WITHOUT_MATCHING_CREDIT_OR_BALANCE_RESET",
+      "financialRisk": "LOW",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "BET_STAKE",
+          "c": 141,
+          "sum": 21900
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_idem_101",
+      "wallet_id": "w_idem_101",
+      "wallet_balance": 700,
+      "ledger_sum": -18300,
+      "delta": 19000,
+      "ledger_rows": 61,
+      "mismatchType": "NEGATIVE_LEDGER_SUM",
+      "likelyCause": "TEST_DEBIT_WITHOUT_MATCHING_CREDIT_OR_BALANCE_RESET",
+      "financialRisk": "LOW",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "BET_STAKE",
+          "c": 61,
+          "sum": 18300
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_payout_acct",
+      "wallet_id": "wal_payout_acct",
+      "wallet_balance": 10530,
+      "ledger_sum": 0,
+      "delta": 10530,
+      "ledger_rows": 0,
+      "mismatchType": "EMPTY_LEDGER_POSITIVE_WALLET",
+      "likelyCause": "FIXTURE_OR_SEED_WITHOUT_LEDGER",
+      "financialRisk": "LOW",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "ADJUSTMENT",
+          "c": 1,
+          "sum": -500
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_g2e_ok_1787844022280",
+      "wallet_id": "wal_usr_g2e_ok_1787844022280",
+      "wallet_balance": 0,
+      "ledger_sum": 10000,
+      "delta": -10000,
+      "ledger_rows": 1,
+      "mismatchType": "WALLET_ZERO_LEDGER_POSITIVE",
+      "likelyCause": "TEST_FIXTURE_RESET_WALLET_WITHOUT_LEDGER_REVERSAL",
+      "financialRisk": "LOW",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "BONUS_CLAIM",
+          "c": 1,
+          "sum": 10000
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_g2e_ok_1787842690171",
+      "wallet_id": "wal_usr_g2e_ok_1787842690171",
+      "wallet_balance": 0,
+      "ledger_sum": 10000,
+      "delta": -10000,
+      "ledger_rows": 1,
+      "mismatchType": "WALLET_ZERO_LEDGER_POSITIVE",
+      "likelyCause": "TEST_FIXTURE_RESET_WALLET_WITHOUT_LEDGER_REVERSAL",
+      "financialRisk": "LOW",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "BONUS_CLAIM",
+          "c": 1,
+          "sum": 10000
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_g2e_ok_1787840629131",
+      "wallet_id": "wal_usr_g2e_ok_1787840629131",
+      "wallet_balance": 0,
+      "ledger_sum": 10000,
+      "delta": -10000,
+      "ledger_rows": 1,
+      "mismatchType": "WALLET_ZERO_LEDGER_POSITIVE",
+      "likelyCause": "TEST_FIXTURE_RESET_WALLET_WITHOUT_LEDGER_REVERSAL",
+      "financialRisk": "LOW",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "BONUS_CLAIM",
+          "c": 1,
+          "sum": 10000
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_stress_100",
+      "wallet_id": "w_stress_100",
+      "wallet_balance": 100,
+      "ledger_sum": -9900,
+      "delta": 10000,
+      "ledger_rows": 66,
+      "mismatchType": "NEGATIVE_LEDGER_SUM",
+      "likelyCause": "TEST_DEBIT_WITHOUT_MATCHING_CREDIT_OR_BALANCE_RESET",
+      "financialRisk": "LOW",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "BET_STAKE",
+          "c": 3618,
+          "sum": 542700
+        },
+        {
+          "type": "VIP_TIER_UP",
+          "c": 3,
+          "sum": 1700
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_demo_player",
+      "wallet_id": "wal_demo_player",
+      "wallet_balance": 10300,
+      "ledger_sum": 300,
+      "delta": 10000,
+      "ledger_rows": 1,
+      "mismatchType": "WALLET_GT_LEDGER",
+      "likelyCause": "MISSING_LEDGER_EVENT_OR_OPENING_BALANCE",
+      "financialRisk": "HIGH",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "BONUS_CLAIM",
+          "c": 1,
+          "sum": 300
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_g2e_ok_1787843946138",
+      "wallet_id": "wal_usr_g2e_ok_1787843946138",
+      "wallet_balance": 0,
+      "ledger_sum": 10000,
+      "delta": -10000,
+      "ledger_rows": 1,
+      "mismatchType": "WALLET_ZERO_LEDGER_POSITIVE",
+      "likelyCause": "TEST_FIXTURE_RESET_WALLET_WITHOUT_LEDGER_REVERSAL",
+      "financialRisk": "LOW",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "BONUS_CLAIM",
+          "c": 1,
+          "sum": 10000
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_g2e_ok_1787846047756",
+      "wallet_id": "wal_usr_g2e_ok_1787846047756",
+      "wallet_balance": 0,
+      "ledger_sum": 10000,
+      "delta": -10000,
+      "ledger_rows": 1,
+      "mismatchType": "WALLET_ZERO_LEDGER_POSITIVE",
+      "likelyCause": "TEST_FIXTURE_RESET_WALLET_WITHOUT_LEDGER_REVERSAL",
+      "financialRisk": "LOW",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "BONUS_CLAIM",
+          "c": 1,
+          "sum": 10000
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_g2e_ok_1787840607145",
+      "wallet_id": "wal_usr_g2e_ok_1787840607145",
+      "wallet_balance": 0,
+      "ledger_sum": 10000,
+      "delta": -10000,
+      "ledger_rows": 1,
+      "mismatchType": "WALLET_ZERO_LEDGER_POSITIVE",
+      "likelyCause": "TEST_FIXTURE_RESET_WALLET_WITHOUT_LEDGER_REVERSAL",
+      "financialRisk": "LOW",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "BONUS_CLAIM",
+          "c": 1,
+          "sum": 10000
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_g2e_bad_1787843946138",
+      "wallet_id": "wal_usr_g2e_bad_1787843946138",
+      "wallet_balance": 0,
+      "ledger_sum": 10000,
+      "delta": -10000,
+      "ledger_rows": 1,
+      "mismatchType": "WALLET_ZERO_LEDGER_POSITIVE",
+      "likelyCause": "TEST_FIXTURE_RESET_WALLET_WITHOUT_LEDGER_REVERSAL",
+      "financialRisk": "LOW",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "BONUS_CLAIM",
+          "c": 1,
+          "sum": 10000
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_g2e_ok_1787840497966",
+      "wallet_id": "wal_usr_g2e_ok_1787840497966",
+      "wallet_balance": 0,
+      "ledger_sum": 10000,
+      "delta": -10000,
+      "ledger_rows": 1,
+      "mismatchType": "WALLET_ZERO_LEDGER_POSITIVE",
+      "likelyCause": "TEST_FIXTURE_RESET_WALLET_WITHOUT_LEDGER_REVERSAL",
+      "financialRisk": "LOW",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "BONUS_CLAIM",
+          "c": 1,
+          "sum": 10000
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_g2e_ok_1787843413799",
+      "wallet_id": "wal_usr_g2e_ok_1787843413799",
+      "wallet_balance": 0,
+      "ledger_sum": 10000,
+      "delta": -10000,
+      "ledger_rows": 1,
+      "mismatchType": "WALLET_ZERO_LEDGER_POSITIVE",
+      "likelyCause": "TEST_FIXTURE_RESET_WALLET_WITHOUT_LEDGER_REVERSAL",
+      "financialRisk": "LOW",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "BONUS_CLAIM",
+          "c": 1,
+          "sum": 10000
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_g2e_bad_1787843862959",
+      "wallet_id": "wal_usr_g2e_bad_1787843862959",
+      "wallet_balance": 0,
+      "ledger_sum": 10000,
+      "delta": -10000,
+      "ledger_rows": 1,
+      "mismatchType": "WALLET_ZERO_LEDGER_POSITIVE",
+      "likelyCause": "TEST_FIXTURE_RESET_WALLET_WITHOUT_LEDGER_REVERSAL",
+      "financialRisk": "LOW",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "BONUS_CLAIM",
+          "c": 1,
+          "sum": 10000
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_dbg_bad_1787843980835",
+      "wallet_id": "wal_usr_dbg_bad_1787843980835",
+      "wallet_balance": 0,
+      "ledger_sum": 10000,
+      "delta": -10000,
+      "ledger_rows": 1,
+      "mismatchType": "WALLET_ZERO_LEDGER_POSITIVE",
+      "likelyCause": "TEST_FIXTURE_RESET_WALLET_WITHOUT_LEDGER_REVERSAL",
+      "financialRisk": "LOW",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "BONUS_CLAIM",
+          "c": 1,
+          "sum": 10000
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_g2e_ok_1787844062493",
+      "wallet_id": "wal_usr_g2e_ok_1787844062493",
+      "wallet_balance": 0,
+      "ledger_sum": 10000,
+      "delta": -10000,
+      "ledger_rows": 1,
+      "mismatchType": "WALLET_ZERO_LEDGER_POSITIVE",
+      "likelyCause": "TEST_FIXTURE_RESET_WALLET_WITHOUT_LEDGER_REVERSAL",
+      "financialRisk": "LOW",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "BONUS_CLAIM",
+          "c": 1,
+          "sum": 10000
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_g2e_ok_1787843862959",
+      "wallet_id": "wal_usr_g2e_ok_1787843862959",
+      "wallet_balance": 0,
+      "ledger_sum": 10000,
+      "delta": -10000,
+      "ledger_rows": 1,
+      "mismatchType": "WALLET_ZERO_LEDGER_POSITIVE",
+      "likelyCause": "TEST_FIXTURE_RESET_WALLET_WITHOUT_LEDGER_REVERSAL",
+      "financialRisk": "LOW",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "BONUS_CLAIM",
+          "c": 1,
+          "sum": 10000
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_wag_5x_101",
+      "wallet_id": "wal_usr_wag_5x_101",
+      "wallet_balance": 5400,
+      "ledger_sum": 100,
+      "delta": 5300,
+      "ledger_rows": 1,
+      "mismatchType": "WALLET_GT_LEDGER",
+      "likelyCause": "MISSING_LEDGER_EVENT_OR_OPENING_BALANCE",
+      "financialRisk": "HIGH",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "BONUS_RELEASE",
+          "c": 4,
+          "sum": 400
+        },
+        {
+          "type": "DEPOSIT",
+          "c": 272,
+          "sum": 27200
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_wdr_101",
+      "wallet_id": "w_wdr_101",
+      "wallet_balance": 3800,
+      "ledger_sum": -1200,
+      "delta": 5000,
+      "ledger_rows": 1,
+      "mismatchType": "NEGATIVE_LEDGER_SUM",
+      "likelyCause": "MISSING_LEDGER_CREDIT_OR_DUPLICATE_DEBIT",
+      "financialRisk": "HIGH",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "WITHDRAWAL",
+          "c": 1,
+          "sum": 1200
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_bnm_match_1",
+      "wallet_id": "w_bnm_match_1",
+      "wallet_balance": 4000,
+      "ledger_sum": -1000,
+      "delta": 5000,
+      "ledger_rows": 1,
+      "mismatchType": "NEGATIVE_LEDGER_SUM",
+      "likelyCause": "MISSING_LEDGER_CREDIT_OR_DUPLICATE_DEBIT",
+      "financialRisk": "HIGH",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "WITHDRAWAL",
+          "c": 1,
+          "sum": 1000
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_loyalty_crm_debug",
+      "wallet_id": "wal_usr_loyalty_crm_debug",
+      "wallet_balance": 5000,
+      "ledger_sum": 200,
+      "delta": 4800,
+      "ledger_rows": 1,
+      "mismatchType": "WALLET_GT_LEDGER",
+      "likelyCause": "MISSING_LEDGER_EVENT_OR_OPENING_BALANCE",
+      "financialRisk": "HIGH",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "VIP_TIER_UP",
+          "c": 1,
+          "sum": 200
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_loyalty_crm_101",
+      "wallet_id": "wal_usr_loyalty_crm_101",
+      "wallet_balance": 5000,
+      "ledger_sum": 9400,
+      "delta": -4400,
+      "ledger_rows": 80,
+      "mismatchType": "WALLET_LT_LEDGER",
+      "likelyCause": "EXTRA_LEDGER_OR_UNAPPLIED_WALLET_DEBIT",
+      "financialRisk": "HIGH",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "DEPOSIT",
+          "c": 1,
+          "sum": 1000
+        },
+        {
+          "type": "VIP_TIER_UP",
+          "c": 3,
+          "sum": 1700
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_invite_promo_01",
+      "wallet_id": "wal_usr_invite_promo_01",
+      "wallet_balance": 0,
+      "ledger_sum": 3000,
+      "delta": -3000,
+      "ledger_rows": 6,
+      "mismatchType": "WALLET_ZERO_LEDGER_POSITIVE",
+      "likelyCause": "MISSING_WALLET_UPDATE_OR_EXTRA_LEDGER_CREDIT",
+      "financialRisk": "HIGH",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "BONUS_CLAIM",
+          "c": 6,
+          "sum": 3000
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_claim_idem_101",
+      "wallet_id": "wal_usr_claim_idem_101",
+      "wallet_balance": 5000,
+      "ledger_sum": 7100,
+      "delta": -2100,
+      "ledger_rows": 71,
+      "mismatchType": "WALLET_LT_LEDGER",
+      "likelyCause": "TEST_FIXTURE_IMBALANCE",
+      "financialRisk": "LOW",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "DEPOSIT",
+          "c": 204,
+          "sum": 20400
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_deposit_lock",
+      "wallet_id": "wal_deposit_lock",
+      "wallet_balance": 1500,
+      "ledger_sum": 0,
+      "delta": 1500,
+      "ledger_rows": 0,
+      "mismatchType": "EMPTY_LEDGER_POSITIVE_WALLET",
+      "likelyCause": "LEGACY_PRE_LEDGER_OR_MIGRATION",
+      "financialRisk": "MEDIUM",
+      "autoRepair": false,
+      "transactionsByType": [],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_wallet_e2e",
+      "wallet_id": "wal_wallet_e2e",
+      "wallet_balance": 1030,
+      "ledger_sum": 0,
+      "delta": 1030,
+      "ledger_rows": 0,
+      "mismatchType": "EMPTY_LEDGER_POSITIVE_WALLET",
+      "likelyCause": "LEGACY_PRE_LEDGER_OR_MIGRATION",
+      "financialRisk": "MEDIUM",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "ADJUSTMENT",
+          "c": 1,
+          "sum": -500
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_repair_win",
+      "wallet_id": "wal_repair_win",
+      "wallet_balance": 1030,
+      "ledger_sum": 0,
+      "delta": 1030,
+      "ledger_rows": 0,
+      "mismatchType": "EMPTY_LEDGER_POSITIVE_WALLET",
+      "likelyCause": "LEGACY_PRE_LEDGER_OR_MIGRATION",
+      "financialRisk": "MEDIUM",
+      "autoRepair": false,
+      "transactionsByType": [
+        {
+          "type": "ADJUSTMENT",
+          "c": 1,
+          "sum": -500
+        }
+      ],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_spin_exp_1787556531125",
+      "wallet_id": "wal_usr_spin_exp_1787556531125",
+      "wallet_balance": 1000,
+      "ledger_sum": 0,
+      "delta": 1000,
+      "ledger_rows": 0,
+      "mismatchType": "EMPTY_LEDGER_POSITIVE_WALLET",
+      "likelyCause": "LEGACY_PRE_LEDGER_OR_MIGRATION",
+      "financialRisk": "MEDIUM",
+      "autoRepair": false,
+      "transactionsByType": [],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_spin_exp_1787497065861",
+      "wallet_id": "wal_usr_spin_exp_1787497065861",
+      "wallet_balance": 1000,
+      "ledger_sum": 0,
+      "delta": 1000,
+      "ledger_rows": 0,
+      "mismatchType": "EMPTY_LEDGER_POSITIVE_WALLET",
+      "likelyCause": "LEGACY_PRE_LEDGER_OR_MIGRATION",
+      "financialRisk": "MEDIUM",
+      "autoRepair": false,
+      "transactionsByType": [],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    },
+    {
+      "user_id": "usr_spin_exp_1787755486058",
+      "wallet_id": "wal_usr_spin_exp_1787755486058",
+      "wallet_balance": 1000,
+      "ledger_sum": 0,
+      "delta": 1000,
+      "ledger_rows": 0,
+      "mismatchType": "EMPTY_LEDGER_POSITIVE_WALLET",
+      "likelyCause": "LEGACY_PRE_LEDGER_OR_MIGRATION",
+      "financialRisk": "MEDIUM",
+      "autoRepair": false,
+      "transactionsByType": [],
+      "note": "Flag-only investigation. Do not auto-repair wallet or rewrite ledger history."
+    }
+  ]
+}

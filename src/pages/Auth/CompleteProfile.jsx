@@ -95,7 +95,7 @@ export default function CompleteProfile() {
       }
 
       if (result.referral?.success) {
-        showToast('Joined via referral. Free bet unlocks after your qualifying first deposit.', 'success');
+        showToast('Joined via referral. Your free bet has been credited.', 'success');
       } else if (result.promoReward) {
         const typeLabel = {
           bonus: 'bonus',
@@ -169,7 +169,8 @@ export default function CompleteProfile() {
               {referralActive && (
                 <p className="register-lead" style={{ marginTop: 8, fontSize: '0.82rem' }}>
                   You&apos;re joining through referral code <strong>{referralCode}</strong>.
-                  Referral reward applies. Initial signup promotions cannot be combined with this referral.
+                  Your referral free bet is credited on signup.
+                  Initial signup promotions cannot be combined with this referral.
                 </p>
               )}
             </div>

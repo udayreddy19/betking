@@ -21,7 +21,7 @@ describe('Admin Authentication & RBAC Middleware', () => {
 
   it('should handle X-Admin-Role dev header fallback', () => {
     const req = { headers: { 'x-admin-role': ADMIN_ROLES.FINANCE_ADMIN, 'x-admin-id': 'finance_user' } };
-    const res = {};
+    const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
     const next = vi.fn();
 
     adminAuth(req, res, next);

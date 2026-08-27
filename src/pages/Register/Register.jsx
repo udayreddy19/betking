@@ -115,7 +115,7 @@ export default function Register() {
         return;
       }
       if (result.referral?.success) {
-        showToast('Joined via referral. Free bet unlocks after your qualifying first deposit.', 'success');
+        showToast('Joined via referral. Your free bet has been credited.', 'success');
       } else if (result.promoReward?.error) {
         showToast(result.promoReward.error, 'info');
       } else if (result.promoReward?.deferred) {
@@ -260,7 +260,7 @@ export default function Register() {
               {referralActive && (
                 <p className="register-promo-hint" style={{ marginTop: 8 }}>
                   You&apos;re joining through referral code <strong>{referralCode}</strong>.
-                  Referral reward applies after your first qualifying deposit.
+                  Your referral free bet is credited on signup.
                   Initial signup promotions cannot be combined with this referral.
                 </p>
               )}

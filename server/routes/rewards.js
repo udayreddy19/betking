@@ -83,6 +83,35 @@ router.get('/referrals/me', requireAuth, async (req, res) => {
   }
 });
 
+router.get('/deposit-freebet/me', requireAuth, async (req, res) => {
+  try {
+    const {
+      listMyDepositFreebetGrants,
+      getDepositFreebetCampaign,
+    } = await import('../../lib/depositFreebetEngine.mjs');
+    const [grants, campaign] = await Promise.all([
+      listMyDepositFreebetGrants(req.user.userId),
+      getDepositFreebetCampaign(),
+    ]);
+    res.json({
+      success: true,
+      grants,
+      campaign: campaign
+        ? {
+            name: campaign.name,
+            enabled: campaign.enabled,
+            minDeposit: campaign.minDeposit,
+            matchPercent: campaign.matchPercent,
+            maxFreeBet: campaign.maxFreeBet,
+            freebetExpiryDays: campaign.freebetExpiryDays,
+          }
+        : null,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message, code: 'DEPOSIT_FREEBET_LIST_FAILED' });
+  }
+});
+
 router.post('/referrals/validate', async (req, res) => {
   try {
     const { validateReferralCode } = await import('../../lib/referralLoyaltyEngine.mjs');

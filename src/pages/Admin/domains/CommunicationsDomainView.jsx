@@ -119,23 +119,40 @@ function BroadcastPanel() {
 
 export default function CommunicationsDomainView({ subModule = 'dispatch-logs' }) {
   const [logs, setLogs] = useState([]);
+  const [outboxEvents, setOutboxEvents] = useState([]);
   const [error, setError] = useState(null);
   const { showToast } = useAdminToast();
 
   useEffect(() => {
     if (subModule === 'broadcast') return undefined;
     let cancelled = false;
-    adminApiClient.get('/communications/logs')
-      .then((data) => {
+    const load = async () => {
+      try {
+        const data = await adminApiClient.get('/communications/logs');
         if (cancelled) return;
         setLogs(data.logs || []);
         setError(data.note || null);
-      })
-      .catch((err) => {
+      } catch (err) {
         if (cancelled) return;
         setLogs([]);
         setError(err.message || 'Failed to load communication logs');
-      });
+      }
+      if (subModule === 'dlq-retry') {
+        try {
+          const outbox = await adminApiClient.get('/outbox/events');
+          if (cancelled) return;
+          const failed = (outbox.events || []).filter((e) =>
+            ['FAILED', 'DEAD_LETTER'].includes(String(e.status || '').toUpperCase()),
+          );
+          setOutboxEvents(failed);
+        } catch {
+          if (!cancelled) setOutboxEvents([]);
+        }
+      } else {
+        setOutboxEvents([]);
+      }
+    };
+    load();
     return () => { cancelled = true; };
   }, [subModule]);
 
@@ -166,11 +183,29 @@ export default function CommunicationsDomainView({ subModule = 'dispatch-logs' }
     [logs],
   );
 
+  const outboxRows = useMemo(
+    () => outboxEvents.map((e) => ({
+      id: e.id,
+      channel: 'OUTBOX',
+      recipient: e.aggregateId || '—',
+      template: e.eventType || '—',
+      provider: e.aggregateType || 'outbox',
+      status: e.status,
+      sentAt: e.createdAt || '—',
+      source: 'outbox',
+    })),
+    [outboxEvents],
+  );
+
   if (subModule === 'broadcast') {
     return <BroadcastPanel />;
   }
 
   const handleRetry = (log) => {
+    if (log.source === 'outbox') {
+      showToast('Outbox events are retried by the outbox worker — no manual webhook retry', 'info');
+      return;
+    }
     adminApiClient.post(`/communications/logs/${encodeURIComponent(log.id)}/retry`)
       .then(() => {
         showToast(`Retry queued for ${log.id}`, 'success');
@@ -182,7 +217,7 @@ export default function CommunicationsDomainView({ subModule = 'dispatch-logs' }
   const titles = {
     'dispatch-logs': ['09 · Notification Delivery Logs', 'Webhook / notification delivery records from the database.', 'Notification Delivery Logs', logs],
     templates: ['09 · Message Templates', 'Distinct templates inferred from recent delivery logs.', 'Active Message Templates', templates],
-    'dlq-retry': ['09 · Dead Letter Queue Retries', 'Failed or rejected deliveries eligible for manual retry.', 'Failed Deliveries (DLQ)', failedLogs],
+    'dlq-retry': ['09 · Dead Letter Queue Retries', 'Webhook DLQ plus outbox FAILED / DEAD_LETTER events.', 'Failed Deliveries (DLQ)', failedLogs],
   };
   const [heading, hint, tableTitle, data] = titles[subModule] || titles['dispatch-logs'];
 
@@ -210,38 +245,60 @@ export default function CommunicationsDomainView({ subModule = 'dispatch-logs' }
           ]}
         />
       ) : (
-        <AdminDataTable
-          title={tableTitle}
-          emptyMessage={subModule === 'dlq-retry' ? 'No failed deliveries in DLQ' : 'No notification deliveries recorded yet'}
-          data={data}
-          columns={[
-            { header: 'Message ID', key: 'id', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.id}</span> },
-            { header: 'Channel', key: 'channel', render: (r) => <span className="admin-badge admin-badge--neutral">{r.channel}</span> },
-            { header: 'Recipient', key: 'recipient', render: (r) => <span style={{ fontWeight: 600 }}>{r.recipient}</span> },
-            { header: 'Template', key: 'template' },
-            { header: 'Provider', key: 'provider' },
-            {
-              header: 'Status',
-              key: 'status',
-              render: (r) => <StatusBadge status={r.status} />,
-            },
-            { header: 'Sent At', key: 'sentAt' },
-            ...(subModule === 'dlq-retry' ? [{
-              header: 'Retry',
-              key: 'retry',
-              sortable: false,
-              render: (r) => (
-                <button
-                  type="button"
-                  onClick={() => handleRetry(r)}
-                  className="admin-btn admin-btn--primary admin-btn--sm"
-                >
-                  Queue Retry
-                </button>
-              ),
-            }] : []),
-          ]}
-        />
+        <>
+          <AdminDataTable
+            title={tableTitle}
+            emptyMessage={subModule === 'dlq-retry' ? 'No failed webhook deliveries in DLQ' : 'No notification deliveries recorded yet'}
+            data={data}
+            columns={[
+              { header: 'Message ID', key: 'id', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.id}</span> },
+              { header: 'Channel', key: 'channel', render: (r) => <span className="admin-badge admin-badge--neutral">{r.channel}</span> },
+              { header: 'Recipient', key: 'recipient', render: (r) => <span style={{ fontWeight: 600 }}>{r.recipient}</span> },
+              { header: 'Template', key: 'template', hideOnMobile: true },
+              { header: 'Provider', key: 'provider', hideOnMobile: true },
+              {
+                header: 'Status',
+                key: 'status',
+                render: (r) => <StatusBadge status={r.status} />,
+              },
+              { header: 'Sent At', key: 'sentAt' },
+              ...(subModule === 'dlq-retry' ? [{
+                header: 'Retry',
+                key: 'retry',
+                sortable: false,
+                render: (r) => (
+                  <button
+                    type="button"
+                    onClick={() => handleRetry(r)}
+                    className="admin-btn admin-btn--primary admin-btn--sm"
+                  >
+                    Queue Retry
+                  </button>
+                ),
+              }] : []),
+            ]}
+          />
+          {subModule === 'dlq-retry' && (
+            <AdminDataTable
+              title="Outbox FAILED / DEAD_LETTER"
+              emptyMessage="No failed outbox events"
+              data={outboxRows}
+              columns={[
+                { header: 'Event ID', key: 'id', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.id}</span> },
+                { header: 'Channel', key: 'channel', render: (r) => <span className="admin-badge admin-badge--neutral">{r.channel}</span> },
+                { header: 'Aggregate', key: 'recipient' },
+                { header: 'Event type', key: 'template' },
+                { header: 'Type', key: 'provider', hideOnMobile: true },
+                {
+                  header: 'Status',
+                  key: 'status',
+                  render: (r) => <StatusBadge status={r.status} />,
+                },
+                { header: 'Created', key: 'sentAt' },
+              ]}
+            />
+          )}
+        </>
       )}
     </div>
   );

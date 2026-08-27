@@ -48,3 +48,47 @@ export function FilterSearch({ value, onChange, placeholder = 'Search...', style
     />
   );
 }
+
+/**
+ * Date-range pair for operational filters (from / to). Values are ISO date strings (yyyy-mm-dd).
+ */
+export function FilterDateRange({
+  from,
+  to,
+  onFromChange,
+  onToChange,
+  fromLabel = 'From',
+  toLabel = 'To',
+  style,
+  className = '',
+}) {
+  return (
+    <div
+      className={`admin-filter-date-range ${className}`}
+      style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', ...style }}
+      role="group"
+      aria-label="Date range"
+    >
+      <label className="admin-filter-date-range__field" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', color: 'var(--admin-text-muted)' }}>
+        <span>{fromLabel}</span>
+        <input
+          type="date"
+          className="admin-input"
+          value={from || ''}
+          onChange={(e) => onFromChange?.(e.target.value)}
+          style={{ minWidth: 140 }}
+        />
+      </label>
+      <label className="admin-filter-date-range__field" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', color: 'var(--admin-text-muted)' }}>
+        <span>{toLabel}</span>
+        <input
+          type="date"
+          className="admin-input"
+          value={to || ''}
+          onChange={(e) => onToChange?.(e.target.value)}
+          style={{ minWidth: 140 }}
+        />
+      </label>
+    </div>
+  );
+}

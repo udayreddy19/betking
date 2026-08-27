@@ -9,9 +9,9 @@ describe('Phase 6 Withdrawal & Fund Reservation Security Tests', () => {
   beforeEach(async () => {
     await query(`INSERT INTO users (user_id, email, password_hash) VALUES ($1, $2, 'hash') ON CONFLICT (user_id) DO NOTHING;`, [userId, `${userId}@example.com`]);
     await query(`
-      INSERT INTO user_profiles (user_id, account_status, kyc_status)
-      VALUES ($1, 'ACTIVE', 'VERIFIED')
-      ON CONFLICT (user_id) DO UPDATE SET kyc_status = 'VERIFIED', account_status = 'ACTIVE';
+      INSERT INTO user_profiles (user_id, account_status, kyc_status, date_of_birth)
+      VALUES ($1, 'ACTIVE', 'VERIFIED', '1990-01-01')
+      ON CONFLICT (user_id) DO UPDATE SET kyc_status = 'VERIFIED', account_status = 'ACTIVE', date_of_birth = '1990-01-01';
     `, [userId]);
     await query(`DELETE FROM kyc_cases WHERE user_id = $1;`, [userId]);
     await query(`

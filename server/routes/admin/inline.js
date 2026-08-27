@@ -823,7 +823,7 @@ router.get('/api/admin/customers', async (req, res) => {
   try {
     const { listCustomers } = await import('../../../lib/adminDomainData.mjs');
     res.json(await listCustomers({
-      limit: Math.min(Number(req.query.limit) || 200, 500),
+      limit: Math.min(Number(req.query.limit) || 200, 5000),
       kycFilter: req.query.kyc || req.query.kycFilter || null,
       q: req.query.q || req.query.search || null,
       searchBy: req.query.searchBy || req.query.by || 'all',
@@ -1041,7 +1041,7 @@ router.get('/api/admin/finance/withdrawals/:id/name', async (req, res) => {
   }
 });
 
-router.post('/api/admin/finance/withdrawals/:id/approve', async (req, res) => {
+router.post('/api/admin/finance/withdrawals/:id/approve', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN'), async (req, res) => {
   const { id } = req.params;
   try {
     const { withdrawalEngine } = await import('../../../lib/withdrawalEngine.mjs');
@@ -1049,22 +1049,70 @@ router.post('/api/admin/finance/withdrawals/:id/approve', async (req, res) => {
       withdrawalId: id,
       adminId: req.admin?.id || 'admin',
       decision: 'APPROVE',
+      reason: req.body?.reason || '',
+      forceApprove: Boolean(req.body?.forceApprove),
+    });
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    const action = result.status === 'PENDING_CHECKER'
+      ? 'WITHDRAWAL_MAKER_REVIEW'
+      : (result.role === 'checker' ? 'WITHDRAWAL_CHECKER_APPROVED' : 'WITHDRAWAL_APPROVED');
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: id,
+      action,
+      details: {
+        forceApprove: Boolean(req.body?.forceApprove),
+        reason: req.body?.reason || null,
+        riskLevel: result.riskLevel || null,
+        status: result.status,
+        role: result.role || null,
+        makerAdminId: result.makerAdminId || null,
+        checkerAdminId: result.checkerAdminId || null,
+        idempotent: Boolean(result.idempotent),
+      },
+    });
+    res.json({
+      success: true,
+      requestId: id,
+      status: result.status,
+      role: result.role || null,
+      makerAdminId: result.makerAdminId || null,
+      checkerAdminId: result.checkerAdminId || null,
+      payoutTriggered: result.status === 'APPROVED',
+      message: result.message || null,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    const status = err.status || (err.message?.includes('not found') ? 404 : 400);
+    res.status(status).json({ success: false, error: err.message, code: err.code });
+  }
+});
+
+router.post('/api/admin/finance/withdrawals/:id/hold', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN'), async (req, res) => {
+  const { id } = req.params;
+  const reason = String(req.body?.reason || 'Held for risk review').trim();
+  try {
+    const { withdrawalEngine } = await import('../../../lib/withdrawalEngine.mjs');
+    const result = await withdrawalEngine.reviewWithdrawal({
+      withdrawalId: id,
+      adminId: req.admin?.id || 'admin',
+      decision: 'HOLD',
+      reason,
     });
     const { logAdminAction } = await import('../../middleware/auditLogger.js');
     await logAdminAction({
       actorId: req.admin?.id || 'admin',
       targetId: id,
-      action: 'WITHDRAWAL_APPROVED',
-      details: {},
+      action: 'WITHDRAWAL_HELD',
+      details: { reason, riskLevel: result.riskLevel || null, riskScore: result.riskScore || null },
     });
-    res.json({ success: true, requestId: id, status: result.status, payoutTriggered: true, timestamp: new Date().toISOString() });
+    res.json({ success: true, requestId: id, status: 'HOLD', reason, timestamp: new Date().toISOString() });
   } catch (err) {
-    const status = err.message?.includes('not found') ? 404 : 400;
-    res.status(status).json({ success: false, error: err.message });
+    res.status(err.status || 400).json({ success: false, error: err.message, code: err.code });
   }
 });
 
-router.post('/api/admin/finance/withdrawals/:id/reject', async (req, res) => {
+router.post('/api/admin/finance/withdrawals/:id/reject', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN'), async (req, res) => {
   const { id } = req.params;
   const reason = String(req.body?.reason || '').trim();
   if (!reason) return res.status(400).json({ success: false, error: 'reason required' });
@@ -1188,12 +1236,59 @@ router.get('/api/admin/growth/promotions', async (req, res) => {
   }
 });
 
+router.get('/api/admin/growth/promo-roi', async (req, res) => {
+  try {
+    const { getPromoRoiAnalytics } = await import('../../../lib/promoRoiAnalytics.mjs');
+    const data = await getPromoRoiAnalytics({
+      limit: Number(req.query.limit) || 50,
+      from: req.query.from || null,
+      to: req.query.to || null,
+    });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ success: false, rows: [], error: err.message });
+  }
+});
+
+router.get('/api/admin/growth/dashboard', requireRole('SUPER_ADMIN', 'MARKETING_ADMIN', 'OPERATIONS_ADMIN', 'FINANCE_ADMIN'), async (req, res) => {
+  try {
+    const { getGrowthDashboard } = await import('../../../lib/growthDashboard.mjs');
+    res.json(await getGrowthDashboard());
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 router.get('/api/admin/growth/vip-tiers', async (req, res) => {
   try {
     const { listVipTierCatalog } = await import('../../../lib/adminDomainData.mjs');
     res.json(await listVipTierCatalog());
   } catch (err) {
     res.status(500).json({ tiers: [], error: err.message });
+  }
+});
+
+router.get('/api/admin/growth/vip-dashboard', async (req, res) => {
+  try {
+    const { getVipAdminDashboard } = await import('../../../lib/vipEngine.mjs');
+    res.json(await getVipAdminDashboard());
+  } catch (err) {
+    res.status(500).json({ success: false, tiers: [], error: err.message });
+  }
+});
+
+router.patch('/api/admin/growth/vip-dashboard/override', async (req, res) => {
+  try {
+    const { adminOverrideVipTier } = await import('../../../lib/vipEngine.mjs');
+    const result = await adminOverrideVipTier({
+      userId: req.body?.userId,
+      newTier: req.body?.newTier || req.body?.tier,
+      reason: req.body?.reason || '',
+      adminId: req.admin?.id || req.admin?.email || 'admin',
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 400).json({ success: false, error: err.message, code: err.code });
   }
 });
 
@@ -1212,6 +1307,7 @@ router.post('/api/admin/growth/signup-codes', async (req, res) => {
     const { createSignupPromoCode } = await import('../../../lib/signupPromoCodes.mjs');
     const created = await createSignupPromoCode({
       ...req.body,
+      inviteOnly: req.body?.inviteOnly ?? req.body?.isInviteOnly,
       createdBy: req.admin?.id || req.admin?.adminId || 'admin',
     });
     const { logAdminAction } = await import('../../middleware/auditLogger.js');
@@ -1225,9 +1321,37 @@ router.post('/api/admin/growth/signup-codes', async (req, res) => {
         amount: created.amount,
         maxPerUser: created.maxPerUser,
         maxRedemptions: created.maxRedemptions,
+        inviteOnly: created.inviteOnly,
       },
     });
     res.status(201).json({ success: true, code: created });
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message, code: err.code });
+  }
+});
+
+router.post('/api/admin/growth/signup-codes/:id/send-invites', async (req, res) => {
+  try {
+    const { sendSignupPromoInvites } = await import('../../../lib/signupPromoCodes.mjs');
+    const adminId = req.admin?.id || req.admin?.adminId || 'admin';
+    const result = await sendSignupPromoInvites({
+      codeId: req.params.id,
+      emails: req.body?.emails || req.body?.email || [],
+      adminId,
+    });
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    await logAdminAction({
+      actorId: adminId,
+      targetId: req.params.id,
+      action: 'SIGNUP_PROMO_INVITES_SENT',
+      details: {
+        code: result.code,
+        sent: result.sent,
+        failed: result.failed,
+        inviteOnly: result.inviteOnly,
+      },
+    });
+    res.json({ success: true, ...result });
   } catch (err) {
     res.status(err.status || 500).json({ success: false, error: err.message, code: err.code });
   }
@@ -1250,6 +1374,282 @@ router.patch('/api/admin/growth/signup-codes/:id/toggle', async (req, res) => {
   }
 });
 
+router.get('/api/admin/growth/deposit-freebet', async (req, res) => {
+  try {
+    const {
+      getDepositFreebetCampaign,
+      getDepositFreebetStats,
+      listDepositFreebetGrants,
+    } = await import('../../../lib/depositFreebetEngine.mjs');
+    const [campaign, stats, grants] = await Promise.all([
+      getDepositFreebetCampaign(),
+      getDepositFreebetStats(),
+      listDepositFreebetGrants({
+        limit: Number(req.query.limit) || 100,
+        status: req.query.status || null,
+        q: req.query.q || null,
+      }),
+    ]);
+    res.json({ success: true, campaign, stats, grants });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message, campaign: null, grants: [] });
+  }
+});
+
+router.put('/api/admin/growth/deposit-freebet', async (req, res) => {
+  try {
+    const { upsertDepositFreebetCampaign } = await import('../../../lib/depositFreebetEngine.mjs');
+    const adminId = req.admin?.id || req.admin?.adminId || 'admin';
+    const result = await upsertDepositFreebetCampaign(req.body || {}, { adminId });
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    const enabledChanged = Boolean(result.before?.enabled) !== Boolean(result.campaign?.enabled);
+    await logAdminAction({
+      actorId: adminId,
+      targetId: result.campaign?.id,
+      action: enabledChanged
+        ? (result.campaign.enabled ? 'DEPOSIT_FREEBET_PROMOTION_ENABLED' : 'DEPOSIT_FREEBET_PROMOTION_DISABLED')
+        : 'DEPOSIT_FREEBET_PROMOTION_UPDATED',
+      details: { before: result.before, after: result.campaign },
+    });
+    res.json({ success: true, campaign: result.campaign });
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message, code: err.code });
+  }
+});
+
+router.post('/api/admin/growth/deposit-freebet/grants/:id/send-email', async (req, res) => {
+  try {
+    const { sendDepositFreebetGrantEmail } = await import('../../../lib/depositFreebetEngine.mjs');
+    const adminId = req.admin?.id || req.admin?.adminId || 'admin';
+    const result = await sendDepositFreebetGrantEmail({
+      grantId: req.params.id,
+      adminId,
+      resend: Boolean(req.body?.resend),
+    });
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    await logAdminAction({
+      actorId: adminId,
+      targetId: req.params.id,
+      action: req.body?.resend ? 'FREEBET_EMAIL_RESENT' : 'FREEBET_EMAIL_SENT',
+      details: { status: result.status, messageId: result.messageId, error: result.error || null },
+    });
+    res.json({ success: result.success, ...result });
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message, code: err.code });
+  }
+});
+
+router.get('/api/admin/growth/deposit-freebet/targeted', async (req, res) => {
+  try {
+    const { listTargetedDepositFreebetCampaigns } = await import('../../../lib/depositFreebetEngine.mjs');
+    const campaigns = await listTargetedDepositFreebetCampaigns({ limit: Number(req.query.limit) || 100 });
+    res.json({ success: true, campaigns });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message, campaigns: [] });
+  }
+});
+
+router.post('/api/admin/growth/deposit-freebet/targeted', async (req, res) => {
+  try {
+    const {
+      createTargetedDepositFreebetCampaign,
+    } = await import('../../../lib/depositFreebetEngine.mjs');
+    const adminId = req.admin?.id || req.admin?.adminId || 'admin';
+    const campaign = await createTargetedDepositFreebetCampaign(req.body || {}, { adminId });
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    await logAdminAction({
+      actorId: adminId,
+      targetId: campaign.id,
+      action: 'PROMOTION_CREATED',
+      details: { type: 'TARGETED_DEPOSIT_FREEBET', campaign },
+    });
+    res.status(201).json({ success: true, campaign });
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message, code: err.code });
+  }
+});
+
+router.get('/api/admin/growth/deposit-freebet/targeted/:id', async (req, res) => {
+  try {
+    const { getTargetedDepositFreebetCampaign } = await import('../../../lib/depositFreebetEngine.mjs');
+    const data = await getTargetedDepositFreebetCampaign(req.params.id);
+    if (!data) return res.status(404).json({ success: false, error: 'Not found' });
+    res.json({ success: true, ...data });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/api/admin/growth/deposit-freebet/targeted/:id/users', async (req, res) => {
+  try {
+    const {
+      assignUsersToDepositFreebetCampaign,
+      syncTargetedDepositFreebetAudience,
+    } = await import('../../../lib/depositFreebetEngine.mjs');
+    const adminId = req.admin?.id || req.admin?.adminId || 'admin';
+    const body = req.body || {};
+    let result;
+    if (body.segmentId || body.segmentIds || body.excludeSegmentIds || body.vipTiers || body.syncAudience) {
+      result = await syncTargetedDepositFreebetAudience(req.params.id, {
+        segmentId: body.segmentId,
+        segmentIds: body.segmentIds,
+        excludeSegmentIds: body.excludeSegmentIds,
+        excludeUserIds: body.excludeUserIds || [],
+        vipTiers: body.vipTiers,
+        userIds: body.userIds || [],
+        replace: Boolean(body.replace),
+        adminId,
+      });
+    } else {
+      result = await assignUsersToDepositFreebetCampaign({
+        promotionId: req.params.id,
+        userIds: body.userIds || [],
+        adminId,
+      });
+    }
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    await logAdminAction({
+      actorId: adminId,
+      targetId: req.params.id,
+      action: 'PROMOTION_USERS_ASSIGNED',
+      details: result,
+    });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message, code: err.code });
+  }
+});
+
+router.delete('/api/admin/growth/deposit-freebet/targeted/:id/users/:userId', async (req, res) => {
+  try {
+    const { removeUserFromDepositFreebetCampaign } = await import('../../../lib/depositFreebetEngine.mjs');
+    await removeUserFromDepositFreebetCampaign({
+      promotionId: req.params.id,
+      userId: req.params.userId,
+    });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/api/admin/growth/deposit-freebet/targeted/preview-audience', requireRole('SUPER_ADMIN', 'MARKETING_ADMIN', 'OPERATIONS_ADMIN'), async (req, res) => {
+  try {
+    const { previewTargetedDepositFreebetAudience } = await import('../../../lib/depositFreebetEngine.mjs');
+    const body = req.body || {};
+    const data = await previewTargetedDepositFreebetAudience({
+      userIds: body.userIds || [],
+      segmentId: body.segmentId || null,
+      segmentIds: body.segmentIds || [],
+      excludeSegmentIds: body.excludeSegmentIds || [],
+      excludeUserIds: body.excludeUserIds || [],
+      vipTiers: body.vipTiers || [],
+      limit: Number(body.limit) || 50,
+    });
+    res.json(data);
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message, code: err.code });
+  }
+});
+
+router.post('/api/admin/growth/deposit-freebet/targeted/:id/dispatch', async (req, res) => {
+  try {
+    const { dispatchTargetedDepositFreebetEmails } = await import('../../../lib/depositFreebetEngine.mjs');
+    const adminId = req.admin?.id || req.admin?.adminId || 'admin';
+    const result = await dispatchTargetedDepositFreebetEmails({
+      promotionId: req.params.id,
+      activate: req.body?.activate !== false,
+      adminId,
+    });
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    await logAdminAction({
+      actorId: adminId,
+      targetId: req.params.id,
+      action: 'PROMOTION_EMAIL_DISPATCHED',
+      details: result,
+    });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message, code: err.code });
+  }
+});
+
+router.patch('/api/admin/growth/deposit-freebet/targeted/:id/status', async (req, res) => {
+  try {
+    const { setTargetedDepositFreebetStatus } = await import('../../../lib/depositFreebetEngine.mjs');
+    const adminId = req.admin?.id || req.admin?.adminId || 'admin';
+    const campaign = await setTargetedDepositFreebetStatus(req.params.id, req.body?.status, { adminId });
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    const action = String(req.body?.status || '').toUpperCase() === 'ACTIVE'
+      ? 'PROMOTION_RESUMED'
+      : 'PROMOTION_PAUSED';
+    await logAdminAction({
+      actorId: adminId,
+      targetId: req.params.id,
+      action,
+      details: { status: campaign.status },
+    });
+    res.json({ success: true, campaign });
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message, code: err.code });
+  }
+});
+
+router.delete('/api/admin/growth/deposit-freebet/targeted/:id', async (req, res) => {
+  try {
+    const { deleteTargetedDepositFreebetCampaign } = await import('../../../lib/depositFreebetEngine.mjs');
+    const adminId = req.admin?.id || req.admin?.adminId || 'admin';
+    const campaign = await deleteTargetedDepositFreebetCampaign(req.params.id, { adminId });
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    await logAdminAction({
+      actorId: adminId,
+      targetId: req.params.id,
+      action: 'PROMOTION_DELETED',
+      details: {
+        previousCode: campaign.previousCode,
+        retiredCode: campaign.retiredCode,
+        status: campaign.status,
+      },
+    });
+    res.json({ success: true, campaign });
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message, code: err.code });
+  }
+});
+
+router.get('/api/admin/growth/promo-abuse-alerts', async (req, res) => {
+  try {
+    const { listPromoAbuseAlerts } = await import('../../../lib/promotionAbuseEngine.mjs');
+    res.json(await listPromoAbuseAlerts({
+      limit: Number(req.query.limit) || 100,
+      status: req.query.status || null,
+    }));
+  } catch (err) {
+    res.status(500).json({ success: false, alerts: [], error: err.message });
+  }
+});
+
+router.post('/api/admin/growth/promo-abuse-alerts/:id/resolve', async (req, res) => {
+  try {
+    const { resolvePromoAbuseAlert } = await import('../../../lib/promotionAbuseEngine.mjs');
+    const result = await resolvePromoAbuseAlert(req.params.id, {
+      status: req.body?.status || 'RESOLVED',
+      adminId: req.admin?.id || req.admin?.email || 'admin',
+      notes: req.body?.notes || req.body?.reason || null,
+    });
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: req.params.id,
+      action: 'PROMO_ABUSE_ALERT_RESOLVED',
+      details: { status: result.alert?.status, notes: req.body?.notes || null },
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message });
+  }
+});
+
 router.get('/api/admin/growth/referrals', async (req, res) => {
   try {
     const { listReferralsAdmin } = await import('../../../lib/referralLoyaltyEngine.mjs');
@@ -1260,6 +1660,19 @@ router.get('/api/admin/growth/referrals', async (req, res) => {
     }));
   } catch (err) {
     res.status(500).json({ referrals: [], error: err.message });
+  }
+});
+
+router.get('/api/admin/growth/referrals/analytics', async (req, res) => {
+  try {
+    const { getReferralAnalytics } = await import('../../../lib/referralLoyaltyEngine.mjs');
+    res.json(await getReferralAnalytics({
+      from: req.query.from || null,
+      to: req.query.to || null,
+      limit: Number(req.query.limit) || 25,
+    }));
+  } catch (err) {
+    res.status(500).json({ success: false, topReferrers: [], funnel: {}, error: err.message });
   }
 });
 
@@ -1372,7 +1785,89 @@ router.post('/api/admin/growth/segments', adminAuth, requireRole('SUPER_ADMIN', 
     });
     res.json(result);
   } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
+    res.status(err.status || 400).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/api/admin/growth/segments/preview', adminAuth, requireRole('SUPER_ADMIN', 'MARKETING_ADMIN', 'OPERATIONS_ADMIN'), async (req, res) => {
+  try {
+    const { previewCustomerSegment } = await import('../../../lib/crmEngine.mjs');
+    const body = req.body || {};
+    res.json(await previewCustomerSegment({
+      segmentId: body.segmentId || req.query.segmentId || null,
+      rules: body.rules || null,
+      limit: Number(body.limit || req.query.limit) || 50,
+    }));
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message, matched: 0, sample: [] });
+  }
+});
+
+router.post('/api/admin/growth/segments/:id/refresh', adminAuth, requireRole('SUPER_ADMIN', 'MARKETING_ADMIN'), async (req, res) => {
+  try {
+    const { refreshCustomerSegmentMemberships } = await import('../../../lib/crmEngine.mjs');
+    const result = await refreshCustomerSegmentMemberships(req.params.id);
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: result.segmentId,
+      action: 'CRM_SEGMENT_REFRESH',
+      details: { matched: result.matched, assigned: result.assigned },
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message });
+  }
+});
+
+router.get('/api/admin/growth/segments/:id/members', adminAuth, requireRole('SUPER_ADMIN', 'MARKETING_ADMIN', 'OPERATIONS_ADMIN'), async (req, res) => {
+  try {
+    const { listSegmentMembers } = await import('../../../lib/crmEngine.mjs');
+    res.json(await listSegmentMembers(req.params.id, {
+      limit: Number(req.query.limit) || 50,
+      offset: Number(req.query.offset) || 0,
+    }));
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message, members: [] });
+  }
+});
+
+router.patch('/api/admin/growth/segments/:id', adminAuth, requireRole('SUPER_ADMIN', 'MARKETING_ADMIN'), async (req, res) => {
+  try {
+    const { updateCustomerSegment } = await import('../../../lib/crmEngine.mjs');
+    const result = await updateCustomerSegment(req.params.id, {
+      name: req.body?.name,
+      description: req.body?.description,
+      rules: req.body?.rules,
+      autoEvaluate: req.body?.autoEvaluate,
+    });
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: req.params.id,
+      action: 'SEGMENT_UPDATED',
+      details: { name: result.segment?.name },
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message, code: err.code });
+  }
+});
+
+router.delete('/api/admin/growth/segments/:id', adminAuth, requireRole('SUPER_ADMIN', 'MARKETING_ADMIN'), async (req, res) => {
+  try {
+    const { deleteCustomerSegment } = await import('../../../lib/crmEngine.mjs');
+    const result = await deleteCustomerSegment(req.params.id);
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: result.segmentId,
+      action: 'CRM_SEGMENT_DELETED',
+      details: {},
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message });
   }
 });
 
@@ -1746,7 +2241,7 @@ router.post('/api/v1/admin/tenants/create', async (req, res) => {
   }
 });
 
-router.get('/api/v1/admin/operations/incidents', async (req, res) => {
+router.get(['/api/admin/operations/incidents', '/api/v1/admin/operations/incidents'], async (req, res) => {
   try {
     const { query } = await import('../../../db/pg.js');
     const incRes = await query(`
@@ -1757,7 +2252,7 @@ router.get('/api/v1/admin/operations/incidents', async (req, res) => {
     `);
     res.json({ success: true, count: incRes.rows.length, incidents: incRes.rows });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: err.message, incidents: [] });
   }
 });
 

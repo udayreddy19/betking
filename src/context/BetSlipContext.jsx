@@ -52,13 +52,17 @@ function applyOddsUpdatesToBets(currentBets, updates = []) {
       && (u.selectionId === bet.selection || u.selectionId === bet.selectionId)
     ));
     if (!hit) return bet;
+    const previousOdds = hit.previousOdds ?? hit.oldOdds ?? bet.odds;
+    const newOdds = Number(hit.odds ?? hit.newOdds);
+    if (!Number.isFinite(newOdds)) return bet;
     return {
       ...bet,
-      previousOdds: hit.previousOdds ?? bet.odds,
-      odds: Number(hit.odds),
+      previousOdds: Number.isFinite(Number(previousOdds)) ? Number(previousOdds) : bet.odds,
+      odds: newOdds,
       oddsChanged: true,
+      oddsStatus: ODDS_STATUS.CHANGED,
       ...(hit.marketId ? { marketId: hit.marketId } : {}),
-      ...(hit.selectionId ? { selection: hit.selectionId } : {}),
+      ...(hit.selectionId ? { selection: hit.selectionId, selectionId: hit.selectionId } : {}),
     };
   });
 }
@@ -75,14 +79,25 @@ function mergeQuotedSelectionsIntoBets(currentBets, quotedSelections = [], updat
       u.matchId === bet.matchId
       && (u.selectionId === bet.selection || u.selectionId === bet.selectionId)
     ));
+    const status = String(row.status || row.marketStatus || '').toUpperCase();
+    const unavailable = ['SUSPENDED', 'CLOSED', 'UNAVAILABLE', 'LOCKED'].includes(status)
+      || row.available === false;
     return {
       ...bet,
       odds: Number(row.odds),
       ...(row.marketId ? { marketId: row.marketId } : {}),
-      ...(row.selectionId ? { selection: row.selectionId } : {}),
+      ...(row.selectionId ? { selection: row.selectionId, selectionId: row.selectionId } : {}),
+      ...(unavailable ? {
+        marketStatus: status || 'SUSPENDED',
+        selectionUnavailable: true,
+      } : {
+        selectionUnavailable: false,
+        marketStatus: row.status || row.marketStatus || bet.marketStatus,
+      }),
       ...(changed ? {
         previousOdds: row.previousOdds ?? bet.odds,
         oddsChanged: true,
+        oddsStatus: ODDS_STATUS.CHANGED,
       } : {}),
     };
   });
@@ -776,10 +791,19 @@ export function BetSlipProvider({ children }) {
 
         const handlePlacementOddsRejection = (result, workingBets) => {
           if (isNonAcceptableMarketError(result)) {
+            const code = String(result.code || '').toUpperCase();
+            const nextBets = workingBets.map((bet) => ({
+              ...bet,
+              selectionUnavailable: true,
+              marketStatus: code || 'UNAVAILABLE',
+            }));
+            betsRef.current = nextBets;
+            setBets(nextBets);
             return {
               success: false,
               error: result.error || 'This market is not available right now.',
               code: result.code,
+              marketUnavailable: true,
             };
           }
           if (!isOddsChangedResponse(result)) return result;

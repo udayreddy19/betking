@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { IoClose, IoSettingsOutline } from '../../icons';
 import { useBetSlip } from '../../context/BetSlipContext';
 import BetSlipFooter from './BetSlipFooter';
-import { MIN_STAKE_INR, BONUS_MIN_BET_ODDS, QUICK_STAKE_PRESETS, sanitizeStakeInput } from '../../utils/wageringRules';
+import { MIN_STAKE_INR, MAX_STAKE_INR, BONUS_MIN_BET_ODDS, QUICK_STAKE_PRESETS, sanitizeStakeInput } from '../../utils/wageringRules';
 import { formatOddsChangeAnnouncement, ODDS_STATUS } from '../../utils/oddsChangeHandler';
 import './BetSlip.css';
 
@@ -94,6 +94,7 @@ export default function BetSlip({ showFooter = true, hidePerBetStakes = false })
           />
           <div className="betslip-settings-panel__info">
             <p><strong>Min stake:</strong> ₹{MIN_STAKE_INR}</p>
+            <p><strong>Max stake:</strong> ₹{MAX_STAKE_INR.toLocaleString()} (server-enforced)</p>
             <p><strong>Bonus:</strong> odds ≥ {BONUS_MIN_BET_ODDS.toFixed(2)}, rotate 5× before withdrawing winnings</p>
             <p><strong>Free bet:</strong> any odds, like cash (profit only)</p>
             <p>Verify Aadhaar and PAN to withdraw. Bonus itself cannot be withdrawn.</p>
@@ -142,13 +143,27 @@ export default function BetSlip({ showFooter = true, hidePerBetStakes = false })
 
           return (
             <div
-              className={`betslip-bet${conflict ? ' betslip-bet--conflict' : ''}${bet.oddsChanged ? ' betslip-bet--odds-updated' : ''}`}
+              className={`betslip-bet${conflict ? ' betslip-bet--conflict' : ''}${bet.oddsChanged ? ' betslip-bet--odds-updated' : ''}${bet.selectionUnavailable ? ' betslip-bet--unavailable' : ''}`}
               key={bet.id}
             >
               {conflict && (
                 <div className="betslip-bet-alert" role="alert">
                   <span className="betslip-bet-alert__icon">!</span>
                   <span>{conflict.message}</span>
+                </div>
+              )}
+
+              {bet.selectionUnavailable && !conflict && (
+                <div className="betslip-bet-alert betslip-bet-alert--unavailable" role="alert">
+                  <strong>Selection unavailable.</strong>
+                  <span className="betslip-bet-alert__detail">
+                    {bet.marketStatus === 'SUSPENDED' || bet.marketStatus === 'MARKET_SUSPENDED'
+                      ? 'This market is suspended. Remove the selection or wait for it to reopen.'
+                      : 'This market or selection is not available for betting.'}
+                  </span>
+                  <button type="button" className="betslip-bet-clear-btn" onClick={() => removeBet(bet.id)}>
+                    Remove selection
+                  </button>
                 </div>
               )}
 

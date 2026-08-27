@@ -4,6 +4,8 @@ import AdminDataTable from '../components/AdminDataTable';
 import { useAdminToast } from '../components/AdminToastContext';
 import { StatusBadge } from '../components/AdminBadge';
 import AdminConfirmDialog from '../components/AdminConfirmDialog';
+import AdminPageHeader from '../components/AdminPageHeader';
+import AdminFilterBar, { FilterDateRange } from '../components/AdminFilterBar';
 
 function money(n) {
   if (n == null || Number.isNaN(Number(n))) return '—';
@@ -20,14 +22,42 @@ function matchBadge(bm) {
   return { label: bm.nameMatch || '—', tone: 'neutral' };
 }
 
+function riskNeedsForce(level) {
+  const l = String(level || '').toUpperCase();
+  return l === 'HIGH' || l === 'CRITICAL';
+}
+
+/** CRITICAL on checker stage requires force+reason; maker step never does. */
+function approveNeedsForce(row) {
+  const l = String(row?.riskLevel || '').toUpperCase();
+  const st = String(row?.status || '').toUpperCase();
+  return st === 'PENDING_CHECKER' && l === 'CRITICAL';
+}
+
+function approveActionLabel(row) {
+  const st = String(row?.status || '').toUpperCase();
+  const l = String(row?.riskLevel || '').toUpperCase();
+  if (st === 'PENDING_CHECKER') {
+    return l === 'CRITICAL' ? 'Force checker approve' : 'Checker approve';
+  }
+  if (l === 'HIGH' || l === 'CRITICAL') return 'Maker review';
+  return 'Approve';
+}
+
 function MakerCheckerPanel() {
   const [withdrawals, setWithdrawals] = useState([]);
   const [error, setError] = useState(null);
   const [approveTarget, setApproveTarget] = useState(null);
   const [rejectTarget, setRejectTarget] = useState(null);
+  const [holdTarget, setHoldTarget] = useState(null);
   const [nameLookup, setNameLookup] = useState(null);
   const [fetchingNameId, setFetchingNameId] = useState(null);
   const [processing, setProcessing] = useState(false);
+  const [filterRisk, setFilterRisk] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterUser, setFilterUser] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const { showToast } = useAdminToast();
 
   const load = () => {
@@ -43,6 +73,25 @@ function MakerCheckerPanel() {
   };
 
   useEffect(() => { load(); }, []);
+
+  const filtered = withdrawals.filter((w) => {
+    if (filterRisk && String(w.riskLevel || '').toUpperCase() !== filterRisk) return false;
+    if (filterStatus && String(w.status || '').toUpperCase() !== filterStatus) return false;
+    if (filterUser) {
+      const q = filterUser.toLowerCase();
+      const hay = `${w.userId || ''} ${w.userName || ''} ${w.id || ''}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    if (dateFrom || dateTo) {
+      const ts = w.createdAt || w.created_at || w.requestedAt;
+      if (ts) {
+        const d = new Date(ts).toISOString().slice(0, 10);
+        if (dateFrom && d < dateFrom) return false;
+        if (dateTo && d > dateTo) return false;
+      }
+    }
+    return true;
+  });
 
   const handleFetchName = async (row) => {
     if (!row?.id || fetchingNameId) return;
@@ -68,18 +117,52 @@ function MakerCheckerPanel() {
     }
   };
 
-  const handleApproveWithdrawal = async () => {
+  const handleApproveWithdrawal = async (reason) => {
     if (!approveTarget) return;
+    const force = approveNeedsForce(approveTarget);
+    if (force && !String(reason || '').trim()) {
+      showToast('Force-approve requires a reason', 'error');
+      return;
+    }
     setProcessing(true);
     try {
-      await adminApiClient.post(`/finance/withdrawals/${approveTarget.id}/approve`, { reqId: approveTarget.id });
-      showToast(`Withdrawal ${approveTarget.id} approved.`, 'success');
+      const data = await adminApiClient.post(`/finance/withdrawals/${approveTarget.id}/approve`, {
+        reqId: approveTarget.id,
+        reason: reason || '',
+        forceApprove: force,
+      });
+      const st = String(data?.status || '').toUpperCase();
+      showToast(
+        st === 'PENDING_CHECKER'
+          ? `Maker review recorded for ${approveTarget.id} — awaiting checker.`
+          : force
+            ? `Withdrawal ${approveTarget.id} force-approved by checker.`
+            : `Withdrawal ${approveTarget.id} approved.`,
+        'success',
+      );
       load();
     } catch (err) {
       showToast(err.message || 'Approval failed', 'error');
     } finally {
       setProcessing(false);
       setApproveTarget(null);
+    }
+  };
+
+  const handleHoldWithdrawal = async (reason) => {
+    if (!holdTarget) return;
+    setProcessing(true);
+    try {
+      await adminApiClient.post(`/finance/withdrawals/${holdTarget.id}/hold`, {
+        reason: reason || 'Held for risk review',
+      });
+      showToast(`Withdrawal ${holdTarget.id} held.`, 'success');
+      load();
+    } catch (err) {
+      showToast(err.message || 'Hold failed', 'error');
+    } finally {
+      setProcessing(false);
+      setHoldTarget(null);
     }
   };
 
@@ -100,21 +183,56 @@ function MakerCheckerPanel() {
 
   return (
     <div>
-      <div style={{ marginBottom: '16px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>06 · Maker-Checker Withdrawal Approvals</h2>
-        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
-          Pending withdrawals from PostgreSQL. Approve or reject with an audit trail.
-          Beneficiary ↔ KYC name match is evaluated server-side from verified sources only.
-          Use Fetch name to view the declared account-holder name on the request.
-        </p>
-        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
-      </div>
+      <AdminPageHeader
+        title="Withdrawal queue"
+        subtitle="Pending withdrawals — risk, name-match, and maker≠checker are enforced server-side. Flag-only visibility here."
+        breadcrumbs={[{ label: 'Finance' }, { label: 'Withdrawals' }]}
+        banner={error ? <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p> : null}
+      />
+
+      <AdminFilterBar label="Filters" style={{ marginBottom: 12 }}>
+        <input
+          className="admin-input"
+          placeholder="Filter user / id"
+          value={filterUser}
+          onChange={(e) => setFilterUser(e.target.value)}
+          style={{ minWidth: 160 }}
+        />
+        <select className="admin-input" value={filterRisk} onChange={(e) => setFilterRisk(e.target.value)} style={{ width: 140 }}>
+          <option value="">All risk</option>
+          {['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((r) => <option key={r} value={r}>{r}</option>)}
+        </select>
+        <select className="admin-input" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} style={{ width: 180 }}>
+          <option value="">All status</option>
+          {['PENDING_REVIEW', 'HOLD', 'PENDING_CHECKER'].map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <FilterDateRange from={dateFrom} to={dateTo} onFromChange={setDateFrom} onToChange={setDateTo} />
+      </AdminFilterBar>
 
       <AdminDataTable
         title="Pending Withdrawal Requests"
         emptyMessage="No pending withdrawals"
-        data={withdrawals}
+        data={filtered}
         onRefresh={load}
+        mobilePrimaryKeys={['id', 'userId', 'amount', 'riskLevel', 'status']}
+        renderExpandedRow={(r) => {
+          const sigs = Array.isArray(r.riskSignals) ? r.riskSignals : [];
+          return (
+            <div style={{ fontSize: '0.78rem', display: 'grid', gap: 6 }}>
+              <div><strong>Maker:</strong> {r.makerAdminId || '—'} · <strong>Checker:</strong> {r.checkerAdminId || '—'}</div>
+              <div><strong>Force required:</strong> {approveNeedsForce(r) ? 'Yes (CRITICAL checker)' : 'No'}</div>
+              <div>
+                <strong>Signals:</strong>{' '}
+                {sigs.length
+                  ? sigs.map((s) => (typeof s === 'string' ? s : s.rule || s.code || JSON.stringify(s))).join(', ')
+                  : '—'}
+              </div>
+              {r.beneficiaryMatch && (
+                <div><strong>Name match:</strong> {r.beneficiaryMatch.nameMatch || r.beneficiaryMatch.code || '—'}</div>
+              )}
+            </div>
+          );
+        }}
         columns={[
           { header: 'Request ID', key: 'id' },
           { header: 'User ID', key: 'userId' },
@@ -122,7 +240,65 @@ function MakerCheckerPanel() {
           { header: 'Amount (₹)', key: 'amount', render: (r) => (
             <span style={{ fontWeight: 800, color: 'var(--admin-text)' }}>{money(r.amount)}</span>
           )},
+          {
+            header: 'Status',
+            key: 'status',
+            render: (r) => <StatusBadge status={String(r.status || 'PENDING').toUpperCase()} />,
+          },
           { header: 'Method', key: 'method' },
+          {
+            header: 'Risk',
+            key: 'riskLevel',
+            render: (r) => {
+              const level = String(r.riskLevel || '—').toUpperCase();
+              const tone = level === 'CRITICAL' || level === 'HIGH' ? 'bad' : level === 'MEDIUM' ? 'warn' : level === 'LOW' ? 'ok' : 'neutral';
+              const color = tone === 'ok' ? '#16a34a' : tone === 'bad' ? '#dc2626' : tone === 'warn' ? '#ca8a04' : 'var(--admin-text-muted)';
+              return (
+                <span style={{ fontWeight: 700, fontSize: '0.72rem', color }}>
+                  {level}{r.riskScore != null ? ` (${r.riskScore})` : ''}
+                </span>
+              );
+            },
+          },
+          {
+            header: 'Signals',
+            key: 'riskSignals',
+            sortable: false,
+            render: (r) => {
+              const sigs = Array.isArray(r.riskSignals) ? r.riskSignals : [];
+              if (!sigs.length) return '—';
+              const labels = sigs.slice(0, 3).map((s) => (typeof s === 'string' ? s : s.rule || s.code || s.signal || 'signal'));
+              return <span style={{ fontSize: '0.7rem' }} title={JSON.stringify(sigs)}>{labels.join(', ')}</span>;
+            },
+          },
+          {
+            header: 'Maker',
+            key: 'makerAdminId',
+            render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.7rem' }}>{r.makerAdminId || '—'}</span>,
+          },
+          {
+            header: 'Checker',
+            key: 'checkerAdminId',
+            render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.7rem' }}>{r.checkerAdminId || '—'}</span>,
+          },
+          {
+            header: 'Risk score',
+            key: 'riskScore',
+            render: (r) => (r.riskScore != null ? r.riskScore : '—'),
+          },
+          {
+            header: 'KYC',
+            key: 'kycStatus',
+            render: (r) => {
+              const k = String(r.kycStatus || '—').toUpperCase();
+              const ok = k === 'VERIFIED' || k === 'APPROVED';
+              return (
+                <span style={{ fontWeight: 700, fontSize: '0.72rem', color: ok ? '#16a34a' : '#ca8a04' }}>
+                  {k}
+                </span>
+              );
+            },
+          },
           {
             header: 'Name match',
             key: 'beneficiaryMatch',
@@ -144,7 +320,10 @@ function MakerCheckerPanel() {
             render: (r) => (
               <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
                 <button type="button" className="admin-btn admin-btn--success admin-btn--sm" onClick={() => setApproveTarget(r)}>
-                  Approve
+                  {approveActionLabel(r)}
+                </button>
+                <button type="button" className="admin-btn admin-btn--secondary admin-btn--sm" onClick={() => setHoldTarget(r)}>
+                  Hold
                 </button>
                 <button type="button" className="admin-btn admin-btn--danger admin-btn--sm" onClick={() => setRejectTarget(r)}>
                   Reject
@@ -167,16 +346,30 @@ function MakerCheckerPanel() {
       {/* Approve Confirm */}
       <AdminConfirmDialog
         isOpen={!!approveTarget}
-        variant="success"
-        icon="✅"
-        title="Approve Withdrawal"
-        description="Funds will be released to the user's bank account. This action is irreversible."
+        variant={approveNeedsForce(approveTarget) ? 'warning' : 'success'}
+        icon={approveNeedsForce(approveTarget) ? '⚠️' : '✅'}
+        title={approveActionLabel(approveTarget)}
+        description={
+          String(approveTarget?.status || '').toUpperCase() === 'PENDING_CHECKER'
+            ? (approveNeedsForce(approveTarget)
+              ? `CRITICAL risk — checker must differ from maker (${approveTarget?.makerAdminId || 'maker'}) and provide forceApprove + reason.`
+              : `Checker approval required. Maker was ${approveTarget?.makerAdminId || 'another admin'}; you cannot be the same admin.`)
+            : riskNeedsForce(approveTarget?.riskLevel)
+              ? `Risk is ${String(approveTarget?.riskLevel || '').toUpperCase()}. This records a maker review and moves the request to PENDING_CHECKER for a different admin.`
+              : 'Funds will be released to the user\'s bank account. This action is irreversible.'
+        }
+        requireReason={approveNeedsForce(approveTarget)}
+        reasonPlaceholder="Force-approve reason (required for CRITICAL checker)…"
         details={[
           { label: 'Request ID', value: approveTarget?.id || '—' },
           { label: 'User', value: approveTarget?.userName || approveTarget?.userId || '—' },
           { label: 'Amount', value: money(approveTarget?.amount) },
           { label: 'Method', value: approveTarget?.method || '—' },
-          { label: 'KYC STATUS', value: approveTarget?.beneficiaryMatch?.kycVerified ? '✓ VERIFIED' : '✕ NOT VERIFIED' },
+          { label: 'Status', value: approveTarget?.status || '—' },
+          { label: 'Risk level', value: approveTarget?.riskLevel || '—' },
+          { label: 'Risk score', value: approveTarget?.riskScore != null ? String(approveTarget.riskScore) : '—' },
+          { label: 'Maker', value: approveTarget?.makerAdminId || '—' },
+          { label: 'KYC STATUS', value: approveTarget?.kycStatus || (approveTarget?.beneficiaryMatch?.kycVerified ? '✓ VERIFIED' : '✕ NOT VERIFIED') },
           { label: 'BANK / BENEFICIARY', value: approveTarget?.beneficiaryMatch?.beneficiaryVerified ? '✓ VERIFIED' : '✕ NOT VERIFIED (no provider source)' },
           { label: 'NAME MATCH', value: matchBadge(approveTarget?.beneficiaryMatch).label },
           {
@@ -192,9 +385,32 @@ function MakerCheckerPanel() {
             ? [{ label: 'Dependency', value: approveTarget.beneficiaryMatch.dependency }]
             : []),
         ]}
-        confirmLabel="Approve Withdrawal"
+        confirmLabel={approveActionLabel(approveTarget)}
         onConfirm={handleApproveWithdrawal}
         onCancel={() => setApproveTarget(null)}
+        loading={processing}
+      />
+
+      <AdminConfirmDialog
+        isOpen={!!holdTarget}
+        variant="warning"
+        icon="⏸"
+        title="Hold Withdrawal"
+        description="Marks the request as HOLD for further risk review. Reserved funds stay locked."
+        requireReason
+        reasonPlaceholder="Hold reason (e.g. High risk score, KYC re-check)…"
+        reasonDefault="Held for risk review"
+        details={[
+          { label: 'Request ID', value: holdTarget?.id || '—' },
+          { label: 'User', value: holdTarget?.userName || holdTarget?.userId || '—' },
+          { label: 'Amount', value: money(holdTarget?.amount) },
+          { label: 'Risk level', value: holdTarget?.riskLevel || '—' },
+          { label: 'Risk score', value: holdTarget?.riskScore != null ? String(holdTarget.riskScore) : '—' },
+          { label: 'KYC', value: holdTarget?.kycStatus || '—' },
+        ]}
+        confirmLabel="Hold Withdrawal"
+        onConfirm={handleHoldWithdrawal}
+        onCancel={() => setHoldTarget(null)}
         loading={processing}
       />
 
@@ -524,15 +740,17 @@ function LegacyLedgerPanel() {
 function healthFlag(severity, status) {
   const s = String(severity || status || '').toUpperCase();
   if (s === 'CRITICAL' || s === 'HIGH') return 'CRITICAL';
+  if (s === 'DISCREPANCY') return 'DISCREPANCY';
   if (s === 'MEDIUM' || s === 'WARNING' || s === 'DISCREPANCIES_DETECTED') return 'WARNING';
   if (s === 'MISMATCH' || s === 'OPEN') return 'MISMATCH';
-  if (s === 'MATCHED' || s === 'RESOLVED' || s === 'HEALTHY_RECONCILED' || s === 'LOW') return 'MATCHED';
+  if (s === 'MATCHED' || s === 'RESOLVED' || s === 'HEALTHY_RECONCILED' || s === 'HEALTHY' || s === 'LOW') return 'MATCHED';
   return s || 'WARNING';
 }
 
 function FinanceHealthPanel() {
   const [exceptions, setExceptions] = useState([]);
   const [audit, setAudit] = useState(null);
+  const [walletBuckets, setWalletBuckets] = useState(null);
   const [error, setError] = useState(null);
   const [running, setRunning] = useState(false);
   const [actingId, setActingId] = useState(null);
@@ -551,18 +769,30 @@ function FinanceHealthPanel() {
       });
   };
 
-  useEffect(() => { load(); }, []);
+  const loadBuckets = () => {
+    adminApiClient.get('/reconciliation/wallet-buckets')
+      .then((data) => {
+        if (data?.walletBuckets) setWalletBuckets(data.walletBuckets);
+      })
+      .catch(() => { /* optional snapshot — show after audit if unavailable */ });
+  };
+
+  useEffect(() => {
+    load();
+    loadBuckets();
+  }, []);
 
   const runAudit = async () => {
     setRunning(true);
     try {
       const result = await adminApiClient.post('/reconciliation/run', {});
       setAudit(result);
+      if (result.walletBuckets) setWalletBuckets(result.walletBuckets);
       showToast(
-        result.overallStatus === 'HEALTHY_RECONCILED'
+        result.healthStatus === 'HEALTHY' || result.overallStatus === 'HEALTHY_RECONCILED'
           ? 'Reconciliation audit clean.'
-          : `Audit found ${result.totalNewCasesCreated || 0} case(s). No balances auto-repaired.`,
-        result.overallStatus === 'HEALTHY_RECONCILED' ? 'success' : 'warning',
+          : `Audit ${result.healthStatus || 'flags'} — ${result.totalNewCasesCreated || 0} case(s). No balances auto-repaired.`,
+        result.healthStatus === 'HEALTHY' || result.overallStatus === 'HEALTHY_RECONCILED' ? 'success' : 'warning',
       );
       load();
     } catch (err) {
@@ -625,7 +855,17 @@ function FinanceHealthPanel() {
     showToast('Exported reconciliation cases (audit snapshot only)', 'success');
   };
 
+  const healthStatus = audit?.healthStatus
+    || (exceptions.some((e) => String(e.severity || '').toUpperCase() === 'CRITICAL')
+      ? 'CRITICAL'
+      : (exceptions.some((e) => e.status === 'OPEN') ? 'WARNING' : null));
+
   const cards = [
+    {
+      label: 'Health status',
+      value: healthStatus || audit?.overallStatus || '—',
+      flag: healthFlag(null, healthStatus || audit?.overallStatus || (exceptions.length ? 'WARNING' : 'MATCHED')),
+    },
     {
       label: 'Overall',
       value: audit?.overallStatus || (exceptions.some((e) => e.status === 'OPEN') ? 'OPEN_CASES' : '—'),
@@ -654,30 +894,41 @@ function FinanceHealthPanel() {
     },
   ];
 
+  const bucketCards = walletBuckets
+    ? [
+        { label: 'Cash', value: money(walletBuckets.cashBalance) },
+        { label: 'Winnings', value: money(walletBuckets.winningsBalance) },
+        { label: 'Locked', value: money(walletBuckets.lockedDepositBalance) },
+        { label: 'Bonus', value: money(walletBuckets.bonusBalance) },
+        { label: 'Freebet', value: money(walletBuckets.freebetBalance) },
+        { label: 'Reserved', value: money(walletBuckets.reservedWithdrawalBalance) },
+        { label: 'Calculated total', value: money(walletBuckets.calculatedWalletTotal) },
+      ]
+    : [];
+
   return (
     <div>
-      <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>06 · Finance Health Center</h2>
-          <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
-            Wallet↔ledger, deposit, withdrawal, and settlement reconciliation. Flags only — never auto-repairs balances.
-          </p>
-          {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
-        </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button type="button" className="admin-btn admin-btn--secondary" onClick={exportCsv}>
-            Export CSV
-          </button>
-          <button
-            type="button"
-            className="admin-btn admin-btn--primary"
-            disabled={running}
-            onClick={runAudit}
-          >
-            {running ? 'Running audit…' : 'Run reconciliation audit'}
-          </button>
-        </div>
-      </div>
+      <AdminPageHeader
+        title="Finance Health Center"
+        subtitle="Wallet↔ledger, deposit, withdrawal, and settlement reconciliation. Flags only — never auto-repairs balances."
+        breadcrumbs={[{ label: 'Finance' }, { label: 'Health' }]}
+        banner={error ? <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p> : null}
+        actions={(
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button type="button" className="admin-btn admin-btn--secondary" onClick={exportCsv}>
+              Export CSV
+            </button>
+            <button
+              type="button"
+              className="admin-btn admin-btn--primary"
+              disabled={running}
+              onClick={runAudit}
+            >
+              {running ? 'Running audit…' : 'Run reconciliation audit'}
+            </button>
+          </div>
+        )}
+      />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 16 }}>
         {cards.map((c) => (
@@ -696,6 +947,34 @@ function FinanceHealthPanel() {
           </div>
         ))}
       </div>
+
+      {bucketCards.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800 }}>Wallet bucket snapshot</h3>
+            <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)' }}>
+              {walletBuckets?.walletCount != null ? `${walletBuckets.walletCount} wallets · ` : ''}
+              {walletBuckets?.note || 'Snapshot only — no auto-repair'}
+            </span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8 }}>
+            {bucketCards.map((c) => (
+              <div
+                key={c.label}
+                style={{
+                  border: '1px solid var(--admin-border)',
+                  borderRadius: 8,
+                  padding: '10px 12px',
+                  background: 'var(--admin-surface)',
+                }}
+              >
+                <div style={{ fontSize: '0.68rem', color: 'var(--admin-text-muted)', fontWeight: 700 }}>{c.label}</div>
+                <div style={{ marginTop: 4, fontWeight: 800, fontSize: '0.88rem' }}>{c.value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <AdminDataTable
         title="Reconciliation cases"
@@ -777,6 +1056,121 @@ function FinanceHealthPanel() {
   );
 }
 
+const REFUNDABLE_DEPOSIT = new Set(['CAPTURED', 'SUCCESS', 'COMPLETED']);
+
+function DepositsReviewPanel() {
+  const [deposits, setDeposits] = useState([]);
+  const [error, setError] = useState(null);
+  const [refundTarget, setRefundTarget] = useState(null);
+  const [processing, setProcessing] = useState(false);
+  const { showToast } = useAdminToast();
+
+  const load = () => {
+    adminApiClient.get('/finance/deposits?limit=100')
+      .then((data) => {
+        setDeposits(data.deposits || []);
+        setError(data.error || null);
+      })
+      .catch((err) => {
+        setDeposits([]);
+        setError(err.message || 'Failed to load deposits');
+      });
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const handleRefund = async (reason) => {
+    if (!refundTarget) return;
+    setProcessing(true);
+    try {
+      await adminApiClient.post(`/finance/deposits/${encodeURIComponent(refundTarget.depositId || refundTarget.id)}/refund`, {
+        reason: reason || 'admin_refund',
+      });
+      showToast(`Refund requested for ${refundTarget.depositId || refundTarget.id}`, 'success');
+      load();
+    } catch (err) {
+      showToast(err.message || 'Refund failed', 'error');
+    } finally {
+      setProcessing(false);
+      setRefundTarget(null);
+    }
+  };
+
+  return (
+    <div>
+      <div style={{ marginBottom: '16px' }}>
+        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>06 · Deposits Review</h2>
+        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
+          Recent deposits from PostgreSQL. Refund uses the existing Razorpay + ledger refund path.
+        </p>
+        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
+      </div>
+
+      <AdminDataTable
+        title="Recent Deposits"
+        emptyMessage="No deposits found"
+        data={deposits}
+        onRefresh={load}
+        columns={[
+          { header: 'Deposit ID', key: 'depositId', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.depositId || r.id}</span> },
+          { header: 'User', key: 'userId' },
+          { header: 'Amount', key: 'amount', render: (r) => money(r.amount) },
+          { header: 'Status', key: 'status', render: (r) => <StatusBadge status={r.status} /> },
+          {
+            header: 'Payment',
+            key: 'razorpayPaymentId',
+            hideOnMobile: true,
+            render: (r) => r.razorpayPaymentId || '—',
+          },
+          {
+            header: 'Created',
+            key: 'createdAt',
+            render: (r) => (r.createdAt ? new Date(r.createdAt).toLocaleString('en-IN') : '—'),
+          },
+          {
+            header: 'Action',
+            key: 'action',
+            sortable: false,
+            render: (r) => {
+              const ok = REFUNDABLE_DEPOSIT.has(String(r.status || '').toUpperCase());
+              if (!ok) return <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)' }}>—</span>;
+              return (
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--secondary admin-btn--sm"
+                  onClick={() => setRefundTarget(r)}
+                >
+                  Refund
+                </button>
+              );
+            },
+          },
+        ]}
+      />
+
+      <AdminConfirmDialog
+        isOpen={!!refundTarget}
+        variant="danger"
+        icon="↩"
+        title={`Refund deposit ${refundTarget?.depositId || refundTarget?.id}?`}
+        description="Triggers Razorpay refund and ledger reversal via the existing finance refund engine."
+        requireReason
+        reasonPlaceholder="Refund reason…"
+        reasonDefault="admin_refund"
+        details={refundTarget ? [
+          { label: 'User', value: refundTarget.userId || '—' },
+          { label: 'Amount', value: money(refundTarget.amount) },
+          { label: 'Status', value: refundTarget.status || '—' },
+        ] : []}
+        confirmLabel="Request refund"
+        onConfirm={handleRefund}
+        onCancel={() => setRefundTarget(null)}
+        loading={processing}
+      />
+    </div>
+  );
+}
+
 export default function FinanceDomainView({
   subModule = 'maker-checker',
   focusEntityId = null,
@@ -796,6 +1190,7 @@ export default function FinanceDomainView({
     if (subModule === 'finance-health') return <FinanceHealthPanel />;
     if (subModule === 'legacy-ledger') return <LegacyLedgerPanel />;
     if (subModule === 'payment-gateways') return <PaymentGatewaysPanel />;
+    if (subModule === 'deposits-review') return <DepositsReviewPanel />;
     return <MakerCheckerPanel />;
   }, [subModule, focusEntityId, focusEntityType, onFocusConsumed]);
 

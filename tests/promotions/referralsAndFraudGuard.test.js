@@ -48,22 +48,20 @@ describe('Referral program', () => {
       referralCode: code.code,
     });
     expect(attr.success).toBe(true);
-    expect(attr.status).toBe('REGISTERED');
+    expect(attr.reward?.success).toBe(true);
 
     const conflict = await assertNoReferralPromoConflict(referred).then(() => null).catch((e) => e);
     expect(conflict?.code).toBe('REFERRAL_PROMO_CONFLICT');
   });
 
-  it('grants freebets once and is idempotent', async () => {
-    await processReferralRegistration({
+  it('grants freebets on signup without requiring a deposit', async () => {
+    const reg = await processReferralRegistration({
       referrerUserId: referrer,
       referredUserId: referred,
       referralCode: 'FRIEND500',
     });
-
-    const q1 = await qualifyReferralReward({ referredUserId: referred, depositAmount: 100 });
-    expect(q1.success).toBe(true);
-    expect(q1.rewardAmount).toBe(500);
+    expect(reg.reward?.success).toBe(true);
+    expect(reg.reward?.rewardAmount).toBe(500);
 
     const wallets = await query(
       `SELECT user_id, freebet_balance FROM wallets WHERE user_id IN ($1, $2)`,
@@ -73,7 +71,7 @@ describe('Referral program', () => {
     expect(byId[referred]).toBe(500);
     expect(byId[referrer]).toBe(500);
 
-    const q2 = await qualifyReferralReward({ referredUserId: referred, depositAmount: 100 });
+    const q2 = await qualifyReferralReward({ referredUserId: referred });
     expect(q2.qualified).toBe(false);
 
     const wallets2 = await query(
@@ -130,11 +128,17 @@ describe('Referral program', () => {
   });
 
   it('blocks referral reward when signup promo already claimed', async () => {
-    await processReferralRegistration({
-      referrerUserId: referrer,
-      referredUserId: referred,
-      referralCode: 'THENPROMO',
-    });
+    await query(
+      `INSERT INTO referrals (
+         id, referrer_user_id, referred_user_id, referral_code, status, reward_amount,
+         referred_reward_amount, referrer_reward_amount,
+         attribution_status, qualification_status, reward_status, updated_at
+       ) VALUES (
+         $1, $2, $3, 'THENPROMO', 'REGISTERED', 500, 500, 500,
+         'ATTRIBUTED', 'PENDING', 'PENDING', NOW()
+       )`,
+      [`ref_promo_${referred}`, referrer, referred],
+    );
     await query(
       `INSERT INTO signup_promo_codes (code_id, code, name, reward_type, amount, is_active)
        VALUES ('code_test_welcome2', 'WELCOME_TEST2', 'Welcome Test 2', 'freebet', 100, true)
@@ -147,7 +151,7 @@ describe('Referral program', () => {
       [`spr2_${referred}`, referred],
     );
 
-    const q = await qualifyReferralReward({ referredUserId: referred, depositAmount: 100 });
+    const q = await qualifyReferralReward({ referredUserId: referred });
     expect(q.qualified).toBe(false);
     expect(String(q.reason || '')).toMatch(/promo/i);
   });
