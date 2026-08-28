@@ -505,14 +505,17 @@ function AdminShellInner() {
             const isSupport = String(n.category || '').toUpperCase() === 'SUPPORT'
               || String(n.action_target_type || '') === 'support_conversation';
             alerts.push({
-              id: n.notification_id,
-              title: n.title || 'Admin alert',
-              desc: n.message || '',
+              id: n.notification_id || n.id,
+              title: n.title || n.subject || n.heading || 'Admin alert',
+              desc: n.message || n.body || n.description || '',
               category: isSupport ? 'support' : String(n.category || 'ops').toLowerCase(),
               domainId: isSupport ? 'support' : 'control-tower',
               subModuleId: isSupport ? 'ticket-queue' : 'overview',
-              type: String(n.priority || 'HIGH').toUpperCase() === 'URGENT' ? 'CRITICAL' : 'HIGH',
-              notificationId: n.notification_id,
+              type: String(n.priority || n.severity || 'HIGH').toUpperCase() === 'URGENT'
+                || String(n.priority || '').toUpperCase() === 'CRITICAL'
+                ? 'CRITICAL'
+                : (String(n.priority || 'HIGH').toUpperCase() || 'HIGH'),
+              notificationId: n.notification_id || n.id || null,
               conversationId: n.action_target_id || null,
             });
           });
@@ -977,7 +980,7 @@ function AdminShellInner() {
                   position: 'fixed',
                   top: alertsMenuPos.top,
                   right: alertsMenuPos.right,
-                  width: '340px',
+                  width: '380px',
                   maxWidth: 'calc(100vw - 24px)',
                   background: 'var(--admin-panel)',
                   backdropFilter: 'blur(20px)',
@@ -989,6 +992,7 @@ function AdminShellInner() {
                   zIndex: 100000,
                   color: 'var(--admin-text)',
                 }}
+                className={`admin-alerts-menu ${isDark ? 'admin-alerts-menu--dark' : 'admin-alerts-menu--light'}`}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', borderBottom: '1px solid var(--admin-border)', paddingBottom: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -1009,53 +1013,48 @@ function AdminShellInner() {
                   </button>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
+                <div className="admin-alerts-menu__list">
                   {liveAlerts.length > 0 ? (
-                    liveAlerts.map((alert) => (
+                    liveAlerts.map((alert) => {
+                      const title = alert.title || alert.message || 'Operational alert';
+                      const desc = alert.desc || alert.message || '';
+                      const severity = String(alert.type || 'HIGH').toUpperCase();
+                      const severityClass = severity === 'CRITICAL'
+                        ? 'danger'
+                        : severity === 'HIGH'
+                          ? 'warning'
+                          : 'info';
+                      return (
                       <div
                         key={alert.id}
-                        className="admin-card"
-                        style={{
-                          display: 'block',
-                          width: '100%',
-                          textAlign: 'left',
-                          padding: '10px 12px',
-                          color: 'inherit',
-                        }}
+                        className="admin-alert-item"
                       >
                         <button
                           type="button"
+                          className="admin-alert-item__main"
                           onClick={(e) => handleAlertClick(e, alert)}
-                          style={{
-                            display: 'block',
-                            width: '100%',
-                            textAlign: 'left',
-                            padding: 0,
-                            border: 'none',
-                            background: 'transparent',
-                            cursor: 'pointer',
-                            color: 'inherit',
-                          }}
                         >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
-                            <span className={`admin-badge admin-badge--${alert.type === 'CRITICAL' ? 'danger' : alert.type === 'HIGH' ? 'warning' : 'info'}`}>
+                          <div className="admin-alert-item__meta">
+                            <span className={`admin-badge admin-badge--${severityClass}`}>
                               <span className="admin-badge--dot" style={{
-                                background: alert.type === 'CRITICAL' ? '#f43f5e' : alert.type === 'HIGH' ? '#fbbf24' : '#818cf8',
+                                background: severity === 'CRITICAL' ? '#f43f5e' : severity === 'HIGH' ? '#fbbf24' : '#818cf8',
                               }} />
-                              {alert.type}
+                              {severity}
                             </span>
-                            <span style={{ fontSize: '0.66rem', color: 'var(--admin-text-dim)', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                            <span className="admin-alert-item__category">
                               {alert.category || 'ops'}
                             </span>
                           </div>
-                          <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--admin-text)' }}>{alert.title}</div>
-                          <div style={{ fontSize: '0.74rem', color: 'var(--admin-text-muted)', marginTop: '2px', lineHeight: 1.35 }}>{alert.desc}</div>
-                          <div style={{ fontSize: '0.7rem', color: '#818cf8', marginTop: '6px', fontWeight: 700 }}>
+                          <div className="admin-alert-item__title">{title}</div>
+                          {desc ? (
+                            <div className="admin-alert-item__desc">{desc}</div>
+                          ) : null}
+                          <div className="admin-alert-item__cta">
                             Go to {alert.category || 'section'} →
                           </div>
                         </button>
                         {alert.notificationId && (
-                          <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                          <div className="admin-alert-item__actions">
                             <button
                               type="button"
                               className="admin-btn admin-btn--secondary admin-btn--sm"
@@ -1073,9 +1072,10 @@ function AdminShellInner() {
                           </div>
                         )}
                       </div>
-                    ))
+                      );
+                    })
                   ) : (
-                    <div style={{ padding: '20px 14px', textAlign: 'center', color: 'var(--admin-text-muted)', fontSize: '0.8rem' }}>
+                    <div className="admin-alerts-menu__empty">
                       ✓ No active operational alerts
                     </div>
                   )}

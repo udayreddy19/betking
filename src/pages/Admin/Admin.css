@@ -2303,3 +2303,125 @@ html[data-theme="light"] .tdfb-users__search .admin-input::placeholder,
     min-height: 40px;
   }
 }
+
+/* ── Operational Alerts popover (portaled) ──
+   Critical: list items must NOT shrink — flex-shrink was clipping titles. */
+.admin-alerts-menu__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: min(420px, 60vh);
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.admin-alert-item {
+  flex: 0 0 auto;
+  min-height: auto;
+  width: 100%;
+  text-align: left;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  color: var(--admin-text);
+  box-shadow: none;
+  overflow: visible;
+}
+
+.admin-alert-item__main {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.admin-alert-item__meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.admin-alert-item__category {
+  font-size: 0.66rem;
+  color: var(--admin-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-weight: 700;
+}
+
+.admin-alert-item__title {
+  font-size: 0.84rem;
+  font-weight: 750;
+  color: var(--admin-text);
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.admin-alert-item__desc {
+  font-size: 0.76rem;
+  color: var(--admin-text-muted);
+  margin-top: 4px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.admin-alert-item__cta {
+  font-size: 0.72rem;
+  color: var(--admin-primary-hover, #818cf8);
+  margin-top: 8px;
+  font-weight: 700;
+}
+
+.admin-alert-item__actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.admin-alerts-menu__empty {
+  padding: 20px 14px;
+  text-align: center;
+  color: var(--admin-text-muted);
+  font-size: 0.8rem;
+}
+
+html[data-theme="light"] .admin-badge--warning,
+.admin-shell--light .admin-badge--warning,
+.admin-alerts-menu--light .admin-badge--warning {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+  border-color: rgba(217, 119, 6, 0.28);
+}
+
+html[data-theme="light"] .admin-badge--neutral,
+.admin-shell--light .admin-badge--neutral,
+.admin-alerts-menu--light .admin-badge--neutral {
+  background: rgba(15, 23, 42, 0.06);
+  color: #475569;
+  border-color: rgba(15, 23, 42, 0.12);
+}
+
+html[data-theme="light"] .admin-badge--danger,
+.admin-shell--light .admin-badge--danger,
+.admin-alerts-menu--light .admin-badge--danger {
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
+  border-color: rgba(220, 38, 38, 0.25);
+}
+
+html[data-theme="light"] .admin-badge--info,
+.admin-shell--light .admin-badge--info,
+.admin-alerts-menu--light .admin-badge--info {
+  background: rgba(37, 99, 235, 0.1);
+  color: #1d4ed8;
+  border-color: rgba(37, 99, 235, 0.25);
+}
