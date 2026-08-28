@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-08-28T15:58:20.130Z",
+  "environment": "STAGING_VPS",
+  "engineVersion": "3.0.0",
+  "modelVersion": "v3.1-prod",
+  "realHistoricalDataAvailable": false,
+  "realWorldValidation": "NOT_VERIFIED",
+  "trainSplitPct": 60,
+  "valSplitPct": 20,
+  "testSplitPct": 20,
+  "chronologicalValidation": "STRICT_NO_SHUFFLE",
+  "status": "VALIDATED"
+}

@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-08-28T15:58:20.130Z",
+  "environment": "STAGING_VPS",
+  "engineVersion": "3.0.0",
+  "modelVersion": "v3.1-prod",
+  "realHistoricalDataAvailable": false,
+  "realWorldValidation": "NOT_VERIFIED",
+  "matrix": {
+    "runs_vs_wickets": -0.45,
+    "boundary_vs_team_total": 0.65
+  },
+  "frechetBoundsEnforced": true,
+  "status": "SHADOW_ONLY"
+}

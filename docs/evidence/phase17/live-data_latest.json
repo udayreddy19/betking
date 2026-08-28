@@ -1,0 +1,12 @@
+{
+  "timestamp": "2026-08-28T15:58:20.130Z",
+  "environment": "STAGING_VPS",
+  "engineVersion": "3.0.0",
+  "modelVersion": "v3.1-prod",
+  "realHistoricalDataAvailable": false,
+  "realWorldValidation": "NOT_VERIFIED",
+  "pipeline": "oddsObservationStore",
+  "bufferLimit": 50000,
+  "dimensionsCaptured": 29,
+  "status": "ACTIVE_NON_BLOCKING"
+}

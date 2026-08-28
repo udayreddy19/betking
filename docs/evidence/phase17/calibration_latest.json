@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-08-28T15:58:20.130Z",
+  "environment": "STAGING_VPS",
+  "engineVersion": "3.0.0",
+  "modelVersion": "v3.1-prod",
+  "realHistoricalDataAvailable": false,
+  "realWorldValidation": "NOT_VERIFIED",
+  "candidateMethods": [
+    "CURRENT_RAW",
+    "PLATT_SCALING",
+    "ISOTONIC_REGRESSION"
+  ],
+  "gateDecision": "KEEP_CURRENT_MODEL",
+  "status": "EVALUATED"
+}
