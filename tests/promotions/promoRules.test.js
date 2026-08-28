@@ -19,7 +19,7 @@ describe('promo rules', () => {
     expect(canBetWithFreebetOnLegs([{ odds: 1.20 }])).toBe(true);
   });
 
-  it('credits bonus/freebet profit as winnings and recycles bonus stake', () => {
+  it('locks bonus returns in bonusCredit until rollover completes and credits freebet profit to cash', () => {
     const bonusWin = splitBetWinPayout({
       payout: 200,
       stake: 100,
@@ -27,9 +27,8 @@ describe('promo rules', () => {
       bonusStake: 100,
       legs: [{ odds: 2 }],
     });
-    expect(bonusWin.cashCredit).toBe(100);
-    expect(bonusWin.winningsCredit).toBe(100);
-    expect(bonusWin.bonusCredit).toBe(100);
+    expect(bonusWin.cashCredit).toBe(0);
+    expect(bonusWin.bonusCredit).toBe(200);
 
     const freeWin = splitBetWinPayout({
       payout: 150,

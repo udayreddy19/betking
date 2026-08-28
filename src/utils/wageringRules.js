@@ -119,10 +119,9 @@ export function splitBetWinPayout(bet) {
 
   if (bonusStake > 0) {
     const bonusShare = (bonusStake / stake) * payout;
-    const profit = Math.max(0, bonusShare - bonusStake);
-    cashCredit += profit;
-    winningsCredit += profit;
-    bonusCredit += bonusStake;
+    // Model B (Full Rollover Lock): all returns (stake + winnings) from bonus bets remain locked in bonus_balance
+    // until the 5x rollover requirement at min odds (>= 1.75) is completed.
+    bonusCredit += bonusShare;
   }
 
   if (freebetStake > 0) {
