@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-08-28T17:51:01.698Z",
+  "environment": "STAGING_VPS",
+  "modelVersion": "v3.1-prod",
+  "candidateVersion": "v3.2-candidate-004",
+  "datasetVersion": "ds_v1.0_cold",
+  "codeCommitSHA": "1d5d628",
+  "status": "COLLECTING",
+  "sampleSize": 0,
+  "validationClass": "NOT_VERIFIED",
+  "productionSettledObservations": 0,
+  "samplingPolicy": "STATE_CHANGE_AND_PROB_DELTA",
+  "minProbDelta": 0.02,
+  "heartbeatSeconds": 60,
+  "deduplicationFingerprint": "SHA-256"
+}

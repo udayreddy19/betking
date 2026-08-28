@@ -1,0 +1,32 @@
+{
+  "timestamp": "2026-08-28T17:51:01.698Z",
+  "environment": "STAGING_VPS",
+  "modelVersion": "v3.1-prod",
+  "candidateVersion": "v3.2-candidate-004",
+  "datasetVersion": "ds_v1.0_cold",
+  "codeCommitSHA": "1d5d628",
+  "status": "COLLECTING",
+  "sampleSize": 0,
+  "validationClass": "NOT_VERIFIED",
+  "productionSettledObservations": 0,
+  "cricbuzz": {
+    "status": "HEALTHY",
+    "latencyMs": 110,
+    "freshness": 94.5
+  },
+  "crex": {
+    "status": "HEALTHY",
+    "latencyMs": 92,
+    "freshness": 89.2
+  },
+  "espn": {
+    "status": "HEALTHY",
+    "latencyMs": 195,
+    "freshness": 88
+  },
+  "tencric": {
+    "status": "HEALTHY",
+    "latencyMs": 340,
+    "freshness": 85
+  }
+}
