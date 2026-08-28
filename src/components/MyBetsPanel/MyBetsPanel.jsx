@@ -123,14 +123,29 @@ export default function MyBetsPanel() {
   const panelRef = useRef(null);
   const [filter, setFilter] = useState('pending');
   const [cashoutQuotes, setCashoutQuotes] = useState({});
-  const [highlightBetId, setHighlightBetId] = useState(null);
   const [expandedEvidence, setExpandedEvidence] = useState({});
+  const [loadedEvidence, setLoadedEvidence] = useState({});
 
-  const toggleEvidence = (betId) => {
+  const toggleEvidence = async (betId, existingEvidence) => {
+    const isOpening = !expandedEvidence[betId];
     setExpandedEvidence((prev) => ({
       ...prev,
-      [betId]: !prev[betId],
+      [betId]: isOpening,
     }));
+
+    if (isOpening && !existingEvidence && !loadedEvidence[betId]) {
+      try {
+        const res = await apiFetch(`/api/bets/${encodeURIComponent(betId)}/evidence`);
+        if (res?.evidence) {
+          setLoadedEvidence((prev) => ({
+            ...prev,
+            [betId]: res.evidence,
+          }));
+        }
+      } catch {
+        // Fallback gracefully
+      }
+    }
   };
 
   useEffect(() => {
@@ -589,128 +604,132 @@ export default function MyBetsPanel() {
                     </div>
                   )}
 
-                  {SETTLED_STATUSES.has(placed.status) && (
-                    <div className="my-bets-evidence-container">
-                      <button
-                        type="button"
-                        className="my-bets-evidence-toggle"
-                        onClick={() => toggleEvidence(placed.id)}
-                        aria-expanded={Boolean(expandedEvidence[placed.id])}
-                      >
-                        <div className="my-bets-evidence-header">
-                          <span className="my-bets-evidence-title">
-                            <span className="my-bets-evidence-icon">🏏</span> Settlement Evidence
-                          </span>
-                          <span className={`my-bets-evidence-badge my-bets-evidence-badge--${placed.settlementEvidence?.evidenceStatus || 'VERIFIED'}`}>
-                            {placed.settlementEvidence?.evidenceStatus === 'EVIDENCE_UNAVAILABLE'
-                              ? '⚠ EVIDENCE UNAVAILABLE'
-                              : placed.settlementEvidence?.evidenceStatus === 'PENDING'
-                                ? '⏳ PROCESSING'
-                                : '✓ VERIFIED SETTLEMENT'}
-                          </span>
-                        </div>
-                        <div className="my-bets-evidence-preview">
-                          <span className="my-bets-evidence-summary-text">
-                            {placed.settlementEvidence?.summary || placed.settlementReason || `Settled ${placed.status.toUpperCase()}`}
-                          </span>
-                          <span className="my-bets-evidence-chevron">{expandedEvidence[placed.id] ? '▲' : '▼'}</span>
-                        </div>
-                      </button>
+                  {SETTLED_STATUSES.has(placed.status) && (() => {
+                    const evidence = placed.settlementEvidence || loadedEvidence[placed.id] || null;
+                    return (
+                      <div className="my-bets-evidence-container">
+                        <button
+                          type="button"
+                          className="my-bets-evidence-toggle"
+                          onClick={() => toggleEvidence(placed.id, evidence)}
+                          aria-expanded={Boolean(expandedEvidence[placed.id])}
+                        >
+                          <div className="my-bets-evidence-header">
+                            <span className="my-bets-evidence-title">
+                              <span className="my-bets-evidence-icon">🏏</span> Settlement Evidence
+                            </span>
+                            <span className={`my-bets-evidence-badge my-bets-evidence-badge--${evidence?.evidenceStatus || 'VERIFIED'}`}>
+                              {evidence?.evidenceStatus === 'EVIDENCE_UNAVAILABLE'
+                                ? '⚠ EVIDENCE UNAVAILABLE'
+                                : evidence?.evidenceStatus === 'PENDING'
+                                  ? '⏳ PROCESSING'
+                                  : '✓ VERIFIED SETTLEMENT'}
+                            </span>
+                          </div>
+                          <div className="my-bets-evidence-preview">
+                            <span className="my-bets-evidence-summary-text">
+                              {evidence?.summary || placed.settlementReason || `Settled ${placed.status.toUpperCase()}`}
+                            </span>
+                            <span className="my-bets-evidence-chevron">{expandedEvidence[placed.id] ? '▲' : '▼'}</span>
+                          </div>
+                        </button>
 
-                      {expandedEvidence[placed.id] && (
-                        <div className="my-bets-evidence-body">
-                          {placed.settlementEvidence?.evidenceStatus === 'EVIDENCE_UNAVAILABLE' ? (
-                            <div className="my-bets-evidence-unavailable">
-                              <p>Settlement evidence is not available for this historical bet.</p>
-                              <span className="my-bets-evidence-subtext">The authoritative settlement result remains <strong>{placed.status.toUpperCase()}</strong>.</span>
-                            </div>
-                          ) : (
-                            <>
-                              {placed.settlementEvidence?.timeline?.length > 0 && (
-                                <div className="my-bets-evidence-section">
-                                  <div className="my-bets-evidence-section-title">
-                                    Ball-by-Ball Timeline {placed.settlementEvidence.overNumber ? `(Over ${placed.settlementEvidence.overNumber})` : ''}
-                                  </div>
-                                  <div className="my-bets-ball-timeline">
-                                    {placed.settlementEvidence.timeline.map((ball, bIdx) => (
-                                      <div key={bIdx} className={`my-bets-ball-item ${ball.wicket ? 'my-bets-ball-item--wicket' : ''}`}>
-                                        <span className="my-bets-ball-num">{ball.delivery}</span>
-                                        <span className={`my-bets-ball-badge ${ball.wicket ? 'badge-wicket' : ball.runs >= 4 ? 'badge-boundary' : ''}`}>
-                                          {ball.rawLabel}
-                                        </span>
-                                        <span className="my-bets-ball-label">{ball.outcomeLabel}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-
-                              {placed.settlementEvidence?.scoreAtEvent && (
-                                <div className="my-bets-evidence-row">
-                                  <span className="label">Score at event:</span>
-                                  <span className="value highlight">{placed.settlementEvidence.scoreAtEvent.scoreFormatted || `${placed.settlementEvidence.scoreAtEvent.runs}/${placed.settlementEvidence.scoreAtEvent.wickets}`}</span>
-                                </div>
-                              )}
-
-                              {placed.settlementEvidence?.eventDetails && (
-                                <div className="my-bets-evidence-details-grid">
-                                  {placed.settlementEvidence.eventDetails.batter && (
-                                    <div className="my-bets-evidence-grid-item">
-                                      <span className="label">Batter:</span>
-                                      <span className="value">{placed.settlementEvidence.eventDetails.batter}</span>
-                                    </div>
-                                  )}
-                                  {placed.settlementEvidence.eventDetails.bowler && (
-                                    <div className="my-bets-evidence-grid-item">
-                                      <span className="label">Bowler:</span>
-                                      <span className="value">{placed.settlementEvidence.eventDetails.bowler}</span>
-                                    </div>
-                                  )}
-                                  {placed.settlementEvidence.eventDetails.dismissalType && (
-                                    <div className="my-bets-evidence-grid-item">
-                                      <span className="label">Dismissal:</span>
-                                      <span className="value">{placed.settlementEvidence.eventDetails.dismissalType}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-
-                              {placed.settlementEvidence?.matchResult && (
-                                <div className="my-bets-evidence-details-grid">
-                                  {placed.settlementEvidence.matchResult.winner && (
-                                    <div className="my-bets-evidence-grid-item">
-                                      <span className="label">Winner:</span>
-                                      <span className="value">{placed.settlementEvidence.matchResult.winner}</span>
-                                    </div>
-                                  )}
-                                  {placed.settlementEvidence.matchResult.margin && (
-                                    <div className="my-bets-evidence-grid-item">
-                                      <span className="label">Margin:</span>
-                                      <span className="value">{placed.settlementEvidence.matchResult.margin}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-
-                              <div className="my-bets-evidence-footer">
-                                <span className="my-bets-evidence-source">Source: {placed.settlementEvidence?.source || 'Verified match event feed'}</span>
-                                {placed.settlementEvidence?.verifiedAt && (
-                                  <span className="my-bets-evidence-time">
-                                    Verified: {new Date(placed.settlementEvidence.verifiedAt).toLocaleString('en-IN', {
-                                      day: '2-digit',
-                                      month: 'short',
-                                      hour: '2-digit',
-                                      minute: '2-digit',
-                                    })}
-                                  </span>
-                                )}
+                        {expandedEvidence[placed.id] && (
+                          <div className="my-bets-evidence-body">
+                            {evidence?.evidenceStatus === 'EVIDENCE_UNAVAILABLE' ? (
+                              <div className="my-bets-evidence-unavailable">
+                                <p>Settlement evidence is not available for this historical bet.</p>
+                                <span className="my-bets-evidence-subtext">The authoritative settlement result remains <strong>{placed.status.toUpperCase()}</strong>.</span>
                               </div>
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                            ) : (
+                              <>
+                                {evidence?.timeline?.length > 0 && (
+                                  <div className="my-bets-evidence-section">
+                                    <div className="my-bets-evidence-section-title">
+                                      Ball-by-Ball Timeline {evidence.overNumber ? `(Over ${evidence.overNumber})` : ''}
+                                    </div>
+                                    <div className="my-bets-ball-timeline">
+                                      {evidence.timeline.map((ball, bIdx) => (
+                                        <div key={bIdx} className={`my-bets-ball-item ${ball.wicket ? 'my-bets-ball-item--wicket' : ''}`}>
+                                          <span className="my-bets-ball-num">{ball.delivery}</span>
+                                          <span className={`my-bets-ball-badge ${ball.wicket ? 'badge-wicket' : ball.runs >= 4 ? 'badge-boundary' : ''}`}>
+                                            {ball.rawLabel}
+                                          </span>
+                                          <span className="my-bets-ball-label">{ball.outcomeLabel}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {evidence?.scoreAtEvent && (
+                                  <div className="my-bets-evidence-row">
+                                    <span className="label">Score at event:</span>
+                                    <span className="value highlight">{evidence.scoreAtEvent.scoreFormatted || `${evidence.scoreAtEvent.runs}/${evidence.scoreAtEvent.wickets}`}</span>
+                                  </div>
+                                )}
+
+                                {evidence?.eventDetails && (
+                                  <div className="my-bets-evidence-details-grid">
+                                    {evidence.eventDetails.batter && (
+                                      <div className="my-bets-evidence-grid-item">
+                                        <span className="label">Batter:</span>
+                                        <span className="value">{evidence.eventDetails.batter}</span>
+                                      </div>
+                                    )}
+                                    {evidence.eventDetails.bowler && (
+                                      <div className="my-bets-evidence-grid-item">
+                                        <span className="label">Bowler:</span>
+                                        <span className="value">{evidence.eventDetails.bowler}</span>
+                                      </div>
+                                    )}
+                                    {evidence.eventDetails.dismissalType && (
+                                      <div className="my-bets-evidence-grid-item">
+                                        <span className="label">Dismissal:</span>
+                                        <span className="value">{evidence.eventDetails.dismissalType}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                                {evidence?.matchResult && (
+                                  <div className="my-bets-evidence-details-grid">
+                                    {evidence.matchResult.winner && (
+                                      <div className="my-bets-evidence-grid-item">
+                                        <span className="label">Winner:</span>
+                                        <span className="value">{evidence.matchResult.winner}</span>
+                                      </div>
+                                    )}
+                                    {evidence.matchResult.margin && (
+                                      <div className="my-bets-evidence-grid-item">
+                                        <span className="label">Margin:</span>
+                                        <span className="value">{evidence.matchResult.margin}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                                <div className="my-bets-evidence-footer">
+                                  <span className="my-bets-evidence-source">Source: {evidence?.source || 'Verified match event feed'}</span>
+                                  {evidence?.verifiedAt && (
+                                    <span className="my-bets-evidence-time">
+                                      Verified: {new Date(evidence.verifiedAt).toLocaleString('en-IN', {
+                                        day: '2-digit',
+                                        month: 'short',
+                                        year: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                      })}
+                                    </span>
+                                  )}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   <ol className="my-bets-timeline" aria-label="Settlement timeline">
                     {buildSettlementTimeline(placed).map((step) => (
