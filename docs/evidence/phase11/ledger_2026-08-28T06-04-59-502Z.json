@@ -1,0 +1,29 @@
+{
+  "phase": 11,
+  "timestamp": "2026-08-28T06:04:59.502Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "forceGreenAllowed": false,
+  "secretsPrinted": false,
+  "environment": "production",
+  "result": "NOT_VERIFIED",
+  "stub": false,
+  "verificationMethod": "investigate_required",
+  "notes": "Run finance:investigate against proven production DB; AUTO_REPAIR=false",
+  "gates": {
+    "LEDGER": {
+      "status": "NOT_VERIFIED"
+    },
+    "FINANCE": {
+      "status": "NOT_VERIFIED"
+    }
+  },
+  "checks": {
+    "actionableMismatchCount": null,
+    "rawMismatchCount": null,
+    "excludedKnownTestFundingCount": null,
+    "AUTO_REPAIR": false,
+    "identityProven": false
+  },
+  "expiresAt": "2026-09-04T06:04:59.502Z"
+}

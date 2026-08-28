@@ -1,0 +1,48 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> oddsyra@0.0.0 db:verify
+> node scripts/db-verify.mjs
+
+◇ injected env (20) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+{
+  "event": "MIGRATION_READINESS",
+  "expectedPrefixes": [
+    "067",
+    "068",
+    "069",
+    "070",
+    "071",
+    "098"
+  ],
+  "expectedHeadHint": "098_reconciliation_investigation_metadata.sql (or later)",
+  "actualHead": "096_payment_refund_manual_review.sql",
+  "onDisk": {
+    "067": true,
+    "068": true,
+    "069": true,
+    "070": true,
+    "071": true,
+    "098": true
+  },
+  "appliedStatus": {
+    "067": "GREEN",
+    "068": "GREEN",
+    "069": "GREEN",
+    "070": "YELLOW",
+    "071": "YELLOW",
+    "098": "YELLOW"
+  },
+  "appliedCount": 71,
+  "missingMigrations": [
+    "070",
+    "071",
+    "098"
+  ],
+  "unexpectedMigrations": [],
+  "schemaWarnings": [],
+  "status": "YELLOW",
+  "goLive": "HOLD",
+  "note": "Source + DB presence checked; production deploy still needs live evidence",
+  "generatedAt": "2026-08-28T04:35:10.749Z"
+}

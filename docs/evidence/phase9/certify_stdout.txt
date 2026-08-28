@@ -1,0 +1,53 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> oddsyra@0.0.0 phase9:certify
+> node scripts/phase9-certify.mjs --environment=production
+
+◇ injected env (20) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+{
+  "event": "PHASE9_GO_LIVE_CHECK",
+  "environment": "production",
+  "claimedProduction": true,
+  "productionDbAsserted": false,
+  "smokeStatus": "BLOCKED",
+  "probeBlocked": true,
+  "testFundingOnConnectedDb": "TEST_FUNDING_CLEAN",
+  "autoRepair": false,
+  "secretsPrinted": false
+}
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+{"ts":"2026-08-28T05:29:33.774Z","level":"error","message":"sql_error","error":"relation \"settlement_queue\" does not exist"}
+{"ts":"2026-08-28T05:29:33.775Z","level":"error","message":"sql_error","error":"relation \"ops_alerts\" does not exist"}
+{"ts":"2026-08-28T05:29:33.778Z","level":"error","message":"sql_error","error":"relation \"ops_incidents\" does not exist"}
+{
+  "event": "PHASE9_CERTIFY",
+  "PRODUCTION_CERTIFICATION_STATUS": "NO-GO",
+  "productionClaimAllowed": false,
+  "goNoGo": "NO-GO",
+  "mandatoryBlockers": [
+    "CORE:BLOCKED",
+    "TESTS:NOT_VERIFIED",
+    "BUILD:NOT_VERIFIED",
+    "DATABASE:NOT_VERIFIED",
+    "MIGRATIONS:NOT_VERIFIED",
+    "LEDGER:NOT_VERIFIED",
+    "RECONCILIATION:NOT_VERIFIED",
+    "TEST_FUNDING:NOT_VERIFIED",
+    "AUTHENTICATION:NOT_VERIFIED",
+    "MFA:NOT_VERIFIED",
+    "RBAC:NOT_VERIFIED",
+    "CSRF:NOT_VERIFIED",
+    "SECRETS:NOT_VERIFIED",
+    "AUDIT_LOGGING:NOT_VERIFIED",
+    "SECURITY:NOT_VERIFIED",
+    "FINANCE:NOT_VERIFIED",
+    "PROMOTIONS:NOT_VERIFIED",
+    "CRM:NOT_VERIFIED",
+    "WORKERS:NOT_VERIFIED",
+    "OUTBOX:NOT_VERIFIED"
+  ],
+  "summaryPath": "docs/evidence/phase9/VERIFICATION_SUMMARY.json"
+}

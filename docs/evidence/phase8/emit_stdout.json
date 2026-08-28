@@ -1,0 +1,9 @@
+◇ injected env (20) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+{
+  "event": "PHASE8_EVIDENCE_STUBS",
+  "environment": "local",
+  "testFundingStatus": "PASS",
+  "productionAssumed": false,
+  "autoRepair": false
+}

@@ -1,0 +1,231 @@
+{
+  "phase": 8,
+  "timestamp": "2026-08-28T05:23:23.864Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "secretsPrinted": false,
+  "environment": "local",
+  "baseUrl": "https://oddsyra.com",
+  "result": "FAIL",
+  "gates": {
+    "PRODUCTION_SMOKE": {
+      "status": "FAIL",
+      "notes": "Core public probes incomplete"
+    }
+  },
+  "steps": [
+    {
+      "id": "public_readiness",
+      "result": "FAIL",
+      "detail": {
+        "path": "/readiness",
+        "status": null,
+        "error": "fetch failed"
+      }
+    },
+    {
+      "id": "public_liveness",
+      "result": "FAIL",
+      "detail": {
+        "path": "/liveness",
+        "status": null,
+        "error": "fetch failed"
+      }
+    },
+    {
+      "id": "health_live",
+      "result": "FAIL",
+      "detail": {
+        "path": "/health/live",
+        "status": null,
+        "error": "fetch failed",
+        "note": "SPA HTML means alias not deployed"
+      }
+    },
+    {
+      "id": "health_ready",
+      "result": "FAIL",
+      "detail": {
+        "path": "/health/ready",
+        "status": null,
+        "error": "fetch failed"
+      }
+    },
+    {
+      "id": "health_dependencies",
+      "result": "FAIL",
+      "detail": {
+        "path": "/health/dependencies",
+        "status": null,
+        "error": "fetch failed"
+      }
+    },
+    {
+      "id": "admin_unauthenticated",
+      "result": "FAIL",
+      "detail": {
+        "path": "/api/admin/operations/production-readiness",
+        "status": null,
+        "error": "fetch failed"
+      }
+    },
+    {
+      "id": "certification_unauthenticated",
+      "result": "FAIL",
+      "detail": {
+        "path": "/api/admin/operations/production-certification",
+        "status": null,
+        "error": "fetch failed"
+      }
+    },
+    {
+      "id": "authentication",
+      "result": "NOT_VERIFIED",
+      "detail": {
+        "note": "Requires credentialed operator procedure — see docs/PHASE_8_PRODUCTION_SMOKE_TEST.md"
+      }
+    },
+    {
+      "id": "mfa",
+      "result": "NOT_VERIFIED",
+      "detail": {
+        "note": "Requires credentialed operator procedure — see docs/PHASE_8_PRODUCTION_SMOKE_TEST.md"
+      }
+    },
+    {
+      "id": "rbac",
+      "result": "NOT_VERIFIED",
+      "detail": {
+        "note": "Requires credentialed operator procedure — see docs/PHASE_8_PRODUCTION_SMOKE_TEST.md"
+      }
+    },
+    {
+      "id": "admin_shell",
+      "result": "NOT_VERIFIED",
+      "detail": {
+        "note": "Requires credentialed operator procedure — see docs/PHASE_8_PRODUCTION_SMOKE_TEST.md"
+      }
+    },
+    {
+      "id": "customer_lookup",
+      "result": "NOT_VERIFIED",
+      "detail": {
+        "note": "Requires credentialed operator procedure — see docs/PHASE_8_PRODUCTION_SMOKE_TEST.md"
+      }
+    },
+    {
+      "id": "customer_360",
+      "result": "NOT_VERIFIED",
+      "detail": {
+        "note": "Requires credentialed operator procedure — see docs/PHASE_8_PRODUCTION_SMOKE_TEST.md"
+      }
+    },
+    {
+      "id": "wallet_readonly",
+      "result": "NOT_VERIFIED",
+      "detail": {
+        "note": "Requires credentialed operator procedure — see docs/PHASE_8_PRODUCTION_SMOKE_TEST.md"
+      }
+    },
+    {
+      "id": "bet_slip",
+      "result": "NOT_VERIFIED",
+      "detail": {
+        "note": "Requires credentialed operator procedure — see docs/PHASE_8_PRODUCTION_SMOKE_TEST.md"
+      }
+    },
+    {
+      "id": "odds_changed",
+      "result": "NOT_VERIFIED",
+      "detail": {
+        "note": "Requires credentialed operator procedure — see docs/PHASE_8_PRODUCTION_SMOKE_TEST.md"
+      }
+    },
+    {
+      "id": "odds_acceptance",
+      "result": "NOT_VERIFIED",
+      "detail": {
+        "note": "Requires credentialed operator procedure — see docs/PHASE_8_PRODUCTION_SMOKE_TEST.md"
+      }
+    },
+    {
+      "id": "bet_placement",
+      "result": "BLOCKED",
+      "detail": {
+        "note": "Financial smoke blocked — pass --allow-financial-smoke=1 only with operator approval"
+      }
+    },
+    {
+      "id": "settlement",
+      "result": "BLOCKED",
+      "detail": {
+        "note": "Financial smoke blocked — pass --allow-financial-smoke=1 only with operator approval"
+      }
+    },
+    {
+      "id": "withdrawal_request",
+      "result": "BLOCKED",
+      "detail": {
+        "note": "Financial smoke blocked — pass --allow-financial-smoke=1 only with operator approval"
+      }
+    },
+    {
+      "id": "maker_checker",
+      "result": "NOT_VERIFIED",
+      "detail": {
+        "note": "Requires credentialed operator procedure — see docs/PHASE_8_PRODUCTION_SMOKE_TEST.md"
+      }
+    },
+    {
+      "id": "reconciliation",
+      "result": "NOT_VERIFIED",
+      "detail": {
+        "note": "Requires credentialed operator procedure — see docs/PHASE_8_PRODUCTION_SMOKE_TEST.md"
+      }
+    },
+    {
+      "id": "notifications",
+      "result": "NOT_VERIFIED",
+      "detail": {
+        "note": "Requires credentialed operator procedure — see docs/PHASE_8_PRODUCTION_SMOKE_TEST.md"
+      }
+    },
+    {
+      "id": "outbox",
+      "result": "NOT_VERIFIED",
+      "detail": {
+        "note": "Requires credentialed operator procedure — see docs/PHASE_8_PRODUCTION_SMOKE_TEST.md"
+      }
+    },
+    {
+      "id": "worker",
+      "result": "NOT_VERIFIED",
+      "detail": {
+        "note": "Requires credentialed operator procedure — see docs/PHASE_8_PRODUCTION_SMOKE_TEST.md"
+      }
+    },
+    {
+      "id": "redis",
+      "result": "NOT_VERIFIED",
+      "detail": {
+        "note": "Requires credentialed operator procedure — see docs/PHASE_8_PRODUCTION_SMOKE_TEST.md"
+      }
+    },
+    {
+      "id": "websocket",
+      "result": "NOT_VERIFIED",
+      "detail": {
+        "note": "Requires credentialed operator procedure — see docs/PHASE_8_PRODUCTION_SMOKE_TEST.md"
+      }
+    },
+    {
+      "id": "audit_log",
+      "result": "NOT_VERIFIED",
+      "detail": {
+        "note": "Requires credentialed operator procedure — see docs/PHASE_8_PRODUCTION_SMOKE_TEST.md"
+      }
+    }
+  ],
+  "financialSmokeExecuted": false,
+  "allowFinancial": false
+}

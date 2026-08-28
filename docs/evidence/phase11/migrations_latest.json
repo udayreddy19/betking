@@ -1,0 +1,52 @@
+{
+  "phase": 11,
+  "timestamp": "2026-08-28T06:04:59.461Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "forceGreenAllowed": false,
+  "secretsPrinted": false,
+  "environment": "production",
+  "result": "NOT_VERIFIED",
+  "stub": false,
+  "verificationMethod": "connected_url_probe",
+  "notes": "Migration PASS requires proven production DB identity + applied 067–071 and 098",
+  "gates": {
+    "MIGRATIONS": {
+      "status": "NOT_VERIFIED"
+    }
+  },
+  "checks": {
+    "requiredMigrations": [
+      "067",
+      "068",
+      "069",
+      "070",
+      "071",
+      "098"
+    ],
+    "expectedVersions": [
+      "067",
+      "068",
+      "069",
+      "070",
+      "071",
+      "098"
+    ],
+    "actualHead": "096_payment_refund_manual_review.sql",
+    "appliedStatus": {
+      "067": "GREEN",
+      "068": "GREEN",
+      "069": "GREEN",
+      "070": "YELLOW",
+      "071": "YELLOW",
+      "098": "YELLOW"
+    },
+    "missingMigrations": [
+      "070",
+      "071",
+      "098"
+    ],
+    "identityProven": false
+  },
+  "expiresAt": "2026-09-04T06:04:59.461Z"
+}

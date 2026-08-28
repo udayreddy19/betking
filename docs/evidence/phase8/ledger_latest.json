@@ -1,0 +1,24 @@
+{
+  "phase": 8,
+  "timestamp": "2026-08-28T05:23:24.460Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "secretsPrinted": false,
+  "environment": "local",
+  "result": "NOT_VERIFIED",
+  "gates": {
+    "LEDGER": {
+      "status": "NOT_VERIFIED"
+    },
+    "FINANCE": {
+      "status": "NOT_VERIFIED"
+    }
+  },
+  "checks": {
+    "RAW": 146,
+    "ACTIONABLE": 24,
+    "ACCEPTED": 1,
+    "AUTO_REPAIR": false
+  },
+  "note": "Local investigate only — production PASS requires actionable=0 on production DB"
+}

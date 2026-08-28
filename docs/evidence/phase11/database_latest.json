@@ -1,0 +1,56 @@
+{
+  "phase": 11,
+  "timestamp": "2026-08-28T06:04:59.443Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "forceGreenAllowed": false,
+  "secretsPrinted": false,
+  "environment": "production",
+  "result": "NOT_VERIFIED",
+  "stub": false,
+  "verificationMethod": "connected_url_probe",
+  "identityProven": false,
+  "notes": "Connected DATABASE_URL is NOT proven production. Set PRODUCTION_DB_ASSERTED=1 + PRODUCTION_DB_ASSERTION_REF under change control after verifying host/db.",
+  "gates": {
+    "DATABASE": {
+      "status": "NOT_VERIFIED"
+    }
+  },
+  "checks": {
+    "dbReachable": true,
+    "identityProven": false,
+    "assertionRef": null,
+    "databaseIdentity": {
+      "host": "127***",
+      "database": "odd***",
+      "port": "5432",
+      "user": "od***",
+      "identityProven": false,
+      "note": "Redacted; identityProven remains false until operator asserts production under change control"
+    },
+    "migrationHead": "096_payment_refund_manual_review.sql",
+    "requiredMigrations": [
+      "067",
+      "068",
+      "069",
+      "070",
+      "071",
+      "098"
+    ],
+    "appliedStatus": {
+      "067": "GREEN",
+      "068": "GREEN",
+      "069": "GREEN",
+      "070": "YELLOW",
+      "071": "YELLOW",
+      "098": "YELLOW"
+    },
+    "missingMigrations": [
+      "070",
+      "071",
+      "098"
+    ]
+  },
+  "errors": [],
+  "expiresAt": "2026-09-04T06:04:59.443Z"
+}

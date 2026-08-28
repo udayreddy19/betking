@@ -1,0 +1,22 @@
+{
+  "phase": 8,
+  "timestamp": "2026-08-28T05:22:52.721Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "secretsPrinted": false,
+  "environment": "local",
+  "result": "NOT_VERIFIED",
+  "gates": {
+    "DR": {
+      "status": "NOT_VERIFIED"
+    },
+    "BACKUP": {
+      "status": "NOT_VERIFIED"
+    }
+  },
+  "classes": {
+    "LOCAL_DUMP": "HISTORICAL_PASSED_NOT_PROD_RTO",
+    "STAGING_PITR": "NOT_VERIFIED",
+    "PRODUCTION_CLASS_PITR": "NOT_VERIFIED"
+  }
+}

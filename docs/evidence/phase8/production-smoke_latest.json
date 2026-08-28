@@ -1,0 +1,16 @@
+{
+  "phase": 8,
+  "timestamp": "2026-08-28T05:48:38.372Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "secretsPrinted": false,
+  "environment": "production",
+  "result": "BLOCKED",
+  "blocked": true,
+  "blockReason": "Pass --i-understand-production=1",
+  "gates": {
+    "PRODUCTION_SMOKE": {
+      "status": "BLOCKED"
+    }
+  }
+}

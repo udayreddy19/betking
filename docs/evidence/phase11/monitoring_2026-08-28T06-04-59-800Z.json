@@ -1,0 +1,26 @@
+{
+  "phase": 11,
+  "timestamp": "2026-08-28T06:04:59.800Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "forceGreenAllowed": false,
+  "secretsPrinted": false,
+  "environment": "production",
+  "result": "NOT_VERIFIED",
+  "stub": false,
+  "verificationMethod": "distributed_required",
+  "metricsBackend": "PROCESS_LOCAL",
+  "processLocal": true,
+  "notes": "PROCESS_LOCAL telemetry is not distributed production monitoring",
+  "gates": {
+    "MONITORING": {
+      "status": "NOT_VERIFIED"
+    }
+  },
+  "checks": {
+    "metricsBackend": "PROCESS_LOCAL",
+    "alertBackend": "NOT_VERIFIED",
+    "logBackend": "NOT_VERIFIED"
+  },
+  "expiresAt": "2026-09-04T06:04:59.800Z"
+}

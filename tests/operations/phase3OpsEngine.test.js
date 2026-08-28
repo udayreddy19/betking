@@ -24,7 +24,13 @@ import {
   updateNotificationPreferences,
 } from '../../lib/opsNotificationCenter.mjs';
 import { buildOpsControlTower } from '../../lib/opsControlTower.mjs';
-import { buildProductionHealth } from '../../lib/opsProductionHealth.mjs';
+import { buildProductionHealth, getProductionHealthDrilldown } from '../../lib/opsProductionHealth.mjs';
+import { getAdminKpiDrilldown } from '../../lib/adminKpiDrilldown.mjs';
+import {
+  observeHttpRequest,
+  resetRequestMetricsForTests,
+  getHttpCounterBreakdown,
+} from '../../lib/requestMetrics.mjs';
 
 const hasDb = !!process.env.DATABASE_URL;
 
@@ -190,6 +196,35 @@ describe.skipIf(!hasDb)('Phase 3 — Control Tower + Production Health', () => {
     expect(h.database).toBeTruthy();
     expect(h.security?.note).toBeTruthy();
   }, 15000);
+});
+
+describe('Phase 3 — Production Health drilldown (process-local)', () => {
+  it('returns HTTP error breakdown for errorCount tile', async () => {
+    resetRequestMetricsForTests();
+    observeHttpRequest({ method: 'GET', route: '/api/test', status: 404, ms: 12 });
+    observeHttpRequest({ method: 'GET', route: '/api/test', status: 404, ms: 8 });
+    observeHttpRequest({ method: 'POST', route: '/api/bets', status: 500, ms: 40 });
+    const breakdown = getHttpCounterBreakdown({ statusMin: 400, statusMax: 599 });
+    expect(breakdown.rows.length).toBeGreaterThanOrEqual(2);
+    const drill = await getProductionHealthDrilldown('errorCount', { limit: 20 });
+    expect(drill.success).toBe(true);
+    expect(drill.rows.length).toBeGreaterThanOrEqual(2);
+    expect(drill.columns.some((c) => c.key === 'route')).toBe(true);
+  });
+
+  it('shared kpi drilldown covers withdrawals + outbox aliases', async () => {
+    const wd = await getAdminKpiDrilldown('pendingWithdrawals', { limit: 5 });
+    expect(wd.success).toBe(true);
+    expect(Array.isArray(wd.rows)).toBe(true);
+    const ob = await getAdminKpiDrilldown('outboxPending', { limit: 5 });
+    expect(ob.success).toBe(true);
+  });
+
+  it('returns 404 payload for unknown metric', async () => {
+    const drill = await getAdminKpiDrilldown('not_a_real_metric');
+    expect(drill.success).toBe(false);
+    expect(drill.status).toBe(404);
+  });
 });
 
 describe('Phase 3 — Failure safety (soft raiseOpsAlert)', () => {

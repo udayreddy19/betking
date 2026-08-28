@@ -97,20 +97,52 @@ function sanitizeBody(body) {
 /**
  * Log a specific audit event programmatically (for services to call directly).
  */
-export async function logAdminAction({ actorId, targetId, action, details = {} }) {
+export async function logAdminAction({
+  actorId,
+  targetId,
+  action,
+  details = {},
+  ip = null,
+  userAgent = null,
+  requestId = null,
+  riskLevel = null,
+}) {
   const query = await getQuery();
   if (!query) return null;
 
   try {
     const res = await query(
-      `INSERT INTO audit_events (actor_id, target_id, action, details, created_at)
-       VALUES ($1, $2, $3, $4, NOW())
+      `INSERT INTO audit_events (
+         actor_id, target_id, action, details, created_at,
+         ip_address, user_agent, request_id, risk_level
+       )
+       VALUES ($1, $2, $3, $4, NOW(), $5, $6, $7, $8)
        RETURNING event_id, actor_id, action, created_at`,
-      [actorId, targetId || null, action, JSON.stringify(details)]
+      [
+        actorId,
+        targetId || null,
+        action,
+        JSON.stringify(details),
+        ip ? String(ip).slice(0, 45) : null,
+        userAgent ? String(userAgent).slice(0, 2000) : null,
+        requestId ? String(requestId).slice(0, 128) : null,
+        riskLevel ? String(riskLevel).slice(0, 16) : null,
+      ],
     );
-    return res.rows[0];
+    return res.rows[0] || null;
   } catch (err) {
-    console.error('[AuditLogger] logAdminAction failed:', err.message);
-    return null;
+    // Fallback if enrichment columns not migrated yet
+    try {
+      const res = await query(
+        `INSERT INTO audit_events (actor_id, target_id, action, details, created_at)
+         VALUES ($1, $2, $3, $4, NOW())
+         RETURNING event_id, actor_id, action, created_at`,
+        [actorId, targetId || null, action, JSON.stringify(details)],
+      );
+      return res.rows[0] || null;
+    } catch (err2) {
+      console.error('[AuditLogger] DB write failed:', err2.message || err.message);
+      return null;
+    }
   }
 }

@@ -1,0 +1,22 @@
+{
+  "phase": 11,
+  "timestamp": "2026-08-28T06:04:59.904Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "forceGreenAllowed": false,
+  "secretsPrinted": false,
+  "environment": "production",
+  "result": "NOT_VERIFIED",
+  "stub": false,
+  "verificationMethod": "feature_probe_required",
+  "notes": "Production feature verification not executed in this session",
+  "gates": {
+    "CRM": {
+      "status": "NOT_VERIFIED",
+      "notes": "Production feature verification not executed in this session"
+    }
+  },
+  "checks": {},
+  "identityProven": false,
+  "expiresAt": "2026-09-04T06:04:59.904Z"
+}

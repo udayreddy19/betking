@@ -1,0 +1,93 @@
+{
+  "phase": 9,
+  "timestamp": "2026-08-28T06:06:09.795Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "secretsPrinted": false,
+  "environment": "local-connected-not-production",
+  "claimedEnvironment": "production",
+  "result": "NOT_VERIFIED",
+  "gates": {
+    "TEST_FUNDING": {
+      "status": "NOT_VERIFIED",
+      "notes": "Production DB not confirmed"
+    }
+  },
+  "checks": {
+    "code": "TEST_FUNDING_CLEAN",
+    "goLiveBlocked": false,
+    "pendingCount": 0,
+    "accounts": [
+      {
+        "userId": "usr_1787373521441_5f0bb0f7",
+        "cashBalance": 0,
+        "bonusBalance": 0,
+        "freebetBalance": 0,
+        "reservedBalance": 0,
+        "bucketTotal": 0,
+        "cleanupStatus": "CLEAN",
+        "residualNonZero": false
+      },
+      {
+        "userId": "usr_1787315920401_e9f85dfb",
+        "cashBalance": 0,
+        "bonusBalance": 0,
+        "freebetBalance": 0,
+        "reservedBalance": 0,
+        "bucketTotal": 0,
+        "cleanupStatus": "CLEAN",
+        "residualNonZero": false
+      },
+      {
+        "userId": "usr_1787551534293_d50c7435",
+        "cashBalance": 0,
+        "bonusBalance": 0,
+        "freebetBalance": 0,
+        "reservedBalance": 0,
+        "bucketTotal": 0,
+        "cleanupStatus": "CLEAN",
+        "residualNonZero": false
+      },
+      {
+        "userId": "faizu_26_08_2026_000014",
+        "cashBalance": 0,
+        "bonusBalance": 0,
+        "freebetBalance": 0,
+        "reservedBalance": 0,
+        "bucketTotal": 0,
+        "cleanupStatus": "CLEAN",
+        "residualNonZero": false
+      },
+      {
+        "userId": "vishnu_25_08_2026_000013",
+        "cashBalance": 0,
+        "bonusBalance": 0,
+        "freebetBalance": 0,
+        "reservedBalance": 0,
+        "bucketTotal": 0,
+        "cleanupStatus": "CLEAN",
+        "residualNonZero": false
+      },
+      {
+        "userId": "usr_1786981914375_bb8e3569",
+        "cashBalance": 0,
+        "bonusBalance": 0,
+        "freebetBalance": 0,
+        "reservedBalance": 0,
+        "bucketTotal": 0,
+        "cleanupStatus": "CLEAN",
+        "residualNonZero": false
+      },
+      {
+        "userId": "udayreddytest_27_08_2026_000015",
+        "cashBalance": 0,
+        "bonusBalance": 0,
+        "freebetBalance": 0,
+        "reservedBalance": 0,
+        "bucketTotal": 0,
+        "cleanupStatus": "CLEAN",
+        "residualNonZero": false
+      }
+    ]
+  }
+}

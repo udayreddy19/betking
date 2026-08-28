@@ -1,0 +1,8 @@
+PRODUCTION_CERTIFICATION_STATUS=NO-GO
+GO_NO_GO=NO-GO
+productionClaimAllowed=false
+forceGreenAllowed=false
+autoRepair=false
+mandatoryBlockers=31
+certificationVersion=phase10
+generatedAt=2026-08-28T05:48:40.906Z

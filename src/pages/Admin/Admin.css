@@ -410,6 +410,13 @@ body {
   box-shadow: none;
   transition: border-color var(--admin-transition-fast), background var(--admin-transition-fast);
   cursor: default;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  width: 100%;
+  display: block;
+  appearance: none;
+  -webkit-appearance: none;
 }
 .telemetry-card::before {
   content: '';
@@ -418,12 +425,24 @@ body {
   width: 3px; height: 100%;
   background: var(--card-accent, var(--admin-primary));
   opacity: 0.85;
+  pointer-events: none;
 }
 .telemetry-card:hover {
   transform: none;
   border-color: var(--admin-border-bright);
   background: var(--admin-surface-hover);
   box-shadow: none;
+}
+.telemetry-card--clickable {
+  cursor: pointer !important;
+}
+.telemetry-card--clickable:hover {
+  border-color: var(--admin-primary);
+  background: var(--admin-surface-hover);
+}
+.telemetry-card--clickable:focus-visible {
+  outline: 2px solid var(--admin-primary);
+  outline-offset: 2px;
 }
 .telemetry-label {
   font-size: 0.68rem;

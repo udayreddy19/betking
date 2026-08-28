@@ -2,6 +2,7 @@ import React from 'react';
 
 /**
  * KPI / Metric card with value, label, trend indicator, and click-to-navigate.
+ * Renders as a real <button> when onClick is provided so clicks are reliable.
  */
 export default function AdminKPI({
   label,
@@ -17,19 +18,19 @@ export default function AdminKPI({
 }) {
   const trendColor = trend === 'up' ? '#10b981' : trend === 'down' ? '#f43f5e' : 'var(--admin-text-muted)';
   const trendIcon = trend === 'up' ? '↑' : trend === 'down' ? '↓' : '';
+  const clickable = typeof onClick === 'function';
+  const Tag = clickable ? 'button' : 'div';
 
   return (
-    <div
-      className={`telemetry-card ${className}`}
+    <Tag
+      type={clickable ? 'button' : undefined}
+      className={`telemetry-card ${clickable ? 'telemetry-card--clickable' : ''} ${className}`.trim()}
       style={{
         '--card-accent': accent,
-        ...(onClick ? { cursor: 'pointer' } : {}),
         ...style,
       }}
-      onClick={onClick}
-      role={onClick ? 'button' : undefined}
-      tabIndex={onClick ? 0 : undefined}
-      onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(e); } } : undefined}
+      onClick={clickable ? onClick : undefined}
+      aria-label={clickable ? `${label}: ${value ?? '—'} — view details` : undefined}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div className="telemetry-label">{label}</div>
@@ -49,16 +50,28 @@ export default function AdminKPI({
         {source && (
           <span style={{
             fontSize: '0.66rem',
-            color: 'var(--admin-text-dim)',
+            color: clickable ? 'var(--admin-primary)' : 'var(--admin-text-dim)',
             padding: '1px 5px',
             borderRadius: '4px',
-            background: 'rgba(148, 163, 184, 0.1)',
+            background: clickable ? 'rgba(99, 102, 241, 0.15)' : 'rgba(148, 163, 184, 0.1)',
             fontWeight: 600,
           }}>
             {source}
           </span>
         )}
+        {clickable && !source && (
+          <span style={{
+            fontSize: '0.66rem',
+            color: 'var(--admin-primary)',
+            padding: '1px 5px',
+            borderRadius: '4px',
+            background: 'rgba(99, 102, 241, 0.15)',
+            fontWeight: 600,
+          }}>
+            View →
+          </span>
+        )}
       </div>
-    </div>
+    </Tag>
   );
 }

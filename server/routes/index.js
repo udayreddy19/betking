@@ -9,12 +9,20 @@ import { Router } from 'express';
 import { adminAuth } from '../middleware/adminAuth.js';
 import { auditLogger } from '../middleware/auditLogger.js';
 import { correlationId } from '../middleware/correlationId.js';
+import { adminApiRateLimiter, adminMutationRateLimiter } from '../middleware/rateLimiter.js';
 
 const adminRouter = Router();
 
 // Apply middleware stack to all admin routes
 adminRouter.use(correlationId);
 adminRouter.use(adminAuth);
+adminRouter.use(adminApiRateLimiter);
+adminRouter.use((req, res, next) => {
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+    return adminMutationRateLimiter(req, res, next);
+  }
+  return next();
+});
 adminRouter.use(auditLogger);
 
 // ── Mount feature routers ──

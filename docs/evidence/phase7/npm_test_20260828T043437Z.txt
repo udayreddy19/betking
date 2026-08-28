@@ -1,0 +1,16 @@
+=== npm test ===
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> oddsyra@0.0.0 test
+> vitest run
+
+◇ injected env (20) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+
+ RUN  v4.1.10 /Users/udayreddy/Desktop/betking
+
+
+ Test Files  202 passed (202)
+      Tests  822 passed | 5 skipped (827)
+   Start at  10:04:38
+   Duration  17.86s (transform 6.07s, setup 0ms, import 20.19s, tests 56.68s, environment 58ms)
+

@@ -1,0 +1,24 @@
+{
+  "phase": 11,
+  "timestamp": "2026-08-28T06:04:59.521Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "forceGreenAllowed": false,
+  "secretsPrinted": false,
+  "environment": "production",
+  "result": "NOT_VERIFIED",
+  "stub": false,
+  "verificationMethod": "flag_only_engine",
+  "notes": "FLAG_ONLY reconciliation; production verification requires proven prod DB + investigation metadata sample",
+  "gates": {
+    "RECONCILIATION": {
+      "status": "NOT_VERIFIED"
+    }
+  },
+  "checks": {
+    "policy": "FLAG_ONLY",
+    "autoRepair": false,
+    "makerCheckerRequiredForAdjustment": true
+  },
+  "expiresAt": "2026-09-04T06:04:59.521Z"
+}

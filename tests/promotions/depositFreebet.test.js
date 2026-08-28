@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import { query } from '../../db/pg.js';
 import {
   calculateDepositFreebetAmount,
@@ -69,6 +69,7 @@ describe('Deposit free bet grants', () => {
   const userId = 'usr_dfb_test_01';
   const depositA = 'dep_dfb_a01';
   const depositB = 'dep_dfb_b02';
+  const FREEBET_SUITE_LOCK = 87236401;
 
   beforeAll(async () => {
     await query(`
@@ -122,6 +123,7 @@ describe('Deposit free bet grants', () => {
   });
 
   beforeEach(async () => {
+    await query(`SELECT pg_advisory_lock($1)`, [FREEBET_SUITE_LOCK]).catch(() => null);
     await query(`INSERT INTO users (user_id, email, password_hash, first_name, status)
                  VALUES ($1, $2, 'hash', 'Test', 'ACTIVE')
                  ON CONFLICT (user_id) DO UPDATE SET status = 'ACTIVE'`, [userId, `${userId}@example.com`]);
@@ -145,6 +147,10 @@ describe('Deposit free bet grants', () => {
       emailOnGrant: false,
       freebetExpiryDays: 7,
     });
+  });
+
+  afterEach(async () => {
+    await query(`SELECT pg_advisory_unlock($1)`, [FREEBET_SUITE_LOCK]).catch(() => null);
   });
 
   async function seedCapturedDeposit(depositId, amount) {

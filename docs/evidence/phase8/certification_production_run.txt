@@ -1,0 +1,66 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> oddsyra@0.0.0 production:certification
+> node scripts/production-certification.mjs --environment=production
+
+◇ injected env (20) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+{"ts":"2026-08-28T05:23:38.511Z","level":"error","message":"sql_error","error":"relation \"ops_alerts\" does not exist"}
+{"ts":"2026-08-28T05:23:38.512Z","level":"error","message":"sql_error","error":"relation \"settlement_queue\" does not exist"}
+{"ts":"2026-08-28T05:23:38.521Z","level":"error","message":"sql_error","error":"relation \"ops_incidents\" does not exist"}
+{
+  "event": "PRODUCTION_CERTIFICATION",
+  "PRODUCTION_CERTIFICATION_STATUS": "RED",
+  "goNoGo": {
+    "decision": "NO-GO",
+    "productionClaimAllowed": false,
+    "stagingClaimAllowed": false,
+    "mandatoryBlockers": [
+      "MIGRATIONS:NOT_VERIFIED",
+      "LEDGER:FAIL",
+      "RECONCILIATION:FAIL",
+      "AUTHENTICATION:NOT_VERIFIED",
+      "MFA:NOT_VERIFIED",
+      "RBAC:NOT_VERIFIED",
+      "CSRF:NOT_VERIFIED",
+      "SECRETS:NOT_VERIFIED",
+      "FINANCE:FAIL",
+      "WORKERS:NOT_VERIFIED",
+      "OUTBOX:NOT_VERIFIED",
+      "DR:NOT_VERIFIED",
+      "PITR:NOT_VERIFIED",
+      "RPO:NOT_VERIFIED",
+      "RTO:NOT_VERIFIED",
+      "DEPLOYMENT:NOT_VERIFIED",
+      "PRODUCTION_SMOKE:NOT_VERIFIED",
+      "CONFIGURATION:NOT_VERIFIED",
+      "LEDGER:FAIL:actionable:146"
+    ],
+    "rule": "Production GREEN only when every mandatory gate is PASS with environment-matched evidence. No force-GREEN.",
+    "autoRepair": false
+  },
+  "mandatoryBlockers": [
+    "MIGRATIONS:NOT_VERIFIED",
+    "LEDGER:FAIL",
+    "RECONCILIATION:FAIL",
+    "AUTHENTICATION:NOT_VERIFIED",
+    "MFA:NOT_VERIFIED",
+    "RBAC:NOT_VERIFIED",
+    "CSRF:NOT_VERIFIED",
+    "SECRETS:NOT_VERIFIED",
+    "FINANCE:FAIL",
+    "WORKERS:NOT_VERIFIED",
+    "OUTBOX:NOT_VERIFIED",
+    "DR:NOT_VERIFIED",
+    "PITR:NOT_VERIFIED",
+    "RPO:NOT_VERIFIED",
+    "RTO:NOT_VERIFIED",
+    "DEPLOYMENT:NOT_VERIFIED",
+    "PRODUCTION_SMOKE:NOT_VERIFIED",
+    "CONFIGURATION:NOT_VERIFIED",
+    "LEDGER:FAIL:actionable:146"
+  ],
+  "evidencePath": "docs/evidence/phase8/certification_2026-08-28T05-23-38-661Z.json",
+  "summaryPath": "docs/evidence/phase8/VERIFICATION_SUMMARY.json"
+}

@@ -1,0 +1,15 @@
+{
+  "phase": 8,
+  "timestamp": "2026-08-28T05:22:52.785Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "secretsPrinted": false,
+  "environment": "local",
+  "result": "NOT_VERIFIED",
+  "gates": {
+    "RECONCILIATION": {
+      "status": "NOT_VERIFIED"
+    }
+  },
+  "note": "Flag-only engine preserved; local finance:reconcile previously hit duplicate-key — not hidden"
+}

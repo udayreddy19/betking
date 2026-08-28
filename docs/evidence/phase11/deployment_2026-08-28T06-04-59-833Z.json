@@ -1,0 +1,25 @@
+{
+  "phase": 11,
+  "timestamp": "2026-08-28T06:04:59.833Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "forceGreenAllowed": false,
+  "secretsPrinted": false,
+  "environment": "production",
+  "result": "NOT_VERIFIED",
+  "stub": false,
+  "verificationMethod": "deployment_evidence_required",
+  "notes": "Local git commit ≠ proven production deployment",
+  "gates": {
+    "DEPLOYMENT": {
+      "status": "NOT_VERIFIED"
+    }
+  },
+  "checks": {
+    "localGitCommit": "31eb6aa",
+    "productionCommit": null,
+    "artifactId": null,
+    "rollbackCapability": "application_image_only"
+  },
+  "expiresAt": "2026-09-04T06:04:59.833Z"
+}

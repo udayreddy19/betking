@@ -1,0 +1,23 @@
+{
+  "phase": 11,
+  "timestamp": "2026-08-28T06:04:59.922Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "forceGreenAllowed": false,
+  "secretsPrinted": false,
+  "environment": "production",
+  "result": "BLOCKED",
+  "blocked": true,
+  "blockReason": "Pass --i-understand-production=1 for authorized production smoke",
+  "stub": false,
+  "verificationMethod": "ack_required",
+  "gates": {
+    "PRODUCTION_SMOKE": {
+      "status": "BLOCKED"
+    },
+    "CORE": {
+      "status": "BLOCKED"
+    }
+  },
+  "expiresAt": "2026-09-04T06:04:59.922Z"
+}

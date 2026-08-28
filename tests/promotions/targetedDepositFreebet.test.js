@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import { query } from '../../db/pg.js';
 import {
   calculateDepositFreebetAmount,
@@ -11,9 +11,11 @@ import {
 } from '../../lib/depositFreebetEngine.mjs';
 
 describe('Targeted deposit free bet', () => {
-  const userA = 'usr_tdfb_a';
-  const userB = 'usr_tdfb_b';
-  const userD = 'usr_tdfb_d';
+  const runId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const userA = `usr_tdfb_a_${runId}`;
+  const userB = `usr_tdfb_b_${runId}`;
+  const userD = `usr_tdfb_d_${runId}`;
+  const FREEBET_SUITE_LOCK = 87236401;
   let campaignId;
 
   beforeAll(async () => {
@@ -67,12 +69,14 @@ describe('Targeted deposit free bet', () => {
   }
 
   beforeEach(async () => {
+    await query(`SELECT pg_advisory_lock($1)`, [FREEBET_SUITE_LOCK]).catch(() => null);
     for (const u of [userA, userB, userD]) await ensureUser(u);
     await query(`DELETE FROM deposit_freebet_grants WHERE user_id IN ($1,$2,$3)`, [userA, userB, userD]);
     await query(`DELETE FROM deposit_freebet_campaign_users WHERE user_id IN ($1,$2,$3)`, [userA, userB, userD]).catch(() => null);
     await query(`DELETE FROM deposits WHERE user_id IN ($1,$2,$3)`, [userA, userB, userD]).catch(() => null);
 
-    // Isolate from global deposit freebet campaign (sibling test suite)
+    // Isolate from global deposit freebet campaign (sibling test suite) without
+    // pausing ALL freebet promos (that races depositFreebet.test.js in parallel).
     await ensureDepositFreebetCampaign();
     await upsertDepositFreebetCampaign({
       enabled: false,
@@ -85,17 +89,17 @@ describe('Targeted deposit free bet', () => {
       emailOnGrant: false,
       freebetExpiryDays: 7,
     });
-    // Hard-pause every non-targeted auto-grant freebet so unselected users cannot fall through
+    const { DEPOSIT_FREEBET_CODE } = await import('../../lib/depositFreebetEngine.mjs');
     await query(
       `UPDATE promotions SET status = 'PAUSED'
-       WHERE COALESCE(reward_bucket, 'bonus') = 'freebet'
+       WHERE code = $1
          AND COALESCE(auto_grant_on_deposit, false) = true
          AND COALESCE(is_targeted, false) = false`,
+      [DEPOSIT_FREEBET_CODE],
     ).catch(() => null);
-    await query(`UPDATE promotions SET status = 'PAUSED' WHERE COALESCE(is_targeted, false) = true`).catch(() => null);
 
     const campaign = await createTargetedDepositFreebetCampaign({
-      name: 'VIP 100% Deposit Offer',
+      name: `VIP 100% Deposit Offer ${runId}`,
       minDeposit: 10000,
       matchPercent: 100,
       maxFreeBet: 10000,
@@ -108,20 +112,26 @@ describe('Targeted deposit free bet', () => {
     await setTargetedDepositFreebetStatus(campaignId, 'ACTIVE');
   });
 
+  afterEach(async () => {
+    await query(`SELECT pg_advisory_unlock($1)`, [FREEBET_SUITE_LOCK]).catch(() => null);
+  });
+
   async function seedDeposit(userId, depositId, amount) {
+    const id = `${depositId}_${runId}`;
     await query(
       `INSERT INTO deposits (id, deposit_id, user_id, order_id, amount, currency, status, created_at)
        VALUES ($1, $1, $2, $3, $4, 'INR', 'CAPTURED', NOW())
        ON CONFLICT (id) DO UPDATE SET status = 'CAPTURED', amount = EXCLUDED.amount`,
-      [depositId, userId, `ord_${depositId}`, amount],
+      [id, userId, `ord_${id}`, amount],
     );
+    return id;
   }
 
   it('selected user deposits ₹10,000 → ₹10,000 free bet', async () => {
-    await seedDeposit(userA, 'dep_tdfb_a10k', 10000);
+    const depId = await seedDeposit(userA, 'dep_tdfb_a10k', 10000);
     const r = await tryGrantDepositFreebet({
       userId: userA,
-      depositId: 'dep_tdfb_a10k',
+      depositId: depId,
       amount: 10000,
       autoEmail: false,
     });
@@ -133,10 +143,10 @@ describe('Targeted deposit free bet', () => {
   });
 
   it('selected user deposits ₹15,000 → capped at ₹10,000', async () => {
-    await seedDeposit(userA, 'dep_tdfb_a15k', 15000);
+    const depId = await seedDeposit(userA, 'dep_tdfb_a15k', 15000);
     const r = await tryGrantDepositFreebet({
       userId: userA,
-      depositId: 'dep_tdfb_a15k',
+      depositId: depId,
       amount: 15000,
       autoEmail: false,
     });
@@ -145,10 +155,10 @@ describe('Targeted deposit free bet', () => {
   });
 
   it('selected user deposits ₹8,000 → no reward', async () => {
-    await seedDeposit(userA, 'dep_tdfb_a8k', 8000);
+    const depId = await seedDeposit(userA, 'dep_tdfb_a8k', 8000);
     const r = await tryGrantDepositFreebet({
       userId: userA,
-      depositId: 'dep_tdfb_a8k',
+      depositId: depId,
       amount: 8000,
       autoEmail: false,
     });
@@ -157,10 +167,10 @@ describe('Targeted deposit free bet', () => {
   });
 
   it('unselected user deposits ₹10,000 → no reward', async () => {
-    await seedDeposit(userD, 'dep_tdfb_d10k', 10000);
+    const depId = await seedDeposit(userD, 'dep_tdfb_d10k', 10000);
     const r = await tryGrantDepositFreebet({
       userId: userD,
-      depositId: 'dep_tdfb_d10k',
+      depositId: depId,
       amount: 10000,
       autoEmail: false,
     });
@@ -169,12 +179,12 @@ describe('Targeted deposit free bet', () => {
   });
 
   it('duplicate deposit event → one reward only', async () => {
-    await seedDeposit(userA, 'dep_tdfb_dup', 10000);
+    const depId = await seedDeposit(userA, 'dep_tdfb_dup', 10000);
     const r1 = await tryGrantDepositFreebet({
-      userId: userA, depositId: 'dep_tdfb_dup', amount: 10000, autoEmail: false,
+      userId: userA, depositId: depId, amount: 10000, autoEmail: false,
     });
     const r2 = await tryGrantDepositFreebet({
-      userId: userA, depositId: 'dep_tdfb_dup', amount: 10000, autoEmail: false,
+      userId: userA, depositId: depId, amount: 10000, autoEmail: false,
     });
     expect(r1.granted).toBe(true);
     expect(r2.granted).toBe(false);
@@ -185,21 +195,21 @@ describe('Targeted deposit free bet', () => {
 
   it('paused campaign → no reward', async () => {
     await setTargetedDepositFreebetStatus(campaignId, 'PAUSED');
-    await seedDeposit(userA, 'dep_tdfb_paused', 10000);
+    const depId = await seedDeposit(userA, 'dep_tdfb_paused', 10000);
     const r = await tryGrantDepositFreebet({
-      userId: userA, depositId: 'dep_tdfb_paused', amount: 10000, autoEmail: false,
+      userId: userA, depositId: depId, amount: 10000, autoEmail: false,
     });
     expect(r.granted).toBe(false);
   });
 
   it('one claim per user on campaign', async () => {
-    await seedDeposit(userA, 'dep_tdfb_once1', 10000);
+    const dep1 = await seedDeposit(userA, 'dep_tdfb_once1', 10000);
     await tryGrantDepositFreebet({
-      userId: userA, depositId: 'dep_tdfb_once1', amount: 10000, autoEmail: false,
+      userId: userA, depositId: dep1, amount: 10000, autoEmail: false,
     });
-    await seedDeposit(userA, 'dep_tdfb_once2', 10000);
+    const dep2 = await seedDeposit(userA, 'dep_tdfb_once2', 10000);
     const r2 = await tryGrantDepositFreebet({
-      userId: userA, depositId: 'dep_tdfb_once2', amount: 10000, autoEmail: false,
+      userId: userA, depositId: dep2, amount: 10000, autoEmail: false,
     });
     expect(r2.granted).toBe(false);
     expect(r2.reason).toBe('ALREADY_REWARDED');
@@ -211,9 +221,9 @@ describe('Targeted deposit free bet', () => {
       userIds: [userD],
       adminId: 'admin_test',
     });
-    await seedDeposit(userD, 'dep_tdfb_d_now', 10000);
+    const depId = await seedDeposit(userD, 'dep_tdfb_d_now', 10000);
     const r = await tryGrantDepositFreebet({
-      userId: userD, depositId: 'dep_tdfb_d_now', amount: 10000, autoEmail: false,
+      userId: userD, depositId: depId, amount: 10000, autoEmail: false,
     });
     expect(r.granted).toBe(true);
   });

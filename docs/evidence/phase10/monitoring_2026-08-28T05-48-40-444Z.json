@@ -1,0 +1,23 @@
+{
+  "phase": 10,
+  "timestamp": "2026-08-28T05:48:40.444Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "forceGreenAllowed": false,
+  "secretsPrinted": false,
+  "environment": "production",
+  "result": "NOT_VERIFIED",
+  "verificationMethod": "phase10_stub",
+  "stub": true,
+  "notes": "PROCESS_LOCAL telemetry recorded; distributed MONITORING remains NOT_VERIFIED",
+  "gates": {
+    "MONITORING": {
+      "status": "NOT_VERIFIED",
+      "notes": "PROCESS_LOCAL telemetry recorded; distributed MONITORING remains NOT_VERIFIED"
+    }
+  },
+  "checks": {},
+  "metricsBackend": "PROCESS_LOCAL",
+  "processLocal": true,
+  "expiresAt": "2026-09-04T05:48:40.444Z"
+}

@@ -1,0 +1,39 @@
+{
+  "phase": 11,
+  "timestamp": "2026-08-28T06:04:59.484Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "forceGreenAllowed": false,
+  "secretsPrinted": false,
+  "environment": "production",
+  "result": "NOT_VERIFIED",
+  "stub": false,
+  "verificationMethod": "inspectKnownTestFundingAccounts",
+  "notes": "Connected-DB inspect is not production evidence unless identityProven + environment=production assertion",
+  "gates": {
+    "TEST_FUNDING": {
+      "status": "NOT_VERIFIED",
+      "notes": "TEST_FUNDING_CLEAN"
+    }
+  },
+  "checks": {
+    "code": "TEST_FUNDING_CLEAN",
+    "goLiveBlocked": false,
+    "allResidualsZero": null,
+    "totalKnownTestFundingAccounts": 7,
+    "accountsWithResidualBalance": 0,
+    "totalResidualBalance": null,
+    "safeAccountIds": [
+      "usr_1787373521441_5f0bb0f7",
+      "usr_1787315920401_e9f85dfb",
+      "usr_1787551534293_d50c7435",
+      "faizu_26_08_2026_000014",
+      "vishnu_25_08_2026_000013",
+      "usr_1786981914375_bb8e3569",
+      "udayreddytest_27_08_2026_000015"
+    ],
+    "AUTO_REPAIR": false,
+    "identityProven": false
+  },
+  "expiresAt": "2026-09-04T06:04:59.484Z"
+}

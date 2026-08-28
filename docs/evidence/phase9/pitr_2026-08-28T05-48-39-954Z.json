@@ -1,0 +1,18 @@
+{
+  "phase": 9,
+  "timestamp": "2026-08-28T05:48:39.954Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "secretsPrinted": false,
+  "environment": "production",
+  "result": "NOT_VERIFIED",
+  "gates": {
+    "PITR": {
+      "status": "NOT_VERIFIED",
+      "notes": "Production-class PITR required"
+    }
+  },
+  "checks": {
+    "note": "Production-class PITR required"
+  }
+}

@@ -1,0 +1,457 @@
+{
+  "phase": 8,
+  "timestamp": "2026-08-28T05:23:38.661Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "secretsPrinted": false,
+  "environment": "production",
+  "result": "RED",
+  "PRODUCTION_CERTIFICATION_STATUS": "RED",
+  "goNoGo": {
+    "decision": "NO-GO",
+    "productionClaimAllowed": false,
+    "stagingClaimAllowed": false,
+    "mandatoryBlockers": [
+      "MIGRATIONS:NOT_VERIFIED",
+      "LEDGER:FAIL",
+      "RECONCILIATION:FAIL",
+      "AUTHENTICATION:NOT_VERIFIED",
+      "MFA:NOT_VERIFIED",
+      "RBAC:NOT_VERIFIED",
+      "CSRF:NOT_VERIFIED",
+      "SECRETS:NOT_VERIFIED",
+      "FINANCE:FAIL",
+      "WORKERS:NOT_VERIFIED",
+      "OUTBOX:NOT_VERIFIED",
+      "DR:NOT_VERIFIED",
+      "PITR:NOT_VERIFIED",
+      "RPO:NOT_VERIFIED",
+      "RTO:NOT_VERIFIED",
+      "DEPLOYMENT:NOT_VERIFIED",
+      "PRODUCTION_SMOKE:NOT_VERIFIED",
+      "CONFIGURATION:NOT_VERIFIED",
+      "LEDGER:FAIL:actionable:146"
+    ],
+    "rule": "Production GREEN only when every mandatory gate is PASS with environment-matched evidence. No force-GREEN.",
+    "autoRepair": false
+  },
+  "passedGates": [
+    "CORE",
+    "DATABASE",
+    "TEST_FUNDING",
+    "TEST_FUNDING_CLEANUP",
+    "CORS",
+    "SETTLEMENT",
+    "DEPOSITS",
+    "PROMOTIONS",
+    "REDIS",
+    "BACKUPS"
+  ],
+  "failedGates": [
+    "WALLET",
+    "LEDGER",
+    "RECONCILIATION",
+    "FINANCE",
+    "ALERTING"
+  ],
+  "notVerifiedGates": [
+    "TESTS",
+    "BUILD",
+    "LINT",
+    "DEPENDENCIES",
+    "MIGRATIONS",
+    "AUTHENTICATION",
+    "AUTH",
+    "MFA",
+    "RBAC",
+    "CSRF",
+    "SESSION",
+    "SECRETS",
+    "RATE_LIMITING",
+    "SECURITY_HEADERS",
+    "AUDIT_LOGGING",
+    "SECURITY",
+    "ODDS",
+    "BET_PLACEMENT",
+    "WITHDRAWALS",
+    "WITHDRAWAL_RISK",
+    "VIP",
+    "CRM",
+    "NOTIFICATIONS",
+    "WORKERS",
+    "OUTBOX",
+    "WEBSOCKET",
+    "MONITORING",
+    "INCIDENTS",
+    "DR",
+    "PITR",
+    "RPO",
+    "RTO",
+    "DEPLOYMENT",
+    "ROLLBACK",
+    "DATA_RETENTION",
+    "PRIVACY",
+    "PRODUCTION_SMOKE",
+    "CONFIGURATION"
+  ],
+  "blockedGates": [],
+  "mandatoryBlockers": [
+    "MIGRATIONS:NOT_VERIFIED",
+    "LEDGER:FAIL",
+    "RECONCILIATION:FAIL",
+    "AUTHENTICATION:NOT_VERIFIED",
+    "MFA:NOT_VERIFIED",
+    "RBAC:NOT_VERIFIED",
+    "CSRF:NOT_VERIFIED",
+    "SECRETS:NOT_VERIFIED",
+    "FINANCE:FAIL",
+    "WORKERS:NOT_VERIFIED",
+    "OUTBOX:NOT_VERIFIED",
+    "DR:NOT_VERIFIED",
+    "PITR:NOT_VERIFIED",
+    "RPO:NOT_VERIFIED",
+    "RTO:NOT_VERIFIED",
+    "DEPLOYMENT:NOT_VERIFIED",
+    "PRODUCTION_SMOKE:NOT_VERIFIED",
+    "CONFIGURATION:NOT_VERIFIED",
+    "LEDGER:FAIL:actionable:146"
+  ],
+  "evidenceCompleteness": {
+    "filesOnDisk": 43,
+    "latestBundlesPresent": 18,
+    "note": "Presence of files ≠ PASS; each gate needs result PASS for matching environment",
+    "missingLatest": []
+  },
+  "mismatchCounts": {
+    "RAW_MISMATCH_COUNT": 146,
+    "ACTIONABLE_MISMATCH_COUNT": 146,
+    "ACCEPTED_MISMATCH_COUNT": 0
+  },
+  "testFundingCode": "TEST_FUNDING_CLEAN",
+  "gates": {
+    "CORE": {
+      "status": "PASS",
+      "required": true,
+      "verified": false,
+      "evidencePath": null
+    },
+    "TESTS": {
+      "status": "NOT_VERIFIED",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "BUILD": {
+      "status": "NOT_VERIFIED",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "LINT": {
+      "status": "NOT_VERIFIED",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "DEPENDENCIES": {
+      "status": "NOT_VERIFIED",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "DATABASE": {
+      "status": "PASS",
+      "required": true,
+      "verified": false,
+      "evidencePath": null
+    },
+    "MIGRATIONS": {
+      "status": "NOT_VERIFIED",
+      "required": true,
+      "verified": false,
+      "evidencePath": null
+    },
+    "WALLET": {
+      "status": "FAIL",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "LEDGER": {
+      "status": "FAIL",
+      "required": true,
+      "verified": false,
+      "evidencePath": null
+    },
+    "RECONCILIATION": {
+      "status": "FAIL",
+      "required": true,
+      "verified": false,
+      "evidencePath": null
+    },
+    "TEST_FUNDING": {
+      "status": "PASS",
+      "required": true,
+      "verified": false,
+      "evidencePath": null
+    },
+    "TEST_FUNDING_CLEANUP": {
+      "status": "PASS",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "AUTHENTICATION": {
+      "status": "NOT_VERIFIED",
+      "required": true,
+      "verified": false,
+      "evidencePath": null
+    },
+    "AUTH": {
+      "status": "NOT_VERIFIED",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "MFA": {
+      "status": "NOT_VERIFIED",
+      "required": true,
+      "verified": false,
+      "evidencePath": null
+    },
+    "RBAC": {
+      "status": "NOT_VERIFIED",
+      "required": true,
+      "verified": false,
+      "evidencePath": null
+    },
+    "CSRF": {
+      "status": "NOT_VERIFIED",
+      "required": true,
+      "verified": false,
+      "evidencePath": null
+    },
+    "SESSION": {
+      "status": "NOT_VERIFIED",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "SECRETS": {
+      "status": "NOT_VERIFIED",
+      "required": true,
+      "verified": false,
+      "evidencePath": null
+    },
+    "RATE_LIMITING": {
+      "status": "NOT_VERIFIED",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "SECURITY_HEADERS": {
+      "status": "NOT_VERIFIED",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "CORS": {
+      "status": "PASS",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "AUDIT_LOGGING": {
+      "status": "NOT_VERIFIED",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "SECURITY": {
+      "status": "NOT_VERIFIED",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "ODDS": {
+      "status": "NOT_VERIFIED",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "BET_PLACEMENT": {
+      "status": "NOT_VERIFIED",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "SETTLEMENT": {
+      "status": "PASS",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "DEPOSITS": {
+      "status": "PASS",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "WITHDRAWALS": {
+      "status": "NOT_VERIFIED",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "WITHDRAWAL_RISK": {
+      "status": "NOT_VERIFIED",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "FINANCE": {
+      "status": "FAIL",
+      "required": true,
+      "verified": false,
+      "evidencePath": null
+    },
+    "PROMOTIONS": {
+      "status": "PASS",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "VIP": {
+      "status": "NOT_VERIFIED",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "CRM": {
+      "status": "NOT_VERIFIED",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "NOTIFICATIONS": {
+      "status": "NOT_VERIFIED",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "WORKERS": {
+      "status": "NOT_VERIFIED",
+      "required": true,
+      "verified": false,
+      "evidencePath": null
+    },
+    "OUTBOX": {
+      "status": "NOT_VERIFIED",
+      "required": true,
+      "verified": false,
+      "evidencePath": null
+    },
+    "REDIS": {
+      "status": "PASS",
+      "required": true,
+      "verified": false,
+      "evidencePath": null
+    },
+    "WEBSOCKET": {
+      "status": "NOT_VERIFIED",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "MONITORING": {
+      "status": "NOT_VERIFIED",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "ALERTING": {
+      "status": "FAIL",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "INCIDENTS": {
+      "status": "NOT_VERIFIED",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "BACKUPS": {
+      "status": "PASS",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "DR": {
+      "status": "NOT_VERIFIED",
+      "required": true,
+      "verified": false,
+      "evidencePath": null
+    },
+    "PITR": {
+      "status": "NOT_VERIFIED",
+      "required": true,
+      "verified": false,
+      "evidencePath": null
+    },
+    "RPO": {
+      "status": "NOT_VERIFIED",
+      "required": true,
+      "verified": false,
+      "evidencePath": null
+    },
+    "RTO": {
+      "status": "NOT_VERIFIED",
+      "required": true,
+      "verified": false,
+      "evidencePath": null
+    },
+    "DEPLOYMENT": {
+      "status": "NOT_VERIFIED",
+      "required": true,
+      "verified": false,
+      "evidencePath": null
+    },
+    "ROLLBACK": {
+      "status": "NOT_VERIFIED",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "DATA_RETENTION": {
+      "status": "NOT_VERIFIED",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "PRIVACY": {
+      "status": "NOT_VERIFIED",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "PRODUCTION_SMOKE": {
+      "status": "NOT_VERIFIED",
+      "required": true,
+      "verified": false,
+      "evidencePath": null
+    },
+    "PAYMENTS": {
+      "status": "OUT_OF_SCOPE",
+      "required": false,
+      "verified": false,
+      "evidencePath": null
+    },
+    "CONFIGURATION": {
+      "status": "NOT_VERIFIED",
+      "required": true,
+      "verified": false,
+      "evidencePath": "docs/evidence/phase8/configuration_latest.json"
+    }
+  }
+}

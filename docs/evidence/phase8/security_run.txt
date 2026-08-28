@@ -1,0 +1,39 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> oddsyra@0.0.0 security:certification
+> node scripts/security-certification.mjs --environment=local --base-url=https://oddsyra.com
+
+◇ injected env (20) from .env // tip: ⌘ suppress logs { quiet: true }
+{
+  "event": "SECURITY_CERTIFICATION",
+  "environment": "local",
+  "result": "FAIL",
+  "gates": {
+    "AUTHENTICATION": {
+      "status": "BLOCKED",
+      "notes": "Unauth + invalid bearer probes only"
+    },
+    "MFA": {
+      "status": "NOT_VERIFIED",
+      "notes": "Set SMOKE_ADMIN_TOKEN / MFA test procedure for live MFA PASS"
+    },
+    "RBAC": {
+      "status": "NOT_VERIFIED",
+      "notes": "Role matrix requires provisioned admin roles — not auto PASS"
+    },
+    "CSRF": {
+      "status": "NOT_VERIFIED",
+      "notes": "Cookie CSRF matrix requires browser session — not auto PASS"
+    },
+    "SECURITY": {
+      "status": "FAIL",
+      "notes": "Partial automated surface only; full SECURITY PASS needs MFA+RBAC+CSRF evidence"
+    },
+    "AUDIT_LOGGING": {
+      "status": "NOT_VERIFIED",
+      "notes": "Requires credentialed privileged action + audit row inspect"
+    }
+  },
+  "path": "docs/evidence/phase8/security_2026-08-28T05-23-23-559Z.json",
+  "secretsPrinted": false
+}

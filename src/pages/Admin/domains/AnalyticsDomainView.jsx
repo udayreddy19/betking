@@ -5,6 +5,7 @@ import { useAdminToast } from '../components/AdminToastContext';
 import { StatusBadge } from '../components/AdminBadge';
 import AdminKPI from '../components/AdminKPI';
 import AdminCard from '../components/AdminCard';
+import { AdminKpiDrillDrawer, useAdminKpiDrilldown } from '../hooks/useAdminKpiDrilldown';
 
 function money(v) {
   if (v == null || Number.isNaN(Number(v))) return 'Data unavailable';
@@ -75,17 +76,19 @@ export default function AnalyticsDomainView({ subModule = 'turnover-ggr' }) {
   const finance = overview?.finance || {};
 
   const kpiCards = [
-    { label: 'Users', value: num(users.total), accent: '#38bdf8' },
-    { label: 'Active users', value: num(users.active), accent: '#34d399' },
-    { label: 'Active bettors', value: num(users.activeBettors), accent: '#a78bfa' },
-    { label: 'Turnover', value: money(betting.turnover), accent: '#fb923c' },
-    { label: 'GGR', value: money(betting.ggr), accent: '#f87171' },
-    { label: 'NGR', value: money(betting.ngr), accent: '#fbbf24' },
-    { label: 'Avg stake', value: money(betting.totalBets > 0 ? betting.turnover / betting.totalBets : null), accent: '#818cf8' },
-    { label: 'Bet count', value: num(betting.totalBets), accent: '#60a5fa' },
-    { label: 'Deposits', value: money(finance.totalDeposits), accent: '#4ade80' },
-    { label: 'Withdrawals', value: money(finance.totalWithdrawals), accent: '#fb7185' },
+    { label: 'Users', metric: 'registeredUsers', value: num(users.total), accent: '#38bdf8' },
+    { label: 'Active users', metric: 'activeUsers', value: num(users.active), accent: '#34d399' },
+    { label: 'Active bettors', metric: 'activeBettors', value: num(users.activeBettors), accent: '#a78bfa' },
+    { label: 'Turnover', metric: 'turnover', value: money(betting.turnover), accent: '#fb923c' },
+    { label: 'GGR', metric: 'ggr', value: money(betting.ggr), accent: '#f87171' },
+    { label: 'NGR', metric: 'NGR', value: money(betting.ngr), accent: '#fbbf24' },
+    { label: 'Avg stake', metric: 'Avg stake', value: money(betting.totalBets > 0 ? betting.turnover / betting.totalBets : null), accent: '#818cf8' },
+    { label: 'Bet count', metric: 'totalBets', value: num(betting.totalBets), accent: '#60a5fa' },
+    { label: 'Deposits', metric: 'Deposits', value: money(finance.totalDeposits), accent: '#4ade80' },
+    { label: 'Withdrawals', metric: 'Withdrawals', value: money(finance.totalWithdrawals), accent: '#fb7185' },
   ];
+
+  const drill = useAdminKpiDrilldown();
 
   return (
     <div>
@@ -93,7 +96,7 @@ export default function AnalyticsDomainView({ subModule = 'turnover-ggr' }) {
         <div>
           <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>{heading}</h2>
           <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
-            {hint}
+            {hint} Click any tile for underlying rows.
           </p>
           {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
         </div>
@@ -120,10 +123,19 @@ export default function AnalyticsDomainView({ subModule = 'turnover-ggr' }) {
         }}
         >
           {kpiCards.map((c) => (
-            <AdminKPI key={c.label} label={c.label} value={c.value} accent={c.accent} />
+            <AdminKPI
+              key={c.label}
+              label={c.label}
+              value={c.value}
+              accent={c.accent}
+              source="Details"
+              onClick={() => drill.openDrilldown(c.metric, c.label)}
+            />
           ))}
         </div>
       )}
+
+      <AdminKpiDrillDrawer drill={drill} />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14, marginBottom: 20 }}>
         <AdminCard title="Retention" accent="#34d399">

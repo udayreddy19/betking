@@ -1,0 +1,21 @@
+{
+  "phase": 10,
+  "timestamp": "2026-08-28T05:48:40.562Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "forceGreenAllowed": false,
+  "secretsPrinted": false,
+  "environment": "production",
+  "result": "NOT_VERIFIED",
+  "verificationMethod": "phase10_stub",
+  "stub": true,
+  "notes": "Not independently verified for this claim environment. Do not fabricate PASS.",
+  "gates": {
+    "CRM": {
+      "status": "NOT_VERIFIED",
+      "notes": "Awaiting production-class evidence"
+    }
+  },
+  "checks": {},
+  "expiresAt": "2026-09-04T05:48:40.562Z"
+}

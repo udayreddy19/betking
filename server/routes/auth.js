@@ -4,6 +4,45 @@ import { requireAuth } from '../middleware/userAuth.js';
 
 const router = Router();
 
+async function attachAdminSessionTelemetry(req, payload, { adminIdHint = null, mfaUsed = false, failureReason = null } = {}) {
+  try {
+    const {
+      recordAdminLoginAttempt,
+      createAdminSessionRecord,
+      assessAdminSessionRisk,
+    } = await import('../../lib/adminSessionEngine.mjs');
+    const ip = req.ip || req.headers['x-forwarded-for'] || null;
+    const userAgent = req.headers['user-agent'] || null;
+    const adminId = payload?.adminId || adminIdHint || 'unknown';
+
+    await recordAdminLoginAttempt({
+      adminId,
+      ip,
+      userAgent,
+      success: Boolean(payload?.success),
+      failureReason: payload?.success ? null : (failureReason || payload?.code || payload?.error || null),
+      mfaUsed,
+    });
+
+    if (!payload?.success) return payload;
+
+    const risk = await assessAdminSessionRisk({ adminId, ip, userAgent });
+    const sess = await createAdminSessionRecord({
+      adminId,
+      ip,
+      userAgent,
+      mfaVerified: mfaUsed || Boolean(payload?.mfaVerified),
+    });
+    return {
+      ...payload,
+      sessionId: sess.sessionId,
+      sessionRisk: risk,
+    };
+  } catch {
+    return payload;
+  }
+}
+
 router.post('/api/auth/admin-login', loginRateLimiter, async (req, res) => {
   try {
     const { ADMIN_ROLES } = await import('../middleware/adminAuth.js');
@@ -32,13 +71,24 @@ router.post('/api/auth/admin-login', loginRateLimiter, async (req, res) => {
         userAgent: req.headers['user-agent'],
       });
       if (result.error) {
+        await attachAdminSessionTelemetry(req, { success: false, error: result.error, code: result.code }, {
+          adminIdHint: email,
+          failureReason: result.code || result.error,
+        });
         return res.status(result.status || 401).json({ error: result.error, code: result.code });
       }
       try {
         const payload = await completeAdminPasswordLogin(result.user);
-        const status = payload.success ? 200 : (payload.code === 'MFA_REQUIRED' || payload.code === 'MFA_SETUP_REQUIRED' ? 401 : 200);
-        return res.status(status).json(payload);
+        const enriched = await attachAdminSessionTelemetry(req, payload, {
+          adminIdHint: result.user?.userId || result.user?.user_id,
+        });
+        const status = enriched.success ? 200 : (enriched.code === 'MFA_REQUIRED' || enriched.code === 'MFA_SETUP_REQUIRED' ? 401 : 200);
+        return res.status(status).json(enriched);
       } catch (err) {
+        await attachAdminSessionTelemetry(req, { success: false, error: err.message, code: err.code }, {
+          adminIdHint: result.user?.userId || result.user?.user_id,
+          failureReason: err.code || err.message,
+        });
         return res.status(err.status || 403).json({ error: err.message, code: err.code || 'ADMIN_NOT_ALLOWED' });
       }
     }
@@ -58,8 +108,11 @@ router.post('/api/auth/admin-login', loginRateLimiter, async (req, res) => {
         if (user && user.status !== 'BANNED' && user.status !== 'SUSPENDED') {
           try {
             const payload = await completeAdminBearerUpgrade(user);
-            const status = payload.success ? 200 : (payload.code === 'MFA_REQUIRED' || payload.code === 'MFA_SETUP_REQUIRED' ? 401 : 200);
-            return res.status(status).json(payload);
+            const enriched = await attachAdminSessionTelemetry(req, payload, {
+              adminIdHint: user.user_id,
+            });
+            const status = enriched.success ? 200 : (enriched.code === 'MFA_REQUIRED' || enriched.code === 'MFA_SETUP_REQUIRED' ? 401 : 200);
+            return res.status(status).json(enriched);
           } catch (err) {
             return res.status(err.status || 403).json({ error: err.message, code: err.code || 'ADMIN_NOT_ALLOWED' });
           }
@@ -79,7 +132,10 @@ router.post('/api/auth/admin-login', loginRateLimiter, async (req, res) => {
     }
 
     const adminId = String(req.body?.adminId || 'admin_local');
-    return res.json(issueAdminSessionJson(adminId, fallbackRole));
+    const payload = await attachAdminSessionTelemetry(req, issueAdminSessionJson(adminId, fallbackRole), {
+      adminIdHint: adminId,
+    });
+    return res.json(payload);
   } catch (err) {
     res.status(500).json({ error: 'Admin login failed', message: err.message });
   }
@@ -89,8 +145,13 @@ router.post('/api/auth/admin-mfa/verify', loginRateLimiter, async (req, res) => 
   try {
     const { completeAdminMfa } = await import('../../lib/adminLoginFlow.mjs');
     const payload = await completeAdminMfa(req.body?.mfaToken, req.body?.code, { enroll: false });
-    return res.json(payload);
+    const enriched = await attachAdminSessionTelemetry(req, payload, { mfaUsed: true });
+    return res.json(enriched);
   } catch (err) {
+    await attachAdminSessionTelemetry(req, { success: false, error: err.message, code: err.code }, {
+      failureReason: err.code || err.message,
+      mfaUsed: true,
+    });
     return res.status(err.status || 401).json({ error: err.message, code: err.code || 'MFA_INVALID' });
   }
 });
@@ -99,7 +160,8 @@ router.post('/api/auth/admin-mfa/confirm', loginRateLimiter, async (req, res) =>
   try {
     const { completeAdminMfa } = await import('../../lib/adminLoginFlow.mjs');
     const payload = await completeAdminMfa(req.body?.mfaToken, req.body?.code, { enroll: true });
-    return res.json(payload);
+    const enriched = await attachAdminSessionTelemetry(req, payload, { mfaUsed: true });
+    return res.json(enriched);
   } catch (err) {
     return res.status(err.status || 401).json({ error: err.message, code: err.code || 'MFA_INVALID' });
   }

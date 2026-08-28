@@ -1,0 +1,42 @@
+{
+  "phase": 9,
+  "timestamp": "2026-08-28T05:48:38.660Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "secretsPrinted": false,
+  "environment": "local-connected-not-production",
+  "claimedEnvironment": "production",
+  "result": "NOT_VERIFIED",
+  "gates": {
+    "DATABASE": {
+      "status": "NOT_VERIFIED"
+    }
+  },
+  "checks": {
+    "dbReachable": true,
+    "migrationHead": "096_payment_refund_manual_review.sql",
+    "requiredMigrations": [
+      "067",
+      "068",
+      "069",
+      "070",
+      "071",
+      "098"
+    ],
+    "appliedStatus": {
+      "067": "GREEN",
+      "068": "GREEN",
+      "069": "GREEN",
+      "070": "YELLOW",
+      "071": "YELLOW",
+      "098": "YELLOW"
+    },
+    "missingMigrations": [
+      "070",
+      "071",
+      "098"
+    ],
+    "note": "Connected DATABASE_URL is NOT asserted as production. Operator must run with production credentials under change control."
+  },
+  "errors": []
+}

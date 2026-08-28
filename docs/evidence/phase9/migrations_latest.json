@@ -1,0 +1,39 @@
+{
+  "phase": 9,
+  "timestamp": "2026-08-28T06:06:09.773Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "secretsPrinted": false,
+  "environment": "local-connected-not-production",
+  "claimedEnvironment": "production",
+  "result": "NOT_VERIFIED",
+  "gates": {
+    "MIGRATIONS": {
+      "status": "NOT_VERIFIED"
+    }
+  },
+  "checks": {
+    "requiredMigrations": [
+      "067",
+      "068",
+      "069",
+      "070",
+      "071",
+      "098"
+    ],
+    "migrationHead": "096_payment_refund_manual_review.sql",
+    "missingMigrations": [
+      "070",
+      "071",
+      "098"
+    ],
+    "schemaChecks": {
+      "067": "GREEN",
+      "068": "GREEN",
+      "069": "GREEN",
+      "070": "YELLOW",
+      "071": "YELLOW",
+      "098": "YELLOW"
+    }
+  }
+}

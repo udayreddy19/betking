@@ -1,0 +1,24 @@
+{
+  "phase": 10,
+  "timestamp": "2026-08-28T05:48:40.169Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "forceGreenAllowed": false,
+  "secretsPrinted": false,
+  "environment": "production",
+  "result": "NOT_VERIFIED",
+  "verificationMethod": "phase10_stub",
+  "stub": true,
+  "notes": "Not independently verified for this claim environment. Do not fabricate PASS.",
+  "gates": {
+    "TEST_FUNDING": {
+      "status": "NOT_VERIFIED",
+      "notes": "Awaiting production-class evidence"
+    }
+  },
+  "checks": {
+    "allResidualsZero": null,
+    "note": "Requires inspectKnownTestFundingAccounts against production DB evidence"
+  },
+  "expiresAt": "2026-09-04T05:48:40.169Z"
+}

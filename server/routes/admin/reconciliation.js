@@ -49,9 +49,46 @@ router.get('/wallet-buckets', requirePermission('finance', 'reconciliation'), as
 router.put('/exceptions/:id/investigate', requirePermission('finance', 'reconciliation'), async (req, res) => {
   try {
     const q = await getQuery();
-    await q("UPDATE reconciliation_cases SET status = 'INVESTIGATING', assigned_to = $1 WHERE id = $2", [req.admin.id, req.params.id]);
-    await logAdminAction({ actorId: req.admin.id, targetId: req.params.id, action: 'RECON_INVESTIGATE' });
-    res.json({ id: req.params.id, status: 'INVESTIGATING' });
+    const {
+      mismatchCategory = null,
+      suspectedCause = null,
+      investigationStatus = 'INVESTIGATING',
+      investigationNotes = null,
+      evidence = null,
+    } = req.body || {};
+    await q(
+      `UPDATE reconciliation_cases SET
+         status = 'INVESTIGATING',
+         assigned_to = $1,
+         reviewer = $1,
+         last_checked_at = NOW(),
+         mismatch_category = COALESCE($3, mismatch_category),
+         suspected_cause = COALESCE($4, suspected_cause),
+         investigation_status = COALESCE($5, investigation_status, 'INVESTIGATING'),
+         investigation_notes = COALESCE($6, investigation_notes),
+         evidence = CASE WHEN $7::jsonb IS NULL THEN evidence ELSE COALESCE(evidence, '{}'::jsonb) || $7::jsonb END
+       WHERE id = $2`,
+      [
+        req.admin.id,
+        req.params.id,
+        mismatchCategory,
+        suspectedCause,
+        investigationStatus,
+        investigationNotes,
+        evidence ? JSON.stringify(evidence) : null,
+      ],
+    ).catch(async () => {
+      // Pre-098 fallback
+      await q("UPDATE reconciliation_cases SET status = 'INVESTIGATING', assigned_to = $1 WHERE id = $2", [req.admin.id, req.params.id]);
+    });
+    await logAdminAction({
+      actorId: req.admin.id,
+      targetId: req.params.id,
+      action: 'RECON_INVESTIGATE',
+      details: { mismatchCategory, suspectedCause, investigationStatus },
+      riskLevel: 'MEDIUM',
+    });
+    res.json({ id: req.params.id, status: 'INVESTIGATING', investigationStatus: investigationStatus || 'INVESTIGATING', autoRepair: false });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -60,9 +97,59 @@ router.put('/exceptions/:id/resolve', requirePermission('finance', 'reconciliati
   try {
     const q = await getQuery();
     if (!req.body.resolution) return res.status(400).json({ error: 'Resolution is required' });
-    await q("UPDATE reconciliation_cases SET status = 'RESOLVED', resolution = $1, resolved_at = NOW() WHERE id = $2", [req.body.resolution, req.params.id]);
-    await logAdminAction({ actorId: req.admin.id, targetId: req.params.id, action: 'RECON_RESOLVED', details: { resolution: req.body.resolution } });
-    res.json({ id: req.params.id, status: 'RESOLVED' });
+    const classification = req.body.resolutionClassification || req.body.resolution_classification || null;
+    const linkedAdjustmentId = req.body.linkedAdjustmentId || null;
+    const allowed = [
+      'HISTORICAL_OPENING_BALANCE',
+      'BUCKET_METHODOLOGY',
+      'ACTIVE_TRANSACTION',
+      'DUPLICATE_OR_MISSING_ENTRY',
+      'ACCEPTED_WITH_EVIDENCE',
+      'RESOLVED_BY_APPROVED_ADJUSTMENT',
+    ];
+    if (classification && !allowed.includes(classification)) {
+      return res.status(400).json({ error: 'Invalid resolutionClassification', allowed });
+    }
+    if (classification === 'RESOLVED_BY_APPROVED_ADJUSTMENT' && !linkedAdjustmentId) {
+      return res.status(400).json({
+        error: 'RESOLVED_BY_APPROVED_ADJUSTMENT requires linkedAdjustmentId (maker/checker path)',
+        code: 'LINKED_ADJUSTMENT_REQUIRED',
+      });
+    }
+    await q(
+      `UPDATE reconciliation_cases SET
+         status = 'RESOLVED',
+         resolution = $1,
+         resolved_at = NOW(),
+         resolution_classification = COALESCE($3, resolution_classification),
+         linked_adjustment_id = COALESCE($4, linked_adjustment_id),
+         reviewer = $5,
+         last_checked_at = NOW(),
+         investigation_status = COALESCE($3, 'ACCEPTED_WITH_EVIDENCE')
+       WHERE id = $2`,
+      [req.body.resolution, req.params.id, classification, linkedAdjustmentId, req.admin.id],
+    ).catch(async () => {
+      await q("UPDATE reconciliation_cases SET status = 'RESOLVED', resolution = $1, resolved_at = NOW() WHERE id = $2", [req.body.resolution, req.params.id]);
+    });
+    await logAdminAction({
+      actorId: req.admin.id,
+      targetId: req.params.id,
+      action: 'RECON_RESOLVED',
+      details: {
+        resolution: req.body.resolution,
+        resolutionClassification: classification,
+        linkedAdjustmentId,
+        autoRepair: false,
+      },
+      riskLevel: 'HIGH',
+    });
+    res.json({
+      id: req.params.id,
+      status: 'RESOLVED',
+      resolutionClassification: classification,
+      autoRepair: false,
+      note: 'NO AUTO-REPAIR — balances unchanged',
+    });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

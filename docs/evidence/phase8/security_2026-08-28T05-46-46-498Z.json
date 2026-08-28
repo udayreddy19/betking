@@ -1,0 +1,72 @@
+{
+  "phase": 8,
+  "timestamp": "2026-08-28T05:46:46.498Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "secretsPrinted": false,
+  "environment": "local",
+  "baseUrl": "http://127.0.0.1:5001",
+  "result": "FAIL",
+  "gates": {
+    "AUTHENTICATION": {
+      "status": "BLOCKED",
+      "notes": "Unauth + invalid bearer probes only"
+    },
+    "MFA": {
+      "status": "NOT_VERIFIED",
+      "notes": "Set SMOKE_ADMIN_TOKEN / MFA test procedure for live MFA PASS"
+    },
+    "RBAC": {
+      "status": "NOT_VERIFIED",
+      "notes": "Role matrix requires provisioned admin roles — not auto PASS"
+    },
+    "CSRF": {
+      "status": "NOT_VERIFIED",
+      "notes": "Cookie CSRF matrix requires browser session — not auto PASS"
+    },
+    "SECURITY": {
+      "status": "FAIL",
+      "notes": "Partial automated surface only; full SECURITY PASS needs MFA+RBAC+CSRF evidence"
+    },
+    "AUDIT_LOGGING": {
+      "status": "NOT_VERIFIED",
+      "notes": "Requires credentialed privileged action + audit row inspect"
+    }
+  },
+  "cases": [
+    {
+      "name": "unauthenticated_admin",
+      "ok": false,
+      "status": null,
+      "error": "fetch failed"
+    },
+    {
+      "name": "unauthenticated_certification",
+      "ok": false,
+      "status": null,
+      "error": "fetch failed"
+    },
+    {
+      "name": "invalid_bearer",
+      "ok": false,
+      "status": null,
+      "error": "fetch failed"
+    },
+    {
+      "name": "public_readiness",
+      "ok": false,
+      "status": null,
+      "error": "fetch failed"
+    },
+    {
+      "name": "public_liveness",
+      "ok": false,
+      "status": null,
+      "error": "fetch failed"
+    }
+  ],
+  "credentialedMatrixExecuted": false,
+  "configOverall": "WARNING",
+  "secretsLeakDetected": false,
+  "notes": "Automated partial certification. MFA/RBAC/CSRF remain NOT_VERIFIED until credentialed evidence."
+}

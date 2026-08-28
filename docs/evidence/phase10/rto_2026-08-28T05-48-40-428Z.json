@@ -1,0 +1,22 @@
+{
+  "phase": 10,
+  "timestamp": "2026-08-28T05:48:40.428Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "forceGreenAllowed": false,
+  "secretsPrinted": false,
+  "environment": "production",
+  "result": "NOT_VERIFIED",
+  "verificationMethod": "phase10_stub",
+  "stub": true,
+  "notes": "PITR/RPO/RTO require PRODUCTION_CLASS_PITR evidence. SQL dump restore is not sufficient.",
+  "gates": {
+    "RTO": {
+      "status": "NOT_VERIFIED",
+      "notes": "PITR/RPO/RTO require PRODUCTION_CLASS_PITR evidence. SQL dump restore is not sufficient."
+    }
+  },
+  "checks": {},
+  "dumpOnly": false,
+  "expiresAt": "2026-09-04T05:48:40.428Z"
+}

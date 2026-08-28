@@ -1,0 +1,51 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> oddsyra@0.0.0 deployment:preflight
+> node scripts/deployment-preflight.mjs
+
+◇ injected env (20) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+{
+  "event": "DEPLOYMENT_PREFLIGHT",
+  "environment": "development",
+  "envStatus": {
+    "NODE_ENV": "MISSING",
+    "DATABASE_URL": "SET",
+    "REDIS_URL": "SET",
+    "JWT_SECRET": "UNSAFE",
+    "FRONTEND_URL": "MISSING",
+    "CORS_ORIGIN": "MISSING",
+    "DEMO_MODE": "MISSING",
+    "VITE_DEMO_MODE": "MISSING",
+    "SMTP_HOST": "MISSING",
+    "COOKIE_SECURE": "MISSING"
+  },
+  "configOverall": "WARNING",
+  "migrations": {
+    "status": "YELLOW",
+    "onDisk": {
+      "067": true,
+      "068": true,
+      "069": true,
+      "070": true,
+      "071": true,
+      "098": true
+    },
+    "appliedStatus": {
+      "067": "GREEN",
+      "068": "GREEN",
+      "069": "GREEN",
+      "070": "YELLOW",
+      "071": "YELLOW",
+      "098": "YELLOW"
+    }
+  },
+  "testFunding": {
+    "code": "TEST_FUNDING_CLEAN",
+    "goLiveBlocked": false,
+    "pendingCount": 0
+  },
+  "secretsPrinted": false,
+  "critical": true,
+  "generatedAt": "2026-08-28T04:35:10.242Z"
+}

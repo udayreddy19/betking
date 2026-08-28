@@ -1,0 +1,25 @@
+{
+  "phase": 10,
+  "timestamp": "2026-08-28T05:48:40.185Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "forceGreenAllowed": false,
+  "secretsPrinted": false,
+  "environment": "production",
+  "result": "NOT_VERIFIED",
+  "verificationMethod": "phase10_stub",
+  "stub": true,
+  "notes": "Not independently verified for this claim environment. Do not fabricate PASS.",
+  "gates": {
+    "LEDGER": {
+      "status": "NOT_VERIFIED",
+      "notes": "Awaiting production-class evidence"
+    }
+  },
+  "checks": {
+    "actionableMismatchCount": null,
+    "AUTO_REPAIR": false,
+    "note": "Requires investigate_wallet_ledger_mismatches evidence for production"
+  },
+  "expiresAt": "2026-09-04T05:48:40.185Z"
+}

@@ -136,3 +136,19 @@ export const rewardsClaimRateLimiter = createRateLimiter({
   maxRequests: 10,
   windowSeconds: 60,
 });
+
+/** Admin API read traffic */
+export const adminApiRateLimiter = createRateLimiter({
+  prefix: 'rl:admin_api',
+  maxRequests: parseInt(process.env.ADMIN_API_RATE_LIMIT, 10) || 120,
+  windowSeconds: 60,
+  keyGenerator: (req) => `admin:${req.admin?.id || req.ip || 'anon'}`,
+});
+
+/** Sensitive admin mutations (finance / security / config) */
+export const adminMutationRateLimiter = createRateLimiter({
+  prefix: 'rl:admin_mut',
+  maxRequests: parseInt(process.env.ADMIN_MUTATION_RATE_LIMIT, 10) || 30,
+  windowSeconds: 60,
+  keyGenerator: (req) => `adminmut:${req.admin?.id || req.ip || 'anon'}`,
+});

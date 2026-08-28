@@ -6,6 +6,7 @@ import { StatusBadge } from '../components/AdminBadge';
 import AdminKPI from '../components/AdminKPI';
 import AdminCard from '../components/AdminCard';
 import AdminConfirmDialog from '../components/AdminConfirmDialog';
+import { AdminKpiDrillDrawer, useAdminKpiDrilldown } from '../hooks/useAdminKpiDrilldown';
 
 function moneyOrDash(value) {
   if (value == null || Number.isNaN(Number(value))) return '—';
@@ -45,6 +46,7 @@ export default function TradingRiskDomainView({ subModule }) {
   const [suspending, setSuspending] = useState(false);
   const [resuming, setResuming] = useState(false);
   const { showToast } = useAdminToast();
+  const drill = useAdminKpiDrilldown();
 
   const showOddsDesk = !subModule || subModule === 'exposure' || subModule === 'suspension' || subModule === 'fraud-signals';
   const showGgrDesk = subModule === 'ggr-liability';
@@ -250,14 +252,14 @@ export default function TradingRiskDomainView({ subModule }) {
             marginBottom: '20px',
           }}>
             {[
-              { label: 'GGR', value: moneyOrDash(deskMetrics.ggr), hint: 'Handle − paid out', accent: '#a78bfa' },
-              { label: 'Hold %', value: pctOrDash(deskMetrics.holdPct), hint: 'GGR / handle', accent: '#34d399' },
-              { label: 'Handle', value: moneyOrDash(deskMetrics.handle), hint: 'BET_STAKE total', accent: '#38bdf8' },
-              { label: 'Paid out', value: moneyOrDash(deskMetrics.paidOut), hint: 'Wins + cashouts + voids', accent: '#fb923c' },
-              { label: 'Open liability', value: moneyOrDash(deskMetrics.openLiability), hint: `${deskMetrics.openBets || 0} open bets`, accent: '#f87171' },
-              { label: 'Stored liability', value: moneyOrDash(deskMetrics.storedMarketLiability), hint: 'market_selection_liability', accent: '#fbbf24' },
-              { label: 'Mem worst-case', value: moneyOrDash(deskMetrics.memoryWorstCaseLoss), hint: 'In-process exposure', accent: '#f43f5e' },
-              { label: 'Cashouts', value: `${deskMetrics.cashouts?.count || 0}`, hint: moneyOrDash(deskMetrics.cashouts?.stake), accent: '#818cf8' },
+              { label: 'GGR', metric: 'ggr', value: moneyOrDash(deskMetrics.ggr), hint: 'Handle − paid out', accent: '#a78bfa' },
+              { label: 'Hold %', metric: 'Hold %', value: pctOrDash(deskMetrics.holdPct), hint: 'GGR / handle', accent: '#34d399' },
+              { label: 'Handle', metric: 'handle', value: moneyOrDash(deskMetrics.handle), hint: 'BET_STAKE total', accent: '#38bdf8' },
+              { label: 'Paid out', metric: 'paidOut', value: moneyOrDash(deskMetrics.paidOut), hint: 'Wins + cashouts + voids', accent: '#fb923c' },
+              { label: 'Open liability', metric: 'openLiability', value: moneyOrDash(deskMetrics.openLiability), hint: `${deskMetrics.openBets || 0} open bets`, accent: '#f87171' },
+              { label: 'Stored liability', metric: 'Stored liability', value: moneyOrDash(deskMetrics.storedMarketLiability), hint: 'market_selection_liability', accent: '#fbbf24' },
+              { label: 'Mem worst-case', metric: 'Mem worst-case', value: moneyOrDash(deskMetrics.memoryWorstCaseLoss), hint: 'In-process exposure', accent: '#f43f5e' },
+              { label: 'Cashouts', metric: 'cashouts', value: `${deskMetrics.cashouts?.count || 0}`, hint: moneyOrDash(deskMetrics.cashouts?.stake), accent: '#818cf8' },
             ].map((card) => (
               <AdminKPI
                 key={card.label}
@@ -265,9 +267,12 @@ export default function TradingRiskDomainView({ subModule }) {
                 value={card.value}
                 trendLabel={card.hint}
                 accent={card.accent}
+                source="Details"
+                onClick={() => drill.openDrilldown(card.metric, card.label)}
               />
             ))}
           </div>
+          <AdminKpiDrillDrawer drill={drill} />
 
           <AdminDataTable
             title="Top Selection Liabilities (Persisted)"

@@ -109,6 +109,7 @@ services:
     command: node scripts/start_worker.mjs
     environment:
       NODE_ENV: production
+      NODE_OPTIONS: "--max-old-space-size=1024"
       DATABASE_URL: postgresql://${POSTGRES_USER:-oddsyra_app}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-oddsyra}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       JWT_SECRET: ${JWT_SECRET}
@@ -133,8 +134,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.0'
-          memory: 768M
+          cpus: '1.5'
+          memory: 1280M
 
   # 5. Production Nginx Reverse Proxy (Exposed 80/443)
   nginx:

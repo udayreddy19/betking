@@ -1,0 +1,6 @@
+PRODUCTION_CERTIFICATION_STATUS=NO-GO
+DETAIL_STATUS=RED
+GO_NO_GO=NO-GO
+productionClaimAllowed=false
+mandatoryBlockers=19
+note=RED reflects FAIL gates from connected DB pressure during production claim; overall decision remains NO-GO. productionClaimAllowed never true without all mandatory PASS evidence.

@@ -55,6 +55,91 @@ router.get('/liveness', async (req, res) => {
   }
 });
 
+
+router.get('/health/live', async (req, res) => {
+  try {
+    const { getLivenessStatus } = await import('../../lib/devopsEngine.mjs');
+    const live = getLivenessStatus();
+    res.json({
+      status: 'ok',
+      environment: process.env.NODE_ENV === 'production' ? 'production' : (process.env.READINESS_ENV || process.env.NODE_ENV || 'local'),
+      timestamp: live.timestamp || new Date().toISOString(),
+      version: process.env.APP_VERSION || process.env.npm_package_version || null,
+      alive: true,
+    });
+  } catch {
+    res.json({
+      status: 'ok',
+      environment: process.env.NODE_ENV === 'production' ? 'production' : 'local',
+      timestamp: new Date().toISOString(),
+      version: null,
+      alive: true,
+    });
+  }
+});
+
+router.get('/health/ready', async (req, res) => {
+  try {
+    const { getReadinessStatus, getPublicReadinessStatus } = await import('../../lib/devopsEngine.mjs');
+    const readiness = await getReadinessStatus();
+    const publicBody = getPublicReadinessStatus(readiness);
+    res.status(publicBody.ready ? 200 : 503).json({
+      status: publicBody.ready ? 'ok' : 'degraded',
+      environment: process.env.NODE_ENV === 'production' ? 'production' : (process.env.READINESS_ENV || process.env.NODE_ENV || 'local'),
+      timestamp: publicBody.timestamp || new Date().toISOString(),
+      version: process.env.APP_VERSION || process.env.npm_package_version || null,
+      ready: publicBody.ready,
+      readinessStatus: publicBody.status,
+    });
+  } catch (err) {
+    res.status(503).json({
+      status: 'error',
+      environment: process.env.NODE_ENV === 'production' ? 'production' : 'local',
+      timestamp: new Date().toISOString(),
+      ready: false,
+      error: err.message,
+    });
+  }
+});
+
+/** Dependency snapshot — no secrets, no financial data. */
+router.get('/health/dependencies', async (req, res) => {
+  try {
+    const { checkPgHealth } = await import('../../db/pg.js');
+    const { checkRedisHealth } = await import('../../db/redis.js');
+    const pg = await checkPgHealth();
+    const redis = await checkRedisHealth();
+    const dbOk = Boolean(pg?.connected);
+    const redisOk = Boolean(redis?.connected);
+    let workers = 'unknown';
+    let outbox = 'unknown';
+    try {
+      const { getSystemHealthStatus } = await import('../../lib/devopsEngine.mjs');
+      const h = await getSystemHealthStatus();
+      outbox = h?.outboxQueue?.status === 'HEALTHY' ? 'ok' : (h?.outboxQueue?.status || 'unknown');
+      workers = h?.overall === 'HEALTHY' || h?.overall === 'DEGRADED' ? 'ok' : 'unknown';
+    } catch {
+      /* leave unknown */
+    }
+    const ok = dbOk && redisOk;
+    res.status(ok ? 200 : 503).json({
+      status: ok ? 'ok' : 'degraded',
+      environment: process.env.NODE_ENV === 'production' ? 'production' : (process.env.READINESS_ENV || process.env.NODE_ENV || 'local'),
+      timestamp: new Date().toISOString(),
+      version: process.env.APP_VERSION || process.env.npm_package_version || null,
+      dependencies: {
+        database: dbOk ? 'ok' : 'down',
+        redis: redisOk ? 'ok' : 'down',
+        workers,
+        outbox,
+      },
+      note: 'No secrets or financial data. PROCESS_LOCAL dependency checks only.',
+    });
+  } catch (err) {
+    res.status(503).json({ status: 'error', timestamp: new Date().toISOString(), error: err.message });
+  }
+});
+
 router.get('/api/health', async (req, res) => {
   try {
     const { checkPgHealth } = await import('../../db/pg.js');

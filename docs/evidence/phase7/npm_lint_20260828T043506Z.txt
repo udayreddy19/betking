@@ -1,0 +1,354 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> oddsyra@0.0.0 lint
+> oxlint
+
+db/redis.js:36:12: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+db/redis.js:45:12: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+scripts/test_bet_lifecycle.mjs:1:17: warning eslint(no-unused-vars): Identifier 'withTransaction' is imported but never used. help: Consider removing this import.
+lib/massSettlementWorker.mjs:10:40: warning eslint(no-unused-vars): Identifier 'buildSettlementMatchState' is imported but never used. help: Consider removing this import.
+tests/betting/accaAndLiabilityCap.test.js:2:10: warning eslint(no-unused-vars): Identifier 'assertBettableQuote' is imported but never used. help: Consider removing this import.
+tests/betting/betStressLoad.test.js:56:11: warning eslint(no-unused-vars): Variable 'debugWRes' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+db/financialTransactions.js:1:27: warning eslint(no-unused-vars): Identifier 'query' is imported but never used. help: Consider removing this import.
+lib/platformIntegrityEngine.mjs:46:12: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+lib/platformIntegrityEngine.mjs:70:12: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+lib/platformIntegrityEngine.mjs:94:12: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+lib/platformIntegrityEngine.mjs:118:12: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+lib/platformIntegrityEngine.mjs:142:12: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+lib/iplSrlEngine.mjs:70:36: warning eslint(no-unused-vars): Parameter 'seasonId' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+lib/testCricketEngine.mjs:36:7: warning eslint(no-unused-vars): Variable 'OVERS_PER_DAY_TARGET' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/testCricketEngine.mjs:277:11: warning eslint(no-unused-vars): Variable 'nonStriker' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/testCricketEngine.mjs:733:11: warning eslint(no-unused-vars): Variable 'inn4' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+scripts/test_fraud_security.mjs:3:35: warning eslint(no-unused-vars): Identifier 'detectDeviceAndIPClusters' is imported but never used. help: Consider removing this import.
+lib/themeEngine.mjs:1:10: warning eslint(no-unused-vars): Identifier 'resolveTenantContext' is imported but never used. help: Consider removing this import.
+lib/providers/americanFootballProvider.mjs:8:52: warning eslint(no-unused-vars): Parameter 'type' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+scripts/db_restore.mjs:29:7: warning eslint(no-unused-vars): Variable 'restored' is assigned a value but never used. Unused variables should start with a '_'. help: Did you mean to use this variable?
+scripts/db_restore.mjs:36:12: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+src/hooks/useMatchDetail.js:44:6: warning react-hooks(exhaustive-deps): React Hook useMemo has unnecessary dependency: version help: Either include it or remove the dependency array.
+src/hooks/useMatchDetail.js:44:6: warning react-hooks(exhaustive-deps): React Hook useMemo has unnecessary dependency: match help: Either include it or remove the dependency array.
+lib/sportsDataRegistry.mjs:7:10: warning eslint(no-unused-vars): Identifier 'toCanonicalMatch' is imported but never used. help: Consider removing this import.
+lib/sportsDataRegistry.mjs:7:28: warning eslint(no-unused-vars): Identifier 'toCanonicalTeam' is imported but never used. help: Consider removing this import.
+lib/sportsDataRegistry.mjs:7:45: warning eslint(no-unused-vars): Identifier 'toCanonicalPlayer' is imported but never used. help: Consider removing this import.
+lib/providers/tencricProvider.mjs:230:10: warning eslint(no-unused-vars): Function 'collectEventMarkets' is declared but never used. help: Consider removing this declaration.
+lib/providers/tencricProvider.mjs:238:10: warning eslint(no-unused-vars): Function 'oversFromMarkets' is declared but never used. help: Consider removing this declaration.
+lib/providers/tencricProvider.mjs:282:10: warning eslint(no-unused-vars): Function 'overLineFromMarket' is declared but never used. help: Consider removing this declaration.
+scripts/test_db_flows.mjs:1:10: warning eslint(no-unused-vars): Identifier 'pool' is imported but never used. help: Consider removing this import.
+lib/providers/basketballProvider.mjs:7:46: warning eslint(no-unused-vars): Parameter 'type' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+tests/vip/vipBenefits.test.js:1:32: warning eslint(no-unused-vars): Identifier 'beforeEach' is imported but never used. help: Consider removing this import.
+lib/matchOverSnapshotStore.mjs:78:9: warning eslint(no-unused-vars): Variable 't1' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/hooks/useLiveFieldState.js:309:6: warning react-hooks(exhaustive-deps): React Hook useMemo has unnecessary dependency: stateKey help: Either include it or remove the dependency array.
+lib/providers/formula1Provider.mjs:7:44: warning eslint(no-unused-vars): Parameter 'type' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+lib/providers/hockeyProvider.mjs:7:42: warning eslint(no-unused-vars): Parameter 'type' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+lib/providers/multisportProvider.mjs:8:46: warning eslint(no-unused-vars): Parameter 'type' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+lib/providers/tennisProvider.mjs:7:42: warning eslint(no-unused-vars): Parameter 'type' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+lib/betSettlementEngine.mjs:380:16: warning eslint(no-unused-vars): Catch parameter 'ignored' is caught but never used. help: Consider handling this error.
+scripts/verify_runtime_truth.mjs:30:18: warning eslint(no-unused-vars): Catch parameter 'e' is caught but never used. help: Consider handling this error.
+server/services/caseService.js:8:17: warning eslint(no-unused-vars): Identifier 'withTransaction' is imported but never used. help: Consider removing this import.
+server/services/caseService.js:9:10: warning eslint(no-unused-vars): Identifier 'logAdminAction' is imported but never used. help: Consider removing this import.
+scripts/test_support_ticketing_system.mjs:7:25: warning eslint(no-unused-vars): Identifier 'APPROVED_RESOLUTION_CODES' is imported but never used. help: Consider removing this import.
+scripts/test_support_ticketing_system.mjs:7:52: warning eslint(no-unused-vars): Identifier 'TERMINAL_NOT_REQUIRED_CODES' is imported but never used. help: Consider removing this import.
+scripts/test_support_ticketing_system.mjs:23:14: warning eslint(no-unused-vars): Catch parameter 'e' is caught but never used. help: Consider handling this error.
+lib/cricbuzzLiveScores.mjs:409:34: warning eslint(no-useless-escape): Unnecessary escape character '"' help: Replace `\"` with `"`.
+lib/cricbuzzLiveScores.mjs:409:56: warning eslint(no-useless-escape): Unnecessary escape character '"' help: Replace `\"` with `"`.
+server/routes/live.js:304:12: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+server/routes/live.js:313:12: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+server/routes/live.js:324:12: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+lib/riskSimulationEngine.mjs:17:11: warning eslint(no-unused-vars): Variable 'delta' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/components/Header/Header.jsx:4:64: warning eslint(no-unused-vars): Identifier 'IoGiftOutline' is imported but never used. help: Consider removing this import.
+src/components/Header/Header.jsx:4:101: warning eslint(no-unused-vars): Identifier 'FiShield' is imported but never used. help: Consider removing this import.
+lib/platformReadinessEngine.mjs:8:10: warning eslint(no-unused-vars): Identifier 'canonicalMatchStateEngine' is imported but never used. help: Consider removing this import.
+src/components/DeveloperApiKeyTab.jsx:16:5: warning react-hooks(exhaustive-deps): React Hook useEffect has a missing dependency: 'fetchApps' help: Either include it or remove the dependency array.
+lib/exposureEngine.mjs:178:20: warning eslint(no-unused-vars): Variable 'mData' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/exposureEngine.mjs:202:61: warning eslint(no-unused-vars): Parameter 'marketId' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+lib/kycEngine.mjs:233:16: warning eslint(no-unused-vars): Catch parameter 'ignored' is caught but never used. help: Consider handling this error.
+lib/marketSuspensionEngine.mjs:8:10: warning eslint(no-unused-vars): Identifier 'marketStateMachine' is imported but never used. help: Consider removing this import.
+lib/marketSuspensionEngine.mjs:38:14: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+lib/marketSuspensionEngine.mjs:121:16: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+lib/marketSuspensionEngine.mjs:145:14: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+lib/schedulerWorker.mjs:3:10: warning eslint(no-unused-vars): Identifier 'redis' is imported but never used. help: Consider removing this import.
+src/components/AdminControlCenter/AdminControlCenter.jsx:2:45: warning eslint(no-unused-vars): Identifier 'FiShield' is imported but never used. help: Consider removing this import.
+src/components/AdminControlCenter/AdminControlCenter.jsx:2:65: warning eslint(no-unused-vars): Identifier 'FiCheckCircle' is imported but never used. help: Consider removing this import.
+src/components/AdminControlCenter/AdminControlCenter.jsx:2:100: warning eslint(no-unused-vars): Identifier 'FiAlertTriangle' is imported but never used. help: Consider removing this import.
+src/services/liveScoresService.js:36:11: warning eslint(no-unused-vars): Variable 'legacyIds' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/components/DailySpinModal/DailySpinModal.jsx:60:9: warning react-hooks(exhaustive-deps): React Hook useEffect has a missing dependency: 'applyWallet' help: Either include it or remove the dependency array.
+server/routes/public/odds.js:103:11: warning eslint(no-unused-vars): Variable 'sport' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+server/routes/public/odds.js:103:18: warning eslint(no-unused-vars): Variable 'league' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+server/routes/public/odds.js:172:12: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+scripts/test_scale_readiness.mjs:3:30: warning eslint(no-unused-vars): Identifier 'getOutboxMetrics' is imported but never used. help: Consider removing this import.
+scripts/test_scale_readiness.mjs:10:3: warning eslint(no-unused-vars): Identifier 'getReconciliationCasesMetrics' is imported but never used. help: Consider removing this import.
+scripts/test_scale_readiness.mjs:99:11: warning eslint(no-unused-vars): Variable 'idempEvt' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+scripts/test_scale_readiness.mjs:188:11: warning eslint(no-unused-vars): Variable 'cacheEvt' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+scripts/db_backup.mjs:26:7: warning eslint(no-unused-vars): Variable 'success' is assigned a value but never used. Unused variables should start with a '_'. help: Did you mean to use this variable?
+scripts/db_backup.mjs:33:12: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+vite-plugins/sportsApiPlatform.js:143:22: warning eslint(no-unused-vars): Variable 'sport' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+vite-plugins/sportsApiPlatform.js:151:22: warning eslint(no-unused-vars): Variable 'sport' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+vite-plugins/sportsApiPlatform.js:160:22: warning eslint(no-unused-vars): Variable 'sport' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+vite-plugins/sportsApiPlatform.js:141:174: warning eslint(no-useless-escape): Unnecessary escape character '/' help: Replace `\/` with `/`.
+vite-plugins/sportsApiPlatform.js:149:165: warning eslint(no-useless-escape): Unnecessary escape character '/' help: Replace `\/` with `/`.
+vite-plugins/sportsApiPlatform.js:158:169: warning eslint(no-useless-escape): Unnecessary escape character '/' help: Replace `\/` with `/`.
+lib/betPlacementEngine.mjs:88:11: warning eslint(no-unused-vars): Variable 'oddsUpdates' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/settlement/settlementDeadLetterRecovery.mjs:14:7: warning eslint(no-unused-vars): Variable 'DEAD_LETTER_REQUEUE_MS' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/searchEngine.mjs:6:10: warning eslint(no-unused-vars): Identifier 'query' is imported but never used. help: Consider removing this import.
+lib/searchEngine.mjs:19:66: warning eslint(no-unused-vars): Parameter 'tenantId' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+lib/espnLiveScores.mjs:65:10: warning eslint(no-unused-vars): Function 'shortName' is declared but never used. help: Consider removing this declaration.
+lib/developerPlatformEngine.mjs:45:12: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+lib/developerPlatformEngine.mjs:317:14: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+src/pages/ApiDocs/ApiDocs.jsx:14:3: warning eslint(no-unused-vars): Identifier 'ChartBarIcon' is imported but never used. help: Consider removing this import.
+src/pages/ApiDocs/ApiDocs.jsx:15:3: warning eslint(no-unused-vars): Identifier 'UsersIcon' is imported but never used. help: Consider removing this import.
+lib/liveScoreSequenceEngine.mjs:33:58: warning eslint(no-unused-vars): Parameter 'providerName' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+lib/ruleEngine.mjs:42:14: warning eslint(no-unused-vars): Catch parameter 'ignored' is caught but never used. help: Consider handling this error.
+lib/ruleEngine.mjs:63:3: warning eslint(no-unused-vars): Parameter 'createdBy' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+server/routes/admin/notifications.js:30:12: warning eslint(no-unused-vars): Catch parameter 'ignored' is caught but never used. help: Consider handling this error.
+lib/iplSrlTeamEngine.mjs:6:10: warning eslint(no-unused-vars): Identifier 'teamKitColors' is imported but never used. help: Consider removing this import.
+server/routes/admin/workflows.js:5:10: warning eslint(no-unused-vars): Identifier 'requireRole' is imported but never used. help: Consider removing this import.
+lib/settlement/overBoundary.mjs:39:62: warning eslint(no-unused-vars): Parameter 'match' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+server/routes/admin/providers.js:6:10: warning eslint(no-unused-vars): Identifier 'logAdminAction' is imported but never used. help: Consider removing this import.
+lib/sportsDataService.mjs:130:12: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+lib/sportsDataService.mjs:239:12: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+src/utils/liveFieldState.js:162:9: warning eslint(no-unused-vars): Variable 'bowlers' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/utils/liveFieldState.js:220:46: warning eslint(no-unused-vars): Parameter 'roster' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+lib/riskEngine.mjs:55:9: warning eslint(no-unused-vars): Variable 'marketId' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/riskEngine.mjs:59:9: warning eslint(no-unused-vars): Variable 'potentialWin' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/capacityPlanningEngine.mjs:15:11: warning eslint(no-unused-vars): Variable 'maxSupportedApiRps' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/crmEngine.mjs:489:3: warning eslint(no-unused-vars): Parameter 'kycStatus' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+src/pages/IPLSRL/IPLSRLMatchCenter.jsx:2:10: warning eslint(no-unused-vars): Identifier 'generateIPLSRLCommentary' is imported but never used. help: Consider removing this import.
+src/pages/IPLSRL/IPLSRLMatchCenter.jsx:10:22: warning eslint(no-unused-vars): Variable 'setMatchState' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/pages/IPLSRL/IPLSRLMatchCenter.jsx:23:17: warning eslint(no-unused-vars): Variable 'setProbs' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/pages/IPLSRL/IPLSRLMatchCenter.jsx:25:28: warning eslint(no-unused-vars): Variable 'setRecentDeliveries' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/pages/IPLSRL/IPLSRLMatchCenter.jsx:32:26: warning eslint(no-unused-vars): Variable 'setCommentaryList' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/fraudGraphEngine.mjs:100:109: warning eslint(no-unused-vars): Parameter 'operatorId' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+lib/fraudGraphEngine.mjs:104:11: warning eslint(no-unused-vars): Variable 'previousStatus' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/fraudGraphEngine.mjs:116:80: warning eslint(no-unused-vars): Parameter 'operatorNotes' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+lib/fraudGraphEngine.mjs:116:100: warning eslint(no-unused-vars): Parameter 'operatorId' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+lib/fraudGraphEngine.mjs:131:87: warning eslint(no-unused-vars): Parameter 'operatorId' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+lib/fraudGraphEngine.mjs:178:5: warning eslint(no-unused-expressions): Expected expression to be used help: Consider using this expression or removing it
+lib/aiOddsOptimizer.mjs:19:9: warning eslint(no-unused-vars): Variable 'exposure' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/aiOddsOptimizer.mjs:21:7: warning eslint(no-unused-vars): Variable 'marginDelta' is assigned a value but never used. Unused variables should start with a '_'. help: Did you mean to use this variable?
+src/pages/IPLSRL/IPLSRLHome.jsx:1:20: warning eslint(no-unused-vars): Identifier 'useEffect' is imported but never used. help: Consider removing this import.
+src/pages/IPLSRL/IPLSRLHome.jsx:5:10: warning eslint(no-unused-vars): Identifier 'formatInr' is imported but never used. help: Consider removing this import.
+src/pages/IPLSRL/IPLSRLHome.jsx:18:21: warning eslint(no-unused-vars): Variable 'setLiveMatch' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/components/LiveMatchGraphicWidget/LiveMatchGraphicWidget.jsx:42:49: warning eslint(no-unused-vars): Identifier 'oversToBallsForMatch' is imported but never used. help: Consider removing this import.
+src/components/LiveMatchGraphicWidget/LiveMatchGraphicWidget.jsx:736:9: warning eslint(no-unused-vars): Variable 'currentRuns' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/components/LiveMatchGraphicWidget/LiveMatchGraphicWidget.jsx:737:9: warning eslint(no-unused-vars): Variable 'currentWickets' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/components/LiveMatchGraphicWidget/LiveMatchGraphicWidget.jsx:738:9: warning eslint(no-unused-vars): Variable 'currentOvers' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/components/LiveMatchGraphicWidget/LiveMatchGraphicWidget.jsx:783:9: warning eslint(no-unused-vars): Variable 'totalTeamRuns' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/components/LiveMatchGraphicWidget/LiveMatchGraphicWidget.jsx:785:9: warning eslint(no-unused-vars): Variable 'teamBallsCount' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/components/LiveMatchGraphicWidget/LiveMatchGraphicWidget.jsx:798:9: warning eslint(no-unused-vars): Variable 'defaultBowler' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/components/LiveMatchGraphicWidget/LiveMatchGraphicWidget.jsx:985:6: warning react-hooks(exhaustive-deps): React Hook useMemo has unnecessary dependency: match.liveDetails.commentaryFeed help: Either include it or remove the dependency array.
+src/components/LiveMatchGraphicWidget/LiveMatchGraphicWidget.jsx:985:6: warning react-hooks(exhaustive-deps): React Hook useMemo has unnecessary dependency: match.liveDetails.commentaryList help: Either include it or remove the dependency array.
+src/components/LiveMatchGraphicWidget/LiveMatchGraphicWidget.jsx:985:6: warning react-hooks(exhaustive-deps): React Hook useMemo has unnecessary dependency: match.liveDetails.commentary help: Either include it or remove the dependency array.
+src/components/LiveMatchGraphicWidget/LiveMatchGraphicWidget.jsx:985:6: warning react-hooks(exhaustive-deps): React Hook useMemo has unnecessary dependency: match.liveDetails.commentary help: Either include it or remove the dependency array.
+lib/reconciliationEngine.mjs:325:12: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+server/routes/admin/inline.js:10:12: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+server/routes/admin/inline.js:21:12: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+server/routes/admin/inline.js:434:14: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+server/routes/admin/inline.js:1131:11: warning eslint(no-unused-vars): Variable 'result' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+server/routes/admin/inline.js:2167:11: warning eslint(no-unused-vars): Variable 'resolution' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+server/routes/admin/inline.js:2794:38: warning eslint(no-unused-vars): Variable 'module' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/notificationWorker.mjs:32:12: warning eslint(no-unused-vars): Catch parameter 'ignored' is caught but never used. help: Consider handling this error.
+lib/sports/adapters/baseSportsAdapter.mjs:22:26: warning eslint(no-unused-vars): Parameter 'providerMatchId' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+lib/sports/adapters/srlAdapter.mjs:31:14: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+lib/supportEngine.mjs:592:14: warning eslint(no-unused-vars): Catch parameter 'ignored' is caught but never used. help: Consider handling this error.
+lib/supportEngine.mjs:626:14: warning eslint(no-unused-vars): Catch parameter 'ignored' is caught but never used. help: Consider handling this error.
+lib/supportEngine.mjs:663:14: warning eslint(no-unused-vars): Catch parameter 'ignored' is caught but never used. help: Consider handling this error.
+lib/supportEngine.mjs:717:14: warning eslint(no-unused-vars): Catch parameter 'ignored' is caught but never used. help: Consider handling this error.
+lib/supportEngine.mjs:754:14: warning eslint(no-unused-vars): Catch parameter 'ignored' is caught but never used. help: Consider handling this error.
+lib/supportEngine.mjs:774:14: warning eslint(no-unused-vars): Catch parameter 'ignored' is caught but never used. help: Consider handling this error.
+lib/supportEngine.mjs:810:14: warning eslint(no-unused-vars): Catch parameter 'ignored' is caught but never used. help: Consider handling this error.
+lib/supportEngine.mjs:842:82: warning eslint(no-unused-vars): Parameter 'resolutionStatus' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+lib/supportEngine.mjs:871:14: warning eslint(no-unused-vars): Catch parameter 'ignored' is caught but never used. help: Consider handling this error.
+src/components/MatchDetailModal/MatchDetailModal.jsx:118:9: warning eslint(no-unused-vars): Variable 'liveBatter2' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/components/MatchDetailModal/MatchDetailModal.jsx:131:9: warning eslint(no-unused-vars): Variable 'handleOddsClick' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/components/MatchDetailModal/MatchDetailModal.jsx:165:9: warning eslint(no-unused-vars): Variable 'oddsBtnClass' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/components/MatchDetailModal/MatchDetailModal.jsx:181:17: warning eslint(no-unused-vars): Variable 'countdownText' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/sports/adapters/fancodeAdapter.mjs:29:14: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+lib/sports/adapters/espnAdapter.mjs:29:14: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+lib/liveMatchSettlement.mjs:16:3: warning eslint(no-unused-vars): Identifier 'getScoreAtOverEnd' is imported but never used. help: Consider removing this import.
+lib/liveMatchSettlement.mjs:1015:8: warning eslint(no-unused-vars): Parameter 'id' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+lib/liveMatchSettlement.mjs:1181:9: warning eslint(no-unused-vars): Variable 'liveBookReady' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+server/routes/admin/commandCenter.js:9:10: warning eslint(no-unused-vars): Identifier 'requirePermission' is imported but never used. help: Consider removing this import.
+server/routes/admin/makerChecker.js:6:10: warning eslint(no-unused-vars): Identifier 'requireRole' is imported but never used. help: Consider removing this import.
+server/routes/admin/makerChecker.js:13:7: warning eslint(no-unused-vars): Variable 'EXTENDED_ACTION_TYPES' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/userProfileEngine.mjs:100:9: warning eslint(no-unused-vars): Variable 'riskSummary' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/outboxEngine.mjs:63:12: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+lib/notificationEngine.mjs:1:17: warning eslint(no-unused-vars): Identifier 'withTransaction' is imported but never used. help: Consider removing this import.
+lib/userSecurityCenter.mjs:131:14: warning eslint(no-unused-vars): Catch parameter 'ignored' is caught but never used. help: Consider handling this error.
+lib/userSecurityCenter.mjs:155:14: warning eslint(no-unused-vars): Catch parameter 'ignored' is caught but never used. help: Consider handling this error.
+lib/userSecurityCenter.mjs:179:14: warning eslint(no-unused-vars): Catch parameter 'ignored' is caught but never used. help: Consider handling this error.
+lib/userSecurityCenter.mjs:255:14: warning eslint(no-unused-vars): Catch parameter 'ignored' is caught but never used. help: Consider handling this error.
+lib/userSecurityCenter.mjs:376:14: warning eslint(no-unused-vars): Catch parameter 'ignored' is caught but never used. help: Consider handling this error.
+src/utils/cricketScores.js:73:10: warning eslint(no-unused-vars): Function 'pickEntryForTeam' is declared but never used. help: Consider removing this declaration.
+src/utils/cricketScores.js:57:20: warning oxc(const-comparisons): Both sides of the logical operator are equivalent help: This logical expression will always evaluate to the same value as either side.
+lib/odds-v3/otherSportsOdds.mjs:51:10: warning eslint(no-unused-vars): Function 'matchSeed' is declared but never used. help: Consider removing this declaration.
+lib/odds-v3/otherSportsOdds.mjs:55:10: warning eslint(no-unused-vars): Function 'parseMinute' is declared but never used. help: Consider removing this declaration.
+lib/odds-v3/otherSportsOdds.mjs:143:11: warning eslint(no-unused-vars): Variable 'score1' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/odds-v3/otherSportsOdds.mjs:143:19: warning eslint(no-unused-vars): Variable 'score2' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/odds-v3/otherSportsOdds.mjs:143:27: warning eslint(no-unused-vars): Variable 'liveDetails' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/odds-v3/otherSportsOdds.mjs:144:9: warning eslint(no-unused-vars): Variable 'live' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/utils/audioAlerts.js:42:12: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+tests/payments/webhook.test.js:35:115: warning eslint(no-useless-escape): Unnecessary escape character '.' help: Replace `\.` with `.`.
+tests/payments/webhook.test.js:35:117: warning eslint(no-useless-escape): Unnecessary escape character '@' help: Replace `\@` with `@`.
+tests/payments/webhook.test.js:41:115: warning eslint(no-useless-escape): Unnecessary escape character '.' help: Replace `\.` with `.`.
+tests/payments/webhook.test.js:41:117: warning eslint(no-useless-escape): Unnecessary escape character '@' help: Replace `\@` with `@`.
+lib/betRiskEnforcement.mjs:14:3: warning eslint(no-unused-vars): Parameter 'betType' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+src/pages/Sports/Sports.jsx:3:70: warning eslint(no-unused-vars): Identifier 'FiMessageCircle' is imported but never used. help: Consider removing this import.
+src/pages/Sports/Sports.jsx:152:65: warning eslint(no-unused-vars): Variable 'overs2' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/pages/Sports/Sports.jsx:291:17: warning eslint(no-unused-vars): Variable 'showToast' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/pages/Sports/Sports.jsx:650:9: warning eslint(no-unused-vars): Variable 'matchTimeLabel' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/pages/Sports/Sports.jsx:335:6: warning react-hooks(exhaustive-deps): React Hook useMemo has unnecessary dependency: matchDetailVersion help: Either include it or remove the dependency array.
+src/pages/Sports/Sports.jsx:443:50: warning react-hooks(exhaustive-deps): React Hook useEffect has missing dependencies: 'oddsStateKey', and 'activeMatch' help: Either include it or remove the dependency array.
+src/pages/Sports/Sports.jsx:492:15: warning react-hooks(exhaustive-deps): React Hook useEffect has a missing dependency: 'activeMatch' help: Either include it or remove the dependency array.
+src/pages/Sports/Sports.jsx:524:5: warning react-hooks(exhaustive-deps): React Hook useEffect has a missing dependency: 'liveMatches' help: Either include it or remove the dependency array.
+src/pages/Admin/hooks/useAdminKpiDrilldown.jsx:21:17: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/pages/Admin/hooks/useAdminKpiDrilldown.jsx:105:16: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+tests/developer/publicOddsApi.test.js:9:7: warning eslint(no-unused-vars): Variable 'rawKey' is assigned a value but never used. Unused variables should start with a '_'. help: Did you mean to use this variable?
+tests/developer/apiKeyRotationAndRevocation.test.js:2:60: warning eslint(no-unused-vars): Identifier 'revokeApiKey' is imported but never used. help: Consider removing this import.
+tests/developer/webhookSigningAndSsrf.test.js:3:8: warning eslint(no-unused-vars): Identifier 'crypto' is imported but never used. help: Consider removing this import.
+lib/odds-v3/markets/playerRuns.mjs:49:9: warning eslint(no-unused-vars): Variable 'bowlingTeam' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/odds-v3/markets/playerRuns.mjs:53:9: warning eslint(no-unused-vars): Variable 'bowlerName' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/odds-v3/markets/inningsTotal.mjs:12:41: warning eslint(no-unused-vars): Identifier 'calculateRangeProbability' is imported but never used. help: Consider removing this import.
+lib/odds-v3/markets/inningsTotal.mjs:19:9: warning eslint(no-unused-vars): Variable 'bowlingTeam' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/context/LiveSportsContext.jsx:240:9: warning eslint(no-unused-vars): Variable 'oddsCacheRef' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/odds-v3/adapters/V3ApiAdapter.mjs:15:61: warning eslint(no-unused-vars): Parameter 'matchObj' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+server/routes/admin/finance.js:8:10: warning eslint(no-unused-vars): Identifier 'query' is imported but never used. help: Consider removing this import.
+lib/devopsEngine.mjs:58:12: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+lib/devopsEngine.mjs:74:12: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+lib/devopsEngine.mjs:84:12: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+tests/settlement/closedMatchMoneyFlow.test.js:8:72: warning eslint(no-unused-vars): Parameter 'matchId' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+server/routes/admin/timeline.js:5:10: warning eslint(no-unused-vars): Identifier 'logAdminAction' is imported but never used. help: Consider removing this import.
+src/pages/Admin/components/AdminToastContext.jsx:108:17: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/context/BetSlipContext.jsx:21:3: warning eslint(no-unused-vars): Identifier 'applyOddsChangedToBets' is imported but never used. help: Consider removing this import.
+src/context/BetSlipContext.jsx:26:3: warning eslint(no-unused-vars): Identifier 'normalizeOddsUpdates' is imported but never used. help: Consider removing this import.
+src/context/BetSlipContext.jsx:33:7: warning eslint(no-unused-vars): Variable 'ODDS_SYNC_FRESH_MS' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/context/BetSlipContext.jsx:47:10: warning eslint(no-unused-vars): Function 'applyOddsUpdatesToBets' is declared but never used. help: Consider removing this declaration.
+src/context/BetSlipContext.jsx:106:10: warning eslint(no-unused-vars): Function 'isOddsRefreshError' is declared but never used. help: Consider removing this declaration.
+src/context/BetSlipContext.jsx:113:10: warning eslint(no-unused-vars): Function 'clearOddsChangedFlagsOnBets' is declared but never used. help: Consider removing this declaration.
+src/context/BetSlipContext.jsx:114:22: warning eslint(no-unused-vars): Parameter 'oddsChanged' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+src/context/BetSlipContext.jsx:114:35: warning eslint(no-unused-vars): Parameter 'previousOdds' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+src/context/BetSlipContext.jsx:311:9: warning eslint(no-unused-vars): Variable 'oddsConfirmPendingRef' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/context/BetSlipContext.jsx:669:6: warning react-hooks(exhaustive-deps): React Hook useMemo has unnecessary dependency: multiOdds help: Either include it or remove the dependency array.
+src/context/BetSlipContext.jsx:910:20: warning react-hooks(exhaustive-deps): React Hook useCallback has a missing dependency: 'multiDisplayOdds' help: Either include it or remove the dependency array.
+src/context/BetSlipContext.jsx:960:6: warning react-hooks(exhaustive-deps): React Hook useCallback has unnecessary dependency: multiOdds help: Either include it or remove the dependency array.
+src/context/BetSlipContext.jsx:1094:5: warning react-hooks(exhaustive-deps): React Hook useMemo has missing dependencies: 'setBetslipPref', and 'multiDisplayOdds' help: Either include it or remove the dependency array.
+src/context/BetSlipContext.jsx:1104:7: warning react-hooks(exhaustive-deps): React Hook useMemo has unnecessary dependency: multiOdds help: Either include it or remove the dependency array.
+src/pages/Admin/domains/FinanceDomainView.jsx:1253:21: warning react-hooks(exhaustive-deps): React Hook useEffect has a missing dependency: 'load' help: Either include it or remove the dependency array.
+lib/depositEngine.mjs:23:59: warning eslint(no-unused-vars): Parameter 'correlationId' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+lib/depositEngine.mjs:156:66: warning eslint(no-useless-escape): Unnecessary escape character '.' help: Replace `\.` with `.`.
+lib/depositEngine.mjs:156:68: warning eslint(no-useless-escape): Unnecessary escape character '@' help: Replace `\@` with `@`.
+src/pages/Admin/domains/TradingRiskDomainView.jsx:97:11: warning react-hooks(exhaustive-deps): React Hook useEffect has a missing dependency: 'showToast' help: Either include it or remove the dependency array.
+src/pages/Admin/domains/TradingRiskDomainView.jsx:123:14: warning react-hooks(exhaustive-deps): React Hook useEffect has a missing dependency: 'selectedMatchId' help: Either include it or remove the dependency array.
+src/pages/Admin/domains/TradingRiskDomainView.jsx:140:19: warning react-hooks(exhaustive-deps): React Hook useEffect has missing dependencies: 'oddsMatches', and 'showToast' help: Either include it or remove the dependency array.
+src/components/SocialAuthButtons/SocialAuthButtons.jsx:33:9: warning eslint(no-unused-vars): Variable 'googleEnabled' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/pages/Admin/domains/SecurityGovernanceDomainView.jsx:207:21: warning react-hooks(exhaustive-deps): React Hook useEffect has a missing dependency: 'load' help: Either include it or remove the dependency array.
+src/context/auth/AuthProvider.jsx:15:3: warning eslint(no-unused-vars): Identifier 'canRedeemLoyaltyPoints' is imported but never used. help: Consider removing this import.
+src/context/auth/AuthProvider.jsx:821:13: warning eslint(no-unused-vars): Variable 'winnings' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/context/auth/AuthProvider.jsx:299:7: warning react-hooks(exhaustive-deps): React Hook useCallback has a missing dependency: 'setUser' help: Either include it or remove the dependency array.
+src/context/auth/AuthProvider.jsx:451:15: warning react-hooks(exhaustive-deps): React Hook useCallback has a missing dependency: 'syncTransactions' help: Either include it or remove the dependency array.
+src/context/auth/AuthProvider.jsx:642:7: warning react-hooks(exhaustive-deps): React Hook useCallback has a missing dependency: 'setUser' help: Either include it or remove the dependency array.
+src/pages/Admin/domains/SupportDomainView.jsx:7:8: warning eslint(no-unused-vars): Identifier 'AdminCard' is imported but never used. help: Consider removing this import.
+src/context/AuthContext.jsx:7:10: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/context/AuthContext.jsx:7:22: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/context/AuthContext.jsx:7:33: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/context/AuthContext.jsx:7:45: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/components/ErrorBoundary/ErrorBoundary.jsx:20:7: warning react(no-did-update-set-state): Do not use `setState` in `componentDidUpdate`. help: Updating state after a component update triggers a second render() call and can lead to property/layout thrashing.
+tests/settlement/milestoneOverSettlement.test.js:17:28: warning eslint(no-unused-vars): Parameter 'firstInningsScore' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+src/pages/Admin/permissions/AdminRBACGate.jsx:9:14: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/pages/Admin/permissions/AdminRBACGate.jsx:31:14: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/pages/Admin/permissions/AdminRBACGate.jsx:44:17: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/pages/Admin/permissions/AdminRBACGate.jsx:74:17: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/pages/Admin/permissions/AdminRBACGate.jsx:110:17: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/pages/Admin/domains/OperationsDomainView.jsx:771:21: warning react-hooks(exhaustive-deps): React Hook useEffect has a missing dependency: 'load' help: Either include it or remove the dependency array.
+src/pages/Admin/features/CommandPalette/CommandPalette.jsx:184:9: warning react-hooks(exhaustive-deps): React Hook useEffect has a missing dependency: 'handleResultClick' help: Either include it or remove the dependency array.
+src/pages/Admin/features/CommandPalette/CommandPalette.jsx:193:15: warning react-hooks(exhaustive-deps): React hook useEffect depends on `flatResults`, which changes every render help: Try memoizing this variable with `useRef` or `useCallback`.
+tests/settlement/cashoutSettlementRace.test.js:40:11: warning eslint(no-unused-vars): Variable 'results' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+server/routes/admin/cases.js:7:10: warning eslint(no-unused-vars): Identifier 'requirePermission' is imported but never used. help: Consider removing this import.
+server/routes/admin/cases.js:7:29: warning eslint(no-unused-vars): Identifier 'requireRole' is imported but never used. help: Consider removing this import.
+src/pages/Admin/layout/AdminShell.jsx:3:10: warning eslint(no-unused-vars): Identifier 'Link' is imported but never used. help: Consider removing this import.
+src/pages/Admin/layout/AdminShell.jsx:15:3: warning eslint(no-unused-vars): Identifier 'SearchIcon' is imported but never used. help: Consider removing this import.
+src/pages/Admin/layout/AdminShell.jsx:18:3: warning eslint(no-unused-vars): Identifier 'ChevronRightIcon' is imported but never used. help: Consider removing this import.
+src/pages/Admin/layout/AdminShell.jsx:19:3: warning eslint(no-unused-vars): Identifier 'ChevronDownIcon' is imported but never used. help: Consider removing this import.
+src/pages/Admin/layout/AdminShell.jsx:20:3: warning eslint(no-unused-vars): Identifier 'LockIcon' is imported but never used. help: Consider removing this import.
+src/pages/Admin/layout/AdminShell.jsx:21:3: warning eslint(no-unused-vars): Identifier 'LogOutIcon' is imported but never used. help: Consider removing this import.
+src/pages/Admin/layout/AdminShell.jsx:27:8: warning eslint(no-unused-vars): Identifier 'ThemeToggle' is imported but never used. help: Consider removing this import.
+src/pages/Admin/layout/AdminShell.jsx:30:8: warning eslint(no-unused-vars): Identifier 'AdminMfaQr' is imported but never used. help: Consider removing this import.
+server/routes/admin/bulk.js:5:10: warning eslint(no-unused-vars): Identifier 'requireRole' is imported but never used. help: Consider removing this import.
+server/routes/admin/bulk.js:14:47: warning eslint(no-unused-vars): Variable 'opParams' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+server/routes/admin/bulk.js:18:11: warning eslint(no-unused-vars): Variable 'q' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/components/MyBetsPanel/MyBetsPanel.jsx:259:7: warning react-hooks(exhaustive-deps): React hook useEffect depends on `liveMatches`, which changes every render help: Try memoizing this variable with `useRef` or `useCallback`.
+src/components/MyBetsPanel/MyBetsPanel.jsx:273:27: warning react-hooks(exhaustive-deps): React hook useMemo depends on `liveMatches`, which changes every render help: Try memoizing this variable with `useRef` or `useCallback`.
+lib/marketEngine.mjs:104:9: warning eslint(no-unused-vars): Variable 'existing' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/pricingEngine.mjs:10:10: warning eslint(no-unused-vars): Identifier 'validateBetRisk' is imported but never used. help: Consider removing this import.
+src/pages/Admin/domains/ControlTowerView.jsx:13:17: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/components/FinancialModals/FinancialModals.jsx:2:10: warning eslint(no-unused-vars): Identifier 'motion' is imported but never used. help: Consider removing this import.
+lib/jwtHs256.mjs:14:11: warning eslint(no-unused-vars): Variable 'exp' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/jwtHs256.mjs:14:16: warning eslint(no-unused-vars): Variable 'iat' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/loyaltyEngine.mjs:73:12: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+tests/betting/idempotencyConcurrency.test.js:36:11: warning eslint(no-unused-vars): Variable 'results' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+server/routes/admin/settlement.js:79:41: warning eslint(no-unused-vars): Variable 'getInningsOversString' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/crexCricketProvider.mjs:40:37: warning eslint(no-unused-vars): Parameter 'type' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+lib/disasterRecoverySimulator.mjs:7:24: warning eslint(no-unused-vars): Identifier 'setMatchCacheItem' is imported but never used. help: Consider removing this import.
+lib/iplSrlCommentaryEngine.mjs:7:40: warning eslint(no-unused-vars): Variable 'runs' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/iplSrlCommentaryEngine.mjs:7:67: warning eslint(no-unused-vars): Variable 'isExtra' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/depositFreebetEngine.mjs:1265:78: warning eslint(no-unused-vars): Parameter 'adminId' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+src/pages/Auth/VerifyEmailPage.jsx:19:7: warning react-hooks(exhaustive-deps): React Hook useEffect has a missing dependency: 'handleAutoVerify' help: Either include it or remove the dependency array.
+lib/oddsQuoteService.mjs:7:52: warning eslint(no-unused-vars): Identifier 'oddsQuoteChanged' is imported but never used. help: Consider removing this import.
+lib/oddsQuoteService.mjs:190:10: warning eslint(no-unused-vars): Function 'findQuotedSelectionAcrossMarkets' is declared but never used. help: Consider removing this declaration.
+scripts/test-cricket-engine-test.mjs:5:48: warning eslint(no-unused-vars): Identifier 'SESSIONS' is imported but never used. help: Consider removing this import.
+lib/responsibleGaming.mjs:106:14: warning eslint(no-unused-vars): Catch parameter 'ignored' is caught but never used. help: Consider handling this error.
+lib/providerHealthEngine.mjs:50:14: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+lib/providerHealthEngine.mjs:58:37: warning eslint(no-unused-vars): Parameter 'errorMessage' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+lib/providerHealthEngine.mjs:76:14: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+lib/providerHealthEngine.mjs:113:11: warning eslint(no-unused-vars): Variable 'fallbackState' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+scripts/test_production_hardening.mjs:1:17: warning eslint(no-unused-vars): Identifier 'withTransaction' is imported but never used. help: Consider removing this import.
+scripts/verify_chrome_browser.mjs:10:10: warning eslint(no-unused-vars): Function 'checkUrl' is declared but never used. help: Consider removing this declaration.
+lib/testIPLSRL.mjs:7:10: warning eslint(no-unused-vars): Identifier 'createIPLSRLSeason' is imported but never used. help: Consider removing this import.
+lib/testIPLSRL.mjs:8:29: warning eslint(no-unused-vars): Identifier 'createIPLSRLTeam' is imported but never used. help: Consider removing this import.
+lib/testIPLSRL.mjs:9:31: warning eslint(no-unused-vars): Identifier 'createIPLSRLPlayer' is imported but never used. help: Consider removing this import.
+lib/testIPLSRL.mjs:14:32: warning eslint(no-unused-vars): Identifier 'getIPLSRLDeliveries' is imported but never used. help: Consider removing this import.
+lib/notificationTemplateEngine.mjs:35:75: warning eslint(no-unused-vars): Parameter 'lang' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+lib/globalRiskOrchestrator.mjs:7:10: warning eslint(no-unused-vars): Identifier 'validateResponsibleGamingStatus' is imported but never used. help: Consider removing this import.
+lib/globalRiskOrchestrator.mjs:8:52: warning eslint(no-unused-vars): Identifier 'calculateMatchExposureMetrics' is imported but never used. help: Consider removing this import.
+lib/globalRiskOrchestrator.mjs:12:16: warning eslint(no-unused-vars): Function 'safePgQuery' is declared but never used. help: Consider removing this declaration.
+lib/globalRiskOrchestrator.mjs:37:35: warning eslint(no-unused-vars): Variable 'ipAddress' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/globalRiskOrchestrator.mjs:37:72: warning eslint(no-unused-vars): Variable 'stake' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+lib/globalRiskOrchestrator.mjs:141:5: warning eslint(no-unused-vars): Parameter 'userSessionMinutes' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+lib/globalRiskOrchestrator.mjs:142:5: warning eslint(no-unused-vars): Parameter 'userDailyDeposit' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+scripts/test_promotions_engine.mjs:154:11: warning eslint(no-unused-vars): Variable 'qualRes' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+tests/finance/financialStressLoad.test.js:4:10: warning eslint(no-unused-vars): Identifier 'withdrawalEngine' is imported but never used. help: Consider removing this import.
+scripts/security-smoke.mjs:19:10: warning eslint(no-unused-vars): Function 'hasFlag' is declared but never used. help: Consider removing this declaration.
+scripts/test_platform_expansion_batch1.mjs:19:51: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+scripts/migrate.mjs:3:16: warning eslint(no-unused-vars): Identifier 'withTransaction' is imported but never used. help: Consider removing this import.
+tests/analytics/reconciliationAndAccuracy.test.js:16:11: warning eslint(no-unused-vars): Variable 'fromTime' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+tests/odds-v3/bookIntegrity.test.js:3:10: warning eslint(no-unused-vars): Identifier 'createCanonicalMatchState' is imported but never used. help: Consider removing this import.
+scripts/test_master_sportsbook_expansion.mjs:12:10: warning eslint(no-unused-vars): Identifier 'runFullReconciliationAudit' is imported but never used. help: Consider removing this import.
+scripts/test_master_sportsbook_expansion.mjs:31:11: warning eslint(no-unused-vars): Variable 'dev1' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+tests/operations/remainingGapsHardening.test.js:4:36: warning eslint(no-unused-vars): Identifier 'beforeEach' is imported but never used. help: Consider removing this import.
+tests/operations/phase3OpsEngine.test.js:12:3: warning eslint(no-unused-vars): Identifier 'createOpsIncident' is imported but never used. help: Consider removing this import.
+scripts/verify_chrome_full_dom.mjs:34:13: warning eslint(no-unused-vars): Variable 'hasLiveBetting' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+scripts/test_phase4_5_6_risk_exposure.mjs:18:11: warning eslint(no-unused-vars): Variable 'loginEval' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+scripts/test_phase4_5_6_risk_exposure.mjs:19:11: warning eslint(no-unused-vars): Variable 'depEval' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+scripts/test_phase4_5_6_risk_exposure.mjs:20:11: warning eslint(no-unused-vars): Variable 'wdEval' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+tests/rewards/spinGrantExpiry.test.js:3:10: warning eslint(no-unused-vars): Identifier 'claimDailySpin' is imported but never used. help: Consider removing this import.
+scripts/test_support_platform.mjs:7:25: warning eslint(no-unused-vars): Identifier 'SUPPORT_CATEGORIES' is imported but never used. help: Consider removing this import.
+tests/promotions/referralsAndFraudGuard.test.js:9:3: warning eslint(no-unused-vars): Identifier 'backfillReferralCodesForExistingUsers' is imported but never used. help: Consider removing this import.
+tests/odds-v3/v3Migration.test.js:1:32: warning eslint(no-unused-vars): Identifier 'beforeEach' is imported but never used. help: Consider removing this import.
+tests/feeds/providerOutagePolicy.test.js:1:32: warning eslint(no-unused-vars): Identifier 'vi' is imported but never used. help: Consider removing this import.
+tests/feeds/providerOutagePolicy.test.js:1:36: warning eslint(no-unused-vars): Identifier 'beforeEach' is imported but never used. help: Consider removing this import.
+tests/feeds/providerOutagePolicy.test.js:1:48: warning eslint(no-unused-vars): Identifier 'afterEach' is imported but never used. help: Consider removing this import.
+tests/finance/walletIntegrationE2E.test.js:48:48: warning eslint(no-unused-vars): Parameter 'stake' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+tests/finance/walletIntegrationE2E.test.js:48:55: warning eslint(no-unused-vars): Parameter 'odds' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+tests/finance/walletIntegrationE2E.test.js:66:36: warning eslint(no-unused-vars): Parameter 'stake' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+tests/auth/forgotPasswordAndRecovery.test.js:11:3: warning eslint(no-unused-vars): Identifier 'hashRefreshToken' is imported but never used. help: Consider removing this import.
+tests/auth/forgotPasswordAndRecovery.test.js:13:24: warning eslint(no-unused-vars): Identifier 'verifyPassword' is imported but never used. help: Consider removing this import.
+tests/auth/rbacAndIdor.test.js:2:23: warning eslint(no-unused-vars): Identifier 'requireAccountStatus' is imported but never used. help: Consider removing this import.
+tests/auth/rbacAndIdor.test.js:3:21: warning eslint(no-unused-vars): Identifier 'requireRole' is imported but never used. help: Consider removing this import.
+tests/auth/authEndpoints.test.js:5:3: warning eslint(no-unused-vars): Identifier 'logout' is imported but never used. help: Consider removing this import.
+tests/auth/authEndpoints.test.js:9:3: warning eslint(no-unused-vars): Identifier 'getMe' is imported but never used. help: Consider removing this import.
+tests/auth/authEndpoints.test.js:14:3: warning eslint(no-unused-vars): Identifier 'rotateRefreshToken' is imported but never used. help: Consider removing this import.
+tests/auth/authEndpoints.test.js:16:10: warning eslint(no-unused-vars): Identifier 'hashPassword' is imported but never used. help: Consider removing this import.
+tests/auth/authEndpoints.test.js:474:9: warning eslint(no-unused-vars): Variable 'userId' is assigned a value but never used. Unused variables should start with a '_'. help: Did you mean to use this variable?
+tests/sports/providerAdapters.test.js:4:10: warning eslint(no-unused-vars): Identifier 'fancodeAdapter' is imported but never used. help: Consider removing this import.
+tests/promotions/phase2GrowthExtensions.test.js:57:7: warning eslint(no-unused-vars): Variable 'refreshCustomerSegmentMemberships' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+tests/load/concurrencyLoad.test.js:2:29: warning eslint(no-unused-vars): Identifier 'getSystemHealthStatus' is imported but never used. help: Consider removing this import.
+tests/promotions/loyaltyAndCrmCampaigns.test.js:3:51: warning eslint(no-unused-vars): Identifier 'evaluateUserSegments' is imported but never used. help: Consider removing this import.
+lint_exit=0

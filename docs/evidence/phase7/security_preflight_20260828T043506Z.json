@@ -1,0 +1,45 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> oddsyra@0.0.0 security:preflight
+> node scripts/security-preflight.mjs
+
+◇ injected env (20) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+{
+  "event": "SECURITY_PREFLIGHT",
+  "configOverall": "WARNING",
+  "checklist": [
+    {
+      "id": "DEMO_MODE",
+      "status": "OK"
+    },
+    {
+      "id": "JWT_PRESENT",
+      "status": "OK"
+    },
+    {
+      "id": "CORS",
+      "status": "OK"
+    },
+    {
+      "id": "LIVE_MFA_SMOKE",
+      "status": "NOT VERIFIED",
+      "note": "Run SECURITY_VERIFICATION_CHECKLIST.md on target"
+    },
+    {
+      "id": "LIVE_RBAC_SMOKE",
+      "status": "NOT VERIFIED"
+    },
+    {
+      "id": "LIVE_CSRF_SMOKE",
+      "status": "NOT VERIFIED"
+    },
+    {
+      "id": "MAKER_CHECKER",
+      "status": "NOT VERIFIED",
+      "note": "Covered by unit/integration tests locally; live dual-admin smoke required for production GREEN"
+    }
+  ],
+  "secretsPrinted": false,
+  "generatedAt": "2026-08-28T04:35:10.487Z",
+  "evidenceRule": "Config checks ≠ live MFA/RBAC/CSRF verification"
+}

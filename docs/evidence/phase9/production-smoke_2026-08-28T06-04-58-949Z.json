@@ -1,0 +1,60 @@
+{
+  "phase": 9,
+  "timestamp": "2026-08-28T06:04:58.949Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "secretsPrinted": false,
+  "environment": "production",
+  "result": "BLOCKED",
+  "blocked": true,
+  "blockReason": "fetch failed",
+  "gates": {
+    "PRODUCTION_SMOKE": {
+      "status": "BLOCKED",
+      "notes": "Public probe blocked from this environment"
+    },
+    "CORE": {
+      "status": "BLOCKED",
+      "notes": "Public readiness alone does not certify CORE for productionClaimAllowed"
+    }
+  },
+  "checks": {
+    "readiness": {
+      "path": "/readiness",
+      "status": null,
+      "error": "fetch failed",
+      "blocked": true
+    },
+    "liveness": {
+      "path": "/liveness",
+      "status": null,
+      "error": "fetch failed",
+      "blocked": true
+    },
+    "healthLive": {
+      "path": "/health/live",
+      "status": null,
+      "error": "fetch failed",
+      "blocked": true
+    },
+    "healthReady": {
+      "path": "/health/ready",
+      "status": null,
+      "error": "fetch failed",
+      "blocked": true
+    },
+    "healthDeps": {
+      "path": "/health/dependencies",
+      "status": null,
+      "error": "fetch failed",
+      "blocked": true
+    },
+    "adminUnauth": {
+      "path": "/api/admin/operations/production-certification",
+      "status": null,
+      "error": "fetch failed",
+      "blocked": true
+    }
+  },
+  "baseUrl": "https://oddsyra.com"
+}

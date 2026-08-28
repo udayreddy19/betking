@@ -1,0 +1,12 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> oddsyra@0.0.0 finance:reconcile
+> node scripts/financial-reconcile.mjs
+
+◇ injected env (20) from .env // tip: ⌘ enable debugging { debug: true }
+{
+  "event": "FINANCIAL_RECONCILE_START",
+  "userId": "ALL"
+}
+{"ts":"2026-08-28T04:35:36.261Z","level":"error","message":"sql_error","error":"duplicate key value violates unique constraint \"financial_discrepancies_pkey\""}
+{"event":"FINANCIAL_RECONCILE_ERROR","message":"duplicate key value violates unique constraint \"financial_discrepancies_pkey\""}

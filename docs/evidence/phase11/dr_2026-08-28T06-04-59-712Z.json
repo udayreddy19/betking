@@ -1,0 +1,30 @@
+{
+  "phase": 11,
+  "timestamp": "2026-08-28T06:04:59.712Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "forceGreenAllowed": false,
+  "secretsPrinted": false,
+  "environment": "production",
+  "result": "NOT_VERIFIED",
+  "stub": false,
+  "verificationMethod": "pitr_drill_required",
+  "notes": "PRODUCTION_CLASS_PITR drill not executed; SQL dump cannot satisfy PITR/RPO/RTO",
+  "gates": {
+    "DR": {
+      "status": "NOT_VERIFIED",
+      "notes": "PRODUCTION_CLASS_PITR drill not executed; SQL dump cannot satisfy PITR/RPO/RTO"
+    }
+  },
+  "checks": {
+    "restore_start": null,
+    "restore_finish": null,
+    "RTO": "NOT_VERIFIED",
+    "RPO": "NOT_VERIFIED",
+    "wal_position": null
+  },
+  "identityProven": false,
+  "dumpOnly": false,
+  "restore_environment": null,
+  "expiresAt": "2026-09-04T06:04:59.712Z"
+}

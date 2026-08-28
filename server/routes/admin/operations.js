@@ -311,6 +311,45 @@ router.get(
   },
 );
 
+router.get(
+  '/production-health/drilldown',
+  requireRole(...READ_OPS),
+  async (req, res) => {
+    try {
+      const { getAdminKpiDrilldown } = await import('../../../lib/adminKpiDrilldown.mjs');
+      const result = await getAdminKpiDrilldown(req.query.metric, {
+        limit: req.query.limit,
+      });
+      if (result?.success === false && result?.status === 404) {
+        return res.status(404).json(result);
+      }
+      res.json(result);
+    } catch (err) {
+      handle(err, res);
+    }
+  },
+);
+
+/** Shared KPI drill-down for all Control Center modules / tiles */
+router.get(
+  '/kpi-drilldown',
+  requireRole(...READ_OPS),
+  async (req, res) => {
+    try {
+      const { getAdminKpiDrilldown } = await import('../../../lib/adminKpiDrilldown.mjs');
+      const result = await getAdminKpiDrilldown(req.query.metric, {
+        limit: req.query.limit,
+      });
+      if (result?.success === false && result?.status === 404) {
+        return res.status(404).json(result);
+      }
+      res.json(result);
+    } catch (err) {
+      handle(err, res);
+    }
+  },
+);
+
 // ── Notifications ──
 router.get(
   '/notifications',
@@ -391,6 +430,106 @@ router.patch(
     try {
       const { updateNotificationPreferences } = await import('../../../lib/opsNotificationCenter.mjs');
       res.json(await updateNotificationPreferences(adminId(req), req.body || {}));
+    } catch (err) {
+      handle(err, res);
+    }
+  },
+);
+
+/** GET /operations/production-readiness — evidence-based readiness matrix */
+router.get(
+  '/production-readiness',
+  requireRole(...READ_OPS),
+  async (req, res) => {
+    try {
+      const { buildProductionReadiness } = await import('../../../lib/productionReadinessEngine.mjs');
+      const environment = req.query.environment || process.env.READINESS_ENV || 'local';
+      res.json(await buildProductionReadiness({ environment }));
+    } catch (err) {
+      handle(err, res);
+    }
+  },
+);
+
+
+/** GET /operations/production-certification — Phase 10 certification (evidence-gated; never force-GREEN) */
+router.get(
+  '/production-certification',
+  requireRole(...READ_OPS),
+  async (req, res) => {
+    try {
+      const { buildProductionCertification } = await import('../../../lib/productionCertificationEngine.mjs');
+      const environment = req.query.environment || process.env.READINESS_ENV || 'local';
+      const body = await buildProductionCertification({ environment });
+      try {
+        const { logAdminAction } = await import('../../middleware/auditLogger.js');
+        await logAdminAction({
+          actorId: adminId(req),
+          action: 'production_certification_read',
+          details: {
+            environment,
+            status: body.PRODUCTION_CERTIFICATION_STATUS,
+            productionClaimAllowed: body.productionClaimAllowed,
+          },
+          ip: req.ip,
+          userAgent: req.get?.('user-agent'),
+          requestId: req.requestId || req.id || null,
+        });
+      } catch {
+        /* non-blocking audit */
+      }
+      res.json(body);
+    } catch (err) {
+      handle(err, res);
+    }
+  },
+);
+
+/** GET /operations/test-funding — known test accounts (read-only; no auto-zero) */
+router.get(
+  '/test-funding',
+  requireRole(...READ_OPS),
+  async (req, res) => {
+    try {
+      const { inspectKnownTestFundingAccounts } = await import('../../../lib/knownTestFundingExclusions.mjs');
+      res.json(await inspectKnownTestFundingAccounts());
+    } catch (err) {
+      handle(err, res);
+    }
+  },
+);
+
+/** GET /operations/backups — backup log (metadata only) */
+router.get(
+  '/backups',
+  requireRole(...READ_OPS),
+  async (req, res) => {
+    try {
+      const { query } = await import('../../../db/pg.js');
+      const lim = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
+      const bkpRes = await query(
+        `SELECT id, backup_type, status, size_bytes, duration_ms, created_at
+         FROM backups_log
+         ORDER BY created_at DESC
+         LIMIT $1`,
+        [lim],
+      );
+      const latest = bkpRes.rows[0] || null;
+      let ageHours = null;
+      if (latest?.created_at) {
+        ageHours = Math.round((Date.now() - new Date(latest.created_at).getTime()) / 3600000);
+      }
+      res.json({
+        success: true,
+        count: bkpRes.rows.length,
+        backups: bkpRes.rows,
+        summary: {
+          lastBackupAt: latest?.created_at || null,
+          lastStatus: latest?.status || null,
+          ageHours,
+          note: 'Local dump restore RPO/RTO is NOT production claim. See DR verification reports.',
+        },
+      });
     } catch (err) {
       handle(err, res);
     }

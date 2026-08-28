@@ -1,0 +1,28 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> oddsyra@0.0.0 production:certification-preflight
+> node scripts/production-certification-preflight.mjs
+
+◇ injected env (20) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+{
+  "event": "PRODUCTION_CERTIFICATION_PREFLIGHT",
+  "environment": "local",
+  "configuration": {
+    "NODE_ENV": "MISSING",
+    "DATABASE_URL": "SET",
+    "REDIS_URL": "SET",
+    "JWT_SECRET": "INVALID_FORMAT",
+    "FRONTEND_URL": "MISSING",
+    "CORS_ORIGIN": "MISSING",
+    "DEMO_MODE": "MISSING",
+    "COOKIE_SECURE": "MISSING",
+    "SMTP_HOST": "MISSING"
+  },
+  "secrets": {
+    "JWT_SECRET": "INVALID_FORMAT",
+    "DATABASE_URL": "SET",
+    "REDIS_URL": "SET"
+  },
+  "secretsPrinted": false,
+  "result": "FAIL"
+}

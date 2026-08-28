@@ -231,15 +231,25 @@ router.post('/api/admin/search/global', async (req, res) => {
 
 router.get('/api/admin/anomalies/list', async (req, res) => {
   try {
-    const { globalRiskOrchestrator } = await import('../../../lib/globalRiskOrchestrator.mjs');
-    const riskSummary = globalRiskOrchestrator.getRiskSummary();
+    const { listFinancialAnomalies } = await import('../../../lib/financialAnomalyEngine.mjs');
+    const result = await listFinancialAnomalies({
+      limit: Number(req.query.limit) || 50,
+      severity: req.query.severity || null,
+    });
+    let riskSummary = null;
+    try {
+      const { globalRiskOrchestrator } = await import('../../../lib/globalRiskOrchestrator.mjs');
+      riskSummary = globalRiskOrchestrator.getRiskSummary();
+    } catch {
+      /* optional */
+    }
     res.json({
       success: true,
-      anomalies: [
-        { id: 'anom_01', type: 'Betting Velocity', entity: '10cric_2026_101', severity: 'HIGH', status: 'INVESTIGATING', confidence: '94%', timestamp: new Date().toISOString() },
-        { id: 'anom_02', type: 'Feed Latency', entity: 'CREX Provider', severity: 'MEDIUM', status: 'VALIDATING', confidence: '88%', timestamp: new Date().toISOString() },
-      ],
+      anomalies: result.anomalies,
+      count: result.count,
+      note: result.note,
       riskSummary,
+      generatedAt: result.generatedAt,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1800,6 +1810,50 @@ router.post('/api/admin/growth/segments/preview', adminAuth, requireRole('SUPER_
     }));
   } catch (err) {
     res.status(err.status || 500).json({ success: false, error: err.message, matched: 0, sample: [] });
+  }
+});
+
+/** CRM composer — dry-run / preview only (server finalizes audience + opt-out) */
+router.post('/api/admin/growth/crm-composer/preview', adminAuth, requireRole('SUPER_ADMIN', 'MARKETING_ADMIN', 'OPERATIONS_ADMIN'), async (req, res) => {
+  try {
+    const { previewCrmComposerAudience } = await import('../../../lib/crmComposerEngine.mjs');
+    const body = req.body || {};
+    res.json(await previewCrmComposerAudience({
+      includeSegmentIds: body.includeSegmentIds || body.include || [],
+      excludeSegmentIds: body.excludeSegmentIds || body.exclude || [],
+      limit: Number(body.limit) || 50,
+    }));
+  } catch (err) {
+    res.status(err.status || 400).json({ success: false, error: err.message, code: err.code });
+  }
+});
+
+router.post('/api/admin/growth/crm-composer/dry-run', adminAuth, requireRole('SUPER_ADMIN', 'MARKETING_ADMIN'), async (req, res) => {
+  try {
+    const { dryRunCrmComposer } = await import('../../../lib/crmComposerEngine.mjs');
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    const body = req.body || {};
+    const result = await dryRunCrmComposer({
+      adminId: req.admin?.id,
+      includeSegmentIds: body.includeSegmentIds || body.include || [],
+      excludeSegmentIds: body.excludeSegmentIds || body.exclude || [],
+      templateSubject: body.subject,
+      templateBody: body.body,
+    });
+    await logAdminAction({
+      actorId: req.admin?.id,
+      action: 'CRM_COMPOSER_DRY_RUN',
+      details: {
+        includeSegmentIds: body.includeSegmentIds || body.include,
+        excludeSegmentIds: body.excludeSegmentIds || body.exclude,
+        eligibleCountSample: result.audience?.eligibleCountSample,
+        optedOutCountSample: result.audience?.optedOutCountSample,
+      },
+      riskLevel: 'LOW',
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 400).json({ success: false, error: err.message, code: err.code });
   }
 });
 

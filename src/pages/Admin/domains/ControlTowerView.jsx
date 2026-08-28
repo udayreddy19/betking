@@ -6,6 +6,7 @@ import AdminKPI from '../components/AdminKPI';
 import AdminTabs from '../components/AdminTabs';
 import AdminCard from '../components/AdminCard';
 import { StatusBadge } from '../components/AdminBadge';
+import { AdminKpiDrillDrawer, useAdminKpiDrilldown } from '../hooks/useAdminKpiDrilldown';
 import { startVisibleInterval } from '../utils/visibleInterval';
 
 /** Display helper — never invent metrics. */
@@ -23,7 +24,7 @@ function Section({ title, children }) {
   );
 }
 
-function KpiGrid({ cards, onNavigate }) {
+function KpiGrid({ cards, onNavigate, onDrill }) {
   return (
     <div className="admin-kpi-grid">
       {cards.map((card) => (
@@ -32,13 +33,16 @@ function KpiGrid({ cards, onNavigate }) {
           label={card.label}
           value={card.value}
           accent={card.accent}
-          source={card.source}
+          source={card.source || (card.metric || card.domainId ? 'Details' : undefined)}
           trendLabel={card.trendLabel}
-          onClick={card.onClick
-            ? card.onClick
-            : (card.domainId && onNavigate
-              ? () => onNavigate({ domainId: card.domainId, subModuleId: card.subModuleId })
-              : undefined)}
+          onClick={
+            card.onClick
+              || (card.metric && onDrill
+                ? () => onDrill(card.metric, card.label)
+                : (card.domainId && onNavigate
+                  ? () => onNavigate({ domainId: card.domainId, subModuleId: card.subModuleId })
+                  : undefined))
+          }
         />
       ))}
     </div>
@@ -47,6 +51,7 @@ function KpiGrid({ cards, onNavigate }) {
 
 export default function ControlTowerView({ subModule = 'overview', onSubModuleChange, onNavigate }) {
   const navigate = useNavigate();
+  const drill = useAdminKpiDrilldown();
   const [metrics, setMetrics] = useState({
     registeredUsers: null,
     activeUsers: null,
@@ -241,6 +246,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
       value: metrics.systemStatus || 'Data unavailable',
       source: 'LIVE',
       accent: metrics.systemStatus === 'HEALTHY' ? '#10b981' : '#f59e0b',
+      metric: 'systemHealth',
       domainId: 'operations',
       subModuleId: 'health-matrix',
     },
@@ -249,6 +255,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
       value: opsHealth?.overall || opsHealth?.status || (opsHealth ? 'OK' : 'Data unavailable'),
       source: 'OPS',
       accent: '#38bdf8',
+      metric: 'systemHealth',
       domainId: 'operations',
       subModuleId: 'health-matrix',
     },
@@ -257,14 +264,16 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
       value: formatMetric(observability?.outbox?.pending),
       source: 'DB',
       accent: '#f59e0b',
+      metric: 'outboxPending',
       domainId: 'operations',
-      subModuleId: 'outbox',
+      subModuleId: 'outbox-queue',
     },
     {
       label: 'Settlement failed',
       value: formatMetric(observability?.settlement?.failed_jobs),
       source: 'DB',
       accent: '#f43f5e',
+      metric: 'settlementFailed',
       domainId: 'operations',
       subModuleId: 'settlement-queue',
     },
@@ -273,46 +282,49 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
       value: formatMetric(metrics.riskAlerts),
       source: 'FEED',
       accent: '#fb7185',
+      metric: 'oddsFreshnessProblems',
       domainId: 'sports',
       subModuleId: 'providers',
     },
   ];
 
   const businessCards = [
-    { label: 'Users', value: formatMetric(metrics.registeredUsers ?? metrics.activeUsers), source: 'DB', accent: '#34d399', domainId: 'customers', subModuleId: 'directory' },
+    { label: 'Users', value: formatMetric(metrics.registeredUsers ?? metrics.activeUsers), source: 'DB', accent: '#34d399', metric: 'registeredUsers', domainId: 'customers', subModuleId: 'directory' },
     {
       label: metrics.turnoverScope === 'today' ? 'Turnover (today)' : 'Turnover',
       value: formatMetric(metrics.todayTurnover, '₹'),
       source: 'DB',
       accent: '#38bdf8',
+      metric: 'turnover',
       domainId: 'analytics',
       subModuleId: 'turnover-ggr',
     },
-    { label: 'Approx GGR', value: formatMetric(metrics.ggr, '₹'), trendLabel: metrics.ggrNote || undefined, source: 'DB', accent: '#a78bfa', domainId: 'analytics', subModuleId: 'turnover-ggr' },
-    { label: 'Open bets', value: formatMetric(metrics.openBets), source: 'DB', accent: '#60a5fa', domainId: 'betting', subModuleId: 'bets-registry' },
-    { label: 'Open exposure', value: formatMetric(metrics.openExposure ?? metrics.openLiability, '₹'), source: 'DB', accent: '#f472b6', domainId: 'trading-risk', subModuleId: 'exposure' },
-    { label: 'Pending KYC', value: formatMetric(metrics.pendingKyc), source: 'DB', accent: '#fbbf24', domainId: 'customers', subModuleId: 'kyc-queue' },
-    { label: 'Pending withdrawals', value: formatMetric(metrics.pendingWithdrawals), source: 'DB', accent: '#f87171', domainId: 'finance', subModuleId: 'maker-checker' },
+    { label: 'Approx GGR', value: formatMetric(metrics.ggr, '₹'), trendLabel: metrics.ggrNote || undefined, source: 'DB', accent: '#a78bfa', metric: 'ggr', domainId: 'analytics', subModuleId: 'turnover-ggr' },
+    { label: 'Open bets', value: formatMetric(metrics.openBets), source: 'DB', accent: '#60a5fa', metric: 'openBets', domainId: 'betting', subModuleId: 'bets-registry' },
+    { label: 'Open exposure', value: formatMetric(metrics.openExposure ?? metrics.openLiability, '₹'), source: 'DB', accent: '#f472b6', metric: 'openLiability', domainId: 'trading-risk', subModuleId: 'exposure' },
+    { label: 'Pending KYC', value: formatMetric(metrics.pendingKyc), source: 'DB', accent: '#fbbf24', metric: 'kycPending', domainId: 'customers', subModuleId: 'kyc-queue' },
+    { label: 'Pending withdrawals', value: formatMetric(metrics.pendingWithdrawals), source: 'DB', accent: '#f87171', metric: 'pendingWithdrawals', domainId: 'finance', subModuleId: 'maker-checker' },
   ];
 
   const tradingCards = [
-    { label: 'Live matches', value: formatMetric(metrics.liveMatches), source: 'LIVE', accent: '#f472b6', domainId: 'sports', subModuleId: 'catalog' },
+    { label: 'Live matches', value: formatMetric(metrics.liveMatches), source: 'LIVE', accent: '#f472b6', metric: 'liveMatches', domainId: 'sports', subModuleId: 'catalog' },
     {
       label: 'Priced coverage',
       value: pricedCoverage == null ? 'Data unavailable' : `${pricedCoverage}%`,
       trendLabel: `${formatMetric(metrics.matchesWithOdds)} of ${formatMetric(metrics.liveMatches)}`,
       source: 'LIVE',
       accent: '#fbbf24',
+      metric: 'liveMatches',
       domainId: 'trading-risk',
       subModuleId: 'exposure',
     },
-    { label: 'Suspended markets', value: formatMetric(metrics.suspendedMarkets), source: 'DB', accent: '#fb923c', domainId: 'trading-risk', subModuleId: 'suspension' },
+    { label: 'Suspended markets', value: formatMetric(metrics.suspendedMarkets), source: 'DB', accent: '#fb923c', metric: 'suspendedMarkets', domainId: 'trading-risk', subModuleId: 'suspension' },
   ];
 
   const financeCards = [
-    { label: 'Locked deposits', value: formatMetric(metrics.lockedDepositsTotal, '₹'), source: 'DB', accent: '#22d3ee', domainId: 'finance', subModuleId: 'finance-health' },
-    { label: 'Reserved funds', value: formatMetric(metrics.reservedFundsTotal, '₹'), source: 'DB', accent: '#818cf8', domainId: 'finance', subModuleId: 'ledger' },
-    { label: 'Open support tickets', value: formatMetric(metrics.openTickets), source: 'DB', accent: '#22d3ee', domainId: 'support', subModuleId: 'ticket-queue' },
+    { label: 'Locked deposits', value: formatMetric(metrics.lockedDepositsTotal, '₹'), source: 'DB', accent: '#22d3ee', metric: 'openReconciliation', domainId: 'finance', subModuleId: 'finance-health' },
+    { label: 'Reserved funds', value: formatMetric(metrics.reservedFundsTotal, '₹'), source: 'DB', accent: '#818cf8', metric: 'pendingWithdrawals', domainId: 'finance', subModuleId: 'ledger' },
+    { label: 'Open support tickets', value: formatMetric(metrics.openTickets), source: 'DB', accent: '#22d3ee', metric: 'openTickets', domainId: 'support', subModuleId: 'ticket-queue' },
   ];
 
   const riskCards = [
@@ -329,8 +341,9 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
       value: 'Growth',
       source: 'NAV',
       accent: '#a855f7',
+      metric: 'promotionAbuse',
       domainId: 'growth',
-      subModuleId: 'referrals',
+      subModuleId: 'promo-abuse',
     },
   ];
 
@@ -371,28 +384,30 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
       {showOverview && (
         <>
           <Section title="System health">
-            <KpiGrid cards={systemCards} onNavigate={onNavigate} />
+            <KpiGrid cards={systemCards} onNavigate={onNavigate} onDrill={drill.openDrilldown} />
           </Section>
           <Section title="Business">
-            <KpiGrid cards={businessCards} onNavigate={onNavigate} />
+            <KpiGrid cards={businessCards} onNavigate={onNavigate} onDrill={drill.openDrilldown} />
           </Section>
           <Section title="Trading">
-            <KpiGrid cards={tradingCards} onNavigate={onNavigate} />
+            <KpiGrid cards={tradingCards} onNavigate={onNavigate} onDrill={drill.openDrilldown} />
           </Section>
           <Section title="Finance">
-            <KpiGrid cards={financeCards} onNavigate={onNavigate} />
+            <KpiGrid cards={financeCards} onNavigate={onNavigate} onDrill={drill.openDrilldown} />
           </Section>
           <Section title="Risk">
-            <KpiGrid cards={riskCards} onNavigate={onNavigate} />
+            <KpiGrid cards={riskCards} onNavigate={onNavigate} onDrill={drill.openDrilldown} />
           </Section>
+          <AdminKpiDrillDrawer drill={drill} />
         </>
       )}
 
       {showProviders && (
         <>
           <Section title="System health">
-            <KpiGrid cards={systemCards} onNavigate={onNavigate} />
+            <KpiGrid cards={systemCards} onNavigate={onNavigate} onDrill={drill.openDrilldown} />
           </Section>
+          <AdminKpiDrillDrawer drill={drill} />
           {observability ? (
             <div className="admin-kpi-grid" style={{ marginBottom: 16 }}>
               <AdminCard title="Settlement" accent="#f43f5e" style={{ margin: 0 }}>

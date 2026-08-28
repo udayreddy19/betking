@@ -5,6 +5,8 @@ import { useAdminToast } from '../components/AdminToastContext';
 import { StatusBadge } from '../components/AdminBadge';
 import AdminCard from '../components/AdminCard';
 import AdminTabs from '../components/AdminTabs';
+import AdminKPI from '../components/AdminKPI';
+import { AdminKpiDrillDrawer, useAdminKpiDrilldown } from '../hooks/useAdminKpiDrilldown';
 
 function money(n) {
   if (n == null || Number.isNaN(Number(n))) return '—';
@@ -734,6 +736,7 @@ function TargetedDepositFreeBetPanel() {
 
 function DepositFreeBetPanel() {
   const { showToast } = useAdminToast();
+  const drillFb = useAdminKpiDrilldown();
   const [campaign, setCampaign] = useState(null);
   const [stats, setStats] = useState(null);
   const [grants, setGrants] = useState([]);
@@ -847,17 +850,23 @@ function DepositFreeBetPanel() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 16 }}>
         {[
-          { label: 'Eligible Users', value: stats?.eligibleUsers ?? 0 },
-          { label: 'Rewards Granted', value: money(stats?.totalFreebetValue) },
-          { label: 'Used', value: money(stats?.usedValue) },
-          { label: 'Emails Sent', value: stats?.emailsSent ?? 0 },
-          { label: 'Emails Failed', value: stats?.emailsFailed ?? 0 },
+          { label: 'Eligible Users', metric: 'freebetGrants', value: stats?.eligibleUsers ?? 0 },
+          { label: 'Rewards Granted', metric: 'freebetGrants', value: money(stats?.totalFreebetValue) },
+          { label: 'Used', metric: 'freebetGrants', value: money(stats?.usedValue) },
+          { label: 'Emails Sent', metric: 'freebetGrants', value: stats?.emailsSent ?? 0 },
+          { label: 'Emails Failed', metric: 'freebetGrants', value: stats?.emailsFailed ?? 0 },
         ].map((card) => (
-          <AdminCard key={card.label} title={card.label} accent="#0ea5e9">
-            <div style={{ fontSize: '1.35rem', fontWeight: 800 }}>{card.value}</div>
-          </AdminCard>
+          <AdminKPI
+            key={card.label}
+            label={card.label}
+            value={card.value}
+            accent="#0ea5e9"
+            source="Details"
+            onClick={() => drillFb.openDrilldown(card.metric, card.label)}
+          />
         ))}
       </div>
+      <AdminKpiDrillDrawer drill={drillFb} />
 
       <AdminCard title="Campaign configuration" accent="#22c55e" style={{ marginBottom: 16 }}>
         <form onSubmit={save} style={{ display: 'grid', gap: 12 }}>
@@ -1398,6 +1407,7 @@ function SignupPromoCodesPanel() {
 }
 
 function VipTiersPanel() {
+  const drillVip = useAdminKpiDrilldown();
   const [tiers, setTiers] = useState([]);
   const [limits, setLimits] = useState({ minDeposit: null, minWithdraw: null });
   const [dash, setDash] = useState(null);
@@ -1470,20 +1480,24 @@ function VipTiersPanel() {
       {dash && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 16 }}>
           {[
-            { label: 'Loyalty users', value: dash.totals?.loyaltyUsers },
-            { label: 'VIP points', value: dash.totals?.totalVipPoints },
-            { label: 'Redeemable pts', value: dash.totals?.totalRedeemablePoints },
-            { label: 'Stake (tx)', value: money(dash.totals?.attributedStake) },
-            { label: 'Deposits (tx)', value: money(dash.totals?.attributedDeposits) },
+            { label: 'Loyalty users', metric: 'vipUsers', value: dash.totals?.loyaltyUsers },
+            { label: 'VIP points', metric: 'vipUsers', value: dash.totals?.totalVipPoints },
+            { label: 'Redeemable pts', metric: 'vipUsers', value: dash.totals?.totalRedeemablePoints },
+            { label: 'Stake (tx)', metric: 'turnover', value: money(dash.totals?.attributedStake) },
+            { label: 'Deposits (tx)', metric: 'Deposits', value: money(dash.totals?.attributedDeposits) },
           ].map((c) => (
-            <AdminCard key={c.label} title={c.label} style={{ margin: 0 }}>
-              <div style={{ fontWeight: 800, fontSize: '1.05rem' }}>
-                {typeof c.value === 'number' ? c.value.toLocaleString() : (c.value ?? '—')}
-              </div>
-            </AdminCard>
+            <AdminKPI
+              key={c.label}
+              label={c.label}
+              value={typeof c.value === 'number' ? c.value.toLocaleString() : (c.value ?? '—')}
+              accent="#64748b"
+              source="Details"
+              onClick={() => drillVip.openDrilldown(c.metric, c.label)}
+            />
           ))}
         </div>
       )}
+      <AdminKpiDrillDrawer drill={drillVip} />
 
       {dashTiers.length > 0 && (
         <AdminDataTable
@@ -1621,6 +1635,72 @@ function DepositFreeBetHub({ initialTab = 'targeted' }) {
   );
 }
 
+
+function CrmComposerPanel() {
+  const { showToast } = useAdminToast();
+  const [include, setInclude] = useState('');
+  const [exclude, setExclude] = useState('');
+  const [subject, setSubject] = useState('');
+  const [body, setBody] = useState('');
+  const [result, setResult] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  const run = async (mode) => {
+    setBusy(true);
+    try {
+      const payload = {
+        includeSegmentIds: include.split(/[,\s]+/).filter(Boolean),
+        excludeSegmentIds: exclude.split(/[,\s]+/).filter(Boolean),
+        subject,
+        body,
+        limit: 50,
+      };
+      const path = mode === 'dry' ? '/growth/crm-composer/dry-run' : '/growth/crm-composer/preview';
+      const data = await adminApiClient.post(path, payload);
+      setResult(data);
+      showToast(mode === 'dry' ? 'Dry-run recorded (no send)' : 'Preview ready', 'success');
+    } catch (err) {
+      showToast(err.message || 'Composer failed', 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div>
+      <div style={{ marginBottom: 16 }}>
+        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>CRM Composer (dry-run)</h2>
+        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
+          Server finalizes recipients and excludes marketing opt-outs. No frontend recipient bypass. Uses existing emailService / promos@oddsyra.com.
+        </p>
+      </div>
+      <div style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 12 }}>
+        <label style={{ fontSize: '0.78rem' }}>Include segment IDs (comma-separated)
+          <input value={include} onChange={(e) => setInclude(e.target.value)} style={{ display: 'block', width: '100%', marginTop: 4 }} />
+        </label>
+        <label style={{ fontSize: '0.78rem' }}>Exclude segment IDs
+          <input value={exclude} onChange={(e) => setExclude(e.target.value)} style={{ display: 'block', width: '100%', marginTop: 4 }} />
+        </label>
+        <label style={{ fontSize: '0.78rem' }}>Subject
+          <input value={subject} onChange={(e) => setSubject(e.target.value)} style={{ display: 'block', width: '100%', marginTop: 4 }} />
+        </label>
+        <label style={{ fontSize: '0.78rem' }}>Body
+          <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={4} style={{ display: 'block', width: '100%', marginTop: 4 }} />
+        </label>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button type="button" className="admin-btn" disabled={busy} onClick={() => run('preview')}>Preview audience</button>
+          <button type="button" className="admin-btn admin-btn--secondary" disabled={busy} onClick={() => run('dry')}>Dry-run (audit)</button>
+        </div>
+      </div>
+      {result && (
+        <pre style={{ fontSize: '0.72rem', whiteSpace: 'pre-wrap', maxHeight: 360, overflow: 'auto' }}>
+          {JSON.stringify(result, null, 2)}
+        </pre>
+      )}
+    </div>
+  );
+}
+
 export default function GrowthDomainView({ subModule = 'overview' }) {
   if (subModule === 'overview' || subModule === 'growth-overview') {
     return <GrowthOverviewPanel />;
@@ -1644,6 +1724,9 @@ export default function GrowthDomainView({ subModule = 'overview' }) {
   if (subModule === 'promo-abuse') {
     return <PromoAbuseAlertsPanel />;
   }
+  if (subModule === 'crm-composer') {
+    return <CrmComposerPanel />;
+  }
   if (subModule === 'crm-segments') {
     return <CrmSegmentsPanel />;
   }
@@ -1657,6 +1740,7 @@ function GrowthOverviewPanel() {
   const [kpis, setKpis] = useState(null);
   const [error, setError] = useState(null);
   const [notes, setNotes] = useState([]);
+  const drill = useAdminKpiDrilldown();
 
   useEffect(() => {
     adminApiClient.get('/growth/dashboard')
@@ -1671,42 +1755,43 @@ function GrowthOverviewPanel() {
       });
   }, []);
 
-  const card = (label, value) => (
-    <div style={{
-      padding: '14px 16px',
-      borderRadius: 10,
-      border: '1px solid var(--admin-border)',
-      background: 'var(--admin-surface)',
-    }}
-    >
-      <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</div>
-      <div style={{ marginTop: 6, fontSize: '1.35rem', fontWeight: 800 }}>{value ?? '—'}</div>
-    </div>
-  );
+  const cards = [
+    { label: 'Active campaigns', metric: 'activeCampaigns', value: kpis?.activeCampaigns },
+    { label: 'Users targeted', metric: 'activeCampaigns', value: kpis?.usersTargeted },
+    { label: 'Emails sent', metric: 'freebetGrants', value: kpis?.emailsSent },
+    { label: 'Freebet grants', metric: 'freebetGrants', value: kpis?.freebetGrants },
+    { label: 'Freebet issued', metric: 'freebetGrants', value: kpis ? money(kpis.freebetIssued) : null },
+    { label: 'Freebet consumed', metric: 'freebetGrants', value: kpis ? money(kpis.freebetConsumed) : null },
+    { label: 'Linked deposits', metric: 'Deposits', value: kpis ? money(kpis.depositsLinkedToFreebet) : null },
+    { label: 'Claim conversion', metric: 'freebetGrants', value: kpis?.claimConversion != null ? `${(kpis.claimConversion * 100).toFixed(1)}%` : 'N/A' },
+    { label: 'Referral conversion', metric: 'referralActivityToday', value: kpis?.referralConversion != null ? `${(kpis.referralConversion * 100).toFixed(1)}%` : 'N/A' },
+    { label: 'VIP users', metric: 'vipUsers', value: kpis?.vipUsers },
+    { label: 'Segments', metric: 'segments', value: kpis?.segments },
+    { label: 'Abuse alerts open', metric: 'promoAbuseOpen', value: kpis?.promoAbuseOpen },
+  ];
 
   return (
     <div>
       <div style={{ marginBottom: 16 }}>
         <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>08 · Growth Overview</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
-          Live KPIs from campaigns, segments, referrals, VIP, and freebet grants. GGR/NGR shown as N/A when not attributable.
+          Live KPIs from campaigns, segments, referrals, VIP, and freebet grants. Click any tile for details.
         </p>
         {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 16 }}>
-        {card('Active campaigns', kpis?.activeCampaigns)}
-        {card('Users targeted', kpis?.usersTargeted)}
-        {card('Emails sent', kpis?.emailsSent)}
-        {card('Freebet grants', kpis?.freebetGrants)}
-        {card('Freebet issued', kpis ? money(kpis.freebetIssued) : null)}
-        {card('Freebet consumed', kpis ? money(kpis.freebetConsumed) : null)}
-        {card('Linked deposits', kpis ? money(kpis.depositsLinkedToFreebet) : null)}
-        {card('Claim conversion', kpis?.claimConversion != null ? `${(kpis.claimConversion * 100).toFixed(1)}%` : 'N/A')}
-        {card('Referral conversion', kpis?.referralConversion != null ? `${(kpis.referralConversion * 100).toFixed(1)}%` : 'N/A')}
-        {card('VIP users', kpis?.vipUsers)}
-        {card('Segments', kpis?.segments)}
-        {card('Abuse alerts open', kpis?.promoAbuseOpen)}
+        {cards.map((c) => (
+          <AdminKPI
+            key={c.label}
+            label={c.label}
+            value={c.value ?? '—'}
+            accent="#64748b"
+            source="Details"
+            onClick={() => drill.openDrilldown(c.metric, c.label)}
+          />
+        ))}
       </div>
+      <AdminKpiDrillDrawer drill={drill} />
       {notes.map((n) => (
         <p key={n} style={{ margin: '0 0 4px', fontSize: '0.74rem', color: 'var(--admin-text-muted)' }}>{n}</p>
       ))}
@@ -2061,6 +2146,7 @@ function CrmSegmentsPanel() {
 }
 
 function ReferralsAdminPanel() {
+  const drillRef = useAdminKpiDrilldown();
   const [rows, setRows] = useState([]);
   const [metrics, setMetrics] = useState({});
   const [analytics, setAnalytics] = useState(null);
@@ -2154,19 +2240,24 @@ function ReferralsAdminPanel() {
       </p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 16 }}>
         {[
-          ['Total', kpiTotal],
-          ['Registered', kpiPending],
-          ['Qualified', kpiQualified],
-          ['Rewarded', kpiRewarded],
-          ['Reward value', money(kpiRewardValue)],
-          ['Fraud review', funnel.fraud_review ?? analytics?.abuse?.fraud_review],
-        ].map(([label, val]) => (
-          <div key={label} style={{ padding: 12, borderRadius: 10, border: '1px solid var(--admin-border)', background: 'var(--admin-surface)' }}>
-            <div style={{ fontSize: '0.7rem', color: 'var(--admin-text-muted)', fontWeight: 700 }}>{label}</div>
-            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--admin-text)' }}>{val ?? '—'}</div>
-          </div>
+          ['Total', 'referralActivityToday', kpiTotal],
+          ['Registered', 'referralActivityToday', kpiPending],
+          ['Qualified', 'referralActivityToday', kpiQualified],
+          ['Rewarded', 'referralActivityToday', kpiRewarded],
+          ['Reward value', 'referralActivityToday', money(kpiRewardValue)],
+          ['Fraud review', 'promotionAbuse', funnel.fraud_review ?? analytics?.abuse?.fraud_review],
+        ].map(([label, metric, val]) => (
+          <AdminKPI
+            key={label}
+            label={label}
+            value={val ?? '—'}
+            accent="#64748b"
+            source="Details"
+            onClick={() => drillRef.openDrilldown(metric, label)}
+          />
         ))}
       </div>
+      <AdminKpiDrillDrawer drill={drillRef} />
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12, alignItems: 'center' }}>
         <select value={status} onChange={(e) => setStatus(e.target.value)} style={{ padding: '6px 10px', borderRadius: 6 }}>
           <option value="">All statuses</option>

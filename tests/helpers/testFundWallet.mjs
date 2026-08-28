@@ -3,11 +3,13 @@
  * Hard-fails if NODE_ENV=production — never seed real money balances via this helper.
  */
 import { query } from '../../db/pg.js';
+import { assertSafeTestDatabase } from '../../lib/testEnvGuard.mjs';
 
 export function assertNonProductionFunding() {
   if (process.env.NODE_ENV === 'production') {
     throw new Error('TEST_FUND_FORBIDDEN: test wallet funding is disabled in production');
   }
+  assertSafeTestDatabase({ requireTestEnv: false });
 }
 
 /**

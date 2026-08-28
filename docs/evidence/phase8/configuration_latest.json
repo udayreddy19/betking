@@ -1,0 +1,26 @@
+{
+  "phase": 8,
+  "timestamp": "2026-08-28T05:23:23.213Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "secretsPrinted": false,
+  "environment": "local",
+  "result": "FAIL",
+  "gates": {
+    "CONFIGURATION": {
+      "status": "FAIL"
+    }
+  },
+  "checks": {
+    "NODE_ENV": "MISSING",
+    "DATABASE_URL": "SET",
+    "REDIS_URL": "SET",
+    "JWT_SECRET": "INVALID_FORMAT",
+    "FRONTEND_URL": "MISSING",
+    "CORS_ORIGIN": "MISSING",
+    "DEMO_MODE": "MISSING",
+    "COOKIE_SECURE": "MISSING",
+    "SMTP_HOST": "MISSING"
+  },
+  "configHealthOverall": "WARNING"
+}

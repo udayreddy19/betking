@@ -1,0 +1,57 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> oddsyra@0.0.0 dr:certification
+> node scripts/dr-certification.mjs
+
+◇ injected env (20) from .env // tip: ⌘ enable debugging { debug: true }
+{
+  "event": "DR_CERTIFICATION",
+  "requestedClass": "STATUS",
+  "classes": {
+    "LOCAL_DUMP_RESTORE": {
+      "status": "PASSED",
+      "evidence": "docs/DR_RESTORE_TEST_CHECKLIST.md (isolated ~16.7s historical)",
+      "tooling": "node scripts/dr_restore_isolated.mjs",
+      "note": "LOCAL_DUMP ≠ production RTO/RPO/PITR",
+      "measuredRto": "NOT VERIFIED (local only historical)",
+      "measuredRpo": "NOT VERIFIED",
+      "pitr": "NOT APPLICABLE"
+    },
+    "STAGING_PITR": {
+      "status": "NOT VERIFIED",
+      "evidence": null,
+      "tooling": "Authorized staging WAL/PITR drill under change control",
+      "note": "Must record restore_start, restore_finish, backup_timestamp, target_timestamp, WAL position",
+      "measuredRto": "NOT VERIFIED",
+      "measuredRpo": "NOT VERIFIED",
+      "pitr": "NOT VERIFIED"
+    },
+    "PRODUCTION_CLASS_PITR": {
+      "status": "NOT VERIFIED",
+      "evidence": null,
+      "tooling": "Production-equivalent authorized PITR (never destructive on live without change control)",
+      "note": "Do not fabricate values",
+      "measuredRto": "NOT VERIFIED",
+      "measuredRpo": "NOT VERIFIED",
+      "pitr": "NOT VERIFIED"
+    }
+  },
+  "selected": {
+    "status": "STATUS_ONLY",
+    "note": "Pass --class=LOCAL_DUMP|STAGING_PITR|PRODUCTION_CLASS_PITR"
+  },
+  "fieldsTemplate": {
+    "restore_start": null,
+    "restore_finish": null,
+    "RTO": "NOT VERIFIED",
+    "backup_timestamp": null,
+    "target_timestamp": null,
+    "RPO": "NOT VERIFIED",
+    "wal_position": null,
+    "migration_head": null,
+    "row_counts": null,
+    "integrity_results": null
+  },
+  "autoRepair": false,
+  "generatedAt": "2026-08-28T04:35:11.208Z"
+}

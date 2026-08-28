@@ -236,4 +236,77 @@ router.post('/adjustments', requirePermission('finance'), async (req, res) => {
   }
 });
 
+/** GET /api/admin/finance/control-center — KPI rollup (read-only) */
+router.get('/control-center', requirePermission('finance'), async (req, res) => {
+  try {
+    const { getFinanceControlCenterKpis } = await import('../../../lib/financeDailyClosingEngine.mjs');
+    res.json(await getFinanceControlCenterKpis());
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/** GET /api/admin/finance/daily-closing?date=YYYY-MM-DD */
+router.get('/daily-closing', requirePermission('finance'), async (req, res) => {
+  try {
+    const { getOrOpenDailyClosing, listDailyClosings, computeDailyClosingSnapshot } = await import(
+      '../../../lib/financeDailyClosingEngine.mjs'
+    );
+    if (req.query.list === '1') {
+      return res.json(await listDailyClosings({ limit: Number(req.query.limit) || 30 }));
+    }
+    const date = req.query.date || new Date().toISOString().slice(0, 10);
+    if (req.query.preview === '1') {
+      return res.json({ success: true, snapshot: await computeDailyClosingSnapshot(date) });
+    }
+    const result = await getOrOpenDailyClosing(date, { adminId: req.admin?.id });
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+});
+
+/** POST /api/admin/finance/daily-closing/:action — review | sign-off | reopen */
+router.post('/daily-closing/:action', requirePermission('finance'), async (req, res) => {
+  try {
+    const { transitionDailyClosing } = await import('../../../lib/financeDailyClosingEngine.mjs');
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    const action = String(req.params.action || '').toLowerCase();
+    const date = req.body?.date || req.query.date;
+    const result = await transitionDailyClosing({
+      closingDate: date,
+      action,
+      adminId: req.admin?.id || 'admin',
+      reason: req.body?.reason || null,
+      notes: req.body?.notes || null,
+    });
+    await logAdminAction({
+      actorId: req.admin?.id,
+      targetId: result.closing?.closing_id,
+      action: `FINANCE_DAILY_CLOSING_${action.toUpperCase().replace('-', '_')}`,
+      details: { date, status: result.closing?.status, reason: req.body?.reason || null },
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+      requestId: req.correlationId || req.headers['x-request-id'] || null,
+      riskLevel: action === 'reopen' ? 'HIGH' : 'MEDIUM',
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message, code: err.code });
+  }
+});
+
+/** GET /api/admin/finance/anomalies */
+router.get('/anomalies', requirePermission('finance'), async (req, res) => {
+  try {
+    const { listFinancialAnomalies } = await import('../../../lib/financialAnomalyEngine.mjs');
+    res.json(await listFinancialAnomalies({
+      limit: Number(req.query.limit) || 50,
+      severity: req.query.severity || null,
+    }));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

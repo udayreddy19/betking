@@ -1,0 +1,23 @@
+{
+  "phase": 11,
+  "timestamp": "2026-08-28T06:04:59.866Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "forceGreenAllowed": false,
+  "secretsPrinted": false,
+  "environment": "production",
+  "result": "NOT_VERIFIED",
+  "stub": false,
+  "verificationMethod": "config_presence_probe",
+  "notes": "Production configuration must be verified on the production host",
+  "gates": {
+    "CONFIGURATION": {
+      "status": "NOT_VERIFIED"
+    }
+  },
+  "checks": {
+    "NODE_ENV": null,
+    "claimedEnvironment": "production"
+  },
+  "expiresAt": "2026-09-04T06:04:59.866Z"
+}

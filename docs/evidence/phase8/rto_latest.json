@@ -1,0 +1,16 @@
+{
+  "phase": 8,
+  "timestamp": "2026-08-28T05:22:52.770Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "secretsPrinted": false,
+  "environment": "local",
+  "result": "NOT_VERIFIED",
+  "gates": {
+    "RTO": {
+      "status": "NOT_VERIFIED"
+    }
+  },
+  "RTO_target": "OPERATOR_DEFINED",
+  "RTO_verified": null
+}

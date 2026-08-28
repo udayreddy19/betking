@@ -65,4 +65,66 @@ router.get('/privilege-changes', requireRole('SUPER_ADMIN'), async (req, res) =>
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+/** GET /security/config-health — safe env/config status (no secret values) */
+router.get('/config-health', requireRole('SUPER_ADMIN', 'OPERATIONS_ADMIN'), async (req, res) => {
+  try {
+    const { getConfigurationHealth } = await import('../../../lib/configHealthEngine.mjs');
+    res.json(getConfigurationHealth());
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/** GET /security/audit-center — filtered append-only audit explorer */
+router.get('/audit-center', requireRole('SUPER_ADMIN', 'OPERATIONS_ADMIN', 'FINANCE_ADMIN'), async (req, res) => {
+  try {
+    const q = await getQuery();
+    const {
+      adminId, action, resource, riskLevel, ip, requestId, q: search,
+      from, to, page = 1, limit = 50,
+    } = req.query;
+    const conds = [];
+    const params = [];
+    let i = 1;
+    if (adminId) { conds.push(`actor_id = $${i++}`); params.push(adminId); }
+    if (action) { conds.push(`action ILIKE $${i++}`); params.push(`%${action}%`); }
+    if (resource) { conds.push(`(target_id::text ILIKE $${i} OR details::text ILIKE $${i})`); params.push(`%${resource}%`); i += 1; }
+    if (riskLevel) { conds.push(`risk_level = $${i++}`); params.push(String(riskLevel).toUpperCase()); }
+    if (ip) { conds.push(`ip_address = $${i++}`); params.push(ip); }
+    if (requestId) { conds.push(`request_id = $${i++}`); params.push(requestId); }
+    if (search) {
+      conds.push(`(action ILIKE $${i} OR details::text ILIKE $${i} OR actor_id ILIKE $${i} OR target_id::text ILIKE $${i})`);
+      params.push(`%${search}%`);
+      i += 1;
+    }
+    if (from) { conds.push(`created_at >= $${i++}::timestamptz`); params.push(from); }
+    if (to) { conds.push(`created_at <= $${i++}::timestamptz`); params.push(to); }
+    const where = conds.length ? `WHERE ${conds.join(' AND ')}` : '';
+    const lim = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
+    const offset = (Math.max(1, parseInt(page, 10) || 1) - 1) * lim;
+    const result = await q(
+      `SELECT event_id, actor_id, target_id, action, details, created_at,
+              ip_address, user_agent, request_id, risk_level
+       FROM audit_events
+       ${where}
+       ORDER BY created_at DESC
+       LIMIT $${i++} OFFSET $${i++}`,
+      [...params, lim, offset],
+    ).catch(async () => q(
+      `SELECT event_id, actor_id, target_id, action, details, created_at
+       FROM audit_events ${where} ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+      [...params, lim, offset],
+    ));
+    res.json({
+      success: true,
+      events: result.rows,
+      page: parseInt(page, 10) || 1,
+      limit: lim,
+      appendOnly: true,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

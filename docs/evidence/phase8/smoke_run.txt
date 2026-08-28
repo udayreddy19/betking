@@ -1,0 +1,126 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> oddsyra@0.0.0 production:smoke
+> node scripts/production-smoke.mjs --environment=local --base-url=https://oddsyra.com
+
+◇ injected env (20) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+{
+  "event": "PRODUCTION_SMOKE",
+  "environment": "local",
+  "result": "FAIL",
+  "steps": [
+    {
+      "id": "public_readiness",
+      "result": "FAIL"
+    },
+    {
+      "id": "public_liveness",
+      "result": "FAIL"
+    },
+    {
+      "id": "health_live",
+      "result": "FAIL"
+    },
+    {
+      "id": "health_ready",
+      "result": "FAIL"
+    },
+    {
+      "id": "health_dependencies",
+      "result": "FAIL"
+    },
+    {
+      "id": "admin_unauthenticated",
+      "result": "FAIL"
+    },
+    {
+      "id": "certification_unauthenticated",
+      "result": "FAIL"
+    },
+    {
+      "id": "authentication",
+      "result": "NOT_VERIFIED"
+    },
+    {
+      "id": "mfa",
+      "result": "NOT_VERIFIED"
+    },
+    {
+      "id": "rbac",
+      "result": "NOT_VERIFIED"
+    },
+    {
+      "id": "admin_shell",
+      "result": "NOT_VERIFIED"
+    },
+    {
+      "id": "customer_lookup",
+      "result": "NOT_VERIFIED"
+    },
+    {
+      "id": "customer_360",
+      "result": "NOT_VERIFIED"
+    },
+    {
+      "id": "wallet_readonly",
+      "result": "NOT_VERIFIED"
+    },
+    {
+      "id": "bet_slip",
+      "result": "NOT_VERIFIED"
+    },
+    {
+      "id": "odds_changed",
+      "result": "NOT_VERIFIED"
+    },
+    {
+      "id": "odds_acceptance",
+      "result": "NOT_VERIFIED"
+    },
+    {
+      "id": "bet_placement",
+      "result": "BLOCKED"
+    },
+    {
+      "id": "settlement",
+      "result": "BLOCKED"
+    },
+    {
+      "id": "withdrawal_request",
+      "result": "BLOCKED"
+    },
+    {
+      "id": "maker_checker",
+      "result": "NOT_VERIFIED"
+    },
+    {
+      "id": "reconciliation",
+      "result": "NOT_VERIFIED"
+    },
+    {
+      "id": "notifications",
+      "result": "NOT_VERIFIED"
+    },
+    {
+      "id": "outbox",
+      "result": "NOT_VERIFIED"
+    },
+    {
+      "id": "worker",
+      "result": "NOT_VERIFIED"
+    },
+    {
+      "id": "redis",
+      "result": "NOT_VERIFIED"
+    },
+    {
+      "id": "websocket",
+      "result": "NOT_VERIFIED"
+    },
+    {
+      "id": "audit_log",
+      "result": "NOT_VERIFIED"
+    }
+  ],
+  "path": "docs/evidence/phase8/production-smoke_2026-08-28T05-23-23-864Z.json"
+}

@@ -1,0 +1,56 @@
+{
+  "phase": 8,
+  "timestamp": "2026-08-28T05:23:22.952Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "secretsPrinted": false,
+  "environment": "local",
+  "result": "FAIL",
+  "gates": {
+    "DATABASE": {
+      "status": "PASS"
+    },
+    "MIGRATIONS": {
+      "status": "FAIL"
+    }
+  },
+  "checks": {
+    "event": "DB_VERIFY",
+    "environment": "local",
+    "expectedPrefixes": [
+      "067",
+      "068",
+      "069",
+      "070",
+      "071",
+      "098"
+    ],
+    "actualHead": "096_payment_refund_manual_review.sql",
+    "onDisk": {
+      "067": true,
+      "068": true,
+      "069": true,
+      "070": true,
+      "071": true,
+      "098": true
+    },
+    "appliedStatus": {
+      "067": "GREEN",
+      "068": "GREEN",
+      "069": "GREEN",
+      "070": "YELLOW",
+      "071": "YELLOW",
+      "098": "YELLOW"
+    },
+    "appliedCount": 71,
+    "missingMigrations": [
+      "070",
+      "071",
+      "098"
+    ],
+    "dbReachable": true,
+    "requiredTablesPresent": true,
+    "status": "FAIL",
+    "note": "Source + DB presence checked; production deploy still needs live evidence"
+  }
+}

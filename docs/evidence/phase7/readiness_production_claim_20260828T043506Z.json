@@ -1,0 +1,557 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> oddsyra@0.0.0 readiness:check
+> node scripts/readiness-check.mjs --environment=production
+
+◇ injected env (20) from .env // tip: ⌘ suppress logs { quiet: true }
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+{"ts":"2026-08-28T04:35:09.840Z","level":"error","message":"sql_error","error":"relation \"settlement_queue\" does not exist"}
+{"ts":"2026-08-28T04:35:09.841Z","level":"error","message":"sql_error","error":"relation \"ops_alerts\" does not exist"}
+{"ts":"2026-08-28T04:35:09.846Z","level":"error","message":"sql_error","error":"relation \"ops_incidents\" does not exist"}
+{
+  "event": "PRODUCTION_READINESS_CHECK",
+  "overall": "RED",
+  "environment": "production",
+  "goNoGo": {
+    "decision": "NO-GO",
+    "goLiveBlockedByTestFunding": false,
+    "productionClaimAllowed": false,
+    "stagingClaimAllowed": false,
+    "mandatoryBlockers": [
+      "MIGRATIONS_INCOMPLETE",
+      "ACTIONABLE_LEDGER_MISMATCHES:141",
+      "MFA_NOT_VERIFIED",
+      "RBAC_NOT_VERIFIED",
+      "CSRF_NOT_VERIFIED",
+      "PITR_NOT_VERIFIED",
+      "RPO_NOT_VERIFIED",
+      "RTO_NOT_VERIFIED",
+      "DEPLOYMENT_NOT_VERIFIED",
+      "PRODUCTION_SMOKE_NOT_VERIFIED",
+      "AUTHENTICATION_NOT_VERIFIED"
+    ],
+    "reasons": [
+      "Environment claim requires live MFA/RBAC/CSRF/deploy/PITR evidence — productionClaimAllowed always false until evidenced",
+      "Actionable ledger mismatches: 141",
+      "MIGRATIONS_INCOMPLETE",
+      "MFA_NOT_VERIFIED",
+      "RBAC_NOT_VERIFIED",
+      "CSRF_NOT_VERIFIED",
+      "PITR_NOT_VERIFIED",
+      "RPO_NOT_VERIFIED",
+      "RTO_NOT_VERIFIED",
+      "DEPLOYMENT_NOT_VERIFIED",
+      "PRODUCTION_SMOKE_NOT_VERIFIED",
+      "AUTHENTICATION_NOT_VERIFIED"
+    ],
+    "operatorChecklist": [
+      "Zero known test-funding accounts via authorized path (no auto-repair)",
+      "Apply migrations 067–071 and 098 on target and record evidence",
+      "Complete security:smoke on target environment",
+      "Complete PHASE_7_PRODUCTION_SMOKE_TEST.md",
+      "Authorized PITR/DR drill before claiming RPO/RTO",
+      "Record evidence under docs/evidence/phase7/"
+    ],
+    "rule": "Production cannot be GREEN if any mandatory gate is RED, NOT VERIFIED, or blocking YELLOW. Local PASS ≠ production PASS."
+  },
+  "testFundingCode": "TEST_FUNDING_CLEAN",
+  "goLiveBlocked": false,
+  "residualTotal": 0,
+  "mismatchCounts": {
+    "RAW_MISMATCH_COUNT": 141,
+    "ACTIONABLE_MISMATCH_COUNT": 141,
+    "ACCEPTED_MISMATCH_COUNT": 0
+  },
+  "blockingGateIds": [
+    "WALLET",
+    "LEDGER",
+    "RECONCILIATION",
+    "AUTHENTICATION",
+    "MFA",
+    "RBAC",
+    "CSRF",
+    "FINANCE",
+    "ALERTING",
+    "PITR",
+    "RPO",
+    "RTO",
+    "DEPLOYMENT",
+    "PRODUCTION_SMOKE"
+  ],
+  "whyNotGreenTop": [
+    {
+      "id": "TESTS",
+      "status": "NOT VERIFIED",
+      "blocking": false,
+      "explanation": "Local suite GREEN does not verify staging/production"
+    },
+    {
+      "id": "BUILD",
+      "status": "NOT VERIFIED",
+      "blocking": false,
+      "explanation": "Production build"
+    },
+    {
+      "id": "LINT",
+      "status": "NOT VERIFIED",
+      "blocking": false,
+      "explanation": "Record from command output"
+    },
+    {
+      "id": "DEPENDENCIES",
+      "status": "NOT VERIFIED",
+      "blocking": false,
+      "explanation": "Dependencies / supply-chain"
+    },
+    {
+      "id": "MIGRATIONS",
+      "status": "YELLOW",
+      "blocking": false,
+      "explanation": "Apply missing migrations on target env; never claim from source alone"
+    },
+    {
+      "id": "WALLET",
+      "status": "RED",
+      "blocking": true,
+      "explanation": "Wallet integrity (read-only)"
+    },
+    {
+      "id": "LEDGER",
+      "status": "RED",
+      "blocking": true,
+      "explanation": "Ledger (actionable mismatches)"
+    },
+    {
+      "id": "RECONCILIATION",
+      "status": "RED",
+      "blocking": true,
+      "explanation": "Reconciliation"
+    },
+    {
+      "id": "AUTHENTICATION",
+      "status": "NOT VERIFIED",
+      "blocking": true,
+      "explanation": "npm run security:smoke -- --environment=<env>"
+    },
+    {
+      "id": "AUTH",
+      "status": "NOT VERIFIED",
+      "blocking": false,
+      "explanation": "Run live smoke: user + admin login"
+    },
+    {
+      "id": "MFA",
+      "status": "NOT VERIFIED",
+      "blocking": true,
+      "explanation": "Verify MFA challenge on production admin login"
+    },
+    {
+      "id": "RBAC",
+      "status": "NOT VERIFIED",
+      "blocking": true,
+      "explanation": "Deny unauthorized finance/security roles on live"
+    },
+    {
+      "id": "CSRF",
+      "status": "NOT VERIFIED",
+      "blocking": true,
+      "explanation": "Cookie-auth CSRF; admin Bearer is separate model"
+    },
+    {
+      "id": "SESSION",
+      "status": "NOT VERIFIED",
+      "blocking": false,
+      "explanation": "Session revoke may not invalidate JWT until expiry"
+    },
+    {
+      "id": "SECRETS",
+      "status": "YELLOW",
+      "blocking": false,
+      "explanation": "Values never returned"
+    },
+    {
+      "id": "RATE_LIMITING",
+      "status": "YELLOW",
+      "blocking": false,
+      "explanation": "Auth + admin API/mutation limiters exist; live abuse smoke NOT VERIFIED"
+    },
+    {
+      "id": "SECURITY_HEADERS",
+      "status": "YELLOW",
+      "blocking": false,
+      "explanation": "CSP Report-Only; nginx HSTS"
+    },
+    {
+      "id": "AUDIT_LOGGING",
+      "status": "YELLOW",
+      "blocking": false,
+      "explanation": "auditLogger on modular admin; sanitize PARTIAL"
+    },
+    {
+      "id": "SECURITY",
+      "status": "YELLOW",
+      "blocking": false,
+      "explanation": "Configuration security"
+    },
+    {
+      "id": "ODDS",
+      "status": "NOT VERIFIED",
+      "blocking": false,
+      "explanation": "Odds engine"
+    },
+    {
+      "id": "BET_PLACEMENT",
+      "status": "NOT VERIFIED",
+      "blocking": false,
+      "explanation": "Bet placement"
+    },
+    {
+      "id": "WITHDRAWALS",
+      "status": "YELLOW",
+      "blocking": false,
+      "explanation": "Withdrawals"
+    },
+    {
+      "id": "WITHDRAWAL_RISK",
+      "status": "NOT VERIFIED",
+      "blocking": false,
+      "explanation": "Withdrawal risk"
+    },
+    {
+      "id": "FINANCE",
+      "status": "RED",
+      "blocking": true,
+      "explanation": "Finance ops"
+    },
+    {
+      "id": "VIP",
+      "status": "NOT VERIFIED",
+      "blocking": false,
+      "explanation": "VIP"
+    }
+  ],
+  "gates": [
+    {
+      "id": "CORE",
+      "status": "GREEN",
+      "blocking": false,
+      "severity": "INFO"
+    },
+    {
+      "id": "TESTS",
+      "status": "NOT VERIFIED",
+      "blocking": false,
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "BUILD",
+      "status": "NOT VERIFIED",
+      "blocking": false,
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "LINT",
+      "status": "NOT VERIFIED",
+      "blocking": false,
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "DEPENDENCIES",
+      "status": "NOT VERIFIED",
+      "blocking": false,
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "DATABASE",
+      "status": "GREEN",
+      "blocking": false,
+      "severity": "INFO"
+    },
+    {
+      "id": "MIGRATIONS",
+      "status": "YELLOW",
+      "blocking": false,
+      "severity": "HIGH"
+    },
+    {
+      "id": "WALLET",
+      "status": "RED",
+      "blocking": true,
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "LEDGER",
+      "status": "RED",
+      "blocking": true,
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "RECONCILIATION",
+      "status": "RED",
+      "blocking": true,
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "TEST_FUNDING",
+      "status": "GREEN",
+      "blocking": false,
+      "severity": "INFO"
+    },
+    {
+      "id": "TEST_FUNDING_CLEANUP",
+      "status": "GREEN",
+      "blocking": false,
+      "severity": "INFO"
+    },
+    {
+      "id": "AUTHENTICATION",
+      "status": "NOT VERIFIED",
+      "blocking": true,
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "AUTH",
+      "status": "NOT VERIFIED",
+      "blocking": false,
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "MFA",
+      "status": "NOT VERIFIED",
+      "blocking": true,
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "RBAC",
+      "status": "NOT VERIFIED",
+      "blocking": true,
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "CSRF",
+      "status": "NOT VERIFIED",
+      "blocking": true,
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "SESSION",
+      "status": "NOT VERIFIED",
+      "blocking": false,
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "SECRETS",
+      "status": "YELLOW",
+      "blocking": false,
+      "severity": "HIGH"
+    },
+    {
+      "id": "RATE_LIMITING",
+      "status": "YELLOW",
+      "blocking": false,
+      "severity": "HIGH"
+    },
+    {
+      "id": "SECURITY_HEADERS",
+      "status": "YELLOW",
+      "blocking": false,
+      "severity": "HIGH"
+    },
+    {
+      "id": "CORS",
+      "status": "GREEN",
+      "blocking": false,
+      "severity": "INFO"
+    },
+    {
+      "id": "AUDIT_LOGGING",
+      "status": "YELLOW",
+      "blocking": false,
+      "severity": "HIGH"
+    },
+    {
+      "id": "SECURITY",
+      "status": "YELLOW",
+      "blocking": false,
+      "severity": "HIGH"
+    },
+    {
+      "id": "ODDS",
+      "status": "NOT VERIFIED",
+      "blocking": false,
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "BET_PLACEMENT",
+      "status": "NOT VERIFIED",
+      "blocking": false,
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "SETTLEMENT",
+      "status": "GREEN",
+      "blocking": false,
+      "severity": "INFO"
+    },
+    {
+      "id": "DEPOSITS",
+      "status": "GREEN",
+      "blocking": false,
+      "severity": "INFO"
+    },
+    {
+      "id": "WITHDRAWALS",
+      "status": "YELLOW",
+      "blocking": false,
+      "severity": "HIGH"
+    },
+    {
+      "id": "WITHDRAWAL_RISK",
+      "status": "NOT VERIFIED",
+      "blocking": false,
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "FINANCE",
+      "status": "RED",
+      "blocking": true,
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "PROMOTIONS",
+      "status": "GREEN",
+      "blocking": false,
+      "severity": "INFO"
+    },
+    {
+      "id": "VIP",
+      "status": "NOT VERIFIED",
+      "blocking": false,
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "CRM",
+      "status": "NOT VERIFIED",
+      "blocking": false,
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "NOTIFICATIONS",
+      "status": "NOT VERIFIED",
+      "blocking": false,
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "WORKERS",
+      "status": "YELLOW",
+      "blocking": false,
+      "severity": "HIGH"
+    },
+    {
+      "id": "OUTBOX",
+      "status": "YELLOW",
+      "blocking": false,
+      "severity": "HIGH"
+    },
+    {
+      "id": "REDIS",
+      "status": "GREEN",
+      "blocking": false,
+      "severity": "INFO"
+    },
+    {
+      "id": "WEBSOCKET",
+      "status": "NOT VERIFIED",
+      "blocking": false,
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "MONITORING",
+      "status": "YELLOW",
+      "blocking": false,
+      "severity": "HIGH"
+    },
+    {
+      "id": "ALERTING",
+      "status": "RED",
+      "blocking": true,
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "INCIDENTS",
+      "status": "YELLOW",
+      "blocking": false,
+      "severity": "HIGH"
+    },
+    {
+      "id": "BACKUPS",
+      "status": "GREEN",
+      "blocking": false,
+      "severity": "INFO"
+    },
+    {
+      "id": "DR",
+      "status": "NOT VERIFIED",
+      "blocking": false,
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "PITR",
+      "status": "NOT VERIFIED",
+      "blocking": true,
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "RPO",
+      "status": "NOT VERIFIED",
+      "blocking": true,
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "RTO",
+      "status": "NOT VERIFIED",
+      "blocking": true,
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "DEPLOYMENT",
+      "status": "NOT VERIFIED",
+      "blocking": true,
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "ROLLBACK",
+      "status": "YELLOW",
+      "blocking": false,
+      "severity": "HIGH"
+    },
+    {
+      "id": "DATA_RETENTION",
+      "status": "NOT VERIFIED",
+      "blocking": false,
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "PRIVACY",
+      "status": "YELLOW",
+      "blocking": false,
+      "severity": "HIGH"
+    },
+    {
+      "id": "PRODUCTION_SMOKE",
+      "status": "NOT VERIFIED",
+      "blocking": true,
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "PAYMENTS",
+      "status": "OUT OF SCOPE",
+      "blocking": false,
+      "severity": "INFO"
+    }
+  ],
+  "generatedAt": "2026-08-28T04:35:09.943Z",
+  "autoRepair": false,
+  "evidenceRule": "GREEN only with environment-specific evidence. Local tests never make production GREEN. No auto-repair."
+}

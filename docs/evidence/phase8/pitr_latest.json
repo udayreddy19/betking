@@ -1,0 +1,18 @@
+{
+  "phase": 8,
+  "timestamp": "2026-08-28T05:22:52.737Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "secretsPrinted": false,
+  "environment": "local",
+  "result": "NOT_VERIFIED",
+  "gates": {
+    "PITR": {
+      "status": "NOT_VERIFIED"
+    }
+  },
+  "restore_start": null,
+  "restore_finish": null,
+  "wal_position": null,
+  "note": "No PITR executed this phase"
+}

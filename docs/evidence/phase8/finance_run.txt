@@ -1,0 +1,40 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> oddsyra@0.0.0 finance:investigate
+> node scripts/investigate_wallet_ledger_mismatches.mjs --limit=25 --out=docs/evidence/phase8/finance_investigate_raw.json
+
+◇ injected env (20) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+{
+  "event": "WALLET_LEDGER_MISMATCH_INVESTIGATION",
+  "totalMismatches": 146,
+  "RAW_MISMATCH_COUNT": 146,
+  "ACTIONABLE_MISMATCH_COUNT": 24,
+  "ACCEPTED_MISMATCH_COUNT": 1,
+  "sampleSize": 25,
+  "byType": {
+    "WALLET_ZERO_LEDGER_POSITIVE": 12,
+    "NEGATIVE_LEDGER_SUM": 5,
+    "WALLET_GT_LEDGER": 1,
+    "EMPTY_LEDGER_POSITIVE_WALLET": 1,
+    "CASH_VS_FULL_LEDGER": 6
+  },
+  "byCause": {
+    "TEST_FIXTURE_RESET_WALLET_WITHOUT_LEDGER_REVERSAL": 12,
+    "TEST_DEBIT_WITHOUT_MATCHING_CREDIT_OR_BALANCE_RESET": 5,
+    "TEST_FIXTURE_IMBALANCE": 1,
+    "FIXTURE_OR_SEED_WITHOUT_LEDGER": 1,
+    "BUCKET_METHODOLOGY": 6
+  },
+  "byInvestigationStatus": {
+    "OPEN": 12,
+    "DUPLICATE_OR_MISSING_ENTRY": 5,
+    "HISTORICAL_OPENING_BALANCE": 1,
+    "ACCEPTED_WITH_EVIDENCE": 1,
+    "BUCKET_METHODOLOGY": 6
+  },
+  "evidenceFile": "docs/evidence/phase8/finance_investigate_raw.json",
+  "AUTO_REPAIR": false,
+  "autoRepair": false,
+  "displayPolicy": "NO AUTO-REPAIR"
+}

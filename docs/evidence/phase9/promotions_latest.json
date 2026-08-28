@@ -1,0 +1,18 @@
+{
+  "phase": 9,
+  "timestamp": "2026-08-28T06:06:10.254Z",
+  "gitCommit": "31eb6aa",
+  "autoRepair": false,
+  "secretsPrinted": false,
+  "environment": "production",
+  "result": "NOT_VERIFIED",
+  "gates": {
+    "PROMOTIONS": {
+      "status": "NOT_VERIFIED",
+      "notes": "Production promo smoke required"
+    }
+  },
+  "checks": {
+    "note": "Production promo smoke required"
+  }
+}

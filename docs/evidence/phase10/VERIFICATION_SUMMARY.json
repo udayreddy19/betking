@@ -1,0 +1,410 @@
+{
+  "phase": 10,
+  "environment": "production",
+  "timestamp": "2026-08-28T05:48:40.906Z",
+  "gitCommit": "31eb6aa",
+  "result": "NO-GO",
+  "PRODUCTION_CERTIFICATION_STATUS": "NO-GO",
+  "productionClaimAllowed": false,
+  "forceGreenAllowed": false,
+  "autoRepair": false,
+  "goNoGo": {
+    "decision": "NO-GO",
+    "productionClaimAllowed": false,
+    "stagingClaimAllowed": false,
+    "mandatoryBlockers": [
+      "CORE:BLOCKED",
+      "TESTS:NOT_VERIFIED",
+      "BUILD:NOT_VERIFIED",
+      "DATABASE:NOT_VERIFIED",
+      "MIGRATIONS:NOT_VERIFIED",
+      "LEDGER:NOT_VERIFIED",
+      "RECONCILIATION:NOT_VERIFIED",
+      "TEST_FUNDING:NOT_VERIFIED",
+      "AUTHENTICATION:NOT_VERIFIED",
+      "MFA:NOT_VERIFIED",
+      "RBAC:NOT_VERIFIED",
+      "CSRF:NOT_VERIFIED",
+      "SECRETS:NOT_VERIFIED",
+      "AUDIT_LOGGING:NOT_VERIFIED",
+      "SECURITY:NOT_VERIFIED",
+      "FINANCE:NOT_VERIFIED",
+      "PROMOTIONS:NOT_VERIFIED",
+      "CRM:NOT_VERIFIED",
+      "WORKERS:NOT_VERIFIED",
+      "OUTBOX:NOT_VERIFIED",
+      "REDIS:NOT_VERIFIED",
+      "WEBSOCKET:NOT_VERIFIED",
+      "MONITORING:NOT_VERIFIED",
+      "DR:NOT_VERIFIED",
+      "PITR:NOT_VERIFIED",
+      "RPO:NOT_VERIFIED",
+      "RTO:NOT_VERIFIED",
+      "DEPLOYMENT:NOT_VERIFIED",
+      "PRODUCTION_SMOKE:BLOCKED",
+      "CONFIGURATION:NOT_VERIFIED",
+      "BACKUP:NOT_VERIFIED"
+    ],
+    "forceGreenAllowed": false,
+    "rule": "Production GREEN only when every mandatory gate is PASS with environment-matched Phase 10 evidence (valid, fresh). Local/staging evidence never satisfies production. Dump ≠ PITR. PROCESS_LOCAL ≠ distributed monitoring. No force-GREEN. No auto-repair.",
+    "autoRepair": false
+  },
+  "summary": {
+    "decision": "NO-GO",
+    "productionClaimAllowed": false,
+    "mandatoryBlockerCount": 31,
+    "passed": 0,
+    "failed": 0,
+    "notVerified": 52,
+    "blocked": 2
+  },
+  "passedGates": [],
+  "failedGates": [],
+  "notVerifiedGates": [
+    "TESTS",
+    "BUILD",
+    "LINT",
+    "DEPENDENCIES",
+    "DATABASE",
+    "MIGRATIONS",
+    "WALLET",
+    "LEDGER",
+    "RECONCILIATION",
+    "TEST_FUNDING",
+    "TEST_FUNDING_CLEANUP",
+    "AUTHENTICATION",
+    "AUTH",
+    "MFA",
+    "RBAC",
+    "CSRF",
+    "SESSION",
+    "SECRETS",
+    "RATE_LIMITING",
+    "SECURITY_HEADERS",
+    "CORS",
+    "AUDIT_LOGGING",
+    "SECURITY",
+    "ODDS",
+    "BET_PLACEMENT",
+    "SETTLEMENT",
+    "DEPOSITS",
+    "WITHDRAWALS",
+    "WITHDRAWAL_RISK",
+    "FINANCE",
+    "PROMOTIONS",
+    "VIP",
+    "CRM",
+    "NOTIFICATIONS",
+    "WORKERS",
+    "OUTBOX",
+    "REDIS",
+    "WEBSOCKET",
+    "MONITORING",
+    "ALERTING",
+    "INCIDENTS",
+    "BACKUPS",
+    "DR",
+    "PITR",
+    "RPO",
+    "RTO",
+    "DEPLOYMENT",
+    "ROLLBACK",
+    "DATA_RETENTION",
+    "PRIVACY",
+    "CONFIGURATION",
+    "BACKUP"
+  ],
+  "blockedGates": [
+    "CORE",
+    "PRODUCTION_SMOKE"
+  ],
+  "mandatoryBlockers": [
+    "CORE:BLOCKED",
+    "TESTS:NOT_VERIFIED",
+    "BUILD:NOT_VERIFIED",
+    "DATABASE:NOT_VERIFIED",
+    "MIGRATIONS:NOT_VERIFIED",
+    "LEDGER:NOT_VERIFIED",
+    "RECONCILIATION:NOT_VERIFIED",
+    "TEST_FUNDING:NOT_VERIFIED",
+    "AUTHENTICATION:NOT_VERIFIED",
+    "MFA:NOT_VERIFIED",
+    "RBAC:NOT_VERIFIED",
+    "CSRF:NOT_VERIFIED",
+    "SECRETS:NOT_VERIFIED",
+    "AUDIT_LOGGING:NOT_VERIFIED",
+    "SECURITY:NOT_VERIFIED",
+    "FINANCE:NOT_VERIFIED",
+    "PROMOTIONS:NOT_VERIFIED",
+    "CRM:NOT_VERIFIED",
+    "WORKERS:NOT_VERIFIED",
+    "OUTBOX:NOT_VERIFIED",
+    "REDIS:NOT_VERIFIED",
+    "WEBSOCKET:NOT_VERIFIED",
+    "MONITORING:NOT_VERIFIED",
+    "DR:NOT_VERIFIED",
+    "PITR:NOT_VERIFIED",
+    "RPO:NOT_VERIFIED",
+    "RTO:NOT_VERIFIED",
+    "DEPLOYMENT:NOT_VERIFIED",
+    "PRODUCTION_SMOKE:BLOCKED",
+    "CONFIGURATION:NOT_VERIFIED",
+    "BACKUP:NOT_VERIFIED"
+  ],
+  "evidenceCompleteness": {
+    "phase10Files": 57,
+    "phase9Files": 119,
+    "phase8Files": 47,
+    "filesOnDisk": 223,
+    "latestBundlesPresent": 27,
+    "note": "Presence ≠ PASS; gate needs result PASS, matching environment, and non-stale evidence",
+    "missingLatest": []
+  },
+  "checklist": {
+    "note": "Read-only operator checklist. Completing checklist items does NOT override certification.",
+    "canOverrideCertification": false,
+    "sections": {
+      "FINANCE": [
+        {
+          "gate": "FINANCE",
+          "status": "NOT_VERIFIED",
+          "reason": "Connected-DB readiness result is not production evidence",
+          "evidenceTimestamp": "2026-08-28T05:48:39.827Z"
+        },
+        {
+          "gate": "LEDGER",
+          "status": "NOT_VERIFIED",
+          "reason": "Production finance:investigate required",
+          "evidenceTimestamp": "2026-08-28T05:48:39.827Z"
+        },
+        {
+          "gate": "RECONCILIATION",
+          "status": "NOT_VERIFIED",
+          "reason": "Production recon audit required",
+          "evidenceTimestamp": "2026-08-28T05:48:39.843Z"
+        },
+        {
+          "gate": "TEST_FUNDING",
+          "status": "NOT_VERIFIED",
+          "reason": "Known test-funding accounts are clean (zero residual).; Readiness PASS ignored for production/staging claim without matching evidence; environment_mismatch:evidence=local-connected-not-production:claim=production",
+          "evidenceTimestamp": "2026-08-28T05:48:39.648Z"
+        }
+      ],
+      "SECURITY": [
+        {
+          "gate": "SECURITY",
+          "status": "NOT_VERIFIED",
+          "reason": "Credentialed MFA/RBAC/CSRF matrix required",
+          "evidenceTimestamp": "2026-08-28T05:48:39.746Z"
+        },
+        {
+          "gate": "AUTHENTICATION",
+          "status": "NOT_VERIFIED",
+          "reason": "npm run security:smoke -- --environment=<env>",
+          "evidenceTimestamp": "2026-08-28T05:48:39.746Z"
+        },
+        {
+          "gate": "MFA",
+          "status": "NOT_VERIFIED",
+          "reason": "Verify MFA challenge on production admin login",
+          "evidenceTimestamp": "2026-08-28T05:48:39.746Z"
+        },
+        {
+          "gate": "RBAC",
+          "status": "NOT_VERIFIED",
+          "reason": "Deny unauthorized finance/security roles on live",
+          "evidenceTimestamp": "2026-08-28T05:48:39.746Z"
+        },
+        {
+          "gate": "CSRF",
+          "status": "NOT_VERIFIED",
+          "reason": "Cookie-auth CSRF; admin Bearer is separate model",
+          "evidenceTimestamp": "2026-08-28T05:48:39.746Z"
+        },
+        {
+          "gate": "AUDIT_LOGGING",
+          "status": "NOT_VERIFIED",
+          "reason": "auditLogger on modular admin; sanitize PARTIAL",
+          "evidenceTimestamp": "2026-08-28T05:48:39.746Z"
+        },
+        {
+          "gate": "SECRETS",
+          "status": "NOT_VERIFIED",
+          "reason": "Production secret presence verification required",
+          "evidenceTimestamp": "2026-08-28T05:48:40.034Z"
+        }
+      ],
+      "DATABASE": [
+        {
+          "gate": "DATABASE",
+          "status": "NOT_VERIFIED",
+          "reason": "Readiness PASS ignored for production/staging claim without matching evidence; environment_mismatch:evidence=local-connected-not-production:claim=production",
+          "evidenceTimestamp": "2026-08-28T05:48:39.591Z"
+        },
+        {
+          "gate": "MIGRATIONS",
+          "status": "NOT_VERIFIED",
+          "reason": "Apply missing migrations on target env; never claim from source alone; environment_mismatch:evidence=local-connected-not-production:claim=production",
+          "evidenceTimestamp": "2026-08-28T05:48:39.616Z"
+        }
+      ],
+      "DEPLOYMENT": [
+        {
+          "gate": "DEPLOYMENT",
+          "status": "NOT_VERIFIED",
+          "reason": "Deployment version + smoke evidence required",
+          "evidenceTimestamp": "2026-08-28T05:48:40.019Z"
+        },
+        {
+          "gate": "BUILD",
+          "status": "NOT_VERIFIED",
+          "reason": null,
+          "evidenceTimestamp": null
+        },
+        {
+          "gate": "CONFIGURATION",
+          "status": "NOT_VERIFIED",
+          "reason": "Requires configuration evidence for claimed environment",
+          "evidenceTimestamp": null
+        },
+        {
+          "gate": "PRODUCTION_SMOKE",
+          "status": "BLOCKED",
+          "reason": "npm run security:smoke -- --environment=production --i-understand-production=1; fetch failed",
+          "evidenceTimestamp": "2026-08-28T05:48:39.730Z"
+        }
+      ],
+      "DR": [
+        {
+          "gate": "BACKUP",
+          "status": "NOT_VERIFIED",
+          "reason": "Backup PASS requires restore-capable evidence, not existence alone",
+          "evidenceTimestamp": null
+        },
+        {
+          "gate": "DR",
+          "status": "NOT_VERIFIED",
+          "reason": "DR class evidence required",
+          "evidenceTimestamp": "2026-08-28T05:48:39.937Z"
+        },
+        {
+          "gate": "PITR",
+          "status": "NOT_VERIFIED",
+          "reason": "Production-class PITR required",
+          "evidenceTimestamp": "2026-08-28T05:48:39.954Z"
+        },
+        {
+          "gate": "RPO",
+          "status": "NOT_VERIFIED",
+          "reason": "Measured RPO required",
+          "evidenceTimestamp": "2026-08-28T05:48:39.971Z"
+        },
+        {
+          "gate": "RTO",
+          "status": "NOT_VERIFIED",
+          "reason": "Measured RTO required",
+          "evidenceTimestamp": "2026-08-28T05:48:39.987Z"
+        }
+      ],
+      "MONITORING": [
+        {
+          "gate": "MONITORING",
+          "status": "NOT_VERIFIED",
+          "reason": "Distributed monitoring verification required",
+          "evidenceTimestamp": "2026-08-28T05:48:40.003Z"
+        }
+      ],
+      "APPLICATION": [
+        {
+          "gate": "CORE",
+          "status": "BLOCKED",
+          "reason": "Readiness PASS ignored for production/staging claim without matching evidence; fetch failed",
+          "evidenceTimestamp": "2026-08-28T05:48:39.730Z"
+        },
+        {
+          "gate": "TESTS",
+          "status": "NOT_VERIFIED",
+          "reason": "Local suite GREEN does not verify staging/production",
+          "evidenceTimestamp": null
+        },
+        {
+          "gate": "PROMOTIONS",
+          "status": "NOT_VERIFIED",
+          "reason": "Production promo smoke required",
+          "evidenceTimestamp": "2026-08-28T05:48:40.072Z"
+        },
+        {
+          "gate": "CRM",
+          "status": "NOT_VERIFIED",
+          "reason": "Production CRM dry-run smoke required",
+          "evidenceTimestamp": "2026-08-28T05:48:40.092Z"
+        }
+      ],
+      "OPERATIONS": [
+        {
+          "gate": "WORKERS",
+          "status": "NOT_VERIFIED",
+          "reason": "Independent worker verification required",
+          "evidenceTimestamp": "2026-08-28T05:48:39.859Z"
+        },
+        {
+          "gate": "OUTBOX",
+          "status": "NOT_VERIFIED",
+          "reason": "Independent outbox verification required",
+          "evidenceTimestamp": "2026-08-28T05:48:39.875Z"
+        },
+        {
+          "gate": "REDIS",
+          "status": "NOT_VERIFIED",
+          "reason": "Independent Redis verification required",
+          "evidenceTimestamp": "2026-08-28T05:48:39.890Z"
+        },
+        {
+          "gate": "WEBSOCKET",
+          "status": "NOT_VERIFIED",
+          "reason": "Independent WebSocket verification required",
+          "evidenceTimestamp": "2026-08-28T05:48:39.906Z"
+        }
+      ]
+    }
+  },
+  "security": {
+    "MFA": "NOT_VERIFIED",
+    "RBAC": "NOT_VERIFIED",
+    "CSRF": "NOT_VERIFIED",
+    "AUTHENTICATION": "NOT_VERIFIED"
+  },
+  "ledger": {
+    "mismatchCounts": {
+      "RAW_MISMATCH_COUNT": 161,
+      "ACTIONABLE_MISMATCH_COUNT": 161,
+      "ACCEPTED_MISMATCH_COUNT": 0
+    },
+    "policy": "FLAG_ONLY_NO_AUTO_REPAIR",
+    "note": "Production ledger PASS requires phase10 ledger evidence with environment=production and actionableMismatchCount===0"
+  },
+  "testFunding": {
+    "code": "TEST_FUNDING_CLEAN",
+    "goLiveBlocked": false,
+    "note": "Connected-DB inspect is not production unless evidence.environment=production"
+  },
+  "dr": {
+    "status": "NOT_VERIFIED"
+  },
+  "pitr": {
+    "status": "NOT_VERIFIED"
+  },
+  "rpo": {
+    "status": "NOT_VERIFIED"
+  },
+  "rto": {
+    "status": "NOT_VERIFIED"
+  },
+  "deployment": {
+    "status": "NOT_VERIFIED"
+  },
+  "smoke": {
+    "status": "BLOCKED"
+  },
+  "secretsPrinted": false
+}

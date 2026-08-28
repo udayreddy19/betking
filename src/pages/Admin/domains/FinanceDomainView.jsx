@@ -6,6 +6,8 @@ import { StatusBadge } from '../components/AdminBadge';
 import AdminConfirmDialog from '../components/AdminConfirmDialog';
 import AdminPageHeader from '../components/AdminPageHeader';
 import AdminFilterBar, { FilterDateRange } from '../components/AdminFilterBar';
+import AdminKPI from '../components/AdminKPI';
+import { AdminKpiDrillDrawer, useAdminKpiDrilldown } from '../hooks/useAdminKpiDrilldown';
 
 function money(n) {
   if (n == null || Number.isNaN(Number(n))) return '—';
@@ -756,6 +758,7 @@ function FinanceHealthPanel() {
   const [actingId, setActingId] = useState(null);
   const [resolveTarget, setResolveTarget] = useState(null);
   const { showToast } = useAdminToast();
+  const drill = useAdminKpiDrilldown();
 
   const load = () => {
     adminApiClient.get('/reconciliation/exceptions?limit=50')
@@ -863,16 +866,19 @@ function FinanceHealthPanel() {
   const cards = [
     {
       label: 'Health status',
+      metric: 'openReconciliation',
       value: healthStatus || audit?.overallStatus || '—',
       flag: healthFlag(null, healthStatus || audit?.overallStatus || (exceptions.length ? 'WARNING' : 'MATCHED')),
     },
     {
       label: 'Overall',
+      metric: 'openReconciliation',
       value: audit?.overallStatus || (exceptions.some((e) => e.status === 'OPEN') ? 'OPEN_CASES' : '—'),
       flag: healthFlag(null, audit?.overallStatus || (exceptions.length ? 'WARNING' : 'MATCHED')),
     },
     {
       label: 'Wallet vs Ledger',
+      metric: 'Wallet vs Ledger',
       value: audit?.financialResult
         ? `${audit.financialResult.mismatchCount || 0} mismatch / ${audit.financialResult.totalAudited || 0}`
         : 'Run audit',
@@ -880,6 +886,7 @@ function FinanceHealthPanel() {
     },
     {
       label: 'Deposits / Payments',
+      metric: 'depositFailures',
       value: audit?.paymentResult
         ? `${audit.paymentResult.casesCreated || 0} new cases`
         : 'Run audit',
@@ -887,6 +894,7 @@ function FinanceHealthPanel() {
     },
     {
       label: 'Settlement',
+      metric: 'settlementFailed',
       value: audit?.settlementResult
         ? `${audit.settlementResult.casesCreated || 0} new cases`
         : 'Run audit',
@@ -932,21 +940,18 @@ function FinanceHealthPanel() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 16 }}>
         {cards.map((c) => (
-          <div
+          <AdminKPI
             key={c.label}
-            style={{
-              border: '1px solid var(--admin-border)',
-              borderRadius: 10,
-              padding: '12px 14px',
-              background: 'var(--admin-surface)',
-            }}
-          >
-            <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', fontWeight: 700 }}>{c.label}</div>
-            <div style={{ marginTop: 6, fontWeight: 800, fontSize: '0.95rem' }}>{c.value}</div>
-            <div style={{ marginTop: 8 }}><StatusBadge status={c.flag} /></div>
-          </div>
+            label={c.label}
+            value={c.value}
+            accent="#64748b"
+            source="Details"
+            trendLabel={c.flag}
+            onClick={() => drill.openDrilldown(c.metric, c.label)}
+          />
         ))}
       </div>
+      <AdminKpiDrillDrawer drill={drill} />
 
       {bucketCards.length > 0 && (
         <div style={{ marginBottom: 16 }}>
@@ -1171,6 +1176,185 @@ function DepositsReviewPanel() {
   );
 }
 
+function FinanceControlCenterPanel() {
+  const [kpis, setKpis] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    adminApiClient.get('/finance/control-center')
+      .then((data) => { setKpis(data.kpis || null); setError(null); })
+      .catch((err) => { setError(err.message); setKpis(null); });
+  }, []);
+
+  const cards = [
+    { label: 'Deposits (24h)', value: kpis?.deposits24h?.total, sub: `${kpis?.deposits24h?.count ?? '—'} tx` },
+    { label: 'Pending WD', value: kpis?.pendingWithdrawals?.total, sub: `${kpis?.pendingWithdrawals?.count ?? '—'} req` },
+    { label: 'Held WD', value: kpis?.heldWithdrawals?.total, sub: `${kpis?.heldWithdrawals?.count ?? '—'} req` },
+    { label: 'Maker/Checker', value: kpis?.pendingMakerChecker, sub: 'pending' },
+    { label: 'Recon warnings', value: kpis?.reconciliationWarnings, sub: 'open cases' },
+    { label: 'Critical', value: kpis?.criticalIssues, sub: 'recon' },
+    { label: 'Failed tx (24h)', value: kpis?.failedTransactions24h, sub: 'transactions' },
+  ];
+
+  return (
+    <div>
+      <div style={{ marginBottom: 16 }}>
+        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Finance Control Center</h2>
+        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
+          Server-side KPIs only. Frontend never mutates balances.
+        </p>
+        {error && <p style={{ color: '#fbbf24' }}>{error}</p>}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12 }}>
+        {cards.map((c) => (
+          <div key={c.label} className="telemetry-card" style={{ padding: 12 }}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)' }}>{c.label}</div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 800, marginTop: 4 }}>
+              {c.value == null
+                ? '—'
+                : (typeof c.value === 'number' && (c.label.includes('Deposits') || c.label.includes('WD'))
+                  ? `₹${Number(c.value).toLocaleString()}`
+                  : c.value)}
+            </div>
+            <div style={{ fontSize: '0.7rem', marginTop: 2 }}>{c.sub}</div>
+          </div>
+        ))}
+      </div>
+      {kpis?.settlementQueue?.length > 0 && (
+        <div style={{ marginTop: 16 }}>
+          <h3 style={{ fontSize: '0.95rem' }}>Settlement queue</h3>
+          <AdminDataTable
+            title="Settlement"
+            data={kpis.settlementQueue}
+            columns={[
+              { header: 'Status', key: 'status' },
+              { header: 'Count', key: 'cnt' },
+            ]}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DailyClosingPanel() {
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [pack, setPack] = useState(null);
+  const [error, setError] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const { showToast } = useAdminToast();
+
+  const load = () => {
+    adminApiClient.get(`/finance/daily-closing?date=${encodeURIComponent(date)}`)
+      .then((data) => { setPack(data); setError(null); })
+      .catch((err) => { setError(err.message); setPack(null); });
+  };
+
+  useEffect(() => { load(); }, [date]);
+
+  const act = async (action) => {
+    setBusy(true);
+    try {
+      const body = { date };
+      if (action === 'reopen') {
+        const reason = window.prompt('Reopen reason (required):');
+        if (!reason) return;
+        body.reason = reason;
+      }
+      const data = await adminApiClient.post(`/finance/daily-closing/${action}`, body);
+      setPack(data);
+      showToast(`Daily closing → ${data.closing?.status}`, 'success');
+    } catch (err) {
+      showToast(err.message || 'Action failed', 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const lines = pack?.snapshot?.lines || [];
+  const status = pack?.closing?.status || '—';
+
+  return (
+    <div>
+      <div style={{ marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end' }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Daily Closing</h2>
+          <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
+            Flag-only pack. Opening/expected closing UNAVAILABLE without historical snapshots. Never auto-repairs.
+          </p>
+        </div>
+        <label style={{ fontSize: '0.78rem' }}>
+          Date
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={{ display: 'block', marginTop: 4 }} />
+        </label>
+        <StatusBadge status={status} />
+        <button type="button" className="admin-btn admin-btn--sm" disabled={busy} onClick={() => act('review')}>Review</button>
+        <button type="button" className="admin-btn admin-btn--sm" disabled={busy} onClick={() => act('sign-off')}>Sign off</button>
+        <button type="button" className="admin-btn admin-btn--sm" disabled={busy} onClick={() => act('reopen')}>Reopen</button>
+      </div>
+      {error && <p style={{ color: '#fbbf24' }}>{error}</p>}
+      <AdminDataTable
+        title="Day lines (EXPECTED / ACTUAL / DIFF)"
+        data={lines}
+        emptyMessage="No snapshot"
+        columns={[
+          { header: 'Metric', key: 'metric' },
+          { header: 'Expected', key: 'expected', render: (r) => (r.expected == null ? 'N/A' : Number(r.expected).toLocaleString()) },
+          { header: 'Actual', key: 'actual', render: (r) => (r.actual == null ? 'N/A' : Number(r.actual).toLocaleString()) },
+          { header: 'Diff', key: 'difference', render: (r) => (r.difference == null ? 'N/A' : Number(r.difference).toLocaleString()) },
+          { header: 'Status', key: 'status', render: (r) => <StatusBadge status={r.status} /> },
+          { header: 'Note', key: 'note' },
+        ]}
+      />
+    </div>
+  );
+}
+
+function FinanceAnomaliesPanel() {
+  const [rows, setRows] = useState([]);
+  const [error, setError] = useState(null);
+  const [note, setNote] = useState(null);
+
+  useEffect(() => {
+    adminApiClient.get('/finance/anomalies?limit=50')
+      .then((data) => {
+        setRows(data.anomalies || []);
+        setNote(data.note || null);
+        setError(null);
+      })
+      .catch((err) => {
+        setError(err.message);
+        setRows([]);
+      });
+  }, []);
+
+  return (
+    <div>
+      <div style={{ marginBottom: 16 }}>
+        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Financial Anomalies</h2>
+        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
+          Aggregated from reconciliation, high-risk withdrawals, failed transactions, promo abuse.
+        </p>
+        {note && <p style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)' }}>{note}</p>}
+        {error && <p style={{ color: '#fbbf24' }}>{error}</p>}
+      </div>
+      <AdminDataTable
+        title="Anomalies"
+        data={rows}
+        emptyMessage="No open financial anomalies"
+        columns={[
+          { header: 'Type', key: 'type' },
+          { header: 'Severity', key: 'severity', render: (r) => <StatusBadge status={r.severity} /> },
+          { header: 'Status', key: 'status' },
+          { header: 'Entity', key: 'affectedEntity' },
+          { header: 'Detected', key: 'detectedAt', render: (r) => (r.detectedAt ? new Date(r.detectedAt).toLocaleString() : '—') },
+          { header: 'Evidence', key: 'evidence', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.7rem' }}>{JSON.stringify(r.evidence || {}).slice(0, 80)}</span> },
+        ]}
+      />
+    </div>
+  );
+}
+
 export default function FinanceDomainView({
   subModule = 'maker-checker',
   focusEntityId = null,
@@ -1187,6 +1371,9 @@ export default function FinanceDomainView({
         />
       );
     }
+    if (subModule === 'control-center') return <FinanceControlCenterPanel />;
+    if (subModule === 'daily-closing') return <DailyClosingPanel />;
+    if (subModule === 'anomalies') return <FinanceAnomaliesPanel />;
     if (subModule === 'finance-health') return <FinanceHealthPanel />;
     if (subModule === 'legacy-ledger') return <LegacyLedgerPanel />;
     if (subModule === 'payment-gateways') return <PaymentGatewaysPanel />;
