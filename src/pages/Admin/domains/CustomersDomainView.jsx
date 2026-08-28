@@ -394,8 +394,8 @@ export default function CustomersDomainView({
     setActionBusy(true);
     try {
       await adminApiClient.post(`/customers/${user.id}/restrict`, { action: 'TEMPORARY_RESTRICTION', reason: reason || 'Risk Audit' });
-      showToast(`User ${user.id} restricted.`, 'success');
-      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, status: 'RESTRICTED' } : u)));
+        showToast(`User ${user.id} restricted.`, 'success');
+        setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, status: 'RESTRICTED' } : u)));
       if (selectedUser?.id === user.id) refresh360();
     } catch (err) {
       showToast(err.message || 'Restrict failed', 'error');
@@ -599,17 +599,17 @@ export default function CustomersDomainView({
   }
 
   if (subModule === 'kyc-reminders') {
-    return (
-      <div>
-        <div style={{ marginBottom: '20px' }}>
+  return (
+    <div>
+      <div style={{ marginBottom: '20px' }}>
           <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: 'var(--admin-text)' }}>
             02 · KYC Reminders & Email
           </h2>
           <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
             Users who have not completed KYC. Send Zoho/SMTP completion emails — delivery is logged in kyc_reminder_log.
-          </p>
-          {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.82rem' }}>{error}</p>}
-        </div>
+        </p>
+        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.82rem' }}>{error}</p>}
+      </div>
         <KycReminderUsersPanel
           title="Send KYC completion emails"
           onSent={() => loadCustomers()}
@@ -625,14 +625,14 @@ export default function CustomersDomainView({
   const columns = [];
 
   columns.push(
-    { header: 'User ID', key: 'id' },
-    { header: 'Full Name', key: 'name' },
-    { header: 'Contact Email', key: 'email' },
-    { header: 'Phone', key: 'phone', render: (r) => r.phone || '—' },
-    { header: 'Wallet Balance', key: 'balance', render: (r) => money(r.balance) },
-    {
-      header: 'KYC Status',
-      key: 'kyc',
+          { header: 'User ID', key: 'id' },
+          { header: 'Full Name', key: 'name' },
+          { header: 'Contact Email', key: 'email' },
+          { header: 'Phone', key: 'phone', render: (r) => r.phone || '—' },
+          { header: 'Wallet Balance', key: 'balance', render: (r) => money(r.balance) },
+          {
+            header: 'KYC Status',
+            key: 'kyc',
       render: (r) => <StatusBadge status={r.kyc} />,
     },
   );
@@ -668,17 +668,17 @@ export default function CustomersDomainView({
   }
 
   columns.push({
-    header: 'Actions',
-    key: 'actions',
-    sortable: false,
+            header: 'Actions',
+            key: 'actions',
+            sortable: false,
     render: (r) => {
       const busy = actingId && (actingId === r.caseId || actingId === r.id || actingId === r.userId || actingId === 'bulk');
       return (
         <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
           <button type="button" className="admin-btn admin-btn--ghost admin-btn--sm" onClick={() => open360(r)} style={{ color: '#60a5fa' }}>
             360°
-          </button>
-          {subModule === 'kyc-queue' && (
+                </button>
+                {subModule === 'kyc-queue' && (
             <>
               <button
                 type="button"
@@ -687,7 +687,7 @@ export default function CustomersDomainView({
                 onClick={() => handleKycDecision(r, 'VERIFIED')}
               >
                 {busy ? '…' : 'Approve'}
-              </button>
+                  </button>
               <button
                 type="button"
                 disabled={busy}
@@ -729,11 +729,11 @@ export default function CustomersDomainView({
                 className="admin-btn admin-btn--danger admin-btn--sm"
                 onClick={() => setRestrictConfirm(r)}
               >
-                Restrict
-              </button>
+                  Restrict
+                </button>
             )
           )}
-        </div>
+              </div>
       );
     },
   });
@@ -1106,7 +1106,7 @@ export default function CustomersDomainView({
         width={560}
         actions={drawerActions}
       >
-        {selectedUser && (
+      {selectedUser && (
           <>
             {user360Loading && (
               <div style={{ padding: '12px 0', color: 'var(--admin-text-muted)', fontSize: '0.85rem' }}>Loading full dossier…</div>
@@ -1114,12 +1114,12 @@ export default function CustomersDomainView({
             {user360Error && (
               <div style={{ padding: '10px 12px', marginBottom: 12, borderRadius: 8, background: 'rgba(239,68,68,0.1)', color: '#b91c1c', fontSize: '0.82rem' }}>
                 {user360Error}
-              </div>
+          </div>
             )}
 
             <div style={{ marginBottom: 12 }}>
               <AdminTabs tabs={DOSSIER_TABS} active={dossierTab} onChange={setDossierTab} />
-            </div>
+          </div>
 
             {(dossierTab === 'profile') && (
             <AdminCard title="Personal details" accent="var(--admin-info)" style={{ marginBottom: '12px' }}>
@@ -1138,7 +1138,7 @@ export default function CustomersDomainView({
                 <DossierField label="Country / currency">
                   {[user360?.user?.country, user360?.user?.currency].filter(Boolean).join(' · ') || '—'}
                 </DossierField>
-              </div>
+        </div>
             </AdminCard>
             )}
 

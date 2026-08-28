@@ -159,7 +159,7 @@ function MakerCheckerPanel() {
         reason: reason || 'Held for risk review',
       });
       showToast(`Withdrawal ${holdTarget.id} held.`, 'success');
-      load();
+        load();
     } catch (err) {
       showToast(err.message || 'Hold failed', 'error');
     } finally {
@@ -174,7 +174,7 @@ function MakerCheckerPanel() {
     try {
       await adminApiClient.post(`/finance/withdrawals/${rejectTarget.id}/reject`, { reqId: rejectTarget.id, reason });
       showToast(`Withdrawal ${rejectTarget.id} rejected.`, 'success');
-      load();
+        load();
     } catch (err) {
       showToast(err.message || 'Rejection failed', 'error');
     } finally {

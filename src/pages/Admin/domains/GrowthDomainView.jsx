@@ -996,7 +996,7 @@ function PromotionsPanel() {
       adminApiClient.get('/growth/promotions'),
       adminApiClient.get('/growth/promo-roi'),
     ]).then(([promoRes, roiRes]) => {
-      if (cancelled) return;
+        if (cancelled) return;
       if (promoRes.status === 'fulfilled') {
         setPromos(promoRes.value.promotions || []);
         setError(promoRes.value.note || null);
@@ -1011,7 +1011,7 @@ function PromotionsPanel() {
         setRoiRows([]);
         setRoiNote(roiRes.reason?.message || 'Promo ROI unavailable');
       }
-    });
+      });
     return () => { cancelled = true; };
   }, []);
 
@@ -1432,7 +1432,7 @@ function VipTiersPanel() {
         setError(catalog.reason?.message || 'Failed to load VIP tier catalog');
       }
       setDash(dashboard.status === 'fulfilled' ? dashboard.value : null);
-    });
+      });
   }, []);
 
   useEffect(() => { load(); }, [load]);

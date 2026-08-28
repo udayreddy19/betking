@@ -40,7 +40,7 @@ function compareCellValues(a, b) {
   if (aNum !== null && bNum !== null) return aNum - bNum;
 
   const aTime = a instanceof Date ? a.getTime() : (typeof a === 'string' && /^\d{4}-\d{2}-\d{2}/.test(a) ? Date.parse(a) : NaN);
-  const bTime = b instanceof Date ? b.getTime() : (typeof b === 'string' && /^\d{4}-\d{2}-\d{2}/.test(a) ? Date.parse(b) : NaN);
+  const bTime = b instanceof Date ? b.getTime() : (typeof b === 'string' && /^\d{4}-\d{2}-\d{2}/.test(b) ? Date.parse(b) : NaN);
   if (!Number.isNaN(aTime) && !Number.isNaN(bTime)) return aTime - bTime;
 
   const aStr = typeof a === 'object' ? JSON.stringify(a) : String(a);
@@ -322,29 +322,30 @@ export default function DatabaseInspector() {
     }
   };
 
+  const formatCount = (n) => Number(n || 0).toLocaleString();
+
   return (
     <div className="db-inspector-container">
-      {/* Top Header & Telemetry */}
       <div className="db-inspector-header">
         <div className="db-inspector-title">
-          <div>
-            <h2 className="db-inspector-heading">Database Tables</h2>
-            <p className="db-inspector-sub">
-              Browse live PostgreSQL tables. Sensitive auth columns stay hidden.
-            </p>
-          </div>
+          <p className="db-inspector-kicker">Platform · Schema</p>
+          <h2 className="db-inspector-heading">Database Tables</h2>
+          <p className="db-inspector-sub">
+            Live PostgreSQL catalog. Browse rows, sort columns, export slices.
+            Sensitive auth fields stay hidden.
+          </p>
         </div>
 
         <div className="db-status-pills" aria-label="Database status">
           <span className="status-pill status-pill--pg">
             <span className="live-dot" aria-hidden="true" />
-            DB {meta.totalDbSize}
+            Size {meta.totalDbSize}
           </span>
           <span className="status-pill status-pill--disk">
             Disk {meta.availableDiskStorage}
           </span>
           <span className="status-pill status-pill--recon">
-            {tables.length} tables
+            {formatCount(tables.length)} tables
           </span>
           <button
             type="button"
@@ -363,41 +364,41 @@ export default function DatabaseInspector() {
 
       {error && (
         <div className="db-inspector-error" role="alert">
-          <span>⚠</span>
+          <span aria-hidden="true">!</span>
           <span>{error}</span>
         </div>
       )}
       {notice && (
         <div className="db-inspector-notice" role="status">
-          <span>✓</span>
+          <span aria-hidden="true">✓</span>
           <span>{notice}</span>
         </div>
       )}
 
-      {/* Workspace: Sidebar + Table Studio */}
       <div className="db-inspector-workspace">
-        {/* Left Sidebar (Table List) */}
-        <div className="db-tables-sidebar">
+        <aside className="db-tables-sidebar" aria-label="Schema catalog">
           <div className="sidebar-title">
-            <span className="sidebar-title-text">TABLES ({visibleTables.length})</span>
+            <span className="sidebar-title-text">Catalog</span>
+            <span className="sidebar-title-meta">{formatCount(visibleTables.length)}</span>
           </div>
 
           <div className="db-table-filter">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"/>
-              <path d="m21 21-4.3-4.3"/>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
             </svg>
             <input
               type="search"
               placeholder="Filter tables…"
               value={tableFilter}
               onChange={(e) => setTableFilter(e.target.value)}
+              aria-label="Filter tables"
             />
           </div>
 
           <div className="db-table-sort">
-            <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', fontWeight: 700 }}>Sort</span>
-            <select value={tableListSort} onChange={(e) => setTableListSort(e.target.value)}>
+            <span className="db-table-sort-label">Sort</span>
+            <select value={tableListSort} onChange={(e) => setTableListSort(e.target.value)} aria-label="Sort tables">
               <option value="name-asc">Name A–Z</option>
               <option value="name-desc">Name Z–A</option>
               <option value="rows-desc">Rows high → low</option>
@@ -405,12 +406,14 @@ export default function DatabaseInspector() {
             </select>
           </div>
 
-          <div className="tables-list">
+          <div className="tables-list" role="listbox" aria-label="Tables">
             {loadingTables && tables.length === 0 && (
-              <div className="db-sidebar-empty">Loading tables…</div>
+              <div className="db-sidebar-empty">Loading catalog…</div>
             )}
             {!loadingTables && visibleTables.length === 0 && (
-              <div className="db-sidebar-empty">No tables matching "{tableFilter}"</div>
+              <div className="db-sidebar-empty">
+                {tableFilter ? `No tables match “${tableFilter}”` : 'No tables found'}
+              </div>
             )}
             {visibleTables.map((t) => {
               const isSelected = selectedTable === t.tableName;
@@ -418,40 +421,48 @@ export default function DatabaseInspector() {
                 <button
                   key={t.tableName}
                   type="button"
-                  className={`table-item-btn ${isSelected ? 'active' : ''}`}
+                  role="option"
+                  aria-selected={isSelected}
+                  className={`table-item-btn${isSelected ? ' active' : ''}`}
                   onClick={() => setSelectedTable(t.tableName)}
-                  title={`${t.tableName} (${t.rowCount ?? 0} rows)`}
+                  title={`${t.tableName} · ${formatCount(t.rowCount ?? 0)} rows`}
                 >
                   <span className="table-name-text">{t.tableName}</span>
                   <span className="table-count-badge">
-                    {t.rowCount ?? 0}{t.tableSize ? ` · ${t.tableSize}` : ''}
+                    {formatCount(t.rowCount ?? 0)}{t.tableSize ? ` · ${t.tableSize}` : ''}
                   </span>
                 </button>
               );
             })}
           </div>
-        </div>
+        </aside>
 
-        {/* Right Panel (Table Studio Viewer) */}
-        <div className="db-table-viewer">
+        <section className="db-table-viewer" aria-label="Table studio">
           <div className="table-viewer-header">
             <div className="table-info">
-              <span className="table-info-name">{selectedTable || '—'}</span>
-              <span className="admin-badge admin-badge--neutral">
-                {tableData.columns.length} cols
-              </span>
-              <span className="admin-badge admin-badge--neutral">
-                {filteredRows.length}{tableData.totalCount ? ` / ${tableData.totalCount}` : ''} rows
-              </span>
-              {tableData.primaryKey.length > 0 ? (
-                <span className="admin-badge admin-badge--info">
-                  PK: {tableData.primaryKey.join(', ')}
+              <div className="table-info-top">
+                <span className="table-info-name">{selectedTable || 'Select a table'}</span>
+              </div>
+              <div className="table-info-badges">
+                <span className="admin-badge admin-badge--neutral">
+                  {formatCount(tableData.columns.length)} cols
                 </span>
-              ) : (
-                <span className="admin-badge admin-badge--warning">
-                  No PK (Read-only)
+                <span className="admin-badge admin-badge--neutral">
+                  {formatCount(filteredRows.length)}
+                  {tableData.totalCount ? ` / ${formatCount(tableData.totalCount)}` : ''} rows
                 </span>
-              )}
+                {selectedTable && (
+                  tableData.primaryKey.length > 0 ? (
+                    <span className="admin-badge admin-badge--info">
+                      PK · {tableData.primaryKey.join(', ')}
+                    </span>
+                  ) : (
+                    <span className="admin-badge admin-badge--warning">
+                      No PK · read-only
+                    </span>
+                  )
+                )}
+              </div>
             </div>
 
             <div className="table-viewer-tools">
@@ -461,19 +472,20 @@ export default function DatabaseInspector() {
                   className="db-clear-sort-btn"
                   onClick={() => { setSortColumn(''); setSortDir('asc'); }}
                 >
-                  Clear sort ({sortColumn} {sortDir === 'desc' ? '↓' : '↑'})
+                  Clear sort · {sortColumn} {sortDir === 'desc' ? '↓' : '↑'}
                 </button>
               )}
               <div className="table-search-bar">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="8"/>
-                  <path d="m21 21-4.3-4.3"/>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
                 </svg>
                 <input
                   type="search"
                   placeholder="Search loaded rows…"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  aria-label="Search loaded rows"
                 />
               </div>
               <button
@@ -483,7 +495,7 @@ export default function DatabaseInspector() {
                 onClick={() => exportRows('csv')}
                 title="Export visible rows as CSV"
               >
-                Export CSV
+                CSV
               </button>
               <button
                 type="button"
@@ -492,13 +504,13 @@ export default function DatabaseInspector() {
                 onClick={() => exportRows('json')}
                 title="Export visible rows as JSON"
               >
-                Export JSON
+                JSON
               </button>
             </div>
           </div>
 
           {selectedTable === 'kyc_reminder_log' && (
-            <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--admin-border)' }}>
+            <div className="db-kyc-slot">
               <KycReminderUsersPanel
                 compact
                 title="Send KYC completion emails"
@@ -514,26 +526,27 @@ export default function DatabaseInspector() {
           <div className="table-rows-wrap">
             {loadingRows ? (
               <div className="loading-state">
-                <span className="admin-badge admin-badge--info">↻ Loading rows from PostgreSQL…</span>
+                <div className="db-loading-pulse" aria-hidden="true" />
+                <span>Loading rows from PostgreSQL…</span>
               </div>
             ) : !selectedTable ? (
               <div className="empty-state">
                 <AdminEmptyState
-                  icon="🗄️"
-                  title="Select a Table"
-                  description="Choose any PostgreSQL table from the left explorer to inspect and edit live rows."
+                  icon="⊞"
+                  title="Select a table"
+                  description="Pick a relation from the catalog to inspect live rows."
                 />
               </div>
             ) : filteredRows.length === 0 ? (
               <div className="empty-state">
                 <AdminEmptyState
-                  icon="🔍"
+                  icon="∅"
                   title={`No rows in ${selectedTable}`}
                   description={searchQuery
-                    ? `No rows matching "${searchQuery}". Try clearing your search.`
+                    ? `Nothing matches “${searchQuery}”. Clear search to see loaded rows.`
                     : selectedTable === 'kyc_reminder_log'
                       ? 'No reminder rows yet. This table fills after KYC emails are queued/sent.'
-                      : 'This table currently contains 0 records in PostgreSQL.'}
+                      : 'This table currently has no records.'}
                 />
               </div>
             ) : (
@@ -612,7 +625,7 @@ export default function DatabaseInspector() {
               </table>
             )}
           </div>
-        </div>
+        </section>
       </div>
 
       {/* Interactive SQL Console */}
