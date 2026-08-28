@@ -10,8 +10,8 @@ ON bets (match_id, market_id, status);
 CREATE INDEX IF NOT EXISTS idx_ledger_wallet_created 
 ON ledger_entries (wallet_id, created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_ledger_direction_amount 
-ON ledger_entries (direction, amount);
+CREATE INDEX IF NOT EXISTS idx_ledger_type_amount 
+ON ledger_entries (type, amount);
 
 CREATE INDEX IF NOT EXISTS idx_risk_signals_severity_status 
 ON risk_signals (severity, status, created_at DESC);
