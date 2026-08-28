@@ -21,9 +21,22 @@ function aggregateBoundariesFromScorecard(match, battingTeamName) {
   );
 }
 
-function getBattingTeamName(match, ld) {
+function currentBattingTeamName(match, ld) {
   const t1 = match?.team1?.name || '';
   const t2 = match?.team2?.name || '';
+  const isTest = ld.testInnings?.length > 0 || /test/i.test(ld.matchFormat || match?.matchFormat || '');
+  if (isTest) {
+    const currentInnId = ld.inningsId ?? (ld.testInnings?.length ? ld.testInnings[ld.testInnings.length - 1].inningsId : 1);
+    const activeTestInn = (ld.testInnings || []).find((t) => t.inningsId === currentInnId) || (ld.testInnings || [])[(ld.testInnings || []).length - 1];
+    if (activeTestInn?.batTeam) {
+      return teamNameMatches(t2, activeTestInn.batTeam) ? t2 : t1;
+    }
+    if (currentInnId % 2 === 0) {
+      return (ld.firstTeamName && teamNameMatches(t1, ld.firstTeamName)) ? t2 : t1;
+    }
+    return (ld.firstTeamName && teamNameMatches(t2, ld.firstTeamName)) ? t2 : t1;
+  }
+
   if (ld.chaseTeamName) return ld.chaseTeamName;
   if (isCricketSecondInnings(match, ld)) {
     if (ld.firstTeamName && teamNameMatches(t1, ld.firstTeamName)) return t2;
@@ -33,6 +46,10 @@ function getBattingTeamName(match, ld) {
   }
   if (ld.firstTeamName) return ld.firstTeamName;
   return t1;
+}
+
+function getBattingTeamName(match, ld) {
+  return currentBattingTeamName(match, ld);
 }
 
 function emptyBatter() {
@@ -48,6 +65,17 @@ function battingSnapshot(match, ld) {
   const scores = resolveCricketTeamScores(match, ld);
   const t1 = match?.team1?.name || '';
   const t2 = match?.team2?.name || '';
+  const isTest = ld.testInnings?.length > 0 || /test/i.test(ld.matchFormat || match?.matchFormat || '');
+  if (isTest && ld.testInnings?.length) {
+    const currentInnId = ld.inningsId ?? ld.testInnings[ld.testInnings.length - 1].inningsId;
+    const activeTestInn = ld.testInnings.find((t) => t.inningsId === currentInnId) || ld.testInnings[ld.testInnings.length - 1];
+    return {
+      runs: Number(activeTestInn?.runs) || 0,
+      wickets: Number(activeTestInn?.wickets) || 0,
+      balls: oversToBalls(activeTestInn?.overs || '0.0'),
+    };
+  }
+
   let inn = scores.team1;
   if (ld.chaseTeamName) {
     inn = teamNameMatches(t1, ld.chaseTeamName) ? scores.team1 : scores.team2;
