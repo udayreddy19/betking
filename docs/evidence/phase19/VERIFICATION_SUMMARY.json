@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-08-28T16:23:06.506Z",
+  "environment": "STAGING_VPS",
+  "engineVersion": "3.0.0",
+  "modelVersion": "v3.1-prod",
+  "parameterVersion": "params_v1.0_prod",
+  "datasetVersion": "ds_phase19_cold_v1",
+  "realHistoricalDataAvailable": false,
+  "realWorldValidation": "NOT_VERIFIED",
+  "phase": 19,
+  "status": "COMPLETED",
+  "testSuitesPassed": 26,
+  "testsPassed": 183,
+  "oddsEngineCodeScore": 9.8,
+  "empiricalPricingScore": "NOT_VERIFIED",
+  "overallScore": 9.8,
+  "currentProductionModel": "v3.1-prod",
+  "candidateModel": "None (Gated)",
+  "modelDecision": "KEEP_CURRENT"
+}

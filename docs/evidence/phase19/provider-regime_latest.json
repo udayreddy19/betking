@@ -1,0 +1,12 @@
+{
+  "timestamp": "2026-08-28T16:23:06.506Z",
+  "environment": "STAGING_VPS",
+  "engineVersion": "3.0.0",
+  "modelVersion": "v3.1-prod",
+  "parameterVersion": "params_v1.0_prod",
+  "datasetVersion": "ds_phase19_cold_v1",
+  "realHistoricalDataAvailable": false,
+  "realWorldValidation": "NOT_VERIFIED",
+  "weightStatus": "SHADOW_ONLY",
+  "regimesTracked": true
+}

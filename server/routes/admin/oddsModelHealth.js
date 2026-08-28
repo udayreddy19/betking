@@ -473,14 +473,107 @@ router.post('/explainability', async (req, res) => {
 });
 
 /**
- * GET /api/admin/odds-model/feed-redundancy
- * Evaluates active feed redundancy levels and failover readiness
+ * Phase 19 Endpoints
  */
-router.get('/feed-redundancy', async (req, res) => {
+
+/**
+ * GET /api/admin/odds-model/telemetry/worker-status
+ * Returns background telemetry persistence status
+ */
+router.get('/telemetry/worker-status', async (req, res) => {
   try {
-    const { sport } = req.query;
-    const { evaluateFeedRedundancy } = await import('../../../lib/odds-v3/resilience/feedRedundancyManager.mjs');
-    const result = evaluateFeedRedundancy(sport);
+    const { getTelemetryWorkerStatus } = await import('../../../lib/odds-v3/telemetry/durableTelemetryWorker.mjs');
+    const status = getTelemetryWorkerStatus();
+    return res.json({ success: true, data: status });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/admin/odds-model/telemetry/flush
+ * Manually flushes batch from buffer to PostgreSQL
+ */
+router.post('/telemetry/flush', async (req, res) => {
+  try {
+    const { batchSize } = req.body || {};
+    const { flushTelemetryBatch } = await import('../../../lib/odds-v3/telemetry/durableTelemetryWorker.mjs');
+    const result = await flushTelemetryBatch(batchSize);
+    return res.json({ success: true, data: result });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/admin/odds-model/datasets/create
+ * Creates an immutable versioned dataset package
+ */
+router.post('/datasets/create', async (req, res) => {
+  try {
+    const { datasetName, observations, source, sports, markets } = req.body || {};
+    const { createVersionedDataset } = await import('../../../lib/odds-v3/dataset/datasetVersioning.mjs');
+    const dataset = createVersionedDataset({ datasetName, observations, source, sports, markets });
+    return res.json({ success: true, data: dataset });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/admin/odds-model/price-difference
+ * Explains price difference between two observation snapshots
+ */
+router.post('/price-difference', async (req, res) => {
+  try {
+    const { obs1, obs2 } = req.body || {};
+    const { explainPriceDifference } = await import('../../../lib/odds-v3/pricing/priceDifferenceExplainer.mjs');
+    const result = explainPriceDifference(obs1, obs2);
+    return res.json({ success: true, data: result });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/admin/odds-model/counterfactual
+ * Simulates offline counterfactual pricing
+ */
+router.post('/counterfactual', async (req, res) => {
+  try {
+    const { canonicalInput, options } = req.body || {};
+    const { simulateCounterfactualPricing } = await import('../../../lib/odds-v3/pricing/counterfactualPricingEngine.mjs');
+    const result = simulateCounterfactualPricing(canonicalInput, options);
+    return res.json({ success: true, data: result });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/admin/odds-model/sensitivity
+ * Evaluates parameter partial derivatives
+ */
+router.post('/sensitivity', async (req, res) => {
+  try {
+    const { analyzeParameterSensitivity } = await import('../../../lib/odds-v3/pricing/sensitivityAnalyzer.mjs');
+    const result = analyzeParameterSensitivity(req.body);
+    return res.json({ success: true, data: result });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/admin/odds-model/provider-regimes
+ * Evaluates multi-sport provider accuracy regimes
+ */
+router.get('/provider-regimes', async (req, res) => {
+  try {
+    const { queryObservations } = await import('../../../lib/odds-v3/telemetry/oddsObservationStore.mjs');
+    const { analyzeProviderRegimes } = await import('../../../lib/odds-v3/pricing/providerRegimeAnalyzer.mjs');
+    const observations = queryObservations({ limit: 1000 });
+    const result = analyzeProviderRegimes(observations);
     return res.json({ success: true, data: result });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
