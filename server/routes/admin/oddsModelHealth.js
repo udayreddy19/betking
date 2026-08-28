@@ -361,5 +361,131 @@ router.post('/canary/configure', async (req, res) => {
   }
 });
 
+/**
+ * Phase 18 Endpoints
+ */
+
+/**
+ * GET /api/admin/odds-model/integrity
+ * Audits prediction-price-outcome dataset integrity
+ */
+router.get('/integrity', async (req, res) => {
+  try {
+    const { queryObservations } = await import('../../../lib/odds-v3/telemetry/oddsObservationStore.mjs');
+    const { auditPredictionPriceOutcomeIntegrity } = await import('../../../lib/odds-v3/dataset/predictionPriceOutcomeIntegrity.mjs');
+    const observations = queryObservations({ limit: 1000 });
+    const audit = auditPredictionPriceOutcomeIntegrity(observations);
+    return res.json({ success: true, data: audit });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/admin/odds-model/disagreement
+ * Evaluates provider quotes disagreement level and safety action
+ */
+router.post('/disagreement', async (req, res) => {
+  try {
+    const { quotes } = req.body || {};
+    const { evaluateProviderDisagreement } = await import('../../../lib/odds-v3/pricing/providerDisagreementEngine.mjs');
+    const result = evaluateProviderDisagreement(quotes);
+    return res.json({ success: true, data: result });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/admin/odds-model/closing-line
+ * Analyzes closing line value trajectory and flicker metrics
+ */
+router.get('/closing-line', async (req, res) => {
+  try {
+    const { queryObservations } = await import('../../../lib/odds-v3/telemetry/oddsObservationStore.mjs');
+    const { aggregateClosingLineDataset } = await import('../../../lib/odds-v3/validation/closingLineAnalyzer.mjs');
+    const observations = queryObservations({ limit: 1000 });
+    const result = aggregateClosingLineDataset(observations);
+    return res.json({ success: true, data: result });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/admin/odds-model/markets/scorecards
+ * Evaluates scorecards across all supported betting markets
+ */
+router.get('/markets/scorecards', async (req, res) => {
+  try {
+    const { queryObservations } = await import('../../../lib/odds-v3/telemetry/oddsObservationStore.mjs');
+    const { buildMarketScorecards } = await import('../../../lib/odds-v3/validation/marketScorecard.mjs');
+    const observations = queryObservations({ limit: 2000 });
+    const result = buildMarketScorecards(observations);
+    return res.json({ success: true, data: result });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/admin/odds-model/margin-fairness
+ * Audits published margins against safety envelope and volatility
+ */
+router.get('/margin-fairness', async (req, res) => {
+  try {
+    const { queryObservations } = await import('../../../lib/odds-v3/telemetry/oddsObservationStore.mjs');
+    const { auditMarginFairness } = await import('../../../lib/odds-v3/pricing/marginFairnessAuditor.mjs');
+    const observations = queryObservations({ limit: 1000 });
+    const result = auditMarginFairness(observations);
+    return res.json({ success: true, data: result });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/admin/odds-model/failures/taxonomy
+ * Returns standard 9-category failure taxonomy metrics
+ */
+router.get('/failures/taxonomy', async (req, res) => {
+  try {
+    const { getFailureTaxonomyReport } = await import('../../../lib/odds-v3/monitoring/failureTaxonomy.mjs');
+    const report = getFailureTaxonomyReport();
+    return res.json({ success: true, data: report });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/admin/odds-model/explainability
+ * Generates transparent pricing lineage record
+ */
+router.post('/explainability', async (req, res) => {
+  try {
+    const { buildPriceExplainabilityRecord } = await import('../../../lib/odds-v3/pricing/priceExplainability.mjs');
+    const record = buildPriceExplainabilityRecord(req.body);
+    return res.json({ success: true, data: record });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/admin/odds-model/feed-redundancy
+ * Evaluates active feed redundancy levels and failover readiness
+ */
+router.get('/feed-redundancy', async (req, res) => {
+  try {
+    const { sport } = req.query;
+    const { evaluateFeedRedundancy } = await import('../../../lib/odds-v3/resilience/feedRedundancyManager.mjs');
+    const result = evaluateFeedRedundancy(sport);
+    return res.json({ success: true, data: result });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 export default router;
 
