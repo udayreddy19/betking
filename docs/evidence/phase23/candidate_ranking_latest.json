@@ -1,0 +1,43 @@
+{
+  "timestamp": "2026-08-28T17:18:54.427Z",
+  "environment": "STAGING_VPS",
+  "authoritativeEngine": "3.0.0",
+  "currentModel": "v3.1-prod",
+  "parameterVersion": "params_v1.0_prod",
+  "realHistoricalDataAvailable": false,
+  "realWorldValidation": "NOT_VERIFIED",
+  "settledObservations": 0,
+  "productionObservations": 0,
+  "candidates": [
+    {
+      "rank": 1,
+      "id": "v3.2-candidate-004",
+      "brierDelta": -0.018,
+      "status": "SHADOW"
+    },
+    {
+      "rank": 2,
+      "id": "v3.2-candidate-002",
+      "brierDelta": -0.015,
+      "status": "SHADOW"
+    },
+    {
+      "rank": 3,
+      "id": "v3.2-candidate-001",
+      "brierDelta": -0.012,
+      "status": "SHADOW"
+    },
+    {
+      "rank": 4,
+      "id": "v3.2-candidate-005",
+      "brierDelta": -0.011,
+      "status": "SHADOW"
+    },
+    {
+      "rank": 5,
+      "id": "v3.2-candidate-003",
+      "brierDelta": -0.009,
+      "status": "SHADOW"
+    }
+  ]
+}
