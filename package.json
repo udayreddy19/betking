@@ -40,7 +40,8 @@
     "release:record-sha": "node scripts/record-release-sha.mjs",
     "perf:baseline": "node scripts/perf-baseline.mjs",
     "ballfeed:sync": "node scripts/sync-ball-feed.mjs",
-    "odds:measure-freshness": "node scripts/measure_odds_freshness.mjs"
+    "odds:measure-freshness": "node scripts/measure_odds_freshness.mjs",
+    "odds:real-world-report": "node scripts/odds-real-world-report.mjs"
   },
   "browserslist": [
     "chrome >= 80",

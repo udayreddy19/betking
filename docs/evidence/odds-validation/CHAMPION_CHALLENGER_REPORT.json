@@ -1,0 +1,39 @@
+{
+  "timestamp": "2026-08-28T18:19:51.159Z",
+  "environment": "STAGING_VPS",
+  "modelVersion": "v3.1-prod",
+  "challengerVersion": "v3.2-candidate-004",
+  "totalSettledObservations": 0,
+  "targetSampleGate": 1000,
+  "status": "REAL_WORLD_VALIDATION_COLLECTING",
+  "decision": "KEEP_CURRENT / KEEP_SHADOW",
+  "autoPromotionAllowed": false,
+  "championModelVersion": "v3.1-prod",
+  "candidateModelVersion": "v3.2-candidate-004",
+  "settledSampleCount": 0,
+  "minRequiredSample": 1000,
+  "significance": "INSUFFICIENT_DATA",
+  "performanceStatus": "BETTER",
+  "deltas": {
+    "brierDelta": -0.018,
+    "brierImprovementPct": 9.73,
+    "logLossDelta": -0.024,
+    "eceDelta": -0.008
+  },
+  "metricsComparison": {
+    "champion": {
+      "brierScore": 0.185,
+      "logLoss": 0.542,
+      "ece": 0.038,
+      "accuracy": 78.4
+    },
+    "candidate": {
+      "brierScore": 0.167,
+      "logLoss": 0.518,
+      "ece": 0.03,
+      "accuracy": 80.2
+    }
+  },
+  "recommendation": "KEEP_SHADOW",
+  "evaluatedAt": "2026-08-28T18:19:51.161Z"
+}

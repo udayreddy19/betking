@@ -1,0 +1,75 @@
+{
+  "timestamp": "2026-08-28T18:19:51.159Z",
+  "environment": "STAGING_VPS",
+  "modelVersion": "v3.1-prod",
+  "challengerVersion": "v3.2-candidate-004",
+  "totalSettledObservations": 0,
+  "targetSampleGate": 1000,
+  "status": "REAL_WORLD_VALIDATION_COLLECTING",
+  "decision": "KEEP_CURRENT / KEEP_SHADOW",
+  "autoPromotionAllowed": false,
+  "providers": {
+    "cricbuzz": {
+      "providerName": "cricbuzz",
+      "compositeScore": 92.3,
+      "status": "KEEP",
+      "metrics": {
+        "latencyMs": 110,
+        "freshnessPct": 94.5,
+        "availabilityPct": 99.8,
+        "disagreementRate": 0.03,
+        "conflictCount": 0,
+        "totalEvents": 100
+      },
+      "recommendation": "OPERATE_NORMALLY",
+      "evaluatedAt": "2026-08-28T18:19:51.160Z"
+    },
+    "crex": {
+      "providerName": "crex",
+      "compositeScore": 88.8,
+      "status": "KEEP",
+      "metrics": {
+        "latencyMs": 92,
+        "freshnessPct": 89.2,
+        "availabilityPct": 99.5,
+        "disagreementRate": 0.05,
+        "conflictCount": 0,
+        "totalEvents": 100
+      },
+      "recommendation": "OPERATE_NORMALLY",
+      "evaluatedAt": "2026-08-28T18:19:51.160Z"
+    },
+    "espn": {
+      "providerName": "espn",
+      "compositeScore": 84.8,
+      "status": "WATCH",
+      "metrics": {
+        "latencyMs": 195,
+        "freshnessPct": 88,
+        "availabilityPct": 99.2,
+        "disagreementRate": 0.06,
+        "conflictCount": 0,
+        "totalEvents": 100
+      },
+      "recommendation": "MONITOR_FEED_CLOSELY",
+      "evaluatedAt": "2026-08-28T18:19:51.160Z"
+    },
+    "tencric": {
+      "providerName": "tencric",
+      "compositeScore": 78,
+      "status": "WATCH",
+      "metrics": {
+        "latencyMs": 340,
+        "freshnessPct": 85,
+        "availabilityPct": 98.5,
+        "disagreementRate": 0.08,
+        "conflictCount": 0,
+        "totalEvents": 100
+      },
+      "recommendation": "MONITOR_FEED_CLOSELY",
+      "evaluatedAt": "2026-08-28T18:19:51.160Z"
+    }
+  },
+  "overallFeedHealth": "STABLE",
+  "generatedAt": "2026-08-28T18:19:51.160Z"
+}

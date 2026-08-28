@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-08-28T18:19:51.159Z",
+  "environment": "STAGING_VPS",
+  "modelVersion": "v3.1-prod",
+  "challengerVersion": "v3.2-candidate-004",
+  "totalSettledObservations": 0,
+  "targetSampleGate": 1000,
+  "status": "REAL_WORLD_VALIDATION_COLLECTING",
+  "decision": "KEEP_CURRENT / KEEP_SHADOW",
+  "autoPromotionAllowed": false,
+  "eligibilityStatus": "NOT_ENOUGH_DATA",
+  "recommendation": "KEEP_SHADOW",
+  "requiredConditions": {
+    "minSettledObservations": 1000,
+    "currentSettledObservations": 0,
+    "statisticallyMeaningfulBrierImprovement": false,
+    "noMajorSportRegressions": true,
+    "humanOperatorApprovalRequired": true
+  }
+}

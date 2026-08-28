@@ -1,0 +1,30 @@
+{
+  "timestamp": "2026-08-28T18:19:51.159Z",
+  "environment": "STAGING_VPS",
+  "modelVersion": "v3.1-prod",
+  "challengerVersion": "v3.2-candidate-004",
+  "totalSettledObservations": 0,
+  "targetSampleGate": 1000,
+  "status": "INSUFFICIENT_DATA",
+  "decision": "KEEP_CURRENT / KEEP_SHADOW",
+  "autoPromotionAllowed": false,
+  "validationClass": "NOT_VERIFIED",
+  "globalMetrics": {
+    "observationCount": 0,
+    "settledCount": 0,
+    "unresolvedCount": 0,
+    "brierScore": null,
+    "logLoss": null,
+    "accuracy": null,
+    "calibrationError": null,
+    "maximumCalibrationError": null
+  },
+  "segments": {
+    "bySport": {},
+    "byMarket": {},
+    "byLifecycle": {},
+    "byModelVersion": {}
+  },
+  "sampleGatePassed": false,
+  "evaluatedAt": "2026-08-28T18:19:51.160Z"
+}

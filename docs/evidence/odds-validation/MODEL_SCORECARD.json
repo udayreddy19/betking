@@ -1,0 +1,43 @@
+{
+  "timestamp": "2026-08-28T18:19:51.159Z",
+  "environment": "STAGING_VPS",
+  "modelVersion": "v3.1-prod",
+  "challengerVersion": "v3.2-candidate-004",
+  "totalSettledObservations": 0,
+  "targetSampleGate": 1000,
+  "status": "INSUFFICIENT_DATA",
+  "decision": "KEEP_CURRENT / KEEP_SHADOW",
+  "autoPromotionAllowed": false,
+  "validationClass": "NOT_VERIFIED",
+  "nTotalObservations": 0,
+  "nSettledObservations": 0,
+  "minRequiredSettled": 1000,
+  "horizons": {
+    "24h": {
+      "n": 0,
+      "brierScore": null,
+      "logLoss": null,
+      "ece": null
+    },
+    "7d": {
+      "n": 0,
+      "brierScore": null,
+      "logLoss": null,
+      "ece": null
+    },
+    "30d": {
+      "n": 0,
+      "brierScore": null,
+      "logLoss": null,
+      "ece": null
+    },
+    "all_time": {
+      "n": 0,
+      "brierScore": null,
+      "logLoss": null,
+      "ece": null
+    }
+  },
+  "recommendation": "CONTINUE_COLLECTING_SETTLEMENTS",
+  "generatedAt": "2026-08-28T18:19:51.160Z"
+}

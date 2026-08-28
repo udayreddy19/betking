@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-08-28T18:19:51.159Z",
+  "environment": "STAGING_VPS",
+  "modelVersion": "v3.1-prod",
+  "challengerVersion": "v3.2-candidate-004",
+  "totalSettledObservations": 0,
+  "targetSampleGate": 1000,
+  "status": "REAL_WORLD_VALIDATION_COLLECTING",
+  "decision": "KEEP_CURRENT / KEEP_SHADOW",
+  "autoPromotionAllowed": false,
+  "authoritativeEngine": "v3.1-prod",
+  "realWorldValidationStatus": "NOT_VERIFIED",
+  "sampleGatePassed": false,
+  "sampleRemaining": 1000
+}
