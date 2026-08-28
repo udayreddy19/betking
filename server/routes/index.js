@@ -135,4 +135,11 @@ adminRouter.use('/odds', oddsDebugRouter);
 import operationsRouter from './admin/operations.js';
 adminRouter.use('/operations', operationsRouter);
 
+// OddsEngine V3 Model Health & Intelligence
+import oddsModelHealthRouter from './admin/oddsModelHealth.js';
+adminRouter.use('/odds-model', oddsModelHealthRouter);
+
+import oddsIntelligenceRouter from './admin/oddsIntelligence.js';
+adminRouter.use('/odds-intelligence', oddsIntelligenceRouter);
+
 export default adminRouter;
