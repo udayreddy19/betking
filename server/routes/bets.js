@@ -113,7 +113,8 @@ router.get('/api/bets/mine', requireAuth, async (req, res) => {
       return null;
     };
 
-    const bets = (result.rows || []).map((row) => {
+    const { resolveSettlementEvidence } = await import('../../lib/settlementEvidence/settlementEvidenceEngine.mjs');
+    const bets = await Promise.all((result.rows || []).map(async (row) => {
       const selections = Array.isArray(row.selections)
         ? row.selections
         : (typeof row.selections === 'string' ? JSON.parse(row.selections) : []);
@@ -123,6 +124,8 @@ router.get('/api/bets/mine', requireAuth, async (req, res) => {
         try { snap = JSON.parse(snap); } catch { snap = null; }
       }
       const snapLeg = Array.isArray(snap?.legs) ? snap.legs[0] : null;
+      const evidence = await resolveSettlementEvidence({ bet: row });
+
       return {
         ...row,
         selections,
@@ -136,12 +139,42 @@ router.get('/api/bets/mine', requireAuth, async (req, res) => {
         settled_at: row.settled_at || null,
         actual_payout: row.actual_payout != null ? Number(row.actual_payout) : null,
         settlement_reason: row.settlement_reason || null,
+        settlement_evidence: evidence,
       };
-    });
+    }));
 
     res.json({ success: true, bets });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/api/bets/:betId/evidence', requireAuth, async (req, res) => {
+  try {
+    const { betId } = req.params;
+    const { queryRead } = await import('../../db/pg.js');
+    const { resolveSettlementEvidence } = await import('../../lib/settlementEvidence/settlementEvidenceEngine.mjs');
+
+    const result = await queryRead(
+      `SELECT * FROM bets WHERE bet_id = $1 AND user_id = $2`,
+      [betId, req.user.userId],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Bet not found' });
+    }
+
+    const bet = result.rows[0];
+    const evidence = await resolveSettlementEvidence({ bet });
+
+    res.json({
+      success: true,
+      betId,
+      status: bet.status,
+      settlementEvidence: evidence,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

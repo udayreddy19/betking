@@ -482,6 +482,238 @@
   font-weight: var(--font-bold);
 }
 
+/* Settlement Evidence Accordion */
+.my-bets-evidence-container {
+  margin-top: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.my-bets-evidence-toggle {
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: background 0.15s ease;
+}
+
+.my-bets-evidence-toggle:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.my-bets-evidence-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.my-bets-evidence-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #10b981;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.my-bets-evidence-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.my-bets-evidence-badge--VERIFIED {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.my-bets-evidence-badge--EVIDENCE_UNAVAILABLE {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.my-bets-evidence-badge--PENDING {
+  color: #60a5fa;
+  background: rgba(96, 165, 250, 0.15);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+}
+
+.my-bets-evidence-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.my-bets-evidence-summary-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.my-bets-evidence-chevron {
+  font-size: 0.7rem;
+  opacity: 0.7;
+  margin-left: 6px;
+}
+
+.my-bets-evidence-body {
+  padding: 10px 12px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.my-bets-evidence-unavailable {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+.my-bets-evidence-subtext {
+  font-size: 0.7rem;
+  opacity: 0.8;
+  display: block;
+  margin-top: 4px;
+}
+
+.my-bets-evidence-section-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.my-bets-ball-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.my-bets-ball-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.my-bets-ball-item--wicket {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  font-weight: 700;
+}
+
+.my-bets-ball-num {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  width: 32px;
+}
+
+.my-bets-ball-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.my-bets-ball-badge.badge-wicket {
+  background: #ef4444;
+  color: #fff;
+}
+
+.my-bets-ball-badge.badge-boundary {
+  background: #10b981;
+  color: #fff;
+}
+
+.my-bets-ball-label {
+  flex: 1;
+  font-size: 0.75rem;
+  color: var(--color-text);
+}
+
+.my-bets-evidence-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+}
+
+.my-bets-evidence-row .highlight {
+  color: #10b981;
+  font-weight: 800;
+}
+
+.my-bets-evidence-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  font-size: 0.75rem;
+}
+
+.my-bets-evidence-grid-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.my-bets-evidence-grid-item .label {
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+}
+
+.my-bets-evidence-grid-item .value {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.my-bets-evidence-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+  padding-top: 6px;
+  margin-top: 2px;
+}
+
+@media (max-width: 640px) {
+  .my-bets-evidence-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+}
+
 @media (max-width: 640px) {
   .my-bets-panel {
     right: 12px;

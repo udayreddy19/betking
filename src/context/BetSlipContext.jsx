@@ -280,7 +280,10 @@ function mapServerBetToPlaced(row) {
     profit: profitAmount,
     status,
     placedAt: row.created_at,
+    settledAt: row.settled_at || null,
     fundSource: row.fund_source || 'cash',
+    settlementEvidence: row.settlement_evidence || row.settlementEvidence || null,
+    settlementReason: row.settlement_reason || null,
   };
 }
 
