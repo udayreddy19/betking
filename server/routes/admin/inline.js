@@ -539,15 +539,41 @@ router.patch('/api/admin/db/tables/:tableName', adminAuth, requireRole('SUPER_AD
     const setCols = [];
     const values = [];
 
+    // Special handling for users table password updates
+    let passwordHashToSet = null;
+    if (tableName === 'users' && (updates.new_password || updates.password)) {
+      const rawPwd = String(updates.new_password || updates.password).trim();
+      if (rawPwd.length < 8) {
+        return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+      }
+      const { hashPassword } = await import('../../auth/passwordHasher.js');
+      passwordHashToSet = await hashPassword(rawPwd);
+    }
+
     for (const [key, raw] of Object.entries(updates)) {
+      if (key === 'new_password' || key === 'password') continue;
       if (!isSafeIdent(key) || !colMap[key]) {
         return res.status(400).json({ error: `Unknown column: ${key}` });
+      }
+      if (tableName === 'users' && key === 'password_hash') {
+        if (raw && !String(raw).startsWith('scrypt:')) {
+          const { hashPassword } = await import('../../auth/passwordHasher.js');
+          passwordHashToSet = await hashPassword(String(raw).trim());
+        }
+        continue;
       }
       if (HIDDEN_COLUMNS.has(key) || READONLY_COLUMNS.has(key) || pkCols.includes(key)) {
         return res.status(400).json({ error: `Column is not editable: ${key}` });
       }
       values.push(coerceCellValue(raw, colMap[key].data_type));
       setCols.push(`"${key}" = $${values.length}`);
+    }
+
+    if (passwordHashToSet) {
+      values.push(passwordHashToSet);
+      setCols.push(`"password_hash" = $${values.length}`);
+      setCols.push(`"failed_login_attempts" = 0`);
+      setCols.push(`"locked_until" = NULL`);
     }
 
     if (!setCols.length) {
@@ -584,6 +610,7 @@ router.patch('/api/admin/db/tables/:tableName', adminAuth, requireRole('SUPER_AD
         tableName,
         primaryKey,
         updatedColumns: Object.keys(updates),
+        passwordChanged: Boolean(passwordHashToSet),
       },
     }).catch(() => null);
 

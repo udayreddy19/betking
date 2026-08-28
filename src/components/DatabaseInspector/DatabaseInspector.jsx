@@ -211,6 +211,9 @@ export default function DatabaseInspector() {
     editableColumns.forEach((col) => {
       draft[col.column_name] = toInputValue(row[col.column_name]);
     });
+    if (selectedTable === 'users') {
+      draft.new_password = '';
+    }
     setEditRow(row);
     setEditDraft(draft);
     setNotice('');
@@ -232,6 +235,15 @@ export default function DatabaseInspector() {
         updates[col.column_name] = next === '' ? null : next;
       }
     });
+
+    if (selectedTable === 'users' && editDraft.new_password && editDraft.new_password.trim()) {
+      const pwd = editDraft.new_password.trim();
+      if (pwd.length < 8) {
+        setError('New password must be at least 8 characters long');
+        return;
+      }
+      updates.new_password = pwd;
+    }
 
     if (!Object.keys(updates).length) {
       setNotice('No changes to save.');
@@ -258,7 +270,7 @@ export default function DatabaseInspector() {
         await fetchTableData(selectedTable);
       }
       setEditRow(null);
-      setNotice('Row updated successfully.');
+      setNotice(updates.new_password ? 'Row and password updated successfully (scrypt hashed).' : 'Row updated successfully.');
     } catch (err) {
       setError(err.message || 'Failed to update row');
     } finally {
@@ -675,7 +687,58 @@ export default function DatabaseInspector() {
               />
             </div>
           ))}
-          {editableColumns.length === 0 && (
+
+          {selectedTable === 'users' && (
+            <div style={{
+              marginTop: '8px',
+              padding: '14px',
+              borderRadius: '10px',
+              background: 'rgba(99, 102, 241, 0.08)',
+              border: '1px solid rgba(99, 102, 241, 0.25)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--admin-text)' }}>
+                  🔑 Set / Change Password (Optional)
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*';
+                    let pwd = '';
+                    for (let i = 0; i < 12; i++) pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+                    setEditDraft((prev) => ({ ...prev, new_password: pwd }));
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#818cf8',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  🎲 Generate Password
+                </button>
+              </div>
+              <input
+                type="text"
+                className="admin-input"
+                placeholder="Leave empty to keep existing password"
+                value={editDraft.new_password ?? ''}
+                onChange={(e) => setEditDraft((prev) => ({ ...prev, new_password: e.target.value }))}
+                disabled={saving}
+                style={{ fontFamily: 'var(--admin-font-mono, monospace)', background: 'var(--admin-panel)' }}
+              />
+              <span style={{ fontSize: '0.7rem', color: 'var(--admin-text-muted)' }}>
+                Password will be automatically hashed with scrypt before updating PostgreSQL.
+              </span>
+            </div>
+          )}
+
+          {editableColumns.length === 0 && selectedTable !== 'users' && (
             <p style={{ color: 'var(--admin-text-muted)', fontSize: '0.84rem' }}>
               No editable columns on this table.
             </p>
