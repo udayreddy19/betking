@@ -982,22 +982,23 @@ function AdminShellInner() {
                   right: alertsMenuPos.right,
                   width: '380px',
                   maxWidth: 'calc(100vw - 24px)',
-                  background: 'var(--admin-panel)',
-                  backdropFilter: 'blur(20px)',
-                  WebkitBackdropFilter: 'blur(20px)',
-                  border: '1px solid var(--admin-border-bright)',
-                  borderRadius: 'var(--admin-radius-lg)',
-                  boxShadow: 'var(--admin-shadow-lg)',
+                  background: isDark ? '#0f172a' : '#ffffff',
+                  border: `1px solid ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(15,23,42,0.12)'}`,
+                  borderRadius: '12px',
+                  boxShadow: isDark
+                    ? '0 20px 48px -8px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.08)'
+                    : '0 16px 40px rgba(15,23,42,0.12), 0 0 0 1px rgba(15,23,42,0.06)',
                   padding: '14px',
                   zIndex: 100000,
-                  color: 'var(--admin-text)',
+                  color: isDark ? '#f8fafc' : '#0f172a',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif',
                 }}
                 className={`admin-alerts-menu ${isDark ? 'admin-alerts-menu--dark' : 'admin-alerts-menu--light'}`}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', borderBottom: '1px solid var(--admin-border)', paddingBottom: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)'}`, paddingBottom: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: liveAlerts.length ? '#f43f5e' : '#10b981' }} />
-                    <span style={{ fontSize: '0.84rem', fontWeight: 800 }}>Operational Alerts</span>
+                    <span style={{ fontSize: '0.84rem', fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a' }}>Operational Alerts</span>
                   </div>
                   <button
                     type="button"
@@ -1006,66 +1007,158 @@ function AdminShellInner() {
                       adminApiClient.post('/notifications/v2/notifications/read-all').catch(() => {});
                       setLiveAlerts([]);
                     }}
-                    className="admin-btn admin-btn--ghost admin-btn--sm"
-                    style={{ color: '#818cf8' }}
+                    style={{
+                      padding: '4px 10px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      background: 'transparent',
+                      color: '#818cf8',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
                   >
                     Clear All
                   </button>
                 </div>
 
-                <div className="admin-alerts-menu__list">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: 'min(420px, 60vh)', overflowY: 'auto', overflowX: 'hidden', paddingRight: '2px' }}>
                   {liveAlerts.length > 0 ? (
                     liveAlerts.map((alert) => {
                       const title = alert.title || alert.message || 'Operational alert';
                       const desc = alert.desc || alert.message || '';
                       const severity = String(alert.type || 'HIGH').toUpperCase();
-                      const severityClass = severity === 'CRITICAL'
-                        ? 'danger'
+                      const severityDotColor = severity === 'CRITICAL' ? '#f43f5e' : severity === 'HIGH' ? '#fbbf24' : '#818cf8';
+                      const severityBg = severity === 'CRITICAL'
+                        ? (isDark ? 'rgba(244,63,94,0.14)' : 'rgba(220,38,38,0.1)')
                         : severity === 'HIGH'
-                          ? 'warning'
-                          : 'info';
+                          ? (isDark ? 'rgba(245,158,11,0.14)' : 'rgba(217,119,6,0.12)')
+                          : (isDark ? 'rgba(99,102,241,0.14)' : 'rgba(37,99,235,0.1)');
+                      const severityColor = severity === 'CRITICAL'
+                        ? (isDark ? '#fb7185' : '#b91c1c')
+                        : severity === 'HIGH'
+                          ? (isDark ? '#fbbf24' : '#b45309')
+                          : (isDark ? '#818cf8' : '#1d4ed8');
+                      const severityBorder = severity === 'CRITICAL'
+                        ? (isDark ? 'rgba(244,63,94,0.32)' : 'rgba(220,38,38,0.25)')
+                        : severity === 'HIGH'
+                          ? (isDark ? 'rgba(245,158,11,0.32)' : 'rgba(217,119,6,0.28)')
+                          : (isDark ? 'rgba(99,102,241,0.32)' : 'rgba(37,99,235,0.25)');
                       return (
                       <div
                         key={alert.id}
-                        className="admin-alert-item"
+                        style={{
+                          flex: '0 0 auto',
+                          width: '100%',
+                          textAlign: 'left',
+                          padding: '12px',
+                          borderRadius: '10px',
+                          border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0'}`,
+                          background: isDark ? 'rgba(15,23,42,0.8)' : '#f8fafc',
+                          overflow: 'visible',
+                        }}
                       >
                         <button
                           type="button"
-                          className="admin-alert-item__main"
                           onClick={(e) => handleAlertClick(e, alert)}
+                          style={{
+                            display: 'block',
+                            width: '100%',
+                            textAlign: 'left',
+                            padding: 0,
+                            border: 'none',
+                            background: 'transparent',
+                            cursor: 'pointer',
+                            color: 'inherit',
+                            font: 'inherit',
+                          }}
                         >
-                          <div className="admin-alert-item__meta">
-                            <span className={`admin-badge admin-badge--${severityClass}`}>
-                              <span className="admin-badge--dot" style={{
-                                background: severity === 'CRITICAL' ? '#f43f5e' : severity === 'HIGH' ? '#fbbf24' : '#818cf8',
-                              }} />
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '5px',
+                              padding: '2px 8px',
+                              borderRadius: '9999px',
+                              fontSize: '0.7rem',
+                              fontWeight: 700,
+                              letterSpacing: '0.3px',
+                              textTransform: 'uppercase',
+                              whiteSpace: 'nowrap',
+                              lineHeight: 1.4,
+                              background: severityBg,
+                              color: severityColor,
+                              border: `1px solid ${severityBorder}`,
+                            }}>
+                              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: severityDotColor, flexShrink: 0 }} />
                               {severity}
                             </span>
-                            <span className="admin-alert-item__category">
+                            <span style={{
+                              fontSize: '0.66rem',
+                              color: isDark ? '#64748b' : '#64748b',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.3px',
+                              fontWeight: 700,
+                            }}>
                               {alert.category || 'ops'}
                             </span>
                           </div>
-                          <div className="admin-alert-item__title">{title}</div>
+                          <div style={{
+                            fontSize: '0.84rem',
+                            fontWeight: 750,
+                            color: isDark ? '#f1f5f9' : '#0f172a',
+                            lineHeight: 1.35,
+                            wordBreak: 'break-word',
+                          }}>{title}</div>
                           {desc ? (
-                            <div className="admin-alert-item__desc">{desc}</div>
+                            <div style={{
+                              fontSize: '0.76rem',
+                              color: isDark ? '#94a3b8' : '#475569',
+                              marginTop: '4px',
+                              lineHeight: 1.4,
+                              wordBreak: 'break-word',
+                            }}>{desc}</div>
                           ) : null}
-                          <div className="admin-alert-item__cta">
+                          <div style={{
+                            fontSize: '0.72rem',
+                            color: isDark ? '#818cf8' : '#4f46e5',
+                            marginTop: '8px',
+                            fontWeight: 700,
+                          }}>
                             Go to {alert.category || 'section'} →
                           </div>
                         </button>
                         {alert.notificationId && (
-                          <div className="admin-alert-item__actions">
+                          <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
                             <button
                               type="button"
-                              className="admin-btn admin-btn--secondary admin-btn--sm"
                               onClick={(e) => handleAlertAction(e, alert, 'ack')}
+                              style={{
+                                padding: '4px 10px',
+                                borderRadius: '6px',
+                                border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.1)'}`,
+                                background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.04)',
+                                color: isDark ? '#cbd5e1' : '#334155',
+                                fontSize: '0.72rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                              }}
                             >
                               Ack
                             </button>
                             <button
                               type="button"
-                              className="admin-btn admin-btn--primary admin-btn--sm"
                               onClick={(e) => handleAlertAction(e, alert, 'resolve')}
+                              style={{
+                                padding: '4px 10px',
+                                borderRadius: '6px',
+                                border: '1px solid rgba(99,102,241,0.3)',
+                                background: 'rgba(99,102,241,0.15)',
+                                color: '#818cf8',
+                                fontSize: '0.72rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                              }}
                             >
                               Resolve
                             </button>
@@ -1075,7 +1168,12 @@ function AdminShellInner() {
                       );
                     })
                   ) : (
-                    <div className="admin-alerts-menu__empty">
+                    <div style={{
+                      padding: '20px 14px',
+                      textAlign: 'center',
+                      color: isDark ? '#64748b' : '#94a3b8',
+                      fontSize: '0.8rem',
+                    }}>
                       ✓ No active operational alerts
                     </div>
                   )}
