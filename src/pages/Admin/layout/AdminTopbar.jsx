@@ -155,6 +155,7 @@ export default function AdminTopbar({
               border: liveAlerts.length
                 ? '1px solid rgba(244, 63, 94, 0.3)'
                 : '1px solid var(--admin-border)',
+              borderRadius: '50%',
             }}
           >
             <BellRingIcon size={17} style={{ display: 'block' }} />

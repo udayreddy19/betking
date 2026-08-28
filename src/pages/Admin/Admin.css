@@ -635,7 +635,7 @@ body {
   width: 34px;
   height: 34px;
   padding: 0;
-  border-radius: var(--admin-radius);
+  border-radius: 50%;
 }
 
 /* ── 7. TABS (Segmented Control) ── */
@@ -2392,6 +2392,46 @@ html[data-theme="light"] .tdfb-users__search .admin-input::placeholder,
   text-align: center;
   color: var(--admin-text-muted);
   font-size: 0.8rem;
+}
+
+/* ── Light-mode alert visibility fixes ── */
+html[data-theme="light"] .admin-alerts-menu,
+.admin-shell--light .admin-alerts-menu,
+.admin-alerts-menu--light {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+html[data-theme="light"] .admin-alert-item,
+.admin-shell--light .admin-alert-item,
+.admin-alerts-menu--light .admin-alert-item {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+html[data-theme="light"] .admin-alert-item__title,
+.admin-shell--light .admin-alert-item__title,
+.admin-alerts-menu--light .admin-alert-item__title {
+  color: #0f172a;
+}
+
+html[data-theme="light"] .admin-alert-item__desc,
+.admin-shell--light .admin-alert-item__desc,
+.admin-alerts-menu--light .admin-alert-item__desc {
+  color: #475569;
+}
+
+html[data-theme="light"] .admin-alert-item__category,
+.admin-shell--light .admin-alert-item__category,
+.admin-alerts-menu--light .admin-alert-item__category {
+  color: #64748b;
+}
+
+html[data-theme="light"] .admin-alert-item__cta,
+.admin-shell--light .admin-alert-item__cta,
+.admin-alerts-menu--light .admin-alert-item__cta {
+  color: #4f46e5;
 }
 
 html[data-theme="light"] .admin-badge--warning,
