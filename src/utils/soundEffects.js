@@ -1,111 +1,115 @@
 /**
- * Web Audio API Sound Effects Synthesizer for OddsYra
- * Zero external audio files required, zero latency!
+ * Web Audio API Sound Effects Synthesizer
+ * 
+ * Generates tactile sound feedback for:
+ * - Bet Placed (Chime)
+ * - Win Payout (Celebration Chord)
+ * - Cashout (Swoosh)
+ * 
+ * Requires 0 external assets / MP3s.
  */
 
-let audioCtx = null;
-let isMuted = false;
+class SoundEffectsManager {
+  constructor() {
+    this.ctx = null;
+    this.enabled = true;
+  }
 
-function getAudioContext() {
-  if (!audioCtx && typeof window !== 'undefined') {
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    if (AudioContextClass) {
-      audioCtx = new AudioContextClass();
+  getAudioContext() {
+    if (!this.ctx && typeof window !== 'undefined') {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) this.ctx = new AudioCtx();
     }
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume().catch(() => {});
+    }
+    return this.ctx;
   }
-  if (audioCtx && audioCtx.state === 'suspended') {
-    audioCtx.resume();
+
+  toggleSound(enabled) {
+    this.enabled = enabled;
   }
-  return audioCtx;
-}
 
-export function setSoundMuted(muted) {
-  isMuted = muted;
-}
-
-export function isSoundMuted() {
-  return isMuted;
-}
-
-/** Play a crisp bet placement chip sound */
-export function playBetSound() {
-  if (isMuted) return;
-  try {
-    const ctx = getAudioContext();
+  /** Subtle upward 2-tone chime for bet placement */
+  playBetPlaced() {
+    if (!this.enabled) return;
+    const ctx = this.getAudioContext();
     if (!ctx) return;
 
+    const now = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
-    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1); // A5
+    osc.frequency.setValueAtTime(523.25, now); // C5
+    osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.12); // G5
 
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.12, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
 
     osc.connect(gain);
     gain.connect(ctx.destination);
 
-    osc.start();
-    osc.stop(ctx.currentTime + 0.15);
-  } catch {
-    // Ignore audio autoplay restrictions
+    osc.start(now);
+    osc.stop(now + 0.25);
   }
-}
 
-/** Play a rewarding cashout win chime */
-export function playWinSound() {
-  if (isMuted) return;
-  try {
-    const ctx = getAudioContext();
+  /** Winning celebration chord (Major Triad) */
+  playWin() {
+    if (!this.enabled) return;
+    const ctx = this.getAudioContext();
     if (!ctx) return;
 
-    const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+    const now = ctx.currentTime;
+    const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+
     notes.forEach((freq, idx) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
+      const delay = idx * 0.06;
 
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.08);
+      osc.frequency.setValueAtTime(freq, now + delay);
 
-      gain.gain.setValueAtTime(0.2, ctx.currentTime + idx * 0.08);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.08 + 0.2);
+      gain.gain.setValueAtTime(0.15, now + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.4);
 
       osc.connect(gain);
       gain.connect(ctx.destination);
 
-      osc.start(ctx.currentTime + idx * 0.08);
-      osc.stop(ctx.currentTime + idx * 0.08 + 0.2);
+      osc.start(now + delay);
+      osc.stop(now + delay + 0.4);
     });
-  } catch {
-    // Ignore audio restrictions
   }
-}
 
-/** Play wheel tick sound during rotation */
-export function playWheelTickSound() {
-  if (isMuted) return;
-  try {
-    const ctx = getAudioContext();
+  /** Cashout swoosh sound */
+  playCashout() {
+    if (!this.enabled) return;
+    const ctx = this.getAudioContext();
     if (!ctx) return;
 
+    const now = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(1200, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.03);
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(300, now);
+    osc.frequency.exponentialRampToValueAtTime(800, now + 0.15);
 
-    gain.gain.setValueAtTime(0.05, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.03);
+    gain.gain.setValueAtTime(0.08, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
 
     osc.connect(gain);
     gain.connect(ctx.destination);
 
-    osc.start();
-    osc.stop(ctx.currentTime + 0.03);
-  } catch {
-    // Ignore
+    osc.start(now);
+    osc.stop(now + 0.2);
   }
 }
+
+export const soundEffects = new SoundEffectsManager();
+
+export const playBetSound = () => soundEffects.playBetPlaced();
+export const playBetPlacedSound = () => soundEffects.playBetPlaced();
+export const playWinSound = () => soundEffects.playWin();
+export const playCashoutSound = () => soundEffects.playCashout();
