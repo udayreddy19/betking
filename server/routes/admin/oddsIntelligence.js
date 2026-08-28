@@ -11,7 +11,7 @@
  */
 
 import express from 'express';
-import { requireAdminAuth } from '../../middleware/adminAuth.js';
+import { adminAuth } from '../../middleware/adminAuth.js';
 import { telemetryQueue } from '../../../lib/odds-v3/telemetry/telemetryDeliveryQueue.mjs';
 import { getRecentOddsEvents } from '../../../lib/odds-v3/telemetry/oddsEventStream.mjs';
 import { getRecentAnomalies } from '../../../lib/odds-v3/monitoring/pricingAnomalyDetector.mjs';
@@ -26,7 +26,7 @@ import { explainPriceDifference } from '../../../lib/odds-v3/pricing/priceDiffer
 import { executeDeterministicReplay } from '../../../scripts/oddsReplayCli.mjs';
 
 const router = express.Router();
-router.use(requireAdminAuth);
+router.use(adminAuth);
 
 /**
  * GET /api/admin/odds-intelligence/overview
