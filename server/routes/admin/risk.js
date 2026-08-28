@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requirePermission } from '../../middleware/adminAuth.js';
 import { query } from '../../../db/pg.js';
+import { globalLiabilityTracker, globalSyndicateDetector, setUserRiskProfile, getUserRiskSummary } from '../../../lib/riskEngine.mjs';
 
 const router = Router();
 
@@ -38,4 +39,50 @@ router.get('/signals', requirePermission('security', 'risk', 'fraud'), async (re
   }
 });
 
+// GET /api/admin/risk/liability/:matchId — Real-time match liability summary
+router.get('/liability/:matchId?', requirePermission('trading', 'risk', 'finance'), (req, res) => {
+  try {
+    const matchId = req.params.matchId || req.query.matchId || 'global';
+    const report = globalLiabilityTracker.getLiabilityReport(matchId);
+    res.json({ success: true, report });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/admin/risk/syndicates — Active syndicate & coordinated betting flags
+router.get('/syndicates', requirePermission('risk', 'fraud', 'security'), (req, res) => {
+  try {
+    const flags = globalSyndicateDetector.getRecentFlags();
+    res.json({ success: true, syndicates: flags });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/admin/risk/user-tier — Update user risk tier (VIP, SHARP, RESTRICTED, STANDARD)
+router.post('/user-tier', requirePermission('risk', 'fraud'), (req, res) => {
+  try {
+    const { userId, tier } = req.body || {};
+    if (!userId || !tier) {
+      return res.status(400).json({ error: 'userId and tier are required' });
+    }
+    const updated = setUserRiskProfile(userId, { tier: String(tier).toUpperCase() });
+    res.json({ success: true, profile: updated });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/admin/risk/user-profile/:userId — Get risk profile summary for user
+router.get('/user-profile/:userId', requirePermission('risk', 'fraud', 'support'), (req, res) => {
+  try {
+    const summary = getUserRiskSummary(req.params.userId);
+    res.json({ success: true, ...summary });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;
+

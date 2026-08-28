@@ -218,4 +218,15 @@ router.post('/legacy-wallets/:userId/apply-opening-ledger', requirePermission('f
   }
 });
 
+// GET /reconciliation/ledger-consistency — Double-entry balance invariant audit
+router.get('/ledger-consistency', requirePermission('finance', 'reconciliation'), async (req, res) => {
+  try {
+    const { runLedgerConsistencyAudit } = await import('../../../lib/ledgerConsistencyChecker.mjs');
+    const audit = await runLedgerConsistencyAudit();
+    res.json({ success: true, audit });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

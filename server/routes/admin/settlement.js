@@ -329,4 +329,19 @@ router.get('/api/admin/settlement/orphan-open-bets', requireRole('SUPER_ADMIN', 
   }
 });
 
+// POST /api/admin/settlement/dry-run — Preflight settlement preview
+router.post('/api/admin/settlement/dry-run', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'TRADING_ADMIN'), async (req, res) => {
+  try {
+    const { matchId, marketId, winningSelectionId, outcome } = req.body || {};
+    if (!matchId || !marketId) {
+      return res.status(400).json({ error: 'matchId and marketId are required for dry-run simulation' });
+    }
+    const { simulateMarketSettlement } = await import('../../../lib/settlementDryRun.mjs');
+    const preview = await simulateMarketSettlement(matchId, marketId, winningSelectionId, outcome);
+    res.json({ success: true, ...preview });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

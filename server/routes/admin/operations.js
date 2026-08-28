@@ -536,4 +536,74 @@ router.get(
   },
 );
 
+// ── Trader Quick-Freeze & Thaw Endpoints ──
+router.post(
+  '/freeze-match',
+  requireRole('SUPER_ADMIN', 'OPERATIONS_ADMIN', 'TRADING_ADMIN'),
+  async (req, res) => {
+    try {
+      const { matchId, reason = 'TRADER_MANUAL_FREEZE' } = req.body || {};
+      if (!matchId) return res.status(400).json({ error: 'matchId is required' });
+
+      const { query } = await import('../../../db/pg.js');
+      const { logAdminAction } = await import('../../middleware/auditLogger.js');
+      const { invalidateOddsCache } = await import('../../../lib/oddsCacheEngine.mjs');
+
+      // Update match status to SUSPENDED in database
+      await query(
+        `UPDATE matches SET status = 'SUSPENDED', updated_at = NOW() WHERE match_id = $1 OR id = $1`,
+        [matchId],
+      );
+
+      await invalidateOddsCache(matchId);
+
+      await logAdminAction({
+        actorId: adminId(req),
+        targetId: matchId,
+        action: 'MATCH_QUICK_FROZEN',
+        details: { reason, matchId },
+      });
+
+      res.json({ success: true, matchId, status: 'SUSPENDED', reason });
+    } catch (err) {
+      handle(err, res);
+    }
+  },
+);
+
+router.post(
+  '/thaw-match',
+  requireRole('SUPER_ADMIN', 'OPERATIONS_ADMIN', 'TRADING_ADMIN'),
+  async (req, res) => {
+    try {
+      const { matchId, status = 'LIVE', reason = 'TRADER_MANUAL_THAW' } = req.body || {};
+      if (!matchId) return res.status(400).json({ error: 'matchId is required' });
+
+      const { query } = await import('../../../db/pg.js');
+      const { logAdminAction } = await import('../../middleware/auditLogger.js');
+      const { invalidateOddsCache } = await import('../../../lib/oddsCacheEngine.mjs');
+      const { resetMatchCircuitBreaker } = await import('../../../lib/odds-v3/circuitBreaker.mjs');
+
+      await query(
+        `UPDATE matches SET status = $1, updated_at = NOW() WHERE match_id = $2 OR id = $2`,
+        [status, matchId],
+      );
+
+      resetMatchCircuitBreaker(matchId);
+      await invalidateOddsCache(matchId);
+
+      await logAdminAction({
+        actorId: adminId(req),
+        targetId: matchId,
+        action: 'MATCH_THAWED',
+        details: { reason, matchId, restoredStatus: status },
+      });
+
+      res.json({ success: true, matchId, status, reason });
+    } catch (err) {
+      handle(err, res);
+    }
+  },
+);
+
 export default router;

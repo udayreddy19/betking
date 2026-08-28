@@ -201,4 +201,34 @@ router.post('/v2/notifications/:id/resolve', requirePermission('admin'), async (
   }
 });
 
+// ── Outgoing Webhook Configuration Endpoints ──
+router.get('/v2/notifications/webhooks', requirePermission('admin', 'security'), async (req, res) => {
+  try {
+    const { listAlertWebhooks } = await import('../../../lib/alertWebhookEngine.mjs');
+    res.json({ success: true, webhooks: listAlertWebhooks() });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/v2/notifications/webhooks', requirePermission('admin', 'security'), async (req, res) => {
+  try {
+    const { registerAlertWebhook } = await import('../../../lib/alertWebhookEngine.mjs');
+    const created = registerAlertWebhook(req.body);
+    res.status(201).json({ success: true, webhook: created });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/v2/notifications/webhooks/:id', requirePermission('admin', 'security'), async (req, res) => {
+  try {
+    const { deleteAlertWebhook } = await import('../../../lib/alertWebhookEngine.mjs');
+    deleteAlertWebhook(req.params.id);
+    res.json({ success: true, deletedId: req.params.id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;
