@@ -39,10 +39,20 @@ router.get('/signals', requirePermission('security', 'risk', 'fraud'), async (re
   }
 });
 
-// GET /api/admin/risk/liability/:matchId — Real-time match liability summary
-router.get('/liability/:matchId?', requirePermission('trading', 'risk', 'finance'), (req, res) => {
+// GET /api/admin/risk/liability — Real-time match liability summary
+router.get('/liability', requirePermission('trading', 'risk', 'finance'), (req, res) => {
   try {
-    const matchId = req.params.matchId || req.query.matchId || 'global';
+    const matchId = req.query.matchId || 'global';
+    const report = globalLiabilityTracker.getLiabilityReport(matchId);
+    res.json({ success: true, report });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/liability/:matchId', requirePermission('trading', 'risk', 'finance'), (req, res) => {
+  try {
+    const matchId = req.params.matchId || 'global';
     const report = globalLiabilityTracker.getLiabilityReport(matchId);
     res.json({ success: true, report });
   } catch (err) {
