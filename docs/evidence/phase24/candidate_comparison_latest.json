@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-08-28T17:23:38.899Z",
+  "environment": "STAGING_VPS",
+  "modelVersion": "v3.1-prod",
+  "candidateVersion": "v3.2-candidate-pipeline",
+  "datasetVersion": "ds_v1.0_cold",
+  "codeCommitSHA": "be1748d",
+  "status": "SHADOW_EVALUATION",
+  "sampleSize": 0,
+  "validationClass": "NOT_VERIFIED",
+  "productionSettledObservations": 0,
+  "bestCandidate": "v3.2-candidate-004",
+  "syntheticBrierDelta": -0.018,
+  "productionDataAvailable": false
+}
