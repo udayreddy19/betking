@@ -230,6 +230,7 @@ const DOMAIN_GROUPS = [
         Icon: ShieldCheckIcon,
         role: ADMIN_ROLES.SUPER_ADMIN,
         subModules: [
+          { id: 'admin-users', label: 'Admin Accounts & Passwords' },
           { id: 'audit-trail', label: 'Audit Center' },
           { id: 'sessions', label: 'Admin Sessions' },
           { id: 'config-health', label: 'Configuration Health' },

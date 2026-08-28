@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import {
   SearchIcon,
@@ -9,6 +9,120 @@ import {
 } from '../../../icons/animate/index';
 import ThemeToggle from '../../../components/ThemeToggle/ThemeToggle';
 import { ADMIN_ROLES } from '../permissions/AdminRBACGate';
+import AdminProfileModal from '../components/AdminProfileModal';
+
+function AdminProfileSection({ activeRole, onLogout }) {
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [profileData, setProfileData] = useState(null);
+
+  const fetchProfile = () => {
+    import('../api/adminApiClient').then(({ adminApiClient }) => {
+      adminApiClient.get('/security/me')
+        .then((data) => setProfileData(data))
+        .catch(() => {});
+    });
+  };
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const initials = profileData?.first_name
+    ? `${profileData.first_name[0] || ''}${profileData.last_name?.[0] || ''}`.toUpperCase()
+    : 'UR';
+  const displayName = profileData?.display_name || `${profileData?.first_name || ''} ${profileData?.last_name || ''}`.trim() || 'Superuser';
+
+  return (
+    <>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+        <button
+          type="button"
+          onClick={() => setIsProfileModalOpen(true)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer',
+            textAlign: 'left',
+          }}
+          title="Click to edit admin email, password, and profile details"
+        >
+          <div style={{ position: 'relative' }}>
+            <motion.div
+              whileHover={{ scale: 1.06 }}
+              whileTap={{ scale: 0.94 }}
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #6366f1 0%, #3b82f6 100%)',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 800,
+                fontSize: '0.78rem',
+                flexShrink: 0,
+                border: '1.5px solid rgba(255, 255, 255, 0.2)',
+              }}
+            >
+              {initials}
+            </motion.div>
+            <span style={{
+              position: 'absolute',
+              bottom: '0',
+              right: '0',
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              background: '#10b981',
+              border: '1.5px solid var(--admin-panel)',
+            }} />
+          </div>
+          <div style={{ fontSize: '0.76rem', whiteSpace: 'nowrap' }}>
+            <div style={{ fontWeight: 700, color: 'var(--admin-text)', lineHeight: 1.2 }}>{displayName}</div>
+            <div style={{ fontSize: '0.66rem', color: 'var(--admin-text-muted)' }}>{activeRole} ⚙</div>
+          </div>
+        </button>
+
+        <motion.button
+          type="button"
+          onClick={onLogout}
+          whileHover={{ scale: 1.06 }}
+          whileTap={{ scale: 0.93 }}
+          title="Sign out"
+          className="admin-btn admin-btn--ghost admin-btn--icon"
+          style={{
+            width: '30px',
+            height: '30px',
+            marginLeft: '2px',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = '#fb7185';
+            e.currentTarget.style.borderColor = 'rgba(244, 63, 94, 0.3)';
+            e.currentTarget.style.background = 'rgba(244, 63, 94, 0.1)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'var(--admin-text-muted)';
+            e.currentTarget.style.borderColor = 'transparent';
+            e.currentTarget.style.background = 'transparent';
+          }}
+        >
+          <LogOutIcon size={14} />
+        </motion.button>
+      </div>
+
+      <AdminProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        onUpdated={fetchProfile}
+      />
+    </>
+  );
+}
 
 /**
  * Extracted Admin Topbar — search, alerts, RBAC role, profile, breadcrumbs.
@@ -219,69 +333,10 @@ export default function AdminTopbar({
         <span style={{ width: '1px', height: '18px', background: 'var(--admin-border)' }} />
 
         {/* Profile & Logout */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-          <div style={{ position: 'relative' }}>
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, #6366f1 0%, #3b82f6 100%)',
-                color: '#fff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 800,
-                fontSize: '0.78rem',
-                flexShrink: 0,
-                border: '1.5px solid rgba(255, 255, 255, 0.2)',
-              }}
-            >
-              UR
-            </motion.div>
-            <span style={{
-              position: 'absolute',
-              bottom: '0',
-              right: '0',
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              background: '#10b981',
-              border: '1.5px solid var(--admin-panel)',
-            }} />
-          </div>
-          <div style={{ fontSize: '0.76rem', whiteSpace: 'nowrap' }}>
-            <div style={{ fontWeight: 700, color: 'var(--admin-text)', lineHeight: 1.2 }}>Superuser</div>
-            <div style={{ fontSize: '0.66rem', color: 'var(--admin-text-muted)' }}>{activeRole}</div>
-          </div>
-
-          <motion.button
-            type="button"
-            onClick={onLogout}
-            whileHover={{ scale: 1.06 }}
-            whileTap={{ scale: 0.93 }}
-            title="Sign out"
-            className="admin-btn admin-btn--ghost admin-btn--icon"
-            style={{
-              width: '30px',
-              height: '30px',
-              marginLeft: '2px',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#fb7185';
-              e.currentTarget.style.borderColor = 'rgba(244, 63, 94, 0.3)';
-              e.currentTarget.style.background = 'rgba(244, 63, 94, 0.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--admin-text-muted)';
-              e.currentTarget.style.borderColor = 'transparent';
-              e.currentTarget.style.background = 'transparent';
-            }}
-          >
-            <LogOutIcon size={14} />
-          </motion.button>
-        </div>
+        <AdminProfileSection
+          activeRole={activeRole}
+          onLogout={onLogout}
+        />
       </div>
 
       {/* Responsive: show mobile menu, hide breadcrumbs on small screens */}

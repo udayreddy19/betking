@@ -279,7 +279,9 @@ function AuditCenterPanel() {
   );
 }
 
-export default function SecurityGovernanceDomainView({ subModule = 'audit-trail' }) {
+import AdminAccountsPanel from '../components/AdminAccountsPanel';
+
+export default function SecurityGovernanceDomainView({ subModule = 'admin-users' }) {
   const rbacRows = useMemo(() => Object.keys(ADMIN_ROLES).map((role) => {
     const allowed = ROLE_ALLOWED_DOMAINS[role];
     return {
@@ -291,6 +293,7 @@ export default function SecurityGovernanceDomainView({ subModule = 'audit-trail'
     };
   }), []);
 
+  if (subModule === 'admin-users' || subModule === 'admin-accounts') return <AdminAccountsPanel />;
   if (subModule === 'rbac-matrix') {
     return (
       <div>
@@ -321,3 +324,4 @@ export default function SecurityGovernanceDomainView({ subModule = 'audit-trail'
   if (subModule === 'config-health') return <ConfigHealthPanel />;
   return <AuditCenterPanel />;
 }
+
