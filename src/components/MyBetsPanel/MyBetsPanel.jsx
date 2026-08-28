@@ -123,6 +123,7 @@ export default function MyBetsPanel() {
   const panelRef = useRef(null);
   const [filter, setFilter] = useState('pending');
   const [cashoutQuotes, setCashoutQuotes] = useState({});
+  const [highlightBetId, setHighlightBetId] = useState(null);
   const [expandedEvidence, setExpandedEvidence] = useState({});
   const [loadedEvidence, setLoadedEvidence] = useState({});
 
