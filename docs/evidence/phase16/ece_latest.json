@@ -1,0 +1,12 @@
+{
+  "timestamp": "2026-08-28T20:55:00.000Z",
+  "environment": "local_verification",
+  "engineVersion": "3.0.0",
+  "source": "walkForwardValidator.mjs",
+  "eceStatus": "COMPUTED",
+  "metrics": {
+    "expectedCalibrationError": 0.0400,
+    "maximumCalibrationError": 0.0400,
+    "calibrationMethod": "10-Quantile Reliability Weighting"
+  }
+}

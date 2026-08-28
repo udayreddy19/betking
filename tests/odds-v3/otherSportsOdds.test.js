@@ -18,10 +18,13 @@ function soccerMatch(overrides = {}) {
 }
 
 describe('Other sports odds', () => {
-  it('suspends non-cricket markets when provider odds are missing', () => {
+  it('prices soccer using Dixon-Coles model when provider odds are missing', () => {
     const snap = generateOtherSportsSnapshot(soccerMatch(), { winnerOnly: true });
-    expect(snap.status).toBe('SUSPENDED');
-    expect(snap.markets).toEqual([]);
+    expect(snap.status).toBe('OK');
+    expect(snap.markets.length).toBeGreaterThan(0);
+    const winner = extractMatchWinnerOdds(snap, soccerMatch());
+    expect(winner.team1).toBeGreaterThan(1);
+    expect(winner.team2).toBeGreaterThan(1);
   });
 
   it('prices soccer 1X2 including draw for list cards when provider odds exist', () => {

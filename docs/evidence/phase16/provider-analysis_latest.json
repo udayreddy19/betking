@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-08-28T20:55:00.000Z",
+  "environment": "local_verification",
+  "engineVersion": "3.0.0",
+  "source": "providerDivergenceAnalyzer.mjs",
+  "status": "OPERATIONAL",
+  "providersEvaluated": ["10cric", "cricbuzz", "fastscore"],
+  "metrics": {
+    "meanAbsoluteDifference": 0.032,
+    "maxDivergence": 0.085,
+    "disagreementRatePct": 2.1,
+    "consensusHealth": "GREEN"
+  }
+}

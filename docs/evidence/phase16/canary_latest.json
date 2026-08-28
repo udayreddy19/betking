@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-08-28T20:55:00.000Z",
+  "environment": "local_verification",
+  "engineVersion": "3.0.0",
+  "source": "canary_audit",
+  "canaryDeploymentReady": true,
+  "defaultSettings": {
+    "enabled": false,
+    "percent": 5,
+    "mode": "SHADOW_ONLY",
+    "exposureToBettors": false
+  }
+}

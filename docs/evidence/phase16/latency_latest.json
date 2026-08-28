@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-08-28T20:55:00.000Z",
+  "environment": "local_verification",
+  "engineVersion": "3.0.0",
+  "source": "feedLatencyAnalyzer.mjs",
+  "status": "OPERATIONAL",
+  "tiers": [
+    { "tier": "<100ms", "risk": "LOW" },
+    { "tier": "100-250ms", "risk": "LOW" },
+    { "tier": "250-500ms", "risk": "MEDIUM" },
+    { "tier": "500-1000ms", "risk": "ELEVATED" },
+    { "tier": "1000-2500ms", "risk": "HIGH_MARGIN_BUFFER (+1.5% Overround)" },
+    { "tier": ">2500ms", "risk": "CIRCUIT_BREAKER_SUSPENDED" }
+  ]
+}

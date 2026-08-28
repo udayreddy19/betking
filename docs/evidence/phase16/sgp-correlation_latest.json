@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-08-28T20:55:00.000Z",
+  "environment": "local_verification",
+  "engineVersion": "3.0.0",
+  "source": "sgpEmpiricalRho.mjs & correlationEngine.mjs",
+  "status": "OPERATIONAL",
+  "empiricalMethodology": "Pearson Phi coefficient on paired binary match outcomes",
+  "modelComparison": {
+    "naiveIndependent": { "type": "UNSAFE_OPERATOR_RISK", "status": "DEPRECATED" },
+    "gaussianCopulaConfigured": { "type": "MODEL_ASSUMPTION", "status": "ACTIVE_PROTECTED" },
+    "empiricalRhoCalibration": { "type": "PHASE_16_RESEARCH_TOOLING", "status": "READY_FOR_DATA" }
+  }
+}

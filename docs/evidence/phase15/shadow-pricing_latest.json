@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-08-28T20:45:00.000Z",
+  "environment": "local_verification",
+  "engineVersion": "3.0.0",
+  "source": "shadowPricingEngine.mjs",
+  "shadowMode": "ACTIVE",
+  "financialIsolation": "STRICT (Shadow quotes never reach user bet placement or settlement)",
+  "trafficSampling": "Deterministic hash of matchId",
+  "candidateModelVersion": "ODDS_V3_CANDIDATE_1",
+  "baselineModelVersion": "ODDS_V3_BASELINE_PROD"
+}

@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-08-28T20:55:00.000Z",
+  "environment": "local_verification",
+  "engineVersion": "3.0.0",
+  "source": "modelBlendEngine.mjs",
+  "ensembleStatus": "OPERATIONAL",
+  "weightingTechnique": "Bayesian Precision-Weighted Opinion Pool",
+  "stalenessDecay": "Active (>60s reduces provider weight exponentially)",
+  "conflictResolution": "Degrades to parametric model when provider divergence > 25%"
+}

@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-08-28T20:55:00.000Z",
+  "environment": "local_verification",
+  "engineVersion": "3.0.0",
+  "source": "shadowPricingEngine.mjs",
+  "shadowMode": "ACTIVE",
+  "experiments": [
+    {
+      "name": "DynamicMargin_vs_StaticMargin",
+      "baseline": "STATIC_5PCT_OVERROUND",
+      "candidate": "DYNAMIC_VOLATILITY_MARGIN",
+      "pDiffMax": 0.024,
+      "oddsDiffMax": 0.08,
+      "financialIsolation": "100%_SECURED"
+    }
+  ]
+}

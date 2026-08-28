@@ -1,0 +1,18 @@
+{
+  "timestamp": "2026-08-28T20:45:00.000Z",
+  "environment": "local_verification",
+  "engineVersion": "3.0.0",
+  "source": "canary_architecture_audit",
+  "canarySettings": {
+    "enabled": false,
+    "canaryPercent": 5,
+    "candidateModelVersion": "ODDS_V3_CANDIDATE_1",
+    "baselineModelVersion": "ODDS_V3_BASELINE_PROD"
+  },
+  "safetyProperties": {
+    "shadowModeOnly": true,
+    "exposureToBettors": false,
+    "settlementInfluence": false,
+    "deterministicRouting": true
+  }
+}

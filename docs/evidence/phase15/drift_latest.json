@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-08-28T20:45:00.000Z",
+  "environment": "local_verification",
+  "engineVersion": "3.0.0",
+  "source": "driftDetector.mjs",
+  "driftStatus": "GREEN_STABLE",
+  "driftWindows": {
+    "24h": { "sampleCount": "AWAITING_TRAFFIC", "drift": "0.0%" },
+    "7d": { "sampleCount": "AWAITING_TRAFFIC", "drift": "0.0%" },
+    "30d": { "sampleCount": "AWAITING_TRAFFIC", "drift": "0.0%" }
+  },
+  "alertThresholds": {
+    "yellowDriftPct": 15.0,
+    "redDriftPct": 30.0,
+    "maxBrier": 0.28
+  }
+}

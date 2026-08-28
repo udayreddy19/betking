@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-08-28T20:45:00.000Z",
+  "environment": "local_verification",
+  "engineVersion": "3.0.0",
+  "source": "correlationEngine.mjs",
+  "sgpStatus": "ACTIVE_PROTECTED",
+  "copulaModel": "Bivariate Gaussian Copula",
+  "frechetBoundsEnforced": true,
+  "contradictoryRejection": true,
+  "supportedCorrelations": {
+    "matchWinner_teamTotal": { "rho": 0.50, "type": "MODEL_ASSUMPTION" },
+    "matchWinner_matchTotal": { "rho": 0.35, "type": "MODEL_ASSUMPTION" },
+    "matchWinner_opposingTotal": { "rho": -0.30, "type": "MODEL_ASSUMPTION" },
+    "sameMarketOpposing": { "rho": -1.00, "type": "STRICT_CONTRADICTORY_REJECTION" }
+  }
+}

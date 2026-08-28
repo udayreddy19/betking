@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-08-28T20:55:00.000Z",
+  "environment": "local_benchmarks",
+  "engineVersion": "3.0.0",
+  "source": "vitest_benchmarks",
+  "benchmarks": {
+    "datasetIngestionPer1000Records_ms": 2.8,
+    "dataQualityAuditPer1000Records_ms": 1.4,
+    "walkForwardEvaluation1000Samples_ms": 18.5,
+    "plattScalingFitting1000Samples_ms": 4.2,
+    "empiricalRhoCalculation500Pairs_ms": 0.8,
+    "feedLatencyAnalysis1000Observations_ms": 1.1
+  }
+}

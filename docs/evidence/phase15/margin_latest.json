@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-08-28T20:45:00.000Z",
+  "environment": "local_verification",
+  "engineVersion": "3.0.0",
+  "source": "dynamicMarginEngine.mjs",
+  "marginStatus": "BOUNDED_ADAPTIVE",
+  "bounds": {
+    "minOverround": 0.035,
+    "maxOverround": 0.120,
+    "baseOverround": 0.050
+  },
+  "volatilityScaling": "Active on in-play death overs and rapid wicket falls",
+  "latencyScaling": "Active on feed delay > 1500ms (+1.5% buffer)"
+}

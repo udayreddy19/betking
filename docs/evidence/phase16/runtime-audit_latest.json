@@ -1,0 +1,23 @@
+{
+  "timestamp": "2026-08-28T20:55:00.000Z",
+  "environment": "local_forensics",
+  "engineVersion": "3.0.0",
+  "source": "codebase_ast_and_import_trace",
+  "runtimeGraphVerified": true,
+  "nodes": {
+    "feedIngestion": "cricbuzzLiveScores / fastscore / 10cric",
+    "canonicalMapping": "buildCanonicalFromMatch.mjs",
+    "sportModels": {
+      "cricket": "ProbabilityModel.mjs (Sigmoid + Bayesian CRR Smoothing)",
+      "soccer": "soccerDixonColesModel.mjs (Bivariate Poisson Matrix)",
+      "tennis": "tennisMarkovModel.mjs (Point-to-Set Markov Chain)",
+      "basketball": "basketballPaceModel.mjs (Possession Pace Model)"
+    },
+    "providerBlend": "modelBlendEngine.mjs (Precision-weighted opinion pool)",
+    "dynamicMargin": "dynamicMarginEngine.mjs & MarginCalculator.mjs",
+    "liabilityShading": "bookIntegrity.mjs & marketLiabilityStore.mjs (Redis hash)",
+    "qualityAudit": "oddsQualityMonitor.mjs (Pre-broadcast sanity)",
+    "betPlacement": "betPlacementEngine.mjs & betRiskEngine.mjs (SGP Gaussian Copula)",
+    "settlement": "liveMatchSettlement.mjs (calibrationEngine.recordSettledOutcome hook)"
+  }
+}

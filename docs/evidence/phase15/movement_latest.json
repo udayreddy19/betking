@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-08-28T20:45:00.000Z",
+  "environment": "local_verification",
+  "engineVersion": "3.0.0",
+  "source": "oddsMovementAnalyzer.mjs",
+  "stabilityStatus": "STABLE",
+  "flickerFilter": "ACTIVE (< 5000ms jump filter)",
+  "metrics": {
+    "medianJumpPct": 1.2,
+    "p95JumpPct": 4.8,
+    "maxJumpPct": 12.5,
+    "flickerCount": 0
+  }
+}

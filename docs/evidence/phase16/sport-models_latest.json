@@ -1,0 +1,32 @@
+{
+  "timestamp": "2026-08-28T20:55:00.000Z",
+  "environment": "local_verification",
+  "engineVersion": "3.0.0",
+  "source": "sport_models_audit",
+  "models": {
+    "cricket": {
+      "model": "ProbabilityModel.mjs",
+      "version": "ODDS_V3_CRICKET_V3.1",
+      "techniques": ["Sigmoid Run-Rate Ratio", "Wicket Power Decay", "Overs 0-3 Bayesian CRR Prior"],
+      "status": "OPERATIONAL"
+    },
+    "soccer": {
+      "model": "soccerDixonColesModel.mjs",
+      "version": "ODDS_V3_SOCCER_V3.1",
+      "techniques": ["Bivariate Poisson Matrix", "Low-Score Tau Adjustment", "Home Advantage Factor"],
+      "status": "OPERATIONAL"
+    },
+    "tennis": {
+      "model": "tennisMarkovModel.mjs",
+      "version": "ODDS_V3_TENNIS_V3.1",
+      "techniques": ["Point-to-Game Markov Matrix", "Game-to-Set Chain", "Set-to-Match Recursion"],
+      "status": "OPERATIONAL"
+    },
+    "basketball": {
+      "model": "basketballPaceModel.mjs",
+      "version": "ODDS_V3_BASKETBALL_V3.1",
+      "techniques": ["Possession Pace Integration", "Efficiency Ratings", "Normal CDF Spread & Total"],
+      "status": "OPERATIONAL"
+    }
+  }
+}

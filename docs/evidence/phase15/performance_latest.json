@@ -1,0 +1,18 @@
+{
+  "timestamp": "2026-08-28T20:45:00.000Z",
+  "environment": "local_benchmarks",
+  "engineVersion": "3.0.0",
+  "source": "vitest_benchmarks",
+  "benchmarks": {
+    "cricketWinnerPricing_p50_ms": 0.015,
+    "cricketWinnerPricing_p95_ms": 0.024,
+    "cricketWinnerPricing_p99_ms": 0.038,
+    "soccerDixonColesMatrix_p50_ms": 0.030,
+    "tennisMarkovPointChain_p50_ms": 0.011,
+    "basketballPaceModel_p50_ms": 0.008,
+    "sgpBivariateGaussianCopula_p50_ms": 0.025,
+    "preBroadcastQualityAudit_p50_ms": 0.010,
+    "observationStoreAppend_p50_ms": 0.002
+  },
+  "throughput": "> 30,000 market snapshot evaluations per second per core"
+}
