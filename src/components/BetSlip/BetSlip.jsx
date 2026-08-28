@@ -146,55 +146,18 @@ export default function BetSlip({ showFooter = true, hidePerBetStakes = false })
               className={`betslip-bet${conflict ? ' betslip-bet--conflict' : ''}${bet.oddsChanged ? ' betslip-bet--odds-updated' : ''}${bet.selectionUnavailable ? ' betslip-bet--unavailable' : ''}`}
               key={bet.id}
             >
-              {conflict && (
-                <div className="betslip-bet-alert" role="alert">
-                  <span className="betslip-bet-alert__icon">!</span>
-                  <span>{conflict.message}</span>
-                </div>
-              )}
-
-              {bet.selectionUnavailable && !conflict && (
-                <div className="betslip-bet-alert betslip-bet-alert--unavailable" role="alert">
-                  <strong>Selection unavailable.</strong>
-                  <span className="betslip-bet-alert__detail">
-                    {bet.marketStatus === 'SUSPENDED' || bet.marketStatus === 'MARKET_SUSPENDED'
-                      ? 'This market is suspended. Remove the selection or wait for it to reopen.'
-                      : 'This market or selection is not available for betting.'}
-                  </span>
-                  <button type="button" className="betslip-bet-clear-btn" onClick={() => removeBet(bet.id)}>
-                    Remove selection
-                  </button>
-                </div>
-              )}
-
-                  {bet.oddsStatus === ODDS_STATUS.CHANGED && !conflict && (
-                <div
-                  className="betslip-bet-alert betslip-bet-alert--odds-changed"
-                  role="status"
-                  aria-live="polite"
-                >
-                  <strong>Odds have changed.</strong>
-                  <span className="betslip-bet-alert__detail">
-                    {formatOddsChangeAnnouncement(bet)}
-                  </span>
-                </div>
-              )}
-
-              {bet.oddsChanged && bet.oddsStatus !== ODDS_STATUS.CHANGED && !conflict && (
-                <div className="betslip-bet-alert betslip-bet-alert--info" role="status">
-                  Odds have changed. Review the new price below.
-                </div>
-              )}
-
+              {/* Card Header: Match Name & Remove Button */}
               <div className="betslip-bet-meta">
-                <span>{formatBetTime(bet.timestamp)}</span>
+                <span className="betslip-bet-match-title" title={bet.matchName}>{bet.matchName}</span>
                 <button className="betslip-bet-remove" onClick={() => removeBet(bet.id)} type="button" aria-label="Remove bet">
                   <IoClose />
                 </button>
               </div>
 
+              {/* Market Name */}
               <div className="betslip-bet-market">{bet.marketName}</div>
 
+              {/* Selection and Odds Row */}
               <div className="betslip-bet-selection-row">
                 <span className="betslip-bet-selection">{bet.selectionName}</span>
                 <span className={`betslip-bet-odds${bet.oddsStatus === ODDS_STATUS.CHANGED ? ' betslip-bet-odds--updated' : ''}`}>
@@ -210,33 +173,51 @@ export default function BetSlip({ showFooter = true, hidePerBetStakes = false })
                 </span>
               </div>
 
-              {bet.oddsStatus === ODDS_STATUS.CHANGED && (
-                <div className="betslip-odds-actions">
-                  <button
-                    type="button"
-                    className="betslip-accept-odds-btn"
-                    onClick={() => acceptOddsChange(bet.id)}
-                  >
-                    Accept New Odds
-                  </button>
-                  <button
-                    type="button"
-                    className="betslip-bet-clear-btn"
-                    onClick={() => removeBet(bet.id)}
-                  >
-                    Cancel
+              {/* Conflict Alert */}
+              {conflict && (
+                <div className="betslip-bet-alert" role="alert">
+                  <span className="betslip-bet-alert__icon">!</span>
+                  <span>{conflict.message}</span>
+                  <button type="button" className="betslip-bet-clear-btn" onClick={() => removeBet(bet.id)}>
+                    Clear
                   </button>
                 </div>
               )}
 
-              <div className="betslip-bet-match">{bet.matchName}</div>
-
-              {conflict && (
-                <button type="button" className="betslip-bet-clear-btn" onClick={() => removeBet(bet.id)}>
-                  Clear the selection
-                </button>
+              {/* Selection Unavailable */}
+              {bet.selectionUnavailable && !conflict && (
+                <div className="betslip-bet-alert betslip-bet-alert--unavailable" role="alert">
+                  <strong>Selection unavailable</strong>
+                  <button type="button" className="betslip-bet-clear-btn" onClick={() => removeBet(bet.id)}>
+                    Remove selection
+                  </button>
+                </div>
               )}
 
+              {/* Odds Changed Alert & Actions */}
+              {bet.oddsStatus === ODDS_STATUS.CHANGED && !conflict && (
+                <div className="betslip-bet-alert--odds-changed" role="status">
+                  <div>⚠️ Odds updated from {Number(bet.previousOdds || 0).toFixed(2)} to {Number(bet.odds).toFixed(2)}</div>
+                  <div className="betslip-odds-actions">
+                    <button
+                      type="button"
+                      className="betslip-accept-odds-btn"
+                      onClick={() => acceptOddsChange(bet.id)}
+                    >
+                      Accept New Odds ({Number(bet.odds).toFixed(2)})
+                    </button>
+                    <button
+                      type="button"
+                      className="betslip-bet-clear-btn"
+                      onClick={() => removeBet(bet.id)}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Stake Block */}
               {showPerBetStakes && (
                 <div className="betslip-bet-stake-block">
                   <div className="betslip-bet-quick-stakes">
@@ -252,7 +233,7 @@ export default function BetSlip({ showFooter = true, hidePerBetStakes = false })
                     ))}
                   </div>
                   <label className="betslip-bet-stake-row" htmlFor={`stake-${bet.id}`}>
-                    <span>Bet Total: ₹</span>
+                    <span>Stake: ₹</span>
                     <input
                       id={`stake-${bet.id}`}
                       type="text"
@@ -260,11 +241,12 @@ export default function BetSlip({ showFooter = true, hidePerBetStakes = false })
                       autoComplete="off"
                       value={stakeVal}
                       onChange={(e) => setSingleStake(bet.id, sanitizeStakeInput(e.target.value))}
-                      placeholder="Enter amount"
+                      placeholder="0.00"
                     />
                   </label>
                   <p className="betslip-bet-winnings">
-                    Possible winnings: <strong>INR {possibleWin}</strong>
+                    <span>Possible return:</span>
+                    <strong>₹{possibleWin}</strong>
                   </p>
                 </div>
               )}
