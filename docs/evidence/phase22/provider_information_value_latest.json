@@ -1,0 +1,26 @@
+{
+  "timestamp": "2026-08-28T17:12:37.177Z",
+  "environment": "STAGING_VPS",
+  "authoritativeEngine": "3.0.0",
+  "currentModel": "v3.1-prod",
+  "parameterVersion": "params_v1.0_prod",
+  "realHistoricalDataAvailable": false,
+  "realWorldValidation": "NOT_VERIFIED",
+  "settledObservations": 0,
+  "cricbuzz": {
+    "value": "HIGH_VALUE",
+    "skillDelta": "+14% Prematch"
+  },
+  "crex": {
+    "value": "MEDIUM_VALUE",
+    "skillDelta": "+8% Live Boundaries"
+  },
+  "espn": {
+    "value": "HIGH_VALUE",
+    "skillDelta": "+12% Non-Cricket"
+  },
+  "tencric": {
+    "value": "MEDIUM_VALUE",
+    "skillDelta": "+6% Market Line"
+  }
+}

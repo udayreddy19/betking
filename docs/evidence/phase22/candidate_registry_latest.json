@@ -1,0 +1,37 @@
+{
+  "timestamp": "2026-08-28T17:12:37.177Z",
+  "environment": "STAGING_VPS",
+  "authoritativeEngine": "3.0.0",
+  "currentModel": "v3.1-prod",
+  "parameterVersion": "params_v1.0_prod",
+  "realHistoricalDataAvailable": false,
+  "realWorldValidation": "NOT_VERIFIED",
+  "settledObservations": 0,
+  "candidates": [
+    {
+      "id": "v3.2-candidate-001",
+      "name": "Covariance-Aware Provider Blending",
+      "status": "SHADOW"
+    },
+    {
+      "id": "v3.2-candidate-002",
+      "name": "Regime-Specific Model Blending",
+      "status": "SHADOW"
+    },
+    {
+      "id": "v3.2-candidate-003",
+      "name": "Adaptive Volatility Calibration",
+      "status": "SHADOW"
+    },
+    {
+      "id": "v3.2-candidate-004",
+      "name": "Advanced Cricket State Model",
+      "status": "SHADOW"
+    },
+    {
+      "id": "v3.2-candidate-005",
+      "name": "Market-Specific Calibration",
+      "status": "SHADOW"
+    }
+  ]
+}

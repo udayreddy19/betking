@@ -178,4 +178,30 @@ router.get('/canary', (req, res) => {
   }
 });
 
+/**
+ * GET /api/admin/odds-intelligence/candidates
+ */
+router.get('/candidates', async (req, res) => {
+  try {
+    const { listCandidates } = await import('../../../lib/odds-v3/optimization/candidateRegistry.mjs');
+    const candidates = listCandidates();
+    return res.json({ success: true, data: { candidates, baseline: 'v3.1-prod' } });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/admin/odds-intelligence/candidates/evaluate
+ */
+router.post('/candidates/evaluate', async (req, res) => {
+  try {
+    const { runShadowOptimizationEvaluation } = await import('../../../lib/odds-v3/optimization/OddsShadowRunner.mjs');
+    const result = runShadowOptimizationEvaluation(req.body || {});
+    return res.json({ success: true, data: result });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 export default router;

@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-08-28T17:12:37.177Z",
+  "environment": "STAGING_VPS",
+  "authoritativeEngine": "3.0.0",
+  "currentModel": "v3.1-prod",
+  "parameterVersion": "params_v1.0_prod",
+  "realHistoricalDataAvailable": false,
+  "realWorldValidation": "NOT_VERIFIED",
+  "settledObservations": 0,
+  "p50Ms": 0.45,
+  "p95Ms": 1.2,
+  "p99Ms": 1.85,
+  "throughputPerSec": 2200,
+  "shadowOverheadMs": 0.08
+}
