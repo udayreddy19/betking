@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-08-28T17:41:36.111Z",
+  "environment": "STAGING_VPS",
+  "modelVersion": "v3.1-prod",
+  "candidateVersion": "v3.2-candidate-004",
+  "datasetVersion": "ds_v1.0_cold",
+  "codeCommitSHA": "7261706",
+  "status": "SHADOW_EVALUATION",
+  "sampleSize": 0,
+  "validationClass": "NOT_VERIFIED",
+  "productionSettledObservations": 0,
+  "phase": 25,
+  "authoritativeEngine": "OddsEngineV3 v3.1-prod",
+  "totalTestedFiles": 31,
+  "totalPassedTests": 228,
+  "allModulesAudited": true
+}
