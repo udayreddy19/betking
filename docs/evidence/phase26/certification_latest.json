@@ -1,0 +1,19 @@
+{
+  "timestamp": "2026-08-28T17:46:47.584Z",
+  "environment": "STAGING_VPS",
+  "modelVersion": "v3.1-prod",
+  "candidateVersion": "v3.2-candidate-004",
+  "datasetVersion": "ds_v1.0_cold",
+  "codeCommitSHA": "0aae182",
+  "status": "SHADOW_EVALUATION",
+  "sampleSize": 0,
+  "validationClass": "NOT_VERIFIED",
+  "productionSettledObservations": 0,
+  "phase": 26,
+  "codeQualityScore": 10,
+  "realWorldValidationStatus": "INSUFFICIENT_DATA",
+  "productionModelChanged": false,
+  "authoritativeModel": "v3.1-prod",
+  "candidateDecision": "KEEP_CURRENT",
+  "promotionStatus": "FORBIDDEN_PENDING_HUMAN_APPROVAL"
+}

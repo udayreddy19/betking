@@ -1,0 +1,23 @@
+{
+  "timestamp": "2026-08-28T17:46:37.133Z",
+  "championModel": "v3.1-prod",
+  "candidateModel": "v3.2-candidate-004",
+  "period": "30d",
+  "sport": "cricket",
+  "sampleSize": 0,
+  "settledCount": 0,
+  "validationClass": "NOT_VERIFIED",
+  "championMetrics": {
+    "brier": 0.185,
+    "logLoss": 0.542,
+    "ece": 0.038
+  },
+  "challengerSyntheticMetrics": {
+    "brier": 0.167,
+    "logLoss": 0.518,
+    "ece": 0.03,
+    "brierDelta": -0.018
+  },
+  "decision": "INSUFFICIENT_DATA",
+  "recommendation": "KEEP_SHADOW"
+}

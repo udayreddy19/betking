@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-08-28T17:46:47.584Z",
+  "environment": "STAGING_VPS",
+  "modelVersion": "v3.1-prod",
+  "candidateVersion": "v3.2-candidate-004",
+  "datasetVersion": "ds_v1.0_cold",
+  "codeCommitSHA": "0aae182",
+  "status": "SHADOW_EVALUATION",
+  "sampleSize": 0,
+  "validationClass": "NOT_VERIFIED",
+  "productionSettledObservations": 0,
+  "authoritativeModel": "v3.1-prod",
+  "shadowChallengers": [
+    "v3.2-candidate-001",
+    "v3.2-candidate-002",
+    "v3.2-candidate-004",
+    "v3.2-candidate-pipeline"
+  ],
+  "autoPromotionForbidden": true
+}

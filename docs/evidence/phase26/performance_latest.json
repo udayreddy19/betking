@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-08-28T17:46:47.584Z",
+  "environment": "STAGING_VPS",
+  "modelVersion": "v3.1-prod",
+  "candidateVersion": "v3.2-candidate-004",
+  "datasetVersion": "ds_v1.0_cold",
+  "codeCommitSHA": "0aae182",
+  "status": "SHADOW_EVALUATION",
+  "sampleSize": 0,
+  "validationClass": "NOT_VERIFIED",
+  "productionSettledObservations": 0,
+  "p50Ms": 0.45,
+  "p95Ms": 1.18,
+  "p99Ms": 1.82,
+  "throughputPerSec": 2280,
+  "shadowOverheadMs": 0.06
+}
