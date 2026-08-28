@@ -17,7 +17,7 @@ import { getRecentOddsEvents } from '../../../lib/odds-v3/telemetry/oddsEventStr
 import { getRecentAnomalies } from '../../../lib/odds-v3/monitoring/pricingAnomalyDetector.mjs';
 import { getActiveIncidents } from '../../../lib/odds-v3/monitoring/alertCorrelationEngine.mjs';
 import { evaluateActiveMarketsHealth } from '../../../lib/odds-v3/monitoring/liveMarketHealthEngine.mjs';
-import { getActiveModelVersion, listAllModels } from '../../../lib/odds-v3/registry/modelRegistry.mjs';
+import { getActiveModelVersion, listModelVersions } from '../../../lib/odds-v3/registry/modelRegistry.mjs';
 import { getActiveParameters } from '../../../lib/odds-v3/registry/parameterRegistry.mjs';
 import { getCanaryStatus } from '../../../lib/odds-v3/canary/canaryRollbackEngine.mjs';
 import { queryObservations } from '../../../lib/odds-v3/telemetry/oddsObservationStore.mjs';
@@ -158,7 +158,7 @@ router.post('/replay', (req, res) => {
  */
 router.get('/shadow', (req, res) => {
   try {
-    const allModels = listAllModels();
+    const allModels = listModelVersions();
     const shadowModels = allModels.filter((m) => m.status === 'SHADOW');
     return res.json({ success: true, data: { shadowModels, count: shadowModels.length } });
   } catch (err) {
