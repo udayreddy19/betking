@@ -1,0 +1,6 @@
+{
+  "contradiction": "scoreAuthoritative = true AND inningsCompleted = true vs AUTHORITATIVE_MARKET_EVIDENCE = NO and MARKET_FINAL = NO",
+  "rootCauseClassification": "POLICY_CONFIGURATION_OMISSION",
+  "detailedExplanation": "In lib/settlement/settlementConfidenceEngine.mjs, MARKET_FINALITY_POLICIES.TEAM_TOTAL was configured with allowSnapshotFinality: false. While micro-markets (TOSS, OVER_TOTAL, WICKET_IN_OVER, DISMISSAL_SCORE) were allowed to settle on immutable snapshot evidence, TEAM_TOTAL was omitted from allowSnapshotFinality. Consequently, when the match left the live stream at 08:46 UTC without an explicit provider COMPLETED frame, the confidence engine failed to recognize the immutable 20th over snapshot as final evidence (isMarketProvenFinal = false), falling into the live feed staleness gate (stale = true) and blocking authorization (CONFIDENCE_STALE).",
+  "resolution": "Updated MARKET_FINALITY_POLICIES.TEAM_TOTAL to allowSnapshotFinality: true and tagged team total evaluation results with hasImmutableSnapshotEvidence: true. This resolves the contradiction by granting full settlement finality authorization to proven completed innings."
+}

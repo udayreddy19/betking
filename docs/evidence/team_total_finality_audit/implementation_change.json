@@ -1,0 +1,17 @@
+{
+  "modifiedFiles": [
+    "lib/settlement/settlementConfidenceEngine.mjs",
+    "lib/liveMatchSettlement.mjs"
+  ],
+  "changes": [
+    {
+      "file": "lib/settlement/settlementConfidenceEngine.mjs",
+      "change": "Updated MARKET_FINALITY_POLICIES.TEAM_TOTAL to allowSnapshotFinality: true and expanded resolveMarketFinalityPolicy to include TOTAL_RUNS and OVERS_0_ patterns."
+    },
+    {
+      "file": "lib/liveMatchSettlement.mjs",
+      "change": "Added hasImmutableSnapshotEvidence: true to evaluateTotalsMarketBet for completed innings and in-play threshold crossings, and updated isSnapshotBacked regex to recognize team_total_ and overs_ prefixes."
+    }
+  ],
+  "policyAlignment": "Aligns TEAM_TOTAL policy with its existing requireMatchFinal: false definition, enabling safe, evidence-backed settlement for completed innings without compromising full-match market confidence."
+}

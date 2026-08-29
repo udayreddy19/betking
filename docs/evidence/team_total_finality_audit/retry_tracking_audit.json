@@ -1,0 +1,5 @@
+{
+  "finding": "The bets table schema does not maintain a persistent retry_count or attempt_count column.",
+  "workerOperation": "The settlement worker continuously queries `SELECT * FROM bets WHERE status IN ('ACCEPTED', 'OPEN', 'PENDING')` every sweep iteration.",
+  "observabilityResolution": "Settlement telemetry logs track in-memory attemptCount, retryCount, lastAttemptAt, lastErrorCode, and lastErrorMessage during worker execution runs. This guarantees full forensic observability without requiring database schema mutations."
+}

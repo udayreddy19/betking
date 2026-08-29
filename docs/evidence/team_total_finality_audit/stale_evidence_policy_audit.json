@@ -1,0 +1,8 @@
+{
+  "staleDataPolicy": {
+    "liveInPlayUnprovenMarkets": "STALE_DATA ALWAYS BLOCKS SETTLEMENT (prevents settling on interrupted/abandoned mid-innings states)",
+    "snapshotProvenCompletedInnings": "IMMUTABLE SNAPSHOT EVIDENCE OVERRIDES LIVE FEED STALENESS (prevents bets remaining open indefinitely when provider disconnects post-innings)"
+  },
+  "justification": "Once an innings is complete or the boundary line is crossed in-play, the outcome is mathematically immutable. A disconnected upstream stream cannot change the score of an already completed innings.",
+  "confidencePreserved": true
+}

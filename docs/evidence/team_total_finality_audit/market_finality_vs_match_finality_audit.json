@@ -1,0 +1,16 @@
+{
+  "comparison": {
+    "MATCH_FINAL": {
+      "definition": "The entire sporting event has concluded across all innings/periods and an official match result has been declared.",
+      "requiredFor": ["MATCH_WINNER", "OUTRIGHT_WINNER"],
+      "allowSnapshotFinality": false
+    },
+    "MARKET_FINAL": {
+      "definition": "The specific condition, period, innings, or threshold defined by the market contract has reached completion or an irreversible state.",
+      "requiredFor": ["TOSS", "NEXT_BALL", "OVER_TOTAL", "WICKET_IN_OVER", "DISMISSAL_SCORE", "TEAM_TOTAL", "OVERS_0_15_TOTAL"],
+      "allowSnapshotFinality": true
+    }
+  },
+  "teamTotalClassification": "MARKET_FINAL",
+  "auditVerdict": "A Team Total Runs market measures a single innings. When that innings is complete or the line is crossed, the market is contractually and mathematically final regardless of the remaining match state."
+}

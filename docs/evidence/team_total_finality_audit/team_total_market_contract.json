@@ -1,0 +1,20 @@
+{
+  "marketId": "team_total",
+  "marketType": "TEAM_TOTAL",
+  "marketScope": "TEAM_TOTAL_RUNS",
+  "contractRules": {
+    "targetMeasured": "Total runs scored by the nominated batting team in their single respective innings (e.g. Innings 1 or Innings 2)",
+    "requireMatchFinal": false,
+    "requireEventFinal": true,
+    "allowSnapshotFinality": true,
+    "completionRequirements": [
+      "Innings reaches maximum legal overs (20.0 overs for T20)",
+      "OR 10 wickets fall (all out)",
+      "OR innings declared",
+      "OR live score crosses Over/Under threshold (irreversible outcome)",
+      "OR match officially completed"
+    ],
+    "matchCompletionDependency": "None. The 2nd innings of the match has zero contractual or mathematical effect on the 1st innings total runs of Team 1."
+  },
+  "settlementPolicy": "Once the relevant team's innings has concluded or the threshold has been crossed in-play, the total score for that team is final and immutable. Settlement authorization proceeds under snapshot finality rules."
+}

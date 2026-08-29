@@ -1,0 +1,19 @@
+{
+  "dryRunTimestamp": "2026-08-29T13:03:00.000Z",
+  "betId": "bet_1787989375340_ec9isr",
+  "eventFound": true,
+  "lookupSource": "REDIS_CANONICAL_CACHE",
+  "relevantInnings": 1,
+  "inningsComplete": true,
+  "score": 181,
+  "line": 178.5,
+  "evidenceSource": "match_over_snapshots (Over 20: 181/6) + Redis canonical cache (firstRuns: 181)",
+  "evidenceAuthoritative": true,
+  "evidenceStale": false,
+  "marketMathematicallyFinal": true,
+  "marketContractFinal": true,
+  "settlementAuthorized": true,
+  "wouldGrade": "LOST",
+  "gradingReason": "team_total_i1_final=181_line=178.5",
+  "exactBlocker": null
+}

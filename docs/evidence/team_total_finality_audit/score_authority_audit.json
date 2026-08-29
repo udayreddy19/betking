@@ -1,0 +1,19 @@
+{
+  "score": 181,
+  "authoritySources": [
+    {
+      "source": "PostgreSQL match_over_snapshots table",
+      "nature": "Append-only immutable record",
+      "details": "Row recorded_at: 2026-08-29T07:56:10.570Z, innings: 1, over_num: 20, score_at_end: 181, wickets_at_end: 6",
+      "authoritative": true
+    },
+    {
+      "source": "Redis canonical match state cache",
+      "nature": "Real-time state snapshot",
+      "details": "liveDetails.firstRuns: 181, liveDetails.firstWickets: 6, liveDetails.commentary: 'Second innings'",
+      "authoritative": true
+    }
+  ],
+  "isScoreAuthoritative": true,
+  "verdict": "The score 181 is confirmed across both persistent relational database snapshot history and Redis canonical state. It is NOT a synthetic estimate or derived heuristic."
+}

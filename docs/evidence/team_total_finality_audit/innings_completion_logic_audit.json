@@ -1,0 +1,11 @@
+{
+  "inningsEvaluator": "lib/settlement/inningsCompletion.mjs -> isInningsComplete(match, 1)",
+  "evaluationCriteria": {
+    "subsequentInningsUnderway": "batting.innings >= 2 || getCurrentInningsNumber(match) >= 2 -> TRUE (Innings 2 overs 1-17 recorded)",
+    "wicketsCriteria": "resolveInningsWickets(match, 1) >= 10 -> FALSE (6 wickets)",
+    "commentaryRegex": "/all\\s*out|declared|innings\\s*complete/i.test(commentary) -> TRUE (commentary: 'Second innings')",
+    "oversExhaustion": "oversCompleted >= 20.0 maxOvers -> TRUE (Over 20 completed at 181/6)"
+  },
+  "trustworthiness": "HIGH / IMMUTABLE",
+  "rationale": "Over 20 is the legal maximum overs limit for T20 cricket. Once Over 20 snapshot is written to PostgreSQL match_over_snapshots, Innings 1 is mathematically terminated and its score can never change."
+}
