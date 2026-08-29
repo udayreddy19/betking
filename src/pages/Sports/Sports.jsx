@@ -199,7 +199,9 @@ function CricketGroupedMatches({ groups, onSelectMatch, getMatchScores, isBetSel
                     <div className="sports-cricket-row__meta-bar">
                       <div className="sports-card-badge-group">
                         {isLive ? (
-                          <span className="sports-card-badge sports-card-badge--live">🔴 LIVE</span>
+                          <span className="sports-card-badge sports-card-badge--live">
+                            <span className="sports-badge-dot" />LIVE
+                          </span>
                         ) : isFinished ? (
                           <span className="sports-card-badge sports-card-badge--completed">COMPLETED</span>
                         ) : (
@@ -209,7 +211,7 @@ function CricketGroupedMatches({ groups, onSelectMatch, getMatchScores, isBetSel
                           <span className="sports-card-badge sports-card-badge--format">{rowFormatBadge}</span>
                         )}
                         {rowIsSRL && (
-                          <span className="sports-card-badge sports-card-badge--srl">SRL</span>
+                          <span className="sports-card-badge sports-card-badge--srl">⚡ SRL</span>
                         )}
                       </div>
                       <span className="sports-cricket-row__league-sub">{league}</span>
@@ -971,7 +973,9 @@ export default function Sports() {
                 >
                   <div className="sports-card-badge-group">
                     {isLive ? (
-                      <span className="sports-card-badge sports-card-badge--live">🔴 LIVE</span>
+                      <span className="sports-card-badge sports-card-badge--live">
+                        <span className="sports-badge-dot" />LIVE
+                      </span>
                     ) : isFinished ? (
                       <span className="sports-card-badge sports-card-badge--completed">COMPLETED</span>
                     ) : (
@@ -981,7 +985,7 @@ export default function Sports() {
                       <span className="sports-card-badge sports-card-badge--format">{cardFormatBadge}</span>
                     )}
                     {cardIsSRL && (
-                      <span className="sports-card-badge sports-card-badge--srl">SRL</span>
+                      <span className="sports-card-badge sports-card-badge--srl">⚡ SRL</span>
                     )}
                   </div>
                   <div className="sports-ticker-row">

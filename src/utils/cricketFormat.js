@@ -201,7 +201,7 @@ export function isMatchSRL(match) {
 }
 
 /**
- * Returns compact match card format badge text (e.g. "TEST", "ODI", "T20", "T10", "FIRST CLASS", "LIST A", "CRICKET").
+ * Returns compact match card format badge text (e.g. "🏏 TEST", "🏏 ODI", "🏏 T20", "🏏 T10", "🏏 FIRST CLASS", "🏏 LIST A", "🏏 CRICKET").
  */
 export function getCricketFormatCardBadge(formatOrMatch) {
   const format = typeof formatOrMatch === 'string' && !formatOrMatch.includes(' ') && formatOrMatch.toUpperCase() === formatOrMatch
@@ -210,23 +210,23 @@ export function getCricketFormatCardBadge(formatOrMatch) {
 
   switch (format) {
     case 'TEST':
-      return 'TEST';
+      return '🏏 TEST';
     case 'ODI':
-      return 'ODI';
+      return '🏏 ODI';
     case 'T20':
-      return 'T20';
+      return '🏏 T20';
     case 'T10':
-      return 'T10';
+      return '🏏 T10';
     case 'FIRST_CLASS':
-      return 'FIRST CLASS';
+      return '🏏 FIRST CLASS';
     case 'LIST_A':
-      return 'LIST A';
+      return '🏏 LIST A';
     case 'THE_HUNDRED':
-      return 'THE HUNDRED';
+      return '🏏 THE HUNDRED';
     case 'OTHER':
-      return 'CRICKET';
+      return '🏏 CRICKET';
     default:
-      return format || 'CRICKET';
+      return format ? `🏏 ${format}` : '🏏 CRICKET';
   }
 }
 

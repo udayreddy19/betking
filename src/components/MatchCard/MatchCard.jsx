@@ -192,7 +192,9 @@ export default function MatchCard({ match, variant = 'default' }) {
             <div className="match-card-badge-container">
               <div className="sports-card-badge-group">
                 {isLiveNow ? (
-                  <span className="sports-card-badge sports-card-badge--live">🔴 LIVE</span>
+                  <span className="sports-card-badge sports-card-badge--live">
+                    <span className="sports-badge-dot" />LIVE
+                  </span>
                 ) : isFinished ? (
                   <span className="sports-card-badge sports-card-badge--completed">COMPLETED</span>
                 ) : (
@@ -202,7 +204,7 @@ export default function MatchCard({ match, variant = 'default' }) {
                   <span className="sports-card-badge sports-card-badge--format">{formatBadge}</span>
                 )}
                 {isSRL && (
-                  <span className="sports-card-badge sports-card-badge--srl">SRL</span>
+                  <span className="sports-card-badge sports-card-badge--srl">⚡ SRL</span>
                 )}
               </div>
               {inlineScore && <span className="match-card-score-inline">{inlineScore}</span>}

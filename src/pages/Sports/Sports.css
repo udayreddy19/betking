@@ -210,7 +210,7 @@
 .sports-card-badge-group {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   flex-wrap: wrap;
   margin-bottom: 6px;
 }
@@ -218,45 +218,74 @@
 .sports-card-badge {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  font-size: 0.58rem;
-  font-weight: 800;
+  justify-content: center;
+  font-size: 0.62rem;
+  font-weight: 700;
   letter-spacing: 0.03em;
-  padding: 1.5px 5px;
-  border-radius: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full, 9999px);
   line-height: 1.2;
   text-transform: uppercase;
   white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.sports-badge-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #e05252;
+  margin-right: 5px;
+  flex-shrink: 0;
 }
 
 .sports-card-badge--live {
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: rgba(224, 82, 82, 0.08);
+  color: #e05252;
+  border: 1px solid rgba(224, 82, 82, 0.2);
+}
+
+[data-theme='dark'] .sports-card-badge--live {
+  background: rgba(224, 82, 82, 0.12);
+  color: #f87171;
+  border-color: rgba(224, 82, 82, 0.25);
 }
 
 .sports-card-badge--completed {
-  background: rgba(148, 163, 184, 0.15);
-  color: #94a3b8;
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(148, 163, 184, 0.08);
+  color: var(--color-text-muted, #94a3b8);
+  border: 1px solid rgba(148, 163, 184, 0.18);
 }
 
 .sports-card-badge--upcoming {
-  background: rgba(59, 130, 246, 0.12);
+  background: rgba(59, 130, 246, 0.08);
   color: #60a5fa;
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
 .sports-card-badge--format {
-  background: rgba(124, 58, 237, 0.15);
-  color: #a78bfa;
-  border: 1px solid rgba(124, 58, 237, 0.35);
+  background: rgba(148, 163, 184, 0.08);
+  color: var(--color-text-muted, #94a3b8);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+[data-theme='dark'] .sports-card-badge--format {
+  background: rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .sports-card-badge--srl {
-  background: rgba(245, 158, 11, 0.15);
+  background: rgba(245, 158, 11, 0.08);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.22);
+}
+
+[data-theme='dark'] .sports-card-badge--srl {
+  background: rgba(245, 158, 11, 0.12);
   color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-color: rgba(245, 158, 11, 0.28);
 }
 
 .sports-ticker-empty {

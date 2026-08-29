@@ -99,7 +99,7 @@ const t20SrlMatch = {
 {
   const snap = buildCanonicalMatchSnapshot(testLiveMatch);
   assert.strictEqual(snap.match.statusChip, 'LIVE');
-  assert.strictEqual(snap.match.formatCardBadge, 'TEST');
+  assert.strictEqual(snap.match.formatCardBadge, '🏏 TEST');
   assert.strictEqual(snap.match.isSRL, false);
   console.log('✅ Test 1: LIVE Test match shows LIVE + TEST PASS');
 }
@@ -108,7 +108,7 @@ const t20SrlMatch = {
 {
   const snap = buildCanonicalMatchSnapshot(odiLiveMatch);
   assert.strictEqual(snap.match.statusChip, 'LIVE');
-  assert.strictEqual(snap.match.formatCardBadge, 'ODI');
+  assert.strictEqual(snap.match.formatCardBadge, '🏏 ODI');
   assert.strictEqual(snap.match.isSRL, false);
   console.log('✅ Test 2: LIVE ODI shows LIVE + ODI PASS');
 }
@@ -117,7 +117,7 @@ const t20SrlMatch = {
 {
   const snap = buildCanonicalMatchSnapshot(t20LiveMatch);
   assert.strictEqual(snap.match.statusChip, 'LIVE');
-  assert.strictEqual(snap.match.formatCardBadge, 'T20');
+  assert.strictEqual(snap.match.formatCardBadge, '🏏 T20');
   assert.strictEqual(snap.match.isSRL, false);
   console.log('✅ Test 3: LIVE T20 shows LIVE + T20 PASS');
 }
@@ -126,7 +126,7 @@ const t20SrlMatch = {
 {
   const snap = buildCanonicalMatchSnapshot(t10LiveMatch);
   assert.strictEqual(snap.match.statusChip, 'LIVE');
-  assert.strictEqual(snap.match.formatCardBadge, 'T10');
+  assert.strictEqual(snap.match.formatCardBadge, '🏏 T10');
   assert.strictEqual(snap.match.isSRL, false);
   console.log('✅ Test 4: LIVE T10 shows LIVE + T10 PASS');
 }
@@ -143,7 +143,7 @@ const t20SrlMatch = {
 {
   const snap = buildCanonicalMatchSnapshot(t20SrlMatch);
   assert.strictEqual(snap.match.statusChip, 'LIVE');
-  assert.strictEqual(snap.match.formatCardBadge, 'T20');
+  assert.strictEqual(snap.match.formatCardBadge, '🏏 T20');
   assert.strictEqual(snap.match.isSRL, true);
   console.log('✅ Test 6: T20 SRL shows LIVE + T20 + SRL PASS');
 }
@@ -154,7 +154,7 @@ const t20SrlMatch = {
   const snap = buildCanonicalMatchSnapshot(completedT20);
   assert.strictEqual(snap.match.statusChip, 'COMPLETED');
   assert.notStrictEqual(snap.match.statusChip, 'LIVE');
-  assert.strictEqual(snap.match.formatCardBadge, 'T20');
+  assert.strictEqual(snap.match.formatCardBadge, '🏏 T20');
   console.log('✅ Test 7: Completed T20 does not show LIVE PASS');
 }
 
@@ -164,7 +164,7 @@ const t20SrlMatch = {
   const snap = buildCanonicalMatchSnapshot(upcomingODI);
   assert.strictEqual(snap.match.statusChip, 'UPCOMING');
   assert.notStrictEqual(snap.match.statusChip, 'LIVE');
-  assert.strictEqual(snap.match.formatCardBadge, 'ODI');
+  assert.strictEqual(snap.match.formatCardBadge, '🏏 ODI');
   console.log('✅ Test 8: Upcoming ODI does not show LIVE PASS');
 }
 
@@ -196,7 +196,7 @@ const t20SrlMatch = {
   };
   const snap = buildCanonicalMatchSnapshot(missingScoreMatch);
   assert.strictEqual(snap.match.statusChip, 'LIVE');
-  assert.strictEqual(snap.match.formatCardBadge, 'T20');
+  assert.strictEqual(snap.match.formatCardBadge, '🏏 T20');
   assert.strictEqual(snap.match.isSRL, false);
   console.log('✅ Test 10: Missing score does not remove format/status badges PASS');
 }
@@ -205,8 +205,8 @@ const t20SrlMatch = {
 {
   const badges = [
     { type: 'status', label: 'LIVE', priority: 1 },
-    { type: 'srl', label: 'SRL', priority: 2 },
-    { type: 'format', label: 'T20', priority: 3 },
+    { type: 'srl', label: '⚡ SRL', priority: 2 },
+    { type: 'format', label: '🏏 T20', priority: 3 },
   ];
   // Verify priorities and non-empty badge labels
   assert.strictEqual(badges[0].priority, 1);
@@ -241,7 +241,7 @@ const t20SrlMatch = {
     const snap = buildCanonicalMatchSnapshot(t20LiveMatch);
     formats.push(snap.match.formatCardBadge);
   }
-  const allIdentical = formats.every((f) => f === 'T20');
+  const allIdentical = formats.every((f) => f === '🏏 T20');
   assert.strictEqual(allIdentical, true);
   console.log('✅ Test 14: Refreshing repeatedly does not change format PASS');
 }
@@ -257,7 +257,7 @@ const t20SrlMatch = {
     isLive: true,
   };
   const snap = buildCanonicalMatchSnapshot(cachedMatch);
-  assert.strictEqual(snap.match.formatCardBadge, 'TEST');
+  assert.strictEqual(snap.match.formatCardBadge, '🏏 TEST');
   assert.strictEqual(snap.match.statusChip, 'LIVE');
   console.log('✅ Test 15: Redis/cache expiry does not remove format metadata PASS');
 }

@@ -4,10 +4,9 @@
   "testsPassed": "15/15",
   "productionEvaluations": "100/100 (100.0%)",
   "keyEnhancements": [
-    "Badge group [ 🔴 LIVE ] [ FORMAT ] [ SRL ] implemented across all compact match cards and tickers.",
-    "Independent SRL detection supporting combined T20 + SRL formats without loss of underlying cricket format.",
-    "Mobile layout hardened against truncation/overlap using CSS flex-wrap and responsive sizing.",
-    "All format and status badges derived 100% from canonical MatchSnapshot architecture.",
-    "Safe zero vs missing score handling (0/0 displayed, missing rendered as — without card hiding)."
+    "Subtle CSS status dot (6px soft coral #e05252) replaces 🔴 red emoji on LIVE pill.",
+    "Cricket format pills cleanly formatted with cricket emoji: 🏏 TEST, 🏏 ODI, 🏏 T20, 🏏 T10.",
+    "SRL badge formatted with lightning emoji: ⚡ SRL.",
+    "Rounded pills (border-radius: 9999px) with soft neutral backgrounds matching premium sportsbook aesthetics."
   ]
 }
