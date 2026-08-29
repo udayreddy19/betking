@@ -1,0 +1,5 @@
+{
+  "auditStatus": "VERIFIED",
+  "rootCause": "Completed overs regex failing on round over numbers and missing fallback label when provider data omitted",
+  "remediation": "Regex and liveDetails priority updated. When bowler data unavailable, displays \"Current bowler unavailable\" instead of broken empty element."
+}

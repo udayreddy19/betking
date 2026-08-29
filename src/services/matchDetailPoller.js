@@ -195,12 +195,7 @@ function mergeDetails(prev, next, { isFull = false, match = null } = {}) {
     squads: next.squads?.length ? next.squads : prev.squads,
     scorecardInnings: next.scorecardInnings?.length ? next.scorecardInnings : prev.scorecardInnings,
     overHistory: next.overHistory?.length ? next.overHistory : prev.overHistory,
-    liveDetails: {
-      ...liveDetails,
-      batter1: liveDetails.batter1 || prevLd.batter1,
-      batter2: liveDetails.batter2 || prevLd.batter2,
-      bowler: liveDetails.bowler || prevLd.bowler,
-    },
+    liveDetails,
   };
 }
 

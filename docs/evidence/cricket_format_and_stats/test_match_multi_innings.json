@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-08-29T15:22:28.406Z",
+  "testMatch": "Warwickshire v Nottinghamshire",
+  "format": "TEST",
+  "inningsSupported": 4,
+  "inningsLabels": [
+    "Nottinghamshire — 1st INNS",
+    "Warwickshire — 1st INNS",
+    "Nottinghamshire — 2nd INNS",
+    "Warwickshire — 2nd INNS"
+  ],
+  "switchingBehavior": "Synchronous atomic update across score, overs, wickets, batters, bowlers, extras, fours, sixes."
+}

@@ -1,0 +1,18 @@
+{
+  "auditStatus": "FIXED",
+  "previousDefect": "0/0 : 299/7",
+  "rootCause": "Header component formatted unbatted team as 0/0 because missing flag only checked inningsNum === 2",
+  "remediation": "Unbatted teams now render \"Yet to bat\" in scorecard/stats and \"—\" in scoreline between team jerseys",
+  "examples": [
+    {
+      "state": "Team 2 batting 1st, Team 1 not yet batted",
+      "scorelineDisplay": "— : 299/7",
+      "detailedDisplay": "Warwickshire: Yet to bat | Nottinghamshire: 299/7 (82.0)"
+    },
+    {
+      "state": "Both teams batted (2nd innings live)",
+      "scorelineDisplay": "185 : 120/3",
+      "detailedDisplay": "Team 1: 185/10 (50.0) | Team 2: 120/3 (24.2)"
+    }
+  ]
+}

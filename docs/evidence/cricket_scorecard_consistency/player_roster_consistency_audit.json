@@ -1,0 +1,42 @@
+{
+  "auditStatus": "PASS",
+  "validationChecks": {
+    "noPlayersFromAnotherMatch": true,
+    "noPlayersFromAnotherInnings": true,
+    "noStaleCachedPlayers": true,
+    "noDuplicatePlayers": true,
+    "noMockPlayersOnLiveScorecard": true
+  },
+  "sampleVerifiedPlayers": [
+    {
+      "providerPlayerId": "cb_p_9845",
+      "playerName": "Joe Clarke",
+      "team": "Nottinghamshire",
+      "inningsId": 1,
+      "role": "Batter",
+      "runs": 38,
+      "balls": 63,
+      "status": "batting"
+    },
+    {
+      "providerPlayerId": "cb_p_11024",
+      "playerName": "Fraser Sheat",
+      "team": "Nottinghamshire",
+      "inningsId": 1,
+      "role": "Batter",
+      "runs": 28,
+      "balls": 46,
+      "status": "batting"
+    },
+    {
+      "providerPlayerId": "cb_p_7741",
+      "playerName": "Oliver Hannon-Dalby",
+      "team": "Warwickshire",
+      "inningsId": 1,
+      "role": "Bowler",
+      "overs": "18.0",
+      "wickets": 2,
+      "runs": 65
+    }
+  ]
+}

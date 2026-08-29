@@ -38,9 +38,7 @@ function pickNamedPlayer(nextPlayer, prevPlayer) {
     if (nextName.toLowerCase() === prevName.toLowerCase()) {
       return mergePlayerStats(nextPlayer, prevPlayer);
     }
-    if (batterStatWeight(nextPlayer) === 0 && batterStatWeight(prevPlayer) > 0) {
-      return prevPlayer;
-    }
+    // Name changed (e.g. wicket fell or new batter walked in) -> always respect current player
     return nextPlayer;
   }
   if (nextValid) return nextPlayer;

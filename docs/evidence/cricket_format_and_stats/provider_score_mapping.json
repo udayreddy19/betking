@@ -1,0 +1,12 @@
+{
+  "timestamp": "2026-08-29T15:22:28.406Z",
+  "mappingRules": {
+    "scoreExtraction": "innRaw.scoreDetails?.runs ?? innRaw.runs ?? (isTeam1Batting ? ld.firstRuns ?? ld.score1 : ld.chaseRuns ?? ld.score2)",
+    "wicketsExtraction": "innRaw.scoreDetails?.wickets ?? innRaw.wickets ?? (isTeam1Batting ? ld.firstWickets ?? ld.wickets1 : ld.chaseWickets ?? ld.wickets2)",
+    "oversExtraction": "normalizeCricbuzzOvers(innRaw.scoreDetails?.overs || innRaw.overs || ld.overs)",
+    "extrasExtraction": "parseExtrasObject(innRaw.extrasData || innRaw.extrasBreakdown || innRaw.extras || ld.extras)",
+    "foursExtraction": "batters.reduce((s, b) => s + (b.fours ?? 0), 0) || innRaw.fours || ld.fours",
+    "sixesExtraction": "batters.reduce((s, b) => s + (b.sixes ?? 0), 0) || innRaw.sixes || ld.sixes"
+  },
+  "rootCauseRemediation": "Resolved unbatted team 0/0 formatting, missing extras null vs zero confusion, and unlinked innings fours/sixes."
+}

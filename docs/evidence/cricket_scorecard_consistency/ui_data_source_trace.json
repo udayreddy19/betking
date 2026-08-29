@@ -1,0 +1,205 @@
+{
+  "timestamp": "2026-08-29T14:45:31.464Z",
+  "product": "OddsYra",
+  "version": "2026.8.29",
+  "components": [
+    {
+      "section": "1. Match Header",
+      "endpoint": "/api/match-detail",
+      "hook": "useMatchDetail",
+      "cacheKey": "match:{id}:snapshot",
+      "dataSource": "MatchSnapshot.match",
+      "providerEventId": "cb_105219",
+      "snapshotTimestamp": "2026-08-29T14:00:00Z",
+      "inningsId": 1,
+      "teamId": "WAR/NOTT"
+    },
+    {
+      "section": "2. Home Team",
+      "endpoint": "/api/match-detail",
+      "hook": "useMatchDetail",
+      "cacheKey": "match:{id}:snapshot",
+      "dataSource": "MatchSnapshot.match.team1",
+      "providerEventId": "cb_105219",
+      "snapshotTimestamp": "2026-08-29T14:00:00Z",
+      "inningsId": 1,
+      "teamId": "WAR"
+    },
+    {
+      "section": "3. Away Team",
+      "endpoint": "/api/match-detail",
+      "hook": "useMatchDetail",
+      "cacheKey": "match:{id}:snapshot",
+      "dataSource": "MatchSnapshot.match.team2",
+      "providerEventId": "cb_105219",
+      "snapshotTimestamp": "2026-08-29T14:00:00Z",
+      "inningsId": 1,
+      "teamId": "NOTT"
+    },
+    {
+      "section": "4. Team Logos / Jersey",
+      "endpoint": "/api/match-detail",
+      "hook": "useMatchDetail",
+      "cacheKey": "match:{id}:snapshot",
+      "dataSource": "MatchSnapshot.match.team1/team2",
+      "providerEventId": "cb_105219",
+      "snapshotTimestamp": "2026-08-29T14:00:00Z",
+      "inningsId": 1,
+      "teamId": "WAR/NOTT"
+    },
+    {
+      "section": "5. Main Score",
+      "endpoint": "/api/match-detail",
+      "hook": "useMatchDetail",
+      "cacheKey": "match:{id}:snapshot",
+      "dataSource": "MatchSnapshot.headerScores",
+      "providerEventId": "cb_105219",
+      "snapshotTimestamp": "2026-08-29T14:00:00Z",
+      "inningsId": 1,
+      "teamId": "WAR/NOTT"
+    },
+    {
+      "section": "6. Overs",
+      "endpoint": "/api/match-detail",
+      "hook": "useMatchDetail",
+      "cacheKey": "match:{id}:snapshot",
+      "dataSource": "SelectedInningsView.overs",
+      "providerEventId": "cb_105219",
+      "snapshotTimestamp": "2026-08-29T14:00:00Z",
+      "inningsId": 1,
+      "teamId": "NOTT"
+    },
+    {
+      "section": "7. Innings Selector",
+      "endpoint": "/api/match-detail",
+      "hook": "useMatchDetail",
+      "cacheKey": "match:{id}:snapshot",
+      "dataSource": "MatchSnapshot.innings[].inningsName",
+      "providerEventId": "cb_105219",
+      "snapshotTimestamp": "2026-08-29T14:00:00Z",
+      "inningsId": 1,
+      "teamId": "NOTT"
+    },
+    {
+      "section": "8. Selected Innings Score",
+      "endpoint": "/api/match-detail",
+      "hook": "useMatchDetail",
+      "cacheKey": "match:{id}:snapshot",
+      "dataSource": "SelectedInningsView.score / wickets",
+      "providerEventId": "cb_105219",
+      "snapshotTimestamp": "2026-08-29T14:00:00Z",
+      "inningsId": 1,
+      "teamId": "NOTT"
+    },
+    {
+      "section": "9. Current Batsmen",
+      "endpoint": "/api/match-detail",
+      "hook": "useMatchDetail",
+      "cacheKey": "match:{id}:snapshot",
+      "dataSource": "SelectedInningsView.striker / nonStriker",
+      "providerEventId": "cb_105219",
+      "snapshotTimestamp": "2026-08-29T14:00:00Z",
+      "inningsId": 1,
+      "teamId": "NOTT"
+    },
+    {
+      "section": "10. Batter Runs",
+      "endpoint": "/api/match-detail",
+      "hook": "useMatchDetail",
+      "cacheKey": "match:{id}:snapshot",
+      "dataSource": "SelectedInningsView.batters[].runs",
+      "providerEventId": "cb_105219",
+      "snapshotTimestamp": "2026-08-29T14:00:00Z",
+      "inningsId": 1,
+      "teamId": "NOTT"
+    },
+    {
+      "section": "11. Batter Balls",
+      "endpoint": "/api/match-detail",
+      "hook": "useMatchDetail",
+      "cacheKey": "match:{id}:snapshot",
+      "dataSource": "SelectedInningsView.batters[].balls",
+      "providerEventId": "cb_105219",
+      "snapshotTimestamp": "2026-08-29T14:00:00Z",
+      "inningsId": 1,
+      "teamId": "NOTT"
+    },
+    {
+      "section": "12. Fours",
+      "endpoint": "/api/match-detail",
+      "hook": "useMatchDetail",
+      "cacheKey": "match:{id}:snapshot",
+      "dataSource": "SelectedInningsView.batters[].fours",
+      "providerEventId": "cb_105219",
+      "snapshotTimestamp": "2026-08-29T14:00:00Z",
+      "inningsId": 1,
+      "teamId": "NOTT"
+    },
+    {
+      "section": "13. Sixes",
+      "endpoint": "/api/match-detail",
+      "hook": "useMatchDetail",
+      "cacheKey": "match:{id}:snapshot",
+      "dataSource": "SelectedInningsView.batters[].sixes",
+      "providerEventId": "cb_105219",
+      "snapshotTimestamp": "2026-08-29T14:00:00Z",
+      "inningsId": 1,
+      "teamId": "NOTT"
+    },
+    {
+      "section": "14. Current Bowler",
+      "endpoint": "/api/match-detail",
+      "hook": "useMatchDetail",
+      "cacheKey": "match:{id}:snapshot",
+      "dataSource": "SelectedInningsView.currentBowler",
+      "providerEventId": "cb_105219",
+      "snapshotTimestamp": "2026-08-29T14:00:00Z",
+      "inningsId": 1,
+      "teamId": "WAR"
+    },
+    {
+      "section": "15. Innings Statistics",
+      "endpoint": "/api/match-detail",
+      "hook": "useMatchDetail",
+      "cacheKey": "match:{id}:snapshot",
+      "dataSource": "SelectedInningsView.extras / fours / sixes",
+      "providerEventId": "cb_105219",
+      "snapshotTimestamp": "2026-08-29T14:00:00Z",
+      "inningsId": 1,
+      "teamId": "NOTT"
+    },
+    {
+      "section": "16. Scorecard Tab",
+      "endpoint": "/api/match-detail",
+      "hook": "useMatchDetail",
+      "cacheKey": "match:{id}:snapshot",
+      "dataSource": "SelectedInningsView.batters & bowlers",
+      "providerEventId": "cb_105219",
+      "snapshotTimestamp": "2026-08-29T14:00:00Z",
+      "inningsId": 1,
+      "teamId": "NOTT"
+    },
+    {
+      "section": "17. Commentary Tab",
+      "endpoint": "/api/match-detail",
+      "hook": "useMatchDetail",
+      "cacheKey": "match:{id}:snapshot",
+      "dataSource": "MatchSnapshot.match.commentaryFeed",
+      "providerEventId": "cb_105219",
+      "snapshotTimestamp": "2026-08-29T14:00:00Z",
+      "inningsId": 1,
+      "teamId": "NOTT"
+    },
+    {
+      "section": "18. Tracker Tab",
+      "endpoint": "/api/match-detail",
+      "hook": "useMatchDetail",
+      "cacheKey": "match:{id}:snapshot",
+      "dataSource": "SelectedInningsView.pitchState",
+      "providerEventId": "cb_105219",
+      "snapshotTimestamp": "2026-08-29T14:00:00Z",
+      "inningsId": 1,
+      "teamId": "NOTT"
+    }
+  ]
+}

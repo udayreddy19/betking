@@ -204,13 +204,15 @@ export function resolveCricketTeamScores(match, ld = {}) {
   }
 
   // 1st Innings: Team batting first gets current runs/wickets, opponent team stays 0/0
-  let firstTeam = ld.firstTeamName || team1Name;
-  // Without firstTeamName, prefer the side that is actually scoring (away batting first)
-  if (!ld.firstTeamName) {
+  const firstScorecardInn = Array.isArray(match?.scorecardInnings) && match.scorecardInnings.length > 0
+    ? match.scorecardInnings[0]
+    : null;
+  let firstTeam = firstScorecardInn?.batTeamName || ld.firstTeamName || '';
+  if (!firstTeam) {
     const t1r = Number(match?.team1?.runs ?? 0) || 0;
     const t2r = Number(match?.team2?.runs ?? ld.score2 ?? 0) || 0;
     if (t2r > 0 && t1r === 0) firstTeam = team2Name;
-    else if (t1r > 0) firstTeam = team1Name;
+    else firstTeam = team1Name;
   }
   const isTeam2BattingFirst = teamNameMatches(team2Name, firstTeam);
 

@@ -1,0 +1,10 @@
+{
+  "auditStatus": "VERIFIED",
+  "derivationLogic": [
+    "Must belong to the batting team of the selected innings",
+    "Must have notOut === true or dismissal === \"batting\" / \"not out\"",
+    "Must not be dismissed",
+    "If provider data missing, displays \"Current batters unavailable\""
+  ],
+  "stalePrevention": "cricketScoreMerge.js updated: newly arrived batters with 0(0) are no longer discarded for previously dismissed high-scoring batters."
+}

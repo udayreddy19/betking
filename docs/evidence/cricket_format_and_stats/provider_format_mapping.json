@@ -1,0 +1,65 @@
+{
+  "timestamp": "2026-08-29T15:22:28.405Z",
+  "product": "OddsYra",
+  "formatsAudited": [
+    "TEST",
+    "ODI",
+    "T20",
+    "T10",
+    "FIRST_CLASS",
+    "LIST_A",
+    "THE_HUNDRED",
+    "OTHER"
+  ],
+  "fieldsInspected": [
+    "matchFormat",
+    "format",
+    "matchType",
+    "seriesType",
+    "competition",
+    "league",
+    "matchHeader.matchFormat",
+    "matchHeader.seriesName",
+    "liveDetails.matchFormat",
+    "liveDetails.commentary",
+    "overs"
+  ],
+  "sampleProviderPayloads": [
+    {
+      "format": "TEST",
+      "rawFields": {
+        "matchType": "TEST",
+        "league": "ICC World Test Championship"
+      },
+      "detectedFormat": "TEST",
+      "banner": "TEST MATCH"
+    },
+    {
+      "format": "ODI",
+      "rawFields": {
+        "matchType": "ODI",
+        "league": "ICC Men's Cricket World Cup"
+      },
+      "detectedFormat": "ODI",
+      "banner": "ODI"
+    },
+    {
+      "format": "T20",
+      "rawFields": {
+        "matchFormat": "T20",
+        "league": "Indian Premier League"
+      },
+      "detectedFormat": "T20",
+      "banner": "T20"
+    },
+    {
+      "format": "T10",
+      "rawFields": {
+        "league": "European Cricket Series T10",
+        "matchFormat": "T10"
+      },
+      "detectedFormat": "T10",
+      "banner": "T10"
+    }
+  ]
+}

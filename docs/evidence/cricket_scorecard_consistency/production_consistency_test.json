@@ -1,0 +1,2991 @@
+{
+  "totalMatchesTested": 10,
+  "liveMatches": 5,
+  "completedMatches": 5,
+  "repeatCountPerMatch": 20,
+  "totalEvaluations": 200,
+  "passedEvaluations": 200,
+  "successRate": "100.0%",
+  "matches": [
+    {
+      "match": "Warwickshire v Nottinghamshire",
+      "providerEventId": "cb_105219",
+      "isLive": true,
+      "iterations": [
+        {
+          "iteration": 1,
+          "snapshotId": "snap_cb_105219_1788014731486",
+          "snapshotTimestamp": "2026-08-29T14:45:31.486Z",
+          "selectedInnings": "Nottinghamshire INNS",
+          "battingTeam": "Nottinghamshire",
+          "score": "299/7",
+          "overs": "82.0",
+          "batters": [
+            "Joe Clarke",
+            "Fraser Sheat"
+          ],
+          "currentBowler": "Oliver Hannon-Dalby",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 2,
+          "snapshotId": "snap_cb_105219_1788014731489",
+          "snapshotTimestamp": "2026-08-29T14:45:31.489Z",
+          "selectedInnings": "Nottinghamshire INNS",
+          "battingTeam": "Nottinghamshire",
+          "score": "299/7",
+          "overs": "82.0",
+          "batters": [
+            "Joe Clarke",
+            "Fraser Sheat"
+          ],
+          "currentBowler": "Oliver Hannon-Dalby",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 3,
+          "snapshotId": "snap_cb_105219_1788014731489",
+          "snapshotTimestamp": "2026-08-29T14:45:31.489Z",
+          "selectedInnings": "Nottinghamshire INNS",
+          "battingTeam": "Nottinghamshire",
+          "score": "299/7",
+          "overs": "82.0",
+          "batters": [
+            "Joe Clarke",
+            "Fraser Sheat"
+          ],
+          "currentBowler": "Oliver Hannon-Dalby",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 4,
+          "snapshotId": "snap_cb_105219_1788014731490",
+          "snapshotTimestamp": "2026-08-29T14:45:31.490Z",
+          "selectedInnings": "Nottinghamshire INNS",
+          "battingTeam": "Nottinghamshire",
+          "score": "299/7",
+          "overs": "82.0",
+          "batters": [
+            "Joe Clarke",
+            "Fraser Sheat"
+          ],
+          "currentBowler": "Oliver Hannon-Dalby",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 5,
+          "snapshotId": "snap_cb_105219_1788014731490",
+          "snapshotTimestamp": "2026-08-29T14:45:31.490Z",
+          "selectedInnings": "Nottinghamshire INNS",
+          "battingTeam": "Nottinghamshire",
+          "score": "299/7",
+          "overs": "82.0",
+          "batters": [
+            "Joe Clarke",
+            "Fraser Sheat"
+          ],
+          "currentBowler": "Oliver Hannon-Dalby",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 6,
+          "snapshotId": "snap_cb_105219_1788014731490",
+          "snapshotTimestamp": "2026-08-29T14:45:31.490Z",
+          "selectedInnings": "Nottinghamshire INNS",
+          "battingTeam": "Nottinghamshire",
+          "score": "299/7",
+          "overs": "82.0",
+          "batters": [
+            "Joe Clarke",
+            "Fraser Sheat"
+          ],
+          "currentBowler": "Oliver Hannon-Dalby",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 7,
+          "snapshotId": "snap_cb_105219_1788014731490",
+          "snapshotTimestamp": "2026-08-29T14:45:31.490Z",
+          "selectedInnings": "Nottinghamshire INNS",
+          "battingTeam": "Nottinghamshire",
+          "score": "299/7",
+          "overs": "82.0",
+          "batters": [
+            "Joe Clarke",
+            "Fraser Sheat"
+          ],
+          "currentBowler": "Oliver Hannon-Dalby",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 8,
+          "snapshotId": "snap_cb_105219_1788014731490",
+          "snapshotTimestamp": "2026-08-29T14:45:31.490Z",
+          "selectedInnings": "Nottinghamshire INNS",
+          "battingTeam": "Nottinghamshire",
+          "score": "299/7",
+          "overs": "82.0",
+          "batters": [
+            "Joe Clarke",
+            "Fraser Sheat"
+          ],
+          "currentBowler": "Oliver Hannon-Dalby",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 9,
+          "snapshotId": "snap_cb_105219_1788014731491",
+          "snapshotTimestamp": "2026-08-29T14:45:31.491Z",
+          "selectedInnings": "Nottinghamshire INNS",
+          "battingTeam": "Nottinghamshire",
+          "score": "299/7",
+          "overs": "82.0",
+          "batters": [
+            "Joe Clarke",
+            "Fraser Sheat"
+          ],
+          "currentBowler": "Oliver Hannon-Dalby",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 10,
+          "snapshotId": "snap_cb_105219_1788014731491",
+          "snapshotTimestamp": "2026-08-29T14:45:31.491Z",
+          "selectedInnings": "Nottinghamshire INNS",
+          "battingTeam": "Nottinghamshire",
+          "score": "299/7",
+          "overs": "82.0",
+          "batters": [
+            "Joe Clarke",
+            "Fraser Sheat"
+          ],
+          "currentBowler": "Oliver Hannon-Dalby",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 11,
+          "snapshotId": "snap_cb_105219_1788014731491",
+          "snapshotTimestamp": "2026-08-29T14:45:31.491Z",
+          "selectedInnings": "Nottinghamshire INNS",
+          "battingTeam": "Nottinghamshire",
+          "score": "299/7",
+          "overs": "82.0",
+          "batters": [
+            "Joe Clarke",
+            "Fraser Sheat"
+          ],
+          "currentBowler": "Oliver Hannon-Dalby",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 12,
+          "snapshotId": "snap_cb_105219_1788014731491",
+          "snapshotTimestamp": "2026-08-29T14:45:31.491Z",
+          "selectedInnings": "Nottinghamshire INNS",
+          "battingTeam": "Nottinghamshire",
+          "score": "299/7",
+          "overs": "82.0",
+          "batters": [
+            "Joe Clarke",
+            "Fraser Sheat"
+          ],
+          "currentBowler": "Oliver Hannon-Dalby",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 13,
+          "snapshotId": "snap_cb_105219_1788014731491",
+          "snapshotTimestamp": "2026-08-29T14:45:31.491Z",
+          "selectedInnings": "Nottinghamshire INNS",
+          "battingTeam": "Nottinghamshire",
+          "score": "299/7",
+          "overs": "82.0",
+          "batters": [
+            "Joe Clarke",
+            "Fraser Sheat"
+          ],
+          "currentBowler": "Oliver Hannon-Dalby",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 14,
+          "snapshotId": "snap_cb_105219_1788014731491",
+          "snapshotTimestamp": "2026-08-29T14:45:31.491Z",
+          "selectedInnings": "Nottinghamshire INNS",
+          "battingTeam": "Nottinghamshire",
+          "score": "299/7",
+          "overs": "82.0",
+          "batters": [
+            "Joe Clarke",
+            "Fraser Sheat"
+          ],
+          "currentBowler": "Oliver Hannon-Dalby",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 15,
+          "snapshotId": "snap_cb_105219_1788014731495",
+          "snapshotTimestamp": "2026-08-29T14:45:31.495Z",
+          "selectedInnings": "Nottinghamshire INNS",
+          "battingTeam": "Nottinghamshire",
+          "score": "299/7",
+          "overs": "82.0",
+          "batters": [
+            "Joe Clarke",
+            "Fraser Sheat"
+          ],
+          "currentBowler": "Oliver Hannon-Dalby",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 16,
+          "snapshotId": "snap_cb_105219_1788014731495",
+          "snapshotTimestamp": "2026-08-29T14:45:31.495Z",
+          "selectedInnings": "Nottinghamshire INNS",
+          "battingTeam": "Nottinghamshire",
+          "score": "299/7",
+          "overs": "82.0",
+          "batters": [
+            "Joe Clarke",
+            "Fraser Sheat"
+          ],
+          "currentBowler": "Oliver Hannon-Dalby",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 17,
+          "snapshotId": "snap_cb_105219_1788014731495",
+          "snapshotTimestamp": "2026-08-29T14:45:31.495Z",
+          "selectedInnings": "Nottinghamshire INNS",
+          "battingTeam": "Nottinghamshire",
+          "score": "299/7",
+          "overs": "82.0",
+          "batters": [
+            "Joe Clarke",
+            "Fraser Sheat"
+          ],
+          "currentBowler": "Oliver Hannon-Dalby",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 18,
+          "snapshotId": "snap_cb_105219_1788014731495",
+          "snapshotTimestamp": "2026-08-29T14:45:31.495Z",
+          "selectedInnings": "Nottinghamshire INNS",
+          "battingTeam": "Nottinghamshire",
+          "score": "299/7",
+          "overs": "82.0",
+          "batters": [
+            "Joe Clarke",
+            "Fraser Sheat"
+          ],
+          "currentBowler": "Oliver Hannon-Dalby",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 19,
+          "snapshotId": "snap_cb_105219_1788014731495",
+          "snapshotTimestamp": "2026-08-29T14:45:31.495Z",
+          "selectedInnings": "Nottinghamshire INNS",
+          "battingTeam": "Nottinghamshire",
+          "score": "299/7",
+          "overs": "82.0",
+          "batters": [
+            "Joe Clarke",
+            "Fraser Sheat"
+          ],
+          "currentBowler": "Oliver Hannon-Dalby",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 20,
+          "snapshotId": "snap_cb_105219_1788014731495",
+          "snapshotTimestamp": "2026-08-29T14:45:31.495Z",
+          "selectedInnings": "Nottinghamshire INNS",
+          "battingTeam": "Nottinghamshire",
+          "score": "299/7",
+          "overs": "82.0",
+          "batters": [
+            "Joe Clarke",
+            "Fraser Sheat"
+          ],
+          "currentBowler": "Oliver Hannon-Dalby",
+          "dataConsistent": "YES"
+        }
+      ],
+      "allConsistent": true
+    },
+    {
+      "match": "Surrey v Somerset",
+      "providerEventId": "cb_105220",
+      "isLive": true,
+      "iterations": [
+        {
+          "iteration": 1,
+          "snapshotId": "snap_cb_105220_1788014731495",
+          "snapshotTimestamp": "2026-08-29T14:45:31.495Z",
+          "selectedInnings": "Surrey INNS",
+          "battingTeam": "Surrey",
+          "score": "185/3",
+          "overs": "42.1",
+          "batters": [
+            "Rory Burns",
+            "Dom Sibley"
+          ],
+          "currentBowler": "Jack Leach",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 2,
+          "snapshotId": "snap_cb_105220_1788014731496",
+          "snapshotTimestamp": "2026-08-29T14:45:31.496Z",
+          "selectedInnings": "Surrey INNS",
+          "battingTeam": "Surrey",
+          "score": "185/3",
+          "overs": "42.1",
+          "batters": [
+            "Rory Burns",
+            "Dom Sibley"
+          ],
+          "currentBowler": "Jack Leach",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 3,
+          "snapshotId": "snap_cb_105220_1788014731496",
+          "snapshotTimestamp": "2026-08-29T14:45:31.496Z",
+          "selectedInnings": "Surrey INNS",
+          "battingTeam": "Surrey",
+          "score": "185/3",
+          "overs": "42.1",
+          "batters": [
+            "Rory Burns",
+            "Dom Sibley"
+          ],
+          "currentBowler": "Jack Leach",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 4,
+          "snapshotId": "snap_cb_105220_1788014731496",
+          "snapshotTimestamp": "2026-08-29T14:45:31.496Z",
+          "selectedInnings": "Surrey INNS",
+          "battingTeam": "Surrey",
+          "score": "185/3",
+          "overs": "42.1",
+          "batters": [
+            "Rory Burns",
+            "Dom Sibley"
+          ],
+          "currentBowler": "Jack Leach",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 5,
+          "snapshotId": "snap_cb_105220_1788014731496",
+          "snapshotTimestamp": "2026-08-29T14:45:31.496Z",
+          "selectedInnings": "Surrey INNS",
+          "battingTeam": "Surrey",
+          "score": "185/3",
+          "overs": "42.1",
+          "batters": [
+            "Rory Burns",
+            "Dom Sibley"
+          ],
+          "currentBowler": "Jack Leach",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 6,
+          "snapshotId": "snap_cb_105220_1788014731496",
+          "snapshotTimestamp": "2026-08-29T14:45:31.496Z",
+          "selectedInnings": "Surrey INNS",
+          "battingTeam": "Surrey",
+          "score": "185/3",
+          "overs": "42.1",
+          "batters": [
+            "Rory Burns",
+            "Dom Sibley"
+          ],
+          "currentBowler": "Jack Leach",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 7,
+          "snapshotId": "snap_cb_105220_1788014731496",
+          "snapshotTimestamp": "2026-08-29T14:45:31.496Z",
+          "selectedInnings": "Surrey INNS",
+          "battingTeam": "Surrey",
+          "score": "185/3",
+          "overs": "42.1",
+          "batters": [
+            "Rory Burns",
+            "Dom Sibley"
+          ],
+          "currentBowler": "Jack Leach",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 8,
+          "snapshotId": "snap_cb_105220_1788014731496",
+          "snapshotTimestamp": "2026-08-29T14:45:31.496Z",
+          "selectedInnings": "Surrey INNS",
+          "battingTeam": "Surrey",
+          "score": "185/3",
+          "overs": "42.1",
+          "batters": [
+            "Rory Burns",
+            "Dom Sibley"
+          ],
+          "currentBowler": "Jack Leach",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 9,
+          "snapshotId": "snap_cb_105220_1788014731496",
+          "snapshotTimestamp": "2026-08-29T14:45:31.496Z",
+          "selectedInnings": "Surrey INNS",
+          "battingTeam": "Surrey",
+          "score": "185/3",
+          "overs": "42.1",
+          "batters": [
+            "Rory Burns",
+            "Dom Sibley"
+          ],
+          "currentBowler": "Jack Leach",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 10,
+          "snapshotId": "snap_cb_105220_1788014731496",
+          "snapshotTimestamp": "2026-08-29T14:45:31.496Z",
+          "selectedInnings": "Surrey INNS",
+          "battingTeam": "Surrey",
+          "score": "185/3",
+          "overs": "42.1",
+          "batters": [
+            "Rory Burns",
+            "Dom Sibley"
+          ],
+          "currentBowler": "Jack Leach",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 11,
+          "snapshotId": "snap_cb_105220_1788014731496",
+          "snapshotTimestamp": "2026-08-29T14:45:31.496Z",
+          "selectedInnings": "Surrey INNS",
+          "battingTeam": "Surrey",
+          "score": "185/3",
+          "overs": "42.1",
+          "batters": [
+            "Rory Burns",
+            "Dom Sibley"
+          ],
+          "currentBowler": "Jack Leach",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 12,
+          "snapshotId": "snap_cb_105220_1788014731496",
+          "snapshotTimestamp": "2026-08-29T14:45:31.496Z",
+          "selectedInnings": "Surrey INNS",
+          "battingTeam": "Surrey",
+          "score": "185/3",
+          "overs": "42.1",
+          "batters": [
+            "Rory Burns",
+            "Dom Sibley"
+          ],
+          "currentBowler": "Jack Leach",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 13,
+          "snapshotId": "snap_cb_105220_1788014731496",
+          "snapshotTimestamp": "2026-08-29T14:45:31.496Z",
+          "selectedInnings": "Surrey INNS",
+          "battingTeam": "Surrey",
+          "score": "185/3",
+          "overs": "42.1",
+          "batters": [
+            "Rory Burns",
+            "Dom Sibley"
+          ],
+          "currentBowler": "Jack Leach",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 14,
+          "snapshotId": "snap_cb_105220_1788014731497",
+          "snapshotTimestamp": "2026-08-29T14:45:31.497Z",
+          "selectedInnings": "Surrey INNS",
+          "battingTeam": "Surrey",
+          "score": "185/3",
+          "overs": "42.1",
+          "batters": [
+            "Rory Burns",
+            "Dom Sibley"
+          ],
+          "currentBowler": "Jack Leach",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 15,
+          "snapshotId": "snap_cb_105220_1788014731497",
+          "snapshotTimestamp": "2026-08-29T14:45:31.497Z",
+          "selectedInnings": "Surrey INNS",
+          "battingTeam": "Surrey",
+          "score": "185/3",
+          "overs": "42.1",
+          "batters": [
+            "Rory Burns",
+            "Dom Sibley"
+          ],
+          "currentBowler": "Jack Leach",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 16,
+          "snapshotId": "snap_cb_105220_1788014731497",
+          "snapshotTimestamp": "2026-08-29T14:45:31.497Z",
+          "selectedInnings": "Surrey INNS",
+          "battingTeam": "Surrey",
+          "score": "185/3",
+          "overs": "42.1",
+          "batters": [
+            "Rory Burns",
+            "Dom Sibley"
+          ],
+          "currentBowler": "Jack Leach",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 17,
+          "snapshotId": "snap_cb_105220_1788014731497",
+          "snapshotTimestamp": "2026-08-29T14:45:31.497Z",
+          "selectedInnings": "Surrey INNS",
+          "battingTeam": "Surrey",
+          "score": "185/3",
+          "overs": "42.1",
+          "batters": [
+            "Rory Burns",
+            "Dom Sibley"
+          ],
+          "currentBowler": "Jack Leach",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 18,
+          "snapshotId": "snap_cb_105220_1788014731497",
+          "snapshotTimestamp": "2026-08-29T14:45:31.497Z",
+          "selectedInnings": "Surrey INNS",
+          "battingTeam": "Surrey",
+          "score": "185/3",
+          "overs": "42.1",
+          "batters": [
+            "Rory Burns",
+            "Dom Sibley"
+          ],
+          "currentBowler": "Jack Leach",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 19,
+          "snapshotId": "snap_cb_105220_1788014731497",
+          "snapshotTimestamp": "2026-08-29T14:45:31.497Z",
+          "selectedInnings": "Surrey INNS",
+          "battingTeam": "Surrey",
+          "score": "185/3",
+          "overs": "42.1",
+          "batters": [
+            "Rory Burns",
+            "Dom Sibley"
+          ],
+          "currentBowler": "Jack Leach",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 20,
+          "snapshotId": "snap_cb_105220_1788014731497",
+          "snapshotTimestamp": "2026-08-29T14:45:31.497Z",
+          "selectedInnings": "Surrey INNS",
+          "battingTeam": "Surrey",
+          "score": "185/3",
+          "overs": "42.1",
+          "batters": [
+            "Rory Burns",
+            "Dom Sibley"
+          ],
+          "currentBowler": "Jack Leach",
+          "dataConsistent": "YES"
+        }
+      ],
+      "allConsistent": true
+    },
+    {
+      "match": "Yorkshire v Lancashire",
+      "providerEventId": "cb_105221",
+      "isLive": true,
+      "iterations": [
+        {
+          "iteration": 1,
+          "snapshotId": "snap_cb_105221_1788014731498",
+          "snapshotTimestamp": "2026-08-29T14:45:31.498Z",
+          "selectedInnings": "Yorkshire INNS",
+          "battingTeam": "Yorkshire",
+          "score": "312/5",
+          "overs": "88.4",
+          "batters": [
+            "Adam Lyth",
+            "Harry Brook"
+          ],
+          "currentBowler": "James Anderson",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 2,
+          "snapshotId": "snap_cb_105221_1788014731498",
+          "snapshotTimestamp": "2026-08-29T14:45:31.498Z",
+          "selectedInnings": "Yorkshire INNS",
+          "battingTeam": "Yorkshire",
+          "score": "312/5",
+          "overs": "88.4",
+          "batters": [
+            "Adam Lyth",
+            "Harry Brook"
+          ],
+          "currentBowler": "James Anderson",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 3,
+          "snapshotId": "snap_cb_105221_1788014731498",
+          "snapshotTimestamp": "2026-08-29T14:45:31.498Z",
+          "selectedInnings": "Yorkshire INNS",
+          "battingTeam": "Yorkshire",
+          "score": "312/5",
+          "overs": "88.4",
+          "batters": [
+            "Adam Lyth",
+            "Harry Brook"
+          ],
+          "currentBowler": "James Anderson",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 4,
+          "snapshotId": "snap_cb_105221_1788014731498",
+          "snapshotTimestamp": "2026-08-29T14:45:31.498Z",
+          "selectedInnings": "Yorkshire INNS",
+          "battingTeam": "Yorkshire",
+          "score": "312/5",
+          "overs": "88.4",
+          "batters": [
+            "Adam Lyth",
+            "Harry Brook"
+          ],
+          "currentBowler": "James Anderson",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 5,
+          "snapshotId": "snap_cb_105221_1788014731498",
+          "snapshotTimestamp": "2026-08-29T14:45:31.498Z",
+          "selectedInnings": "Yorkshire INNS",
+          "battingTeam": "Yorkshire",
+          "score": "312/5",
+          "overs": "88.4",
+          "batters": [
+            "Adam Lyth",
+            "Harry Brook"
+          ],
+          "currentBowler": "James Anderson",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 6,
+          "snapshotId": "snap_cb_105221_1788014731498",
+          "snapshotTimestamp": "2026-08-29T14:45:31.498Z",
+          "selectedInnings": "Yorkshire INNS",
+          "battingTeam": "Yorkshire",
+          "score": "312/5",
+          "overs": "88.4",
+          "batters": [
+            "Adam Lyth",
+            "Harry Brook"
+          ],
+          "currentBowler": "James Anderson",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 7,
+          "snapshotId": "snap_cb_105221_1788014731498",
+          "snapshotTimestamp": "2026-08-29T14:45:31.498Z",
+          "selectedInnings": "Yorkshire INNS",
+          "battingTeam": "Yorkshire",
+          "score": "312/5",
+          "overs": "88.4",
+          "batters": [
+            "Adam Lyth",
+            "Harry Brook"
+          ],
+          "currentBowler": "James Anderson",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 8,
+          "snapshotId": "snap_cb_105221_1788014731498",
+          "snapshotTimestamp": "2026-08-29T14:45:31.498Z",
+          "selectedInnings": "Yorkshire INNS",
+          "battingTeam": "Yorkshire",
+          "score": "312/5",
+          "overs": "88.4",
+          "batters": [
+            "Adam Lyth",
+            "Harry Brook"
+          ],
+          "currentBowler": "James Anderson",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 9,
+          "snapshotId": "snap_cb_105221_1788014731498",
+          "snapshotTimestamp": "2026-08-29T14:45:31.498Z",
+          "selectedInnings": "Yorkshire INNS",
+          "battingTeam": "Yorkshire",
+          "score": "312/5",
+          "overs": "88.4",
+          "batters": [
+            "Adam Lyth",
+            "Harry Brook"
+          ],
+          "currentBowler": "James Anderson",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 10,
+          "snapshotId": "snap_cb_105221_1788014731498",
+          "snapshotTimestamp": "2026-08-29T14:45:31.498Z",
+          "selectedInnings": "Yorkshire INNS",
+          "battingTeam": "Yorkshire",
+          "score": "312/5",
+          "overs": "88.4",
+          "batters": [
+            "Adam Lyth",
+            "Harry Brook"
+          ],
+          "currentBowler": "James Anderson",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 11,
+          "snapshotId": "snap_cb_105221_1788014731498",
+          "snapshotTimestamp": "2026-08-29T14:45:31.498Z",
+          "selectedInnings": "Yorkshire INNS",
+          "battingTeam": "Yorkshire",
+          "score": "312/5",
+          "overs": "88.4",
+          "batters": [
+            "Adam Lyth",
+            "Harry Brook"
+          ],
+          "currentBowler": "James Anderson",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 12,
+          "snapshotId": "snap_cb_105221_1788014731499",
+          "snapshotTimestamp": "2026-08-29T14:45:31.499Z",
+          "selectedInnings": "Yorkshire INNS",
+          "battingTeam": "Yorkshire",
+          "score": "312/5",
+          "overs": "88.4",
+          "batters": [
+            "Adam Lyth",
+            "Harry Brook"
+          ],
+          "currentBowler": "James Anderson",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 13,
+          "snapshotId": "snap_cb_105221_1788014731499",
+          "snapshotTimestamp": "2026-08-29T14:45:31.499Z",
+          "selectedInnings": "Yorkshire INNS",
+          "battingTeam": "Yorkshire",
+          "score": "312/5",
+          "overs": "88.4",
+          "batters": [
+            "Adam Lyth",
+            "Harry Brook"
+          ],
+          "currentBowler": "James Anderson",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 14,
+          "snapshotId": "snap_cb_105221_1788014731499",
+          "snapshotTimestamp": "2026-08-29T14:45:31.499Z",
+          "selectedInnings": "Yorkshire INNS",
+          "battingTeam": "Yorkshire",
+          "score": "312/5",
+          "overs": "88.4",
+          "batters": [
+            "Adam Lyth",
+            "Harry Brook"
+          ],
+          "currentBowler": "James Anderson",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 15,
+          "snapshotId": "snap_cb_105221_1788014731499",
+          "snapshotTimestamp": "2026-08-29T14:45:31.499Z",
+          "selectedInnings": "Yorkshire INNS",
+          "battingTeam": "Yorkshire",
+          "score": "312/5",
+          "overs": "88.4",
+          "batters": [
+            "Adam Lyth",
+            "Harry Brook"
+          ],
+          "currentBowler": "James Anderson",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 16,
+          "snapshotId": "snap_cb_105221_1788014731499",
+          "snapshotTimestamp": "2026-08-29T14:45:31.499Z",
+          "selectedInnings": "Yorkshire INNS",
+          "battingTeam": "Yorkshire",
+          "score": "312/5",
+          "overs": "88.4",
+          "batters": [
+            "Adam Lyth",
+            "Harry Brook"
+          ],
+          "currentBowler": "James Anderson",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 17,
+          "snapshotId": "snap_cb_105221_1788014731499",
+          "snapshotTimestamp": "2026-08-29T14:45:31.499Z",
+          "selectedInnings": "Yorkshire INNS",
+          "battingTeam": "Yorkshire",
+          "score": "312/5",
+          "overs": "88.4",
+          "batters": [
+            "Adam Lyth",
+            "Harry Brook"
+          ],
+          "currentBowler": "James Anderson",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 18,
+          "snapshotId": "snap_cb_105221_1788014731499",
+          "snapshotTimestamp": "2026-08-29T14:45:31.499Z",
+          "selectedInnings": "Yorkshire INNS",
+          "battingTeam": "Yorkshire",
+          "score": "312/5",
+          "overs": "88.4",
+          "batters": [
+            "Adam Lyth",
+            "Harry Brook"
+          ],
+          "currentBowler": "James Anderson",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 19,
+          "snapshotId": "snap_cb_105221_1788014731499",
+          "snapshotTimestamp": "2026-08-29T14:45:31.499Z",
+          "selectedInnings": "Yorkshire INNS",
+          "battingTeam": "Yorkshire",
+          "score": "312/5",
+          "overs": "88.4",
+          "batters": [
+            "Adam Lyth",
+            "Harry Brook"
+          ],
+          "currentBowler": "James Anderson",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 20,
+          "snapshotId": "snap_cb_105221_1788014731499",
+          "snapshotTimestamp": "2026-08-29T14:45:31.499Z",
+          "selectedInnings": "Yorkshire INNS",
+          "battingTeam": "Yorkshire",
+          "score": "312/5",
+          "overs": "88.4",
+          "batters": [
+            "Adam Lyth",
+            "Harry Brook"
+          ],
+          "currentBowler": "James Anderson",
+          "dataConsistent": "YES"
+        }
+      ],
+      "allConsistent": true
+    },
+    {
+      "match": "India v Australia",
+      "providerEventId": "cb_105222",
+      "isLive": true,
+      "iterations": [
+        {
+          "iteration": 1,
+          "snapshotId": "snap_cb_105222_1788014731499",
+          "snapshotTimestamp": "2026-08-29T14:45:31.499Z",
+          "selectedInnings": "India INNS",
+          "battingTeam": "India",
+          "score": "245/4",
+          "overs": "65.0",
+          "batters": [
+            "Rohit Sharma",
+            "Virat Kohli"
+          ],
+          "currentBowler": "Pat Cummins",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 2,
+          "snapshotId": "snap_cb_105222_1788014731499",
+          "snapshotTimestamp": "2026-08-29T14:45:31.499Z",
+          "selectedInnings": "India INNS",
+          "battingTeam": "India",
+          "score": "245/4",
+          "overs": "65.0",
+          "batters": [
+            "Rohit Sharma",
+            "Virat Kohli"
+          ],
+          "currentBowler": "Pat Cummins",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 3,
+          "snapshotId": "snap_cb_105222_1788014731499",
+          "snapshotTimestamp": "2026-08-29T14:45:31.499Z",
+          "selectedInnings": "India INNS",
+          "battingTeam": "India",
+          "score": "245/4",
+          "overs": "65.0",
+          "batters": [
+            "Rohit Sharma",
+            "Virat Kohli"
+          ],
+          "currentBowler": "Pat Cummins",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 4,
+          "snapshotId": "snap_cb_105222_1788014731499",
+          "snapshotTimestamp": "2026-08-29T14:45:31.499Z",
+          "selectedInnings": "India INNS",
+          "battingTeam": "India",
+          "score": "245/4",
+          "overs": "65.0",
+          "batters": [
+            "Rohit Sharma",
+            "Virat Kohli"
+          ],
+          "currentBowler": "Pat Cummins",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 5,
+          "snapshotId": "snap_cb_105222_1788014731499",
+          "snapshotTimestamp": "2026-08-29T14:45:31.499Z",
+          "selectedInnings": "India INNS",
+          "battingTeam": "India",
+          "score": "245/4",
+          "overs": "65.0",
+          "batters": [
+            "Rohit Sharma",
+            "Virat Kohli"
+          ],
+          "currentBowler": "Pat Cummins",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 6,
+          "snapshotId": "snap_cb_105222_1788014731499",
+          "snapshotTimestamp": "2026-08-29T14:45:31.499Z",
+          "selectedInnings": "India INNS",
+          "battingTeam": "India",
+          "score": "245/4",
+          "overs": "65.0",
+          "batters": [
+            "Rohit Sharma",
+            "Virat Kohli"
+          ],
+          "currentBowler": "Pat Cummins",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 7,
+          "snapshotId": "snap_cb_105222_1788014731499",
+          "snapshotTimestamp": "2026-08-29T14:45:31.499Z",
+          "selectedInnings": "India INNS",
+          "battingTeam": "India",
+          "score": "245/4",
+          "overs": "65.0",
+          "batters": [
+            "Rohit Sharma",
+            "Virat Kohli"
+          ],
+          "currentBowler": "Pat Cummins",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 8,
+          "snapshotId": "snap_cb_105222_1788014731499",
+          "snapshotTimestamp": "2026-08-29T14:45:31.499Z",
+          "selectedInnings": "India INNS",
+          "battingTeam": "India",
+          "score": "245/4",
+          "overs": "65.0",
+          "batters": [
+            "Rohit Sharma",
+            "Virat Kohli"
+          ],
+          "currentBowler": "Pat Cummins",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 9,
+          "snapshotId": "snap_cb_105222_1788014731499",
+          "snapshotTimestamp": "2026-08-29T14:45:31.499Z",
+          "selectedInnings": "India INNS",
+          "battingTeam": "India",
+          "score": "245/4",
+          "overs": "65.0",
+          "batters": [
+            "Rohit Sharma",
+            "Virat Kohli"
+          ],
+          "currentBowler": "Pat Cummins",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 10,
+          "snapshotId": "snap_cb_105222_1788014731499",
+          "snapshotTimestamp": "2026-08-29T14:45:31.499Z",
+          "selectedInnings": "India INNS",
+          "battingTeam": "India",
+          "score": "245/4",
+          "overs": "65.0",
+          "batters": [
+            "Rohit Sharma",
+            "Virat Kohli"
+          ],
+          "currentBowler": "Pat Cummins",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 11,
+          "snapshotId": "snap_cb_105222_1788014731499",
+          "snapshotTimestamp": "2026-08-29T14:45:31.499Z",
+          "selectedInnings": "India INNS",
+          "battingTeam": "India",
+          "score": "245/4",
+          "overs": "65.0",
+          "batters": [
+            "Rohit Sharma",
+            "Virat Kohli"
+          ],
+          "currentBowler": "Pat Cummins",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 12,
+          "snapshotId": "snap_cb_105222_1788014731499",
+          "snapshotTimestamp": "2026-08-29T14:45:31.499Z",
+          "selectedInnings": "India INNS",
+          "battingTeam": "India",
+          "score": "245/4",
+          "overs": "65.0",
+          "batters": [
+            "Rohit Sharma",
+            "Virat Kohli"
+          ],
+          "currentBowler": "Pat Cummins",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 13,
+          "snapshotId": "snap_cb_105222_1788014731499",
+          "snapshotTimestamp": "2026-08-29T14:45:31.499Z",
+          "selectedInnings": "India INNS",
+          "battingTeam": "India",
+          "score": "245/4",
+          "overs": "65.0",
+          "batters": [
+            "Rohit Sharma",
+            "Virat Kohli"
+          ],
+          "currentBowler": "Pat Cummins",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 14,
+          "snapshotId": "snap_cb_105222_1788014731500",
+          "snapshotTimestamp": "2026-08-29T14:45:31.500Z",
+          "selectedInnings": "India INNS",
+          "battingTeam": "India",
+          "score": "245/4",
+          "overs": "65.0",
+          "batters": [
+            "Rohit Sharma",
+            "Virat Kohli"
+          ],
+          "currentBowler": "Pat Cummins",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 15,
+          "snapshotId": "snap_cb_105222_1788014731500",
+          "snapshotTimestamp": "2026-08-29T14:45:31.500Z",
+          "selectedInnings": "India INNS",
+          "battingTeam": "India",
+          "score": "245/4",
+          "overs": "65.0",
+          "batters": [
+            "Rohit Sharma",
+            "Virat Kohli"
+          ],
+          "currentBowler": "Pat Cummins",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 16,
+          "snapshotId": "snap_cb_105222_1788014731500",
+          "snapshotTimestamp": "2026-08-29T14:45:31.500Z",
+          "selectedInnings": "India INNS",
+          "battingTeam": "India",
+          "score": "245/4",
+          "overs": "65.0",
+          "batters": [
+            "Rohit Sharma",
+            "Virat Kohli"
+          ],
+          "currentBowler": "Pat Cummins",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 17,
+          "snapshotId": "snap_cb_105222_1788014731500",
+          "snapshotTimestamp": "2026-08-29T14:45:31.500Z",
+          "selectedInnings": "India INNS",
+          "battingTeam": "India",
+          "score": "245/4",
+          "overs": "65.0",
+          "batters": [
+            "Rohit Sharma",
+            "Virat Kohli"
+          ],
+          "currentBowler": "Pat Cummins",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 18,
+          "snapshotId": "snap_cb_105222_1788014731500",
+          "snapshotTimestamp": "2026-08-29T14:45:31.500Z",
+          "selectedInnings": "India INNS",
+          "battingTeam": "India",
+          "score": "245/4",
+          "overs": "65.0",
+          "batters": [
+            "Rohit Sharma",
+            "Virat Kohli"
+          ],
+          "currentBowler": "Pat Cummins",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 19,
+          "snapshotId": "snap_cb_105222_1788014731500",
+          "snapshotTimestamp": "2026-08-29T14:45:31.500Z",
+          "selectedInnings": "India INNS",
+          "battingTeam": "India",
+          "score": "245/4",
+          "overs": "65.0",
+          "batters": [
+            "Rohit Sharma",
+            "Virat Kohli"
+          ],
+          "currentBowler": "Pat Cummins",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 20,
+          "snapshotId": "snap_cb_105222_1788014731500",
+          "snapshotTimestamp": "2026-08-29T14:45:31.500Z",
+          "selectedInnings": "India INNS",
+          "battingTeam": "India",
+          "score": "245/4",
+          "overs": "65.0",
+          "batters": [
+            "Rohit Sharma",
+            "Virat Kohli"
+          ],
+          "currentBowler": "Pat Cummins",
+          "dataConsistent": "YES"
+        }
+      ],
+      "allConsistent": true
+    },
+    {
+      "match": "England v South Africa",
+      "providerEventId": "cb_105223",
+      "isLive": true,
+      "iterations": [
+        {
+          "iteration": 1,
+          "snapshotId": "snap_cb_105223_1788014731500",
+          "snapshotTimestamp": "2026-08-29T14:45:31.500Z",
+          "selectedInnings": "England INNS",
+          "battingTeam": "England",
+          "score": "198/6",
+          "overs": "50.3",
+          "batters": [
+            "Joe Root",
+            "Ben Stokes"
+          ],
+          "currentBowler": "Kagiso Rabada",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 2,
+          "snapshotId": "snap_cb_105223_1788014731500",
+          "snapshotTimestamp": "2026-08-29T14:45:31.500Z",
+          "selectedInnings": "England INNS",
+          "battingTeam": "England",
+          "score": "198/6",
+          "overs": "50.3",
+          "batters": [
+            "Joe Root",
+            "Ben Stokes"
+          ],
+          "currentBowler": "Kagiso Rabada",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 3,
+          "snapshotId": "snap_cb_105223_1788014731500",
+          "snapshotTimestamp": "2026-08-29T14:45:31.500Z",
+          "selectedInnings": "England INNS",
+          "battingTeam": "England",
+          "score": "198/6",
+          "overs": "50.3",
+          "batters": [
+            "Joe Root",
+            "Ben Stokes"
+          ],
+          "currentBowler": "Kagiso Rabada",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 4,
+          "snapshotId": "snap_cb_105223_1788014731500",
+          "snapshotTimestamp": "2026-08-29T14:45:31.500Z",
+          "selectedInnings": "England INNS",
+          "battingTeam": "England",
+          "score": "198/6",
+          "overs": "50.3",
+          "batters": [
+            "Joe Root",
+            "Ben Stokes"
+          ],
+          "currentBowler": "Kagiso Rabada",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 5,
+          "snapshotId": "snap_cb_105223_1788014731500",
+          "snapshotTimestamp": "2026-08-29T14:45:31.500Z",
+          "selectedInnings": "England INNS",
+          "battingTeam": "England",
+          "score": "198/6",
+          "overs": "50.3",
+          "batters": [
+            "Joe Root",
+            "Ben Stokes"
+          ],
+          "currentBowler": "Kagiso Rabada",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 6,
+          "snapshotId": "snap_cb_105223_1788014731500",
+          "snapshotTimestamp": "2026-08-29T14:45:31.500Z",
+          "selectedInnings": "England INNS",
+          "battingTeam": "England",
+          "score": "198/6",
+          "overs": "50.3",
+          "batters": [
+            "Joe Root",
+            "Ben Stokes"
+          ],
+          "currentBowler": "Kagiso Rabada",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 7,
+          "snapshotId": "snap_cb_105223_1788014731500",
+          "snapshotTimestamp": "2026-08-29T14:45:31.500Z",
+          "selectedInnings": "England INNS",
+          "battingTeam": "England",
+          "score": "198/6",
+          "overs": "50.3",
+          "batters": [
+            "Joe Root",
+            "Ben Stokes"
+          ],
+          "currentBowler": "Kagiso Rabada",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 8,
+          "snapshotId": "snap_cb_105223_1788014731501",
+          "snapshotTimestamp": "2026-08-29T14:45:31.501Z",
+          "selectedInnings": "England INNS",
+          "battingTeam": "England",
+          "score": "198/6",
+          "overs": "50.3",
+          "batters": [
+            "Joe Root",
+            "Ben Stokes"
+          ],
+          "currentBowler": "Kagiso Rabada",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 9,
+          "snapshotId": "snap_cb_105223_1788014731501",
+          "snapshotTimestamp": "2026-08-29T14:45:31.501Z",
+          "selectedInnings": "England INNS",
+          "battingTeam": "England",
+          "score": "198/6",
+          "overs": "50.3",
+          "batters": [
+            "Joe Root",
+            "Ben Stokes"
+          ],
+          "currentBowler": "Kagiso Rabada",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 10,
+          "snapshotId": "snap_cb_105223_1788014731501",
+          "snapshotTimestamp": "2026-08-29T14:45:31.501Z",
+          "selectedInnings": "England INNS",
+          "battingTeam": "England",
+          "score": "198/6",
+          "overs": "50.3",
+          "batters": [
+            "Joe Root",
+            "Ben Stokes"
+          ],
+          "currentBowler": "Kagiso Rabada",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 11,
+          "snapshotId": "snap_cb_105223_1788014731501",
+          "snapshotTimestamp": "2026-08-29T14:45:31.501Z",
+          "selectedInnings": "England INNS",
+          "battingTeam": "England",
+          "score": "198/6",
+          "overs": "50.3",
+          "batters": [
+            "Joe Root",
+            "Ben Stokes"
+          ],
+          "currentBowler": "Kagiso Rabada",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 12,
+          "snapshotId": "snap_cb_105223_1788014731501",
+          "snapshotTimestamp": "2026-08-29T14:45:31.501Z",
+          "selectedInnings": "England INNS",
+          "battingTeam": "England",
+          "score": "198/6",
+          "overs": "50.3",
+          "batters": [
+            "Joe Root",
+            "Ben Stokes"
+          ],
+          "currentBowler": "Kagiso Rabada",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 13,
+          "snapshotId": "snap_cb_105223_1788014731501",
+          "snapshotTimestamp": "2026-08-29T14:45:31.501Z",
+          "selectedInnings": "England INNS",
+          "battingTeam": "England",
+          "score": "198/6",
+          "overs": "50.3",
+          "batters": [
+            "Joe Root",
+            "Ben Stokes"
+          ],
+          "currentBowler": "Kagiso Rabada",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 14,
+          "snapshotId": "snap_cb_105223_1788014731501",
+          "snapshotTimestamp": "2026-08-29T14:45:31.501Z",
+          "selectedInnings": "England INNS",
+          "battingTeam": "England",
+          "score": "198/6",
+          "overs": "50.3",
+          "batters": [
+            "Joe Root",
+            "Ben Stokes"
+          ],
+          "currentBowler": "Kagiso Rabada",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 15,
+          "snapshotId": "snap_cb_105223_1788014731501",
+          "snapshotTimestamp": "2026-08-29T14:45:31.501Z",
+          "selectedInnings": "England INNS",
+          "battingTeam": "England",
+          "score": "198/6",
+          "overs": "50.3",
+          "batters": [
+            "Joe Root",
+            "Ben Stokes"
+          ],
+          "currentBowler": "Kagiso Rabada",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 16,
+          "snapshotId": "snap_cb_105223_1788014731501",
+          "snapshotTimestamp": "2026-08-29T14:45:31.501Z",
+          "selectedInnings": "England INNS",
+          "battingTeam": "England",
+          "score": "198/6",
+          "overs": "50.3",
+          "batters": [
+            "Joe Root",
+            "Ben Stokes"
+          ],
+          "currentBowler": "Kagiso Rabada",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 17,
+          "snapshotId": "snap_cb_105223_1788014731501",
+          "snapshotTimestamp": "2026-08-29T14:45:31.501Z",
+          "selectedInnings": "England INNS",
+          "battingTeam": "England",
+          "score": "198/6",
+          "overs": "50.3",
+          "batters": [
+            "Joe Root",
+            "Ben Stokes"
+          ],
+          "currentBowler": "Kagiso Rabada",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 18,
+          "snapshotId": "snap_cb_105223_1788014731501",
+          "snapshotTimestamp": "2026-08-29T14:45:31.501Z",
+          "selectedInnings": "England INNS",
+          "battingTeam": "England",
+          "score": "198/6",
+          "overs": "50.3",
+          "batters": [
+            "Joe Root",
+            "Ben Stokes"
+          ],
+          "currentBowler": "Kagiso Rabada",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 19,
+          "snapshotId": "snap_cb_105223_1788014731501",
+          "snapshotTimestamp": "2026-08-29T14:45:31.501Z",
+          "selectedInnings": "England INNS",
+          "battingTeam": "England",
+          "score": "198/6",
+          "overs": "50.3",
+          "batters": [
+            "Joe Root",
+            "Ben Stokes"
+          ],
+          "currentBowler": "Kagiso Rabada",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 20,
+          "snapshotId": "snap_cb_105223_1788014731501",
+          "snapshotTimestamp": "2026-08-29T14:45:31.501Z",
+          "selectedInnings": "England INNS",
+          "battingTeam": "England",
+          "score": "198/6",
+          "overs": "50.3",
+          "batters": [
+            "Joe Root",
+            "Ben Stokes"
+          ],
+          "currentBowler": "Kagiso Rabada",
+          "dataConsistent": "YES"
+        }
+      ],
+      "allConsistent": true
+    },
+    {
+      "match": "New Zealand v Pakistan",
+      "providerEventId": "cb_105201",
+      "isLive": false,
+      "iterations": [
+        {
+          "iteration": 1,
+          "snapshotId": "snap_cb_105201_1788014731501",
+          "snapshotTimestamp": "2026-08-29T14:45:31.501Z",
+          "selectedInnings": "New Zealand INNS",
+          "battingTeam": "New Zealand",
+          "score": "320/10",
+          "overs": "50.0",
+          "batters": [
+            "Kane Williamson"
+          ],
+          "currentBowler": "Shaheen Afridi",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 2,
+          "snapshotId": "snap_cb_105201_1788014731501",
+          "snapshotTimestamp": "2026-08-29T14:45:31.501Z",
+          "selectedInnings": "New Zealand INNS",
+          "battingTeam": "New Zealand",
+          "score": "320/10",
+          "overs": "50.0",
+          "batters": [
+            "Kane Williamson"
+          ],
+          "currentBowler": "Shaheen Afridi",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 3,
+          "snapshotId": "snap_cb_105201_1788014731501",
+          "snapshotTimestamp": "2026-08-29T14:45:31.501Z",
+          "selectedInnings": "New Zealand INNS",
+          "battingTeam": "New Zealand",
+          "score": "320/10",
+          "overs": "50.0",
+          "batters": [
+            "Kane Williamson"
+          ],
+          "currentBowler": "Shaheen Afridi",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 4,
+          "snapshotId": "snap_cb_105201_1788014731501",
+          "snapshotTimestamp": "2026-08-29T14:45:31.501Z",
+          "selectedInnings": "New Zealand INNS",
+          "battingTeam": "New Zealand",
+          "score": "320/10",
+          "overs": "50.0",
+          "batters": [
+            "Kane Williamson"
+          ],
+          "currentBowler": "Shaheen Afridi",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 5,
+          "snapshotId": "snap_cb_105201_1788014731501",
+          "snapshotTimestamp": "2026-08-29T14:45:31.501Z",
+          "selectedInnings": "New Zealand INNS",
+          "battingTeam": "New Zealand",
+          "score": "320/10",
+          "overs": "50.0",
+          "batters": [
+            "Kane Williamson"
+          ],
+          "currentBowler": "Shaheen Afridi",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 6,
+          "snapshotId": "snap_cb_105201_1788014731501",
+          "snapshotTimestamp": "2026-08-29T14:45:31.501Z",
+          "selectedInnings": "New Zealand INNS",
+          "battingTeam": "New Zealand",
+          "score": "320/10",
+          "overs": "50.0",
+          "batters": [
+            "Kane Williamson"
+          ],
+          "currentBowler": "Shaheen Afridi",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 7,
+          "snapshotId": "snap_cb_105201_1788014731501",
+          "snapshotTimestamp": "2026-08-29T14:45:31.501Z",
+          "selectedInnings": "New Zealand INNS",
+          "battingTeam": "New Zealand",
+          "score": "320/10",
+          "overs": "50.0",
+          "batters": [
+            "Kane Williamson"
+          ],
+          "currentBowler": "Shaheen Afridi",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 8,
+          "snapshotId": "snap_cb_105201_1788014731501",
+          "snapshotTimestamp": "2026-08-29T14:45:31.501Z",
+          "selectedInnings": "New Zealand INNS",
+          "battingTeam": "New Zealand",
+          "score": "320/10",
+          "overs": "50.0",
+          "batters": [
+            "Kane Williamson"
+          ],
+          "currentBowler": "Shaheen Afridi",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 9,
+          "snapshotId": "snap_cb_105201_1788014731501",
+          "snapshotTimestamp": "2026-08-29T14:45:31.501Z",
+          "selectedInnings": "New Zealand INNS",
+          "battingTeam": "New Zealand",
+          "score": "320/10",
+          "overs": "50.0",
+          "batters": [
+            "Kane Williamson"
+          ],
+          "currentBowler": "Shaheen Afridi",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 10,
+          "snapshotId": "snap_cb_105201_1788014731501",
+          "snapshotTimestamp": "2026-08-29T14:45:31.501Z",
+          "selectedInnings": "New Zealand INNS",
+          "battingTeam": "New Zealand",
+          "score": "320/10",
+          "overs": "50.0",
+          "batters": [
+            "Kane Williamson"
+          ],
+          "currentBowler": "Shaheen Afridi",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 11,
+          "snapshotId": "snap_cb_105201_1788014731501",
+          "snapshotTimestamp": "2026-08-29T14:45:31.501Z",
+          "selectedInnings": "New Zealand INNS",
+          "battingTeam": "New Zealand",
+          "score": "320/10",
+          "overs": "50.0",
+          "batters": [
+            "Kane Williamson"
+          ],
+          "currentBowler": "Shaheen Afridi",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 12,
+          "snapshotId": "snap_cb_105201_1788014731501",
+          "snapshotTimestamp": "2026-08-29T14:45:31.501Z",
+          "selectedInnings": "New Zealand INNS",
+          "battingTeam": "New Zealand",
+          "score": "320/10",
+          "overs": "50.0",
+          "batters": [
+            "Kane Williamson"
+          ],
+          "currentBowler": "Shaheen Afridi",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 13,
+          "snapshotId": "snap_cb_105201_1788014731502",
+          "snapshotTimestamp": "2026-08-29T14:45:31.502Z",
+          "selectedInnings": "New Zealand INNS",
+          "battingTeam": "New Zealand",
+          "score": "320/10",
+          "overs": "50.0",
+          "batters": [
+            "Kane Williamson"
+          ],
+          "currentBowler": "Shaheen Afridi",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 14,
+          "snapshotId": "snap_cb_105201_1788014731502",
+          "snapshotTimestamp": "2026-08-29T14:45:31.502Z",
+          "selectedInnings": "New Zealand INNS",
+          "battingTeam": "New Zealand",
+          "score": "320/10",
+          "overs": "50.0",
+          "batters": [
+            "Kane Williamson"
+          ],
+          "currentBowler": "Shaheen Afridi",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 15,
+          "snapshotId": "snap_cb_105201_1788014731502",
+          "snapshotTimestamp": "2026-08-29T14:45:31.502Z",
+          "selectedInnings": "New Zealand INNS",
+          "battingTeam": "New Zealand",
+          "score": "320/10",
+          "overs": "50.0",
+          "batters": [
+            "Kane Williamson"
+          ],
+          "currentBowler": "Shaheen Afridi",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 16,
+          "snapshotId": "snap_cb_105201_1788014731502",
+          "snapshotTimestamp": "2026-08-29T14:45:31.502Z",
+          "selectedInnings": "New Zealand INNS",
+          "battingTeam": "New Zealand",
+          "score": "320/10",
+          "overs": "50.0",
+          "batters": [
+            "Kane Williamson"
+          ],
+          "currentBowler": "Shaheen Afridi",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 17,
+          "snapshotId": "snap_cb_105201_1788014731502",
+          "snapshotTimestamp": "2026-08-29T14:45:31.502Z",
+          "selectedInnings": "New Zealand INNS",
+          "battingTeam": "New Zealand",
+          "score": "320/10",
+          "overs": "50.0",
+          "batters": [
+            "Kane Williamson"
+          ],
+          "currentBowler": "Shaheen Afridi",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 18,
+          "snapshotId": "snap_cb_105201_1788014731502",
+          "snapshotTimestamp": "2026-08-29T14:45:31.502Z",
+          "selectedInnings": "New Zealand INNS",
+          "battingTeam": "New Zealand",
+          "score": "320/10",
+          "overs": "50.0",
+          "batters": [
+            "Kane Williamson"
+          ],
+          "currentBowler": "Shaheen Afridi",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 19,
+          "snapshotId": "snap_cb_105201_1788014731502",
+          "snapshotTimestamp": "2026-08-29T14:45:31.502Z",
+          "selectedInnings": "New Zealand INNS",
+          "battingTeam": "New Zealand",
+          "score": "320/10",
+          "overs": "50.0",
+          "batters": [
+            "Kane Williamson"
+          ],
+          "currentBowler": "Shaheen Afridi",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 20,
+          "snapshotId": "snap_cb_105201_1788014731502",
+          "snapshotTimestamp": "2026-08-29T14:45:31.502Z",
+          "selectedInnings": "New Zealand INNS",
+          "battingTeam": "New Zealand",
+          "score": "320/10",
+          "overs": "50.0",
+          "batters": [
+            "Kane Williamson"
+          ],
+          "currentBowler": "Shaheen Afridi",
+          "dataConsistent": "YES"
+        }
+      ],
+      "allConsistent": true
+    },
+    {
+      "match": "Sri Lanka v West Indies",
+      "providerEventId": "cb_105202",
+      "isLive": false,
+      "iterations": [
+        {
+          "iteration": 1,
+          "snapshotId": "snap_cb_105202_1788014731502",
+          "snapshotTimestamp": "2026-08-29T14:45:31.502Z",
+          "selectedInnings": "Sri Lanka INNS",
+          "battingTeam": "Sri Lanka",
+          "score": "280/10",
+          "overs": "49.2",
+          "batters": [
+            "Kusal Mendis"
+          ],
+          "currentBowler": "Alzarri Joseph",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 2,
+          "snapshotId": "snap_cb_105202_1788014731502",
+          "snapshotTimestamp": "2026-08-29T14:45:31.502Z",
+          "selectedInnings": "Sri Lanka INNS",
+          "battingTeam": "Sri Lanka",
+          "score": "280/10",
+          "overs": "49.2",
+          "batters": [
+            "Kusal Mendis"
+          ],
+          "currentBowler": "Alzarri Joseph",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 3,
+          "snapshotId": "snap_cb_105202_1788014731502",
+          "snapshotTimestamp": "2026-08-29T14:45:31.502Z",
+          "selectedInnings": "Sri Lanka INNS",
+          "battingTeam": "Sri Lanka",
+          "score": "280/10",
+          "overs": "49.2",
+          "batters": [
+            "Kusal Mendis"
+          ],
+          "currentBowler": "Alzarri Joseph",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 4,
+          "snapshotId": "snap_cb_105202_1788014731502",
+          "snapshotTimestamp": "2026-08-29T14:45:31.502Z",
+          "selectedInnings": "Sri Lanka INNS",
+          "battingTeam": "Sri Lanka",
+          "score": "280/10",
+          "overs": "49.2",
+          "batters": [
+            "Kusal Mendis"
+          ],
+          "currentBowler": "Alzarri Joseph",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 5,
+          "snapshotId": "snap_cb_105202_1788014731502",
+          "snapshotTimestamp": "2026-08-29T14:45:31.502Z",
+          "selectedInnings": "Sri Lanka INNS",
+          "battingTeam": "Sri Lanka",
+          "score": "280/10",
+          "overs": "49.2",
+          "batters": [
+            "Kusal Mendis"
+          ],
+          "currentBowler": "Alzarri Joseph",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 6,
+          "snapshotId": "snap_cb_105202_1788014731502",
+          "snapshotTimestamp": "2026-08-29T14:45:31.502Z",
+          "selectedInnings": "Sri Lanka INNS",
+          "battingTeam": "Sri Lanka",
+          "score": "280/10",
+          "overs": "49.2",
+          "batters": [
+            "Kusal Mendis"
+          ],
+          "currentBowler": "Alzarri Joseph",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 7,
+          "snapshotId": "snap_cb_105202_1788014731502",
+          "snapshotTimestamp": "2026-08-29T14:45:31.502Z",
+          "selectedInnings": "Sri Lanka INNS",
+          "battingTeam": "Sri Lanka",
+          "score": "280/10",
+          "overs": "49.2",
+          "batters": [
+            "Kusal Mendis"
+          ],
+          "currentBowler": "Alzarri Joseph",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 8,
+          "snapshotId": "snap_cb_105202_1788014731502",
+          "snapshotTimestamp": "2026-08-29T14:45:31.502Z",
+          "selectedInnings": "Sri Lanka INNS",
+          "battingTeam": "Sri Lanka",
+          "score": "280/10",
+          "overs": "49.2",
+          "batters": [
+            "Kusal Mendis"
+          ],
+          "currentBowler": "Alzarri Joseph",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 9,
+          "snapshotId": "snap_cb_105202_1788014731502",
+          "snapshotTimestamp": "2026-08-29T14:45:31.502Z",
+          "selectedInnings": "Sri Lanka INNS",
+          "battingTeam": "Sri Lanka",
+          "score": "280/10",
+          "overs": "49.2",
+          "batters": [
+            "Kusal Mendis"
+          ],
+          "currentBowler": "Alzarri Joseph",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 10,
+          "snapshotId": "snap_cb_105202_1788014731502",
+          "snapshotTimestamp": "2026-08-29T14:45:31.502Z",
+          "selectedInnings": "Sri Lanka INNS",
+          "battingTeam": "Sri Lanka",
+          "score": "280/10",
+          "overs": "49.2",
+          "batters": [
+            "Kusal Mendis"
+          ],
+          "currentBowler": "Alzarri Joseph",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 11,
+          "snapshotId": "snap_cb_105202_1788014731502",
+          "snapshotTimestamp": "2026-08-29T14:45:31.502Z",
+          "selectedInnings": "Sri Lanka INNS",
+          "battingTeam": "Sri Lanka",
+          "score": "280/10",
+          "overs": "49.2",
+          "batters": [
+            "Kusal Mendis"
+          ],
+          "currentBowler": "Alzarri Joseph",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 12,
+          "snapshotId": "snap_cb_105202_1788014731502",
+          "snapshotTimestamp": "2026-08-29T14:45:31.502Z",
+          "selectedInnings": "Sri Lanka INNS",
+          "battingTeam": "Sri Lanka",
+          "score": "280/10",
+          "overs": "49.2",
+          "batters": [
+            "Kusal Mendis"
+          ],
+          "currentBowler": "Alzarri Joseph",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 13,
+          "snapshotId": "snap_cb_105202_1788014731502",
+          "snapshotTimestamp": "2026-08-29T14:45:31.502Z",
+          "selectedInnings": "Sri Lanka INNS",
+          "battingTeam": "Sri Lanka",
+          "score": "280/10",
+          "overs": "49.2",
+          "batters": [
+            "Kusal Mendis"
+          ],
+          "currentBowler": "Alzarri Joseph",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 14,
+          "snapshotId": "snap_cb_105202_1788014731502",
+          "snapshotTimestamp": "2026-08-29T14:45:31.502Z",
+          "selectedInnings": "Sri Lanka INNS",
+          "battingTeam": "Sri Lanka",
+          "score": "280/10",
+          "overs": "49.2",
+          "batters": [
+            "Kusal Mendis"
+          ],
+          "currentBowler": "Alzarri Joseph",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 15,
+          "snapshotId": "snap_cb_105202_1788014731502",
+          "snapshotTimestamp": "2026-08-29T14:45:31.502Z",
+          "selectedInnings": "Sri Lanka INNS",
+          "battingTeam": "Sri Lanka",
+          "score": "280/10",
+          "overs": "49.2",
+          "batters": [
+            "Kusal Mendis"
+          ],
+          "currentBowler": "Alzarri Joseph",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 16,
+          "snapshotId": "snap_cb_105202_1788014731502",
+          "snapshotTimestamp": "2026-08-29T14:45:31.502Z",
+          "selectedInnings": "Sri Lanka INNS",
+          "battingTeam": "Sri Lanka",
+          "score": "280/10",
+          "overs": "49.2",
+          "batters": [
+            "Kusal Mendis"
+          ],
+          "currentBowler": "Alzarri Joseph",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 17,
+          "snapshotId": "snap_cb_105202_1788014731503",
+          "snapshotTimestamp": "2026-08-29T14:45:31.503Z",
+          "selectedInnings": "Sri Lanka INNS",
+          "battingTeam": "Sri Lanka",
+          "score": "280/10",
+          "overs": "49.2",
+          "batters": [
+            "Kusal Mendis"
+          ],
+          "currentBowler": "Alzarri Joseph",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 18,
+          "snapshotId": "snap_cb_105202_1788014731503",
+          "snapshotTimestamp": "2026-08-29T14:45:31.503Z",
+          "selectedInnings": "Sri Lanka INNS",
+          "battingTeam": "Sri Lanka",
+          "score": "280/10",
+          "overs": "49.2",
+          "batters": [
+            "Kusal Mendis"
+          ],
+          "currentBowler": "Alzarri Joseph",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 19,
+          "snapshotId": "snap_cb_105202_1788014731503",
+          "snapshotTimestamp": "2026-08-29T14:45:31.503Z",
+          "selectedInnings": "Sri Lanka INNS",
+          "battingTeam": "Sri Lanka",
+          "score": "280/10",
+          "overs": "49.2",
+          "batters": [
+            "Kusal Mendis"
+          ],
+          "currentBowler": "Alzarri Joseph",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 20,
+          "snapshotId": "snap_cb_105202_1788014731503",
+          "snapshotTimestamp": "2026-08-29T14:45:31.503Z",
+          "selectedInnings": "Sri Lanka INNS",
+          "battingTeam": "Sri Lanka",
+          "score": "280/10",
+          "overs": "49.2",
+          "batters": [
+            "Kusal Mendis"
+          ],
+          "currentBowler": "Alzarri Joseph",
+          "dataConsistent": "YES"
+        }
+      ],
+      "allConsistent": true
+    },
+    {
+      "match": "Chennai Super Kings v Mumbai Indians",
+      "providerEventId": "cb_105203",
+      "isLive": false,
+      "iterations": [
+        {
+          "iteration": 1,
+          "snapshotId": "snap_cb_105203_1788014731503",
+          "snapshotTimestamp": "2026-08-29T14:45:31.503Z",
+          "selectedInnings": "Chennai Super Kings INNS",
+          "battingTeam": "Chennai Super Kings",
+          "score": "210/4",
+          "overs": "20.0",
+          "batters": [
+            "Ruturaj Gaikwad"
+          ],
+          "currentBowler": "Jasprit Bumrah",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 2,
+          "snapshotId": "snap_cb_105203_1788014731503",
+          "snapshotTimestamp": "2026-08-29T14:45:31.503Z",
+          "selectedInnings": "Chennai Super Kings INNS",
+          "battingTeam": "Chennai Super Kings",
+          "score": "210/4",
+          "overs": "20.0",
+          "batters": [
+            "Ruturaj Gaikwad"
+          ],
+          "currentBowler": "Jasprit Bumrah",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 3,
+          "snapshotId": "snap_cb_105203_1788014731503",
+          "snapshotTimestamp": "2026-08-29T14:45:31.503Z",
+          "selectedInnings": "Chennai Super Kings INNS",
+          "battingTeam": "Chennai Super Kings",
+          "score": "210/4",
+          "overs": "20.0",
+          "batters": [
+            "Ruturaj Gaikwad"
+          ],
+          "currentBowler": "Jasprit Bumrah",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 4,
+          "snapshotId": "snap_cb_105203_1788014731503",
+          "snapshotTimestamp": "2026-08-29T14:45:31.503Z",
+          "selectedInnings": "Chennai Super Kings INNS",
+          "battingTeam": "Chennai Super Kings",
+          "score": "210/4",
+          "overs": "20.0",
+          "batters": [
+            "Ruturaj Gaikwad"
+          ],
+          "currentBowler": "Jasprit Bumrah",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 5,
+          "snapshotId": "snap_cb_105203_1788014731504",
+          "snapshotTimestamp": "2026-08-29T14:45:31.504Z",
+          "selectedInnings": "Chennai Super Kings INNS",
+          "battingTeam": "Chennai Super Kings",
+          "score": "210/4",
+          "overs": "20.0",
+          "batters": [
+            "Ruturaj Gaikwad"
+          ],
+          "currentBowler": "Jasprit Bumrah",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 6,
+          "snapshotId": "snap_cb_105203_1788014731504",
+          "snapshotTimestamp": "2026-08-29T14:45:31.504Z",
+          "selectedInnings": "Chennai Super Kings INNS",
+          "battingTeam": "Chennai Super Kings",
+          "score": "210/4",
+          "overs": "20.0",
+          "batters": [
+            "Ruturaj Gaikwad"
+          ],
+          "currentBowler": "Jasprit Bumrah",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 7,
+          "snapshotId": "snap_cb_105203_1788014731504",
+          "snapshotTimestamp": "2026-08-29T14:45:31.504Z",
+          "selectedInnings": "Chennai Super Kings INNS",
+          "battingTeam": "Chennai Super Kings",
+          "score": "210/4",
+          "overs": "20.0",
+          "batters": [
+            "Ruturaj Gaikwad"
+          ],
+          "currentBowler": "Jasprit Bumrah",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 8,
+          "snapshotId": "snap_cb_105203_1788014731504",
+          "snapshotTimestamp": "2026-08-29T14:45:31.504Z",
+          "selectedInnings": "Chennai Super Kings INNS",
+          "battingTeam": "Chennai Super Kings",
+          "score": "210/4",
+          "overs": "20.0",
+          "batters": [
+            "Ruturaj Gaikwad"
+          ],
+          "currentBowler": "Jasprit Bumrah",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 9,
+          "snapshotId": "snap_cb_105203_1788014731504",
+          "snapshotTimestamp": "2026-08-29T14:45:31.504Z",
+          "selectedInnings": "Chennai Super Kings INNS",
+          "battingTeam": "Chennai Super Kings",
+          "score": "210/4",
+          "overs": "20.0",
+          "batters": [
+            "Ruturaj Gaikwad"
+          ],
+          "currentBowler": "Jasprit Bumrah",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 10,
+          "snapshotId": "snap_cb_105203_1788014731504",
+          "snapshotTimestamp": "2026-08-29T14:45:31.504Z",
+          "selectedInnings": "Chennai Super Kings INNS",
+          "battingTeam": "Chennai Super Kings",
+          "score": "210/4",
+          "overs": "20.0",
+          "batters": [
+            "Ruturaj Gaikwad"
+          ],
+          "currentBowler": "Jasprit Bumrah",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 11,
+          "snapshotId": "snap_cb_105203_1788014731504",
+          "snapshotTimestamp": "2026-08-29T14:45:31.504Z",
+          "selectedInnings": "Chennai Super Kings INNS",
+          "battingTeam": "Chennai Super Kings",
+          "score": "210/4",
+          "overs": "20.0",
+          "batters": [
+            "Ruturaj Gaikwad"
+          ],
+          "currentBowler": "Jasprit Bumrah",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 12,
+          "snapshotId": "snap_cb_105203_1788014731504",
+          "snapshotTimestamp": "2026-08-29T14:45:31.504Z",
+          "selectedInnings": "Chennai Super Kings INNS",
+          "battingTeam": "Chennai Super Kings",
+          "score": "210/4",
+          "overs": "20.0",
+          "batters": [
+            "Ruturaj Gaikwad"
+          ],
+          "currentBowler": "Jasprit Bumrah",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 13,
+          "snapshotId": "snap_cb_105203_1788014731504",
+          "snapshotTimestamp": "2026-08-29T14:45:31.504Z",
+          "selectedInnings": "Chennai Super Kings INNS",
+          "battingTeam": "Chennai Super Kings",
+          "score": "210/4",
+          "overs": "20.0",
+          "batters": [
+            "Ruturaj Gaikwad"
+          ],
+          "currentBowler": "Jasprit Bumrah",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 14,
+          "snapshotId": "snap_cb_105203_1788014731504",
+          "snapshotTimestamp": "2026-08-29T14:45:31.504Z",
+          "selectedInnings": "Chennai Super Kings INNS",
+          "battingTeam": "Chennai Super Kings",
+          "score": "210/4",
+          "overs": "20.0",
+          "batters": [
+            "Ruturaj Gaikwad"
+          ],
+          "currentBowler": "Jasprit Bumrah",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 15,
+          "snapshotId": "snap_cb_105203_1788014731504",
+          "snapshotTimestamp": "2026-08-29T14:45:31.504Z",
+          "selectedInnings": "Chennai Super Kings INNS",
+          "battingTeam": "Chennai Super Kings",
+          "score": "210/4",
+          "overs": "20.0",
+          "batters": [
+            "Ruturaj Gaikwad"
+          ],
+          "currentBowler": "Jasprit Bumrah",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 16,
+          "snapshotId": "snap_cb_105203_1788014731504",
+          "snapshotTimestamp": "2026-08-29T14:45:31.504Z",
+          "selectedInnings": "Chennai Super Kings INNS",
+          "battingTeam": "Chennai Super Kings",
+          "score": "210/4",
+          "overs": "20.0",
+          "batters": [
+            "Ruturaj Gaikwad"
+          ],
+          "currentBowler": "Jasprit Bumrah",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 17,
+          "snapshotId": "snap_cb_105203_1788014731504",
+          "snapshotTimestamp": "2026-08-29T14:45:31.504Z",
+          "selectedInnings": "Chennai Super Kings INNS",
+          "battingTeam": "Chennai Super Kings",
+          "score": "210/4",
+          "overs": "20.0",
+          "batters": [
+            "Ruturaj Gaikwad"
+          ],
+          "currentBowler": "Jasprit Bumrah",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 18,
+          "snapshotId": "snap_cb_105203_1788014731504",
+          "snapshotTimestamp": "2026-08-29T14:45:31.504Z",
+          "selectedInnings": "Chennai Super Kings INNS",
+          "battingTeam": "Chennai Super Kings",
+          "score": "210/4",
+          "overs": "20.0",
+          "batters": [
+            "Ruturaj Gaikwad"
+          ],
+          "currentBowler": "Jasprit Bumrah",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 19,
+          "snapshotId": "snap_cb_105203_1788014731504",
+          "snapshotTimestamp": "2026-08-29T14:45:31.504Z",
+          "selectedInnings": "Chennai Super Kings INNS",
+          "battingTeam": "Chennai Super Kings",
+          "score": "210/4",
+          "overs": "20.0",
+          "batters": [
+            "Ruturaj Gaikwad"
+          ],
+          "currentBowler": "Jasprit Bumrah",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 20,
+          "snapshotId": "snap_cb_105203_1788014731504",
+          "snapshotTimestamp": "2026-08-29T14:45:31.504Z",
+          "selectedInnings": "Chennai Super Kings INNS",
+          "battingTeam": "Chennai Super Kings",
+          "score": "210/4",
+          "overs": "20.0",
+          "batters": [
+            "Ruturaj Gaikwad"
+          ],
+          "currentBowler": "Jasprit Bumrah",
+          "dataConsistent": "YES"
+        }
+      ],
+      "allConsistent": true
+    },
+    {
+      "match": "Royal Challengers Bengaluru v Kolkata Knight Riders",
+      "providerEventId": "cb_105204",
+      "isLive": false,
+      "iterations": [
+        {
+          "iteration": 1,
+          "snapshotId": "snap_cb_105204_1788014731504",
+          "snapshotTimestamp": "2026-08-29T14:45:31.504Z",
+          "selectedInnings": "Royal Challengers Bengaluru INNS",
+          "battingTeam": "Royal Challengers Bengaluru",
+          "score": "195/6",
+          "overs": "20.0",
+          "batters": [
+            "Virat Kohli"
+          ],
+          "currentBowler": "Sunil Narine",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 2,
+          "snapshotId": "snap_cb_105204_1788014731504",
+          "snapshotTimestamp": "2026-08-29T14:45:31.504Z",
+          "selectedInnings": "Royal Challengers Bengaluru INNS",
+          "battingTeam": "Royal Challengers Bengaluru",
+          "score": "195/6",
+          "overs": "20.0",
+          "batters": [
+            "Virat Kohli"
+          ],
+          "currentBowler": "Sunil Narine",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 3,
+          "snapshotId": "snap_cb_105204_1788014731504",
+          "snapshotTimestamp": "2026-08-29T14:45:31.504Z",
+          "selectedInnings": "Royal Challengers Bengaluru INNS",
+          "battingTeam": "Royal Challengers Bengaluru",
+          "score": "195/6",
+          "overs": "20.0",
+          "batters": [
+            "Virat Kohli"
+          ],
+          "currentBowler": "Sunil Narine",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 4,
+          "snapshotId": "snap_cb_105204_1788014731505",
+          "snapshotTimestamp": "2026-08-29T14:45:31.505Z",
+          "selectedInnings": "Royal Challengers Bengaluru INNS",
+          "battingTeam": "Royal Challengers Bengaluru",
+          "score": "195/6",
+          "overs": "20.0",
+          "batters": [
+            "Virat Kohli"
+          ],
+          "currentBowler": "Sunil Narine",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 5,
+          "snapshotId": "snap_cb_105204_1788014731505",
+          "snapshotTimestamp": "2026-08-29T14:45:31.505Z",
+          "selectedInnings": "Royal Challengers Bengaluru INNS",
+          "battingTeam": "Royal Challengers Bengaluru",
+          "score": "195/6",
+          "overs": "20.0",
+          "batters": [
+            "Virat Kohli"
+          ],
+          "currentBowler": "Sunil Narine",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 6,
+          "snapshotId": "snap_cb_105204_1788014731505",
+          "snapshotTimestamp": "2026-08-29T14:45:31.505Z",
+          "selectedInnings": "Royal Challengers Bengaluru INNS",
+          "battingTeam": "Royal Challengers Bengaluru",
+          "score": "195/6",
+          "overs": "20.0",
+          "batters": [
+            "Virat Kohli"
+          ],
+          "currentBowler": "Sunil Narine",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 7,
+          "snapshotId": "snap_cb_105204_1788014731505",
+          "snapshotTimestamp": "2026-08-29T14:45:31.505Z",
+          "selectedInnings": "Royal Challengers Bengaluru INNS",
+          "battingTeam": "Royal Challengers Bengaluru",
+          "score": "195/6",
+          "overs": "20.0",
+          "batters": [
+            "Virat Kohli"
+          ],
+          "currentBowler": "Sunil Narine",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 8,
+          "snapshotId": "snap_cb_105204_1788014731505",
+          "snapshotTimestamp": "2026-08-29T14:45:31.505Z",
+          "selectedInnings": "Royal Challengers Bengaluru INNS",
+          "battingTeam": "Royal Challengers Bengaluru",
+          "score": "195/6",
+          "overs": "20.0",
+          "batters": [
+            "Virat Kohli"
+          ],
+          "currentBowler": "Sunil Narine",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 9,
+          "snapshotId": "snap_cb_105204_1788014731505",
+          "snapshotTimestamp": "2026-08-29T14:45:31.505Z",
+          "selectedInnings": "Royal Challengers Bengaluru INNS",
+          "battingTeam": "Royal Challengers Bengaluru",
+          "score": "195/6",
+          "overs": "20.0",
+          "batters": [
+            "Virat Kohli"
+          ],
+          "currentBowler": "Sunil Narine",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 10,
+          "snapshotId": "snap_cb_105204_1788014731505",
+          "snapshotTimestamp": "2026-08-29T14:45:31.505Z",
+          "selectedInnings": "Royal Challengers Bengaluru INNS",
+          "battingTeam": "Royal Challengers Bengaluru",
+          "score": "195/6",
+          "overs": "20.0",
+          "batters": [
+            "Virat Kohli"
+          ],
+          "currentBowler": "Sunil Narine",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 11,
+          "snapshotId": "snap_cb_105204_1788014731505",
+          "snapshotTimestamp": "2026-08-29T14:45:31.505Z",
+          "selectedInnings": "Royal Challengers Bengaluru INNS",
+          "battingTeam": "Royal Challengers Bengaluru",
+          "score": "195/6",
+          "overs": "20.0",
+          "batters": [
+            "Virat Kohli"
+          ],
+          "currentBowler": "Sunil Narine",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 12,
+          "snapshotId": "snap_cb_105204_1788014731505",
+          "snapshotTimestamp": "2026-08-29T14:45:31.505Z",
+          "selectedInnings": "Royal Challengers Bengaluru INNS",
+          "battingTeam": "Royal Challengers Bengaluru",
+          "score": "195/6",
+          "overs": "20.0",
+          "batters": [
+            "Virat Kohli"
+          ],
+          "currentBowler": "Sunil Narine",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 13,
+          "snapshotId": "snap_cb_105204_1788014731505",
+          "snapshotTimestamp": "2026-08-29T14:45:31.505Z",
+          "selectedInnings": "Royal Challengers Bengaluru INNS",
+          "battingTeam": "Royal Challengers Bengaluru",
+          "score": "195/6",
+          "overs": "20.0",
+          "batters": [
+            "Virat Kohli"
+          ],
+          "currentBowler": "Sunil Narine",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 14,
+          "snapshotId": "snap_cb_105204_1788014731505",
+          "snapshotTimestamp": "2026-08-29T14:45:31.505Z",
+          "selectedInnings": "Royal Challengers Bengaluru INNS",
+          "battingTeam": "Royal Challengers Bengaluru",
+          "score": "195/6",
+          "overs": "20.0",
+          "batters": [
+            "Virat Kohli"
+          ],
+          "currentBowler": "Sunil Narine",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 15,
+          "snapshotId": "snap_cb_105204_1788014731505",
+          "snapshotTimestamp": "2026-08-29T14:45:31.505Z",
+          "selectedInnings": "Royal Challengers Bengaluru INNS",
+          "battingTeam": "Royal Challengers Bengaluru",
+          "score": "195/6",
+          "overs": "20.0",
+          "batters": [
+            "Virat Kohli"
+          ],
+          "currentBowler": "Sunil Narine",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 16,
+          "snapshotId": "snap_cb_105204_1788014731505",
+          "snapshotTimestamp": "2026-08-29T14:45:31.505Z",
+          "selectedInnings": "Royal Challengers Bengaluru INNS",
+          "battingTeam": "Royal Challengers Bengaluru",
+          "score": "195/6",
+          "overs": "20.0",
+          "batters": [
+            "Virat Kohli"
+          ],
+          "currentBowler": "Sunil Narine",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 17,
+          "snapshotId": "snap_cb_105204_1788014731505",
+          "snapshotTimestamp": "2026-08-29T14:45:31.505Z",
+          "selectedInnings": "Royal Challengers Bengaluru INNS",
+          "battingTeam": "Royal Challengers Bengaluru",
+          "score": "195/6",
+          "overs": "20.0",
+          "batters": [
+            "Virat Kohli"
+          ],
+          "currentBowler": "Sunil Narine",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 18,
+          "snapshotId": "snap_cb_105204_1788014731505",
+          "snapshotTimestamp": "2026-08-29T14:45:31.505Z",
+          "selectedInnings": "Royal Challengers Bengaluru INNS",
+          "battingTeam": "Royal Challengers Bengaluru",
+          "score": "195/6",
+          "overs": "20.0",
+          "batters": [
+            "Virat Kohli"
+          ],
+          "currentBowler": "Sunil Narine",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 19,
+          "snapshotId": "snap_cb_105204_1788014731505",
+          "snapshotTimestamp": "2026-08-29T14:45:31.505Z",
+          "selectedInnings": "Royal Challengers Bengaluru INNS",
+          "battingTeam": "Royal Challengers Bengaluru",
+          "score": "195/6",
+          "overs": "20.0",
+          "batters": [
+            "Virat Kohli"
+          ],
+          "currentBowler": "Sunil Narine",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 20,
+          "snapshotId": "snap_cb_105204_1788014731505",
+          "snapshotTimestamp": "2026-08-29T14:45:31.505Z",
+          "selectedInnings": "Royal Challengers Bengaluru INNS",
+          "battingTeam": "Royal Challengers Bengaluru",
+          "score": "195/6",
+          "overs": "20.0",
+          "batters": [
+            "Virat Kohli"
+          ],
+          "currentBowler": "Sunil Narine",
+          "dataConsistent": "YES"
+        }
+      ],
+      "allConsistent": true
+    },
+    {
+      "match": "Gujarat Titans v Rajasthan Royals",
+      "providerEventId": "cb_105205",
+      "isLive": false,
+      "iterations": [
+        {
+          "iteration": 1,
+          "snapshotId": "snap_cb_105205_1788014731505",
+          "snapshotTimestamp": "2026-08-29T14:45:31.505Z",
+          "selectedInnings": "Gujarat Titans INNS",
+          "battingTeam": "Gujarat Titans",
+          "score": "178/8",
+          "overs": "20.0",
+          "batters": [
+            "Shubman Gill"
+          ],
+          "currentBowler": "Trent Boult",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 2,
+          "snapshotId": "snap_cb_105205_1788014731505",
+          "snapshotTimestamp": "2026-08-29T14:45:31.505Z",
+          "selectedInnings": "Gujarat Titans INNS",
+          "battingTeam": "Gujarat Titans",
+          "score": "178/8",
+          "overs": "20.0",
+          "batters": [
+            "Shubman Gill"
+          ],
+          "currentBowler": "Trent Boult",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 3,
+          "snapshotId": "snap_cb_105205_1788014731506",
+          "snapshotTimestamp": "2026-08-29T14:45:31.506Z",
+          "selectedInnings": "Gujarat Titans INNS",
+          "battingTeam": "Gujarat Titans",
+          "score": "178/8",
+          "overs": "20.0",
+          "batters": [
+            "Shubman Gill"
+          ],
+          "currentBowler": "Trent Boult",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 4,
+          "snapshotId": "snap_cb_105205_1788014731507",
+          "snapshotTimestamp": "2026-08-29T14:45:31.507Z",
+          "selectedInnings": "Gujarat Titans INNS",
+          "battingTeam": "Gujarat Titans",
+          "score": "178/8",
+          "overs": "20.0",
+          "batters": [
+            "Shubman Gill"
+          ],
+          "currentBowler": "Trent Boult",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 5,
+          "snapshotId": "snap_cb_105205_1788014731507",
+          "snapshotTimestamp": "2026-08-29T14:45:31.507Z",
+          "selectedInnings": "Gujarat Titans INNS",
+          "battingTeam": "Gujarat Titans",
+          "score": "178/8",
+          "overs": "20.0",
+          "batters": [
+            "Shubman Gill"
+          ],
+          "currentBowler": "Trent Boult",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 6,
+          "snapshotId": "snap_cb_105205_1788014731507",
+          "snapshotTimestamp": "2026-08-29T14:45:31.507Z",
+          "selectedInnings": "Gujarat Titans INNS",
+          "battingTeam": "Gujarat Titans",
+          "score": "178/8",
+          "overs": "20.0",
+          "batters": [
+            "Shubman Gill"
+          ],
+          "currentBowler": "Trent Boult",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 7,
+          "snapshotId": "snap_cb_105205_1788014731507",
+          "snapshotTimestamp": "2026-08-29T14:45:31.507Z",
+          "selectedInnings": "Gujarat Titans INNS",
+          "battingTeam": "Gujarat Titans",
+          "score": "178/8",
+          "overs": "20.0",
+          "batters": [
+            "Shubman Gill"
+          ],
+          "currentBowler": "Trent Boult",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 8,
+          "snapshotId": "snap_cb_105205_1788014731507",
+          "snapshotTimestamp": "2026-08-29T14:45:31.507Z",
+          "selectedInnings": "Gujarat Titans INNS",
+          "battingTeam": "Gujarat Titans",
+          "score": "178/8",
+          "overs": "20.0",
+          "batters": [
+            "Shubman Gill"
+          ],
+          "currentBowler": "Trent Boult",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 9,
+          "snapshotId": "snap_cb_105205_1788014731507",
+          "snapshotTimestamp": "2026-08-29T14:45:31.507Z",
+          "selectedInnings": "Gujarat Titans INNS",
+          "battingTeam": "Gujarat Titans",
+          "score": "178/8",
+          "overs": "20.0",
+          "batters": [
+            "Shubman Gill"
+          ],
+          "currentBowler": "Trent Boult",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 10,
+          "snapshotId": "snap_cb_105205_1788014731507",
+          "snapshotTimestamp": "2026-08-29T14:45:31.507Z",
+          "selectedInnings": "Gujarat Titans INNS",
+          "battingTeam": "Gujarat Titans",
+          "score": "178/8",
+          "overs": "20.0",
+          "batters": [
+            "Shubman Gill"
+          ],
+          "currentBowler": "Trent Boult",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 11,
+          "snapshotId": "snap_cb_105205_1788014731507",
+          "snapshotTimestamp": "2026-08-29T14:45:31.507Z",
+          "selectedInnings": "Gujarat Titans INNS",
+          "battingTeam": "Gujarat Titans",
+          "score": "178/8",
+          "overs": "20.0",
+          "batters": [
+            "Shubman Gill"
+          ],
+          "currentBowler": "Trent Boult",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 12,
+          "snapshotId": "snap_cb_105205_1788014731507",
+          "snapshotTimestamp": "2026-08-29T14:45:31.507Z",
+          "selectedInnings": "Gujarat Titans INNS",
+          "battingTeam": "Gujarat Titans",
+          "score": "178/8",
+          "overs": "20.0",
+          "batters": [
+            "Shubman Gill"
+          ],
+          "currentBowler": "Trent Boult",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 13,
+          "snapshotId": "snap_cb_105205_1788014731507",
+          "snapshotTimestamp": "2026-08-29T14:45:31.507Z",
+          "selectedInnings": "Gujarat Titans INNS",
+          "battingTeam": "Gujarat Titans",
+          "score": "178/8",
+          "overs": "20.0",
+          "batters": [
+            "Shubman Gill"
+          ],
+          "currentBowler": "Trent Boult",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 14,
+          "snapshotId": "snap_cb_105205_1788014731507",
+          "snapshotTimestamp": "2026-08-29T14:45:31.507Z",
+          "selectedInnings": "Gujarat Titans INNS",
+          "battingTeam": "Gujarat Titans",
+          "score": "178/8",
+          "overs": "20.0",
+          "batters": [
+            "Shubman Gill"
+          ],
+          "currentBowler": "Trent Boult",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 15,
+          "snapshotId": "snap_cb_105205_1788014731507",
+          "snapshotTimestamp": "2026-08-29T14:45:31.507Z",
+          "selectedInnings": "Gujarat Titans INNS",
+          "battingTeam": "Gujarat Titans",
+          "score": "178/8",
+          "overs": "20.0",
+          "batters": [
+            "Shubman Gill"
+          ],
+          "currentBowler": "Trent Boult",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 16,
+          "snapshotId": "snap_cb_105205_1788014731507",
+          "snapshotTimestamp": "2026-08-29T14:45:31.507Z",
+          "selectedInnings": "Gujarat Titans INNS",
+          "battingTeam": "Gujarat Titans",
+          "score": "178/8",
+          "overs": "20.0",
+          "batters": [
+            "Shubman Gill"
+          ],
+          "currentBowler": "Trent Boult",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 17,
+          "snapshotId": "snap_cb_105205_1788014731507",
+          "snapshotTimestamp": "2026-08-29T14:45:31.507Z",
+          "selectedInnings": "Gujarat Titans INNS",
+          "battingTeam": "Gujarat Titans",
+          "score": "178/8",
+          "overs": "20.0",
+          "batters": [
+            "Shubman Gill"
+          ],
+          "currentBowler": "Trent Boult",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 18,
+          "snapshotId": "snap_cb_105205_1788014731507",
+          "snapshotTimestamp": "2026-08-29T14:45:31.507Z",
+          "selectedInnings": "Gujarat Titans INNS",
+          "battingTeam": "Gujarat Titans",
+          "score": "178/8",
+          "overs": "20.0",
+          "batters": [
+            "Shubman Gill"
+          ],
+          "currentBowler": "Trent Boult",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 19,
+          "snapshotId": "snap_cb_105205_1788014731507",
+          "snapshotTimestamp": "2026-08-29T14:45:31.507Z",
+          "selectedInnings": "Gujarat Titans INNS",
+          "battingTeam": "Gujarat Titans",
+          "score": "178/8",
+          "overs": "20.0",
+          "batters": [
+            "Shubman Gill"
+          ],
+          "currentBowler": "Trent Boult",
+          "dataConsistent": "YES"
+        },
+        {
+          "iteration": 20,
+          "snapshotId": "snap_cb_105205_1788014731507",
+          "snapshotTimestamp": "2026-08-29T14:45:31.507Z",
+          "selectedInnings": "Gujarat Titans INNS",
+          "battingTeam": "Gujarat Titans",
+          "score": "178/8",
+          "overs": "20.0",
+          "batters": [
+            "Shubman Gill"
+          ],
+          "currentBowler": "Trent Boult",
+          "dataConsistent": "YES"
+        }
+      ],
+      "allConsistent": true
+    }
+  ]
+}

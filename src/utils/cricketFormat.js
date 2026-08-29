@@ -65,46 +65,118 @@ function inferT10FromLive(match) {
 }
 
 /**
- * Resolve limited-overs format. League/series T10 wins over a generic T20 matchType.
- * @returns {'T10'|'T20'|'ODI'|'TEST'|'THE_HUNDRED'}
+ * Canonical cricket match format detector.
+ * Normalizes all provider fields into standard format tokens:
+ * 'TEST' | 'ODI' | 'T20' | 'T10' | 'FIRST_CLASS' | 'LIST_A' | 'THE_HUNDRED' | 'OTHER'
  */
-export function resolveCricketOversFormat(match) {
+export function detectCricketMatchFormat(match) {
   if (!match) return 'T20';
-  if (isHundredMatch(match)) return 'THE_HUNDRED';
 
+  // 1. Direct authoritative provider format fields
+  const direct = String(
+    match.matchFormat
+    || match.format
+    || match.matchType
+    || match.seriesType
+    || match.matchHeader?.matchFormat
+    || match.liveDetails?.matchFormat
+    || ''
+  ).trim();
+
+  const upperDirect = direct.toUpperCase();
+  if (/^TEST$|^TEST\s*MATCH$/i.test(upperDirect)) return 'TEST';
+  if (/^ODI$|^ONE\s*DAY\s*INTERNATIONAL$/i.test(upperDirect)) return 'ODI';
+  if (/^T20$|^TWENTY20$|^T20I$/i.test(upperDirect)) return 'T20';
+  if (/^T10$|^TEN10$|^T10I$/i.test(upperDirect)) return 'T10';
+  if (/^FIRST[\s-_]?CLASS$|^FC$/i.test(upperDirect)) return 'FIRST_CLASS';
+  if (/^LIST[\s-_]?A$/i.test(upperDirect)) return 'LIST_A';
+  if (/^THE[\s-_]?HUNDRED$|^100\s*BALL$/i.test(upperDirect)) return 'THE_HUNDRED';
+
+  // 2. Comprehensive text analysis across league, competition, title, description, commentary
   const raw = collectMatchFormatText(match).toUpperCase();
 
-  // Explicit T10 markers (before T20 — "Frankfurt T10" + matchType T20)
-  if (/T[\s-]?10|TEN\s*10|10[\s-]?OVERS?|TEN[\s-]?OVERS?|FRANKFURT\s*T10/.test(raw)) {
+  // Test / Multi-Day / First Class
+  if (/\bTEST\s*MATCH\b|\bTEST\b|\bTESTS\b|\bASHES\b|\bSHEFFIELD\s*SHIELD\b|\bRANJI\s*TROPHY\b|\bCOUNTY\s*CHAMPIONSHIP\b|\b4[\s-]?DAY\b|\bFOUR[\s-]?DAY\b|\b5[\s-]?DAY\b|\bMULTI[\s-]?DAY\b/.test(raw)) {
+    if (/FIRST[\s-_]?CLASS/.test(raw)) return 'FIRST_CLASS';
+    return 'TEST';
+  }
+
+  // T10
+  if (/\bT10\b|\bT-10\b|\bTEN10\b|\b10[\s-]?OVERS?\b|\bEUROPEAN\s*CRICKET\s*SERIES\b|\bECS\s*T10\b|\bABU\s*DHABI\s*T10\b|\bMAX60\b/.test(raw)) {
     return 'T10';
   }
 
-  if (inferT10FromLive(match)) return 'T10';
-
-  // Virtual / Quantum products on this book are 10-over games unless marked otherwise
-  const explicitLonger = /\bT20\b|TWENTY20|20[\s-]?OVERS?|\bODI\b|ONE[-\s]?DAY|\bTEST\b|50[\s-]?OVER/.test(raw);
-  if (!explicitLonger) {
-    if (String(match.sport || '').toLowerCase() === 'virtual-cricket') return 'T10';
-    if (/VIRTUAL\s*FAST\s*CRICKET|QUANTUM\s*CRICKET/.test(raw)) return 'T10';
+  // The Hundred
+  if (/\bTHE\s*HUNDRED\b|\bHUNDRED\b|\b100[\s-]?BALL\b/.test(raw)) {
+    return 'THE_HUNDRED';
   }
 
-  if (/TEST|FIRST\s*CLASS|4[\s-]?DAY/.test(raw)) return 'TEST';
-  if (/ODI|ONE[-\s]?DAY|LIST\s*A|\b50[\s-]?OVERS?|CWC\s*LEAGUE/.test(raw)) return 'ODI';
-  if (/\bT20\b|TWENTY20|20[\s-]?OVERS?|\bBLAST\b|\bIPL\b|\bBBL\b|\bCPL\b|SA20|ILT20|\bMLC\b/.test(raw)) {
+  // ODI / 50 Over / List A
+  if (/\bODI\b|\bONE[\s-]?DAY\b|\b50[\s-]?OVERS?\b|\bCWC\b|\bWORLD\s*CUP\b|\bVIJAY\s*HAZARE\b|\bROYAL\s*LONDON\b|\bMARSH\s*ONE\s*DAY\b/.test(raw)) {
+    if (/LIST[\s-_]?A/.test(raw)) return 'LIST_A';
+    return 'ODI';
+  }
+
+  // T20
+  if (/\bT20\b|\bTWENTY20\b|\b20[\s-]?OVERS?\b|\bIPL\b|\bBBL\b|\bPSL\b|\bCPL\b|\bSA20\b|\bILT20\b|\bBPL\b|\bSUPER\s*SMASH\b|\bBLAST\b|\bT20\s*BLAST\b|\bSMAT\b|\bMLC\b|\bSRL\b/.test(raw)) {
     return 'T20';
   }
 
-  // Live overs already past 10 in innings 1 → T20/ODI, not T10
+  // 3. Fallback based on maximum overs or observed overs
   const seen = Math.max(
     oversWhole(match?.liveDetails?.overs),
     oversWhole(match?.liveDetails?.firstOvers),
     oversWhole(match?.liveDetails?.chaseOvers),
     oversWhole(match?.liveDetails?.overs2),
+    oversWhole(match?.team1?.overs),
+    oversWhole(match?.team2?.overs),
   );
-  if (seen > 10 && seen <= 20) return 'T20';
+  if (seen > 50) return 'TEST';
   if (seen > 20) return 'ODI';
+  if (seen > 10) return 'T20';
+
+  if (String(match.sport || '').toLowerCase() === 'virtual-cricket') return 'T10';
 
   return 'T20';
+}
+
+/**
+ * Returns clean user-facing format banner text (e.g. "TEST MATCH", "ODI", "T20", "T10").
+ */
+export function getCricketFormatBanner(formatOrMatch) {
+  const format = typeof formatOrMatch === 'string' && !formatOrMatch.includes(' ') && formatOrMatch.toUpperCase() === formatOrMatch
+    ? formatOrMatch.toUpperCase()
+    : detectCricketMatchFormat(formatOrMatch);
+
+  switch (format) {
+    case 'TEST':
+      return 'TEST MATCH';
+    case 'ODI':
+      return 'ODI';
+    case 'T20':
+      return 'T20';
+    case 'T10':
+      return 'T10';
+    case 'FIRST_CLASS':
+      return 'FIRST CLASS';
+    case 'LIST_A':
+      return 'LIST A';
+    case 'THE_HUNDRED':
+      return 'THE HUNDRED';
+    default:
+      return format || 'T20';
+  }
+}
+
+/**
+ * Resolve limited-overs format. League/series T10 wins over a generic T20 matchType.
+ * @returns {'T10'|'T20'|'ODI'|'TEST'|'THE_HUNDRED'}
+ */
+export function resolveCricketOversFormat(match) {
+  const detected = detectCricketMatchFormat(match);
+  if (detected === 'FIRST_CLASS') return 'TEST';
+  if (detected === 'LIST_A') return 'ODI';
+  return detected;
 }
 
 /** Cricbuzz Hundred API often sends total balls as `64.0` or `100.0` instead of overs. */

@@ -172,7 +172,16 @@ class CentralizedMatchStateEngine {
           declared: Boolean(ld.declared2 || (ld.testInnings && ld.testInnings[1]?.declared)),
         });
       } else {
-        const batTeam = ld.firstTeamName || team1Name;
+        const firstScorecardInn = Array.isArray(payload.scorecardInnings) && payload.scorecardInnings.length > 0
+          ? payload.scorecardInnings[0]
+          : null;
+        let batTeam = firstScorecardInn?.batTeamName || ld.firstTeamName || '';
+        if (!batTeam) {
+          const t1r = Number(payload.team1?.runs ?? ld.score1 ?? 0);
+          const t2r = Number(payload.team2?.runs ?? ld.score2 ?? 0);
+          if (t2r > 0 && t1r === 0) batTeam = team2Name;
+          else batTeam = team1Name;
+        }
         inningsList.push({
           inningsId: 1,
           batTeam,

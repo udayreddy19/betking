@@ -1,0 +1,26 @@
+{
+  "timestamp": "2026-08-29T15:22:28.407Z",
+  "banners": [
+    {
+      "format": "TEST",
+      "banner": "TEST MATCH",
+      "sampleMatch": "Warwickshire v Nottinghamshire"
+    },
+    {
+      "format": "ODI",
+      "banner": "ODI",
+      "sampleMatch": "India v Australia"
+    },
+    {
+      "format": "T20",
+      "banner": "T20",
+      "sampleMatch": "Chennai Super Kings v Mumbai Indians"
+    },
+    {
+      "format": "T10",
+      "banner": "T10",
+      "sampleMatch": "Rome CC v Milan Kings"
+    }
+  ],
+  "liveChipSeparation": "Format banner is independent from status chip [TEST MATCH] [● LIVE]"
+}

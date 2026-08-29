@@ -1,0 +1,21 @@
+{
+  "auditStatus": "VERIFIED",
+  "testMatch": "Warwickshire v Nottinghamshire",
+  "providerEventId": "cb_105219",
+  "findings": {
+    "selectedInnings": "Nottinghamshire INNS",
+    "battingTeam": "Nottinghamshire",
+    "bowlingTeam": "Warwickshire",
+    "score": "299/7",
+    "overs": "82.0",
+    "battersAssignedCorrectly": true,
+    "bowlerAssignedToOpposingTeam": true,
+    "firstAndSecondInningsSeparation": "STRICT_SEPARATE"
+  },
+  "mappingRulesEnforced": [
+    "SELECTED_INNINGS → BATTER DATA FROM SAME INNINGS",
+    "SELECTED_INNINGS → SCORE FROM SAME INNINGS",
+    "SELECTED_INNINGS → OVERS FROM SAME INNINGS",
+    "SELECTED_INNINGS → BOWLER DATA FROM SAME MATCH STATE"
+  ]
+}

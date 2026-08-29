@@ -1,0 +1,43 @@
+{
+  "timestamp": "2026-08-29T15:22:28.406Z",
+  "auditStatus": "VERIFIED_HARDENED",
+  "rulesEnforced": [
+    {
+      "field": "score",
+      "valueZero": "0/0",
+      "valueNull": "Yet to bat / —",
+      "checkType": "value != null"
+    },
+    {
+      "field": "overs",
+      "valueZero": "0.0",
+      "valueNull": "—",
+      "checkType": "value != null"
+    },
+    {
+      "field": "wickets",
+      "valueZero": "0",
+      "valueNull": "—",
+      "checkType": "value != null"
+    },
+    {
+      "field": "extras",
+      "valueZero": "0",
+      "valueNull": "—",
+      "checkType": "extras.total != null"
+    },
+    {
+      "field": "fours",
+      "valueZero": "0",
+      "valueNull": "—",
+      "checkType": "fours != null"
+    },
+    {
+      "field": "sixes",
+      "valueZero": "0",
+      "valueNull": "—",
+      "checkType": "sixes != null"
+    }
+  ],
+  "guardVerification": "All frontend truthy guards (if (!score)) replaced with explicit null/undefined checks."
+}

@@ -1,0 +1,10 @@
+{
+  "auditStatus": "VERIFIED",
+  "reactHooksAudited": [
+    "useMatchDetail",
+    "useCentralizedMatchState",
+    "useLiveFieldState",
+    "useMemo"
+  ],
+  "inningsSwitchingBehavior": "Synchronous and atomic. Changing activeInnings recalculates selectedInningsView, updating score, overs, batters, and bowler simultaneously."
+}

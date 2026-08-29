@@ -1,0 +1,10 @@
+{
+  "rules": [
+    "VR-1: All batters must belong to selected innings batting team",
+    "VR-2: All bowlers must belong to selected innings bowling team (opposing side)",
+    "VR-3: Score and overs must match selected innings score/overs",
+    "VR-4: Header score must never display 0/0 for unbatted teams",
+    "VR-5: If batter/bowler data missing, explicit fallback text must render",
+    "VR-6: SnapshotId and ProviderEventId must be consistent across all child components"
+  ]
+}

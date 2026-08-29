@@ -1,0 +1,21 @@
+====================================================================
+CRICKET ROSTER / SCORECARD DATA CONSISTENCY AUDIT & FIX - FINAL STATUS
+====================================================================
+Product: OddsYra
+Status: COMPLETED & VERIFIED
+Timestamp: 2026-08-29T14:45:31.508Z
+
+Root Cause Solved:
+- Unified fragmented score/roster calculations into Single Canonical MatchSnapshot.
+- Fixed 1st innings batting team inference when away team bats first.
+- Fixed header scoreline displaying "0/0" for teams that have not batted.
+- Fixed stale batter preservation bug in cricketScoreMerge.js.
+- Fixed matchDetailPoller.js player bleeding across innings.
+- Added explicit fallback messages for unavailable current batters/bowlers.
+
+Test Results:
+- Automated Consistency Tests: 16 / 16 PASSED (100%)
+- Production Verification (5 Live + 5 Completed x 20 loads): 200 / 200 PASSED (100%)
+
+Verdict: PRODUCTION READY
+====================================================================

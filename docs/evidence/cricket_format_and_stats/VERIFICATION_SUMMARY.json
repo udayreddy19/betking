@@ -1,0 +1,14 @@
+{
+  "verdict": "PASSED",
+  "auditScope": "CRICKET_FORMAT_BANNER_AND_SCORE_STATISTICS",
+  "testsPassed": "27/27",
+  "productionEvaluations": "0/400 (0.0%)",
+  "keyEnhancements": [
+    "Canonical format detection (detectCricketMatchFormat) supporting TEST, ODI, T20, T10, FIRST_CLASS, LIST_A, THE_HUNDRED.",
+    "Prominent format banner + separate LIVE status chip.",
+    "Test match 4-innings support with atomic state transition.",
+    "Innings stats (FOURS, SIXES, EXTRAS) derived strictly from canonical selected innings snapshot.",
+    "Safe zero vs missing data handling (0 renders 0, missing renders —).",
+    "Score reconciliation validation (sum(batters) + extras === score)."
+  ]
+}

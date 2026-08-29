@@ -1,0 +1,20 @@
+{
+  "architecturePattern": "Single Canonical MatchSnapshot Model",
+  "flow": "ONE MATCH SNAPSHOT → ONE SELECTED INNINGS → ALL UI COMPONENTS DERIVE FROM THAT SAME DATA",
+  "atomicSwapGuarantee": true,
+  "schema": {
+    "providerEventId": "string",
+    "snapshotId": "string",
+    "snapshotTimestamp": "ISO8601",
+    "match": {
+      "id": "string",
+      "team1": "object",
+      "team2": "object",
+      "status": "string",
+      "isLive": "boolean"
+    },
+    "innings": "InningsSnapshot[]",
+    "currentInningsId": "number",
+    "headerScores": "HeaderScoresObject"
+  }
+}
