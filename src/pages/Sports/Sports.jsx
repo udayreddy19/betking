@@ -299,9 +299,11 @@ export default function Sports() {
   const initialSport = searchParams.get('sport') || 'all';
   const initialLeague = resolveLeagueId(searchParams.get('league')) || 'all';
   const initialMatchId = searchParams.get('match');
+  const initialTab = searchParams.get('tab') || searchParams.get('status') || (isLiveBettingPage ? 'live' : 'all');
 
   const [activeSport, setActiveSport] = useState(initialSport);
   const [activeLeague, setActiveLeague] = useState(initialLeague);
+  const [activeStateTab, setActiveStateTab] = useState(initialTab);
   const [viewMode, setViewMode] = useState(initialMatchId ? 'match' : 'league');
   const [activeMarketCat, setActiveMarketCat] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -315,19 +317,29 @@ export default function Sports() {
   useEffect(() => subscribeMediaQuery('(min-width: 1025px)', setIsWideLayout), []);
 
   const isIplSrlView = isSameLeague(activeLeague, 'ipl-srl', cricketSeries);
-  const watchlistOnly = searchParams.get('watchlist') === '1';
 
   const baseSportPool = useMemo(() => {
-    if (watchlistOnly) {
-      return filterMatches(matches || [], { stateTab: 'all', searchQuery })
-        .filter((m) => watchlistIds.includes(String(m.id)));
-    }
     return filterByLeague(
-      filterMatches(matches || [], { sport: activeSport, stateTab: 'all', searchQuery }),
+      filterMatches(matches || [], { sport: activeSport, stateTab: activeStateTab, searchQuery }),
       activeLeague,
       cricketSeries,
     );
-  }, [matches, activeSport, activeLeague, searchQuery, cricketSeries, watchlistOnly, watchlistIds]);
+  }, [matches, activeSport, activeLeague, activeStateTab, searchQuery, cricketSeries]);
+
+  const stateCounts = useMemo(() => {
+    const sportFiltered = filterMatchesBySport(matches || [], activeSport);
+    const leagueFiltered = filterByLeague(sportFiltered, activeLeague, cricketSeries);
+    let live = 0;
+    let upcoming = 0;
+    let completed = 0;
+    for (const m of leagueFiltered) {
+      const s = getMatchState(m);
+      if (s === 'in') live++;
+      else if (s === 'pre') upcoming++;
+      else if (s === 'post') completed++;
+    }
+    return { all: leagueFiltered.length, live, upcoming, completed };
+  }, [matches, activeSport, activeLeague, cricketSeries]);
 
   const sportMatches = useMemo(() => {
     return [...baseSportPool].sort((a, b) => compareMatchesForSportsBoard(a, b, getMatchScores));
@@ -585,14 +597,14 @@ export default function Sports() {
       next.set('sport', activeSport);
       if (resolved) next.set('league', resolved);
       else next.delete('league');
+      if (activeStateTab && activeStateTab !== 'all') next.set('tab', activeStateTab);
       next.delete('match');
-      next.delete('watchlist');
       return next;
     }, { replace: true });
     requestAnimationFrame(() => {
       document.getElementById('sports-match-ticker')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     });
-  }, [activeSport, activeLeague, setSearchParams, cricketSeries]);
+  }, [activeSport, activeLeague, activeStateTab, setSearchParams, cricketSeries]);
 
   const goBackFromMatch = useCallback(() => {
     const historyIndex = window.history.state?.idx;
@@ -636,24 +648,25 @@ export default function Sports() {
       const next = new URLSearchParams(prev);
       next.set('sport', sportId);
       next.set('league', 'all');
+      if (activeStateTab && activeStateTab !== 'all') next.set('tab', activeStateTab);
       next.delete('match');
-      next.delete('watchlist');
       return next;
     }, { replace: true });
-  }, [setSearchParams]);
+  }, [setSearchParams, activeStateTab]);
 
   const handleLeagueChange = useCallback((leagueId) => {
     showLeagueOverview(leagueId);
   }, [showLeagueOverview]);
 
-  const toggleWatchlistFilter = useCallback(() => {
+  const handleStateTabChange = useCallback((tab) => {
+    setActiveStateTab(tab);
     setViewMode('league');
     setSelectedMatchId(null);
-    setSearchParams((prev) => {
+    setSearchParams(prev => {
       const next = new URLSearchParams(prev);
+      if (tab && tab !== 'all') next.set('tab', tab);
+      else next.delete('tab');
       next.delete('match');
-      if (next.get('watchlist') === '1') next.delete('watchlist');
-      else next.set('watchlist', '1');
       return next;
     }, { replace: true });
   }, [setSearchParams]);
@@ -662,8 +675,10 @@ export default function Sports() {
     const sport = searchParams.get('sport');
     const league = searchParams.get('league');
     const match = searchParams.get('match');
+    const tab = searchParams.get('tab') || searchParams.get('status');
 
     if (sport) setActiveSport(sport);
+    if (tab) setActiveStateTab(tab);
 
     if (match) {
       setSelectedMatchId(match);
@@ -823,34 +838,49 @@ export default function Sports() {
           />
 
           <div className="sports-league-chips sports-league-chips--browse">
+            <button
+              type="button"
+              className={`sports-league-chip ${activeStateTab === 'live' ? 'active' : ''}`}
+              onClick={() => handleStateTabChange('live')}
+            >
+              <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: '#ef4444', marginRight: 6, verticalAlign: 'middle', boxShadow: '0 0 6px #ef4444' }} />
+              Live{stateCounts.live > 0 ? ` (${stateCounts.live})` : ''}
+            </button>
+            <button
+              type="button"
+              className={`sports-league-chip ${activeStateTab === 'upcoming' ? 'active' : ''}`}
+              onClick={() => handleStateTabChange('upcoming')}
+            >
+              Upcoming{stateCounts.upcoming > 0 ? ` (${stateCounts.upcoming})` : ''}
+            </button>
+            <button
+              type="button"
+              className={`sports-league-chip ${activeStateTab === 'completed' ? 'active' : ''}`}
+              onClick={() => handleStateTabChange('completed')}
+            >
+              Completed{stateCounts.completed > 0 ? ` (${stateCounts.completed})` : ''}
+            </button>
+            <button
+              type="button"
+              className={`sports-league-chip ${activeStateTab === 'all' ? 'active' : ''}`}
+              onClick={() => handleStateTabChange('all')}
+            >
+              All{stateCounts.all > 0 ? ` (${stateCounts.all})` : ''}
+            </button>
+            {leagueChips.map(league => (
               <button
+                key={league.id}
                 type="button"
-                className={`sports-league-chip ${watchlistOnly ? 'active' : ''}`}
-                onClick={toggleWatchlistFilter}
+                className={`sports-league-chip ${isSameLeague(activeLeague, league.id, cricketSeries) ? 'active' : ''}`}
+                onClick={() => handleLeagueChange(league.id)}
               >
-                ★ Watchlist{watchlistCount ? ` (${watchlistCount})` : ''}
+                {league.icon && (
+                  <SportIcon sport={league.sport} icon={league.icon} className="sports-league-chip-icon" />
+                )}
+                {league.name}
               </button>
-              <button
-                type="button"
-                className={`sports-league-chip ${!watchlistOnly && activeLeague === 'all' ? 'active' : ''}`}
-                onClick={() => handleLeagueChange('all')}
-              >
-                All Leagues
-              </button>
-              {leagueChips.map(league => (
-                <button
-                  key={league.id}
-                  type="button"
-                  className={`sports-league-chip ${!watchlistOnly && isSameLeague(activeLeague, league.id, cricketSeries) ? 'active' : ''}`}
-                  onClick={() => handleLeagueChange(league.id)}
-                >
-                  {league.icon && (
-                    <SportIcon sport={league.sport} icon={league.icon} className="sports-league-chip-icon" />
-                  )}
-                  {league.name}
-                </button>
-              ))}
-            </div>
+            ))}
+          </div>
 
           {isAdminUser && (
             <div className={`sports-live-status sports-live-status--${liveStatusClass} sports-live-status-bar`} role="status">
@@ -888,19 +918,17 @@ export default function Sports() {
             {sportMatches.length === 0 ? (
               <div className="sports-ticker-empty">
                 <p>
-                  {watchlistOnly
-                    ? 'No watchlist matches are on the board right now. Star a match from Sports or Home to save it.'
-                    : `No matches found${searchQuery ? ` for "${searchQuery}"` : ''}.`}
+                  {`No ${activeStateTab !== 'all' ? activeStateTab : ''} matches found${searchQuery ? ` for "${searchQuery}"` : ''}.`}
                 </p>
                 {isLiveBettingPage ? (
                   <Link to="/sports" className="sports-empty-action">
                     Browse all sports
                   </Link>
-                ) : (searchQuery || (activeLeague && activeLeague !== 'all')) && (
+                ) : (searchQuery || (activeLeague && activeLeague !== 'all') || (activeStateTab && activeStateTab !== 'all')) && (
                   <button
                     type="button"
                     className="sports-empty-action"
-                    onClick={() => { setSearchQuery(''); handleLeagueChange('all'); }}
+                    onClick={() => { setSearchQuery(''); handleLeagueChange('all'); handleStateTabChange('all'); }}
                   >
                     Clear filters
                   </button>

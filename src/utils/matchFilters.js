@@ -79,12 +79,14 @@ export function filterMatchesBySport(matches, sportId) {
 }
 
 export function filterMatchesByState(matches, stateTab = 'all') {
-  if (stateTab === 'all') return matches;
+  if (!stateTab || stateTab === 'all') return matches;
 
   return matches.filter((match) => {
     const state = getMatchState(match);
+    if (stateTab === 'live' || stateTab === 'in') return state === 'in';
+    if (stateTab === 'upcoming' || stateTab === 'pre') return state === 'pre';
+    if (stateTab === 'completed' || stateTab === 'post') return state === 'post';
     if (stateTab === 'bettable') return state === 'in' || state === 'pre';
-    if (stateTab === 'completed') return state === 'post';
     return true;
   });
 }
