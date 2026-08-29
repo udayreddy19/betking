@@ -1,0 +1,24 @@
+{
+  "phase": "match_visibility_bug",
+  "environment": "production_and_staging",
+  "timestamp": "2026-08-29T12:20:00Z",
+  "status": "PASS",
+  "source": "FRONTEND_BACKEND_SEPARATION_AUDIT",
+  "stub": false,
+  "separationAudit": {
+    "frontendRenderingIssue": {
+      "present": true,
+      "description": "MyBets leg click navigated to /sports?match=... but Sports.jsx only looked up live matches in local React state. When absent, it did not fetch /api/v1/matches/:id."
+    },
+    "backendEventLookupIssue": {
+      "present": true,
+      "description": "API route /api/v1/matches/:id returned 404 if the match was not present in the ephemeral in-memory Map of that single Node process."
+    },
+    "settlementEngineIssue": {
+      "present": true,
+      "description": "Uncaught RangeError: Invalid time value in evaluateSettlementConfidence when match.time='Live', crashing the settlement sweep."
+    },
+    "settlementIndependentOfFrontend": true,
+    "verdict": "Frontend visibility bug and Backend settlement crash were separate and have both been hardened."
+  }
+}

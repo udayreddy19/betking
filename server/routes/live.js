@@ -359,8 +359,50 @@ router.get('/api/v1/matches', async (req, res) => {
 
 router.get('/api/v1/matches/:id', async (req, res) => {
   try {
+    const matchId = String(req.params.id || '').trim();
+    if (!matchId) return res.status(400).json({ error: 'match_id_required' });
+
     const { canonicalMatchStateEngine } = await import('../../lib/canonicalMatchState.mjs');
-    const matchState = canonicalMatchStateEngine.getMatchState(req.params.id);
+    let matchState = canonicalMatchStateEngine.getMatchState(matchId);
+
+    if (!matchState) {
+      const { getCachedCanonicalMatchState } = await import('../../lib/matchStateCache.mjs');
+      matchState = await getCachedCanonicalMatchState(matchId).catch(() => null);
+    }
+
+    if (!matchState) {
+      const { queryRead } = await import('../../db/pg.js');
+      const dbRes = await queryRead(
+        `SELECT match_id, name, home_team, away_team, status, score_home, score_away, overs_completed
+         FROM matches WHERE match_id = $1 OR id = $1 LIMIT 1`,
+        [matchId],
+      ).catch(() => ({ rows: [] }));
+      if (dbRes.rows.length > 0) {
+        const row = dbRes.rows[0];
+        const isFinal = ['COMPLETED', 'FINISHED', 'FINAL', 'CLOSED'].includes(String(row.status).toUpperCase());
+        matchState = {
+          id: row.match_id,
+          matchId: row.match_id,
+          matchName: row.name,
+          team1: { name: row.home_team },
+          team2: { name: row.away_team },
+          status: row.status,
+          matchState: isFinal ? 'post' : 'in',
+          isLive: !isFinal,
+          liveDetails: {
+            runs: row.score_home,
+            score2: row.score_away,
+            overs: row.overs_completed,
+          },
+        };
+      }
+    }
+
+    if (!matchState) {
+      const { fetchMatchDetail } = await import('../../lib/matchDetailFetcher.mjs');
+      matchState = await fetchMatchDetail({ id: matchId, matchId }).catch(() => null);
+    }
+
     if (!matchState) return res.status(404).json({ error: 'Match state unavailable' });
     res.json({ version: 'v1', match: matchState });
   } catch (err) {

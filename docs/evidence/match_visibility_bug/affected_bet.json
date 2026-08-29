@@ -1,0 +1,33 @@
+{
+  "phase": "match_visibility_bug",
+  "environment": "production_and_staging",
+  "timestamp": "2026-08-29T12:20:00Z",
+  "status": "IDENTIFIED",
+  "source": "AFFECTED_BET_DISCOVERY",
+  "stub": false,
+  "affectedBet": {
+    "betId": "bet_1788004010338_n5gmyk",
+    "userId": "usr_1786981914375_bb8e3569",
+    "eventId": "oy_9853f10f-a7fb-324b-a4b5-a9c0506b36e7",
+    "providerEventId": "sr:match:73684582",
+    "marketId": "i2_wicket_in_next_over_12",
+    "selectionId": "sel_nwkt_yes",
+    "selection": "Yes (Wicket in Over 12: Yes)",
+    "placedTimestamp": "2026-08-29T11:46:50.328Z",
+    "acceptedTimestamp": "2026-08-29T11:46:50.328Z",
+    "currentBetStatus": "ACCEPTED",
+    "settlementStatus": "PENDING_RETRY",
+    "lastSettlementAttempt": "2026-08-29T12:14:30.296Z",
+    "lastSettlementError": "RangeError: Invalid time value in evaluateSettlementConfidence (uncaught exception on match.time='Live')",
+    "retryCount": 1
+  },
+  "companionBetsOnSameMatch": [
+    {
+      "betId": "bet_1788003994607_6bb4vx",
+      "marketId": "i2_overs_0_15_total",
+      "selectionId": "sel_over_107.5",
+      "status": "ACCEPTED",
+      "placedTimestamp": "2026-08-29T11:46:34.551Z"
+    }
+  ]
+}

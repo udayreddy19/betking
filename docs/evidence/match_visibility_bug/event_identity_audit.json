@@ -1,0 +1,24 @@
+{
+  "phase": "match_visibility_bug",
+  "environment": "production_and_staging",
+  "timestamp": "2026-08-29T12:20:00Z",
+  "status": "PASS",
+  "source": "EVENT_IDENTITY_AUDIT",
+  "stub": false,
+  "eventIdentityAudit": {
+    "internalEventId": "oy_9853f10f-a7fb-324b-a4b5-a9c0506b36e7",
+    "providerEventId": "sr:match:73684582",
+    "providerFixtureId": "73684582",
+    "competition": "T20 Kerala League",
+    "teams": {
+      "team1": "Kochi Blue Tigers",
+      "team2": "Thrissur Titans"
+    },
+    "startTime": "2026-08-29T09:00:00.000Z",
+    "matchStatus": "LIVE",
+    "stableEventIdentityPersisted": true,
+    "persistenceLocation": "bets.placement_snapshot (JSONB)",
+    "relianceOnTeamNamesOnly": false,
+    "relianceOnFrontendListOnly": false
+  }
+}

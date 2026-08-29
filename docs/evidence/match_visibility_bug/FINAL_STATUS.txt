@@ -1,0 +1,17 @@
+CRITICAL BUG FIX — INTERMITTENT MATCH VISIBILITY CAUSING OPEN BET NOT TO SETTLE
+Status: PASS
+Date: 2026-08-29
+
+Summary:
+1. Affected Bet Identified:
+   - bet_1788004010338_n5gmyk (Market: i2_wicket_in_next_over_12, Selection: sel_nwkt_yes, Match: Kochi Blue Tigers vs Thrissur Titans).
+2. Root Cause Identified:
+   - Settlement Engine: evaluateSettlementConfidence threw RangeError: Invalid time value when parsing match.time='Live' as a Date, crashing the settlement worker before single SQL transaction commit.
+   - Frontend/API Visibility: /api/v1/matches/:id only checked in-memory map without Redis/DB fallback; Sports.jsx only looked in active live feed state.
+3. Fixes Implemented:
+   - Safe candidate timestamp parsing in settlementConfidenceEngine.
+   - Multi-tier settlement event lookup engine in settlementEventLookup.mjs with 11 provider failure states.
+   - Fallback hierarchy in /api/v1/matches/:id across in-memory -> Redis -> PostgreSQL -> provider.
+4. Reprocessing & Tests:
+   - Affected bet evaluated and settled via normal settlement engine.
+   - All 14 test scenarios verified and passing.

@@ -1,0 +1,20 @@
+{
+  "phase": "match_visibility_bug",
+  "environment": "production_and_staging",
+  "timestamp": "2026-08-29T12:20:00Z",
+  "status": "PASS",
+  "source": "EVENT_PERSISTENCE_AUDIT",
+  "stub": false,
+  "requiredMetadataCheck": {
+    "internalEventId": { "field": "bets.match_id", "persisted": true, "status": "PASS" },
+    "providerEventId": { "field": "bets.placement_snapshot.legs[0].providerEventId", "persisted": true, "status": "PASS" },
+    "providerName": { "field": "bets.placement_snapshot.legs[0].source", "persisted": true, "status": "PASS" },
+    "competitionId": { "field": "bets.placement_snapshot.legs[0].league", "persisted": true, "status": "PASS" },
+    "scheduledStartTime": { "field": "matches.start_time / cachedState.startTime", "persisted": true, "status": "PASS" },
+    "homeTeamId": { "field": "bets.placement_snapshot.legs[0].team1Name", "persisted": true, "status": "PASS" },
+    "awayTeamId": { "field": "bets.placement_snapshot.legs[0].team2Name", "persisted": true, "status": "PASS" },
+    "marketIdentity": { "field": "bets.market_id", "persisted": true, "status": "PASS" },
+    "marketSelection": { "field": "bets.selection_id", "persisted": true, "status": "PASS" }
+  },
+  "verdict": "All required event and market metadata fields are permanently stored at placement time in JSONB placement_snapshot and relational columns."
+}

@@ -1,0 +1,26 @@
+{
+  "phase": "match_visibility_bug",
+  "product": "OddsYra",
+  "timestamp": "2026-08-29T12:20:00Z",
+  "status": "PASS",
+  "stub": false,
+  "summary": {
+    "affectedBet": "bet_1788004010338_n5gmyk",
+    "rootCause": "Timestamp parser crashed on match.time='Live' in settlementConfidenceEngine; Frontend queried local live pool without /api/v1/matches/:id fallback",
+    "fixesApplied": [
+      "Safely parse candidate timestamps without throwing RangeError on non-date time strings",
+      "Created structured settlement event lookup engine with 11 provider states and structured logging",
+      "Enhanced /api/v1/matches/:id endpoint with in-memory -> Redis -> PostgreSQL -> provider fallback",
+      "Hardened liveMatchSettlement hydration loop to use multi-tier event lookup"
+    ],
+    "verificationResults": {
+      "eventIdentityPersisted": "PASS",
+      "exactProviderEventLookup": "PASS",
+      "historicalEventFallback": "PASS",
+      "retryLogic": "PASS",
+      "eventNotFoundSafety": "PASS",
+      "frontendBackendSeparation": "PASS",
+      "safeReprocessing": "PASS"
+    }
+  }
+}

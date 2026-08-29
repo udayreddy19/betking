@@ -1,0 +1,23 @@
+{
+  "phase": "match_visibility_bug",
+  "environment": "production_and_staging",
+  "timestamp": "2026-08-29T12:20:00Z",
+  "status": "PASS",
+  "source": "INTERMITTENT_MATCH_LOOKUP_ROOT_CAUSE",
+  "stub": false,
+  "investigationChannels": {
+    "liveFixtureApi": { "status": "ACCESSIBLE", "intermittent": true, "cause": "Poll cycle delta between aggregator updates" },
+    "upcomingFixtureApi": { "status": "ACCESSIBLE", "intermittent": false },
+    "completedFixtureApi": { "status": "ACCESSIBLE", "intermittent": false },
+    "historicalFixtureApi": { "status": "ACCESSIBLE", "intermittent": false },
+    "providerDirectLookup": { "status": "ACCESSIBLE", "intermittent": false },
+    "redisCache": { "status": "ACCESSIBLE", "intermittent": false },
+    "databaseEventRecord": { "status": "ACCESSIBLE", "intermittent": false },
+    "frontendEventLoading": { "status": "FLAKY", "cause": "Frontend only queried active live pool without fallback to /api/v1/matches/:id" },
+    "settlementWorkerEventLoading": { "status": "CRASHED", "cause": "RangeError on non-ISO date string ('Live') in evaluateSettlementConfidence" }
+  },
+  "rootCauseSummary": {
+    "primarySettlementBlocker": "Uncaught RangeError: Invalid time value when parsing match.time='Live' in settlementConfidenceEngine.mjs",
+    "primaryVisibilityIssue": "Frontend Sports.jsx only queried active in-memory live matches; API /api/v1/matches/:id only checked in-memory map without Redis/DB fallback"
+  }
+}

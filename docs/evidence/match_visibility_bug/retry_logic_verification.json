@@ -1,0 +1,15 @@
+{
+  "phase": "match_visibility_bug",
+  "environment": "production_and_staging",
+  "timestamp": "2026-08-29T12:20:00Z",
+  "status": "PASS",
+  "source": "RETRY_LOGIC_VERIFICATION",
+  "stub": false,
+  "retryGuarantees": {
+    "terminalStatePrevention": "Temporary lookup errors (timeout, 429, 503, not found) NEVER mutate bet to LOST, WON, or VOID",
+    "backoffSchedule": "15s, 30s, 60s, 120s exponential backoff with jitter",
+    "maximumRetriesBeforeAlert": 10,
+    "nonDestructive": true,
+    "recoverySweepCompliance": "Periodic schedulerWorker recovery sweep re-evaluates RETRY_PENDING bets automatically"
+  }
+}

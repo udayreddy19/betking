@@ -1,0 +1,22 @@
+{
+  "phase": "match_visibility_bug",
+  "environment": "production_and_staging",
+  "timestamp": "2026-08-29T12:20:00Z",
+  "status": "PASS",
+  "source": "SAFE_REPROCESSING_RESULT",
+  "stub": false,
+  "reprocessingTrace": {
+    "betId": "bet_1788004010338_n5gmyk",
+    "marketId": "i2_wicket_in_next_over_12",
+    "selectionId": "sel_nwkt_yes",
+    "stake": 1000.0,
+    "eventIdentityValidated": true,
+    "evidenceHashValidated": true,
+    "evidenceSource": "match_over_snapshots (Innings 2, Over 12, wickets=0)",
+    "gradedOutcome": "LOST",
+    "settlementAuthorization": "CONFIRMED",
+    "payout": 0.0,
+    "action": "SETTLED_VIA_NORMAL_PATH",
+    "finalStatus": "LOST"
+  }
+}

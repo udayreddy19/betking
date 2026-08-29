@@ -1,0 +1,21 @@
+{
+  "phase": "match_visibility_bug",
+  "environment": "production_and_staging",
+  "timestamp": "2026-08-29T12:20:00Z",
+  "status": "PASS",
+  "source": "SETTLEMENT_LOOKUP_STATE_AUDIT",
+  "stub": false,
+  "lookupStates": [
+    { "state": "EVENT_FOUND_LIVE", "category": "SUCCESS", "retryable": false, "action": "PROCEED_TO_GRADING" },
+    { "state": "EVENT_FOUND_COMPLETED", "category": "SUCCESS", "retryable": false, "action": "PROCEED_TO_GRADING" },
+    { "state": "EVENT_FOUND_HISTORICAL", "category": "SUCCESS", "retryable": false, "action": "PROCEED_TO_GRADING" },
+    { "state": "PROVIDER_TIMEOUT", "category": "TEMPORARY_FAILURE", "retryable": true, "action": "RETRY_WITH_BACKOFF" },
+    { "state": "PROVIDER_RATE_LIMITED", "category": "TEMPORARY_FAILURE", "retryable": true, "action": "RETRY_WITH_BACKOFF" },
+    { "state": "PROVIDER_UNAVAILABLE", "category": "TEMPORARY_FAILURE", "retryable": true, "action": "RETRY_WITH_BACKOFF" },
+    { "state": "EVENT_NOT_FOUND", "category": "PERMANENT_OR_FLAPPING", "retryable": true, "action": "KEEP_OPEN_AND_INVESTIGATE" },
+    { "state": "EVENT_ID_MISMATCH", "category": "SAFETY_BLOCK", "retryable": false, "action": "BLOCK_SETTLEMENT_ALERT_OPS" },
+    { "state": "STALE_CACHE", "category": "TEMPORARY_FAILURE", "retryable": true, "action": "REFRESH_AND_RETRY" },
+    { "state": "PROVIDER_CONFLICT", "category": "SAFETY_BLOCK", "retryable": false, "action": "BLOCK_SETTLEMENT_ALERT_OPS" },
+    { "state": "UNKNOWN", "category": "TEMPORARY_FAILURE", "retryable": true, "action": "RETRY_WITH_BACKOFF" }
+  ]
+}

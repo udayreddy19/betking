@@ -1,0 +1,38 @@
+{
+  "phase": "match_visibility_bug",
+  "environment": "production_and_staging",
+  "timestamp": "2026-08-29T12:20:00Z",
+  "status": "PASS",
+  "source": "AFFECTED_BET_FULL_TRACE",
+  "stub": false,
+  "trace": {
+    "betAccepted": {
+      "timestamp": "2026-08-29T11:46:50.328Z",
+      "result": "ACCEPTED (Status: ACCEPTED, Stake: $1000.00, Odds: 2.93, Potential Payout: $2930.00)"
+    },
+    "eventStored": {
+      "eventId": "oy_9853f10f-a7fb-324b-a4b5-a9c0506b36e7",
+      "providerId": "sr:match:73684582",
+      "marketId": "i2_wicket_in_next_over_12",
+      "selection": "sel_nwkt_yes"
+    },
+    "firstSettlementAttempt": {
+      "timestamp": "2026-08-29T12:14:30.296Z",
+      "result": "FAILED (RangeError in confidence evaluation)"
+    },
+    "eventLookup": {
+      "result": "SUCCESS (Found in Redis Canonical Match State & Live Feed Map)"
+    },
+    "providerResponse": {
+      "result": "SUCCESS (Innings 2, Over 12 Completed with 0 wickets)"
+    },
+    "evidenceLookup": {
+      "result": "SUCCESS (match_over_snapshots row confirmed 0 wickets in Innings 2 Over 12)"
+    },
+    "settlementAuthorization": {
+      "result": "CONFIRMED (finalityState: SETTLEMENT_ELIGIBLE, confidence: CONFIRMED, outcome: LOST)"
+    },
+    "whyBetRemainedOpen": "Timestamp parser crashed on match.time='Live', aborting settlement before single SQL transaction commit.",
+    "nextSafeAction": "Deploy timestamp parsing safety and structured event lookup engine; trigger normal settlement re-evaluation on worker."
+  }
+}
