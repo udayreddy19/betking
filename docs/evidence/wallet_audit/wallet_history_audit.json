@@ -1,0 +1,32 @@
+{
+  "auditTimestamp": "2026-08-29T23:54:20.611Z",
+  "apiEndpoint": "GET /api/v1/user/transactions",
+  "securityChecks": [
+    {
+      "check": "Authentication & Authorization",
+      "status": "PASS",
+      "description": "Requires JWT token; extracts userId strictly from req.user.userId"
+    },
+    {
+      "check": "IDOR Protection",
+      "status": "PASS",
+      "description": "Query enforces WHERE user_id = $1; users can never view other users transactions"
+    },
+    {
+      "check": "Pagination & Rate Limiting",
+      "status": "PASS",
+      "description": "Supports limit (max 200) and offset with sanitized integer parsing"
+    },
+    {
+      "check": "Negative Amount Injection",
+      "status": "PASS",
+      "description": "All endpoints validate amount > 0 and reject negative or non-numeric inputs"
+    },
+    {
+      "check": "Money Precision",
+      "status": "PASS",
+      "description": "Stored as NUMERIC(14,2); rounded using toFixed(2); zero floating point precision leaks"
+    }
+  ],
+  "verdict": "PASS"
+}

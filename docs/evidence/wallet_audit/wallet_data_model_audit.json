@@ -1,0 +1,77 @@
+{
+  "auditTimestamp": "2026-08-29T23:54:20.609Z",
+  "table": "wallets",
+  "columns": [
+    {
+      "name": "wallet_id",
+      "type": "VARCHAR(64)",
+      "purpose": "Primary key of the user wallet",
+      "sourceOfTruth": "Immutable identifier",
+      "canUserModify": false,
+      "canAdminModify": false
+    },
+    {
+      "name": "user_id",
+      "type": "VARCHAR(64)",
+      "purpose": "Unique foreign key referencing users.user_id",
+      "sourceOfTruth": "Auth user identity",
+      "canUserModify": false,
+      "canAdminModify": false
+    },
+    {
+      "name": "balance",
+      "type": "NUMERIC(14,2)",
+      "purpose": "Playable and withdrawable real cash balance",
+      "sourceOfTruth": "Authoritative cash balance (enforced by CHECK balance >= 0.00)",
+      "canUserModify": false,
+      "canAdminModify": true,
+      "updatedHow": "Atomic transactions with row-level lock (SELECT FOR UPDATE)"
+    },
+    {
+      "name": "bonus_balance",
+      "type": "NUMERIC(14,2)",
+      "purpose": "Promotional casino/sportsbook bonus funds",
+      "sourceOfTruth": "user_bonuses table",
+      "canUserModify": false,
+      "canAdminModify": true,
+      "updatedHow": "Bonus claim engines & forfeiture on withdrawal"
+    },
+    {
+      "name": "reserved_balance",
+      "type": "NUMERIC(14,2)",
+      "purpose": "Pending withdrawal holds awaiting processing",
+      "sourceOfTruth": "withdrawals table (status: PENDING/UNDER_REVIEW)",
+      "canUserModify": false,
+      "canAdminModify": false,
+      "updatedHow": "Withdrawal request hold / release / finalize"
+    },
+    {
+      "name": "freebet_balance",
+      "type": "NUMERIC(14,2)",
+      "purpose": "Non-withdrawable free bet vouchers",
+      "sourceOfTruth": "daily_spins & deposit_freebet_grants",
+      "canUserModify": false,
+      "canAdminModify": true,
+      "updatedHow": "Grant on promotion & deduction upon bet placement"
+    },
+    {
+      "name": "locked_deposit_balance",
+      "type": "NUMERIC(14,2)",
+      "purpose": "Deposited funds subject to 1x anti-money laundering turnover",
+      "sourceOfTruth": "deposits table",
+      "canUserModify": false,
+      "canAdminModify": false,
+      "updatedHow": "Added on deposit, reduced on bet placement turnover"
+    },
+    {
+      "name": "winnings_balance",
+      "type": "NUMERIC(14,2)",
+      "purpose": "Cumulative net profit/loss reporting counter",
+      "sourceOfTruth": "Settled bets calculation (reporting only, not spendable)",
+      "canUserModify": false,
+      "canAdminModify": false,
+      "updatedHow": "Updated upon bet settlement win/loss"
+    }
+  ],
+  "consistencyModel": "Hybrid: Authoritative mutable balance with strict double-entry ledger entries written in the same atomic database transaction (withTransaction)"
+}

@@ -1,0 +1,16 @@
+{
+  "auditTimestamp": "2026-08-29T23:54:20.609Z",
+  "flow": [
+    "1. User requests withdrawal -> withdrawalEngine.requestWithdrawal validates limits, KYC, RG daily limits",
+    "2. Atomic withTransaction locks wallet row with SELECT FOR UPDATE",
+    "3. Calculates availableBalance = max(0, balance - locked_deposit_balance)",
+    "4. If availableBalance < amount -> throws INSUFFICIENT_FUNDS error immediately",
+    "5. Balance deducted by amount, reserved_balance incremented by amount (holds funds without burning ledger credit)",
+    "6. Active bonus balance forfeited if applicable with BONUS_FORFEIT ledger entry",
+    "7. Withdrawal record inserted with risk score & maker-checker requirements",
+    "8. If rejected/cancelled: atomic reversal restores balance and clears reserved_balance with REFUND ledger entry",
+    "9. If approved & paid: reserved_balance deducted and WITHDRAWAL completed ledger entry finalized"
+  ],
+  "overdraftPrevention": "PASS (Available balance check inside SELECT FOR UPDATE lock prevents concurrent overdrafts)",
+  "verdict": "PASS"
+}

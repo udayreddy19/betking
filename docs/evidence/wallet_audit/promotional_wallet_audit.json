@@ -1,0 +1,14 @@
+{
+  "auditTimestamp": "2026-08-29T23:54:20.610Z",
+  "balances": {
+    "freebet_balance": "Stored in wallets.freebet_balance; usable for bet placement (fund_source: FREEBET); returns only net profits (stake not returned); non-withdrawable",
+    "bonus_balance": "Stored in wallets.bonus_balance; subject to wagering requirements in user_bonuses; forfeited upon initiating a cash withdrawal to prevent bonus abuse",
+    "locked_deposit_balance": "Stored in wallets.locked_deposit_balance; enforces 1x turnover before withdrawal"
+  },
+  "safeguards": [
+    "Free bets cannot be directly withdrawn (excluded from availableBalance calculation)",
+    "Bonus forfeiture on withdrawal prevents cashing out unearned promotional funds",
+    "Daily spin grants enforced by unique daily_spins (user_id, spin_date) constraint"
+  ],
+  "verdict": "PASS"
+}

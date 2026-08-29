@@ -1,0 +1,10 @@
+{
+  "auditTimestamp": "2026-08-29T23:54:20.610Z",
+  "makerCheckerPolicy": [
+    "Manual admin wallet adjustments (MANUAL_CREDIT, MANUAL_DEBIT) require two-man approval (Maker creates, Checker approves)",
+    "Maker cannot approve their own request (enforced in makerCheckerEngine.mjs)",
+    "Every approved adjustment writes ADMIN_ID, USER_ID, AMOUNT, DIRECTION, REASON, and REFERENCE",
+    "Creates formal transaction and ledger_entries record with before/after balance tracking"
+  ],
+  "verdict": "PASS"
+}

@@ -1,0 +1,17 @@
+{
+  "auditTimestamp": "2026-08-29T23:54:20.609Z",
+  "flow": [
+    "1. User submits bet slip -> betPlacementEngine.placeBet validates market active, odds valid, selection open",
+    "2. Atomic withTransaction acquires SELECT FOR UPDATE on wallet row",
+    "3. Checks cash balance and freebet balance",
+    "4. Deducts stake from appropriate balance and updates locked deposit allocation",
+    "5. Inserts bet record (status: ACCEPTED) with placement snapshot and odds version",
+    "6. Inserts bet_selections records",
+    "7. Inserts transaction record (type: BET_STAKE, status: SUCCESS)",
+    "8. Inserts ledger_entries record (type: DEBIT, amount: stake, balance_after: newCash)",
+    "9. Calculates VIP loyalty points and awards points in user_loyalty",
+    "10. Inserts outbox event BET_PLACED for real-time WebSocket and push alerts"
+  ],
+  "atomicity": "PASS (If bet insertion or odds check fails, entire transaction rolls back; wallet remains untouched)",
+  "verdict": "PASS"
+}

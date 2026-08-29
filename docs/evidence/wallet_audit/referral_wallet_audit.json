@@ -1,0 +1,14 @@
+{
+  "auditTimestamp": "2026-08-29T23:54:20.610Z",
+  "flow": [
+    "1. User signs up with referral code -> referralLoyaltyEngine attributes referral",
+    "2. Referred user completes KYC verification -> tryQualifyReferralAfterVerification checks eligibility",
+    "3. Idempotency lock acquired on referral_reward_{referralId}",
+    "4. Atomic withTransaction grants ₹500 free bet to referrer and referred user",
+    "5. Inserts referral_reward_events record (unique per referral)",
+    "6. Inserts transaction and ledger_entries records",
+    "7. Publishes REFERRAL_REWARDED outbox event"
+  ],
+  "duplicateProtection": "PASS (Enforced by unq_referral_reward_events constraint and idempotencyEngine)",
+  "verdict": "PASS"
+}

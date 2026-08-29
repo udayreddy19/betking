@@ -1,0 +1,22 @@
+{
+  "auditTimestamp": "2026-08-29T23:54:20.610Z",
+  "mechanisms": [
+    {
+      "layer": "Row-Level Locking",
+      "mechanism": "SELECT ... FOR UPDATE locks target wallet row, serializing all concurrent financial mutations for that user"
+    },
+    {
+      "layer": "Database Constraint",
+      "mechanism": "CHECK (balance >= 0.00) in PostgreSQL schema guarantees database-level rejection of any negative balance attempt"
+    },
+    {
+      "layer": "Application Balance Validation",
+      "mechanism": "Explicit if (availableBalance < numericAmount) check before calculating deltas"
+    },
+    {
+      "layer": "Idempotency Engine",
+      "mechanism": "Redis / PG key locking prevents concurrent duplicate execution of identical event IDs"
+    }
+  ],
+  "verdict": "PASS"
+}

@@ -1,0 +1,15 @@
+{
+  "auditTimestamp": "2026-08-29T23:54:20.610Z",
+  "flow": [
+    "1. User requests cashout -> cashoutEngine.executeCashout validates bet status is PENDING / ACCEPTED",
+    "2. Re-evaluates fair cashout quote and current match odds",
+    "3. Atomic withTransaction locks bet row (SELECT FOR UPDATE) and verifies status",
+    "4. Transitions bet status to CASHED_OUT via transitionBetStatus",
+    "5. Locks wallet row (SELECT FOR UPDATE) and increments balance with cashout amount",
+    "6. Inserts transaction (type: BET_CASHOUT) with ON CONFLICT DO NOTHING (throws if duplicate)",
+    "7. Inserts CREDIT entry into ledger_entries",
+    "8. Publishes BET_CASHED_OUT outbox event"
+  ],
+  "concurrencyProtection": "PASS (Bet row lock + transaction unique constraint prevents multiple concurrent cashouts)",
+  "verdict": "PASS"
+}

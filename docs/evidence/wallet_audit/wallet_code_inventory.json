@@ -1,0 +1,80 @@
+{
+  "auditTimestamp": "2026-08-29T23:54:20.607Z",
+  "coreEngines": [
+    {
+      "name": "Core Financial Transactions",
+      "file": "db/financialTransactions.js",
+      "purpose": "Atomic wallet mutations, row-level locks, ledger entry insertions, and idempotency"
+    },
+    {
+      "name": "Deposit Engine",
+      "file": "lib/depositEngine.mjs",
+      "purpose": "Razorpay order creation, HMAC signature verification, double-capture prevention, and deposit credits"
+    },
+    {
+      "name": "Withdrawal Engine",
+      "file": "lib/withdrawalEngine.mjs",
+      "purpose": "Available balance checks, reserved balance holds, risk scoring, and maker-checker processing"
+    },
+    {
+      "name": "Bet Placement Engine",
+      "file": "lib/betPlacementEngine.mjs",
+      "purpose": "Atomic stake allocation from cash & freebet balance, placement snapshots, and ledger debits"
+    },
+    {
+      "name": "Bet Settlement Engine",
+      "file": "lib/betSettlementEngine.mjs",
+      "purpose": "Atomic win/loss/void/cashout settlement, payout credits, and double-payout guards"
+    },
+    {
+      "name": "Cashout Engine",
+      "file": "lib/cashoutEngine.mjs",
+      "purpose": "Fair cashout valuation, early cashout status transition, wallet credits, and ledger entries"
+    },
+    {
+      "name": "Razorpay Refund Engine",
+      "file": "lib/razorpayRefundEngine.mjs",
+      "purpose": "Deposit refund handling and ledger reversals"
+    },
+    {
+      "name": "Daily Spin & Free Bet Engine",
+      "file": "lib/dailySpinEngine.mjs",
+      "purpose": "Promotional freebet wallet credits with expiry tracking"
+    },
+    {
+      "name": "VIP Loyalty Engine",
+      "file": "lib/vipEngine.mjs",
+      "purpose": "Tier cashback claims, tier-up rewards, and turnover tracking"
+    },
+    {
+      "name": "Referral Loyalty Engine",
+      "file": "lib/referralLoyaltyEngine.mjs",
+      "purpose": "Referral attribution, qualification, and idempotent reward credits"
+    },
+    {
+      "name": "Maker-Checker Engine",
+      "file": "lib/makerCheckerEngine.mjs",
+      "purpose": "Two-man rule for manual admin credits, debits, and settlement corrections"
+    },
+    {
+      "name": "Daily Closing & Recon Engine",
+      "file": "lib/financeDailyClosingEngine.mjs",
+      "purpose": "Daily immutable snapshots and ledger reconciliation"
+    }
+  ],
+  "databaseTables": [
+    "wallets",
+    "transactions",
+    "ledger_entries",
+    "deposits",
+    "withdrawals",
+    "payment_refunds",
+    "bets",
+    "settlements",
+    "settlement_corrections",
+    "finance_daily_closings",
+    "financial_discrepancies",
+    "reconciliation_cases",
+    "idempotency_keys"
+  ]
+}

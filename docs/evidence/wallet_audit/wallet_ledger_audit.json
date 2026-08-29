@@ -1,0 +1,21 @@
+{
+  "auditTimestamp": "2026-08-29T23:54:20.609Z",
+  "ledgerTable": "ledger_entries",
+  "schema": {
+    "entry_id": "SERIAL PRIMARY KEY",
+    "wallet_id": "VARCHAR(64) REFERENCES wallets(wallet_id)",
+    "transaction_id": "VARCHAR(64) REFERENCES transactions(transaction_id)",
+    "type": "VARCHAR(32) (CREDIT | DEBIT)",
+    "amount": "NUMERIC(14,2) NOT NULL",
+    "balance_after": "NUMERIC(14,2) NOT NULL",
+    "description": "TEXT NOT NULL",
+    "created_at": "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP"
+  },
+  "immutabilityGuarantees": [
+    "Append-only architecture: no UPDATE or DELETE queries exist on ledger_entries across production services",
+    "Foreign keys link each ledger entry to an authoritative business transaction and wallet",
+    "balance_after records exact post-mutation balance for point-in-time reconstruction",
+    "Daily closing engine (financeDailyClosingEngine) aggregates opening, net ledger delta, and closing balance daily"
+  ],
+  "verdict": "PASS"
+}

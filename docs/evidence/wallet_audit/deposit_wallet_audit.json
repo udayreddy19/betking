@@ -1,0 +1,18 @@
+{
+  "auditTimestamp": "2026-08-29T23:54:20.609Z",
+  "provider": "Razorpay UPI / Netbanking / Cards",
+  "flow": [
+    "1. User requests deposit order -> DepositEngine.createOrder validates min (₹100), max (₹500,000), 2-decimal precision, RG limits",
+    "2. Order created in Razorpay API -> record inserted in deposits table (status: CREATED)",
+    "3. User completes payment -> Razorpay sends webhook (payment.captured) or client submits checkout confirmation",
+    "4. Webhook signature validated via HMAC SHA-256 (timingSafeEqualStrings)",
+    "5. Idempotency lock acquired via idempotencyEngine.checkOrLock(paymentId, \"DEPOSIT_WEBHOOK\")",
+    "6. Existing transactions checked for duplicate provider_payment_id or utr",
+    "7. Atomic withTransaction acquires SELECT FOR UPDATE on deposits row, verifies status !== CAPTURED",
+    "8. Wallet row locked (SELECT FOR UPDATE) -> balance and locked_deposit_balance incremented",
+    "9. Transaction record created in transactions table and CREDIT entry inserted into ledger_entries",
+    "10. Outbox event DEPOSIT_COMPLETED published for notifications"
+  ],
+  "duplicateProtection": "PASS (Triple layer: HMAC signature, idempotency key lock, and PostgreSQL FOR UPDATE status check)",
+  "verdict": "PASS"
+}

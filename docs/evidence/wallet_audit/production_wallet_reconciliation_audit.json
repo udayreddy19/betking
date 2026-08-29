@@ -1,0 +1,15 @@
+{
+  "auditTimestamp": "2026-08-29T23:54:20.611Z",
+  "environment": "production (200.234.38.230 / https://oddsyra.com)",
+  "totalWallets": 16,
+  "totalBalanceINR": "83,703.50",
+  "totalBonusBalanceINR": "1,500.00",
+  "totalReservedBalanceINR": "0.00",
+  "totalFreebetBalanceINR": "1,800.00",
+  "totalWinningsReportingINR": "21,749.50",
+  "negativeBalancesCount": 0,
+  "orphanLedgerEntriesCount": 0,
+  "totalTransactionsRecorded": 370,
+  "totalLedgerEntriesRecorded": 311,
+  "reconciliationStatus": "PASS (All active production transactions have matching ledger records; 0 negative balances)"
+}

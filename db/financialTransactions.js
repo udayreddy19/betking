@@ -192,7 +192,7 @@ export async function executeSettlementTransaction({
   const settlementKey = idempotencyKey || `settle_${matchId}_${selectionId}`;
   const idCheck = await idempotencyEngine.checkOrLock(settlementKey, 'match_settlement', `${matchId}_${winningSelectionId}`);
   if (idCheck.isDuplicate) {
-    if (idCheck.status === 'COMPLETED') return idCheck.result;
+    if (idCheck.status === 'COMPLETED') return { ...idCheck.result, alreadySettled: true };
     if (idCheck.status === 'PROCESSING') throw new Error('IDEMPOTENCY_CONFLICT: Settlement is currently processing');
   }
 
@@ -208,7 +208,7 @@ export async function executeSettlementTransaction({
       const betsRes = await client.query(`
         SELECT bet_id, user_id, selection_id, stake, odds, potential_payout
         FROM bets
-        WHERE match_id = $1 AND selection_id = $2 AND status = 'PENDING'
+        WHERE match_id = $1 AND selection_id = $2 AND status IN ('PENDING', 'ACCEPTED')
         FOR UPDATE;
       `, [matchId, selectionId]);
 

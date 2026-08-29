@@ -1,0 +1,9 @@
+{
+  "auditTimestamp": "2026-08-29T23:54:20.610Z",
+  "transactionBoundaries": [
+    "All wallet balance mutations, transaction inserts, and ledger entries execute inside withTransaction(async (client) => { ... })",
+    "If any SQL statement fails or throws an exception, PostgreSQL issues a complete ROLLBACK",
+    "No state exists where a wallet balance changes without a corresponding transaction & ledger record"
+  ],
+  "verdict": "PASS"
+}

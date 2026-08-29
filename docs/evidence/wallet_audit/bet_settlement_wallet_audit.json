@@ -1,0 +1,11 @@
+{
+  "auditTimestamp": "2026-08-29T23:54:20.609Z",
+  "outcomes": {
+    "WON": "Calculates actual payout = stake * acceptedOdds; atomic withTransaction locks wallet, credits balance, creates BET_PAYOUT transaction and CREDIT ledger entry",
+    "LOST": "Updates bet status to LOST; creates BET_LOSS audit transaction; no balance credit",
+    "VOID": "Updates bet status to VOID; refunds full stake to user wallet; creates BET_VOID / REFUND transaction and CREDIT ledger entry",
+    "CASHOUT": "Early cashout accepted; credits calculated fair cashout amount; creates BET_CASHOUT transaction and CREDIT ledger entry"
+  },
+  "doublePayoutProtection": "PASS (Enforced via settlements table unique constraint and transactions ON CONFLICT DO NOTHING with rowCount check)",
+  "verdict": "PASS"
+}
