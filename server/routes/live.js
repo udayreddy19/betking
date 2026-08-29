@@ -373,7 +373,7 @@ router.get('/api/v1/matches/:id', async (req, res) => {
     if (!matchState) {
       const { queryRead } = await import('../../db/pg.js');
       const dbRes = await queryRead(
-        `SELECT match_id, name, home_team, away_team, status, score_home, score_away, overs_completed
+        `SELECT match_id, competition_id, team1_id, team2_id, status, live_score1, live_score2, start_time, updated_at
          FROM matches WHERE match_id = $1 OR id = $1 LIMIT 1`,
         [matchId],
       ).catch(() => ({ rows: [] }));
@@ -383,16 +383,16 @@ router.get('/api/v1/matches/:id', async (req, res) => {
         matchState = {
           id: row.match_id,
           matchId: row.match_id,
-          matchName: row.name,
-          team1: { name: row.home_team },
-          team2: { name: row.away_team },
+          competition: row.competition_id,
+          team1: { id: row.team1_id, name: row.team1_id },
+          team2: { id: row.team2_id, name: row.team2_id },
           status: row.status,
           matchState: isFinal ? 'post' : 'in',
           isLive: !isFinal,
+          startTime: row.start_time,
           liveDetails: {
-            runs: row.score_home,
-            score2: row.score_away,
-            overs: row.overs_completed,
+            score1: row.live_score1,
+            score2: row.live_score2,
           },
         };
       }
