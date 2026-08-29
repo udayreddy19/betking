@@ -1,0 +1,17 @@
+{
+  "deployedCommit": "1a337baf4d3ba44211ba69cfb945639f65fa5adb",
+  "branch": "main",
+  "workerProcessVersion": "Node.js v20.20.2",
+  "workerContainer": "oddsyra_prod_worker",
+  "backendContainer": "oddsyra_prod_backend",
+  "deploymentTimestamp": "2026-08-29T12:49:06Z",
+  "healthStatus": "healthy",
+  "featuresVerified": {
+    "safeTimestampParsing": true,
+    "noNowFallbackForInvalidTimestamps": true,
+    "perBetErrorIsolation": true,
+    "multiTierEventLookup": true,
+    "retryHandling": true,
+    "staleConfidenceSafety": true
+  }
+}

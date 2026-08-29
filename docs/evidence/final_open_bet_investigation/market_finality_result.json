@@ -1,0 +1,17 @@
+{
+  "marketId": "team_total",
+  "marketType": "TEAM_TOTAL",
+  "selectionId": "sel_under_178.5",
+  "selectionSide": "UNDER",
+  "line": 178.5,
+  "relevantTeam": "Paarl Royals SRL",
+  "relevantInnings": 1,
+  "finalScoreInnings1": 181,
+  "scoreAuthoritative": true,
+  "inningsCompleted": true,
+  "marketContractFinal": false,
+  "gradedOutcome": "LOST",
+  "gradingReason": "team_total_i1_final=181_line=178.5",
+  "policyEnforcement": "KEEP_OPEN",
+  "policyReason": "Under-selection on full-match team total market requires match/innings finality confirmation. Cached match data is stale (14580s old) and unverified upstream."
+}

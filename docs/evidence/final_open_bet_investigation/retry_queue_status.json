@@ -1,0 +1,11 @@
+{
+  "betId": "bet_1787989375340_ec9isr",
+  "status": "ACCEPTED",
+  "retryState": "BEING_RETRIED",
+  "retryCount": 0,
+  "deadLetterState": false,
+  "workerFilterPassed": true,
+  "isEligibleForPeriodicSweep": true,
+  "lastSweepAttemptTimestamp": "2026-08-29T12:49:13.180Z",
+  "sweepBehavior": "The bet is actively selected on every settlement worker iteration. Evaluation proceeds safely through event lookup and market grading, and is held in ACCEPTED state by the settlement confidence gate until official upstream completion is delivered."
+}

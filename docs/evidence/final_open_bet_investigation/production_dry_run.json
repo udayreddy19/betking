@@ -1,0 +1,36 @@
+{
+  "dryRunTimestamp": "2026-08-29T12:49:13.180Z",
+  "betId": "bet_1787989375340_ec9isr",
+  "eventLookupResult": {
+    "success": true,
+    "lookupSource": "REDIS_CANONICAL_CACHE",
+    "lookupResult": "EVENT_FOUND_LIVE",
+    "eventStatus": "LIVE",
+    "eventId": "oy_45bbebc2-e93b-3aa0-8c0e-583d94394784"
+  },
+  "evidenceResult": {
+    "innings1Score": 181,
+    "innings1Wickets": 6,
+    "innings1Overs": 20,
+    "line": 178.5
+  },
+  "marketGradingResult": {
+    "outcome": "LOST",
+    "reason": "team_total_i1_final=181_line=178.5"
+  },
+  "settlementConfidenceResult": {
+    "settlementAllowed": false,
+    "confidenceState": "STALE",
+    "finalityState": "LIVE",
+    "ageSeconds": 14580,
+    "maxAgeSeconds": 300,
+    "reason": "STALE_DATA: In-play match data age (14580s) exceeds max allowed (300s)"
+  },
+  "settlementAuthorizationResult": {
+    "success": false,
+    "reason": "CONFIDENCE_STALE: In-play match data is stale (14580s old > 300s threshold)",
+    "settlementBlocked": true
+  },
+  "wouldSettle": false,
+  "exactReasonWhyNotProceeding": "CONFIDENCE_STALE: In-play match data from Redis cache is 14,580 seconds old (exceeding 300s maximum threshold) and upstream provider has not provided an official COMPLETED frame. Financial mutation blocked in accordance with strict settlement confidence policies."
+}

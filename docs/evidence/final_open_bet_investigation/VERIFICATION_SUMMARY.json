@@ -1,0 +1,13 @@
+{
+  "investigationId": "OPEN_BET_FORENSIC_INVESTIGATION_055",
+  "auditTimestamp": "2026-08-29T12:49:15.000Z",
+  "targetBetId": "bet_1787989375340_ec9isr",
+  "matchName": "Paarl Royals SRL vs Mi Cape Town SRL",
+  "market": "Team Total Runs (Under 178.5)",
+  "verdict": "LEGITIMATELY_OPEN_BLOCKED_MISSING_EVIDENCE",
+  "currentStatus": "ACCEPTED",
+  "workerStatus": "ACTIVE_RETRYING",
+  "authorizationStatus": "CONFIDENCE_STALE_BLOCKED",
+  "safetyPolicyCompliance": "PASS (Zero manual edits, zero forced mutations)",
+  "productionReady": true
+}

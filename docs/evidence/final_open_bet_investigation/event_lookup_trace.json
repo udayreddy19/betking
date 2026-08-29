@@ -1,0 +1,44 @@
+{
+  "eventId": "oy_45bbebc2-e93b-3aa0-8c0e-583d94394784",
+  "providerEventId": "oy_45bbebc2-e93b-3aa0-8c0e-583d94394784",
+  "lookupOrder": [
+    {
+      "step": 1,
+      "source": "Live Map",
+      "status": "NOT_FOUND",
+      "details": "Fixture not present in active in-memory live matches map (left live board)"
+    },
+    {
+      "step": 2,
+      "source": "Hydrated Map",
+      "status": "NOT_FOUND",
+      "details": "Fixture not present in hydrated match cache"
+    },
+    {
+      "step": 3,
+      "source": "Redis Canonical Cache",
+      "status": "FOUND",
+      "details": "Found key match:oy_45bbebc2-e93b-3aa0-8c0e-583d94394784 (cachedAt: 2026-08-29T08:46:13.413Z, matchState: 'in', overs: '18.5')"
+    },
+    {
+      "step": 4,
+      "source": "PostgreSQL Matches Table",
+      "status": "NOT_FOUND",
+      "details": "No persistent row in matches table for oy_45bbebc2-e93b-3aa0-8c0e-583d94394784"
+    },
+    {
+      "step": 5,
+      "source": "Direct Provider Fetch",
+      "status": "NOT_FOUND",
+      "details": "fetchMatchDetail returned unpopulated placeholder; match completed on provider stream"
+    },
+    {
+      "step": 6,
+      "source": "Completed/Historical Provider Endpoint",
+      "status": "NOT_FOUND",
+      "details": "Provider historical completed endpoint does not index simulated SRL matches"
+    }
+  ],
+  "finalLookupResult": "EVENT_FOUND_LIVE",
+  "finalLookupSource": "REDIS_CANONICAL_CACHE"
+}

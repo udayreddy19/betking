@@ -1,0 +1,33 @@
+{
+  "betId": "bet_1787989375340_ec9isr",
+  "attempts": [
+    {
+      "attempt": 1,
+      "timestamp": "2026-08-29T11:44:15.000Z",
+      "workerInstance": "oddsyra_prod_worker",
+      "workerVersion": "main-801ecdc",
+      "eventLookupSource": "REDIS_CANONICAL_CACHE",
+      "lookupResult": "EVENT_FOUND_LIVE",
+      "providerResponse": "Live score in-play (overs 18.5, firstRuns 181, chaseRuns 146)",
+      "evidenceResult": "Innings 1 Over 20 ended at 181/6. Under 178.5 not settled during active match.",
+      "authorizationResult": "BLOCKED: Stale in-play feed",
+      "finalAction": "RETAIN_OPEN",
+      "errorCode": "STALE_DATA"
+    },
+    {
+      "attempt": 2,
+      "timestamp": "2026-08-29T12:49:13.180Z",
+      "workerInstance": "oddsyra_prod_backend (dry-run)",
+      "workerVersion": "main-1a337ba",
+      "eventLookupSource": "REDIS_CANONICAL_CACHE",
+      "lookupResult": "EVENT_FOUND_LIVE",
+      "providerResponse": "Stale cached live details from 08:46 UTC (age: 14580s)",
+      "evidenceResult": "Evaluated against firstRuns 181 -> outcome: LOST, reason: team_total_i1_final=181_line=178.5",
+      "authorizationResult": "REJECTED: CONFIDENCE_STALE (In-play match data age exceeds 300s)",
+      "finalAction": "KEEP_OPEN",
+      "errorCode": "CONFIDENCE_STALE"
+    }
+  ],
+  "failingStage": "AUTHORIZATION_ENGINE_CONFIDENCE_GATE",
+  "exactReasonWhyStillOpen": "The fixture left the live board at 08:46 UTC without an official COMPLETED frame from the upstream provider. The settlement confidence engine correctly identifies that the in-play feed is stale (14580s old) and unverified, refusing to authorize settlement until official match completion or verified provider scoreboard evidence is presented."
+}

@@ -1,0 +1,7 @@
+{
+  "betId": "bet_1787989375340_ec9isr",
+  "dryRunAuthorized": false,
+  "normalRetryTriggered": false,
+  "action": "KEEP_OPEN",
+  "reason": "Dry run produced settlement authorization = BLOCKED (CONFIDENCE_STALE). As required by Safety Step 9, normal settlement retry path was NOT triggered to prevent unverified financial mutation on stale feed."
+}

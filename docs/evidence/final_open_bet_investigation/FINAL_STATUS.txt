@@ -1,0 +1,59 @@
+EXACT BET ID:
+bet_1787989375340_ec9isr
+
+WHY IT IS STILL OPEN:
+The fixture left the live board at 08:46 UTC without an official COMPLETED frame from the upstream provider. The settlement confidence engine correctly identifies that the in-play data is stale (14580s old) and blocks settlement authorization until official completion is delivered.
+
+LAST SETTLEMENT ERROR:
+STALE_DATA: In-play match data age (14580s) exceeds max allowed (300s)
+
+PRODUCTION WORKER VERSION:
+main-1a337ba (Node.js v20.20.2)
+
+LATEST CODE DEPLOYED:
+YES
+
+LIVE LOOKUP:
+NOT_FOUND
+
+DATABASE LOOKUP:
+NOT_FOUND
+
+HISTORICAL LOOKUP:
+FOUND (Redis canonical cache + immutable snapshot store)
+
+PROVIDER EVENT FOUND:
+YES (oy_45bbebc2-e93b-3aa0-8c0e-583d94394784)
+
+MATCH COMPLETED:
+NO (Upstream feed disconnected before emitting final completed status)
+
+AUTHORITATIVE MARKET EVIDENCE:
+NO (In-play feed disconnected before official finalization)
+
+MARKET FINAL:
+NO
+
+RETRY JOB RUNNING:
+YES
+
+BET SELECTED BY WORKER:
+YES
+
+DRY RUN RESULT:
+Evaluated as LOST (score 181 > line 178.5), but blocked by Settlement Confidence Gate (CONFIDENCE_STALE)
+
+WOULD SETTLE:
+NO
+
+IF NO, EXACT BLOCKER:
+CONFIDENCE_STALE: In-play match data age (14580s) exceeds max allowed (300s) on unverified feed
+
+IF YES, NORMAL RETRY RESULT:
+N/A (Authorization blocked; normal retry not triggered)
+
+FINAL BET STATUS:
+ACCEPTED (OPEN)
+
+FINAL VERDICT:
+LEGITIMATELY_OPEN (KEEP_OPEN until official provider score or finalization is delivered)

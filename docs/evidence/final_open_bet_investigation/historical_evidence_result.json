@@ -1,0 +1,17 @@
+{
+  "matchId": "oy_45bbebc2-e93b-3aa0-8c0e-583d94394784",
+  "matchCompletedUpstream": false,
+  "upstreamStatusReceived": "IN_PLAY (dropped at 18.5 overs)",
+  "snapshotEvidence": {
+    "innings1TotalOversRecorded": 20,
+    "innings1Over20Score": 181,
+    "innings1Over20Wickets": 6,
+    "innings1Over20Timestamp": "2026-08-29T07:56:10.570Z",
+    "innings2OversRecorded": 17,
+    "innings2Over17Score": 134,
+    "innings2Over17Wickets": 7,
+    "innings2Over17Timestamp": "2026-08-29T08:41:22.713Z"
+  },
+  "marketClassification": "BLOCKED_MISSING_EVIDENCE",
+  "mathematicalContractStatus": "Innings 1 concluded at 181 runs (> 178.5 line). However, full-match/team-total contracts require provider confirmation or proven boundary to prevent settlement on interrupted or abandoned matches."
+}
