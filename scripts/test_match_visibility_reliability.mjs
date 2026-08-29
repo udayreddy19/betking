@@ -39,6 +39,8 @@ async function runTests() {
     liveDetails: { firstRuns: 181, chaseRuns: 146, commentary: 'Match completed' },
   };
 
+  await upsertPersistentMatch(sampleCompletedMatch);
+
   const liveMap = new Map([[sampleLiveMatch.id, sampleLiveMatch]]);
 
   // 1. Match found in Live Map

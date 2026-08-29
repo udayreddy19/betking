@@ -3,7 +3,7 @@
  * Tests 14 critical scenarios for reliable match loading, persistence, and lookup independence.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { reconstructMatchFromDb, upsertPersistentMatch } from '../../lib/eventPersistence.mjs';
 import { lookupEventForSettlement } from '../../lib/settlement/settlementEventLookup.mjs';
 import { getAggregatedLiveScores } from '../../lib/aggregator.mjs';
@@ -39,6 +39,10 @@ describe('Match Visibility & Event Lookup Reliability', () => {
   };
 
   const liveMap = new Map([[sampleLiveMatch.id, sampleLiveMatch]]);
+
+  beforeAll(async () => {
+    await upsertPersistentMatch(sampleCompletedMatch);
+  });
 
   // 1. Match found in Live Map
   it('1. Retrieves match directly when present in live memory map', async () => {
