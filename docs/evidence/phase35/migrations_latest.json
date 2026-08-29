@@ -1,0 +1,13 @@
+{
+  "phase": 35,
+  "environment": "production",
+  "timestamp": "2026-08-29T12:10:00Z",
+  "status": "NOT_VERIFIED",
+  "source": "PRODUCTION_MIGRATION_RUNNER",
+  "actual_result": {
+    "totalRequired": 56,
+    "latestMigration": "056_provider_event_db_uniqueness.sql",
+    "blocker": "Awaiting production connection assertion"
+  },
+  "stub": false
+}

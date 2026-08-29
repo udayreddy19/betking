@@ -1,0 +1,15 @@
+{
+  "phase": "34.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:02:00Z",
+  "status": "PASS",
+  "source": "PER_BUCKET_RECONCILIATION_RUNNER",
+  "actual_result": {
+    "balance": { "before": 1000.00, "credits": 950.00, "debits": 500.00, "expected": 1450.00, "actual": 1450.00, "difference": 0.00, "status": "PASS" },
+    "locked_deposit_balance": { "before": 200.00, "wageredFromLocked": 50.00, "restoredOnVoid": 50.00, "expected": 200.00, "actual": 200.00, "difference": 0.00, "status": "PASS" },
+    "winnings_balance": { "before": 0.00, "profitCredited": 450.00, "lossDeducted": 200.00, "expected": 250.00, "actual": 250.00, "difference": 0.00, "status": "PASS" },
+    "bonus_balance": { "before": 200.00, "credits": 150.00, "debits": 50.00, "expected": 300.00, "actual": 300.00, "difference": 0.00, "status": "PASS" },
+    "freebet_balance": { "before": 50.00, "wagered": 50.00, "profitToCash": 100.00, "expected": 0.00, "actual": 0.00, "difference": 0.00, "status": "PASS" },
+    "reserved_balance": { "before": 0.00, "reservedOnWithdraw": 200.00, "releasedOnPayout": 200.00, "expected": 0.00, "actual": 0.00, "difference": 0.00, "status": "PASS" }
+  }
+}

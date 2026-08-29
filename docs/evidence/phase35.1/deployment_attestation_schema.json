@@ -1,0 +1,31 @@
+{
+  "phase": "35.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:18:00Z",
+  "status": "PASS",
+  "source": "DEPLOYMENT_SCHEMA_DEFINITION",
+  "schema": {
+    "requiredFields": [
+      "git_commit_sha",
+      "git_branch",
+      "build_timestamp",
+      "artifact_version",
+      "deployment_id",
+      "deployment_timestamp",
+      "application_version",
+      "database_schema_version",
+      "latest_migration",
+      "rollback_artifact",
+      "rollback_version"
+    ],
+    "conditionalFields": [
+      "docker_image_digest"
+    ],
+    "validationRules": {
+      "git_commit_sha": "Must be 40-character hex string",
+      "application_version": "Must match build artifact metadata",
+      "rollback_artifact": "Mandatory unless rollback is proven not applicable"
+    }
+  },
+  "stub": false
+}

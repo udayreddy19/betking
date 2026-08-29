@@ -1,0 +1,22 @@
+{
+  "phase": "35.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:18:00Z",
+  "status": "PASS",
+  "source": "CANONICAL_IDENTITY_STRATEGY",
+  "actual_result": {
+    "primaryIdentity": {
+      "definition": "provider + provider_event_id",
+      "dbEnforcement": "idx_match_ball_events_provider_native (UNIQUE)",
+      "applicableWhen": "provider IS NOT NULL AND provider_event_id IS NOT NULL"
+    },
+    "fallbackIdentity": {
+      "definition": "canonical_match_id + innings + over_number + ball_number",
+      "dbEnforcement": "idx_match_ball_events_slot (UNIQUE) WHERE superseded_by IS NULL AND is_confirmed = TRUE",
+      "applicableWhen": "provider OR provider_event_id IS NULL",
+      "primaryKey": "event_id (mbe_{matchId}_i{inn}_o{over}_b{ball}_s{seq})"
+    },
+    "safetyGuarantee": "No unconstrained event pathway exists in database schema"
+  },
+  "stub": false
+}

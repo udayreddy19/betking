@@ -1,0 +1,15 @@
+{
+  "phase": "34.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:02:00Z",
+  "status": "PASS",
+  "source": "OUT_OF_ORDER_REVISION_CONCURRENCY_RUNNER",
+  "actual_result": {
+    "revisionsTested": [100, 101, 102],
+    "deliveryOrder": [100, 102, 101],
+    "canonicalRevisionResult": 102,
+    "supersededLinkage": "rev_100.superseded_by == rev_102.eventId",
+    "staleRejection": "rev_101 rejected with STALE_REJECTED",
+    "determinismVerified": true
+  }
+}

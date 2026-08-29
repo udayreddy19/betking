@@ -1,0 +1,11 @@
+{
+  "phase": "PHASE_33",
+  "timestamp": "2026-08-29T11:47:00Z",
+  "environment": "LOCAL_VERIFIED",
+  "status": "PASS",
+  "atomicityMechanisms": {
+    "boundary": "withTransaction (client.query BEGIN/COMMIT/ROLLBACK)",
+    "locking": "SELECT ... FOR UPDATE on bets, wallets, and settlement_corrections",
+    "crashFaultSafety": "Abort cleans transaction state with zero uncommitted ledger mutations"
+  }
+}

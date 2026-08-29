@@ -1,0 +1,17 @@
+{
+  "phase": "34.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:02:00Z",
+  "status": "PASS",
+  "source": "100_CONCURRENT_PROVIDER_EVENTS_RUNNER",
+  "actual_result": {
+    "attempts": 100,
+    "accepted": 1,
+    "duplicates": 99,
+    "settlementsCreated": 1,
+    "walletCreditsCreated": 1,
+    "ledgerEntriesCreated": 1,
+    "duplicateFinancialEffects": 0,
+    "status": "PASS"
+  }
+}

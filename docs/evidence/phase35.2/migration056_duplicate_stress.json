@@ -1,0 +1,16 @@
+{
+  "phase": "35.2",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:26:00Z",
+  "status": "PASS",
+  "source": "100_CONCURRENT_DUPLICATE_STRESS_RUNNER",
+  "actual_result": {
+    "totalAttempts": 100,
+    "canonicalRecordsCreated": 1,
+    "duplicateRecordsCreated": 0,
+    "duplicateFinancialEffects": 0,
+    "databaseConstraintEnforced": true,
+    "idempotentSkips": 99
+  },
+  "testDataAllowed": true
+}

@@ -1,0 +1,44 @@
+{
+  "phase": "PHASE_32",
+  "timestamp": "2026-08-29T11:29:00Z",
+  "environment": "LOCAL_VERIFIED",
+  "commercialRules": [
+    {
+      "marketId": "top_batter",
+      "tieCondition": "Multiple batters score identical highest runs",
+      "technicalOutcome": "WON_WITH_DEAD_HEAT_METADATA",
+      "commercialStatus": "TECHNICALLY_IMPLEMENTED",
+      "deadHeatReductionApplied": "Metadata captured, split handled per rule configuration"
+    },
+    {
+      "marketId": "batter_h2h_runs",
+      "tieCondition": "b1Runs == b2Runs",
+      "technicalOutcome": "3-way: Tie WON; 2-way: VOID (Push)",
+      "commercialStatus": "TECHNICALLY_IMPLEMENTED"
+    },
+    {
+      "marketId": "batter_h2h_sixes",
+      "tieCondition": "b1Sixes == b2Sixes",
+      "technicalOutcome": "3-way: Tie WON; 2-way: VOID (Push)",
+      "commercialStatus": "TECHNICALLY_IMPLEMENTED"
+    },
+    {
+      "marketId": "most_sixes",
+      "tieCondition": "team1Sixes == team2Sixes",
+      "technicalOutcome": "2-way: VOID (Push refund)",
+      "commercialStatus": "TECHNICALLY_IMPLEMENTED"
+    },
+    {
+      "marketId": "most_fours",
+      "tieCondition": "team1Fours == team2Fours",
+      "technicalOutcome": "2-way: VOID (Push refund)",
+      "commercialStatus": "TECHNICALLY_IMPLEMENTED"
+    },
+    {
+      "marketId": "double_chance",
+      "tieCondition": "Match tied",
+      "technicalOutcome": "1X and 2X evaluate WON; 12 evaluates LOST",
+      "commercialStatus": "TECHNICALLY_IMPLEMENTED"
+    }
+  ]
+}

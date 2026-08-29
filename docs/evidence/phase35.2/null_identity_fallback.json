@@ -1,0 +1,14 @@
+{
+  "phase": "35.2",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:26:00Z",
+  "status": "PASS",
+  "source": "NULL_IDENTITY_FALLBACK_HARNESS",
+  "actual_result": {
+    "supportedScenarios": ["manual_score_override", "legacy_event", "synthetic_fallback"],
+    "fallbackSlotKey": "canonical_match_id + innings + over_number + ball_number",
+    "fallbackDuplicateBlocked": true,
+    "activeCanonicalEventCount": 1
+  },
+  "testDataAllowed": true
+}

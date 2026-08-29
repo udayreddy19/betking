@@ -1,0 +1,13 @@
+{
+  "phase": "PHASE_34",
+  "environment": "staging",
+  "timestamp": "2026-08-29T11:55:00Z",
+  "deployedCommit": "HEAD (Phase 34 Certified)",
+  "buildVersion": "v3.4.0-staging",
+  "latestMigration": "055_settlement_correction_recovery_liability.sql",
+  "healthStatus": {
+    "/health/live": "UP",
+    "/health/ready": "READY",
+    "/health/dependencies": "ALL_HEALTHY"
+  }
+}

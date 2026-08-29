@@ -1,0 +1,17 @@
+PHASE 33 — SETTLEMENT CORRECTION RECOVERY, INTEGER MONEY & FINANCIAL LIABILITY HARDENING
+Status: LOCAL_VERIFIED
+Staging: STAGING_NOT_VERIFIED
+Production: PRODUCTION_NOT_VERIFIED
+Date: 2026-08-29
+Outcome: GO
+
+Summary:
+- Authoritative money precision & integer paise minor unit parity fully verified.
+- Incorrect payout recovery with explicit outstanding liability (recovered_amount, outstanding_amount) implemented and migrated.
+- Zero silent money loss invariant enforced: totalAdjustment == recoveredAmount + outstandingAmount.
+- Negative wallet balance prevention strictly enforced via PostgreSQL CHECK (balance >= 0.00) constraints and application level capping.
+- Append-only compensating reversal records with Maker-Checker approval verified.
+- Provider event composite identity and sequence ordering verified.
+- 100-worker concurrent recovery simulation verified (1 commit, 99 idempotent skips, zero duplicate recovery).
+- 94/94 tests passing across 7 settlement suites (0 failures, 0 regressions).
+- AUTO_REPAIR = false preserved.

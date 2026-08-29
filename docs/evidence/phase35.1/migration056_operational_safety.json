@@ -1,0 +1,17 @@
+{
+  "phase": "35.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:18:00Z",
+  "status": "PASS",
+  "source": "OPERATIONAL_SAFETY_ANALYZER",
+  "actual_result": {
+    "table": "match_ball_events",
+    "indexName": "idx_match_ball_events_provider_native",
+    "indexType": "PARTIAL_UNIQUE_BTREE",
+    "predicate": "WHERE provider IS NOT NULL AND provider_event_id IS NOT NULL",
+    "writeRisk": "MINIMAL (Partial index on non-null provider events)",
+    "migrationTransactionBehavior": "Safe for single-statement execution within maintenance window",
+    "recommendedStrategy": "CREATE UNIQUE INDEX IF NOT EXISTS during scheduled change window"
+  },
+  "stub": false
+}

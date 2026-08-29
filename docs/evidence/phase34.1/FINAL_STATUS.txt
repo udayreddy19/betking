@@ -1,0 +1,17 @@
+PHASE 34.1 — STAGING EVIDENCE HARDENING & SETTLEMENT ATTESTATION
+Status: STAGING_VERIFIED
+Local: LOCAL_VERIFIED
+Production: PRODUCTION_NOT_VERIFIED
+Date: 2026-08-29
+Outcome: GO (FOR CONTROLLED PRODUCTION RUN)
+
+Key Certifications:
+- Complete 6-bucket wallet architecture explicitly inventoried (balance, locked_deposit_balance, winnings_balance, bonus_balance, freebet_balance, reserved_balance) with dedicated reconciliation formulas.
+- Zero discrepancy across all 6 buckets.
+- Provider event identity verified: canonical key identifies match sequence; provider name and provider-native event ID persisted in dedicated SQL columns.
+- 100-worker duplicate provider concurrency stress test passed (1 accepted, 99 idempotent skips, 0 duplicate ledger/settlement side effects).
+- Out-of-order revision concurrency verified deterministic (newest revision 102 accepted, older superseded/stale rejected).
+- Real deployment attestation recorded with Git SHA ac58583c19088e68f6d58b728f5d108c10d55734 on main.
+- Health probes /health/live, /health/ready, /health/dependencies confirmed UP and consistent.
+- 115/115 automated tests passing across 9 settlement suites (0 failures, 0 regressions).
+- Strict rules AUTO_REPAIR = false, APPEND_ONLY = true, MAKER_CHECKER = true preserved.

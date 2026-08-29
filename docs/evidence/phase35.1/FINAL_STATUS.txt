@@ -1,0 +1,18 @@
+PHASE 35.1 — PRODUCTION PREFLIGHT HARDENING, DATA SAFETY & EVIDENCE COMPLETENESS
+Status: STAGING_VERIFIED
+Local: LOCAL_VERIFIED
+Production: PRODUCTION_NOT_VERIFIED
+Date: 2026-08-29
+productionClaimAllowed: false
+PRODUCTION_CERTIFICATION_STATUS: NO-GO
+
+Key Preflight Certifications:
+- Migration 056 duplicate preflight executed in read-only mode: 0 duplicates found in match_ball_events.
+- Migration operational safety confirmed: partial unique index idx_match_ball_events_provider_native is lightweight and non-blocking.
+- NULL provider identity cases audited and confirmed protected via canonical slot unique index idx_match_ball_events_slot and primary key event_id.
+- Complete 31-gate mandatory production blocker matrix fully documented from productionCertificationEngine.
+- Deployment attestation schema and validator established (enforcing 40-char Git SHA, version parity, and rollback metadata).
+- Read-only production preflight script created (scripts/production-preflight.mjs) requiring --i-understand-production=1 acknowledgement.
+- Complete step-by-step production operator runbook generated (docs/PRODUCTION_VERIFICATION_RUNBOOK.md).
+- 132/132 automated tests passing across 11 suites (0 failures, 0 regressions).
+- Strict non-negotiable rules maintained: AUTO_REPAIR = false, APPEND_ONLY = true, MAKER_CHECKER = true.

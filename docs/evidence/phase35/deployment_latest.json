@@ -1,0 +1,14 @@
+{
+  "phase": 35,
+  "environment": "production",
+  "timestamp": "2026-08-29T12:10:00Z",
+  "status": "NOT_VERIFIED",
+  "source": "DEPLOYMENT_ATTESTATION",
+  "actual_result": {
+    "git_commit_sha": "ac58583c19088e68f6d58b728f5d108c10d55734",
+    "application_version": "1.0.0-production-candidate",
+    "latest_migration": "056_provider_event_db_uniqueness.sql",
+    "blocker": "Production live deployment confirmation required"
+  },
+  "stub": false
+}

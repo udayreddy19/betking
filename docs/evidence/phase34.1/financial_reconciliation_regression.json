@@ -1,0 +1,22 @@
+{
+  "phase": "34.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:02:00Z",
+  "status": "PASS",
+  "source": "FULL_SETTLEMENT_RECONCILIATION_REGRESSION",
+  "actual_result": {
+    "scenariosTested": [
+      { "name": "WIN", "payoutGteStake": true, "walletMatchesLedger": true, "status": "PASS" },
+      { "name": "LOSS", "payoutZero": true, "walletMatchesLedger": true, "status": "PASS" },
+      { "name": "VOID", "refundEqualsStake": true, "walletMatchesLedger": true, "status": "PASS" },
+      { "name": "REFUND", "refundEqualsStake": true, "walletMatchesLedger": true, "status": "PASS" },
+      { "name": "FULL_RECOVERY", "totalAdjEqualsRecPlusOut": true, "status": "PASS" },
+      { "name": "PARTIAL_RECOVERY", "totalAdjEqualsRecPlusOut": true, "shortfallPersisted": true, "status": "PASS" },
+      { "name": "ZERO_BALANCE_RECOVERY", "totalAdjEqualsRecPlusOut": true, "noNegativeWallet": true, "status": "PASS" }
+    ],
+    "negativeWalletCreated": false,
+    "duplicateLedgerCreated": false,
+    "historicalSettlementMutated": false,
+    "status": "PASS"
+  }
+}

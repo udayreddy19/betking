@@ -1,0 +1,15 @@
+{
+  "phase": "PHASE_34",
+  "environment": "staging",
+  "identityProven": true,
+  "timestamp": "2026-08-29T11:55:00Z",
+  "databaseEngine": "PostgreSQL 16.x",
+  "databaseName": "oddsyra_staging_db",
+  "schemaStatus": "UP_TO_DATE",
+  "tableConstraintsVerified": {
+    "wallets_balance_non_negative": true,
+    "wallets_bonus_non_negative": true,
+    "wallets_locked_deposit_non_negative": true,
+    "settlement_corrections_columns": ["recovered_amount", "outstanding_amount", "reversal_tx_id", "status"]
+  }
+}

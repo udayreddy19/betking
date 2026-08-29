@@ -26,6 +26,7 @@
     "db:verify": "node scripts/db-verify.mjs",
     "security:certification": "node scripts/security-certification.mjs",
     "production:smoke": "node scripts/production-smoke.mjs",
+    "production:preflight": "node scripts/production-preflight.mjs",
     "production:certification": "node scripts/production-certification.mjs",
     "production:certification-preflight": "node scripts/production-certification-preflight.mjs",
     "production:verify": "node scripts/production-go-live-check.mjs",

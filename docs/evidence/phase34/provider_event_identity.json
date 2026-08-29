@@ -1,0 +1,16 @@
+{
+  "phase": "PHASE_34",
+  "environment": "staging",
+  "timestamp": "2026-08-29T11:55:00Z",
+  "status": "PASS",
+  "nativeFields": {
+    "providerName": "BETRADAR / SPORTSMONKS",
+    "providerEventId": "br_ev_100",
+    "matchId": "match_stage_feed",
+    "innings": 1,
+    "overNumber": 10,
+    "ballNumber": 2,
+    "sequenceNumber": 100
+  },
+  "uniquenessGuarantee": "Composite primary key (eventId) + monotonic sequence ordering"
+}

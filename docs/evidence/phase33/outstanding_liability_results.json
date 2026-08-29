@@ -1,0 +1,15 @@
+{
+  "phase": "PHASE_33",
+  "timestamp": "2026-08-29T11:47:00Z",
+  "environment": "LOCAL_VERIFIED",
+  "status": "PASS",
+  "liabilityPolicy": {
+    "zeroSilentLoss": true,
+    "persistedColumns": ["recovered_amount", "outstanding_amount", "status", "reversal_tx_id"],
+    "manualReviewTriggers": [
+      "status == 'REVERSAL_PARTIALLY_RECOVERED'",
+      "status == 'REVERSAL_FINANCIALLY_PENDING'"
+    ],
+    "negativeWalletCreated": false
+  }
+}

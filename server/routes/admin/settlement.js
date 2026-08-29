@@ -344,4 +344,178 @@ router.post('/api/admin/settlement/dry-run', requireRole('SUPER_ADMIN', 'FINANCE
   }
 });
 
+// GET /api/admin/settlement/review-queue — Operational review queue for blocked/conflicting/stale bets
+router.get('/api/admin/settlement/review-queue', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN', 'TRADING_ADMIN'), async (req, res) => {
+  try {
+    const limit = Math.min(Number(req.query.limit) || 100, 500);
+    const { queryRead } = await import('../../../db/pg.js');
+    const { aggregateLiveScores } = await import('../../../lib/aggregator.mjs');
+    const { getCachedCanonicalMatchState } = await import('../../../lib/matchStateCache.mjs');
+    const { evaluateSettlementConfidence } = await import('../../../lib/settlement/settlementConfidenceEngine.mjs');
+
+    const openBets = (await queryRead(
+      `SELECT * FROM bets
+       WHERE UPPER(status) IN ('PENDING', 'ACCEPTED', 'OPEN')
+       ORDER BY created_at ASC LIMIT $1`,
+      [limit],
+    )).rows;
+
+    const snap = await aggregateLiveScores({ force: false });
+    const liveMatches = new Map((snap?.matches || []).map((m) => [String(m.id || m.matchId), m]));
+
+    const reviewItems = [];
+
+    for (const bet of openBets) {
+      const match = liveMatches.get(String(bet.match_id)) || (await getCachedCanonicalMatchState(bet.match_id));
+      const confidence = evaluateSettlementConfidence({
+        match,
+        bet,
+        marketContext: { marketId: bet.market_id },
+        providerObservations: match?.providerObservations || [],
+      });
+
+      if (!confidence.settlementAllowed || confidence.confidence !== 'CONFIRMED') {
+        reviewItems.push({
+          betId: bet.bet_id,
+          userId: bet.user_id,
+          matchId: bet.match_id,
+          marketId: bet.market_id,
+          selectionId: bet.selection_id,
+          stake: bet.stake,
+          odds: bet.accepted_odds || bet.odds,
+          status: bet.status,
+          confidence: confidence.confidence,
+          finality: confidence.finality,
+          settlementAllowed: confidence.settlementAllowed,
+          reasons: confidence.reasons,
+          evidence: confidence.evidence,
+          providerConsensus: confidence.providerConsensus,
+          checkedAt: confidence.checkedAt,
+        });
+      }
+    }
+
+    res.json({
+      count: reviewItems.length,
+      totalOpenChecked: openBets.length,
+      items: reviewItems,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/admin/settlement/blocked — Alias for review-queue exposing all blocked settlements
+router.get('/api/admin/settlement/blocked', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN', 'TRADING_ADMIN'), async (req, res) => {
+  try {
+    const limit = Math.min(Number(req.query.limit) || 100, 500);
+    const { queryRead } = await import('../../../db/pg.js');
+    const { aggregateLiveScores } = await import('../../../lib/aggregator.mjs');
+    const { getCachedCanonicalMatchState } = await import('../../../lib/matchStateCache.mjs');
+    const { evaluateSettlementConfidence } = await import('../../../lib/settlement/settlementConfidenceEngine.mjs');
+
+    const openBets = (await queryRead(
+      `SELECT * FROM bets
+       WHERE UPPER(status) IN ('PENDING', 'ACCEPTED', 'OPEN')
+       ORDER BY created_at ASC LIMIT $1`,
+      [limit],
+    )).rows;
+
+    const snap = await aggregateLiveScores({ force: false });
+    const liveMatches = new Map((snap?.matches || []).map((m) => [String(m.id || m.matchId), m]));
+
+    const blockedItems = [];
+
+    for (const bet of openBets) {
+      const match = liveMatches.get(String(bet.match_id)) || (await getCachedCanonicalMatchState(bet.match_id));
+      const confidence = evaluateSettlementConfidence({
+        match,
+        bet,
+        marketContext: { marketId: bet.market_id },
+        providerObservations: match?.providerObservations || [],
+      });
+
+      if (!confidence.settlementAllowed) {
+        blockedItems.push({
+          betId: bet.bet_id,
+          userId: bet.user_id,
+          matchId: bet.match_id,
+          marketId: bet.market_id,
+          selectionId: bet.selection_id,
+          stake: bet.stake,
+          odds: bet.accepted_odds || bet.odds,
+          status: bet.status,
+          confidenceState: confidence.confidenceState,
+          finalityState: confidence.finalityState,
+          settlementAllowed: confidence.settlementAllowed,
+          reasons: confidence.settlementReasonCodes,
+          evidence: confidence.freshness,
+          providerConsensus: confidence.providerConsensus,
+          firstBlockedAt: bet.created_at,
+          lastEvaluatedAt: confidence.evaluatedAt,
+        });
+      }
+    }
+
+    res.json({
+      count: blockedItems.length,
+      totalOpenChecked: openBets.length,
+      blockedBets: blockedItems,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/admin/settlement/confidence/match/:matchId — Match-level confidence assessment
+router.get('/api/admin/settlement/confidence/match/:matchId', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN', 'TRADING_ADMIN'), async (req, res) => {
+  try {
+    const matchId = req.params.matchId;
+    const { aggregateLiveScores } = await import('../../../lib/aggregator.mjs');
+    const { getCachedCanonicalMatchState } = await import('../../../lib/matchStateCache.mjs');
+    const { evaluateSettlementConfidence } = await import('../../../lib/settlement/settlementConfidenceEngine.mjs');
+
+    const snap = await aggregateLiveScores({ force: false });
+    const match = (snap?.matches || []).find((m) => String(m.id || m.matchId) === String(matchId))
+      || (await getCachedCanonicalMatchState(matchId));
+
+    const assessment = evaluateSettlementConfidence({
+      match,
+      marketContext: { marketType: 'MATCH_WINNER' },
+      providerObservations: match?.providerObservations || [],
+    });
+
+    res.json(assessment);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/admin/settlement/provider-conflicts/:matchId — Multi-provider conflict inspection
+router.get('/api/admin/settlement/provider-conflicts/:matchId', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN', 'TRADING_ADMIN'), async (req, res) => {
+  try {
+    const matchId = req.params.matchId;
+    const { aggregateLiveScores } = await import('../../../lib/aggregator.mjs');
+    const { getCachedCanonicalMatchState } = await import('../../../lib/matchStateCache.mjs');
+    const { evaluateProviderConsensus } = await import('../../../lib/settlement/settlementConfidenceEngine.mjs');
+
+    const snap = await aggregateLiveScores({ force: false });
+    const match = (snap?.matches || []).find((m) => String(m.id || m.matchId) === String(matchId))
+      || (await getCachedCanonicalMatchState(matchId));
+
+    const observations = match?.providerObservations || [];
+    const consensus = evaluateProviderConsensus(observations);
+
+    res.json({
+      matchId,
+      providersAvailable: consensus.providersAvailable,
+      providersAgree: consensus.providersAgree,
+      conflictingFields: consensus.conflictingFields,
+      observations: consensus.observations,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

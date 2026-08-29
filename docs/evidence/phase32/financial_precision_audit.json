@@ -1,0 +1,14 @@
+{
+  "phase": "PHASE_32",
+  "timestamp": "2026-08-29T11:29:00Z",
+  "environment": "LOCAL_VERIFIED",
+  "status": "PASS",
+  "classifications": {
+    "displayOnly": "UI formatted with 2 decimals in client components",
+    "nonFinancial": "Match scores, overs, ball indices, percentages",
+    "financialNonAuthoritative": "Estimated potential profit preview",
+    "authoritativeFinancial": "Wallet balance, transaction amounts, ledger credits/debits, actual payout"
+  },
+  "authoritativePrecisionRule": "Math.round((amount + Number.EPSILON) * 100) / 100",
+  "minorUnitsPaise": "Math.round((amount + Number.EPSILON) * 100)"
+}

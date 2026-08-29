@@ -1,0 +1,54 @@
+{
+  "phase": "34.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:02:00Z",
+  "status": "PASS",
+  "source": "DATABASE_SCHEMA_AND_CODE_AUDIT",
+  "actual_result": {
+    "totalBuckets": 6,
+    "buckets": [
+      {
+        "name": "balance",
+        "type": "AUTHORITATIVE_PLAYABLE_CASH",
+        "reconciliationMethod": "LEDGER_CREDIT_DEBIT_EQUATION",
+        "formula": "delta(balance) == sum(credits) - sum(debits)",
+        "status": "PASS"
+      },
+      {
+        "name": "locked_deposit_balance",
+        "type": "AUTHORITATIVE_TURNOVER_LOCK",
+        "reconciliationMethod": "TURNOVER_LIFECYCLE_INVARIANT",
+        "formula": "0 <= locked_deposit_balance <= balance",
+        "status": "PASS"
+      },
+      {
+        "name": "winnings_balance",
+        "type": "REPORTING_NET_PROFIT",
+        "reconciliationMethod": "LIFETIME_PROFIT_CALCULATION",
+        "formula": "delta(winnings) == sum(payout - stake)[WON] - sum(stake)[LOST]",
+        "status": "PASS"
+      },
+      {
+        "name": "bonus_balance",
+        "type": "AUTHORITATIVE_PROMO_ROLLOVER",
+        "reconciliationMethod": "BONUS_LEDGER_EQUATION",
+        "formula": "delta(bonus_balance) == sum(bonus_credits) - sum(bonus_debits)",
+        "status": "PASS"
+      },
+      {
+        "name": "freebet_balance",
+        "type": "PROMOTIONAL_VOUCHER",
+        "reconciliationMethod": "VOUCHER_NON_NEGATIVE_INVARIANT",
+        "formula": "freebet_balance >= 0 (Stake not returned on win)",
+        "status": "PASS"
+      },
+      {
+        "name": "reserved_balance",
+        "type": "WITHDRAWAL_RESERVATION",
+        "reconciliationMethod": "IN_FLIGHT_WITHDRAWAL_TRACKING",
+        "formula": "reserved_balance >= 0 (Held until payout or cancel)",
+        "status": "PASS"
+      }
+    ]
+  }
+}

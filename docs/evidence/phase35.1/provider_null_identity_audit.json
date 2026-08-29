@@ -1,0 +1,15 @@
+{
+  "phase": "35.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:18:00Z",
+  "status": "PASS",
+  "source": "NULL_IDENTITY_ANALYZER",
+  "actual_result": {
+    "canProviderBeNull": true,
+    "canProviderEventIdBeNull": true,
+    "context": "Internal synthetic fallbacks, legacy test events, manual admin grading",
+    "uniquenessProtectionForNullCases": "Protected by PRIMARY KEY (event_id) and UNIQUE INDEX idx_match_ball_events_slot (canonical_match_id, innings, over_number, ball_number) WHERE superseded_by IS NULL AND is_confirmed = TRUE",
+    "gapExists": false
+  },
+  "stub": false
+}

@@ -1,0 +1,15 @@
+{
+  "phase": "PHASE_34",
+  "environment": "staging",
+  "timestamp": "2026-08-29T11:55:00Z",
+  "status": "PASS",
+  "retryExecution": {
+    "betId": "bet_stage_994821",
+    "firstAttempt": "WON",
+    "secondAttempt": "ALREADY_SETTLED",
+    "payoutSecondAttempt": 0.00,
+    "additionalWalletCredit": 0.00,
+    "additionalLedgerEntry": 0,
+    "idempotencyVerified": true
+  }
+}

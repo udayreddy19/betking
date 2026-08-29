@@ -1,0 +1,14 @@
+{
+  "phase": "PHASE_32",
+  "timestamp": "2026-08-29T11:29:00Z",
+  "environment": "LOCAL_VERIFIED",
+  "moneyModel": {
+    "currency": "INR",
+    "minorUnit": "paise",
+    "paisePerRupee": 100,
+    "roundingMode": "HALF_UP_WITH_EPSILON",
+    "storagePrecision": "NUMERIC(14, 2) in PostgreSQL",
+    "runtimePrecision": "Number normalized via roundAuthoritativeMoney",
+    "intermediateRounding": "NO (unrounded until final stage)"
+  }
+}

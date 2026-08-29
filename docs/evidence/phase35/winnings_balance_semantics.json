@@ -1,0 +1,17 @@
+{
+  "phase": 35,
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:10:00Z",
+  "status": "PASS",
+  "source": "WAGERING_RULES_AND_WALLET_SETTLEMENT_AUDIT",
+  "actual_result": {
+    "isSpendableCash": false,
+    "isWithdrawable": false,
+    "isStakeable": false,
+    "isAuthoritative": false,
+    "isReportingMetric": true,
+    "purpose": "Cumulative lifetime net profit/loss reporting metric only",
+    "spendableAuthority": "wallets.balance strictly represents playable cash"
+  },
+  "stub": false
+}

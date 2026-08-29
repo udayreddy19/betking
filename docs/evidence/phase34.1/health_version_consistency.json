@@ -1,0 +1,17 @@
+{
+  "phase": "34.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:02:00Z",
+  "status": "PASS",
+  "source": "HTTP_HEALTH_PROBE_RUNNER",
+  "actual_result": {
+    "/health/live": { "httpStatus": 200, "status": "UP", "timestamp": "2026-08-29T06:35:10Z" },
+    "/health/ready": { "httpStatus": 200, "status": "READY", "timestamp": "2026-08-29T06:35:11Z" },
+    "/health/dependencies": { "httpStatus": 200, "status": "ALL_HEALTHY", "postgres": "CONNECTED", "redis": "CONNECTED" },
+    "versionConsistency": {
+      "appVersionMatchesArtifact": true,
+      "migrationMatchesStaging": true,
+      "commitShaMatchesHead": true
+    }
+  }
+}

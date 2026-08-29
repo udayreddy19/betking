@@ -1,0 +1,35 @@
+{
+  "phase": "PHASE_32",
+  "timestamp": "2026-08-29T11:29:00Z",
+  "environment": "LOCAL_VERIFIED",
+  "matrix": [
+    {
+      "scope": "DELIVERY",
+      "stateRequired": "BALL_CONFIRMED",
+      "evidenceSource": "match_ball_events.is_confirmed = TRUE",
+      "provisionalHandling": "is_confirmed = FALSE blocks getConfirmedBallEvent",
+      "supersededHandling": "superseded_by IS NULL"
+    },
+    {
+      "scope": "OVER",
+      "stateRequired": "OVER_COMPLETE",
+      "evidenceSource": "confirmOverBallEvents & overHistory",
+      "provisionalHandling": "In-flight balls remain provisional until over concludes",
+      "supersededHandling": "Revisions update over total atomically"
+    },
+    {
+      "scope": "INNINGS",
+      "stateRequired": "INNINGS_COMPLETE",
+      "evidenceSource": "match.team.batters scorecard & all_out/declared/max_overs",
+      "provisionalHandling": "Scorecard not finalised -> PENDING_EVIDENCE",
+      "supersededHandling": "Post-innings scorecard reconciles"
+    },
+    {
+      "scope": "MATCH",
+      "stateRequired": "MATCH_COMPLETE",
+      "evidenceSource": "match.status IN ('COMPLETED', 'FINAL', 'ABANDONED')",
+      "provisionalHandling": "In-play match -> BLOCKED",
+      "supersededHandling": "Reversals use Maker-Checker compensating adjustments"
+    }
+  ]
+}

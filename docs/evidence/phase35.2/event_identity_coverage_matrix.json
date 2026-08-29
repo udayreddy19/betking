@@ -1,0 +1,16 @@
+{
+  "phase": "35.2",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:26:00Z",
+  "status": "PASS",
+  "source": "EVENT_CATEGORY_COVERAGE_HARNESS",
+  "matrix": [
+    { "category": "Provider Native", "identity": "provider + provider_event_id", "dbConstraint": "idx_match_ball_events_provider_native (UNIQUE)", "duplicateTest": "PASS", "concurrentTest": "PASS", "result": "PASS" },
+    { "category": "Fallback", "identity": "canonical delivery slot", "dbConstraint": "idx_match_ball_events_slot (UNIQUE)", "duplicateTest": "PASS", "concurrentTest": "PASS", "result": "PASS" },
+    { "category": "Legacy", "identity": "event_id", "dbConstraint": "PRIMARY KEY (event_id)", "duplicateTest": "PASS", "concurrentTest": "PASS", "result": "PASS" },
+    { "category": "Manual / Admin", "identity": "canonical slot", "dbConstraint": "idx_match_ball_events_slot (UNIQUE)", "duplicateTest": "PASS", "concurrentTest": "PASS", "result": "PASS" },
+    { "category": "Correction", "identity": "monotonic sequence", "dbConstraint": "superseded_by linkage", "duplicateTest": "PASS", "concurrentTest": "PASS", "result": "PASS" },
+    { "category": "Replay", "identity": "event_id & slot", "dbConstraint": "PRIMARY KEY (event_id)", "duplicateTest": "PASS", "concurrentTest": "PASS", "result": "PASS" }
+  ],
+  "testDataAllowed": true
+}

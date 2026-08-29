@@ -1,0 +1,11 @@
+{
+  "phase": "PHASE_33",
+  "timestamp": "2026-08-29T11:47:00Z",
+  "environment": "LOCAL_VERIFIED",
+  "identityStructure": {
+    "compositeKey": "mbe_{canonicalMatchId}_i{innings}_o{overNumber}_b{ballNumber}_s{sequenceNumber}",
+    "providerFields": ["provider", "provider_event_id", "state_version", "sequence_number"],
+    "orderingRule": "sequenceNumber ASC",
+    "supersedingRule": "Previous record marked superseded_by = newEventId, is_confirmed = FALSE"
+  }
+}

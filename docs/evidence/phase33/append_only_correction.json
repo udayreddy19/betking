@@ -1,0 +1,13 @@
+{
+  "phase": "PHASE_33",
+  "timestamp": "2026-08-29T11:47:00Z",
+  "environment": "LOCAL_VERIFIED",
+  "status": "PASS",
+  "appendOnlyInvariants": {
+    "originalBetRowDeleted": false,
+    "originalBetStatusOverwrittenWithoutAudit": false,
+    "originalLedgerPayoutMutated": false,
+    "compensatingJournalType": "DEBIT",
+    "compensatingTransactionType": "SETTLEMENT_REVERSAL"
+  }
+}

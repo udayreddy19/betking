@@ -1,0 +1,12 @@
+{
+  "phase": "PHASE_33",
+  "timestamp": "2026-08-29T11:47:00Z",
+  "environment": "LOCAL_VERIFIED",
+  "status": "PASS",
+  "workflowStages": [
+    { "stage": "REQUEST", "function": "requestSettlementReversal", "role": "Maker / Admin", "status": "REVERSAL_REQUESTED" },
+    { "stage": "APPROVAL", "function": "approveSettlementReversal", "role": "Checker / Supervisor", "status": "APPROVED" },
+    { "stage": "EXECUTION", "function": "executeSettlementReversal", "role": "System / Authorized Admin", "status": "REVERSED | REVERSAL_PARTIALLY_RECOVERED" },
+    { "stage": "REJECTION", "function": "rejectSettlementReversal", "role": "Checker / Supervisor", "status": "REJECTED" }
+  ]
+}

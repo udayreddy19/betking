@@ -1,0 +1,17 @@
+{
+  "phase": "PHASE_32",
+  "timestamp": "2026-08-29T11:29:00Z",
+  "environment": "LOCAL_VERIFIED",
+  "status": "PASS",
+  "schema": {
+    "traceId": "Unique trace string format trc_{betId}_{timestamp}",
+    "bet": ["betId", "userId", "marketId", "selectionId", "selectionName", "stake", "acceptedOdds", "status"],
+    "placementContext": ["frozenAt", "stateVersionAtPlacement", "lineAtPlacement", "marketInstance"],
+    "contract": ["name", "sport", "settlementTiming", "resolver", "voidPolicy"],
+    "evidence": ["matchId", "matchStatus", "team1", "team2", "winner", "isTie"],
+    "ruleEvaluation": ["outcome", "reason", "deadHeatCount", "isPush"],
+    "financialExecution": ["currency", "stake", "grossPayout", "netProfit", "fundSource", "credits"],
+    "authorization": ["authorizationId", "confidenceState", "evidenceHash", "authorizedAt"]
+  },
+  "fabricationPrevention": "Fields are null when unavailable; zero fabricated mock data permitted"
+}

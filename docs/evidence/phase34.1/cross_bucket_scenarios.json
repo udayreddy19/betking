@@ -1,0 +1,28 @@
+{
+  "phase": "34.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:02:00Z",
+  "status": "PASS",
+  "source": "CROSS_BUCKET_INTEGRATION_SUITE",
+  "actual_result": {
+    "totalScenarios": 15,
+    "allPassed": true,
+    "scenarios": [
+      { "id": 1, "name": "Deposit", "status": "PASS" },
+      { "id": 2, "name": "Locked deposit turnover", "status": "PASS" },
+      { "id": 3, "name": "Bet placement (Cash)", "status": "PASS" },
+      { "id": 4, "name": "Bet settlement WIN", "status": "PASS" },
+      { "id": 5, "name": "Bet settlement LOSS", "status": "PASS" },
+      { "id": 6, "name": "VOID refund", "status": "PASS" },
+      { "id": 7, "name": "Push refund", "status": "PASS" },
+      { "id": 8, "name": "Bonus bet win", "status": "PASS" },
+      { "id": 9, "name": "Freebet usage", "status": "PASS" },
+      { "id": 10, "name": "Withdrawal reservation", "status": "PASS" },
+      { "id": 11, "name": "Withdrawal release", "status": "PASS" },
+      { "id": 12, "name": "Settlement correction case", "status": "PASS" },
+      { "id": 13, "name": "Full incorrect payout recovery", "status": "PASS" },
+      { "id": 14, "name": "Partial incorrect payout recovery", "status": "PASS" },
+      { "id": 15, "name": "Zero balance recovery & outstanding liability", "status": "PASS" }
+    ]
+  }
+}

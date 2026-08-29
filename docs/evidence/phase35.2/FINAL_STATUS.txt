@@ -1,0 +1,18 @@
+PHASE 35.2 — PRODUCTION-LIKE DATA INTEGRITY, DUPLICATE & REVISION STRESS VERIFICATION
+Status: STAGING_VERIFIED
+Local: LOCAL_VERIFIED
+Production: PRODUCTION_NOT_VERIFIED
+Date: 2026-08-29
+productionClaimAllowed: false
+PRODUCTION_CERTIFICATION_STATUS: NO-GO
+
+Summary of Accomplishments:
+- 100-worker duplicate stress test on Migration 056 executed in isolated environment (1 canonical record created, 0 duplicate records, 0 duplicate financial side effects).
+- Cross-provider native identity verified (Provider A + ID 100 and Provider B + ID 100 coexist safely; same-provider duplicates blocked).
+- NULL provider identity fallback verified (constrained to single active delivery slot by idx_match_ball_events_slot and primary key event_id).
+- Revision ordering stress verified under out-of-order and concurrent deliveries (latest revision 3 active; older superseded or stale rejected).
+- Append-only correction history verified (zero ledger mutations, zero auto-repair).
+- PostgreSQL index deployment safety confirmed (SAFE_STANDARD_INDEX during approved maintenance window).
+- Mandatory production blocker consistency script created (scripts/production-blockers.mjs) tracking all 31 gates from productionCertificationEngine.
+- Read-only production preflight verified (0 mutations).
+- 139/139 automated tests passing across 12 suites (0 failures, 0 regressions).

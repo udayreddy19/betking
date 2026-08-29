@@ -1,0 +1,14 @@
+{
+  "phase": 35,
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:10:00Z",
+  "status": "PASS",
+  "source": "MIGRATION_056_AND_CONCURRENCY_TEST",
+  "actual_result": {
+    "migration": "056_provider_event_db_uniqueness.sql",
+    "uniqueIndex": "idx_match_ball_events_provider_native (provider, provider_event_id)",
+    "concurrencyTest": "100 concurrent duplicate submissions -> 1 accepted, 99 rejected/idempotent",
+    "databaseLevelProtection": true
+  },
+  "stub": false
+}

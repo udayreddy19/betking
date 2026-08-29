@@ -1,0 +1,62 @@
+{
+  "phase": "PHASE_34",
+  "timestamp": "2026-08-29T11:55:00Z",
+  "environment": "STAGING_VERIFIED",
+  "totalBuckets": 6,
+  "inventory": [
+    {
+      "bucket": "Cash Balance",
+      "dbField": "wallets.balance",
+      "purpose": "Authoritative total playable cash (includes settled winnings)",
+      "allowedInflows": ["Deposit", "Settled Win Payout", "Void Refund"],
+      "allowedOutflows": ["Bet Stake", "Withdrawal Debit", "Compensating Reversal"],
+      "ledgerMapping": "CREDIT / DEBIT",
+      "reconciliationRule": "delta(balance) == sum(credits) - sum(debits)"
+    },
+    {
+      "bucket": "Locked Deposit Balance",
+      "dbField": "wallets.locked_deposit_balance",
+      "purpose": "Deposit portion not yet withdrawable until wagered (1x rollover)",
+      "allowedInflows": ["New Deposit", "Void Refund"],
+      "allowedOutflows": ["Cash Stake Placement"],
+      "ledgerMapping": "N/A (Sub-bucket of balance)",
+      "reconciliationRule": "locked_deposit <= balance"
+    },
+    {
+      "bucket": "Winnings Balance",
+      "dbField": "wallets.winnings_balance",
+      "purpose": "Cumulative lifetime net profit/loss from settled bets (reporting only)",
+      "allowedInflows": ["Net Bet Profit (payout - stake)"],
+      "allowedOutflows": ["Lost Bet Stake (-stake)"],
+      "ledgerMapping": "Reporting field",
+      "reconciliationRule": "lifetime_net_profit == sum(winnings_credited)"
+    },
+    {
+      "bucket": "Bonus Balance",
+      "dbField": "wallets.bonus_balance",
+      "purpose": "Locked promotional bonus funds subject to 5x rollover at min odds >= 1.75",
+      "allowedInflows": ["Bonus Grants", "Bonus Bet Win Returns"],
+      "allowedOutflows": ["Bonus Bet Stake", "Rollover Completion Transfer to Cash"],
+      "ledgerMapping": "CREDIT / DEBIT (BONUS)",
+      "reconciliationRule": "delta(bonus_balance) == sum(bonus_credits) - sum(bonus_debits)"
+    },
+    {
+      "bucket": "Freebet Balance",
+      "dbField": "wallets.freebet_balance",
+      "purpose": "Promotional free bet voucher balance (stake not returned on win)",
+      "allowedInflows": ["Promotional Campaign Grants"],
+      "allowedOutflows": ["Free Bet Stake Placement"],
+      "ledgerMapping": "Voucher Tracking",
+      "reconciliationRule": "freebet_balance >= 0"
+    },
+    {
+      "bucket": "Reserved Balance",
+      "dbField": "wallets.reserved_balance",
+      "purpose": "Audit trail for pending withdrawals (balance already debited on request)",
+      "allowedInflows": ["Withdrawal Request Initiation"],
+      "allowedOutflows": ["Withdrawal Success / Withdrawal Cancellation"],
+      "ledgerMapping": "WITHDRAWAL_LOCK",
+      "reconciliationRule": "reserved_balance >= 0"
+    }
+  ]
+}

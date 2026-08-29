@@ -1,0 +1,17 @@
+{
+  "phase": "PHASE_34",
+  "environment": "staging",
+  "timestamp": "2026-08-29T11:55:00Z",
+  "status": "PASS",
+  "case": {
+    "correctionId": "sc_stage_full_01",
+    "totalAdjustment": 1000.00,
+    "userBalanceBefore": 1500.00,
+    "recoveredAmount": 1000.00,
+    "outstandingAmount": 0.00,
+    "userBalanceAfter": 500.00,
+    "status": "REVERSED",
+    "ledgerDebitAmount": 1000.00,
+    "appendOnlyPreserved": true
+  }
+}

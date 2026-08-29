@@ -1,0 +1,15 @@
+{
+  "phase": "PHASE_34",
+  "timestamp": "2026-08-29T11:55:00Z",
+  "environment": "STAGING_VERIFIED",
+  "status": "PASS",
+  "pathStages": [
+    { "stage": "BET_PLACEMENT", "inputType": "Decimal String (₹)", "appType": "Integer Paise Minor Units", "dbType": "NUMERIC(14,2)" },
+    { "stage": "STAKE_DEBIT", "inputType": "Integer Paise", "appType": "Integer Paise", "dbType": "NUMERIC(14,2)" },
+    { "stage": "PAYOUT_CALCULATION", "inputType": "Odds Decimal + Stake", "appType": "Integer Paise Rounded", "dbType": "NUMERIC(14,2)" },
+    { "stage": "WALLET_UPDATE", "inputType": "Exact Rupee Float from Paise", "appType": "Exact Fixed Float", "dbType": "NUMERIC(14,2) CHECK (balance >= 0)" },
+    { "stage": "LEDGER_JOURNAL", "inputType": "Exact Rupee Float from Paise", "appType": "Exact Fixed Float", "dbType": "NUMERIC(14,2)" },
+    { "stage": "REVERSAL_RECOVERY", "inputType": "Exact Rupee Float from Paise", "appType": "Exact Fixed Float", "dbType": "NUMERIC(14,2)" }
+  ],
+  "epsilonRole": "NON_AUTHORITATIVE (Used only for half-up IEEE 754 float conversion to integer paise/2-decimal strings)"
+}

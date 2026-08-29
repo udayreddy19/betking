@@ -1016,30 +1016,38 @@ router.post('/api/admin/betting/settle', requireRole('SUPER_ADMIN', 'FINANCE_ADM
       return res.status(400).json({ success: false, error: 'outcome must be WON, LOST, or VOID' });
     }
 
-    const { betSettlementEngine } = await import('../../../lib/betSettlementEngine.mjs');
-    const adminReason = String(reason || '').trim().slice(0, 240);
-    const result = await betSettlementEngine.settleSingleBet({
-      betId,
-      matchState: {
-        status: 'COMPLETED',
-        __forcedOutcome: forcedOutcome,
-        __settlementReason: adminReason
-          || `Admin manual settlement by ${req.admin?.id || 'admin'}`,
-      },
-    }, req.correlationId);
-
-    if (!result || result.status === 'ALREADY_SETTLED') {
-      return res.json({ success: true, betId, outcome: result?.outcome || forcedOutcome, status: 'ALREADY_SETTLED' });
-    }
-
+    const { makerCheckerEngine } = await import('../../../lib/makerCheckerEngine.mjs');
     const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    const adminReason = String(reason || '').trim().slice(0, 240);
+
+    const mcReq = await makerCheckerEngine.submitRequest({
+      actionType: 'SETTLEMENT_CORRECTION',
+      targetEntityType: 'bet',
+      targetEntityId: betId,
+      requestPayload: {
+        outcome: forcedOutcome,
+        reason: adminReason || `Manual settlement requested by ${req.admin?.id || 'admin'}`,
+        requestedOutcome: forcedOutcome,
+      },
+      makerId: req.admin?.id || 'admin',
+    });
+
     await logAdminAction({
       actorId: req.admin?.id || 'admin',
       targetId: betId,
-      action: 'BET_SETTLED',
-      details: { outcome: forcedOutcome, payout: result.payout, reason: adminReason || null },
+      action: 'SETTLEMENT_REQUEST_CREATED',
+      details: { outcome: forcedOutcome, reason: adminReason || null, requestId: mcReq.requestId },
     });
-    res.json({ success: true, betId, outcome: forcedOutcome, status: `SETTLED_${forcedOutcome}`, payout: result.payout, timestamp: new Date().toISOString() });
+
+    res.json({
+      success: true,
+      pendingApproval: true,
+      requestId: mcReq.requestId,
+      betId,
+      requestedOutcome: forcedOutcome,
+      message: 'Direct forced settlement is deprecated. Manual settlement request submitted for Maker-Checker dual authorization.',
+      timestamp: new Date().toISOString(),
+    });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

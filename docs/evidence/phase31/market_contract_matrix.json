@@ -1,0 +1,271 @@
+{
+  "timestamp": "2026-08-29T11:21:00Z",
+  "phase": "PHASE_31",
+  "environment": "LOCAL_VERIFIED",
+  "contracts": [
+    {
+      "marketId": "match_winner",
+      "category": "main",
+      "grader": "openBetOutcome",
+      "settlementTiming": "MATCH_COMPLETE",
+      "voidPolicy": "VOID_IF_ABANDONED_OR_NO_RESULT",
+      "supported": true
+    },
+    {
+      "marketId": "match_winner_super_over",
+      "category": "main",
+      "grader": "openBetOutcome",
+      "settlementTiming": "MATCH_COMPLETE",
+      "voidPolicy": "VOID_IF_ABANDONED_OR_NO_RESULT",
+      "supported": true
+    },
+    {
+      "marketId": "will_there_be_a_tie",
+      "category": "main",
+      "grader": "specialMatchMarket",
+      "settlementTiming": "MATCH_COMPLETE",
+      "voidPolicy": "VOID_IF_ABANDONED_OR_NO_RESULT",
+      "supported": true
+    },
+    {
+      "marketId": "double_chance",
+      "category": "main",
+      "grader": "specialMatchMarket",
+      "settlementTiming": "MATCH_COMPLETE",
+      "voidPolicy": "VOID_IF_ABANDONED_OR_NO_RESULT",
+      "supported": true
+    },
+    {
+      "marketId": "most_sixes",
+      "category": "main",
+      "grader": "mostBoundariesMarket",
+      "settlementTiming": "MATCH_COMPLETE",
+      "voidPolicy": "VOID_IF_ABANDONED_OR_NO_RESULT",
+      "supported": true
+    },
+    {
+      "marketId": "most_fours",
+      "category": "main",
+      "grader": "mostBoundariesMarket",
+      "settlementTiming": "MATCH_COMPLETE",
+      "voidPolicy": "VOID_IF_ABANDONED_OR_NO_RESULT",
+      "supported": true
+    },
+    {
+      "marketId": "match_total",
+      "category": "totals",
+      "grader": "totalsMarket",
+      "settlementTiming": "MATCH_COMPLETE",
+      "voidPolicy": "VOID_IF_ABANDONED_BEFORE_THRESHOLD",
+      "supported": true
+    },
+    {
+      "marketId": "match_total_alt",
+      "category": "totals",
+      "grader": "totalsMarket",
+      "settlementTiming": "MATCH_COMPLETE",
+      "voidPolicy": "VOID_IF_ABANDONED_BEFORE_THRESHOLD",
+      "supported": true
+    },
+    {
+      "marketId": "total_match_sixes",
+      "category": "totals",
+      "grader": "matchAggregateMarket",
+      "settlementTiming": "MATCH_COMPLETE",
+      "voidPolicy": "VOID_IF_ABANDONED_BEFORE_THRESHOLD",
+      "supported": true
+    },
+    {
+      "marketId": "total_match_fours",
+      "category": "totals",
+      "grader": "matchAggregateMarket",
+      "settlementTiming": "MATCH_COMPLETE",
+      "voidPolicy": "VOID_IF_ABANDONED_BEFORE_THRESHOLD",
+      "supported": true
+    },
+    {
+      "marketId": "total_match_wickets",
+      "category": "totals",
+      "grader": "matchAggregateMarket",
+      "settlementTiming": "MATCH_COMPLETE",
+      "voidPolicy": "VOID_IF_ABANDONED_BEFORE_THRESHOLD",
+      "supported": true
+    },
+    {
+      "marketId": "match_run_range",
+      "category": "totals",
+      "grader": "matchAggregateMarket",
+      "settlementTiming": "MATCH_COMPLETE",
+      "voidPolicy": "VOID_IF_ABANDONED_OR_NO_RESULT",
+      "supported": true
+    },
+    {
+      "marketId": "btts_score_x",
+      "category": "main",
+      "grader": "specialMatchMarket",
+      "settlementTiming": "MATCH_COMPLETE",
+      "voidPolicy": "VOID_IF_ABANDONED_OR_NO_RESULT",
+      "supported": true
+    },
+    {
+      "marketId": "team_total",
+      "category": "totals",
+      "grader": "totalsMarket",
+      "settlementTiming": "INNINGS_COMPLETE",
+      "voidPolicy": "VOID_IF_INNINGS_ABANDONED_BEFORE_THRESHOLD",
+      "supported": true
+    },
+    {
+      "marketId": "team_total_fours",
+      "category": "totals",
+      "grader": "teamBoundaryMarket",
+      "settlementTiming": "INNINGS_COMPLETE",
+      "voidPolicy": "VOID_IF_INNINGS_ABANDONED_BEFORE_THRESHOLD",
+      "supported": true
+    },
+    {
+      "marketId": "team_total_sixes",
+      "category": "totals",
+      "grader": "teamBoundaryMarket",
+      "settlementTiming": "INNINGS_COMPLETE",
+      "voidPolicy": "VOID_IF_INNINGS_ABANDONED_BEFORE_THRESHOLD",
+      "supported": true
+    },
+    {
+      "marketId": "next_over_x_total",
+      "category": "overs",
+      "grader": "overMarket",
+      "settlementTiming": "OVER_COMPLETE",
+      "voidPolicy": "VOID_IF_OVER_NEVER_BOWLED",
+      "supported": true
+    },
+    {
+      "marketId": "overs_0_5_total",
+      "category": "overs",
+      "grader": "overMarket",
+      "settlementTiming": "OVER_COMPLETE",
+      "voidPolicy": "VOID_IF_POWERPLAY_INCOMPLETE",
+      "supported": true
+    },
+    {
+      "marketId": "current_over_x_odd_even",
+      "category": "overs",
+      "grader": "overOddEvenMarket",
+      "settlementTiming": "OVER_COMPLETE",
+      "voidPolicy": "VOID_IF_OVER_NEVER_BOWLED",
+      "supported": true
+    },
+    {
+      "marketId": "next_delivery_runs",
+      "category": "deliveries",
+      "grader": "deliveryMarket",
+      "settlementTiming": "BALL_CONFIRMED",
+      "voidPolicy": "VOID_IF_DELIVERY_NOT_BOWLED",
+      "supported": true
+    },
+    {
+      "marketId": "next_delivery_ou",
+      "category": "deliveries",
+      "grader": "deliveryMarket",
+      "settlementTiming": "BALL_CONFIRMED",
+      "voidPolicy": "VOID_IF_DELIVERY_NOT_BOWLED",
+      "supported": true
+    },
+    {
+      "marketId": "next_delivery_boundary",
+      "category": "deliveries",
+      "grader": "deliveryMarket",
+      "settlementTiming": "BALL_CONFIRMED",
+      "voidPolicy": "VOID_IF_DELIVERY_NOT_BOWLED",
+      "supported": true
+    },
+    {
+      "marketId": "next_delivery_wicket",
+      "category": "deliveries",
+      "grader": "deliveryMarket",
+      "settlementTiming": "BALL_CONFIRMED",
+      "voidPolicy": "VOID_IF_DELIVERY_NOT_BOWLED",
+      "supported": true
+    },
+    {
+      "marketId": "wicket_in_over_x",
+      "category": "wickets",
+      "grader": "wicketInOverMarket",
+      "settlementTiming": "OVER_COMPLETE",
+      "voidPolicy": "VOID_IF_OVER_NEVER_BOWLED",
+      "supported": true
+    },
+    {
+      "marketId": "team_score_at_x_dismissal",
+      "category": "wickets",
+      "grader": "dismissalMarket",
+      "settlementTiming": "INNINGS_COMPLETE",
+      "voidPolicy": "VOID_IF_WICKET_NEVER_FELL_AND_INNINGS_INCOMPLETE",
+      "supported": true
+    },
+    {
+      "marketId": "method_of_next_wicket_x",
+      "category": "wickets",
+      "grader": "methodOfDismissalMarket",
+      "settlementTiming": "INNINGS_COMPLETE",
+      "voidPolicy": "VOID_IF_WICKET_NEVER_FELL",
+      "supported": true
+    },
+    {
+      "marketId": "player_alt_runs",
+      "category": "player_props",
+      "grader": "playerPropMarket",
+      "settlementTiming": "INNINGS_COMPLETE",
+      "voidPolicy": "VOID_IF_PLAYER_DNB",
+      "supported": true
+    },
+    {
+      "marketId": "player_milestone_runs",
+      "category": "player_props",
+      "grader": "playerPropMarket",
+      "settlementTiming": "INNINGS_COMPLETE",
+      "voidPolicy": "VOID_IF_PLAYER_DNB",
+      "supported": true
+    },
+    {
+      "marketId": "top_batter",
+      "category": "player_props",
+      "grader": "topBatterMarket",
+      "settlementTiming": "INNINGS_COMPLETE",
+      "voidPolicy": "VOID_IF_SCORECARD_UNAVAILABLE",
+      "supported": true
+    },
+    {
+      "marketId": "batter_h2h_runs",
+      "category": "h2h",
+      "grader": "batterH2HMarket",
+      "settlementTiming": "MATCH_COMPLETE",
+      "voidPolicy": "VOID_IF_EITHER_PLAYER_DNB",
+      "supported": true
+    },
+    {
+      "marketId": "batter_h2h_sixes",
+      "category": "h2h",
+      "grader": "batterH2HMarket",
+      "settlementTiming": "MATCH_COMPLETE",
+      "voidPolicy": "VOID_IF_EITHER_PLAYER_DNB",
+      "supported": true
+    },
+    {
+      "marketId": "btts",
+      "category": "other_sports",
+      "grader": "soccerGoalsMarket",
+      "settlementTiming": "MATCH_COMPLETE",
+      "voidPolicy": "VOID_IF_ABANDONED",
+      "supported": true
+    },
+    {
+      "marketId": "goals_line",
+      "category": "other_sports",
+      "grader": "soccerGoalsMarket",
+      "settlementTiming": "MATCH_COMPLETE",
+      "voidPolicy": "VOID_IF_ABANDONED_BEFORE_THRESHOLD",
+      "supported": true
+    }
+  ]
+}

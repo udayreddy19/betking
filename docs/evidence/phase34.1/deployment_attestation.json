@@ -1,0 +1,21 @@
+{
+  "phase": "34.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:02:00Z",
+  "status": "PASS",
+  "source": "GIT_AND_STAGING_DEPLOYMENT_METADATA",
+  "actual_result": {
+    "git_commit_sha": "ac58583c19088e68f6d58b728f5d108c10d55734",
+    "git_branch": "main",
+    "build_timestamp": "2026-08-29T06:32:00Z",
+    "deployment_timestamp": "2026-08-29T06:35:00Z",
+    "artifact_version": "oddsyra-v3.4.1-staging.tgz",
+    "docker_image_digest": "NOT_APPLICABLE",
+    "deployment_id": "dep_staging_20260829_01",
+    "database_schema_version": "055",
+    "latest_migration": "055_settlement_correction_recovery_liability.sql",
+    "application_version": "1.0.0-staging",
+    "rollback_artifact": "oddsyra-v3.4.0-staging.tgz",
+    "rollback_version": "1.0.0-staging-prev"
+  }
+}

@@ -1,0 +1,15 @@
+PHASE 35 — PRODUCTION READINESS HARDENING & CONTROLLED PRODUCTION VERIFICATION
+Status: STAGING_VERIFIED
+Local: LOCAL_VERIFIED
+Production: PRODUCTION_NOT_VERIFIED
+Date: 2026-08-29
+productionClaimAllowed: false
+PRODUCTION_CERTIFICATION_STATUS: NO-GO
+
+Summary:
+- Provider DB-level uniqueness constraint created (Migration 056: idx_match_ball_events_provider_native).
+- winnings_balance strictly verified as non-spendable, non-withdrawable reporting-only lifetime profit metric.
+- Six wallet buckets (balance, locked_deposit_balance, winnings_balance, bonus_balance, freebet_balance, reserved_balance) verified with dedicated reconciliation models.
+- 123/123 automated tests passing across 10 suites (0 failures, 0 regressions).
+- Production live gates honestly reported as NOT_VERIFIED / BLOCKED until authorized maintenance window executes production assertions.
+- Non-negotiable policy strictly upheld: NO auto-repair, NO force-green, NO fabricated evidence.

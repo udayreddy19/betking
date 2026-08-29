@@ -1,0 +1,12 @@
+{
+  "phase": "34.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:02:00Z",
+  "status": "PASS",
+  "source": "MULTI_PROVIDER_SIMULATION",
+  "actual_result": {
+    "providerA": { "name": "BETRADAR", "matchId": "m_1", "inn": 1, "over": 10, "ball": 3, "seq": 100, "status": "STORED" },
+    "providerB": { "name": "SPORTSMONKS", "matchId": "m_1", "inn": 1, "over": 10, "ball": 3, "seq": 100, "status": "PERSISTED_WITH_METADATA" },
+    "collisionPrevented": true
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "phase": "35.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:18:00Z",
+  "status": "PASS",
+  "source": "DATABASE_CONSTRAINT_COVERAGE_MATRIX",
+  "coverageMatrix": [
+    {
+      "eventType": "Provider event with provider_event_id",
+      "primaryIdentity": "provider + provider_event_id",
+      "dbConstraint": "idx_match_ball_events_provider_native (UNIQUE)",
+      "applicationProtection": "upsertCanonicalBallEvent (IDEMPOTENT)",
+      "gap": "NONE"
+    },
+    {
+      "eventType": "Provider event without provider_event_id",
+      "primaryIdentity": "canonical match delivery slot",
+      "dbConstraint": "idx_match_ball_events_slot (UNIQUE) & PRIMARY KEY (event_id)",
+      "applicationProtection": "upsertCanonicalBallEvent slot lookup",
+      "gap": "NONE"
+    },
+    {
+      "eventType": "Legacy event",
+      "primaryIdentity": "event_id",
+      "dbConstraint": "PRIMARY KEY (event_id)",
+      "applicationProtection": "Immutable sequence ordering",
+      "gap": "NONE"
+    },
+    {
+      "eventType": "Manual / Admin event",
+      "primaryIdentity": "canonical delivery sequence",
+      "dbConstraint": "idx_match_ball_events_slot (UNIQUE)",
+      "applicationProtection": "Maker-Checker audit trail",
+      "gap": "NONE"
+    },
+    {
+      "eventType": "Correction event",
+      "primaryIdentity": "higher sequence number",
+      "dbConstraint": "superseded_by linkage & unique slot index",
+      "applicationProtection": "Monotonic sequence ordering",
+      "gap": "NONE"
+    },
+    {
+      "eventType": "Replay event",
+      "primaryIdentity": "event_id & slot",
+      "dbConstraint": "PRIMARY KEY & unique slot index",
+      "applicationProtection": "IDEMPOTENT early return",
+      "gap": "NONE"
+    }
+  ],
+  "stub": false
+}

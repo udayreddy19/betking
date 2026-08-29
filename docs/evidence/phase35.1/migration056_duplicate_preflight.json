@@ -1,0 +1,16 @@
+{
+  "phase": "35.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:18:00Z",
+  "status": "PASS",
+  "source": "READ_ONLY_DUPLICATE_PREFLIGHT",
+  "readOnly": true,
+  "actual_result": {
+    "duplicateQuery": "SELECT provider, provider_event_id, COUNT(*) FROM match_ball_events WHERE provider IS NOT NULL AND provider_event_id IS NOT NULL GROUP BY provider, provider_event_id HAVING COUNT(*) > 1;",
+    "duplicateGroupCount": 0,
+    "affectedRowCount": 0,
+    "dataIntegrity": "CLEAN",
+    "migration056Eligible": true
+  },
+  "stub": false
+}

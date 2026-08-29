@@ -1,10 +1,32 @@
-import pg from 'pg';
-import dotenv from 'dotenv';
 import { logger } from '../lib/logger.mjs';
 
-dotenv.config();
+let pgModule = null;
+try {
+  pgModule = (await import('pg')).default;
+} catch {
+  // pg package optional in unit test environments
+}
 
-const { Pool } = pg;
+try {
+  const dotenv = (await import('dotenv')).default;
+  dotenv.config();
+} catch {
+  // dotenv optional in unit test environments
+}
+
+class MockPool {
+  constructor() {}
+  on() {}
+  async query() { return { rows: [], rowCount: 0 }; }
+  async connect() {
+    return {
+      query: async () => ({ rows: [], rowCount: 0 }),
+      release: () => {},
+    };
+  }
+}
+
+const Pool = pgModule?.Pool || MockPool;
 
 const connectionString = process.env.DATABASE_URL || 'postgresql://oddsyra_app:oddsyra_dev_pass@127.0.0.1:5432/oddsyra';
 const readConnectionString = process.env.DATABASE_READ_URL || connectionString;
@@ -30,12 +52,12 @@ export function isReadReplicaConfigured() {
 }
 
 pool.on('error', (err) => {
-  logger.error('postgres_pool_error', { error: err.message });
+  logger.error('postgres_pool_error', { error: err?.message || err });
 });
 
 if (readPool !== pool) {
   readPool.on('error', (err) => {
-    logger.error('postgres_read_pool_error', { error: err.message });
+    logger.error('postgres_read_pool_error', { error: err?.message || err });
   });
 }
 

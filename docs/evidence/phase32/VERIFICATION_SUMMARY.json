@@ -1,0 +1,31 @@
+{
+  "phase": "PHASE_32",
+  "timestamp": "2026-08-29T11:29:00Z",
+  "product": "OddsYra / BetKing",
+  "statusSummary": {
+    "localStatus": "LOCAL_VERIFIED",
+    "stagingStatus": "STAGING_NOT_VERIFIED",
+    "productionStatus": "PRODUCTION_NOT_VERIFIED",
+    "recommendation": "GO"
+  },
+  "invariantsVerified": {
+    "noUnsafeFloatingPointMoney": true,
+    "deterministicRoundingPolicy": true,
+    "walletAndLedgerConsistent": true,
+    "deliveryProvisionalBarrierEnforced": true,
+    "providerRevisionsOrderedAndSuperseded": true,
+    "appendOnlyReversalsPreserved": true,
+    "deadHeatAndTieRulesDocumented": true,
+    "bucketLevelReconciliationVerified": true,
+    "idempotentConcurrentSettlement": true,
+    "settlementDecisionTraceExplainable": true,
+    "autoRepairDisabled": true,
+    "noUnresolvedHighOrCriticalDefects": true
+  },
+  "statistics": {
+    "totalSettlementSuites": 6,
+    "totalTestsPassed": 84,
+    "totalTestsFailed": 0,
+    "passRate": "100%"
+  }
+}

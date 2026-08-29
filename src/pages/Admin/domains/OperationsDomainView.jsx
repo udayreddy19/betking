@@ -49,9 +49,11 @@ function SettlementQueuePanel() {
   const [pendingJobs, setPendingJobs] = useState([]);
   const [pendingBets, setPendingBets] = useState([]);
   const [failedJobs, setFailedJobs] = useState([]);
+  const [blockedBets, setBlockedBets] = useState([]);
   const [obs, setObs] = useState(null);
   const [error, setError] = useState(null);
   const [retryingId, setRetryingId] = useState(null);
+  const [selectedBlocked, setSelectedBlocked] = useState(null);
   const { showToast } = useAdminToast();
   const drill = useAdminKpiDrilldown();
 
@@ -59,8 +61,9 @@ function SettlementQueuePanel() {
     Promise.all([
       adminApiClient.get('/settlement/pending').catch((err) => ({ error: err.message })),
       adminApiClient.get('/settlement/failed').catch(() => ({ failedJobs: [] })),
+      adminApiClient.get('/settlement/blocked').catch(() => ({ blockedBets: [] })),
       adminApiClient.get('/ops/observability').catch(() => null),
-    ]).then(([pending, failed, observability]) => {
+    ]).then(([pending, failed, blocked, observability]) => {
       if (pending.error) {
         setError(pending.error);
         setPendingJobs([]);
@@ -71,6 +74,7 @@ function SettlementQueuePanel() {
         setError(null);
       }
       setFailedJobs(failed.failedJobs || []);
+      setBlockedBets(blocked.blockedBets || []);
       setObs(observability);
     });
   }, []);
@@ -117,19 +121,118 @@ function SettlementQueuePanel() {
     <div>
       <div style={{ marginBottom: '16px' }}>
         <div className="admin-flex-between" style={{ flexWrap: 'wrap' }}>
-          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>12 · Settlement Queue</h2>
+          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>12 · Settlement Queue & Confidence Monitoring</h2>
           <button type="button" className="admin-btn admin-btn--secondary admin-btn--sm" onClick={load}>
             ↻ Refresh
           </button>
         </div>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
-          Pending settlement jobs and open bets awaiting resolution. Refreshes every 30s.
+          Real-time settlement confidence states, multi-provider consensus, and blocked queue inspection. Refreshes every 30s.
         </p>
         {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
       </div>
 
       <ObservabilityKpis data={obs} onDrill={drill.openDrilldown} />
       <AdminKpiDrillDrawer drill={drill} />
+
+      {blockedBets.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <AdminDataTable
+            title={`Blocked Settlement Queue (${blockedBets.length})`}
+            emptyMessage="No bets currently blocked by confidence engine"
+            data={blockedBets}
+            columns={[
+              { header: 'Bet ID', key: 'betId', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.betId}</span> },
+              { header: 'Match', key: 'matchId', render: (r) => <span style={{ fontSize: '0.76rem' }}>{r.matchId}</span> },
+              { header: 'Market', key: 'marketId', render: (r) => <span style={{ fontSize: '0.76rem' }}>{r.marketId}</span> },
+              {
+                header: 'Confidence State',
+                key: 'confidenceState',
+                render: (r) => (
+                  <span style={{
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    background: r.confidenceState === 'CONFLICT' ? '#ef444422' : (r.confidenceState === 'STALE' ? '#f59e0b22' : '#3b82f622'),
+                    color: r.confidenceState === 'CONFLICT' ? '#ef4444' : (r.confidenceState === 'STALE' ? '#f59e0b' : '#60a5fa'),
+                  }}>
+                    {r.confidenceState || 'BLOCKED'}
+                  </span>
+                ),
+              },
+              {
+                header: 'Reason',
+                key: 'reasons',
+                render: (r) => (
+                  <span style={{ fontSize: '0.74rem', color: '#fca5a5' }}>
+                    {Array.isArray(r.reasons) ? r.reasons[0] : (r.reasons || 'Blocked by confidence gate')}
+                  </span>
+                ),
+              },
+              {
+                header: 'Inspect',
+                key: 'inspect',
+                sortable: false,
+                render: (r) => (
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn--secondary admin-btn--sm"
+                    onClick={() => setSelectedBlocked(r)}
+                  >
+                    View Details
+                  </button>
+                ),
+              },
+            ]}
+          />
+        </div>
+      )}
+
+      {selectedBlocked && (
+        <div style={{
+          padding: '16px',
+          marginBottom: '20px',
+          background: 'rgba(15, 23, 42, 0.6)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '8px',
+        }}>
+          <div className="admin-flex-between">
+            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700 }}>
+              Blocked Bet Evidence & Consensus: #{selectedBlocked.betId}
+            </h3>
+            <button
+              type="button"
+              className="admin-btn admin-btn--secondary admin-btn--sm"
+              onClick={() => setSelectedBlocked(null)}
+            >
+              Close
+            </button>
+          </div>
+          <div style={{ marginTop: '10px', fontSize: '0.8rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <div>
+              <strong>Confidence State:</strong> {selectedBlocked.confidenceState} <br />
+              <strong>Finality State:</strong> {selectedBlocked.finalityState || 'PROVISIONAL'} <br />
+              <strong>Settlement Allowed:</strong> {selectedBlocked.settlementAllowed ? 'YES' : 'NO (BLOCKED)'} <br />
+              <strong>First Blocked At:</strong> {selectedBlocked.firstBlockedAt || '—'} <br />
+            </div>
+            <div>
+              <strong>Providers Available:</strong> {selectedBlocked.providerConsensus?.providersAvailable ?? 1} <br />
+              <strong>Providers Agree:</strong> {selectedBlocked.providerConsensus?.providersAgree ? 'YES' : 'NO (CONFLICT)'} <br />
+              <strong>Conflicting Fields:</strong> {selectedBlocked.providerConsensus?.conflictingFields?.join(', ') || 'None'} <br />
+              <strong>Last Evaluated:</strong> {selectedBlocked.lastEvaluatedAt || '—'} <br />
+            </div>
+          </div>
+          {Array.isArray(selectedBlocked.reasons) && selectedBlocked.reasons.length > 0 && (
+            <div style={{ marginTop: '10px', padding: '8px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '4px' }}>
+              <strong style={{ color: '#f87171' }}>Reason Codes:</strong>
+              <ul style={{ margin: '4px 0 0', paddingLeft: '20px', color: '#fca5a5', fontSize: '0.78rem' }}>
+                {selectedBlocked.reasons.map((rsn, idx) => <li key={idx}>{rsn}</li>)}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
 
       <AdminDataTable
         title="Settlement Jobs"

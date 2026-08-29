@@ -1,0 +1,17 @@
+{
+  "phase": "PHASE_33",
+  "timestamp": "2026-08-29T11:47:00Z",
+  "environment": "LOCAL_VERIFIED",
+  "model": {
+    "unit": "INR",
+    "minorUnit": "paise",
+    "multiplier": 100,
+    "rounding": "HALF_UP_WITH_EPSILON",
+    "invariants": [
+      "WIN: payout_paise >= stake_paise",
+      "LOSS: payout_paise == 0",
+      "VOID: refund_paise == stake_paise",
+      "RECOVERY: total_adjustment_paise == recovered_paise + outstanding_paise"
+    ]
+  }
+}
