@@ -167,6 +167,68 @@ export function getCricketFormatBanner(formatOrMatch) {
       return format || 'T20';
   }
 }
+/**
+ * Detects if a match is an SRL (Simulated Reality League) fixture.
+ * @param {object} match
+ * @returns {boolean}
+ */
+export function isMatchSRL(match) {
+  if (!match) return false;
+  if (match.isSRL === true || match.isSrl === true) return true;
+  if (match.isSRL === false || match.isSrl === false) return false;
+
+  const raw = [
+    match.league,
+    match.seriesName,
+    match.competition,
+    match.tournament,
+    match.name,
+    match.eventName,
+    match.matchName,
+    match.matchType,
+    match.format,
+    match.matchFormat,
+    match.description,
+    match.team1?.name,
+    match.team2?.name,
+    typeof match.team1 === 'string' ? match.team1 : null,
+    typeof match.team2 === 'string' ? match.team2 : null,
+    match.sport,
+    match.id,
+  ].filter(Boolean).join(' ').toUpperCase();
+
+  return /\bSRL\b|SIMULATED\s*REALITY|IPL\s*SRL|BBL\s*SRL|PSL\s*SRL|CPL\s*SRL|T20\s*SRL|SA20\s*SRL|PAKISTAN\s*SRL|INDIA\s*SRL|AUSTRALIA\s*SRL/.test(raw);
+}
+
+/**
+ * Returns compact match card format badge text (e.g. "TEST", "ODI", "T20", "T10", "FIRST CLASS", "LIST A", "CRICKET").
+ */
+export function getCricketFormatCardBadge(formatOrMatch) {
+  const format = typeof formatOrMatch === 'string' && !formatOrMatch.includes(' ') && formatOrMatch.toUpperCase() === formatOrMatch
+    ? formatOrMatch.toUpperCase()
+    : detectCricketMatchFormat(formatOrMatch);
+
+  switch (format) {
+    case 'TEST':
+      return 'TEST';
+    case 'ODI':
+      return 'ODI';
+    case 'T20':
+      return 'T20';
+    case 'T10':
+      return 'T10';
+    case 'FIRST_CLASS':
+      return 'FIRST CLASS';
+    case 'LIST_A':
+      return 'LIST A';
+    case 'THE_HUNDRED':
+      return 'THE HUNDRED';
+    case 'OTHER':
+      return 'CRICKET';
+    default:
+      return format || 'CRICKET';
+  }
+}
 
 /**
  * Resolve limited-overs format. League/series T10 wins over a generic T20 matchType.

@@ -15,7 +15,14 @@ import { useAuth } from '../../context/AuthContext';
 import { isMatchBettable, isTrulyLiveMatch, getMatchState, isMatchFinished } from '../../utils/matchBetting';
 import { resolveCricketTeamScores, resolveCricketTossText, isCricketSecondInnings } from '../../utils/cricketScores';
 import { isTeamBattingInMatch } from '../../utils/teamFlags';
-import { isTestMatch, getTestMatchDayLabel, formatMatchCountdown, resolveCricketOversFormat } from '../../utils/cricketFormat';
+import {
+  isTestMatch,
+  getTestMatchDayLabel,
+  formatMatchCountdown,
+  resolveCricketOversFormat,
+  getCricketFormatCardBadge,
+  isMatchSRL,
+} from '../../utils/cricketFormat';
 import { prefetchMatchDetail, enrichFromPoller, subscribeGlobalMatchDetails, getGlobalMatchDetailVersion } from '../../services/matchDetailPoller';
 import { useMatchDetail } from '../../hooks/useMatchDetail';
 import { useCentralizedMatchState } from '../../hooks/useCentralizedMatchState';
@@ -186,8 +193,25 @@ function CricketGroupedMatches({ groups, onSelectMatch, getMatchScores, isBetSel
               >
                 {(() => {
                   const rowToss = resolveTossText(m);
+                  const rowFormatBadge = isCricketRow ? getCricketFormatCardBadge(m) : null;
+                  const rowIsSRL = isMatchSRL(m);
                   return (
                     <div className="sports-cricket-row__meta-bar">
+                      <div className="sports-card-badge-group">
+                        {isLive ? (
+                          <span className="sports-card-badge sports-card-badge--live">🔴 LIVE</span>
+                        ) : isFinished ? (
+                          <span className="sports-card-badge sports-card-badge--completed">COMPLETED</span>
+                        ) : (
+                          <span className="sports-card-badge sports-card-badge--upcoming">UPCOMING</span>
+                        )}
+                        {rowFormatBadge && (
+                          <span className="sports-card-badge sports-card-badge--format">{rowFormatBadge}</span>
+                        )}
+                        {rowIsSRL && (
+                          <span className="sports-card-badge sports-card-badge--srl">SRL</span>
+                        )}
+                      </div>
                       <span className="sports-cricket-row__league-sub">{league}</span>
                       {rowToss && <span className="sports-cricket-row__status-text" style={{ color: 'var(--color-accent-gold)' }}>🪙 {rowToss}</span>}
                       <span className="sports-cricket-row__status-text">{statusLabel}</span>
@@ -935,7 +959,9 @@ export default function Sports() {
                 )}
               </div>
             ) : sportMatches.map(m => {
-              const { team1Score, team2Score, isLive } = getMatchScores(m);
+              const { team1Score, team2Score, isLive, isFinished } = getMatchScores(m);
+              const cardFormatBadge = getCricketFormatCardBadge(m);
+              const cardIsSRL = isMatchSRL(m);
               return (
                 <button
                   key={m.id}
@@ -943,15 +969,29 @@ export default function Sports() {
                   className={`sports-ticker-card ${viewMode === 'match' && activeMatch?.id === m.id ? 'selected' : ''}`}
                   onClick={() => selectMatch(m.id)}
                 >
+                  <div className="sports-card-badge-group">
+                    {isLive ? (
+                      <span className="sports-card-badge sports-card-badge--live">🔴 LIVE</span>
+                    ) : isFinished ? (
+                      <span className="sports-card-badge sports-card-badge--completed">COMPLETED</span>
+                    ) : (
+                      <span className="sports-card-badge sports-card-badge--upcoming">UPCOMING</span>
+                    )}
+                    {cardFormatBadge && (
+                      <span className="sports-card-badge sports-card-badge--format">{cardFormatBadge}</span>
+                    )}
+                    {cardIsSRL && (
+                      <span className="sports-card-badge sports-card-badge--srl">SRL</span>
+                    )}
+                  </div>
                   <div className="sports-ticker-row">
                     <span title={teamDisplayName(m.team1)}>{formatTeamShortName(teamDisplayName(m.team1), m.team1?.shortName)}</span>
-                    <span>{team1Score || ''}</span>
+                    <span>{team1Score || '—'}</span>
                   </div>
                   <div className="sports-ticker-row">
                     <span title={teamDisplayName(m.team2)}>{formatTeamShortName(teamDisplayName(m.team2), m.team2?.shortName)}</span>
-                    <span>{team2Score || ''}</span>
+                    <span>{team2Score || '—'}</span>
                   </div>
-                  {isLive && <span className="sports-ticker-live">LIVE</span>}
                 </button>
               );
             })}

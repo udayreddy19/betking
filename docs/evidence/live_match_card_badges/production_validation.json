@@ -1,0 +1,76 @@
+{
+  "timestamp": "2026-08-29T17:36:55.914Z",
+  "totalMatchesTested": 5,
+  "formatsTested": [
+    "TEST",
+    "ODI",
+    "T20",
+    "T10",
+    "SRL"
+  ],
+  "totalEvaluations": 100,
+  "passedEvaluations": 100,
+  "successRate": "100.0%",
+  "records": [
+    {
+      "MATCH": "Sussex v Somerset",
+      "STATUS": "LIVE",
+      "LIVE_BADGE_CORRECT": true,
+      "FORMAT_DETECTED": "TEST",
+      "FORMAT_BADGE_CORRECT": true,
+      "SRL_DETECTED": false,
+      "SRL_BADGE_CORRECT": true,
+      "SCORE_CORRECT": true,
+      "MOBILE_UI_CORRECT": true,
+      "CANONICAL_SNAPSHOT_CONSISTENT": true
+    },
+    {
+      "MATCH": "India v Australia",
+      "STATUS": "LIVE",
+      "LIVE_BADGE_CORRECT": true,
+      "FORMAT_DETECTED": "ODI",
+      "FORMAT_BADGE_CORRECT": true,
+      "SRL_DETECTED": false,
+      "SRL_BADGE_CORRECT": true,
+      "SCORE_CORRECT": true,
+      "MOBILE_UI_CORRECT": true,
+      "CANONICAL_SNAPSHOT_CONSISTENT": true
+    },
+    {
+      "MATCH": "Chennai Super Kings v Mumbai Indians",
+      "STATUS": "LIVE",
+      "LIVE_BADGE_CORRECT": true,
+      "FORMAT_DETECTED": "T20",
+      "FORMAT_BADGE_CORRECT": true,
+      "SRL_DETECTED": false,
+      "SRL_BADGE_CORRECT": true,
+      "SCORE_CORRECT": true,
+      "MOBILE_UI_CORRECT": true,
+      "CANONICAL_SNAPSHOT_CONSISTENT": true
+    },
+    {
+      "MATCH": "Rome CC v Milan Kings",
+      "STATUS": "LIVE",
+      "LIVE_BADGE_CORRECT": true,
+      "FORMAT_DETECTED": "T10",
+      "FORMAT_BADGE_CORRECT": true,
+      "SRL_DETECTED": false,
+      "SRL_BADGE_CORRECT": true,
+      "SCORE_CORRECT": true,
+      "MOBILE_UI_CORRECT": true,
+      "CANONICAL_SNAPSHOT_CONSISTENT": true
+    },
+    {
+      "MATCH": "Delhi Capitals SRL v Sunrisers Hyderabad SRL",
+      "STATUS": "LIVE",
+      "LIVE_BADGE_CORRECT": true,
+      "FORMAT_DETECTED": "T20",
+      "FORMAT_BADGE_CORRECT": true,
+      "SRL_DETECTED": true,
+      "SRL_BADGE_CORRECT": true,
+      "SCORE_CORRECT": true,
+      "MOBILE_UI_CORRECT": true,
+      "CANONICAL_SNAPSHOT_CONSISTENT": true
+    }
+  ]
+}

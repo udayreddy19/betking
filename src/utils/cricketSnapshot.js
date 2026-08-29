@@ -11,9 +11,21 @@
 
 import { formatTeamShortName, teamDisplayName } from './teamShortName.js';
 import { normalizeCricbuzzOvers, oversToBalls } from './oversUtils.js';
-import { detectCricketMatchFormat, getCricketFormatBanner, isTestMatch } from './cricketFormat.js';
+import {
+  detectCricketMatchFormat,
+  getCricketFormatBanner,
+  getCricketFormatCardBadge,
+  isMatchSRL,
+  isTestMatch,
+} from './cricketFormat.js';
 
-export { detectCricketMatchFormat, getCricketFormatBanner, isTestMatch };
+export {
+  detectCricketMatchFormat,
+  getCricketFormatBanner,
+  getCricketFormatCardBadge,
+  isMatchSRL,
+  isTestMatch,
+};
 
 export function normalizeTeamToken(name = '') {
   return String(name || '')
@@ -101,6 +113,8 @@ export function buildCanonicalMatchSnapshot(match) {
 
   const matchFormat = detectCricketMatchFormat(match);
   const formatBanner = getCricketFormatBanner(matchFormat);
+  const formatCardBadge = getCricketFormatCardBadge(matchFormat);
+  const isSRL = isMatchSRL(match);
   const isTest = matchFormat === 'TEST' || matchFormat === 'FIRST_CLASS' || isTestMatch(match);
 
   const team1Name = match.team1?.name || match.team1 || match.homeTeam || 'Team 1';
@@ -417,6 +431,8 @@ export function buildCanonicalMatchSnapshot(match) {
       matchState: match.matchState || (isLive ? 'in' : 'pre'),
       matchFormat,
       formatBanner,
+      formatCardBadge,
+      isSRL,
       statusChip,
       time: match.time || 'Live',
       league: match.league || match.seriesName || 'Cricket',
@@ -482,6 +498,8 @@ export function deriveSelectedInningsView(snapshot, selectedInningsNameOrId = nu
     matchId: snapshot.match.id,
     matchFormat: snapshot.match.matchFormat,
     formatBanner: snapshot.match.formatBanner,
+    formatCardBadge: snapshot.match.formatCardBadge || getCricketFormatCardBadge(snapshot.match.matchFormat),
+    isSRL: Boolean(snapshot.match.isSRL),
     statusChip: snapshot.match.statusChip,
     selectedInningsId: selected.inningsId,
     selectedInningsNumber: selected.inningsNumber,

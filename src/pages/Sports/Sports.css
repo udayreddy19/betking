@@ -207,23 +207,56 @@
   margin-top: 4px;
 }
 
-.sports-ticker-live {
-  position: absolute;
-  top: 4px;
-  left: 6px;
-  right: auto;
-  background: #ef4444;
-  color: white;
-  font-size: 0.5rem;
-  font-weight: 800;
-  padding: 1px 5px;
-  border-radius: var(--radius-full);
-  line-height: 1.2;
-  z-index: 1;
+.sports-card-badge-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
 }
 
-.sports-ticker-card:has(.sports-ticker-live) {
-  padding-top: 16px;
+.sports-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  padding: 1.5px 5px;
+  border-radius: 4px;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.sports-card-badge--live {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.sports-card-badge--completed {
+  background: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.sports-card-badge--upcoming {
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.sports-card-badge--format {
+  background: rgba(124, 58, 237, 0.15);
+  color: #a78bfa;
+  border: 1px solid rgba(124, 58, 237, 0.35);
+}
+
+.sports-card-badge--srl {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
 }
 
 .sports-ticker-empty {

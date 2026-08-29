@@ -10,7 +10,13 @@ import MatchCountdownTimer from '../MatchCountdownTimer/MatchCountdownTimer';
 import { isMatchBettable, isMatchLive, isMatchFinished, hasCricketPlayStarted } from '../../utils/matchBetting';
 import { resolveCricketTeamScores } from '../../utils/cricketScores';
 import { isTeamBattingInMatch } from '../../utils/teamFlags';
-import { isTestMatch, getTestMatchDayLabel, formatMatchCountdown } from '../../utils/cricketFormat';
+import {
+  isTestMatch,
+  getTestMatchDayLabel,
+  formatMatchCountdown,
+  getCricketFormatCardBadge,
+  isMatchSRL,
+} from '../../utils/cricketFormat';
 import { enrichFromPoller } from '../../services/matchDetailPoller';
 import { teamDisplayName, asDisplayText } from '../../utils/teamShortName';
 import './MatchCard.css';
@@ -137,6 +143,10 @@ export default function MatchCard({ match, variant = 'default' }) {
 
   const jerseySize = isHome ? 52 : 46;
 
+  const isCricket = !match.sport || String(match.sport).toLowerCase().includes('cricket');
+  const formatBadge = isCricket ? getCricketFormatCardBadge(match) : null;
+  const isSRL = isMatchSRL(match);
+
   return (
     <>
       {!isHome && (
@@ -178,21 +188,28 @@ export default function MatchCard({ match, variant = 'default' }) {
         <div className={`match-card-time ${isLiveNow ? 'live' : ''} ${isFinished ? 'finished' : ''}`}>
           {isHome ? (
             timeLabel
-          ) : isLiveNow ? (
-            <>
-              <span className="live-dot" />
-              LIVE {isTest && testDayBadge ? `· ${testDayBadge.split('·')[0].trim()}` : ''}
-              {inlineScore && <span className="match-card-score-inline">{inlineScore}</span>}
-            </>
-          ) : isFinished ? (
-            <>
-              <span className="result-badge">RESULT</span>
-              {match.liveDetails?.commentary && (
-                <span className="match-card-score-inline">{match.liveDetails.commentary}</span>
-              )}
-            </>
           ) : (
-            <MatchCountdownTimer match={match} style={{ fontSize: '0.78rem', padding: '2px 8px' }} />
+            <div className="match-card-badge-container">
+              <div className="sports-card-badge-group">
+                {isLiveNow ? (
+                  <span className="sports-card-badge sports-card-badge--live">🔴 LIVE</span>
+                ) : isFinished ? (
+                  <span className="sports-card-badge sports-card-badge--completed">COMPLETED</span>
+                ) : (
+                  <span className="sports-card-badge sports-card-badge--upcoming">UPCOMING</span>
+                )}
+                {formatBadge && (
+                  <span className="sports-card-badge sports-card-badge--format">{formatBadge}</span>
+                )}
+                {isSRL && (
+                  <span className="sports-card-badge sports-card-badge--srl">SRL</span>
+                )}
+              </div>
+              {inlineScore && <span className="match-card-score-inline">{inlineScore}</span>}
+              {!isLiveNow && !isFinished && (
+                <MatchCountdownTimer match={match} style={{ fontSize: '0.78rem', padding: '2px 8px' }} />
+              )}
+            </div>
           )}
         </div>
 
