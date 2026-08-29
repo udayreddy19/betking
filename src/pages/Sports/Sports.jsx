@@ -20,7 +20,7 @@ import { prefetchMatchDetail, enrichFromPoller, subscribeGlobalMatchDetails, get
 import { useMatchDetail } from '../../hooks/useMatchDetail';
 import { useCentralizedMatchState } from '../../hooks/useCentralizedMatchState';
 import { centralizedMatchEngine } from '../../services/centralizedMatchStateEngine';
-import { filterMatches, compareMatchesForSportsBoard } from '../../utils/matchFilters';
+import { filterMatches, filterMatchesBySport, compareMatchesForSportsBoard } from '../../utils/matchFilters';
 import { resolveLeagueId, getLeagueMeta, isSameLeague, groupMatchesByLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
 import { matchIdsEqual } from '../../../lib/matchIdPublic.mjs';
 import { findLiveMatch } from '../../utils/findLiveMatch';
