@@ -1,0 +1,11 @@
+{
+  "refreshPattern": "STALE_WHILE_REVALIDATE (Atomic Pointer Swap)",
+  "implementation": "lib/aggregator.mjs -> getAggregatedLiveScores()",
+  "raceConditionAnalysis": {
+    "clearBeforeFetch": false,
+    "staleServedWhileRefreshing": true,
+    "atomicPointerAssignment": "cachedResponse = responsePayload is executed only after all upstream fetches are fulfilled and normalized.",
+    "raceConditionPresent": false
+  },
+  "verdict": "The backend aggregator implements an atomic swap pattern with stale-while-revalidate, preventing empty snapshot windows during provider fetches."
+}

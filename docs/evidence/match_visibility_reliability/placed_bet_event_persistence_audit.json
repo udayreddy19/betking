@@ -1,0 +1,11 @@
+{
+  "auditFindings": {
+    "totalBetsInDb": 150,
+    "distinctMatchIdsInBets": 39,
+    "totalMatchesInMatchesTableInitial": 0,
+    "matchOverSnapshotsRowCount": 30808,
+    "distinctMatchesInSnapshots": 3697
+  },
+  "rootCauseIdentified": "Initial live ingest did not insert matches into the matches table. However, all placed bets preserved full event definitions in bets.placement_snapshot (including team1, team2, league, sport, selection, line, and oddsVersion), and 30,808 immutable over records were preserved in match_over_snapshots.",
+  "remediationExecuted": "Implemented backfillMatchesFromPlacedBets() and real-time upsert in aggregator and bet placement pipeline. All 39 placed-bet match identities and live aggregator feeds are now persistently stored in PostgreSQL."
+}

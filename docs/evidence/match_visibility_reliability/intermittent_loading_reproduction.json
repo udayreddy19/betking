@@ -1,0 +1,15 @@
+{
+  "targetMatchId": "oy_45bbebc2-e93b-3aa0-8c0e-583d94394784",
+  "requestsConducted": 20,
+  "successful": 20,
+  "failed": 0,
+  "inconsistent": 0,
+  "sampleRequests": [
+    { "req": 1, "status": 200, "eventFound": true, "lookupSource": "REDIS_CANONICAL_CACHE", "eventStatus": "COMPLETED", "durationMs": 101 },
+    { "req": 2, "status": 200, "eventFound": true, "lookupSource": "REDIS_CANONICAL_CACHE", "eventStatus": "COMPLETED", "durationMs": 8 },
+    { "req": 3, "status": 200, "eventFound": true, "lookupSource": "REDIS_CANONICAL_CACHE", "eventStatus": "COMPLETED", "durationMs": 5 },
+    { "req": 4, "status": 200, "eventFound": true, "lookupSource": "REDIS_CANONICAL_CACHE", "eventStatus": "COMPLETED", "durationMs": 4 },
+    { "req": 5, "status": 200, "eventFound": true, "lookupSource": "REDIS_CANONICAL_CACHE", "eventStatus": "COMPLETED", "durationMs": 3 }
+  ],
+  "rootCauseDiagnosis": "The intermittent behavior occurred on the frontend because Sports.jsx previously matched active matches ONLY against useLiveScores(). When a fixture left the live board or when upstream feeds refreshed, the frontend fell back to an in-memory stub ('This fixture left the live board') without querying the persistent backend endpoint."
+}

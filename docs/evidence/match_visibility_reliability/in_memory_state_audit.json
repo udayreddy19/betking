@@ -1,0 +1,20 @@
+{
+  "inMemoryDataStructures": [
+    {
+      "structure": "cachedResponse in lib/aggregator.mjs",
+      "purpose": "High-speed in-memory cache of multi-provider live scores board",
+      "risk": "Ephemeral. Only contains currently active/live fixtures returned by upstream feeds. When a match ends, it drops from this cache."
+    },
+    {
+      "structure": "canonicalMatchStateEngine in lib/canonicalMatchState.mjs",
+      "purpose": "State engine for live matches in memory",
+      "risk": "Process-local. Drops on container restart."
+    },
+    {
+      "structure": "matchOddsCache in lib/liveScoresApiHandlers.mjs",
+      "purpose": "Short TTL (2,000ms) cache for odds payloads",
+      "risk": "Cache only. Not used for identity truth."
+    }
+  ],
+  "remediation": "In-memory maps are used strictly as Level 1 acceleration caches. PostgreSQL persistence (matches table, placement snapshots, and match_over_snapshots) now serves as the permanent backing store for all placed-bet matches."
+}

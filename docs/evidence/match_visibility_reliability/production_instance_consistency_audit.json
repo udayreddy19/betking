@@ -1,0 +1,18 @@
+{
+  "productionTopology": {
+    "host": "200.234.38.230",
+    "backendContainer": "oddsyra_prod_backend",
+    "workerContainer": "oddsyra_prod_worker",
+    "redisContainer": "oddsyra_prod_redis",
+    "postgresContainer": "oddsyra_prod_postgres",
+    "nginxContainer": "oddsyra_prod_nginx"
+  },
+  "instanceConsistencyAudit": {
+    "multipleBackendReplicas": false,
+    "redisSharedBetweenProcesses": true,
+    "postgresSharedBetweenProcesses": true,
+    "loadBalancingSplits": false,
+    "instanceDifferencesDetected": false
+  },
+  "verdict": "Production runs a centralized multi-container architecture connected to a single authoritative PostgreSQL database and Redis instance. Backend and worker share state via Redis pub/sub and PostgreSQL transactions."
+}

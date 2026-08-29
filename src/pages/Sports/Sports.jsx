@@ -310,10 +310,41 @@ export default function Sports() {
     winner: true, tie: true, over10: true, delivery: false, partnership: false,
   });
   const [isWideLayout, setIsWideLayout] = useState(() => mediaQueryMatches('(min-width: 1025px)'));
+  const [persistedMatchFallback, setPersistedMatchFallback] = useState(null);
 
   useEffect(() => subscribeMediaQuery('(min-width: 1025px)', setIsWideLayout), []);
 
+  // Prefer the current league pool. Deep-linked match ids search the full feed (any league).
+  const matchDeepLinkId = searchParams.get('match');
+  const matchTeamsHint = searchParams.get('teams');
 
+  useEffect(() => {
+    const targetId = selectedMatchId || matchDeepLinkId;
+    if (!targetId) {
+      setPersistedMatchFallback(null);
+      return;
+    }
+    const foundInLive = findLiveMatch(matches, { matchId: targetId, matchName: matchTeamsHint })
+      || findLiveMatch(sportMatches, { matchId: targetId, matchName: matchTeamsHint })
+      || findLiveMatch(liveMatches, { matchId: targetId, matchName: matchTeamsHint });
+
+    if (foundInLive) {
+      setPersistedMatchFallback(null);
+      return;
+    }
+
+    let cancelled = false;
+    fetch(`/api/v1/matches/${encodeURIComponent(targetId)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.match) {
+          setPersistedMatchFallback(data.match);
+        }
+      })
+      .catch(() => {});
+
+    return () => { cancelled = true; };
+  }, [selectedMatchId, matchDeepLinkId, matches, sportMatches, liveMatches, matchTeamsHint]);
 
   const isIplSrlView = isSameLeague(activeLeague, 'ipl-srl', cricketSeries);
   const watchlistOnly = searchParams.get('watchlist') === '1';
@@ -343,10 +374,6 @@ export default function Sports() {
 
   const lastActiveMatchRef = useRef(null);
 
-  // Prefer the current league pool. Deep-linked match ids search the full feed (any league).
-  const matchDeepLinkId = searchParams.get('match');
-  const matchTeamsHint = searchParams.get('teams');
-
   const baseActiveMatch = useMemo(() => {
     const targetId = selectedMatchId || matchDeepLinkId;
     if (targetId) {
@@ -359,6 +386,10 @@ export default function Sports() {
       if (selected) {
         lastActiveMatchRef.current = selected;
         return selected;
+      }
+      if (persistedMatchFallback && (persistedMatchFallback.id === targetId || persistedMatchFallback.matchId === targetId)) {
+        lastActiveMatchRef.current = persistedMatchFallback;
+        return persistedMatchFallback;
       }
       // Keep waiting while scores load — avoid flashing "Match not found"
       if (isScoresLoading) return lastActiveMatchRef.current;

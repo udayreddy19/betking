@@ -1,0 +1,43 @@
+{
+  "endpoint": "GET /api/v1/matches/:id",
+  "contractResponses": {
+    "200_LIVE": {
+      "version": "v1",
+      "success": true,
+      "eventStatus": "LIVE",
+      "isLive": true,
+      "lookupSource": "LIVE_MAP",
+      "match": { "id": "...", "team1": "...", "team2": "...", "liveDetails": "..." }
+    },
+    "200_COMPLETED": {
+      "version": "v1",
+      "success": true,
+      "eventStatus": "COMPLETED",
+      "isLive": false,
+      "lookupSource": "POSTGRESQL_PERSISTENCE",
+      "match": { "id": "...", "team1": "...", "team2": "...", "status": "COMPLETED" }
+    },
+    "200_HISTORICAL": {
+      "version": "v1",
+      "success": true,
+      "eventStatus": "HISTORICAL",
+      "isLive": false,
+      "lookupSource": "POSTGRESQL_PERSISTENCE",
+      "match": { "id": "...", "team1": "...", "team2": "...", "status": "HISTORICAL" }
+    },
+    "200_NO_LONGER_LIVE": {
+      "version": "v1",
+      "success": true,
+      "eventStatus": "NO_LONGER_LIVE",
+      "isLive": false,
+      "lookupSource": "POSTGRESQL_PERSISTENCE",
+      "match": { "id": "...", "team1": "...", "team2": "..." }
+    },
+    "404_NOT_FOUND": {
+      "version": "v1",
+      "success": false,
+      "eventStatus": "NOT_FOUND",
+      "error": "Match state unavailable"
+    }
+  }
+}

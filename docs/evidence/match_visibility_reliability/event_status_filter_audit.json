@@ -1,0 +1,16 @@
+{
+  "filtersInspected": [
+    {
+      "context": "Frontend Live Scores Board (Sports.jsx)",
+      "filter": "m.isLive === true || getMatchState(m) === 'in'",
+      "behavior": "Correctly filters the live board to active in-play fixtures.",
+      "flaw": "Previously, when a user clicked a placed bet on a finished match, the frontend only looked in this live array and failed to fetch the persistent match record."
+    },
+    {
+      "context": "Backend Public Matches (server/routes/live.js)",
+      "filter": "status IN ('LIVE', 'UPCOMING', 'COMPLETED')",
+      "behavior": "Supported query filters by sport and status."
+    }
+  ],
+  "resolution": "Frontend Sports.jsx now uses an asynchronous fallback to /api/v1/matches/:id when a selected match is no longer on the live board, displaying the complete historical match card and status."
+}

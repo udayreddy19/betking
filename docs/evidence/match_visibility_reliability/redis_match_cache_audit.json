@@ -1,0 +1,16 @@
+{
+  "redisKeyPatterns": [
+    "canonical:match:{matchId}",
+    "oy:match:state:{matchId}",
+    "aggregator:live_scores:v1"
+  ],
+  "ttlPolicy": {
+    "liveMatches": "300 - 600 seconds",
+    "completedMatches": "86,400 seconds (24 hours)",
+    "aggregatorTicks": "10 seconds"
+  },
+  "expirationSafety": {
+    "behaviorOnExpiration": "When Redis keys expire, match lookups seamlessly fall back to PostgreSQL matches table and bets.placement_snapshot via reconstructMatchFromDb.",
+    "placedBetMatchSafety": "A placed bet never loses its event identity or scorecard data when Redis expires."
+  }
+}

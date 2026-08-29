@@ -1,0 +1,36 @@
+{
+  "requestPath": "Frontend (Sports.jsx) -> /api/v1/matches/:id (or /api/live-scores) -> server/routes/live.js -> lib/canonicalMatchState.mjs -> lib/matchStateCache.mjs -> lib/eventPersistence.mjs -> lib/matchDetailFetcher.mjs",
+  "layers": [
+    {
+      "layer": "Frontend Component",
+      "component": "src/pages/Sports/Sports.jsx",
+      "description": "Evaluates baseActiveMatch from liveMatches pool. If missing from live array, triggers asynchronous fallback hook to /api/v1/matches/:id."
+    },
+    {
+      "layer": "API Router",
+      "endpoint": "GET /api/v1/matches/:id",
+      "file": "server/routes/live.js",
+      "statusContract": "Returns 200 with explicit eventStatus ('LIVE', 'COMPLETED', 'HISTORICAL', 'NO_LONGER_LIVE') or 404 for nonexistent IDs."
+    },
+    {
+      "layer": "Layer 1: In-Memory Live Map",
+      "module": "lib/canonicalMatchState.mjs",
+      "status": "Checked first for ultra-low latency live in-play matches."
+    },
+    {
+      "layer": "Layer 2: Redis Canonical Cache",
+      "module": "lib/matchStateCache.mjs",
+      "status": "Checked second for high-throughput distributed state."
+    },
+    {
+      "layer": "Layer 3: PostgreSQL Database Persistence",
+      "module": "lib/eventPersistence.mjs",
+      "status": "Permanent immutable anchor for placed-bet matches and historical scorecards."
+    },
+    {
+      "layer": "Layer 4: Upstream Provider Direct",
+      "module": "lib/matchDetailFetcher.mjs",
+      "status": "External provider scrape/feed fetcher when local state requires hydration."
+    }
+  ]
+}

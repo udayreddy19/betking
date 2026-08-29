@@ -1,0 +1,12 @@
+{
+  "frontendArchitecture": {
+    "framework": "React 18 with Vite and React Router",
+    "stateManagement": "React Hooks (useMemo, useEffect, useState, useRef, useSyncExternalStore)",
+    "pollingEngine": "useLiveSportsMeta polling /api/live-scores every 5000ms"
+  },
+  "cachingMechanisms": {
+    "browserCache": "Disabled on real-time live match polling via Cache-Control headers",
+    "componentCache": "lastActiveMatchRef retains the last active match to prevent flashing unmounts during polling refreshes"
+  },
+  "rootCauseFixed": "Sports.jsx now queries /api/v1/matches/:id when a selected match is absent from the live board, preventing intermittent disappearance on polling ticks."
+}

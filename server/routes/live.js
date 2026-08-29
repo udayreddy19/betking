@@ -363,50 +363,64 @@ router.get('/api/v1/matches/:id', async (req, res) => {
     if (!matchId) return res.status(400).json({ error: 'match_id_required' });
 
     const { canonicalMatchStateEngine } = await import('../../lib/canonicalMatchState.mjs');
+    let lookupSource = 'NOT_FOUND';
     let matchState = canonicalMatchStateEngine.getMatchState(matchId);
+    if (matchState) lookupSource = 'LIVE_MAP';
 
     if (!matchState) {
       const { getCachedCanonicalMatchState } = await import('../../lib/matchStateCache.mjs');
       matchState = await getCachedCanonicalMatchState(matchId).catch(() => null);
+      if (matchState) lookupSource = 'REDIS_CANONICAL_CACHE';
     }
 
     if (!matchState) {
-      const { queryRead } = await import('../../db/pg.js');
-      const dbRes = await queryRead(
-        `SELECT match_id, competition_id, team1_id, team2_id, status, live_score1, live_score2, start_time, updated_at
-         FROM matches WHERE match_id = $1 LIMIT 1`,
-        [matchId],
-      ).catch(() => ({ rows: [] }));
-      if (dbRes.rows.length > 0) {
-        const row = dbRes.rows[0];
-        const isFinal = ['COMPLETED', 'FINISHED', 'FINAL', 'CLOSED'].includes(String(row.status).toUpperCase());
-        matchState = {
-          id: row.match_id,
-          matchId: row.match_id,
-          competition: row.competition_id,
-          team1: { id: row.team1_id, name: row.team1_id },
-          team2: { id: row.team2_id, name: row.team2_id },
-          status: row.status,
-          matchState: isFinal ? 'post' : 'in',
-          isLive: !isFinal,
-          startTime: row.start_time,
-          liveDetails: {
-            score1: row.live_score1,
-            score2: row.live_score2,
-          },
-        };
-      }
+      const { reconstructMatchFromDb } = await import('../../lib/eventPersistence.mjs');
+      matchState = await reconstructMatchFromDb(matchId);
+      if (matchState) lookupSource = 'POSTGRESQL_PERSISTENCE';
     }
 
     if (!matchState) {
       const { fetchMatchDetail } = await import('../../lib/matchDetailFetcher.mjs');
       matchState = await fetchMatchDetail({ id: matchId, matchId }).catch(() => null);
+      if (matchState && (matchState.team1?.name || matchState.matchName)) {
+        lookupSource = 'PROVIDER_DIRECT';
+      }
     }
 
-    if (!matchState) return res.status(404).json({ error: 'Match state unavailable' });
-    res.json({ version: 'v1', match: matchState });
+    if (!matchState || (!matchState.team1?.name && !matchState.matchName && !matchState.id)) {
+      return res.status(404).json({
+        version: 'v1',
+        success: false,
+        eventStatus: 'NOT_FOUND',
+        error: 'Match state unavailable'
+      });
+    }
+
+    const isFinal = Boolean(
+      matchState.isCompleted
+      || matchState.matchState === 'post'
+      || ['COMPLETED', 'FINISHED', 'FINAL', 'CLOSED', 'SETTLED'].includes(String(matchState.status).toUpperCase())
+    );
+
+    let eventStatus = 'LIVE';
+    if (isFinal) {
+      eventStatus = 'COMPLETED';
+    } else if (matchState.source === 'POSTGRESQL_PLACED_BET_SNAPSHOT') {
+      eventStatus = 'HISTORICAL';
+    } else if (!matchState.isLive && matchState.matchState !== 'in') {
+      eventStatus = 'NO_LONGER_LIVE';
+    }
+
+    res.json({
+      version: 'v1',
+      success: true,
+      eventStatus,
+      isLive: eventStatus === 'LIVE',
+      lookupSource,
+      match: matchState
+    });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch match state' });
+    res.status(500).json({ error: 'Failed to fetch match state', message: err.message });
   }
 });
 

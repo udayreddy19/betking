@@ -1,0 +1,29 @@
+{
+  "fixesApplied": [
+    {
+      "area": "Database Match Persistence & Historical Reconstruction",
+      "file": "lib/eventPersistence.mjs",
+      "description": "Added upsertPersistentMatch(), backfillMatchesFromPlacedBets(), and reconstructMatchFromDb() to provide authoritative PostgreSQL persistence for every live match and historical placed bet."
+    },
+    {
+      "area": "Aggregator Real-Time Persistence",
+      "file": "lib/aggregator.mjs",
+      "description": "Added upsertPersistentMatch(m) alongside cacheCanonicalMatchState() to continuously sync active and completed matches to PostgreSQL."
+    },
+    {
+      "area": "Match Details API Endpoint",
+      "file": "server/routes/live.js",
+      "description": "Updated /api/v1/matches/:id with multi-tier lookup (Live Map -> Redis -> PostgreSQL -> Provider) and explicit eventStatus response contract."
+    },
+    {
+      "area": "Public Odds Endpoint Fallback",
+      "file": "lib/liveScoresApiHandlers.mjs",
+      "description": "Updated buildMatchOddsPayload to fall back to Redis and DB, returning NO_LONGER_LIVE (200) instead of throwing 404 for concluded events."
+    },
+    {
+      "area": "Frontend Persistent Match Fallback",
+      "file": "src/pages/Sports/Sports.jsx",
+      "description": "Added persistedMatchFallback state and asynchronous fallback effect to fetch /api/v1/matches/:id when a selected fixture is absent from the live board."
+    }
+  ]
+}
