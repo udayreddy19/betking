@@ -1,0 +1,29 @@
+{
+  "auditTimestamp": "2026-08-29T18:29:37.494Z",
+  "serviceFile": "server/auth/emailService.js",
+  "architecture": {
+    "primaryProvider": "Resend SMTP (smtp.resend.com)",
+    "fallbackProvider": "Brevo SMTP (smtp-relay.brevo.com)",
+    "failoverTrigger": "HTTP 429, daily quota exhaustion (SMTP_PRIMARY_DAILY_LIMIT), or rate limits",
+    "metricsExposed": "Prometheus /metrics endpoint (email_primary_success_total, email_fallback_success_total, etc.)"
+  },
+  "templatesAudited": [
+    "sendVerificationEmail",
+    "sendPasswordResetEmail",
+    "sendPasswordChangedNotificationEmail",
+    "sendDepositCompletedEmail",
+    "sendWithdrawalStatusEmail",
+    "sendKycReminderEmail",
+    "sendReferralRewardEmail",
+    "sendDepositFreebetEmail",
+    "sendPromoCodeInviteEmail",
+    "sendTargetedDepositOfferEmail",
+    "sendSupportTicketAlertEmail",
+    "sendSupportAdminReplyEmail"
+  ],
+  "security": {
+    "htmlEscaping": "Strict escapeHtml() on all dynamic inputs",
+    "sensitiveDataProtection": "No passwords or session tokens logged in email logs"
+  },
+  "verdict": "PASS"
+}

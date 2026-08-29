@@ -1,0 +1,8 @@
+{
+  "auditTimestamp": "2026-08-29T18:29:37.494Z",
+  "stateMachine": "QUEUED -> PROCESSING -> DELIVERED | FAILED | RETRYING -> DEAD_LETTER",
+  "maxRetries": 3,
+  "errorTracking": "error_message and attempts columns in notifications and outbox_events",
+  "recoveryJob": "processNotificationDeliveryQueue() automatically retries failed items up to 3 times before moving to DEAD_LETTER",
+  "verdict": "PASS"
+}

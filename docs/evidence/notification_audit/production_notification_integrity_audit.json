@@ -1,0 +1,45 @@
+{
+  "auditTimestamp": "2026-08-29T18:30:00.000Z",
+  "environment": "production (200.234.38.230)",
+  "productionSafety": "READ_ONLY_FIRST=true, NO_PRODUCTION_DATA_DELETION=true",
+  "summary": {
+    "total_notifications": 8,
+    "unread_notifications": 8,
+    "delivered": 8,
+    "queued": 0,
+    "failed": 0,
+    "dead_letter": 0
+  },
+  "typeBreakdown": [
+    {
+      "event_type": "support.message.admin",
+      "category": "SUPPORT",
+      "channel": "IN_APP",
+      "count": 4
+    },
+    {
+      "event_type": "support.ticket.closed",
+      "category": "SUPPORT",
+      "channel": "IN_APP",
+      "count": 2
+    },
+    {
+      "event_type": "support.ticket.created",
+      "category": "SUPPORT",
+      "channel": "IN_APP",
+      "count": 2
+    }
+  ],
+  "adminNotifications": {
+    "total_admin_notifications": 43,
+    "unread_admin_notifications": 23
+  },
+  "outbox": {
+    "total_outbox": 308,
+    "pending_outbox": 0,
+    "processed_outbox": 291,
+    "retried_outbox": 11
+  },
+  "orphanNotifications": 0,
+  "integrityVerdict": "PASS (0 orphan notifications, clean foreign key relationships, 0 dead-letter notifications, 0 pending outbox backlog)"
+}

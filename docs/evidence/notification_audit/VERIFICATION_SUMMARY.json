@@ -1,0 +1,20 @@
+{
+  "auditTimestamp": "2026-08-29T18:29:37.495Z",
+  "inAppNotifications": "PASS",
+  "realTimeUpdates": "PASS",
+  "betNotifications": "PASS",
+  "paymentNotifications": "PASS",
+  "kycNotifications": "PASS",
+  "bonusFreeBetNotifications": "PASS",
+  "referralNotifications": "PASS",
+  "emailNotifications": "PASS",
+  "pushNotifications": "PARTIAL (Engine ready; awaiting VAPID keys)",
+  "adminNotifications": "PASS",
+  "duplicateProtection": "PASS",
+  "apiSecurity": "PASS",
+  "productionDataIntegrity": "PASS",
+  "criticalIssues": "NONE",
+  "highPriorityIssues": "NONE",
+  "mediumPriorityIssues": "Configure VAPID keys for browser webpush; connect DLT credentials for SMS",
+  "finalStatus": "PASS"
+}

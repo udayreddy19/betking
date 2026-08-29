@@ -1,0 +1,71 @@
+{
+  "auditTimestamp": "2026-08-29T18:29:37.416Z",
+  "channels": [
+    {
+      "channel": "IN_APP",
+      "exists": true,
+      "configured": true,
+      "working": "YES",
+      "provider": "PostgreSQL notifications table + REST API + useUserNotifications hook",
+      "failureHandling": "Database transaction rollback with error logging",
+      "retrySupport": "Immediate persistence on generation; durable across browser refreshes"
+    },
+    {
+      "channel": "WEBSOCKET_REALTIME",
+      "exists": true,
+      "configured": true,
+      "working": "YES",
+      "provider": "WebSocket Server (lib/websocketEngine.mjs) + outboxWorker",
+      "failureHandling": "Automatic disconnect cleanup and client-side auto-reconnect",
+      "retrySupport": "Backed by REST polling fallback (useUserNotifications 20s interval)"
+    },
+    {
+      "channel": "EMAIL",
+      "exists": true,
+      "configured": false,
+      "working": "PARTIAL",
+      "provider": "Primary: Resend SMTP; Fallback: Brevo SMTP with automatic quota failover",
+      "failureHandling": "Automatic failover to secondary SMTP on 429/quota error; retry queue in DB",
+      "retrySupport": "Notifications queue 3 retry attempts before DEAD_LETTER",
+      "metrics": {
+        "primarySuccess": 0,
+        "fallbackSuccess": 0,
+        "primaryFailure": 0,
+        "fallbackFailure": 0,
+        "lastProvider": null,
+        "lastError": null,
+        "lastAt": null,
+        "fallbackConfigured": false,
+        "primaryConfigured": false,
+        "monitored": false
+      }
+    },
+    {
+      "channel": "SMS",
+      "exists": true,
+      "configured": false,
+      "working": "PARTIAL",
+      "provider": "India DLT Compliant SMS Gateway (TRAI mandated DLT template/entity ID)",
+      "failureHandling": "Honest non-delivery skip with reason logging when unconfigured",
+      "retrySupport": "Max 3 retry attempts in notifications queue"
+    },
+    {
+      "channel": "BROWSER_PUSH",
+      "exists": true,
+      "configured": false,
+      "working": "PARTIAL",
+      "provider": "Web Push / VAPID (RFC 8292)",
+      "failureHandling": "Skip with WEB_PUSH_NOT_CONFIGURED; expired subscription cleanup",
+      "retrySupport": "Max 3 retry attempts in notifications queue"
+    },
+    {
+      "channel": "MOBILE_PUSH",
+      "exists": false,
+      "configured": false,
+      "working": "NOT IMPLEMENTED",
+      "provider": "FCM / APNs (Not integrated; Web Push is used for mobile web browsers)",
+      "failureHandling": "N/A",
+      "retrySupport": "N/A"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "auditTimestamp": "2026-08-29T18:29:37.493Z",
+  "table": "user_notification_preferences",
+  "columns": [
+    "marketing_email",
+    "marketing_sms",
+    "marketing_push",
+    "transactional_email"
+  ],
+  "enforcementRules": [
+    "Transactional alerts (KYC, Security, Bet Settlements, Withdrawals) are NEVER suppressed by marketing opt-outs",
+    "Promotional emails and marketing campaigns respect marketing_email = false",
+    "Quiet hours defer promotional communications while allowing critical security alerts",
+    "User preference updates are audited with updated_at timestamp"
+  ],
+  "apiEndpoints": [
+    "GET /api/v1/user/notifications/preferences",
+    "POST /api/v1/user/notifications/preferences"
+  ],
+  "verdict": "PASS"
+}

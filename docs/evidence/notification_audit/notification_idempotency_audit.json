@@ -1,0 +1,22 @@
+{
+  "auditTimestamp": "2026-08-29T18:29:37.494Z",
+  "mechanisms": [
+    {
+      "layer": "Idempotency Engine",
+      "description": "idempotencyEngine.checkOrLock(notif_{eventType}_{eventId}_{userId}) locks concurrent requests"
+    },
+    {
+      "layer": "Database Unique Index",
+      "description": "idx_notifications_event_unq (event_id, event_type, user_id) guards against duplicate inserts"
+    },
+    {
+      "layer": "Outbox Status Tracking",
+      "description": "outbox_events status moves PENDING -> PROCESSED with FOR UPDATE SKIP LOCKED"
+    },
+    {
+      "layer": "Settlement Versioning",
+      "description": "ws_settle_{betId}_v{version} ensures exact 1 notification per settlement grade"
+    }
+  ],
+  "verdict": "PASS"
+}

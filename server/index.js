@@ -105,7 +105,10 @@ import publicOddsRouter from './routes/public/odds.js';
 import adminInlineRouter from './routes/admin/inline.js';
 import adminSettlementRouter from './routes/admin/settlement.js';
 
+import userNotificationsRouter from './routes/userNotifications.js';
+
 app.use(authInlineRouter);
+app.use(userNotificationsRouter);
 app.use(liveRouter);
 app.use('/api', liveScoresPublicRouter);
 app.use('/api/public/sports', publicOddsRouter);

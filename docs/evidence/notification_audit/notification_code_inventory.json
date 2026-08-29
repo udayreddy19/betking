@@ -1,0 +1,194 @@
+{
+  "auditTimestamp": "2026-08-29T18:29:37.416Z",
+  "databaseTables": [
+    {
+      "name": "notifications",
+      "migration": "011_notification_communication_center.sql",
+      "purpose": "User in-app, email, sms, push delivery queue and persistent store"
+    },
+    {
+      "name": "admin_notifications",
+      "migration": "070_phase3_ops_alerts_incidents.sql",
+      "purpose": "Admin operational alerts, security alerts, and system notifications"
+    },
+    {
+      "name": "user_notification_preferences",
+      "migration": "011_notification_communication_center.sql / 071",
+      "purpose": "Per-user channel preferences for marketing and transactional alerts"
+    },
+    {
+      "name": "notification_templates",
+      "migration": "011_notification_communication_center.sql",
+      "purpose": "Parameterized subject and body templates with versioning"
+    },
+    {
+      "name": "outbox_events",
+      "migration": "004_transactional_outbox_and_reconciliation.sql",
+      "purpose": "Transactional outbox for reliable asynchronous event notification dispatch"
+    },
+    {
+      "name": "ops_notification_preferences",
+      "migration": "070_phase3_ops_alerts_incidents.sql",
+      "purpose": "Admin/ops severity threshold and routing preferences"
+    }
+  ],
+  "backendEnginesAndServices": [
+    {
+      "file": "lib/notificationEngine.mjs",
+      "purpose": "Core dispatchNotificationEvent, delivery queue processor, dead-letter handler"
+    },
+    {
+      "file": "lib/notificationWorker.mjs",
+      "purpose": "Outbox event consumer for user & admin notifications with WebSocket broadcast"
+    },
+    {
+      "file": "lib/notificationTemplateEngine.mjs",
+      "purpose": "Safe whitelisted template renderer with SQL injection & eval protection"
+    },
+    {
+      "file": "lib/notificationPreferencesEngine.mjs",
+      "purpose": "User marketing opt-out checks and quiet hours evaluation"
+    },
+    {
+      "file": "lib/notificationChannels.mjs",
+      "purpose": "Delivery adapters for IN_APP, EMAIL (SMTP), SMS (DLT), WEB_PUSH (VAPID)"
+    },
+    {
+      "file": "lib/opsAlertEngine.mjs",
+      "purpose": "Admin operational alert deduplication, severity grading, and incident integration"
+    },
+    {
+      "file": "lib/opsNotificationCenter.mjs",
+      "purpose": "Ops notification listing, read status, preference management"
+    },
+    {
+      "file": "lib/supportNotify.mjs",
+      "purpose": "Customer support in-app and email notifications"
+    },
+    {
+      "file": "lib/outboxWorker.mjs",
+      "purpose": "Domain event subscriber dispatching real-time WebSocket notifications"
+    },
+    {
+      "file": "lib/websocketEngine.mjs",
+      "purpose": "Real-time WebSocket event broadcaster and unicast sender (sendToUser)"
+    },
+    {
+      "file": "server/auth/emailService.js",
+      "purpose": "Enterprise SMTP mailer with Resend primary, Brevo fallback, and Prometheus metrics"
+    }
+  ],
+  "apiRoutes": [
+    {
+      "path": "GET /api/v1/user/notifications",
+      "scope": "User (Auth)",
+      "purpose": "Fetch paginated user notifications with unread count"
+    },
+    {
+      "path": "POST /api/v1/user/notifications/read",
+      "scope": "User (Auth)",
+      "purpose": "Mark single notification as read"
+    },
+    {
+      "path": "POST /api/v1/user/notifications/read-all",
+      "scope": "User (Auth)",
+      "purpose": "Mark all notifications as read"
+    },
+    {
+      "path": "POST /api/v1/user/notifications/clear",
+      "scope": "User (Auth)",
+      "purpose": "Delete single or all notifications"
+    },
+    {
+      "path": "GET /api/v1/user/notifications/preferences",
+      "scope": "User (Auth)",
+      "purpose": "Get user marketing and notification preferences"
+    },
+    {
+      "path": "POST /api/v1/user/notifications/preferences",
+      "scope": "User (Auth)",
+      "purpose": "Update user marketing and notification preferences"
+    },
+    {
+      "path": "GET /api/admin/v2/notifications",
+      "scope": "Admin",
+      "purpose": "List paginated admin notifications with filters"
+    },
+    {
+      "path": "POST /api/admin/v2/notifications/:id/read",
+      "scope": "Admin",
+      "purpose": "Mark admin alert as read"
+    },
+    {
+      "path": "POST /api/admin/v2/notifications/read-all",
+      "scope": "Admin",
+      "purpose": "Mark all admin alerts as read"
+    },
+    {
+      "path": "POST /api/admin/v2/notifications/:id/ack",
+      "scope": "Admin",
+      "purpose": "Acknowledge admin operational alert"
+    },
+    {
+      "path": "POST /api/admin/v2/notifications/:id/resolve",
+      "scope": "Admin",
+      "purpose": "Resolve admin operational alert"
+    },
+    {
+      "path": "GET /api/admin/operations/notifications",
+      "scope": "Admin Ops",
+      "purpose": "Ops Control Tower notifications"
+    }
+  ],
+  "frontendComponents": [
+    {
+      "file": "src/hooks/useUserNotifications.js",
+      "purpose": "Shared multi-subscriber polling (20s) and state management hook"
+    },
+    {
+      "file": "src/components/Header/Header.jsx",
+      "purpose": "Header notification bell with live unread badge and dropdown trigger"
+    },
+    {
+      "file": "src/components/Sidebar/Sidebar.jsx",
+      "purpose": "Sidebar navigation with unread count indicator"
+    },
+    {
+      "file": "src/components/MobileBottomBar/MobileBottomBar.jsx",
+      "purpose": "Mobile navigation bar with unread notification badge"
+    },
+    {
+      "file": "src/pages/Notifications/NotificationCenter.jsx",
+      "purpose": "Full notification center page with category tabs, search, and bulk actions"
+    },
+    {
+      "file": "src/pages/Profile/ProfileMarketingPrefsCard.jsx",
+      "purpose": "User profile settings card for email, SMS, and push marketing preferences"
+    },
+    {
+      "file": "src/pages/Admin/layout/AdminShell.jsx",
+      "purpose": "Admin shell with top-bar alert bell and real-time WebSocket popups"
+    },
+    {
+      "file": "src/pages/Admin/domains/OperationsDomainView.jsx",
+      "purpose": "Admin Operations alerts and notification management view"
+    }
+  ],
+  "backgroundWorkers": [
+    {
+      "name": "Outbox Worker (lib/outboxWorker.mjs)",
+      "interval": "2000ms",
+      "purpose": "Processes outbox_events with FOR UPDATE SKIP LOCKED and dispatches domain events"
+    },
+    {
+      "name": "Notification Worker (lib/notificationWorker.mjs)",
+      "interval": "15000ms",
+      "purpose": "Renders templates, applies preferences, and writes to notifications table"
+    },
+    {
+      "name": "Notification Delivery Queue Worker (lib/notificationEngine.mjs)",
+      "interval": "15000ms",
+      "purpose": "Pulls QUEUED notifications and dispatches via channels"
+    }
+  ]
+}

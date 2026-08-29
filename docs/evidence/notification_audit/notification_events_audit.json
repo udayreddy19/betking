@@ -1,0 +1,303 @@
+{
+  "auditTimestamp": "2026-08-29T18:29:37.493Z",
+  "eventsCount": 33,
+  "events": [
+    {
+      "category": "ACCOUNT",
+      "event": "Welcome/signup",
+      "eventType": "user.signup",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP + EMAIL",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "ACCOUNT",
+      "event": "Email verification",
+      "eventType": "auth.verify_email",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "EMAIL",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "ACCOUNT",
+      "event": "Phone verification",
+      "eventType": "auth.verify_phone",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "SMS (DLT)",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "ACCOUNT",
+      "event": "KYC submitted",
+      "eventType": "kyc.submitted",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP + ADMIN_ALERT",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "ACCOUNT",
+      "event": "KYC approved",
+      "eventType": "kyc.verified",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP + EMAIL",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "ACCOUNT",
+      "event": "KYC rejected",
+      "eventType": "kyc.rejected",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP + EMAIL",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "ACCOUNT",
+      "event": "Password changed",
+      "eventType": "auth.password_changed",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "EMAIL (Security Alert)",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "ACCOUNT",
+      "event": "Security alert",
+      "eventType": "fraud.signal.created",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP + ADMIN_ALERT",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "ACCOUNT",
+      "event": "New login",
+      "eventType": "auth.login_new_device",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP + EMAIL",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "PAYMENTS",
+      "event": "Deposit successful",
+      "eventType": "deposit.completed",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP + EMAIL + WS",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "PAYMENTS",
+      "event": "Deposit failed",
+      "eventType": "deposit.failed",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "PAYMENTS",
+      "event": "Withdrawal requested",
+      "eventType": "withdrawal.created",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP + ADMIN_ALERT",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "PAYMENTS",
+      "event": "Withdrawal approved",
+      "eventType": "withdrawal.approved",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP + EMAIL",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "PAYMENTS",
+      "event": "Withdrawal rejected",
+      "eventType": "withdrawal.rejected",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP + EMAIL",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "PAYMENTS",
+      "event": "Withdrawal completed",
+      "eventType": "withdrawal.completed",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP + EMAIL",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "PAYMENTS",
+      "event": "Payment failure",
+      "eventType": "payment.failed",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP + ADMIN_ALERT",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "BETTING",
+      "event": "Bet placed",
+      "eventType": "BET_PLACED",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP + WS",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "BETTING",
+      "event": "Bet accepted",
+      "eventType": "bet.accepted",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP + WS",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "BETTING",
+      "event": "Bet rejected",
+      "eventType": "bet.rejected",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "BETTING",
+      "event": "Bet won",
+      "eventType": "BET_SETTLED (WON)",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP + WS",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "BETTING",
+      "event": "Bet lost",
+      "eventType": "BET_SETTLED (LOST)",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP + WS",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "BETTING",
+      "event": "Bet void",
+      "eventType": "BET_SETTLED (VOID)",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP + WS",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "BETTING",
+      "event": "Bet settled",
+      "eventType": "bet.settled",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP + WS",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "BETTING",
+      "event": "Cash out successful",
+      "eventType": "BET_CASHED_OUT",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP + WS",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "BETTING",
+      "event": "Cash out failed",
+      "eventType": "cashout.failed",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "PROMOTIONS",
+      "event": "Free bet credited",
+      "eventType": "bonus.freebet_credited",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP + EMAIL + WS",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "PROMOTIONS",
+      "event": "Bonus credited",
+      "eventType": "bonus.awarded",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP + WS",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "PROMOTIONS",
+      "event": "Bonus expiry reminder",
+      "eventType": "bonus.expiring_soon",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP + EMAIL",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "PROMOTIONS",
+      "event": "Promo activated",
+      "eventType": "promo.activated",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "PROMOTIONS",
+      "event": "Promo expired",
+      "eventType": "promo.expired",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "REFERRALS",
+      "event": "Referral registered",
+      "eventType": "referral.registered",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "REFERRALS",
+      "event": "Referral qualified",
+      "eventType": "referral.qualified",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP",
+      "duplicateSafe": "PASS"
+    },
+    {
+      "category": "REFERRALS",
+      "event": "Referral reward credited",
+      "eventType": "referral.rewarded",
+      "trigger": "PASS",
+      "recordCreated": "PASS",
+      "delivery": "IN_APP + EMAIL + WS",
+      "duplicateSafe": "PASS"
+    }
+  ]
+}

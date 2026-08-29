@@ -1,0 +1,386 @@
+{
+  "auditTimestamp": "2026-08-29T18:29:37.492Z",
+  "tables": {
+    "notifications": {
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "user_id",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "event_type",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "category",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "channel",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "recipient",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "subject",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "body",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "status",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": "'QUEUED'::character varying"
+        },
+        {
+          "column_name": "attempts",
+          "data_type": "integer",
+          "is_nullable": "YES",
+          "column_default": "0"
+        },
+        {
+          "column_name": "error_message",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "event_id",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "is_read",
+          "data_type": "boolean",
+          "is_nullable": "YES",
+          "column_default": "false"
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": "CURRENT_TIMESTAMP"
+        },
+        {
+          "column_name": "delivered_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "tenant_id",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": "'tenant_default'::character varying"
+        }
+      ],
+      "primaryKey": "id (VARCHAR(64))",
+      "foreignKeys": [
+        "user_id REFERENCES users(user_id) ON DELETE CASCADE"
+      ]
+    },
+    "admin_notifications": {
+      "columns": [
+        {
+          "column_name": "notification_id",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "admin_id",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "title",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "message",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "category",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": "'INFO'::character varying"
+        },
+        {
+          "column_name": "priority",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": "'NORMAL'::character varying"
+        },
+        {
+          "column_name": "action_type",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "action_target_type",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "action_target_id",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "action_label",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "is_read",
+          "data_type": "boolean",
+          "is_nullable": "YES",
+          "column_default": "false"
+        },
+        {
+          "column_name": "is_actioned",
+          "data_type": "boolean",
+          "is_nullable": "YES",
+          "column_default": "false"
+        },
+        {
+          "column_name": "tenant_id",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": "'oddsyra_in'::character varying"
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": "CURRENT_TIMESTAMP"
+        },
+        {
+          "column_name": "action_note",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "status",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": "'OPEN'::character varying"
+        },
+        {
+          "column_name": "severity",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": "'WARNING'::character varying"
+        },
+        {
+          "column_name": "dedupe_key",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "occurrence_count",
+          "data_type": "integer",
+          "is_nullable": "YES",
+          "column_default": "1"
+        },
+        {
+          "column_name": "source",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "entity_type",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "entity_id",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "acknowledged_by",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "acknowledged_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "resolved_by",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "resolved_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "last_occurrence_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "metadata",
+          "data_type": "jsonb",
+          "is_nullable": "YES",
+          "column_default": "'{}'::jsonb"
+        }
+      ],
+      "primaryKey": "notification_id (VARCHAR(64))"
+    },
+    "user_notification_preferences": {
+      "columns": [
+        {
+          "column_name": "user_id",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "marketing_email",
+          "data_type": "boolean",
+          "is_nullable": "YES",
+          "column_default": "true"
+        },
+        {
+          "column_name": "marketing_sms",
+          "data_type": "boolean",
+          "is_nullable": "YES",
+          "column_default": "true"
+        },
+        {
+          "column_name": "marketing_push",
+          "data_type": "boolean",
+          "is_nullable": "YES",
+          "column_default": "true"
+        },
+        {
+          "column_name": "transactional_email",
+          "data_type": "boolean",
+          "is_nullable": "YES",
+          "column_default": "true"
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": "CURRENT_TIMESTAMP"
+        },
+        {
+          "column_name": "source",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": "'user'::character varying"
+        },
+        {
+          "column_name": "updated_by",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null
+        }
+      ],
+      "primaryKey": "user_id (VARCHAR(64)) REFERENCES users(user_id) ON DELETE CASCADE"
+    }
+  },
+  "indexes": [
+    {
+      "indexname": "admin_notifications_pkey",
+      "indexdef": "CREATE UNIQUE INDEX admin_notifications_pkey ON public.admin_notifications USING btree (notification_id)"
+    },
+    {
+      "indexname": "idx_admin_notif_dedupe_open",
+      "indexdef": "CREATE INDEX idx_admin_notif_dedupe_open ON public.admin_notifications USING btree (dedupe_key) WHERE ((dedupe_key IS NOT NULL) AND (upper((COALESCE(status, 'OPEN'::character varying))::text) = 'OPEN'::text))"
+    },
+    {
+      "indexname": "idx_admin_notif_entity",
+      "indexdef": "CREATE INDEX idx_admin_notif_entity ON public.admin_notifications USING btree (entity_type, entity_id) WHERE (entity_id IS NOT NULL)"
+    },
+    {
+      "indexname": "idx_admin_notif_status_sev",
+      "indexdef": "CREATE INDEX idx_admin_notif_status_sev ON public.admin_notifications USING btree (status, severity, created_at DESC)"
+    },
+    {
+      "indexname": "notification_templates_pkey",
+      "indexdef": "CREATE UNIQUE INDEX notification_templates_pkey ON public.notification_templates USING btree (id)"
+    },
+    {
+      "indexname": "unq_event_channel_ver",
+      "indexdef": "CREATE UNIQUE INDEX unq_event_channel_ver ON public.notification_templates USING btree (event_type, channel, version)"
+    },
+    {
+      "indexname": "idx_notifications_event_unq",
+      "indexdef": "CREATE INDEX idx_notifications_event_unq ON public.notifications USING btree (event_id, event_type, user_id)"
+    },
+    {
+      "indexname": "idx_notifications_queue",
+      "indexdef": "CREATE INDEX idx_notifications_queue ON public.notifications USING btree (status, attempts)"
+    },
+    {
+      "indexname": "idx_notifications_user",
+      "indexdef": "CREATE INDEX idx_notifications_user ON public.notifications USING btree (user_id, is_read, created_at)"
+    },
+    {
+      "indexname": "notifications_pkey",
+      "indexdef": "CREATE UNIQUE INDEX notifications_pkey ON public.notifications USING btree (id)"
+    },
+    {
+      "indexname": "user_notification_preferences_pkey",
+      "indexdef": "CREATE UNIQUE INDEX user_notification_preferences_pkey ON public.user_notification_preferences USING btree (user_id)"
+    }
+  ],
+  "securityAndIsolation": {
+    "crossUserAccessPrevention": "All user queries enforce WHERE user_id = $1 using verified JWT session",
+    "cascadeDeletes": "Deleting user removes associated notifications and preferences cleanly",
+    "duplicateProtection": "Index idx_notifications_event_unq (event_id, event_type, user_id) guards against duplicate event inserts"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "auditTimestamp": "2026-08-29T18:29:37.494Z",
+  "serviceFile": "lib/notificationChannels.mjs",
+  "webPushProtocol": "RFC 8292 / VAPID",
+  "configurationStatus": {
+    "endpoint": "NOT_CONFIGURED",
+    "vapidPublicKey": "NOT_CONFIGURED"
+  },
+  "safetyGuards": [
+    "Safe no-op with reason WEB_PUSH_NOT_CONFIGURED when environment keys are absent",
+    "Expired push subscription endpoints (HTTP 410 Gone) are caught and flagged"
+  ],
+  "verdict": "PARTIAL (Engine ready; awaiting VAPID keys)"
+}

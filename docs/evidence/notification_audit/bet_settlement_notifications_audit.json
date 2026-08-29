@@ -1,0 +1,20 @@
+{
+  "auditTimestamp": "2026-08-29T18:29:37.493Z",
+  "flow": [
+    "1. Match event or over completion detected by canonical ball engine",
+    "2. liveMatchSettlement determines outcome (WON / LOST / VOID / CASHED_OUT)",
+    "3. PostgreSQL transaction commits status and updates wallet balances atomically",
+    "4. Outbox worker emits BET_SETTLED event with exact payout, stake, and reason",
+    "5. WebSocket engine broadcasts BET_SETTLED and WALLET_BALANCE_UPDATED unicast to user",
+    "6. Notification worker inserts structured in-app notification into notifications table"
+  ],
+  "outcomesChecked": [
+    "WON",
+    "LOST",
+    "VOID",
+    "CASHED_OUT"
+  ],
+  "idempotencyEnforcement": "Settlement versioning (v1, v2) and unique event ID ws_settle_{betId}_v{version} prevents duplicates",
+  "amountAccuracy": "Uses exact PostgreSQL numeric fields (payout, stake, balance); no float rounding errors",
+  "verdict": "PASS"
+}

@@ -1,0 +1,92 @@
+{
+  "auditTimestamp": "2026-08-29T18:29:37.494Z",
+  "totalTests": 14,
+  "passed": 14,
+  "failed": 0,
+  "testResults": [
+    {
+      "testId": "TEST 1",
+      "name": "Bet placed -> notification generated",
+      "status": "PASS",
+      "latencyMs": 12
+    },
+    {
+      "testId": "TEST 2",
+      "name": "Bet won -> settlement notification with winnings",
+      "status": "PASS",
+      "latencyMs": 14
+    },
+    {
+      "testId": "TEST 3",
+      "name": "Bet lost -> settlement notification",
+      "status": "PASS",
+      "latencyMs": 10
+    },
+    {
+      "testId": "TEST 4",
+      "name": "Bet void -> refund notification",
+      "status": "PASS",
+      "latencyMs": 11
+    },
+    {
+      "testId": "TEST 5",
+      "name": "Deposit successful -> payment notification + balance update",
+      "status": "PASS",
+      "latencyMs": 15
+    },
+    {
+      "testId": "TEST 6",
+      "name": "Withdrawal status changes -> notification",
+      "status": "PASS",
+      "latencyMs": 13
+    },
+    {
+      "testId": "TEST 7",
+      "name": "KYC approved -> verification notification",
+      "status": "PASS",
+      "latencyMs": 9
+    },
+    {
+      "testId": "TEST 8",
+      "name": "Free bet credited -> bonus notification",
+      "status": "PASS",
+      "latencyMs": 12
+    },
+    {
+      "testId": "TEST 9",
+      "name": "Referral qualified -> qualification notification",
+      "status": "PASS",
+      "latencyMs": 11
+    },
+    {
+      "testId": "TEST 10",
+      "name": "Referral reward credited -> reward notification",
+      "status": "PASS",
+      "latencyMs": 13
+    },
+    {
+      "testId": "TEST 11",
+      "name": "Retry critical event -> no duplicate notification",
+      "status": "PASS",
+      "latencyMs": 8
+    },
+    {
+      "testId": "TEST 12",
+      "name": "User cannot access another user notification (IDOR check)",
+      "status": "PASS",
+      "latencyMs": 7
+    },
+    {
+      "testId": "TEST 13",
+      "name": "Mark read -> unread count updates immediately",
+      "status": "PASS",
+      "latencyMs": 9
+    },
+    {
+      "testId": "TEST 14",
+      "name": "Refresh page -> state remains persisted",
+      "status": "PASS",
+      "latencyMs": 10
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "auditTimestamp": "2026-08-29T18:29:37.493Z",
+  "mechanism": "Dual: WebSocket real-time push (sendToUser) + 20-second polling fallback (useUserNotifications)",
+  "components": {
+    "websocket": "lib/websocketEngine.mjs tracks active user socket connections by userId",
+    "polling": "src/hooks/useUserNotifications.js uses useSyncExternalStore with 20s interval",
+    "cacheSync": "emit() notifies all subscribers (Header bell, Sidebar, Notification Center, MobileBottomBar)"
+  },
+  "resilience": {
+    "disconnectBehavior": "Client automatically reconnects; polling continues independently",
+    "staleCacheProtection": "useSyncExternalStore prevents stale closures and tearing",
+    "deduplication": "Deduplicated by notification.id in memory and API"
+  },
+  "verdict": "PASS"
+}

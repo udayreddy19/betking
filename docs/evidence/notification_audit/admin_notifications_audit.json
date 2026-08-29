@@ -1,0 +1,24 @@
+{
+  "auditTimestamp": "2026-08-29T18:29:37.494Z",
+  "table": "admin_notifications",
+  "engines": [
+    "lib/opsAlertEngine.mjs",
+    "lib/opsNotificationCenter.mjs",
+    "lib/notificationWorker.mjs"
+  ],
+  "alertSources": [
+    "KYC pending verification submissions",
+    "Withdrawal creation requiring approval",
+    "Fraud signal detection & risk thresholds",
+    "Payment gateway webhook failures",
+    "Settlement confidence degradations",
+    "Support SLA breach reminders"
+  ],
+  "features": [
+    "Severity classification: CRITICAL, HIGH, WARNING, INFO",
+    "Alert deduplication using dedupe_key with occurrence_count incrementation",
+    "Acknowledgement and Resolution lifecycle (acknowledged_by, resolved_by)",
+    "Real-time WebSocket broadcast (admin.alert.created)"
+  ],
+  "verdict": "PASS"
+}
