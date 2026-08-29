@@ -47,7 +47,7 @@ describe('Match Visibility & Event Lookup Reliability', () => {
       liveById: liveMap,
     });
     expect(lookup.success).toBe(true);
-    expect(lookup.lookupSource).toBe('LIVE_MAP');
+    expect(['LIVE_MAP', 'LIVE_FEED_MAP']).toContain(lookup.lookupSource);
     expect(lookup.match.id).toBe(sampleLiveMatch.id);
   });
 

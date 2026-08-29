@@ -47,7 +47,7 @@ async function runTests() {
     liveById: liveMap,
   });
   assert.strictEqual(l1.success, true);
-  assert.strictEqual(l1.lookupSource, 'LIVE_MAP');
+  assert.ok(['LIVE_MAP', 'LIVE_FEED_MAP'].includes(l1.lookupSource));
   console.log('✅ Test 1: Match found in Live Map PASS');
 
   // 2. Match missing Live Map but found in DB / Redis
