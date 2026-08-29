@@ -374,7 +374,7 @@ router.get('/api/v1/matches/:id', async (req, res) => {
       const { queryRead } = await import('../../db/pg.js');
       const dbRes = await queryRead(
         `SELECT match_id, competition_id, team1_id, team2_id, status, live_score1, live_score2, start_time, updated_at
-         FROM matches WHERE match_id = $1 OR id = $1 LIMIT 1`,
+         FROM matches WHERE match_id = $1 LIMIT 1`,
         [matchId],
       ).catch(() => ({ rows: [] }));
       if (dbRes.rows.length > 0) {
