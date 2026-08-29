@@ -71,3 +71,15 @@ export async function getOrSetCache(key, ttlSeconds, fetchFn) {
 
   return freshData;
 }
+
+export async function checkRedisHealth() {
+  if (!Redis || redis instanceof MockRedis) {
+    return { ok: true, connected: true, status: 'mock_connected' };
+  }
+  try {
+    const pong = await redis.ping();
+    return { ok: pong === 'PONG', connected: pong === 'PONG', status: pong === 'PONG' ? 'connected' : 'error' };
+  } catch (err) {
+    return { ok: false, connected: false, status: 'disconnected', error: err.message };
+  }
+}
