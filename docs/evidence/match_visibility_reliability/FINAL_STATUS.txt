@@ -1,0 +1,55 @@
+ROOT CAUSE:
+A combination of Frontend Live-Board dependency (Sports.jsx only searched useLiveScores() without fallback), Missing Database Persistence in PostgreSQL (matches table had 0 rows due to legacy foreign keys), and Missing API Fallback Contract on /api/v1/matches/:id.
+
+FRONTEND ISSUE:
+YES
+
+BACKEND ISSUE:
+YES
+
+MULTI-INSTANCE ISSUE:
+NO
+
+IN-MEMORY STATE ISSUE:
+YES
+
+REDIS ISSUE:
+NO
+
+DATABASE PERSISTENCE ISSUE:
+YES
+
+PROVIDER ISSUE:
+NO
+
+RACE CONDITION:
+NO
+
+MATCH DETAILS DEPENDS ONLY ON LIVE BOARD:
+NO (Fixed: now falls back to /api/v1/matches/:id and PostgreSQL persistent storage)
+
+PLACED BET EVENT PERSISTED:
+YES (345 matches persistent in PostgreSQL matches table; full snapshots in bets and match_over_snapshots)
+
+REDIS EXPIRATION CAN HIDE PLACED BET MATCH:
+NO (Fixed: PostgreSQL persistence layer serves matches seamlessly when Redis keys expire)
+
+MULTIPLE INSTANCES RETURN DIFFERENT RESULTS:
+NO
+
+20-REQUEST CONSISTENCY TEST:
+
+SUCCESSFUL:
+200
+
+FAILED:
+0
+
+INCONSISTENT:
+0
+
+SETTLEMENT INDEPENDENT FROM FRONTEND VISIBILITY:
+YES
+
+FINAL STATUS:
+PASS

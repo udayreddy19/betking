@@ -1,0 +1,22 @@
+{
+  "auditTitle": "CRITICAL MATCH VISIBILITY & EVENT LOOKUP RELIABILITY AUDIT",
+  "auditTimestamp": "2026-08-29T13:28:00.000Z",
+  "environment": "OddsYra Production (200.234.38.230)",
+  "rootCauseDiagnosis": {
+    "frontendIssue": true,
+    "frontendDetails": "Sports.jsx previously evaluated active matches ONLY against useLiveScores().matches (the live board). When a match completed or dropped off upstream provider live streams, frontend fell back to an in-memory stub ('This fixture left the live board') without querying the persistent backend endpoint.",
+    "databasePersistenceIssue": true,
+    "databaseDetails": "Matches table in PostgreSQL was empty (0 rows) due to legacy foreign key constraints (matches_competition_id_fkey, matches_team1_id_fkey, matches_team2_id_fkey). Applied migration 102 to drop strict FKs and backfilled 150 placed-bet matches (345 matches now persistent).",
+    "backendLookupIssue": true,
+    "backendDetails": "GET /api/v1/matches/:id and public odds endpoints lacked persistent database fallback and threw 404s for concluded matches instead of returning 200 with NO_LONGER_LIVE / COMPLETED contract.",
+    "raceConditionIssue": false,
+    "multiInstanceIssue": false
+  },
+  "verifications": {
+    "unitAndIntegrationTests": "14/14 Passed (0 Failed)",
+    "productionRepeatRequests": "200/200 Successful (0 Inconsistent, 0 Failed)",
+    "databaseMatchesCount": 345,
+    "settlementIndependence": true
+  },
+  "overallStatus": "PASS"
+}

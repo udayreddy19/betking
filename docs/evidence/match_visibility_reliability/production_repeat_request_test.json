@@ -1,0 +1,26 @@
+{
+  "testExecutionTimestamp": "2026-08-29T13:27:44.000Z",
+  "environment": "OddsYra Production (200.234.38.230)",
+  "testScope": "20 Sequential HTTP Requests x 10 Distinct Matches (5 Live + 5 Historical Placed Bets)",
+  "summary": {
+    "totalRequests": 200,
+    "successfulRequests": 200,
+    "failedRequests": 0,
+    "inconsistentCount": 0,
+    "instanceDifferences": 0,
+    "allConsistent": true,
+    "successRate": "100.0%"
+  },
+  "matchesTested": [
+    { "id": "cb_142518", "type": "LIVE", "name": "Middlesex vs Northamptonshire", "requests": 20, "successful": 20, "consistent": true },
+    { "id": "cb_142519", "type": "LIVE", "name": "Kent vs Surrey", "requests": 20, "successful": 20, "consistent": true },
+    { "id": "cb_142516", "type": "LIVE", "name": "Durham vs Sussex", "requests": 20, "successful": 20, "consistent": true },
+    { "id": "cb_142505", "type": "LIVE", "name": "Derbyshire vs Lancashire", "requests": 20, "successful": 20, "consistent": true },
+    { "id": "cb_142506", "type": "LIVE", "name": "Yorkshire vs Leicestershire", "requests": 20, "successful": 20, "consistent": true },
+    { "id": "cb_129579", "type": "HISTORICAL", "name": "cb_129579", "requests": 20, "successful": 20, "consistent": true },
+    { "id": "cb_129585", "type": "HISTORICAL", "name": "England vs Pakistan", "requests": 20, "successful": 20, "consistent": true },
+    { "id": "cb_142517", "type": "HISTORICAL", "name": "Glamorgan vs Hampshire", "requests": 20, "successful": 20, "consistent": true },
+    { "id": "oy_45bbebc2-e93b-3aa0-8c0e-583d94394784", "type": "HISTORICAL", "name": "Paarl Royals SRL vs Mi Cape Town SRL", "requests": 20, "successful": 20, "consistent": true },
+    { "id": "cb_163017", "type": "HISTORICAL", "name": "Sri Lanka vs India", "requests": 20, "successful": 20, "consistent": true }
+  ]
+}
