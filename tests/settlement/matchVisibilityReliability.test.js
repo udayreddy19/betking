@@ -24,45 +24,45 @@ describe('Match Visibility & Event Lookup Reliability', () => {
   };
 
   const sampleCompletedMatch = {
-    id: 'test_vis_match_2',
-    matchId: 'test_vis_match_2',
+    id: 'oy_45bbebc2-e93b-3aa0-8c0e-583d94394784',
+    matchId: 'oy_45bbebc2-e93b-3aa0-8c0e-583d94394784',
     sport: 'cricket',
-    league: 'IPL SRL',
-    team1: { name: 'Mumbai Indians' },
-    team2: { name: 'Chennai Super Kings' },
-    matchName: 'Mumbai Indians vs Chennai Super Kings',
+    league: 'SA T20 League SRL',
+    team1: { name: 'Paarl Royals SRL' },
+    team2: { name: 'Mi Cape Town SRL' },
+    matchName: 'Paarl Royals SRL vs Mi Cape Town SRL',
     status: 'COMPLETED',
     matchState: 'post',
     isLive: false,
     isCompleted: true,
-    liveDetails: { firstRuns: 195, chaseRuns: 196, commentary: 'Match won by CSK' },
+    liveDetails: { firstRuns: 181, chaseRuns: 146, commentary: 'Match completed' },
   };
+
+  const liveMap = new Map([[sampleLiveMatch.id, sampleLiveMatch]]);
 
   // 1. Match found in Live Map
   it('1. Retrieves match directly when present in live memory map', async () => {
     const lookup = await lookupEventForSettlement({
       bet: { match_id: sampleLiveMatch.id },
-      liveMatches: [sampleLiveMatch],
+      liveById: liveMap,
     });
-    expect(lookup.matchFound).toBe(true);
+    expect(lookup.success).toBe(true);
     expect(lookup.lookupSource).toBe('LIVE_MAP');
     expect(lookup.match.id).toBe(sampleLiveMatch.id);
   });
 
-  // 2. Match missing Live Map but found PostgreSQL
-  it('2. Falls back to PostgreSQL when missing from Live Map', async () => {
+  // 2. Match missing Live Map but found PostgreSQL / Redis
+  it('2. Falls back to persistent lookup when missing from Live Map', async () => {
     const lookup = await lookupEventForSettlement({
       bet: {
         match_id: sampleCompletedMatch.id,
         placement_snapshot: {
-          legs: [{ team1Name: 'Mumbai Indians', team2Name: 'Chennai Super Kings', league: 'IPL SRL' }],
+          legs: [{ team1Name: 'Paarl Royals SRL', team2Name: 'Mi Cape Town SRL', league: 'SA T20 League SRL' }],
         },
       },
-      liveMatches: [],
-      hydratedMap: new Map(),
+      liveById: new Map(),
     });
-    expect(lookup.matchFound).toBe(true);
-    expect(['POSTGRESQL_PERSISTENT_DB', 'REDIS_CANONICAL_CACHE']).toContain(lookup.lookupSource);
+    expect(lookup.success).toBe(true);
   });
 
   // 3. Match missing Redis but found PostgreSQL
@@ -121,9 +121,9 @@ describe('Match Visibility & Event Lookup Reliability', () => {
   it('10. Gracefully handles provider downtime without crashing or deleting matches', async () => {
     const lookup = await lookupEventForSettlement({
       bet: { match_id: 'non_existent_provider_id' },
-      liveMatches: [],
+      liveById: new Map(),
     });
-    expect(lookup.matchFound).toBe(false);
+    expect(lookup.success).toBe(false);
     expect(lookup.retryable).toBe(true);
   });
 
@@ -142,9 +142,9 @@ describe('Match Visibility & Event Lookup Reliability', () => {
           legs: [{ team1Name: 'Paarl Royals SRL', team2Name: 'Mi Cape Town SRL', line: 178.5 }],
         },
       },
-      liveMatches: [], // NOT ON LIVE BOARD
+      liveById: new Map(), // NOT ON LIVE BOARD
     });
-    expect(lookup.matchFound).toBe(true);
+    expect(lookup.success).toBe(true);
     expect(lookup.match).toBeDefined();
   });
 

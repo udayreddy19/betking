@@ -39,12 +39,14 @@ async function runTests() {
     liveDetails: { firstRuns: 181, chaseRuns: 146, commentary: 'Match completed' },
   };
 
+  const liveMap = new Map([[sampleLiveMatch.id, sampleLiveMatch]]);
+
   // 1. Match found in Live Map
   const l1 = await lookupEventForSettlement({
     bet: { match_id: sampleLiveMatch.id },
-    liveMatches: [sampleLiveMatch],
+    liveById: liveMap,
   });
-  assert.strictEqual(l1.matchFound, true);
+  assert.strictEqual(l1.success, true);
   assert.strictEqual(l1.lookupSource, 'LIVE_MAP');
   console.log('✅ Test 1: Match found in Live Map PASS');
 
@@ -56,9 +58,9 @@ async function runTests() {
         legs: [{ team1Name: 'Paarl Royals SRL', team2Name: 'Mi Cape Town SRL', league: 'SA T20 League SRL' }],
       },
     },
-    liveMatches: [],
+    liveById: new Map(),
   });
-  assert.strictEqual(l2.matchFound, true);
+  assert.strictEqual(l2.success, true);
   console.log('✅ Test 2: Match missing Live Map but found via multi-tier persistent lookup PASS');
 
   // 3. Reconstruct from DB
@@ -99,9 +101,9 @@ async function runTests() {
   // 10. Provider temporarily unavailable
   const l10 = await lookupEventForSettlement({
     bet: { match_id: 'non_existent_id_test' },
-    liveMatches: [],
+    liveById: new Map(),
   });
-  assert.strictEqual(l10.matchFound, false);
+  assert.strictEqual(l10.success, false);
   assert.strictEqual(l10.retryable, true);
   console.log('✅ Test 10: Provider downtime handled gracefully without crashing PASS');
 
@@ -116,9 +118,9 @@ async function runTests() {
       match_id: sampleCompletedMatch.id,
       placement_snapshot: { legs: [{ team1Name: 'Paarl Royals SRL', team2Name: 'Mi Cape Town SRL' }] },
     },
-    liveMatches: [], // NOT ON LIVE BOARD
+    liveById: new Map(), // NOT ON LIVE BOARD
   });
-  assert.strictEqual(l12.matchFound, true);
+  assert.strictEqual(l12.success, true);
   console.log('✅ Test 12: Settlement engine operates independently from frontend live board PASS');
 
   // 13. Placed bet event persistence
