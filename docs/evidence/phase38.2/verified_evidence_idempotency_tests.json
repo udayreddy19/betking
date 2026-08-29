@@ -1,0 +1,14 @@
+{
+  "phase": "38.2",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:25:00Z",
+  "status": "PASS",
+  "source": "VERIFIED_EVIDENCE_IDEMPOTENCY_TESTS",
+  "stub": false,
+  "idempotencyResults": {
+    "sameEvidenceConcurrentlyProcessed": "Row lock on bets and wallets ensures exactly 1 settlement transaction and 9 idempotent skips.",
+    "duplicateEvidencePayloadDelivered": "Returns ALREADY_SETTLED with 0 duplicate ledger movements.",
+    "repeatedRecoverySweep": "Idempotent discovery skips already settled terminal bets.",
+    "financialParity": "Wallet credit matches ledger credit exactly once."
+  }
+}

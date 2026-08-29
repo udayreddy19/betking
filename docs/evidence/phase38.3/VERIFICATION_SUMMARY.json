@@ -1,0 +1,47 @@
+{
+  "phase": "38.3",
+  "product": "OddsYra",
+  "timestamp": "2026-08-29T11:30:00Z",
+  "status": "PASS",
+  "stub": false,
+  "verificationResults": {
+    "tossSemantics": "PASS",
+    "tossSecurity": "PASS",
+    "databaseSnapshotImmutability": "PASS",
+    "applicationRoleUpdateBlocked": "PASS",
+    "applicationRoleDeleteBlocked": "PASS",
+    "providerConsensusPolicy": "PASS",
+    "primaryFinalSecondaryFinal": "PASS",
+    "primaryFinalSecondaryUnavailable": "PASS",
+    "providerDisagreementSafety": "PASS",
+    "fourMicroMarketRecoveryCandidates": {
+      "approved": 4,
+      "blocked": 0,
+      "details": {
+        "bet_1787989343526_gz1lb5": "RECOVERY_APPROVED (WON)",
+        "bet_1787989337539_7hhbuh": "RECOVERY_APPROVED (LOST)",
+        "bet_1787989331426_r1j9xk": "RECOVERY_APPROVED (WON)",
+        "bet_1787989321317_ks5t6b": "RECOVERY_APPROVED (WON)"
+      }
+    },
+    "teamTotalBet": "KEEP_OPEN (INSUFFICIENT_EVIDENCE)",
+    "fullPipelineDryRun": "PASS",
+    "recoverySafetyGate": "PASS",
+    "controlledRecoveryPlan": "PASS",
+    "postRecoveryVerification": "PASS",
+    "testSuiteResults": {
+      "totalSuites": 17,
+      "totalTests": 71,
+      "passed": 71,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "certification": {
+    "localStatus": "LOCAL_PASS",
+    "stagingStatus": "STAGING_PASS",
+    "productionStatus": "NOT_VERIFIED",
+    "productionClaimAllowed": false,
+    "productionCertificationStatus": "NO-GO"
+  }
+}

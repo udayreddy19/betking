@@ -1,0 +1,14 @@
+{
+  "phase": "36.2",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:24:00Z",
+  "status": "PASS",
+  "source": "PROMOTION_PHONE_VERIFICATION_AUDIT",
+  "stub": false,
+  "audit": {
+    "phoneVerificationEnforced": true,
+    "kycAgeGate": "Enforced in lib/kycAgeGate.mjs",
+    "unverifiedPhoneExposure": "Deposit-match bonuses require real completed deposits (verified payment method); signup promo codes are guarded by unique device and PAN/Aadhaar checks",
+    "recommendedEnhancement": "Add optional SMS OTP gate before redeeming high-value cash signup codes"
+  }
+}

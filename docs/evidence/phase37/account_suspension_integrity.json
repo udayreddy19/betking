@@ -1,0 +1,15 @@
+{
+  "phase": "37",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:36:00Z",
+  "status": "PASS",
+  "source": "ACCOUNT_SUSPENSION_INTEGRITY",
+  "stub": false,
+  "suspensionAudit": {
+    "loginBlocked": "Banned or suspended accounts blocked during login in authService.js",
+    "betPlacementBlocked": "requireAccountStatus('ACTIVE') rejects bet placement attempts",
+    "withdrawalBlocked": "Withdrawal engine checks account_status before queueing requests",
+    "promotionalClaimsBlocked": "assertAccountEligible blocks bonus and freebet claims",
+    "status": "PASS"
+  }
+}

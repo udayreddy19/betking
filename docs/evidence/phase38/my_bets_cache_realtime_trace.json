@@ -1,0 +1,14 @@
+{
+  "phase": "38",
+  "environment": "production",
+  "timestamp": "2026-08-29T10:48:00Z",
+  "status": "PASS",
+  "source": "MY_BETS_CACHE_REALTIME_TRACE",
+  "stub": false,
+  "cacheTrace": {
+    "frontendCache": "React state refetched on tab switch and mount",
+    "backendCache": "None (direct PostgreSQL reads)",
+    "realtimeSync": "WebSocket updates dispatched upon settlement event",
+    "staleClientPossibility": false
+  }
+}

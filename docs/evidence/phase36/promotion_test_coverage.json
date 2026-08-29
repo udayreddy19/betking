@@ -1,0 +1,73 @@
+{
+  "phase": "36",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:50:00Z",
+  "status": "PASS",
+  "source": "PROMOTION_TEST_COVERAGE_AUDIT",
+  "testCoverageTable": [
+    {
+      "feature": "Deposit Match Bonus & Wagering Turnover",
+      "testFile": "tests/promotions/fiveXWageringAndRelease.test.js",
+      "testsExist": true,
+      "passing": true,
+      "missingTests": "None"
+    },
+    {
+      "feature": "Deposit Free Bet Grants",
+      "testFile": "tests/promotions/depositFreebet.test.js",
+      "testsExist": true,
+      "passing": true,
+      "missingTests": "None"
+    },
+    {
+      "feature": "Targeted Deposit Free Bets",
+      "testFile": "tests/promotions/targetedDepositFreebet.test.js",
+      "testsExist": true,
+      "passing": true,
+      "missingTests": "None"
+    },
+    {
+      "feature": "Signup Promo Codes & Limits",
+      "testFile": "tests/promotions/signupPromoCodes.test.js, tests/promotions/claimIdempotencyAndLimits.test.js",
+      "testsExist": true,
+      "passing": true,
+      "missingTests": "None"
+    },
+    {
+      "feature": "Daily Spin Wheel & Expiry",
+      "testFile": "tests/rewards/dailySpinPrizes.test.js, tests/rewards/spinGrantExpiry.test.js",
+      "testsExist": true,
+      "passing": true,
+      "missingTests": "None"
+    },
+    {
+      "feature": "VIP Benefits & Tier Calculation",
+      "testFile": "tests/vip/vipBenefits.test.js, tests/loyalty/vipAndStreak.test.js",
+      "testsExist": true,
+      "passing": true,
+      "missingTests": "None"
+    },
+    {
+      "feature": "Referrals & Fraud Guard",
+      "testFile": "tests/promotions/referralsAndFraudGuard.test.js",
+      "testsExist": true,
+      "passing": true,
+      "missingTests": "None"
+    },
+    {
+      "feature": "Promotion Abuse Prevention",
+      "testFile": "tests/promotions/promoAbuseHotPath.test.js",
+      "testsExist": true,
+      "passing": true,
+      "missingTests": "None"
+    },
+    {
+      "feature": "Promo Catalog Mapping",
+      "testFile": "tests/promotions/promotionCatalog.test.js",
+      "testsExist": true,
+      "passing": true,
+      "missingTests": "None"
+    }
+  ],
+  "readOnly": true
+}

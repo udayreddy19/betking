@@ -1,0 +1,38 @@
+{
+  "phase": "36",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:50:00Z",
+  "status": "PASS",
+  "source": "PROMOTION_ABUSE_RISK_AUDIT",
+  "riskMatrix": [
+    {
+      "risk": "Multi-account bonus exploitation (same user opening multiple accounts for welcome bonuses)",
+      "existingProtection": "Identity hash deduplication (assertIdentityHasNotClaimedPromo on PAN/Aadhaar) + device fingerprinting",
+      "gap": "Unverified users prior to KYC could attempt multiple claims if unlinked",
+      "severity": "MEDIUM",
+      "recommendedFix": "Require phone verification / SMS OTP before claiming signup promo codes"
+    },
+    {
+      "risk": "Referral loops & self-referral (User refers their own secondary account)",
+      "existingProtection": "Self-referral check (userId !== referrerId) + PAN/Aadhaar clash check + IP collision detection",
+      "gap": "None (Fully guarded in referralLoyaltyEngine.mjs)",
+      "severity": "LOW",
+      "recommendedFix": "Maintain current risk scoring thresholds"
+    },
+    {
+      "risk": "Free bet double-spending across concurrent bet placement requests",
+      "existingProtection": "Database row lock (FOR UPDATE) on wallets.freebet_balance during bet placement transaction",
+      "gap": "None (Atomic CAS & transaction isolation enforced)",
+      "severity": "LOW",
+      "recommendedFix": "None"
+    },
+    {
+      "risk": "Direct withdrawal of promotional bonus funds without wagering turnover",
+      "existingProtection": "Withdrawal engine checks balance (Cash) only; getWithdrawableAmount strictly excludes bonus_balance and locked_deposit_balance",
+      "gap": "None (6-bucket isolation strictly enforced)",
+      "severity": "LOW",
+      "recommendedFix": "None"
+    }
+  ],
+  "readOnly": true
+}

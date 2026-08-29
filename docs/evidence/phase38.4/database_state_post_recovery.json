@@ -1,0 +1,21 @@
+{
+  "phase": "38.4",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:35:00Z",
+  "status": "PASS",
+  "source": "DATABASE_STATE_POST_RECOVERY",
+  "stub": false,
+  "finalDatabaseStates": {
+    "bet_1787989343526_gz1lb5": "WON",
+    "bet_1787989337539_7hhbuh": "LOST",
+    "bet_1787989331426_r1j9xk": "WON",
+    "bet_1787989321317_ks5t6b": "WON",
+    "bet_1787989375340_ec9isr": "ACCEPTED"
+  },
+  "summary": {
+    "totalRecovered": 4,
+    "wonCount": 3,
+    "lostCount": 1,
+    "openCount": 1
+  }
+}

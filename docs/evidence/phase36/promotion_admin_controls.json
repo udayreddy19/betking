@@ -1,0 +1,17 @@
+{
+  "phase": "36",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:50:00Z",
+  "status": "PASS",
+  "source": "PROMOTIONAL_ADMIN_CONTROLS_AUDIT",
+  "audit": {
+    "promotionsManagement": "Admin can list, create, pause, resume, assign users, and delete promotions",
+    "signupCodesManagement": "Admin can generate codes, toggle active status, manage invites, and set max usage limits",
+    "depositFreebetsManagement": "Admin can configure match%, min deposit, max reward, and target audience segments",
+    "vipManagement": "Admin can view tier distributions and perform audited VIP tier overrides",
+    "abuseAlertsManagement": "Admin can review and resolve promotion abuse alerts via Maker-Checker workflow",
+    "unlimitedRewardPrevention": "All promotional issuance requires budget ceilings (budget column) or Maker-Checker approval",
+    "auditTrail": "All actions logged via enterpriseAuditEngine with adminId and timestamp"
+  },
+  "readOnly": true
+}

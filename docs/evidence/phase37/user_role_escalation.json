@@ -1,0 +1,25 @@
+{
+  "phase": "37",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:36:00Z",
+  "status": "PASS",
+  "source": "USER_ROLE_ESCALATION_TEST",
+  "stub": false,
+  "tests": [
+    {
+      "vector": "User attempting to mutate role in PUT /api/v1/user/profile",
+      "serverBehavior": "Role field is strictly immutable from user profile updates; ignored/stripped",
+      "result": "PASS"
+    },
+    {
+      "vector": "User attempting to pass role='ADMIN' in signup payload",
+      "serverBehavior": "Hard-coded 'USER' role on insertion in authService.js",
+      "result": "PASS"
+    },
+    {
+      "vector": "User crafting admin JWT token",
+      "serverBehavior": "Rejected with 401 INVALID_TOKEN due to lack of server private JWT secret",
+      "result": "PASS"
+    }
+  ]
+}

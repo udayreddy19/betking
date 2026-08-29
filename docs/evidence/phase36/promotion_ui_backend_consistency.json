@@ -1,0 +1,46 @@
+{
+  "phase": "36",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:50:00Z",
+  "status": "PASS",
+  "source": "UI_VS_BACKEND_CONSISTENCY_AUDIT",
+  "consistencyMatrix": [
+    {
+      "feature": "Promotions Catalog Page",
+      "uiComponent": "src/pages/Promotions/Promotions.jsx",
+      "backendService": "lib/promotionsEngine.mjs & lib/promotionCatalog.mjs",
+      "consistency": "CONSISTENT (Renders active deposit promotions, welcome offers, and wagering progress)"
+    },
+    {
+      "feature": "Daily Spin Modal",
+      "uiComponent": "src/components/DailySpinModal/DailySpinModal.jsx",
+      "backendService": "lib/dailySpinEngine.mjs",
+      "consistency": "CONSISTENT (Fetches daily status from server, handles already-spun state, awards genuine wallet grants)"
+    },
+    {
+      "feature": "VIP Club & Cashback Dashboard",
+      "uiComponent": "src/pages/VIP/VIP.jsx",
+      "backendService": "lib/vipEngine.mjs & lib/vipBenefits.mjs",
+      "consistency": "CONSISTENT (Displays tier status, progress bar, daily cashback claim button, and VIP perks)"
+    },
+    {
+      "feature": "Referral Program Page",
+      "uiComponent": "src/pages/Referrals/Referrals.jsx",
+      "backendService": "lib/referralLoyaltyEngine.mjs",
+      "consistency": "CONSISTENT (Generates unique code, displays stats and referral history)"
+    },
+    {
+      "feature": "Promo Code Redemption Drawer",
+      "uiComponent": "src/components/PromotionsPanel/PromotionsPanel.jsx",
+      "backendService": "lib/signupPromoCodes.mjs",
+      "consistency": "CONSISTENT (Redeems promo code and updates wallet balances via server API)"
+    },
+    {
+      "feature": "Casino Slot Free Spins",
+      "uiComponent": "src/components/GameCard/GameCard.jsx",
+      "backendService": "None (Demo iframe launch only)",
+      "consistency": "UI_DEMO_ONLY (No provider spin API exists)"
+    }
+  ],
+  "readOnly": true
+}

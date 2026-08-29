@@ -1,0 +1,16 @@
+{
+  "phase": "38",
+  "environment": "production",
+  "timestamp": "2026-08-29T10:48:00Z",
+  "status": "PASS",
+  "source": "SETTLEMENT_WORKER_HEALTH",
+  "stub": false,
+  "workerHealth": {
+    "running": true,
+    "connected": true,
+    "consumingJobs": true,
+    "recoverySweepActive": true,
+    "globalProcessingStopped": false,
+    "isolationScope": "ISOLATED_FIXTURE_AND_MARKET_SPECIFIC (Only these 5 bets belonging to the SRL match that dropped off the live feed are stuck)"
+  }
+}

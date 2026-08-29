@@ -1,0 +1,24 @@
+{
+  "phase": "38.4",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:35:00Z",
+  "status": "PASS",
+  "source": "NORMAL_SETTLEMENT_PATH_VERIFICATION",
+  "stub": false,
+  "executionTrace": {
+    "engine": "betSettlementEngine.mjs (settleSingleBet)",
+    "steps": [
+      "1. Candidate selection via approved whitelist",
+      "2. Row locking (SELECT ... FOR UPDATE on bets and wallets)",
+      "3. Current status check (ensures not prior settled)",
+      "4. Cryptographic authorization validation (validateSettlementAuthorization)",
+      "5. Deterministic market grading against immutable snapshots",
+      "6. Atomic multi-bucket wallet credit (balance/winnings)",
+      "7. Double-entry ledger journal creation (SETTLEMENT_PAYOUT)",
+      "8. Bet status transition (ACCEPTED -> WON / LOST)",
+      "9. Single SQL transaction commit"
+    ],
+    "shortcutUsed": false,
+    "manualIntervention": false
+  }
+}

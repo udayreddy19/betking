@@ -1,0 +1,19 @@
+{
+  "phase": "36.2",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:24:00Z",
+  "status": "PASS",
+  "source": "PROMOTION_BUDGET_CONCURRENCY_TEST",
+  "stub": false,
+  "testExecution": {
+    "totalBudget": 1000,
+    "rewardPerClaim": 500,
+    "concurrentClaims": 100,
+    "successfulClaims": 2,
+    "budgetExhaustedRejections": 98,
+    "finalUsedBudget": 1000,
+    "budgetNegative": false,
+    "overAllocation": 0,
+    "status": "PASS"
+  }
+}

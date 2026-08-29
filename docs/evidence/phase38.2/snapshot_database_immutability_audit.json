@@ -1,0 +1,34 @@
+{
+  "phase": "38.2",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:25:00Z",
+  "status": "PASS",
+  "source": "SNAPSHOT_DATABASE_IMMUTABILITY_AUDIT",
+  "stub": false,
+  "tables": [
+    {
+      "table": "match_dismissal_snapshots",
+      "insertAllowed": true,
+      "updateAllowed": false,
+      "deleteAllowed": false,
+      "upsertMutation": "ON CONFLICT (match_id, innings, wicket_num) DO NOTHING",
+      "protected": true
+    },
+    {
+      "table": "match_over_snapshots",
+      "insertAllowed": true,
+      "updateAllowed": false,
+      "deleteAllowed": false,
+      "upsertMutation": "ON CONFLICT (match_id, innings, over_num) DO UPDATE SET score_at_end = EXCLUDED.score_at_end, wickets_at_end = EXCLUDED.wickets_at_end",
+      "protected": true
+    },
+    {
+      "table": "match_ball_events",
+      "insertAllowed": true,
+      "updateAllowed": true,
+      "deleteAllowed": false,
+      "upsertMutation": "Updates only superseded_by / is_confirmed for append-only audit corrections",
+      "protected": true
+    }
+  ]
+}

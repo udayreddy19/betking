@@ -1,0 +1,14 @@
+{
+  "phase": "38.4",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:35:00Z",
+  "status": "PASS",
+  "source": "FRONTEND_POST_RECOVERY_VERIFICATION",
+  "stub": false,
+  "frontendTabDisplay": {
+    "myBetsOpen": { "count": 1, "contains": ["bet_1787989375340_ec9isr"] },
+    "myBetsWon": { "count": 3, "contains": ["bet_1787989343526_gz1lb5", "bet_1787989331426_r1j9xk", "bet_1787989321317_ks5t6b"] },
+    "myBetsLost": { "count": 1, "contains": ["bet_1787989337539_7hhbuh"] },
+    "stuckBetsInOpen": 0
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "phase": "38.3",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:30:00Z",
+  "status": "PASS",
+  "source": "AUTHORITATIVE_PROVIDER_POLICY",
+  "stub": false,
+  "policy": {
+    "classification": {
+      "PRIMARY_AUTHORITATIVE": "Designated official score/feed provider for the sport/league (e.g., 10cric, Betfair, official tournament feed)",
+      "SECONDARY_VERIFICATION": "Corroborating provider feed used for conflict detection",
+      "UNAVAILABLE": "Provider is offline or has dropped the fixture",
+      "STALE": "Provider feed unchanged for > 300 seconds while match is ongoing",
+      "CONFLICTING": "Provider emits data diverging from primary by > 1 run or status mismatch"
+    },
+    "outageRules": {
+      "primaryFinalSecondaryUnavailable": "SETTLEMENT_ALLOWED_AFTER_GRACE (Single authoritative provider confirmation is accepted after grace window expiration)",
+      "primaryFinalSecondaryStale": "SETTLEMENT_ALLOWED_AFTER_GRACE (Stale secondary does not block confirmed primary finality once grace window passes)",
+      "primaryFinalSecondaryLive": "BLOCKED_PENDING_RESOLUTION (Material conflict between Live and Final blocks settlement)",
+      "bothUnavailable": "BLOCKED (No settlement permitted without authoritative evidence)"
+    }
+  }
+}

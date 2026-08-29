@@ -1,0 +1,14 @@
+{
+  "phase": "37.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:42:00Z",
+  "status": "PASS",
+  "source": "LOGOUT_TOKEN_REVOCATION_TEST",
+  "stub": false,
+  "logoutAudit": {
+    "refreshTokenRevocation": "POST /api/auth/logout marks refresh token revoked_at in database immediately",
+    "statelessAccessToken": "Access tokens are stateless (15m expiry); sensitive operations perform real-time DB status checks",
+    "globalLogout": "revokeAllUserTokens revokes all refresh tokens across all devices",
+    "status": "PASS"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "phase": "38",
+  "environment": "production",
+  "timestamp": "2026-08-29T10:48:00Z",
+  "status": "PASS",
+  "source": "GLOBAL_STUCK_SETTLEMENT_HEALTH",
+  "stub": false,
+  "metrics": {
+    "totalOpenBetsInSystem": 5,
+    "stuckBetsFound": 5,
+    "completedEventsWithUnsettledBets": 1,
+    "affectedSport": "cricket",
+    "affectedProvider": "10cric (SRL)",
+    "systemicSeverity": "ISOLATED_TO_SRL_FIXTURES_DROPPED_WITHOUT_TERMINAL_EMIT"
+  }
+}

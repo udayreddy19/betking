@@ -1,0 +1,38 @@
+{
+  "phase": "38.1",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:20:00Z",
+  "status": "PASS",
+  "source": "SETTLEMENT_EVIDENCE_CATALOG",
+  "stub": false,
+  "evidenceCatalog": [
+    {
+      "source": "match_over_snapshots",
+      "immutability": "HIGH_DB_PERSISTED",
+      "eventIdentity": "match_id + innings + over_num",
+      "confidence": "AUTHORITATIVE",
+      "marketsSupported": ["OVER_TOTAL", "WICKET_IN_OVER", "NEXT_OVER_TOTAL"]
+    },
+    {
+      "source": "match_dismissal_snapshots",
+      "immutability": "HIGH_DB_PERSISTED",
+      "eventIdentity": "match_id + innings + wicket_num",
+      "confidence": "AUTHORITATIVE",
+      "marketsSupported": ["DISMISSAL_SCORE", "FALL_OF_WICKET"]
+    },
+    {
+      "source": "match_ball_events",
+      "immutability": "HIGH_DB_PERSISTED",
+      "eventIdentity": "match_id + innings + over_num + ball_num",
+      "confidence": "AUTHORITATIVE",
+      "marketsSupported": ["NEXT_BALL", "DELIVERY_OUTCOME", "METHOD_OF_DISMISSAL"]
+    },
+    {
+      "source": "provider_live_feed",
+      "immutability": "TRANSIENT_STREAM",
+      "eventIdentity": "matchId",
+      "confidence": "UNTRUSTED_WHEN_STALE",
+      "marketsSupported": ["LIVE_MATCH_WINNER", "LIVE_ODDS"]
+    }
+  ]
+}

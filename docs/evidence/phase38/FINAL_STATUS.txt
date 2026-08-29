@@ -1,0 +1,25 @@
+PHASE 38 — STUCK OPEN BETS FORENSIC SETTLEMENT INVESTIGATION
+Status: STAGING_VERIFIED (PASS)
+Local: LOCAL_VERIFIED (PASS)
+Production: PRODUCTION_INVESTIGATED_ROOT_CAUSE_PROVEN
+Date: 2026-08-29
+productionClaimAllowed: false
+PRODUCTION_CERTIFICATION_STATUS: NO-GO
+
+Investigation Summary:
+- Exact Stuck Bet Count: 5 bets in PostgreSQL bets table under match 'oy_45bbebc2-e93b-3aa0-8c0e-583d94394784' (Paarl Royals SRL vs Mi Cape Town SRL).
+- Case Determination: CASE A. The raw database status of all 5 bets is ACCEPTED (OPEN). The API returns ACCEPTED and the frontend accurately maps it to Pending / Open tab. There is NO frontend or cache bug.
+- Root Cause: EVENT_NOT_MARKED_FINAL & STALE_IN_PLAY_CONFIDENCE_BLOCK.
+  1. The 10cric provider dropped the concluded Simulated Reality League (SRL) fixture from its active live feed without emitting an explicit status='COMPLETED' record.
+  2. The cached canonical match object in memory/Redis retained time='Live', matchState='in' with 18.5 overs (113 balls / 120) and 8 wickets down.
+  3. In lib/settlement/settlementConfidenceEngine.mjs, isFinalMatch evaluated to false.
+  4. Because isFinalMatch was false, the data age (> 300s, actual 7165s) caused the confidence engine to flag the match as STALE_DATA: In-play match data age exceeds max allowed.
+  5. The settlement worker's authorizeSettlement gate blocked execution from proceeding to betSettlementEngine.settleSingleBet.
+- Dry Run Evaluation: Market graders in lib/liveMatchSettlement.mjs successfully grade all 5 bets against confirmed PostgreSQL snapshots in match_over_snapshots and match_dismissal_snapshots:
+  - bet_1787989375340_ec9isr (Team Total Under 178.5) -> WON (146 runs < 178.5)
+  - bet_1787989343526_gz1lb5 (5th Wicket Under 159.5) -> WON (149 runs < 159.5)
+  - bet_1787989337539_7hhbuh (5th Wicket Over 159.5) -> LOST (149 runs not > 159.5)
+  - bet_1787989331426_r1j9xk (Wicket in Over 16: No) -> WON (0 wickets in over 16)
+  - bet_1787989321317_ks5t6b (Over 17 Total Under 10.5) -> WON (6 runs in over 17)
+- Safe Fix Plan created in docs/PHASE_38_STUCK_OPEN_BETS_FIX_PLAN.md (NOT implemented yet, per strict rules).
+- Forensic Report created in docs/PHASE_38_STUCK_OPEN_BETS_FORENSIC_INVESTIGATION.md.

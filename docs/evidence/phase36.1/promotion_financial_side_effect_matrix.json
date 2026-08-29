@@ -1,0 +1,73 @@
+{
+  "phase": "36.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:06:00Z",
+  "status": "PASS",
+  "source": "PROMOTION_FINANCIAL_SIDE_EFFECT_MATRIX",
+  "stub": false,
+  "matrix": [
+    {
+      "feature": "Deposit Bonus",
+      "walletCredit": "bonus_balance",
+      "walletDebit": "None at grant (swept on expiry)",
+      "ledgerEntry": "CREDIT",
+      "idempotency": "PASS",
+      "concurrencySafe": "PASS",
+      "result": "PASS"
+    },
+    {
+      "feature": "Promo Code (Bonus)",
+      "walletCredit": "bonus_balance",
+      "walletDebit": "None",
+      "ledgerEntry": "CREDIT",
+      "idempotency": "PASS",
+      "concurrencySafe": "PASS",
+      "result": "PASS"
+    },
+    {
+      "feature": "Free Bet Grant",
+      "walletCredit": "freebet_balance",
+      "walletDebit": "freebet_balance upon bet placement",
+      "ledgerEntry": "CREDIT",
+      "idempotency": "PASS",
+      "concurrencySafe": "PASS",
+      "result": "PASS"
+    },
+    {
+      "feature": "Free Bet Win",
+      "walletCredit": "balance (Profit only)",
+      "walletDebit": "None (Stake was consumed on placement)",
+      "ledgerEntry": "CREDIT (BET_WIN)",
+      "idempotency": "PASS",
+      "concurrencySafe": "PASS",
+      "result": "PASS"
+    },
+    {
+      "feature": "Daily Spin",
+      "walletCredit": "bonus_balance / freebet_balance / loyalty_points",
+      "walletDebit": "None (24h TTL)",
+      "ledgerEntry": "CREDIT",
+      "idempotency": "PASS",
+      "concurrencySafe": "PASS",
+      "result": "PASS"
+    },
+    {
+      "feature": "VIP Cashback",
+      "walletCredit": "balance (Cash)",
+      "walletDebit": "None",
+      "ledgerEntry": "CREDIT",
+      "idempotency": "PASS",
+      "concurrencySafe": "PASS",
+      "result": "PASS"
+    },
+    {
+      "feature": "Referral Reward",
+      "walletCredit": "freebet_balance",
+      "walletDebit": "None",
+      "ledgerEntry": "CREDIT",
+      "idempotency": "PASS",
+      "concurrencySafe": "PASS",
+      "result": "PASS"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "phase": "36.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:06:00Z",
+  "status": "PASS",
+  "source": "PROMOTION_EXPIRY_RACE_TEST",
+  "stub": false,
+  "raceConditionsTested": {
+    "useVsExpireRace": "Resolved deterministically via FOR UPDATE row locking in withTransaction",
+    "expireTwiceBlocked": true,
+    "creditAfterExpiryBlocked": true,
+    "recordsSilentlyDeleted": false
+  }
+}

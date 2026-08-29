@@ -1,0 +1,17 @@
+{
+  "phase": "36.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:06:00Z",
+  "status": "PASS",
+  "source": "PROMOTION_CLIENT_TRUST_VERIFICATION",
+  "stub": false,
+  "clientTrustBoundaries": {
+    "rewardAmountSpoofingBlocked": true,
+    "bonusAmountSpoofingBlocked": true,
+    "freebetAmountSpoofingBlocked": true,
+    "spinResultSpoofingBlocked": true,
+    "cashbackAmountSpoofingBlocked": true,
+    "wageringCompletionSpoofingBlocked": true,
+    "serverAuthoritativeEnforcement": true
+  }
+}

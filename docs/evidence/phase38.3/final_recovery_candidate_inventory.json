@@ -1,0 +1,60 @@
+{
+  "phase": "38.3",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:30:00Z",
+  "status": "PASS",
+  "source": "FINAL_RECOVERY_CANDIDATE_INVENTORY",
+  "stub": false,
+  "inventory": [
+    {
+      "candidateNumber": 1,
+      "betId": "bet_1787989343526_gz1lb5",
+      "market": "1st Innings Score at 5th Wicket (< 159.5)",
+      "selectionId": "sel_under_159.5",
+      "matchId": "oy_45bbebc2-e93b-3aa0-8c0e-583d94394784",
+      "expectedOutcome": "WON",
+      "qualification": "RECOVERY_APPROVED",
+      "evidenceDetail": "match_dismissal_snapshots (Innings 1, Wicket 5, Score 149)"
+    },
+    {
+      "candidateNumber": 2,
+      "betId": "bet_1787989337539_7hhbuh",
+      "market": "1st Innings Score at 5th Wicket (> 159.5)",
+      "selectionId": "sel_over_159.5",
+      "matchId": "oy_45bbebc2-e93b-3aa0-8c0e-583d94394784",
+      "expectedOutcome": "LOST",
+      "qualification": "RECOVERY_APPROVED",
+      "evidenceDetail": "match_dismissal_snapshots (Innings 1, Wicket 5, Score 149)"
+    },
+    {
+      "candidateNumber": 3,
+      "betId": "bet_1787989331426_r1j9xk",
+      "market": "1st Innings Wicket in Over 16 (No)",
+      "selectionId": "sel_cwkt_no",
+      "matchId": "oy_45bbebc2-e93b-3aa0-8c0e-583d94394784",
+      "expectedOutcome": "WON",
+      "qualification": "RECOVERY_APPROVED",
+      "evidenceDetail": "match_over_snapshots (Innings 1, Over 16, Wickets 0)"
+    },
+    {
+      "candidateNumber": 4,
+      "betId": "bet_1787989321317_ks5t6b",
+      "market": "1st Innings Over 17 Total (< 10.5)",
+      "selectionId": "sel_under_10.5",
+      "matchId": "oy_45bbebc2-e93b-3aa0-8c0e-583d94394784",
+      "expectedOutcome": "WON",
+      "qualification": "RECOVERY_APPROVED",
+      "evidenceDetail": "match_over_snapshots (Innings 1, Over 17, Runs 6)"
+    },
+    {
+      "candidateNumber": 5,
+      "betId": "bet_1787989375340_ec9isr",
+      "market": "TEAM_TOTAL Under 178.5",
+      "selectionId": "sel_under_178.5",
+      "matchId": "oy_45bbebc2-e93b-3aa0-8c0e-583d94394784",
+      "expectedOutcome": "UNRESOLVED",
+      "qualification": "KEEP_OPEN",
+      "evidenceDetail": "Innings stopped at 18.5 ov; no 20th over or all-out snapshot"
+    }
+  ]
+}

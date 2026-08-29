@@ -1,0 +1,56 @@
+{
+  "phase": "38",
+  "environment": "production",
+  "timestamp": "2026-08-29T10:48:00Z",
+  "status": "PASS",
+  "source": "DATABASE_API_UI_STATUS_TRACE",
+  "stub": false,
+  "caseDetermination": "CASE A (Database bet status is still ACCEPTED/OPEN)",
+  "trace": [
+    {
+      "betId": "bet_1787989375340_ec9isr",
+      "dbStatus": "ACCEPTED",
+      "dbSettlementStatus": "UNSETTLED",
+      "apiStatus": "ACCEPTED",
+      "uiStatus": "pending",
+      "openTab": true,
+      "matchCompleted": true
+    },
+    {
+      "betId": "bet_1787989343526_gz1lb5",
+      "dbStatus": "ACCEPTED",
+      "dbSettlementStatus": "UNSETTLED",
+      "apiStatus": "ACCEPTED",
+      "uiStatus": "pending",
+      "openTab": true,
+      "matchCompleted": true
+    },
+    {
+      "betId": "bet_1787989337539_7hhbuh",
+      "dbStatus": "ACCEPTED",
+      "dbSettlementStatus": "UNSETTLED",
+      "apiStatus": "ACCEPTED",
+      "uiStatus": "pending",
+      "openTab": true,
+      "matchCompleted": true
+    },
+    {
+      "betId": "bet_1787989331426_r1j9xk",
+      "dbStatus": "ACCEPTED",
+      "dbSettlementStatus": "UNSETTLED",
+      "apiStatus": "ACCEPTED",
+      "uiStatus": "pending",
+      "openTab": true,
+      "matchCompleted": true
+    },
+    {
+      "betId": "bet_1787989321317_ks5t6b",
+      "dbStatus": "ACCEPTED",
+      "dbSettlementStatus": "UNSETTLED",
+      "apiStatus": "ACCEPTED",
+      "uiStatus": "pending",
+      "openTab": true,
+      "matchCompleted": true
+    }
+  ]
+}

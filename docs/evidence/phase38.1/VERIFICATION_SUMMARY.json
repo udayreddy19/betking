@@ -1,0 +1,40 @@
+{
+  "phase": "38.1",
+  "product": "OddsYra",
+  "timestamp": "2026-08-29T11:20:00Z",
+  "status": "PASS",
+  "stub": false,
+  "verificationResults": {
+    "eventFinalitySafety": "PASS",
+    "marketSpecificFinality": "PASS",
+    "snapshotValidation": "PASS",
+    "staleDataProtection": "PASS",
+    "fullEventFinalityRegression": "PASS",
+    "eventIdentitySecurity": "PASS",
+    "exactlyOnceSettlement": "PASS",
+    "walletIntegrity": "PASS",
+    "recoverySweepSafety": "PASS",
+    "backwardCompatibility": "PASS",
+    "testSuiteResults": {
+      "totalSuites": 12,
+      "totalTests": 51,
+      "passed": 51,
+      "failed": 0,
+      "skipped": 0
+    },
+    "fiveBetDryRun": {
+      "bet_1787989375340_ec9isr": "KEEP_OPEN (INSUFFICIENT_EVIDENCE)",
+      "bet_1787989343526_gz1lb5": "RECOVERY_ELIGIBLE (WON)",
+      "bet_1787989337539_7hhbuh": "RECOVERY_ELIGIBLE (LOST)",
+      "bet_1787989331426_r1j9xk": "RECOVERY_ELIGIBLE (WON)",
+      "bet_1787989321317_ks5t6b": "RECOVERY_ELIGIBLE (WON)"
+    }
+  },
+  "certification": {
+    "localStatus": "LOCAL_PASS",
+    "stagingStatus": "STAGING_PASS",
+    "productionStatus": "NOT_VERIFIED",
+    "productionClaimAllowed": false,
+    "productionCertificationStatus": "NO-GO"
+  }
+}

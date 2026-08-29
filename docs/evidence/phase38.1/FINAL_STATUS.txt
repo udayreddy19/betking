@@ -1,0 +1,26 @@
+PHASE 38.1 — SETTLEMENT FINALITY & SNAPSHOT AUTHORIZATION HARDENING
+Status: STAGING_VERIFIED (PASS)
+Local: LOCAL_VERIFIED (PASS)
+Production: NOT VERIFIED
+Date: 2026-08-29
+productionClaimAllowed: false
+PRODUCTION_CERTIFICATION_STATUS: NO-GO
+
+Hardening Accomplishments:
+1. Decoupled Event Finality from Market Finality:
+   - Historical micro-markets (OVER_TOTAL, WICKET_IN_OVER, DISMISSAL_SCORE, NEXT_BALL, TOSS) now support immutable snapshot finality (allowSnapshotFinality: true).
+   - Full-match/full-innings markets (MATCH_WINNER, TEAM_TOTAL, MATCH_TOTAL) strictly enforce allowSnapshotFinality: false and require confirmed event/innings completion.
+2. Stale Data Protection:
+   - Vanishing fixtures from provider feeds or elapsed time (> 3.5h) NEVER automatically marks an event FINAL.
+   - Stale in-play data (> 300s) continues to strictly block full-match markets from settling.
+3. Immutable Snapshot Verification:
+   - Pre-transaction authorization validates snapshot event ID, innings, over/wicket index, and double-entry score deltas.
+   - Authorizes cryptographically bound SHA-256 tokens before database transactions.
+4. Five Stuck Bets Dry Run Results:
+   - bet_1787989343526_gz1lb5 (5th Wicket Under 159.5) -> RECOVERY_ELIGIBLE (WON)
+   - bet_1787989337539_7hhbuh (5th Wicket Over 159.5) -> RECOVERY_ELIGIBLE (LOST)
+   - bet_1787989331426_r1j9xk (Wicket in Over 16: No) -> RECOVERY_ELIGIBLE (WON)
+   - bet_1787989321317_ks5t6b (Over 17 Total Under 10.5) -> RECOVERY_ELIGIBLE (WON)
+   - bet_1787989375340_ec9isr (Team Total Under 178.5) -> KEEP_OPEN (INSUFFICIENT_EVIDENCE / Full-innings market cannot settle on stale live score)
+5. Test Suite Results:
+   - 51/51 tests passing across 12 suites (0 failures).

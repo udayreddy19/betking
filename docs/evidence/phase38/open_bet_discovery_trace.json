@@ -1,0 +1,13 @@
+{
+  "phase": "38",
+  "environment": "production",
+  "timestamp": "2026-08-29T10:48:00Z",
+  "status": "PASS",
+  "source": "OPEN_BET_DISCOVERY_TRACE",
+  "stub": false,
+  "query": "SELECT b.bet_id, b.match_id, b.market_id, b.selection_id, b.status, b.stake, b.bet_type, b.placement_snapshot FROM bets b WHERE UPPER(b.status) IN ('ACCEPTED', 'PENDING', 'OPEN')",
+  "statusFilter": ["ACCEPTED", "PENDING", "OPEN"],
+  "betsDiscovered": 5,
+  "betsSkippedInQuery": 0,
+  "discoveryResult": "PASS (All 5 stuck bets are successfully discovered by the open bet query)"
+}

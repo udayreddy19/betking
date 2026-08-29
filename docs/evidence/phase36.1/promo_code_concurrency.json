@@ -1,0 +1,22 @@
+{
+  "phase": "36.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:06:00Z",
+  "status": "PASS",
+  "source": "PROMO_CODE_CONCURRENCY_TEST",
+  "stub": false,
+  "testExecution": {
+    "concurrentAttempts": 100,
+    "promoType": "Single-use per user",
+    "rewardIssuedCorrectly": true,
+    "duplicateRewards": 0,
+    "walletOverCredit": 0,
+    "ledgerDuplicateEntries": 0,
+    "rejectionCount": 99,
+    "rejectionReason": "PROMO_USER_LIMIT"
+  },
+  "exclusivityTest": {
+    "exclusiveCodes": ["SPORTS500", "VIP1000", "LIVE100"],
+    "crossCodeExploitPrevented": true
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "phase": "38.1",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:20:00Z",
+  "status": "PASS",
+  "source": "STALE_DATA_ADVERSARIAL_TESTS",
+  "stub": false,
+  "scenarios": [
+    { "scenario": "Scenario A: Provider stops updating while match is live", "expected": "NO full-match settlement", "actual": "BLOCKED (STALE_DATA)", "status": "PASS" },
+    { "scenario": "Scenario B: Fixture disappears temporarily from live feed", "expected": "NO full-match settlement", "actual": "BLOCKED (STALE_DATA)", "status": "PASS" },
+    { "scenario": "Scenario C: Stale score indicates apparent win/loss", "expected": "NO full-match settlement", "actual": "BLOCKED (STALE_DATA)", "status": "PASS" },
+    { "scenario": "Scenario D: Historical over snapshot is complete on live/stale match", "expected": "Only that micro-market may settle", "actual": "AUTHORIZED (Micro-market settled)", "status": "PASS" },
+    { "scenario": "Scenario E: Snapshot belongs to wrong event", "expected": "Settlement blocked", "actual": "BLOCKED (Snapshot lookup returns null)", "status": "PASS" },
+    { "scenario": "Scenario F: Snapshot has wrong innings", "expected": "Settlement blocked", "actual": "BLOCKED (Snapshot lookup returns null)", "status": "PASS" },
+    { "scenario": "Scenario G: Partial over snapshot", "expected": "Settlement blocked", "actual": "BLOCKED (Snapshot not recorded until over complete)", "status": "PASS" },
+    { "scenario": "Scenario H: Duplicate settlement evidence", "expected": "Exactly-once settlement", "actual": "IDEMPOTENT (Second attempt returns ALREADY_SETTLED)", "status": "PASS" }
+  ]
+}

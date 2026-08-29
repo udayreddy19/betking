@@ -1,0 +1,17 @@
+{
+  "phase": "36",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:50:00Z",
+  "status": "PASS",
+  "source": "PROMOTIONAL_FINANCIAL_INTEGRITY_AUDIT",
+  "audit": {
+    "doubleCreditPrevention": "Every promotional claim executes inside withTransaction with FOR UPDATE row locks",
+    "missingDebitPrevention": "When placing bets, stake is atomically deducted in allocateCashStake according to fund hierarchy",
+    "freebetDoubleSpendPrevention": "Protected by atomic balance checks and row-level locking",
+    "negativeBalancePrevention": "Wallets table balance constraints enforce non-negative balances",
+    "orphanLedgerEntryPrevention": "Wallet updates and ledger inserts are committed in the same database transaction",
+    "autoRepairUsed": false,
+    "appendOnlyLedger": true
+  },
+  "readOnly": true
+}

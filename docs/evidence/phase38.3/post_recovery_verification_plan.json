@@ -1,0 +1,15 @@
+{
+  "phase": "38.3",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:30:00Z",
+  "status": "PASS",
+  "source": "POST_RECOVERY_VERIFICATION_PLAN",
+  "stub": false,
+  "verificationPlan": {
+    "databaseTerminalStatus": "Verify bets table shows status = 'WON' (3 bets), status = 'LOST' (1 bet), status = 'ACCEPTED' (1 bet)",
+    "walletIntegrity": "Verify user balance and winnings credit match simulated values with 0 discrepancy",
+    "ledgerAudit": "Verify append-only ledger journals created with matching transaction hashes",
+    "myBetsApiQuery": "Verify GET /api/bets returns 3 bets in 'won' tab, 1 bet in 'lost' tab, and exactly 1 bet in 'open' tab",
+    "frontendAssertion": "Verify My Bets UI displays 0 stuck bets under open for the 4 resolved markets"
+  }
+}

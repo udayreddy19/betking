@@ -1,0 +1,19 @@
+{
+  "phase": "38",
+  "environment": "production",
+  "timestamp": "2026-08-29T10:48:00Z",
+  "status": "PASS",
+  "source": "PROVIDER_RESULT_EVIDENCE",
+  "stub": false,
+  "resultData": {
+    "eventId": "oy_45bbebc2-e93b-3aa0-8c0e-583d94394784",
+    "resultPayloadReceived": true,
+    "correctEvent": true,
+    "finalScorePresent": true,
+    "inningsScorePresent": true,
+    "wicketProgressionPresent": true,
+    "overByOverSnapshotsPresent": true,
+    "dismissalSnapshotsPresent": true,
+    "evidenceSummary": "PostgreSQL match_over_snapshots contains 25 over records; match_dismissal_snapshots contains 14 wicket records. Scorecard data is fully present in PostgreSQL DB."
+  }
+}

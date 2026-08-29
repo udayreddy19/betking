@@ -1,0 +1,18 @@
+{
+  "phase": "38.4",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:35:00Z",
+  "status": "PASS",
+  "source": "TEAM_TOTAL_EXCLUSION_VERIFICATION",
+  "stub": false,
+  "exclusionDetail": {
+    "betId": "bet_1787989375340_ec9isr",
+    "market": "Team Total Runs (Under 178.5)",
+    "isInningsAuthoritativelyComplete": false,
+    "has20thOverSnapshot": false,
+    "hasAllOutSnapshot": false,
+    "hasOfficialResult": false,
+    "action": "EXCLUDED_FROM_RECOVERY",
+    "finalState": "KEEP_OPEN (ACCEPTED)"
+  }
+}

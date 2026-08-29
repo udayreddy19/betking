@@ -1,0 +1,52 @@
+{
+  "phase": "36.2",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:24:00Z",
+  "status": "PASS",
+  "source": "PROMOTION_DATABASE_INTEGRITY_MATRIX",
+  "stub": false,
+  "matrix": [
+    {
+      "entity": "Promo Redemption",
+      "businessIdentity": "user_id + code_id",
+      "dbConstraint": "signup_promo_redemptions table index",
+      "applicationLock": "FOR UPDATE on wallets",
+      "concurrencySafe": "PASS"
+    },
+    {
+      "entity": "Bonus Grant",
+      "businessIdentity": "user_id + promotion_id",
+      "dbConstraint": "user_bonuses status check",
+      "applicationLock": "FOR UPDATE on promotions & wallets",
+      "concurrencySafe": "PASS"
+    },
+    {
+      "entity": "Free Bet Grant",
+      "businessIdentity": "deposit_id + promotion_id",
+      "dbConstraint": "deposit_freebet_grants deposit_id uniqueness",
+      "applicationLock": "FOR UPDATE on wallets",
+      "concurrencySafe": "PASS"
+    },
+    {
+      "entity": "Spin Reward",
+      "businessIdentity": "user_id + spin_date",
+      "dbConstraint": "UNIQUE(user_id, spin_date) on daily_spins",
+      "applicationLock": "FOR UPDATE on daily_spins & wallets",
+      "concurrencySafe": "PASS"
+    },
+    {
+      "entity": "Cashback Claim",
+      "businessIdentity": "user_id + claim_date",
+      "dbConstraint": "UNIQUE(user_id, claim_date) on vip_cashback_claims",
+      "applicationLock": "FOR UPDATE on wallets",
+      "concurrencySafe": "PASS"
+    },
+    {
+      "entity": "Referral Reward",
+      "businessIdentity": "user_id + referrer_id",
+      "dbConstraint": "referral_reward_events uniqueness",
+      "applicationLock": "withTransaction serialization",
+      "concurrencySafe": "PASS"
+    }
+  ]
+}

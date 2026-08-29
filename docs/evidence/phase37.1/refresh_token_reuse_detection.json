@@ -1,0 +1,14 @@
+{
+  "phase": "37.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:42:00Z",
+  "status": "PASS",
+  "source": "REFRESH_TOKEN_REUSE_DETECTION",
+  "stub": false,
+  "reuseDetection": {
+    "supported": true,
+    "mechanism": "When an already revoked token hash is presented, queryFn revokes all active tokens for that user_id (UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL)",
+    "adversarialOutcome": "Attacker using leaked old token immediately terminates legitimate user sessions and forces re-authentication",
+    "status": "PASS"
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "phase": "36.2",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:24:00Z",
+  "status": "PASS",
+  "source": "PROMOTION_API_INVENTORY_DISCOVERY",
+  "stub": false,
+  "endpoints": [
+    {
+      "endpoint": "/api/v1/promotions/claim",
+      "method": "POST",
+      "authentication": "requireAuth (JWT)",
+      "authorization": "Authenticated user (ACTIVE account)",
+      "financialImpact": "Credits wallets.bonus_balance",
+      "idempotencyMechanism": "user_bonuses status check + row lock on promotions",
+      "databaseConstraint": "UNIQUE / active check in withTransaction",
+      "transactionUsage": "withTransaction (SERIALIZABLE / FOR UPDATE)",
+      "rateLimiting": "Global API rate limiter",
+      "auditLogging": "ledger_entries & audit_events",
+      "workerInvolvement": "expireStaleBonuses worker"
+    },
+    {
+      "endpoint": "/api/rewards/promo/claim",
+      "method": "POST",
+      "authentication": "requireAuth (JWT)",
+      "authorization": "Authenticated user",
+      "financialImpact": "Credits bonus_balance, freebet_balance, or balance",
+      "idempotencyMechanism": "signup_promo_redemptions per-user cap & exclusivity check",
+      "databaseConstraint": "signup_promo_redemptions table records",
+      "transactionUsage": "withTransaction (FOR UPDATE on wallets)",
+      "rateLimiting": "rewardsClaimRateLimiter",
+      "auditLogging": "ledger_entries & transactions",
+      "workerInvolvement": "None"
+    },
+    {
+      "endpoint": "/api/v1/rewards/daily-spin/spin",
+      "method": "POST",
+      "authentication": "requireAuth (JWT)",
+      "authorization": "Authenticated user",
+      "financialImpact": "Credits bonus_balance, freebet_balance, or loyalty points",
+      "idempotencyMechanism": "UNIQUE(user_id, spin_date) on daily_spins",
+      "databaseConstraint": "daily_spins unique index",
+      "transactionUsage": "withTransaction (FOR UPDATE on wallets)",
+      "rateLimiting": "dailySpinRateLimiter",
+      "auditLogging": "ledger_entries & spin_wallet_grants",
+      "workerInvolvement": "expireSpinGrants on-demand sweeper"
+    },
+    {
+      "endpoint": "/api/v1/user/vip/cashback",
+      "method": "POST",
+      "authentication": "requireAuth (JWT)",
+      "authorization": "Silver VIP Tier and above",
+      "financialImpact": "Credits cash wallets.balance",
+      "idempotencyMechanism": "UNIQUE(user_id, claim_date) on vip_cashback_claims",
+      "databaseConstraint": "vip_cashback_claims unique index",
+      "transactionUsage": "withTransaction (FOR UPDATE on wallets)",
+      "rateLimiting": "Global API rate limiter",
+      "auditLogging": "ledger_entries & transactions",
+      "workerInvolvement": "None"
+    },
+    {
+      "endpoint": "/api/v1/promotions/user/bonuses/release",
+      "method": "POST",
+      "authentication": "requireAuth (JWT)",
+      "authorization": "Authenticated user with completed wagering",
+      "financialImpact": "Unlocks bonus funds (Model B)",
+      "idempotencyMechanism": "user_bonuses status transition check (COMPLETED -> RELEASED)",
+      "databaseConstraint": "user_bonuses row lock (FOR UPDATE)",
+      "transactionUsage": "withTransaction",
+      "rateLimiting": "Global API rate limiter",
+      "auditLogging": "user_bonuses status update",
+      "workerInvolvement": "None"
+    },
+    {
+      "endpoint": "/api/v1/admin/promotions/create",
+      "method": "POST",
+      "authentication": "requireAuth (Admin JWT)",
+      "authorization": "ADMIN / GROWTH_MANAGER",
+      "financialImpact": "Allocates promotional liability budget ceiling",
+      "idempotencyMechanism": "Unique promotion code index",
+      "databaseConstraint": "promotions.code UNIQUE",
+      "transactionUsage": "Atomic INSERT",
+      "rateLimiting": "Admin rate limiter",
+      "auditLogging": "enterpriseAuditEngine",
+      "workerInvolvement": "None"
+    }
+  ]
+}

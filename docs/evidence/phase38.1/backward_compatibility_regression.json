@@ -1,0 +1,17 @@
+{
+  "phase": "38.1",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:20:00Z",
+  "status": "PASS",
+  "source": "BACKWARD_COMPATIBILITY_REGRESSION",
+  "stub": false,
+  "testResults": {
+    "normalFinalEventSettlement": "PASS",
+    "liveInPlayMarketProtection": "PASS",
+    "cancelledAbandonedEventHandling": "PASS",
+    "accumulatorVoidLossRules": "PASS",
+    "playerPropScorecardResolution": "PASS",
+    "doubleEntryLedgerParity": "PASS",
+    "authorizationTokenValidation": "PASS"
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "phase": "37",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:36:00Z",
+  "status": "PASS",
+  "source": "ADMIN_RBAC_MATRIX",
+  "stub": false,
+  "matrix": [
+    {
+      "role": "SUPER_ADMIN",
+      "permission": "* (Universal wildcard)",
+      "apiAccess": "All /api/admin/* routes",
+      "uiAccess": "All Admin Domains",
+      "financialAction": "Full access",
+      "result": "PASS"
+    },
+    {
+      "role": "FINANCE_ADMIN",
+      "permission": ["finance", "betting", "reconciliation", "withdrawal", "wallet"],
+      "apiAccess": "/api/admin/finance/*",
+      "uiAccess": "Finance Domain",
+      "financialAction": "Withdrawal reviews & reconciliations",
+      "result": "PASS"
+    },
+    {
+      "role": "TRADING_ADMIN",
+      "permission": ["trading", "betting", "sports", "markets", "odds", "risk"],
+      "apiAccess": "/api/admin/trading/*",
+      "uiAccess": "Trading Domain",
+      "financialAction": "Odds adjustments & market suspensions",
+      "result": "PASS"
+    },
+    {
+      "role": "SUPPORT_AGENT",
+      "permission": ["support", "customers", "tickets", "cases", "kyc"],
+      "apiAccess": "/api/admin/support/*",
+      "uiAccess": "Support & Cases Domain",
+      "financialAction": "Blocked from finance mutations",
+      "result": "PASS"
+    },
+    {
+      "role": "RISK_ANALYST",
+      "permission": ["risk", "fraud", "analytics", "security", "reconciliation", "kyc"],
+      "apiAccess": "/api/admin/risk/*",
+      "uiAccess": "Risk & Fraud Domain",
+      "financialAction": "Blocked from direct wallet payouts",
+      "result": "PASS"
+    },
+    {
+      "role": "MARKETING_ADMIN",
+      "permission": ["growth", "promotions", "communications", "analytics"],
+      "apiAccess": "/api/admin/growth/*",
+      "uiAccess": "Growth & Promotions Domain",
+      "financialAction": "Promotion campaign creation",
+      "result": "PASS"
+    },
+    {
+      "role": "OPERATIONS_ADMIN",
+      "permission": ["operations", "platform", "providers", "emergency", "incidents", "analytics", "kyc"],
+      "apiAccess": "/api/admin/operations/*",
+      "uiAccess": "Ops Control Tower & Platform Domain",
+      "financialAction": "Blocked from finance payouts",
+      "result": "PASS"
+    }
+  ]
+}

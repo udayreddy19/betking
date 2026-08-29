@@ -1,0 +1,50 @@
+{
+  "phase": "36",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:50:00Z",
+  "status": "PASS",
+  "source": "PROMOTIONS_API_AUDIT",
+  "endpointsAudited": [
+    {
+      "method": "POST",
+      "path": "/api/rewards/promo/claim",
+      "auth": "requireAuth",
+      "rateLimiter": "rewardsClaimRateLimiter",
+      "idempotency": "Protected by signup_promo_redemptions per-user cap and unique checks",
+      "financialEffect": "Credits bonus_balance, freebet_balance, or balance"
+    },
+    {
+      "method": "GET",
+      "path": "/api/rewards/promo/claims",
+      "auth": "requireAuth",
+      "rateLimiter": "Standard API rate limit",
+      "idempotency": "Read-only",
+      "financialEffect": "None"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/rewards/daily-spin/spin",
+      "auth": "requireAuth",
+      "rateLimiter": "dailySpinRateLimiter",
+      "idempotency": "Protected by daily_spins (user_id, spin_date) unique key",
+      "financialEffect": "Credits bonus, freebet, or loyalty points"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/vip/cashback/claim",
+      "auth": "requireAuth",
+      "rateLimiter": "vipActionRateLimiter",
+      "idempotency": "Protected by vip_cashback_claims (user_id, claim_date) unique key",
+      "financialEffect": "Credits cash balance with yesterday net loss percentage"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/promotions/claim",
+      "auth": "requireAuth",
+      "rateLimiter": "promotionsRateLimiter",
+      "idempotency": "Protected by user_bonuses active status check and promotion row lock",
+      "financialEffect": "Credits bonus_balance"
+    }
+  ],
+  "readOnly": true
+}

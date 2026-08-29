@@ -1,0 +1,52 @@
+{
+  "phase": "36.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:06:00Z",
+  "status": "PASS",
+  "source": "PROMOTION_LIFECYCLE_MAP_AUDIT",
+  "stub": false,
+  "lifecycles": {
+    "depositMatchBonus": {
+      "stages": [
+        "CREATE: Admin defines promotion with code, budget, max_reward, wagering_multiplier (5x)",
+        "ELIGIBILITY: User must have account_status='ACTIVE', verified deposit transaction >= min_stake",
+        "ISSUE/CLAIM: claimPromotionBonus() locks promotion row (FOR UPDATE), inserts into user_bonuses",
+        "AVAILABLE: Bonus balance credited to wallets.bonus_balance",
+        "USE: Staked on bets with fundSource='bonus' or qualifying cash bets for turnover",
+        "BET/REWARD_ACTION: Qualifying bets (odds >= 1.75) advance wagering_completed via processBonusWageringProgress()",
+        "SETTLEMENT: Returns from bonus bets locked in bonus_balance (Model B) until rollover is completed",
+        "EXPIRY/RELEASE: releaseCompletedBonus() unlocks bonus upon full turnover; expireStaleBonuses() deducts expired bonuses",
+        "WALLET/LEDGER/AUDIT: Double-entry ledger journals type=CREDIT/DEBIT with append-only audit records"
+      ]
+    },
+    "depositFreeBet": {
+      "stages": [
+        "CREATE: Auto-grant deposit promotion configured in promotions (reward_bucket='freebet')",
+        "ELIGIBILITY: Validated on deposit CAPTURED event (new/existing eligibility, audience exclusions)",
+        "ISSUE/CLAIM: tryGrantDepositFreebet() inserts deposit_freebet_grants with status='AVAILABLE'",
+        "AVAILABLE: wallets.freebet_balance incremented with grant amount",
+        "USE: allocateCashStake() consumes freebet_balance when fundSource='freebet'",
+        "SETTLEMENT: Profit-only return on win ((odds - 1) * stake credited to cash balance; stake not returned)",
+        "VOID/CANCEL: On VOID, freebet stake is restored to freebet_balance if not expired",
+        "EXPIRY: Unused grants past expires_at marked EXPIRED"
+      ]
+    },
+    "dailySpinWheel": {
+      "stages": [
+        "ELIGIBILITY: 1 spin per user per calendar day in Asia/Kolkata timezone",
+        "ISSUE/CLAIM: claimDailySpin() checks unique composite key (user_id, spin_date)",
+        "AVAILABLE: Awards bonus_balance, freebet_balance, or loyalty points with 24h TTL",
+        "USE: Consumed in normal wagering",
+        "EXPIRY: expireSpinGrants() sweeps unspent grants past 24 hours"
+      ]
+    },
+    "vipDailyCashback": {
+      "stages": [
+        "ELIGIBILITY: Silver tier and above (cashbackPct > 0)",
+        "CALCULATION: Share of yesterday's net cash losses (cash stakes - cash returns) in Kolkata timezone",
+        "CLAIM: claimDailyCashback() validates UNIQUE(user_id, claim_date)",
+        "CREDIT: Credits real cash wallets.balance with double-entry ledger entry"
+      ]
+    }
+  }
+}

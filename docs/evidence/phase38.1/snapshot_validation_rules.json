@@ -1,0 +1,16 @@
+{
+  "phase": "38.1",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:20:00Z",
+  "status": "PASS",
+  "source": "SNAPSHOT_VALIDATION_RULES",
+  "stub": false,
+  "validationRules": [
+    "Event identity match: Snapshot match_id must strictly match bet match_id",
+    "Innings number match: Market innings parameter must match snapshot innings",
+    "Target index match: Over number or wicket number must match query parameter exactly",
+    "Completeness check: Incomplete or mid-over partial scores must be rejected",
+    "Double-entry delta validation: Runs in over = over_end_score - previous_over_end_score",
+    "Cryptographic binding: Authorization token binds SHA-256 evidence hash of betId + matchId + marketId + outcome"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "phase": "38.3",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:30:00Z",
+  "status": "PASS",
+  "source": "TOSS_MARKET_SEMANTICS_AUDIT",
+  "stub": false,
+  "audit": {
+    "currentBehavior": "TOSS policy in MARKET_FINALITY_POLICIES specifies requireMatchFinal: false, requireEventFinal: true, allowSnapshotFinality: true.",
+    "intendedBehavior": "TOSS reaches PROVEN_FINAL as soon as authoritative toss winner evidence is bound to the exact event ID, allowing settlement while match remains LIVE.",
+    "actualSettlementCondition": "authoritative toss record + exact match ID match + gradedOutcome != null",
+    "requireEventFinalBehavior": "Protects against premature settlement when no verified toss header/snapshot exists.",
+    "safeFinalityCondition": "Authoritative provider toss header + exact match_id match + selection resolved",
+    "risk": "Mitigated: Generic team-name matching is strictly prevented; exact event ID is mandatory.",
+    "recommendation": "Maintain allowSnapshotFinality: true with exact event binding."
+  }
+}

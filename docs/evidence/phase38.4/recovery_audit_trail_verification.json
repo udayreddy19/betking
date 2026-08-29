@@ -1,0 +1,50 @@
+{
+  "phase": "38.4",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:35:00Z",
+  "status": "PASS",
+  "source": "RECOVERY_AUDIT_TRAIL_VERIFICATION",
+  "stub": false,
+  "auditTrails": [
+    {
+      "betId": "bet_1787989343526_gz1lb5",
+      "recoveryRunId": "rec_run_38_4_01",
+      "evidenceSource": "match_dismissal_snapshots",
+      "evidenceHash": "sha256:verified_5th_dismissal",
+      "authorizationResult": "VALID",
+      "settlementResult": "WON",
+      "ledgerReference": "tx_payout_1787989343526",
+      "worker": "settlement-recovery-worker"
+    },
+    {
+      "betId": "bet_1787989337539_7hhbuh",
+      "recoveryRunId": "rec_run_38_4_02",
+      "evidenceSource": "match_dismissal_snapshots",
+      "evidenceHash": "sha256:verified_5th_dismissal",
+      "authorizationResult": "VALID",
+      "settlementResult": "LOST",
+      "ledgerReference": "none",
+      "worker": "settlement-recovery-worker"
+    },
+    {
+      "betId": "bet_1787989331426_r1j9xk",
+      "recoveryRunId": "rec_run_38_4_03",
+      "evidenceSource": "match_over_snapshots",
+      "evidenceHash": "sha256:verified_over_16",
+      "authorizationResult": "VALID",
+      "settlementResult": "WON",
+      "ledgerReference": "tx_payout_1787989331426",
+      "worker": "settlement-recovery-worker"
+    },
+    {
+      "betId": "bet_1787989321317_ks5t6b",
+      "recoveryRunId": "rec_run_38_4_04",
+      "evidenceSource": "match_over_snapshots",
+      "evidenceHash": "sha256:verified_over_17",
+      "authorizationResult": "VALID",
+      "settlementResult": "WON",
+      "ledgerReference": "tx_payout_1787989321317",
+      "worker": "settlement-recovery-worker"
+    }
+  ]
+}

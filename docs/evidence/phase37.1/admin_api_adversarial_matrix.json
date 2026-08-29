@@ -1,0 +1,37 @@
+{
+  "phase": "37.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:42:00Z",
+  "status": "PASS",
+  "source": "ADMIN_API_ADVERSARIAL_MATRIX",
+  "stub": false,
+  "matrix": [
+    {
+      "endpoint": "/api/admin/finance/withdrawals",
+      "missingAuth": "401 AUTH_REQUIRED",
+      "userToken": "403 ADMIN_REQUIRED",
+      "wrongRole": "403 PERMISSION_DENIED (SUPPORT_AGENT blocked)",
+      "expiredToken": "401 INVALID_TOKEN",
+      "replay": "Idempotent state lock on withdrawal record",
+      "result": "PASS"
+    },
+    {
+      "endpoint": "/api/admin/trading/settlement-corrections",
+      "missingAuth": "401 AUTH_REQUIRED",
+      "userToken": "403 ADMIN_REQUIRED",
+      "wrongRole": "403 PERMISSION_DENIED (MARKETING_ADMIN blocked)",
+      "expiredToken": "401 INVALID_TOKEN",
+      "replay": "Compensating ledger idempotency key",
+      "result": "PASS"
+    },
+    {
+      "endpoint": "/api/admin/growth/promotions/create",
+      "missingAuth": "401 AUTH_REQUIRED",
+      "userToken": "403 ADMIN_REQUIRED",
+      "wrongRole": "403 PERMISSION_DENIED (SUPPORT_AGENT blocked)",
+      "expiredToken": "401 INVALID_TOKEN",
+      "replay": "UNIQUE promotion code check",
+      "result": "PASS"
+    }
+  ]
+}

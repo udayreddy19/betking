@@ -1,0 +1,19 @@
+{
+  "phase": "38",
+  "environment": "production",
+  "timestamp": "2026-08-29T10:48:00Z",
+  "status": "PASS",
+  "source": "STUCK_BET_PATTERN_ANALYSIS",
+  "stub": false,
+  "patterns": {
+    "sameMatch": true,
+    "matchId": "oy_45bbebc2-e93b-3aa0-8c0e-583d94394784",
+    "matchName": "Paarl Royals SRL vs Mi Cape Town SRL",
+    "sameProvider": true,
+    "provider": "10cric (SRL Simulated Reality League)",
+    "sameSport": true,
+    "sport": "cricket",
+    "markets": ["team_total", "i1_team_score_at_5_dismissal", "i1_wicket_in_over_16", "i1_next_over_17_total"],
+    "commonFactor": "Fixture concluded in simulated reality and vanished from active feed; snapshot database contains the exact scores, but match-level stale confidence gate blocked settlement."
+  }
+}

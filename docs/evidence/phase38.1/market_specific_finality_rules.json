@@ -1,0 +1,15 @@
+{
+  "phase": "38.1",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:20:00Z",
+  "status": "PASS",
+  "source": "MARKET_SPECIFIC_FINALITY_RULES",
+  "stub": false,
+  "rules": {
+    "TEAM_TOTAL_RUNS": "Requires authoritative full innings completion (20 overs / all out / official match final). Cannot settle on partial/stale in-play overs.",
+    "DISMISSAL_SCORE": "Can settle once the specific dismissal snapshot (e.g. 5th wicket) is recorded in match_dismissal_snapshots. If innings concludes with fewer wickets, market voids.",
+    "WICKET_IN_OVER": "Can settle once the target over snapshot is recorded in match_over_snapshots with verified wicket count (score delta).",
+    "OVER_TOTAL_RUNS": "Can settle once the target over snapshot is recorded in match_over_snapshots with verified runs delta.",
+    "MATCH_WINNER": "Requires authoritative event finality and grace window expiration. Stale feed or vanished fixture strictly blocks settlement."
+  }
+}

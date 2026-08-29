@@ -1,0 +1,30 @@
+{
+  "phase": "36",
+  "product": "OddsYra / BetKing",
+  "timestamp": "2026-08-29T12:50:00Z",
+  "auditType": "READ_ONLY_PROMOTIONS_AUDIT",
+  "statusSummary": {
+    "localStatus": "LOCAL_VERIFIED",
+    "stagingStatus": "STAGING_VERIFIED",
+    "productionStatus": "PRODUCTION_NOT_VERIFIED",
+    "productionClaimAllowed": false,
+    "productionCertificationStatus": "NO-GO"
+  },
+  "featureStatus": {
+    "bonuses": "IMPLEMENTED",
+    "promoCodes": "IMPLEMENTED",
+    "freeBets": "IMPLEMENTED",
+    "freeSpins": "MISSING (CASINO_SLOT_FREE_SPINS_NOT_IMPLEMENTED)",
+    "spinWheel": "IMPLEMENTED",
+    "cashback": "IMPLEMENTED",
+    "referrals": "IMPLEMENTED",
+    "promotionEngine": "IMPLEMENTED"
+  },
+  "financialIntegrity": {
+    "financialSafety": "PASS",
+    "duplicateRewardProtection": "PASS",
+    "freebetDoubleSpendProtection": "PASS",
+    "expiryEngine": "PASS",
+    "adminSecurity": "PASS"
+  }
+}

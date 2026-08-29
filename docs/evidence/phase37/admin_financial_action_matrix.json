@@ -1,0 +1,37 @@
+{
+  "phase": "37",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:36:00Z",
+  "status": "PASS",
+  "source": "ADMIN_FINANCIAL_ACTION_MATRIX",
+  "stub": false,
+  "financialActions": [
+    {
+      "action": "Withdrawal Manual Review",
+      "requiredRole": ["SUPER_ADMIN", "FINANCE_ADMIN"],
+      "requiredPermission": "withdrawal / finance",
+      "makerChecker": "Enforced for high-value thresholds",
+      "idempotency": "Protected by withdrawal_requests state lock",
+      "ledgerEntry": "DEBIT/CREDIT on approval/rejection",
+      "auditLog": "enterpriseAuditEngine"
+    },
+    {
+      "action": "Settlement Correction Recovery",
+      "requiredRole": ["SUPER_ADMIN", "TRADING_ADMIN"],
+      "requiredPermission": "trading / betting",
+      "makerChecker": "Enforced via settlement_corrections table",
+      "idempotency": "Canonical event revision sequence",
+      "ledgerEntry": "Append-only compensating ledger record",
+      "auditLog": "enterpriseAuditEngine"
+    },
+    {
+      "action": "Promotion Creation",
+      "requiredRole": ["SUPER_ADMIN", "MARKETING_ADMIN"],
+      "requiredPermission": "growth / promotions",
+      "makerChecker": "Enforced via budget cap",
+      "idempotency": "Unique promotion code",
+      "ledgerEntry": "None at creation (budget ceiling)",
+      "auditLog": "enterpriseAuditEngine"
+    }
+  ]
+}

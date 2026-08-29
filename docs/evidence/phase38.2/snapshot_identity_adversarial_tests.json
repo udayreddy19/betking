@@ -1,0 +1,15 @@
+{
+  "phase": "38.2",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:25:00Z",
+  "status": "PASS",
+  "source": "SNAPSHOT_IDENTITY_ADVERSARIAL_TESTS",
+  "stub": false,
+  "identityTests": [
+    { "attempt": "Foreign match ID in snapshot query", "result": "null returned, settlement skipped", "status": "PASS" },
+    { "attempt": "Mismatched bet ID in authorization token", "result": "SETTLEMENT_AUTHORIZATION_MISMATCH rejected", "status": "PASS" },
+    { "attempt": "Wrong innings snapshot query", "result": "null returned, market kept open", "status": "PASS" },
+    { "attempt": "Wrong over index query", "result": "null returned, market kept open", "status": "PASS" },
+    { "attempt": "Wrong wicket number query", "result": "null returned, market kept open", "status": "PASS" }
+  ]
+}

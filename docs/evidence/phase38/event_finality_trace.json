@@ -1,0 +1,20 @@
+{
+  "phase": "38",
+  "environment": "production",
+  "timestamp": "2026-08-29T10:48:00Z",
+  "status": "PASS",
+  "source": "EVENT_FINALITY_TRACE",
+  "stub": false,
+  "events": [
+    {
+      "event": "Paarl Royals SRL vs Mi Cape Town SRL",
+      "eventId": "oy_45bbebc2-e93b-3aa0-8c0e-583d94394784",
+      "providerStatus": "Dropped off live feed (Finished without terminal status emit)",
+      "canonicalStatus": "Live / in (Stale cached state)",
+      "finalResult": "Mi Cape Town SRL 181/6, Paarl Royals SRL 146/8 (18.5 ov)",
+      "completionTime": "2026-08-29T08:46:13.413Z",
+      "settlementEligible": false,
+      "blockReason": "STALE_DATA: In-play match data age (7165s) exceeds max allowed (300s) because isFinalMatch evaluated false"
+    }
+  ]
+}

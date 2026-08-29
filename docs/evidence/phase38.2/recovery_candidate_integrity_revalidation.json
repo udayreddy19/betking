@@ -1,0 +1,54 @@
+{
+  "phase": "38.2",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:25:00Z",
+  "status": "PASS",
+  "source": "RECOVERY_CANDIDATE_INTEGRITY_REVALIDATION",
+  "stub": false,
+  "candidates": [
+    {
+      "betId": "bet_1787989343526_gz1lb5",
+      "market": "1st Innings Score at 5th Wicket",
+      "eventId": "oy_45bbebc2-e93b-3aa0-8c0e-583d94394784",
+      "evidenceSource": "match_dismissal_snapshots (Innings 1, Wicket 5, Score 149)",
+      "evidenceHashVerified": true,
+      "identityVerification": "PASS (match_id, innings=1, wicket=5 match)",
+      "marketFinality": "PROVEN_FINAL",
+      "dryRunResult": "WON",
+      "recoveryStatus": "RECOVERY_ELIGIBLE"
+    },
+    {
+      "betId": "bet_1787989337539_7hhbuh",
+      "market": "1st Innings Score at 5th Wicket",
+      "eventId": "oy_45bbebc2-e93b-3aa0-8c0e-583d94394784",
+      "evidenceSource": "match_dismissal_snapshots (Innings 1, Wicket 5, Score 149)",
+      "evidenceHashVerified": true,
+      "identityVerification": "PASS (match_id, innings=1, wicket=5 match)",
+      "marketFinality": "PROVEN_FINAL",
+      "dryRunResult": "LOST",
+      "recoveryStatus": "RECOVERY_ELIGIBLE"
+    },
+    {
+      "betId": "bet_1787989331426_r1j9xk",
+      "market": "1st Innings Wicket in Over 16",
+      "eventId": "oy_45bbebc2-e93b-3aa0-8c0e-583d94394784",
+      "evidenceSource": "match_over_snapshots (Innings 1, Over 16, Wkts 0)",
+      "evidenceHashVerified": true,
+      "identityVerification": "PASS (match_id, innings=1, over=16 match)",
+      "marketFinality": "PROVEN_FINAL",
+      "dryRunResult": "WON",
+      "recoveryStatus": "RECOVERY_ELIGIBLE"
+    },
+    {
+      "betId": "bet_1787989321317_ks5t6b",
+      "market": "1st Innings Over 17 Total Runs",
+      "eventId": "oy_45bbebc2-e93b-3aa0-8c0e-583d94394784",
+      "evidenceSource": "match_over_snapshots (Innings 1, Over 17, Runs 6)",
+      "evidenceHashVerified": true,
+      "identityVerification": "PASS (match_id, innings=1, over=17 match)",
+      "marketFinality": "PROVEN_FINAL",
+      "dryRunResult": "WON",
+      "recoveryStatus": "RECOVERY_ELIGIBLE"
+    }
+  ]
+}

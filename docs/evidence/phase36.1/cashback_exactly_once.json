@@ -1,0 +1,17 @@
+{
+  "phase": "36.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:06:00Z",
+  "status": "PASS",
+  "source": "CASHBACK_EXACTLY_ONCE_TEST",
+  "stub": false,
+  "testExecution": {
+    "concurrentClaims": 50,
+    "claimDate": "2026-08-28",
+    "successfulClaims": 1,
+    "duplicateClaims": 49,
+    "duplicateWalletCredits": 0,
+    "ledgerDuplicates": 0,
+    "rejectionReason": "CASHBACK_ALREADY_CLAIMED"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "phase": "38.2",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:25:00Z",
+  "status": "PASS",
+  "source": "UNSAFE_FINALITY_PROMOTION_TESTS",
+  "stub": false,
+  "results": [
+    { "scenario": "SCENARIO A: LIVE event feed stops", "expected": "STALE, NOT FINAL", "actual": "CONFIDENCE_STATES.STALE / FINALITY_STATES.LIVE", "status": "PASS" },
+    { "scenario": "SCENARIO B: Fixture disappears from feed", "expected": "NOT FINAL", "actual": "CONFIDENCE_STATES.STALE / FINALITY_STATES.LIVE", "status": "PASS" },
+    { "scenario": "SCENARIO C: Elapsed time exceeds 3.5 hours", "expected": "NOT FINAL", "actual": "CONFIDENCE_STATES.STALE / FINALITY_STATES.LIVE", "status": "PASS" },
+    { "scenario": "SCENARIO D: Score appears complete but no official result for full match", "expected": "NOT FINAL for full-event markets", "actual": "BLOCKED (STALE_DATA)", "status": "PASS" },
+    { "scenario": "SCENARIO E: Authoritative result confirms completion", "expected": "FINAL_CONFIRMED", "actual": "FINALITY_STATES.SETTLEMENT_ELIGIBLE / CONFIRMED", "status": "PASS" },
+    { "scenario": "SCENARIO F: Immutable over snapshot exists but event remains LIVE", "expected": "Only market-specific settlement may occur", "actual": "AUTHORIZED for OVER_TOTAL only", "status": "PASS" },
+    { "scenario": "SCENARIO G: Partial snapshot exists", "expected": "No settlement", "actual": "BLOCKED (null outcome)", "status": "PASS" }
+  ]
+}

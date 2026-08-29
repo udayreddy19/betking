@@ -1,0 +1,22 @@
+PHASE 38.4 — CONTROLLED SETTLEMENT RECOVERY & POST-SETTLEMENT VERIFICATION
+Status: STAGING_VERIFIED (PASS)
+Local: LOCAL_VERIFIED (PASS)
+Production: NOT VERIFIED
+Date: 2026-08-29
+productionClaimAllowed: false
+PRODUCTION_CERTIFICATION_STATUS: NO-GO
+
+Summary of Controlled Recovery Execution:
+1. Candidate Whitelist Execution:
+   - Candidate 1 (bet_1787989343526_gz1lb5): SETTLED -> WON (Gross payout: $95.00)
+   - Candidate 2 (bet_1787989337539_7hhbuh): SETTLED -> LOST (Gross payout: $0.00)
+   - Candidate 3 (bet_1787989331426_r1j9xk): SETTLED -> WON (Gross payout: $185.00)
+   - Candidate 4 (bet_1787989321317_ks5t6b): SETTLED -> WON (Gross payout: $188.00)
+2. Excluded Candidate:
+   - Candidate 5 (bet_1787989375340_ec9isr): HELD OPEN in ACCEPTED state (Insufficient innings completion proof)
+3. Financial and State Parity:
+   - Exact parity verified between gross payout, multi-bucket wallet credit, and double-entry ledger entries.
+   - Database state reflects 3 WON, 1 LOST, 1 ACCEPTED.
+   - My Bets API and UI display 3 bets in Won tab, 1 in Lost tab, and 1 in Open tab (0 stuck terminal bets in Open).
+4. Tests:
+   - 79/79 tests pass across all 18 suites (0 failures).

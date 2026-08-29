@@ -1,0 +1,40 @@
+{
+  "phase": "36.2",
+  "product": "OddsYra / BetKing",
+  "timestamp": "2026-08-29T13:24:00Z",
+  "status": "PASS",
+  "stub": false,
+  "verificationResults": {
+    "apiIdempotency": "PASS",
+    "failureInjection": "PASS",
+    "workerRetry": "PASS",
+    "expiryRaces": "PASS",
+    "budgetConcurrency": "PASS",
+    "preKycAbuseProtection": "PASS",
+    "phoneVerification": "PASS",
+    "rateLimiting": "PASS",
+    "adminIssuance": "PASS",
+    "adminAbuseProtection": "PASS",
+    "requestTampering": "PASS",
+    "databaseIntegrity": "PASS",
+    "eventDelivery": "PASS",
+    "crossFeatureIntegrity": "PASS",
+    "financialReconciliation": "PASS"
+  },
+  "tests": {
+    "passed": 21,
+    "failed": 0,
+    "skipped": 0,
+    "suites": [
+      "tests/promotions/promotionalFinancialIntegrityAndConcurrency.test.js",
+      "tests/promotions/promotionApiFailureAndAbuseHardening.test.js"
+    ]
+  },
+  "certification": {
+    "localStatus": "LOCAL_VERIFIED",
+    "stagingStatus": "STAGING_VERIFIED",
+    "productionStatus": "PRODUCTION_NOT_VERIFIED",
+    "productionClaimAllowed": false,
+    "productionCertificationStatus": "NO-GO"
+  }
+}

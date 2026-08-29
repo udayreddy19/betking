@@ -1,0 +1,28 @@
+{
+  "phase": "36.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:06:00Z",
+  "status": "PASS",
+  "source": "FREEBET_SETTLEMENT_INTEGRITY_TEST",
+  "stub": false,
+  "scenarios": {
+    "WIN": {
+      "stake": 500,
+      "odds": 2.50,
+      "totalReturn": 1250,
+      "cashCredit": 750,
+      "freebetCredit": 0,
+      "stakeReturned": false,
+      "profitOnlyEnforced": true
+    },
+    "LOSS": {
+      "stake": 500,
+      "cashCredit": 0,
+      "freebetCredit": 0
+    },
+    "VOID": {
+      "stake": 500,
+      "stakeRestoredToFreebetBalance": true
+    }
+  }
+}

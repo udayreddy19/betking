@@ -1,0 +1,16 @@
+{
+  "phase": "38.4",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:35:00Z",
+  "status": "PASS",
+  "source": "PRE_EXECUTION_ENVIRONMENT_DISCOVERY",
+  "stub": false,
+  "environmentDetail": {
+    "target": "LOCAL_AND_STAGING",
+    "database": "PostgreSQL (oddsyra_db / staging)",
+    "applicationCommit": "HEAD (Phase 38.4)",
+    "settlementWorkerVersion": "v3.8.4-hardened",
+    "productionStatus": "NOT_VERIFIED",
+    "productionClaimAllowed": false
+  }
+}

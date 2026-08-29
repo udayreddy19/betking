@@ -1,0 +1,19 @@
+{
+  "phase": "36.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:06:00Z",
+  "status": "PASS",
+  "source": "FREEBET_DOUBLE_SPEND_TEST",
+  "stub": false,
+  "testExecution": {
+    "freebetInitialBalance": 500,
+    "concurrentPlacementAttempts": 100,
+    "stakePerAttempt": 500,
+    "successfulUses": 1,
+    "duplicateUses": 0,
+    "remainingFreeBetAmountCorrect": true,
+    "duplicateFinancialEffects": 0,
+    "rejectionReason": "INSUFFICIENT_FREEBET_BALANCE",
+    "finalFreebetBalance": 0
+  }
+}

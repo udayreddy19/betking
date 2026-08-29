@@ -1,0 +1,28 @@
+{
+  "phase": "37.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:42:00Z",
+  "status": "PASS",
+  "source": "TOKEN_CONFUSION_ADVERSARIAL_TEST",
+  "stub": false,
+  "confusionTests": [
+    {
+      "vector": "User access token (type='access') used against /api/admin/*",
+      "expected": "403 ADMIN_REQUIRED",
+      "actual": "403 ADMIN_REQUIRED",
+      "result": "PASS"
+    },
+    {
+      "vector": "Admin token (type='admin') with manipulated user sub",
+      "expected": "401 Signature verification mismatch",
+      "actual": "401 INVALID_TOKEN",
+      "result": "PASS"
+    },
+    {
+      "vector": "Transient MFA token (type='admin_mfa_pending') against admin routes",
+      "expected": "403 ADMIN_REQUIRED",
+      "actual": "403 ADMIN_REQUIRED",
+      "result": "PASS"
+    }
+  ]
+}

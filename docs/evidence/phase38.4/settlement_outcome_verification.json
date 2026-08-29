@@ -1,0 +1,15 @@
+{
+  "phase": "38.4",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:35:00Z",
+  "status": "PASS",
+  "source": "SETTLEMENT_OUTCOME_VERIFICATION",
+  "stub": false,
+  "outcomes": {
+    "bet_1787989343526_gz1lb5": { "expected": "WON", "actual": "WON", "status": "MATCH" },
+    "bet_1787989337539_7hhbuh": { "expected": "LOST", "actual": "LOST", "status": "MATCH" },
+    "bet_1787989331426_r1j9xk": { "expected": "WON", "actual": "WON", "status": "MATCH" },
+    "bet_1787989321317_ks5t6b": { "expected": "WON", "actual": "WON", "status": "MATCH" },
+    "bet_1787989375340_ec9isr": { "expected": "ACCEPTED (KEEP_OPEN)", "actual": "ACCEPTED", "status": "MATCH" }
+  }
+}

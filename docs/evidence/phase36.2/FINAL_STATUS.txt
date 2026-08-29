@@ -1,0 +1,22 @@
+PHASE 36.2 — PROMOTION API COVERAGE, FAILURE INJECTION & ABUSE HARDENING
+Status: STAGING_VERIFIED (PASS)
+Local: LOCAL_VERIFIED (PASS)
+Production: PRODUCTION_NOT_VERIFIED
+Date: 2026-08-29
+productionClaimAllowed: false
+PRODUCTION_CERTIFICATION_STATUS: NO-GO
+
+Verification Summary:
+- API Idempotency: PASS (Verified across /promotions/claim, /rewards/promo/claim, /rewards/daily-spin, /user/vip/cashback, and /user/bonuses/release).
+- Failure Injection: PASS (Simulated ledger failures and worker crashes trigger full transaction rollback with 0 phantom balances).
+- Worker Retry: PASS (Stale bonus and spin grant sweepers are idempotent upon restarts and network retries).
+- Expiry Races: PASS (Deterministic row locking resolves simultaneous usage and expiry attempts with 0 double actions).
+- Budget Concurrency: PASS (100 concurrent claims on ₹1,000 budget with ₹500 reward allow exactly 2 claims and reject 98 over-budget attempts).
+- Pre-KYC Abuse Protection: PASS (Cryptographic PAN and Aadhaar hash matching blocks multi-account syndicate exploitation).
+- Phone Verification: PASS (Deposit match bonuses require completed deposits; high-value cash codes guarded by identity hashes).
+- Rate Limiting: PASS (Infrastructure protection via rate limits operates independently of financial idempotency).
+- Admin Issuance: PASS (RBAC, audit logging, unique code constraints, and Maker-Checker alert resolution verified).
+- Request Tampering: PASS (Server computes all rewards strictly from verified DB records; client overrides rejected).
+- Database Integrity: PASS (Primary keys, unique constraints, and FOR UPDATE row locks prevent concurrent over-allocations).
+- Financial Reconciliation: PASS (Zero actionable mismatches; autoRepairUsed = false).
+- Test Results: 21/21 tests passing across Phase 36.1 and 36.2 test suites.

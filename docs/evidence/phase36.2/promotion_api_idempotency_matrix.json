@@ -1,0 +1,55 @@
+{
+  "phase": "36.2",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:24:00Z",
+  "status": "PASS",
+  "source": "PROMOTION_API_IDEMPOTENCY_MATRIX",
+  "stub": false,
+  "matrix": [
+    {
+      "endpoint": "/api/v1/promotions/claim",
+      "financialAction": "Credit bonus_balance",
+      "idempotencyKey": "user_id + promotion_id",
+      "dbProtection": "user_bonuses status check + FOR UPDATE lock",
+      "retryTested": true,
+      "concurrentTested": true,
+      "result": "PASS"
+    },
+    {
+      "endpoint": "/api/rewards/promo/claim",
+      "financialAction": "Credit bonus/freebet/cash",
+      "idempotencyKey": "user_id + code_id",
+      "dbProtection": "signup_promo_redemptions per-user count + FOR UPDATE",
+      "retryTested": true,
+      "concurrentTested": true,
+      "result": "PASS"
+    },
+    {
+      "endpoint": "/api/v1/rewards/daily-spin/spin",
+      "financialAction": "Credit spin prize",
+      "idempotencyKey": "user_id + spin_date",
+      "dbProtection": "UNIQUE(user_id, spin_date) on daily_spins",
+      "retryTested": true,
+      "concurrentTested": true,
+      "result": "PASS"
+    },
+    {
+      "endpoint": "/api/v1/user/vip/cashback",
+      "financialAction": "Credit cash balance",
+      "idempotencyKey": "user_id + claim_date",
+      "dbProtection": "UNIQUE(user_id, claim_date) on vip_cashback_claims",
+      "retryTested": true,
+      "concurrentTested": true,
+      "result": "PASS"
+    },
+    {
+      "endpoint": "/api/v1/promotions/user/bonuses/release",
+      "financialAction": "Unlock bonus to cash",
+      "idempotencyKey": "user_id + bonus_id",
+      "dbProtection": "user_bonuses status check (COMPLETED -> RELEASED)",
+      "retryTested": true,
+      "concurrentTested": true,
+      "result": "PASS"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "phase": "36.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:06:00Z",
+  "status": "PASS",
+  "source": "PROMOTION_ABUSE_GUARD_VERIFICATION",
+  "stub": false,
+  "guardsTested": {
+    "multipleClaimsPerUser": "BLOCKED (per_user_limit / unique status check)",
+    "crossAccountIdentityDuplication": "BLOCKED (assertIdentityHasNotClaimedPromo on PAN/Aadhaar)",
+    "freebetDoubleSpending": "BLOCKED (FOR UPDATE row lock on wallets.freebet_balance)",
+    "dailySpinReplay": "BLOCKED (UNIQUE user_id, spin_date constraint)",
+    "selfReferralLoop": "BLOCKED (referrer_id !== user_id verification)"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "phase": "38",
+  "environment": "production",
+  "timestamp": "2026-08-29T10:48:00Z",
+  "status": "PASS",
+  "source": "MY_BETS_API_TRACE",
+  "stub": false,
+  "apiTrace": {
+    "endpoint": "GET /api/bets/mine",
+    "queryParameters": "None (uses req.user.userId from JWT)",
+    "databaseQuery": "SELECT b.bet_id, ..., b.status FROM bets b WHERE b.user_id = $1 ORDER BY b.created_at DESC",
+    "rawDbStatus": "ACCEPTED",
+    "apiTransformedStatus": "ACCEPTED",
+    "cacheBehavior": "Direct DB read with queryRead"
+  }
+}

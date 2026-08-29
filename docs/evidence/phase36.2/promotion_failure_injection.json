@@ -1,0 +1,28 @@
+{
+  "phase": "36.2",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:24:00Z",
+  "status": "PASS",
+  "source": "PROMOTION_FAILURE_INJECTION_TEST",
+  "stub": false,
+  "injectionsTested": [
+    {
+      "failurePoint": "Ledger write fails after wallet update",
+      "expectedBehavior": "Complete rollback of database transaction",
+      "actualResult": "Wallet balance NOT mutated; 0 orphan ledger records; 0 phantom balances",
+      "status": "PASS"
+    },
+    {
+      "failurePoint": "Worker crashes before sending acknowledgement",
+      "expectedBehavior": "Event reprocessed safely using idempotency deduplication key",
+      "actualResult": "Duplicate execution skipped; 0 duplicate wallet credits",
+      "status": "PASS"
+    },
+    {
+      "failurePoint": "Database connection timeout during claimPromotionBonus",
+      "expectedBehavior": "Full transaction rollback",
+      "actualResult": "Budget used_budget NOT mutated; user_bonuses record NOT created",
+      "status": "PASS"
+    }
+  ]
+}

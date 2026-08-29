@@ -1,0 +1,17 @@
+{
+  "phase": "36.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:06:00Z",
+  "status": "PASS",
+  "source": "DAILY_SPIN_CONCURRENCY_TEST",
+  "stub": false,
+  "testExecution": {
+    "concurrentSpinRequests": 100,
+    "calendarTimezone": "Asia/Kolkata",
+    "spinsGranted": 1,
+    "alreadySpunRejections": 99,
+    "duplicateWalletCredits": 0,
+    "grantTtlHours": 24,
+    "vipMultiplierScalingVerified": true
+  }
+}

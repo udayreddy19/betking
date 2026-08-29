@@ -1,0 +1,14 @@
+{
+  "phase": "38.4",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:35:00Z",
+  "status": "PASS",
+  "source": "RECOVERY_FAILURE_ROLLBACK_TESTS",
+  "stub": false,
+  "rollbackScenarios": [
+    { "failurePoint": "Pre-authorization check fails", "rollbackBehavior": "Transaction aborted before row lock / 0 mutation", "status": "PASS" },
+    { "failurePoint": "Wallet update error", "rollbackBehavior": "PostgreSQL transaction rollback / 0 balance change", "status": "PASS" },
+    { "failurePoint": "Ledger insertion error", "rollbackBehavior": "PostgreSQL transaction rollback / 0 balance change", "status": "PASS" },
+    { "failurePoint": "Duplicate recovery attempt", "rollbackBehavior": "Returns ALREADY_SETTLED cleanly / 0 mutation", "status": "PASS" }
+  ]
+}

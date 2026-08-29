@@ -1,0 +1,15 @@
+{
+  "phase": "38.1",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:20:00Z",
+  "status": "PASS",
+  "source": "SNAPSHOT_SETTLEMENT_WALLET_INTEGRITY",
+  "stub": false,
+  "walletIntegrity": {
+    "wonCash": "Stake returned to balance, profit credited to winnings; Ledger Credit equals gross payout.",
+    "wonBonus": "Profit credited to bonus; stake NOT returned; Ledger Credit equals profit.",
+    "lost": "Zero wallet credit, zero ledger credit.",
+    "void": "Stake returned to cash balance; locked restored; Ledger Credit equals stake.",
+    "transactionAtomicity": "All ledger entries, wallet mutations, and bet status changes commit in a single SQL transaction."
+  }
+}

@@ -1,0 +1,17 @@
+PHASE 36 — BONUS, PROMOTIONS, FREE BETS & SPINS FUNCTIONALITY AUDIT
+Status: STAGING_VERIFIED (READ-ONLY AUDIT COMPLETE)
+Local: LOCAL_VERIFIED
+Production: PRODUCTION_NOT_VERIFIED
+Date: 2026-08-29
+productionClaimAllowed: false
+PRODUCTION_CERTIFICATION_STATUS: NO-GO
+
+Feature Audit Summary:
+- Deposit Match Bonuses: IMPLEMENTED (with 5x turnover wagering tracking, row-level budget locks, and KYC/Identity deduplication).
+- Free Bet Grants: IMPLEMENTED (credits wallets.freebet_balance; profit-only payout on win; stake restored on void).
+- Gamified Daily Spin Wheel: IMPLEMENTED (1 spin per day in Asia/Kolkata tz; 24h TTL on wallet grants).
+- Casino Slot Free Spins: MISSING / NOT IMPLEMENTED (No provider-integrated slot free spin API exists).
+- VIP Daily Cashback: IMPLEMENTED (calculated strictly from yesterday's net cash losses in Kolkata tz; one claim per day).
+- Referral Program: IMPLEMENTED (dual free bet grants upon referee deposit qualification + risk clearance).
+- Promo Codes: IMPLEMENTED (exclusive welcome codes, per-user limits, and invite lists).
+- Financial Safety: PASS (All promotional credits isolated into dedicated buckets; double-entry ledger journals; zero auto-repair).

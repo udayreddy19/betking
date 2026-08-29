@@ -1,0 +1,19 @@
+{
+  "phase": "37",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:36:00Z",
+  "status": "PASS",
+  "source": "USER_ACCOUNT_STATE_MACHINE",
+  "stub": false,
+  "accountStates": {
+    "validStates": ["ACTIVE", "SUSPENDED", "BANNED", "CLOSED", "SELF_EXCLUDED"],
+    "defaultInitialState": "ACTIVE",
+    "kycStates": ["UNVERIFIED", "PENDING", "VERIFIED", "REJECTED"],
+    "stateTransitions": [
+      { "from": "ACTIVE", "to": "SUSPENDED", "authorizedBy": "ADMIN / RISK_ANALYST" },
+      { "from": "SUSPENDED", "to": "ACTIVE", "authorizedBy": "ADMIN (with audit reason)" },
+      { "from": "ACTIVE", "to": "SELF_EXCLUDED", "authorizedBy": "USER (Responsible Gaming)" },
+      { "from": "ACTIVE", "to": "BANNED", "authorizedBy": "SUPER_ADMIN" }
+    ]
+  }
+}

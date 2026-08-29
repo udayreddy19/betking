@@ -1,0 +1,22 @@
+PHASE 37 — USER & ADMIN FUNCTIONALITY, SECURITY, RBAC & ACCESS CONTROL AUDIT
+Status: STAGING_VERIFIED (PASS)
+Local: LOCAL_VERIFIED (PASS)
+Production: PRODUCTION_NOT_VERIFIED
+Date: 2026-08-29
+productionClaimAllowed: false
+PRODUCTION_CERTIFICATION_STATUS: NO-GO
+
+Verification Summary:
+- User Registration: PASS (Unique email constraints, atomic profile/wallet creation, 0 duplicate accounts on concurrent requests).
+- Password Security: PASS (Scrypt hashing with salt, 8+ character policy, single-use 30-min reset tokens).
+- Authentication: PASS (5-attempt brute-force lockout, rate limiting, secure login).
+- Session Management: PASS (JWT 15m access / 7d refresh token with database revocation and device management).
+- Horizontal Access Control (IDOR): PASS (Ownership bound strictly to req.user.userId; client query/body spoofing ignored).
+- Vertical Privilege Escalation: PASS (Normal user tokens strictly blocked by adminAuth with 403 ADMIN_REQUIRED).
+- Admin RBAC: PASS (Domain permission middleware enforces granular access across 7 distinct admin roles).
+- Admin MFA: PASS (Mandatory TOTP authenticator verification before granting admin session).
+- Account Suspension: PASS (Suspended/banned accounts blocked from logins, bets, withdrawals, and promos).
+- Token Security: PASS (HS256 signature verification rejects expired and tampered tokens).
+- Rate Limiting: PASS (Independent rate limits on auth and admin endpoints protect infrastructure).
+- Database Integrity: PASS (Primary keys, foreign keys, unique constraints, and append-only audit tables verified).
+- Test Results: 12/12 tests passing in tests/security/userAdminRbacAndSecurityAudit.test.js.

@@ -1,0 +1,38 @@
+{
+  "phase": "38.1",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:20:00Z",
+  "status": "PASS",
+  "source": "EVENT_FINALITY_STATE_MODEL",
+  "stub": false,
+  "finalityStates": {
+    "LIVE": {
+      "definition": "Event is actively ongoing or scheduled.",
+      "settlementEligible": false
+    },
+    "FINAL_CONFIRMED": {
+      "definition": "Authoritative evidence proves the match is completed (COMPLETED/FINAL status or official result string).",
+      "settlementEligible": true
+    },
+    "PROVISIONAL_COMPLETE": {
+      "definition": "Match ended according to score/rules but within grace window.",
+      "settlementEligible": false
+    },
+    "SETTLEMENT_ELIGIBLE": {
+      "definition": "Match or market passed grace period and is fully cleared for financial settlement.",
+      "settlementEligible": true
+    },
+    "STALE": {
+      "definition": "Live feed stopped updating; match completion is NOT proven. Full event settlement blocked.",
+      "settlementEligible": false
+    },
+    "ABANDONED": {
+      "definition": "Event cancelled or abandoned by officials.",
+      "settlementEligible": true
+    },
+    "UNKNOWN": {
+      "definition": "Insufficient information available.",
+      "settlementEligible": false
+    }
+  }
+}

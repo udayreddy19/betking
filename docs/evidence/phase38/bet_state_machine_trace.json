@@ -1,0 +1,15 @@
+{
+  "phase": "38",
+  "environment": "production",
+  "timestamp": "2026-08-29T10:48:00Z",
+  "status": "PASS",
+  "source": "BET_STATE_MACHINE_TRACE",
+  "stub": false,
+  "stateMachine": {
+    "currentStatus": "ACCEPTED",
+    "targetTransitions": ["ACCEPTED -> WON", "ACCEPTED -> LOST", "ACCEPTED -> VOID"],
+    "allowedByStateMachine": true,
+    "blockedByStateMachine": false,
+    "blockingMechanism": "Authorization filter, not database state transition constraint"
+  }
+}

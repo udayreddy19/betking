@@ -1,0 +1,20 @@
+{
+  "phase": "38.4",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:35:00Z",
+  "status": "PASS",
+  "source": "CONTROLLED_RECOVERY_FINANCIAL_TRANSACTION_TEST",
+  "stub": false,
+  "transactionAtomicity": {
+    "scope": "Single PostgreSQL BEGIN ... COMMIT transaction",
+    "operationsInScope": [
+      "Row lock on bet",
+      "Row lock on user wallet",
+      "Bet status update",
+      "Wallet balance and winnings credit",
+      "Double-entry ledger journal insertion",
+      "Settlement audit event insertion"
+    ],
+    "failureBehavior": "Any error rolls back all mutations; 0 partial financial mutations possible"
+  }
+}

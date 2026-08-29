@@ -1,0 +1,27 @@
+{
+  "phase": "38",
+  "environment": "production",
+  "timestamp": "2026-08-29T10:48:00Z",
+  "status": "PASS",
+  "source": "ROOT_CAUSE_PROOF",
+  "stub": false,
+  "rootCauseCategory": "EVENT_NOT_MARKED_FINAL",
+  "rootCauseProof": {
+    "rootCause": "EVENT_NOT_MARKED_FINAL & STALE_IN_PLAY_CONFIDENCE_BLOCK",
+    "affectedBets": [
+      "bet_1787989375340_ec9isr",
+      "bet_1787989343526_gz1lb5",
+      "bet_1787989337539_7hhbuh",
+      "bet_1787989331426_r1j9xk",
+      "bet_1787989321317_ks5t6b"
+    ],
+    "affectedEvents": ["oy_45bbebc2-e93b-3aa0-8c0e-583d94394784"],
+    "firstFailurePoint": "lib/settlement/settlementConfidenceEngine.mjs (line 213-223)",
+    "exactComponent": "settlementConfidenceEngine.mjs",
+    "exactFunction": "evaluateSettlementConfidence",
+    "expectedBehavior": "When an event drops off the live feed after match duration (> 3.5 hours) with confirmed snapshot database records, or when completed micro-markets have conclusive snapshot records, settlement confidence should allow finalization.",
+    "actualBehavior": "isFinalMatch evaluated false because rawStatus was unset and chase balls were 113/120. Because isFinalMatch was false, ageSeconds > 300s triggered STALE_DATA: In-play match data age exceeds max allowed, blocking authorizeSettlement from proceeding to execute betSettlementEngine.settleSingleBet.",
+    "evidence": "Dry run execution on backend container logged: decision: 'BLOCKED', confidence: 'STALE', reasons: ['STALE_DATA: In-play match data age (7165s) exceeds max allowed (300s)']. PostgreSQL match_over_snapshots and match_dismissal_snapshots already contain all verified scores.",
+    "whyTheBetRemainedOpen": "The settlement worker continuously skipped the bets because the confidence engine blocked authorization due to stale in-play data status, preventing the terminal database status update from ever being written to the bets table."
+  }
+}

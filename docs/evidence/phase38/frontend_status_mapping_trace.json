@@ -1,0 +1,16 @@
+{
+  "phase": "38",
+  "environment": "production",
+  "timestamp": "2026-08-29T10:48:00Z",
+  "status": "PASS",
+  "source": "FRONTEND_STATUS_MAPPING_TRACE",
+  "stub": false,
+  "frontendTrace": {
+    "apiStatusReceived": "ACCEPTED",
+    "normalizedStatus": "pending",
+    "tabFilterLogic": "Open tab displays bets where status === 'pending' || status === 'accepted' || status === 'open'",
+    "statusBadge": "Pending (Yellow badge)",
+    "frontendBugPresent": false,
+    "conclusion": "Frontend accurately reflects the backend database state; no UI mapping anomaly."
+  }
+}

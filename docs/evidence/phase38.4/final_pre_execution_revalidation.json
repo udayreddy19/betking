@@ -1,0 +1,86 @@
+{
+  "phase": "38.4",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:35:00Z",
+  "status": "PASS",
+  "source": "FINAL_PRE_EXECUTION_REVALIDATION",
+  "stub": false,
+  "revalidationResults": [
+    {
+      "betId": "bet_1787989343526_gz1lb5",
+      "market": "1st Inn Score @ 5th Wkt (< 159.5)",
+      "selection": "sel_under_159.5",
+      "checks": {
+        "betExists": true,
+        "betStatusEligible": true,
+        "notTerminal": true,
+        "eventIdValid": true,
+        "evidenceExists": true,
+        "evidenceHashValid": true,
+        "mathematicallyFinal": true,
+        "settlementAuthorized": true,
+        "walletSimulated": true,
+        "ledgerSimulated": true
+      },
+      "status": "PASS",
+      "expectedOutcome": "WON"
+    },
+    {
+      "betId": "bet_1787989337539_7hhbuh",
+      "market": "1st Inn Score @ 5th Wkt (> 159.5)",
+      "selection": "sel_over_159.5",
+      "checks": {
+        "betExists": true,
+        "betStatusEligible": true,
+        "notTerminal": true,
+        "eventIdValid": true,
+        "evidenceExists": true,
+        "evidenceHashValid": true,
+        "mathematicallyFinal": true,
+        "settlementAuthorized": true,
+        "walletSimulated": true,
+        "ledgerSimulated": true
+      },
+      "status": "PASS",
+      "expectedOutcome": "LOST"
+    },
+    {
+      "betId": "bet_1787989331426_r1j9xk",
+      "market": "1st Inn Wkt in Over 16 (No)",
+      "selection": "sel_cwkt_no",
+      "checks": {
+        "betExists": true,
+        "betStatusEligible": true,
+        "notTerminal": true,
+        "eventIdValid": true,
+        "evidenceExists": true,
+        "evidenceHashValid": true,
+        "mathematicallyFinal": true,
+        "settlementAuthorized": true,
+        "walletSimulated": true,
+        "ledgerSimulated": true
+      },
+      "status": "PASS",
+      "expectedOutcome": "WON"
+    },
+    {
+      "betId": "bet_1787989321317_ks5t6b",
+      "market": "1st Inn Over 17 Total (< 10.5)",
+      "selection": "sel_under_10.5",
+      "checks": {
+        "betExists": true,
+        "betStatusEligible": true,
+        "notTerminal": true,
+        "eventIdValid": true,
+        "evidenceExists": true,
+        "evidenceHashValid": true,
+        "mathematicallyFinal": true,
+        "settlementAuthorized": true,
+        "walletSimulated": true,
+        "ledgerSimulated": true
+      },
+      "status": "PASS",
+      "expectedOutcome": "WON"
+    }
+  ]
+}

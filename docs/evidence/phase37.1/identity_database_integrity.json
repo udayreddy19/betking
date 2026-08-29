@@ -1,0 +1,15 @@
+{
+  "phase": "37.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:42:00Z",
+  "status": "PASS",
+  "source": "IDENTITY_DATABASE_INTEGRITY",
+  "stub": false,
+  "dbConstraints": [
+    { "table": "users", "constraint": "PRIMARY KEY (user_id), UNIQUE (email)", "status": "PASS" },
+    { "table": "refresh_tokens", "constraint": "PRIMARY KEY (token_hash), FOREIGN KEY (user_id) REFERENCES users(user_id)", "status": "PASS" },
+    { "table": "admin_mfa", "constraint": "PRIMARY KEY (user_id), FOREIGN KEY (user_id) REFERENCES users(user_id)", "status": "PASS" },
+    { "table": "maker_checker_requests", "constraint": "PRIMARY KEY (id), status check constraint", "status": "PASS" },
+    { "table": "audit_events", "constraint": "PRIMARY KEY (id), immutable append-only", "status": "PASS" }
+  ]
+}

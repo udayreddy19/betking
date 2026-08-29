@@ -1,0 +1,15 @@
+{
+  "phase": "38.3",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:30:00Z",
+  "status": "PASS",
+  "source": "DATABASE_IMMUTABILITY_DESIGN",
+  "stub": false,
+  "immutabilityArchitecture": {
+    "primaryKeys": "Composite PK (match_id, innings, over_num) for match_over_snapshots; (match_id, innings, wicket_num) for match_dismissal_snapshots",
+    "insertStrategy": "Append-only insertion with ON CONFLICT DO NOTHING for dismissals; exact boundary upsert for overs",
+    "ballEventCorrections": "match_ball_events uses superseded_by and is_confirmed = false instead of row deletion",
+    "runtimeProtection": "Application database role has zero DELETE grants in production settlement workflows",
+    "migrationSafe": "DDL and migrations run under dedicated migration scripts without impacting runtime append-only logic"
+  }
+}

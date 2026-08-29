@@ -1,0 +1,15 @@
+{
+  "phase": "37.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:42:00Z",
+  "status": "PASS",
+  "source": "ACCOUNT_STATE_ACCESS_MATRIX",
+  "stub": false,
+  "matrix": [
+    { "state": "ACTIVE", "login": "ALLOWED", "refresh": "ALLOWED", "betting": "ALLOWED", "withdrawal": "ALLOWED", "promos": "ALLOWED" },
+    { "state": "SUSPENDED", "login": "BLOCKED", "refresh": "BLOCKED", "betting": "BLOCKED", "withdrawal": "BLOCKED", "promos": "BLOCKED" },
+    { "state": "BANNED", "login": "BLOCKED", "refresh": "BLOCKED", "betting": "BLOCKED", "withdrawal": "BLOCKED", "promos": "BLOCKED" },
+    { "state": "CLOSED", "login": "BLOCKED", "refresh": "BLOCKED", "betting": "BLOCKED", "withdrawal": "BLOCKED", "promos": "BLOCKED" },
+    { "state": "SELF_EXCLUDED", "login": "ALLOWED (View only)", "refresh": "ALLOWED", "betting": "BLOCKED", "withdrawal": "ALLOWED", "promos": "BLOCKED" }
+  ]
+}

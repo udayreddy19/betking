@@ -1,0 +1,73 @@
+{
+  "phase": "38.2",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:25:00Z",
+  "status": "PASS",
+  "source": "FINALITY_STATE_DISCOVERY_AUDIT",
+  "stub": false,
+  "discoveredStates": [
+    {
+      "state": "LIVE",
+      "createdBy": "settlementConfidenceEngine.mjs (default fallback)",
+      "conditions": "Match status is IN_PLAY/LIVE or score/overs are actively progressing",
+      "providerDataRequired": true,
+      "elapsedTimeInvolved": false,
+      "staleDataCanTrigger": false,
+      "settlementAuthorizationAccepts": false
+    },
+    {
+      "state": "FINAL_CONFIRMED",
+      "createdBy": "settlementConfidenceEngine.mjs",
+      "conditions": "Provider rawStatus in ['COMPLETED', 'FINAL', 'FINISHED', 'CLOSED'] or isCricketMatchCompleted returns true",
+      "providerDataRequired": true,
+      "elapsedTimeInvolved": false,
+      "staleDataCanTrigger": false,
+      "settlementAuthorizationAccepts": true
+    },
+    {
+      "state": "PROVISIONAL_COMPLETE",
+      "createdBy": "settlementConfidenceEngine.mjs",
+      "conditions": "Match finished score conditions but currently within settlementGracePeriodSeconds",
+      "providerDataRequired": true,
+      "elapsedTimeInvolved": true,
+      "staleDataCanTrigger": false,
+      "settlementAuthorizationAccepts": false
+    },
+    {
+      "state": "SETTLEMENT_ELIGIBLE",
+      "createdBy": "settlementConfidenceEngine.mjs",
+      "conditions": "Event is FINAL_CONFIRMED and grace period elapsed OR micro-market is isMarketProvenFinal with verified immutable snapshot",
+      "providerDataRequired": true,
+      "elapsedTimeInvolved": false,
+      "staleDataCanTrigger": false,
+      "settlementAuthorizationAccepts": true
+    },
+    {
+      "state": "STALE",
+      "createdBy": "settlementConfidenceEngine.mjs",
+      "conditions": "Live feed data age > 300s on uncompleted match without snapshot proof",
+      "providerDataRequired": false,
+      "elapsedTimeInvolved": true,
+      "staleDataCanTrigger": true,
+      "settlementAuthorizationAccepts": false
+    },
+    {
+      "state": "ABANDONED",
+      "createdBy": "settlementConfidenceEngine.mjs",
+      "conditions": "rawStatus in ['ABANDONED', 'CANCELLED']",
+      "providerDataRequired": true,
+      "elapsedTimeInvolved": false,
+      "staleDataCanTrigger": false,
+      "settlementAuthorizationAccepts": true
+    },
+    {
+      "state": "UNKNOWN",
+      "createdBy": "settlementConfidenceEngine.mjs",
+      "conditions": "Match object is null or missing required structure",
+      "providerDataRequired": false,
+      "elapsedTimeInvolved": false,
+      "staleDataCanTrigger": false,
+      "settlementAuthorizationAccepts": false
+    }
+  ]
+}

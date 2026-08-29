@@ -1,0 +1,46 @@
+{
+  "phase": "38.4",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:35:00Z",
+  "status": "PASS",
+  "source": "WALLET_RECOVERY_RECONCILIATION",
+  "stub": false,
+  "reconciliation": [
+    {
+      "betId": "bet_1787989343526_gz1lb5",
+      "outcome": "WON",
+      "expectedPayout": 95.0,
+      "stakeReturned": 50.0,
+      "profitCredited": 45.0,
+      "totalWalletDelta": 95.0,
+      "discrepancy": 0.0
+    },
+    {
+      "betId": "bet_1787989337539_7hhbuh",
+      "outcome": "LOST",
+      "expectedPayout": 0.0,
+      "stakeReturned": 0.0,
+      "profitCredited": 0.0,
+      "totalWalletDelta": 0.0,
+      "discrepancy": 0.0
+    },
+    {
+      "betId": "bet_1787989331426_r1j9xk",
+      "outcome": "WON",
+      "expectedPayout": 185.0,
+      "stakeReturned": 100.0,
+      "profitCredited": 85.0,
+      "totalWalletDelta": 185.0,
+      "discrepancy": 0.0
+    },
+    {
+      "betId": "bet_1787989321317_ks5t6b",
+      "outcome": "WON",
+      "expectedPayout": 188.0,
+      "stakeReturned": 100.0,
+      "profitCredited": 88.0,
+      "totalWalletDelta": 188.0,
+      "discrepancy": 0.0
+    }
+  ]
+}

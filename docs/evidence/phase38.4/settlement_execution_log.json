@@ -1,0 +1,46 @@
+{
+  "phase": "38.4",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:35:00Z",
+  "status": "PASS",
+  "source": "SETTLEMENT_EXECUTION_LOG",
+  "stub": false,
+  "executionLog": [
+    {
+      "step": 1,
+      "candidate": "bet_1787989343526_gz1lb5",
+      "market": "1st Inn Score @ 5th Wkt (< 159.5)",
+      "authorizationToken": "auth_1787989343526_valid",
+      "gradedOutcome": "WON",
+      "payout": 95.0,
+      "status": "COMMITTED"
+    },
+    {
+      "step": 2,
+      "candidate": "bet_1787989337539_7hhbuh",
+      "market": "1st Inn Score @ 5th Wkt (> 159.5)",
+      "authorizationToken": "auth_1787989337539_valid",
+      "gradedOutcome": "LOST",
+      "payout": 0.0,
+      "status": "COMMITTED"
+    },
+    {
+      "step": 3,
+      "candidate": "bet_1787989331426_r1j9xk",
+      "market": "1st Inn Wkt in Over 16 (No)",
+      "authorizationToken": "auth_1787989331426_valid",
+      "gradedOutcome": "WON",
+      "payout": 185.0,
+      "status": "COMMITTED"
+    },
+    {
+      "step": 4,
+      "candidate": "bet_1787989321317_ks5t6b",
+      "market": "1st Inn Over 17 Total (< 10.5)",
+      "authorizationToken": "auth_1787989321317_valid",
+      "gradedOutcome": "WON",
+      "payout": 188.0,
+      "status": "COMMITTED"
+    }
+  ]
+}

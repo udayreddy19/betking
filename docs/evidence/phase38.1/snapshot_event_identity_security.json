@@ -1,0 +1,13 @@
+{
+  "phase": "38.1",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:20:00Z",
+  "status": "PASS",
+  "source": "SNAPSHOT_EVENT_IDENTITY_SECURITY",
+  "stub": false,
+  "identityGuarantees": {
+    "compositePrimaryKey": "match_over_snapshots(match_id, innings, over_num), match_dismissal_snapshots(match_id, innings, wicket_num)",
+    "crossMatchProtection": "Querying getRunsInOver / getScoreAtDismissal with foreign match_id returns null, preventing cross-match corruption.",
+    "tokenBinding": "Authorization tokens cryptographically bind matchId + betId + marketId into the SHA-256 evidenceHash."
+  }
+}

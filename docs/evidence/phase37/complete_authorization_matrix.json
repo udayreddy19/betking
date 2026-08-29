@@ -1,0 +1,17 @@
+{
+  "phase": "37",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:36:00Z",
+  "status": "PASS",
+  "source": "COMPLETE_AUTHORIZATION_MATRIX",
+  "stub": false,
+  "matrix": [
+    { "endpoint": "/api/v1/wallet", "anonymous": "DENIED", "user": "ALLOWED (Own)", "adminFinance": "DENIED (User API)", "requiredPermission": "USER_JWT" },
+    { "endpoint": "/api/v1/bets/place", "anonymous": "DENIED", "user": "ALLOWED", "adminFinance": "DENIED", "requiredPermission": "USER_JWT" },
+    { "endpoint": "/api/v1/user/kyc", "anonymous": "DENIED", "user": "ALLOWED (Own)", "adminFinance": "DENIED", "requiredPermission": "USER_JWT" },
+    { "endpoint": "/api/admin/finance/*", "anonymous": "DENIED", "user": "DENIED", "adminFinance": "ALLOWED", "requiredPermission": "finance" },
+    { "endpoint": "/api/admin/trading/*", "anonymous": "DENIED", "user": "DENIED", "adminFinance": "DENIED", "requiredPermission": "trading" },
+    { "endpoint": "/api/admin/growth/*", "anonymous": "DENIED", "user": "DENIED", "adminFinance": "DENIED", "requiredPermission": "growth" },
+    { "endpoint": "/api/admin/operations/*", "anonymous": "DENIED", "user": "DENIED", "adminFinance": "DENIED", "requiredPermission": "operations" }
+  ]
+}

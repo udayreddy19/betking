@@ -1,0 +1,13 @@
+{
+  "phase": "38.2",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:25:00Z",
+  "status": "PASS",
+  "source": "TOSS_ADVERSARIAL_TESTS",
+  "stub": false,
+  "tests": [
+    { "scenario": "Toss from different event ID", "expected": "Rejected by event ID binding", "status": "PASS" },
+    { "scenario": "Missing toss winner in match payload", "expected": "Settlement blocked (null outcome)", "status": "PASS" },
+    { "scenario": "Conflicting provider toss records", "expected": "PROVIDER_CONFLICT blocks settlement", "status": "PASS" }
+  ]
+}

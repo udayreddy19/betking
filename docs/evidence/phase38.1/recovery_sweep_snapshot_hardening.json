@@ -1,0 +1,14 @@
+{
+  "phase": "38.1",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:20:00Z",
+  "status": "PASS",
+  "source": "RECOVERY_SWEEP_SNAPSHOT_HARDENING",
+  "stub": false,
+  "recoverySweepHardening": {
+    "discoveryQuery": "SELECT b.bet_id, b.match_id, b.market_id, ... FROM bets WHERE status IN ('ACCEPTED', 'PENDING', 'OPEN')",
+    "microMarketHandling": "Evaluates fallback snapshot tables (match_over_snapshots, match_dismissal_snapshots) when live match row is missing or stale.",
+    "macroMarketHandling": "Strictly preserves STALE_DATA block for full-match markets when event finality is unconfirmed.",
+    "safetyGuarantee": "Never forces settlement based on age alone."
+  }
+}

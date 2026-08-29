@@ -1,0 +1,25 @@
+{
+  "phase": "38.1",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:20:00Z",
+  "status": "PASS",
+  "source": "MARKET_FINALITY_MODEL",
+  "stub": false,
+  "separationModel": {
+    "principle": "Event Finality is strictly decoupled from Market Finality. A historical micro-market may reach PROVEN_FINAL state while the event remains LIVE or STALE, provided immutable snapshot evidence proves the outcome.",
+    "marketCategories": {
+      "MICRO_MARKETS": {
+        "markets": ["OVER_TOTAL", "WICKET_IN_OVER", "DISMISSAL_SCORE", "NEXT_BALL", "TOSS"],
+        "allowSnapshotFinality": true,
+        "requiresEventFinal": false,
+        "evidenceSource": "Immutable PostgreSQL snapshot tables (match_over_snapshots, match_dismissal_snapshots, match_ball_events)"
+      },
+      "MACRO_MARKETS": {
+        "markets": ["MATCH_WINNER", "TEAM_TOTAL", "MATCH_TOTAL", "PLAYER_RUNS", "ACCUMULATOR"],
+        "allowSnapshotFinality": false,
+        "requiresEventFinal": true,
+        "evidenceSource": "Authoritative match finality or complete innings scorecard"
+      }
+    }
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "phase": "37.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:42:00Z",
+  "status": "PASS",
+  "source": "SESSION_TOKEN_ARCHITECTURE",
+  "stub": false,
+  "tokens": [
+    {
+      "name": "Access Token",
+      "purpose": "Stateless user authentication for protected API requests",
+      "storage": "Authorization Bearer header / Memory / bk_access cookie",
+      "expiry": "15 minutes (900s)",
+      "creation": "generateAccessToken in tokenService.js",
+      "validation": "verifyAccessToken (HS256 signature verification)",
+      "revocation": "Expires naturally; database status checked for sensitive actions",
+      "rotation": "Rotated via refresh token endpoint",
+      "logoutBehavior": "Discarded by client; server refresh token revoked",
+      "riskLevel": "LOW (Short 15-minute window)"
+    },
+    {
+      "name": "Refresh Token",
+      "purpose": "Stateful long-lived token rotation",
+      "storage": "PostgreSQL refresh_tokens table (SHA-256 hash)",
+      "expiry": "7 days",
+      "creation": "generateRefreshToken in tokenService.js",
+      "validation": "Database lookup against unrevoked hash and unexpired date",
+      "revocation": "Explicitly marked revoked_at = NOW() upon rotation, logout, or reuse",
+      "rotation": "Single-use rotation (rotateRefreshToken)",
+      "logoutBehavior": "Immediately revoked in database",
+      "riskLevel": "LOW (Automatic reuse detection & family invalidation)"
+    },
+    {
+      "name": "Admin Token",
+      "purpose": "Administrative access to /api/admin/* routes",
+      "storage": "Authorization Bearer header (Memory/SessionStorage)",
+      "expiry": "8 hours",
+      "creation": "generateAdminToken with type='admin'",
+      "validation": "adminAuth middleware (HS256 + type='admin' + ADMIN_ROLES check)",
+      "revocation": "Expires naturally; MFA required upon initial login",
+      "rotation": "Re-authenticated via admin login flow",
+      "logoutBehavior": "Discarded on client logout",
+      "riskLevel": "LOW (Restricted to verified admin users + MFA)"
+    },
+    {
+      "name": "Admin MFA Pending Token",
+      "purpose": "Transient challenge token for TOTP verification",
+      "storage": "Client memory during MFA challenge flow",
+      "expiry": "5 minutes",
+      "creation": "generateAdminMfaPendingToken with type='admin_mfa_pending'",
+      "validation": "completeAdminMfa in adminLoginFlow.mjs",
+      "revocation": "Expires in 5 minutes; cannot access admin routes",
+      "rotation": "Exchanged for 8h Admin Token upon successful TOTP check",
+      "logoutBehavior": "Discarded",
+      "riskLevel": "VERY LOW (Zero privilege token)"
+    }
+  ]
+}

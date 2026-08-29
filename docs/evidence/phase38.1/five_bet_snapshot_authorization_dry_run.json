@@ -1,0 +1,65 @@
+{
+  "phase": "38.1",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:20:00Z",
+  "status": "PASS",
+  "source": "FIVE_BET_SNAPSHOT_AUTHORIZATION_DRY_RUN",
+  "stub": false,
+  "dryRunResults": [
+    {
+      "betId": "bet_1787989375340_ec9isr",
+      "market": "Team Total Runs (Under 178.5)",
+      "currentStatus": "ACCEPTED",
+      "eventFinality": "LIVE/STALE",
+      "marketFinality": "UNRESOLVED (Innings 2 stopped at 18.5 ov; no 20th over or all-out snapshot)",
+      "evidenceSource": "Transient live feed (Stale)",
+      "evidenceValidation": "FAIL_NO_INNINGS_COMPLETION_PROOF",
+      "dryRunOutcome": "BLOCKED",
+      "expectedSettlement": "KEEP_OPEN"
+    },
+    {
+      "betId": "bet_1787989343526_gz1lb5",
+      "market": "1st Innings Score at 5th Wicket (Under 159.5)",
+      "currentStatus": "ACCEPTED",
+      "eventFinality": "LIVE/STALE",
+      "marketFinality": "PROVEN_FINAL",
+      "evidenceSource": "match_dismissal_snapshots (Innings 1, Wicket 5 @ 149 runs)",
+      "evidenceValidation": "PASS_IMMUTABLE_SNAPSHOT",
+      "dryRunOutcome": "AUTHORIZED",
+      "expectedSettlement": "WON"
+    },
+    {
+      "betId": "bet_1787989337539_7hhbuh",
+      "market": "1st Innings Score at 5th Wicket (Over 159.5)",
+      "currentStatus": "ACCEPTED",
+      "eventFinality": "LIVE/STALE",
+      "marketFinality": "PROVEN_FINAL",
+      "evidenceSource": "match_dismissal_snapshots (Innings 1, Wicket 5 @ 149 runs)",
+      "evidenceValidation": "PASS_IMMUTABLE_SNAPSHOT",
+      "dryRunOutcome": "AUTHORIZED",
+      "expectedSettlement": "LOST"
+    },
+    {
+      "betId": "bet_1787989331426_r1j9xk",
+      "market": "1st Innings Wicket in Over 16 (No)",
+      "currentStatus": "ACCEPTED",
+      "eventFinality": "LIVE/STALE",
+      "marketFinality": "PROVEN_FINAL",
+      "evidenceSource": "match_over_snapshots (Innings 1, Over 16 wkts=0)",
+      "evidenceValidation": "PASS_IMMUTABLE_SNAPSHOT",
+      "dryRunOutcome": "AUTHORIZED",
+      "expectedSettlement": "WON"
+    },
+    {
+      "betId": "bet_1787989321317_ks5t6b",
+      "market": "1st Innings Over 17 Total (Under 10.5)",
+      "currentStatus": "ACCEPTED",
+      "eventFinality": "LIVE/STALE",
+      "marketFinality": "PROVEN_FINAL",
+      "evidenceSource": "match_over_snapshots (Innings 1, Over 17 runs=6)",
+      "evidenceValidation": "PASS_IMMUTABLE_SNAPSHOT",
+      "dryRunOutcome": "AUTHORIZED",
+      "expectedSettlement": "WON"
+    }
+  ]
+}

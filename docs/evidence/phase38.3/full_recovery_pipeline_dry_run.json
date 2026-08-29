@@ -1,0 +1,40 @@
+{
+  "phase": "38.3",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:30:00Z",
+  "status": "PASS",
+  "source": "FULL_RECOVERY_PIPELINE_DRY_RUN",
+  "stub": false,
+  "pipelineDryRuns": [
+    {
+      "betId": "bet_1787989343526_gz1lb5",
+      "pipelineTrace": "BET_DISCOVERY -> EVENT_IDENTITY (Match oy_45bbebc2...) -> MARKET_FINALITY (allowSnapshotFinality: true) -> EVIDENCE_LOOKUP (match_dismissal_snapshots w=5, score=149) -> EVIDENCE_HASH (sha256 computed) -> HASH_VALIDATION (Valid) -> SETTLEMENT_AUTHORIZATION (Success) -> MARKET_GRADING (149 < 159.5 => WON) -> STATE_TRANSITION (ACCEPTED -> WON) -> IDEMPOTENCY_CHECK (Pass) -> WALLET_SIMULATION (Stake + Profit credited) -> LEDGER_SIMULATION (Credit gross)",
+      "dryRunStatus": "DRY_RUN_AUTHORIZED",
+      "simulatedOutcome": "WON"
+    },
+    {
+      "betId": "bet_1787989337539_7hhbuh",
+      "pipelineTrace": "BET_DISCOVERY -> EVENT_IDENTITY (Match oy_45bbebc2...) -> MARKET_FINALITY (allowSnapshotFinality: true) -> EVIDENCE_LOOKUP (match_dismissal_snapshots w=5, score=149) -> EVIDENCE_HASH (sha256 computed) -> HASH_VALIDATION (Valid) -> SETTLEMENT_AUTHORIZATION (Success) -> MARKET_GRADING (149 not > 159.5 => LOST) -> STATE_TRANSITION (ACCEPTED -> LOST) -> IDEMPOTENCY_CHECK (Pass) -> WALLET_SIMULATION (0 wallet change) -> LEDGER_SIMULATION (0 ledger credit)",
+      "dryRunStatus": "DRY_RUN_AUTHORIZED",
+      "simulatedOutcome": "LOST"
+    },
+    {
+      "betId": "bet_1787989331426_r1j9xk",
+      "pipelineTrace": "BET_DISCOVERY -> EVENT_IDENTITY (Match oy_45bbebc2...) -> MARKET_FINALITY (allowSnapshotFinality: true) -> EVIDENCE_LOOKUP (match_over_snapshots o=16, wkts=0) -> EVIDENCE_HASH (sha256 computed) -> HASH_VALIDATION (Valid) -> SETTLEMENT_AUTHORIZATION (Success) -> MARKET_GRADING (0 wkts == 0 => WON) -> STATE_TRANSITION (ACCEPTED -> WON) -> IDEMPOTENCY_CHECK (Pass) -> WALLET_SIMULATION (Stake + Profit credited) -> LEDGER_SIMULATION (Credit gross)",
+      "dryRunStatus": "DRY_RUN_AUTHORIZED",
+      "simulatedOutcome": "WON"
+    },
+    {
+      "betId": "bet_1787989321317_ks5t6b",
+      "pipelineTrace": "BET_DISCOVERY -> EVENT_IDENTITY (Match oy_45bbebc2...) -> MARKET_FINALITY (allowSnapshotFinality: true) -> EVIDENCE_LOOKUP (match_over_snapshots o=17, runs=6) -> EVIDENCE_HASH (sha256 computed) -> HASH_VALIDATION (Valid) -> SETTLEMENT_AUTHORIZATION (Success) -> MARKET_GRADING (6 < 10.5 => WON) -> STATE_TRANSITION (ACCEPTED -> WON) -> IDEMPOTENCY_CHECK (Pass) -> WALLET_SIMULATION (Stake + Profit credited) -> LEDGER_SIMULATION (Credit gross)",
+      "dryRunStatus": "DRY_RUN_AUTHORIZED",
+      "simulatedOutcome": "WON"
+    },
+    {
+      "betId": "bet_1787989375340_ec9isr",
+      "pipelineTrace": "BET_DISCOVERY -> EVENT_IDENTITY (Match oy_45bbebc2...) -> MARKET_FINALITY (allowSnapshotFinality: false) -> EVIDENCE_LOOKUP (Live feed stopped @ 18.5 ov) -> STALE_DATA_CHECK (Data age > 300s) -> SETTLEMENT_AUTHORIZATION (Blocked) -> KEEP_OPEN",
+      "dryRunStatus": "DRY_RUN_BLOCKED",
+      "simulatedOutcome": "BLOCKED (INSUFFICIENT_EVIDENCE)"
+    }
+  ]
+}

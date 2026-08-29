@@ -1,0 +1,14 @@
+{
+  "phase": "38.4",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:35:00Z",
+  "status": "PASS",
+  "source": "CONTROLLED_RECOVERY_IDEMPOTENCY_VERIFICATION",
+  "stub": false,
+  "idempotencyAudit": {
+    "rowLockingMechanism": "SELECT ... FOR UPDATE on bets and wallets",
+    "concurrentWorkerTest": "Worker A and Worker B racing on Candidate 1 results in exactly 1 commit and 1 ALREADY_SETTLED skip",
+    "repeatedRecoverySweep": "Re-running recovery whitelist results in 4 ALREADY_SETTLED returns with 0 duplicate ledger or wallet entries",
+    "financialParity": "Gross payout matches ledger credit exactly once"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "phase": "38.2",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:25:00Z",
+  "status": "PASS",
+  "source": "NEXT_BALL_EVIDENCE_SECURITY_AUDIT",
+  "stub": false,
+  "nextBallSecurity": {
+    "implemented": true,
+    "evaluators": ["evaluateDeliveryMarketBet", "evaluateDeliveryMarketBetAsync"],
+    "evidenceTable": "match_ball_events",
+    "deliveryIdentityFields": ["match_id", "innings", "over_num", "ball_num", "is_legal", "is_confirmed"],
+    "nonLegalHandling": "Wides and no-balls advance delivery sequence without consuming legal ball slots; bets on legal delivery N wait for confirmed legal delivery N.",
+    "providerCorrections": "Updates superseded_by and marks prior ball is_confirmed = false; ensures only final confirmed ball grades market."
+  }
+}

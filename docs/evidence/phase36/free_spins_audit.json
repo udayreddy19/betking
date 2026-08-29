@@ -1,0 +1,24 @@
+{
+  "phase": "36",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:50:00Z",
+  "status": "PASS",
+  "source": "FREE_SPINS_AND_DAILY_SPIN_AUDIT",
+  "audit": {
+    "casinoSlotFreeSpins": {
+      "status": "FREE_SPINS_NOT_IMPLEMENTED",
+      "details": "No casino provider-integrated free round / slot free spin API exists in the codebase. Casino games run in demo/iframe mode."
+    },
+    "gamifiedDailySpinWheel": {
+      "status": "IMPLEMENTED",
+      "engine": "lib/dailySpinEngine.mjs, lib/spinGrantEngine.mjs",
+      "tables": "daily_spins, spin_wallet_grants",
+      "prizes": "Bonus balance (₹50-₹200), Free bet balance (₹50-₹200), VIP points (100-500)",
+      "cadence": "1 spin per user per calendar day in Asia/Kolkata timezone",
+      "ttl": "24 hours (SPIN_PRIZE_TTL_MS = 86,400,000 ms)",
+      "expiry": "Expired via expireSpinGrants() before reading wallet snapshot",
+      "idempotency": "Enforced via unique composite key (user_id, spin_date) on daily_spins"
+    }
+  },
+  "readOnly": true
+}

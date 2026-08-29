@@ -1,0 +1,45 @@
+{
+  "phase": "38.1",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:20:00Z",
+  "status": "PASS",
+  "source": "HISTORICAL_STUCK_BET_RECOVERY_CANDIDATES",
+  "stub": false,
+  "candidates": [
+    {
+      "betId": "bet_1787989343526_gz1lb5",
+      "market": "1st Innings Score at 5th Wicket (Under 159.5)",
+      "qualification": "RECOVERY_ELIGIBLE",
+      "outcome": "WON",
+      "justification": "Immutable snapshot confirms 5th dismissal fell at 149 runs (149 < 159.5)"
+    },
+    {
+      "betId": "bet_1787989337539_7hhbuh",
+      "market": "1st Innings Score at 5th Wicket (Over 159.5)",
+      "qualification": "RECOVERY_ELIGIBLE",
+      "outcome": "LOST",
+      "justification": "Immutable snapshot confirms 5th dismissal fell at 149 runs (149 not > 159.5)"
+    },
+    {
+      "betId": "bet_1787989331426_r1j9xk",
+      "market": "1st Innings Wicket in Over 16 (No)",
+      "qualification": "RECOVERY_ELIGIBLE",
+      "outcome": "WON",
+      "justification": "Immutable snapshot confirms over 16 completed with 0 wickets"
+    },
+    {
+      "betId": "bet_1787989321317_ks5t6b",
+      "market": "1st Innings Over 17 Total Runs (Under 10.5)",
+      "qualification": "RECOVERY_ELIGIBLE",
+      "outcome": "WON",
+      "justification": "Immutable snapshot confirms over 17 completed with 6 runs (6 < 10.5)"
+    },
+    {
+      "betId": "bet_1787989375340_ec9isr",
+      "market": "Team Total Runs (Under 178.5)",
+      "qualification": "INSUFFICIENT_EVIDENCE / KEEP_OPEN",
+      "outcome": "UNRESOLVED",
+      "justification": "Innings 2 score stopped at 18.5 overs on live feed; missing 20th over or all-out snapshot. Full-innings market cannot settle on stale live data."
+    }
+  ]
+}

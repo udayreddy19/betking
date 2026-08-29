@@ -1,0 +1,13 @@
+{
+  "phase": "38.1",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:20:00Z",
+  "status": "PASS",
+  "source": "SNAPSHOT_SETTLEMENT_IDEMPOTENCY",
+  "stub": false,
+  "idempotencyVerification": {
+    "concurrentWorkerAttempts": "10 concurrent attempts result in exactly 1 payout transaction and 9 idempotent skips.",
+    "databaseRowLocking": "FOR UPDATE on bets and wallets ensures atomic single-execution.",
+    "alreadySettledHandling": "Second attempts return ALREADY_SETTLED with 0 duplicate ledger or wallet entries."
+  }
+}

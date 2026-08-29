@@ -1,0 +1,16 @@
+{
+  "phase": "38.2",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:25:00Z",
+  "status": "PASS",
+  "source": "SNAPSHOT_FINALITY_MARKET_POLICY_MATRIX",
+  "stub": false,
+  "matrix": [
+    { "marketKey": "OVER_TOTAL", "evidenceSource": "match_over_snapshots", "allowSnapshotFinality": true, "minimumProof": "Complete over boundary (balls=0)", "staleDataBehavior": "Authorizes if target over is complete" },
+    { "marketKey": "WICKET_IN_OVER", "evidenceSource": "match_over_snapshots", "allowSnapshotFinality": true, "minimumProof": "Complete over boundary + start/end wicket count", "staleDataBehavior": "Authorizes if target over is complete" },
+    { "marketKey": "DISMISSAL_SCORE", "evidenceSource": "match_dismissal_snapshots", "allowSnapshotFinality": true, "minimumProof": "Target dismissal recorded at specific score", "staleDataBehavior": "Authorizes if target wicket snapshot exists" },
+    { "marketKey": "NEXT_BALL", "evidenceSource": "match_ball_events", "allowSnapshotFinality": true, "minimumProof": "Exact confirmed ball event", "staleDataBehavior": "Authorizes if ball is confirmed" },
+    { "marketKey": "TEAM_TOTAL", "evidenceSource": "scorecard / match finality", "allowSnapshotFinality": false, "minimumProof": "All-out or 20 overs bowled", "staleDataBehavior": "STRICTLY BLOCKED if stale" },
+    { "marketKey": "MATCH_WINNER", "evidenceSource": "official result / match complete", "allowSnapshotFinality": false, "minimumProof": "Official terminal status + grace window", "staleDataBehavior": "STRICTLY BLOCKED if stale" }
+  ]
+}

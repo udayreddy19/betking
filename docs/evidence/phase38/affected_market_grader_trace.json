@@ -1,0 +1,50 @@
+{
+  "phase": "38",
+  "environment": "production",
+  "timestamp": "2026-08-29T10:48:00Z",
+  "status": "PASS",
+  "source": "AFFECTED_MARKET_GRADER_TRACE",
+  "stub": false,
+  "graders": [
+    {
+      "betId": "bet_1787989375340_ec9isr",
+      "market": "Team Total Runs",
+      "marketKey": "team_total",
+      "graderFound": "totalsMarket (evaluateTotalsMarketBet)",
+      "resultDataAvailable": true,
+      "gradeResult": "WON (146 runs < 178.5 line)"
+    },
+    {
+      "betId": "bet_1787989343526_gz1lb5",
+      "market": "1st Innings Score at 5th Wicket",
+      "marketKey": "i1_team_score_at_5_dismissal",
+      "graderFound": "dismissalMarket (evaluateDismissalMarketBet)",
+      "resultDataAvailable": true,
+      "gradeResult": "WON (149 runs at 5th wicket < 159.5 line)"
+    },
+    {
+      "betId": "bet_1787989337539_7hhbuh",
+      "market": "1st Innings Score at 5th Wicket",
+      "marketKey": "i1_team_score_at_5_dismissal",
+      "graderFound": "dismissalMarket (evaluateDismissalMarketBet)",
+      "resultDataAvailable": true,
+      "gradeResult": "LOST (149 runs at 5th wicket is not > 159.5 line)"
+    },
+    {
+      "betId": "bet_1787989331426_r1j9xk",
+      "market": "1st Innings Wicket in Over 16",
+      "marketKey": "i1_wicket_in_over_16",
+      "graderFound": "wicketInOverMarket (evaluateWicketInOverMarketBet)",
+      "resultDataAvailable": true,
+      "gradeResult": "WON (0 wickets taken in over 16 -> 'No' won)"
+    },
+    {
+      "betId": "bet_1787989321317_ks5t6b",
+      "market": "1st Innings Over 17 Total Runs",
+      "marketKey": "i1_next_over_17_total",
+      "graderFound": "overMarket (evaluateOverMarketBet)",
+      "resultDataAvailable": true,
+      "gradeResult": "WON (6 runs scored in over 17 < 10.5 line)"
+    }
+  ]
+}

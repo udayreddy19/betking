@@ -1,0 +1,14 @@
+{
+  "phase": "38.2",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:25:00Z",
+  "status": "PASS",
+  "source": "NEXT_BALL_ADVERSARIAL_TESTS",
+  "stub": false,
+  "tests": [
+    { "scenario": "Duplicate delivery event arrives", "expected": "ON CONFLICT preserves single canonical event", "status": "PASS" },
+    { "scenario": "Wrong ball number evaluated", "expected": "Grader returns null / ignores unmatching ball", "status": "PASS" },
+    { "scenario": "Wide delivery preceding legal ball", "expected": "Wide does not fulfill legal ball bet; waits for legal delivery", "status": "PASS" },
+    { "scenario": "Provider correction arrives after unconfirmed ball", "expected": "Supersedes old record, settles on confirmed ball only", "status": "PASS" }
+  ]
+}

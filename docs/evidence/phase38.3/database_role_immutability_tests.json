@@ -1,0 +1,15 @@
+{
+  "phase": "38.3",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:30:00Z",
+  "status": "PASS",
+  "source": "DATABASE_ROLE_IMMUTABILITY_TESTS",
+  "stub": false,
+  "immutabilityTests": [
+    { "operation": "UPDATE snapshot row in match_dismissal_snapshots", "enforcement": "ON CONFLICT DO NOTHING (No update queries exist in app code)", "status": "PASS" },
+    { "operation": "DELETE snapshot row in match_over_snapshots", "enforcement": "Zero DELETE statements in codebase", "status": "PASS" },
+    { "operation": "UPSERT existing dismissal snapshot", "enforcement": "ON CONFLICT DO NOTHING preserves original score", "status": "PASS" },
+    { "operation": "Modify evidence hash in authorization", "enforcement": "validateSettlementAuthorization detects SHA-256 mismatch and rolls back", "status": "PASS" },
+    { "operation": "Modify match ID / innings / score", "enforcement": "Composite PK (match_id, innings, over_num/wicket_num) prevents row mutation", "status": "PASS" }
+  ]
+}

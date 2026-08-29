@@ -1,0 +1,15 @@
+{
+  "phase": "37",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:36:00Z",
+  "status": "PASS",
+  "source": "AUTHENTICATION_RATE_LIMIT_AUDIT",
+  "stub": false,
+  "rateLimiters": [
+    { "endpoint": "POST /api/auth/login", "limiter": "loginRateLimiter", "policy": "10 req/min per IP" },
+    { "endpoint": "POST /api/auth/signup", "limiter": "registerRateLimiter", "policy": "5 req/hour per IP" },
+    { "endpoint": "POST /api/auth/admin-login", "limiter": "loginRateLimiter", "policy": "10 req/min per IP" },
+    { "endpoint": "POST /api/rewards/promo/claim", "limiter": "rewardsClaimRateLimiter", "policy": "5 req/min per IP" }
+  ],
+  "status": "PASS"
+}

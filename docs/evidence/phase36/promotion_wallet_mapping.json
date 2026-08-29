@@ -1,0 +1,80 @@
+{
+  "phase": "36",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:50:00Z",
+  "status": "PASS",
+  "source": "PROMOTIONAL_WALLET_MAPPING_AUDIT",
+  "walletMappingTable": [
+    {
+      "feature": "Deposit Match Bonus",
+      "walletBucket": "bonus_balance",
+      "ledgerEffect": "CREDIT",
+      "reversible": true,
+      "risk": "LOW (Isolated in bonus bucket; released only on 100% wagering completion)"
+    },
+    {
+      "feature": "Deposit Free Bet",
+      "walletBucket": "freebet_balance",
+      "ledgerEffect": "CREDIT",
+      "reversible": true,
+      "risk": "LOW (Stake not returned on win; profit only credits cash)"
+    },
+    {
+      "feature": "Daily Spin Bonus",
+      "walletBucket": "bonus_balance",
+      "ledgerEffect": "CREDIT",
+      "reversible": true,
+      "risk": "LOW (24h TTL; revoked on expiry via spin_wallet_grants)"
+    },
+    {
+      "feature": "Daily Spin Free Bet",
+      "walletBucket": "freebet_balance",
+      "ledgerEffect": "CREDIT",
+      "reversible": true,
+      "risk": "LOW (24h TTL; revoked on expiry via spin_wallet_grants)"
+    },
+    {
+      "feature": "Daily Spin Loyalty Points",
+      "walletBucket": "user_loyalty.points / vip_points",
+      "ledgerEffect": "POINTS_CREDIT (Non-financial bucket)",
+      "reversible": true,
+      "risk": "NONE (Separated from cash wallet)"
+    },
+    {
+      "feature": "VIP Daily Cashback",
+      "walletBucket": "balance (Cash)",
+      "ledgerEffect": "CREDIT",
+      "reversible": true,
+      "risk": "LOW (Calculated strictly from net cash losses of previous day in Kolkata tz)"
+    },
+    {
+      "feature": "Referral Rewards",
+      "walletBucket": "freebet_balance",
+      "ledgerEffect": "CREDIT",
+      "reversible": true,
+      "risk": "LOW (Requires referee qualifying deposit + risk clearance)"
+    },
+    {
+      "feature": "Signup Promo Code (Cash)",
+      "walletBucket": "balance",
+      "ledgerEffect": "CREDIT",
+      "reversible": true,
+      "risk": "MEDIUM (Direct cash credit; guarded by KYC/Identity deduplication)"
+    },
+    {
+      "feature": "Signup Promo Code (Bonus)",
+      "walletBucket": "bonus_balance",
+      "ledgerEffect": "CREDIT",
+      "reversible": true,
+      "risk": "LOW (Subject to wagering rules)"
+    },
+    {
+      "feature": "Signup Promo Code (Free Bet)",
+      "walletBucket": "freebet_balance",
+      "ledgerEffect": "CREDIT",
+      "reversible": true,
+      "risk": "LOW (Profit only payout)"
+    }
+  ],
+  "readOnly": true
+}

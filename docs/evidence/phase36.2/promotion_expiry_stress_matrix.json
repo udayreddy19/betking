@@ -1,0 +1,35 @@
+{
+  "phase": "36.2",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:24:00Z",
+  "status": "PASS",
+  "source": "PROMOTION_EXPIRY_STRESS_MATRIX",
+  "stub": false,
+  "scenarios": [
+    {
+      "scenario": "A: Request arrives before expiry",
+      "result": "Allowed and processed successfully",
+      "status": "PASS"
+    },
+    {
+      "scenario": "B: Request arrives after expiry",
+      "result": "Rejected with REWARD_EXPIRED",
+      "status": "PASS"
+    },
+    {
+      "scenario": "C: Request and expiry worker execute simultaneously",
+      "result": "Resolved deterministically by FOR UPDATE row lock; zero double-action",
+      "status": "PASS"
+    },
+    {
+      "scenario": "D: Two expiry workers execute simultaneously",
+      "result": "First worker marks EXPIRED; second worker finds 0 rows matching status='ACTIVE'",
+      "status": "PASS"
+    },
+    {
+      "scenario": "E: Expiry worker retries",
+      "result": "Idempotent; zero additional balance deductions",
+      "status": "PASS"
+    }
+  ]
+}

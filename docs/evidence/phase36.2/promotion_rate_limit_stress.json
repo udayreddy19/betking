@@ -1,0 +1,14 @@
+{
+  "phase": "36.2",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:24:00Z",
+  "status": "PASS",
+  "source": "PROMOTION_RATE_LIMIT_STRESS",
+  "stub": false,
+  "rateLimitStressResults": {
+    "normalTraffic": "Allowed without throttles",
+    "rapid100Requests": "Throttled with HTTP 429 after threshold",
+    "rateLimitVsIdempotency": "Independent; rate limiter protects API capacity, database row locks protect financial consistency",
+    "status": "PASS"
+  }
+}

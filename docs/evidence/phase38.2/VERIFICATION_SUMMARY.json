@@ -1,0 +1,49 @@
+{
+  "phase": "38.2",
+  "product": "OddsYra",
+  "timestamp": "2026-08-29T11:25:00Z",
+  "status": "PASS",
+  "stub": false,
+  "verificationResults": {
+    "settlementEligibleSecurity": "PASS",
+    "unsafeFinalityPromotion": "PASS",
+    "snapshotImmutability": "PASS",
+    "applicationMutationPaths": "PASS",
+    "evidenceHashCreation": "PASS",
+    "evidenceHashVerification": "PASS",
+    "hashTamperingDetection": "PASS",
+    "snapshotIdentitySecurity": "PASS",
+    "nextBallSecurity": "PASS",
+    "tossSecurity": "PASS",
+    "snapshotMarketPolicies": "PASS",
+    "insufficientSnapshotBypass": "PASS",
+    "staleDataBypass": "PASS",
+    "concurrentEvidenceIntegrity": "PASS",
+    "exactlyOnceSettlement": "PASS",
+    "recoveryCandidatesVerified": {
+      "recoveryEligibleCount": 4,
+      "keepOpenCount": 1,
+      "bets": {
+        "bet_1787989343526_gz1lb5": "RECOVERY_ELIGIBLE (WON)",
+        "bet_1787989337539_7hhbuh": "RECOVERY_ELIGIBLE (LOST)",
+        "bet_1787989331426_r1j9xk": "RECOVERY_ELIGIBLE (WON)",
+        "bet_1787989321317_ks5t6b": "RECOVERY_ELIGIBLE (WON)",
+        "bet_1787989375340_ec9isr": "KEEP_OPEN (INSUFFICIENT_EVIDENCE)"
+      }
+    },
+    "testSuiteResults": {
+      "totalSuites": 13,
+      "totalTests": 59,
+      "passed": 59,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "certification": {
+    "localStatus": "LOCAL_PASS",
+    "stagingStatus": "STAGING_PASS",
+    "productionStatus": "NOT_VERIFIED",
+    "productionClaimAllowed": false,
+    "productionCertificationStatus": "NO-GO"
+  }
+}

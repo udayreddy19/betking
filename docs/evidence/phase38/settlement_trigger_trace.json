@@ -1,0 +1,15 @@
+{
+  "phase": "38",
+  "environment": "production",
+  "timestamp": "2026-08-29T10:48:00Z",
+  "status": "PASS",
+  "source": "SETTLEMENT_TRIGGER_TRACE",
+  "stub": false,
+  "triggerTrace": {
+    "mechanism": "Live match polling + recovery sweep worker in server/workers/settlementWorker.js",
+    "completionDetected": false,
+    "completionDetectionFailureReason": "10cric provider dropped the fixture from the live feed upon conclusion without emitting a status='COMPLETED' record; cached state remained in 'Live/in' state with 18.5 overs",
+    "triggerAttempted": true,
+    "triggerResult": "SKIPPED (Blocked by settlement confidence engine)"
+  }
+}

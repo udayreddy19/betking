@@ -1,0 +1,40 @@
+{
+  "phase": "38.2",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:25:00Z",
+  "status": "PASS",
+  "source": "SETTLEMENT_ELIGIBLE_CREATION_PATHS_AUDIT",
+  "stub": false,
+  "creationPaths": [
+    {
+      "source": "FULL_MATCH_CONFIRMATION",
+      "function": "evaluateSettlementConfidence",
+      "input": "match object with confirmed completed status and elapsed grace window",
+      "conditions": "isFinalMatch === true AND elapsedSinceEndSeconds >= gracePeriodSec AND consensusResult.providersAgree === true",
+      "authoritativeEvidenceRequired": true,
+      "timeHeuristicUsed": false,
+      "staleDataAllowed": false,
+      "settlementAllowed": true
+    },
+    {
+      "source": "MICRO_MARKET_SNAPSHOT_FINALITY",
+      "function": "evaluateSettlementConfidence",
+      "input": "bet + candidateMatch with marketContext.hasImmutableSnapshotEvidence === true AND policy.allowSnapshotFinality === true",
+      "conditions": "policy.allowSnapshotFinality === true AND hasImmutableSnapshot === true AND evaluatedOutcome != null",
+      "authoritativeEvidenceRequired": true,
+      "timeHeuristicUsed": false,
+      "staleDataAllowed": false,
+      "settlementAllowed": true
+    },
+    {
+      "source": "UNSAFE_ELAPSED_TIME_ATTEMPT",
+      "function": "evaluateSettlementConfidence",
+      "input": "fixture started > 3.5h ago but feed dropped without terminal status",
+      "conditions": "isFinalMatch === false",
+      "authoritativeEvidenceRequired": true,
+      "timeHeuristicUsed": false,
+      "staleDataAllowed": false,
+      "settlementAllowed": false
+    }
+  ]
+}

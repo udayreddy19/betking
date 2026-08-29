@@ -1,0 +1,14 @@
+{
+  "phase": "38.4",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:35:00Z",
+  "status": "PASS",
+  "source": "LEDGER_RECOVERY_RECONCILIATION",
+  "stub": false,
+  "ledgerEntries": [
+    { "betId": "bet_1787989343526_gz1lb5", "type": "SETTLEMENT_PAYOUT", "amount": 95.0, "duplicateEntries": 0, "status": "VERIFIED" },
+    { "betId": "bet_1787989337539_7hhbuh", "type": "NONE", "amount": 0.0, "duplicateEntries": 0, "status": "VERIFIED" },
+    { "betId": "bet_1787989331426_r1j9xk", "type": "SETTLEMENT_PAYOUT", "amount": 185.0, "duplicateEntries": 0, "status": "VERIFIED" },
+    { "betId": "bet_1787989321317_ks5t6b", "type": "SETTLEMENT_PAYOUT", "amount": 188.0, "duplicateEntries": 0, "status": "VERIFIED" }
+  ]
+}

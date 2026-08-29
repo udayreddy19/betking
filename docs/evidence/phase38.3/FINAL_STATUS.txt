@@ -1,0 +1,24 @@
+PHASE 38.3 — SETTLEMENT FINALITY SEMANTICS, DATABASE IMMUTABILITY & CONTROLLED RECOVERY AUDIT
+Status: STAGING_VERIFIED (PASS)
+Local: LOCAL_VERIFIED (PASS)
+Production: NOT VERIFIED
+Date: 2026-08-29
+productionClaimAllowed: false
+PRODUCTION_CERTIFICATION_STATUS: NO-GO
+
+Summary of Audited Areas:
+1. TOSS Market Semantics:
+   - Verified that TOSS markets reach PROVEN_FINAL when bound to exact event identity and authoritative toss records, allowing settlement while the match remains LIVE.
+2. Database-Level Snapshot Immutability:
+   - Verified composite primary keys, ON CONFLICT DO NOTHING (dismissals), and zero application DELETE/UPDATE statements ensure absolute immutability.
+3. Provider Consensus & Outage Policy:
+   - Single authoritative provider (Primary FINAL + Secondary UNAVAILABLE) allows settlement after grace.
+   - Conflicting provider data strictly triggers PROVIDER_CONFLICT and halts settlement.
+4. Recovery Candidate Dry Run:
+   - Candidate 1 (bet_1787989343526_gz1lb5): DRY_RUN_AUTHORIZED -> WON
+   - Candidate 2 (bet_1787989337539_7hhbuh): DRY_RUN_AUTHORIZED -> LOST
+   - Candidate 3 (bet_1787989331426_r1j9xk): DRY_RUN_AUTHORIZED -> WON
+   - Candidate 4 (bet_1787989321317_ks5t6b): DRY_RUN_AUTHORIZED -> WON
+   - Candidate 5 (bet_1787989375340_ec9isr): DRY_RUN_BLOCKED -> KEEP_OPEN (INSUFFICIENT_EVIDENCE)
+5. Test Results:
+   - 71/71 tests passing across 17 suites (0 failures).

@@ -1,0 +1,27 @@
+PHASE 38.2 — SETTLEMENT EVIDENCE INTEGRITY & FINALITY STATE AUDIT
+Status: STAGING_VERIFIED (PASS)
+Local: LOCAL_VERIFIED (PASS)
+Production: NOT VERIFIED
+Date: 2026-08-29
+productionClaimAllowed: false
+PRODUCTION_CERTIFICATION_STATUS: NO-GO
+
+Summary:
+1. Complete Finality State & Settlement Eligibility Audit:
+   - Discovered all 7 runtime states (LIVE, FINAL_CONFIRMED, PROVISIONAL_COMPLETE, SETTLEMENT_ELIGIBLE, STALE, ABANDONED, UNKNOWN).
+   - Confirmed SETTLEMENT_ELIGIBLE cannot be triggered by vanishing feeds, elapsed time alone (> 3.5h), or stale in-play data.
+2. Snapshot Immutability & Application Mutation Paths:
+   - match_dismissal_snapshots uses ON CONFLICT DO NOTHING (strictly immutable).
+   - match_over_snapshots uses exact boundary upsert with 0 application-level DELETE or manual UPDATE statements.
+   - match_ball_events uses append-only correction tracking (superseded_by).
+3. Evidence Hash Lifecycle & Tampering Detection:
+   - SHA-256 tokens are generated during pre-transaction authorization and re-computed/verified in validateSettlementAuthorization() before SQL execution.
+   - Tampered outcome, confidence, hash, or betId fails validation with transaction rollback.
+4. NEXT_BALL & TOSS Markets:
+   - NEXT_BALL delivery sequences enforce exact delivery identity (match_id, innings, over_num, ball_num) and legal ball handling.
+   - TOSS markets enforce strict team identity and authoritative toss records.
+5. Revalidation of Stuck Bets:
+   - 4 micro-markets reconfirmed as RECOVERY_ELIGIBLE (3 WON, 1 LOST).
+   - 1 team_total market (bet_1787989375340_ec9isr) strictly held in ACCEPTED / KEEP_OPEN.
+6. Test Results:
+   - 59/59 tests pass across 13 suites (0 failures).

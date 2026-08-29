@@ -1,0 +1,34 @@
+{
+  "phase": "38.2",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:25:00Z",
+  "status": "PASS",
+  "source": "EVIDENCE_HASH_TAMPERING_TESTS",
+  "stub": false,
+  "tamperingScenarios": [
+    {
+      "tamperedField": "gradedOutcome ('WON' -> 'LOST')",
+      "detectionMethod": "validateSettlementAuthorization SHA-256 recalculation",
+      "result": "BLOCKED (SETTLEMENT_AUTHORIZATION_CORRUPTED)",
+      "status": "PASS"
+    },
+    {
+      "tamperedField": "confidenceState ('CONFIRMED' -> 'STALE')",
+      "detectionMethod": "validateSettlementAuthorization eligibleConfidence check",
+      "result": "BLOCKED (SETTLEMENT_AUTHORIZATION_INELIGIBLE_CONFIDENCE)",
+      "status": "PASS"
+    },
+    {
+      "tamperedField": "evidenceHash (corrupted hex string)",
+      "detectionMethod": "validateSettlementAuthorization equality comparison",
+      "result": "BLOCKED (SETTLEMENT_AUTHORIZATION_CORRUPTED)",
+      "status": "PASS"
+    },
+    {
+      "tamperedField": "betId (swapped bet ID)",
+      "detectionMethod": "validateSettlementAuthorization betId binding check",
+      "result": "BLOCKED (SETTLEMENT_AUTHORIZATION_MISMATCH)",
+      "status": "PASS"
+    }
+  ]
+}

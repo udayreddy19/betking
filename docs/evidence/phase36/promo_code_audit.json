@@ -1,0 +1,19 @@
+{
+  "phase": "36",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:50:00Z",
+  "status": "PASS",
+  "source": "PROMO_CODE_AUDIT_HARNESS",
+  "audit": {
+    "engine": "lib/signupPromoCodes.mjs",
+    "tables": "signup_promo_codes, signup_promo_redemptions, signup_promo_invites",
+    "normalization": "Uppercase, trimmed, alphanumeric only (normalizePromoCode)",
+    "rewardTypes": ["bonus", "freebet", "cash"],
+    "exclusivity": "Enforced across exclusive welcome codes (SPORTS500, VIP1000, LIVE100)",
+    "perUserLimit": "Enforced via max_per_user and COUNT(signup_promo_redemptions)",
+    "inviteOnly": "Supports private invite lists via signup_promo_invites",
+    "concurrentProtection": "FOR UPDATE row locking on wallets prevents race condition exploits",
+    "abuseIntegration": "Integrated with promotionAbuseEngine.mjs"
+  },
+  "readOnly": true
+}

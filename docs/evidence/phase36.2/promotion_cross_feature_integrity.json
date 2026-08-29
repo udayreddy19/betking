@@ -1,0 +1,14 @@
+{
+  "phase": "36.2",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:24:00Z",
+  "status": "PASS",
+  "source": "PROMOTION_CROSS_FEATURE_INTEGRITY",
+  "stub": false,
+  "crossFeatureRules": {
+    "welcomeBonusExclusivity": "Enforces only one of SPORTS500, VIP1000, LIVE100 per identity",
+    "depositBonusPlusFreeBet": "Separated into bonus_balance and freebet_balance buckets; wagering tracked independently",
+    "referralPlusSignupPromo": "Accounts that joined via referral have distinct promo code eligibility checks",
+    "status": "PASS"
+  }
+}

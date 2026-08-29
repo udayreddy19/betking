@@ -1,0 +1,17 @@
+{
+  "phase": "38.3",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:30:00Z",
+  "status": "PASS",
+  "source": "TOSS_ADVERSARIAL_VERIFICATION",
+  "stub": false,
+  "scenarios": [
+    { "scenario": "Scenario A: Correct event + authoritative toss winner", "expected": "PROVEN_FINAL / Eligible while match is LIVE", "actual": "AUTHORIZED (WON)", "status": "PASS" },
+    { "scenario": "Scenario B: Same teams + wrong event ID", "expected": "BLOCKED", "actual": "BLOCKED (No matching event)", "status": "PASS" },
+    { "scenario": "Scenario C: Different fixture same teams", "expected": "BLOCKED", "actual": "BLOCKED (Event ID mismatch)", "status": "PASS" },
+    { "scenario": "Scenario D: Conflicting toss provider data", "expected": "BLOCKED_PENDING_RESOLUTION", "actual": "PROVIDER_CONFLICT (providersAgree = false)", "status": "PASS" },
+    { "scenario": "Scenario E: Provider correction before settlement", "expected": "Latest authoritative record used", "actual": "PASS (Evaluates against confirmed event)", "status": "PASS" },
+    { "scenario": "Scenario F: Duplicate toss events", "expected": "Exactly one settlement", "actual": "PASS (Idempotent single execution)", "status": "PASS" },
+    { "scenario": "Scenario G: Match remains LIVE after toss", "expected": "TOSS settles independently", "actual": "PASS (Settled without waiting for match finality)", "status": "PASS" }
+  ]
+}

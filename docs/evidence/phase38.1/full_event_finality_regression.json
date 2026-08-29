@@ -1,0 +1,14 @@
+{
+  "phase": "38.1",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:20:00Z",
+  "status": "PASS",
+  "source": "FULL_EVENT_FINALITY_REGRESSION",
+  "stub": false,
+  "regressionAudit": {
+    "matchWinnerProtected": "MATCH_WINNER markets strictly require isFinalMatch=true and allowSnapshotFinality=false.",
+    "teamTotalProtected": "TEAM_TOTAL markets strictly require authoritative innings completion and allowSnapshotFinality=false.",
+    "vanishedFixtureProtected": "Fixtures disappearing from provider feed without terminal status NEVER automatically become final.",
+    "elapsedTimeProtected": "Start time > 3.5h alone NEVER forces full-match finality."
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "phase": "36.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:06:00Z",
+  "status": "PASS",
+  "source": "PROMOTION_API_IDEMPOTENCY_TEST",
+  "stub": false,
+  "endpoints": {
+    "/api/rewards/promo/claim": "Exactly-once credit; repeated calls return already claimed error or record",
+    "/api/v1/rewards/daily-spin/spin": "Exactly-once credit; repeated calls return alreadySpun: true",
+    "/api/v1/vip/cashback/claim": "Exactly-once credit; repeated calls return CASHBACK_ALREADY_CLAIMED",
+    "/api/v1/promotions/claim": "Exactly-once credit; repeated calls return alreadyClaimed: true"
+  }
+}

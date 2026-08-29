@@ -1,0 +1,13 @@
+{
+  "phase": "36.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:06:00Z",
+  "status": "PASS",
+  "source": "PROMOTION_FAILURE_RECOVERY_TEST",
+  "stub": false,
+  "failureScenarios": {
+    "walletCreditFails": "Full database transaction rollback; promo grant row NOT inserted",
+    "ledgerInsertFails": "Full database transaction rollback; wallet balance NOT mutated",
+    "settlementCorrectionOccurs": "Settlement correction engine creates append-only compensating records"
+  }
+}

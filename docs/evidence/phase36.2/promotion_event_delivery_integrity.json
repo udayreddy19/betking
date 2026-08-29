@@ -1,0 +1,13 @@
+{
+  "phase": "36.2",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:24:00Z",
+  "status": "PASS",
+  "source": "PROMOTION_EVENT_DELIVERY_INTEGRITY",
+  "stub": false,
+  "eventsAudited": {
+    "outboxPattern": "Used in notification delivery (outboxWorker.mjs)",
+    "duplicateEventHandling": "Idempotent processing via dedupeKey; duplicate events do not create financial mutations",
+    "status": "PASS"
+  }
+}

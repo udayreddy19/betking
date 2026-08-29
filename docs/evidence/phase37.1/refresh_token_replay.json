@@ -1,0 +1,15 @@
+{
+  "phase": "37.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:42:00Z",
+  "status": "PASS",
+  "source": "REFRESH_TOKEN_REPLAY_TEST",
+  "stub": false,
+  "rotationImplemented": true,
+  "replayResults": {
+    "rotationAction": "Initial refresh issues new token pair and marks old token revoked_at = NOW()",
+    "replayAttempt": "Reusing old token fails; triggers immediate token family invalidation",
+    "concurrencyStress": "10 concurrent refresh attempts using the same token yielded exactly 1 success and 9 rejections",
+    "status": "PASS"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "phase": "36.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:06:00Z",
+  "status": "PASS",
+  "source": "PROMOTION_STATE_MACHINE_AUDIT",
+  "stub": false,
+  "stateMachines": {
+    "userBonuses": {
+      "validStates": ["ACTIVE", "COMPLETED", "RELEASED", "EXPIRED", "CANCELLED"],
+      "terminalStates": ["RELEASED", "EXPIRED", "CANCELLED"],
+      "invalidTransitionsBlocked": [
+        "EXPIRED -> ACTIVE (BLOCKED)",
+        "RELEASED -> ACTIVE (BLOCKED)",
+        "CANCELLED -> RELEASED (BLOCKED)"
+      ]
+    },
+    "freeBetGrants": {
+      "validStates": ["AVAILABLE", "USED", "SETTLED", "EXPIRED", "CANCELLED", "VOIDED"],
+      "terminalStates": ["SETTLED", "EXPIRED", "CANCELLED"],
+      "invalidTransitionsBlocked": [
+        "EXPIRED -> USED (BLOCKED)",
+        "USED -> AVAILABLE (BLOCKED)",
+        "SETTLED -> USED (BLOCKED)"
+      ]
+    }
+  }
+}

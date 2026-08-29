@@ -1,0 +1,31 @@
+{
+  "phase": "36.2",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:24:00Z",
+  "status": "PASS",
+  "source": "PRE_KYC_PROMOTION_ABUSE_MATRIX",
+  "stub": false,
+  "matrix": [
+    {
+      "abuseScenario": "Rapid account creation for signup bonuses",
+      "existingProtection": "IP rate limiting + device fingerprint tracking in promotionAbuseEngine.mjs",
+      "tested": true,
+      "result": "PASS",
+      "gap": "Minimal (device clustering alerts generated)"
+    },
+    {
+      "abuseScenario": "Multiple claims with same PAN/Aadhaar",
+      "existingProtection": "Cryptographic hash match (assertIdentityHasNotClaimedPromo)",
+      "tested": true,
+      "result": "PASS",
+      "gap": "None (Fully blocked)"
+    },
+    {
+      "abuseScenario": "Self-referral loop across secondary accounts",
+      "existingProtection": "Self-referral check (referrer_id !== user_id) + IP/device collision",
+      "tested": true,
+      "result": "PASS",
+      "gap": "None (Fully blocked)"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "phase": "38.2",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:25:00Z",
+  "status": "PASS",
+  "source": "TEAM_TOTAL_EVIDENCE_REVALIDATION",
+  "stub": false,
+  "revalidation": {
+    "betId": "bet_1787989375340_ec9isr",
+    "selectionId": "sel_under_178.5",
+    "marketId": "team_total",
+    "team": "Paarl Royals SRL",
+    "isInningsOfficiallyComplete": false,
+    "wasInningsAllOut": false,
+    "wasTargetReached": false,
+    "wasMatchShortened": false,
+    "isDLsApplicable": false,
+    "isOfficialResultAvailable": false,
+    "isAuthoritativeScorecardAvailable": false,
+    "feedLastScore": "146/8 in 18.5 overs",
+    "conclusion": "Under strict forensic safety rules, full-innings team total cannot be inferred from stale live overs alone without authoritative 20th over snapshot or confirmed all-out record.",
+    "action": "KEEP_OPEN (BLOCKED)"
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "phase": "38",
+  "environment": "production",
+  "timestamp": "2026-08-29T10:48:00Z",
+  "status": "PASS",
+  "source": "MARKET_GRADING_DRY_RUN",
+  "stub": false,
+  "dryRunResults": [
+    {
+      "betId": "bet_1787989375340_ec9isr",
+      "inputMarket": "team_total",
+      "inputLine": 178.5,
+      "selection": "sel_under_178.5",
+      "finalEventResult": "Paarl Royals SRL 146 runs in 18.5 ov",
+      "graderResult": "WON",
+      "error": null,
+      "unresolvedReason": null,
+      "blockReason": "BLOCKED_BY_CONFIDENCE: STALE_DATA: In-play match data age (7165s) exceeds max allowed (300s)"
+    },
+    {
+      "betId": "bet_1787989343526_gz1lb5",
+      "inputMarket": "i1_team_score_at_5_dismissal",
+      "inputLine": 159.5,
+      "selection": "sel_under_159.5",
+      "finalEventResult": "Score at 5th dismissal was 149 runs",
+      "graderResult": "WON",
+      "error": null,
+      "unresolvedReason": null,
+      "blockReason": "BLOCKED_BY_CONFIDENCE: STALE_DATA: In-play match data age (7165s) exceeds max allowed (300s)"
+    },
+    {
+      "betId": "bet_1787989337539_7hhbuh",
+      "inputMarket": "i1_team_score_at_5_dismissal",
+      "inputLine": 159.5,
+      "selection": "sel_over_159.5",
+      "finalEventResult": "Score at 5th dismissal was 149 runs",
+      "graderResult": "LOST",
+      "error": null,
+      "unresolvedReason": null,
+      "blockReason": "BLOCKED_BY_CONFIDENCE: STALE_DATA: In-play match data age (7165s) exceeds max allowed (300s)"
+    },
+    {
+      "betId": "bet_1787989331426_r1j9xk",
+      "inputMarket": "i1_wicket_in_over_16",
+      "inputLine": null,
+      "selection": "sel_cwkt_no",
+      "finalEventResult": "Over 16 wickets = 0 (Score moved from 140/4 to 145/4)",
+      "graderResult": "WON",
+      "error": null,
+      "unresolvedReason": null,
+      "blockReason": "BLOCKED_BY_CONFIDENCE: STALE_DATA: In-play match data age (7165s) exceeds max allowed (300s)"
+    },
+    {
+      "betId": "bet_1787989321317_ks5t6b",
+      "inputMarket": "i1_next_over_17_total",
+      "inputLine": 10.5,
+      "selection": "sel_under_10.5",
+      "finalEventResult": "Over 17 runs = 6 (Score moved from 145/4 to 151/5)",
+      "graderResult": "WON",
+      "error": null,
+      "unresolvedReason": null,
+      "blockReason": "BLOCKED_BY_CONFIDENCE: STALE_DATA: In-play match data age (7165s) exceeds max allowed (300s)"
+    }
+  ]
+}

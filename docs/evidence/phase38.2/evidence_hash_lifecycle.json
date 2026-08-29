@@ -1,0 +1,27 @@
+{
+  "phase": "38.2",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:25:00Z",
+  "status": "PASS",
+  "source": "EVIDENCE_HASH_LIFECYCLE_AUDIT",
+  "stub": false,
+  "lifecycle": {
+    "creationPoint": "authorizeSettlement() in lib/settlement/settlementAuthorizationEngine.mjs",
+    "algorithm": "SHA-256 (crypto.createHash('sha256'))",
+    "exactFieldsIncluded": [
+      "betId",
+      "matchId",
+      "marketId",
+      "selectionId",
+      "gradedOutcome",
+      "confidenceState",
+      "finalityState",
+      "providersAgree",
+      "providersAvailable",
+      "stale"
+    ],
+    "storage": "Passed as authorizationToken.evidenceHash to betSettlementEngine",
+    "recomputationAndComparison": "validateSettlementAuthorization() recomputes expectedHash and strictly verifies authorization.evidenceHash === `sha256:${expectedHash}`",
+    "mismatchHandling": "Throws SETTLEMENT_AUTHORIZATION_CORRUPTED: Evidence hash verification failed and aborts SQL transaction"
+  }
+}

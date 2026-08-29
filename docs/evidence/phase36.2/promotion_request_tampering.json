@@ -1,0 +1,30 @@
+{
+  "phase": "36.2",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:24:00Z",
+  "status": "PASS",
+  "source": "PROMOTION_REQUEST_TAMPERING_TEST",
+  "stub": false,
+  "tamperingAttempts": [
+    {
+      "vector": "Spoofed rewardAmount in POST /api/v1/promotions/claim",
+      "serverBehavior": "Ignored; calculated strictly from transactions table deposit amount",
+      "status": "PASS"
+    },
+    {
+      "vector": "Spoofed matchPercent in POST /api/rewards/promo/claim",
+      "serverBehavior": "Ignored; amount fetched from signup_promo_codes record",
+      "status": "PASS"
+    },
+    {
+      "vector": "Spoofed prizeIndex in POST /api/v1/rewards/daily-spin/spin",
+      "serverBehavior": "Ignored; server generates cryptographic random spin result",
+      "status": "PASS"
+    },
+    {
+      "vector": "Spoofed netLoss in POST /api/v1/user/vip/cashback",
+      "serverBehavior": "Ignored; server aggregates SQL net cash loss from settled bets and payout transactions",
+      "status": "PASS"
+    }
+  ]
+}

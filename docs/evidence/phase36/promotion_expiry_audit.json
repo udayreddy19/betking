@@ -1,0 +1,23 @@
+{
+  "phase": "36",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:50:00Z",
+  "status": "PASS",
+  "source": "PROMOTIONAL_EXPIRY_AUDIT",
+  "audit": {
+    "bonusExpiry": {
+      "mechanism": "expireStaleBonuses() sweeps user_bonuses where expires_at < CURRENT_TIMESTAMP",
+      "walletEffect": "Reduces wallets.bonus_balance by expired active bonus amount"
+    },
+    "freebetExpiry": {
+      "mechanism": "deposit_freebet_grants expires_at check in tryGrantDepositFreebet and bet placement validation",
+      "walletEffect": "Remaining unspent grant is marked EXPIRED"
+    },
+    "dailySpinExpiry": {
+      "mechanism": "expireSpinGrants() called on-demand before every wallet snapshot / daily spin check",
+      "walletEffect": "Unused spin grant balance deducted from bonus_balance or freebet_balance"
+    },
+    "historicalPreservation": "Expired records remain preserved in database with status='EXPIRED'"
+  },
+  "readOnly": true
+}

@@ -1,0 +1,16 @@
+{
+  "phase": "36.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:06:00Z",
+  "status": "PASS",
+  "source": "BONUS_WAGERING_INTEGRITY_TEST",
+  "stub": false,
+  "rulesVerified": {
+    "minOddsThreshold": 1.75,
+    "wageringMultiplier": 5,
+    "oddsBelowThresholdIgnored": true,
+    "freebetStakesIgnored": true,
+    "turnoverCappedAtRequired": true,
+    "negativeProgress": 0
+  }
+}

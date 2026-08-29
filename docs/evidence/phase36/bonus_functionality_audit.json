@@ -1,0 +1,25 @@
+{
+  "phase": "36",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:50:00Z",
+  "status": "PASS",
+  "source": "PROMOTIONS_ENGINE_AUDIT",
+  "audit": {
+    "feature": "Deposit Match Bonus & Wagering Turnover",
+    "table": "user_bonuses, promotions",
+    "creation": "Admin or migration seeded",
+    "claiming": "claimPromotionBonus() inside withTransaction with FOR UPDATE row lock",
+    "idempotency": "Enforced via unique active user_bonuses check",
+    "identityDeduplication": "Enforced via assertIdentityHasNotClaimedPromo on PAN/Aadhaar hashes",
+    "depositValidation": "Strictly verified against transactions WHERE type='DEPOSIT' AND status IN ('SUCCESS', 'COMPLETED')",
+    "budgetSafety": "Atomic budget subtraction; throws PROMOTION_ERROR: Promotion budget exhausted",
+    "walletEffect": "Credits wallets.bonus_balance",
+    "ledgerEffect": "Creates transaction (BONUS_CLAIM) and ledger_entries (CREDIT)",
+    "wageringMultiplier": "Calculated as rewardAmount * wagering_multiplier (e.g. 5x)",
+    "wageringProgress": "Tracked via processBonusWageringProgress() on qualifying bets (odds >= 1.50)",
+    "release": "releaseCompletedBonus() marks status RELEASED once wagering_completed >= wagering_required",
+    "expiry": "expireStaleBonuses() marks expired and deducts from bonus_balance",
+    "financialIsolation": "Bonus funds cannot be directly withdrawn without turnover completion"
+  },
+  "readOnly": true
+}

@@ -1,0 +1,29 @@
+{
+  "phase": "36.2",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:24:00Z",
+  "status": "PASS",
+  "source": "PROMOTION_WORKER_RETRY_INTEGRITY",
+  "stub": false,
+  "workersAudited": [
+    {
+      "worker": "expireStaleBonuses Worker",
+      "task": "Sweeps expired active user_bonuses and deducts unspent bonus balance",
+      "crashBeforeCommit": "Rolls back; unexpired bonuses untouched",
+      "crashAfterCommit": "On restart, query filters WHERE status='ACTIVE' so already processed records are skipped safely",
+      "status": "PASS"
+    },
+    {
+      "worker": "crmCampaignExecutionWorker",
+      "task": "Dispatches promotional communications to segmented audiences",
+      "retrySafety": "Idempotent communication logging; no duplicate financial side-effects",
+      "status": "PASS"
+    },
+    {
+      "worker": "expireSpinGrants Sweeper",
+      "task": "Sweeps daily spin wallet grants past 24 hours",
+      "retrySafety": "Filters WHERE status='ACTIVE' AND expires_at < NOW(); idempotent deductions",
+      "status": "PASS"
+    }
+  ]
+}

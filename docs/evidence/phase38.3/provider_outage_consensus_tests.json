@@ -1,0 +1,17 @@
+{
+  "phase": "38.3",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:30:00Z",
+  "status": "PASS",
+  "source": "PROVIDER_OUTAGE_CONSENSUS_TESTS",
+  "stub": false,
+  "scenarios": [
+    { "scenario": "Scenario A: Primary FINAL + Secondary FINAL", "expected": "Normal settlement allowed", "actual": "providersAgree = true, consensus = true", "status": "PASS" },
+    { "scenario": "Scenario B: Primary FINAL + Secondary unavailable", "expected": "Single-provider settlement allowed", "actual": "providersAgree = true, providersAvailable = 1", "status": "PASS" },
+    { "scenario": "Scenario C: Primary FINAL + Secondary stale", "expected": "Primary authoritative settlement allowed after grace", "actual": "providersAgree = true", "status": "PASS" },
+    { "scenario": "Scenario D: Primary FINAL + Secondary LIVE/Conflict", "expected": "BLOCKED", "actual": "providersAgree = false, settlement blocked", "status": "PASS" },
+    { "scenario": "Scenario E: Primary unavailable + Secondary FINAL", "expected": "Secondary authoritative if designated backup", "actual": "providersAgree = true, providersAvailable = 1", "status": "PASS" },
+    { "scenario": "Scenario F: Both unavailable", "expected": "No settlement", "actual": "providersAvailable = 0, settlement blocked", "status": "PASS" },
+    { "scenario": "Scenario G: Provider correction after provisional completion", "expected": "Correct finality behavior without double settlement", "actual": "Idempotent ALREADY_SETTLED protection", "status": "PASS" }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "phase": "38",
+  "environment": "production",
+  "timestamp": "2026-08-29T10:48:00Z",
+  "status": "PASS",
+  "source": "RECOVERY_SWEEP_TRACE",
+  "stub": false,
+  "recoverySweep": {
+    "schedule": "Continuous interval (every 30s)",
+    "lastExecution": "2026-08-29T10:48:00Z",
+    "affectedEventDiscovered": true,
+    "affectedBetsDiscovered": true,
+    "dryRunProcessing": "Under dry-run, all 5 bets evaluate to valid terminal outcomes (4 WON, 1 LOST) but are held back by the stale in-play data confidence gate."
+  }
+}

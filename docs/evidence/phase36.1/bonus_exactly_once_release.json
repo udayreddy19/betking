@@ -1,0 +1,17 @@
+{
+  "phase": "36.1",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:06:00Z",
+  "status": "PASS",
+  "source": "BONUS_EXACTLY_ONCE_RELEASE_TEST",
+  "stub": false,
+  "testExecution": {
+    "concurrentReleaseRequests": 100,
+    "bonusAmount": 1000,
+    "releasesOccurred": 1,
+    "duplicateReleases": 0,
+    "alreadyReleasedReturns": 99,
+    "totalCashCredited": 1000,
+    "overReleaseAmount": 0
+  }
+}

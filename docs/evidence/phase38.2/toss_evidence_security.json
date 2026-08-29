@@ -1,0 +1,16 @@
+{
+  "phase": "38.2",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:25:00Z",
+  "status": "PASS",
+  "source": "TOSS_EVIDENCE_SECURITY_AUDIT",
+  "stub": false,
+  "tossSecurity": {
+    "status": "POLICY_DEFINED",
+    "policy": "resolveMarketFinalityPolicy('TOSS')",
+    "requireMatchFinal": false,
+    "requireEventFinal": true,
+    "allowSnapshotFinality": true,
+    "requirements": "Requires authoritative matchHeader.tossWinner / liveDetails.tossWinner with strictly matching event identity and team IDs. Generic name matching is disallowed."
+  }
+}

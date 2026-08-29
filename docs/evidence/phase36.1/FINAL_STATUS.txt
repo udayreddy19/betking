@@ -1,0 +1,25 @@
+PHASE 36.1 — PROMOTIONAL FINANCIAL INTEGRITY, LIFECYCLE & CONCURRENCY VERIFICATION
+Status: STAGING_VERIFIED (PASS)
+Local: LOCAL_VERIFIED (PASS)
+Production: PRODUCTION_NOT_VERIFIED
+Date: 2026-08-29
+productionClaimAllowed: false
+PRODUCTION_CERTIFICATION_STATUS: NO-GO
+
+Verification Summary:
+- Promo Concurrency: PASS (100 concurrent workers yielded exactly 1 claim, 99 duplicate rejections, 0 ledger duplicates).
+- Free Bet Double Spend: PASS (100 concurrent placements on ₹500 free bet yielded exactly 1 reservation, 99 insufficient fund blocks).
+- Free Bet Settlement: PASS (Profit-only return on win strictly verified; stake is NOT returned to cash balance; stake restored on void).
+- Bonus Wagering: PASS (Accumulates only on qualifying odds >= 1.75; freebet stakes ignored; capped at required turnover).
+- Exactly-Once Bonus Release: PASS (100 concurrent release events yielded exactly 1 release and 0 over-release).
+- Daily Spin Wheel: PASS (100 concurrent spin attempts yielded exactly 1 prize, 99 alreadySpun rejections; 24h grant TTL).
+- VIP Cashback: PASS (Yesterday net loss formula in Kolkata timezone; duplicate claims rejected).
+- Referral Integrity: PASS (Self-referral blocked; duplicate referee qualification blocked).
+- Expiry Races: PASS (Deterministic row locking; expired records preserved).
+- API Idempotency: PASS (Exactly-once outcomes across all endpoints).
+- Failure Recovery: PASS (Database transaction rollback on failure; no orphaned records).
+- Wallet/Ledger Reconciliation: PASS (Zero actionable mismatches; non-negative balance constraints).
+- Abuse Protection: PASS (PAN/Aadhaar identity deduplication and device fingerprinting).
+- Admin Integrity: PASS (RBAC, audit logging, Maker-Checker alert resolution).
+- Client Trust Boundaries: PASS (Server calculates all rewards on verified DB records; client overrides rejected).
+- Test Results: 15/15 tests passing in tests/promotions/promotionalFinancialIntegrityAndConcurrency.test.js.

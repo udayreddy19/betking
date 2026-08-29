@@ -1,0 +1,45 @@
+{
+  "phase": "38.4",
+  "product": "OddsYra",
+  "timestamp": "2026-08-29T11:35:00Z",
+  "status": "PASS",
+  "stub": false,
+  "recoverySummary": {
+    "approvedCandidates": 4,
+    "successfullySettled": 4,
+    "blocked": 0,
+    "halted": false,
+    "betResults": {
+      "bet_1787989343526_gz1lb5": "WON (Payout: $95.00)",
+      "bet_1787989337539_7hhbuh": "LOST (Payout: $0.00)",
+      "bet_1787989331426_r1j9xk": "WON (Payout: $185.00)",
+      "bet_1787989321317_ks5t6b": "WON (Payout: $188.00)",
+      "bet_1787989375340_ec9isr": "ACCEPTED (KEEP_OPEN / EXCLUDED)"
+    },
+    "teamTotalExclusion": "PASS",
+    "normalSettlementPath": "PASS",
+    "evidenceRevalidation": "PASS",
+    "idempotency": "PASS",
+    "walletReconciliation": "PASS",
+    "ledgerReconciliation": "PASS",
+    "databaseState": "PASS",
+    "apiState": "PASS",
+    "frontendState": "PASS",
+    "auditTrail": "PASS",
+    "workerHealth": "PASS",
+    "testSuiteResults": {
+      "totalSuites": 18,
+      "totalTests": 79,
+      "passed": 79,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "certification": {
+    "localStatus": "LOCAL_PASS",
+    "stagingStatus": "STAGING_PASS",
+    "productionStatus": "NOT_VERIFIED",
+    "productionClaimAllowed": false,
+    "productionCertificationStatus": "NO-GO"
+  }
+}

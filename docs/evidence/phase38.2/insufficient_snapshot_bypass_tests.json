@@ -1,0 +1,14 @@
+{
+  "phase": "38.2",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:25:00Z",
+  "status": "PASS",
+  "source": "INSUFFICIENT_SNAPSHOT_BYPASS_TESTS",
+  "stub": false,
+  "tests": [
+    { "attempt": "OVER_TOTAL evaluated during mid-over (balls > 0)", "result": "getRunsInOver returns null -> Settlement BLOCKED", "status": "PASS" },
+    { "attempt": "DISMISSAL_SCORE evaluated before wicket falls", "result": "getScoreAtDismissal returns null -> Settlement BLOCKED", "status": "PASS" },
+    { "attempt": "NEXT_BALL evaluated before delivery confirmed", "result": "getConfirmedBallEvent returns null -> Settlement BLOCKED", "status": "PASS" },
+    { "attempt": "TEAM_TOTAL evaluated on partial innings (18.5 ov)", "result": "allowSnapshotFinality: false -> Settlement BLOCKED (STALE_DATA)", "status": "PASS" }
+  ]
+}

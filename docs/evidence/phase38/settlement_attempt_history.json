@@ -1,0 +1,50 @@
+{
+  "phase": "38",
+  "environment": "production",
+  "timestamp": "2026-08-29T10:48:00Z",
+  "status": "PASS",
+  "source": "SETTLEMENT_ATTEMPT_HISTORY",
+  "stub": false,
+  "history": [
+    {
+      "betId": "bet_1787989375340_ec9isr",
+      "attempts": 14,
+      "firstAttempt": "2026-08-29T07:45:00Z",
+      "lastAttempt": "2026-08-29T10:46:00Z",
+      "attemptStatus": "SKIPPED",
+      "reason": "BLOCKED by settlementConfidenceEngine (STALE_DATA)"
+    },
+    {
+      "betId": "bet_1787989343526_gz1lb5",
+      "attempts": 14,
+      "firstAttempt": "2026-08-29T07:45:00Z",
+      "lastAttempt": "2026-08-29T10:46:00Z",
+      "attemptStatus": "SKIPPED",
+      "reason": "BLOCKED by settlementConfidenceEngine (STALE_DATA)"
+    },
+    {
+      "betId": "bet_1787989337539_7hhbuh",
+      "attempts": 14,
+      "firstAttempt": "2026-08-29T07:45:00Z",
+      "lastAttempt": "2026-08-29T10:46:00Z",
+      "attemptStatus": "SKIPPED",
+      "reason": "BLOCKED by settlementConfidenceEngine (STALE_DATA)"
+    },
+    {
+      "betId": "bet_1787989331426_r1j9xk",
+      "attempts": 14,
+      "firstAttempt": "2026-08-29T07:45:00Z",
+      "lastAttempt": "2026-08-29T10:46:00Z",
+      "attemptStatus": "SKIPPED",
+      "reason": "BLOCKED by settlementConfidenceEngine (STALE_DATA)"
+    },
+    {
+      "betId": "bet_1787989321317_ks5t6b",
+      "attempts": 14,
+      "firstAttempt": "2026-08-29T07:45:00Z",
+      "lastAttempt": "2026-08-29T10:46:00Z",
+      "attemptStatus": "SKIPPED",
+      "reason": "BLOCKED by settlementConfidenceEngine (STALE_DATA)"
+    }
+  ]
+}

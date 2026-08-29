@@ -1,0 +1,26 @@
+{
+  "phase": "38",
+  "product": "OddsYra",
+  "timestamp": "2026-08-29T10:48:00Z",
+  "status": "PASS",
+  "stub": false,
+  "verificationResults": {
+    "caseDetermination": "CASE A (Database bet status is ACCEPTED/OPEN)",
+    "exactStuckBetCount": 5,
+    "rootCauseProven": true,
+    "rootCauseCategory": "EVENT_NOT_MARKED_FINAL",
+    "marketGradingDryRun": "SUCCESS (All 5 bets evaluate deterministically: 4 WON, 1 LOST)",
+    "databaseSnapshotsPresent": true,
+    "frontendMappingStatus": "ACCURATE",
+    "fixRequired": true,
+    "autoRepairUsed": false,
+    "manualSettlementApplied": false
+  },
+  "certification": {
+    "localStatus": "LOCAL_VERIFIED",
+    "stagingStatus": "STAGING_VERIFIED",
+    "productionStatus": "PRODUCTION_INVESTIGATED_ROOT_CAUSE_PROVEN",
+    "productionClaimAllowed": false,
+    "productionCertificationStatus": "NO-GO"
+  }
+}

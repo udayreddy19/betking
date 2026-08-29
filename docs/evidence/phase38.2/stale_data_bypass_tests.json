@@ -1,0 +1,14 @@
+{
+  "phase": "38.2",
+  "environment": "local_and_staging",
+  "timestamp": "2026-08-29T11:25:00Z",
+  "status": "PASS",
+  "source": "STALE_DATA_BYPASS_TESTS",
+  "stub": false,
+  "tests": [
+    { "bypassMethod": "Passing fixture elapsed time > 3.5h without terminal status", "result": "BLOCKED (STALE_DATA)", "status": "PASS" },
+    { "bypassMethod": "Fixture dropped from provider feed", "result": "BLOCKED (STALE_DATA)", "status": "PASS" },
+    { "bypassMethod": "Stale score indicating apparent lead in incomplete chase", "result": "BLOCKED (STALE_DATA)", "status": "PASS" },
+    { "bypassMethod": "Using old cached canonical state (> 300s)", "result": "BLOCKED (STALE_DATA)", "status": "PASS" }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "phase": "36",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:50:00Z",
+  "status": "PASS",
+  "source": "PROMOTION_ENGINE_STRUCTURE_AUDIT",
+  "audit": {
+    "engineType": "Rule & Database Driven Promotion Catalog",
+    "coreTables": "promotions, user_bonuses, deposit_freebet_grants, crm_campaigns",
+    "promotionFields": [
+      "id", "name", "code", "type", "status", "budget", "used_budget",
+      "max_reward", "per_user_limit", "min_odds", "min_stake",
+      "wagering_multiplier", "match_percent", "starts_at", "expires_at",
+      "reward_bucket", "auto_grant_on_deposit", "is_targeted"
+    ],
+    "eligibilityChecks": [
+      "Account status (ACTIVE only)",
+      "KYC / PAN / Aadhaar unique identity checks",
+      "Deposit count verification (NEW vs EXISTING vs ALL)",
+      "Segment membership / exclusion checks",
+      "Abuse risk clearance (promotionAbuseEngine)"
+    ],
+    "adminControls": "Create, pause, resume, assign users, track ROI, view abuse alerts"
+  },
+  "readOnly": true
+}

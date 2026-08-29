@@ -1,0 +1,34 @@
+{
+  "phase": "37",
+  "environment": "staging",
+  "timestamp": "2026-08-29T13:36:00Z",
+  "status": "PASS",
+  "source": "USER_HORIZONTAL_ACCESS_CONTROL",
+  "stub": false,
+  "idorProtections": [
+    {
+      "resource": "User Wallet & Balance",
+      "endpoint": "GET /api/v1/wallet",
+      "protection": "Resolved strictly from req.user.userId (JWT sub); query params ignored",
+      "result": "PASS"
+    },
+    {
+      "resource": "User Bets History",
+      "endpoint": "GET /api/v1/bets/my-bets",
+      "protection": "WHERE user_id = req.user.userId SQL binding",
+      "result": "PASS"
+    },
+    {
+      "resource": "User Profile & Security",
+      "endpoint": "GET /api/v1/user/profile",
+      "protection": "WHERE user_id = req.user.userId SQL binding",
+      "result": "PASS"
+    },
+    {
+      "resource": "KYC Verification Records",
+      "endpoint": "GET /api/v1/user/kyc",
+      "protection": "WHERE user_id = req.user.userId SQL binding",
+      "result": "PASS"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+PHASE 37.1 — USER & ADMIN ADVERSARIAL SESSION, TOKEN & PRIVILEGE HARDENING
+Status: STAGING_VERIFIED (PASS)
+Local: LOCAL_VERIFIED (PASS)
+Production: PRODUCTION_NOT_VERIFIED
+Date: 2026-08-29
+productionClaimAllowed: false
+PRODUCTION_CERTIFICATION_STATUS: NO-GO
+
+Verification Summary:
+- Access Token Security: PASS (Stateless 15-minute HS256 tokens reject expired, tampered, or misclassified token types).
+- Refresh Token Replay & Reuse Detection: PASS (Single-use token rotation implemented; replaying an old refresh token instantly revokes all tokens for that user).
+- Logout & Revocation: PASS (Logout and password change immediately revoke active database refresh tokens).
+- Active Session Suspension: PASS (requireAccountStatus queries DB in real-time to block bets and withdrawals on active tokens of suspended users).
+- Admin Self-Dealing & Maker-Checker: PASS (Strict maker != checker separation prevents self-approval of manual credits or overrides; 10 concurrent approval workers execute exactly 1 approval).
+- JWT Secret Security & Rotation: PASS (Production startup rejects missing/insecure default secrets; opaque database refresh tokens allow seamless secret rotation).
+- Admin MFA Security: PASS (5-minute transient challenge tokens cannot authorize admin APIs).
+- Token Confusion: PASS (User access tokens strictly blocked from admin routes with 403 ADMIN_REQUIRED).
+- Session Fixation & Multi-Device: PASS (Fresh 64-byte random tokens on each login; individual or global session termination).
+- Test Results: 8/8 tests passing in tests/security/adversarialSessionAndPrivilegeHardening.test.js (41/41 tests passing across full security suite).

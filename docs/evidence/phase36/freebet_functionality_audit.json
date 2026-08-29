@@ -1,0 +1,20 @@
+{
+  "phase": "36",
+  "environment": "staging",
+  "timestamp": "2026-08-29T12:50:00Z",
+  "status": "PASS",
+  "source": "DEPOSIT_FREEBET_ENGINE_AUDIT",
+  "audit": {
+    "feature": "Deposit Free Bet Grants",
+    "table": "deposit_freebet_grants, promotions",
+    "lifecycle": "CREATED -> AVAILABLE -> USED -> SETTLED (or EXPIRED / VOIDED)",
+    "walletEffect": "Credits wallets.freebet_balance",
+    "ledgerEffect": "Creates transaction (BONUS_CLAIM: DEPOSIT_FREEBET) and ledger_entries (CREDIT)",
+    "stakeAllocation": "Consumes freebet_balance when placing bet with fundSource = 'freebet'",
+    "winningSettlementRule": "PROFIT_ONLY: Free bet stake is NOT returned to user on win. Only net profit (odds - 1) * stake is credited to cash balance.",
+    "voidSettlementRule": "On VOID, freebet stake is restored to freebet_balance if not expired",
+    "doubleSpendProtection": "Protected by database row-level locking on wallets (FOR UPDATE)",
+    "campaignTargeting": "Supports global campaigns and targeted segment campaigns via deposit_freebet_campaign_users"
+  },
+  "readOnly": true
+}
