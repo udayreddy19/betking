@@ -150,6 +150,13 @@ httpServer.listen(PORT, async () => {
   logger.info('http_listening', { port: Number(PORT), webhook: '/api/webhooks/razorpay', websocket: '/ws/support' });
 
   try {
+    const { logWebPushStartupStatus } = await import('../lib/webPushEngine.mjs');
+    logWebPushStartupStatus();
+  } catch (err) {
+    logger.warn('webpush_startup_check_failed', { error: err.message });
+  }
+
+  try {
     if (process.env.RUN_BACKGROUND_WORKERS !== 'false') {
       const { startBackgroundWorkers } = await import('../lib/schedulerWorker.mjs');
       startBackgroundWorkers();

@@ -141,6 +141,93 @@ router.post('/api/v1/user/notifications/clear', requireAuth, async (req, res) =>
 });
 
 /**
+ * GET /api/v1/user/push/vapid-public-key
+ * Get VAPID public key for frontend service worker registration.
+ */
+router.get('/api/v1/user/push/vapid-public-key', async (req, res) => {
+  try {
+    const { getWebPushStatus } = await import('../../lib/webPushEngine.mjs');
+    const status = getWebPushStatus();
+    res.json({
+      success: true,
+      enabled: status.enabled,
+      configured: status.configured,
+      vapidPublicKey: status.vapidPublicKey,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message, vapidPublicKey: null });
+  }
+});
+
+/**
+ * GET /api/v1/user/push/status
+ * Get user push notification subscription status.
+ */
+router.get('/api/v1/user/push/status', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { getUserActivePushSubscriptions, isWebPushConfigured } = await import('../../lib/webPushEngine.mjs');
+    const subs = await getUserActivePushSubscriptions(userId);
+    res.json({
+      success: true,
+      pushSupported: isWebPushConfigured(),
+      subscribed: subs.length > 0,
+      activeDevices: subs.length,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/v1/user/push/subscribe
+ * Register or update browser push subscription for authenticated user.
+ */
+router.post('/api/v1/user/push/subscribe', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { endpoint, keys } = req.body || {};
+
+    if (!endpoint || !keys?.p256dh || !keys?.auth) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid subscription payload. Must include endpoint and keys (p256dh, auth).',
+      });
+    }
+
+    const { savePushSubscription } = await import('../../lib/webPushEngine.mjs');
+    const row = await savePushSubscription({
+      userId,
+      endpoint,
+      p256dh: keys.p256dh,
+      auth: keys.auth,
+      userAgent: req.headers['user-agent'] || '',
+    });
+
+    res.json({ success: true, subscription: row });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/v1/user/push/unsubscribe
+ * Unsubscribe / deactivate browser push subscription for authenticated user.
+ */
+router.post('/api/v1/user/push/unsubscribe', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { endpoint } = req.body || {};
+    const { removePushSubscription } = await import('../../lib/webPushEngine.mjs');
+
+    const result = await removePushSubscription({ userId, endpoint });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
  * GET /api/v1/user/notifications/preferences
  * Fetch user notification preferences.
  */
@@ -169,3 +256,5 @@ router.post('/api/v1/user/notifications/preferences', requireAuth, async (req, r
 });
 
 export default router;
+
+
