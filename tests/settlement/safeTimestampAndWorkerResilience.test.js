@@ -203,7 +203,7 @@ describe('Safe Timestamp Parser & Settlement Worker Resilience', () => {
     });
 
     expect(auth.success).toBe(true);
-    expect(auth.authorization.token).toBeDefined();
+    expect(auth.authorization.authorizationId).toBeDefined();
   });
 
   // 14. Event identity terminology accuracy: names are not IDs

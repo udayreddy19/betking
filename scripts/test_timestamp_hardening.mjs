@@ -139,7 +139,7 @@ async function runTests() {
     authorizedBy: 'LiveMatchSettlementWorker',
   });
   assert.strictEqual(auth13.success, true);
-  assert.ok(auth13.authorization.token);
+  assert.ok(auth13.authorization.authorizationId);
   console.log('✅ Test 13: Snapshot-authorized micro-market passes with exact authorization PASS');
 
   // Test 14: Event identity terminology accuracy
