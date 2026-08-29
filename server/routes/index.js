@@ -142,4 +142,7 @@ adminRouter.use('/odds-model', oddsModelHealthRouter);
 import oddsIntelligenceRouter from './admin/oddsIntelligence.js';
 adminRouter.use('/odds-intelligence', oddsIntelligenceRouter);
 
+import apiExplorerRouter from './admin/apiExplorer.js';
+adminRouter.use('/api-explorer', apiExplorerRouter);
+
 export default adminRouter;

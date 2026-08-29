@@ -23,7 +23,7 @@ const ROLE_ALLOWED_DOMAINS = {
   [ADMIN_ROLES.SUPPORT_AGENT]: ['support', 'customers'],
   [ADMIN_ROLES.RISK_ANALYST]: ['trading-risk', 'analytics', 'security-governance'],
   [ADMIN_ROLES.MARKETING_ADMIN]: ['growth', 'communications', 'analytics'],
-  [ADMIN_ROLES.OPERATIONS_ADMIN]: ['operations', 'platform', 'analytics', 'betting', 'support'],
+  [ADMIN_ROLES.OPERATIONS_ADMIN]: ['operations', 'platform', 'analytics', 'betting', 'support', 'api-explorer'],
 };
 
 export { ROLE_ALLOWED_DOMAINS };

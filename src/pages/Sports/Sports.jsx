@@ -314,6 +314,32 @@ export default function Sports() {
 
   useEffect(() => subscribeMediaQuery('(min-width: 1025px)', setIsWideLayout), []);
 
+  const isIplSrlView = isSameLeague(activeLeague, 'ipl-srl', cricketSeries);
+  const watchlistOnly = searchParams.get('watchlist') === '1';
+
+  const baseSportPool = useMemo(() => {
+    if (watchlistOnly) {
+      return filterMatches(matches || [], { stateTab: 'all', searchQuery })
+        .filter((m) => watchlistIds.includes(String(m.id)));
+    }
+    return filterByLeague(
+      filterMatches(matches || [], { sport: activeSport, stateTab: 'all', searchQuery }),
+      activeLeague,
+      cricketSeries,
+    );
+  }, [matches, activeSport, activeLeague, searchQuery, cricketSeries, watchlistOnly, watchlistIds]);
+
+  const sportMatches = useMemo(() => {
+    return [...baseSportPool].sort((a, b) => compareMatchesForSportsBoard(a, b, getMatchScores));
+  }, [baseSportPool, matchDetailVersion]);
+
+  const liveMatches = useMemo(
+    () => sportMatches.filter((m) => getMatchState(m) === 'in'),
+    [sportMatches],
+  );
+
+  const cricketGroups = useMemo(() => groupMatchesByLeague(sportMatches), [sportMatches]);
+
   // Prefer the current league pool. Deep-linked match ids search the full feed (any league).
   const matchDeepLinkId = searchParams.get('match');
   const matchTeamsHint = searchParams.get('teams');
@@ -345,32 +371,6 @@ export default function Sports() {
 
     return () => { cancelled = true; };
   }, [selectedMatchId, matchDeepLinkId, matches, sportMatches, liveMatches, matchTeamsHint]);
-
-  const isIplSrlView = isSameLeague(activeLeague, 'ipl-srl', cricketSeries);
-  const watchlistOnly = searchParams.get('watchlist') === '1';
-
-  const baseSportPool = useMemo(() => {
-    if (watchlistOnly) {
-      return filterMatches(matches || [], { stateTab: 'all', searchQuery })
-        .filter((m) => watchlistIds.includes(String(m.id)));
-    }
-    return filterByLeague(
-      filterMatches(matches || [], { sport: activeSport, stateTab: 'all', searchQuery }),
-      activeLeague,
-      cricketSeries,
-    );
-  }, [matches, activeSport, activeLeague, searchQuery, cricketSeries, watchlistOnly, watchlistIds]);
-
-  const sportMatches = useMemo(() => {
-    return [...baseSportPool].sort((a, b) => compareMatchesForSportsBoard(a, b, getMatchScores));
-  }, [baseSportPool, matchDetailVersion]);
-
-  const liveMatches = useMemo(
-    () => sportMatches.filter((m) => getMatchState(m) === 'in'),
-    [sportMatches],
-  );
-
-  const cricketGroups = useMemo(() => groupMatchesByLeague(sportMatches), [sportMatches]);
 
   const lastActiveMatchRef = useRef(null);
 

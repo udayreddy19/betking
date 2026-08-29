@@ -26,7 +26,7 @@ const ROLE_PERMISSIONS = {
   SUPPORT_AGENT: ['support', 'customers', 'tickets', 'cases', 'kyc'],
   RISK_ANALYST: ['risk', 'fraud', 'analytics', 'security', 'reconciliation', 'kyc'],
   MARKETING_ADMIN: ['growth', 'promotions', 'communications', 'analytics'],
-  OPERATIONS_ADMIN: ['operations', 'platform', 'providers', 'emergency', 'incidents', 'analytics', 'kyc'],
+  OPERATIONS_ADMIN: ['operations', 'platform', 'providers', 'emergency', 'incidents', 'analytics', 'kyc', 'api-explorer'],
 };
 
 export function generateAdminToken(adminId, role, tenantId = 'oddsyra_in') {

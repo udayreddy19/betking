@@ -45,6 +45,7 @@ import AnalyticsDomainView from '../domains/AnalyticsDomainView';
 import PlatformDomainView from '../domains/PlatformDomainView';
 import OperationsDomainView from '../domains/OperationsDomainView';
 import SecurityGovernanceDomainView from '../domains/SecurityGovernanceDomainView';
+import ApiExplorerDomainView from '../domains/ApiExplorerDomainView';
 import { ensureAdminSession, adminApiClient } from '../api/adminApiClient';
 import { AdminToastProvider } from '../components/AdminToastContext';
 
@@ -225,8 +226,18 @@ const DOMAIN_GROUPS = [
         ],
       },
       {
+        id: 'api-explorer',
+        label: '13 · API Explorer',
+        Icon: SearchIcon,
+        role: ADMIN_ROLES.OPERATIONS_ADMIN,
+        subModules: [
+          { id: 'overview', label: 'API Catalog' },
+          { id: 'odds-engine', label: 'Odds Engine' },
+        ],
+      },
+      {
         id: 'security-governance',
-        label: '13 · Security & Governance',
+        label: '14 · Security & Governance',
         Icon: ShieldCheckIcon,
         role: ADMIN_ROLES.SUPER_ADMIN,
         subModules: [
@@ -898,6 +909,7 @@ function AdminShellInner() {
       case 'analytics': return <AnalyticsDomainView subModule={activeSubModule} />;
       case 'platform': return <PlatformDomainView subModule={activeSubModule} />;
       case 'operations': return <OperationsDomainView subModule={activeSubModule} onNavigate={handleCommandNavigate} />;
+      case 'api-explorer': return <ApiExplorerDomainView subModule={activeSubModule} />;
       case 'security-governance': return <SecurityGovernanceDomainView subModule={activeSubModule} />;
       default: return (
         <ControlTowerView
