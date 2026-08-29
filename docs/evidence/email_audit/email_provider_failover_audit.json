@@ -1,0 +1,19 @@
+{
+  "auditTimestamp": "2026-08-29T18:44:23.865Z",
+  "flow": [
+    "1. Attempt send via Primary SMTP transport",
+    "2. If success: increment primarySuccess metric and update quota tracker",
+    "3. If error is 429, daily limit, or rate limit: mark primary quota failure and switch to Fallback Transport (Brevo)",
+    "4. If fallback succeeds: increment fallbackSuccess metric",
+    "5. If both fail or network error: record error in database queue with retry status (max 3 attempts)"
+  ],
+  "deadLetterHandling": "Attempts incremented per retry; moves to DEAD_LETTER after 3 failures with error_message logged",
+  "prometheusMetrics": [
+    "email_primary_success_total",
+    "email_fallback_success_total",
+    "email_primary_failure_total",
+    "email_fallback_failure_total",
+    "email_failover_monitored"
+  ],
+  "verdict": "PASS"
+}

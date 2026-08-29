@@ -1,0 +1,17 @@
+{
+  "auditTimestamp": "2026-08-29T18:44:23.875Z",
+  "environment": "production (200.234.38.230 / https://oddsyra.com)",
+  "primarySmtpConfigured": true,
+  "fallbackSmtpConfigured": false,
+  "fromAddress": "OddsYra <no-reply@oddsyra.com>",
+  "promosFromAddress": "OddsYra Promotions <promos@oddsyra.com>",
+  "activeEmailLogsInDb": 8,
+  "failedOrStuckEmailJobs": 0,
+  "deadLetterBacklog": 0,
+  "dnsAuthenticationStatus": {
+    "spf": "VERIFIED (include:zoho.in ~all)",
+    "dkim": "VERIFIED (zmail._domainkey.oddsyra.com, mail._domainkey.oddsyra.com)",
+    "dmarc": "VERIFIED (p=none; rua=mailto:admin@oddsyra.com)"
+  },
+  "verdict": "PASS"
+}

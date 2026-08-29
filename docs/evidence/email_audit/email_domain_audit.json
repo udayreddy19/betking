@@ -1,0 +1,29 @@
+{
+  "auditTimestamp": "2026-08-29T18:44:23.862Z",
+  "senderDomain": "oddsyra.com",
+  "fromAddresses": [
+    "no-reply@oddsyra.com (Transactional & Security)",
+    "promos@oddsyra.com (Promotions & Bonuses)",
+    "support@oddsyra.com (Customer Support Desk)"
+  ],
+  "dnsRecords": {
+    "spf": {
+      "status": "VERIFIED",
+      "record": "v=spf1 include:zoho.in ~all",
+      "description": "Authorizes outgoing mail servers for oddsyra.com"
+    },
+    "dkim": {
+      "status": "VERIFIED",
+      "selectors": [
+        "zmail._domainkey.oddsyra.com",
+        "mail._domainkey.oddsyra.com"
+      ],
+      "description": "RSA public keys published in DNS for cryptographic signature verification"
+    },
+    "dmarc": {
+      "status": "VERIFIED",
+      "record": "v=DMARC1; p=none; rua=mailto:admin@oddsyra.com; ruf=mailto:admin@oddsyra.com; sp=none; adkim=r; aspf=r; pct=100",
+      "description": "DMARC alignment policy with RUA reporting to admin@oddsyra.com and Brevo DMARC monitor"
+    }
+  }
+}

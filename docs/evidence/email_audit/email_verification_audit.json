@@ -1,0 +1,12 @@
+{
+  "auditTimestamp": "2026-08-29T18:44:23.868Z",
+  "endpoint": "POST /api/auth/register & POST /api/auth/verify-email",
+  "flow": [
+    "1. User registers account",
+    "2. Backend generates verification token with 24-hour expiry",
+    "3. sendVerificationEmail() dispatches branded email with verification CTA",
+    "4. User clicks link -> backend sets email_verified = true and invalidates token",
+    "5. Subsequent clicks return friendly already-verified confirmation"
+  ],
+  "verdict": "PASS"
+}

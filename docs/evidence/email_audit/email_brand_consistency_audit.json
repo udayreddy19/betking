@@ -1,0 +1,20 @@
+{
+  "auditTimestamp": "2026-08-29T18:44:23.863Z",
+  "stylingArchitecture": {
+    "templateRenderer": "renderTransactionalEmail() (server/auth/emailService.js)",
+    "colorPalette": {
+      "bodyBackground": "#efeae0 (Warm Neutral Canvas)",
+      "cardBackground": "#fbf8f2 (Clean Off-White Card)",
+      "brandGreen": "#1f8a4c (OddsYra Primary Green)",
+      "brandGold": "#c98a12 (OddsYra Gold Accent)",
+      "textDark": "#14181f (High Contrast Body Text)",
+      "textMuted": "#5c6570 (Subtle Metadata Text)"
+    },
+    "typography": "-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
+    "darkModeResilience": "Light-on-cream design with meta color-scheme=\"light only\" and CSS overrides preventing iOS/Gmail auto-inversion corruption",
+    "ctaButtons": "Standard rounded pill (#1f8a4c, padding 14px 28px, 15px bold white text)",
+    "fallbackLinks": "Dashed box with full URL copy-paste fallback for clients with disabled button links",
+    "footer": "Standard legal copyright with dynamic year rendering and support details"
+  },
+  "verdict": "PASS (100% unified branding and mobile-optimized table layouts)"
+}

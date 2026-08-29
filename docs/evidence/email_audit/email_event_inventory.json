@@ -1,0 +1,149 @@
+{
+  "auditTimestamp": "2026-08-29T18:44:23.863Z",
+  "events": [
+    {
+      "category": "ACCOUNT",
+      "event": "Email Verification",
+      "trigger": "PASS",
+      "templateExists": "PASS",
+      "dispatched": "PASS",
+      "duplicateSafe": "PASS",
+      "functionName": "sendVerificationEmail"
+    },
+    {
+      "category": "ACCOUNT",
+      "event": "Password Reset Request",
+      "trigger": "PASS",
+      "templateExists": "PASS",
+      "dispatched": "PASS",
+      "duplicateSafe": "PASS",
+      "functionName": "sendPasswordResetEmail"
+    },
+    {
+      "category": "ACCOUNT",
+      "event": "Password Changed Alert",
+      "trigger": "PASS",
+      "templateExists": "PASS",
+      "dispatched": "PASS",
+      "duplicateSafe": "PASS",
+      "functionName": "sendPasswordChangedNotificationEmail"
+    },
+    {
+      "category": "KYC",
+      "event": "KYC Submission Reminder",
+      "trigger": "PASS",
+      "templateExists": "PASS",
+      "dispatched": "PASS",
+      "duplicateSafe": "PASS",
+      "functionName": "sendKycReminderEmail"
+    },
+    {
+      "category": "KYC",
+      "event": "KYC Approved / Rejected",
+      "trigger": "PASS",
+      "templateExists": "PASS",
+      "dispatched": "PASS",
+      "duplicateSafe": "PASS",
+      "functionName": "sendGenericNotificationEmail"
+    },
+    {
+      "category": "PAYMENTS",
+      "event": "Deposit Completed",
+      "trigger": "PASS",
+      "templateExists": "PASS",
+      "dispatched": "PASS",
+      "duplicateSafe": "PASS",
+      "functionName": "sendDepositCompletedEmail"
+    },
+    {
+      "category": "PAYMENTS",
+      "event": "Withdrawal Status Update",
+      "trigger": "PASS",
+      "templateExists": "PASS",
+      "dispatched": "PASS",
+      "duplicateSafe": "PASS",
+      "functionName": "sendWithdrawalStatusEmail"
+    },
+    {
+      "category": "BETTING",
+      "event": "Bet Settlement Outcome",
+      "trigger": "PASS",
+      "templateExists": "PASS",
+      "dispatched": "PASS",
+      "duplicateSafe": "PASS",
+      "functionName": "sendGenericNotificationEmail"
+    },
+    {
+      "category": "REWARDS",
+      "event": "Free Bet Credited",
+      "trigger": "PASS",
+      "templateExists": "PASS",
+      "dispatched": "PASS",
+      "duplicateSafe": "PASS",
+      "functionName": "sendDepositFreebetEmail"
+    },
+    {
+      "category": "REFERRALS",
+      "event": "Referral Reward Credited",
+      "trigger": "PASS",
+      "templateExists": "PASS",
+      "dispatched": "PASS",
+      "duplicateSafe": "PASS",
+      "functionName": "sendReferralRewardEmail"
+    },
+    {
+      "category": "MARKETING",
+      "event": "Invite Promo Code",
+      "trigger": "PASS",
+      "templateExists": "PASS",
+      "dispatched": "PASS",
+      "duplicateSafe": "PASS",
+      "functionName": "sendPromoCodeInviteEmail"
+    },
+    {
+      "category": "MARKETING",
+      "event": "Targeted Deposit Match Offer",
+      "trigger": "PASS",
+      "templateExists": "PASS",
+      "dispatched": "PASS",
+      "duplicateSafe": "PASS",
+      "functionName": "sendTargetedDepositOfferEmail"
+    },
+    {
+      "category": "SUPPORT",
+      "event": "Ticket Created User Ack",
+      "trigger": "PASS",
+      "templateExists": "PASS",
+      "dispatched": "PASS",
+      "duplicateSafe": "PASS",
+      "functionName": "sendSupportTicketCreatedUserEmail"
+    },
+    {
+      "category": "SUPPORT",
+      "event": "Support Agent Reply",
+      "trigger": "PASS",
+      "templateExists": "PASS",
+      "dispatched": "PASS",
+      "duplicateSafe": "PASS",
+      "functionName": "sendSupportAdminReplyEmail"
+    },
+    {
+      "category": "SUPPORT",
+      "event": "Support Ticket Closed",
+      "trigger": "PASS",
+      "templateExists": "PASS",
+      "dispatched": "PASS",
+      "duplicateSafe": "PASS",
+      "functionName": "sendSupportTicketClosedEmail"
+    },
+    {
+      "category": "SUPPORT",
+      "event": "Staff SLA Reminder",
+      "trigger": "PASS",
+      "templateExists": "PASS",
+      "dispatched": "PASS",
+      "duplicateSafe": "PASS",
+      "functionName": "sendSupportSlaReminderEmail"
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "auditTimestamp": "2026-08-29T18:44:23.865Z",
+  "checks": [
+    {
+      "check": "HTML Injection (XSS) Prevention",
+      "status": "PASS",
+      "description": "All dynamic parameters pass through escapeHtml() converting &, <, >, \", '"
+    },
+    {
+      "check": "Secure Token Generation",
+      "status": "PASS",
+      "description": "Cryptographically secure tokens (crypto.randomBytes(32).toString(\"hex\")) used for email verification and password resets"
+    },
+    {
+      "check": "Token Expiry",
+      "status": "PASS",
+      "description": "Password reset tokens expire in 1 hour; email verification tokens expire in 24 hours"
+    },
+    {
+      "check": "One-Time Token Use",
+      "status": "PASS",
+      "description": "Tokens are invalidated in the database immediately upon successful verification or password reset"
+    },
+    {
+      "check": "Rate Limiting",
+      "status": "PASS",
+      "description": "Password reset and resend verification endpoints are protected by rate limiters (authRateLimiter)"
+    },
+    {
+      "check": "Zero Secret Exposure",
+      "status": "PASS",
+      "description": "SMTP passwords and token secrets are never logged in plaintext"
+    }
+  ],
+  "verdict": "PASS"
+}

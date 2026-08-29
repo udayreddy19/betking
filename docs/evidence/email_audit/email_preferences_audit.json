@@ -1,0 +1,11 @@
+{
+  "auditTimestamp": "2026-08-29T18:44:23.868Z",
+  "table": "user_notification_preferences",
+  "column": "marketing_email (BOOLEAN DEFAULT TRUE)",
+  "safeguards": [
+    "Promotional campaigns (promos@oddsyra.com) verify marketing_email !== false before sending",
+    "Transactional emails (no-reply@oddsyra.com) for password resets, verification, deposits, withdrawals, and settlements bypass marketing opt-outs",
+    "Opt-out link included in marketing mail headers (List-Unsubscribe)"
+  ],
+  "verdict": "PASS"
+}

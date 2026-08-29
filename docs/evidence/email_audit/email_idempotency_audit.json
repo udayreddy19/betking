@@ -1,0 +1,22 @@
+{
+  "auditTimestamp": "2026-08-29T18:44:23.864Z",
+  "guards": [
+    {
+      "layer": "Idempotency Engine",
+      "mechanism": "idempotencyEngine.checkOrLock(notif_{eventType}_{eventId}_{userId}) locks concurrent dispatch"
+    },
+    {
+      "layer": "Database Unique Index",
+      "mechanism": "idx_notifications_event_unq (event_id, event_type, user_id) blocks duplicate rows in notifications table"
+    },
+    {
+      "layer": "Cooldown Windows",
+      "mechanism": "KYC reminder logs enforce 24-hour minimum spacing before repeat reminders"
+    },
+    {
+      "layer": "Referral Idempotency Key",
+      "mechanism": "unq_referral_reward_idempotency prevents duplicate reward notifications upon worker restarts"
+    }
+  ],
+  "verdict": "PASS"
+}

@@ -1,0 +1,42 @@
+{
+  "auditTimestamp": "2026-08-29T18:44:23.860Z",
+  "primaryProvider": {
+    "name": "Primary SMTP Transport (Resend / Zoho)",
+    "configured": false,
+    "hostEnv": "SMTP_HOST",
+    "userEnv": "SMTP_USER",
+    "portEnv": "SMTP_PORT (default 587 / 465)",
+    "secureEnv": "SMTP_SECURE (SSL/TLS / STARTTLS)",
+    "from": "OddsYra <no-reply@oddsyra.com>"
+  },
+  "fallbackProvider": {
+    "name": "Fallback SMTP Transport (Brevo / Sendinblue)",
+    "configured": false,
+    "hostEnv": "SMTP_FALLBACK_HOST",
+    "userEnv": "SMTP_FALLBACK_USER",
+    "portEnv": "SMTP_FALLBACK_PORT (default 587)",
+    "triggerConditions": [
+      "HTTP 429 Too Many Requests",
+      "Daily Quota Exceeded (SMTP_PRIMARY_DAILY_LIMIT)",
+      "Rate limit error responses"
+    ]
+  },
+  "promosProvider": {
+    "name": "Dedicated Promotional Mailbox (promos@oddsyra.com)",
+    "configured": false,
+    "from": "OddsYra Promotions <promos@oddsyra.com>",
+    "replyTo": "promos@oddsyra.com"
+  },
+  "metrics": {
+    "primarySuccess": 0,
+    "fallbackSuccess": 0,
+    "primaryFailure": 0,
+    "fallbackFailure": 0,
+    "lastProvider": null,
+    "lastError": null,
+    "lastAt": null,
+    "fallbackConfigured": false,
+    "primaryConfigured": false,
+    "monitored": false
+  }
+}

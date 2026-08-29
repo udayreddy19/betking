@@ -1,0 +1,21 @@
+{
+  "auditTimestamp": "2026-08-29T18:44:23.871Z",
+  "logsTable": "notifications",
+  "adminApi": "GET /api/admin/communications/logs & POST /api/admin/communications/logs/:id/retry",
+  "fieldsRecorded": [
+    "id",
+    "user_id",
+    "event_type",
+    "category",
+    "channel",
+    "recipient",
+    "subject",
+    "status",
+    "attempts",
+    "error_message",
+    "created_at",
+    "delivered_at"
+  ],
+  "metricsApi": "GET /metrics (Prometheus email counters)",
+  "verdict": "PASS"
+}

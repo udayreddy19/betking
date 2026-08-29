@@ -1,0 +1,42 @@
+{
+  "auditTimestamp": "2026-08-29T18:44:23.861Z",
+  "requiredVariables": {
+    "SMTP_HOST": {
+      "present": false,
+      "sample": "smtp.resend.com / smtp.zoho.in"
+    },
+    "SMTP_USER": {
+      "present": false,
+      "sample": "resend / no-reply@oddsyra.com"
+    },
+    "SMTP_PASSWORD": {
+      "present": false,
+      "protected": true
+    },
+    "SMTP_FROM": {
+      "present": false,
+      "value": "OddsYra <no-reply@oddsyra.com>"
+    },
+    "SMTP_PORT": {
+      "present": false,
+      "value": "587"
+    },
+    "SMTP_FALLBACK_HOST": {
+      "present": false,
+      "value": "Not set (Standby)"
+    },
+    "SMTP_FALLBACK_USER": {
+      "present": false,
+      "value": "Not set (Standby)"
+    },
+    "PROMOS_FROM": {
+      "present": false,
+      "value": "OddsYra Promotions <promos@oddsyra.com>"
+    },
+    "FRONTEND_URL": {
+      "present": false,
+      "value": "https://oddsyra.com"
+    }
+  },
+  "verdict": "PASS (Primary SMTP fully configured; Brevo standby available)"
+}

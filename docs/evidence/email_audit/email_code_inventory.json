@@ -1,0 +1,146 @@
+{
+  "auditTimestamp": "2026-08-29T18:44:23.859Z",
+  "coreService": "server/auth/emailService.js",
+  "smtpEngines": [
+    {
+      "name": "Nodemailer SMTP Transporter",
+      "file": "server/auth/emailService.js",
+      "purpose": "RFC 5322 MIME compilation and TLS/SSL SMTP transport"
+    },
+    {
+      "name": "Dual-Provider Failover Pipeline",
+      "file": "server/auth/emailService.js",
+      "purpose": "Primary Resend / Zoho SMTP with automatic Brevo failover on 429/quota error"
+    },
+    {
+      "name": "Promos Mailbox Router",
+      "file": "server/auth/emailService.js",
+      "purpose": "Routes marketing & promo campaigns via promos@oddsyra.com"
+    }
+  ],
+  "emailTemplates": [
+    {
+      "name": "sendVerificationEmail",
+      "type": "TRANSACTIONAL",
+      "trigger": "User signup / Resend verification",
+      "subject": "Verify your OddsYra account"
+    },
+    {
+      "name": "sendPasswordResetEmail",
+      "type": "SECURITY",
+      "trigger": "Password reset request",
+      "subject": "Reset your OddsYra password"
+    },
+    {
+      "name": "sendPasswordChangedNotificationEmail",
+      "type": "SECURITY",
+      "trigger": "Password updated",
+      "subject": "Your OddsYra password was changed"
+    },
+    {
+      "name": "sendSupportTicketAlertEmail",
+      "type": "ADMIN_SUPPORT",
+      "trigger": "Customer ticket created",
+      "subject": "Support Ticket Created: [TK-...]"
+    },
+    {
+      "name": "sendSupportTicketCreatedUserEmail",
+      "type": "TRANSACTIONAL_SUPPORT",
+      "trigger": "Customer ticket acknowledged",
+      "subject": "OddsYra Support: We received your request"
+    },
+    {
+      "name": "sendSupportAdminReplyEmail",
+      "type": "TRANSACTIONAL_SUPPORT",
+      "trigger": "Support agent replied",
+      "subject": "OddsYra Support: Update on your request"
+    },
+    {
+      "name": "sendSupportTicketClosedEmail",
+      "type": "TRANSACTIONAL_SUPPORT",
+      "trigger": "Support ticket resolved",
+      "subject": "OddsYra Support: Ticket closed"
+    },
+    {
+      "name": "sendSupportSlaReminderEmail",
+      "type": "ADMIN_SUPPORT",
+      "trigger": "Ticket nearing SLA breach",
+      "subject": "SLA Alert: Support Ticket [TK-...]"
+    },
+    {
+      "name": "sendDepositCompletedEmail",
+      "type": "TRANSACTIONAL_PAYMENT",
+      "trigger": "Deposit confirmed",
+      "subject": "Deposit Successful - OddsYra"
+    },
+    {
+      "name": "sendWithdrawalStatusEmail",
+      "type": "TRANSACTIONAL_PAYMENT",
+      "trigger": "Withdrawal status update",
+      "subject": "Withdrawal Update - OddsYra"
+    },
+    {
+      "name": "sendKycReminderEmail",
+      "type": "TRANSACTIONAL_KYC",
+      "trigger": "KYC submission reminder",
+      "subject": "Verify Your Identity - OddsYra"
+    },
+    {
+      "name": "sendReferralRewardEmail",
+      "type": "TRANSACTIONAL_REWARD",
+      "trigger": "Referral qualified & rewarded",
+      "subject": "Your Referral Reward is Here! - OddsYra"
+    },
+    {
+      "name": "sendDepositFreebetEmail",
+      "type": "PROMOTIONAL",
+      "trigger": "Deposit freebet credited",
+      "subject": "Your Free Bet Has Been Credited! - OddsYra"
+    },
+    {
+      "name": "sendPromoCodeInviteEmail",
+      "type": "PROMOTIONAL",
+      "trigger": "Exclusive promo invitation",
+      "subject": "Exclusive OddsYra Promo Code"
+    },
+    {
+      "name": "sendTargetedDepositOfferEmail",
+      "type": "PROMOTIONAL",
+      "trigger": "CRM targeted campaign",
+      "subject": "Exclusive Deposit Match Offer"
+    },
+    {
+      "name": "sendGenericNotificationEmail",
+      "type": "TRANSACTIONAL_SYSTEM",
+      "trigger": "Notification delivery queue",
+      "subject": "OddsYra notification"
+    }
+  ],
+  "queuesAndWorkers": [
+    {
+      "name": "Notification Delivery Queue (lib/notificationEngine.mjs)",
+      "interval": "15000ms",
+      "purpose": "Pulls QUEUED EMAIL records and dispatches via sendGenericNotificationEmail"
+    },
+    {
+      "name": "KYC Reminder Worker (lib/kycReminder.mjs)",
+      "interval": "120000ms",
+      "purpose": "Scans pending unverified users and sends sendKycReminderEmail with cooldowns"
+    },
+    {
+      "name": "Support SLA Worker (lib/supportSlaWorker.mjs)",
+      "interval": "300000ms",
+      "purpose": "Identifies open tickets breaching SLA and notifies on-duty staff"
+    }
+  ],
+  "integrationCallsites": [
+    "server/auth/authService.js",
+    "lib/kycReminder.mjs",
+    "lib/referralLoyaltyEngine.mjs",
+    "lib/supportNotify.mjs",
+    "lib/signupPromoCodes.mjs",
+    "lib/depositFreebetEngine.mjs",
+    "lib/crmComposerEngine.mjs",
+    "lib/notificationChannels.mjs"
+  ]
+}

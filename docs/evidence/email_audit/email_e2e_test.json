@@ -1,0 +1,98 @@
+{
+  "auditTimestamp": "2026-08-29T18:44:23.873Z",
+  "totalTests": 15,
+  "passed": 15,
+  "failed": 0,
+  "results": [
+    {
+      "testId": "TEST 1",
+      "name": "Welcome/signup verification email render",
+      "status": "PASS",
+      "durationMs": 8
+    },
+    {
+      "testId": "TEST 2",
+      "name": "Email verification token generation & link validity",
+      "status": "PASS",
+      "durationMs": 6
+    },
+    {
+      "testId": "TEST 3",
+      "name": "Password reset email generation & expiry check",
+      "status": "PASS",
+      "durationMs": 7
+    },
+    {
+      "testId": "TEST 4",
+      "name": "KYC approved notification email render",
+      "status": "PASS",
+      "durationMs": 5
+    },
+    {
+      "testId": "TEST 5",
+      "name": "KYC rejected notification email render",
+      "status": "PASS",
+      "durationMs": 5
+    },
+    {
+      "testId": "TEST 6",
+      "name": "Deposit completed payment email render",
+      "status": "PASS",
+      "durationMs": 6
+    },
+    {
+      "testId": "TEST 7",
+      "name": "Withdrawal completed payout email render",
+      "status": "PASS",
+      "durationMs": 6
+    },
+    {
+      "testId": "TEST 8",
+      "name": "Bet settlement notification email render",
+      "status": "PASS",
+      "durationMs": 5
+    },
+    {
+      "testId": "TEST 9",
+      "name": "Free bet credited reward email render",
+      "status": "PASS",
+      "durationMs": 6
+    },
+    {
+      "testId": "TEST 10",
+      "name": "Referral reward credited email render",
+      "status": "PASS",
+      "durationMs": 7
+    },
+    {
+      "testId": "TEST 11",
+      "name": "Primary provider failure circuit-breaker & fallback",
+      "status": "PASS",
+      "durationMs": 12
+    },
+    {
+      "testId": "TEST 12",
+      "name": "Retry event deduplication (idempotency key)",
+      "status": "PASS",
+      "durationMs": 5
+    },
+    {
+      "testId": "TEST 13",
+      "name": "Invalid recipient email rejection & error logging",
+      "status": "PASS",
+      "durationMs": 6
+    },
+    {
+      "testId": "TEST 14",
+      "name": "Email link domain validation (https://oddsyra.com)",
+      "status": "PASS",
+      "durationMs": 4
+    },
+    {
+      "testId": "TEST 15",
+      "name": "Marketing opt-out respected for promotional mail",
+      "status": "PASS",
+      "durationMs": 5
+    }
+  ]
+}
