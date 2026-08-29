@@ -11,8 +11,9 @@
   position: fixed;
   top: calc(var(--header-height) + 8px);
   right: var(--space-6);
-  width: min(380px, calc(100vw - 24px));
-  max-height: min(70vh, 560px);
+  width: min(420px, calc(100vw - 24px));
+  height: min(75vh, 600px);
+  max-height: min(75vh, 600px);
   background: var(--color-surface);
   isolation: isolate;
   transform: translateZ(0);
@@ -78,6 +79,8 @@
 }
 
 .my-bets-body {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: var(--space-3);
   display: flex;
@@ -86,22 +89,37 @@
 }
 
 .my-bets-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   padding: var(--space-8) var(--space-4);
   color: var(--color-text-muted);
+  min-height: 240px;
 }
 
 .my-bets-empty-icon {
-  font-size: 2rem;
+  font-size: 2.25rem;
   margin-bottom: var(--space-2);
 }
 
 .my-bets-empty h4 {
   color: var(--color-text);
+  font-size: var(--text-base);
+  font-weight: var(--font-bold);
   margin-bottom: var(--space-1);
 }
 
+.my-bets-empty p {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  margin: 0;
+}
+
 .my-bets-loading {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -109,6 +127,7 @@
   gap: var(--space-3);
   padding: var(--space-8) var(--space-4);
   color: var(--color-text-muted);
+  min-height: 240px;
 }
 
 .my-bets-loading-spinner {
@@ -130,6 +149,22 @@
   border-radius: var(--radius-md);
   padding: var(--space-3);
   background: var(--color-bg);
+}
+
+.my-bets-card--won {
+  border-left-color: #16a34a;
+}
+
+.my-bets-card--lost {
+  border-left-color: #dc2626;
+}
+
+.my-bets-card--void {
+  border-left-color: #64748b;
+}
+
+.my-bets-card--cashed_out {
+  border-left-color: #0284c7;
 }
 
 .my-bets-card--highlight {
@@ -174,6 +209,16 @@
 .my-bets-status-badge--lost {
   background: #fee2e2;
   color: #b91c1c;
+}
+
+.my-bets-status-badge--void {
+  background: rgba(148, 163, 184, 0.16);
+  color: #64748b;
+}
+
+.my-bets-status-badge--cashed_out {
+  background: rgba(2, 132, 199, 0.14);
+  color: #0284c7;
 }
 
 .my-bets-summary--won .value {
@@ -719,6 +764,7 @@
     right: 12px;
     left: 12px;
     width: auto;
+    height: min(80vh, 620px);
     max-height: calc(100vh - var(--header-height) - 24px);
   }
 

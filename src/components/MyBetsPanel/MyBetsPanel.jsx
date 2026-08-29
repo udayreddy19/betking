@@ -482,7 +482,10 @@ export default function MyBetsPanel() {
               key={f.id}
               type="button"
               className={`my-bets-filter ${filter === f.id ? 'active' : ''}`}
-              onClick={() => setFilter(f.id)}
+              onClick={(e) => {
+                setFilter(f.id);
+                e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+              }}
             >
               {f.label}
             </button>
