@@ -1,0 +1,39 @@
+{
+  "auditTimestamp": "2026-08-29T18:11:07.933Z",
+  "component": "src/pages/Profile/ProfileReferralCard.jsx",
+  "apiEndpoint": "/api/v1/rewards/referrals/me",
+  "displayedFields": {
+    "referralCode": "data.code (e.g. UDAY100)",
+    "referralLink": "data.link (e.g. https://oddsyra.com/register?ref=UDAY100)",
+    "copyButton": "Native navigator.clipboard.writeText with visual feedback",
+    "shareButtons": [
+      "WhatsApp Direct Share",
+      "Native WebShare API"
+    ],
+    "statisticsCards": [
+      {
+        "label": "Invited Friends",
+        "key": "stats.invited",
+        "dbSource": "COUNT(*) FROM referrals WHERE referrer_user_id = $1"
+      },
+      {
+        "label": "Qualified",
+        "key": "stats.qualified",
+        "dbSource": "COUNT(*) FILTER WHERE qualification_status = QUALIFIED"
+      },
+      {
+        "label": "Pending",
+        "key": "stats.pending",
+        "dbSource": "COUNT(*) FILTER WHERE status IN (REGISTERED, FRAUD_REVIEW)"
+      },
+      {
+        "label": "Free Bets Earned",
+        "key": "stats.rewardsEarned",
+        "dbSource": "SUM(referrer_reward_amount) WHERE reward_status = GRANTED"
+      }
+    ],
+    "termsAndConditions": "Explicitly displays ₹500 free bet value and notice that signup promos cannot be combined with referral."
+  },
+  "fakeFrontendCountersPresent": false,
+  "reconciliationStatus": "100% data-driven from backend postgres queries."
+}

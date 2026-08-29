@@ -2208,6 +2208,16 @@ function ReferralsAdminPanel() {
       .catch((err) => showToast(err.message || 'Disable failed', 'error'));
   };
 
+  const reconcile = () => {
+    adminApiClient.post('/growth/referrals/reconcile', { batchSize: 100 })
+      .then((res) => {
+        showToast(`Reconciled: ${res.qualified || 0} qualified of ${res.processed || 0} processed`, 'success');
+        load();
+        loadAnalytics();
+      })
+      .catch((err) => showToast(err.message || 'Reconciliation failed', 'error'));
+  };
+
   const rowCounts = useMemo(() => {
     const total = rows.length;
     let qualified = 0;
@@ -2274,6 +2284,7 @@ function ReferralsAdminPanel() {
         <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} title="Analytics from" />
         <input type="date" value={to} onChange={(e) => setTo(e.target.value)} title="Analytics to" />
         <button type="button" onClick={() => { load(); loadAnalytics(); }}>Refresh</button>
+        <button type="button" className="admin-btn admin-btn--sm" onClick={reconcile}>Reconcile Pending</button>
       </div>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
 

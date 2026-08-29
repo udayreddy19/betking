@@ -1,0 +1,155 @@
+{
+  "auditTimestamp": "2026-08-29T18:11:07.891Z",
+  "product": "OddsYra",
+  "scope": "Comprehensive Referral & Growth Ecosystem",
+  "components": {
+    "databaseMigrations": [
+      {
+        "migration": "010_promotions_bonus_referral_crm.sql",
+        "description": "Creates foundational referrals table, status, reward_amount, and unique referred_user_id constraint.",
+        "tablesCreated": [
+          "referrals"
+        ]
+      },
+      {
+        "migration": "020_platform_expansion_ecosystem.sql",
+        "description": "Creates affiliate_accounts, affiliate_clicks, and affiliate referral code indexing.",
+        "tablesCreated": [
+          "affiliate_accounts",
+          "affiliate_clicks"
+        ]
+      },
+      {
+        "migration": "061_referral_program.sql",
+        "description": "Creates referral_codes table, referral_reward_events table, idempotency constraints, and dual reward columns.",
+        "tablesCreated": [
+          "referral_codes",
+          "referral_reward_events"
+        ]
+      },
+      {
+        "migration": "062_backfill_referral_codes.sql",
+        "description": "Idempotent backfill migration for generating unique referral codes for pre-existing active users.",
+        "operations": [
+          "PL/pgSQL loop allocating referral_codes for active accounts"
+        ]
+      },
+      {
+        "migration": "068_phase1_maker_checker_promo_dedupe.sql",
+        "description": "Enforces exclusivity and deduplication across promotions, referral rewards, and signup bonuses.",
+        "operations": [
+          "Added cross-campaign idempotency and audit controls"
+        ]
+      }
+    ],
+    "backendCoreEngines": [
+      {
+        "file": "lib/referralLoyaltyEngine.mjs",
+        "purpose": "Core engine handling code generation, attribution, fraud review, dual freebet crediting, idempotency, user dashboard, and admin analytics.",
+        "keyFunctions": [
+          "ensureReferralCode",
+          "normalizeReferralCode",
+          "generateCodeCandidate",
+          "referralLinkFromCode",
+          "resolveReferrerByCode",
+          "attributeReferralOnSignup",
+          "processReferralRegistration",
+          "qualifyReferralReward",
+          "tryQualifyReferralAfterDeposit",
+          "getMyReferralDashboard",
+          "validateReferralCode",
+          "listReferralsAdmin",
+          "getReferralAnalytics",
+          "disableReferralCode",
+          "adminRetryReferralReward",
+          "assertNoReferralPromoConflict",
+          "userHasReferralAttribution",
+          "userHasActiveSignupPromo"
+        ]
+      },
+      {
+        "file": "server/auth/authService.js",
+        "purpose": "Authentication service integrating referral code capture during registration, conflict validation with promo codes, and referral allocation on login.",
+        "keyIntegrationPoints": [
+          "Validation of rawReferral vs rawPromo conflict",
+          "ensureReferralCode allocation for new and returning users",
+          "attributeReferralOnSignup invocation during registration"
+        ]
+      },
+      {
+        "file": "lib/promotionAbuseEngine.mjs",
+        "purpose": "Risk analysis engine evaluating multi-accounting, device clusters, and IP velocity for inbound referral registrations."
+      },
+      {
+        "file": "lib/deviceFingerprintEngine.mjs",
+        "purpose": "Device and browser fingerprint recorder used to flag self-referral rings and syndicate multi-accounts."
+      }
+    ],
+    "backendApiEndpoints": [
+      {
+        "method": "GET",
+        "path": "/api/v1/rewards/referrals/me",
+        "authRequired": true,
+        "handler": "getMyReferralDashboard(req.user.userId)",
+        "description": "Returns personal referral code, link, stats (invited, qualified, pending, rewardsEarned), and history."
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/rewards/referrals/validate",
+        "authRequired": false,
+        "handler": "validateReferralCode(req.body.code)",
+        "description": "Validates referral code during registration form interaction without exposing sensitive referrer data."
+      },
+      {
+        "method": "GET",
+        "path": "/api/admin/growth/referrals",
+        "authRequired": "ADMIN",
+        "handler": "listReferralsAdmin({ limit, status, q })",
+        "description": "Paginated admin list of all user referral relationships with status, referrer/referred details, and KYC state."
+      },
+      {
+        "method": "GET",
+        "path": "/api/admin/growth/referrals/analytics",
+        "authRequired": "ADMIN",
+        "handler": "getReferralAnalytics({ from, to, limit })",
+        "description": "Funnel metrics, conversion stats, top referrers by deposits/turnover, and abuse flags."
+      },
+      {
+        "method": "POST",
+        "path": "/api/admin/growth/referrals/:id/retry-reward",
+        "authRequired": "ADMIN",
+        "handler": "adminRetryReferralReward({ referralId, adminId, reason })",
+        "description": "Allows privileged admin to re-evaluate and clear fraud hold to grant rewards."
+      },
+      {
+        "method": "POST",
+        "path": "/api/admin/growth/referral-codes/:code/disable",
+        "authRequired": "ADMIN",
+        "handler": "disableReferralCode({ code, adminId, reason })",
+        "description": "Disables a specific referral code involved in abusive campaigns."
+      }
+    ],
+    "frontendPagesAndComponents": [
+      {
+        "file": "src/pages/Register/Register.jsx",
+        "purpose": "Captures ?ref= query parameter, stores in sessionStorage, enforces mutual exclusivity between promo code and referral, and displays dynamic feedback."
+      },
+      {
+        "file": "src/pages/Profile/ProfileReferralCard.jsx",
+        "purpose": "Dedicated referral card in user profile displaying personal referral code, one-click copy, WhatsApp/WebShare link, reward summary, and live statistics."
+      },
+      {
+        "file": "src/pages/Profile/Profile.jsx",
+        "purpose": "Hosts referral dashboard and enforces UI disabling of signup promotion claiming if user account was attributed to a referral."
+      },
+      {
+        "file": "src/pages/Admin/domains/GrowthDomainView.jsx",
+        "purpose": "Admin Control Tower view for the Referral Program with KPI cards, funnel charts, top referrers table, and action buttons."
+      },
+      {
+        "file": "src/pages/Notifications/NotificationCenter.jsx",
+        "purpose": "Categorizes referral reward notifications and routes users to promotional details."
+      }
+    ]
+  }
+}

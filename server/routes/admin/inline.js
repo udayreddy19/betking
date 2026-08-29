@@ -1749,6 +1749,18 @@ router.post('/api/admin/growth/referral-codes/:code/disable', async (req, res) =
   }
 });
 
+router.post('/api/admin/growth/referrals/reconcile', async (req, res) => {
+  try {
+    const { reconcilePendingReferrals } = await import('../../../lib/referralLoyaltyEngine.mjs');
+    const result = await reconcilePendingReferrals({
+      batchSize: Number(req.body?.batchSize) || 100,
+    });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 router.get('/api/admin/communications/logs', async (req, res) => {
   try {
     const { listCommunicationLogs } = await import('../../../lib/adminDomainData.mjs');

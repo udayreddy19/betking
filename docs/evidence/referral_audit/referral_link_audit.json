@@ -1,0 +1,15 @@
+{
+  "auditTimestamp": "2026-08-29T18:11:07.933Z",
+  "canonicalFormat": "https://oddsyra.com/register?ref=UDAY4A9B1C",
+  "queryParameter": "ref",
+  "privacyAndInformationLeakage": {
+    "exposesInternalUuid": false,
+    "exposesUserEmail": false,
+    "exposesPhone": false,
+    "informationRevealed": "Only alphanumeric referral code. Validation endpoint reveals only public first name."
+  },
+  "crossSessionPersistence": {
+    "mechanism": "sessionStorage bk_pending_referral",
+    "survivesReload": true
+  }
+}

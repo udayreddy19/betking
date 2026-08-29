@@ -1,0 +1,50 @@
+{
+  "auditTimestamp": "2026-08-29T18:11:07.936Z",
+  "testSuite": "tests/promotions/referralsAndFraudGuard.test.js",
+  "scenariosTested": [
+    {
+      "name": "1. Referral code uppercase normalization",
+      "result": "PASS"
+    },
+    {
+      "name": "2. Self-referral prevention (USER_A cannot refer USER_A)",
+      "result": "PASS"
+    },
+    {
+      "name": "3. Referral code allocation and signup attribution",
+      "result": "PASS"
+    },
+    {
+      "name": "4. Mutual exclusivity: Signup promo conflict assertion",
+      "result": "PASS"
+    },
+    {
+      "name": "5. Instant dual freebet crediting (500 to referrer, 500 to referee)",
+      "result": "PASS"
+    },
+    {
+      "name": "6. Idempotent re-qualification rejection (No double reward)",
+      "result": "PASS"
+    },
+    {
+      "name": "7. Duplicate referred user registration rejection",
+      "result": "PASS"
+    },
+    {
+      "name": "8. Backfill referral codes for active accounts",
+      "result": "PASS"
+    },
+    {
+      "name": "9. Referral dashboard metrics aggregation",
+      "result": "PASS"
+    },
+    {
+      "name": "10. Referral code disablement by admin",
+      "result": "PASS"
+    }
+  ],
+  "totalTests": 10,
+  "passedTests": 10,
+  "failedTests": 0,
+  "verdict": "ALL E2E SCENARIOS PASSED"
+}

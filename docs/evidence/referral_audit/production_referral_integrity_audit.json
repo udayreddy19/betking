@@ -1,0 +1,23 @@
+{
+  "auditTimestamp": "2026-08-29T18:11:07.936Z",
+  "targetEnvironment": "200.234.38.230 (Production)",
+  "auditMode": "READ_ONLY_FIRST",
+  "checks": {
+    "totalReferralRelationships": 0,
+    "statusBreakdown": {
+      "REGISTERED": 0,
+      "FRAUD_REVIEW": 0,
+      "QUALIFIED": 0,
+      "REWARDED": 0,
+      "REJECTED": 0
+    },
+    "integrityAnomalies": {
+      "selfReferralCount": 0,
+      "duplicateReferredUsersCount": 0,
+      "orphanRewardEventsCount": 0,
+      "duplicateRewardTransactionsCount": 0,
+      "negativeFreebetBalancesCount": 0
+    }
+  },
+  "databaseIntegrityVerdict": "CLEAN — Zero schema anomalies or orphan records."
+}

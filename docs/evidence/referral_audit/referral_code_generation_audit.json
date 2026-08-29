@@ -1,0 +1,20 @@
+{
+  "auditTimestamp": "2026-08-29T18:11:07.929Z",
+  "algorithm": "Prefix (First 4 letters of First Name uppercase or USR) + Suffix (6 hex characters from crypto.randomBytes(3))",
+  "exampleFormat": "UDAY4A9B1C",
+  "codeLength": "7-12 characters",
+  "characterSet": "A-Z, 0-9",
+  "uniquenessGuarantee": {
+    "primaryKey": "referral_codes.code is PRIMARY KEY",
+    "userConstraint": "referral_codes.user_id is UNIQUE",
+    "retryLoop": "8 iteration collision-retry loop on postgres code 23505 unique violation"
+  },
+  "predictabilityAndEntropy": {
+    "entropyBits": "24 bits of cryptographic pseudorandom entropy in suffix (16,777,216 variations per prefix)",
+    "guessabilityDefense": "Rate limiting on validation endpoints, absence of enumeration endpoints, inactive/disabled status checks."
+  },
+  "userModificationSafety": {
+    "canUserEditCode": false,
+    "adminDisableEndpoint": "POST /api/admin/growth/referral-codes/:code/disable"
+  }
+}

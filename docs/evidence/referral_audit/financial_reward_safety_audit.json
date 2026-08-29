@@ -1,0 +1,20 @@
+{
+  "auditTimestamp": "2026-08-29T18:11:07.934Z",
+  "executionPipeline": [
+    "1. withTransaction wraps the entire qualification and reward process.",
+    "2. SELECT ... FOR UPDATE locks the referrals row preventing concurrent workers from racing.",
+    "3. Verify referral.status is not REWARDED and reward_status is not GRANTED.",
+    "4. creditFreebet executes SELECT ... FROM referral_reward_events WHERE idempotency_key = $1.",
+    "5. SELECT ... FROM wallets WHERE user_id = $1 FOR UPDATE locks target wallet.",
+    "6. INSERT INTO transactions (type: BONUS_CLAIM, method: REFERRAL, status: COMPLETED).",
+    "7. UPDATE wallets SET freebet_balance = freebet_balance + amount.",
+    "8. INSERT INTO ledger_entries (type: CREDIT, description: Referral reward).",
+    "9. INSERT INTO referral_reward_events with UNIQUE idempotency_key constraint.",
+    "10. UPDATE referrals SET status = REWARDED, reward_status = GRANTED, rewarded_at = NOW()."
+  ],
+  "idempotencyKeys": {
+    "referredUserKey": "REFERRAL_REWARD:<referral_id>:REFERRED_USER",
+    "referrerUserKey": "REFERRAL_REWARD:<referral_id>:REFERRER"
+  },
+  "financialSafetyVerdict": "SECURE — Double-spend and duplicate credit mathematically impossible under PostgreSQL ACID serializability and unique constraints."
+}

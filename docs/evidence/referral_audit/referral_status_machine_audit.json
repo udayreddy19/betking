@@ -1,0 +1,30 @@
+{
+  "auditTimestamp": "2026-08-29T18:11:07.933Z",
+  "implementedStatuses": [
+    "REGISTERED: Initial state upon attribution during signup.",
+    "FRAUD_REVIEW: Placed under hold if device fingerprint or promo abuse engine detects risk signals.",
+    "QUALIFIED: Qualification conditions met (clean fraud check, KYC if enabled).",
+    "REWARDED: Terminal state once both referrer and referred wallets have been credited.",
+    "REJECTED: Terminal state if self-referral, syndicate ring, or promo conflict detected."
+  ],
+  "extendedStateColumns": {
+    "attribution_status": "ATTRIBUTED",
+    "qualification_status": "PENDING | QUALIFIED | FAILED",
+    "reward_status": "PENDING | GRANTED | FAILED"
+  },
+  "validTransitions": [
+    "REGISTERED -> QUALIFIED -> REWARDED",
+    "REGISTERED -> FRAUD_REVIEW -> (Admin Retry) -> QUALIFIED -> REWARDED",
+    "REGISTERED -> REJECTED",
+    "FRAUD_REVIEW -> REJECTED"
+  ],
+  "invalidTransitionsBlocked": [
+    "REWARDED -> REGISTERED (Blocked: qualifyReferralReward rejects with \"Already rewarded\")",
+    "REWARDED -> REWARDED (Blocked: idempotency key unq_referral_reward_idempotency throws on duplicate grant)",
+    "REJECTED -> REWARDED (Blocked: status validation rejects with \"Referral rejected\")"
+  ],
+  "terminalStates": [
+    "REWARDED",
+    "REJECTED"
+  ]
+}

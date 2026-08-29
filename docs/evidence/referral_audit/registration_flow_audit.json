@@ -1,0 +1,56 @@
+{
+  "auditTimestamp": "2026-08-29T18:11:07.933Z",
+  "flowSteps": [
+    {
+      "step": 1,
+      "action": "User visits /register?ref=UDAY123",
+      "handler": "Register.jsx extracts searchParams.get(\"ref\") and writes to sessionStorage(\"bk_pending_referral\")"
+    },
+    {
+      "step": 2,
+      "action": "Page Refresh / Navigation",
+      "handler": "Component re-reads referral code from sessionStorage so refresh does not lose attribution"
+    },
+    {
+      "step": 3,
+      "action": "User fills registration form",
+      "handler": "Frontend displays referral confirmation banner and disables conflicting signup promo inputs"
+    },
+    {
+      "step": 4,
+      "action": "Form Submit",
+      "handler": "POST /auth/register with payload { email, password, firstName, referralCode }"
+    },
+    {
+      "step": 5,
+      "action": "Conflict Validation in authService.js",
+      "handler": "If both rawReferral and rawPromo are provided, request is rejected with REFERRAL_PROMO_CONFLICT"
+    },
+    {
+      "step": 6,
+      "action": "User Creation in users & wallets table",
+      "handler": "Atomic user creation and initial wallet initialization"
+    },
+    {
+      "step": 7,
+      "action": "Allocate Personal Referral Code",
+      "handler": "ensureReferralCode creates a personal referral code for the new user"
+    },
+    {
+      "step": 8,
+      "action": "Attribute Inbound Referral",
+      "handler": "attributeReferralOnSignup resolves referrer, checks validity, and calls processReferralRegistration"
+    },
+    {
+      "step": 9,
+      "action": "Reward Evaluation",
+      "handler": "processReferralRegistration checks fraud flags; if clean, executes qualifyReferralReward"
+    }
+  ],
+  "failureHandling": {
+    "invalidReferralCode": "Returns 400 with code REFERRAL_INVALID without creating dangling records",
+    "disabledReferralCode": "Returns 400 with code REFERRAL_DISABLED",
+    "selfReferral": "Returns 400 with code SELF_REFERRAL_NOT_ALLOWED",
+    "duplicateRegistration": "DB unique constraint catches duplicate; skips redundant attribution"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "auditTimestamp": "2026-08-29T18:11:07.935Z",
+  "abuseVectorsAndDefenses": [
+    {
+      "vector": "Self-Referral (User invites self)",
+      "defense": "Checked via referrerUserId === referredUserId. Rejects with SELF_REFERRAL_NOT_ALLOWED.",
+      "status": "PROTECTED"
+    },
+    {
+      "vector": "Referral Loop (User A refers User B, User B refers User A)",
+      "defense": "User A already has an account, so User B cannot refer User A on signup. unq_referred_user prevents existing accounts from being re-attributed.",
+      "status": "PROTECTED"
+    },
+    {
+      "vector": "Duplicate Registration (Replaying signup request)",
+      "defense": "users.email UNIQUE and referrals.referred_user_id UNIQUE prevent duplicate relationship creation.",
+      "status": "PROTECTED"
+    },
+    {
+      "vector": "Concurrent Qualification Race",
+      "defense": "PostgreSQL FOR UPDATE row lock and unq_referral_reward_idempotency constraint guarantee exactly-once processing.",
+      "status": "PROTECTED"
+    },
+    {
+      "vector": "Promo Stacking (Referral Free Bet + Signup Promo Code)",
+      "defense": "Strict exclusivity in authService.js (REFERRAL_PROMO_CONFLICT) and assertNoReferralPromoConflict.",
+      "status": "PROTECTED"
+    },
+    {
+      "vector": "Device Clustering / Multi-Account Farming",
+      "defense": "recordDeviceFingerprint flags high-density IP/device clusters and shifts initial status to FRAUD_REVIEW.",
+      "status": "PROTECTED"
+    }
+  ]
+}

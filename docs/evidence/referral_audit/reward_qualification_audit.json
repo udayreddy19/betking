@@ -1,0 +1,20 @@
+{
+  "auditTimestamp": "2026-08-29T18:11:07.934Z",
+  "activeProgram": {
+    "campaignName": "OddsYra Player Referral Program",
+    "referrerReward": "₹500 Free Bet (configurable via REFERRAL_REFERRER_FREEBET)",
+    "refereeReward": "₹500 Free Bet (configurable via REFERRAL_REFERRED_FREEBET)",
+    "qualificationTrigger": "Signup Attribution (with clean fraud evaluation) + optional deposit trigger (tryQualifyReferralAfterDeposit)",
+    "rewardTiming": "Instant upon successful attribution & qualification",
+    "expiry": "Governed by platform free bet expiry policies",
+    "maxReferralsPerUser": "Configurable via REFERRAL_MAX_PER_USER (0 = unlimited)"
+  },
+  "qualificationConditionsChecked": [
+    "1. Referrer account must be active in referral_codes & users",
+    "2. Referred account must be newly created and not previously attributed",
+    "3. Referred account must NOT have claimed an initial signup promo",
+    "4. Device fingerprint must not exhibit syndicate clustering (else routed to FRAUD_REVIEW)",
+    "5. KYC verification status (if REFERRAL_REQUIRE_KYC is set to true)"
+  ],
+  "bypassVulnerabilities": "None identified. All checks enforced inside database transaction."
+}

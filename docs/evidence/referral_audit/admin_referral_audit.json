@@ -1,0 +1,37 @@
+{
+  "auditTimestamp": "2026-08-29T18:11:07.935Z",
+  "adminEndpoints": {
+    "listReferrals": {
+      "route": "GET /api/admin/growth/referrals",
+      "features": [
+        "Search by user/code/email",
+        "Filter by status",
+        "Pagination",
+        "Aggregated summary counts"
+      ]
+    },
+    "analytics": {
+      "route": "GET /api/admin/growth/referrals/analytics",
+      "features": [
+        "Conversion funnel",
+        "Top referrers by deposits & turnover",
+        "Fraud review metrics"
+      ]
+    },
+    "retryReward": {
+      "route": "POST /api/admin/growth/referrals/:id/retry-reward",
+      "features": [
+        "Clears fraud review hold and re-evaluates qualification",
+        "Logs admin action to audit trail"
+      ]
+    },
+    "disableCode": {
+      "route": "POST /api/admin/growth/referral-codes/:code/disable",
+      "features": [
+        "Deactivates malicious or spam referral codes",
+        "Logs admin action to audit trail"
+      ]
+    }
+  },
+  "auditTrailVerification": "All admin mutations record actorId, targetId, timestamp, and metadata in admin_audit_logs table."
+}

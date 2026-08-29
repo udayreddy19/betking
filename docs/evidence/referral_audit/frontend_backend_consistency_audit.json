@@ -1,0 +1,42 @@
+{
+  "auditTimestamp": "2026-08-29T18:11:07.936Z",
+  "dataMappings": [
+    {
+      "uiElement": "ProfileReferralCard > Invited Stats",
+      "frontendKey": "stats.invited",
+      "backendField": "stats.invited",
+      "reconciles": true
+    },
+    {
+      "uiElement": "ProfileReferralCard > Qualified Stats",
+      "frontendKey": "stats.qualified",
+      "backendField": "stats.qualified",
+      "reconciles": true
+    },
+    {
+      "uiElement": "ProfileReferralCard > Pending Stats",
+      "frontendKey": "stats.pending",
+      "backendField": "stats.pending",
+      "reconciles": true
+    },
+    {
+      "uiElement": "ProfileReferralCard > Free Bets Earned",
+      "frontendKey": "stats.rewardsEarned",
+      "backendField": "stats.rewardsEarned",
+      "reconciles": true
+    },
+    {
+      "uiElement": "Register > Referral Banner",
+      "frontendKey": "referralActive && referralCode",
+      "backendField": "referralResult.referralId",
+      "reconciles": true
+    },
+    {
+      "uiElement": "Admin > Referral KPIs",
+      "frontendKey": "kpiTotal, kpiPending, kpiQualified, kpiRewarded",
+      "backendField": "analytics.funnel / metrics",
+      "reconciles": true
+    }
+  ],
+  "staleCacheVulnerabilities": "None. ProfileReferralCard and Admin Growth view use fresh fetch on mount and action completion."
+}

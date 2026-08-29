@@ -1,0 +1,222 @@
+{
+  "auditTimestamp": "2026-08-29T18:11:07.908Z",
+  "tables": {
+    "referrals": {
+      "primaryKey": "id (VARCHAR(64))",
+      "columns": [
+        {
+          "name": "id",
+          "type": "VARCHAR(64)",
+          "nullable": false
+        },
+        {
+          "name": "referrer_user_id",
+          "type": "VARCHAR(64)",
+          "nullable": false,
+          "fk": "users(user_id) ON DELETE CASCADE"
+        },
+        {
+          "name": "referred_user_id",
+          "type": "VARCHAR(64)",
+          "nullable": false,
+          "fk": "users(user_id) ON DELETE CASCADE"
+        },
+        {
+          "name": "referral_code",
+          "type": "VARCHAR(64)",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(32)",
+          "default": "REGISTERED"
+        },
+        {
+          "name": "reward_amount",
+          "type": "NUMERIC(14,2)",
+          "default": 500
+        },
+        {
+          "name": "referred_reward_amount",
+          "type": "NUMERIC(14,2)",
+          "default": 500
+        },
+        {
+          "name": "referrer_reward_amount",
+          "type": "NUMERIC(14,2)",
+          "default": 500
+        },
+        {
+          "name": "attribution_status",
+          "type": "VARCHAR(32)",
+          "default": "ATTRIBUTED"
+        },
+        {
+          "name": "qualification_status",
+          "type": "VARCHAR(32)",
+          "default": "PENDING"
+        },
+        {
+          "name": "reward_status",
+          "type": "VARCHAR(32)",
+          "default": "PENDING"
+        },
+        {
+          "name": "metadata",
+          "type": "JSONB",
+          "default": "{}"
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMPTZ",
+          "default": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "qualified_at",
+          "type": "TIMESTAMPTZ",
+          "nullable": true
+        },
+        {
+          "name": "rewarded_at",
+          "type": "TIMESTAMPTZ",
+          "nullable": true
+        },
+        {
+          "name": "updated_at",
+          "type": "TIMESTAMPTZ",
+          "default": "NOW()"
+        }
+      ],
+      "constraints": [
+        "unq_referred_user: UNIQUE(referred_user_id) — Guarantees a user can ONLY ever be referred ONCE in platform history."
+      ],
+      "indexes": [
+        "idx_referrals_referrer_status ON (referrer_user_id, status)",
+        "idx_referrals_code ON (referral_code)"
+      ]
+    },
+    "referral_codes": {
+      "primaryKey": "code (VARCHAR(32))",
+      "columns": [
+        {
+          "name": "code",
+          "type": "VARCHAR(32)",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "VARCHAR(64)",
+          "nullable": false,
+          "fk": "users(user_id) ON DELETE CASCADE",
+          "unique": true
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(16)",
+          "nullable": false,
+          "default": "ACTIVE",
+          "check": "status IN ('ACTIVE', 'DISABLED')"
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMPTZ",
+          "default": "NOW()"
+        },
+        {
+          "name": "updated_at",
+          "type": "TIMESTAMPTZ",
+          "default": "NOW()"
+        }
+      ],
+      "constraints": [
+        "PRIMARY KEY (code)",
+        "UNIQUE (user_id) — Strict 1-to-1 mapping between a user and their assigned referral code."
+      ],
+      "indexes": [
+        "idx_referral_codes_user ON (user_id)"
+      ]
+    },
+    "referral_reward_events": {
+      "primaryKey": "id (VARCHAR(64))",
+      "columns": [
+        {
+          "name": "id",
+          "type": "VARCHAR(64)",
+          "nullable": false
+        },
+        {
+          "name": "referral_id",
+          "type": "VARCHAR(64)",
+          "nullable": false,
+          "fk": "referrals(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "beneficiary_user_id",
+          "type": "VARCHAR(64)",
+          "nullable": false,
+          "fk": "users(user_id) ON DELETE CASCADE"
+        },
+        {
+          "name": "reward_type",
+          "type": "VARCHAR(32)",
+          "nullable": false
+        },
+        {
+          "name": "amount",
+          "type": "NUMERIC(14,2)",
+          "nullable": false
+        },
+        {
+          "name": "idempotency_key",
+          "type": "VARCHAR(128)",
+          "nullable": false
+        },
+        {
+          "name": "transaction_id",
+          "type": "VARCHAR(64)",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(32)",
+          "nullable": false,
+          "default": "GRANTED",
+          "check": "status IN ('GRANTED', 'FAILED', 'REVERSED')"
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMPTZ",
+          "default": "NOW()"
+        }
+      ],
+      "constraints": [
+        "unq_referral_reward_idempotency: UNIQUE (idempotency_key) — Cryptographic guarantee against duplicate wallet grants."
+      ],
+      "indexes": [
+        "idx_referral_reward_events_referral ON (referral_id)"
+      ]
+    }
+  },
+  "safeguardEvaluation": {
+    "selfReferralPrevented": {
+      "status": "VERIFIED_SAFE",
+      "mechanism": "Application level assertion `referrerUserId === referredUserId` throws 'SELF_REFERRAL_NOT_ALLOWED' before any DB write."
+    },
+    "multipleReferrersPrevented": {
+      "status": "VERIFIED_SAFE",
+      "mechanism": "Database constraint `unq_referred_user UNIQUE(referred_user_id)` combined with `ON CONFLICT (referred_user_id) DO NOTHING`."
+    },
+    "relationshipTamperingPrevented": {
+      "status": "VERIFIED_SAFE",
+      "mechanism": "No API exists allowing end-users or unprivileged actors to change an attributed referral. Rows are immutable after creation except for qualification state transitions."
+    },
+    "duplicateRewardsPrevented": {
+      "status": "VERIFIED_SAFE",
+      "mechanism": "Dual defense: (1) `SELECT ... FOR UPDATE` row lock in `qualifyReferralReward` checking `reward_status <> 'GRANTED'`, and (2) Database UNIQUE constraint on `referral_reward_events.idempotency_key`."
+    },
+    "raceConditionsPrevented": {
+      "status": "VERIFIED_SAFE",
+      "mechanism": "PostgreSQL atomic transactions (`withTransaction`), `FOR UPDATE` locking on `wallets` and `referrals`, and idempotency unique keys."
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "auditTimestamp": "2026-08-29T18:11:07.935Z",
+  "apis": [
+    {
+      "endpoint": "GET /api/v1/rewards/referrals/me",
+      "auth": "requireAuth (JWT verified)",
+      "idorProtection": "Strictly queries by req.user.userId from authenticated token.",
+      "dataLeakage": "Masks referred user emails to first 3 chars (e.g. jdo***).",
+      "verdict": "SECURE"
+    },
+    {
+      "endpoint": "POST /api/v1/rewards/referrals/validate",
+      "auth": "Public (Pre-registration)",
+      "idorProtection": "N/A (Code validation only).",
+      "dataLeakage": "Returns only referral code and first name (or OddsYra player fallback). No user ID or email returned.",
+      "verdict": "SECURE"
+    },
+    {
+      "endpoint": "GET /api/admin/growth/referrals",
+      "auth": "requireAdmin / requireAuth with admin privileges",
+      "idorProtection": "Role-based access control.",
+      "verdict": "SECURE"
+    }
+  ]
+}
