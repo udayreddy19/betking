@@ -1,0 +1,23 @@
+{
+  "phase": "timestamp_hardening",
+  "environment": "production_and_staging",
+  "timestamp": "2026-08-29T12:30:00Z",
+  "status": "PASS",
+  "source": "TIMESTAMP_TRUST_MODEL_VERIFICATION",
+  "stub": false,
+  "trustModel": {
+    "priorityOrder": [
+      "1. providerTimestamp",
+      "2. providerUpdatedAt",
+      "3. cachedAt",
+      "4. lastUpdatedAt",
+      "5. fetchedAt",
+      "6. updatedAt",
+      "7. time (only if valid date)"
+    ],
+    "states": ["VALID", "MISSING", "INVALID", "UNKNOWN", "STALE"],
+    "fallbackToNowAllowed": false,
+    "unknownTreatedAsFresh": false,
+    "auditRecordPreserved": true
+  }
+}

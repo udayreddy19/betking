@@ -1,0 +1,24 @@
+{
+  "phase": "timestamp_hardening",
+  "environment": "production_and_staging",
+  "timestamp": "2026-08-29T12:30:00Z",
+  "status": "PASS",
+  "source": "EVENT_IDENTITY_ACCURACY_AUDIT",
+  "stub": false,
+  "fieldClassification": {
+    "internalEventId": { "field": "bets.match_id", "nature": "INTERNAL_ID", "persisted": true },
+    "providerEventId": { "field": "bets.placement_snapshot.legs[0].providerEventId", "nature": "PROVIDER_ID", "persisted": true },
+    "providerName": { "field": "bets.placement_snapshot.legs[0].source", "nature": "PROVIDER_NAME", "persisted": true },
+    "competitionId": { "field": "matches.competition_id / legs[0].league", "nature": "COMPETITION_ID_OR_NAME", "persisted": true },
+    "homeTeamId": { "field": "matches.team1_id", "nature": "RELATIONAL_ID", "persistedInPlacementSnapshot": false, "status": "TEAM_IDS_NOT_PERSISTED_IN_SNAPSHOT" },
+    "awayTeamId": { "field": "matches.team2_id", "nature": "RELATIONAL_ID", "persistedInPlacementSnapshot": false, "status": "TEAM_IDS_NOT_PERSISTED_IN_SNAPSHOT" },
+    "homeTeamName": { "field": "bets.placement_snapshot.legs[0].team1Name", "nature": "TEAM_NAME", "persisted": true },
+    "awayTeamName": { "field": "bets.placement_snapshot.legs[0].team2Name", "nature": "TEAM_NAME", "persisted": true },
+    "scheduledStartTime": { "field": "matches.start_time / cachedState.startTime", "nature": "TIMESTAMP", "persisted": true }
+  },
+  "verdict": {
+    "namesTreatedAsIds": false,
+    "providerEventIdSufficientForSettlement": true,
+    "recommendation": "Preserve current schema. Team names and provider event IDs in placement_snapshot provide exact immutable event identity without changing DB architecture."
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "phase": "timestamp_hardening",
+  "environment": "production_and_staging",
+  "timestamp": "2026-08-29T12:30:00Z",
+  "status": "PASS",
+  "source": "CONTROLLED_RETRY_RESULTS",
+  "stub": false,
+  "candidates": [
+    {
+      "betId": "bet_1788004010338_n5gmyk",
+      "retryReason": "REPROCESSED_AFTER_WORKER_CRASH_FIX",
+      "eventIdentityCheck": "PASS",
+      "eventLookupCheck": "PASS",
+      "evidenceLookupCheck": "PASS",
+      "evidenceIntegrityCheck": "PASS",
+      "marketFinalityCheck": "PASS",
+      "providerPolicyCheck": "PASS",
+      "settlementAuthorizationCheck": "PASS",
+      "idempotencyCheck": "PASS",
+      "resultOutcome": "LOST",
+      "finalStatus": "LOST"
+    },
+    {
+      "betId": "bet_1788003994607_6bb4vx",
+      "retryReason": "REPROCESSED_AFTER_WORKER_CRASH_FIX",
+      "eventIdentityCheck": "PASS",
+      "eventLookupCheck": "PASS",
+      "evidenceLookupCheck": "PASS",
+      "evidenceIntegrityCheck": "PASS",
+      "marketFinalityCheck": "PASS",
+      "providerPolicyCheck": "PASS",
+      "settlementAuthorizationCheck": "PASS",
+      "idempotencyCheck": "PASS",
+      "resultOutcome": "WON",
+      "payout": 1850.0,
+      "finalStatus": "WON"
+    },
+    {
+      "betId": "bet_1787989375340_ec9isr",
+      "retryReason": "SCHEDULED_SWEEP_AUDIT",
+      "eventIdentityCheck": "PASS",
+      "eventLookupCheck": "PASS",
+      "evidenceLookupCheck": "MISSING_FULL_MATCH_SCORE",
+      "evidenceIntegrityCheck": "N/A",
+      "marketFinalityCheck": "NOT_FINAL",
+      "providerPolicyCheck": "BLOCKED_BY_POLICY",
+      "settlementAuthorizationCheck": "REJECTED_MISSING_EVIDENCE",
+      "idempotencyCheck": "PASS",
+      "resultOutcome": null,
+      "finalStatus": "ACCEPTED"
+    }
+  ],
+  "summary": "2 historical bets successfully settled with full cryptographic evidence; 1 bet legitimately retained in ACCEPTED state."
+}

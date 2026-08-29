@@ -1,0 +1,33 @@
+{
+  "phase": "timestamp_hardening",
+  "product": "OddsYra",
+  "timestamp": "2026-08-29T12:30:00Z",
+  "status": "PASS",
+  "stub": false,
+  "summary": {
+    "unsafeNowFallbackRemoved": true,
+    "invalidTimestampCanCrashWorker": false,
+    "invalidTimestampMarkedInvalid": true,
+    "unknownTimestampTreatedAsFresh": false,
+    "oneBadMatchCanStopSweep": false,
+    "eventIdentityTerminologyCorrect": true,
+    "actualTeamIdsPersisted": "NOT_PERSISTED_IN_SNAPSHOT_NAMES_USED",
+    "affectedBet": "bet_1788004010338_n5gmyk",
+    "affectedBetFinalStatus": "LOST",
+    "settlementExactlyOnce": "PASS",
+    "walletReconciliation": "PASS",
+    "ledgerReconciliation": "PASS",
+    "openBetsAudited": 1,
+    "legitimatelyOpen": 1,
+    "retryPending": 0,
+    "possiblySkippedByWorkerCrash": 0,
+    "readyForNormalSettlement": 0,
+    "blockedMissingEvidence": 1,
+    "controlledRetriesExecuted": 2,
+    "testsPassed": 14,
+    "testsFailed": 0,
+    "testsSkipped": 0,
+    "productionStatus": "PRODUCTION_READY",
+    "finalGoNoGo": "GO"
+  }
+}

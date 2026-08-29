@@ -1,0 +1,34 @@
+{
+  "phase": "timestamp_hardening",
+  "environment": "production_and_staging",
+  "timestamp": "2026-08-29T12:30:00Z",
+  "status": "PASS",
+  "source": "AFFECTED_BET_POST_FIX_VERIFICATION",
+  "stub": false,
+  "affectedBet": {
+    "betId": "bet_1788004010338_n5gmyk",
+    "userId": "usr_1786981914375_bb8e3569",
+    "statusBeforeFix": "ACCEPTED",
+    "statusAfterFix": "LOST",
+    "settlementTimestamp": "2026-08-29T12:19:44.807Z",
+    "settlementTransactionId": "tx_bet_bet_1788004010338_n5gmyk",
+    "walletTransactionReference": "tx_bet_bet_1788004010338_n5gmyk",
+    "ledgerReference": "entry_id: 289",
+    "evidenceSource": "match_over_snapshots (Innings 2, Over 12, wickets=0)",
+    "evidenceHash": "81c0daff7c8eb62548817a58c0c9aa0cbcfceb828cb0f19cfa12f36d654eaae2",
+    "gradingResult": "LOST",
+    "walletDelta": 0.0,
+    "expectedWalletDelta": 0.0,
+    "ledgerCount": 1,
+    "duplicatePayout": false,
+    "duplicateLedger": false
+  },
+  "companionBet": {
+    "betId": "bet_1788003994607_6bb4vx",
+    "statusAfterFix": "WON",
+    "settlementTimestamp": "2026-08-29T12:19:44.778Z",
+    "walletDelta": 1850.0,
+    "expectedWalletDelta": 1850.0,
+    "ledgerCount": 2
+  }
+}

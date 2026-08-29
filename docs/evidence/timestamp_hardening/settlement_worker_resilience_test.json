@@ -1,0 +1,23 @@
+{
+  "phase": "timestamp_hardening",
+  "environment": "production_and_staging",
+  "timestamp": "2026-08-29T12:30:00Z",
+  "status": "PASS",
+  "source": "SETTLEMENT_WORKER_RESILIENCE_TEST",
+  "stub": false,
+  "resilience": {
+    "perBetTryCatchIsolation": true,
+    "oneMalformedMatchStopsSweep": false,
+    "nextEligibleMatchProcesses": true,
+    "structuredErrorReporting": {
+      "betId": true,
+      "eventId": true,
+      "providerEventId": true,
+      "errorCode": true,
+      "errorMessage": true,
+      "timestampStatus": true,
+      "settlementAttempt": true
+    },
+    "silentSwallowing": false
+  }
+}

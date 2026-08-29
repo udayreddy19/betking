@@ -1,0 +1,39 @@
+{
+  "phase": "timestamp_hardening",
+  "environment": "production_and_staging",
+  "timestamp": "2026-08-29T12:30:00Z",
+  "status": "PASS",
+  "source": "OPEN_BET_WORKER_CRASH_SMOKE_AUDIT",
+  "stub": false,
+  "totalNonTerminalBets": 1,
+  "auditedBets": [
+    {
+      "betId": "bet_1787989375340_ec9isr",
+      "userId": "usr_1786981914375_bb8e3569",
+      "matchId": "oy_45bbebc2-e93b-3aa0-8c0e-583d94394784",
+      "matchName": "Paarl Royals SRL vs Mi Cape Town SRL",
+      "marketId": "team_total",
+      "selectionId": "sel_under_178.5",
+      "status": "ACCEPTED",
+      "matchStillLive": false,
+      "matchCompleted": true,
+      "settlementAttempted": true,
+      "workerErrorRecorded": false,
+      "timestampParsingErrorOccurred": false,
+      "eventLookupFailureOccurred": false,
+      "evidenceAvailable": false,
+      "marketMathematicallyFinal": false,
+      "eligibleForNormalSettlement": false,
+      "classification": "BLOCKED_MISSING_EVIDENCE",
+      "action": "KEEP_OPEN_AWAIT_OFFICIAL_EVIDENCE"
+    }
+  ],
+  "summaryCounts": {
+    "LEGITIMATELY_OPEN": 1,
+    "RETRY_PENDING": 0,
+    "POSSIBLY_SKIPPED_BY_WORKER_CRASH": 0,
+    "BLOCKED_MISSING_EVIDENCE": 1,
+    "READY_FOR_NORMAL_SETTLEMENT": 0,
+    "ALREADY_TERMINAL": 0
+  }
+}
