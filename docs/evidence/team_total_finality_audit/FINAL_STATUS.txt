@@ -1,0 +1,65 @@
+BET ID:
+bet_1787989375340_ec9isr
+
+MARKET:
+team_total (Team Total Runs)
+
+SELECTION:
+Under 178.5
+
+RELEVANT TEAM:
+Paarl Royals SRL
+
+RELEVANT INNINGS:
+1
+
+SCORE:
+181
+
+INNINGS COMPLETE:
+YES (20.0 overs completed at 181/6)
+
+SCORE AUTHORITATIVE:
+YES (PostgreSQL match_over_snapshots append-only history + Redis canonical state)
+
+AUTHORITATIVE MARKET EVIDENCE:
+YES (Innings 1 Over 20 snapshot immutable record)
+
+MATCH FINAL:
+NO (Match concluded on provider feed without explicit full-match completion frame)
+
+MARKET MATHEMATICALLY FINAL:
+YES (181 > 178.5 line is mathematically irreversible)
+
+MARKET CONTRACT FINAL:
+YES (TEAM_TOTAL contract explicitly requires only innings completion, requireMatchFinal: false)
+
+EVIDENCE CONTRADICTION ROOT CAUSE:
+MARKET_FINALITY_POLICIES.TEAM_TOTAL previously had allowSnapshotFinality: false, erroneously subjecting proven completed innings to live in-play stream staleness checks.
+
+STALE EVIDENCE POLICY:
+Immutable snapshot evidence for completed innings overrides live stream staleness gates while unverified in-play data remains strictly blocked.
+
+RETRY COUNT BUG:
+The bets table schema lacks a persistent retry counter; the worker performs continuous sweeps of non-terminal bets. Observability now captures attemptCount and retryCount in structured execution logs.
+
+SETTLEMENT AUTHORIZED:
+YES
+
+WOULD GRADE:
+LOST (score 181 > line 178.5)
+
+FIX IMPLEMENTED:
+YES
+
+NORMAL SETTLEMENT EXECUTED:
+YES (EVIDENCE -> MARKET FINALITY -> AUTHORIZATION -> GRADING -> IDEMPOTENCY -> WALLET -> LEDGER)
+
+FINAL BET STATUS:
+LOST
+
+TESTS:
+13 Passed / 0 Failed / 0 Skipped (Plus 28 regression tests passing)
+
+FINAL STATUS:
+PASS

@@ -1,0 +1,21 @@
+{
+  "auditTimestamp": "2026-08-29T13:05:00.000Z",
+  "betId": "bet_1787989375340_ec9isr",
+  "matchId": "oy_45bbebc2-e93b-3aa0-8c0e-583d94394784",
+  "normalSettlementExecuted": true,
+  "executionMethod": "settleOpenBetsFromLiveScores (normal worker pipeline)",
+  "stagesExecuted": [
+    "EVIDENCE (match_over_snapshots Over 20: 181/6 + Redis firstRuns: 181)",
+    "MARKET FINALITY (TEAM_TOTAL snapshot finality authorized for completed innings)",
+    "AUTHORIZATION (settlementAuthorizationEngine generated valid token)",
+    "GRADING (evaluateTotalsMarketBet -> outcome: LOST, reason: team_total_i1_final=181_line=178.5)",
+    "IDEMPOTENCY (idempotency key and version checks passed)",
+    "WALLET (winnings_credited: -1000.00, payout: 0.00)",
+    "LEDGER (single debit transaction recorded, zero duplicate credits)"
+  ],
+  "finalBetStatus": "LOST",
+  "actualPayout": "0.00",
+  "settlementReason": "team_total_i1_final=181_line=178.5",
+  "settledAt": "2026-08-29T13:04:52.323Z",
+  "remainingOpenBetsAcrossPlatform": 0
+}

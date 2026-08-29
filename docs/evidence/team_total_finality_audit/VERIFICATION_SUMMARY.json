@@ -1,0 +1,21 @@
+{
+  "investigationTitle": "CRITICAL MARKET FINALITY & EVIDENCE POLICY AUDIT — REMAINING OPEN TEAM TOTAL BET",
+  "auditTimestamp": "2026-08-29T13:05:00.000Z",
+  "targetBetId": "bet_1787989375340_ec9isr",
+  "matchId": "oy_45bbebc2-e93b-3aa0-8c0e-583d94394784",
+  "market": "Team Total Runs (Under 178.5)",
+  "relevantTeam": "Paarl Royals SRL",
+  "relevantInnings": 1,
+  "finalScore": 181,
+  "policyAuditConclusion": "A Team Total Runs market measures single-team innings totals and contractually has requireMatchFinal: false. An immutable snapshot proving the relevant team innings is complete is sufficient to settle.",
+  "implementationFix": "Enabled allowSnapshotFinality: true on MARKET_FINALITY_POLICIES.TEAM_TOTAL and added hasImmutableSnapshotEvidence: true in evaluateTotalsMarketBet.",
+  "testSuite": {
+    "scenariosPassed": 13,
+    "scenariosFailed": 0,
+    "scenariosSkipped": 0
+  },
+  "normalSettlementExecuted": true,
+  "finalBetStatus": "LOST",
+  "remainingOpenBetsInProduction": 0,
+  "overallStatus": "PASS"
+}
