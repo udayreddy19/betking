@@ -123,6 +123,8 @@ const DOMAIN_GROUPS = [
         Icon: WalletIcon,
         role: ADMIN_ROLES.FINANCE_ADMIN,
         subModules: [
+          { id: 'investigation', label: 'Wallet Investigation & Timeline' },
+          { id: 'reconciliation', label: 'Read-Only Reconciliation' },
           { id: 'control-center', label: 'Control Center' },
           { id: 'maker-checker', label: 'Maker-Checker Approvals' },
           { id: 'deposits-review', label: 'Deposits Review' },

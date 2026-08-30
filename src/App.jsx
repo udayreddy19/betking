@@ -53,6 +53,7 @@ const ApiDocs = lazy(() => import('./pages/ApiDocs/ApiDocs'));
 const Vip = lazy(() => import('./pages/Vip/Vip'));
 const IPLSRLAdmin = lazy(() => import('./pages/Admin/IPLSRL/IPLSRLAdmin'));
 const NotificationCenter = lazy(() => import('./pages/Notifications/NotificationCenter'));
+const WalletDashboard = lazy(() => import('./pages/Wallet/WalletDashboard'));
 
 function CasinoComingSoon() {
   return <Navigate to="/sports" replace />;
@@ -116,6 +117,7 @@ function AppLayout() {
               <Route path="/live-casino" element={CASINO_ENABLED ? <LiveCasino /> : <CasinoComingSoon />} />
               <Route path="/fantasy" element={<Fantasy />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/wallet" element={<WalletDashboard />} />
               <Route path="/register" element={<Register />} />
               <Route path="/complete-profile" element={<CompleteProfile />} />
               <Route path="/_oauth/google" element={<OAuthGoogleCallback />} />

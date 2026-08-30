@@ -1355,6 +1355,299 @@ function FinanceAnomaliesPanel() {
   );
 }
 
+function WalletInvestigationPanel() {
+  const [query, setQuery] = useState('');
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const { showToast } = useAdminToast();
+
+  const handleSearch = async (e) => {
+    if (e) e.preventDefault();
+    const q = query.trim();
+    if (!q) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await adminApiClient.get(`/finance/investigate?q=${encodeURIComponent(q)}`);
+      setData(res);
+      showToast('Wallet investigation loaded', 'success');
+    } catch (err) {
+      setError(err.message || 'No matching user or financial record found');
+      setData(null);
+      showToast(err.message || 'Investigation query failed', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <div style={{ marginBottom: 20 }}>
+        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Wallet Investigation & Financial Timeline</h2>
+        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
+          Forensic lookup by User ID, Email, Transaction ID, Bet ID, or Withdrawal ID.
+        </p>
+      </div>
+
+      <form onSubmit={handleSearch} style={{ display: 'flex', gap: 10, maxWidth: 640, marginBottom: 24 }}>
+        <input
+          type="search"
+          placeholder="Enter User ID (usr_...), Email, Tx ID (tx_...), Bet ID (bet_...), or WD ID..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="admin-input"
+          style={{ flex: 1, padding: '10px 14px', borderRadius: 8, fontSize: '0.9rem' }}
+        />
+        <button type="submit" className="admin-btn admin-btn--primary" disabled={loading || !query.trim()}>
+          {loading ? 'Searching…' : 'Investigate'}
+        </button>
+      </form>
+
+      {error && (
+        <div style={{ padding: '12px 16px', background: '#fee2e2', color: '#991b1b', borderRadius: 8, marginBottom: 20, fontSize: '0.88rem' }}>
+          {error}
+        </div>
+      )}
+
+      {data && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {/* USER & WALLET SUMMARY */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+            {/* USER CARD */}
+            <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 12, padding: 20 }}>
+              <h3 style={{ margin: '0 0 12px', fontSize: '1rem', fontWeight: 700 }}>Target User Profile</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: '0.85rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--admin-text-muted)' }}>User ID:</span>
+                  <span className="admin-text-mono" style={{ fontWeight: 600 }}>{data.user?.userId}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--admin-text-muted)' }}>Email:</span>
+                  <span style={{ fontWeight: 600 }}>{data.user?.email || '—'}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--admin-text-muted)' }}>Name / Phone:</span>
+                  <span>{data.user?.fullName || data.user?.phone || '—'}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--admin-text-muted)' }}>Status:</span>
+                  <StatusBadge status={data.user?.status} />
+                </div>
+              </div>
+            </div>
+
+            {/* WALLET BREAKDOWN CARD */}
+            <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 12, padding: 20 }}>
+              <h3 style={{ margin: '0 0 12px', fontSize: '1rem', fontWeight: 700 }}>Live Wallet Breakdown</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: '0.85rem' }}>
+                <div>
+                  <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.75rem' }}>CASH BALANCE</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#10b981' }}>{money(data.wallet?.balance)}</div>
+                </div>
+                <div>
+                  <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.75rem' }}>BONUS BALANCE</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#a855f7' }}>{money(data.wallet?.bonusBalance)}</div>
+                </div>
+                <div>
+                  <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.75rem' }}>FREE BET VALUE</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#3b82f6' }}>{money(data.wallet?.freebetBalance)}</div>
+                </div>
+                <div>
+                  <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.75rem' }}>RESERVED WITHDRAWAL</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f59e0b' }}>{money(data.wallet?.reservedBalance)}</div>
+                </div>
+                <div>
+                  <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.75rem' }}>LOCKED DEPOSIT</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#eab308' }}>{money(data.wallet?.lockedDepositBalance)}</div>
+                </div>
+                <div>
+                  <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.75rem' }}>WINNINGS P&L</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--admin-text)' }}>{money(data.wallet?.winningsBalance)}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* CHRONOLOGICAL FINANCIAL TIMELINE */}
+          <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 12, padding: 20 }}>
+            <h3 style={{ margin: '0 0 16px', fontSize: '1rem', fontWeight: 700 }}>
+              Chronological Financial Timeline ({data.timeline?.length || 0} events)
+            </h3>
+
+            {(!data.timeline || data.timeline.length === 0) ? (
+              <p style={{ color: 'var(--admin-text-muted)', fontSize: '0.88rem' }}>No financial transactions found for this user.</p>
+            ) : (
+              <AdminDataTable
+                data={data.timeline}
+                emptyMessage="No transaction events"
+                columns={[
+                  {
+                    header: 'Timestamp',
+                    key: 'createdAt',
+                    render: (r) => (r.createdAt ? new Date(r.createdAt).toLocaleString('en-IN') : '—'),
+                  },
+                  {
+                    header: 'Event & Description',
+                    key: 'type',
+                    render: (r) => (
+                      <div>
+                        <strong>{r.type}</strong>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)' }}>{r.description}</div>
+                      </div>
+                    ),
+                  },
+                  {
+                    header: 'Amount',
+                    key: 'amount',
+                    render: (r) => {
+                      const isCredit = ['DEPOSIT', 'BET_PAYOUT', 'BET_WIN', 'BET_REFUND', 'BET_VOID', 'CASHOUT', 'BONUS_CLAIM', 'REFERRAL_REWARD', 'ADMIN_CREDIT'].includes(r.type);
+                      return (
+                        <span style={{ fontWeight: 700, color: isCredit ? '#10b981' : '#ef4444' }}>
+                          {isCredit ? '+' : '-'}{money(r.amount)}
+                        </span>
+                      );
+                    },
+                  },
+                  {
+                    header: 'Balance After',
+                    key: 'balanceAfter',
+                    render: (r) => (r.balanceAfter != null ? money(r.balanceAfter) : '—'),
+                  },
+                  {
+                    header: 'Status',
+                    key: 'status',
+                    render: (r) => <StatusBadge status={r.status} />,
+                  },
+                  {
+                    header: 'Reference',
+                    key: 'id',
+                    render: (r) => (
+                      <span className="admin-text-mono" style={{ fontSize: '0.75rem' }}>
+                        {r.id}
+                        {r.utr ? ` · UTR: ${r.utr}` : ''}
+                      </span>
+                    ),
+                  },
+                ]}
+              />
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ReconciliationDashboardPanel() {
+  const [overview, setOverview] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [scanResult, setScanResult] = useState(null);
+  const { showToast } = useAdminToast();
+
+  const loadOverview = () => {
+    setLoading(true);
+    adminApiClient.get('/finance/reconciliation-overview')
+      .then((data) => {
+        setOverview(data);
+      })
+      .catch((err) => {
+        showToast(err.message || 'Failed to load reconciliation overview', 'error');
+      })
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadOverview();
+  }, []);
+
+  const runReconciliationScan = async () => {
+    setScanning(true);
+    try {
+      const res = await adminApiClient.post('/finance/reconcile', {});
+      setScanResult(res);
+      showToast('Read-only reconciliation scan completed', 'success');
+      loadOverview();
+    } catch (err) {
+      showToast(err.message || 'Reconciliation scan failed', 'error');
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  return (
+    <div>
+      <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14 }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Read-Only Financial Reconciliation Dashboard</h2>
+          <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
+            Authoritative double-entry ledger audit. Non-mutating: never alters balances or deletes records.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="admin-btn admin-btn--primary"
+          disabled={scanning}
+          onClick={runReconciliationScan}
+        >
+          {scanning ? 'Running Read-Only Scan…' : 'Run Read-Only Reconciliation Scan'}
+        </button>
+      </div>
+
+      {/* KPI METRIC CARDS */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 24 }}>
+        <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 10, padding: 16 }}>
+          <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.75rem', fontWeight: 700 }}>TOTAL ACTIVE WALLETS</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: 4 }}>{overview?.totalWallets ?? '—'}</div>
+        </div>
+
+        <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 10, padding: 16 }}>
+          <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.75rem', fontWeight: 700 }}>STORED CASH BALANCE SUM</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981', marginTop: 4 }}>{money(overview?.totalCashBalance)}</div>
+        </div>
+
+        <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 10, padding: 16 }}>
+          <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.75rem', fontWeight: 700 }}>BONUS BALANCE SUM</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#a855f7', marginTop: 4 }}>{money(overview?.totalBonusBalance)}</div>
+        </div>
+
+        <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 10, padding: 16 }}>
+          <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.75rem', fontWeight: 700 }}>RESERVED WITHDRAWAL SUM</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f59e0b', marginTop: 4 }}>{money(overview?.totalReservedBalance)}</div>
+        </div>
+
+        <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 10, padding: 16 }}>
+          <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.75rem', fontWeight: 700 }}>NEGATIVE BALANCE WALLETS</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: overview?.negativeBalanceWalletsCount === 0 ? '#10b981' : '#ef4444', marginTop: 4 }}>
+            {overview?.negativeBalanceWalletsCount ?? 0}
+          </div>
+        </div>
+
+        <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 10, padding: 16 }}>
+          <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.75rem', fontWeight: 700 }}>ORPHAN LEDGER ENTRIES</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: overview?.orphanLedgerCount === 0 ? '#10b981' : '#ef4444', marginTop: 4 }}>
+            {overview?.orphanLedgerCount ?? 0}
+          </div>
+        </div>
+      </div>
+
+      {/* RECONCILIATION SCAN REPORT */}
+      {scanResult && (
+        <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 12, padding: 20, marginBottom: 24 }}>
+          <h3 style={{ margin: '0 0 12px', fontSize: '1.1rem', fontWeight: 700 }}>Latest Scan Report</h3>
+          <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', fontSize: '0.88rem' }}>
+            <div><strong>Status:</strong> {scanResult.status || 'OK'}</div>
+            <div><strong>Wallets Scanned:</strong> {scanResult.walletsReconciled || scanResult.totalWallets || overview?.totalWallets}</div>
+            <div><strong>Discrepancies Detected:</strong> {scanResult.discrepanciesCount || 0}</div>
+            <div><strong>Timestamp:</strong> {new Date().toLocaleTimeString()}</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function FinanceDomainView({
   subModule = 'maker-checker',
   focusEntityId = null,
@@ -1362,6 +1655,8 @@ export default function FinanceDomainView({
   onFocusConsumed = null,
 }) {
   const view = useMemo(() => {
+    if (subModule === 'investigation') return <WalletInvestigationPanel />;
+    if (subModule === 'reconciliation') return <ReconciliationDashboardPanel />;
     if (subModule === 'ledger') {
       return (
         <LedgerPanel
@@ -1383,3 +1678,4 @@ export default function FinanceDomainView({
 
   return view;
 }
+

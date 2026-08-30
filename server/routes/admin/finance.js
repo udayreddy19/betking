@@ -309,4 +309,191 @@ router.get('/anomalies', requirePermission('finance'), async (req, res) => {
   }
 });
 
+/** GET /api/admin/finance/investigate — Search by user/email/txId/betId/wdId and return financial timeline */
+router.get('/investigate', requirePermission('finance'), async (req, res) => {
+  try {
+    const q = String(req.query.q || '').trim();
+    if (!q) {
+      return res.status(400).json({ error: 'Search query (user ID, email, tx ID, bet ID, or withdrawal ID) is required' });
+    }
+
+    let targetUserId = null;
+
+    // 1. Direct user / email match
+    const userMatch = await queryRead(
+      `SELECT user_id, email, full_name, phone, status, created_at FROM users WHERE user_id = $1 OR LOWER(email) = LOWER($1) LIMIT 1`,
+      [q]
+    );
+    if (userMatch.rows.length > 0) {
+      targetUserId = userMatch.rows[0].user_id;
+    }
+
+    // 2. Transaction ID match
+    if (!targetUserId) {
+      const txMatch = await queryRead(
+        `SELECT user_id FROM transactions WHERE transaction_id = $1 OR provider_payment_id = $1 OR utr = $1 LIMIT 1`,
+        [q]
+      );
+      if (txMatch.rows.length > 0) targetUserId = txMatch.rows[0].user_id;
+    }
+
+    // 3. Bet ID match
+    if (!targetUserId) {
+      const betMatch = await queryRead(
+        `SELECT user_id FROM bets WHERE bet_id = $1 LIMIT 1`,
+        [q]
+      );
+      if (betMatch.rows.length > 0) targetUserId = betMatch.rows[0].user_id;
+    }
+
+    // 4. Withdrawal ID match
+    if (!targetUserId) {
+      const wdMatch = await queryRead(
+        `SELECT user_id FROM withdrawals WHERE withdrawal_id = $1 OR payout_id = $1 LIMIT 1`,
+        [q]
+      );
+      if (wdMatch.rows.length > 0) targetUserId = wdMatch.rows[0].user_id;
+    }
+
+    // 5. Deposit ID match
+    if (!targetUserId) {
+      const depMatch = await queryRead(
+        `SELECT user_id FROM deposits WHERE deposit_id = $1 OR order_id = $1 OR payment_id = $1 LIMIT 1`,
+        [q]
+      );
+      if (depMatch.rows.length > 0) targetUserId = depMatch.rows[0].user_id;
+    }
+
+    if (!targetUserId) {
+      return res.status(404).json({ error: 'No matching user or financial record found for search query' });
+    }
+
+    // Fetch user details & wallet
+    const userRes = await queryRead(
+      `SELECT u.user_id, u.email, u.full_name, u.phone, u.status, u.created_at,
+              w.wallet_id, w.balance, w.bonus_balance, w.reserved_balance, w.freebet_balance,
+              w.locked_deposit_balance, w.winnings_balance, w.currency, w.updated_at as wallet_updated_at
+       FROM users u
+       LEFT JOIN wallets w ON u.user_id = w.user_id
+       WHERE u.user_id = $1`,
+      [targetUserId]
+    );
+
+    const user = userRes.rows[0] || null;
+
+    // Fetch unified chronological timeline
+    const timelineRes = await queryRead(
+      `SELECT t.transaction_id as id,
+              t.type,
+              t.amount,
+              t.status,
+              t.method,
+              t.utr,
+              t.created_at,
+              le.balance_after,
+              le.description
+       FROM transactions t
+       LEFT JOIN ledger_entries le ON t.transaction_id = le.transaction_id
+       WHERE t.user_id = $1
+       ORDER BY t.created_at DESC
+       LIMIT 100`,
+      [targetUserId]
+    );
+
+    res.json({
+      success: true,
+      user: {
+        userId: user?.user_id,
+        email: user?.email,
+        fullName: user?.full_name,
+        phone: user?.phone,
+        status: user?.status,
+        createdAt: user?.created_at,
+      },
+      wallet: {
+        walletId: user?.wallet_id,
+        balance: Number(user?.balance || 0),
+        bonusBalance: Number(user?.bonus_balance || 0),
+        reservedBalance: Number(user?.reserved_balance || 0),
+        freebetBalance: Number(user?.freebet_balance || 0),
+        lockedDepositBalance: Number(user?.locked_deposit_balance || 0),
+        winningsBalance: Number(user?.winnings_balance || 0),
+        currency: user?.currency || 'INR',
+        updatedAt: user?.wallet_updated_at,
+      },
+      timeline: timelineRes.rows.map((r) => ({
+        id: r.id,
+        type: r.type,
+        amount: Number(r.amount || 0),
+        status: r.status,
+        method: r.method,
+        utr: r.utr,
+        createdAt: r.created_at,
+        balanceAfter: r.balance_after != null ? Number(r.balance_after) : null,
+        description: r.description || `${r.type} transaction`,
+      })),
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to investigate user wallet', message: err.message });
+  }
+});
+
+/** GET /api/admin/finance/reconciliation-overview — Read-only dashboard summary metrics */
+router.get('/reconciliation-overview', requirePermission('finance'), async (req, res) => {
+  try {
+    const walletsRes = await queryRead(
+      `SELECT count(*)::int as total_wallets,
+              COALESCE(SUM(balance), 0)::numeric(14,2) as total_cash_balance,
+              COALESCE(SUM(bonus_balance), 0)::numeric(14,2) as total_bonus_balance,
+              COALESCE(SUM(reserved_balance), 0)::numeric(14,2) as total_reserved_balance,
+              COALESCE(SUM(freebet_balance), 0)::numeric(14,2) as total_freebet_balance
+       FROM wallets`
+    );
+
+    const negWalletsRes = await queryRead(
+      `SELECT count(*)::int as count FROM wallets WHERE balance < 0 OR bonus_balance < 0 OR freebet_balance < 0 OR reserved_balance < 0`
+    );
+
+    const pendingDepRes = await queryRead(
+      `SELECT count(*)::int as count FROM deposits WHERE UPPER(status) = 'CREATED'`
+    );
+
+    const pendingWdRes = await queryRead(
+      `SELECT count(*)::int as count FROM withdrawals WHERE UPPER(status) IN ('PENDING', 'UNDER_REVIEW', 'PENDING_CHECKER', 'PROCESSING')`
+    );
+
+    const failedTxRes = await queryRead(
+      `SELECT count(*)::int as count FROM transactions WHERE UPPER(status) = 'FAILED'`
+    );
+
+    const orphanLedgerRes = await queryRead(
+      `SELECT count(*)::int as count FROM ledger_entries le LEFT JOIN wallets w ON le.wallet_id = w.wallet_id WHERE w.wallet_id IS NULL`
+    );
+
+    const discrepanciesRes = await queryRead(
+      `SELECT count(*)::int as count FROM financial_discrepancies WHERE status = 'OPEN'`
+    );
+
+    const row = walletsRes.rows[0] || {};
+    res.json({
+      success: true,
+      isReadOnly: true,
+      totalWallets: Number(row.total_wallets || 0),
+      totalCashBalance: Number(row.total_cash_balance || 0),
+      totalBonusBalance: Number(row.total_bonus_balance || 0),
+      totalReservedBalance: Number(row.total_reserved_balance || 0),
+      totalFreebetBalance: Number(row.total_freebet_balance || 0),
+      negativeBalanceWalletsCount: Number(negWalletsRes.rows[0]?.count || 0),
+      pendingDepositsCount: Number(pendingDepRes.rows[0]?.count || 0),
+      pendingWithdrawalsCount: Number(pendingWdRes.rows[0]?.count || 0),
+      failedTransactionsCount: Number(failedTxRes.rows[0]?.count || 0),
+      orphanLedgerCount: Number(orphanLedgerRes.rows[0]?.count || 0),
+      discrepancyCount: Number(discrepanciesRes.rows[0]?.count || 0),
+      lastAuditedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load reconciliation overview', message: err.message });
+  }
+});
+
 export default router;
