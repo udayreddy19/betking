@@ -145,6 +145,9 @@ export function logScoreMapping({
 /**
  * Extract clean integer runs, wickets, and overs.
  */
+/**
+ * Extract clean integer runs, wickets, and overs.
+ */
 function sanitizeScoreFields(raw = {}) {
   const runs = Number.isFinite(Number(raw.runs ?? raw.score)) ? Math.max(0, Math.floor(Number(raw.runs ?? raw.score))) : 0;
   const wickets = Number.isFinite(Number(raw.wickets ?? raw.wkts)) ? Math.max(0, Math.min(10, Math.floor(Number(raw.wickets ?? raw.wkts)))) : 0;
@@ -164,78 +167,107 @@ export function normalizeMatch(raw = {}, previous = {}, options = {}) {
   const format = detectCanonicalFormat(raw);
   const isTest = format === CRICKET_FORMATS.TEST;
 
-  // Stale request protection
-  const incomingTime = Number(raw.providerUpdatedAt || raw.fetchedAt || Date.now());
-  const prevTime = Number(previous.lastUpdated || previous.fetchedAt || 0);
+  // Stale request protection: Only accept if newer than or equal to current valid state
+  const incomingTime = Number(raw.providerUpdatedAt || raw.completedAt || raw.fetchedAt || Date.now());
+  const prevTime = Number(previous.providerUpdatedAt || previous.lastUpdated || previous.fetchedAt || 0);
   if (prevTime > 0 && incomingTime < prevTime && previous.matchId === matchId) {
-    // Stale request discarded
+    // Stale request discarded — preserve current authoritative state
     return previous;
   }
 
   const rawLd = raw.liveDetails || raw.live || raw.matchScore || {};
   const prevLd = previous.liveDetails || previous.rawLiveDetails || {};
 
-  // Team extraction
+  // Team extraction with persistent fallbacks
+  const t1Id = String(raw.team1?.id || raw.team1?.teamId || raw.matchHeader?.team1?.id || previous.homeTeam?.id || 'tm_1');
+  const t2Id = String(raw.team2?.id || raw.team2?.teamId || raw.matchHeader?.team2?.id || previous.awayTeam?.id || 'tm_2');
+
   const t1Name = raw.team1?.name || raw.matchHeader?.team1?.name || previous.homeTeam?.name || previous.team1?.name || 'Home Team';
   const t2Name = raw.team2?.name || raw.matchHeader?.team2?.name || previous.awayTeam?.name || previous.team2?.name || 'Away Team';
   const t1Short = formatTeamShortName(t1Name, raw.team1?.shortName || previous.homeTeam?.shortName || previous.team1?.shortName);
   const t2Short = formatTeamShortName(t2Name, raw.team2?.shortName || previous.awayTeam?.shortName || previous.team2?.shortName);
 
   const homeTeam = {
-    id: String(raw.team1?.id || raw.team1?.teamId || 'tm_1'),
+    id: t1Id,
     name: t1Name,
     shortName: t1Short,
     color: raw.team1?.color || previous.homeTeam?.color || null,
   };
 
   const awayTeam = {
-    id: String(raw.team2?.id || raw.team2?.teamId || 'tm_2'),
+    id: t2Id,
     name: t2Name,
     shortName: t2Short,
     color: raw.team2?.color || previous.awayTeam?.color || null,
   };
 
-  // Build Unified Innings List (Guaranteed 1 Innings -> 1 Batting Team)
+  // Build Unified Innings List (Strict 1-to-1 Innings -> Batting Team Mapping)
   let rawInnings = [];
 
   if (Array.isArray(rawLd.testInnings) && rawLd.testInnings.length > 0) {
     rawInnings = rawLd.testInnings.map((inn, idx) => ({
       inningsId: inn.inningsId ?? idx + 1,
-      batTeam: inn.batTeam || inn.teamName || '',
+      batTeamId: inn.battingTeamId || inn.batTeamId || inn.teamId || null,
+      batTeam: inn.batTeam || inn.teamName || inn.team || '',
+      batTeamShort: inn.teamSName || inn.shortName || '',
       ...sanitizeScoreFields(inn),
     }));
   } else if (Array.isArray(raw.scorecardInnings) && raw.scorecardInnings.length > 0) {
     rawInnings = raw.scorecardInnings.map((inn, idx) => ({
       inningsId: inn.inningsId ?? idx + 1,
+      batTeamId: inn.battingTeamId || inn.batTeamId || inn.teamId || null,
       batTeam: inn.batTeamName || inn.teamName || '',
+      batTeamShort: inn.batTeamShortName || '',
+      ...sanitizeScoreFields(inn),
+    }));
+  } else if (Array.isArray(raw.innings) && raw.innings.length > 0) {
+    rawInnings = raw.innings.map((inn, idx) => ({
+      inningsId: inn.inningsId ?? idx + 1,
+      batTeamId: inn.battingTeamId || inn.batTeamId || inn.teamId || null,
+      batTeam: inn.batTeam || inn.teamName || '',
+      batTeamShort: inn.batTeamShort || inn.teamSName || '',
       ...sanitizeScoreFields(inn),
     }));
   } else {
     // Check first & chase innings from liveDetails
-    const hasExplicitChase = (Number(rawLd.inningsId) >= 2)
-      || (Number(rawLd.chaseRuns) > 0)
-      || (rawLd.chaseOvers && rawLd.chaseOvers !== '0.0' && rawLd.chaseOvers !== '0');
+    const firstRuns = rawLd.firstRuns ?? raw.runs ?? rawLd.score1 ?? raw.score1;
+    const firstWickets = rawLd.firstWickets ?? raw.wickets ?? rawLd.wickets1 ?? raw.wickets1;
+    const firstOvers = rawLd.firstOvers ?? raw.overs ?? '0.0';
 
-    if (hasExplicitChase) {
-      const firstTeam = rawLd.firstTeamName || (matchesTeamIdentifier(t2Name, rawLd.chaseTeamName, t2Short) ? t1Name : t2Name);
-      const chaseTeam = rawLd.chaseTeamName || (firstTeam === t1Name ? t2Name : t1Name);
+    const chaseRuns = rawLd.chaseRuns ?? rawLd.score2 ?? raw.score2;
+    const chaseWickets = rawLd.chaseWickets ?? rawLd.wickets2 ?? raw.wickets2;
+    const chaseOvers = rawLd.chaseOvers ?? rawLd.overs2;
+
+    // Detect if chase/2nd innings has actually commenced
+    const chaseHasRunsOrWickets = (chaseRuns != null && Number(chaseRuns) > 0) || (chaseWickets != null && Number(chaseWickets) > 0);
+    const chaseHasOvers = chaseOvers && chaseOvers !== '0.0' && chaseOvers !== '0';
+    const isExplicitSecondInnings = Number(rawLd.inningsId) >= 2;
+
+    // Check for mirrored first innings bug (where feed copied runs/wickets into score2)
+    const isMirroredScore = Number(firstRuns) > 0 && Number(firstRuns) === Number(chaseRuns) && Number(firstWickets) === Number(chaseWickets) && !chaseHasOvers;
+
+    const hasValidChase = (isExplicitSecondInnings || chaseHasRunsOrWickets || chaseHasOvers) && !isMirroredScore;
+
+    if (hasValidChase) {
+      const firstTeamName = rawLd.firstTeamName || (matchesTeamIdentifier(t2Name, rawLd.chaseTeamName, t2Short) ? t1Name : t2Name);
+      const chaseTeamName = rawLd.chaseTeamName || (firstTeamName === t1Name ? t2Name : t1Name);
 
       const firstScores = sanitizeScoreFields({
-        runs: rawLd.firstRuns ?? rawLd.runs ?? 0,
-        wickets: rawLd.firstWickets ?? rawLd.wickets ?? 0,
-        overs: rawLd.firstOvers ?? rawLd.overs ?? '50.0',
+        runs: firstRuns ?? 0,
+        wickets: firstWickets ?? 0,
+        overs: firstOvers ?? '0.0',
         declared: rawLd.declared1 || rawLd.declared,
       });
 
       const chaseScores = sanitizeScoreFields({
-        runs: rawLd.chaseRuns ?? rawLd.score2 ?? 0,
-        wickets: rawLd.chaseWickets ?? rawLd.wickets2 ?? 0,
-        overs: rawLd.chaseOvers ?? rawLd.overs2 ?? '0.0',
+        runs: chaseRuns ?? 0,
+        wickets: chaseWickets ?? 0,
+        overs: chaseOvers ?? '0.0',
         declared: rawLd.declared2,
       });
 
-      rawInnings.push({ inningsId: 1, batTeam: firstTeam, ...firstScores });
-      rawInnings.push({ inningsId: 2, batTeam: chaseTeam, ...chaseScores });
+      rawInnings.push({ inningsId: 1, batTeam: firstTeamName, ...firstScores });
+      rawInnings.push({ inningsId: 2, batTeam: chaseTeamName, ...chaseScores });
     } else {
       // 1st Innings only
       let batTeam = rawLd.firstTeamName || '';
@@ -246,45 +278,77 @@ export function normalizeMatch(raw = {}, previous = {}, options = {}) {
         else batTeam = t1Name;
       }
       const singleScores = sanitizeScoreFields({
-        runs: rawLd.runs ?? raw.runs ?? rawLd.score1 ?? raw.score1 ?? 0,
-        wickets: rawLd.wickets ?? raw.wickets ?? rawLd.wickets1 ?? raw.wickets1 ?? 0,
-        overs: rawLd.overs ?? raw.overs ?? rawLd.firstOvers ?? '0.0',
+        runs: rawLd.runs ?? raw.runs ?? firstRuns ?? 0,
+        wickets: rawLd.wickets ?? raw.wickets ?? firstWickets ?? 0,
+        overs: rawLd.overs ?? raw.overs ?? firstOvers ?? '0.0',
         declared: rawLd.declared || rawLd.declared1,
       });
       rawInnings.push({ inningsId: 1, batTeam, ...singleScores });
     }
   }
 
-  // Sort and assign each innings strictly to Home or Away
+  // Map each innings exclusively to ONE team (Home or Away)
   const homeInnings = [];
   const awayInnings = [];
   const normalizedInnings = [];
 
   for (const inn of rawInnings) {
-    const isHome = matchesTeamIdentifier(t1Name, inn.batTeam, t1Short);
-    const isAway = matchesTeamIdentifier(t2Name, inn.batTeam, t2Short);
-
     let mappedTo = 'UNMAPPED';
-    if (isHome && !isAway) {
-      mappedTo = 'HOME';
-      homeInnings.push(inn);
-    } else if (isAway && !isHome) {
-      mappedTo = 'AWAY';
-      awayInnings.push(inn);
-    } else if (inn.inningsId % 2 === 1) {
-      // Default odd innings to team 1 if unmapped, even to team 2
-      mappedTo = 'HOME';
-      homeInnings.push({ ...inn, batTeam: t1Name });
-    } else {
-      mappedTo = 'AWAY';
-      awayInnings.push({ ...inn, batTeam: t2Name });
+
+    // Priority 1: Provider Team ID match
+    if (inn.batTeamId) {
+      if (String(inn.batTeamId) === t1Id) mappedTo = 'HOME';
+      else if (String(inn.batTeamId) === t2Id) mappedTo = 'AWAY';
+    }
+
+    // Priority 2: Exact or fuzzy team name match
+    if (mappedTo === 'UNMAPPED' && inn.batTeam) {
+      const isHome = matchesTeamIdentifier(t1Name, inn.batTeam, t1Short) || matchesTeamIdentifier(t1Name, inn.batTeamShort, t1Short);
+      const isAway = matchesTeamIdentifier(t2Name, inn.batTeam, t2Short) || matchesTeamIdentifier(t2Name, inn.batTeamShort, t2Short);
+
+      if (isHome && !isAway) mappedTo = 'HOME';
+      else if (isAway && !isHome) mappedTo = 'AWAY';
+    }
+
+    // Priority 3: Fallback based on sequence in non-ambiguous cases
+    if (mappedTo === 'UNMAPPED') {
+      if (inn.inningsId === 1) {
+        mappedTo = 'HOME';
+      } else if (inn.inningsId === 2 && !isTest) {
+        mappedTo = 'AWAY';
+      } else if (isTest && inn.inningsId === 3) {
+        mappedTo = 'HOME';
+      } else if (isTest && inn.inningsId === 4) {
+        mappedTo = 'AWAY';
+      }
+    }
+
+    const assignedTeamName = mappedTo === 'HOME' ? t1Name : (mappedTo === 'AWAY' ? t2Name : inn.batTeam || 'Unmapped Team');
+    const assignedTeamId = mappedTo === 'HOME' ? t1Id : (mappedTo === 'AWAY' ? t2Id : null);
+    const assignedTeamShort = mappedTo === 'HOME' ? t1Short : (mappedTo === 'AWAY' ? t2Short : 'UNM');
+
+    const cleanInnings = {
+      inningsId: inn.inningsId,
+      batTeam: assignedTeamName,
+      batTeamId: assignedTeamId,
+      batTeamShort: assignedTeamShort,
+      runs: inn.runs,
+      wickets: inn.wickets,
+      overs: inn.overs,
+      declared: inn.declared,
+    };
+
+    if (mappedTo === 'HOME') {
+      homeInnings.push(cleanInnings);
+    } else if (mappedTo === 'AWAY') {
+      awayInnings.push(cleanInnings);
     }
 
     logScoreMapping({
       matchId,
       inningsId: inn.inningsId,
-      battingTeamId: mappedTo === 'HOME' ? homeTeam.id : awayTeam.id,
-      battingTeamName: inn.batTeam || (mappedTo === 'HOME' ? t1Name : t2Name),
+      battingTeamId: assignedTeamId || 'unmapped',
+      battingTeamName: inn.batTeam || assignedTeamName,
       runs: inn.runs,
       wickets: inn.wickets,
       overs: inn.overs,
@@ -292,26 +356,30 @@ export function normalizeMatch(raw = {}, previous = {}, options = {}) {
       requestId,
     });
 
-    normalizedInnings.push({
-      inningsId: inn.inningsId,
-      batTeam: mappedTo === 'HOME' ? t1Name : t2Name,
-      batTeamId: mappedTo === 'HOME' ? homeTeam.id : awayTeam.id,
-      batTeamShort: mappedTo === 'HOME' ? t1Short : t2Short,
-      runs: inn.runs,
-      wickets: inn.wickets,
-      overs: inn.overs,
-      declared: inn.declared,
-    });
+    normalizedInnings.push(cleanInnings);
+  }
+
+  // Handle incomplete response: If an authoritative previous state had innings for a team and the incoming partial payload has 0 innings for that team, preserve previous team innings
+  if (homeInnings.length === 0 && previous.homeTeam?.innings?.length > 0) {
+    homeInnings.push(...previous.homeTeam.innings);
+  }
+  if (awayInnings.length === 0 && previous.awayTeam?.innings?.length > 0) {
+    awayInnings.push(...previous.awayTeam.innings);
   }
 
   // Calculate formatted team display score strings
   const formatInningsScoreString = (inningsList) => {
-    if (!inningsList || inningsList.length === 0) return '0/0';
+    if (!inningsList || inningsList.length === 0) return null;
     if (inningsList.length === 1 || !isTest) {
       const inn = inningsList[inningsList.length - 1];
       return `${inn.runs}/${inn.wickets}${inn.declared ? 'd' : ''}`;
     }
-    return inningsList.map((i) => `${i.runs}/${i.wickets}${i.declared ? 'd' : ''}`).join(' & ');
+    // Test match multi-innings format: e.g. "250 & 619/2d"
+    return inningsList.map((i, idx) => {
+      // In 1st innings of Test, show only runs if 10 wickets (all out), otherwise runs/wickets
+      if (idx === 0 && inningsList.length > 1 && i.wickets === 10) return `${i.runs}`;
+      return `${i.runs}/${i.wickets}${i.declared ? 'd' : ''}`;
+    }).join(' & ');
   };
 
   const homeScoreStr = formatInningsScoreString(homeInnings);
@@ -327,7 +395,7 @@ export function normalizeMatch(raw = {}, previous = {}, options = {}) {
   const activeInnings = normalizedInnings[normalizedInnings.length - 1] || {
     inningsId: 1,
     batTeam: t1Name,
-    batTeamId: homeTeam.id,
+    batTeamId: t1Id,
     batTeamShort: t1Short,
     runs: 0,
     wickets: 0,
@@ -422,6 +490,7 @@ export function normalizeMatch(raw = {}, previous = {}, options = {}) {
 
     teams: {
       team1: {
+        id: t1Id,
         name: t1Name,
         shortName: t1Short,
         score: homeScoreStr,
@@ -431,6 +500,7 @@ export function normalizeMatch(raw = {}, previous = {}, options = {}) {
         innings: homeInnings,
       },
       team2: {
+        id: t2Id,
         name: t2Name,
         shortName: t2Short,
         score: awayScoreStr,
@@ -462,9 +532,11 @@ export function normalizeMatch(raw = {}, previous = {}, options = {}) {
     recentBalls: rawLd.currentOverBalls || previous.recentBalls || [],
     toss: rawLd.toss || raw.toss || previous.toss || null,
 
+    providerUpdatedAt: incomingTime,
     lastUpdated: incomingTime,
     version: (previous.version || 0) + 1,
     source: raw.source || previous.source || 'aggregator',
     rawLiveDetails: rawLd,
   };
 }
+

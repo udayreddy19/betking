@@ -72,7 +72,41 @@ function inferT10FromLive(match) {
 export function detectCricketMatchFormat(match) {
   if (!match) return 'T20';
 
-  // 1. Direct authoritative provider format fields
+  // 1. Comprehensive text analysis across league, competition, title, description, commentary
+  const raw = collectMatchFormatText(match).toUpperCase();
+
+  // Test / Multi-Day / First Class
+  if (/\bTEST\s*MATCH\b|\bTEST\b|\bTESTS\b|\bASHES\b|\bSHEFFIELD\s*SHIELD\b|\bRANJI\s*TROPHY\b|\bCOUNTY\s*CHAMPIONSHIP\b|\b4[\s-]?DAY\b|\bFOUR[\s-]?DAY\b|\b5[\s-]?DAY\b|\bMULTI[\s-]?DAY\b/.test(raw)) {
+    if (/FIRST[\s-_]?CLASS/.test(raw)) return 'FIRST_CLASS';
+    return 'TEST';
+  }
+
+  // T10 (explicit league/title or inferred from 10-over innings)
+  if (/\bT10\b|\bT-10\b|\bTEN10\b|\b10[\s-]?OVERS?\b|\bEUROPEAN\s*CRICKET\s*SERIES\b|\bECS\s*T10\b|\bABU\s*DHABI\s*T10\b|\bMAX60\b/.test(raw) || inferT10FromLive(match)) {
+    return 'T10';
+  }
+
+  // The Hundred
+  if (/\bTHE\s*HUNDRED\b|\bHUNDRED\b|\b100[\s-]?BALL\b/.test(raw)) {
+    return 'THE_HUNDRED';
+  }
+
+  // ODI / 50 Over / List A
+  if (/\bODI\b|\bONE[\s-]?DAY\b|\b50[\s-]?OVERS?\b|\bCWC\b|\bWORLD\s*CUP\b|\bVIJAY\s*HAZARE\b|\bROYAL\s*LONDON\b|\bMARSH\s*ONE\s*DAY\b/.test(raw)) {
+    if (/LIST[\s-_]?A/.test(raw)) return 'LIST_A';
+    return 'ODI';
+  }
+
+  // Virtual cricket matches (e.g. Quantum Cricket League, (V) teams)
+  if (
+    String(match.sport || '').toLowerCase() === 'virtual-cricket'
+    || /Quantum Cricket League/i.test(match.league || '')
+    || /\(V\)/i.test(match.team1?.name || (typeof match.team1 === 'string' ? match.team1 : ''))
+  ) {
+    return 'T10';
+  }
+
+  // 2. Direct authoritative provider format fields
   const direct = String(
     match.matchFormat
     || match.format
@@ -92,32 +126,7 @@ export function detectCricketMatchFormat(match) {
   if (/^LIST[\s-_]?A$/i.test(upperDirect)) return 'LIST_A';
   if (/^THE[\s-_]?HUNDRED$|^100\s*BALL$/i.test(upperDirect)) return 'THE_HUNDRED';
 
-  // 2. Comprehensive text analysis across league, competition, title, description, commentary
-  const raw = collectMatchFormatText(match).toUpperCase();
-
-  // Test / Multi-Day / First Class
-  if (/\bTEST\s*MATCH\b|\bTEST\b|\bTESTS\b|\bASHES\b|\bSHEFFIELD\s*SHIELD\b|\bRANJI\s*TROPHY\b|\bCOUNTY\s*CHAMPIONSHIP\b|\b4[\s-]?DAY\b|\bFOUR[\s-]?DAY\b|\b5[\s-]?DAY\b|\bMULTI[\s-]?DAY\b/.test(raw)) {
-    if (/FIRST[\s-_]?CLASS/.test(raw)) return 'FIRST_CLASS';
-    return 'TEST';
-  }
-
-  // T10
-  if (/\bT10\b|\bT-10\b|\bTEN10\b|\b10[\s-]?OVERS?\b|\bEUROPEAN\s*CRICKET\s*SERIES\b|\bECS\s*T10\b|\bABU\s*DHABI\s*T10\b|\bMAX60\b/.test(raw)) {
-    return 'T10';
-  }
-
-  // The Hundred
-  if (/\bTHE\s*HUNDRED\b|\bHUNDRED\b|\b100[\s-]?BALL\b/.test(raw)) {
-    return 'THE_HUNDRED';
-  }
-
-  // ODI / 50 Over / List A
-  if (/\bODI\b|\bONE[\s-]?DAY\b|\b50[\s-]?OVERS?\b|\bCWC\b|\bWORLD\s*CUP\b|\bVIJAY\s*HAZARE\b|\bROYAL\s*LONDON\b|\bMARSH\s*ONE\s*DAY\b/.test(raw)) {
-    if (/LIST[\s-_]?A/.test(raw)) return 'LIST_A';
-    return 'ODI';
-  }
-
-  // T20
+  // T20 leagues / keywords
   if (/\bT20\b|\bTWENTY20\b|\b20[\s-]?OVERS?\b|\bIPL\b|\bBBL\b|\bPSL\b|\bCPL\b|\bSA20\b|\bILT20\b|\bBPL\b|\bSUPER\s*SMASH\b|\bBLAST\b|\bT20\s*BLAST\b|\bSMAT\b|\bMLC\b|\bSRL\b/.test(raw)) {
     return 'T20';
   }
@@ -134,8 +143,6 @@ export function detectCricketMatchFormat(match) {
   if (seen > 50) return 'TEST';
   if (seen > 20) return 'ODI';
   if (seen > 10) return 'T20';
-
-  if (String(match.sport || '').toLowerCase() === 'virtual-cricket') return 'T10';
 
   return 'T20';
 }

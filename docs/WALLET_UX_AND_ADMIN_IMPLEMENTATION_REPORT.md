@@ -31,7 +31,7 @@ In accordance with strict financial-critical directives:
 | **Financial Modals & History** | `src/components/FinancialModals/FinancialModals.jsx` | Deposit modal, withdraw modal with validation hints, and rich Transaction History modal with category filters and details drawer. | `UPDATED & VERIFIED` |
 | **Admin Finance Domain** | `src/pages/Admin/domains/FinanceDomainView.jsx` | Admin multi-entity search (email, userId, txId, betId, withdrawalId), visual financial timeline, and read-only reconciliation dashboard. | `UPDATED & VERIFIED` |
 | **Admin Finance API** | `server/routes/admin/finance.js` | Endpoints for admin wallet lookup (`/api/admin/finance/wallets/:userId`), transactions, and maker-checker approvals. | `VERIFIED` |
-| **Automated Test Suite** | `tests/wallet/walletUxAndAdmin.test.mjs` | 16 automated test scenarios verifying UX math, breakdown rules, transaction sanitization, filtering, and admin reconciliation. | `CREATED & PASSING (16/16)` |
+| **Automated Test Suite** | `tests/wallet/walletUxAndAdmin.test.js` & `scripts/run_wallet_ux_audit.mjs` | 16 automated test scenarios verifying UX math, breakdown rules, transaction sanitization, filtering, and admin reconciliation. | `CREATED & PASSING (16/16)` |
 
 ---
 

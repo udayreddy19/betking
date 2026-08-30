@@ -22,19 +22,31 @@ function mergePlayerStats(primary, fallback) {
   const pName = (primary.name || '').trim();
   const fName = (fallback.name || '').trim();
 
+  const pRuns = Number(primary.runs);
+  const fRuns = Number(fallback.runs);
+  const pBalls = Number(primary.balls);
+  const fBalls = Number(fallback.balls);
+
+  const runs = (Number.isFinite(pRuns) && pRuns > 0)
+    ? pRuns
+    : (Number.isFinite(fRuns) && fRuns > 0 ? fRuns : (Number.isFinite(pRuns) ? pRuns : (fRuns || 0)));
+  const balls = (Number.isFinite(pBalls) && pBalls > 0)
+    ? pBalls
+    : (Number.isFinite(fBalls) && fBalls > 0 ? fBalls : (Number.isFinite(pBalls) ? pBalls : (fBalls || 0)));
+
   return {
     ...fallback,
     ...primary,
     name: pName || fName,
-    runs: Number.isFinite(Number(primary.runs)) ? Number(primary.runs) : Number(fallback.runs || 0),
-    balls: Number.isFinite(Number(primary.balls)) ? Number(primary.balls) : Number(fallback.balls || 0),
-    fours: Number.isFinite(Number(primary.fours)) ? Number(primary.fours) : Number(fallback.fours || 0),
-    sixes: Number.isFinite(Number(primary.sixes)) ? Number(primary.sixes) : Number(fallback.sixes || 0),
-    wickets: Number.isFinite(Number(primary.wickets)) ? Number(primary.wickets) : Number(fallback.wickets || 0),
-    overs: primary.overs || fallback.overs || '0.0',
+    runs,
+    balls,
+    fours: Math.max(Number(primary.fours) || 0, Number(fallback.fours) || 0),
+    sixes: Math.max(Number(primary.sixes) || 0, Number(fallback.sixes) || 0),
+    wickets: Math.max(Number(primary.wickets) || 0, Number(fallback.wickets) || 0),
+    overs: (primary.overs && primary.overs !== '0.0') ? primary.overs : (fallback.overs || primary.overs || '0.0'),
     maidens: primary.maidens ?? fallback.maidens ?? 0,
-    strikeRate: primary.strikeRate || fallback.strikeRate || '0.00',
-    economy: primary.economy || fallback.economy || '0.00',
+    strikeRate: (primary.strikeRate && primary.strikeRate !== '0.00') ? primary.strikeRate : (fallback.strikeRate || primary.strikeRate || '0.00'),
+    economy: (primary.economy && primary.economy !== '0.00') ? primary.economy : (fallback.economy || primary.economy || '0.00'),
   };
 }
 
