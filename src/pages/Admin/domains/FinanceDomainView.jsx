@@ -576,37 +576,72 @@ function LedgerPanel({ focusEntityId = null, focusEntityType = null, onFocusCons
 }
 
 function PaymentGatewaysPanel() {
+  const { showToast } = useAdminToast();
   const [gateways, setGateways] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [loadingPayments, setLoadingPayments] = useState(false);
+  const [reconcilingId, setReconcilingId] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [search, setSearch] = useState('');
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  const loadGateways = () => {
     adminApiClient.get('/finance/gateways')
       .then((data) => {
-        if (cancelled) return;
         setGateways(data.gateways || []);
+      })
+      .catch(() => setGateways([]));
+  };
+
+  const loadPayments = () => {
+    setLoadingPayments(true);
+    let url = '/finance/razorpay/payments?limit=100';
+    if (statusFilter !== 'ALL') url += `&status=${encodeURIComponent(statusFilter)}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+
+    adminApiClient.get(url)
+      .then((data) => {
+        setPayments(data.payments || []);
         setError(null);
       })
       .catch((err) => {
-        if (cancelled) return;
-        setGateways([]);
-        setError(err.message || 'Failed to load payment gateway status');
-      });
-    return () => { cancelled = true; };
-  }, []);
+        setPayments([]);
+        setError(err.message || 'Failed to load Razorpay payments');
+      })
+      .finally(() => setLoadingPayments(false));
+  };
+
+  useEffect(() => {
+    loadGateways();
+    loadPayments();
+  }, [statusFilter, search]);
+
+  const handleReconcile = async (orderId) => {
+    if (!orderId) return;
+    setReconcilingId(orderId);
+    try {
+      const res = await adminApiClient.post(`/finance/razorpay/reconcile/${encodeURIComponent(orderId)}`);
+      showToast(res.message || `Order ${orderId} reconciled.`, res.success ? 'success' : 'info');
+      loadPayments();
+    } catch (err) {
+      showToast(err.message || 'Reconciliation failed', 'error');
+    } finally {
+      setReconcilingId(null);
+    }
+  };
 
   return (
     <div>
       <div style={{ marginBottom: '16px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>06 · Razorpay & Bank Gateways</h2>
+        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>06 · Razorpay Payment Gateway & Live Transactions</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
-          Payment provider configuration status from server environment (no secrets shown).
+          Server-authoritative Razorpay integration, webhook processing status, and real-time transaction ledger.
         </p>
         {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
       </div>
 
       <AdminDataTable
-        title="Payment Gateway Status"
+        title="Gateway Configuration Status"
         emptyMessage="No gateway configuration detected"
         data={gateways}
         columns={[
@@ -618,6 +653,119 @@ function PaymentGatewaysPanel() {
           { header: 'Detail', key: 'detail' },
         ]}
       />
+
+      <div style={{ marginTop: '28px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
+          <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Razorpay Deposit Transactions ({payments.length})</h3>
+
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <input
+              type="text"
+              className="admin-input"
+              placeholder="Search user, order ID, payment ID…"
+              style={{ width: '260px' }}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+
+            <select
+              className="admin-input"
+              style={{ width: '140px' }}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="ALL">All Statuses</option>
+              <option value="PAID">PAID</option>
+              <option value="PENDING">PENDING</option>
+              <option value="FAILED">FAILED</option>
+            </select>
+
+            <button
+              type="button"
+              className="admin-btn admin-btn--sm"
+              onClick={loadPayments}
+              disabled={loadingPayments}
+            >
+              {loadingPayments ? 'Loading…' : '↻ Refresh'}
+            </button>
+          </div>
+        </div>
+
+        <AdminDataTable
+          title="Deposit Transactions"
+          emptyMessage="No Razorpay transactions found"
+          data={payments}
+          columns={[
+            {
+              header: 'Deposit ID',
+              key: 'depositId',
+              render: (r) => <span className="admin-text-mono" style={{ fontWeight: 700 }}>{r.depositId}</span>,
+            },
+            {
+              header: 'User',
+              key: 'userName',
+              render: (r) => (
+                <div>
+                  <div style={{ fontWeight: 600 }}>{r.userName}</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)' }}>{r.userId}</div>
+                </div>
+              ),
+            },
+            {
+              header: 'Amount',
+              key: 'amount',
+              render: (r) => <strong style={{ color: r.status === 'PAID' ? '#10b981' : 'var(--admin-text)' }}>{money(r.amount)}</strong>,
+            },
+            {
+              header: 'Status',
+              key: 'status',
+              render: (r) => <StatusBadge status={r.status} />,
+            },
+            {
+              header: 'Razorpay Order ID',
+              key: 'razorpayOrderId',
+              render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.75rem' }}>{r.razorpayOrderId}</span>,
+            },
+            {
+              header: 'Payment ID',
+              key: 'razorpayPaymentId',
+              render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.75rem' }}>{r.razorpayPaymentId || '—'}</span>,
+            },
+            {
+              header: 'Webhook',
+              key: 'webhookStatus',
+              render: (r) => <StatusBadge status={r.webhookStatus} />,
+            },
+            {
+              header: 'Created At',
+              key: 'createdAt',
+              render: (r) => (r.createdAt ? new Date(r.createdAt).toLocaleString('en-IN') : '—'),
+            },
+            {
+              header: 'Actions',
+              key: 'actions',
+              sortable: false,
+              render: (r) => (
+                <div>
+                  {r.status !== 'PAID' && (
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn--sm"
+                      disabled={reconcilingId === r.razorpayOrderId}
+                      onClick={() => handleReconcile(r.razorpayOrderId)}
+                    >
+                      {reconcilingId === r.razorpayOrderId ? 'Checking…' : 'Reconcile'}
+                    </button>
+                  )}
+                  {r.status === 'PAID' && (
+                    <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 700 }}>✓ Verified</span>
+                  )}
+                </div>
+              ),
+            },
+          ]}
+        />
+      </div>
     </div>
   );
 }

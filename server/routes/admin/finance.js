@@ -575,4 +575,137 @@ router.get('/reconciliation-overview', requirePermission('finance'), async (req,
   }
 });
 
+/** GET /api/admin/finance/razorpay/payments — List Razorpay deposit transactions with webhook status */
+router.get('/razorpay/payments', requirePermission('finance'), async (req, res) => {
+  try {
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 200);
+    const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
+    const status = req.query.status && req.query.status !== 'ALL' ? String(req.query.status).toUpperCase() : null;
+    const search = req.query.search ? String(req.query.search).trim() : null;
+    const userId = req.query.userId ? String(req.query.userId).trim() : null;
+
+    const params = [];
+    const conditions = [];
+
+    if (status) {
+      params.push(status);
+      conditions.push(`UPPER(COALESCE(d.status, '')) = $${params.length}`);
+    }
+
+    if (userId) {
+      params.push(userId);
+      conditions.push(`d.user_id = $${params.length}`);
+    }
+
+    if (search) {
+      params.push(`%${search}%`);
+      conditions.push(`(d.deposit_id ILIKE $${params.length} OR d.order_id ILIKE $${params.length} OR d.payment_id ILIKE $${params.length} OR u.email ILIKE $${params.length} OR u.display_name ILIKE $${params.length})`);
+    }
+
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    params.push(limit);
+    params.push(offset);
+
+    const result = await queryRead(
+      `SELECT d.id, d.deposit_id, d.user_id, d.amount, d.amount_paise, d.currency, d.provider,
+              d.status, d.order_id, d.payment_id, d.created_at, d.updated_at, d.paid_at,
+              u.email AS user_email, u.display_name AS user_name,
+              pwh.status AS webhook_status, pwh.created_at AS webhook_received_at
+       FROM deposits d
+       LEFT JOIN users u ON d.user_id = u.user_id
+       LEFT JOIN payment_webhook_events pwh ON pwh.provider_event_id = ('evt_rzp_' || d.payment_id || '_payment.captured')
+       ${where}
+       ORDER BY d.created_at DESC
+       LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params
+    );
+
+    res.json({
+      success: true,
+      count: result.rows.length,
+      payments: result.rows.map((r) => ({
+        id: r.deposit_id || r.id,
+        depositId: r.deposit_id || r.id,
+        userId: r.user_id,
+        userName: r.user_name || r.user_email || r.user_id,
+        userEmail: r.user_email,
+        amount: Number(r.amount || 0),
+        amountPaise: r.amount_paise ? Number(r.amount_paise) : Math.round(Number(r.amount || 0) * 100),
+        currency: r.currency || 'INR',
+        provider: r.provider || 'RAZORPAY',
+        status: String(r.status || 'PENDING').toUpperCase(),
+        razorpayOrderId: r.order_id,
+        razorpayPaymentId: r.payment_id,
+        webhookStatus: r.webhook_status || (r.status === 'PAID' ? 'PROCESSED' : 'PENDING'),
+        webhookReceivedAt: r.webhook_received_at,
+        createdAt: r.created_at,
+        paidAt: r.paid_at,
+        updatedAt: r.updated_at,
+      })),
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to fetch Razorpay payments', message: err.message });
+  }
+});
+
+/** POST /api/admin/finance/razorpay/reconcile/:orderId — Authoritative Razorpay API reconciliation */
+router.post('/razorpay/reconcile/:orderId', requirePermission('finance'), async (req, res) => {
+  try {
+    const orderId = req.params.orderId;
+    const { query } = await import('../../../db/pg.js');
+    const depRes = await query(`SELECT * FROM deposits WHERE order_id = $1`, [orderId]);
+
+    if (depRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: `No deposit record found for order '${orderId}'` });
+    }
+
+    const deposit = depRes.rows[0];
+    if (String(deposit.status).toUpperCase() === 'PAID' || String(deposit.status).toUpperCase() === 'CAPTURED') {
+      return res.json({ success: true, message: 'Deposit is already PAID', deposit });
+    }
+
+    const key_id = process.env.RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID;
+    const key_secret = process.env.RAZORPAY_KEY_SECRET;
+
+    if (!key_id || !key_secret) {
+      return res.status(500).json({ success: false, error: 'Razorpay credentials are not configured on server' });
+    }
+
+    const Razorpay = (await import('razorpay')).default;
+    const instance = new Razorpay({ key_id, key_secret });
+
+    // Fetch payments for this order
+    const orderPayments = await instance.orders.fetchPayments(orderId);
+    const capturedPayment = (orderPayments.items || []).find((p) => String(p.status).toLowerCase() === 'captured');
+
+    if (!capturedPayment) {
+      return res.json({
+        success: false,
+        message: 'No captured payment found on Razorpay for this order',
+        orderPayments: orderPayments.items || [],
+      });
+    }
+
+    const { depositEngine } = await import('../../../lib/depositEngine.mjs');
+    const result = await depositEngine.processVerifiedRazorpayPayment({
+      depositId: deposit.deposit_id || deposit.id,
+      providerOrderId: orderId,
+      providerPaymentId: capturedPayment.id,
+      amountInINR: parseFloat((Number(capturedPayment.amount) / 100).toFixed(2)),
+      userId: deposit.user_id,
+      method: capturedPayment.method || 'upi',
+      utr: capturedPayment.acquirer_data?.rrn || capturedPayment.acquirer_data?.upi_transaction_id || capturedPayment.id,
+      rawPayload: { source: 'admin_reconcile', payment: capturedPayment },
+      source: 'ADMIN_RECONCILE',
+      correlationId: req.correlationId || null,
+    });
+
+    res.json({ success: true, message: 'Deposit successfully reconciled and credited', result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Reconciliation failed', message: err.message });
+  }
+});
+
 export default router;
+

@@ -4,36 +4,7 @@ import { requireAuth } from '../middleware/userAuth.js';
 const router = Router();
 const isProduction = process.env.NODE_ENV === 'production';
 
-if (!isProduction) {
-  router.post('/api/create-order', async (req, res) => {
-    const { amount, userId } = req.body;
-
-    if (!amount || amount <= 0) {
-      return res.status(400).json({ error: 'Invalid deposit amount' });
-    }
-
-    try {
-      const mockOrder = {
-        id: `order_${Math.random().toString(36).substring(2, 12)}`,
-        entity: 'order',
-        amount: amount * 100,
-        amount_paid: 0,
-        amount_due: amount * 100,
-        currency: 'INR',
-        receipt: `rcpt_${userId || 'user123'}_${Date.now()}`,
-        status: 'created',
-        notes: { userId: userId || 'user123' },
-      };
-
-      console.log(`[API] Dev mock order created: ${mockOrder.id} for ₹${amount}`);
-      res.json(mockOrder);
-    } catch (err) {
-      console.error('[API Error] Failed to create order:', err);
-      res.status(500).json({ error: 'Server error creating order' });
-    }
-  });
-}
-
+// Webhook endpoint for Razorpay payment captures / refunds / failures
 router.post('/api/webhooks/razorpay', async (req, res) => {
   const signature = req.headers['x-razorpay-signature'];
   try {
@@ -47,12 +18,13 @@ router.post('/api/webhooks/razorpay', async (req, res) => {
 
     res.json(result);
   } catch (err) {
-    const statusCode = err.message?.includes('INVALID_SIGNATURE') ? 400 : 500;
+    const statusCode = err.message?.includes('INVALID_SIGNATURE') || err.message?.includes('MISSING_SIGNATURE') ? 400 : 500;
     res.status(statusCode).json({ error: err.message || 'Webhook processing failed' });
   }
 });
 
-router.post('/api/v1/payments/create-order', requireAuth, async (req, res) => {
+// Create Razorpay Order (supports both /api/payments/razorpay/create-order and /api/v1/payments/create-order)
+const handleCreateOrder = async (req, res) => {
   try {
     const { depositEngine } = await import('../../lib/depositEngine.mjs');
     const result = await depositEngine.createOrder(
@@ -63,22 +35,27 @@ router.post('/api/v1/payments/create-order', requireAuth, async (req, res) => {
   } catch (err) {
     const message = err?.message || err?.error?.description || 'Unable to create deposit order';
     res.status(err.status || err.statusCode || 400).json({
+      success: false,
       error: message,
       code: err.code || err?.error?.code,
     });
   }
-});
+};
 
-/** Confirm Checkout payment (signature + Razorpay fetch) and credit wallet — webhook fallback. */
-router.post('/api/v1/payments/confirm', requireAuth, async (req, res) => {
+router.post('/api/payments/razorpay/create-order', requireAuth, handleCreateOrder);
+router.post('/api/v1/payments/create-order', requireAuth, handleCreateOrder);
+
+// Verify Razorpay Payment (supports both /api/payments/razorpay/verify and /api/v1/payments/confirm)
+const handleVerifyPayment = async (req, res) => {
   try {
     const { depositEngine } = await import('../../lib/depositEngine.mjs');
     const result = await depositEngine.confirmCheckoutPayment(
       {
         userId: req.user.userId,
-        razorpayOrderId: req.body?.razorpay_order_id || req.body?.orderId,
-        razorpayPaymentId: req.body?.razorpay_payment_id || req.body?.paymentId,
-        razorpaySignature: req.body?.razorpay_signature || req.body?.signature,
+        depositId: req.body?.depositId || req.body?.deposit_id,
+        razorpayOrderId: req.body?.razorpay_order_id || req.body?.orderId || req.body?.razorpayOrderId,
+        razorpayPaymentId: req.body?.razorpay_payment_id || req.body?.paymentId || req.body?.razorpayPaymentId,
+        razorpaySignature: req.body?.razorpay_signature || req.body?.signature || req.body?.razorpaySignature,
       },
       req.correlationId,
     );
@@ -91,8 +68,12 @@ router.post('/api/v1/payments/confirm', requireAuth, async (req, res) => {
       code: err.code || err?.error?.code,
     });
   }
-});
+};
 
+router.post('/api/payments/razorpay/verify', requireAuth, handleVerifyPayment);
+router.post('/api/v1/payments/confirm', requireAuth, handleVerifyPayment);
+
+// Withdrawals
 router.post('/api/v1/withdrawals/request', requireAuth, async (req, res) => {
   try {
     const { withdrawalEngine } = await import('../../lib/withdrawalEngine.mjs');
