@@ -67,8 +67,8 @@ test('ODDSYRA — CASHFREE PAYMENTS API + WEBHOOK INTEGRATION TEST SUITE', async
   );
 
   await query(
-    `INSERT INTO wallets (wallet_id, user_id, balance, locked_deposit_balance, created_at, updated_at)
-     VALUES ($1, $2, 0.00, 0.00, NOW(), NOW())
+    `INSERT INTO wallets (wallet_id, user_id, balance, locked_deposit_balance, updated_at)
+     VALUES ($1, $2, 0.00, 0.00, NOW())
      ON CONFLICT (wallet_id) DO NOTHING`,
     [testWalletId, testUserId]
   );
