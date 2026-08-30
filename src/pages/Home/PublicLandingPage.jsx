@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { FiCheckCircle, FiShield, FiLock, FiCpu, FiLifeBuoy } from '../../icons';
+import { FiCheckCircle, FiShield, FiLock, FiCpu, FiHelpCircle } from '../../icons';
 import './PublicLandingPage.css';
 
 export default function PublicLandingPage() {
@@ -40,7 +40,7 @@ export default function PublicLandingPage() {
               <span>LOG IN</span>
             </button>
             <Link to="/help" className="private-btn-outline">
-              <FiLifeBuoy className="btn-icon" />
+              <FiHelpCircle className="btn-icon" />
               <span>SUPPORT</span>
             </Link>
           </div>
