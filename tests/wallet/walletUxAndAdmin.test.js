@@ -190,8 +190,14 @@ describe('ODDSYRA — Wallet UX & Admin Control Audit Suite (16 Scenarios)', () 
     expect(hint).toContain('Wager ₹500 of your deposit');
   });
 
-  it('TEST 11: Admin can search user wallet by email, user ID, or transaction ID', async () => {
+  it('TEST 11: Admin can search user wallet by user (ID, email, phone, display name) or reference ID', async () => {
     const txId = 'tx_investigate_01';
+    await query(`
+      INSERT INTO user_profiles (user_id, display_name, kyc_status, account_status)
+      VALUES ($1, 'Vikram Sharma', 'VERIFIED', 'ACTIVE')
+      ON CONFLICT (user_id) DO UPDATE SET display_name = EXCLUDED.display_name;
+    `, [testUserId]);
+
     await query(`
       INSERT INTO transactions (transaction_id, user_id, type, amount, status)
       VALUES ($1, $2, 'DEPOSIT', 1500.00, 'COMPLETED');
@@ -200,6 +206,13 @@ describe('ODDSYRA — Wallet UX & Admin Control Audit Suite (16 Scenarios)', () 
     // Test lookup by User ID
     const resUser = await queryRead(`SELECT user_id, email FROM users WHERE user_id = $1`, [testUserId]);
     expect(resUser.rows[0].email).toBe('ux_test_01@oddsyra.com');
+
+    // Test lookup by Display Name
+    const resName = await queryRead(
+      `SELECT u.user_id, up.display_name FROM users u JOIN user_profiles up ON u.user_id = up.user_id WHERE up.display_name ILIKE $1`,
+      ['%Vikram%']
+    );
+    expect(resName.rows[0].user_id).toBe(testUserId);
 
     // Test lookup by Transaction ID
     const resTx = await queryRead(`SELECT user_id FROM transactions WHERE transaction_id = $1`, [txId]);

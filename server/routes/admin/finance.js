@@ -309,20 +309,95 @@ router.get('/anomalies', requirePermission('finance'), async (req, res) => {
   }
 });
 
+/** GET /api/admin/finance/users/lookup — Search users by user_id, email, display_name, or phone for quick wallet investigation */
+router.get('/users/lookup', requirePermission('finance'), async (req, res) => {
+  try {
+    const q = String(req.query.q || '').trim();
+    if (!q) {
+      // Return 10 recent users by default
+      const recent = await queryRead(
+        `SELECT u.user_id, u.email, u.phone, u.created_at, up.display_name, up.kyc_status,
+                COALESCE(w.balance, 0.00) as balance, COALESCE(w.currency, 'INR') as currency
+         FROM users u
+         LEFT JOIN user_profiles up ON u.user_id = up.user_id
+         LEFT JOIN wallets w ON u.user_id = w.user_id
+         ORDER BY u.created_at DESC
+         LIMIT 10`
+      );
+      return res.json({
+        users: recent.rows.map((r) => ({
+          userId: r.user_id,
+          email: r.email,
+          phone: r.phone,
+          displayName: r.display_name,
+          kycStatus: r.kyc_status,
+          balance: Number(r.balance),
+          currency: r.currency,
+          createdAt: r.created_at,
+        })),
+      });
+    }
+
+    const likeQ = `%${q.toLowerCase()}%`;
+    const result = await queryRead(
+      `SELECT u.user_id, u.email, u.phone, u.created_at, up.display_name, up.kyc_status,
+              COALESCE(w.balance, 0.00) as balance, COALESCE(w.currency, 'INR') as currency
+       FROM users u
+       LEFT JOIN user_profiles up ON u.user_id = up.user_id
+       LEFT JOIN wallets w ON u.user_id = w.user_id
+       WHERE u.user_id = $1
+          OR LOWER(u.email) = LOWER($1)
+          OR u.phone = $1
+          OR LOWER(u.email) LIKE $2
+          OR LOWER(u.user_id) LIKE $2
+          OR LOWER(COALESCE(up.display_name, '')) LIKE $2
+          OR u.phone LIKE $2
+       ORDER BY u.created_at DESC
+       LIMIT 20`,
+      [q, likeQ]
+    );
+
+    res.json({
+      users: result.rows.map((r) => ({
+        userId: r.user_id,
+        email: r.email,
+        phone: r.phone,
+        displayName: r.display_name,
+        kycStatus: r.kyc_status,
+        balance: Number(r.balance),
+        currency: r.currency,
+        createdAt: r.created_at,
+      })),
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to lookup users', message: err.message });
+  }
+});
+
 /** GET /api/admin/finance/investigate — Search by user/email/txId/betId/wdId and return financial timeline */
 router.get('/investigate', requirePermission('finance'), async (req, res) => {
   try {
     const q = String(req.query.q || '').trim();
     if (!q) {
-      return res.status(400).json({ error: 'Search query (user ID, email, tx ID, bet ID, or withdrawal ID) is required' });
+      return res.status(400).json({ error: 'Search query (user ID, email, username, tx ID, bet ID, or withdrawal ID) is required' });
     }
 
     let targetUserId = null;
 
-    // 1. Direct user / email match
+    // 1. Direct user / email / display_name / phone match
     const userMatch = await queryRead(
-      `SELECT user_id, email, full_name, phone, status, created_at FROM users WHERE user_id = $1 OR LOWER(email) = LOWER($1) LIMIT 1`,
-      [q]
+      `SELECT u.user_id, u.email, u.phone, u.created_at, up.display_name, up.account_status, up.kyc_status
+       FROM users u
+       LEFT JOIN user_profiles up ON u.user_id = up.user_id
+       WHERE u.user_id = $1
+          OR LOWER(u.email) = LOWER($1)
+          OR u.phone = $1
+          OR LOWER(COALESCE(up.display_name, '')) = LOWER($1)
+          OR LOWER(u.email) LIKE $2
+          OR LOWER(u.user_id) LIKE $2
+          OR LOWER(COALESCE(up.display_name, '')) LIKE $2
+       LIMIT 1`,
+      [q, `%${q.toLowerCase()}%`]
     );
     if (userMatch.rows.length > 0) {
       targetUserId = userMatch.rows[0].user_id;
@@ -370,10 +445,12 @@ router.get('/investigate', requirePermission('finance'), async (req, res) => {
 
     // Fetch user details & wallet
     const userRes = await queryRead(
-      `SELECT u.user_id, u.email, u.full_name, u.phone, u.status, u.created_at,
+      `SELECT u.user_id, u.email, u.phone, u.created_at,
+              up.display_name, up.account_status, up.kyc_status,
               w.wallet_id, w.balance, w.bonus_balance, w.reserved_balance, w.freebet_balance,
               w.locked_deposit_balance, w.winnings_balance, w.currency, w.updated_at as wallet_updated_at
        FROM users u
+       LEFT JOIN user_profiles up ON u.user_id = up.user_id
        LEFT JOIN wallets w ON u.user_id = w.user_id
        WHERE u.user_id = $1`,
       [targetUserId]
@@ -405,9 +482,11 @@ router.get('/investigate', requirePermission('finance'), async (req, res) => {
       user: {
         userId: user?.user_id,
         email: user?.email,
-        fullName: user?.full_name,
+        displayName: user?.display_name || user?.full_name,
+        fullName: user?.display_name || user?.full_name,
         phone: user?.phone,
-        status: user?.status,
+        status: user?.account_status || user?.status || 'ACTIVE',
+        kycStatus: user?.kyc_status || 'NOT_STARTED',
         createdAt: user?.created_at,
       },
       wallet: {

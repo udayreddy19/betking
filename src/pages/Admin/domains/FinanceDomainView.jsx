@@ -1360,18 +1360,46 @@ function WalletInvestigationPanel() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [userSuggestions, setUserSuggestions] = useState([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const { showToast } = useAdminToast();
 
-  const handleSearch = async (e) => {
-    if (e) e.preventDefault();
-    const q = query.trim();
+  const loadUserSuggestions = async (searchStr = '') => {
+    setSuggestionsLoading(true);
+    try {
+      const res = await adminApiClient.get(`/finance/users/lookup?q=${encodeURIComponent(searchStr)}`);
+      setUserSuggestions(res.users || []);
+    } catch {
+      setUserSuggestions([]);
+    } finally {
+      setSuggestionsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadUserSuggestions('');
+  }, []);
+
+  const handleQueryChange = (val) => {
+    setQuery(val);
+    if (val.trim().length >= 1) {
+      loadUserSuggestions(val.trim());
+      setShowSuggestions(true);
+    }
+  };
+
+  const investigateTarget = async (searchTarget) => {
+    const q = String(searchTarget || '').trim();
     if (!q) return;
     setLoading(true);
     setError(null);
+    setShowSuggestions(false);
     try {
       const res = await adminApiClient.get(`/finance/investigate?q=${encodeURIComponent(q)}`);
       setData(res);
-      showToast('Wallet investigation loaded', 'success');
+      setQuery(res.user?.email || res.user?.userId || q);
+      showToast(`Wallet investigation loaded for ${res.user?.email || res.user?.userId}`, 'success');
     } catch (err) {
       setError(err.message || 'No matching user or financial record found');
       setData(null);
@@ -1381,28 +1409,96 @@ function WalletInvestigationPanel() {
     }
   };
 
+  const handleSearch = (e) => {
+    if (e) e.preventDefault();
+    investigateTarget(query);
+  };
+
   return (
     <div>
       <div style={{ marginBottom: 20 }}>
         <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Wallet Investigation & Financial Timeline</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
-          Forensic lookup by User ID, Email, Transaction ID, Bet ID, or Withdrawal ID.
+          Forensic lookup by User (Name, Email, Phone, User ID) or Reference ID (Tx ID, Bet ID, Withdrawal ID, Deposit ID).
         </p>
       </div>
 
-      <form onSubmit={handleSearch} style={{ display: 'flex', gap: 10, maxWidth: 640, marginBottom: 24 }}>
-        <input
-          type="search"
-          placeholder="Enter User ID (usr_...), Email, Tx ID (tx_...), Bet ID (bet_...), or WD ID..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="admin-input"
-          style={{ flex: 1, padding: '10px 14px', borderRadius: 8, fontSize: '0.9rem' }}
-        />
-        <button type="submit" className="admin-btn admin-btn--primary" disabled={loading || !query.trim()}>
-          {loading ? 'Searching…' : 'Investigate'}
-        </button>
-      </form>
+      {/* SEARCH BAR & USER LOOKUP DROPDOWN */}
+      <div style={{ position: 'relative', maxWidth: 720, marginBottom: 24 }}>
+        <form onSubmit={handleSearch} style={{ display: 'flex', gap: 10 }}>
+          <div style={{ position: 'relative', flex: 1 }}>
+            <input
+              type="search"
+              placeholder="Lookup by user (Name, Email, Phone, usr_...) or Ref (tx_..., bet_..., wd_...)"
+              value={query}
+              onChange={(e) => handleQueryChange(e.target.value)}
+              onFocus={() => setShowSuggestions(true)}
+              className="admin-input"
+              style={{ width: '100%', padding: '10px 14px', borderRadius: 8, fontSize: '0.9rem' }}
+            />
+          </div>
+          <button type="submit" className="admin-btn admin-btn--primary" disabled={loading || !query.trim()}>
+            {loading ? 'Searching…' : 'Investigate'}
+          </button>
+        </form>
+
+        {/* QUICK USER SUGGESTIONS / AUTOCOMPLETE */}
+        {showSuggestions && userSuggestions.length > 0 && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '100%',
+              left: 0,
+              right: 0,
+              zIndex: 50,
+              background: 'var(--admin-card-bg, #1e293b)',
+              border: '1px solid var(--admin-border, #334155)',
+              borderRadius: 8,
+              boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+              marginTop: 4,
+              maxHeight: 280,
+              overflowY: 'auto',
+            }}
+          >
+            <div style={{ padding: '6px 12px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--admin-text-muted)', borderBottom: '1px solid var(--admin-border)' }}>
+              {suggestionsLoading ? 'Searching users…' : 'MATCHING USERS (Click to Investigate)'}
+            </div>
+            {userSuggestions.map((u) => (
+              <div
+                key={u.userId}
+                onClick={() => investigateTarget(u.userId)}
+                style={{
+                  padding: '10px 14px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  borderBottom: '1px solid var(--admin-border-subtle, rgba(255,255,255,0.05))',
+                  transition: 'background 0.15s ease',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+              >
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>
+                    {u.displayName || u.email}
+                    {u.displayName && <span style={{ color: 'var(--admin-text-muted)', fontSize: '0.78rem', marginLeft: 6 }}>({u.email})</span>}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)' }}>
+                    ID: <span className="admin-text-mono">{u.userId}</span> {u.phone ? `· Phone: ${u.phone}` : ''}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontWeight: 700, color: '#10b981', fontSize: '0.9rem' }}>
+                    ₹{u.balance?.toLocaleString('en-IN') ?? 0}
+                  </div>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--admin-text-muted)' }}>{u.kycStatus || 'NOT_STARTED'}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {error && (
         <div style={{ padding: '12px 16px', background: '#fee2e2', color: '#991b1b', borderRadius: 8, marginBottom: 20, fontSize: '0.88rem' }}>
@@ -1423,16 +1519,24 @@ function WalletInvestigationPanel() {
                   <span className="admin-text-mono" style={{ fontWeight: 600 }}>{data.user?.userId}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--admin-text-muted)' }}>Display Name:</span>
+                  <span style={{ fontWeight: 600 }}>{data.user?.displayName || data.user?.fullName || '—'}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: 'var(--admin-text-muted)' }}>Email:</span>
                   <span style={{ fontWeight: 600 }}>{data.user?.email || '—'}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--admin-text-muted)' }}>Name / Phone:</span>
-                  <span>{data.user?.fullName || data.user?.phone || '—'}</span>
+                  <span style={{ color: 'var(--admin-text-muted)' }}>Phone:</span>
+                  <span>{data.user?.phone || '—'}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--admin-text-muted)' }}>Status:</span>
-                  <StatusBadge status={data.user?.status} />
+                  <span style={{ color: 'var(--admin-text-muted)' }}>KYC Status:</span>
+                  <StatusBadge status={data.user?.kycStatus || 'NOT_STARTED'} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--admin-text-muted)' }}>Account Status:</span>
+                  <StatusBadge status={data.user?.status || 'ACTIVE'} />
                 </div>
               </div>
             </div>
