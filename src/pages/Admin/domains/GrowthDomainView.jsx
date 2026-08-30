@@ -1733,6 +1733,9 @@ export default function GrowthDomainView({ subModule = 'overview' }) {
   if (subModule === 'promo-roi') {
     return <PromoRoiPanel />;
   }
+  if (subModule === 'rewards' || subModule === 'discrete-rewards') {
+    return <DiscreteRewardsAdminPanel />;
+  }
   return <PromotionsPanel />;
 }
 
@@ -2462,3 +2465,439 @@ function PromoAbuseAlertsPanel() {
     </div>
   );
 }
+
+function DiscreteRewardsAdminPanel() {
+  const { showToast } = useAdminToast();
+  const [rewards, setRewards] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [searchUser, setSearchUser] = useState('');
+  const [filterStatus, setFilterStatus] = useState('ALL');
+  const [filterType, setFilterType] = useState('ALL');
+  const [issuing, setIssuing] = useState(false);
+  const [activeLedgerReward, setActiveLedgerReward] = useState(null);
+  const [ledgerEntries, setLedgerEntries] = useState([]);
+  const [loadingLedger, setLoadingLedger] = useState(false);
+
+  const [issueForm, setIssueForm] = useState({
+    userId: '',
+    rewardType: 'freebet',
+    amount: '500',
+    title: '',
+    minOdds: '1.50',
+    expiryDays: '7',
+    returnsStake: false,
+    allowPartialUse: false,
+    reason: '',
+  });
+
+  const loadRewards = useCallback(async () => {
+    setLoading(true);
+    try {
+      let url = '/rewards?limit=100';
+      if (searchUser) url += `&userId=${encodeURIComponent(searchUser)}`;
+      if (filterStatus !== 'ALL') url += `&status=${encodeURIComponent(filterStatus)}`;
+      if (filterType !== 'ALL') url += `&rewardType=${encodeURIComponent(filterType)}`;
+      const data = await adminApiClient.get(url);
+      setRewards(data.rewards || []);
+    } catch (err) {
+      showToast(err.message || 'Failed to load discrete rewards', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [searchUser, filterStatus, filterType, showToast]);
+
+  useEffect(() => {
+    loadRewards();
+  }, [loadRewards]);
+
+  const handleIssueSubmit = async (e) => {
+    e.preventDefault();
+    if (!issueForm.userId || !issueForm.amount) {
+      showToast('User ID and Amount are required.', 'error');
+      return;
+    }
+    setIssuing(true);
+    try {
+      await adminApiClient.post('/rewards/issue', {
+        userId: issueForm.userId,
+        rewardType: issueForm.rewardType,
+        amount: Number(issueForm.amount),
+        title: issueForm.title || `${issueForm.rewardType === 'freebet' ? 'Free Bet' : 'Bonus'} ₹${issueForm.amount}`,
+        minOdds: Number(issueForm.minOdds || 1.00),
+        expiryDays: Number(issueForm.expiryDays || 7),
+        returnsStake: Boolean(issueForm.returnsStake),
+        allowPartialUse: Boolean(issueForm.allowPartialUse),
+        reason: issueForm.reason || 'Admin Issued',
+      });
+      showToast(`Successfully issued ₹${issueForm.amount} ${issueForm.rewardType} to user ${issueForm.userId}!`, 'success');
+      setIssueForm({
+        userId: '',
+        rewardType: 'freebet',
+        amount: '500',
+        title: '',
+        minOdds: '1.50',
+        expiryDays: '7',
+        returnsStake: false,
+        allowPartialUse: false,
+        reason: '',
+      });
+      loadRewards();
+    } catch (err) {
+      showToast(err.message || 'Failed to issue reward', 'error');
+    } finally {
+      setIssuing(false);
+    }
+  };
+
+  const handleCancelReward = async (rewardId) => {
+    if (!window.confirm(`Are you sure you want to cancel reward ${rewardId}?`)) return;
+    try {
+      await adminApiClient.post(`/rewards/${encodeURIComponent(rewardId)}/cancel`, {
+        reason: 'Cancelled via Admin Console',
+      });
+      showToast(`Reward ${rewardId} cancelled.`, 'success');
+      loadRewards();
+    } catch (err) {
+      showToast(err.message || 'Failed to cancel reward', 'error');
+    }
+  };
+
+  const handleExtendExpiry = async (rewardId) => {
+    try {
+      await adminApiClient.post(`/rewards/${encodeURIComponent(rewardId)}/extend`, {
+        extensionDays: 7,
+        reason: 'Extended +7 days via Admin Console',
+      });
+      showToast(`Reward ${rewardId} expiry extended by 7 days.`, 'success');
+      loadRewards();
+    } catch (err) {
+      showToast(err.message || 'Failed to extend expiry', 'error');
+    }
+  };
+
+  const handleViewLedger = async (reward) => {
+    setActiveLedgerReward(reward);
+    setLoadingLedger(true);
+    setLedgerEntries([]);
+    try {
+      const data = await adminApiClient.get(`/rewards/${encodeURIComponent(reward.rewardId)}/ledger`);
+      setLedgerEntries(data.ledger || []);
+    } catch (err) {
+      showToast(err.message || 'Failed to fetch reward ledger', 'error');
+    } finally {
+      setLoadingLedger(false);
+    }
+  };
+
+  return (
+    <div>
+      <div style={{ marginBottom: '20px' }}>
+        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900 }}>🎁 Discrete Free Bets & Bonuses Management</h2>
+        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.84rem' }}>
+          Issue and inspect discrete promotional reward instruments. Free Bets and Bonuses require exact full-stake usage and are never merged with cash balances.
+        </p>
+      </div>
+
+      {/* Issue Form */}
+      <AdminCard title="Issue New Discrete Reward Instrument" style={{ marginBottom: '24px' }}>
+        <form onSubmit={handleIssueSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '4px' }}>User ID / UUID *</label>
+            <input
+              type="text"
+              className="admin-input"
+              placeholder="e.g. usr_123 or UUID"
+              value={issueForm.userId}
+              onChange={(e) => setIssueForm({ ...issueForm, userId: e.target.value })}
+              required
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '4px' }}>Reward Instrument Type *</label>
+            <select
+              className="admin-input"
+              value={issueForm.rewardType}
+              onChange={(e) => setIssueForm({ ...issueForm, rewardType: e.target.value })}
+            >
+              <option value="freebet">🎁 Free Bet (Profit Only)</option>
+              <option value="bonus">⭐ Bonus Credit</option>
+            </select>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '4px' }}>Exact Amount (₹) *</label>
+            <input
+              type="number"
+              className="admin-input"
+              placeholder="500"
+              value={issueForm.amount}
+              onChange={(e) => setIssueForm({ ...issueForm, amount: e.target.value })}
+              required
+              min="1"
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '4px' }}>Reward Title</label>
+            <input
+              type="text"
+              className="admin-input"
+              placeholder="e.g. VIP ₹500 Free Bet"
+              value={issueForm.title}
+              onChange={(e) => setIssueForm({ ...issueForm, title: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '4px' }}>Min Odds</label>
+            <input
+              type="number"
+              step="0.05"
+              className="admin-input"
+              placeholder="1.50"
+              value={issueForm.minOdds}
+              onChange={(e) => setIssueForm({ ...issueForm, minOdds: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '4px' }}>Expiry (Days)</label>
+            <input
+              type="number"
+              className="admin-input"
+              placeholder="7"
+              value={issueForm.expiryDays}
+              onChange={(e) => setIssueForm({ ...issueForm, expiryDays: e.target.value })}
+              min="1"
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '4px' }}>Reason / Campaign</label>
+            <input
+              type="text"
+              className="admin-input"
+              placeholder="e.g. Goodwill Retention"
+              value={issueForm.reason}
+              onChange={(e) => setIssueForm({ ...issueForm, reason: e.target.value })}
+            />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingTop: '20px' }}>
+            <button
+              type="submit"
+              className="admin-btn admin-btn--primary"
+              disabled={issuing}
+            >
+              {issuing ? 'Issuing…' : 'Issue Reward →'}
+            </button>
+          </div>
+        </form>
+      </AdminCard>
+
+      {/* Filter Bar */}
+      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap' }}>
+        <input
+          type="text"
+          className="admin-input"
+          placeholder="Filter by User ID…"
+          style={{ width: '220px' }}
+          value={searchUser}
+          onChange={(e) => setSearchUser(e.target.value)}
+        />
+
+        <select
+          className="admin-input"
+          style={{ width: '150px' }}
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+        >
+          <option value="ALL">All Statuses</option>
+          <option value="AVAILABLE">AVAILABLE</option>
+          <option value="CONSUMED">CONSUMED</option>
+          <option value="EXPIRED">EXPIRED</option>
+          <option value="CANCELLED">CANCELLED</option>
+        </select>
+
+        <select
+          className="admin-input"
+          style={{ width: '150px' }}
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value)}
+        >
+          <option value="ALL">All Types</option>
+          <option value="freebet">Free Bet</option>
+          <option value="bonus">Bonus</option>
+        </select>
+
+        <button type="button" className="admin-btn" onClick={loadRewards} disabled={loading}>
+          {loading ? 'Loading…' : '↻ Refresh'}
+        </button>
+      </div>
+
+      {/* Rewards Table */}
+      <AdminDataTable
+        title={`Issued Discrete Rewards (${rewards.length})`}
+        emptyMessage="No discrete rewards found matching criteria"
+        data={rewards}
+        columns={[
+          {
+            header: 'Reward ID',
+            key: 'rewardId',
+            render: (r) => <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{r.rewardId}</span>,
+          },
+          {
+            header: 'User',
+            key: 'userId',
+            render: (r) => <span style={{ fontSize: '0.78rem' }}>{r.userId}</span>,
+          },
+          {
+            header: 'Type',
+            key: 'rewardType',
+            render: (r) => (
+              <span style={{ fontWeight: 800, color: r.rewardType === 'freebet' ? '#10b981' : '#f59e0b' }}>
+                {r.rewardType === 'freebet' ? '🎁 FREEBET' : '⭐ BONUS'}
+              </span>
+            ),
+          },
+          {
+            header: 'Amount',
+            key: 'amount',
+            render: (r) => <strong>₹{Number(r.amount).toLocaleString()}</strong>,
+          },
+          {
+            header: 'Status',
+            key: 'status',
+            render: (r) => <StatusBadge status={r.status || 'AVAILABLE'} />,
+          },
+          {
+            header: 'Min Odds',
+            key: 'minOdds',
+            render: (r) => (r.minOdds > 1 ? `${Number(r.minOdds).toFixed(2)}x` : 'Any'),
+          },
+          {
+            header: 'Expires At',
+            key: 'expiresAt',
+            render: (r) => (r.expiresAt ? new Date(r.expiresAt).toLocaleDateString() : '—'),
+          },
+          {
+            header: 'Used In Bet',
+            key: 'usedBetId',
+            render: (r) => (r.usedBetId ? <span style={{ fontFamily: 'monospace', color: '#6366f1' }}>{r.usedBetId}</span> : '—'),
+          },
+          {
+            header: 'Actions',
+            key: 'actions',
+            sortable: false,
+            render: (r) => (
+              <div style={{ display: 'flex', gap: '6px' }}>
+                {r.status === 'AVAILABLE' && (
+                  <>
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn--danger admin-btn--sm"
+                      onClick={() => handleCancelReward(r.rewardId)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn--sm"
+                      onClick={() => handleExtendExpiry(r.rewardId)}
+                    >
+                      +7d
+                    </button>
+                  </>
+                )}
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--sm"
+                  onClick={() => handleViewLedger(r)}
+                >
+                  Ledger
+                </button>
+              </div>
+            ),
+          },
+        ]}
+      />
+
+      {/* Ledger Modal */}
+      {activeLedgerReward && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.6)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px',
+        }}>
+          <div style={{
+            background: 'var(--admin-surface, #ffffff)',
+            borderRadius: '12px',
+            maxWidth: '750px',
+            width: '100%',
+            maxHeight: '85vh',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+          }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--admin-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>Audit Ledger · {activeLedgerReward.rewardId}</h3>
+                <span style={{ fontSize: '0.78rem', color: 'var(--admin-text-muted)' }}>
+                  User: {activeLedgerReward.userId} | {activeLedgerReward.title} (₹{activeLedgerReward.amount})
+                </span>
+              </div>
+              <button
+                type="button"
+                className="admin-btn admin-btn--sm"
+                onClick={() => setActiveLedgerReward(null)}
+              >
+                ✕ Close
+              </button>
+            </div>
+
+            <div style={{ padding: '20px', overflowY: 'auto', flex: 1 }}>
+              {loadingLedger ? (
+                <p>Loading ledger entries…</p>
+              ) : ledgerEntries.length === 0 ? (
+                <p>No ledger entries found for this reward.</p>
+              ) : (
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid var(--admin-border)', textAlign: 'left' }}>
+                      <th style={{ padding: '8px' }}>Event</th>
+                      <th style={{ padding: '8px' }}>Transition</th>
+                      <th style={{ padding: '8px' }}>Bet ID</th>
+                      <th style={{ padding: '8px' }}>Notes</th>
+                      <th style={{ padding: '8px' }}>Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ledgerEntries.map((l) => (
+                      <tr key={l.ledger_id || l.event_id} style={{ borderBottom: '1px solid var(--admin-border)' }}>
+                        <td style={{ padding: '8px', fontWeight: 700 }}>{l.event_type}</td>
+                        <td style={{ padding: '8px' }}>{l.previous_status || '—'} → {l.new_status}</td>
+                        <td style={{ padding: '8px', fontFamily: 'monospace' }}>{l.bet_id || '—'}</td>
+                        <td style={{ padding: '8px' }}>{l.notes || '—'}</td>
+                        <td style={{ padding: '8px', whiteSpace: 'nowrap' }}>{new Date(l.created_at).toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+

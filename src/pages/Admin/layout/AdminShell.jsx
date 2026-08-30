@@ -159,6 +159,7 @@ const DOMAIN_GROUPS = [
         role: ADMIN_ROLES.MARKETING_ADMIN,
         subModules: [
           { id: 'overview', label: 'Growth Overview' },
+          { id: 'rewards', label: '🎁 Free Bets & Bonuses' },
           { id: 'promotions', label: 'Sportsbook Campaigns' },
           { id: 'deposit-freebet', label: 'Deposit Free Bet' },
           { id: 'bonus-codes', label: 'Signup Promo Codes' },
