@@ -286,7 +286,7 @@ export default function LiveChatSupportWidget() {
 
   return (
     <div className="live-chat-wrapper">
-      {/* Floating Action Button */}
+      {/* Floating Action Button (Matches Screenshot: Circular Royal Blue Headset Badge) */}
       <AnimatePresence>
         {!isOpen && (
           <motion.button
@@ -296,15 +296,12 @@ export default function LiveChatSupportWidget() {
             whileHover={hoverScale}
             whileTap={pressScale}
             transition={springUi}
-            aria-label="Open support chat"
-            style={{
-              bottom: isSidebarOpen ? '80px' : '20px',
-            }}
+            aria-label="Open support live chat"
           >
-            <div className="live-chat-fab-icon">
-              <SupportHeadsetIcon size={24} />
+            <div className="live-chat-fab-inner">
+              <SupportHeadsetIcon size={26} color="#ffffff" />
+              {unreadCount > 0 && <span className="live-chat-unread-dot" />}
             </div>
-            <span className="live-chat-fab-label">Support</span>
           </motion.button>
         )}
       </AnimatePresence>

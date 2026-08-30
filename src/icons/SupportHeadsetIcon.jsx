@@ -1,5 +1,8 @@
-/** Headset mark for support (FAB, profile, admin). */
-export default function SupportHeadsetIcon({ className = '', size = 22, ...props }) {
+/**
+ * Modern Headset mark for support chat (Floating FAB, profile, admin)
+ * Matches crisp rounded headphone aesthetic with microphone
+ */
+export default function SupportHeadsetIcon({ className = '', size = 26, color = 'currentColor', ...props }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -7,19 +10,24 @@ export default function SupportHeadsetIcon({ className = '', size = 22, ...props
       height={size}
       viewBox="0 0 24 24"
       fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
+      stroke={color}
+      strokeWidth="2.2"
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
       aria-hidden="true"
       {...props}
     >
-      <path d="M4 13v-1a8 8 0 0 1 16 0v1" />
-      <path d="M4 13a2.5 2.5 0 0 0 0 5h1v-5H4z" />
-      <path d="M20 13a2.5 2.5 0 0 1 0 5h-1v-5h1z" />
-      <path d="M19 18v1a3 3 0 0 1-3 3h-2" />
-      <circle cx="12" cy="20" r="1.2" fill="currentColor" stroke="none" />
+      {/* Headband */}
+      <path d="M3.5 13.5v-2a8.5 8.5 0 0 1 17 0v2" />
+      {/* Left Earcup */}
+      <rect x="2.5" y="12" width="3" height="6.5" rx="1.5" fill="none" strokeWidth="2.2" />
+      {/* Right Earcup */}
+      <rect x="18.5" y="12" width="3" height="6.5" rx="1.5" fill="none" strokeWidth="2.2" />
+      {/* Microphone Boom */}
+      <path d="M5.5 17.5v1a3 3 0 0 0 3 3h2" />
+      {/* Mic Tip Dot */}
+      <circle cx="11.5" cy="21.5" r="1" fill={color} stroke="none" />
     </svg>
   );
 }
