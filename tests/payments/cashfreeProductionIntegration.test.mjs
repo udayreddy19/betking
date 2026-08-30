@@ -7,6 +7,11 @@ import { cashfreeProvider } from '../../lib/paymentProviders/CashfreeProvider.mj
 import { razorpayProvider } from '../../lib/paymentProviders/RazorpayProvider.mjs';
 import { paymentProviderService } from '../../lib/paymentProviders/paymentProviderService.mjs';
 
+process.env.NODE_ENV = 'test';
+process.env.CASHFREE_CLIENT_ID = 'cf_test_client_id_12345';
+process.env.CASHFREE_CLIENT_SECRET = 'cf_test_client_secret_67890';
+process.env.CASHFREE_WEBHOOK_SECRET = 'cf_mock_test_secret_12345';
+
 function createMockCashfreeWebhookPayload({ orderId, paymentId, amount = 1000, status = 'SUCCESS', event = 'PAYMENT_SUCCESS_WEBHOOK', userId }) {
   return {
     data: {
