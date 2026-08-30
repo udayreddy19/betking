@@ -584,6 +584,7 @@ function PaymentGatewaysPanel() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [search, setSearch] = useState('');
   const [error, setError] = useState(null);
+  const [providerFilter, setProviderFilter] = useState('ALL');
 
   const loadGateways = () => {
     adminApiClient.get('/finance/gateways')
@@ -595,8 +596,9 @@ function PaymentGatewaysPanel() {
 
   const loadPayments = () => {
     setLoadingPayments(true);
-    let url = '/finance/razorpay/payments?limit=100';
+    let url = '/finance/payments?limit=100';
     if (statusFilter !== 'ALL') url += `&status=${encodeURIComponent(statusFilter)}`;
+    if (providerFilter !== 'ALL') url += `&provider=${encodeURIComponent(providerFilter)}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
 
     adminApiClient.get(url)
@@ -606,7 +608,7 @@ function PaymentGatewaysPanel() {
       })
       .catch((err) => {
         setPayments([]);
-        setError(err.message || 'Failed to load Razorpay payments');
+        setError(err.message || 'Failed to load payments');
       })
       .finally(() => setLoadingPayments(false));
   };
@@ -614,13 +616,16 @@ function PaymentGatewaysPanel() {
   useEffect(() => {
     loadGateways();
     loadPayments();
-  }, [statusFilter, search]);
+  }, [statusFilter, providerFilter, search]);
 
-  const handleReconcile = async (orderId) => {
+  const handleReconcile = async (orderId, provider = 'CASHFREE') => {
     if (!orderId) return;
     setReconcilingId(orderId);
     try {
-      const res = await adminApiClient.post(`/finance/razorpay/reconcile/${encodeURIComponent(orderId)}`);
+      const endpoint = String(provider).toUpperCase() === 'CASHFREE'
+        ? `/finance/cashfree/reconcile/${encodeURIComponent(orderId)}`
+        : `/finance/razorpay/reconcile/${encodeURIComponent(orderId)}`;
+      const res = await adminApiClient.post(endpoint);
       showToast(res.message || `Order ${orderId} reconciled.`, res.success ? 'success' : 'info');
       loadPayments();
     } catch (err) {
@@ -633,9 +638,9 @@ function PaymentGatewaysPanel() {
   return (
     <div>
       <div style={{ marginBottom: '16px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>06 · Razorpay Payment Gateway & Live Transactions</h2>
+        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>06 · Payment Gateways & Live Transactions</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
-          Server-authoritative Razorpay integration, webhook processing status, and real-time transaction ledger.
+          Server-authoritative Cashfree & Razorpay integration, webhook processing status, and real-time transaction ledger.
         </p>
         {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
       </div>
@@ -656,21 +661,32 @@ function PaymentGatewaysPanel() {
 
       <div style={{ marginTop: '28px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
-          <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Razorpay Deposit Transactions ({payments.length})</h3>
+          <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Deposit Transactions ({payments.length})</h3>
 
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
             <input
               type="text"
               className="admin-input"
               placeholder="Search user, order ID, payment ID…"
-              style={{ width: '260px' }}
+              style={{ width: '220px' }}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
 
             <select
               className="admin-input"
-              style={{ width: '140px' }}
+              style={{ width: '130px' }}
+              value={providerFilter}
+              onChange={(e) => setProviderFilter(e.target.value)}
+            >
+              <option value="ALL">All Gateways</option>
+              <option value="CASHFREE">Cashfree</option>
+              <option value="RAZORPAY">Razorpay</option>
+            </select>
+
+            <select
+              className="admin-input"
+              style={{ width: '130px' }}
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -693,13 +709,27 @@ function PaymentGatewaysPanel() {
 
         <AdminDataTable
           title="Deposit Transactions"
-          emptyMessage="No Razorpay transactions found"
+          emptyMessage="No deposit transactions found"
           data={payments}
           columns={[
             {
               header: 'Deposit ID',
               key: 'depositId',
               render: (r) => <span className="admin-text-mono" style={{ fontWeight: 700 }}>{r.depositId}</span>,
+            },
+            {
+              header: 'Provider',
+              key: 'provider',
+              render: (r) => (
+                <span className="admin-badge" style={{
+                  background: r.provider === 'CASHFREE' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                  color: r.provider === 'CASHFREE' ? '#3b82f6' : '#10b981',
+                  fontWeight: 700,
+                  fontSize: '0.72rem',
+                }}>
+                  {r.provider || 'CASHFREE'}
+                </span>
+              ),
             },
             {
               header: 'User',
@@ -722,14 +752,14 @@ function PaymentGatewaysPanel() {
               render: (r) => <StatusBadge status={r.status} />,
             },
             {
-              header: 'Razorpay Order ID',
-              key: 'razorpayOrderId',
-              render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.75rem' }}>{r.razorpayOrderId}</span>,
+              header: 'Provider Order ID',
+              key: 'providerOrderId',
+              render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.75rem' }}>{r.providerOrderId || r.razorpayOrderId || r.cfOrderId || '—'}</span>,
             },
             {
               header: 'Payment ID',
-              key: 'razorpayPaymentId',
-              render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.75rem' }}>{r.razorpayPaymentId || '—'}</span>,
+              key: 'providerPaymentId',
+              render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.75rem' }}>{r.providerPaymentId || r.razorpayPaymentId || '—'}</span>,
             },
             {
               header: 'Webhook',
@@ -751,10 +781,10 @@ function PaymentGatewaysPanel() {
                     <button
                       type="button"
                       className="admin-btn admin-btn--sm"
-                      disabled={reconcilingId === r.razorpayOrderId}
-                      onClick={() => handleReconcile(r.razorpayOrderId)}
+                      disabled={reconcilingId === (r.providerOrderId || r.razorpayOrderId)}
+                      onClick={() => handleReconcile(r.providerOrderId || r.razorpayOrderId, r.provider)}
                     >
-                      {reconcilingId === r.razorpayOrderId ? 'Checking…' : 'Reconcile'}
+                      {reconcilingId === (r.providerOrderId || r.razorpayOrderId) ? 'Checking…' : 'Reconcile'}
                     </button>
                   )}
                   {r.status === 'PAID' && (

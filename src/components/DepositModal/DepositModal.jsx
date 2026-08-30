@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { IoClose, FiArrowRight, FiAlertCircle, FiCheck } from '../../icons';
@@ -22,15 +22,51 @@ async function waitForWalletCredit(refreshWallet, startBalance, attempts = 8) {
   return false;
 }
 
+function loadCashfreeSdk() {
+  return new Promise((resolve, reject) => {
+    if (window.Cashfree) return resolve(window.Cashfree);
+    const existing = document.getElementById('cashfree-sdk-script');
+    if (existing) {
+      existing.addEventListener('load', () => resolve(window.Cashfree));
+      existing.addEventListener('error', reject);
+      return;
+    }
+    const script = document.createElement('script');
+    script.id = 'cashfree-sdk-script';
+    script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
+    script.async = true;
+    script.onload = () => resolve(window.Cashfree);
+    script.onerror = () => reject(new Error('Failed to load Cashfree SDK'));
+    document.head.appendChild(script);
+  });
+}
+
 export default function DepositModal() {
   const { isDepositModalOpen, closeDepositModal, refreshWallet, addFunds, user } = useAuth();
   const navigate = useNavigate();
   const [amount, setAmount] = useState('1000');
+  const [selectedProvider, setSelectedProvider] = useState('CASHFREE');
+  const [availableProviders, setAvailableProviders] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isRzpModalOpen, setIsRzpModalOpen] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+
+  useEffect(() => {
+    if (!isDepositModalOpen) return;
+    let cancelled = false;
+    apiFetch('/api/v1/payments/providers')
+      .then(res => res.json())
+      .then(data => {
+        if (!cancelled && data?.providers) {
+          setAvailableProviders(data.providers);
+          if (data.defaultProvider) setSelectedProvider(data.defaultProvider);
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [isDepositModalOpen]);
 
   if (!isDepositModalOpen) return null;
 
@@ -57,6 +93,91 @@ export default function DepositModal() {
       : ''));
   const showKycCta = isKycBanner;
 
+  const openCashfreePayment = async (depositAmt) => {
+    setErrorMsg('');
+    setIsLoading(true);
+
+    try {
+      if (DEMO_MODE) {
+        setIsLoading(false);
+        setIsRzpModalOpen(true);
+        return;
+      }
+
+      const orderRes = await apiFetch('/api/v1/payments/create-order', {
+        method: 'POST',
+        body: JSON.stringify({ amount: depositAmt, currency: 'INR', provider: 'CASHFREE' }),
+      });
+      const orderData = await orderRes.json();
+      if (!orderRes.ok) {
+        const apiError = orderData.error || orderData.code || 'Unable to create Cashfree deposit order';
+        throw new Error(apiError);
+      }
+
+      if (!orderData.paymentSessionId) {
+        throw new Error('Cashfree payment session missing from server response');
+      }
+
+      const CashfreeSdk = await loadCashfreeSdk();
+      const cashfree = new CashfreeSdk({
+        mode: orderData.environment === 'production' ? 'production' : 'sandbox',
+      });
+
+      setIsLoading(false);
+
+      const checkoutOptions = {
+        paymentSessionId: orderData.paymentSessionId,
+        redirectTarget: '_modal',
+      };
+
+      try {
+        await cashfree.checkout(checkoutOptions);
+      } catch (cfUiErr) {
+        logger.warn('Cashfree checkout modal note:', cfUiErr);
+      }
+
+      // Check and verify with server
+      setIsProcessing(true);
+      const startBalance = Number(user?.balance || 0);
+
+      try {
+        const verifyRes = await apiFetch('/api/v1/payments/cashfree/verify', {
+          method: 'POST',
+          body: JSON.stringify({
+            orderId: orderData.orderId,
+            depositId: orderData.depositId,
+            provider: 'CASHFREE',
+          }),
+        });
+        const verifyData = await verifyRes.json().catch(() => ({}));
+        if (verifyRes.ok && verifyData.success) {
+          await refreshWallet?.();
+          setIsSuccess(true);
+        } else {
+          const credited = await waitForWalletCredit(refreshWallet, startBalance);
+          if (credited) {
+            setIsSuccess(true);
+          } else {
+            setErrorMsg(verifyData.error || 'Payment was not confirmed. If debited, your wallet will update shortly.');
+          }
+        }
+      } catch (err) {
+        const credited = await waitForWalletCredit(refreshWallet, startBalance);
+        if (credited) {
+          setIsSuccess(true);
+        } else {
+          setErrorMsg('Payment verification in progress. Please check your transaction history.');
+        }
+      } finally {
+        setIsProcessing(false);
+      }
+    } catch (err) {
+      setIsLoading(false);
+      setIsProcessing(false);
+      setErrorMsg(err.message || 'Unable to start Cashfree payment');
+    }
+  };
+
   const openRazorpayRealPayment = async (depositAmt) => {
     setErrorMsg('');
     setIsLoading(true);
@@ -70,7 +191,7 @@ export default function DepositModal() {
 
       const orderRes = await apiFetch('/api/v1/payments/create-order', {
         method: 'POST',
-        body: JSON.stringify({ amount: depositAmt, currency: 'INR' }),
+        body: JSON.stringify({ amount: depositAmt, currency: 'INR', provider: 'RAZORPAY' }),
       });
       const orderData = await orderRes.json();
       if (!orderRes.ok) {
@@ -83,19 +204,15 @@ export default function DepositModal() {
         throw new Error('Razorpay checkout is not available');
       }
 
-      // Razorpay Checkout expects amount in paise. Server returns rupees (+ amountPaise).
       const amountPaise = Number(orderData.amountPaise)
         || Math.round(Number(orderData.amount || depositAmt) * 100);
 
       setIsLoading(false);
-      // Never prefill email/phone/VPA — Safari throws
-      // "The string did not match the expected pattern" for .local emails / bad VPAs,
-      // and Razorpay Checkout validates prefill strictly.
       const options = {
         key: activeKey,
         amount: amountPaise,
         currency: orderData.currency || 'INR',
-        name: 'OddsYra Gaming',
+        name: 'ODDSYRA',
         description: 'Account Deposit',
         order_id: orderData.orderId,
         handler: async function (response) {
@@ -131,7 +248,7 @@ export default function DepositModal() {
             setIsProcessing(false);
           }
         },
-        theme: { color: '#1f8a4c' },
+        theme: { color: '#2563eb' },
         modal: {
           ondismiss: function () {
             setIsLoading(false);
@@ -140,24 +257,12 @@ export default function DepositModal() {
         },
       };
 
-      if (!orderData.orderId || !String(orderData.orderId).startsWith('order_')) {
-        throw new Error('Invalid payment order from server. Please try again.');
-      }
-
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', function (response) {
         setIsProcessing(false);
         setErrorMsg(`Payment failed: ${response.error?.description || 'Transaction cancelled.'}`);
       });
-      try {
-        rzp.open();
-      } catch (openErr) {
-        const msg = String(openErr?.message || openErr || '');
-        if (/expected pattern|pattern/i.test(msg)) {
-          throw new Error('Could not open Razorpay Checkout. Refresh the page and try again.');
-        }
-        throw openErr;
-      }
+      rzp.open();
     } catch (err) {
       setIsLoading(false);
       setIsProcessing(false);
@@ -169,7 +274,7 @@ export default function DepositModal() {
     setIsRzpModalOpen(false);
     const amt = parseFloat(amount);
     if (DEMO_MODE && Number.isFinite(amt) && amt > 0) {
-      await addFunds?.(amt, 'Razorpay');
+      await addFunds?.(amt, selectedProvider);
     } else {
       await refreshWallet?.();
     }
@@ -178,101 +283,150 @@ export default function DepositModal() {
 
   const handleDepositSubmit = (e) => {
     if (e) e.preventDefault();
+    setErrorMsg('');
     const depositAmt = parseFloat(amount);
-    if (isNaN(depositAmt) || depositAmt < MIN_DEPOSIT_INR) {
-      setErrorMsg(`Minimum deposit is ₹${MIN_DEPOSIT_INR.toLocaleString('en-IN')}.`);
+
+    if (isNaN(depositAmt) || depositAmt <= 0) {
+      setErrorMsg('Please enter a valid amount.');
+      return;
+    }
+    if (depositAmt < MIN_DEPOSIT_INR) {
+      setErrorMsg(`Minimum deposit amount is ₹${MIN_DEPOSIT_INR.toLocaleString('en-IN')}.`);
       return;
     }
     if (depositAmt > MAX_DEPOSIT_INR) {
-      setErrorMsg(`Maximum deposit is ₹${MAX_DEPOSIT_INR.toLocaleString('en-IN')}.`);
+      setErrorMsg(`Maximum deposit amount is ₹${MAX_DEPOSIT_INR.toLocaleString('en-IN')}.`);
       return;
     }
-    openRazorpayRealPayment(depositAmt);
+
+    if (selectedProvider === 'CASHFREE') {
+      openCashfreePayment(depositAmt);
+    } else {
+      openRazorpayRealPayment(depositAmt);
+    }
   };
 
   return (
     <>
-      {DEMO_MODE && (
-        <RazorpayModal
-          isOpen={isRzpModalOpen}
-          onClose={() => setIsRzpModalOpen(false)}
-          amount={amount}
-          onSuccess={handleRazorpayModalSuccess}
-          user={user}
-        />
-      )}
+      <RazorpayModal
+        isOpen={isRzpModalOpen}
+        onClose={() => setIsRzpModalOpen(false)}
+        amount={amount}
+        onSuccess={handleRazorpayModalSuccess}
+        user={user}
+      />
 
-      <div className="deposit-overlay" onClick={handleClose} id="deposit-modal">
-        <div className="deposit-card" onClick={(e) => e.stopPropagation()}>
-
-          <div className="deposit-header">
-            <div className="deposit-header-left">
-              <h2>
-                <span className="deposit-header-rupee"><RupeeSymbol size={22} /></span>
-                {isSuccess ? 'Deposit Submitted' : 'Deposit Funds'}
-              </h2>
+      <div className="deposit-modal-overlay" onClick={handleClose}>
+        <div
+          className="deposit-modal-card"
+          onClick={(e) => e.stopPropagation()}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="deposit-modal-title"
+        >
+          <div className="deposit-modal-header">
+            <div className="deposit-modal-title-wrap">
+              <h2 id="deposit-modal-title">Add Funds</h2>
+              <span className="deposit-modal-badge">Instant Deposit</span>
             </div>
-            <motion.button
+            <button
               type="button"
-              className="deposit-close"
+              className="deposit-close-btn"
               onClick={handleClose}
-              whileHover={{ scale: 1.1, rotate: 90 }}
-              whileTap={{ scale: 0.9 }}
+              aria-label="Close"
             >
               <IoClose />
-            </motion.button>
+            </button>
           </div>
 
-          <div className="deposit-body">
+          <div className="deposit-modal-body">
             {bannerText && (
-              <div className={`deposit-error-banner${isKycBanner ? ' deposit-error-banner--kyc' : ''}`}>
-                <FiAlertCircle style={{ flexShrink: 0 }} />
-                <div className="deposit-error-banner-copy">
-                  <span>{bannerText}</span>
-                  {showKycCta && (
-                    <button type="button" className="deposit-kyc-cta" onClick={goToKyc}>
-                      Proceed to KYC <FiArrowRight />
-                    </button>
-                  )}
-                </div>
+              <div
+                className={`deposit-kyc-banner ${isKycError(errorMsg) ? 'deposit-kyc-banner--error' : 'deposit-kyc-banner--info'}`}
+                role="status"
+              >
+                <FiAlertCircle className="deposit-kyc-icon" aria-hidden="true" />
+                <span className="deposit-kyc-text">{bannerText}</span>
+                {showKycCta && (
+                  <button type="button" className="deposit-kyc-cta" onClick={goToKyc}>
+                    Complete KYC
+                  </button>
+                )}
               </div>
             )}
 
             <AnimatePresence mode="wait">
-              {isSuccess || isProcessing ? (
+              {isSuccess ? (
                 <motion.div
                   key="success"
-                  className="deposit-success"
-                  initial={{ opacity: 0, scale: 0.9 }}
+                  className="deposit-success-view"
+                  initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0 }}
                 >
-                  <span className="deposit-success-icon">{isProcessing ? '⏳' : '🎉'}</span>
-                  <h3>
-                    {isProcessing
-                      ? 'Confirming your payment…'
-                      : `₹${parseFloat(amount).toLocaleString()} payment received`}
-                  </h3>
-                  <p>
-                    {isProcessing
-                      ? 'Please wait while we verify with Razorpay and credit your wallet.'
-                      : 'Your deposit has been credited to your OddsYra wallet.'}
+                  <div className="deposit-success-icon-wrap">
+                    <FiCheck />
+                  </div>
+                  <h3>Deposit Successful!</h3>
+                  <p className="deposit-success-amount">
+                    <RupeeSymbol size={20} />
+                    {parseFloat(amount || 0).toLocaleString('en-IN')} credited to your wallet
                   </p>
-                  {!isProcessing && (
-                    <button type="button" className="deposit-pay-btn" onClick={handleClose}>
-                      <FiCheck /> Done
-                    </button>
-                  )}
+                  <p className="deposit-success-sub">
+                    Funds are immediately available for sports selections.
+                  </p>
+                  <button
+                    type="button"
+                    className="deposit-done-btn"
+                    onClick={handleClose}
+                  >
+                    Start Betting
+                  </button>
+                </motion.div>
+              ) : isProcessing ? (
+                <motion.div
+                  key="processing"
+                  className="deposit-processing-view"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <div className="deposit-spinner" />
+                  <h3>Verifying Payment</h3>
+                  <p>
+                    Please wait while we confirm your transaction and credit your wallet.
+                  </p>
                 </motion.div>
               ) : (
                 <motion.form
                   key="form"
+                  className="deposit-form"
                   onSubmit={handleDepositSubmit}
                   noValidate
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                 >
+                  {/* Gateway selector if multiple available */}
+                  <div className="deposit-provider-selector">
+                    <span className="provider-selector-label">Payment Gateway</span>
+                    <div className="provider-selector-tabs">
+                      <button
+                        type="button"
+                        className={`provider-tab ${selectedProvider === 'CASHFREE' ? 'active' : ''}`}
+                        onClick={() => setSelectedProvider('CASHFREE')}
+                      >
+                        ⚡ Cashfree Payments
+                      </button>
+                      <button
+                        type="button"
+                        className={`provider-tab ${selectedProvider === 'RAZORPAY' ? 'active' : ''}`}
+                        onClick={() => setSelectedProvider('RAZORPAY')}
+                      >
+                        🛡️ Razorpay
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="amount-presets-label">
                     <span>Select Deposit Amount (₹)</span>
                   </div>
@@ -303,9 +457,8 @@ export default function DepositModal() {
                     />
                   </div>
 
-                  <div className="deposit-quick-apps-label">UPI apps</div>
+                  <div className="deposit-quick-apps-label">Supported UPI & Instant Methods</div>
                   <div className="deposit-quick-apps-bar">
-                    {/* Logos are visual only — do not prefill fake VPAs (Safari/Razorpay reject them). */}
                     <UpiLogo height={36} width={118} />
                     <GPayLogo height={36} width={118} />
                     <PhonePeLogo height={36} width={118} />
@@ -326,15 +479,12 @@ export default function DepositModal() {
                   </motion.button>
 
                   <div className="deposit-trust-footer">
-                    <span className="deposit-trust-item">🔒 SSL Encrypted</span>
+                    <span className="deposit-trust-item">🔒 256-bit SSL</span>
                     <span>•</span>
-                    <span className="deposit-trust-item">Webhook-verified credits</span>
+                    <span className="deposit-trust-item">Instant Verified Credit</span>
                     <span>•</span>
-                    <span className="deposit-trust-item">🛡️ Razorpay</span>
+                    <span className="deposit-trust-item">{selectedProvider === 'CASHFREE' ? '⚡ Cashfree PG' : '🛡️ Razorpay PG'}</span>
                   </div>
-                  <p className="deposit-wager-note">
-                    Deposited funds must be wagered once before they can be withdrawn.
-                  </p>
                 </motion.form>
               )}
             </AnimatePresence>

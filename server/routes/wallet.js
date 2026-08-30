@@ -4,31 +4,67 @@ import { requireAuth } from '../middleware/userAuth.js';
 const router = Router();
 const isProduction = process.env.NODE_ENV === 'production';
 
-// Webhook endpoint for Razorpay payment captures / refunds / failures
+// ── 1. WEBHOOK ENDPOINTS ──────────────────────────────────────────────────────
+
+// Razorpay Webhook
 router.post('/api/webhooks/razorpay', async (req, res) => {
   const signature = req.headers['x-razorpay-signature'];
   try {
     const { depositEngine } = await import('../../lib/depositEngine.mjs');
     const result = await depositEngine.processWebhook({
       rawBody: req.rawBody,
+      headers: req.headers,
       signature,
-      payload: req.body.payload,
-      event: req.body.event,
+      payload: req.body?.payload,
+      event: req.body?.event,
+      provider: 'RAZORPAY',
     }, req.correlationId);
 
     res.json(result);
   } catch (err) {
     const statusCode = err.message?.includes('INVALID_SIGNATURE') || err.message?.includes('MISSING_SIGNATURE') ? 400 : 500;
-    res.status(statusCode).json({ error: err.message || 'Webhook processing failed' });
+    res.status(statusCode).json({ error: err.message || 'Razorpay webhook processing failed' });
   }
 });
 
-// Create Razorpay Order (supports both /api/payments/razorpay/create-order and /api/v1/payments/create-order)
+// Cashfree Webhook
+router.post('/api/webhooks/cashfree', async (req, res) => {
+  try {
+    const { depositEngine } = await import('../../lib/depositEngine.mjs');
+    const result = await depositEngine.processWebhook({
+      rawBody: req.rawBody,
+      headers: req.headers,
+      provider: 'CASHFREE',
+    }, req.correlationId);
+
+    res.json(result);
+  } catch (err) {
+    const statusCode = err.message?.includes('INVALID_SIGNATURE') || err.message?.includes('MISSING_SIGNATURE') ? 400 : 500;
+    res.status(statusCode).json({ error: err.message || 'Cashfree webhook processing failed' });
+  }
+});
+
+// ── 2. PROVIDER CONFIG / AVAILABILITY ─────────────────────────────────────────
+
+router.get('/api/v1/payments/providers', async (req, res) => {
+  try {
+    const { paymentProviderService } = await import('../../lib/paymentProviders/paymentProviderService.mjs');
+    const providers = paymentProviderService.getAvailableProviders();
+    const defaultProvider = paymentProviderService.getDefaultProvider();
+    res.json({ success: true, providers, defaultProvider });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ── 3. ORDER CREATION ENDPOINTS ───────────────────────────────────────────────
+
 const handleCreateOrder = async (req, res) => {
   try {
     const { depositEngine } = await import('../../lib/depositEngine.mjs');
+    const provider = req.body?.provider || (req.path.includes('cashfree') ? 'CASHFREE' : (req.path.includes('razorpay') ? 'RAZORPAY' : undefined));
     const result = await depositEngine.createOrder(
-      { ...req.body, userId: req.user.userId },
+      { ...req.body, userId: req.user.userId, provider },
       req.correlationId,
     );
     res.json(result);
@@ -43,19 +79,28 @@ const handleCreateOrder = async (req, res) => {
 };
 
 router.post('/api/payments/razorpay/create-order', requireAuth, handleCreateOrder);
+router.post('/api/payments/cashfree/create-order', requireAuth, handleCreateOrder);
+router.post('/api/v1/payments/cashfree/create-order', requireAuth, handleCreateOrder);
 router.post('/api/v1/payments/create-order', requireAuth, handleCreateOrder);
 
-// Verify Razorpay Payment (supports both /api/payments/razorpay/verify and /api/v1/payments/confirm)
+// ── 4. PAYMENT VERIFICATION ENDPOINTS ─────────────────────────────────────────
+
 const handleVerifyPayment = async (req, res) => {
   try {
     const { depositEngine } = await import('../../lib/depositEngine.mjs');
+    const inferredProvider = req.body?.provider || (req.path.includes('cashfree') ? 'CASHFREE' : (req.path.includes('razorpay') ? 'RAZORPAY' : undefined));
     const result = await depositEngine.confirmCheckoutPayment(
       {
         userId: req.user.userId,
+        provider: inferredProvider,
         depositId: req.body?.depositId || req.body?.deposit_id,
+        orderId: req.body?.orderId || req.body?.order_id || req.body?.razorpayOrderId || req.body?.cfOrderId,
+        paymentId: req.body?.paymentId || req.body?.payment_id || req.body?.razorpayPaymentId || req.body?.cfPaymentId,
         razorpayOrderId: req.body?.razorpay_order_id || req.body?.orderId || req.body?.razorpayOrderId,
         razorpayPaymentId: req.body?.razorpay_payment_id || req.body?.paymentId || req.body?.razorpayPaymentId,
         razorpaySignature: req.body?.razorpay_signature || req.body?.signature || req.body?.razorpaySignature,
+        cfOrderId: req.body?.cfOrderId || req.body?.cf_order_id,
+        cfPaymentId: req.body?.cfPaymentId || req.body?.cf_payment_id,
       },
       req.correlationId,
     );
@@ -71,9 +116,12 @@ const handleVerifyPayment = async (req, res) => {
 };
 
 router.post('/api/payments/razorpay/verify', requireAuth, handleVerifyPayment);
+router.post('/api/payments/cashfree/verify', requireAuth, handleVerifyPayment);
+router.post('/api/v1/payments/cashfree/verify', requireAuth, handleVerifyPayment);
 router.post('/api/v1/payments/confirm', requireAuth, handleVerifyPayment);
 
-// Withdrawals
+// ── 5. WITHDRAWALS & WALLET LEDGER ────────────────────────────────────────────
+
 router.post('/api/v1/withdrawals/request', requireAuth, async (req, res) => {
   try {
     const { withdrawalEngine } = await import('../../lib/withdrawalEngine.mjs');
