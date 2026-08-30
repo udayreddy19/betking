@@ -2576,6 +2576,106 @@ router.get('/api/admin/support/knowledge-base', async (req, res) => {
   }
 });
 
+// ── Admin Live Chat Queue & Management ──
+router.get(['/api/admin/support/live-chats', '/api/v1/admin/support/live-chats'], async (req, res) => {
+  try {
+    const { filter = 'ALL' } = req.query;
+    const agentId = req.admin?.id || 'admin';
+    const { supportEngine } = await import('../../../lib/supportEngine.mjs');
+    const chats = supportEngine.getLiveChats({ filter, agentId });
+    const metrics = supportEngine.getAdminMetrics(agentId);
+    res.json({ success: true, chats, liveChats: chats, metrics });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post(['/api/admin/support/live-chats/:id/accept', '/api/v1/admin/support/live-chats/:id/accept'], async (req, res) => {
+  const { id } = req.params;
+  const agentId = req.body?.agentId || req.admin?.id || 'admin';
+  const agentName = req.body?.agentName || req.admin?.displayName || req.admin?.name || 'OddsYra Agent';
+  try {
+    const { supportEngine } = await import('../../../lib/supportEngine.mjs');
+    const chat = await supportEngine.acceptLiveChat(id, { agentId, agentName });
+    res.json({ success: true, chat });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+router.post(['/api/admin/support/live-chats/:id/end', '/api/v1/admin/support/live-chats/:id/end'], async (req, res) => {
+  const { id } = req.params;
+  const endedBy = req.admin?.id || 'admin';
+  try {
+    const { supportEngine } = await import('../../../lib/supportEngine.mjs');
+    const chat = await supportEngine.endLiveChat(id, { endedBy, actorType: 'admin' });
+    res.json({ success: true, chat });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+router.post(['/api/admin/support/live-chats/:id/escalate', '/api/v1/admin/support/live-chats/:id/escalate'], async (req, res) => {
+  const { id } = req.params;
+  const { category = 'OTHER', priority = 'NORMAL', subject, assignedAgentId, assignedAgentName } = req.body || {};
+  const agentId = req.admin?.id || 'admin';
+  try {
+    const { supportEngine } = await import('../../../lib/supportEngine.mjs');
+    const result = await supportEngine.escalateChatToTicket(id, {
+      category,
+      priority,
+      subject,
+      assignedAgentId: assignedAgentId || agentId,
+      assignedAgentName: assignedAgentName || req.admin?.displayName || 'OddsYra Support',
+      agentId,
+    });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+router.post(['/api/admin/support/tickets/:id/priority', '/api/v1/admin/support/tickets/:id/priority'], async (req, res) => {
+  const { id } = req.params;
+  const { priority } = req.body;
+  const actorId = req.admin?.id || 'admin';
+  try {
+    const { supportEngine } = await import('../../../lib/supportEngine.mjs');
+    const updated = await supportEngine.updatePriority(id, { priority, actorId });
+    res.json({ success: true, ticket: updated });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// ── Financial Safety: Request Financial Review (Maker-Checker link without direct balance modification) ──
+router.post('/api/v1/admin/support/financial-review-request', async (req, res) => {
+  const { userId, ticketId, reason, transactionId, betId, amount } = req.body || {};
+  const requestedBy = req.admin?.id || 'support_agent';
+  if (!userId || !reason) {
+    return res.status(400).json({ success: false, error: 'userId and reason are required' });
+  }
+  try {
+    const requestId = `fin_rev_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    const { enterpriseAuditEngine } = await import('../../../lib/enterpriseAuditEngine.mjs');
+    enterpriseAuditEngine.recordEvent({
+      who: requestedBy,
+      what: 'FINANCIAL_REVIEW_REQUESTED',
+      reason,
+      referenceId: userId,
+      metadata: { ticketId, transactionId, betId, amount, requestId },
+    });
+    res.status(201).json({
+      success: true,
+      requestId,
+      status: 'PENDING_FINANCE_APPROVAL',
+      message: 'Financial review request created and queued for Finance Maker-Checker verification. Support agents cannot directly adjust balances.',
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 router.post('/api/v1/admin/integrity/scan', async (req, res) => {
   try {
     const { runFullIntegrityScan } = await import('../../../lib/platformIntegrityEngine.mjs');

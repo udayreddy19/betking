@@ -54,6 +54,10 @@ const Vip = lazy(() => import('./pages/Vip/Vip'));
 const IPLSRLAdmin = lazy(() => import('./pages/Admin/IPLSRL/IPLSRLAdmin'));
 const NotificationCenter = lazy(() => import('./pages/Notifications/NotificationCenter'));
 const WalletDashboard = lazy(() => import('./pages/Wallet/WalletDashboard'));
+const SupportHome = lazy(() => import('./pages/Support/SupportHome'));
+const TicketsListPage = lazy(() => import('./pages/Support/TicketsListPage'));
+const CreateTicketPage = lazy(() => import('./pages/Support/CreateTicketPage'));
+const TicketDetailPage = lazy(() => import('./pages/Support/TicketDetailPage'));
 
 function CasinoComingSoon() {
   return <Navigate to="/sports" replace />;
@@ -169,6 +173,10 @@ function AppLayout() {
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/responsible-gaming" element={<ResponsibleGaming />} />
               <Route path="/help" element={<Help />} />
+              <Route path="/support" element={<SupportHome />} />
+              <Route path="/support/tickets" element={<TicketsListPage />} />
+              <Route path="/support/tickets/new" element={<CreateTicketPage />} />
+              <Route path="/support/tickets/:ticketReference" element={<TicketDetailPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

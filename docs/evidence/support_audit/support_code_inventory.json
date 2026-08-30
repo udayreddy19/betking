@@ -1,0 +1,205 @@
+{
+  "auditDate": "2026-08-30T06:52:00.000Z",
+  "system": "OddsYra Customer Support & Live Chat Ecosystem",
+  "auditor": "Antigravity Engineering",
+  "statusSummary": {
+    "databaseTables": "PARTIAL (Tables exist in migrations 015/016/101/104, need support for OD-YYYY-XXXXX format, live-chat conversation flag, and financial review links)",
+    "userPages": "PARTIAL (Static /help and /profile?tab=support exist; dedicated /support, /support/tickets, /support/tickets/new, /support/tickets/:ticketReference missing)",
+    "adminPages": "PARTIAL (/admin support domain view exists with basic ticket queue; dedicated Live Chat queue, assignment race-locking, escalation UI, and metrics missing)",
+    "realtimeLiveChat": "PARTIAL (WebSocket server on /ws/support exists with channel auth; bot assistant currently used on client instead of agent live chat & escalation)",
+    "apis": "PARTIAL (Admin support APIs exist in inline.js; User-facing /api/v1/support/tickets & live-chat routes missing in server/routes/support.js)",
+    "rbacAndFinancialSafety": "PARTIAL (SUPPORT_AGENT role exists in adminAuth; explicit financial guardrails preventing direct wallet modifications need validation)",
+    "pushNotifications": "PARTIAL (WebPushEngine and user_push_subscriptions table exist; support triggers need direct wiring for ticket replies and live chat events)"
+  },
+  "existingSupportPages": [
+    {
+      "path": "/help",
+      "component": "src/pages/Legal/Help.jsx",
+      "status": "WORKING_BASIC",
+      "notes": "Static FAQ guide with link to Profile Support and chat trigger button"
+    },
+    {
+      "path": "/profile?tab=support",
+      "component": "src/pages/Profile/ProfileSupportTab.jsx",
+      "status": "PARTIAL",
+      "notes": "Lists user tickets from /api/v1/support/tickets and allows replying, but lacks standalone routing, category filtering, search, and related record verification"
+    },
+    {
+      "path": "LiveChatSupportWidget",
+      "component": "src/components/LiveChatSupportWidget/LiveChatSupportWidget.jsx",
+      "status": "PARTIAL",
+      "notes": "Local assistant bot widget simulating support turns; needs true live chat agent connection with WebSocket real-time updates and ticket escalation"
+    },
+    {
+      "path": "/admin/support (domainId: support)",
+      "component": "src/pages/Admin/domains/SupportDomainView.jsx",
+      "status": "PARTIAL",
+      "notes": "Admin ticket queue with thread drawer and replies; missing dedicated live-chat queue, priority/category filters, escalation, and internal notes UI"
+    }
+  ],
+  "existingDatabaseTables": [
+    {
+      "tableName": "support_conversations",
+      "migration": "migrations/015_support_platform_realtime_ecosystem.sql, migrations/016_support_tickets_resolution_sla_ecosystem.sql",
+      "status": "WORKING",
+      "fields": [
+        "conversation_id", "conversation_number", "ticket_number", "user_id", "tenant_id",
+        "subject", "category", "priority", "status", "assigned_agent_id", "assigned_agent_name",
+        "assigned_team", "sla_due_at", "first_response_due_at", "resolution_due_at",
+        "first_response_at", "resolved_at", "closed_at", "reopened_at",
+        "resolution_status", "resolution_code", "resolution_summary", "resolved_by",
+        "related_entity_type", "related_entity_id", "unread_user_count", "unread_admin_count",
+        "created_at", "updated_at"
+      ]
+    },
+    {
+      "tableName": "support_messages",
+      "migration": "migrations/015_support_platform_realtime_ecosystem.sql",
+      "status": "WORKING",
+      "fields": [
+        "message_id", "conversation_id", "sender_id", "sender_type", "message_type",
+        "agent_name", "text", "attachments", "idempotency_key", "delivered_at", "read_at", "created_at"
+      ]
+    },
+    {
+      "tableName": "support_attachments",
+      "migration": "migrations/015_support_platform_realtime_ecosystem.sql",
+      "status": "WORKING",
+      "fields": ["attachment_id", "message_id", "conversation_id", "file_name", "file_type", "file_size", "storage_path", "created_at"]
+    },
+    {
+      "tableName": "support_assignments",
+      "migration": "migrations/015_support_platform_realtime_ecosystem.sql",
+      "status": "WORKING",
+      "fields": ["assignment_id", "conversation_id", "assigned_by", "agent_id", "agent_name", "team_id", "assigned_at"]
+    },
+    {
+      "tableName": "support_escalations",
+      "migration": "migrations/015_support_platform_realtime_ecosystem.sql",
+      "status": "WORKING",
+      "fields": ["escalation_id", "conversation_id", "escalated_by", "from_team", "to_team", "reason", "escalated_at"]
+    },
+    {
+      "tableName": "support_audit_logs",
+      "migration": "migrations/015_support_platform_realtime_ecosystem.sql",
+      "status": "WORKING",
+      "fields": ["log_id", "conversation_id", "actor_id", "action", "details", "created_at"]
+    },
+    {
+      "tableName": "support_ticket_history",
+      "migration": "migrations/016_support_tickets_resolution_sla_ecosystem.sql",
+      "status": "WORKING",
+      "fields": ["history_id", "conversation_id", "actor_id", "action", "old_value", "new_value", "metadata", "created_at"]
+    },
+    {
+      "tableName": "user_push_subscriptions",
+      "migration": "migrations/104_user_push_subscriptions.sql",
+      "status": "WORKING",
+      "fields": ["id", "user_id", "endpoint", "p256dh", "auth", "user_agent", "status", "error_count", "created_at", "updated_at", "last_success_at"]
+    },
+    {
+      "tableName": "bet_disputes",
+      "migration": "migrations/101_support_disputes.sql",
+      "status": "WORKING",
+      "fields": ["id", "dispute_id", "bet_id", "user_id", "reason", "status", "assigned_agent_id", "resolution_notes", "refund_amount", "created_at", "resolved_at"]
+    }
+  ],
+  "existingApis": [
+    {
+      "method": "POST",
+      "path": "/api/support/disputes",
+      "location": "server/routes/support.js",
+      "status": "WORKING",
+      "description": "User opens a dispute for a settled bet"
+    },
+    {
+      "method": "GET",
+      "path": "/api/support/disputes",
+      "location": "server/routes/support.js",
+      "status": "WORKING",
+      "description": "List disputes for authenticated user"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/support/tickets",
+      "location": "server/routes/admin/inline.js",
+      "status": "WORKING",
+      "description": "Admin retrieves tickets list"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/support/tickets/:id",
+      "location": "server/routes/admin/inline.js",
+      "status": "WORKING",
+      "description": "Admin retrieves specific ticket details including messages and notes"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/support/tickets/:id/reply",
+      "location": "server/routes/admin/inline.js",
+      "status": "WORKING",
+      "description": "Admin sends reply to a support ticket"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/support/tickets/:id/close",
+      "location": "server/routes/admin/inline.js",
+      "status": "WORKING",
+      "description": "Admin resolves/closes a support ticket"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/support/conversations/:id/assign",
+      "location": "server/routes/admin/inline.js",
+      "status": "WORKING",
+      "description": "Admin assigns agent/team to ticket"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/support/conversations/:id/escalate",
+      "location": "server/routes/admin/inline.js",
+      "status": "WORKING",
+      "description": "Admin escalates ticket to another team"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/support/conversations/:id/internal-notes",
+      "location": "server/routes/admin/inline.js",
+      "status": "WORKING",
+      "description": "Admin adds internal note"
+    }
+  ],
+  "existingRealtimeFeatures": {
+    "engine": "lib/websocketEngine.mjs",
+    "endpoint": "/ws/support",
+    "authenticated": true,
+    "channelAuthorization": "support:conversation:{id} checks user ownership or admin role",
+    "events": [
+      "support.conversation.created",
+      "support.message.created",
+      "support.message.read",
+      "support.conversation.assigned",
+      "support.conversation.status_changed",
+      "support.conversation.reopened"
+    ],
+    "redisFanout": "Configured via WS_REDIS_FANOUT"
+  },
+  "existingRbacPermissions": {
+    "SUPPORT_AGENT": ["support", "customers", "tickets", "cases", "kyc"],
+    "SUPER_ADMIN": ["*"],
+    "OPERATIONS_ADMIN": ["operations", "platform", "providers", "emergency", "incidents", "analytics", "kyc", "api-explorer", "support"],
+    "financialSafety": "Support agents do NOT have permission for finance, wallet balance manipulation, or direct bet settlement"
+  },
+  "gapsIdentified": [
+    "User frontend routes: Missing /support, /support/tickets, /support/tickets/new, and /support/tickets/:ticketReference",
+    "User backend APIs: Need complete /api/v1/support/tickets, /api/v1/support/tickets/new, /api/v1/support/tickets/:ticketReference/messages, /api/v1/support/tickets/:ticketReference/reopen, /api/v1/support/live-chat/start, /api/v1/support/live-chat/:id/messages, /api/v1/support/live-chat/:id/end",
+    "Live Chat separation: Live chat conversation sessions (type = 'LIVE_CHAT') must be distinct from support tickets (type = 'TICKET'), with support for escalating LIVE_CHAT -> TICKET with full conversation reference",
+    "Ticket identifiers: Public reference format standard 'OD-YYYY-XXXXX' (e.g. OD-2026-10245) generation and querying",
+    "State Machine: Enforce strict transitions: OPEN -> IN_PROGRESS, IN_PROGRESS -> WAITING_FOR_USER, WAITING_FOR_USER -> IN_PROGRESS, IN_PROGRESS -> RESOLVED, RESOLVED -> CLOSED, REOPENED",
+    "Internal Notes isolation: Absolute backend isolation guaranteeing INTERNAL_NOTE is never returned to user endpoints or broadcasted on user sockets",
+    "Admin Live Chat queue: Dedicated /admin/support tab with WAITING, ACTIVE, UNASSIGNED, MY CHATS, Accept Chat, Escalate Chat to Ticket, and real-time live chat interaction",
+    "Related Records Verification: Backend verification for related entity IDs (Bet, Deposit, Withdrawal, KYC, Referral) ensuring existence and user ownership",
+    "Browser Push Notifications: Wire ticket reply and live chat events to webPushEngine and user_push_subscriptions",
+    "Comprehensive end-to-end synthetic testing across all 25 test cases"
+  ]
+}

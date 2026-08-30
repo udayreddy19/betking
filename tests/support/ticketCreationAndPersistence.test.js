@@ -3,7 +3,7 @@ import { supportEngine } from '../../lib/supportEngine.mjs';
 import { query } from '../../db/pg.js';
 
 describe('Phase 8 Support Ticket Creation & PostgreSQL Persistence Tests', () => {
-  const userId = 'usr_sup_101';
+  const userId = 'usr_sup_persistence_unique_101';
 
   beforeEach(async () => {
     await query(`INSERT INTO users (user_id, email, password_hash) VALUES ($1, $2, 'hash') ON CONFLICT (user_id) DO NOTHING;`, [userId, `${userId}@example.com`]);
