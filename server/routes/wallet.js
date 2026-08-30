@@ -28,7 +28,20 @@ router.post('/api/webhooks/razorpay', async (req, res) => {
 });
 
 // Cashfree Webhook
-router.post('/api/webhooks/cashfree', async (req, res) => {
+router.all('/api/webhooks/cashfree', async (req, res) => {
+  if (req.method === 'GET' || req.method === 'HEAD') {
+    return res.status(200).json({ status: 'ok', message: 'Cashfree webhook endpoint active' });
+  }
+
+  // Handle Cashfree Dashboard Test Ping / Verification Ping
+  const isTestPing = req.body?.event === 'TEST' ||
+    req.body?.type?.includes('TEST') ||
+    (!req.headers['x-webhook-signature'] && !req.headers['x-cf-signature'] && (!process.env.CASHFREE_WEBHOOK_SECRET && !process.env.CASHFREE_CLIENT_SECRET));
+
+  if (isTestPing) {
+    return res.status(200).json({ status: 'ok', message: 'Cashfree test webhook received' });
+  }
+
   try {
     const { depositEngine } = await import('../../lib/depositEngine.mjs');
     const result = await depositEngine.processWebhook({
