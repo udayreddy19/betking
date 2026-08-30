@@ -1,0 +1,37 @@
+{
+  "auditTimestamp": "2026-08-30T00:16:19.668Z",
+  "tests": [
+    {
+      "test": "Support Agent calling Withdrawal Approval API",
+      "expected": 403,
+      "enforcedBy": "requireRole(SUPER_ADMIN, FINANCE_ADMIN)",
+      "status": "PASS"
+    },
+    {
+      "test": "Marketing Admin calling Wallet Adjustment API",
+      "expected": 403,
+      "enforcedBy": "requirePermission(finance)",
+      "status": "PASS"
+    },
+    {
+      "test": "Finance Admin attempting Super Admin Role Creation",
+      "expected": 403,
+      "enforcedBy": "requireRole(SUPER_ADMIN)",
+      "status": "PASS"
+    },
+    {
+      "test": "Direct Header Tampering in Production",
+      "expected": "Rejected",
+      "enforcedBy": "Strict JWT signature verification",
+      "status": "PASS"
+    },
+    {
+      "test": "User Token accessing Admin API",
+      "expected": 403,
+      "enforcedBy": "decoded.type === \"admin\" assertion",
+      "status": "PASS"
+    }
+  ],
+  "backendEnforcedStrictly": true,
+  "status": "PASS"
+}

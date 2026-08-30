@@ -1,0 +1,145 @@
+{
+  "auditTimestamp": "2026-08-30T00:16:19.668Z",
+  "definedRoles": [
+    "SUPER_ADMIN",
+    "FINANCE_ADMIN",
+    "TRADING_ADMIN",
+    "SUPPORT_AGENT",
+    "RISK_ANALYST",
+    "MARKETING_ADMIN",
+    "OPERATIONS_ADMIN"
+  ],
+  "rolePermissionsMapping": {
+    "SUPER_ADMIN": "*",
+    "FINANCE_ADMIN": [
+      "finance",
+      "betting",
+      "reconciliation",
+      "withdrawal",
+      "wallet"
+    ],
+    "TRADING_ADMIN": [
+      "trading",
+      "betting",
+      "sports",
+      "markets",
+      "odds",
+      "risk"
+    ],
+    "SUPPORT_AGENT": [
+      "support",
+      "customers",
+      "tickets",
+      "cases",
+      "kyc"
+    ],
+    "RISK_ANALYST": [
+      "risk",
+      "fraud",
+      "analytics",
+      "security",
+      "reconciliation",
+      "kyc"
+    ],
+    "MARKETING_ADMIN": [
+      "growth",
+      "promotions",
+      "communications",
+      "analytics"
+    ],
+    "OPERATIONS_ADMIN": [
+      "operations",
+      "platform",
+      "providers",
+      "emergency",
+      "incidents",
+      "analytics",
+      "kyc",
+      "api-explorer"
+    ]
+  },
+  "superAdminBypassConfigured": true,
+  "enforcementLocations": [
+    "server/middleware/adminAuth.js (requirePermission, requireRole)",
+    "src/pages/Admin/permissions/AdminRBACGate.jsx",
+    "src/pages/Admin/layout/AdminShell.jsx"
+  ],
+  "rolesVerified": {
+    "SUPER_ADMIN": {
+      "access": "ALL_DOMAINS",
+      "financialAdjust": true,
+      "kycOverride": true
+    },
+    "FINANCE_ADMIN": {
+      "domains": [
+        "finance",
+        "betting",
+        "reconciliation",
+        "withdrawal",
+        "wallet"
+      ],
+      "financialAdjust": true,
+      "userAdmin": false
+    },
+    "TRADING_ADMIN": {
+      "domains": [
+        "trading",
+        "betting",
+        "sports",
+        "markets",
+        "odds",
+        "risk"
+      ],
+      "marketSettlement": true,
+      "walletAdjust": false
+    },
+    "SUPPORT_AGENT": {
+      "domains": [
+        "support",
+        "customers",
+        "tickets",
+        "cases",
+        "kyc"
+      ],
+      "ticketManage": true,
+      "withdrawalApprove": false
+    },
+    "RISK_ANALYST": {
+      "domains": [
+        "risk",
+        "fraud",
+        "analytics",
+        "security",
+        "reconciliation",
+        "kyc"
+      ],
+      "fraudGraph": true,
+      "withdrawalApprove": false
+    },
+    "MARKETING_ADMIN": {
+      "domains": [
+        "growth",
+        "promotions",
+        "communications",
+        "analytics"
+      ],
+      "campaignCreate": true,
+      "walletAdjust": false
+    },
+    "OPERATIONS_ADMIN": {
+      "domains": [
+        "operations",
+        "platform",
+        "providers",
+        "emergency",
+        "incidents",
+        "analytics",
+        "kyc",
+        "api-explorer"
+      ],
+      "incidentManage": true,
+      "adminCreate": false
+    }
+  },
+  "status": "PASS"
+}

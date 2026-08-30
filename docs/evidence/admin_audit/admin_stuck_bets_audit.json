@@ -1,0 +1,10 @@
+{
+  "auditTimestamp": "2026-08-30T00:16:19.668Z",
+  "remediationTools": {
+    "settlementSweepWorker": "Runs every 60s in lib/schedulerWorker.mjs",
+    "manualSettlementRetry": "POST /api/admin/settlement/retry with idempotency",
+    "disputeResolutionView": "SupportDomainView & BettingDomainView status inspection"
+  },
+  "idempotentRetryVerified": true,
+  "status": "PASS"
+}

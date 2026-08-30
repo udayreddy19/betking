@@ -1,0 +1,9 @@
+{
+  "auditTimestamp": "2026-08-30T00:16:19.668Z",
+  "verificationRules": {
+    "manualCreditWithoutGateway": "BLOCKED (Must have gateway order_id or maker-checker recovery)",
+    "reconciliationMatching": "Reconciliation engine matches Razorpay payments to user balances",
+    "doubleCreditProtection": "Enforced via transactions(order_id) UNIQUE constraint"
+  },
+  "status": "PASS"
+}

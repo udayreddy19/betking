@@ -1,0 +1,26 @@
+{
+  "auditTimestamp": "2026-08-30T00:16:19.668Z",
+  "userSearchCapabilities": [
+    "User ID",
+    "Email",
+    "Display Name",
+    "Phone Number"
+  ],
+  "accountStatusValues": [
+    "ACTIVE",
+    "SUSPENDED",
+    "LOCKED",
+    "RESTRICTED"
+  ],
+  "kycStatusValues": [
+    "NOT_STARTED",
+    "PENDING",
+    "UNDER_REVIEW",
+    "VERIFIED",
+    "REJECTED"
+  ],
+  "sampleAuditedUsersCount": 10,
+  "idorProtection": "Strict param validation and query parametrization across all user routes",
+  "auditLogging": "Every status change records actor, target, reason, and timestamp in audit_events",
+  "status": "PASS"
+}

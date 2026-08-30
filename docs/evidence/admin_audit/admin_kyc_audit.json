@@ -1,0 +1,16 @@
+{
+  "auditTimestamp": "2026-08-30T00:16:19.668Z",
+  "workflow": [
+    "Pending Queue",
+    "Document Inspection",
+    "Approve / Reject / Resubmit",
+    "Reason Mandate"
+  ],
+  "piiProtection": {
+    "aadhaarMasking": "Masked except last 4 digits",
+    "panMasking": "First 2 & Last 2 chars visible, middle masked",
+    "documentStorage": "Encrypted object storage with expiring signed URLs"
+  },
+  "auditLogging": "KYC state transitions recorded in audit_events and kyc_cases",
+  "status": "PASS"
+}

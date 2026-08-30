@@ -1,0 +1,12 @@
+{
+  "auditTimestamp": "2026-08-30T00:16:19.668Z",
+  "suspensionEffects": {
+    "loginBlocked": "auth inline verifies account_status !== SUSPENDED",
+    "betPlacementBlocked": "betPlacementEngine verifies account_status == ACTIVE",
+    "depositBlocked": "depositEngine checks user lock and suspension state",
+    "withdrawalBlocked": "withdrawalEngine rejects requests for non-active users"
+  },
+  "unrestrictRequiresAudit": true,
+  "confirmationDialogInUI": true,
+  "status": "PASS"
+}

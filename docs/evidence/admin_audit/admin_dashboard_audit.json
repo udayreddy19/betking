@@ -1,0 +1,16 @@
+{
+  "auditTimestamp": "2026-08-30T00:16:19.668Z",
+  "metricsSource": "PostgreSQL Primary Database",
+  "realDataVerified": true,
+  "totalRegisteredUsers": 111432,
+  "activeUsers30d": 111432,
+  "pendingKycQueue": 3,
+  "pendingWithdrawalQueue": 0,
+  "completedDepositCount": 0,
+  "completedDepositVolume": 0,
+  "openBetsCount": 0,
+  "openBetsLiability": 0,
+  "auditEventCount": 1413,
+  "apiAuthorizationChecked": "PASS",
+  "status": "PASS"
+}

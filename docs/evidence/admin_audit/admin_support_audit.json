@@ -1,0 +1,6 @@
+{
+  "auditTimestamp": "2026-08-30T00:16:19.668Z",
+  "ticketIsolation": "Support agents access tickets via assigned cases, preventing cross-tenant leakage",
+  "adminReplyAudit": "Every reply logged with admin_id in case_notes and support_tickets",
+  "status": "PASS"
+}

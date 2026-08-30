@@ -1,0 +1,9 @@
+{
+  "auditTimestamp": "2026-08-30T00:16:19.668Z",
+  "programIntegrity": {
+    "uniqueReferralCodes": "Unique constraint on referral_codes(code)",
+    "antiAbuseChecks": "Same device/IP checks prevent self-referral qualification",
+    "immutableRewardLog": "Recorded in referral_reward_events table"
+  },
+  "status": "PASS"
+}

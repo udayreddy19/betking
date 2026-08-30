@@ -1,0 +1,15 @@
+{
+  "auditTimestamp": "2026-08-30T00:16:19.668Z",
+  "table": "audit_events",
+  "loggedFields": [
+    "event_id",
+    "actor_id",
+    "target_id",
+    "action",
+    "details",
+    "created_at"
+  ],
+  "appendOnlyEnforced": true,
+  "unauthorizedAccessBlocked": true,
+  "status": "PASS"
+}

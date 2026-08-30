@@ -1,0 +1,11 @@
+{
+  "auditTimestamp": "2026-08-30T00:16:19.668Z",
+  "voucherTypes": [
+    "DEPOSIT_MATCH_BONUS",
+    "FREE_BET_VOUCHER",
+    "DAILY_SPIN_PRIZE"
+  ],
+  "duplicateCreditBlocked": "Unique constraints on user_promotions and idempotency keys",
+  "netProfitRulesEnforced": true,
+  "status": "PASS"
+}

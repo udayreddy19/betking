@@ -1,0 +1,13 @@
+{
+  "auditTimestamp": "2026-08-30T00:16:19.668Z",
+  "financialCritical": true,
+  "twoPersonRule": {
+    "makerCheckerEnforced": true,
+    "makerCannotBeChecker": "db/financialTransactions.js verifies checker_id != maker_id",
+    "maxThresholdAutoReview": 10000
+  },
+  "idempotentPayout": "Locked via status IN (PENDING, UNDER_REVIEW) with FOR UPDATE",
+  "duplicateApprovalBlocked": true,
+  "duplicatePayoutBlocked": true,
+  "status": "PASS"
+}

@@ -1,0 +1,7 @@
+{
+  "auditTimestamp": "2026-08-30T00:16:19.668Z",
+  "audienceTargeting": "Segment-based filtering via customer_segments",
+  "marketingOptOutRespected": "Checked against marketing_preference_events",
+  "bulkSendingProtection": "Rate limited and queued in outbox_events",
+  "status": "PASS"
+}
