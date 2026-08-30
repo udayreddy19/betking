@@ -204,7 +204,11 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
                   <h4>{team1Name}</h4>
                   {isLiveNow && match.liveDetails && (
                     <div className="scoreboard-score">
-                      {sport === 'cricket' && `${team1Score.runs}/${team1Score.wickets} (${team1Score.overs} ov)`}
+                      {sport === 'cricket' && (
+                        team1Score.displayScore
+                          ? `${team1Score.displayScore} (${team1Score.overs} ov)`
+                          : `${team1Score.runs}/${team1Score.wickets} (${team1Score.overs} ov)`
+                      )}
                       {sport === 'soccer' && (match.liveDetails.score1 ?? 2)}
                       {sport === 'basketball' && (match.liveDetails.score1 ?? 94)}
                     </div>
@@ -216,7 +220,14 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
                     <div className="scoreboard-live-badge">
                       <span className="live-pulse" />
                       LIVE {
-                        sport === 'cricket' ? (testDayBadge ? `(${testDayBadge})` : (isSecondInnings ? `(INN 2 | ${team2Score.overs}/${maxOvers} OV)` : `(INN 1 | ${team1Score.overs}/${maxOvers} OV)`)) :
+                        sport === 'cricket' ? (
+                          isTest
+                            ? (testDayBadge ? `(${testDayBadge})` : '(Test Match)')
+                            : (isSecondInnings
+                                ? `(INN 2 | ${team2Score.overs}/${maxOvers} OV)`
+                                : `(INN 1 | ${team1Score.overs}/${maxOvers} OV)`
+                              )
+                        ) :
                         sport === 'soccer' ? `(${match.liveDetails?.minute || '74'}' In Play)` : '(In Play)'
                       }
                     </div>
@@ -233,7 +244,11 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
                   <h4>{team2Name}</h4>
                   {isLiveNow && match.liveDetails && (
                     <div className="scoreboard-score">
-                      {sport === 'cricket' && `${team2Score.runs}/${team2Score.wickets} (${team2Score.overs} ov)`}
+                      {sport === 'cricket' && (
+                        team2Score.displayScore
+                          ? `${team2Score.displayScore} (${team2Score.overs} ov)`
+                          : `${team2Score.runs}/${team2Score.wickets} (${team2Score.overs} ov)`
+                      )}
                       {sport === 'soccer' && (match.liveDetails.score2 ?? 1)}
                       {sport === 'basketball' && (match.liveDetails.score2 ?? 88)}
                     </div>
@@ -252,6 +267,8 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
             <div className="cricket-chase-pill">
               {chaseText
                 ? `⚡ ${chaseText}`
+                : isTest
+                ? `⚡ Test Match · ${team1Name} vs ${team2Name}`
                 : isSecondInnings
                 ? `⚡ 2nd Innings: ${team2Name} ${team2Score.runs}/${team2Score.wickets} (${team2Score.overs}/${maxOvers} Ov)`
                 : `⚡ 1st Innings: ${team1Name} ${team1Score.runs}/${team1Score.wickets} (${team1Score.overs}/${maxOvers} Ov)`}
@@ -272,8 +289,11 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
               const ld = match.liveDetails || {};
               const t1Name = match?.team1?.name || match?.team1 || 'Team 1';
               const t2Name = match?.team2?.name || match?.team2 || 'Team 2';
-              const batRoster = getRosterForTeam(t1Name) || { batters: [], bowlers: [] };
-              const bowlRoster = getRosterForTeam(t2Name) || { batters: [], bowlers: [] };
+              const isTeam2Batting = isTeamBattingInMatch(match, match?.team2) || isSecondInnings;
+              const batTeam = isTeam2Batting ? t2Name : t1Name;
+              const bowlTeam = isTeam2Batting ? t1Name : t2Name;
+              const batRoster = getRosterForTeam(batTeam) || { batters: [], bowlers: [] };
+              const bowlRoster = getRosterForTeam(bowlTeam) || { batters: [], bowlers: [] };
 
               const b1 = ld.batter1 || {};
               const b2 = ld.batter2 || {};

@@ -1,5 +1,6 @@
 import { normalizeCricbuzzOvers, oversToBalls } from './oversUtils.js';
 import { normalizeMatchOvers, oversToBallsForMatch } from './cricketFormat.js';
+import { normalizeMatch } from './cricketMatchNormalizer.js';
 
 /** Wickets in a single innings cannot exceed 10 (except test multi-day formats). */
 export function clampInningsWickets(wickets, match) {
@@ -114,138 +115,47 @@ export function looksLikeMirroredFirstInnings(match, ld = {}) {
  * Map liveDetails fields onto team1/team2 regardless of chase/first naming.
  */
 export function resolveCricketTeamScores(match, ld = {}) {
-  const team1Name = match?.team1?.name || match?.team1 || '';
-  const team2Name = match?.team2?.name || match?.team2 || '';
+  const team1Name = match?.team1?.name || match?.team1 || 'Team 1';
+  const team2Name = match?.team2?.name || match?.team2 || 'Team 2';
 
-  // Test match: resolve from testInnings[]
-  if (ld.testInnings?.length > 0) {
-    return resolveTestMatchTeamScores(match, ld);
-  }
+  // Delegate directly to authoritative normalizer
+  const normalized = normalizeMatch({
+    ...match,
+    team1: { ...(typeof match?.team1 === 'object' ? match.team1 : {}), name: team1Name },
+    team2: { ...(typeof match?.team2 === 'object' ? match.team2 : {}), name: team2Name },
+    liveDetails: { ...(match?.liveDetails || {}), ...ld },
+  });
 
-  const commentaryStr = ld.commentary || '';
-  const needMatch = commentaryStr.match(/(?:([A-Za-z\s]+)\s+)?need\s+(\d+)\s+runs?/i);
-  const mirroredFirst = looksLikeMirroredFirstInnings(match, ld);
+  const t1Innings = normalized.homeTeam.innings || [];
+  const t2Innings = normalized.awayTeam.innings || [];
 
-  // 2nd Innings ONLY with explicit chase signals — never score2/wickets2 alone
-  const hasSecondInningsData = !mirroredFirst && (
-    (Number(ld.inningsId) >= 2)
-    || Number(ld.chaseRuns) > 0
-    || Number(ld.chaseWickets) > 0
-    || (ld.chaseOvers != null && ld.chaseOvers !== '0.0' && ld.chaseOvers !== '0' && ld.chaseOvers !== '')
-    || Boolean(needMatch && (Number(ld.firstRuns) > 0 || Number(needMatch[2]) === 0))
-    || (
-      Number(match?.team1?.runs) > 0
-      && Number(match?.team2?.runs) > 0
-      && Number(match.team1.runs) !== Number(match.team2.runs)
-    )
-  );
+  const t1Latest = t1Innings[t1Innings.length - 1];
+  const t2Latest = t2Innings[t2Innings.length - 1];
 
-  if (hasSecondInningsData) {
-    let chaseTeam = ld.chaseTeamName;
-
-    if (needMatch) {
-      if (!chaseTeam && needMatch[1]) chaseTeam = needMatch[1].trim();
-    }
-
-    const firstTeam = ld.firstTeamName || (teamNameMatches(team1Name, chaseTeam) ? team2Name : team1Name);
-    const firstFromMatch = teamNameMatches(team1Name, firstTeam)
-      ? pickPositiveScore(match?.team1?.runs, match?.score1, 0)
-      : pickPositiveScore(match?.team2?.runs, match?.score2, 0);
-    const firstRuns = pickPositiveScore(
-      ld.firstRuns,
-      teamNameMatches(team1Name, firstTeam) ? ld.score1 : (teamNameMatches(team2Name, firstTeam) ? ld.score2 : null),
-      firstFromMatch,
-    );
-    const firstWickets = pickPositiveScore(
-      ld.firstWickets,
-      teamNameMatches(team1Name, firstTeam) ? ld.wickets1 : ld.wickets2,
-      teamNameMatches(team1Name, firstTeam) ? match?.team1?.wickets : match?.team2?.wickets,
-    );
-    const firstOvers = [
-      ld.firstOvers,
-      firstRuns > 0 && teamNameMatches(team1Name, firstTeam) ? ld.overs : null,
-      firstRuns > 0 ? ld.overs2 : null,
-      teamNameMatches(team1Name, firstTeam) ? match?.team1?.overs : match?.team2?.overs,
-    ].find((value) => value != null && value !== '' && value !== 0 && value !== '0' && value !== '0.0')
-      || '0.0';
-
-    const chaseTeamObj = teamNameMatches(team1Name, chaseTeam || ld.chaseTeamName)
-      ? match?.team1
-      : match?.team2;
-    const chaseRuns = Math.max(
-      pickPositiveScore(
-        ld.chaseRuns,
-        ld.score2,
-        pickPositiveScore(
-          Number(ld.inningsId) >= 2 ? ld.runs : null,
-          teamNameMatches(team1Name, chaseTeam || ld.chaseTeamName)
-            ? pickPositiveScore(match?.team1?.runs, match?.score1, 0)
-            : pickPositiveScore(match?.team2?.runs, match?.score2, 0),
-        ),
-      ),
-      Number(chaseTeamObj?.runs) || 0,
-    );
-    const chaseWickets = clampInningsWickets(
-      pickPositiveScore(ld.chaseWickets, ld.wickets2, chaseTeamObj?.wickets),
-      match,
-    );
-    const chaseOvers = [ld.chaseOvers, ld.overs2, Number(ld.inningsId) >= 2 ? ld.overs : null, chaseTeamObj?.overs]
-      .find((value) => value != null && value !== '' && value !== 0 && value !== '0' && value !== '0.0')
-      || '0.0';
-
-    const firstScore = scoreEntry(firstTeam, firstRuns, firstWickets, firstOvers, match);
-    const chaseScore = scoreEntry(chaseTeam || team2Name, chaseRuns, chaseWickets, chaseOvers, match);
-
-    const isTeam1Chasing = teamNameMatches(team1Name, chaseTeam || ld.chaseTeamName);
-    return {
-      team1: isTeam1Chasing ? chaseScore : firstScore,
-      team2: isTeam1Chasing ? firstScore : chaseScore,
-    };
-  }
-
-  // 1st Innings: Team batting first gets current runs/wickets, opponent team stays 0/0
-  const firstScorecardInn = Array.isArray(match?.scorecardInnings) && match.scorecardInnings.length > 0
-    ? match.scorecardInnings[0]
-    : null;
-  let firstTeam = firstScorecardInn?.batTeamName || ld.firstTeamName || '';
-  if (!firstTeam) {
-    const t1r = Number(match?.team1?.runs ?? 0) || 0;
-    const t2r = Number(match?.team2?.runs ?? ld.score2 ?? 0) || 0;
-    if (t2r > 0 && t1r === 0) firstTeam = team2Name;
-    else firstTeam = team1Name;
-  }
-  const isTeam2BattingFirst = teamNameMatches(team2Name, firstTeam);
-
-  const battingScore = scoreEntry(
-    firstTeam,
-    pickPositiveScore(
-      ld.runs,
-      ld.firstRuns,
-      isTeam2BattingFirst
-        ? pickPositiveScore(ld.score2, match?.team2?.runs ?? match?.score2, 0)
-        : pickPositiveScore(ld.score1, match?.team1?.runs ?? match?.score1, 0),
-    ),
-    pickPositiveScore(
-      ld.wickets,
-      ld.firstWickets,
-      isTeam2BattingFirst
-        ? pickPositiveScore(ld.wickets2, match?.team2?.wickets, 0)
-        : pickPositiveScore(ld.wickets1, match?.team1?.wickets, 0),
-    ),
-    ld.overs || ld.firstOvers || (isTeam2BattingFirst ? match?.team2?.overs : match?.team1?.overs) || '0.0',
+  const t1Score = scoreEntry(
+    team1Name,
+    normalized.homeTeam.runs ?? 0,
+    t1Latest?.wickets ?? 0,
+    t1Latest?.overs ?? '0.0',
     match,
   );
-  const idleScore = scoreEntry(
-    isTeam2BattingFirst ? team1Name : team2Name,
-    0,
-    0,
-    '0.0',
+  t1Score.innings = t1Innings;
+  t1Score.displayScore = normalized.homeTeam.score;
+
+  const t2Score = scoreEntry(
+    team2Name,
+    normalized.awayTeam.runs ?? 0,
+    t2Latest?.wickets ?? 0,
+    t2Latest?.overs ?? '0.0',
     match,
   );
+  t2Score.innings = t2Innings;
+  t2Score.displayScore = normalized.awayTeam.score;
 
   return {
-    team1: isTeam2BattingFirst ? idleScore : battingScore,
-    team2: isTeam2BattingFirst ? battingScore : idleScore,
+    team1: t1Score,
+    team2: t2Score,
+    normalized,
   };
 }
 

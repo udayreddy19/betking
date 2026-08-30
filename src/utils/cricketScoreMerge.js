@@ -12,20 +12,29 @@ function batterStatWeight(player) {
 }
 
 function mergePlayerStats(primary, fallback) {
+  if (!primary && !fallback) return null;
   if (!primary) return fallback;
   if (!fallback) return primary;
-  if (typeof primary === 'string' || typeof fallback === 'string') return primary;
+  if (typeof primary === 'string' && typeof fallback === 'string') return primary || fallback;
+  if (typeof primary === 'string') return { ...fallback, name: primary };
+  if (typeof fallback === 'string') return { ...primary, name: primary.name || fallback };
+
+  const pName = (primary.name || '').trim();
+  const fName = (fallback.name || '').trim();
+
   return {
     ...fallback,
     ...primary,
-    name: primary.name || fallback.name,
-    runs: Math.max(Number(primary.runs) || 0, Number(fallback.runs) || 0),
-    balls: Math.max(Number(primary.balls) || 0, Number(fallback.balls) || 0),
-    fours: Math.max(Number(primary.fours) || 0, Number(fallback.fours) || 0),
-    sixes: Math.max(Number(primary.sixes) || 0, Number(fallback.sixes) || 0),
-    wickets: Math.max(Number(primary.wickets) || 0, Number(fallback.wickets) || 0),
-    overs: primary.overs || fallback.overs,
-    maidens: primary.maidens ?? fallback.maidens,
+    name: pName || fName,
+    runs: Number.isFinite(Number(primary.runs)) ? Number(primary.runs) : Number(fallback.runs || 0),
+    balls: Number.isFinite(Number(primary.balls)) ? Number(primary.balls) : Number(fallback.balls || 0),
+    fours: Number.isFinite(Number(primary.fours)) ? Number(primary.fours) : Number(fallback.fours || 0),
+    sixes: Number.isFinite(Number(primary.sixes)) ? Number(primary.sixes) : Number(fallback.sixes || 0),
+    wickets: Number.isFinite(Number(primary.wickets)) ? Number(primary.wickets) : Number(fallback.wickets || 0),
+    overs: primary.overs || fallback.overs || '0.0',
+    maidens: primary.maidens ?? fallback.maidens ?? 0,
+    strikeRate: primary.strikeRate || fallback.strikeRate || '0.00',
+    economy: primary.economy || fallback.economy || '0.00',
   };
 }
 
@@ -34,6 +43,7 @@ function pickNamedPlayer(nextPlayer, prevPlayer) {
   const prevName = prevPlayer?.name || (typeof prevPlayer === 'string' ? prevPlayer : '');
   const nextValid = nextName && !isPlaceholderPlayerName(nextName);
   const prevValid = prevName && !isPlaceholderPlayerName(prevName);
+
   if (nextValid && prevValid) {
     if (nextName.toLowerCase() === prevName.toLowerCase()) {
       return mergePlayerStats(nextPlayer, prevPlayer);
@@ -43,7 +53,7 @@ function pickNamedPlayer(nextPlayer, prevPlayer) {
   }
   if (nextValid) return nextPlayer;
   if (prevValid) return prevPlayer;
-  return nextPlayer || prevPlayer;
+  return nextPlayer || prevPlayer || null;
 }
 
 function pickHigherOvers(a, b) {

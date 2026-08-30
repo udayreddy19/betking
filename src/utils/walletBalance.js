@@ -3,7 +3,7 @@ import {
   getAvailableBalance,
   getLockedDepositAmount,
   getWinningsAmount,
-} from './wageringRules';
+} from './wageringRules.js';
 
 /**
  * Wallet breakdown for header / profile display.

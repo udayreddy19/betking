@@ -9,6 +9,8 @@ import { cricketScoreWeight, cricketSourceRank, getCanonicalMatchPairKey } from 
 
 export { normalizeTeamName };
 
+const lastKnownLiveMatches = new Map();
+
 /**
  * Fetch live scores from unified OddsYra API & Gateway.
  */
@@ -151,7 +153,26 @@ export async function fetchLiveScores(options = {}) {
       matchMap.set(key, mergeLegacyOrGateway(matchMap.get(key), g));
     }
 
+    // Retain live matches during short API dropouts (20s grace period)
+    const now = Date.now();
+    for (const [key, cached] of lastKnownLiveMatches.entries()) {
+      if (!matchMap.has(key) && (now - cached.lastSeenAt < 20000)) {
+        matchMap.set(key, cached.match);
+      }
+    }
+
     const mergedMatches = Array.from(matchMap.values());
+
+    // Update last known live matches cache
+    for (const m of mergedMatches) {
+      const isLive = m.isLive || m.matchState === 'in';
+      const key = getCanonicalMatchPairKey(m) || String(m.id);
+      if (isLive) {
+        lastKnownLiveMatches.set(key, { match: m, lastSeenAt: now });
+      } else {
+        lastKnownLiveMatches.delete(key);
+      }
+    }
 
     return {
       matches: mergedMatches,
