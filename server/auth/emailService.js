@@ -800,14 +800,24 @@ export async function sendTargetedDepositOfferEmail({
  * APPROVED CATEGORY 7: SUPPORT EMAILS
  * ======================================================================== */
 
+export function formatMessageForEmail(text) {
+  if (!text || typeof text !== 'string') return '';
+  const escaped = escapeHtml(text.trim());
+  return escaped.replace(/\r?\n/g, '<br>');
+}
+
 export async function sendSupportTicketCreatedUserEmail({
   email,
   name,
+  userName,
   ticketId,
+  ticketNumber,
   subject: ticketSubject,
+  category,
 }) {
-  const greeting = name || email.split('@')[0];
-  const subject = `We've received your support request [${ticketId}]`;
+  const resolvedTicketId = ticketId || ticketNumber || 'SUPPORT';
+  const greeting = userName || name || (email ? email.split('@')[0] : 'Valued Customer');
+  const subject = `We've received your support request [${resolvedTicketId}]`;
   const ctaHref = `${FRONTEND_URL}/profile`;
 
   const extraDetailsHtml = `
@@ -816,7 +826,7 @@ export async function sendSupportTicketCreatedUserEmail({
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f6f2ea;border-radius:8px;padding:12px;">
           <tr>
             <td style="font-size:13px;color:#5c6570;">Ticket Reference:</td>
-            <td align="right" style="font-size:13px;font-weight:700;">${escapeHtml(ticketId)}</td>
+            <td align="right" style="font-size:13px;font-weight:700;">${escapeHtml(resolvedTicketId)}</td>
           </tr>
           <tr>
             <td style="font-size:13px;color:#5c6570;padding-top:6px;">Subject:</td>
@@ -843,18 +853,44 @@ export async function sendSupportTicketCreatedUserEmail({
 export async function sendSupportAdminReplyEmail({
   email,
   name,
+  userName,
   ticketId,
+  ticketNumber,
+  agentReply,
   messageText,
+  content,
+  preview,
+  replyUrl,
 }) {
-  const greeting = name || email.split('@')[0];
-  const subject = `Update on your support request [${ticketId}]`;
-  const ctaHref = `${FRONTEND_URL}/profile`;
+  const resolvedTicketId = ticketId || ticketNumber || 'SUPPORT';
+  const resolvedReply = (agentReply || messageText || content || preview || '').trim();
+  const greeting = userName || name || (email ? email.split('@')[0] : 'Valued Customer');
+
+  // Strict Validation: Never send a blank/empty support reply email
+  if (!resolvedReply) {
+    logger.warn?.('[sendSupportAdminReplyEmail] Blocked attempt to send empty support reply email', {
+      email,
+      ticketId: resolvedTicketId,
+    });
+    return {
+      success: false,
+      skipped: true,
+      delivered: false,
+      reason: 'EMPTY_AGENT_REPLY_CONTENT',
+      error: 'Agent reply content is empty.',
+    };
+  }
+
+  const subject = `Update on your support request [${resolvedTicketId}]`;
+  const ctaHref = replyUrl || `${FRONTEND_URL}/profile`;
+
+  const formattedReplyHtml = formatMessageForEmail(resolvedReply);
 
   const replyBoxHtml = `
     <tr>
       <td class="oy-td" style="padding:12px 24px 0;">
-        <div style="background-color:#f6f2ea;border-left:4px solid #1f8a4c;border-radius:4px;padding:14px;font-size:14px;line-height:1.5;">
-          ${escapeHtml(messageText)}
+        <div style="background-color:#f6f2ea;border-left:4px solid #1f8a4c;border-radius:6px;padding:16px;font-size:14px;line-height:1.6;color:#1e293b;white-space:pre-wrap;word-break:break-word;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+          ${formattedReplyHtml}
         </div>
       </td>
     </tr>
@@ -863,9 +899,9 @@ export async function sendSupportAdminReplyEmail({
   const html = renderTransactionalEmail({
     heading: 'New Reply from OddsYra Support',
     greetingName: greeting,
-    introHtml: `A support agent has responded to your ticket <strong>${escapeHtml(ticketId)}</strong>:`,
+    introHtml: `A support agent has responded to your ticket <strong>${escapeHtml(resolvedTicketId)}</strong>:`,
     extraHtml: replyBoxHtml,
-    ctaLabel: 'Reply to Support',
+    ctaLabel: 'View & Reply to Support',
     ctaHref,
     noteHtml: 'Please log in to your OddsYra account to continue the conversation.',
   });
@@ -876,16 +912,20 @@ export async function sendSupportAdminReplyEmail({
 export async function sendSupportTicketClosedEmail({
   email,
   name,
+  userName,
   ticketId,
+  ticketNumber,
+  resolutionSummary,
 }) {
-  const greeting = name || email.split('@')[0];
-  const subject = `Your support request has been resolved [${ticketId}]`;
+  const resolvedTicketId = ticketId || ticketNumber || 'SUPPORT';
+  const greeting = userName || name || (email ? email.split('@')[0] : 'Valued Customer');
+  const subject = `Your support request has been resolved [${resolvedTicketId}]`;
   const ctaHref = `${FRONTEND_URL}/profile`;
 
   const html = renderTransactionalEmail({
     heading: 'Support Ticket Resolved',
     greetingName: greeting,
-    introHtml: `Your support ticket <strong>${escapeHtml(ticketId)}</strong> has been marked as resolved and closed. If you have any further questions or if your issue persists, you can easily reopen the ticket from your profile.`,
+    introHtml: `Your support ticket <strong>${escapeHtml(resolvedTicketId)}</strong> has been marked as resolved and closed. If you have any further questions or if your issue persists, you can easily reopen the ticket from your profile.`,
     ctaLabel: 'View Support History',
     ctaHref,
     noteHtml: 'Thank you for choosing OddsYra. We appreciate your patience while we resolved your inquiry.',
