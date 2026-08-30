@@ -17,12 +17,16 @@
   width: 100%;
 }
 
-/* ── 1. HERO SECTION ── */
+/* ── HERO SECTION ── */
 .private-hero {
-  padding: 5.5rem 0 4rem;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5rem 0 4rem;
   text-align: center;
   position: relative;
-  background: radial-gradient(circle at 50% 10%, rgba(59, 130, 246, 0.08) 0%, transparent 65%);
+  background: radial-gradient(circle at 50% 25%, rgba(59, 130, 246, 0.08) 0%, transparent 65%);
 }
 
 .private-badge {
@@ -45,8 +49,8 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #f59e0b;
-  box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+  background: #3b82f6;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
 }
 
 .private-hero-title {
@@ -132,119 +136,7 @@
   font-size: 1.1rem;
 }
 
-/* ── 2. STATUS SECTION ── */
-.private-status-section {
-  padding: 2rem 0 3.5rem;
-}
-
-.private-status-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.25rem;
-}
-
-.private-status-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  padding: 1.5rem;
-  background: var(--bg-secondary, rgba(255, 255, 255, 0.03));
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
-  border-radius: 14px;
-  transition: transform 0.2s ease, border-color 0.2s ease;
-}
-
-.private-status-card:hover {
-  border-color: var(--border-color, rgba(255, 255, 255, 0.16));
-  transform: translateY(-2px);
-}
-
-.status-card-icon {
-  font-size: 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
-  flex-shrink: 0;
-}
-
-.status-card-icon.status-green {
-  background: rgba(16, 185, 129, 0.12);
-  color: #10b981;
-}
-
-.status-card-icon.status-amber {
-  background: rgba(245, 158, 11, 0.12);
-  color: #f59e0b;
-}
-
-.status-card-content {
-  display: flex;
-  flex-direction: column;
-}
-
-.status-card-label {
-  font-size: 0.8rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-secondary, #94a3b8);
-  margin-bottom: 0.25rem;
-}
-
-.status-card-state {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--text-primary, #ffffff);
-  margin: 0 0 0.35rem;
-}
-
-.status-card-sub {
-  font-size: 0.85rem;
-  color: var(--text-secondary, #94a3b8);
-  margin: 0;
-  line-height: 1.4;
-}
-
-/* ── 3. NOTICE SECTION ── */
-.private-notice-section {
-  padding: 0 0 4rem;
-}
-
-.private-notice-box {
-  display: flex;
-  align-items: flex-start;
-  gap: 1.25rem;
-  padding: 1.5rem 1.75rem;
-  background: rgba(59, 130, 246, 0.04);
-  border: 1px solid rgba(59, 130, 246, 0.15);
-  border-radius: 12px;
-}
-
-.notice-icon {
-  font-size: 1.6rem;
-  color: #3b82f6;
-  flex-shrink: 0;
-  margin-top: 0.1rem;
-}
-
-.notice-content h4 {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary, #f1f5f9);
-  margin: 0 0 0.35rem;
-}
-
-.notice-content p {
-  font-size: 0.9rem;
-  color: var(--text-secondary, #94a3b8);
-  margin: 0;
-  line-height: 1.5;
-}
-
-/* ── 4. FOOTER ── */
+/* ── FOOTER ── */
 .private-footer {
   margin-top: auto;
   border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
