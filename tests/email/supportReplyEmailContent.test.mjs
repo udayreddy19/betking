@@ -44,7 +44,7 @@ OddsYra Support`;
 
     // Header & greeting
     assert.ok(res.html.includes('New Reply from OddsYra Support'));
-    assert.ok(res.html.includes(`Hi ${testName}`));
+    assert.ok(res.html.includes(`Hi <strong>${testName}</strong>`));
     assert.ok(res.html.includes(testTicketId));
 
     // Message box content
@@ -125,7 +125,7 @@ OddsYra Support`;
 
     assert.equal(res.success, true);
     assert.ok(!res.html.includes('<script>'));
-    assert.ok(!res.html.includes('onerror='));
+    assert.ok(!res.html.includes('<img src=x'));
     assert.ok(res.html.includes('&lt;script&gt;'));
     assert.ok(res.html.includes('&lt;img src=x onerror=alert(1)&gt;'));
   });
