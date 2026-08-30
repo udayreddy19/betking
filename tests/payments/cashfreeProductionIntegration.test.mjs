@@ -51,11 +51,12 @@ test('ODDSYRA — CASHFREE PAYMENTS API + WEBHOOK INTEGRATION TEST SUITE', async
   process.env.CASHFREE_WEBHOOK_SECRET = mockWebhookSecret;
 
   // Setup test user & wallet in DB
+  const testPhone = `9${Math.floor(100000000 + Math.random() * 900000000)}`;
   await query(
     `INSERT INTO users (user_id, email, phone, created_at, updated_at)
-     VALUES ($1, $2, '9876543210', NOW(), NOW())
+     VALUES ($1, $2, $3, NOW(), NOW())
      ON CONFLICT (user_id) DO NOTHING`,
-    [testUserId, `${testUserId}@example.com`]
+    [testUserId, `${testUserId}@example.com`, testPhone]
   );
 
   await query(

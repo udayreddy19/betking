@@ -14,11 +14,12 @@ process.env.RAZORPAY_KEY_SECRET = TEST_SECRET;
 process.env.RAZORPAY_WEBHOOK_SECRET = TEST_WEBHOOK_SECRET;
 
 async function createTestUserAndWallet(userId, initialBalance = 0) {
+  const phone = `9${Math.floor(100000000 + Math.random() * 900000000)}`;
   await query(
     `INSERT INTO users (user_id, email, password_hash, phone, created_at, updated_at)
-     VALUES ($1, $2, 'hash_test', '9876543210', NOW(), NOW())
+     VALUES ($1, $2, 'hash_test', $3, NOW(), NOW())
      ON CONFLICT (user_id) DO NOTHING`,
-    [userId, `${userId}@oddsyra.test`]
+    [userId, `${userId}@oddsyra.test`, phone]
   );
 
   await query(
