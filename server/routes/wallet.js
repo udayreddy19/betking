@@ -36,7 +36,9 @@ router.all('/api/webhooks/cashfree', async (req, res) => {
   // Handle Cashfree Dashboard Test Ping / Verification Ping
   const isTestPing = req.body?.event === 'TEST' ||
     req.body?.type?.includes('TEST') ||
-    (!req.headers['x-webhook-signature'] && !req.headers['x-cf-signature'] && (!process.env.CASHFREE_WEBHOOK_SECRET && !process.env.CASHFREE_CLIENT_SECRET));
+    req.body?.data?.order?.order_id?.toLowerCase()?.includes('test') ||
+    req.body?.data?.payment?.cf_payment_id?.toString()?.toLowerCase()?.includes('test') ||
+    (!process.env.CASHFREE_WEBHOOK_SECRET && !process.env.CASHFREE_CLIENT_SECRET);
 
   if (isTestPing) {
     return res.status(200).json({ status: 'ok', message: 'Cashfree test webhook received' });
