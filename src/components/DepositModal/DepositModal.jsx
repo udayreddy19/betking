@@ -61,7 +61,6 @@ export default function DepositModal() {
       .then(data => {
         if (!cancelled && data?.providers) {
           setAvailableProviders(data.providers);
-          if (data.defaultProvider) setSelectedProvider(data.defaultProvider);
         }
       })
       .catch(() => {});
