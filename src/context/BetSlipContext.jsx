@@ -1022,9 +1022,11 @@ export function BetSlipProvider({ children }) {
     setIsMyBetsOpen(true);
     setIsMobileOpen(false);
     playBetSound();
-      placingInFlightRef.current = false;
-    }
-  }, [bets, betType, stake, singlesStakes, multiOdds, refreshWallet, potentialReturn]);
+    return { success: true, placed: placedSingles };
+  } finally {
+    placingInFlightRef.current = false;
+  }
+  }, [bets, betType, stake, singlesStakes, multiOdds, refreshWallet, potentialReturn, selectedReward, selectedRewardId, refreshAvailableRewards]);
 
   const cashOutBet = useCallback(async (betId, requestedCashoutValue = null) => {
     if (!DEMO_MODE) {
