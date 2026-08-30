@@ -112,6 +112,30 @@ router.get('/deposit-freebet/me', requireAuth, async (req, res) => {
   }
 });
 
+router.get(['/available', '/my-rewards/available'], requireAuth, async (req, res) => {
+  try {
+    const { listUserAvailableRewards } = await import('../../lib/discreteRewardEngine.mjs');
+    const available = await listUserAvailableRewards(req.user.userId);
+    res.json({ success: true, available });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message, code: 'AVAILABLE_REWARDS_FAILED' });
+  }
+});
+
+router.get(['/my-rewards', '/all'], requireAuth, async (req, res) => {
+  try {
+    const { listUserAllRewards } = await import('../../lib/discreteRewardEngine.mjs');
+    const data = await listUserAllRewards(req.user.userId, {
+      status: req.query.status || null,
+      limit: parseInt(req.query.limit, 10) || 50,
+      offset: parseInt(req.query.offset, 10) || 0,
+    });
+    res.json({ success: true, ...data });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message, code: 'MY_REWARDS_FAILED' });
+  }
+});
+
 router.post('/referrals/validate', async (req, res) => {
   try {
     const { validateReferralCode } = await import('../../lib/referralLoyaltyEngine.mjs');

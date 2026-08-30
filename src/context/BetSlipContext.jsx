@@ -282,6 +282,8 @@ function mapServerBetToPlaced(row) {
     placedAt: row.created_at,
     settledAt: row.settled_at || null,
     fundSource: row.fund_source || 'cash',
+    rewardId: row.reward_id || null,
+    returnsStake: Boolean(row.returns_stake),
     settlementEvidence: row.settlement_evidence || row.settlementEvidence || null,
     settlementReason: row.settlement_reason || null,
   };
@@ -315,6 +317,54 @@ export function BetSlipProvider({ children }) {
   const placingInFlightRef = useRef(false);
   const [betslipPrefs, setBetslipPrefsState] = useState(() => loadBetslipPrefs());
   const [quickBet, setQuickBet] = useState(null);
+  const [availableRewards, setAvailableRewards] = useState([]);
+  const [selectedRewardId, setSelectedRewardId] = useState(null);
+
+  const refreshAvailableRewards = useCallback(async () => {
+    if (!user?.userId && !user?.email) {
+      setAvailableRewards([]);
+      return;
+    }
+    try {
+      const res = await apiFetch('/api/v1/rewards/available');
+      const data = await res.json().catch(() => ({}));
+      if (data?.success && Array.isArray(data.available)) {
+        setAvailableRewards(data.available);
+      }
+    } catch {
+      // non-blocking
+    }
+  }, [user?.userId, user?.email]);
+
+  useEffect(() => {
+    refreshAvailableRewards();
+  }, [refreshAvailableRewards]);
+
+  const selectedReward = useMemo(() => {
+    if (!selectedRewardId) return null;
+    return availableRewards.find((r) => r.rewardId === selectedRewardId) || null;
+  }, [availableRewards, selectedRewardId]);
+
+  const isStakeLocked = Boolean(selectedReward && !selectedReward.allowPartialUse);
+
+  const selectReward = useCallback((reward) => {
+    if (!reward) {
+      setSelectedRewardId(null);
+      return;
+    }
+    const rId = typeof reward === 'string' ? reward : reward.rewardId;
+    const found = availableRewards.find((r) => r.rewardId === rId) || (typeof reward === 'object' ? reward : null);
+    if (!found) return;
+
+    setSelectedRewardId(found.rewardId);
+    const amountStr = String(found.amount);
+    setStake(amountStr);
+    setSinglesStakes(() => {
+      const next = {};
+      betsRef.current.forEach((b) => { next[b.id] = amountStr; });
+      return next;
+    });
+  }, [availableRewards]);
 
   useEffect(() => {
     betsRef.current = bets;
@@ -678,9 +728,10 @@ export function BetSlipProvider({ children }) {
     placingInFlightRef.current = true;
     const attemptId = `a${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
     try {
+    const chosenRewardId = options.rewardId || selectedRewardId || null;
     const stakeSource = ['bonus', 'freebet'].includes(options.stakeSource)
       ? options.stakeSource
-      : 'cash';
+      : (selectedReward ? selectedReward.rewardType : 'cash');
     const prefs = loadBetslipPrefs();
     const targetSingleId = options.singleBetId || null;
 
@@ -715,6 +766,7 @@ export function BetSlipProvider({ children }) {
               stake: stakeAmount,
               clientOdds: bet.odds,
               fundSource: stakeSource,
+              rewardId: chosenRewardId,
             }),
           });
           const data = await res.json().catch(() => ({}));
@@ -760,6 +812,7 @@ export function BetSlipProvider({ children }) {
             body: JSON.stringify({
               stake: stakeAmount,
               fundSource: stakeSource,
+              rewardId: chosenRewardId,
               selections: workingBets.map((bet) => ({
                 matchId: bet.matchId,
                 marketId: bet.marketId || 'match_winner',
@@ -872,6 +925,8 @@ export function BetSlipProvider({ children }) {
           setQuickBet(null);
           localStorage.removeItem(PENDING_BETSLIP_KEY);
         }
+        setSelectedRewardId(null);
+        void refreshAvailableRewards();
         setIsMyBetsOpen(true);
         setIsMobileOpen(false);
         playBetSound();
@@ -900,64 +955,73 @@ export function BetSlipProvider({ children }) {
     });
 
     if (betType === 'multi') {
-      const stakeAmount = parseFloat(stake);
-      if (!stakeAmount || stakeAmount <= 0) {
+      const numericStake = parseFloat(stake);
+      if (!numericStake || numericStake <= 0) {
         return { success: false, error: 'Enter a valid stake amount' };
       }
-
-      const placed = withFundMeta({
-        id: `placed-${Date.now()}`,
+      const potential = computeAccumulatorPayout(numericStake, betsRef.current);
+      const newPlaced = withFundMeta({
+        id: `bet-${Date.now()}`,
         type: 'multi',
-        legs: [...bets],
-        stake: stakeAmount,
-        totalOdds: multiDisplayOdds,
-        potentialReturn: computeAccumulatorPayout(stakeAmount, bets.map((b) => b.odds)).potentialPayout,
+        legs: betsRef.current.map((b) => ({
+          ...b,
+          selectionName: b.selectionName || b.selection,
+        })),
+        stake: numericStake,
+        totalOdds: multiOdds.toFixed(2),
+        potentialReturn: potential,
         status: 'pending',
         placedAt: new Date().toISOString(),
-      }, stakeAmount);
-
-      setPlacedBets(prev => [placed, ...prev]);
+      }, numericStake);
+      const updated = [newPlaced, ...placedBets];
+      setPlacedBets(updated);
+      localStorage.setItem(PLACED_BETS_KEY, JSON.stringify(updated));
       setBets([]);
       setStake('');
-      setSinglesStakes({});
+      setSelectedRewardId(null);
+      void refreshAvailableRewards();
+      localStorage.removeItem(PENDING_BETSLIP_KEY);
       setQuickBet(null);
       setIsMyBetsOpen(true);
       setIsMobileOpen(false);
       playBetSound();
-      return { success: true, placed, totalDeducted: stakeAmount, stakeSource };
+      return { success: true, placed: newPlaced };
     }
 
-    const placements = [];
-    let totalDeducted = 0;
-
-    for (const bet of bets) {
+    const placedSingles = [];
+    for (const bet of betsRef.current) {
       const stakeAmount = parseFloat(singlesStakes[bet.id] || stake || 0);
       if (!stakeAmount || stakeAmount <= 0) {
         return { success: false, error: `Enter stake for "${bet.selectionName}"` };
       }
-      totalDeducted += stakeAmount;
-      placements.push(withFundMeta({
-        id: `placed-${Date.now()}-${bet.id}`,
+      const newPlaced = withFundMeta({
+        id: `bet-${Date.now()}-${bet.id}`,
         type: 'single',
-        legs: [bet],
+        legs: [{
+          ...bet,
+          selectionName: bet.selectionName || bet.selection,
+        }],
         stake: stakeAmount,
-        totalOdds: bet.odds,
-        potentialReturn: stakeAmount * bet.odds,
+        totalOdds: Number(bet.odds).toFixed(2),
+        potentialReturn: parseFloat((stakeAmount * bet.odds).toFixed(2)),
         status: 'pending',
         placedAt: new Date().toISOString(),
-      }, stakeAmount));
+      }, stakeAmount);
+      placedSingles.push(newPlaced);
     }
-
-    setPlacedBets(prev => [...placements, ...prev]);
+    const updated = [...placedSingles, ...placedBets];
+    setPlacedBets(updated);
+    localStorage.setItem(PLACED_BETS_KEY, JSON.stringify(updated));
     setBets([]);
     setStake('');
     setSinglesStakes({});
+    setSelectedRewardId(null);
+    void refreshAvailableRewards();
+    localStorage.removeItem(PENDING_BETSLIP_KEY);
     setQuickBet(null);
     setIsMyBetsOpen(true);
     setIsMobileOpen(false);
     playBetSound();
-    return { success: true, placed: placements, totalDeducted, stakeSource };
-    } finally {
       placingInFlightRef.current = false;
     }
   }, [bets, betType, stake, singlesStakes, multiOdds, refreshWallet, potentialReturn]);
@@ -1104,6 +1168,13 @@ export function BetSlipProvider({ children }) {
     acceptOddsChange,
     acceptAllOddsChanges,
     hasPendingOddsAcceptance: hasPendingOddsAcceptance(bets),
+    availableRewards,
+    refreshAvailableRewards,
+    selectedRewardId,
+    setSelectedRewardId,
+    selectReward,
+    selectedReward,
+    isStakeLocked,
   }), [
     bets,
     placedBets,
@@ -1139,6 +1210,13 @@ export function BetSlipProvider({ children }) {
     refreshSlipOdds,
     acceptOddsChange,
     acceptAllOddsChanges,
+    availableRewards,
+    refreshAvailableRewards,
+    selectedRewardId,
+    setSelectedRewardId,
+    selectReward,
+    selectedReward,
+    isStakeLocked,
   ]);
 
   return (

@@ -58,6 +58,7 @@ const SupportHome = lazy(() => import('./pages/Support/SupportHome'));
 const TicketsListPage = lazy(() => import('./pages/Support/TicketsListPage'));
 const CreateTicketPage = lazy(() => import('./pages/Support/CreateTicketPage'));
 const TicketDetailPage = lazy(() => import('./pages/Support/TicketDetailPage'));
+const MyRewards = lazy(() => import('./pages/Rewards/MyRewards'));
 
 function CasinoComingSoon() {
   return <Navigate to="/sports" replace />;
@@ -128,6 +129,8 @@ function AppLayout() {
               <Route path="/verify-email" element={<VerifyEmailPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/promotions" element={<Promotions />} />
+              <Route path="/rewards" element={<MyRewards />} />
+              <Route path="/my-rewards" element={<MyRewards />} />
               <Route path="/notifications" element={<NotificationCenter />} />
               <Route path="/vip" element={<Vip />} />
               <Route

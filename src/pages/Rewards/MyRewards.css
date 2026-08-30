@@ -1,0 +1,335 @@
+.my-rewards-page {
+  padding: var(--space-6) var(--space-4);
+  max-width: 1100px;
+  margin: 0 auto;
+  min-height: 80vh;
+}
+
+.my-rewards-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.my-rewards-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.my-rewards-title {
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  color: var(--color-text-primary);
+  margin-bottom: 4px;
+}
+
+.my-rewards-subtitle {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.my-rewards-refresh-btn {
+  padding: 8px 16px;
+  background: var(--color-surface-elevated, #ffffff);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--color-text-primary);
+  transition: background 0.15s;
+}
+
+.my-rewards-refresh-btn:hover {
+  background: var(--color-surface-hover, #f1f5f9);
+}
+
+.my-rewards-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-4);
+}
+
+.my-rewards-stat-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border-radius: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.my-rewards-stat-card--freebet {
+  border-left: 4px solid #10b981;
+}
+
+.my-rewards-stat-card--bonus {
+  border-left: 4px solid #f59e0b;
+}
+
+.my-rewards-stat-card__icon {
+  font-size: 28px;
+}
+
+.my-rewards-stat-card__label {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.my-rewards-stat-card__value {
+  font-size: var(--text-lg);
+  font-weight: 800;
+  color: var(--color-text-primary);
+}
+
+.my-rewards-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 2px;
+}
+
+.my-rewards-tab {
+  padding: 10px 18px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.my-rewards-tab.active {
+  color: var(--color-primary, #1f8a4c);
+  border-bottom-color: var(--color-primary, #1f8a4c);
+  font-weight: 700;
+}
+
+.my-rewards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--space-5);
+}
+
+.my-reward-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  position: relative;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.my-reward-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+}
+
+.my-reward-card--freebet {
+  border-top: 4px solid #10b981;
+}
+
+.my-reward-card--bonus {
+  border-top: 4px solid #f59e0b;
+}
+
+.my-reward-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.my-reward-card__type-badge {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.my-reward-card__status--available {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.my-reward-card__amount {
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
+}
+
+.my-reward-card__title {
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.my-reward-card__rules {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: var(--space-2) 0;
+}
+
+.my-reward-rule-pill {
+  font-size: var(--text-xs);
+  padding: 4px 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  color: #475569;
+}
+
+.my-reward-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border-light, #f1f5f9);
+}
+
+.my-reward-card__expiry {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.my-rewards-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+  border: none;
+}
+
+.my-rewards-btn--use {
+  background: var(--color-primary, #1f8a4c);
+  color: #ffffff;
+}
+
+.my-rewards-btn--use:hover {
+  filter: brightness(1.1);
+}
+
+.my-rewards-btn--primary {
+  background: var(--color-primary, #1f8a4c);
+  color: #ffffff;
+}
+
+.my-rewards-btn--outline {
+  background: none;
+  border: 1px solid var(--color-primary, #1f8a4c);
+  color: var(--color-primary, #1f8a4c);
+}
+
+.my-rewards-empty {
+  text-align: center;
+  padding: var(--space-12) var(--space-4);
+  background: var(--color-surface);
+  border-radius: 12px;
+  border: 1px dashed var(--color-border);
+}
+
+.my-rewards-empty__icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+.my-rewards-history-table-wrap {
+  overflow-x: auto;
+  background: var(--color-surface);
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+}
+
+.my-rewards-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.my-rewards-history-table th,
+.my-rewards-history-table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border-light, #f1f5f9);
+}
+
+.my-rewards-history-table th {
+  background: #f8fafc;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: var(--text-xs);
+}
+
+.my-rewards-sub-id {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  font-family: monospace;
+}
+
+.my-reward-type-tag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.my-reward-type-tag--freebet {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.my-reward-type-tag--bonus {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.my-reward-status-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+.my-reward-status-pill--consumed {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.my-reward-status-pill--expired {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.my-reward-status-pill--cancelled {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.my-rewards-bet-link {
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--color-primary, #1f8a4c);
+  font-weight: 600;
+}

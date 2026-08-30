@@ -1749,6 +1749,114 @@ router.post('/api/admin/growth/referral-codes/:code/disable', async (req, res) =
   }
 });
 
+/* ========================================================================
+ * DISCRETE REWARD & EXACT STAKE MANAGEMENT (ADMIN)
+ * ======================================================================== */
+router.get('/api/admin/rewards', async (req, res) => {
+  try {
+    const { adminListRewards } = await import('../../../lib/discreteRewardEngine.mjs');
+    const data = await adminListRewards({
+      page: parseInt(req.query.page, 10) || 1,
+      limit: parseInt(req.query.limit, 10) || 25,
+      status: req.query.status || null,
+      rewardType: req.query.rewardType || null,
+      userId: req.query.userId || null,
+      search: req.query.search || req.query.q || null,
+    });
+    res.json({ success: true, ...data });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message, code: 'ADMIN_REWARDS_FAILED' });
+  }
+});
+
+router.post('/api/admin/rewards/issue', async (req, res) => {
+  try {
+    const { issueDiscreteReward } = await import('../../../lib/discreteRewardEngine.mjs');
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    const adminId = req.admin?.id || req.admin?.adminId || 'admin';
+    const reward = await issueDiscreteReward({
+      userId: req.body?.userId,
+      rewardType: req.body?.rewardType || 'freebet',
+      amount: req.body?.amount,
+      title: req.body?.title,
+      source: req.body?.source || 'ADMIN_GRANT',
+      minOdds: req.body?.minOdds || 1.00,
+      maxOdds: req.body?.maxOdds || null,
+      singleOnly: Boolean(req.body?.singleOnly),
+      accumulatorAllowed: req.body?.accumulatorAllowed !== false,
+      returnsStake: Boolean(req.body?.returnsStake),
+      allowPartialUse: Boolean(req.body?.allowPartialUse),
+      expiryDays: req.body?.expiryDays || 7,
+      adminId,
+    });
+    await logAdminAction({
+      actorId: adminId,
+      targetId: reward.reward_id,
+      action: 'REWARD_ISSUED',
+      details: { userId: req.body?.userId, amount: req.body?.amount, rewardType: req.body?.rewardType },
+    });
+    res.json({ success: true, reward });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/api/admin/rewards/:id/cancel', async (req, res) => {
+  try {
+    const { adminCancelReward } = await import('../../../lib/discreteRewardEngine.mjs');
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    const adminId = req.admin?.id || req.admin?.adminId || 'admin';
+    const result = await adminCancelReward({
+      rewardId: req.params.id,
+      adminId,
+      reason: req.body?.reason || 'Cancelled by admin',
+    });
+    await logAdminAction({
+      actorId: adminId,
+      targetId: req.params.id,
+      action: 'REWARD_CANCELLED',
+      details: { reason: req.body?.reason },
+    });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/api/admin/rewards/:id/extend', async (req, res) => {
+  try {
+    const { adminExtendRewardExpiry } = await import('../../../lib/discreteRewardEngine.mjs');
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    const adminId = req.admin?.id || req.admin?.adminId || 'admin';
+    const result = await adminExtendRewardExpiry({
+      rewardId: req.params.id,
+      adminId,
+      extensionDays: req.body?.extensionDays || 7,
+      newExpiresAt: req.body?.newExpiresAt || null,
+      reason: req.body?.reason || 'Extended by admin',
+    });
+    await logAdminAction({
+      actorId: adminId,
+      targetId: req.params.id,
+      action: 'REWARD_EXPIRY_EXTENDED',
+      details: { ...result, reason: req.body?.reason },
+    });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+router.get('/api/admin/rewards/:id/ledger', async (req, res) => {
+  try {
+    const { adminGetRewardLedger } = await import('../../../lib/discreteRewardEngine.mjs');
+    const ledger = await adminGetRewardLedger(req.params.id);
+    res.json({ success: true, ledger });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 router.post('/api/admin/growth/referrals/reconcile', async (req, res) => {
   try {
     const { reconcilePendingReferrals } = await import('../../../lib/referralLoyaltyEngine.mjs');

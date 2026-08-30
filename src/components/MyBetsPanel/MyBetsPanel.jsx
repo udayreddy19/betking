@@ -519,7 +519,9 @@ export default function MyBetsPanel() {
                     <div className="my-bets-card-badges">
                       <span className="my-bets-type-badge">{placed.type === 'multi' ? 'MULTI' : 'SINGLE'}</span>
                       <span className={`my-bets-fund-badge my-bets-fund-badge--${placed.fundSource || 'cash'}`}>
-                        {(placed.fundSource || 'cash').toUpperCase()}
+                        {placed.rewardId
+                          ? `${placed.fundSource === 'freebet' ? '🎁 FREE BET' : '⭐ BONUS'} · ${placed.rewardId}`
+                          : (placed.fundSource || 'cash').toUpperCase()}
                       </span>
                       <span className={`my-bets-status-badge my-bets-status-badge--${placed.status || 'pending'}`}>
                         {(placed.status || 'pending').replace('_', ' ').toUpperCase()}
@@ -555,7 +557,11 @@ export default function MyBetsPanel() {
 
                   <div className="my-bets-summary">
                     <span className="label">Stake</span>
-                    <span className="value">₹{placed.stake.toFixed(2)}</span>
+                    <span className="value">
+                      ₹{placed.stake.toFixed(2)}
+                      {placed.fundSource === 'freebet' && <span style={{ fontSize: '0.8em', color: '#10b981', marginLeft: 6 }}>🎁 Free Bet</span>}
+                      {placed.fundSource === 'bonus' && <span style={{ fontSize: '0.8em', color: '#f59e0b', marginLeft: 6 }}>⭐ Bonus</span>}
+                    </span>
                   </div>
                   {placed.type === 'multi' && (
                     <div className="my-bets-summary">
