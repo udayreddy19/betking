@@ -296,9 +296,9 @@ export async function sendEmail({ to, subject, html, text, from = SMTP_FROM, rep
   const accounts = promosAcc ? [promosAcc] : configuredAccounts();
 
   if (accounts.length === 0) {
-    if (isProduction) {
+    if (process.env.NODE_ENV === 'production') {
       logger.error('email_smtp_not_configured', { to, subject });
-      return { success: false, error: 'SMTP is not configured in production environment' };
+      return { success: false, error: 'SMTP is not configured in production environment', html };
     }
     const transport = createTransport(null);
     const result = await transport.sendMail({
@@ -310,7 +310,7 @@ export async function sendEmail({ to, subject, html, text, from = SMTP_FROM, rep
       replyTo: replyTo || from,
       headers,
     });
-    return { success: true, messageId: result.messageId, json: true };
+    return { success: true, messageId: result.messageId, json: true, html };
   }
 
   let lastErr = null;
@@ -346,7 +346,7 @@ export async function sendEmail({ to, subject, html, text, from = SMTP_FROM, rep
       deliveryMetrics.lastAt = new Date().toISOString();
       deliveryMetrics.lastError = null;
 
-      return { success: true, messageId: info.messageId, provider: account.name };
+      return { success: true, messageId: info.messageId, provider: account.name, html };
     } catch (err) {
       lastErr = err;
       if (account.name === 'primary') {

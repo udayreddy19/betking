@@ -103,6 +103,8 @@ OddsYra Support`;
   test('5. emailUserOnAdminReply safely resolves user contact and dispatches full reply', async () => {
     const res = await emailUserOnAdminReply({
       userId: 'usr_test_123',
+      userEmail: testEmail,
+      userName: testName,
       ticketNumber: testTicketId,
       agentReply: multiLineReply,
     });
