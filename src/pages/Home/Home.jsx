@@ -8,6 +8,7 @@ import HomeCategoryGrid from '../../components/HomeCategoryGrid/HomeCategoryGrid
 import { sportsCategories, featuredLeagues } from '../../data/mockData';
 import { homePromoSlides } from '../../data/homePageData';
 import { useLiveMatches, useLiveSportsMeta } from '../../context/LiveSportsContext';
+import { useAuth } from '../../context/AuthContext';
 import LiveScoresFeedBanner from '../../components/LiveScoresFeedBanner/LiveScoresFeedBanner';
 import { filterMatches, compareMatchesForSportsBoard } from '../../utils/matchFilters';
 import { getMatchState } from '../../utils/matchBetting';
@@ -16,6 +17,7 @@ import { useMatchWatchlist } from '../../hooks/useMatchWatchlist';
 import BoostedOddsWidget from '../../components/BoostedOddsWidget/BoostedOddsWidget';
 import AnimatedMotionGiftIcon from '../../components/AnimatedMotionGiftIcon/AnimatedMotionGiftIcon';
 import ErrorBoundary from '../../components/ErrorBoundary/ErrorBoundary';
+import PublicLandingPage from './PublicLandingPage';
 import './Home.css';
 
 const HOME_MATCH_LIMIT = 12;
@@ -27,7 +29,7 @@ function filterByLeague(matchList, leagueId) {
   return matchList.filter((m) => matchBelongsToLeague(m, meta));
 }
 
-export default function Home() {
+function AuthenticatedHomeSportsDashboard() {
   const matches = useLiveMatches();
   const { isScoresLoading, scoresError, refreshScores } = useLiveSportsMeta();
   const navigate = useNavigate();
@@ -65,7 +67,6 @@ export default function Home() {
 
   const leagueChips = useMemo(() => {
     const all = featuredLeagues.filter((l) => l.sport === activeSport);
-    // Only leagues that currently have matches — keeps the chip row short
     const withMatches = all.filter((league) => {
       const meta = getLeagueMeta(league.id);
       if (!meta) return false;
@@ -276,4 +277,39 @@ export default function Home() {
       </section>
     </div>
   );
+}
+
+export default function Home() {
+  const { isLoggedIn, authStatus } = useAuth();
+
+  if (authStatus === 'loading') {
+    return (
+      <div style={{
+        minHeight: '70vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 16,
+      }}>
+        <div style={{
+          width: 40,
+          height: 40,
+          borderRadius: '50%',
+          border: '3px solid rgba(99, 102, 241, 0.2)',
+          borderTopColor: '#6366f1',
+          animation: 'spin 0.8s linear infinite',
+        }} />
+        <span style={{ fontSize: 13, color: 'var(--color-text-muted, #94a3b8)', fontWeight: 600 }}>
+          Initializing OddsYra...
+        </span>
+      </div>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return <PublicLandingPage />;
+  }
+
+  return <AuthenticatedHomeSportsDashboard />;
 }

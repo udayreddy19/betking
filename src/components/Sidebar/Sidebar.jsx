@@ -96,7 +96,7 @@ export default function Sidebar() {
       await markRead(notif.id);
     }
     closeSidebar();
-    navigate('/profile?tab=support');
+    navigate('/support');
   };
 
   const firstName = String(user?.displayName || user?.email || 'there').split(/[\s@]/)[0];
@@ -239,8 +239,18 @@ export default function Sidebar() {
                 </button>
               </div>
 
-              <div className="sidebar-section-label">Account</div>
+              <div className="sidebar-section-label">Sports & Betting</div>
               <div className="sidebar-list">
+                <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/sports'); }}>
+                  <HiOutlineTrophy className="sidebar-list-icon" />
+                  <span>Sportsbook</span>
+                  <FiChevronRight className="sidebar-list-arrow" />
+                </button>
+                <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/live-betting'); }}>
+                  <FiZap className="sidebar-list-icon" />
+                  <span>Live Betting</span>
+                  <FiChevronRight className="sidebar-list-arrow" />
+                </button>
                 <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); openMyBets(); }}>
                   <HiOutlineClipboardList className="sidebar-list-icon" />
                   <span>My Bets</span>
@@ -258,7 +268,7 @@ export default function Sidebar() {
                 </button>
                 <button type="button" className="sidebar-list-item" onClick={() => handleFinModal('bonuses')}>
                   <BiGift className="sidebar-list-icon" />
-                  <span>Bonuses</span>
+                  <span>Bonuses & Free Bets</span>
                   <FiChevronRight className="sidebar-list-arrow" />
                 </button>
                 <button
@@ -292,14 +302,19 @@ export default function Sidebar() {
                   <span>Notifications{unreadCount > 0 ? ` (${unreadCount > 99 ? '99+' : unreadCount})` : ''}</span>
                   <FiChevronRight className="sidebar-list-arrow" />
                 </button>
-                <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/profile?tab=support'); }}>
+                <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/support'); }}>
                   <FiHelpCircle className="sidebar-list-icon" />
-                  <span>Support</span>
+                  <span>Support Desk</span>
                   <FiChevronRight className="sidebar-list-arrow" />
                 </button>
                 <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/promotions'); }}>
                   <HiOutlineTrophy className="sidebar-list-icon" />
                   <span>Promotions</span>
+                  <FiChevronRight className="sidebar-list-arrow" />
+                </button>
+                <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/vip'); }}>
+                  <FiShield className="sidebar-list-icon" />
+                  <span>VIP Club</span>
                   <FiChevronRight className="sidebar-list-arrow" />
                 </button>
                 {CASINO_ENABLED && (
@@ -309,11 +324,6 @@ export default function Sidebar() {
                     <FiChevronRight className="sidebar-list-arrow" />
                   </button>
                 )}
-                <button type="button" className="sidebar-list-item" onClick={() => handleFinModal('marketplace')}>
-                  <MdOutlineStorefront className="sidebar-list-icon" />
-                  <span>Marketplace</span>
-                  <FiChevronRight className="sidebar-list-arrow" />
-                </button>
                 {isAdminUser && (
                   <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/admin'); }}>
                     <FiShield className="sidebar-list-icon" />
@@ -342,23 +352,44 @@ export default function Sidebar() {
               <HiOutlineDocumentText />
             </div>
             <h3>Welcome to OddsYra</h3>
-            <p>Log in or create an account to deposit, bet, and track notifications.</p>
+            <p>Log in or create an account to access the live sports platform, real-time fixtures, and discrete rewards.</p>
             <button type="button" className="sidebar-guest-btn primary" onClick={handleLogin}>Log in</button>
             <button type="button" className="sidebar-guest-btn outline" onClick={handleRegister}>Create account</button>
             <div className="sidebar-list sidebar-list--guest">
-              <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/sports'); }}>
+              <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/'); }}>
                 <HiOutlineTrophy className="sidebar-list-icon" />
-                <span>Sports</span>
+                <span>Home</span>
                 <FiChevronRight className="sidebar-list-arrow" />
               </button>
-              <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/live-betting'); }}>
+              <button
+                type="button"
+                className="sidebar-list-item"
+                onClick={() => {
+                  closeSidebar();
+                  if (location.pathname === '/') {
+                    document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
+                  } else {
+                    navigate('/#how-it-works');
+                  }
+                }}
+              >
                 <HiOutlineClipboardList className="sidebar-list-icon" />
-                <span>Live betting</span>
+                <span>How It Works</span>
                 <FiChevronRight className="sidebar-list-arrow" />
               </button>
               <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/help'); }}>
                 <FiHelpCircle className="sidebar-list-icon" />
-                <span>Help center</span>
+                <span>Help & Support</span>
+                <FiChevronRight className="sidebar-list-arrow" />
+              </button>
+              <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/responsible-gaming'); }}>
+                <FiShield className="sidebar-list-icon" />
+                <span>Responsible Gaming</span>
+                <FiChevronRight className="sidebar-list-arrow" />
+              </button>
+              <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/terms'); }}>
+                <HiOutlineDocumentText className="sidebar-list-icon" />
+                <span>Terms of Service</span>
                 <FiChevronRight className="sidebar-list-arrow" />
               </button>
             </div>

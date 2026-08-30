@@ -26,22 +26,29 @@ import './Header.css';
 
 const BALANCE_VISIBLE_KEY = 'oddsyra_balance_visible';
 
-const navLinks = withoutCasinoLinks([
-  { to: '/live-betting', label: 'Live Betting' },
+const publicNavLinks = [
+  { to: '/', label: 'Home' },
+  { to: '/#how-it-works', label: 'How It Works' },
+  { to: '/help', label: 'Support' },
+];
+
+const authenticatedNavLinks = withoutCasinoLinks([
   { to: '/sports', label: 'Sports' },
-  { to: '/casino', label: 'Casino' },
-  { to: '/live-casino', label: 'Live Casino' },
-  { to: '/fantasy', label: 'Fantasy' },
-  { to: '/promotions', label: 'Win Free' },
+  { to: '/live-betting', label: 'Live' },
+  { to: '/sports?tab=rosters', label: 'Roster' },
+  { to: '/wallet', label: 'Wallet' },
+  { to: '/rewards', label: 'Rewards' },
+  { to: '/support', label: 'Support' },
+  { to: '/profile', label: 'Profile' },
 ]);
 
 const moreLinks = withoutCasinoLinks([
   { to: '/profile', label: 'My Profile' },
-  { to: '/profile?tab=support', label: 'Support tickets' },
+  { to: '/support', label: 'Support Desk' },
   { to: '/admin', label: '🛡️ Admin Portal' },
   { to: '/help', label: 'Help Center' },
   { to: '/promotions', label: 'Promotions' },
-  { to: '/casino', label: 'Casino' },
+  { to: '/vip', label: 'VIP Club' },
   { to: '/responsible-gaming', label: 'Responsible Gaming' },
 ]);
 
@@ -147,53 +154,74 @@ function Header() {
     return () => document.removeEventListener('pointerdown', close);
   }, [isNotifOpen]);
 
-  useEffect(() => {
-    const openSpin = () => setIsSpinOpen(true);
-    window.addEventListener('oddsyra:open-daily-spin', openSpin);
-    return () => window.removeEventListener('oddsyra:open-daily-spin', openSpin);
-  }, []);
+  const closeHeaderOverlays = useCallback(() => {
+    setIsPromosOpen(false);
+    setIsSpinOpen(false);
+    setIsMoreOpen(false);
+    setIsWalletOpen(false);
+    setIsNotifOpen(false);
+    closeMyBets();
+  }, [closeMyBets]);
 
   const togglePromos = useCallback(() => {
-    setIsPromosOpen((open) => {
-      if (!open) closeMyBets();
-      return !open;
+    setIsPromosOpen((prev) => {
+      const next = !prev;
+      if (next) {
+        setIsSpinOpen(false);
+        setIsMoreOpen(false);
+        setIsWalletOpen(false);
+        setIsNotifOpen(false);
+        closeMyBets();
+      }
+      return next;
     });
   }, [closeMyBets]);
 
-  const closePromos = useCallback(() => setIsPromosOpen(false), []);
-
-  const closeHeaderOverlays = useCallback(() => {
-    closePromos();
-    closeMyBets();
-    setIsNotifOpen(false);
-    setIsWalletOpen(false);
-    setIsMoreOpen(false);
-    setIsSpinOpen(false);
-  }, [closePromos, closeMyBets]);
+  const closePromos = useCallback(() => {
+    setIsPromosOpen(false);
+  }, []);
 
   const handleMyBetsToggle = useCallback(() => {
-    closePromos();
+    setIsPromosOpen(false);
+    setIsSpinOpen(false);
+    setIsMoreOpen(false);
+    setIsWalletOpen(false);
     setIsNotifOpen(false);
     toggleMyBets();
-  }, [closePromos, toggleMyBets]);
+  }, [toggleMyBets]);
 
   const handleNotifToggle = useCallback(() => {
-    closePromos();
-    closeMyBets();
-    setIsNotifOpen((open) => !open);
-  }, [closePromos, closeMyBets]);
+    setIsNotifOpen((prev) => {
+      const next = !prev;
+      if (next) {
+        setIsPromosOpen(false);
+        setIsSpinOpen(false);
+        setIsMoreOpen(false);
+        setIsWalletOpen(false);
+        closeMyBets();
+      }
+      return next;
+    });
+  }, [closeMyBets]);
 
-  const handleOpenNotification = useCallback(async (notif) => {
-    if (notif?.id && !notif.is_read) {
-      await markRead(notif.id);
-    }
+  const handleOpenNotification = useCallback((notif) => {
+    markRead(notif.id);
     setIsNotifOpen(false);
-    closeHeaderOverlays();
-    navigate('/profile?tab=support');
-  }, [navigate, closeHeaderOverlays, markRead]);
+    const link = notif.action_url || notif.link || notif.data?.link;
+    if (link && typeof link === 'string') {
+      if (link.startsWith('http')) {
+        window.open(link, '_blank', 'noopener,noreferrer');
+      } else {
+        navigate(link);
+      }
+    }
+  }, [markRead, navigate]);
 
-  const handleRedeemLoyalty = useCallback((pts) => {
-    redeemLoyaltyPoints(pts);
+  const handleRedeemLoyalty = useCallback(async (pts) => {
+    const res = await redeemLoyaltyPoints(pts);
+    if (res?.success) {
+      setIsWalletOpen(false);
+    }
   }, [redeemLoyaltyPoints]);
 
   useEffect(() => {
@@ -216,6 +244,8 @@ function Header() {
 
   const showOperatorChrome = isDevRoute && hasAdminSession && !isLoggedIn;
 
+  const activeNavLinks = isLoggedIn ? authenticatedNavLinks : publicNavLinks;
+
   return (
     <header className="header" id="main-header">
       <div className="header-inner">
@@ -231,48 +261,71 @@ function Header() {
           </NavLink>
 
           <nav className="header-nav" id="main-nav">
-            {navLinks.map(link => (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                className={({ isActive }) => `header-nav-link ${isActive ? 'active' : ''}`}
-                id={`nav-${link.to.slice(1)}`}
-              >
-                {link.label}
-              </NavLink>
-            ))}
-            <div className="header-more" ref={moreRef}>
-              <button
-                type="button"
-                className={`header-nav-link header-more-btn ${isMoreOpen ? 'active' : ''}`}
-                onClick={() => setIsMoreOpen((o) => !o)}
-                aria-expanded={isMoreOpen}
-              >
-                More <FiChevronDown className="header-more-chevron" />
-              </button>
-              <AnimatePresence>
-                {isMoreOpen && (
-                  <motion.div
-                    className="header-more-menu"
-                    initial={{ opacity: 0, y: -6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -4 }}
-                    transition={{ duration: 0.18, ease: 'easeOut' }}
+            {activeNavLinks.map((link) => {
+              if (link.to.includes('#')) {
+                return (
+                  <a
+                    key={link.to}
+                    href={link.to}
+                    className="header-nav-link"
+                    onClick={(e) => {
+                      if (location.pathname === '/') {
+                        e.preventDefault();
+                        const targetId = link.to.split('#')[1];
+                        document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth' });
+                      }
+                    }}
                   >
-                    {activeMoreLinks.map((link) => (
-                      <button
-                        key={link.to}
-                        type="button"
-                        className="header-more-item"
-                        onClick={() => { navigate(link.to); setIsMoreOpen(false); }}
-                      >
-                        {link.label}
-                      </button>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                    {link.label}
+                  </a>
+                );
+              }
+              return (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  className={({ isActive }) => `header-nav-link ${isActive ? 'active' : ''}`}
+                  id={`nav-${link.to.replace(/[^a-zA-Z0-9]/g, '')}`}
+                >
+                  {link.label}
+                </NavLink>
+              );
+            })}
+
+            {isLoggedIn && (
+              <div className="header-more" ref={moreRef}>
+                <button
+                  type="button"
+                  className={`header-nav-link header-more-btn ${isMoreOpen ? 'active' : ''}`}
+                  onClick={() => setIsMoreOpen((o) => !o)}
+                  aria-expanded={isMoreOpen}
+                >
+                  More <FiChevronDown className="header-more-chevron" />
+                </button>
+                <AnimatePresence>
+                  {isMoreOpen && (
+                    <motion.div
+                      className="header-more-menu"
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.18, ease: 'easeOut' }}
+                    >
+                      {activeMoreLinks.map((link) => (
+                        <button
+                          key={link.to}
+                          type="button"
+                          className="header-more-item"
+                          onClick={() => { navigate(link.to); setIsMoreOpen(false); }}
+                        >
+                          {link.label}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
           </nav>
         </div>
 
@@ -356,7 +409,7 @@ function Header() {
                             type="button"
                             onClick={() => {
                               setIsNotifOpen(false);
-                              navigate('/profile?tab=support');
+                              navigate('/support');
                             }}
                           >
                             Support
@@ -508,148 +561,155 @@ function Header() {
                         exit={{ opacity: 0, y: -4 }}
                         transition={{ duration: 0.18, ease: 'easeOut' }}
                       >
-                      <div className={`header-wallet-menu__loyalty${loyalty.canRedeem ? '' : ' header-wallet-menu__loyalty--compact'}`}>
-                        {loyalty.canRedeem ? (
-                          <>
-                            <div className="header-wallet-menu__loyalty-head">
-                              <span className={`header-wallet-menu__loyalty-tier header-wallet-menu__loyalty-tier--${String(loyalty.tier || 'BRONZE').toLowerCase()}`}>
-                                {loyalty.tierLabel || 'Standard'}
-                              </span>
-                            </div>
-                            <p className="header-wallet-menu__loyalty-hint">
-                              {loyalty.points} pts · {loyalty.pointsPer100} / ₹100
-                              {loyalty.nextLabel
-                                ? ` · ${Number(loyalty.pointsToNext || 0).toLocaleString('en-IN')} to ${loyalty.nextLabel}`
-                                : ''}
-                            </p>
-                            <div className="loyalty-slider-section">
-                              <div className="loyalty-slider-header">
-                                <span className="loyalty-slider-label">Redeem</span>
-                                <span className="loyalty-slider-value">
-                                  <strong>{sliderPoints} pts</strong>
-                                  <span className="loyalty-slider-rupees">₹{(sliderPoints / 5).toFixed(2)}</span>
+                        <div className={`header-wallet-menu__loyalty${loyalty.canRedeem ? '' : ' header-wallet-menu__loyalty--compact'}`}>
+                          {loyalty.canRedeem ? (
+                            <>
+                              <div className="header-wallet-menu__loyalty-head">
+                                <span className={`header-wallet-menu__loyalty-tier header-wallet-menu__loyalty-tier--${String(loyalty.tier || 'BRONZE').toLowerCase()}`}>
+                                  {loyalty.tierLabel || 'Standard'}
                                 </span>
                               </div>
+                              <p className="header-wallet-menu__loyalty-hint">
+                                {loyalty.points} pts · {loyalty.pointsPer100} / ₹100
+                                {loyalty.nextLabel
+                                  ? ` · ${Number(loyalty.pointsToNext || 0).toLocaleString('en-IN')} to ${loyalty.nextLabel}`
+                                  : ''}
+                              </p>
+                              <div className="loyalty-slider-section">
+                                <div className="loyalty-slider-header">
+                                  <span className="loyalty-slider-label">Redeem</span>
+                                  <span className="loyalty-slider-value">
+                                    <strong>{sliderPoints} pts</strong>
+                                    <span className="loyalty-slider-rupees">₹{(sliderPoints / 5).toFixed(2)}</span>
+                                  </span>
+                                </div>
 
-                              <input
-                                type="range"
-                                min={loyaltySliderMin}
-                                max={loyalty.points}
-                                step={5}
-                                value={sliderPoints}
-                                onChange={(e) => setSliderPoints(Number(e.target.value))}
-                                className="loyalty-range-input"
-                                id="loyalty-points-slider"
-                                style={{ '--loyalty-pct': loyaltySliderPct }}
-                              />
+                                <input
+                                  type="range"
+                                  min={loyaltySliderMin}
+                                  max={loyalty.points}
+                                  step={5}
+                                  value={sliderPoints}
+                                  onChange={(e) => setSliderPoints(Number(e.target.value))}
+                                  className="loyalty-range-input"
+                                  id="loyalty-points-slider"
+                                  style={{ '--loyalty-pct': loyaltySliderPct }}
+                                />
 
-                              <div className="loyalty-slider-presets">
-                                {[0.25, 0.5, 0.75, 1].map((pct) => {
-                                  const rawPts = Math.floor((loyalty.points * pct) / 5) * 5;
-                                  const targetPts = Math.max(LOYALTY_MIN_REDEEM_POINTS, rawPts);
-                                  // Don't mark 25%/50% active when they only equal the min after clamping
-                                  const isExactPct = pct === 1 || rawPts >= LOYALTY_MIN_REDEEM_POINTS;
-                                  const isActive = sliderPoints === targetPts && isExactPct;
-                                  return (
-                                    <button
-                                      key={pct}
-                                      type="button"
-                                      className={`loyalty-preset-chip ${isActive ? 'active' : ''}`}
-                                      onClick={() => setSliderPoints(targetPts)}
-                                    >
-                                      {pct === 1 ? 'Max' : `${pct * 100}%`}
-                                    </button>
-                                  );
-                                })}
+                                <div className="loyalty-slider-presets">
+                                  {[0.25, 0.5, 0.75, 1].map((pct) => {
+                                    const rawPts = Math.floor((loyalty.points * pct) / 5) * 5;
+                                    const targetPts = Math.max(LOYALTY_MIN_REDEEM_POINTS, rawPts);
+                                    const isExactPct = pct === 1 || rawPts >= LOYALTY_MIN_REDEEM_POINTS;
+                                    const isActive = sliderPoints === targetPts && isExactPct;
+                                    return (
+                                      <button
+                                        key={pct}
+                                        type="button"
+                                        className={`loyalty-preset-chip ${isActive ? 'active' : ''}`}
+                                        onClick={() => setSliderPoints(targetPts)}
+                                      >
+                                        {pct === 1 ? 'Max' : `${pct * 100}%`}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+
+                                <button
+                                  type="button"
+                                  className="header-wallet-menu__redeem header-wallet-menu__redeem--slider"
+                                  onClick={() => handleRedeemLoyalty(sliderPoints)}
+                                >
+                                  Redeem {sliderPoints} pts
+                                </button>
                               </div>
-
-                              <button
-                                type="button"
-                                className="header-wallet-menu__redeem header-wallet-menu__redeem--slider"
-                                onClick={() => handleRedeemLoyalty(sliderPoints)}
-                              >
-                                Redeem {sliderPoints} pts
-                              </button>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="header-wallet-menu__loyalty-compact-row">
-                            <span className="header-wallet-menu__loyalty-compact-label">
-                              <span className={`header-wallet-menu__loyalty-tier header-wallet-menu__loyalty-tier--${String(loyalty.tier || 'BRONZE').toLowerCase()}`}>
-                                {loyalty.tierLabel || 'Standard'}
+                            </>
+                          ) : (
+                            <div className="header-wallet-menu__loyalty-compact-row">
+                              <span className="header-wallet-menu__loyalty-compact-label">
+                                <span className={`header-wallet-menu__loyalty-tier header-wallet-menu__loyalty-tier--${String(loyalty.tier || 'BRONZE').toLowerCase()}`}>
+                                  {loyalty.tierLabel || 'Standard'}
+                                </span>
                               </span>
-                            </span>
-                            <span className="header-wallet-menu__loyalty-compact-meta">
-                              {loyalty.points} pts · {loyalty.pointsToUnlock} more to redeem
+                              <span className="header-wallet-menu__loyalty-compact-meta">
+                                {loyalty.points} pts · {loyalty.pointsToUnlock} more to redeem
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="header-wallet-menu__hero">
+                          <span className="header-wallet-menu__hero-label">Total balance</span>
+                          <span className="header-wallet-menu__hero-amount">
+                            {balanceVisible ? formatInr(wallet.total) : '₹ ✦✦✦'}
+                          </span>
+                          <div className="header-wallet-menu__hero-chips">
+                            {walletBreakdownLines.map((line) => (
+                              <span
+                                key={line.key}
+                                className={`header-wallet-menu__chip header-wallet-menu__chip--${line.tone}`}
+                              >
+                                {line.label} {balanceVisible ? formatInr(line.value) : '✦✦✦'}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="header-wallet-menu__withdraw-card">
+                          <div className="header-wallet-menu__withdraw-head">
+                            <span className="header-wallet-menu__withdraw-label">Withdrawable</span>
+                            <span className="header-wallet-menu__withdraw-amount">
+                              {balanceVisible ? formatInr(wallet.withdrawable) : '₹ ✦✦✦'}
                             </span>
                           </div>
-                        )}
-                      </div>
-
-                      <div className="header-wallet-menu__hero">
-                        <span className="header-wallet-menu__hero-label">Total balance</span>
-                        <span className="header-wallet-menu__hero-amount">
-                          {balanceVisible ? formatInr(wallet.total) : '₹ ✦✦✦'}
-                        </span>
-                        <div className="header-wallet-menu__hero-chips">
-                          {walletBreakdownLines.map((line) => (
-                            <span
-                              key={line.key}
-                              className={`header-wallet-menu__chip header-wallet-menu__chip--${line.tone}`}
-                            >
-                              {line.label} {balanceVisible ? formatInr(line.value) : '✦✦✦'}
-                            </span>
-                          ))}
+                          <p className="header-wallet-menu__withdraw-note">{withdrawableHint}</p>
                         </div>
-                      </div>
 
-                      <div className="header-wallet-menu__withdraw-card">
-                        <div className="header-wallet-menu__withdraw-head">
-                          <span className="header-wallet-menu__withdraw-label">Withdrawable</span>
-                          <span className="header-wallet-menu__withdraw-amount">
-                            {balanceVisible ? formatInr(wallet.withdrawable) : '₹ ✦✦✦'}
-                          </span>
+                        <div className="header-wallet-menu__actions">
+                          <button
+                            type="button"
+                            className="header-wallet-menu__deposit"
+                            onClick={() => {
+                              setIsWalletOpen(false);
+                              openDepositModal();
+                            }}
+                          >
+                            Deposit
+                          </button>
+                          <button
+                            type="button"
+                            className="header-wallet-menu__withdraw"
+                            onClick={() => {
+                              setIsWalletOpen(false);
+                              openFinModal('withdraw');
+                            }}
+                          >
+                            Withdraw
+                          </button>
+                          <button
+                            type="button"
+                            className="header-wallet-menu__profile"
+                            onClick={() => {
+                              setIsWalletOpen(false);
+                              navigate('/profile');
+                            }}
+                          >
+                            My Profile
+                          </button>
                         </div>
-                        <p className="header-wallet-menu__withdraw-note">{withdrawableHint}</p>
-                      </div>
-
-                      <div className="header-wallet-menu__actions">
-                        <button
-                          type="button"
-                          className="header-wallet-menu__deposit"
-                          onClick={() => {
-                            setIsWalletOpen(false);
-                            openDepositModal();
-                          }}
-                        >
-                          Deposit
-                        </button>
-                        <button
-                          type="button"
-                          className="header-wallet-menu__withdraw"
-                          onClick={() => {
-                            setIsWalletOpen(false);
-                            openFinModal('withdraw');
-                          }}
-                        >
-                          Withdraw
-                        </button>
-                        <button
-                          type="button"
-                          className="header-wallet-menu__profile"
-                          onClick={() => {
-                            setIsWalletOpen(false);
-                            navigate('/profile');
-                          }}
-                        >
-                          My Profile
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
+              <button
+                type="button"
+                className="header-deposit-btn"
+                onClick={openDepositModal}
+                id="deposit-btn"
+              >
+                Deposit
+              </button>
             </>
           ) : showOperatorChrome ? (
             <button
@@ -666,8 +726,8 @@ function Header() {
               </button>
               {!isRegisterPage && (
                 <button className="header-join-btn" onClick={() => navigate('/register')} id="join-btn">
-                  <span className="header-join-label-full">Join now</span>
-                  <span className="header-join-label-short">Join</span>
+                  <span className="header-join-label-full">Sign Up</span>
+                  <span className="header-join-label-short">Sign Up</span>
                 </button>
               )}
             </div>

@@ -13,6 +13,7 @@ import { subscribeLiveChannel, isLiveFeedSocketOpen } from '../services/liveFeed
 import { LIVE_SCORES_POLL_MS, LIVE_SCORES_WS_FALLBACK_POLL_MS } from '../config/livePolling';
 import { getIplSrlMatches } from '../../lib/iplSrlSimulator.mjs';
 import { cricketScoreWeight, cricketSourceRank, getCanonicalMatchPairKey } from '../../lib/matchPairKey.mjs';
+import { useAuth } from './AuthContext';
 
 const LiveMatchesContext = createContext([]);
 const LiveSportsMetaContext = createContext(null);
@@ -76,7 +77,6 @@ function mergeSrlMatches(matches) {
   const pushUnique = (match, { allowSrl = false } = {}) => {
     if (!match?.id || seenIds.has(match.id)) return;
     const pairKey = getCanonicalMatchPairKey(match);
-    // Force SRL sims into their own bucket even when team names collide with real fixtures
     const keyed = allowSrl || isSrlMatch(match)
       ? `srl|${pairKey}`
       : pairKey;
@@ -98,72 +98,49 @@ function mergeSrlMatches(matches) {
 
   for (const match of apiMatches) pushUnique(match, { allowSrl: false });
   for (const match of srl) pushUnique(match, { allowSrl: true });
-
   return result;
 }
 
-function playerSlot(player) {
-  if (!player) return null;
-  const name = typeof player === 'string' ? player : player.name;
-  if (!name) return null;
-  return player;
-}
-
-function mergeLiveDetailsPreservePlayers(prevLd = {}, nextLd = {}) {
-  const merged = { ...prevLd, ...nextLd };
-  for (const key of ['batter1', 'batter2', 'bowler']) {
-    merged[key] = playerSlot(nextLd[key]) || playerSlot(prevLd[key]) || nextLd[key] || prevLd[key];
-  }
-  if (!merged.currentOverBalls?.length && prevLd.currentOverBalls?.length) {
-    merged.currentOverBalls = prevLd.currentOverBalls;
-  }
-  return merged;
-}
-
-function matchDisplayKey(match) {
-  const ld = match.liveDetails || {};
-  const b1 = ld.batter1 || {};
-  const b2 = ld.batter2 || {};
-  const bowl = ld.bowler || {};
+function matchDisplayKey(m) {
   return [
-    match.id,
-    match.matchState,
-    match.isLive,
-    match.time,
-    match.odds?.team1,
-    match.odds?.team2,
-    match.odds?.draw,
-    ld.runs,
-    ld.wickets,
-    ld.overs,
-    ld.score1,
-    ld.score2,
-    ld.wickets2,
-    ld.overs2,
-    ld.firstRuns,
-    ld.chaseRuns,
-    ld.firstWickets,
-    ld.chaseWickets,
-    ld.chaseBallNbr,
-    ld.requiredRunRate,
-    ld.remainingBalls,
-    b1.name,
-    b1.runs,
-    b1.balls,
-    b2.name,
-    b2.runs,
-    b2.balls,
-    bowl.name,
-    bowl.wickets,
-    bowl.runs,
-    bowl.overs,
-    (ld.currentOverBalls || []).join(','),
-    ld.commentary,
-  ].join(':');
+    m.id,
+    m.score,
+    m.time,
+    m.liveDetails?.summary,
+    m.liveDetails?.cricket?.score,
+    m.liveDetails?.cricket?.overs,
+    m.liveDetails?.cricket?.batsman1?.name,
+    m.liveDetails?.cricket?.bowler?.name,
+    m.liveDetails?.cricket?.lastBallResult,
+    m.liveDetails?.eventState,
+    m.scorecardInnings?.length || 0,
+    m.squads?.length || 0,
+    m.odds?.team1,
+    m.odds?.team2,
+  ].join('|');
 }
 
-function summarizeMatches(matches) {
-  return matches.map(matchDisplayKey).join('|');
+function summarizeMatches(list) {
+  return list.map(matchDisplayKey).join('##');
+}
+
+function mergeLiveDetailsPreservePlayers(prev = {}, next = {}) {
+  const cPrev = prev.cricket || {};
+  const cNext = next.cricket || {};
+  const mergedCricket = {
+    ...cPrev,
+    ...cNext,
+    batsman1: cNext.batsman1?.name ? cNext.batsman1 : cPrev.batsman1,
+    batsman2: cNext.batsman2?.name ? cNext.batsman2 : cPrev.batsman2,
+    bowler: cNext.bowler?.name ? cNext.bowler : cPrev.bowler,
+    innings: cNext.innings?.length ? cNext.innings : cPrev.innings,
+    recentOvers: cNext.recentOvers?.length ? cNext.recentOvers : cPrev.recentOvers,
+  };
+  return {
+    ...prev,
+    ...next,
+    cricket: mergedCricket,
+  };
 }
 
 function mergeMatchesStable(prev, next) {
@@ -208,8 +185,6 @@ function mergeMatchesStable(prev, next) {
     merged.push(chosen);
   }
 
-  // Retain active matches from prev if omitted in next during transient provider delay,
-  // but never keep a second copy of the same fixture (pair key).
   for (const previous of prev) {
     if (processedIds.has(previous.id)) continue;
     const pairKey = getCanonicalMatchPairKey(previous);
@@ -232,12 +207,12 @@ function seriesSignature(series) {
 }
 
 export function LiveSportsProvider({ children }) {
-  const [matches, setMatches] = useState(() => mergeSrlMatches([]));
+  const { isLoggedIn, authStatus } = useAuth();
+  const [matches, setMatches] = useState([]);
   const [cricketSeries, setCricketSeries] = useState([]);
   const [tickerMessage, setTickerMessage] = useState('🟢 Syncing live scores...');
   const [scoresError, setScoresError] = useState(null);
-  const [isScoresLoading, setIsScoresLoading] = useState(true);
-  const oddsCacheRef = useRef(new Map());
+  const [isScoresLoading, setIsScoresLoading] = useState(false);
   const matchesSummaryRef = useRef('');
   const seriesSummaryRef = useRef('');
   const hasLoadedRef = useRef(false);
@@ -339,7 +314,16 @@ export function LiveSportsProvider({ children }) {
     }
   }, [applyScoresPayload]);
 
+  // Auth-gated live subscription and polling: ONLY runs when user is authenticated
   useEffect(() => {
+    if (!isLoggedIn || authStatus !== 'authenticated') {
+      setMatches([]);
+      setCricketSeries([]);
+      setIsScoresLoading(false);
+      hasLoadedRef.current = false;
+      return undefined;
+    }
+
     mountedRef.current = true;
     let intervalId = null;
     let cancelled = false;
@@ -374,14 +358,16 @@ export function LiveSportsProvider({ children }) {
 
     return () => {
       cancelled = true;
-      mountedRef.current = false;
       unsubScores();
       if (intervalId) clearTimeout(intervalId);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [refreshScores, applyScoresPayload]);
+  }, [isLoggedIn, authStatus, refreshScores, applyScoresPayload]);
 
+  // SRL simulation tick — ONLY when authenticated
   useEffect(() => {
+    if (!isLoggedIn || authStatus !== 'authenticated') return undefined;
+
     const tickSrl = () => {
       if (document.hidden) return;
       setMatches((prev) => {
@@ -395,7 +381,7 @@ export function LiveSportsProvider({ children }) {
 
     const srlInterval = setInterval(tickSrl, 2000);
     return () => clearInterval(srlInterval);
-  }, []);
+  }, [isLoggedIn, authStatus]);
 
   const metaValue = useMemo(() => ({
     cricketSeries,
