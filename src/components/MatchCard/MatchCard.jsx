@@ -111,12 +111,10 @@ export default function MatchCard({ match, variant = 'default' }) {
     const showCricketScores = isFinished || (isLiveNow && hasCricketPlayStarted(displayMatch));
     if (showCricketScores) {
       const scores = resolveCricketTeamScores(displayMatch, ld);
-      const hasT1 = (scores.team1.innings && scores.team1.innings.length > 0) || scores.team1.runs > 0 || scores.team1.wickets > 0 || scores.team1.balls > 0;
-      const hasT2 = (scores.team2.innings && scores.team2.innings.length > 0) || scores.team2.runs > 0 || scores.team2.wickets > 0 || scores.team2.balls > 0;
-      if (hasT1) team1Score = scores.team1.displayScore || `${scores.team1.runs}/${scores.team1.wickets}`;
-      if (hasT2) team2Score = scores.team2.displayScore || `${scores.team2.runs}/${scores.team2.wickets}`;
+      if (scores.team1.hasBatted) team1Score = scores.team1.displayScore;
+      if (scores.team2.hasBatted) team2Score = scores.team2.displayScore;
     }
-    inlineScore = team1Score && team2Score ? `${team1Score} vs ${team2Score}` : team1Score;
+    inlineScore = team1Score && team2Score ? `${team1Score} vs ${team2Score}` : (team1Score || team2Score);
   } else if (match.sport === 'soccer' || match.sport === 'esoccer') {
     if (Number.isFinite(ld.score1)) {
       team1Score = String(ld.score1);

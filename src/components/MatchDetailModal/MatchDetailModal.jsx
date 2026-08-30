@@ -205,9 +205,9 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
                   {isLiveNow && match.liveDetails && (
                     <div className="scoreboard-score">
                       {sport === 'cricket' && (
-                        team1Score.displayScore
+                        team1Score.hasBatted
                           ? `${team1Score.displayScore} (${team1Score.overs} ov)`
-                          : `${team1Score.runs}/${team1Score.wickets} (${team1Score.overs} ov)`
+                          : '—'
                       )}
                       {sport === 'soccer' && (match.liveDetails.score1 ?? 2)}
                       {sport === 'basketball' && (match.liveDetails.score1 ?? 94)}
@@ -245,9 +245,9 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
                   {isLiveNow && match.liveDetails && (
                     <div className="scoreboard-score">
                       {sport === 'cricket' && (
-                        team2Score.displayScore
+                        team2Score.hasBatted
                           ? `${team2Score.displayScore} (${team2Score.overs} ov)`
-                          : `${team2Score.runs}/${team2Score.wickets} (${team2Score.overs} ov)`
+                          : '—'
                       )}
                       {sport === 'soccer' && (match.liveDetails.score2 ?? 1)}
                       {sport === 'basketball' && (match.liveDetails.score2 ?? 88)}
@@ -264,6 +264,55 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
         {/* 10CRIC Live Cricket Scorecard & Match Center Bar */}
         {sport === 'cricket' && isLiveNow && (
           <div className="cricket-live-center">
+            {/* Test Match Multi-Innings Breakdown Card */}
+            {isTest && (team1Score.innings?.length > 0 || team2Score.innings?.length > 0) && (
+              <div className="cricket-test-innings-breakdown" style={{
+                background: 'rgba(15, 23, 42, 0.6)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '12px',
+                padding: '12px 16px',
+                marginBottom: '14px'
+              }}>
+                <div style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.05em' }}>
+                  📊 Test Match Innings Scorecard
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div>
+                    <div style={{ color: '#f8fafc', fontSize: '13px', fontWeight: 700 }}>{team1Name}</div>
+                    {team1Score.innings?.length > 0 ? (
+                      <div style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        {team1Score.innings.map((inn, idx) => (
+                          <div key={inn.inningsId || idx} style={{ fontSize: '12px', color: '#cbd5e1' }}>
+                            <span style={{ color: '#94a3b8' }}>{idx === 0 ? '1st Inns:' : '2nd Inns:'}</span>{' '}
+                            <strong>{inn.runs}/{inn.wickets}{inn.declared ? 'd' : ''}</strong>{' '}
+                            <span style={{ fontSize: '11px', color: '#64748b' }}>({inn.overs} ov)</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>Yet to bat</div>
+                    )}
+                  </div>
+                  <div>
+                    <div style={{ color: '#f8fafc', fontSize: '13px', fontWeight: 700 }}>{team2Name}</div>
+                    {team2Score.innings?.length > 0 ? (
+                      <div style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        {team2Score.innings.map((inn, idx) => (
+                          <div key={inn.inningsId || idx} style={{ fontSize: '12px', color: '#cbd5e1' }}>
+                            <span style={{ color: '#94a3b8' }}>{idx === 0 ? '1st Inns:' : '2nd Inns:'}</span>{' '}
+                            <strong>{inn.runs}/{inn.wickets}{inn.declared ? 'd' : ''}</strong>{' '}
+                            <span style={{ fontSize: '11px', color: '#64748b' }}>({inn.overs} ov)</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>Yet to bat</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="cricket-chase-pill">
               {chaseText
                 ? `⚡ ${chaseText}`

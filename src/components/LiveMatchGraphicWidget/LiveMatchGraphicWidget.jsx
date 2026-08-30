@@ -50,22 +50,12 @@ function getTeamShort(name, existingShort = '') {
 
 function getInningsInfo(match, team1, team2, resolved) {
   const ld = match?.liveDetails || {};
-  const isTest = ld.testInnings?.length > 0 || /test/i.test(ld.matchFormat || match?.matchFormat || '');
-  const team1Score = resolved.team1;
-  const team2Score = resolved.team2;
+  const currentInn = resolved?.currentInnings;
+  const team1Score = resolved?.team1 || { runs: 0, wickets: 0, overs: '0.0' };
+  const team2Score = resolved?.team2 || { runs: 0, wickets: 0, overs: '0.0' };
 
-  if (isTest) {
-    const currentInnId = ld.inningsId ?? (ld.testInnings?.length ? ld.testInnings[ld.testInnings.length - 1].inningsId : 1);
-    const activeTestInn = (ld.testInnings || []).find((t) => t.inningsId === currentInnId) || (ld.testInnings || [])[(ld.testInnings || []).length - 1];
-    let battingTeam = team1;
-    if (activeTestInn?.batTeam) {
-      battingTeam = teamNameMatches(team2, activeTestInn.batTeam) ? team2 : team1;
-    } else if (currentInnId % 2 === 0) {
-      battingTeam = (ld.firstTeamName && teamNameMatches(team1, ld.firstTeamName)) ? team2 : team1;
-    } else {
-      battingTeam = (ld.firstTeamName && teamNameMatches(team2, ld.firstTeamName)) ? team2 : team1;
-    }
-
+  if (currentInn) {
+    const battingTeam = currentInn.batTeam || team1;
     const battingScore = battingTeam === team1 ? team1Score : team2Score;
     const s1 = team1Score.runs ?? 0;
     const w1 = team1Score.wickets ?? 0;
@@ -73,18 +63,15 @@ function getInningsInfo(match, team1, team2, resolved) {
     const w2 = team2Score.wickets ?? 0;
 
     return {
-      inningsNum: currentInnId,
+      inningsNum: currentInn.number || 1,
       battingTeam,
-      battingShort: getTeamShort(battingTeam),
+      battingShort: currentInn.batTeamShort || getTeamShort(battingTeam),
       displayScore1: s1,
       displayWickets1: w1,
       displayScore2: s2,
       displayWickets2: w2,
-      displayOvers: activeTestInn?.overs
-        || (!isEmptyOversValue(battingScore.overs) ? battingScore.overs : null)
-        || (currentInnId % 2 === 0 ? ld.chaseOvers || ld.overs2 : ld.firstOvers || ld.overs)
-        || '0.0',
-      defaultInnings: `${getTeamDisplayName(battingTeam)} ${currentInnId > 2 ? '2ND' : '1ST'} INNS`,
+      displayOvers: currentInn.overs || battingScore.overs || '0.0',
+      defaultInnings: `${currentInn.batTeamShort || getTeamDisplayName(battingTeam)} ${currentInn.inningsNum > 1 ? '2ND' : '1ST'} INNS`,
     };
   }
 

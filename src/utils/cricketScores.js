@@ -1,6 +1,15 @@
 import { normalizeCricbuzzOvers, oversToBalls } from './oversUtils.js';
 import { normalizeMatchOvers, oversToBallsForMatch } from './cricketFormat.js';
-import { normalizeMatch } from './cricketMatchNormalizer.js';
+import {
+  normalizeMatch,
+  normalizeMatchScore,
+  matchesTeamIdentifier,
+  normalizeToken,
+  CRICKET_FORMATS,
+  detectCanonicalFormat,
+} from './cricketMatchNormalizer.js';
+
+export { normalizeMatch, normalizeMatchScore };
 
 /** Wickets in a single innings cannot exceed 10 (except test multi-day formats). */
 export function clampInningsWickets(wickets, match) {
@@ -27,38 +36,8 @@ function scoreEntry(token, runs, wickets, overs, match) {
   };
 }
 
-function normalizeTeamToken(name = '') {
-  return String(name)
-    .toLowerCase()
-    .replace(/\(women\)|\bwomen\b|\bw\b$/gi, 'w')
-    .replace(/\(men\)|\bmen\b/gi, 'm')
-    .replace(/[^a-z0-9]/g, '');
-}
-
-function teamInitials(name = '') {
-  return String(name)
-    .replace(/[()]/g, ' ')
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((word) => word[0])
-    .join('')
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, '');
-}
-
-export function teamNameMatches(teamName, token) {
-  if (!teamName || !token) return false;
-  const team = normalizeTeamToken(teamName);
-  const hint = normalizeTeamToken(token);
-  if (!team || !hint) return false;
-  if (team === hint) return true;
-  if (team.includes(hint) || hint.includes(team)) return true;
-  const initials = teamInitials(teamName);
-  const hintInitials = teamInitials(token);
-  if (initials && (initials === hint || hint === initials || initials === hintInitials)) return true;
-  const team5 = team.slice(0, 5);
-  const hint5 = hint.slice(0, 5);
-  return team5.length >= 3 && hint5.length >= 3 && (team.startsWith(hint5) || hint.startsWith(team5));
+export function teamNameMatches(teamName, token, teamId = null, candidateId = null) {
+  return matchesTeamIdentifier(teamName, token, '', candidateId, teamId);
 }
 
 export function pickPositiveScore(primary, fallback, lastResort = 0) {
@@ -69,10 +48,6 @@ export function pickPositiveScore(primary, fallback, lastResort = 0) {
   if (p != null && Number.isFinite(p)) return p;
   if (f != null && Number.isFinite(f)) return f;
   return lastResort;
-}
-
-function pickEntryForTeam(entries, teamName) {
-  return entries.find((entry) => entry.token && teamNameMatches(teamName, entry.token)) || null;
 }
 
 /** Feed copied the batting score onto both teams (often still labelled innings 2). */
@@ -112,142 +87,58 @@ export function looksLikeMirroredFirstInnings(match, ld = {}) {
 }
 
 /**
- * Map liveDetails fields onto team1/team2 regardless of chase/first naming.
+ * Authoritative score resolver using the canonical normalizer.
+ * Maps liveDetails fields onto team1/team2 strictly partitioning innings by batting team.
  */
 export function resolveCricketTeamScores(match, ld = {}) {
-  const team1Name = match?.team1?.name || match?.team1 || 'Team 1';
-  const team2Name = match?.team2?.name || match?.team2 || 'Team 2';
+  const enriched = {
+    ...match,
+    liveDetails: {
+      ...(match?.liveDetails || {}),
+      ...ld,
+    },
+  };
 
-  if (ld.testInnings?.length > 0) {
-    const res = resolveTestMatchTeamScores(match, ld);
-    res.team1.displayScore = res.team1.innings?.length > 1
-      ? res.team1.innings.map((i) => `${i.runs}/${i.wickets}`).join(' & ')
-      : `${res.team1.runs}/${res.team1.wickets}`;
-    res.team2.displayScore = res.team2.innings?.length > 1
-      ? res.team2.innings.map((i) => `${i.runs}/${i.wickets}`).join(' & ')
-      : `${res.team2.runs}/${res.team2.wickets}`;
-    return res;
-  }
+  const normalized = normalizeMatch(enriched);
 
-  const commentary = ld.commentary || match?.liveDetails?.commentary || '';
-  const needMatch = commentary.match(/([A-Za-z\s.]+)\s+need\s+\d+\s+runs/i);
-  const hasSecondInningsData = isCricketSecondInnings(
-    match,
-    { ...ld, commentary: ld.commentary || commentary },
-  );
+  const t1Latest = normalized.homeTeam.innings[normalized.homeTeam.innings.length - 1];
+  const t2Latest = normalized.awayTeam.innings[normalized.awayTeam.innings.length - 1];
 
-  if (hasSecondInningsData) {
-    let chaseTeam = ld.chaseTeamName;
-
-    if (needMatch) {
-      if (!chaseTeam && needMatch[1]) chaseTeam = needMatch[1].trim();
-    }
-
-    const firstTeam = ld.firstTeamName || (teamNameMatches(team1Name, chaseTeam) ? team2Name : team1Name);
-    const firstFromMatch = teamNameMatches(team1Name, firstTeam)
-      ? pickPositiveScore(match?.team1?.runs, match?.score1, 0)
-      : pickPositiveScore(match?.team2?.runs, match?.score2, 0);
-    const firstRuns = pickPositiveScore(
-      ld.firstRuns,
-      teamNameMatches(team1Name, firstTeam) ? ld.score1 : (teamNameMatches(team2Name, firstTeam) ? ld.score2 : null),
-      firstFromMatch,
-    );
-    const firstWickets = pickPositiveScore(
-      ld.firstWickets,
-      teamNameMatches(team1Name, firstTeam) ? ld.wickets1 : ld.wickets2,
-      teamNameMatches(team1Name, firstTeam) ? match?.team1?.wickets : match?.team2?.wickets,
-    );
-    const firstOvers = [
-      ld.firstOvers,
-      firstRuns > 0 && teamNameMatches(team1Name, firstTeam) ? ld.overs : null,
-      firstRuns > 0 ? ld.overs2 : null,
-      teamNameMatches(team1Name, firstTeam) ? match?.team1?.overs : match?.team2?.overs,
-    ].find((value) => value != null && value !== '' && value !== 0 && value !== '0' && value !== '0.0')
-      || '0.0';
-
-    const chaseTeamObj = teamNameMatches(team1Name, chaseTeam || ld.chaseTeamName)
-      ? match?.team1
-      : match?.team2;
-    const chaseRuns = Math.max(
-      pickPositiveScore(
-        ld.chaseRuns,
-        ld.score2,
-        pickPositiveScore(
-          Number(ld.inningsId) >= 2 ? ld.runs : null,
-          teamNameMatches(team1Name, chaseTeam || ld.chaseTeamName)
-            ? pickPositiveScore(match?.team1?.runs, match?.score1, 0)
-            : pickPositiveScore(match?.team2?.runs, match?.score2, 0),
-        ),
-      ),
-      Number(chaseTeamObj?.runs) || 0,
-    );
-    const chaseWickets = clampInningsWickets(
-      pickPositiveScore(ld.chaseWickets, ld.wickets2, chaseTeamObj?.wickets),
-      match,
-    );
-    const chaseOvers = [ld.chaseOvers, ld.overs2, Number(ld.inningsId) >= 2 ? ld.overs : null, chaseTeamObj?.overs]
-      .find((value) => value != null && value !== '' && value !== 0 && value !== '0' && value !== '0.0')
-      || '0.0';
-
-    const firstScore = scoreEntry(firstTeam, firstRuns, firstWickets, firstOvers, match);
-    const chaseScore = scoreEntry(chaseTeam || team2Name, chaseRuns, chaseWickets, chaseOvers, match);
-
-    firstScore.displayScore = `${firstScore.runs}/${firstScore.wickets}`;
-    chaseScore.displayScore = `${chaseScore.runs}/${chaseScore.wickets}`;
-
-    const isTeam1Chasing = teamNameMatches(team1Name, chaseTeam || ld.chaseTeamName);
-    return {
-      team1: isTeam1Chasing ? chaseScore : firstScore,
-      team2: isTeam1Chasing ? firstScore : chaseScore,
-    };
-  }
-
-  // 1st Innings: Team batting first gets current runs/wickets, opponent team stays 0/0
-  const firstScorecardInn = Array.isArray(match?.scorecardInnings) && match.scorecardInnings.length > 0
-    ? match.scorecardInnings[0]
-    : null;
-  let firstTeam = firstScorecardInn?.batTeamName || ld.firstTeamName || '';
-  if (!firstTeam) {
-    const t1r = Number(match?.team1?.runs ?? 0) || 0;
-    const t2r = Number(match?.team2?.runs ?? ld.score2 ?? 0) || 0;
-    if (t2r > 0 && t1r === 0) firstTeam = team2Name;
-    else firstTeam = team1Name;
-  }
-  const isTeam2BattingFirst = teamNameMatches(team2Name, firstTeam);
-
-  const battingScore = scoreEntry(
-    firstTeam,
-    pickPositiveScore(
-      ld.runs,
-      ld.firstRuns,
-      isTeam2BattingFirst
-        ? pickPositiveScore(ld.score2, match?.team2?.runs ?? match?.score2, 0)
-        : pickPositiveScore(ld.score1, match?.team1?.runs ?? match?.score1, 0),
-    ),
-    pickPositiveScore(
-      ld.wickets,
-      ld.firstWickets,
-      isTeam2BattingFirst
-        ? pickPositiveScore(ld.wickets2, match?.team2?.wickets, 0)
-        : pickPositiveScore(ld.wickets1, match?.team1?.wickets, 0),
-    ),
-    ld.overs || ld.firstOvers || (isTeam2BattingFirst ? match?.team2?.overs : match?.team1?.overs) || '0.0',
-    match,
-  );
-  const idleScore = scoreEntry(
-    isTeam2BattingFirst ? team1Name : team2Name,
-    0,
-    0,
-    '0.0',
+  const t1Score = scoreEntry(
+    normalized.homeTeam.name,
+    t1Latest ? t1Latest.runs : 0,
+    t1Latest ? t1Latest.wickets : 0,
+    t1Latest ? t1Latest.overs : '0.0',
     match,
   );
 
-  battingScore.displayScore = `${battingScore.runs}/${battingScore.wickets}`;
-  idleScore.displayScore = '';
+  const t2Score = scoreEntry(
+    normalized.awayTeam.name,
+    t2Latest ? t2Latest.runs : 0,
+    t2Latest ? t2Latest.wickets : 0,
+    t2Latest ? t2Latest.overs : '0.0',
+    match,
+  );
+
+  // Compact single scores for roster cards (e.g. "256/3" or "—")
+  t1Score.displayScore = normalized.homeTeam.hasBatted ? `${t1Latest.runs}/${t1Latest.wickets}${t1Latest.declared ? 'd' : ''}` : '';
+  t2Score.displayScore = normalized.awayTeam.hasBatted ? `${t2Latest.runs}/${t2Latest.wickets}${t2Latest.declared ? 'd' : ''}` : '';
+
+  // Detailed multi-innings strings and arrays for detail view & scorecard
+  t1Score.fullInningsSummary = normalized.homeTeam.fullInningsSummary;
+  t2Score.fullInningsSummary = normalized.awayTeam.fullInningsSummary;
+  t1Score.innings = normalized.homeTeam.innings;
+  t2Score.innings = normalized.awayTeam.innings;
+  t1Score.hasBatted = normalized.homeTeam.hasBatted;
+  t2Score.hasBatted = normalized.awayTeam.hasBatted;
 
   return {
-    team1: isTeam2BattingFirst ? idleScore : battingScore,
-    team2: isTeam2BattingFirst ? battingScore : idleScore,
+    team1: t1Score,
+    team2: t2Score,
+    currentInnings: normalized.currentInnings,
+    innings: normalized.innings,
+    homeTeam: normalized.homeTeam,
+    awayTeam: normalized.awayTeam,
   };
 }
 
@@ -267,8 +158,8 @@ export function isEmptyOversValue(value) {
 }
 
 export function isCricketSecondInnings(match, ld = {}) {
-  // Test match: only innings 4 is a "chase"
-  if (ld.testInnings?.length > 0 || /test/i.test(ld.matchFormat || match?.matchFormat || '')) {
+  const format = detectCanonicalFormat({ ...match, liveDetails: ld });
+  if (format === CRICKET_FORMATS.TEST) {
     return (ld.inningsId ?? 0) === 4;
   }
 
@@ -279,7 +170,6 @@ export function isCricketSecondInnings(match, ld = {}) {
 
   const chaseProgress = Number(ld.chaseRuns) > 0 || Number(ld.chaseWickets) > 0;
 
-  // Explicit first innings: only upgrade on real chase progress or both team cards scored
   if (inningsId === 1) {
     if (chaseProgress) return true;
     if (Number(match?.team1?.runs) > 0 && Number(match?.team2?.runs) > 0) return true;
@@ -298,44 +188,6 @@ export function isCricketSecondInnings(match, ld = {}) {
   if (Number(match?.team1?.runs) > 0 && Number(match?.team2?.runs) > 0) return true;
 
   return false;
-}
-
-/**
- * Resolve Test match team scores from testInnings[] — sums each team's runs across all their innings.
- */
-function resolveTestMatchTeamScores(match, ld) {
-  const team1Name = match?.team1?.name || '';
-  const team2Name = match?.team2?.name || '';
-  const testInnings = ld.testInnings || [];
-
-  // batTeam is often an ICC code (SL, IND) — use teamNameMatches, not raw substring/slice.
-  const team1Innings = testInnings.filter((i) => teamNameMatches(team1Name, i.batTeam || i.team || ''));
-  const team2Innings = testInnings.filter((i) => teamNameMatches(team2Name, i.batTeam || i.team || ''));
-
-  // Use latest innings overs/wickets for display, but sum runs
-  const team1Latest = team1Innings[team1Innings.length - 1];
-  const team2Latest = team2Innings[team2Innings.length - 1];
-
-  const t1Score = scoreEntry(
-    team1Name,
-    team1Innings.reduce((s, i) => s + i.runs, 0),
-    team1Latest?.wickets ?? 0,
-    team1Latest?.overs ?? '0.0',
-    match,
-  );
-  const t2Score = scoreEntry(
-    team2Name,
-    team2Innings.reduce((s, i) => s + i.runs, 0),
-    team2Latest?.wickets ?? 0,
-    team2Latest?.overs ?? '0.0',
-    match,
-  );
-
-  // Attach individual innings for UI consumption
-  t1Score.innings = team1Innings;
-  t2Score.innings = team2Innings;
-
-  return { team1: t1Score, team2: t2Score };
 }
 
 export function resolveCricketTossText(match, extraState) {

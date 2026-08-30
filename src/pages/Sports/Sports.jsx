@@ -132,8 +132,8 @@ function getMatchScores(match) {
 
   if (!isBallSport) {
     const resolved = resolveCricketTeamScores(enriched, ld);
-    team1Score = resolved.team1.displayScore || ((resolved.team1.innings?.length || resolved.team1.runs > 0 || resolved.team1.wickets > 0) ? `${resolved.team1.runs}/${resolved.team1.wickets}` : '');
-    team2Score = resolved.team2.displayScore || ((resolved.team2.innings?.length || resolved.team2.runs > 0 || resolved.team2.wickets > 0) ? `${resolved.team2.runs}/${resolved.team2.wickets}` : '');
+    team1Score = resolved.team1.hasBatted ? resolved.team1.displayScore : '';
+    team2Score = resolved.team2.hasBatted ? resolved.team2.displayScore : '';
   } else if (!team1Score || team1Score === '0/0' || !team2Score || team2Score === '0/0') {
     team1Score = String(ld.score1 ?? 0);
     team2Score = String(ld.score2 ?? 0);
