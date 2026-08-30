@@ -52,10 +52,17 @@ test('ODDSYRA — CASHFREE PAYMENTS API + WEBHOOK INTEGRATION TEST SUITE', async
 
   // Setup test user & wallet in DB
   await query(
-    `INSERT INTO users (user_id, email, username, kyc_status, is_active, created_at, updated_at)
-     VALUES ($1, $2, $3, 'VERIFIED', TRUE, NOW(), NOW())
+    `INSERT INTO users (user_id, email, phone, created_at, updated_at)
+     VALUES ($1, $2, '9876543210', NOW(), NOW())
      ON CONFLICT (user_id) DO NOTHING`,
-    [testUserId, `${testUserId}@example.com`, `player_${timestamp}`]
+    [testUserId, `${testUserId}@example.com`]
+  );
+
+  await query(
+    `INSERT INTO user_profiles (user_id, display_name, kyc_status, account_status)
+     VALUES ($1, $2, 'VERIFIED', 'ACTIVE')
+     ON CONFLICT (user_id) DO UPDATE SET kyc_status = 'VERIFIED', account_status = 'ACTIVE'`,
+    [testUserId, `Player ${timestamp}`]
   );
 
   await query(
