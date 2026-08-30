@@ -64,6 +64,7 @@ export default function LiveChatSupportWidget() {
   const displayName = user?.displayName;
 
   const [isOpen, setIsOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [messages, setMessages] = useState(() => [welcomeMessage(displayName)]);
   const [inputText, setInputText] = useState('');
   const [chatSession, setChatSession] = useState(null); // { conversationId, status, assignedAgentName }
@@ -121,6 +122,7 @@ export default function LiveChatSupportWidget() {
 
   useEffect(() => {
     if (isOpen) {
+      setUnreadCount(0);
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, isOpen, isTyping]);
