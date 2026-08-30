@@ -10,7 +10,7 @@ import { verifyAccessToken } from '../auth/tokenService.js';
 /**
  * Require a valid access token. Attaches req.user on success.
  */
-export function requireAuth(req, res, next) {
+export async function requireAuth(req, res, next) {
   const token = extractToken(req);
 
   if (!token) {
@@ -20,6 +20,25 @@ export function requireAuth(req, res, next) {
   const decoded = verifyAccessToken(token);
   if (!decoded) {
     return res.status(401).json({ error: 'Invalid or expired token.', code: 'TOKEN_INVALID' });
+  }
+
+  const { isPrivateAccessMode, isPrivateAccessAllowed } = await import('../../lib/privateAccessConfig.mjs');
+  if (isPrivateAccessMode()) {
+    try {
+      const { query } = await import('../../db/pg.js');
+      const userRes = await query('SELECT email FROM users WHERE user_id = $1', [decoded.sub]);
+      const email = userRes.rows[0]?.email;
+      if (!email || !isPrivateAccessAllowed(email)) {
+        return res.status(403).json({
+          error: 'Access to the platform is temporarily restricted.',
+          message: 'Access to the platform is temporarily restricted.',
+          code: 'PRIVATE_ACCESS_RESTRICTED',
+        });
+      }
+      req.userEmail = email;
+    } catch {
+      return res.status(500).json({ error: 'Internal error.', code: 'INTERNAL_ERROR' });
+    }
   }
 
   req.user = {

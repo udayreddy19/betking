@@ -61,6 +61,15 @@ router.post('/api/auth/admin-login', loginRateLimiter, async (req, res) => {
     const email = String(req.body?.email || '').trim().toLowerCase();
     const password = req.body?.password;
 
+    const { isPrivateAccessMode, isAuthorizedAdmin } = await import('../../lib/privateAccessConfig.mjs');
+    if (isPrivateAccessMode() && !isAuthorizedAdmin(email)) {
+      return res.status(403).json({
+        message: 'Access to the platform is temporarily restricted.',
+        error: 'Access to the platform is temporarily restricted.',
+        code: 'PRIVATE_ACCESS_RESTRICTED',
+      });
+    }
+
     if (email && password) {
       const { query } = await import('../../db/pg.js');
       const { login } = await import('../auth/authService.js');

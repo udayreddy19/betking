@@ -26,20 +26,8 @@ export default function MobileBottomBar() {
     if (!isLoggedIn) {
       return [
         { label: 'Home', path: '/', icon: NavHomeIcon },
-        {
-          label: 'How It Works',
-          action: () => {
-            if (location.pathname === '/') {
-              document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
-            } else {
-              navigate('/#how-it-works');
-            }
-          },
-          icon: HiOutlineClipboardList,
-        },
         { label: 'Support', path: '/help', icon: FiHelpCircle },
         { label: 'Login', action: () => openLoginModal(), icon: HiOutlineUser },
-        { label: 'Sign Up', path: '/register', icon: IoGiftOutline },
       ];
     }
 

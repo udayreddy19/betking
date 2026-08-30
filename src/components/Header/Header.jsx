@@ -721,15 +721,19 @@ function Header() {
             </button>
           ) : (
             <div className="header-auth-buttons">
-              <button className="header-login-btn" onClick={openLoginModal} id="login-btn">
-                Log in
+              <span className="header-private-access-badge" title="Platform currently in private access mode">
+                PRIVATE ACCESS
+              </span>
+              <button
+                type="button"
+                className="header-support-link-btn"
+                onClick={() => navigate('/help')}
+              >
+                Support
               </button>
-              {!isRegisterPage && (
-                <button className="header-join-btn" onClick={() => navigate('/register')} id="join-btn">
-                  <span className="header-join-label-full">Sign Up</span>
-                  <span className="header-join-label-short">Sign Up</span>
-                </button>
-              )}
+              <button className="header-login-btn" onClick={openLoginModal} id="login-btn">
+                Log In
+              </button>
             </div>
           )}
         </div>
