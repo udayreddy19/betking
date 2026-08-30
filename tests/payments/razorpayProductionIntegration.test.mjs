@@ -15,10 +15,17 @@ process.env.RAZORPAY_WEBHOOK_SECRET = TEST_WEBHOOK_SECRET;
 
 async function createTestUserAndWallet(userId, initialBalance = 0) {
   await query(
-    `INSERT INTO users (user_id, email, password_hash, status, created_at, updated_at)
-     VALUES ($1, $2, 'hash_test', 'ACTIVE', NOW(), NOW())
+    `INSERT INTO users (user_id, email, password_hash, phone, created_at, updated_at)
+     VALUES ($1, $2, 'hash_test', '9876543210', NOW(), NOW())
      ON CONFLICT (user_id) DO NOTHING`,
     [userId, `${userId}@oddsyra.test`]
+  );
+
+  await query(
+    `INSERT INTO user_profiles (user_id, display_name, kyc_status, account_status)
+     VALUES ($1, $2, 'VERIFIED', 'ACTIVE')
+     ON CONFLICT (user_id) DO UPDATE SET kyc_status = 'VERIFIED', account_status = 'ACTIVE'`,
+    [userId, `Player ${userId}`]
   );
 
   await query(
