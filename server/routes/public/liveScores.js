@@ -3,11 +3,10 @@ import {
   buildLiveScoresPayload,
   buildMatchDetailPayload,
 } from '../../../lib/liveScoresApiHandlers.mjs';
-import { requireAuth } from '../../middleware/userAuth.js';
 
 const router = Router();
 
-router.get('/live-scores', requireAuth, async (req, res) => {
+router.get('/live-scores', async (req, res) => {
   try {
     const force = req.query.refresh === '1';
     const payload = await buildLiveScoresPayload({ force });
@@ -21,7 +20,7 @@ router.get('/live-scores', requireAuth, async (req, res) => {
   }
 });
 
-router.get('/match-detail', requireAuth, async (req, res) => {
+router.get('/match-detail', async (req, res) => {
   try {
     const get = (key) => {
       const value = req.query[key];

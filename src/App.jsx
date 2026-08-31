@@ -1,5 +1,5 @@
-import { lazy, Suspense, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useLocation, useNavigate, useSearchParams, Navigate } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { MotionConfig } from 'motion/react';
 import { ThemeProvider } from './context/ThemeContext';
 import { BetSlipProvider } from './context/BetSlipContext';
@@ -25,7 +25,6 @@ import LiveChatSupportWidget from './components/LiveChatSupportWidget/LiveChatSu
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import RouteSeo from './components/RouteSeo/RouteSeo';
 import PhoneRequiredGate from './components/PhoneRequiredGate/PhoneRequiredGate';
-import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
 import { getAdminSessionState } from './utils/adminSession';
 import { CASINO_ENABLED } from './utils/featureFlags';
 
@@ -75,30 +74,12 @@ function AdminProtectedRoute({ children }) {
   return <Navigate to="/admin" replace />;
 }
 
-function LoginPageRedirect() {
-  const { isLoggedIn, openLoginModal } = useAuth();
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const redirectTarget = searchParams.get('redirect') || '/sports';
-
-  useEffect(() => {
-    if (isLoggedIn) {
-      navigate(redirectTarget, { replace: true });
-    } else {
-      openLoginModal();
-    }
-  }, [isLoggedIn, navigate, redirectTarget, openLoginModal]);
-
-  return <Home />;
-}
-
 function AppFinancialModals() {
   const { finModalType, closeFinModal } = useAuth();
   return <FinancialModals modalType={finModalType} onClose={closeFinModal} />;
 }
 
 function AppLayout() {
-  const { isLoggedIn } = useAuth();
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
   const isDevRoute = location.pathname.startsWith('/developer') || location.pathname.startsWith('/api-docs');
@@ -125,57 +106,33 @@ function AppLayout() {
       <SessionIdleLogout />
       <AppFinancialModals />
       <Toast />
-      {isLoggedIn && <GamePlayModal />}
-      {isLoggedIn && <BetSettlementRunner />}
-      {isLoggedIn && <MobileBetSlip />}
-      {isLoggedIn && <GlobalBetBar />}
+      <GamePlayModal />
+      <BetSettlementRunner />
+      <MobileBetSlip />
+      <GlobalBetBar />
       {!isAdminRoute && !isDevRoute && !isRegisterRoute && <MobileBottomBar />}
       <main className={mainClass}>
         <ErrorBoundary resetKey={location.pathname}>
           <Suspense fallback={<PageLoader />}>
             <Routes>
-              {/* Public Routes */}
               <Route path="/" element={<Home />} />
-              <Route path="/login" element={<LoginPageRedirect />} />
+              <Route path="/live-betting" element={<Sports />} />
+              <Route path="/sports" element={<Sports />} />
+              <Route path="/casino" element={CASINO_ENABLED ? <Casino /> : <CasinoComingSoon />} />
+              <Route path="/live-casino" element={CASINO_ENABLED ? <LiveCasino /> : <CasinoComingSoon />} />
+              <Route path="/fantasy" element={<Fantasy />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/wallet" element={<WalletDashboard />} />
               <Route path="/register" element={<Register />} />
               <Route path="/complete-profile" element={<CompleteProfile />} />
               <Route path="/_oauth/google" element={<OAuthGoogleCallback />} />
               <Route path="/verify-email" element={<VerifyEmailPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/responsible-gaming" element={<ResponsibleGaming />} />
-              <Route path="/help" element={<Help />} />
-              <Route path="/support" element={<SupportHome />} />
-
-              {/* Protected Sports & Account Routes */}
-              <Route path="/live-betting" element={<ProtectedRoute><Sports /></ProtectedRoute>} />
-              <Route path="/sports" element={<ProtectedRoute><Sports /></ProtectedRoute>} />
-              <Route path="/matches" element={<ProtectedRoute><Sports /></ProtectedRoute>} />
-              <Route path="/match/:id" element={<ProtectedRoute><Sports /></ProtectedRoute>} />
-              <Route path="/roster" element={<ProtectedRoute><Sports /></ProtectedRoute>} />
-              <Route path="/casino" element={<ProtectedRoute>{CASINO_ENABLED ? <Casino /> : <CasinoComingSoon />}</ProtectedRoute>} />
-              <Route path="/live-casino" element={<ProtectedRoute>{CASINO_ENABLED ? <LiveCasino /> : <CasinoComingSoon />}</ProtectedRoute>} />
-              <Route path="/fantasy" element={<ProtectedRoute><Fantasy /></ProtectedRoute>} />
-              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              <Route path="/wallet" element={<ProtectedRoute><WalletDashboard /></ProtectedRoute>} />
-              <Route path="/promotions" element={<ProtectedRoute><Promotions /></ProtectedRoute>} />
-              <Route path="/rewards" element={<ProtectedRoute><MyRewards /></ProtectedRoute>} />
-              <Route path="/my-rewards" element={<ProtectedRoute><MyRewards /></ProtectedRoute>} />
-              <Route path="/notifications" element={<ProtectedRoute><NotificationCenter /></ProtectedRoute>} />
-              <Route path="/vip" element={<ProtectedRoute><Vip /></ProtectedRoute>} />
-              <Route path="/support/tickets" element={<ProtectedRoute><TicketsListPage /></ProtectedRoute>} />
-              <Route path="/support/tickets/new" element={<ProtectedRoute><CreateTicketPage /></ProtectedRoute>} />
-              <Route path="/support/tickets/:ticketReference" element={<ProtectedRoute><TicketDetailPage /></ProtectedRoute>} />
-
-              {/* SRL & Navigation Aliases */}
-              <Route path="/iplsrl" element={<ProtectedRoute><Navigate to="/sports?league=ipl-srl" replace /></ProtectedRoute>} />
-              <Route path="/iplsrl/match-center" element={<ProtectedRoute><Navigate to="/sports?league=ipl-srl" replace /></ProtectedRoute>} />
-              <Route path="/iplsrl/standings" element={<ProtectedRoute><Navigate to="/sports?league=ipl-srl" replace /></ProtectedRoute>} />
-              <Route path="/iplsrl/stats" element={<ProtectedRoute><Navigate to="/sports?league=ipl-srl" replace /></ProtectedRoute>} />
-              <Route path="/iplsrl/teams" element={<ProtectedRoute><Navigate to="/sports?league=ipl-srl" replace /></ProtectedRoute>} />
-
-              {/* Admin Routes */}
+              <Route path="/promotions" element={<Promotions />} />
+              <Route path="/rewards" element={<MyRewards />} />
+              <Route path="/my-rewards" element={<MyRewards />} />
+              <Route path="/notifications" element={<NotificationCenter />} />
+              <Route path="/vip" element={<Vip />} />
               <Route
                 path="/admin/iplsrl"
                 element={(
@@ -186,6 +143,11 @@ function AppLayout() {
               />
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/*" element={<Admin />} />
+              <Route path="/iplsrl" element={<Navigate to="/sports?league=ipl-srl" replace />} />
+              <Route path="/iplsrl/match-center" element={<Navigate to="/sports?league=ipl-srl" replace />} />
+              <Route path="/iplsrl/standings" element={<Navigate to="/sports?league=ipl-srl" replace />} />
+              <Route path="/iplsrl/stats" element={<Navigate to="/sports?league=ipl-srl" replace />} />
+              <Route path="/iplsrl/teams" element={<Navigate to="/sports?league=ipl-srl" replace />} />
               <Route
                 path="/trader"
                 element={(
@@ -210,7 +172,14 @@ function AppLayout() {
                   </AdminProtectedRoute>
                 )}
               />
-
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/responsible-gaming" element={<ResponsibleGaming />} />
+              <Route path="/help" element={<Help />} />
+              <Route path="/support" element={<SupportHome />} />
+              <Route path="/support/tickets" element={<TicketsListPage />} />
+              <Route path="/support/tickets/new" element={<CreateTicketPage />} />
+              <Route path="/support/tickets/:ticketReference" element={<TicketDetailPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

@@ -348,7 +348,7 @@ router.get('/api/v1/sports', async (req, res) => {
   }
 });
 
-router.get('/api/v1/matches', requireAuth, async (req, res) => {
+router.get('/api/v1/matches', async (req, res) => {
   try {
     const { sportsDataRegistry } = await import('../../lib/sportsDataRegistry.mjs');
     res.json({ version: 'v1', matches: sportsDataRegistry.getAllMatches() });
@@ -357,7 +357,7 @@ router.get('/api/v1/matches', requireAuth, async (req, res) => {
   }
 });
 
-router.get('/api/v1/matches/:id', requireAuth, async (req, res) => {
+router.get('/api/v1/matches/:id', async (req, res) => {
   try {
     const matchId = String(req.params.id || '').trim();
     if (!matchId) return res.status(400).json({ error: 'match_id_required' });

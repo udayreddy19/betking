@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
+import { CASINO_ENABLED } from '../../utils/featureFlags';
 import { pressScale, springTab } from '../../utils/motionPresets';
 import { useUserNotifications } from '../../hooks/useUserNotifications';
 import {
@@ -12,61 +13,34 @@ import {
   NavVipIcon,
   NavMenuIcon,
 } from './MobileNavIcons';
-import { HiOutlineUser, HiOutlineClipboardList, FiZap, IoGiftOutline, FiHelpCircle } from '../../icons';
+import { HiOutlineUser } from '../../icons';
 import './MobileBottomBar.css';
 
 export default function MobileBottomBar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isLoggedIn, user, toggleSidebar, closeSidebar, openLoginModal } = useAuth();
-  const { closeMyBets, closeQuickBet, setIsMobileOpen, myBetsCount } = useBetSlip();
+  const { isLoggedIn, user, toggleSidebar, closeSidebar } = useAuth();
+  const { closeMyBets, closeQuickBet, setIsMobileOpen } = useBetSlip();
   const { unreadCount } = useUserNotifications(isLoggedIn, user?.userId);
 
-  const navItems = useMemo(() => {
-    if (!isLoggedIn) {
-      return [
-        { label: 'Home', path: '/', icon: NavHomeIcon },
-        {
-          label: 'How It Works',
-          action: () => {
-            if (location.pathname === '/') {
-              document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
-            } else {
-              navigate('/#how-it-works');
-            }
-          },
-          icon: HiOutlineClipboardList,
-        },
-        { label: 'Support', path: '/help', icon: FiHelpCircle },
-        { label: 'Login', action: () => openLoginModal(), icon: HiOutlineUser },
-        { label: 'Sign Up', path: '/register', icon: IoGiftOutline },
-      ];
-    }
+  const navItems = useMemo(() => ([
+    { label: 'Home', path: '/', icon: NavHomeIcon },
+    CASINO_ENABLED
+      ? { label: 'Casino', path: '/casino', icon: NavCasinoIcon }
+      : { label: 'Promos', path: '/promotions', icon: NavPromotionsIcon },
+    isLoggedIn
+      ? { label: 'Profile', path: '/profile', icon: HiOutlineUser, isProfile: true }
+      : { label: 'VIP', path: '/vip', icon: NavVipIcon, isVip: true },
+  ]), [isLoggedIn]);
 
-    return [
-      { label: 'Sports', path: '/sports', icon: NavHomeIcon },
-      { label: 'Live', path: '/live-betting', icon: FiZap },
-      { label: 'Bet Slip', action: () => setIsMobileOpen?.(true), icon: HiOutlineClipboardList, badge: myBetsCount },
-      { label: 'Rewards', path: '/rewards', icon: IoGiftOutline },
-      { label: 'Profile', path: '/profile', icon: HiOutlineUser },
-    ];
-  }, [isLoggedIn, location.pathname, navigate, openLoginModal, setIsMobileOpen, myBetsCount]);
-
-  const handleItemClick = (item) => {
+  const go = (path) => {
     closeSidebar();
     closeMyBets?.();
     closeQuickBet?.();
+    setIsMobileOpen?.(false);
     window.dispatchEvent(new CustomEvent('oddsyra:close-support-chat'));
-
-    if (item.action) {
-      item.action();
-      return;
-    }
-
-    if (item.path) {
-      if (location.pathname === item.path) return;
-      navigate(item.path);
-    }
+    if (location.pathname === path) return;
+    navigate(path);
   };
 
   return (
@@ -74,23 +48,20 @@ export default function MobileBottomBar() {
       <div className="mobile-bottom-bar-inner">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = item.path && location.pathname === item.path;
+          const isActive = location.pathname === item.path;
 
           return (
             <motion.button
-              key={item.label}
+              key={item.path}
               type="button"
-              className={`mobile-bar-item ${isActive ? 'active' : ''}`}
+              className={`mobile-bar-item ${isActive ? 'active' : ''} ${item.isVip ? 'vip-item' : ''} ${item.isProfile ? 'profile-item' : ''}`}
               aria-current={isActive ? 'page' : undefined}
-              onClick={() => handleItemClick(item)}
+              onClick={() => go(item.path)}
               whileTap={{ scale: pressScale }}
               transition={springTab}
             >
-              <div className="mobile-bar-icon-wrap" style={{ position: 'relative' }}>
+              <div className="mobile-bar-icon-wrap">
                 <Icon className="mobile-bar-icon" />
-                {item.badge > 0 && (
-                  <span className="mobile-bar-notif-badge">{item.badge}</span>
-                )}
               </div>
               <span className="mobile-bar-label">{item.label}</span>
               {isActive && (

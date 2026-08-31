@@ -6,7 +6,6 @@
 import { normalizeTeamName } from '../utils/teamNames';
 import { sportsGatewayClient } from './sportsGatewayClient';
 import { cricketScoreWeight, cricketSourceRank, getCanonicalMatchPairKey } from '../../lib/matchPairKey.mjs';
-import { getAccessToken } from '../utils/apiClient';
 
 export { normalizeTeamName };
 
@@ -17,12 +16,10 @@ const lastKnownLiveMatches = new Map();
  */
 export async function fetchLiveScores(options = {}) {
   const url = options.force ? '/api/live-scores?refresh=1' : '/api/live-scores';
-  const token = getAccessToken();
-  const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
   try {
     const [legacyRes, gatewayCricket, gatewayFootball, gatewayBasketball, gatewayTennis, gatewayF1, gatewayHockey, gatewayAmericanFootball] = await Promise.all([
-      fetch(url, { cache: 'no-store', headers })
+      fetch(url, { cache: 'no-store' })
         .then(async (r) => {
           const data = await r.json().catch(() => ({}));
           return { httpOk: r.ok, ...data };
