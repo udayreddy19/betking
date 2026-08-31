@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import { query, withTransaction } from '../db/pg.js';
 import { betPlacementEngine } from '../lib/betPlacementEngine.mjs';
 import { settleBetRecord } from '../lib/betSettlementEngine.mjs';
+import { depositEngine } from '../lib/depositEngine.mjs';
 import { BONUS_MIN_BET_ODDS } from '../lib/promoRules.mjs';
-import { MIN_DEPOSIT_INR } from '../lib/depositEngine.mjs';
+import { MIN_DEPOSIT_INR } from '../lib/vipBenefits.mjs';
 
 test('PRODUCTION-LEVEL COMPLETE BETTING LIFECYCLE AUDIT', async (t) => {
   const testUserId = `usr_audit_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
