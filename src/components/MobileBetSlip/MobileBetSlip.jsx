@@ -53,8 +53,6 @@ const sheetMotionDesktop = {
 function QuickBetPanel({
   bet,
   stake,
-  stakeSource,
-  onStakeSource,
   betCount,
   isPlacing,
   placementNotice,
@@ -68,17 +66,22 @@ function QuickBetPanel({
   isDesktop,
 }) {
   const { user } = useAuth();
+  const {
+    fundingSource,
+    activeFundingSource,
+    selectFundingSource,
+    isPromoLocked,
+    promoAmount,
+  } = useBetSlip();
+
   const wallet = getWalletBreakdown(user);
   const bonusAvailable = wallet.bonus;
   const freebetAvailable = wallet.freebets;
   const canUseBonus = bonusAvailable > 0 && canBetWithBonusOnLegs([bet]);
   const canUseFreebet = freebetAvailable > 0;
+  const activeSource = activeFundingSource;
 
-  let activeSource = 'cash';
-  if (stakeSource === 'bonus' && canUseBonus) activeSource = 'bonus';
-  else if (stakeSource === 'freebet' && canUseFreebet) activeSource = 'freebet';
-
-  const stakeNum = parseFloat(stake) || 0;
+  const stakeNum = isPromoLocked ? promoAmount : (parseFloat(stake) || 0);
   const odds = Number(bet.odds) || 0;
   const potentialReturn = stakeNum > 0 && odds > 0
     ? (activeSource === 'freebet'
@@ -162,7 +165,7 @@ function QuickBetPanel({
               <button
                 type="button"
                 className={`betslip-stake-source__tab ${activeSource === 'cash' ? 'active' : ''}`}
-                onClick={() => onStakeSource('cash')}
+                onClick={() => selectFundingSource('cash')}
               >
                 Cash {formatInr(wallet.cashBalance)}
               </button>
@@ -170,7 +173,7 @@ function QuickBetPanel({
                 <button
                   type="button"
                   className={`betslip-stake-source__tab ${activeSource === 'bonus' ? 'active' : ''}`}
-                  onClick={() => onStakeSource('bonus')}
+                  onClick={() => selectFundingSource('bonus')}
                   disabled={!canUseBonus}
                 >
                   Bonus {formatInr(bonusAvailable)}
@@ -180,26 +183,26 @@ function QuickBetPanel({
                 <button
                   type="button"
                   className={`betslip-stake-source__tab ${activeSource === 'freebet' ? 'active' : ''}`}
-                  onClick={() => onStakeSource('freebet')}
+                  onClick={() => selectFundingSource('freebet')}
                   disabled={!canUseFreebet}
                 >
                   Freebet {formatInr(freebetAvailable)}
                 </button>
               )}
             </div>
-            {stakeSource === 'bonus' && !canUseBonus && (
+            {activeSource === 'bonus' && !canUseBonus && (
               <p className="betslip-stake-source__warn">
-                Bonus requires odds ≥ {BONUS_MIN_BET_ODDS.toFixed(2)}. Rotate 5× before withdrawing winnings.
+                Bonus requires odds ≥ {BONUS_MIN_BET_ODDS.toFixed(2)}.
               </p>
             )}
             {activeSource === 'bonus' && canUseBonus && (
               <p className="betslip-stake-source__hint">
-                Bonus must be rotated 5 times at {BONUS_MIN_BET_ODDS.toFixed(2)}+ odds. Winnings can be withdrawn after that — not the bonus.
+                🔒 Bonus must be used in full ({formatInr(bonusAvailable)}).
               </p>
             )}
             {activeSource === 'freebet' && (
               <p className="betslip-stake-source__hint">
-                Free bet plays like cash at any odds. Winning pays profit only.
+                🔒 Free Bet must be used in full ({formatInr(freebetAvailable)}).
               </p>
             )}
           </div>
@@ -220,26 +223,37 @@ function QuickBetPanel({
               autoCorrect="off"
               autoCapitalize="off"
               spellCheck={false}
-              value={stake}
-              onChange={(e) => onStake(sanitizeStakeInput(e.target.value))}
+              value={isPromoLocked ? String(promoAmount) : stake}
+              readOnly={isPromoLocked}
+              disabled={isPromoLocked}
+              onChange={(e) => {
+                if (!isPromoLocked) onStake(sanitizeStakeInput(e.target.value));
+              }}
               placeholder="Enter amount"
               aria-label="Enter stake amount"
             />
+            {isPromoLocked && <span style={{ marginLeft: 6 }}>🔒</span>}
           </div>
         </div>
 
-        <div className="mobile-betslip-quick-stakes">
-          {QUICK_STAKES.map((amount) => (
-            <button
-              key={amount}
-              type="button"
-              className={`mobile-betslip-quick-stake${String(amount) === String(stake) ? ' is-active' : ''}`}
-              onClick={() => onStake(String(amount))}
-            >
-              ₹{amount >= 1000 ? `${amount / 1000}K` : amount}
-            </button>
-          ))}
-        </div>
+        {!isPromoLocked ? (
+          <div className="mobile-betslip-quick-stakes">
+            {QUICK_STAKES.map((amount) => (
+              <button
+                key={amount}
+                type="button"
+                className={`mobile-betslip-quick-stake${String(amount) === String(stake) ? ' is-active' : ''}`}
+                onClick={() => onStake(String(amount))}
+              >
+                ₹{amount >= 1000 ? `${amount / 1000}K` : amount}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div style={{ fontSize: '0.78rem', color: '#f59e0b', fontWeight: 600, padding: '4px 0 8px', textAlign: 'center' }}>
+            🔒 Promotional stake is fixed ({formatInr(promoAmount)})
+          </div>
+        )}
 
         {noticeText && (
           <p className="mobile-betslip-notice" role="status">{noticeText}</p>
@@ -517,8 +531,6 @@ export default function MobileBetSlip() {
           <QuickBetPanel
             bet={bet}
             stake={stake}
-            stakeSource={stakeSource}
-            onStakeSource={setStakeSource}
             betCount={betCount}
             isPlacing={isPlacing}
             placementNotice={placementNotice}

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { getCashoutOffer } from '../utils/wageringRules';
+import { getWalletBreakdown } from '../utils/walletBalance';
 import { computeAccumulatorPayout } from '../utils/accumulatorPayout.js';
 import { playBetSound, playWinSound } from '../utils/soundEffects';
 import { isMatchBettable } from '../utils/matchBetting';
@@ -316,9 +317,12 @@ export function BetSlipProvider({ children }) {
   const oddsConfirmPendingRef = useRef(false);
   const placingInFlightRef = useRef(false);
   const [betslipPrefs, setBetslipPrefsState] = useState(() => loadBetslipPrefs());
-  const [quickBet, setQuickBet] = useState(null);
   const [availableRewards, setAvailableRewards] = useState([]);
   const [selectedRewardId, setSelectedRewardId] = useState(null);
+  const [fundingSource, setFundingSource] = useState('cash'); // 'cash' | 'bonus' | 'freebet'
+  const [lastCashStake, setLastCashStake] = useState('100');
+
+  const wallet = useMemo(() => getWalletBreakdown(user), [user]);
 
   const refreshAvailableRewards = useCallback(async () => {
     if (!user?.userId && !user?.email) {
@@ -338,6 +342,11 @@ export function BetSlipProvider({ children }) {
 
   useEffect(() => {
     refreshAvailableRewards();
+    const handleRewardsUpdated = () => {
+      void refreshAvailableRewards();
+    };
+    window.addEventListener('oddsyra:rewards-updated', handleRewardsUpdated);
+    return () => window.removeEventListener('oddsyra:rewards-updated', handleRewardsUpdated);
   }, [refreshAvailableRewards]);
 
   const selectedReward = useMemo(() => {
@@ -345,26 +354,90 @@ export function BetSlipProvider({ children }) {
     return availableRewards.find((r) => r.rewardId === selectedRewardId) || null;
   }, [availableRewards, selectedRewardId]);
 
-  const isStakeLocked = Boolean(selectedReward && !selectedReward.allowPartialUse);
+  const activeFundingSource = useMemo(() => {
+    if (selectedReward) return selectedReward.rewardType;
+    if (['bonus', 'freebet'].includes(fundingSource)) return fundingSource;
+    return 'cash';
+  }, [selectedReward, fundingSource]);
+
+  const promoAmount = useMemo(() => {
+    if (selectedReward) return Number(selectedReward.amount) || 0;
+    if (activeFundingSource === 'bonus') return Number(wallet.bonus) || 0;
+    if (activeFundingSource === 'freebet') return Number(wallet.freebets) || 0;
+    return 0;
+  }, [selectedReward, activeFundingSource, wallet.bonus, wallet.freebets]);
+
+  const isPromoLocked = Boolean(selectedReward || activeFundingSource === 'bonus' || activeFundingSource === 'freebet');
+  const isStakeLocked = isPromoLocked;
+
+  const selectFundingSource = useCallback((source, reward = null) => {
+    if (source === 'cash') {
+      setFundingSource('cash');
+      setSelectedRewardId(null);
+      const restored = lastCashStake || '100';
+      setStake(restored);
+      setSinglesStakes(() => {
+        const next = {};
+        betsRef.current.forEach((b) => { next[b.id] = restored; });
+        return next;
+      });
+      return;
+    }
+
+    if (reward) {
+      setLastCashStake((prev) => (fundingSource === 'cash' ? (stake || '100') : prev));
+      setSelectedRewardId(reward.rewardId);
+      setFundingSource(reward.rewardType);
+      const amountStr = String(reward.amount);
+      setStake(amountStr);
+      setSinglesStakes(() => {
+        const next = {};
+        betsRef.current.forEach((b) => { next[b.id] = amountStr; });
+        return next;
+      });
+      return;
+    }
+
+    if (source === 'bonus') {
+      setLastCashStake((prev) => (fundingSource === 'cash' ? (stake || '100') : prev));
+      setSelectedRewardId(null);
+      setFundingSource('bonus');
+      const amountStr = String(wallet.bonus || 0);
+      setStake(amountStr);
+      setSinglesStakes(() => {
+        const next = {};
+        betsRef.current.forEach((b) => { next[b.id] = amountStr; });
+        return next;
+      });
+      return;
+    }
+
+    if (source === 'freebet') {
+      setLastCashStake((prev) => (fundingSource === 'cash' ? (stake || '100') : prev));
+      setSelectedRewardId(null);
+      setFundingSource('freebet');
+      const amountStr = String(wallet.freebets || 0);
+      setStake(amountStr);
+      setSinglesStakes(() => {
+        const next = {};
+        betsRef.current.forEach((b) => { next[b.id] = amountStr; });
+        return next;
+      });
+      return;
+    }
+  }, [fundingSource, stake, lastCashStake, wallet.bonus, wallet.freebets]);
 
   const selectReward = useCallback((reward) => {
     if (!reward) {
-      setSelectedRewardId(null);
+      selectFundingSource('cash');
       return;
     }
     const rId = typeof reward === 'string' ? reward : reward.rewardId;
     const found = availableRewards.find((r) => r.rewardId === rId) || (typeof reward === 'object' ? reward : null);
-    if (!found) return;
-
-    setSelectedRewardId(found.rewardId);
-    const amountStr = String(found.amount);
-    setStake(amountStr);
-    setSinglesStakes(() => {
-      const next = {};
-      betsRef.current.forEach((b) => { next[b.id] = amountStr; });
-      return next;
-    });
-  }, [availableRewards]);
+    if (found) {
+      selectFundingSource('reward', found);
+    }
+  }, [availableRewards, selectFundingSource]);
 
   useEffect(() => {
     betsRef.current = bets;
@@ -564,7 +637,7 @@ export function BetSlipProvider({ children }) {
     const removedIds = bets
       .filter(b => !filtered.includes(b))
       .map(b => b.id);
-    const defaultStake = stake || '100';
+    const defaultStake = isPromoLocked ? String(promoAmount) : (stake || '100');
     const newBet = {
       id: betId,
       matchId: match.id,
@@ -588,7 +661,7 @@ export function BetSlipProvider({ children }) {
     setSinglesStakes(s => {
       const next = { ...s };
       for (const id of removedIds) delete next[id];
-      next[betId] = next[betId] || defaultStake;
+      next[betId] = isPromoLocked ? String(promoAmount) : (next[betId] || defaultStake);
       return next;
     });
 
@@ -620,7 +693,7 @@ export function BetSlipProvider({ children }) {
     }
 
     return true;
-  }, [bets, showToast, betType, stake]);
+  }, [bets, showToast, betType, stake, isPromoLocked, promoAmount]);
 
   const removeBet = useCallback((betId) => {
     setBets(prev => prev.filter(b => b.id !== betId));
@@ -644,8 +717,12 @@ export function BetSlipProvider({ children }) {
   }, []);
 
   const setSingleStake = useCallback((betId, value) => {
+    if (isPromoLocked) {
+      // Promotional balances are locked to full exact entitlement
+      return;
+    }
     setSinglesStakes(prev => ({ ...prev, [betId]: value }));
-  }, []);
+  }, [isPromoLocked]);
 
   const openMobileBetslip = useCallback(() => setIsMobileOpen(true), []);
 
@@ -666,10 +743,10 @@ export function BetSlipProvider({ children }) {
         marketName: bet.marketName,
         odds: bet.odds,
       },
-      defaultStake: singlesStakes[bet.id] || stake || '100',
+      defaultStake: isPromoLocked ? String(promoAmount) : (singlesStakes[bet.id] || stake || '100'),
     });
     setIsMobileOpen(false);
-  }, [stake, singlesStakes]);
+  }, [stake, singlesStakes, isPromoLocked, promoAmount]);
 
   const setBetslipPref = useCallback((key, value) => {
     setBetslipPrefsState((prev) => {
@@ -701,25 +778,36 @@ export function BetSlipProvider({ children }) {
   );
 
   const totalStakeAmount = useMemo(() => {
+    if (isPromoLocked) return promoAmount;
     if (betType === 'multi') return parseFloat(stake) || 0;
     return bets.reduce((sum, bet) => {
       const s = parseFloat(singlesStakes[bet.id] || stake || 0);
       return sum + (s || 0);
     }, 0);
-  }, [betType, bets, stake, singlesStakes]);
+  }, [betType, bets, stake, singlesStakes, isPromoLocked, promoAmount]);
 
   const potentialReturn = useMemo(() => {
     if (bets.length === 0) return '0.00';
+    const isFreeBet = activeFundingSource === 'freebet';
     if (betType === 'multi') {
-      const s = parseFloat(stake) || 0;
-      return computeAccumulatorPayout(s, bets.map((bet) => bet.odds)).potentialPayout.toFixed(2);
+      const s = isPromoLocked ? promoAmount : (parseFloat(stake) || 0);
+      if (s <= 0) return '0.00';
+      const combinedOdds = computeAccumulatorPayout(1, bets.map((bet) => bet.odds)).fullCombinedOdds;
+      if (isFreeBet) {
+        return (Math.max(0, s * (combinedOdds - 1))).toFixed(2);
+      }
+      return (s * combinedOdds).toFixed(2);
     }
     const total = bets.reduce((sum, bet) => {
-      const s = parseFloat(singlesStakes[bet.id] || stake || 0) || 0;
+      const s = isPromoLocked ? promoAmount : (parseFloat(singlesStakes[bet.id] || stake || 0) || 0);
+      if (s <= 0) return sum;
+      if (isFreeBet) {
+        return sum + Math.max(0, s * (bet.odds - 1));
+      }
       return sum + s * bet.odds;
     }, 0);
     return total.toFixed(2);
-  }, [bets, betType, stake, singlesStakes, multiOdds]);
+  }, [bets, betType, stake, singlesStakes, isPromoLocked, promoAmount, activeFundingSource]);
 
   const placeBets = useCallback(async (options = {}) => {
     if (placingInFlightRef.current) {
@@ -731,7 +819,7 @@ export function BetSlipProvider({ children }) {
     const chosenRewardId = options.rewardId || selectedRewardId || null;
     const stakeSource = ['bonus', 'freebet'].includes(options.stakeSource)
       ? options.stakeSource
-      : (selectedReward ? selectedReward.rewardType : 'cash');
+      : activeFundingSource;
     const prefs = loadBetslipPrefs();
     const targetSingleId = options.singleBetId || null;
 
@@ -750,6 +838,7 @@ export function BetSlipProvider({ children }) {
     if (!DEMO_MODE) {
       try {
         const placeSingle = async (bet, stakeAmount) => {
+          const finalStake = isPromoLocked ? promoAmount : stakeAmount;
           const res = await apiFetch('/api/bets/place', {
             method: 'POST',
             headers: { 'X-Idempotency-Key': `single-${bet.id}-${attemptId}` },
@@ -763,7 +852,7 @@ export function BetSlipProvider({ children }) {
               team2Name: bet.team2Name || null,
               league: bet.league || null,
               sport: bet.sport || null,
-              stake: stakeAmount,
+              stake: finalStake,
               clientOdds: bet.odds,
               fundSource: stakeSource,
               rewardId: chosenRewardId,
@@ -790,7 +879,7 @@ export function BetSlipProvider({ children }) {
         const placeSingles = async (workingBets) => {
           const placedIds = [];
           for (const bet of workingBets) {
-            const stakeAmount = parseFloat(singlesStakes[bet.id] || stake || 0);
+            const stakeAmount = isPromoLocked ? promoAmount : parseFloat(singlesStakes[bet.id] || stake || 0);
             if (!stakeAmount || stakeAmount <= 0) {
               return { success: false, error: `Enter stake for "${bet.selectionName}"` };
             }
@@ -802,7 +891,7 @@ export function BetSlipProvider({ children }) {
         };
 
         const placeMulti = async (workingBets) => {
-          const stakeAmount = parseFloat(stake);
+          const stakeAmount = isPromoLocked ? promoAmount : parseFloat(stake);
           if (!stakeAmount || stakeAmount <= 0) {
             return { success: false, error: 'Enter a valid stake amount' };
           }
@@ -1176,7 +1265,12 @@ export function BetSlipProvider({ children }) {
     setSelectedRewardId,
     selectReward,
     selectedReward,
+    fundingSource,
+    activeFundingSource,
+    selectFundingSource,
+    isPromoLocked,
     isStakeLocked,
+    promoAmount,
   }), [
     bets,
     placedBets,
@@ -1218,7 +1312,12 @@ export function BetSlipProvider({ children }) {
     setSelectedRewardId,
     selectReward,
     selectedReward,
+    fundingSource,
+    activeFundingSource,
+    selectFundingSource,
+    isPromoLocked,
     isStakeLocked,
+    promoAmount,
   ]);
 
   return (

@@ -23,13 +23,13 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
     betType, totalStakeAmount, setSingleStake,
     hasBlockingConflicts, singlesStakes,
     hasPendingOddsAcceptance,
-    availableRewards, selectedRewardId, setSelectedRewardId, selectReward, selectedReward, isStakeLocked,
+    availableRewards, selectedRewardId, setSelectedRewardId, selectReward, selectedReward,
+    fundingSource, activeFundingSource, selectFundingSource, isPromoLocked, promoAmount,
   } = useBetSlip();
   const {
     user, isLoggedIn, deductStake, refundStake, showToast, openLoginModal,
   } = useAuth();
   const [isPlacing, setIsPlacing] = useState(false);
-  const [stakeSource, setStakeSource] = useState('cash');
   const [placementNotice, setPlacementNotice] = useState(null);
   const hasOddsUpdates = bets.some((bet) => bet.oddsChanged || bet.oddsStatus === 'ODDS_CHANGED');
   const needsOddsAcceptance = hasPendingOddsAcceptance;
@@ -46,6 +46,7 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
       : (hasOddsUpdates ? 'Odds updated — review the new prices and tap Place again.' : null));
 
   const singlesStakeInputValue = (() => {
+    if (isPromoLocked) return String(promoAmount);
     if (betType === 'multi') return stake;
     const values = bets.map((b) => singlesStakes[b.id]).filter((v) => v != null && v !== '');
     if (values.length === 0) return stake;
@@ -53,11 +54,9 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
       && values.every((v) => String(v) === String(values[0]));
     return allSame ? String(values[0]) : '';
   })();
-  const singlesStakePlaceholder = betType === 'singles'
-    && bets.some((b) => singlesStakes[b.id])
-    && !singlesStakeInputValue
-    ? 'Mixed'
-    : '0.00';
+  const singlesStakePlaceholder = isPromoLocked
+    ? String(promoAmount)
+    : (betType === 'singles' && bets.some((b) => singlesStakes[b.id]) && !singlesStakeInputValue ? 'Mixed' : '0.00');
 
   if (betCount === 0) return null;
 
@@ -68,14 +67,7 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
   const canUseBonus = bonusAvailable > 0 && canBetWithBonusOnLegs(bets);
   const canUseFreebet = freebetAvailable > 0;
 
-  let activeSource = 'cash';
-  if (selectedReward) {
-    activeSource = selectedReward.rewardType;
-  } else if (stakeSource === 'bonus' && canUseBonus) {
-    activeSource = 'bonus';
-  } else if (stakeSource === 'freebet' && canUseFreebet) {
-    activeSource = 'freebet';
-  }
+  const activeSource = activeFundingSource;
 
   const spinGrantNotice = buildSpinGrantNotice(user?.spinGrants);
   const showSpinExpiry = spinGrantNotice && (activeSource === 'bonus' || activeSource === 'freebet');
@@ -200,28 +192,8 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
     }
   };
 
-  const isPromoLocked = Boolean(isStakeLocked || selectedReward || activeSource === 'freebet' || activeSource === 'bonus');
-
   const handleSelectPaymentMethod = (type, reward = null) => {
-    if (type === 'cash') {
-      setSelectedRewardId(null);
-      setStakeSource('cash');
-    } else if (reward) {
-      selectReward(reward);
-      setStakeSource(reward.rewardType);
-    } else if (type === 'freebet') {
-      setSelectedRewardId(null);
-      setStakeSource('freebet');
-      const amtStr = String(freebetAvailable);
-      setStake(amtStr);
-      bets.forEach((b) => setSingleStake(b.id, amtStr));
-    } else if (type === 'bonus') {
-      setSelectedRewardId(null);
-      setStakeSource('bonus');
-      const amtStr = String(bonusAvailable);
-      setStake(amtStr);
-      bets.forEach((b) => setSingleStake(b.id, amtStr));
-    }
+    selectFundingSource(type, reward);
   };
 
   const stakeSourceToggle = (
@@ -251,20 +223,20 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
           );
         })}
 
-        {availableRewards.length === 0 && freebetAvailable > 0 && (
+        {freebetAvailable > 0 && !availableRewards.some((r) => r.rewardType === 'freebet') && (
           <button
             type="button"
-            className={`betslip-stake-source__tab betslip-stake-source__tab--reward ${activeSource === 'freebet' ? 'active betslip-stake-source__tab--freebet' : ''}`}
+            className={`betslip-stake-source__tab betslip-stake-source__tab--reward ${!selectedRewardId && activeSource === 'freebet' ? 'active betslip-stake-source__tab--freebet' : ''}`}
             onClick={() => handleSelectPaymentMethod('freebet')}
           >
             🎁 Free Bet {formatInr(freebetAvailable)}
           </button>
         )}
 
-        {availableRewards.length === 0 && bonusAvailable > 0 && (
+        {bonusAvailable > 0 && !availableRewards.some((r) => r.rewardType === 'bonus') && (
           <button
             type="button"
-            className={`betslip-stake-source__tab betslip-stake-source__tab--reward ${activeSource === 'bonus' ? 'active betslip-stake-source__tab--bonus' : ''}`}
+            className={`betslip-stake-source__tab betslip-stake-source__tab--reward ${!selectedRewardId && activeSource === 'bonus' ? 'active betslip-stake-source__tab--bonus' : ''}`}
             onClick={() => handleSelectPaymentMethod('bonus')}
           >
             ⭐ Bonus {formatInr(bonusAvailable)}
@@ -318,7 +290,7 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
 
   const stakeControls = (
     <>
-      {!isStakeLocked && !isPromoLocked && (
+      {!isPromoLocked ? (
         <div className="betslip-quick-stakes">
           {QUICK_STAKES.map(amount => (
             <button
@@ -330,6 +302,10 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
               ₹{amount}
             </button>
           ))}
+        </div>
+      ) : (
+        <div style={{ fontSize: '0.78rem', color: '#94a3b8', fontStyle: 'italic', marginBottom: '8px' }}>
+          🔒 Promotional stake is fixed ({formatInr(promoAmount)}).
         </div>
       )}
 
@@ -343,7 +319,7 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
             inputMode="decimal"
             autoComplete="off"
             placeholder={singlesStakePlaceholder}
-            value={betType === 'multi' ? stake : singlesStakeInputValue}
+            value={isPromoLocked ? String(promoAmount) : (betType === 'multi' ? stake : singlesStakeInputValue)}
             readOnly={isPromoLocked}
             disabled={isPromoLocked}
             className={`betslip-stake-input ${isPromoLocked ? 'betslip-stake-input--locked' : ''}`}
@@ -359,8 +335,8 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
             id="stake-input"
             aria-label={betType === 'multi' ? 'Stake amount' : 'Stake amount per single bet'}
           />
-          {isStakeLocked && (
-            <span className="betslip-stake-lock-icon" title="Stake locked to exact reward amount">
+          {isPromoLocked && (
+            <span className="betslip-stake-lock-icon" title={`Stake locked to full promotional amount: ₹${promoAmount}`}>
               🔒
             </span>
           )}
@@ -404,31 +380,42 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
         )}
 
         <div className="betslip-modal-row betslip-modal-actions">
-          <div className="betslip-modal-quick-stakes">
-            {QUICK_STAKES.map(amount => (
-              <button
-                key={amount}
-                type="button"
-                className="betslip-quick-stake-btn"
-                onClick={() => (betType === 'multi' ? setStake(String(amount)) : applySinglesStake(String(amount)))}
-              >
-                ₹{amount}
-              </button>
-            ))}
-          </div>
+          {!isPromoLocked ? (
+            <div className="betslip-modal-quick-stakes">
+              {QUICK_STAKES.map(amount => (
+                <button
+                  key={amount}
+                  type="button"
+                  className="betslip-quick-stake-btn"
+                  onClick={() => (betType === 'multi' ? setStake(String(amount)) : applySinglesStake(String(amount)))}
+                >
+                  ₹{amount}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontSize: '0.78rem', color: '#f59e0b', fontWeight: 600, padding: '4px 0' }}>
+              🔒 Promotional stake is fixed ({formatInr(promoAmount)})
+            </div>
+          )}
           <input
-            type="number"
-            className="betslip-modal-stake-input"
+            type="text"
+            className={`betslip-modal-stake-input ${isPromoLocked ? 'betslip-stake-input--locked' : ''}`}
             placeholder="Stake"
-            value={stake}
-            onChange={(e) => (betType === 'multi' ? setStake(e.target.value) : applySinglesStake(e.target.value))}
-            min={MIN_STAKE_INR}
+            value={isPromoLocked ? String(promoAmount) : stake}
+            readOnly={isPromoLocked}
+            disabled={isPromoLocked}
+            onChange={(e) => {
+              if (isPromoLocked) return;
+              if (betType === 'multi') setStake(e.target.value);
+              else applySinglesStake(e.target.value);
+            }}
             id="modal-stake-input"
             aria-label={betType === 'multi' ? 'Stake amount' : 'Stake amount per single bet'}
           />
           <button
             className={`betslip-place-btn betslip-modal-place-btn ${isPlacing ? 'is-placing' : ''}`}
-            disabled={!stake || parseFloat(stake) < MIN_STAKE_INR || isPlacing || hasBlockingConflicts || needsOddsAcceptance}
+            disabled={(!stake && !isPromoLocked) || isPlacing || hasBlockingConflicts || needsOddsAcceptance}
             type="button"
             onClick={handlePlaceBet}
           >

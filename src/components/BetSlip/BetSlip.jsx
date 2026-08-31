@@ -41,6 +41,9 @@ export default function BetSlip({ showFooter = true, hidePerBetStakes = false })
     acceptOddsChange,
     acceptAllOddsChanges,
     hasPendingOddsAcceptance,
+    isPromoLocked,
+    promoAmount,
+    activeFundingSource,
   } = useBetSlip();
   const [showSettings, setShowSettings] = useState(false);
   const pendingOddsCount = bets.filter((b) => b.oddsStatus === ODDS_STATUS.CHANGED).length;
@@ -220,18 +223,25 @@ export default function BetSlip({ showFooter = true, hidePerBetStakes = false })
               {/* Stake Block */}
               {showPerBetStakes && (
                 <div className="betslip-bet-stake-block">
-                  <div className="betslip-bet-quick-stakes">
-                    {PER_BET_QUICK_STAKES.map((amount) => (
-                      <button
-                        key={amount}
-                        type="button"
-                        className={`betslip-bet-quick-stake${String(amount) === String(stakeVal) ? ' is-active' : ''}`}
-                        onClick={() => setSingleStake(bet.id, String(amount))}
-                      >
-                        ₹{amount >= 1000 ? `${amount / 1000}K` : amount}
-                      </button>
-                    ))}
-                  </div>
+                  {!isPromoLocked && (
+                    <div className="betslip-bet-quick-stakes">
+                      {PER_BET_QUICK_STAKES.map((amount) => (
+                        <button
+                          key={amount}
+                          type="button"
+                          className={`betslip-bet-quick-stake${String(amount) === String(stakeVal) ? ' is-active' : ''}`}
+                          onClick={() => setSingleStake(bet.id, String(amount))}
+                        >
+                          ₹{amount >= 1000 ? `${amount / 1000}K` : amount}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {isPromoLocked && (
+                    <div style={{ fontSize: '0.78rem', color: '#f59e0b', fontWeight: 600, marginBottom: '6px' }}>
+                      🔒 {activeFundingSource === 'freebet' ? 'Free Bet' : 'Bonus'} must be used in full: ₹{promoAmount}
+                    </div>
+                  )}
                   <label className="betslip-bet-stake-row" htmlFor={`stake-${bet.id}`}>
                     <span>Stake: ₹</span>
                     <input
@@ -239,10 +249,18 @@ export default function BetSlip({ showFooter = true, hidePerBetStakes = false })
                       type="text"
                       inputMode="decimal"
                       autoComplete="off"
-                      value={stakeVal}
-                      onChange={(e) => setSingleStake(bet.id, sanitizeStakeInput(e.target.value))}
+                      value={isPromoLocked ? String(promoAmount) : stakeVal}
+                      readOnly={isPromoLocked}
+                      disabled={isPromoLocked}
+                      className={isPromoLocked ? 'betslip-stake-input--locked' : ''}
+                      onChange={(e) => {
+                        if (!isPromoLocked) {
+                          setSingleStake(bet.id, sanitizeStakeInput(e.target.value));
+                        }
+                      }}
                       placeholder="0.00"
                     />
+                    {isPromoLocked && <span style={{ marginLeft: 6 }}>🔒</span>}
                   </label>
                   <p className="betslip-bet-winnings">
                     <span>Possible return:</span>
