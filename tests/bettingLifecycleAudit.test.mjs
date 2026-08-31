@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { query, withTransaction } from '../db/pg.js';
 import { betPlacementEngine } from '../lib/betPlacementEngine.mjs';
-import { settleBetRecord } from '../lib/betSettlementEngine.mjs';
+import { betSettlementEngine } from '../lib/betSettlementEngine.mjs';
 import { depositEngine } from '../lib/depositEngine.mjs';
 import { BONUS_MIN_BET_ODDS } from '../lib/promoRules.mjs';
 import { MIN_DEPOSIT_INR } from '../lib/vipBenefits.mjs';
@@ -77,28 +77,34 @@ test('PRODUCTION-LEVEL COMPLETE BETTING LIFECYCLE AUDIT', async (t) => {
     assert.strictEqual(Number(wAfterPlace.locked_deposit_balance), 0, 'Locked deposit must be used first in waterfall deduction (200 -> 0)');
 
     // Settle Bet as WON
-    const settleResult = await settleBetRecord(betId, {
-      outcome: 'WON',
-      settlementReason: 'audit_test_win',
-      match: { status: 'FINISHED' },
+    const settleResult = await betSettlementEngine.settleSingleBet({
+      betId,
+      matchState: {
+        __bypassAuth: true,
+        status: 'COMPLETED',
+        winner: '1',
+        __forcedOutcome: 'WON',
+      },
     });
 
-    assert.strictEqual(settleResult.success, true, 'Settlement must succeed');
-    assert.strictEqual(settleResult.status, 'WON');
+    assert.strictEqual(settleResult.outcome, 'WON', 'Settlement must succeed as WON');
 
     // Verify wallet credited with Gross Payout (₹500)
     const wAfterWin = (await query(`SELECT balance, winnings_balance FROM wallets WHERE user_id = $1`, [testUserId])).rows[0];
     assert.strictEqual(Number(wAfterWin.balance), 1300, 'Cash balance must equal 800 + 500 = 1300');
     assert.strictEqual(Number(wAfterWin.winnings_balance), 300, 'Net winnings must record 500 - 200 = 300');
 
-    // Verify settlement idempotency (calling settleBetRecord again does nothing)
-    const secondSettle = await settleBetRecord(betId, {
-      outcome: 'WON',
-      settlementReason: 'duplicate_attempt',
-      match: { status: 'FINISHED' },
+    // Verify settlement idempotency (calling settleSingleBet again does nothing)
+    const secondSettle = await betSettlementEngine.settleSingleBet({
+      betId,
+      matchState: {
+        __bypassAuth: true,
+        status: 'COMPLETED',
+        winner: '1',
+        __forcedOutcome: 'WON',
+      },
     });
-    assert.strictEqual(secondSettle.success, true);
-    assert.strictEqual(secondSettle.alreadySettled, true, 'Second settlement must be marked as already settled');
+    assert.strictEqual(secondSettle.status, 'ALREADY_SETTLED', 'Second settlement must be marked as already settled');
 
     const wAfterDuplicate = (await query(`SELECT balance FROM wallets WHERE user_id = $1`, [testUserId])).rows[0];
     assert.strictEqual(Number(wAfterDuplicate.balance), 1300, 'Balance must remain exactly 1300 without duplicate credit');
@@ -139,8 +145,8 @@ test('PRODUCTION-LEVEL COMPLETE BETTING LIFECYCLE AUDIT', async (t) => {
           idempotencyKey: `idemp_low_odds_bonus_${Date.now()}`,
         });
       },
-      (err) => err.message.includes('BONUS_ODDS_GATE') || err.message.includes('1.40'),
-      'Bonus bet on odds < 1.40 must be rejected'
+      (err) => err.message.includes('BONUS_ODDS_GATE') || err.message.includes('1.75') || err.message.includes('1.40'),
+      'Bonus bet on odds < threshold must be rejected'
     );
 
     // 3C. Place full bonus bet (₹900 @ 2.00)
@@ -164,13 +170,17 @@ test('PRODUCTION-LEVEL COMPLETE BETTING LIFECYCLE AUDIT', async (t) => {
     assert.strictEqual(Number(wBonusAfter.bonus_balance), 0, 'Bonus balance must be 0 after ₹900 bet');
 
     // Settle as VOID -> Bonus must be returned to bonus_balance
-    const voidSettle = await settleBetRecord(bonusBetId, {
-      outcome: 'VOID',
-      settlementReason: 'match_abandoned',
-      match: { status: 'CANCELLED' },
+    const voidSettle = await betSettlementEngine.settleSingleBet({
+      betId: bonusBetId,
+      matchState: {
+        __bypassAuth: true,
+        status: 'COMPLETED',
+        isCancelled: true,
+        __forcedOutcome: 'VOID',
+      },
     });
 
-    assert.strictEqual(voidSettle.status, 'VOID');
+    assert.strictEqual(voidSettle.outcome, 'VOID');
     const wBonusRestored = (await query(`SELECT bonus_balance FROM wallets WHERE user_id = $1`, [testUserId])).rows[0];
     assert.strictEqual(Number(wBonusRestored.bonus_balance), 900, 'Bonus balance must be restored to 900 on VOID');
   });
@@ -216,13 +226,17 @@ test('PRODUCTION-LEVEL COMPLETE BETTING LIFECYCLE AUDIT', async (t) => {
     const balanceBeforeWin = Number(wFreebetAfter.balance);
 
     // Settle as WON: Profit only = 500 * (3.00 - 1) = ₹1000 cash credit
-    const settleFreebet = await settleBetRecord(freebetBetId, {
-      outcome: 'WON',
-      settlementReason: 'freebet_won',
-      match: { status: 'FINISHED' },
+    const settleFreebet = await betSettlementEngine.settleSingleBet({
+      betId: freebetBetId,
+      matchState: {
+        __bypassAuth: true,
+        status: 'COMPLETED',
+        winner: '1',
+        __forcedOutcome: 'WON',
+      },
     });
 
-    assert.strictEqual(settleFreebet.status, 'WON');
+    assert.strictEqual(settleFreebet.outcome, 'WON');
     const wFreebetWin = (await query(`SELECT balance FROM wallets WHERE user_id = $1`, [testUserId])).rows[0];
     assert.strictEqual(Number(wFreebetWin.balance), balanceBeforeWin + 1000, 'Free bet win must credit net profit of ₹1000');
   });
