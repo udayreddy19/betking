@@ -7,8 +7,8 @@ import { paymentProviderService } from '../../lib/paymentProviders/paymentProvid
 
 async function createTestUserAndWallet(userId, initialBalance = 0) {
   await query(
-    `INSERT INTO users (user_id, email, role, kyc_status, created_at, updated_at)
-     VALUES ($1, $2, 'USER', 'VERIFIED', NOW(), NOW())
+    `INSERT INTO users (user_id, email, role, created_at, updated_at)
+     VALUES ($1, $2, 'USER', NOW(), NOW())
      ON CONFLICT (user_id) DO NOTHING`,
     [userId, `${userId}@test.com`]
   );
@@ -233,13 +233,13 @@ test('ODDSYRA — PRODUCTION PAYMENT GATEWAY MANAGEMENT TEST SUITE', async (t) =
     );
 
     const auditRes = await query(
-      `SELECT * FROM audit_logs 
+      `SELECT * FROM audit_events 
        WHERE action = 'PAYMENT_GATEWAY_CONFIG_CHANGED' AND actor_id = 'admin_audit_tester'
        ORDER BY created_at DESC LIMIT 1`
     );
 
     assert.equal(auditRes.rows.length, 1);
-    assert.equal(auditRes.rows[0].entity_id, 'RAZORPAY');
+    assert.equal(auditRes.rows[0].target_id, 'RAZORPAY');
 
     // Reset default
     await paymentProviderService.updateGatewayConfig('CASHFREE', { enabled: true, isPrimary: true });
