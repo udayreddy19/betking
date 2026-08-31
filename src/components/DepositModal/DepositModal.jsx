@@ -211,8 +211,8 @@ export default function DepositModal() {
         key: activeKey,
         amount: amountPaise,
         currency: orderData.currency || 'INR',
-        name: 'ODDSYRA',
-        description: 'Account Deposit',
+        name: 'ReconcileX',
+        description: 'Account Deposit / Service Credits',
         order_id: orderData.orderId,
         handler: async function (response) {
           setIsProcessing(true);
