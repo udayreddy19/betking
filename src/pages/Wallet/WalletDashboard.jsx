@@ -57,7 +57,7 @@ export default function WalletDashboard() {
       if (txFilter === 'deposits' && tx.type !== 'deposit') return false;
       if (txFilter === 'withdrawals' && !['withdraw', 'withdraw_cancel'].includes(tx.type)) return false;
       if (txFilter === 'betting' && !['bet_stake', 'bet_win', 'cashout', 'refund'].includes(tx.type)) return false;
-      if (txFilter === 'rewards' && !['bonus', 'freebet', 'loyalty_redeem', 'vip_cashback', 'vip_perk'].includes(tx.type)) return false;
+      if (txFilter === 'rewards' && !['bonus', 'bonus_claim', 'freebet', 'loyalty_redeem', 'vip_cashback', 'vip_perk'].includes(String(tx.type || '').toLowerCase())) return false;
 
       // Status filter
       if (txStatusFilter !== 'all') {
@@ -116,7 +116,10 @@ export default function WalletDashboard() {
       case 'refund':
         return 'Stake refunded due to match cancellation or void selection.';
       case 'bonus':
-        return 'Promotional bonus credit added to your account.';
+      case 'bonus_claim':
+        return tx.method === 'DAILY_SPIN'
+          ? 'Daily Spin promotional bonus credit added to your account.'
+          : 'Promotional bonus credit added to your account.';
       case 'freebet':
         return 'Free bet voucher credit granted for promotional play.';
       case 'loyalty_redeem':

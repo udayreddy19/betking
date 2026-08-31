@@ -29,20 +29,21 @@ function formatExpiryLabel(prize) {
 }
 
 export default function DailySpinModal({ isOpen, onClose }) {
-  const { updateUser, showToast } = useAuth();
+  const { updateUser, refreshWallet, showToast } = useAuth();
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotationDegree, setRotationDegree] = useState(0);
   const [wonPrize, setWonPrize] = useState(null);
   const [prizeMeta, setPrizeMeta] = useState(null);
   const [hasSpunToday, setHasSpunToday] = useState(false);
 
-  const applyWallet = (wallet) => {
+  const applyWallet = (wallet, spinGrants = null) => {
     if (!wallet) return;
     updateUser({
       bonusBalance: Number(wallet.bonusBalance) || 0,
       freebetBalance: Number(wallet.freebetBalance) || 0,
       loyaltyPoints: Number(wallet.loyaltyPoints) || 0,
       coins: Number(wallet.loyaltyPoints) || 0,
+      spinGrants: spinGrants || undefined,
     });
   };
 
@@ -57,7 +58,7 @@ export default function DailySpinModal({ isOpen, onClose }) {
         if (!res.ok) return;
         const data = await res.json();
         if (cancelled) return;
-        applyWallet(data.wallet);
+        applyWallet(data.wallet, data.spinGrants);
         if (data.hasSpunToday && data.prize) {
           setHasSpunToday(true);
           setPrizeMeta(data.prize);
@@ -103,9 +104,11 @@ export default function DailySpinModal({ isOpen, onClose }) {
       }
 
       const prize = WHEEL_SECTORS[data.prize.index] || data.prize;
-      applyWallet(data.wallet);
+      applyWallet(data.wallet, data.spinGrants);
       setHasSpunToday(true);
       setPrizeMeta(data.prize);
+      refreshWallet?.();
+      window.dispatchEvent(new CustomEvent('oddsyra:rewards-updated'));
 
       if (data.alreadySpun) {
         setIsSpinning(false);
@@ -121,6 +124,8 @@ export default function DailySpinModal({ isOpen, onClose }) {
         setIsSpinning(false);
         setWonPrize(prize);
         playWinSound();
+        refreshWallet?.();
+        window.dispatchEvent(new CustomEvent('oddsyra:rewards-updated'));
         if (prize.type === 'bonus') {
           showToast(`You won ${formatInr(prize.value)} bonus — use within ${SPIN_PRIZE_TTL_HOURS}h!`, 'success');
         } else if (prize.type === 'freebet') {
