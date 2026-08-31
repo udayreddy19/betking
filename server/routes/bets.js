@@ -225,6 +225,10 @@ router.post(['/api/bets/place', '/api/v1/bet/place'], requireAuth, async (req, r
       code,
       data: err.data || null,
       oddsUpdates: err.oddsUpdates || (err.data ? [err.data].flat() : undefined),
+      changedSelections: err.changedSelections || err.oddsUpdates || (err.data ? [err.data].flat() : undefined),
+      previousTotalOdds: err.previousTotalOdds ?? err.previousOdds ?? undefined,
+      newTotalOdds: err.newTotalOdds ?? err.currentOdds ?? err.newOdds ?? undefined,
+      requiresAcceptance: err.requiresAcceptance || false,
     });
   }
 });

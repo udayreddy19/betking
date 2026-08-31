@@ -10,7 +10,8 @@ export const ODDS_STATUS = {
 
 /** Normalize API odds update payloads into a consistent shape. */
 export function normalizeOddsUpdates(apiPayload = {}) {
-  const raw = apiPayload.oddsUpdates
+  const raw = apiPayload.changedSelections
+    || apiPayload.oddsUpdates
     || apiPayload.data?.selections
     || (apiPayload.data ? [apiPayload.data] : []);
   const list = Array.isArray(raw) ? raw : [raw];
