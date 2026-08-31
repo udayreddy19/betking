@@ -317,6 +317,7 @@ export function BetSlipProvider({ children }) {
   const oddsConfirmPendingRef = useRef(false);
   const placingInFlightRef = useRef(false);
   const [betslipPrefs, setBetslipPrefsState] = useState(() => loadBetslipPrefs());
+  const [quickBet, setQuickBet] = useState(null);
   const [availableRewards, setAvailableRewards] = useState([]);
   const [selectedRewardId, setSelectedRewardId] = useState(null);
   const [fundingSource, setFundingSource] = useState('cash'); // 'cash' | 'bonus' | 'freebet'
