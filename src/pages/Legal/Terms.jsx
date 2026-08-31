@@ -8,32 +8,28 @@ export default function Terms() {
       <section>
         <h2>1. Platform</h2>
         <p>
-          ODDSYRA provides technology and platform services. By accessing or using this site, you agree to comply with these terms of service.
+          OddsYra provides sports betting and related gaming services. By using this site you agree to these terms.
         </p>
       </section>
       <section>
-        <h2>2. Eligibility & Access</h2>
+        <h2>2. Eligibility</h2>
+        <p>You must be 18 years or older and legally permitted to gamble in your jurisdiction.</p>
+      </section>
+      <section>
+        <h2>3. Account</h2>
         <p>
-          Access to certain areas of the platform is restricted to authorized users. You are responsible for ensuring that all information provided during platform interactions is accurate.
+          You are responsible for keeping your login credentials secure. We may require identity verification for withdrawals and compliance.
         </p>
       </section>
       <section>
-        <h2>3. Account Security</h2>
+        <h2>4. Wagering & withdrawals</h2>
         <p>
-          Authorized account holders are responsible for maintaining the confidentiality of their credentials. Any unauthorized access attempts should be reported to support immediately.
+          Deposited funds must be placed on bets before they can contribute to withdrawable balance.
+          Only bet winnings (and eligible bonus/freebet profits meeting minimum odds) may be withdrawn.
+          Bonus and freebet balances are not directly withdrawable.
         </p>
       </section>
-      <section>
-        <h2>4. Modifications</h2>
-        <p>
-          We reserve the right to modify, suspend, or update platform services, features, and policies as necessary during maintenance and verification cycles.
-        </p>
-      </section>
-      <p style={{ marginTop: '2.5rem' }}>
-        <Link to="/" style={{ color: 'var(--text-secondary, #94a3b8)', textDecoration: 'none' }}>
-          ← Back to home
-        </Link>
-      </p>
+      <p><Link to="/">← Back to home</Link></p>
     </div>
   );
 }

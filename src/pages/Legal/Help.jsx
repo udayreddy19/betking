@@ -1,42 +1,81 @@
 import { Link } from 'react-router-dom';
+import {
+  BONUS_MIN_BET_ODDS,
+  MIN_STAKE_INR,
+} from '../../utils/wageringRules';
+import { MIN_DEPOSIT_INR, MIN_WITHDRAW_INR } from '../../utils/vipBenefits';
+import { LOYALTY_MIN_REDEEM_POINTS, LOYALTY_POINTS_PER_100_STANDARD, LOYALTY_POINTS_PER_100_SILVER, LOYALTY_POINTS_PER_100_GOLD, LOYALTY_POINTS_PER_100_VIP, LOYALTY_POINTS_PER_RUPEE } from '../../utils/loyaltyPoints';
 import './LegalPage.css';
 
 export default function Help() {
   return (
     <div className="legal-page container">
-      <h1>Help & Support</h1>
+      <h1>Help Center</h1>
       <section>
-        <h2>Platform Inquiries & Support</h2>
+        <h2>How to place a bet</h2>
+        <ol>
+          <li>Log in or <Link to="/register">create an account</Link>.</li>
+          <li>Go to <Link to="/sports">Sports</Link> and pick a live match.</li>
+          <li>Tap an odds button to add it to your betslip.</li>
+          <li>Choose Cash, Bonus, or Freebet, enter a stake (min ₹{MIN_STAKE_INR}), and place the bet.</li>
+        </ol>
+      </section>
+      <section>
+        <h2>Wallet & withdrawals</h2>
+        <ul>
+          <li><strong>Deposits</strong> are locked until you wager that amount on bets. Minimum deposit is ₹{MIN_DEPOSIT_INR.toLocaleString('en-IN')}.</li>
+          <li><strong>Winnings</strong> from bets can be withdrawn after Aadhaar and PAN verification (UPI, min ₹{MIN_WITHDRAW_INR.toLocaleString('en-IN')}; max depends on VIP tier).</li>
+          <li><strong>Bonus</strong> cannot be withdrawn. Withdrawing winnings while bonus is still in your wallet sets that bonus to ₹0.</li>
+          <li><strong>Free bets</strong> play like cash at any odds; winnings are profit only.</li>
+        </ul>
+      </section>
+      <section>
+        <h2>Bonus & freebet rules</h2>
+        <ul>
+          <li>Bonus can only be used on selections with odds ≥ {BONUS_MIN_BET_ODDS.toFixed(2)} and must rotate 5 times.</li>
+          <li>After 5× rotation, bonus winnings can be withdrawn. The bonus itself cannot.</li>
+          <li>Free bets play like cash at any odds and pay profit only (stake is not returned).</li>
+          <li>Each promo code can be used once per user, linked to Aadhaar and PAN.</li>
+          <li>SPORTS500, VIP1000, and LIVE100 are welcome offers — only one of these three can be claimed per user.</li>
+        </ul>
+      </section>
+      <section>
+        <h2>Loyalty points</h2>
         <p>
-          If you have questions regarding the ODDSYRA platform, account access, system updates, or verification status, our support team is available to assist you.
+          Standard (Bronze) players earn {LOYALTY_POINTS_PER_100_STANDARD} points per ₹100 staked.
+          Silver earns {LOYALTY_POINTS_PER_100_SILVER}, Gold {LOYALTY_POINTS_PER_100_GOLD}, and Platinum/Diamond {LOYALTY_POINTS_PER_100_VIP} points per ₹100.
+          {LOYALTY_POINTS_PER_RUPEE} points = ₹1. Redeem from {LOYALTY_MIN_REDEEM_POINTS}+ points in the wallet menu — credit goes to cash winnings.
+          VIP tier progress uses lifetime VIP points and is not reduced when you redeem.
         </p>
       </section>
-
       <section>
-        <h2>Contact Information</h2>
+        <h2>Cash out</h2>
         <p>
-          You can reach our team directly by email:
-        </p>
-        <p style={{ margin: '1rem 0' }}>
-          <strong>Email:</strong>{' '}
-          <a href="mailto:support@oddsyra.com" style={{ color: '#3b82f6', textDecoration: 'none', fontWeight: 600 }}>
-            support@oddsyra.com
-          </a>
+          Open My Bets and cash out eligible pending cash bets early. Standard players get 85% of potential
+          payout; VIP club rates go up to 95% at Diamond. Bonus and freebet bets cannot be cashed out.
         </p>
       </section>
-
       <section>
-        <h2>Access & Verification</h2>
+        <h2>Contact</h2>
         <p>
-          During the platform verification and update period, access is limited to authorized accounts. If you are an authorized partner or tester requiring assistance with your credentials, please contact support with your assigned account details.
+          Chat with the assistant, open a ticket (you’ll get an email with your ticket number),
+          follow it in <Link to="/profile?tab=support">Profile → Support</Link>, or email{' '}
+          <a href="mailto:support@oddsyra.com">support@oddsyra.com</a>.
         </p>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="legal-chat-btn"
+            onClick={() => window.dispatchEvent(new CustomEvent('oddsyra:open-support-chat'))}
+          >
+            Open support chat
+          </button>
+          <Link to="/profile?tab=support" className="legal-chat-btn">
+            My tickets
+          </Link>
+        </div>
       </section>
-
-      <p style={{ marginTop: '2.5rem' }}>
-        <Link to="/" style={{ color: 'var(--text-secondary, #94a3b8)', textDecoration: 'none' }}>
-          ← Back to home
-        </Link>
-      </p>
+      <p><Link to="/">← Back to home</Link></p>
     </div>
   );
 }

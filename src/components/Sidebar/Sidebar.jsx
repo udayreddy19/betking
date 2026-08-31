@@ -351,23 +351,40 @@ export default function Sidebar() {
             <div className="sidebar-guest-mark">
               <HiOutlineDocumentText />
             </div>
-            <h3>ODDSYRA</h3>
-            <p>Platform is undergoing updates and verification. Access is temporarily limited to authorized accounts.</p>
-            <button type="button" className="sidebar-guest-btn primary" onClick={handleLogin}>Log In</button>
+            <h3>Welcome to OddsYra</h3>
+            <p>Log in or create an account to access the live sports platform, real-time fixtures, and discrete rewards.</p>
+            <button type="button" className="sidebar-guest-btn primary" onClick={handleLogin}>Log in</button>
+            <button type="button" className="sidebar-guest-btn outline" onClick={handleRegister}>Create account</button>
             <div className="sidebar-list sidebar-list--guest">
               <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/'); }}>
                 <HiOutlineTrophy className="sidebar-list-icon" />
                 <span>Home</span>
                 <FiChevronRight className="sidebar-list-arrow" />
               </button>
-              <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/help'); }}>
-                <FiHelpCircle className="sidebar-list-icon" />
-                <span>Support Desk</span>
+              <button
+                type="button"
+                className="sidebar-list-item"
+                onClick={() => {
+                  closeSidebar();
+                  if (location.pathname === '/') {
+                    document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
+                  } else {
+                    navigate('/#how-it-works');
+                  }
+                }}
+              >
+                <HiOutlineClipboardList className="sidebar-list-icon" />
+                <span>How It Works</span>
                 <FiChevronRight className="sidebar-list-arrow" />
               </button>
-              <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/privacy'); }}>
+              <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/help'); }}>
+                <FiHelpCircle className="sidebar-list-icon" />
+                <span>Help & Support</span>
+                <FiChevronRight className="sidebar-list-arrow" />
+              </button>
+              <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/responsible-gaming'); }}>
                 <FiShield className="sidebar-list-icon" />
-                <span>Privacy Policy</span>
+                <span>Responsible Gaming</span>
                 <FiChevronRight className="sidebar-list-arrow" />
               </button>
               <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/terms'); }}>

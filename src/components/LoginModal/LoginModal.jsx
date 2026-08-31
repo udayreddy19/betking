@@ -203,43 +203,48 @@ export default function LoginModal() {
               </div>
             )}
 
-            {/* Reset token field */}
+            {/* Reset Code input for Step 2 */}
             {mode === 'reset' && (
               <div className="form-group">
-                <label htmlFor="reset-token">Reset code</label>
+                <label className="form-label" htmlFor="login-reset-token">6-digit reset code</label>
                 <input
-                  id="reset-token"
+                  className="form-input"
+                  id="login-reset-token"
                   type="text"
-                  placeholder="Enter the 6-digit code from email"
-                  value={resetToken}
-                  onChange={(e) => setResetToken(e.target.value)}
+                  inputMode="numeric"
                   autoComplete="one-time-code"
+                  maxLength={6}
+                  pattern="[0-9]{6}"
+                  placeholder="Enter 6-digit code"
+                  value={resetToken}
+                  onChange={e => setResetToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   required
                 />
               </div>
             )}
 
-            {/* Password field */}
+            {/* Password fields for Login and Reset Password */}
             {mode !== 'forgot' && (
               <div className="form-group">
-                <label htmlFor="login-password">
+                <label className="form-label" htmlFor="login-password">
                   {mode === 'reset' ? 'New password' : 'Password'}
                 </label>
-                <div className="password-input-wrap">
+                <div className="form-input-wrapper">
                   <input
+                    className="form-input"
                     id="login-password"
                     type={showPassword ? 'text' : 'password'}
                     placeholder={mode === 'reset' ? 'At least 6 characters' : 'Enter your password'}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={e => setPassword(e.target.value)}
                     autoComplete={mode === 'reset' ? 'new-password' : 'current-password'}
                     required
                   />
                   <button
                     type="button"
-                    className="toggle-password-btn"
+                    className="password-toggle"
                     onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-label="Toggle password visibility"
                   >
                     {showPassword ? <IoEyeOffOutline /> : <IoEyeOutline />}
                   </button>
@@ -247,16 +252,17 @@ export default function LoginModal() {
               </div>
             )}
 
-            {/* Confirm Password (reset mode only) */}
+            {/* Confirm Password for Reset Mode */}
             {mode === 'reset' && (
               <div className="form-group">
-                <label htmlFor="login-confirm-password">Confirm new password</label>
+                <label className="form-label" htmlFor="login-password-confirm">Confirm new password</label>
                 <input
-                  id="login-confirm-password"
+                  className="form-input"
+                  id="login-password-confirm"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Re-enter new password"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={e => setConfirmPassword(e.target.value)}
                   autoComplete="new-password"
                   required
                 />
@@ -270,7 +276,7 @@ export default function LoginModal() {
                 ? 'Send reset link'
                 : mode === 'reset'
                 ? 'Update password'
-                : 'Log In'}
+                : 'Log in'}
             </button>
 
             <div className="modal-links">
@@ -294,9 +300,9 @@ export default function LoginModal() {
                   <button type="button" onClick={() => { resetForm(); setMode('forgot'); }}>
                     Forgot password?
                   </button>
-                  <span className="modal-private-note" style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary, #94a3b8)', alignSelf: 'center' }}>
-                    Private Access Mode
-                  </span>
+                  <Link to="/register" onClick={handleRegister}>
+                    Create account
+                  </Link>
                 </>
               )}
             </div>

@@ -158,23 +158,6 @@ router.post('/google/callback', authGeneralRateLimiter, async (req, res) => {
       return res.status(result.status || 502).json({ error: result.error, code: result.code });
     }
 
-    const { isRegistrationEnabled, isPrivateAccessMode, isPrivateAccessAllowed } = await import('../../lib/privateAccessConfig.mjs');
-    if (result.isNewUser && !isRegistrationEnabled()) {
-      return res.status(403).json({
-        message: 'New registrations are temporarily unavailable.',
-        error: 'New registrations are temporarily unavailable.',
-        code: 'REGISTRATION_DISABLED',
-      });
-    }
-
-    if (result.user && isPrivateAccessMode() && !isPrivateAccessAllowed(result.user.email)) {
-      return res.status(403).json({
-        message: 'Access to the platform is temporarily restricted.',
-        error: 'Access to the platform is temporarily restricted.',
-        code: 'PRIVATE_ACCESS_RESTRICTED',
-      });
-    }
-
     setRefreshCookie(res, result.refreshToken);
     const csrfToken = issueCsrfCookie(res);
 
@@ -194,15 +177,6 @@ router.post('/google/callback', authGeneralRateLimiter, async (req, res) => {
 // ── POST /api/auth/signup ──
 router.post('/signup', registerRateLimiter, async (req, res) => {
   try {
-    const { isRegistrationEnabled } = await import('../../lib/privateAccessConfig.mjs');
-    if (!isRegistrationEnabled()) {
-      return res.status(403).json({
-        message: 'New registrations are temporarily unavailable.',
-        error: 'New registrations are temporarily unavailable.',
-        code: 'REGISTRATION_DISABLED',
-      });
-    }
-
     const result = await signup(query, withTransaction, {
       ...req.body,
       ipAddress: req.ip || req.headers['x-forwarded-for'],
@@ -239,7 +213,6 @@ router.post('/signup', registerRateLimiter, async (req, res) => {
 // ── POST /api/auth/login ──
 router.post('/login', loginRateLimiter, async (req, res) => {
   try {
-    const { isPrivateAccessMode, isPrivateAccessAllowed } = await import('../../lib/privateAccessConfig.mjs');
     const result = await login(query, {
       ...req.body,
       ip: req.ip || req.headers['x-forwarded-for'],
@@ -248,14 +221,6 @@ router.post('/login', loginRateLimiter, async (req, res) => {
 
     if (result.error) {
       return res.status(result.status || 401).json({ error: result.error, code: result.code });
-    }
-
-    if (result.user && isPrivateAccessMode() && !isPrivateAccessAllowed(result.user.email)) {
-      return res.status(403).json({
-        message: 'Access to the platform is temporarily restricted.',
-        error: 'Access to the platform is temporarily restricted.',
-        code: 'PRIVATE_ACCESS_RESTRICTED',
-      });
     }
 
     setRefreshCookie(res, result.refreshToken);

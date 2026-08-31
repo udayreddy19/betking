@@ -429,12 +429,7 @@ export function AuthProvider({ children }) {
         body: JSON.stringify({ email: normalizedEmail, password }),
       });
 
-      const data = await res.json().catch(() => ({}));
-      if (res.status === 403) {
-        const errorMsg = data.message || data.error || 'Access to the platform is temporarily restricted.';
-        showToast(errorMsg, 'error');
-        return { ok: false, error: errorMsg };
-      }
+      const data = await res.json();
       if (res.ok && data.success) {
         if (data.accessToken) {
           setAccessToken(data.accessToken);
@@ -458,19 +453,18 @@ export function AuthProvider({ children }) {
         showToast(`Welcome back, ${sessionUser.displayName}!`);
         return true;
       }
-      return { ok: false, error: data.error || data.message || 'Invalid email or password.' };
     } catch {
-      if (!DEMO_MODE) return { ok: false, error: 'Could not connect to server. Please try again.' };
+      if (!DEMO_MODE) return false;
     }
 
-    if (!DEMO_MODE) return { ok: false, error: 'Invalid email or password.' };
+    if (!DEMO_MODE) return false;
 
     // Demo-only offline fallback
     const stored = getStoredUsers().find(
       u => u.email === normalizedEmail && u.password === password
     );
 
-    if (!stored) return { ok: false, error: 'Invalid email or password.' };
+    if (!stored) return false;
 
     const sessionUser = toSessionUser(stored);
     setUser(sessionUser);
@@ -479,7 +473,7 @@ export function AuthProvider({ children }) {
     setIsLoginModalOpen(false);
     showToast(`Welcome back, ${sessionUser.displayName}!`);
     return true;
-  }, [setUser, showToast, syncTransactions]);
+  }, [setUser, showToast]);
 
   const completeGoogleAuth = useCallback(async (userPayload) => {
     const sessionUser = userPayload?.email
