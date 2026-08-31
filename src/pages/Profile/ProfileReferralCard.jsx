@@ -6,6 +6,7 @@ export default function ProfileReferralCard({ onLoaded } = {}) {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const onLoadedRef = useRef(onLoaded);
   onLoadedRef.current = onLoaded;
 
@@ -50,6 +51,8 @@ export default function ProfileReferralCard({ onLoaded } = {}) {
 
   const referredReward = Number(data.referredReward || 500);
   const referrerReward = Number(data.referrerReward || 500);
+  const historyList = Array.isArray(data.history) ? data.history : [];
+  const totalEarned = Number(data.stats?.rewardsEarned || 0);
 
   const copy = async () => {
     try {
@@ -75,48 +78,103 @@ export default function ProfileReferralCard({ onLoaded } = {}) {
     }
   };
 
+  const getStatusBadge = (status, rewardedAt) => {
+    const s = String(status || '').toUpperCase();
+    if (s === 'REWARDED' || rewardedAt) {
+      return <span className="profile-referral-badge profile-referral-badge--rewarded">✓ Rewarded</span>;
+    }
+    if (s === 'QUALIFIED') {
+      return <span className="profile-referral-badge profile-referral-badge--qualified">Qualified</span>;
+    }
+    return <span className="profile-referral-badge profile-referral-badge--pending">Pending</span>;
+  };
+
   return (
-    <div className="profile-loyalty-box">
+    <div className="profile-loyalty-box profile-referral-card">
       <div className="profile-loyalty-head">
-        <span>Refer &amp; Earn</span>
-        <strong>{formatInr(data.stats?.rewardsEarned || 0)}</strong>
+        <span style={{ fontWeight: 800 }}>🎁 Refer &amp; Earn</span>
+        <strong style={{ color: 'var(--color-primary-dark, #16a34a)', fontSize: '1rem' }}>
+          {formatInr(totalEarned)}
+        </strong>
       </div>
-      <p className="profile-loyalty-meta">
-        Invite friends with your link. They get ₹{referredReward} free bet when they sign up —
-        and so do you (₹{referrerReward}). Signup promos cannot be combined with referral.
+
+      <p className="profile-loyalty-meta" style={{ margin: '4px 0 12px', lineHeight: 1.45 }}>
+        Invite friends with your referral link. They get a <strong>₹{referredReward} Free Bet</strong> upon first deposit — and you earn <strong>₹{referrerReward} Free Bet</strong>.
       </p>
-      <p className="profile-loyalty-meta" style={{ fontWeight: 700 }}>
-        Code: {data.code || '—'}
-      </p>
-      <p className="profile-loyalty-meta" style={{ wordBreak: 'break-all' }}>
-        {data.link || '—'}
-      </p>
-      <div className="profile-actions profile-referral-actions" style={{ marginTop: 8 }}>
-        <button type="button" className="profile-link-btn" onClick={copy}>
-          {copied ? 'Copied' : 'Copy link'}
+
+      {/* Referral Link / Code Box */}
+      <div className="profile-referral-link-box">
+        <span className="profile-referral-link-text">
+          {data.link || `Code: ${data.code}`}
+        </span>
+        <button type="button" className="profile-link-btn" onClick={copy} style={{ margin: 0, padding: '6px 14px', fontSize: '0.8rem' }}>
+          {copied ? '✓ Copied' : 'Copy link'}
         </button>
-        <button type="button" className="profile-link-btn outline" onClick={share}>
+        <button type="button" className="profile-link-btn outline" onClick={share} style={{ margin: 0, padding: '6px 14px', fontSize: '0.8rem' }}>
           Share
         </button>
       </div>
-      <p className="profile-loyalty-meta" style={{ marginTop: 10, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-        <span><strong>{data.stats?.invited || 0}</strong><br />Invited</span>
-        <span><strong>{data.stats?.qualified || 0}</strong><br />Qualified</span>
-        <span><strong>{data.stats?.pending || 0}</strong><br />Pending</span>
-      </p>
-      <p className="profile-loyalty-meta">
-        Rewards earned: <strong>{formatInr(data.stats?.rewardsEarned || 0)}</strong>
-        {' '}· Free bet reward: ₹{referredReward}
-      </p>
-      {Array.isArray(data.history) && data.history.length > 0 && (
-        <ul className="profile-loyalty-meta" style={{ marginTop: 8, paddingLeft: 18 }}>
-          {data.history.slice(0, 8).map((row) => (
-            <li key={row.id}>
-              {row.referred_mask || 'Friend'} — {row.status}
-              {row.rewarded_at ? ` · rewarded` : ''}
-            </li>
-          ))}
-        </ul>
+
+      {/* 3-Column Summary Stats Grid */}
+      <div className="profile-referral-stats-grid">
+        <div className="profile-referral-stat-card">
+          <span className="profile-referral-stat-val">{data.stats?.invited || 0}</span>
+          <span className="profile-referral-stat-lbl">Invited</span>
+        </div>
+        <div className="profile-referral-stat-card">
+          <span className="profile-referral-stat-val" style={{ color: '#2563eb' }}>{data.stats?.qualified || 0}</span>
+          <span className="profile-referral-stat-lbl">Qualified</span>
+        </div>
+        <div className="profile-referral-stat-card">
+          <span className="profile-referral-stat-val" style={{ color: '#d97706' }}>{data.stats?.pending || 0}</span>
+          <span className="profile-referral-stat-lbl">Pending</span>
+        </div>
+      </div>
+
+      <div className="profile-loyalty-meta" style={{ margin: '8px 0 10px', fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>
+        Rewards earned: <strong style={{ color: 'var(--color-text)' }}>{formatInr(totalEarned)}</strong> · Reward per friend: <strong>₹{referrerReward} Free Bet</strong>
+      </div>
+
+      {/* Referred Friends History (Fixed-Height Scrollable Container) */}
+      {historyList.length > 0 && (
+        <div className="profile-referral-history-section">
+          <div className="profile-referral-history-header">
+            <span>Referred Friends ({historyList.length})</span>
+            {historyList.length > 4 && (
+              <button
+                type="button"
+                className="profile-referral-toggle-btn"
+                onClick={() => setShowAll((prev) => !prev)}
+              >
+                {showAll ? 'Collapse' : `View All (${historyList.length})`}
+              </button>
+            )}
+          </div>
+
+          <div
+            className={`profile-referral-scroll-list ${showAll ? 'profile-referral-scroll-list--expanded' : ''}`}
+            tabIndex={0}
+            role="region"
+            aria-label="Referred friends list"
+          >
+            {historyList.map((row) => (
+              <div key={row.id || row.referred_user_id || row.created_at} className="profile-referral-item">
+                <div className="profile-referral-user">
+                  <span className="profile-referral-avatar-icon">👤</span>
+                  <div>
+                    <div style={{ fontWeight: 700, color: 'var(--color-text)' }}>{row.referred_mask || 'Friend'}</div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)' }}>
+                      {row.rewarded_at ? `₹${referrerReward} Free Bet credited` : (row.status === 'QUALIFIED' ? 'Pending settlement credit' : 'Awaiting qualifying deposit')}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  {getStatusBadge(row.status, row.rewarded_at)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );
