@@ -212,10 +212,14 @@ export function validateInningsPartition(homeInnings, awayInnings) {
  * Extract clean integer runs, wickets, and overs.
  */
 function sanitizeScoreFields(raw = {}) {
-  const runs = Number.isFinite(Number(raw.runs ?? raw.score)) ? Math.max(0, Math.floor(Number(raw.runs ?? raw.score))) : 0;
-  const wickets = Number.isFinite(Number(raw.wickets ?? raw.wkts)) ? Math.max(0, Math.min(10, Math.floor(Number(raw.wickets ?? raw.wkts)))) : 0;
-  const overs = normalizeCricbuzzOvers(raw.overs ?? raw.over ?? '0.0');
-  const declared = Boolean(raw.declared || raw.isDeclared || raw.isDeclaredInnings);
+  const sd = raw.scoreDetails || {};
+  const rawRuns = raw.runs ?? raw.score ?? sd.runs;
+  const rawWickets = raw.wickets ?? raw.wkts ?? sd.wickets;
+  const rawOvers = raw.overs ?? raw.over ?? sd.overs;
+  const runs = Number.isFinite(Number(rawRuns)) ? Math.max(0, Math.floor(Number(rawRuns))) : 0;
+  const wickets = Number.isFinite(Number(rawWickets)) ? Math.max(0, Math.min(10, Math.floor(Number(rawWickets)))) : 0;
+  const overs = normalizeCricbuzzOvers(rawOvers ?? '0.0');
+  const declared = Boolean(raw.declared || raw.isDeclared || raw.isDeclaredInnings || sd.isDeclared);
   return { runs, wickets, overs, declared };
 }
 
@@ -296,6 +300,46 @@ export function normalizeMatch(raw = {}, previous = {}, options = {}) {
       batTeamShort: inn.batTeamShort || inn.teamSName || '',
       ...sanitizeScoreFields(inn),
     }));
+  }
+
+  // If rawInnings was constructed from partial scorecard/testInnings, ensure active live team scores are preserved
+  if (rawInnings.length > 0) {
+    const hasHome = rawInnings.some((inn) => matchesTeamIdentifier(homeTeam, inn.batTeam, inn.batTeamShort, inn.batTeamId));
+    const hasAway = rawInnings.some((inn) => matchesTeamIdentifier(awayTeam, inn.batTeam, inn.batTeamShort, inn.batTeamId));
+
+    const t1r = Number(raw.team1?.runs ?? rawLd.firstRuns ?? rawLd.score1 ?? (rawLd.firstTeamName && matchesTeamIdentifier(homeTeam, rawLd.firstTeamName) ? rawLd.runs : null) ?? 0);
+    const t1w = Number(raw.team1?.wickets ?? rawLd.firstWickets ?? rawLd.wickets1 ?? 0);
+    const t1o = normalizeCricbuzzOvers(raw.team1?.overs || rawLd.firstOvers || rawLd.overs || '0.0');
+
+    const t2r = Number(raw.team2?.runs ?? rawLd.chaseRuns ?? rawLd.score2 ?? (rawLd.chaseTeamName && matchesTeamIdentifier(awayTeam, rawLd.chaseTeamName) ? rawLd.runs : null) ?? 0);
+    const t2w = Number(raw.team2?.wickets ?? rawLd.chaseWickets ?? rawLd.wickets2 ?? 0);
+    const t2o = normalizeCricbuzzOvers(raw.team2?.overs || rawLd.chaseOvers || rawLd.overs2 || '0.0');
+
+    if (!hasHome && (t1r > 0 || (t1o && t1o !== '0.0' && t1o !== '0') || t1w > 0)) {
+      rawInnings.push({
+        inningsId: rawInnings.length + 1,
+        batTeamId: t1Id,
+        batTeam: t1Name,
+        batTeamShort: t1Short,
+        runs: t1r,
+        wickets: t1w,
+        overs: t1o,
+        declared: false,
+      });
+    }
+
+    if (!hasAway && (t2r > 0 || (t2o && t2o !== '0.0' && t2o !== '0') || t2w > 0)) {
+      rawInnings.push({
+        inningsId: rawInnings.length + 1,
+        batTeamId: t2Id,
+        batTeam: t2Name,
+        batTeamShort: t2Short,
+        runs: t2r,
+        wickets: t2w,
+        overs: t2o,
+        declared: false,
+      });
+    }
   } else {
     // Legacy / LiveDetails fields extraction
     const firstRuns = rawLd.firstRuns ?? raw.runs ?? rawLd.score1 ?? raw.score1;

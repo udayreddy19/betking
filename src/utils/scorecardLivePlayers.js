@@ -1,4 +1,4 @@
-import { isPlaceholderPlayerName } from './cricketPlayers';
+import { isPlaceholderPlayerName } from './cricketPlayers.js';
 
 function isUsablePlayer(player) {
   const name = player?.name || (typeof player === 'string' ? player : '');
@@ -18,17 +18,17 @@ function batterFromScorecard(b) {
 function mergeLiveWithScorecardBatter(live, card) {
   if (!card) return live;
   if (!isUsablePlayer(live)) return batterFromScorecard(card);
-  if (String(live.name).toLowerCase() === String(card.name).toLowerCase()) {
+  const liveName = String(live.name).toLowerCase().trim();
+  const cardName = String(card.name).toLowerCase().trim();
+  if (liveName === cardName || liveName.includes(cardName) || cardName.includes(liveName)) {
     return {
       ...live,
+      name: live.name || card.name,
       runs: Math.max(live.runs ?? 0, card.runs ?? 0),
       balls: Math.max(live.balls ?? 0, card.balls ?? 0),
       fours: Math.max(live.fours ?? 0, card.fours ?? 0),
       sixes: Math.max(live.sixes ?? 0, card.sixes ?? 0),
     };
-  }
-  if ((live.runs ?? 0) === 0 && (live.balls ?? 0) === 0 && ((card.runs ?? 0) > 0 || (card.balls ?? 0) > 0)) {
-    return batterFromScorecard(card);
   }
   return live;
 }
@@ -48,19 +48,32 @@ function isWaitingBatter(b) {
 }
 
 function pickCurrentBattingInnings(scorecardInnings = [], liveDetails = {}) {
-  const battingNow = scorecardInnings.filter((inn) =>
-    (inn.batters || []).some(isAtCreaseBatter),
-  );
-  if (battingNow.length) return battingNow[battingNow.length - 1];
-  const started = scorecardInnings.filter((inn) =>
-    (inn.batters || []).some(isWaitingBatter),
-  );
-  if (started.length) return started[started.length - 1];
+  if (!scorecardInnings.length) return null;
+
+  // 1. If explicit liveDetails.inningsId matches an innings, check if that innings is usable
   if (liveDetails.inningsId != null) {
-    const found = scorecardInnings.find((inn) => (inn.inningsId ?? 1) === liveDetails.inningsId);
+    const found = scorecardInnings.find((inn) => (inn.inningsId ?? 1) === Number(liveDetails.inningsId));
     if (found) return found;
   }
-  return scorecardInnings[scorecardInnings.length - 1] || null;
+
+  // 2. An in-progress innings has batters at the crease and is not all-out (10 wkts) or declared
+  const inProgress = scorecardInnings.filter((inn) => {
+    const sd = inn.scoreDetails || {};
+    const wkts = sd.wickets ?? (inn.batters || []).filter((b) => !b.notOut && b.dismissal && !/^(batting|not out)$/i.test(b.dismissal)).length;
+    if (wkts >= 10 || inn.isDeclared) return false;
+    return (inn.batters || []).some(isAtCreaseBatter);
+  });
+  if (inProgress.length) return inProgress[inProgress.length - 1];
+
+  // 3. Check for any innings that is not all-out and not declared
+  const uncompleted = scorecardInnings.filter((inn) => {
+    const sd = inn.scoreDetails || {};
+    const wkts = sd.wickets ?? (inn.batters || []).filter((b) => !b.notOut && b.dismissal && !/^(batting|not out)$/i.test(b.dismissal)).length;
+    return wkts < 10 && !inn.isDeclared;
+  });
+  if (uncompleted.length) return uncompleted[uncompleted.length - 1];
+
+  return null;
 }
 
 /** Fill live batter/bowler slots from scorecard when comm API omits them. */

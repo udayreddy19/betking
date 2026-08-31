@@ -386,17 +386,109 @@ export function buildCanonicalMatchSnapshot(match) {
     }
   }
 
+  // Reconcile: If scorecard was missing the active current innings of either team, add it to inningsList!
+  const hasTeam1Innings = inningsList.some((inn) => teamNameMatches(team1Name, inn.battingTeamName));
+  const hasTeam2Innings = inningsList.some((inn) => teamNameMatches(team2Name, inn.battingTeamName));
+
+  const t1Runs = Number(match.team1?.runs ?? ld.firstRuns ?? ld.score1 ?? (ld.firstTeamName && teamNameMatches(team1Name, ld.firstTeamName) ? ld.runs : null) ?? 0);
+  const t1Wkts = Number(match.team1?.wickets ?? ld.firstWickets ?? ld.wickets1 ?? 0);
+  const t1Ovs = normalizeCricbuzzOvers(match.team1?.overs || ld.firstOvers || ld.overs || '0.0');
+
+  const t2Runs = Number(match.team2?.runs ?? ld.chaseRuns ?? ld.score2 ?? (ld.chaseTeamName && teamNameMatches(team2Name, ld.chaseTeamName) ? ld.runs : null) ?? 0);
+  const t2Wkts = Number(match.team2?.wickets ?? ld.chaseWickets ?? ld.wickets2 ?? 0);
+  const t2Ovs = normalizeCricbuzzOvers(match.team2?.overs || ld.chaseOvers || ld.overs2 || '0.0');
+
+  const isT1Active = (t1Runs > 0 || (t1Ovs && t1Ovs !== '0.0' && t1Ovs !== '0') || t1Wkts > 0);
+  const isT2Active = (t2Runs > 0 || (t2Ovs && t2Ovs !== '0.0' && t2Ovs !== '0') || t2Wkts > 0);
+
+  if (!hasTeam1Innings && isT1Active) {
+    const nextInnNumber = inningsList.length + 1;
+    const inningsOrdinal = isTest ? (nextInnNumber > 2 ? '2nd INNS' : '1st INNS') : (nextInnNumber > 1 ? `${nextInnNumber}nd INNS` : '1st INNS');
+    const liveBatters = [];
+    if (ld.batter1?.name && !isPlaceholderPlayer(ld.batter1.name)) liveBatters.push({ ...ld.batter1, isAtCrease: true, notOut: true });
+    if (ld.batter2?.name && !isPlaceholderPlayer(ld.batter2.name)) liveBatters.push({ ...ld.batter2, isAtCrease: true, notOut: true });
+    const liveBowlers = [];
+    if (ld.bowler?.name && !isPlaceholderPlayer(ld.bowler.name)) liveBowlers.push({ ...ld.bowler });
+
+    inningsList.push({
+      inningsId: nextInnNumber,
+      inningsNumber: nextInnNumber,
+      inningsLabel: `${teamDisplayName(team1Name)} — ${inningsOrdinal}`,
+      inningsName: `${teamDisplayName(team1Name)} ${inningsOrdinal}`,
+      battingTeamName: team1Name,
+      battingTeamShort: team1Short,
+      bowlingTeamName: team2Name,
+      bowlingTeamShort: team2Short,
+      score: t1Runs,
+      runs: t1Runs,
+      wickets: t1Wkts,
+      overs: t1Ovs,
+      status: t1Wkts >= 10 ? 'all_out' : 'in_progress',
+      batters: liveBatters,
+      bowlers: liveBowlers,
+      currentBatters: { striker: liveBatters[0] || null, nonStriker: liveBatters[1] || null },
+      currentBowler: liveBowlers[0] || null,
+      extras: parseExtrasObject(ld.extras),
+      fours: ld.fours != null ? Number(ld.fours) : null,
+      sixes: ld.sixes != null ? Number(ld.sixes) : null,
+      reconciliation: { status: 'RECONCILIATION_PARTIAL_DATA', isReconciled: true, calculatedTotal: t1Runs, actualTotal: t1Runs },
+      isCurrent: true,
+    });
+  }
+
+  if (!hasTeam2Innings && isT2Active) {
+    const nextInnNumber = inningsList.length + 1;
+    const inningsOrdinal = isTest ? (nextInnNumber > 2 ? '2nd INNS' : '1st INNS') : (nextInnNumber > 1 ? `${nextInnNumber}nd INNS` : '1st INNS');
+    const liveBatters = [];
+    if (ld.batter1?.name && !isPlaceholderPlayer(ld.batter1.name)) liveBatters.push({ ...ld.batter1, isAtCrease: true, notOut: true });
+    if (ld.batter2?.name && !isPlaceholderPlayer(ld.batter2.name)) liveBatters.push({ ...ld.batter2, isAtCrease: true, notOut: true });
+    const liveBowlers = [];
+    if (ld.bowler?.name && !isPlaceholderPlayer(ld.bowler.name)) liveBowlers.push({ ...ld.bowler });
+
+    inningsList.push({
+      inningsId: nextInnNumber,
+      inningsNumber: nextInnNumber,
+      inningsLabel: `${teamDisplayName(team2Name)} — ${inningsOrdinal}`,
+      inningsName: `${teamDisplayName(team2Name)} ${inningsOrdinal}`,
+      battingTeamName: team2Name,
+      battingTeamShort: team2Short,
+      bowlingTeamName: team1Name,
+      bowlingTeamShort: team1Short,
+      score: t2Runs,
+      runs: t2Runs,
+      wickets: t2Wkts,
+      overs: t2Ovs,
+      status: t2Wkts >= 10 ? 'all_out' : 'in_progress',
+      batters: liveBatters,
+      bowlers: liveBowlers,
+      currentBatters: { striker: liveBatters[0] || null, nonStriker: liveBatters[1] || null },
+      currentBowler: liveBowlers[0] || null,
+      extras: parseExtrasObject(ld.extras),
+      fours: ld.fours != null ? Number(ld.fours) : null,
+      sixes: ld.sixes != null ? Number(ld.sixes) : null,
+      reconciliation: { status: 'RECONCILIATION_PARTIAL_DATA', isReconciled: true, calculatedTotal: t2Runs, actualTotal: t2Runs },
+      isCurrent: true,
+    });
+  }
+
   // Determine which innings is currently in progress
   let currentInnings = null;
   if (ld.inningsId != null) {
     currentInnings = inningsList.find((i) => i.inningsId === Number(ld.inningsId));
   }
   if (!currentInnings) {
-    // Pick the latest innings with active batters at crease or scored overs/runs
-    const inProgress = inningsList.filter((i) => i.batters?.some((b) => b.isAtCrease) || (i.overs && i.overs !== '0.0' && i.overs !== '0') || i.score > 0);
-    currentInnings = inProgress[inProgress.length - 1] || inningsList[0];
+    // 1. Pick any uncompleted in-progress innings (wickets < 10 && status !== 'declared')
+    const inProgress = inningsList.filter((i) => i.status === 'in_progress' && i.wickets < 10);
+    if (inProgress.length > 0) {
+      currentInnings = inProgress[inProgress.length - 1];
+    }
   }
-  inningsList.forEach((i) => { i.isCurrent = (currentInnings && i.inningsId === currentInnings.inningsId); });
+  if (!currentInnings) {
+    // 2. Pick the latest innings with active batters at crease or scored overs/runs
+    const withActivity = inningsList.filter((i) => i.batters?.some((b) => b.isAtCrease) || (i.overs && i.overs !== '0.0' && i.overs !== '0') || i.score > 0);
+    currentInnings = withActivity[withActivity.length - 1] || inningsList[0];
+  }
+  inningsList.forEach((i) => { i.isCurrent = Boolean(currentInnings && i.inningsId === currentInnings.inningsId); });
 
   // Build unambiguous header scores (never 0/0 for unbatted teams!)
   const team1Innings = inningsList.filter((i) => teamNameMatches(team1Name, i.battingTeamName));
@@ -446,11 +538,11 @@ export function buildCanonicalMatchSnapshot(match) {
       team1Display,
       team1Short,
       team1ScoreText,
-      team1HasBatted: team1Innings.length > 0,
+      team1HasBatted: team1Innings.length > 0 || isT1Active,
       team2Display,
       team2Short,
       team2ScoreText,
-      team2HasBatted: team2Innings.length > 0,
+      team2HasBatted: team2Innings.length > 0 || isT2Active,
     },
   };
 }
