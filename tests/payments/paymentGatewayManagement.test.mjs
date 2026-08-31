@@ -5,6 +5,17 @@ import { query } from '../../db/pg.js';
 import { depositEngine } from '../../lib/depositEngine.mjs';
 import { paymentProviderService } from '../../lib/paymentProviders/paymentProviderService.mjs';
 
+process.env.NODE_ENV = 'test';
+const RZP_TEST_SECRET = 'rzp_test_secret_management_suite';
+const RZP_WEBHOOK_SECRET = 'rzp_test_wh_management_suite';
+const CF_SECRET = 'cf_test_secret_management_suite';
+const CF_WEBHOOK_SECRET = 'cf_test_wh_management_suite';
+
+process.env.RAZORPAY_KEY_SECRET = RZP_TEST_SECRET;
+process.env.RAZORPAY_WEBHOOK_SECRET = RZP_WEBHOOK_SECRET;
+process.env.CASHFREE_CLIENT_SECRET = CF_SECRET;
+process.env.CASHFREE_WEBHOOK_SECRET = CF_WEBHOOK_SECRET;
+
 async function createTestUserAndWallet(userId, initialBalance = 0) {
   const testPhone = `9${Math.floor(100000000 + Math.random() * 900000000)}`;
   await query(
@@ -29,11 +40,16 @@ async function createTestUserAndWallet(userId, initialBalance = 0) {
   );
 }
 
-function generateRazorpaySignature(orderId, paymentId, secret = 'rzp_test_webhook_secret') {
+function generateRazorpayPaymentSignature(orderId, paymentId) {
   return crypto
-    .createHmac('sha256', secret)
+    .createHmac('sha256', RZP_TEST_SECRET)
     .update(`${orderId}|${paymentId}`)
     .digest('hex');
+}
+
+function generateCashfreeWebhookSignature(rawBody, timestamp) {
+  const payload = String(timestamp) + (typeof rawBody === 'string' ? rawBody : JSON.stringify(rawBody));
+  return crypto.createHmac('sha256', CF_WEBHOOK_SECRET).update(payload).digest('base64');
 }
 
 test('ODDSYRA — PRODUCTION PAYMENT GATEWAY MANAGEMENT TEST SUITE', async (t) => {
@@ -118,19 +134,23 @@ test('ODDSYRA — PRODUCTION PAYMENT GATEWAY MANAGEMENT TEST SUITE', async (t) =
 
     // 3. Incoming Webhook for the older Cashfree order arrives
     const paymentId = `cf_pay_${Date.now()}_5`;
+    const rawBody = JSON.stringify({
+      event_time: new Date().toISOString(),
+      type: 'PAYMENT_SUCCESS_WEBHOOK',
+      data: {
+        order: { order_id: orderRes.orderId, order_amount: 750, order_currency: 'INR' },
+        payment: { cf_payment_id: paymentId, payment_status: 'SUCCESS', payment_amount: 750, payment_currency: 'INR' },
+        customer_details: { customer_id: userId },
+      },
+    });
+    const timestamp = String(Date.now());
+    const signature = generateCashfreeWebhookSignature(rawBody, timestamp);
+
     const webhookRes = await depositEngine.processWebhook({
-      rawBody: JSON.stringify({
-        event_time: new Date().toISOString(),
-        type: 'PAYMENT_SUCCESS_WEBHOOK',
-        data: {
-          order: { order_id: orderRes.orderId, order_amount: 750, order_currency: 'INR' },
-          payment: { cf_payment_id: paymentId, payment_status: 'SUCCESS', payment_amount: 750, payment_currency: 'INR' },
-          customer_details: { customer_id: userId },
-        },
-      }),
+      rawBody,
       headers: {
-        'x-webhook-signature': 'sig',
-        'x-webhook-timestamp': String(Date.now()),
+        'x-webhook-signature': signature,
+        'x-webhook-timestamp': timestamp,
       },
       provider: 'CASHFREE',
     });
@@ -154,7 +174,7 @@ test('ODDSYRA — PRODUCTION PAYMENT GATEWAY MANAGEMENT TEST SUITE', async (t) =
 
     // 3. Incoming Confirmation / Webhook for older Razorpay order
     const paymentId = `pay_rzp_${Date.now()}_6`;
-    const signature = generateRazorpaySignature(orderRes.orderId, paymentId);
+    const signature = generateRazorpayPaymentSignature(orderRes.orderId, paymentId);
     const verifyRes = await depositEngine.confirmCheckoutPayment({
       userId,
       provider: 'RAZORPAY',
