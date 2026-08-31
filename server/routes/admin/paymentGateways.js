@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAdminRole, ADMIN_ROLES } from '../../middleware/adminAuth.js';
+import { adminAuth, requireRole, ADMIN_ROLES } from '../../middleware/adminAuth.js';
 import { logAdminAction } from '../../middleware/auditLogger.js';
 import { paymentProviderService } from '../../../lib/paymentProviders/paymentProviderService.mjs';
 
@@ -8,14 +8,14 @@ const router = Router();
 const ALLOWED_ROLES = [
   ADMIN_ROLES.SUPER_ADMIN,
   ADMIN_ROLES.FINANCE_ADMIN,
-  ADMIN_ROLES.TECH_ADMIN,
+  ADMIN_ROLES.OPERATIONS_ADMIN,
 ];
 
 /**
  * GET /api/admin/payment-gateways
  * List all payment gateway configurations, health, and transaction metrics.
  */
-router.get('/', requireAdminRole(ALLOWED_ROLES), async (req, res) => {
+router.get('/', adminAuth, requireRole(ALLOWED_ROLES), async (req, res) => {
   try {
     const gateways = await paymentProviderService.getGatewayConfigs();
     res.json({
@@ -32,7 +32,7 @@ router.get('/', requireAdminRole(ALLOWED_ROLES), async (req, res) => {
  * PATCH /api/admin/payment-gateways/:provider
  * Toggle gateway state, set primary, or toggle allow_user_selection.
  */
-router.patch('/:provider', requireAdminRole(ALLOWED_ROLES), async (req, res) => {
+router.patch('/:provider', adminAuth, requireRole(ALLOWED_ROLES), async (req, res) => {
   const provider = String(req.params.provider).toUpperCase();
   const adminId = req.admin?.adminId || req.admin?.id || 'admin';
 
@@ -78,7 +78,7 @@ router.patch('/:provider', requireAdminRole(ALLOWED_ROLES), async (req, res) => 
  * POST /api/admin/payment-gateways/:provider/test
  * Safely test connection and response latency to the payment provider.
  */
-router.post('/:provider/test', requireAdminRole(ALLOWED_ROLES), async (req, res) => {
+router.post('/:provider/test', adminAuth, requireRole(ALLOWED_ROLES), async (req, res) => {
   const provider = String(req.params.provider).toUpperCase();
 
   try {
