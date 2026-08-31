@@ -20,7 +20,7 @@ import { cleanKycMessage, isKycError, KYC_PROFILE_PATH } from '../../utils/kycUi
 import RazorpayModal from '../RazorpayModal/RazorpayModal';
 import './DepositView.css';
 
-const QUICK_AMOUNTS = [500, 1000, 2500, 5000, 10000, 25000];
+const QUICK_AMOUNTS = [1000, 2500, 5000, 10000, 25000, 50000];
 
 const PAYMENT_METHODS = [
   {
