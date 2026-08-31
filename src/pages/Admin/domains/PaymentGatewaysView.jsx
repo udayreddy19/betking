@@ -4,15 +4,14 @@ import { useAdminToast } from '../components/AdminToastContext';
 import AdminCard from '../components/AdminCard';
 import { StatusBadge } from '../components/AdminBadge';
 import {
-  CreditCardIcon,
-  CheckCircleIcon,
-  XCircleIcon,
+  WalletIcon,
+  CircleCheckIcon,
   RefreshCwIcon,
   ShieldCheckIcon,
   ActivityIcon,
-  AlertTriangleIcon,
+  InfoIcon,
   ZapIcon,
-  SlidersIcon,
+  SettingsIcon,
 } from '../../../icons/animate/index';
 
 export default function PaymentGatewaysView() {
@@ -140,12 +139,12 @@ export default function PaymentGatewaysView() {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{
-                background: 'rgba(59, 130, 246, 0.2)',
+                background: 'rgba(59, 130, 246, 0.15)',
                 padding: '8px',
                 borderRadius: '10px',
                 color: '#60a5fa',
               }}>
-                <CreditCardIcon size={24} />
+                <WalletIcon size={24} />
               </div>
               <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#f8fafc', margin: 0 }}>
                 Payment Gateway Management
@@ -157,21 +156,11 @@ export default function PaymentGatewaysView() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{
-              background: enabledCount > 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-              border: `1px solid ${enabledCount > 0 ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
-              borderRadius: '8px',
-              padding: '8px 16px',
-              textAlign: 'right',
-            }}>
-              <div style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase', fontWeight: '700' }}>
                 Active Routing Mode
               </div>
-              <div style={{
-                fontSize: '14px',
-                fontWeight: '700',
-                color: enabledCount > 0 ? '#34d399' : '#f87171',
-              }}>
+              <div style={{ fontSize: '14px', fontWeight: '800', color: '#38bdf8', marginTop: '2px' }}>
                 {operationalMode}
               </div>
             </div>
@@ -181,17 +170,17 @@ export default function PaymentGatewaysView() {
               disabled={loading}
               style={{
                 background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                color: '#e2e8f0',
-                padding: '10px 16px',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
                 borderRadius: '8px',
-                cursor: loading ? 'not-allowed' : 'pointer',
+                padding: '8px 12px',
+                color: '#cbd5e1',
+                cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
-                fontWeight: '600',
+                gap: '6px',
                 fontSize: '13px',
               }}
+              title="Refresh gateway configs"
             >
               <RefreshCwIcon size={16} className={loading ? 'animate-spin' : ''} />
               Refresh
@@ -199,11 +188,13 @@ export default function PaymentGatewaysView() {
           </div>
         </div>
 
-        {/* Global Checkout Mode Control */}
+        {/* Global Configuration Banner */}
         <div style={{
           marginTop: '20px',
-          paddingTop: '16px',
-          borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+          padding: '12px 16px',
+          background: 'rgba(168, 85, 247, 0.08)',
+          border: '1px solid rgba(168, 85, 247, 0.2)',
+          borderRadius: '10px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -211,7 +202,7 @@ export default function PaymentGatewaysView() {
           gap: '12px',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <SlidersIcon size={18} style={{ color: '#a855f7' }} />
+            <SettingsIcon size={18} style={{ color: '#a855f7' }} />
             <span style={{ fontSize: '13px', color: '#cbd5e1' }}>
               Allow customers to select gateway during checkout (when both are enabled):
             </span>
@@ -403,7 +394,7 @@ export default function PaymentGatewaysView() {
                   gap: '8px',
                   color: testRes.healthy ? '#34d399' : '#f87171',
                 }}>
-                  {testRes.healthy ? <CheckCircleIcon size={16} /> : <AlertTriangleIcon size={16} />}
+                  {testRes.healthy ? <CircleCheckIcon size={16} /> : <InfoIcon size={16} />}
                   <span>
                     {testRes.healthy
                       ? `API Ping Succeeded · Response Time: ${testRes.latencyMs}ms (${testRes.environment})`
