@@ -186,3 +186,57 @@ httpServer.listen(PORT, async () => {
   }
 });
 
+let isShuttingDown = false;
+
+async function handleGracefulShutdown(signal) {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+  logger.info('graceful_shutdown_started', { signal });
+
+  const shutdownTimeout = setTimeout(() => {
+    logger.error('graceful_shutdown_timed_out', { signal });
+    process.exit(1);
+  }, 10000);
+  shutdownTimeout.unref();
+
+  try {
+    httpServer.close(() => {
+      logger.info('http_server_closed');
+    });
+
+    if (process.env.RUN_BACKGROUND_WORKERS !== 'false') {
+      try {
+        const { stopBackgroundWorkers } = await import('../lib/schedulerWorker.mjs');
+        stopBackgroundWorkers();
+      } catch (err) {
+        logger.warn('stop_workers_error', { error: err.message });
+      }
+    }
+
+    try {
+      const { pool } = await import('../db/pg.js');
+      if (pool?.end) await pool.end();
+      logger.info('postgres_pool_closed');
+    } catch (err) {
+      logger.warn('close_pg_error', { error: err.message });
+    }
+
+    try {
+      const { redis } = await import('../db/redis.js');
+      if (redis?.quit) await redis.quit();
+      logger.info('redis_connection_closed');
+    } catch (err) {
+      logger.warn('close_redis_error', { error: err.message });
+    }
+
+    logger.info('graceful_shutdown_complete', { signal });
+    process.exit(0);
+  } catch (err) {
+    logger.error('graceful_shutdown_failed', { error: err.message });
+    process.exit(1);
+  }
+}
+
+process.on('SIGTERM', () => handleGracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => handleGracefulShutdown('SIGINT'));
+

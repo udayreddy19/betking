@@ -8,6 +8,8 @@
     "build": "vite build",
     "start": "node server/index.js",
     "preview": "vite preview",
+    "validate:production": "node scripts/preflight-production.mjs --validate-only",
+    "preflight:production": "node scripts/preflight-production.mjs",
     "lint": "oxlint",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
