@@ -87,7 +87,7 @@ test('ODDSYRA — COMPLETE RAZORPAY API + WEBHOOK INTEGRATION TEST SUITE', async
   await t.test('TEST 2: Verify API called twice -> No duplicate wallet credit (Exactly-Once Idempotency)', async () => {
     const userId = `usr_test_${Date.now()}_2`;
     await createTestUserAndWallet(userId, 100);
-    const orderRes = await depositEngine.createOrder({ userId, amount: 1000 });
+    const orderRes = await depositEngine.createOrder({ userId, amount: 1000, provider: 'RAZORPAY' });
     const paymentId = `pay_test_${Date.now()}_2`;
     const signature = generatePaymentSignature(orderRes.orderId, paymentId);
 
@@ -117,7 +117,7 @@ test('ODDSYRA — COMPLETE RAZORPAY API + WEBHOOK INTEGRATION TEST SUITE', async
   await t.test('TEST 3: Webhook delivered twice -> Idempotent, no duplicate wallet credit', async () => {
     const userId = `usr_test_${Date.now()}_3`;
     await createTestUserAndWallet(userId, 0);
-    const orderRes = await depositEngine.createOrder({ userId, amount: 750 });
+    const orderRes = await depositEngine.createOrder({ userId, amount: 750, provider: 'RAZORPAY' });
     const paymentId = `pay_test_${Date.now()}_3`;
 
     const rawPayload = JSON.stringify({
@@ -145,6 +145,7 @@ test('ODDSYRA — COMPLETE RAZORPAY API + WEBHOOK INTEGRATION TEST SUITE', async
       signature,
       payload: JSON.parse(rawPayload).payload,
       event: 'payment.captured',
+      provider: 'RAZORPAY',
     });
     assert.equal(firstWebhook.status, 'PAID');
     assert.equal(firstWebhook.alreadyPaid, false);
@@ -156,6 +157,7 @@ test('ODDSYRA — COMPLETE RAZORPAY API + WEBHOOK INTEGRATION TEST SUITE', async
       signature,
       payload: JSON.parse(rawPayload).payload,
       event: 'payment.captured',
+      provider: 'RAZORPAY',
     });
     assert.equal(secondWebhook.status, 'IGNORED_DUPLICATE');
   });
@@ -163,7 +165,7 @@ test('ODDSYRA — COMPLETE RAZORPAY API + WEBHOOK INTEGRATION TEST SUITE', async
   await t.test('TEST 4: Webhook arrives before frontend verification -> Processed once', async () => {
     const userId = `usr_test_${Date.now()}_4`;
     await createTestUserAndWallet(userId, 0);
-    const orderRes = await depositEngine.createOrder({ userId, amount: 2000 });
+    const orderRes = await depositEngine.createOrder({ userId, amount: 2000, provider: 'RAZORPAY' });
     const paymentId = `pay_test_${Date.now()}_4`;
 
     const rawPayload = JSON.stringify({
@@ -190,6 +192,7 @@ test('ODDSYRA — COMPLETE RAZORPAY API + WEBHOOK INTEGRATION TEST SUITE', async
       signature: webhookSig,
       payload: JSON.parse(rawPayload).payload,
       event: 'payment.captured',
+      provider: 'RAZORPAY',
     });
     assert.equal(webhookRes.status, 'PAID');
     assert.equal(webhookRes.alreadyPaid, false);
@@ -199,6 +202,7 @@ test('ODDSYRA — COMPLETE RAZORPAY API + WEBHOOK INTEGRATION TEST SUITE', async
     const paymentSig = generatePaymentSignature(orderRes.orderId, paymentId);
     const frontendRes = await depositEngine.confirmCheckoutPayment({
       userId,
+      provider: 'RAZORPAY',
       razorpayOrderId: orderRes.orderId,
       razorpayPaymentId: paymentId,
       razorpaySignature: paymentSig,
@@ -211,13 +215,14 @@ test('ODDSYRA — COMPLETE RAZORPAY API + WEBHOOK INTEGRATION TEST SUITE', async
   await t.test('TEST 5: Frontend verification arrives before webhook -> Processed once', async () => {
     const userId = `usr_test_${Date.now()}_5`;
     await createTestUserAndWallet(userId, 0);
-    const orderRes = await depositEngine.createOrder({ userId, amount: 1500 });
+    const orderRes = await depositEngine.createOrder({ userId, amount: 1500, provider: 'RAZORPAY' });
     const paymentId = `pay_test_${Date.now()}_5`;
 
     // 1. Frontend verifies first
     const paymentSig = generatePaymentSignature(orderRes.orderId, paymentId);
     const frontendRes = await depositEngine.confirmCheckoutPayment({
       userId,
+      provider: 'RAZORPAY',
       razorpayOrderId: orderRes.orderId,
       razorpayPaymentId: paymentId,
       razorpaySignature: paymentSig,
@@ -249,6 +254,7 @@ test('ODDSYRA — COMPLETE RAZORPAY API + WEBHOOK INTEGRATION TEST SUITE', async
       signature: webhookSig,
       payload: JSON.parse(rawPayload).payload,
       event: 'payment.captured',
+      provider: 'RAZORPAY',
     });
     assert.equal(webhookRes.status, 'PAID');
     assert.equal(webhookRes.alreadyPaid, true);
@@ -258,12 +264,13 @@ test('ODDSYRA — COMPLETE RAZORPAY API + WEBHOOK INTEGRATION TEST SUITE', async
   await t.test('TEST 6: Invalid payment signature -> Rejected and wallet not credited', async () => {
     const userId = `usr_test_${Date.now()}_6`;
     await createTestUserAndWallet(userId, 0);
-    const orderRes = await depositEngine.createOrder({ userId, amount: 500 });
+    const orderRes = await depositEngine.createOrder({ userId, amount: 500, provider: 'RAZORPAY' });
 
     await assert.rejects(
       async () => {
         await depositEngine.confirmCheckoutPayment({
           userId,
+          provider: 'RAZORPAY',
           razorpayOrderId: orderRes.orderId,
           razorpayPaymentId: `pay_test_${Date.now()}_invalid`,
           razorpaySignature: 'invalid_tampered_signature_abc123',
@@ -287,6 +294,7 @@ test('ODDSYRA — COMPLETE RAZORPAY API + WEBHOOK INTEGRATION TEST SUITE', async
           signature: 'fake_tampered_signature_xyz',
           payload: JSON.parse(rawPayload).payload,
           event: 'payment.captured',
+          provider: 'RAZORPAY',
         });
       },
       /INVALID_SIGNATURE/
@@ -297,7 +305,7 @@ test('ODDSYRA — COMPLETE RAZORPAY API + WEBHOOK INTEGRATION TEST SUITE', async
     const userId = `usr_test_${Date.now()}_8`;
     await createTestUserAndWallet(userId, 0);
     // Create ₹500 deposit
-    const orderRes = await depositEngine.createOrder({ userId, amount: 500 });
+    const orderRes = await depositEngine.createOrder({ userId, amount: 500, provider: 'RAZORPAY' });
     const paymentId = `pay_test_${Date.now()}_8`;
 
     await assert.rejects(
@@ -321,7 +329,7 @@ test('ODDSYRA — COMPLETE RAZORPAY API + WEBHOOK INTEGRATION TEST SUITE', async
     await createTestUserAndWallet(legitimateUser, 0);
     await createTestUserAndWallet(maliciousUser, 0);
 
-    const orderRes = await depositEngine.createOrder({ userId: legitimateUser, amount: 500 });
+    const orderRes = await depositEngine.createOrder({ userId: legitimateUser, amount: 500, provider: 'RAZORPAY' });
     const paymentId = `pay_test_${Date.now()}_9`;
     const signature = generatePaymentSignature(orderRes.orderId, paymentId);
 
@@ -329,6 +337,7 @@ test('ODDSYRA — COMPLETE RAZORPAY API + WEBHOOK INTEGRATION TEST SUITE', async
       async () => {
         await depositEngine.confirmCheckoutPayment({
           userId: maliciousUser,
+          provider: 'RAZORPAY',
           razorpayOrderId: orderRes.orderId,
           razorpayPaymentId: paymentId,
           razorpaySignature: signature,
@@ -344,19 +353,19 @@ test('ODDSYRA — COMPLETE RAZORPAY API + WEBHOOK INTEGRATION TEST SUITE', async
 
     // Reject under minimum ₹100
     await assert.rejects(
-      async () => depositEngine.createOrder({ userId, amount: 50 }),
+      async () => depositEngine.createOrder({ userId, amount: 50, provider: 'RAZORPAY' }),
       /DEPOSIT_LIMIT.*Minimum deposit is ₹100/
     );
 
     // Reject over maximum ₹500000
     await assert.rejects(
-      async () => depositEngine.createOrder({ userId, amount: 600000 }),
+      async () => depositEngine.createOrder({ userId, amount: 600000, provider: 'RAZORPAY' }),
       /DEPOSIT_LIMIT.*Maximum deposit is ₹500000/
     );
 
     // Reject invalid decimals (> 2 decimals)
     await assert.rejects(
-      async () => depositEngine.createOrder({ userId, amount: 500.123 }),
+      async () => depositEngine.createOrder({ userId, amount: 500.123, provider: 'RAZORPAY' }),
       /INVALID_AMOUNT/
     );
   });
@@ -367,8 +376,8 @@ test('ODDSYRA — COMPLETE RAZORPAY API + WEBHOOK INTEGRATION TEST SUITE', async
     await createTestUserAndWallet(user1, 0);
     await createTestUserAndWallet(user2, 0);
 
-    const order1 = await depositEngine.createOrder({ userId: user1, amount: 500 });
-    const order2 = await depositEngine.createOrder({ userId: user2, amount: 500 });
+    const order1 = await depositEngine.createOrder({ userId: user1, amount: 500, provider: 'RAZORPAY' });
+    const order2 = await depositEngine.createOrder({ userId: user2, amount: 500, provider: 'RAZORPAY' });
 
     const reusedPaymentId = `pay_test_${Date.now()}_shared_11`;
     const sig1 = generatePaymentSignature(order1.orderId, reusedPaymentId);
@@ -376,6 +385,7 @@ test('ODDSYRA — COMPLETE RAZORPAY API + WEBHOOK INTEGRATION TEST SUITE', async
     // User 1 uses payment ID
     const res1 = await depositEngine.confirmCheckoutPayment({
       userId: user1,
+      provider: 'RAZORPAY',
       razorpayOrderId: order1.orderId,
       razorpayPaymentId: reusedPaymentId,
       razorpaySignature: sig1,
@@ -388,6 +398,7 @@ test('ODDSYRA — COMPLETE RAZORPAY API + WEBHOOK INTEGRATION TEST SUITE', async
       async () => {
         await depositEngine.confirmCheckoutPayment({
           userId: user2,
+          provider: 'RAZORPAY',
           razorpayOrderId: order2.orderId,
           razorpayPaymentId: reusedPaymentId,
           razorpaySignature: sig2,
@@ -400,7 +411,7 @@ test('ODDSYRA — COMPLETE RAZORPAY API + WEBHOOK INTEGRATION TEST SUITE', async
   await t.test('TEST 12: Simultaneous processing attempts lock and resolve safely', async () => {
     const userId = `usr_test_${Date.now()}_12`;
     await createTestUserAndWallet(userId, 0);
-    const orderRes = await depositEngine.createOrder({ userId, amount: 500 });
+    const orderRes = await depositEngine.createOrder({ userId, amount: 500, provider: 'RAZORPAY' });
     const paymentId = `pay_test_${Date.now()}_12`;
 
     const sig = generatePaymentSignature(orderRes.orderId, paymentId);
@@ -409,12 +420,14 @@ test('ODDSYRA — COMPLETE RAZORPAY API + WEBHOOK INTEGRATION TEST SUITE', async
     const [first, second] = await Promise.all([
       depositEngine.confirmCheckoutPayment({
         userId,
+        provider: 'RAZORPAY',
         razorpayOrderId: orderRes.orderId,
         razorpayPaymentId: paymentId,
         razorpaySignature: sig,
       }),
       depositEngine.confirmCheckoutPayment({
         userId,
+        provider: 'RAZORPAY',
         razorpayOrderId: orderRes.orderId,
         razorpayPaymentId: paymentId,
         razorpaySignature: sig,
@@ -431,7 +444,7 @@ test('ODDSYRA — COMPLETE RAZORPAY API + WEBHOOK INTEGRATION TEST SUITE', async
   await t.test('TEST 13: Delayed duplicate webhook is ignored safely', async () => {
     const userId = `usr_test_${Date.now()}_13`;
     await createTestUserAndWallet(userId, 0);
-    const orderRes = await depositEngine.createOrder({ userId, amount: 800 });
+    const orderRes = await depositEngine.createOrder({ userId, amount: 800, provider: 'RAZORPAY' });
     const paymentId = `pay_test_${Date.now()}_13`;
 
     const rawPayload = JSON.stringify({
@@ -458,6 +471,7 @@ test('ODDSYRA — COMPLETE RAZORPAY API + WEBHOOK INTEGRATION TEST SUITE', async
       signature: sig,
       payload: JSON.parse(rawPayload).payload,
       event: 'payment.captured',
+      provider: 'RAZORPAY',
     });
     assert.equal(initial.status, 'PAID');
 

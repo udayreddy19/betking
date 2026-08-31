@@ -6,17 +6,25 @@ import { depositEngine } from '../../lib/depositEngine.mjs';
 import { paymentProviderService } from '../../lib/paymentProviders/paymentProviderService.mjs';
 
 async function createTestUserAndWallet(userId, initialBalance = 0) {
+  const testPhone = `9${Math.floor(100000000 + Math.random() * 900000000)}`;
   await query(
-    `INSERT INTO users (user_id, email, role, created_at, updated_at)
-     VALUES ($1, $2, 'USER', NOW(), NOW())
+    `INSERT INTO users (user_id, email, phone, created_at, updated_at)
+     VALUES ($1, $2, $3, NOW(), NOW())
      ON CONFLICT (user_id) DO NOTHING`,
-    [userId, `${userId}@test.com`]
+    [userId, `${userId}@example.com`, testPhone]
   );
 
   await query(
-    `INSERT INTO wallets (wallet_id, user_id, balance, locked_deposit_balance, currency, created_at, updated_at)
-     VALUES ($1, $2, $3, 0, 'INR', NOW(), NOW())
-     ON CONFLICT (wallet_id) DO UPDATE SET balance = $3`,
+    `INSERT INTO user_profiles (user_id, display_name, kyc_status, account_status)
+     VALUES ($1, $2, 'VERIFIED', 'ACTIVE')
+     ON CONFLICT (user_id) DO UPDATE SET kyc_status = 'VERIFIED', account_status = 'ACTIVE'`,
+    [userId, `User ${userId}`]
+  );
+
+  await query(
+    `INSERT INTO wallets (wallet_id, user_id, balance, locked_deposit_balance, updated_at)
+     VALUES ($1, $2, $3, 0, NOW())
+     ON CONFLICT (user_id) DO UPDATE SET balance = $3, updated_at = NOW()`,
     [`wal_${userId}`, userId, initialBalance]
   );
 }
