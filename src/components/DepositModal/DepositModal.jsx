@@ -410,7 +410,8 @@ export default function DepositModal() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                                {!paymentsAvailable && (
+                >
+                  {!paymentsAvailable && (
                     <div className="deposit-kyc-banner deposit-kyc-banner--error" role="alert" style={{ marginBottom: '16px' }}>
                       <FiAlertCircle className="deposit-kyc-icon" aria-hidden="true" />
                       <span className="deposit-kyc-text">
