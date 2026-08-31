@@ -59,7 +59,7 @@ test('ODDSYRA — COMPLETE RAZORPAY API + WEBHOOK INTEGRATION TEST SUITE', async
     const amount = 500;
 
     // 1. Create order
-    const orderRes = await depositEngine.createOrder({ userId, amount });
+    const orderRes = await depositEngine.createOrder({ userId, amount, provider: 'RAZORPAY' });
     assert.equal(orderRes.success, true);
     assert.equal(orderRes.amount, 500);
     assert.equal(orderRes.amountPaise, 50000);
