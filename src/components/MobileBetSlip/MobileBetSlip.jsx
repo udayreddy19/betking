@@ -354,6 +354,10 @@ export default function MobileBetSlip() {
     removeBet,
     clearAll,
     acceptOddsChange,
+    activeFundingSource,
+    selectFundingSource,
+    isPromoLocked,
+    promoAmount,
   } = useBetSlip();
   const { isLoggedIn, openLoginModal, showToast, dismissToast, user } = useAuth();
   const location = useLocation();
@@ -361,7 +365,6 @@ export default function MobileBetSlip() {
   const [isPlacing, setIsPlacing] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
   const [placementNotice, setPlacementNotice] = useState(null);
-  const [stakeSource, setStakeSource] = useState('cash');
   const prevBetCountRef = useRef(betCount);
 
   const bet = !quickBet?.bet
@@ -442,10 +445,6 @@ export default function MobileBetSlip() {
     };
   }, [isMobileOpen, quickBet]);
 
-  useEffect(() => {
-    if (!quickBet) setStakeSource('cash');
-  }, [quickBet]);
-
   const handleQuickPlace = async () => {
     if (isPlacing || !bet) return;
     if (!isLoggedIn) {
@@ -453,19 +452,14 @@ export default function MobileBetSlip() {
       openLoginModal();
       return;
     }
-    const stakeNum = parseFloat(stake) || 0;
+    const stakeNum = isPromoLocked ? promoAmount : (parseFloat(stake) || 0);
     if (stakeNum < MIN_STAKE_INR) {
       showToast(`Minimum stake is ₹${MIN_STAKE_INR}.`, 'error');
       return;
     }
 
     const wallet = getWalletBreakdown(user);
-    let activeSource = 'cash';
-    if (stakeSource === 'bonus' && wallet.bonus > 0 && canBetWithBonusOnLegs([bet])) {
-      activeSource = 'bonus';
-    } else if (stakeSource === 'freebet' && wallet.freebets > 0) {
-      activeSource = 'freebet';
-    }
+    const activeSource = activeFundingSource;
 
     if (activeSource === 'bonus' && !canBetWithBonusOnLegs([bet])) {
       showToast(
