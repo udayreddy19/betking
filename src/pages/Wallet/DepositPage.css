@@ -1,0 +1,7 @@
+.deposit-page-container {
+  width: 100%;
+  min-height: 100vh;
+  background-color: #0b0e14;
+  display: flex;
+  justify-content: center;
+}

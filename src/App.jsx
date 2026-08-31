@@ -59,6 +59,7 @@ const TicketsListPage = lazy(() => import('./pages/Support/TicketsListPage'));
 const CreateTicketPage = lazy(() => import('./pages/Support/CreateTicketPage'));
 const TicketDetailPage = lazy(() => import('./pages/Support/TicketDetailPage'));
 const MyRewards = lazy(() => import('./pages/Rewards/MyRewards'));
+const DepositPage = lazy(() => import('./pages/Wallet/DepositPage'));
 
 function CasinoComingSoon() {
   return <Navigate to="/sports" replace />;
@@ -85,32 +86,36 @@ function AppLayout() {
   const isDevRoute = location.pathname.startsWith('/developer') || location.pathname.startsWith('/api-docs');
   const isSportsRoute = location.pathname === '/sports' || location.pathname === '/live-betting';
   const isRegisterRoute = location.pathname === '/register' || location.pathname === '/complete-profile';
+  const isDepositRoute = location.pathname === '/wallet/deposit' || location.pathname === '/deposit';
   const mainClass = [
     'app-main',
     isAdminRoute ? 'app-main--admin' : '',
     isDevRoute ? 'app-main--developer' : '',
     isSportsRoute ? 'app-main--sports' : '',
     isRegisterRoute ? 'app-main--register' : '',
+    isDepositRoute ? 'app-main--deposit' : '',
   ].filter(Boolean).join(' ');
 
   return (
     <>
       <RouteSeo />
       <PhoneRequiredGate />
-      <Header />
-      <ErrorBoundary fallback={null}>
-        <Sidebar />
-      </ErrorBoundary>
+      {!isDepositRoute && <Header />}
+      {!isDepositRoute && (
+        <ErrorBoundary fallback={null}>
+          <Sidebar />
+        </ErrorBoundary>
+      )}
       <LoginModal />
       <DepositModal />
       <SessionIdleLogout />
       <AppFinancialModals />
       <Toast />
-      <GamePlayModal />
+      {!isDepositRoute && <GamePlayModal />}
       <BetSettlementRunner />
-      <MobileBetSlip />
-      <GlobalBetBar />
-      {!isAdminRoute && !isDevRoute && !isRegisterRoute && <MobileBottomBar />}
+      {!isDepositRoute && <MobileBetSlip />}
+      {!isDepositRoute && <GlobalBetBar />}
+      {!isAdminRoute && !isDevRoute && !isRegisterRoute && !isDepositRoute && <MobileBottomBar />}
       <main className={mainClass}>
         <ErrorBoundary resetKey={location.pathname}>
           <Suspense fallback={<PageLoader />}>
@@ -118,6 +123,8 @@ function AppLayout() {
               <Route path="/" element={<Home />} />
               <Route path="/live-betting" element={<Sports />} />
               <Route path="/sports" element={<Sports />} />
+              <Route path="/wallet/deposit" element={<DepositPage />} />
+              <Route path="/deposit" element={<Navigate to="/wallet/deposit" replace />} />
               <Route path="/casino" element={CASINO_ENABLED ? <Casino /> : <CasinoComingSoon />} />
               <Route path="/live-casino" element={CASINO_ENABLED ? <LiveCasino /> : <CasinoComingSoon />} />
               <Route path="/fantasy" element={<Fantasy />} />
@@ -185,8 +192,8 @@ function AppLayout() {
           </Suspense>
         </ErrorBoundary>
       </main>
-      {!isAdminRoute && !isDevRoute && !isRegisterRoute && <Footer />}
-      {!isAdminRoute && !isDevRoute && !isRegisterRoute && <LiveChatSupportWidget />}
+      {!isAdminRoute && !isDevRoute && !isRegisterRoute && !isDepositRoute && <Footer />}
+      {!isAdminRoute && !isDevRoute && !isRegisterRoute && !isDepositRoute && <LiveChatSupportWidget />}
     </>
   );
 }
