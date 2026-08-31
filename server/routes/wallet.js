@@ -64,9 +64,8 @@ router.all('/api/webhooks/cashfree', async (req, res) => {
 router.get('/api/v1/payments/providers', async (req, res) => {
   try {
     const { paymentProviderService } = await import('../../lib/paymentProviders/paymentProviderService.mjs');
-    const providers = paymentProviderService.getAvailableProviders();
-    const defaultProvider = paymentProviderService.getDefaultProvider();
-    res.json({ success: true, providers, defaultProvider });
+    const payload = await paymentProviderService.getPublicProvidersPayload();
+    res.json(payload);
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

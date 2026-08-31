@@ -8,6 +8,7 @@ import AdminPageHeader from '../components/AdminPageHeader';
 import AdminFilterBar, { FilterDateRange } from '../components/AdminFilterBar';
 import AdminKPI from '../components/AdminKPI';
 import { AdminKpiDrillDrawer, useAdminKpiDrilldown } from '../hooks/useAdminKpiDrilldown';
+import PaymentGatewaysView from './PaymentGatewaysView';
 
 function money(n) {
   if (n == null || Number.isNaN(Number(n))) return '—';
@@ -1953,7 +1954,7 @@ export default function FinanceDomainView({
     if (subModule === 'anomalies') return <FinanceAnomaliesPanel />;
     if (subModule === 'finance-health') return <FinanceHealthPanel />;
     if (subModule === 'legacy-ledger') return <LegacyLedgerPanel />;
-    if (subModule === 'payment-gateways') return <PaymentGatewaysPanel />;
+    if (subModule === 'payment-gateways') return <PaymentGatewaysView />;
     if (subModule === 'deposits-review') return <DepositsReviewPanel />;
     return <MakerCheckerPanel />;
   }, [subModule, focusEntityId, focusEntityType, onFocusConsumed]);

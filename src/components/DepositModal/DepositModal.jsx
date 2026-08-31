@@ -47,6 +47,8 @@ export default function DepositModal() {
   const [amount, setAmount] = useState('1000');
   const [selectedProvider, setSelectedProvider] = useState('CASHFREE');
   const [availableProviders, setAvailableProviders] = useState([]);
+  const [paymentsAvailable, setPaymentsAvailable] = useState(true);
+  const [allowUserSelection, setAllowUserSelection] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isRzpModalOpen, setIsRzpModalOpen] = useState(false);
@@ -59,8 +61,12 @@ export default function DepositModal() {
     apiFetch('/api/v1/payments/providers')
       .then(res => res.json())
       .then(data => {
-        if (!cancelled && data?.providers) {
-          setAvailableProviders(data.providers);
+        if (!cancelled) {
+          setPaymentsAvailable(data.paymentsAvailable !== false);
+          setAvailableProviders(data.providers || []);
+          setAllowUserSelection(Boolean(data.allowUserSelection));
+          const primary = data.primaryProvider || data.defaultProvider || 'CASHFREE';
+          setSelectedProvider(primary);
         }
       })
       .catch(() => {});
@@ -404,27 +410,36 @@ export default function DepositModal() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                >
-                  {/* Gateway selector if multiple available */}
-                  <div className="deposit-provider-selector">
-                    <span className="provider-selector-label">Payment Gateway</span>
-                    <div className="provider-selector-tabs">
-                      <button
-                        type="button"
-                        className={`provider-tab ${selectedProvider === 'CASHFREE' ? 'active' : ''}`}
-                        onClick={() => setSelectedProvider('CASHFREE')}
-                      >
-                        ⚡ Cashfree Payments
-                      </button>
-                      <button
-                        type="button"
-                        className={`provider-tab ${selectedProvider === 'RAZORPAY' ? 'active' : ''}`}
-                        onClick={() => setSelectedProvider('RAZORPAY')}
-                      >
-                        🛡️ Razorpay
-                      </button>
+                                {!paymentsAvailable && (
+                    <div className="deposit-kyc-banner deposit-kyc-banner--error" role="alert" style={{ marginBottom: '16px' }}>
+                      <FiAlertCircle className="deposit-kyc-icon" aria-hidden="true" />
+                      <span className="deposit-kyc-text">
+                        Payments are temporarily unavailable. Please try again later.
+                      </span>
                     </div>
-                  </div>
+                  )}
+
+                  {/* Gateway selector if multiple available and enabled by admin */}
+                  {allowUserSelection && availableProviders.length > 1 && (
+                    <div className="deposit-provider-selector">
+                      <span className="provider-selector-label">Payment Gateway</span>
+                      <div className="provider-selector-tabs">
+                        {availableProviders.map((p) => {
+                          const pUpper = String(p.provider || p.name || '').toUpperCase();
+                          return (
+                            <button
+                              key={pUpper}
+                              type="button"
+                              className={`provider-tab ${selectedProvider === pUpper ? 'active' : ''}`}
+                              onClick={() => setSelectedProvider(pUpper)}
+                            >
+                              {pUpper === 'CASHFREE' ? '⚡ Cashfree Payments' : '🛡️ Razorpay'}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="amount-presets-label">
                     <span>Select Deposit Amount (₹)</span>
@@ -468,13 +483,14 @@ export default function DepositModal() {
                   <motion.button
                     type="submit"
                     className="deposit-pay-btn"
-                    disabled={isLoading}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    disabled={isLoading || !paymentsAvailable}
+                    whileHover={paymentsAvailable ? { scale: 1.02 } : {}}
+                    whileTap={paymentsAvailable ? { scale: 0.98 } : {}}
+                    style={!paymentsAvailable ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                   >
-                    {isLoading ? 'Creating secure order…' : (
+                    {!paymentsAvailable ? 'Payments Unavailable' : (isLoading ? 'Creating secure order…' : (
                       <>Pay ₹{parseFloat(amount || 0).toLocaleString()} <FiArrowRight /></>
-                    )}
+                    ))}
                   </motion.button>
 
                   <div className="deposit-trust-footer">

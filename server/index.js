@@ -104,6 +104,7 @@ import liveScoresPublicRouter from './routes/public/liveScores.js';
 import publicOddsRouter from './routes/public/odds.js';
 import adminInlineRouter from './routes/admin/inline.js';
 import adminSettlementRouter from './routes/admin/settlement.js';
+import adminPaymentGatewaysRouter from './routes/admin/paymentGateways.js';
 
 import userNotificationsRouter from './routes/userNotifications.js';
 
@@ -117,6 +118,8 @@ app.use(betsRouter);
 app.use(supportRouter);
 app.use(growthRouter);
 
+app.use('/api/admin/payment-gateways', adminAuth, adminPaymentGatewaysRouter);
+app.use('/api/v1/admin/payment-gateways', adminAuth, adminPaymentGatewaysRouter);
 app.use('/api/admin', adminRouter);
 
 // All v1 admin endpoints require admin JWT
