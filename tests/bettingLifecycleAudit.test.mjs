@@ -28,11 +28,32 @@ test('PRODUCTION-LEVEL COMPLETE BETTING LIFECYCLE AUDIT', async (t) => {
   );
 
   const matchId = `match_audit_${Date.now()}`;
+  const marketId = `mkt_audit_${Date.now()}`;
+  const sel1 = 'sel_team1';
+  const sel2 = 'sel_team2';
+  const selFav = 'sel_heavy_fav';
+
   await query(
     `INSERT INTO matches (match_id, competition_id, team1_id, team2_id, status, live_score1, live_score2)
      VALUES ($1, 'Audit League', 'Team Alpha', 'Team Beta', 'LIVE', '100', '150')
      ON CONFLICT (match_id) DO NOTHING`,
     [matchId]
+  );
+
+  await query(
+    `INSERT INTO markets (market_id, match_id, name, status)
+     VALUES ($1, $2, 'Match Winner', 'OPEN')
+     ON CONFLICT (market_id) DO UPDATE SET status = 'OPEN'`,
+    [marketId, matchId]
+  );
+
+  await query(
+    `INSERT INTO selections (selection_id, market_id, name, odds, status)
+     VALUES ($1, $2, 'Team Alpha', 2.50, 'OPEN'),
+            ($3, $2, 'Team Beta', 2.00, 'OPEN'),
+            ($4, $2, 'Heavy Favorite', 1.20, 'OPEN')
+     ON CONFLICT (selection_id) DO UPDATE SET status = 'OPEN'`,
+    [sel1, marketId, sel2, selFav]
   );
 
   await t.test('1. Minimum Deposit Rules Enforcement (₹1,000)', async () => {
@@ -59,8 +80,8 @@ test('PRODUCTION-LEVEL COMPLETE BETTING LIFECYCLE AUDIT', async (t) => {
     const placeResult = await betPlacementEngine.placeBet({
       userId: testUserId,
       matchId,
-      marketId: 'match_winner',
-      selectionId: 'sel_team1',
+      marketId,
+      selectionId: sel1,
       selectionName: 'Team Alpha',
       stake,
       clientOdds: odds,
@@ -117,8 +138,8 @@ test('PRODUCTION-LEVEL COMPLETE BETTING LIFECYCLE AUDIT', async (t) => {
         await betPlacementEngine.placeBet({
           userId: testUserId,
           matchId,
-          marketId: 'match_winner',
-          selectionId: 'sel_team1',
+          marketId,
+          selectionId: sel1,
           selectionName: 'Team Alpha',
           stake: 500, // Available bonus is 900
           clientOdds: 2.00,
@@ -130,14 +151,14 @@ test('PRODUCTION-LEVEL COMPLETE BETTING LIFECYCLE AUDIT', async (t) => {
       'Partial bonus bet must be rejected'
     );
 
-    // 3B. Reject bonus bet under minimum odds (e.g. 1.20 < 1.40)
+    // 3B. Reject bonus bet under minimum odds (e.g. 1.20 < 1.40/1.75)
     await assert.rejects(
       async () => {
         await betPlacementEngine.placeBet({
           userId: testUserId,
           matchId,
-          marketId: 'match_winner',
-          selectionId: 'sel_heavy_fav',
+          marketId,
+          selectionId: selFav,
           selectionName: 'Heavy Favorite',
           stake: 900,
           clientOdds: 1.20,
@@ -153,9 +174,9 @@ test('PRODUCTION-LEVEL COMPLETE BETTING LIFECYCLE AUDIT', async (t) => {
     const bonusPlace = await betPlacementEngine.placeBet({
       userId: testUserId,
       matchId,
-      marketId: 'match_winner',
-      selectionId: 'sel_team1',
-      selectionName: 'Team Alpha',
+      marketId,
+      selectionId: sel2,
+      selectionName: 'Team Beta',
       stake: 900,
       clientOdds: 2.00,
       fundSource: 'bonus',
@@ -192,8 +213,8 @@ test('PRODUCTION-LEVEL COMPLETE BETTING LIFECYCLE AUDIT', async (t) => {
         await betPlacementEngine.placeBet({
           userId: testUserId,
           matchId,
-          marketId: 'match_winner',
-          selectionId: 'sel_team1',
+          marketId,
+          selectionId: sel1,
           selectionName: 'Team Alpha',
           stake: 200, // Available freebet is 500
           clientOdds: 2.00,
@@ -205,15 +226,15 @@ test('PRODUCTION-LEVEL COMPLETE BETTING LIFECYCLE AUDIT', async (t) => {
       'Partial free bet must be rejected'
     );
 
-    // 4B. Place valid full free bet (₹500 @ 3.00)
+    // 4B. Place valid full free bet (₹500 @ 2.50)
     const freebetPlace = await betPlacementEngine.placeBet({
       userId: testUserId,
       matchId,
-      marketId: 'match_winner',
-      selectionId: 'sel_team1',
+      marketId,
+      selectionId: sel1,
       selectionName: 'Team Alpha',
       stake: 500,
-      clientOdds: 3.00,
+      clientOdds: 2.50,
       fundSource: 'freebet',
       idempotencyKey: `idemp_valid_freebet_${Date.now()}`,
     });
@@ -225,7 +246,7 @@ test('PRODUCTION-LEVEL COMPLETE BETTING LIFECYCLE AUDIT', async (t) => {
     assert.strictEqual(Number(wFreebetAfter.freebet_balance), 0, 'Free bet balance must be 0 after placement');
     const balanceBeforeWin = Number(wFreebetAfter.balance);
 
-    // Settle as WON: Profit only = 500 * (3.00 - 1) = ₹1000 cash credit
+    // Settle as WON: Profit only = 500 * (2.50 - 1) = ₹750 cash credit
     const settleFreebet = await betSettlementEngine.settleSingleBet({
       betId: freebetBetId,
       matchState: {
@@ -238,31 +259,31 @@ test('PRODUCTION-LEVEL COMPLETE BETTING LIFECYCLE AUDIT', async (t) => {
 
     assert.strictEqual(settleFreebet.outcome, 'WON');
     const wFreebetWin = (await query(`SELECT balance FROM wallets WHERE user_id = $1`, [testUserId])).rows[0];
-    assert.strictEqual(Number(wFreebetWin.balance), balanceBeforeWin + 1000, 'Free bet win must credit net profit of ₹1000');
+    assert.strictEqual(Number(wFreebetWin.balance), balanceBeforeWin + 750, 'Free bet win must credit net profit of ₹750');
   });
 
   await t.test('5. Concurrency & Double-Spend Protection', async () => {
-    // User current cash balance is 2300.
-    // Attempt two simultaneous ₹2000 bets (Total ₹4000 needed > ₹2300 available)
+    // Current user cash balance is 1300 + 750 = 2050.
+    // Attempt two simultaneous ₹1500 bets (Total ₹3000 needed > ₹2050 available)
     const [res1, res2] = await Promise.allSettled([
       betPlacementEngine.placeBet({
         userId: testUserId,
         matchId,
-        marketId: 'match_winner',
-        selectionId: 'sel_team1',
+        marketId,
+        selectionId: sel1,
         selectionName: 'Team Alpha',
-        stake: 2000,
-        clientOdds: 2.00,
+        stake: 1500,
+        clientOdds: 2.50,
         fundSource: 'cash',
         idempotencyKey: `idemp_race_1_${Date.now()}`,
       }),
       betPlacementEngine.placeBet({
         userId: testUserId,
         matchId,
-        marketId: 'match_winner',
-        selectionId: 'sel_team2',
+        marketId,
+        selectionId: sel2,
         selectionName: 'Team Beta',
-        stake: 2000,
+        stake: 1500,
         clientOdds: 2.00,
         fundSource: 'cash',
         idempotencyKey: `idemp_race_2_${Date.now()}`,
@@ -275,9 +296,9 @@ test('PRODUCTION-LEVEL COMPLETE BETTING LIFECYCLE AUDIT', async (t) => {
     assert.strictEqual(successes.length, 1, 'Exactly ONE concurrent bet must succeed');
     assert.strictEqual(failures.length, 1, 'The other concurrent bet must be rejected for insufficient funds');
 
-    // Final balance check: 2300 - 2000 = 300
+    // Final balance check: 2050 - 1500 = 550
     const wFinal = (await query(`SELECT balance FROM wallets WHERE user_id = $1`, [testUserId])).rows[0];
-    assert.strictEqual(Number(wFinal.balance), 300, 'Balance must accurately reflect exactly one deduction');
+    assert.strictEqual(Number(wFinal.balance), 550, 'Balance must accurately reflect exactly one deduction');
   });
 
   // Cleanup test user
