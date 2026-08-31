@@ -218,13 +218,13 @@ export default function WalletDashboard() {
                 <div className="wallet-breakdown-cell">
                   <span className="wallet-breakdown-cell__title">Bonus Balance</span>
                   <span className="wallet-breakdown-cell__value wallet-breakdown-cell__value--bonus">{formatInr(wallet.bonus)}</span>
-                  <span className="wallet-breakdown-cell__desc">Promotional bonus subject to turnover terms.</span>
+                  <span className="wallet-breakdown-cell__desc">Promotional bonus credit. <strong>Must be used in full in one eligible bet.</strong></span>
                 </div>
 
                 <div className="wallet-breakdown-cell">
                   <span className="wallet-breakdown-cell__title">Free Bet Value</span>
                   <span className="wallet-breakdown-cell__value wallet-breakdown-cell__value--freebet">{formatInr(wallet.freebets)}</span>
-                  <span className="wallet-breakdown-cell__desc">Non-withdrawable free bet vouchers (winnings pay net profit).</span>
+                  <span className="wallet-breakdown-cell__desc">Promotional free bet voucher. <strong>Must be used in full in one eligible bet.</strong></span>
                 </div>
               </div>
 

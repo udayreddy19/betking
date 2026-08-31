@@ -20,17 +20,48 @@ export default function PaymentGatewaysView() {
   const [testResults, setTestResults] = useState({});
   const { showToast } = useAdminToast();
 
+  const [promoRules, setPromoRules] = useState({
+    minimumDepositAmount: 1000,
+    allowPartialFreeBet: false,
+    allowPartialBonus: false,
+    requireFullFreeBetAmount: true,
+    requireFullBonusAmount: true,
+  });
+  const [savingRules, setSavingRules] = useState(false);
+
   const fetchGateways = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await adminApiClient.get('/payment-gateways');
-      setGateways(res.gateways || []);
+      const [res, rulesRes] = await Promise.allSettled([
+        adminApiClient.get('/payment-gateways'),
+        adminApiClient.get('/wallet-promo-rules'),
+      ]);
+      if (res.status === 'fulfilled') {
+        setGateways(res.value?.gateways || []);
+      }
+      if (rulesRes.status === 'fulfilled' && rulesRes.value?.rules) {
+        setPromoRules(rulesRes.value.rules);
+      }
     } catch (err) {
       showToast(err.message || 'Failed to load payment gateways', 'error');
     } finally {
       setLoading(false);
     }
   }, [showToast]);
+
+  const handleSavePromoRules = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    setSavingRules(true);
+    try {
+      const res = await adminApiClient.patch('/wallet-promo-rules', promoRules);
+      if (res.rules) setPromoRules(res.rules);
+      showToast('Wallet & promotion rules saved successfully!', 'success');
+    } catch (err) {
+      showToast(err.message || 'Failed to save wallet rules', 'error');
+    } finally {
+      setSavingRules(false);
+    }
+  };
 
   useEffect(() => {
     fetchGateways();
@@ -360,6 +391,99 @@ export default function PaymentGatewaysView() {
             </div>
           );
         })}
+      </div>
+
+      {/* Wallet & Promotion Balance Rules Configuration */}
+      <div className="pg-card" style={{ marginTop: 24, padding: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <WalletIcon size={20} />
+            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>
+              Wallet & Promotion Rules
+            </h3>
+          </div>
+          <button
+            type="button"
+            onClick={handleSavePromoRules}
+            disabled={savingRules}
+            className="pg-btn pg-btn-primary-switch--active"
+            style={{ padding: '6px 18px' }}
+          >
+            {savingRules ? 'Saving...' : 'Save Rules'}
+          </button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+          <div style={{ background: 'var(--admin-card-bg-subtle, rgba(255,255,255,0.03))', padding: 14, borderRadius: 8, border: '1px solid var(--admin-border, #333)' }}>
+            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: 6 }}>
+              Minimum Deposit Amount (INR)
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontWeight: 700, fontSize: '1rem' }}>₹</span>
+              <input
+                type="number"
+                min="1"
+                step="100"
+                value={promoRules.minimumDepositAmount}
+                onChange={(e) => setPromoRules((p) => ({ ...p, minimumDepositAmount: Number(e.target.value) || 1000 }))}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  background: 'var(--admin-input-bg, #1e1e1e)',
+                  color: 'inherit',
+                  border: '1px solid var(--admin-border, #444)',
+                  borderRadius: 6,
+                  fontWeight: 700,
+                }}
+              />
+            </div>
+            <p style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted, #888)', marginTop: 4 }}>
+              Server-authoritative minimum threshold. Rejects requests below ₹{promoRules.minimumDepositAmount}.
+            </p>
+          </div>
+
+          <div style={{ background: 'var(--admin-card-bg-subtle, rgba(255,255,255,0.03))', padding: 14, borderRadius: 8, border: '1px solid var(--admin-border, #333)' }}>
+            <span style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: 6 }}>
+              Free Bet Exact Stake Rule
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{
+                padding: '4px 10px',
+                borderRadius: 4,
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                background: !promoRules.allowPartialFreeBet ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                color: !promoRules.allowPartialFreeBet ? '#22c55e' : '#ef4444',
+              }}>
+                {!promoRules.allowPartialFreeBet ? '✓ FULL STAKE REQUIRED' : 'PARTIAL ALLOWED'}
+              </span>
+            </div>
+            <p style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted, #888)', marginTop: 4 }}>
+              Free bets must be used in a single qualifying bet. Splitting or partial deductions are blocked.
+            </p>
+          </div>
+
+          <div style={{ background: 'var(--admin-card-bg-subtle, rgba(255,255,255,0.03))', padding: 14, borderRadius: 8, border: '1px solid var(--admin-border, #333)' }}>
+            <span style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: 6 }}>
+              Bonus Exact Stake Rule
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{
+                padding: '4px 10px',
+                borderRadius: 4,
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                background: !promoRules.allowPartialBonus ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                color: !promoRules.allowPartialBonus ? '#22c55e' : '#ef4444',
+              }}>
+                {!promoRules.allowPartialBonus ? '✓ FULL STAKE REQUIRED' : 'PARTIAL ALLOWED'}
+              </span>
+            </div>
+            <p style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted, #888)', marginTop: 4 }}>
+              Bonus funds must be placed as full qualifying bets according to turnover rules.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Safety & Architecture Reference Guide */}

@@ -105,6 +105,7 @@ import publicOddsRouter from './routes/public/odds.js';
 import adminInlineRouter from './routes/admin/inline.js';
 import adminSettlementRouter from './routes/admin/settlement.js';
 import adminPaymentGatewaysRouter from './routes/admin/paymentGateways.js';
+import adminWalletPromoRulesRouter from './routes/admin/walletPromoRules.js';
 
 import userNotificationsRouter from './routes/userNotifications.js';
 
@@ -120,6 +121,8 @@ app.use(growthRouter);
 
 app.use('/api/admin/payment-gateways', adminAuth, adminPaymentGatewaysRouter);
 app.use('/api/v1/admin/payment-gateways', adminAuth, adminPaymentGatewaysRouter);
+app.use('/api/admin/wallet-promo-rules', adminAuth, adminWalletPromoRulesRouter);
+app.use('/api/v1/admin/wallet-promo-rules', adminAuth, adminWalletPromoRulesRouter);
 app.use('/api/admin', adminRouter);
 
 // All v1 admin endpoints require admin JWT

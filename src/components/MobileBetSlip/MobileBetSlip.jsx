@@ -460,12 +460,12 @@ export default function MobileBetSlip() {
       );
       return;
     }
-    if (activeSource === 'bonus' && wallet.bonus < stakeNum) {
-      showToast('Insufficient bonus balance.', 'error');
+    if (activeSource === 'bonus' && Math.round(stakeNum * 100) !== Math.round(wallet.bonus * 100)) {
+      showToast(`This Bonus must be used in full (₹${wallet.bonus}). Partial usage is not allowed.`, 'error');
       return;
     }
-    if (activeSource === 'freebet' && wallet.freebets < stakeNum) {
-      showToast('Insufficient freebet balance.', 'error');
+    if (activeSource === 'freebet' && Math.round(stakeNum * 100) !== Math.round(wallet.freebets * 100)) {
+      showToast(`This Free Bet must be used in full (₹${wallet.freebets}). Partial usage is not allowed.`, 'error');
       return;
     }
     if (activeSource === 'cash' && wallet.cashBalance < stakeNum) {

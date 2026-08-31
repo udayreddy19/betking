@@ -108,7 +108,7 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
       const expectedAmount = Number(selectedReward.amount);
       if (!selectedReward.allowPartialUse && Math.round(amountToDeduct * 100) !== Math.round(expectedAmount * 100)) {
         showToast(
-          `${selectedReward.rewardType === 'freebet' ? 'Free Bet' : 'Bonus'} must be placed as a single exact ${formatInr(expectedAmount)} stake.`,
+          `This ${selectedReward.rewardType === 'freebet' ? 'Free Bet' : 'Bonus'} must be used in full (${formatInr(expectedAmount)}). Partial usage is not allowed.`,
           'error',
         );
         return;
@@ -128,13 +128,19 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
         );
         return;
       }
-      if (bonusAvailable < amountToDeduct) {
-        showToast('Insufficient bonus balance.', 'error');
+      if (Math.round(amountToDeduct * 100) !== Math.round(bonusAvailable * 100)) {
+        showToast(
+          `This Bonus must be used in full (${formatInr(bonusAvailable)}). Partial usage is not allowed.`,
+          'error',
+        );
         return;
       }
     } else if (activeSource === 'freebet') {
-      if (freebetAvailable < amountToDeduct) {
-        showToast('Insufficient freebet balance.', 'error');
+      if (Math.round(amountToDeduct * 100) !== Math.round(freebetAvailable * 100)) {
+        showToast(
+          `This Free Bet must be used in full (${formatInr(freebetAvailable)}). Partial usage is not allowed.`,
+          'error',
+        );
         return;
       }
     } else if (wallet.cashBalance < amountToDeduct) {
@@ -178,38 +184,23 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
           });
         }
         if (isKycError(result.error)) {
-          showToast(cleanKycMessage(result.error) || 'Verify your identity before withdrawing.', 'error', {
-            action: { label: 'Proceed to KYC', path: KYC_PROFILE_PATH },
-          });
-        } else if (result.oddsUpdated || result.requiresAcceptance) {
-          const msg = result.error || 'The odds have changed. Please review the new odds.';
-          setPlacementNotice(msg);
-          showToast(msg, 'info');
-        } else {
-          showToast(result.error || 'Could not place bet.', 'error');
+          showToast(result.error || 'Please complete KYC verification before placing bets.', 'error');
+          return;
         }
+        showToast(result.error || 'Failed to place bet. Please try again.', 'error');
         return;
       }
 
-      const ret = Number(
-        result.potentialReturn
-        ?? result.placed?.potentialReturn
-        ?? (Array.isArray(result.placed)
-          ? result.placed.reduce((s, p) => s + Number(p.potentialReturn || 0), 0)
-          : potentialReturn),
-      );
-
-      showToast(
-        betType === 'multi'
-          ? `Multi bet placed (${selectedReward ? selectedReward.title : activeSource})! Potential return ₹${ret.toFixed(2)}`
-          : `${result.placed.length} single bet(s) placed (${selectedReward ? selectedReward.title : activeSource})! Potential return ₹${ret.toFixed(2)}`,
-        'success',
-      );
-      onPlaced?.();
+      showToast('Bet placed successfully!', 'success');
+      clearAll();
+    } catch (err) {
+      showToast(err.message || 'Error placing bet.', 'error');
     } finally {
       setIsPlacing(false);
     }
   };
+
+  const isPromoLocked = Boolean(isStakeLocked || selectedReward || activeSource === 'freebet' || activeSource === 'bonus');
 
   const handleSelectPaymentMethod = (type, reward = null) => {
     if (type === 'cash') {
@@ -218,6 +209,18 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
     } else if (reward) {
       selectReward(reward);
       setStakeSource(reward.rewardType);
+    } else if (type === 'freebet') {
+      setSelectedRewardId(null);
+      setStakeSource('freebet');
+      const amtStr = String(freebetAvailable);
+      setStake(amtStr);
+      bets.forEach((b) => setSingleStake(b.id, amtStr));
+    } else if (type === 'bonus') {
+      setSelectedRewardId(null);
+      setStakeSource('bonus');
+      const amtStr = String(bonusAvailable);
+      setStake(amtStr);
+      bets.forEach((b) => setSingleStake(b.id, amtStr));
     }
   };
 
@@ -247,13 +250,33 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
             </button>
           );
         })}
+
+        {availableRewards.length === 0 && freebetAvailable > 0 && (
+          <button
+            type="button"
+            className={`betslip-stake-source__tab betslip-stake-source__tab--reward ${activeSource === 'freebet' ? 'active betslip-stake-source__tab--freebet' : ''}`}
+            onClick={() => handleSelectPaymentMethod('freebet')}
+          >
+            🎁 Free Bet {formatInr(freebetAvailable)}
+          </button>
+        )}
+
+        {availableRewards.length === 0 && bonusAvailable > 0 && (
+          <button
+            type="button"
+            className={`betslip-stake-source__tab betslip-stake-source__tab--reward ${activeSource === 'bonus' ? 'active betslip-stake-source__tab--bonus' : ''}`}
+            onClick={() => handleSelectPaymentMethod('bonus')}
+          >
+            ⭐ Bonus {formatInr(bonusAvailable)}
+          </button>
+        )}
       </div>
 
       {selectedReward && (
         <div className="betslip-reward-applied-banner">
           <span className="betslip-reward-applied-banner__icon">🔒</span>
           <div className="betslip-reward-applied-banner__text">
-            <strong>{selectedReward.rewardType === 'freebet' ? 'Free Bet Applied' : 'Bonus Applied'}:</strong> You must place this reward as a single exact {formatInr(selectedReward.amount)} stake.
+            <strong>{selectedReward.rewardType === 'freebet' ? 'Free Bet Applied' : 'Bonus Applied'}:</strong> This {selectedReward.rewardType === 'freebet' ? 'Free Bet' : 'Bonus'} must be used in full ({formatInr(selectedReward.amount)}). Partial usage is not allowed.
             {selectedReward.minOdds && selectedReward.minOdds > 1.00 && (
               <div className="betslip-reward-applied-banner__sub">Requires min odds of {selectedReward.minOdds.toFixed(2)}.</div>
             )}
@@ -261,33 +284,41 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
         </div>
       )}
 
-      {!selectedReward && stakeSource === 'bonus' && !canUsePromoFunds && (
-        <p className="betslip-stake-source__warn">
-          Bonus requires odds ≥ {BONUS_MIN_BET_ODDS.toFixed(2)} on every selection. Rotate 5× before withdrawing winnings.
-        </p>
-      )}
-      {!selectedReward && activeSource === 'bonus' && canUsePromoFunds && (
-        <p className="betslip-stake-source__hint">
-          Bonus must be rotated 5 times at {BONUS_MIN_BET_ODDS.toFixed(2)}+ odds. Winnings can be withdrawn after that — not the bonus.
-        </p>
-      )}
       {!selectedReward && activeSource === 'freebet' && (
-        <p className="betslip-stake-source__hint">
-          Free bet plays like cash at any odds. Winning pays profit only.
-        </p>
+        <div className="betslip-reward-applied-banner">
+          <span className="betslip-reward-applied-banner__icon">🔒</span>
+          <div className="betslip-reward-applied-banner__text">
+            <strong>Free Bet Applied:</strong> This Free Bet must be used in full ({formatInr(freebetAvailable)}). Partial usage is not allowed.
+          </div>
+        </div>
+      )}
+
+      {!selectedReward && activeSource === 'bonus' && (
+        <div className="betslip-reward-applied-banner">
+          <span className="betslip-reward-applied-banner__icon">🔒</span>
+          <div className="betslip-reward-applied-banner__text">
+            <strong>Bonus Applied:</strong> This Bonus must be used in full ({formatInr(bonusAvailable)}). Partial usage is not allowed.
+            {!canUsePromoFunds && (
+              <div className="betslip-reward-applied-banner__sub text-amber-400">Requires odds ≥ {BONUS_MIN_BET_ODDS.toFixed(2)} on every selection.</div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
 
   const applySinglesStake = (value) => {
-    if (isStakeLocked) return;
+    if (isPromoLocked) {
+      showToast('Promotional balances must be used in full. Stake amount is fixed.', 'info');
+      return;
+    }
     setStake(value);
     bets.forEach((bet) => setSingleStake(bet.id, value));
   };
 
   const stakeControls = (
     <>
-      {!isStakeLocked && (
+      {!isStakeLocked && !isPromoLocked && (
         <div className="betslip-quick-stakes">
           {QUICK_STAKES.map(amount => (
             <button
@@ -313,11 +344,11 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
             autoComplete="off"
             placeholder={singlesStakePlaceholder}
             value={betType === 'multi' ? stake : singlesStakeInputValue}
-            readOnly={isStakeLocked}
-            disabled={isStakeLocked}
-            className={`betslip-stake-input ${isStakeLocked ? 'betslip-stake-input--locked' : ''}`}
+            readOnly={isPromoLocked}
+            disabled={isPromoLocked}
+            className={`betslip-stake-input ${isPromoLocked ? 'betslip-stake-input--locked' : ''}`}
             onChange={(e) => {
-              if (isStakeLocked) return;
+              if (isPromoLocked) return;
               const value = sanitizeStakeInput(e.target.value);
               if (betType === 'multi') {
                 setStake(value);
