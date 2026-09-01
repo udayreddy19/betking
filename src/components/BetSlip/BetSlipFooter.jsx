@@ -191,7 +191,11 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
     selectFundingSource(type, reward);
   };
 
-  const stakeSourceToggle = (
+  const hasPromoMethods = (availableRewards?.length || 0) > 0
+    || (bonusAvailable > 0 && !availableRewards.some((r) => r.rewardType === 'bonus'))
+    || (freebetAvailable > 0 && !availableRewards.some((r) => r.rewardType === 'freebet'));
+
+  const stakeSourceToggle = !hasPromoMethods ? null : (
     <div className="betslip-stake-source">
       <span className="betslip-stake-source__label">Payment Method</span>
       <div className="betslip-stake-source__tabs betslip-stake-source__tabs--scrollable">

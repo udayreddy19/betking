@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { IoClose } from '../../icons';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { isMatchBettable, isMatchLive } from '../../utils/matchBetting';
@@ -24,24 +24,6 @@ import './MatchDetailModal.css';
 export default function MatchDetailModal({ match, isOpen, onClose }) {
   const { addBet, isBetSelected, betCount } = useBetSlip();
   const [activeMarketCategory, setActiveMarketCategory] = useState('all');
-  const [builderLegs, setBuilderLegs] = useState([]);
-
-  const toggleBuilderLeg = (label, odds) => {
-    setBuilderLegs(prev => {
-      const exists = prev.find(l => l.label === label);
-      if (exists) return prev.filter(l => l.label !== label);
-      if (prev.length >= 4) return prev;
-      return [...prev, { label, odds: Number(odds) }];
-    });
-  };
-
-  const builderCombinedOdds = useMemo(() => {
-    if (!builderLegs.length) return 1.0;
-    const product = builderLegs.reduce((acc, leg) => acc * leg.odds, 1);
-    // Slight correlation discount factor for same match
-    const discount = builderLegs.length > 1 ? 0.92 : 1.0;
-    return Math.max(1.10, Math.round(product * discount * 100) / 100);
-  }, [builderLegs]);
 
   const [matchMarkets, setMatchMarkets] = useState([]);
   const oddsStateKey = matchOddsStateKey(match);
@@ -412,7 +394,7 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
 
         {/* Market Category Filter Tabs */}
         <div className="market-tabs">
-          {['all', 'main', 'overs-deliveries', 'player-props', 'specials', 'builder', 'insights'].map(cat => (
+          {['all', 'main', 'overs-deliveries', 'player-props', 'specials', 'insights'].map(cat => (
             <button
               key={cat}
               className={`market-tab ${activeMarketCategory === cat ? 'active' : ''}`}
@@ -423,7 +405,6 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
               {cat === 'overs-deliveries' && (sport === 'cricket' ? 'Overs & Deliveries' : 'Interval Markets')}
               {cat === 'player-props' && 'Player Props'}
               {cat === 'specials' && 'Specials'}
-              {cat === 'builder' && '🛠️ Bet Builder'}
               {cat === 'insights' && '📊 Match Insights'}
             </button>
           ))}
@@ -439,7 +420,7 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
         <div className="market-content">
 
           {/* DYNAMIC AUTHORITATIVE BETTING MARKETS FROM ODDS ENGINE V2 */}
-          {activeMarketCategory !== 'builder' && activeMarketCategory !== 'insights' && (
+          {activeMarketCategory !== 'insights' && (
             matchMarkets.length > 0 ? (
               matchMarkets.map((m) => {
                 const isCatMatch = activeMarketCategory === 'all'
@@ -523,81 +504,6 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
                 MARKET UNAVAILABLE — Fetching authoritative live odds...
               </div>
             )
-          )}
-
-          {/* BET BUILDER UI VIEW — AUTHORITATIVE snapshot LEGS */}
-          {activeMarketCategory === 'builder' && (
-            <div className="builder-view">
-              <div className="builder-header-box">
-                <h4>🛠️ Same Match Bet Builder</h4>
-                <p>Select up to 4 legs from active authoritative markets to construct a custom parlay.</p>
-              </div>
-
-              <div className="builder-options-list">
-                {matchMarkets.filter(m => m.status === 'OPEN').map((m) => (
-                  <div key={m.key} className="builder-option-group">
-                    <h5>{m.title}</h5>
-                    <div className={`market-odds-grid ${m.options.length === 3 ? 'three-col' : 'two-col'}`}>
-                      {m.options.filter(o => o.bettable !== false && o.odds != null).map((opt) => {
-                        const isSel = builderLegs.some(l => l.label === opt.name);
-                        return (
-                          <button
-                            key={opt.selection || opt.name}
-                            type="button"
-                            className={`market-odds-btn ${isSel ? 'selected' : ''}`}
-                            onClick={() => toggleBuilderLeg(opt.name, opt.odds)}
-                          >
-                            <span className="market-label">{opt.name}</span>
-                            <span className="market-val">{Number(opt.odds).toFixed(2)}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="builder-summary-box">
-                <div className="builder-legs-chips">
-                  {builderLegs.length === 0 ? (
-                    <span className="builder-empty-hint">Tap choices above to add legs to your builder</span>
-                  ) : (
-                    builderLegs.map((leg) => (
-                      <span key={leg.label} className="builder-leg-chip">
-                        {leg.label} ({leg.odds.toFixed(2)})
-                        <button type="button" onClick={() => toggleBuilderLeg(leg.label, leg.odds)}>×</button>
-                      </span>
-                    ))
-                  )}
-                </div>
-
-                <div className="builder-bottom-row">
-                  <div className="builder-odds-result">
-                    <span>Combined Odds:</span>
-                    <strong>{builderCombinedOdds.toFixed(2)}</strong>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="deposit-confirm-btn"
-                    disabled={builderLegs.length === 0}
-                    onClick={() => {
-                      const desc = `BetBuilder (${builderLegs.length} legs): ${builderLegs.map(l => l.label).join(' + ')}`;
-                      addBet(
-                        match,
-                        `Builder:${Date.now()}`,
-                        builderCombinedOdds,
-                        desc,
-                        { marketName: '🛠️ Same Match Bet Builder' },
-                      );
-                      setBuilderLegs([]);
-                    }}
-                  >
-                    Add Bet Builder to Slip
-                  </button>
-                </div>
-              </div>
-            </div>
           )}
 
           {/* MATCH INSIGHTS & H2H VIEW */}

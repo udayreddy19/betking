@@ -1,14 +1,12 @@
 import { useState, useMemo, useEffect, useCallback, useRef, useSyncExternalStore } from 'react';
 import { Link, useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { FiSearch, FiHome, HiOutlineChevronDown, HiOutlineChevronUp, FiMessageCircle } from '../../icons';
-import FilterChips from '../../components/FilterChips/FilterChips';
-import SportIcon from '../../components/SportIcon/SportIcon';
 import TeamJersey from '../../components/TeamJersey/TeamJersey';
 import MatchCountdownTimer from '../../components/MatchCountdownTimer/MatchCountdownTimer';
 import LiveMatchGraphicWidget from '../../components/LiveMatchGraphicWidget/LiveMatchGraphicWidget';
 import ErrorBoundary from '../../components/ErrorBoundary/ErrorBoundary';
 import SportsLeagueSidebar from '../../components/SportsLeagueSidebar/SportsLeagueSidebar';
-import { sportsCategories, featuredLeagues } from '../../data/mockData';
+import { sportsCategories } from '../../data/mockData';
 import { useLiveMatches, useLiveSportsMeta } from '../../context/LiveSportsContext';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { useAuth } from '../../context/AuthContext';
@@ -27,7 +25,7 @@ import { prefetchMatchDetail, enrichFromPoller, subscribeGlobalMatchDetails, get
 import { useMatchDetail } from '../../hooks/useMatchDetail';
 import { useCentralizedMatchState } from '../../hooks/useCentralizedMatchState';
 import { centralizedMatchEngine } from '../../services/centralizedMatchStateEngine';
-import { filterMatches, filterMatchesBySport, compareMatchesForSportsBoard } from '../../utils/matchFilters';
+import { filterMatches, compareMatchesForSportsBoard } from '../../utils/matchFilters';
 import { resolveLeagueId, getLeagueMeta, isSameLeague, groupMatchesByLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
 import { matchIdsEqual } from '../../../lib/matchIdPublic.mjs';
 import { findLiveMatch } from '../../utils/findLiveMatch';
@@ -45,7 +43,6 @@ import { getMarketCategoriesForSport } from '../../utils/marketCategoryLabels';
 import { useMatchWatchlist } from '../../hooks/useMatchWatchlist';
 import LiveScoresFeedBanner from '../../components/LiveScoresFeedBanner/LiveScoresFeedBanner';
 import { mediaQueryMatches, subscribeMediaQuery } from '../../utils/browserCompat';
-import SgpBuilder from '../../components/SgpBuilder/SgpBuilder';
 import { apiFetch } from '../../utils/apiClient';
 import './Sports.css';
 
@@ -328,7 +325,10 @@ export default function Sports() {
   const initialSport = searchParams.get('sport') || 'all';
   const initialLeague = resolveLeagueId(searchParams.get('league')) || 'all';
   const initialMatchId = searchParams.get('match');
-  const initialTab = searchParams.get('tab') || searchParams.get('status') || (isLiveBettingPage ? 'live' : 'all');
+  const initialTabRaw = searchParams.get('tab') || searchParams.get('status');
+  const initialTab = initialLeague === 'ipl-srl'
+    ? (initialTabRaw && initialTabRaw !== 'all' ? initialTabRaw : 'all')
+    : (initialTabRaw && initialTabRaw !== 'all' ? initialTabRaw : 'live');
 
   const [activeSport, setActiveSport] = useState(initialSport);
   const [activeLeague, setActiveLeague] = useState(initialLeague);
@@ -357,19 +357,20 @@ export default function Sports() {
   }, [matches, activeSport, activeLeague, boardStateTab, searchQuery, cricketSeries]);
 
   const stateCounts = useMemo(() => {
-    const sportFiltered = filterMatchesBySport(matches || [], activeSport);
-    const leagueFiltered = filterByLeague(sportFiltered, activeLeague, cricketSeries);
+    const pool = matches || [];
     let live = 0;
     let upcoming = 0;
     let completed = 0;
-    for (const m of leagueFiltered) {
+    let srl = 0;
+    for (const m of pool) {
+      if (isMatchSRL(m)) srl += 1;
       const s = getMatchState(m);
-      if (s === 'in') live++;
-      else if (s === 'pre') upcoming++;
-      else if (s === 'post') completed++;
+      if (s === 'in') live += 1;
+      else if (s === 'pre') upcoming += 1;
+      else if (s === 'post') completed += 1;
     }
-    return { all: leagueFiltered.length, live, upcoming, completed };
-  }, [matches, activeSport, activeLeague, cricketSeries]);
+    return { live, upcoming, completed, srl };
+  }, [matches]);
 
   const sportMatches = useMemo(() => {
     return [...baseSportPool].sort((a, b) => compareMatchesForSportsBoard(a, b, getMatchScores));
@@ -692,12 +693,28 @@ export default function Sports() {
 
   const handleStateTabChange = useCallback((tab) => {
     setActiveStateTab(tab);
+    setActiveLeague('all');
     setViewMode('league');
     setSelectedMatchId(null);
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
+      next.set('league', 'all');
       if (tab && tab !== 'all') next.set('tab', tab);
       else next.delete('tab');
+      next.delete('match');
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
+
+  const selectSrlBoard = useCallback(() => {
+    setActiveLeague('ipl-srl');
+    setActiveStateTab('all');
+    setViewMode('league');
+    setSelectedMatchId(null);
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.set('league', 'ipl-srl');
+      next.delete('tab');
       next.delete('match');
       return next;
     }, { replace: true });
@@ -710,7 +727,11 @@ export default function Sports() {
     const tab = searchParams.get('tab') || searchParams.get('status');
 
     if (sport) setActiveSport(sport);
-    if (tab) setActiveStateTab(tab);
+    if (tab) {
+      const resolvedLeague = league ? resolveLeagueId(league, cricketSeries) : 'all';
+      if (tab === 'all' && resolvedLeague !== 'ipl-srl') setActiveStateTab('live');
+      else setActiveStateTab(tab);
+    }
 
     if (match) {
       setSelectedMatchId(match);
@@ -739,7 +760,6 @@ export default function Sports() {
     'All Leagues',
   );
   const sportLabel = sportsCategories.find(s => s.id === activeSport)?.name || 'Cricket';
-  const leagueChips = featuredLeagues.filter(l => l.sport === activeSport);
   const canBetActive = activeMatch ? isMatchBettable(activeMatch) : false;
   const liveStatusClass = tickerMessage?.includes('⚠️')
     ? 'error'
@@ -764,30 +784,6 @@ export default function Sports() {
       silentAdd: true,
     });
   };
-
-  const sportCounts = useMemo(() => {
-    const pool = isLiveBettingPage
-      ? filterMatches(matches || [], { stateTab: 'bettable' })
-      : filterMatches(matches || [], { stateTab: 'all' });
-    const map = {};
-    for (const cat of sportsCategories) {
-      if (cat.id === 'all') { map['all'] = pool.length; continue; }
-      map[cat.id] = pool.filter((m) => {
-        const s = String(m.sport || '').toLowerCase();
-        if (cat.id === 'cricket') return s === 'cricket';
-        if (cat.id === 'soccer') return s === 'soccer' || s === 'football';
-        if (cat.id === 'basketball') return s === 'basketball';
-        if (cat.id === 'tennis') return s === 'tennis';
-        if (cat.id === 'table-tennis') return s === 'table-tennis' || s === 'tabletennis';
-        if (cat.id === 'kabaddi') return s === 'kabaddi';
-        if (cat.id === 'esoccer') return s === 'esoccer';
-        if (cat.id === 'volleyball') return s === 'volleyball';
-        if (cat.id === 'american-football') return s === 'american-football' || s === 'nfl';
-        return s === cat.id;
-      }).length;
-    }
-    return map;
-  }, [matches, isLiveBettingPage]);
 
   return (
     <div
@@ -861,57 +857,44 @@ export default function Sports() {
             </nav>
           )}
 
-          <FilterChips
-            items={sportsCategories}
-            activeId={activeSport}
-            onSelect={handleSportChange}
-            counts={sportCounts}
-            className="filter-chips-row sports-sport-chips"
-          />
-
-          <div className="sports-league-chips sports-league-chips--browse">
+          <div className="sports-league-chips sports-league-chips--browse" role="tablist" aria-label="Match filters">
             <button
               type="button"
-              className={`sports-league-chip ${activeStateTab === 'live' ? 'active' : ''}`}
+              role="tab"
+              aria-selected={!isIplSrlView && activeStateTab === 'live'}
+              className={`sports-league-chip ${!isIplSrlView && activeStateTab === 'live' ? 'active' : ''}`}
               onClick={() => handleStateTabChange('live')}
             >
-              <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: '#ef4444', marginRight: 6, verticalAlign: 'middle', boxShadow: '0 0 6px #ef4444' }} />
+              <span className="sports-league-chip-live-dot" aria-hidden="true" />
               Live{stateCounts.live > 0 ? ` (${stateCounts.live})` : ''}
             </button>
             <button
               type="button"
-              className={`sports-league-chip ${activeStateTab === 'upcoming' ? 'active' : ''}`}
+              role="tab"
+              aria-selected={!isIplSrlView && activeStateTab === 'upcoming'}
+              className={`sports-league-chip ${!isIplSrlView && activeStateTab === 'upcoming' ? 'active' : ''}`}
               onClick={() => handleStateTabChange('upcoming')}
             >
               Upcoming{stateCounts.upcoming > 0 ? ` (${stateCounts.upcoming})` : ''}
             </button>
             <button
               type="button"
-              className={`sports-league-chip ${activeStateTab === 'completed' ? 'active' : ''}`}
+              role="tab"
+              aria-selected={isIplSrlView}
+              className={`sports-league-chip sports-league-chip--srl ${isIplSrlView ? 'active' : ''}`}
+              onClick={selectSrlBoard}
+            >
+              OddsYra SRL{stateCounts.srl > 0 ? ` (${stateCounts.srl})` : ''}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={!isIplSrlView && activeStateTab === 'completed'}
+              className={`sports-league-chip ${!isIplSrlView && activeStateTab === 'completed' ? 'active' : ''}`}
               onClick={() => handleStateTabChange('completed')}
             >
               Completed{stateCounts.completed > 0 ? ` (${stateCounts.completed})` : ''}
             </button>
-            <button
-              type="button"
-              className={`sports-league-chip ${activeStateTab === 'all' ? 'active' : ''}`}
-              onClick={() => handleStateTabChange('all')}
-            >
-              All{stateCounts.all > 0 ? ` (${stateCounts.all})` : ''}
-            </button>
-            {leagueChips.map(league => (
-              <button
-                key={league.id}
-                type="button"
-                className={`sports-league-chip ${isSameLeague(activeLeague, league.id, cricketSeries) ? 'active' : ''}`}
-                onClick={() => handleLeagueChange(league.id)}
-              >
-                {league.icon && (
-                  <SportIcon sport={league.sport} icon={league.icon} className="sports-league-chip-icon" />
-                )}
-                {league.name}
-              </button>
-            ))}
           </div>
 
           {isAdminUser && (
@@ -950,7 +933,9 @@ export default function Sports() {
             {sportMatches.length === 0 ? (
               <div className="sports-ticker-empty">
                 <p>
-                  {`No ${activeStateTab !== 'all' ? activeStateTab : ''} matches found${searchQuery ? ` for "${searchQuery}"` : ''}.`}
+                  {isIplSrlView
+                    ? `No OddsYra SRL matches${searchQuery ? ` for "${searchQuery}"` : ''} right now.`
+                    : `No ${activeStateTab !== 'all' ? activeStateTab : ''} matches found${searchQuery ? ` for "${searchQuery}"` : ''}.`}
                 </p>
                 {isLiveBettingPage ? (
                   <Link to="/sports" className="sports-empty-action">
@@ -960,7 +945,7 @@ export default function Sports() {
                   <button
                     type="button"
                     className="sports-empty-action"
-                    onClick={() => { setSearchQuery(''); handleLeagueChange('all'); handleStateTabChange('all'); }}
+                    onClick={() => { setSearchQuery(''); handleStateTabChange('live'); }}
                   >
                     Clear filters
                   </button>
@@ -1291,9 +1276,6 @@ export default function Sports() {
                   </div>
                 );
               })}
-                  {canBetActive && !isMatchFinished(activeMatch) && (
-                    <SgpBuilder match={activeMatch} markets={matchMarkets} />
-                  )}
                 </>
               )}
 

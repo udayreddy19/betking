@@ -5,71 +5,6 @@
   background: var(--color-bg);
 }
 
-.home-srl-banner {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 16px 24px;
-  width: 100%;
-  margin-bottom: var(--space-4);
-  padding: 18px 22px;
-  border: none;
-  border-radius: 16px;
-  text-align: left;
-  cursor: pointer;
-  background: linear-gradient(135deg, #1a1408 0%, #7c2d12 52%, #ea580c 130%);
-  color: #f4f1ea;
-}
-
-.home-srl-banner__copy {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  min-width: 0;
-}
-
-.home-srl-banner__cta {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 40px;
-  padding: 0 16px;
-  border-radius: 999px;
-  background: #7dff6b;
-  color: #0b0e12;
-  font-size: 0.82rem;
-  font-weight: 800;
-}
-
-.home-srl-banner:active {
-  transform: scale(0.99);
-}
-
-.home-srl-banner__kicker {
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: #fdba74;
-}
-
-.home-srl-banner__title {
-  font-family: var(--font-display);
-  font-size: clamp(1.2rem, 3.2vw, 1.75rem);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
-}
-
-.home-srl-banner__subtitle {
-  max-width: 40rem;
-  font-size: 0.9rem;
-  line-height: 1.4;
-  color: rgba(254, 215, 170, 0.95);
-}
-
 /* ── Hero promo ── */
 .home-promo-banner {
   display: grid;
@@ -455,14 +390,6 @@
   .home-sports-action { order: 3; }
   .home-watchlist { order: 4; }
   .home-boosted { order: 5; }
-
-  .home-srl-banner {
-    grid-template-columns: 1fr;
-  }
-
-  .home-srl-banner__cta {
-    justify-self: start;
-  }
 
   .home-promo-banner {
     grid-template-columns: 56px minmax(0, 1fr);

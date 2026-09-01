@@ -7,7 +7,7 @@ import MatchCard from '../../components/MatchCard/MatchCard';
 import HomeCategoryGrid from '../../components/HomeCategoryGrid/HomeCategoryGrid';
 import { sportsCategories, featuredLeagues } from '../../data/mockData';
 import { homePromoSlides } from '../../data/homePageData';
-import { getSrlHomeBanner, isSrlSeasonLive, SRL_LAUNCH_LABEL, SRL_PAGE_PATH } from '../../data/oddsyraSrlSeason';
+import { isSrlSeasonLive, SRL_LAUNCH_LABEL, SRL_PAGE_PATH } from '../../data/oddsyraSrlSeason';
 import { useLiveMatches, useLiveSportsMeta } from '../../context/LiveSportsContext';
 import LiveScoresFeedBanner from '../../components/LiveScoresFeedBanner/LiveScoresFeedBanner';
 import { filterMatches, compareMatchesForSportsBoard } from '../../utils/matchFilters';
@@ -137,7 +137,6 @@ export default function Home() {
   }, [matches, watchlistIds]);
 
   const promoRaw = homePromoSlides[promoIndex];
-  const srlBanner = getSrlHomeBanner();
   const promo = promoRaw.id === 'srl'
     ? {
       ...promoRaw,
@@ -154,18 +153,6 @@ export default function Home() {
         onRetry={() => refreshScores({ force: true })}
         retrying={isScoresLoading}
       />
-      <button
-        type="button"
-        className="home-srl-banner"
-        onClick={() => navigate(SRL_PAGE_PATH)}
-      >
-        <span className="home-srl-banner__copy">
-          <span className="home-srl-banner__kicker">{srlBanner.kicker}</span>
-          <span className="home-srl-banner__title">{srlBanner.title}</span>
-          <span className="home-srl-banner__subtitle">{srlBanner.subtitle}</span>
-        </span>
-        <span className="home-srl-banner__cta">{srlBanner.cta}</span>
-      </button>
 
       <button
         type="button"

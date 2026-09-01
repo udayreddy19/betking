@@ -3,6 +3,7 @@ import { useAuth } from './AuthContext';
 import { getCashoutOffer } from '../utils/wageringRules';
 import { getWalletBreakdown } from '../utils/walletBalance';
 import { computeAccumulatorPayout } from '../utils/accumulatorPayout.js';
+import { filterRewardsByWallet } from '../utils/filterRewardsByWallet.js';
 import { playBetSound, playWinSound } from '../utils/soundEffects';
 import { isMatchBettable } from '../utils/matchBetting';
 import { apiFetch } from '../utils/apiClient';
@@ -341,6 +342,25 @@ export function BetSlipProvider({ children }) {
     }
   }, [user?.userId, user?.email]);
 
+  const stakeableRewards = useMemo(
+    () => filterRewardsByWallet(availableRewards, { bonus: wallet.bonus, freebets: wallet.freebets }),
+    [availableRewards, wallet.bonus, wallet.freebets],
+  );
+
+  useEffect(() => {
+    if (selectedRewardId && !stakeableRewards.some((r) => r.rewardId === selectedRewardId)) {
+      setSelectedRewardId(null);
+    }
+    if (fundingSource === 'bonus' && !(Number(wallet.bonus) > 0)) {
+      setFundingSource('cash');
+      setSelectedRewardId(null);
+    }
+    if (fundingSource === 'freebet' && !(Number(wallet.freebets) > 0)) {
+      setFundingSource('cash');
+      setSelectedRewardId(null);
+    }
+  }, [stakeableRewards, selectedRewardId, fundingSource, wallet.bonus, wallet.freebets]);
+
   useEffect(() => {
     refreshAvailableRewards();
     const handleRewardsUpdated = () => {
@@ -352,8 +372,8 @@ export function BetSlipProvider({ children }) {
 
   const selectedReward = useMemo(() => {
     if (!selectedRewardId) return null;
-    return availableRewards.find((r) => r.rewardId === selectedRewardId) || null;
-  }, [availableRewards, selectedRewardId]);
+    return stakeableRewards.find((r) => r.rewardId === selectedRewardId) || null;
+  }, [stakeableRewards, selectedRewardId]);
 
   const activeFundingSource = useMemo(() => {
     if (selectedReward) return selectedReward.rewardType;
@@ -434,11 +454,11 @@ export function BetSlipProvider({ children }) {
       return;
     }
     const rId = typeof reward === 'string' ? reward : reward.rewardId;
-    const found = availableRewards.find((r) => r.rewardId === rId) || (typeof reward === 'object' ? reward : null);
+    const found = stakeableRewards.find((r) => r.rewardId === rId);
     if (found) {
       selectFundingSource('reward', found);
     }
-  }, [availableRewards, selectFundingSource]);
+  }, [stakeableRewards, selectFundingSource]);
 
   useEffect(() => {
     betsRef.current = bets;
@@ -702,30 +722,6 @@ export function BetSlipProvider({ children }) {
 
     return true;
   }, [showToast, betType, stake, isPromoLocked, promoAmount]);
-
-  const addSgpLegs = useCallback((match, legs = []) => {
-    const list = Array.isArray(legs) ? legs.filter((leg) => Number(leg.odds) > 1) : [];
-    if (list.length < 2) {
-      showToast('Pick at least two same-match legs for a parlay.', 'error');
-      return false;
-    }
-    for (const leg of list) {
-      addBet(match, leg.selectionId || leg.selection, leg.odds, leg.selectionName || leg.name, {
-        marketId: leg.marketId,
-        marketName: leg.marketName,
-        keepExisting: true,
-        skipMobileOpen: true,
-        silentAdd: true,
-        asMulti: true,
-      });
-    }
-    setBetType('multi');
-    setStake((prev) => prev || '100');
-    setQuickBet(null);
-    setIsMobileOpen(true);
-    showToast(`Added ${list.length}-leg same-game parlay. Place it as a Multi — not a Single.`, 'success');
-    return true;
-  }, [addBet, showToast]);
 
   const removeBet = useCallback((betId) => {
     setBets(prev => prev.filter(b => b.id !== betId));
@@ -1253,7 +1249,6 @@ export function BetSlipProvider({ children }) {
     bets,
     placedBets,
     addBet,
-    addSgpLegs,
     removeBet,
     clearAll,
     placeBets,
@@ -1292,7 +1287,7 @@ export function BetSlipProvider({ children }) {
     acceptOddsChange,
     acceptAllOddsChanges,
     hasPendingOddsAcceptance: hasPendingOddsAcceptance(bets),
-    availableRewards,
+    availableRewards: stakeableRewards,
     refreshAvailableRewards,
     selectedRewardId,
     setSelectedRewardId,
@@ -1308,7 +1303,6 @@ export function BetSlipProvider({ children }) {
     bets,
     placedBets,
     addBet,
-    addSgpLegs,
     removeBet,
     clearAll,
     placeBets,
@@ -1340,7 +1334,7 @@ export function BetSlipProvider({ children }) {
     refreshSlipOdds,
     acceptOddsChange,
     acceptAllOddsChanges,
-    availableRewards,
+    stakeableRewards,
     refreshAvailableRewards,
     selectedRewardId,
     setSelectedRewardId,
