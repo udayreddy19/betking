@@ -45,7 +45,6 @@ async function handleLiveScores(req, res) {
     const force = url.searchParams.get('refresh') === '1';
     const payload = await buildLiveScoresPayload({ force });
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Cache-Control', force ? 'no-store' : 'public, max-age=1, stale-while-revalidate=2');
     res.end(JSON.stringify(payload));
   } catch (error) {
     console.error('[Live Scores Plugin]', error);

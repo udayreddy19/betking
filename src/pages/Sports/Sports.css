@@ -939,8 +939,6 @@
   border-radius: 10px;
   margin-bottom: var(--space-2);
   overflow: hidden;
-  content-visibility: auto;
-  contain-intrinsic-size: auto 88px;
 }
 
 .sports-cricket-row__main {

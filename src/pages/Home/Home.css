@@ -1,5 +1,5 @@
 .home-page {
-  animation: fadeIn 160ms ease;
+  animation: fadeIn 300ms ease;
   position: relative;
   padding-bottom: var(--space-8);
   background: var(--color-bg);

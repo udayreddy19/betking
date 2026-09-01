@@ -73,25 +73,6 @@ function loadCashfreeSdk() {
   });
 }
 
-function loadRazorpaySdk() {
-  return new Promise((resolve, reject) => {
-    if (window.Razorpay) return resolve(window.Razorpay);
-    const existing = document.getElementById('razorpay-checkout-script');
-    if (existing) {
-      existing.addEventListener('load', () => resolve(window.Razorpay));
-      existing.addEventListener('error', reject);
-      return;
-    }
-    const script = document.createElement('script');
-    script.id = 'razorpay-checkout-script';
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.async = true;
-    script.onload = () => resolve(window.Razorpay);
-    script.onerror = () => reject(new Error('Failed to load Razorpay checkout'));
-    document.head.appendChild(script);
-  });
-}
-
 export default function DepositView({ onClose, isModal = false, returnTo = null }) {
   const { user, refreshWallet, addFunds } = useAuth();
   const navigate = useNavigate();
@@ -330,7 +311,6 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
       }
 
       const activeKey = orderData.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID;
-      await loadRazorpaySdk();
       if (!window.Razorpay || !activeKey) {
         throw new Error('Razorpay checkout is not available');
       }

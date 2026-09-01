@@ -157,17 +157,6 @@ function writeKeyboardInset() {
   document.documentElement.style.setProperty('--kb-inset', `${covered >= 140 ? covered : 0}px`);
 }
 
-/** Run after the browser is idle so first paint is not competing with prefetch. */
-export function runWhenIdle(fn, timeout = 1800) {
-  if (typeof window === 'undefined') return () => {};
-  if (typeof window.requestIdleCallback === 'function') {
-    const id = window.requestIdleCallback(() => { fn(); }, { timeout });
-    return () => window.cancelIdleCallback(id);
-  }
-  const timer = window.setTimeout(fn, Math.min(400, timeout));
-  return () => window.clearTimeout(timer);
-}
-
 export function bindAppViewport() {
   if (typeof window === 'undefined') return () => {};
   writeAppHeight({ force: true });

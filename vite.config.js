@@ -55,7 +55,12 @@ export default defineConfig({
           if (id.includes('node_modules/motion')) {
             return 'icons-motion';
           }
+          // Split each itshover icon into its own chunk
           if (id.includes('/src/icons/itshover/')) {
+            const match = id.match(/\/src\/icons\/itshover\/([^/]+)\./);
+            if (match) {
+              return `icon-${match[1].replace('-icon', '')}`;
+            }
             return 'icons-itshover';
           }
         },

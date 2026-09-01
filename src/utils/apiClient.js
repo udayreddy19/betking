@@ -88,24 +88,15 @@ export async function apiFetch(path, options = {}, { retry = true } = {}) {
   return res;
 }
 
-/** One in-flight /me at a time — wallet refresh + WS events must not stampede. */
-let meInFlight = null;
-
 export async function fetchMe() {
-  if (meInFlight) return meInFlight;
-  meInFlight = (async () => {
-    const res = await apiFetch('/api/auth/me');
-    if (!res.ok) return null;
-    const data = await res.json();
-    const user = data.user || null;
-    if (user && data.spinGrants) {
-      user.spinGrants = data.spinGrants;
-    }
-    return user;
-  })().finally(() => {
-    meInFlight = null;
-  });
-  return meInFlight;
+  const res = await apiFetch('/api/auth/me');
+  if (!res.ok) return null;
+  const data = await res.json();
+  const user = data.user || null;
+  if (user && data.spinGrants) {
+    user.spinGrants = data.spinGrants;
+  }
+  return user;
 }
 
 export function mapServerUserToSession(serverUser, previous = null) {

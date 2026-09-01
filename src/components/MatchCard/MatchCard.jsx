@@ -1,4 +1,4 @@
-import { useState, memo } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { useAuth } from '../../context/AuthContext';
@@ -55,7 +55,7 @@ function leagueIconKey(league) {
   return 'world';
 }
 
-function MatchCard({ match, variant = 'default' }) {
+export default function MatchCard({ match, variant = 'default' }) {
   const { addBet, isBetSelected } = useBetSlip();
   const { showToast } = useAuth();
   const { isSaved, toggle } = useMatchWatchlist();
@@ -305,5 +305,3 @@ function MatchCard({ match, variant = 'default' }) {
     </>
   );
 }
-
-export default memo(MatchCard);

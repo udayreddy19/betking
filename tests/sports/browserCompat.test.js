@@ -8,7 +8,6 @@ import {
   copyToClipboard,
   bindAppViewport,
   isEditableFocusTarget,
-  runWhenIdle,
 } from '../../src/utils/browserCompat.js';
 
 function memoryStorage() {
@@ -123,18 +122,6 @@ describe('browserCompat', () => {
     const unbind = bindAppViewport();
     expect(props['--app-height']).toBe('800px');
     unbind();
-    vi.unstubAllGlobals();
-  });
-
-  it('cancels runWhenIdle timers', () => {
-    const fakeWindow = {
-      setTimeout: vi.fn(() => 7),
-      clearTimeout: vi.fn(),
-    };
-    vi.stubGlobal('window', fakeWindow);
-    const cancel = runWhenIdle(() => {}, 800);
-    cancel();
-    expect(fakeWindow.clearTimeout).toHaveBeenCalledWith(7);
     vi.unstubAllGlobals();
   });
 });

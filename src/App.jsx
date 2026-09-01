@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { MotionConfig } from 'motion/react';
 import { ThemeProvider } from './context/ThemeContext';
@@ -7,7 +7,6 @@ import { LiveSportsProvider } from './context/LiveSportsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CasinoProvider } from './context/CasinoContext';
 import { springUi } from './utils/motionPresets';
-import { runWhenIdle } from './utils/browserCompat';
 
 import Header from './components/Header/Header';
 import Footer from './components/Footer/Footer';
@@ -21,6 +20,8 @@ import MobileBetSlip from './components/MobileBetSlip/MobileBetSlip';
 import GlobalBetBar from './components/GlobalBetBar/GlobalBetBar';
 import MobileBottomBar from './components/MobileBottomBar/MobileBottomBar';
 import BetSettlementRunner from './components/BetSettlementRunner/BetSettlementRunner';
+import GamePlayModal from './components/GamePlayModal/GamePlayModal';
+import LiveChatSupportWidget from './components/LiveChatSupportWidget/LiveChatSupportWidget';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import RouteSeo from './components/RouteSeo/RouteSeo';
 import PhoneRequiredGate from './components/PhoneRequiredGate/PhoneRequiredGate';
@@ -28,16 +29,15 @@ import { getAdminSessionState } from './utils/adminSession';
 import { CASINO_ENABLED } from './utils/featureFlags';
 
 import Home from './pages/Home/Home';
-
-const Register = lazy(() => import('./pages/Register/Register'));
-const Profile = lazy(() => import('./pages/Profile/Profile'));
-const Fantasy = lazy(() => import('./pages/Fantasy/Fantasy'));
-const Promotions = lazy(() => import('./pages/Promotions/Promotions'));
-const Terms = lazy(() => import('./pages/Legal/Terms'));
-const Privacy = lazy(() => import('./pages/Legal/Privacy'));
-const ResponsibleGaming = lazy(() => import('./pages/Legal/ResponsibleGaming'));
-const Help = lazy(() => import('./pages/Legal/Help'));
-const NotFound = lazy(() => import('./pages/Legal/NotFound'));
+import Register from './pages/Register/Register';
+import Profile from './pages/Profile/Profile';
+import Fantasy from './pages/Fantasy/Fantasy';
+import Promotions from './pages/Promotions/Promotions';
+import Terms from './pages/Legal/Terms';
+import Privacy from './pages/Legal/Privacy';
+import ResponsibleGaming from './pages/Legal/ResponsibleGaming';
+import Help from './pages/Legal/Help';
+import NotFound from './pages/Legal/NotFound';
 
 const VerifyEmailPage = lazy(() => import('./pages/Auth/VerifyEmailPage'));
 const ResetPasswordPage = lazy(() => import('./pages/Auth/ResetPasswordPage'));
@@ -60,41 +60,6 @@ const CreateTicketPage = lazy(() => import('./pages/Support/CreateTicketPage'));
 const TicketDetailPage = lazy(() => import('./pages/Support/TicketDetailPage'));
 const MyRewards = lazy(() => import('./pages/Rewards/MyRewards'));
 const DepositPage = lazy(() => import('./pages/Wallet/DepositPage'));
-const GamePlayModal = lazy(() => import('./components/GamePlayModal/GamePlayModal'));
-const LiveChatSupportWidget = lazy(() => import('./components/LiveChatSupportWidget/LiveChatSupportWidget'));
-
-function DeferredLiveChat() {
-  const [ready, setReady] = useState(false);
-  const openPendingRef = useRef(false);
-
-  useEffect(() => {
-    const arm = (open) => {
-      if (open) openPendingRef.current = true;
-      setReady(true);
-    };
-    const onOpen = () => arm(true);
-    window.addEventListener('oddsyra:open-support-chat', onOpen);
-    const cancelIdle = runWhenIdle(() => arm(false), 2500);
-    return () => {
-      window.removeEventListener('oddsyra:open-support-chat', onOpen);
-      cancelIdle();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!ready || !openPendingRef.current) return undefined;
-    openPendingRef.current = false;
-    window.dispatchEvent(new CustomEvent('oddsyra:open-support-chat'));
-    return undefined;
-  }, [ready]);
-
-  if (!ready) return null;
-  return (
-    <Suspense fallback={null}>
-      <LiveChatSupportWidget />
-    </Suspense>
-  );
-}
 
 function CasinoComingSoon() {
   return <Navigate to="/sports" replace />;
@@ -117,12 +82,6 @@ function AppFinancialModals() {
 
 function AppLayout() {
   const location = useLocation();
-
-  useEffect(() => {
-    return runWhenIdle(() => {
-      void import('./pages/Sports/Sports');
-    }, 2000);
-  }, []);
   const isAdminRoute = location.pathname.startsWith('/admin');
   const isDevRoute = location.pathname.startsWith('/developer') || location.pathname.startsWith('/api-docs');
   const isSportsRoute = location.pathname === '/sports' || location.pathname === '/live-betting';
@@ -152,11 +111,7 @@ function AppLayout() {
       <SessionIdleLogout />
       <AppFinancialModals />
       <Toast />
-      {CASINO_ENABLED && !isDepositRoute && (
-        <Suspense fallback={null}>
-          <GamePlayModal />
-        </Suspense>
-      )}
+      {!isDepositRoute && <GamePlayModal />}
       <BetSettlementRunner />
       {!isDepositRoute && <MobileBetSlip />}
       {!isDepositRoute && <GlobalBetBar />}
@@ -238,7 +193,7 @@ function AppLayout() {
         </ErrorBoundary>
       </main>
       {!isAdminRoute && !isDevRoute && !isRegisterRoute && !isDepositRoute && <Footer />}
-      {!isAdminRoute && !isDevRoute && !isRegisterRoute && !isDepositRoute && <DeferredLiveChat />}
+      {!isAdminRoute && !isDevRoute && !isRegisterRoute && !isDepositRoute && <LiveChatSupportWidget />}
     </>
   );
 }

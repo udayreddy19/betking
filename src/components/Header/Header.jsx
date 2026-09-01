@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, memo, lazy, Suspense } from 'react';
+import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { HiOutlineMenu, HiOutlineClipboardList, HiOutlineUser, IoGiftOutline, FiChevronDown, FiZap, FiShield, IoNotifications, IoEyeOutline, IoEyeOffOutline } from '../../icons';
@@ -7,21 +7,22 @@ import { useBetSlip } from '../../context/BetSlipContext';
 import { getWalletBreakdown, formatInr, formatHeaderWalletAmount, getWalletBreakdownLines, getWithdrawableHint } from '../../utils/walletBalance';
 import { getLoyaltySummary, LOYALTY_MIN_REDEEM_POINTS } from '../../utils/loyaltyPoints';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
+import MyBetsPanel from '../MyBetsPanel/MyBetsPanel';
+import PromotionsPanel from '../PromotionsPanel/PromotionsPanel';
 import RupeeSymbol from '../RupeeSymbol/RupeeSymbol';
+import DailySpinModal from '../DailySpinModal/DailySpinModal';
 import AnimatedMotionGiftIcon from '../AnimatedMotionGiftIcon/AnimatedMotionGiftIcon';
 import { ODDS_FORMAT_OPTIONS } from '../../utils/oddsFormatter';
 import { storageGet, storageSet } from '../../utils/browserCompat';
 import { hasValidAdminSession } from '../../utils/adminSession';
 import { isAdminEligibleUser } from '../../utils/isAdminEligibleUser';
 import { useUserNotifications } from '../../hooks/useUserNotifications';
+import '../MyBetsPanel/MyBetsPanel.css';
+import '../PromotionsPanel/PromotionsPanel.css';
 import BrandLogo, { BrandWordmark } from '../BrandLogo/BrandLogo';
 import { withoutCasinoLinks } from '../../utils/featureFlags';
 import { hoverScale, pressScale, springUi } from '../../utils/motionPresets';
 import './Header.css';
-
-const MyBetsPanel = lazy(() => import('../MyBetsPanel/MyBetsPanel'));
-const PromotionsPanel = lazy(() => import('../PromotionsPanel/PromotionsPanel'));
-const DailySpinModal = lazy(() => import('../DailySpinModal/DailySpinModal'));
 
 const BALANCE_VISIBLE_KEY = 'oddsyra_balance_visible';
 
@@ -293,7 +294,6 @@ function Header() {
                 className={`header-action-icon-btn header-my-bets-btn ${isMyBetsOpen ? 'active' : ''}`}
                 data-my-bets-trigger
                 onClick={handleMyBetsToggle}
-                onPointerEnter={() => { void import('../MyBetsPanel/MyBetsPanel'); }}
                 aria-expanded={isMyBetsOpen}
                 aria-haspopup="dialog"
                 aria-label="My bets"
@@ -405,12 +405,17 @@ function Header() {
                 id="daily-spin-btn"
                 title="Spin & Win Daily Rewards"
                 onClick={() => setIsSpinOpen(true)}
-                onPointerEnter={() => { void import('../DailySpinModal/DailySpinModal'); }}
                 whileHover={{ scale: hoverScale }}
                 whileTap={{ scale: pressScale }}
                 transition={springUi}
               >
-                <FiZap style={{ color: '#f59e0b' }} aria-hidden="true" />
+                <motion.div
+                  animate={{ scale: [1, 1.25, 1], rotate: [0, -10, 10, 0] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  style={{ display: 'inline-flex' }}
+                >
+                  <FiZap style={{ color: '#f59e0b' }} />
+                </motion.div>
               </motion.button>
               <motion.button
                 type="button"
@@ -421,7 +426,6 @@ function Header() {
                 aria-expanded={isPromosOpen}
                 aria-haspopup="dialog"
                 onClick={togglePromos}
-                onPointerEnter={() => { void import('../PromotionsPanel/PromotionsPanel'); }}
                 title="Promotions"
                 whileHover={{ scale: hoverScale }}
                 whileTap={{ scale: pressScale }}
@@ -674,21 +678,9 @@ function Header() {
           )}
         </div>
       </div>
-      {isLoggedIn && isMyBetsOpen && (
-        <Suspense fallback={null}>
-          <MyBetsPanel />
-        </Suspense>
-      )}
-      {isLoggedIn && isPromosOpen && (
-        <Suspense fallback={null}>
-          <PromotionsPanel isOpen={isPromosOpen} onClose={closePromos} />
-        </Suspense>
-      )}
-      {isLoggedIn && isSpinOpen && (
-        <Suspense fallback={null}>
-          <DailySpinModal isOpen={isSpinOpen} onClose={() => setIsSpinOpen(false)} />
-        </Suspense>
-      )}
+      {isLoggedIn && <MyBetsPanel />}
+      {isLoggedIn && <PromotionsPanel isOpen={isPromosOpen} onClose={closePromos} />}
+      {isLoggedIn && <DailySpinModal isOpen={isSpinOpen} onClose={() => setIsSpinOpen(false)} />}
     </header>
   );
 }
