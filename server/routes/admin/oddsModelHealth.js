@@ -19,6 +19,8 @@ router.get('/health', async (req, res) => {
     const sport = req.query.sport;
     const metrics = calculateCalibrationMetrics({ sport });
     const stats = getObservationStats();
+    const { getCalibrationSummary } = await import('../../../lib/oddsCalibrationObservations.mjs');
+    const settlementIngest = await getCalibrationSummary();
     
     return res.json({
       success: true,
@@ -33,6 +35,8 @@ router.get('/health', async (req, res) => {
         },
         calibration: metrics,
         observationStore: stats,
+        settlementIngest,
+        ritual: 'Review inverted books, 1.01 rate, and settlement ingest before the first live session.',
       },
     });
   } catch (err) {

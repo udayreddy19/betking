@@ -27,6 +27,7 @@ function generateRandomPassword() {
 
 export default function AdminAccountsPanel() {
   const [admins, setAdmins] = useState([]);
+  const [mfaMeta, setMfaMeta] = useState({ mfaEnforced: false, missingTotp: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editAdmin, setEditAdmin] = useState(null);
@@ -58,6 +59,10 @@ export default function AdminAccountsPanel() {
     adminApiClient.get('/security/admin-users')
       .then((res) => {
         setAdmins(res.admins || []);
+        setMfaMeta({
+          mfaEnforced: Boolean(res.mfaEnforced),
+          missingTotp: res.missingTotp || (res.admins || []).filter((a) => !a.mfa_enabled).map((a) => a.user_id),
+        });
         setError(null);
       })
       .catch((err) => {
@@ -216,6 +221,12 @@ export default function AdminAccountsPanel() {
           {error}
         </div>
       )}
+      <p style={{ fontSize: '0.82rem', margin: '0 0 12px' }}>
+        Admin MFA {mfaMeta.mfaEnforced ? 'is required (production fail-closed).' : 'is optional in this environment.'}
+        {mfaMeta.missingTotp?.length
+          ? ` Accounts without TOTP: ${mfaMeta.missingTotp.join(', ')}.`
+          : ' All listed admins have TOTP enabled.'}
+      </p>
 
       {/* KPI Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>

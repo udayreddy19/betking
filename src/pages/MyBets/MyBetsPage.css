@@ -1,0 +1,30 @@
+.my-bets-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px 80px;
+}
+
+.my-bets-page-header h1 {
+  margin: 0 0 8px;
+  font-size: 1.5rem;
+}
+
+.my-bets-page-header p {
+  margin: 0 0 16px;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.my-bets-page .my-bets-panel {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: auto;
+  max-height: none;
+  box-shadow: none;
+  border-radius: 16px;
+}
+
+.my-bets-page .my-bets-backdrop {
+  display: none;
+}

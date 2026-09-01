@@ -519,15 +519,20 @@ router.get(
       if (latest?.created_at) {
         ageHours = Math.round((Date.now() - new Date(latest.created_at).getTime()) / 3600000);
       }
+      const { getDrPitrStatus } = await import('../../../lib/drPitrStatus.mjs');
+      const pitr = await getDrPitrStatus();
       res.json({
         success: true,
         count: bkpRes.rows.length,
         backups: bkpRes.rows,
+        pitr,
         summary: {
           lastBackupAt: latest?.created_at || null,
           lastStatus: latest?.status || null,
           ageHours,
-          note: 'Local dump restore RPO/RTO is NOT production claim. See DR verification reports.',
+          pitrCertified: pitr.pitrCertified,
+          goLive: pitr.goLive,
+          note: pitr.note,
         },
       });
     } catch (err) {
@@ -555,14 +560,23 @@ router.post(
         [matchId],
       );
 
-      await invalidateOddsCache(matchId);
-
       await logAdminAction({
         actorId: adminId(req),
         targetId: matchId,
         action: 'MATCH_QUICK_FROZEN',
         details: { reason, matchId },
       });
+
+      await invalidateOddsCache(matchId);
+
+      const { marketSuspensionEngine } = await import('../../../lib/marketSuspensionEngine.mjs');
+      await marketSuspensionEngine.addSuspensionCause(`match:${matchId}`, 'MANUAL_ADMIN', 'TRADER', adminId(req));
+      try {
+        const { buildMatchOddsPayload } = await import('../../../lib/liveScoresApiHandlers.mjs');
+        await buildMatchOddsPayload({ matchId, force: true });
+      } catch {
+        // WS push is best-effort
+      }
 
       res.json({ success: true, matchId, status: 'SUSPENDED', reason });
     } catch (err) {
@@ -591,6 +605,9 @@ router.post(
 
       resetMatchCircuitBreaker(matchId);
       await invalidateOddsCache(matchId);
+
+      const { marketSuspensionEngine } = await import('../../../lib/marketSuspensionEngine.mjs');
+      await marketSuspensionEngine.clearSuspensionCause(`match:${matchId}`, 'MANUAL_ADMIN');
 
       await logAdminAction({
         actorId: adminId(req),

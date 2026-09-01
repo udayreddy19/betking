@@ -168,7 +168,7 @@ function AuditCenterPanel() {
   const [error, setError] = useState(null);
   const [selected, setSelected] = useState(null);
   const [filters, setFilters] = useState({
-    q: '', action: '', adminId: '', riskLevel: '', ip: '', requestId: '', from: '', to: '',
+    q: '', action: '', adminId: '', betId: '', riskLevel: '', ip: '', requestId: '', from: '', to: '',
   });
 
   const load = () => {
@@ -220,6 +220,7 @@ function AuditCenterPanel() {
         {[
           ['q', 'Search'],
           ['adminId', 'Admin'],
+          ['betId', 'Bet / user id'],
           ['action', 'Action'],
           ['riskLevel', 'Risk'],
           ['ip', 'IP'],

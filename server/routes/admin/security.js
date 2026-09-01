@@ -5,6 +5,7 @@ import { Router } from 'express';
 import { requireRole, ADMIN_ROLES } from '../../middleware/adminAuth.js';
 import { logAdminAction } from '../../middleware/auditLogger.js';
 import { hashPassword, verifyPassword } from '../../auth/passwordHasher.js';
+import { isAdminMfaEnforced } from '../../../lib/adminMfa.mjs';
 const router = Router();
 let pgQuery = null;
 async function getQuery() { if (!pgQuery) { const m = await import('../../../db/pg.js'); pgQuery = m.query; } return pgQuery; }
@@ -48,7 +49,12 @@ router.get('/admin-users', requireRole('SUPER_ADMIN'), async (req, res) => {
        ORDER BY u.created_at DESC`,
       [adminEmails.length ? adminEmails : ['__none__']],
     );
-    res.json({ success: true, admins: result.rows });
+    res.json({
+      success: true,
+      admins: result.rows,
+      mfaEnforced: isAdminMfaEnforced(),
+      missingTotp: result.rows.filter((r) => !r.mfa_enabled).map((r) => r.user_id),
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -525,6 +531,11 @@ router.get('/audit-center', requireRole('SUPER_ADMIN', 'OPERATIONS_ADMIN', 'FINA
     const params = [];
     let i = 1;
     if (adminId) { conds.push(`actor_id = $${i++}`); params.push(adminId); }
+    if (req.query.betId) {
+      conds.push(`(target_id::text ILIKE $${i} OR details::text ILIKE $${i})`);
+      params.push(`%${req.query.betId}%`);
+      i += 1;
+    }
     if (action) { conds.push(`action ILIKE $${i++}`); params.push(`%${action}%`); }
     if (resource) { conds.push(`(target_id::text ILIKE $${i} OR details::text ILIKE $${i})`); params.push(`%${resource}%`); i += 1; }
     if (riskLevel) { conds.push(`risk_level = $${i++}`); params.push(String(riskLevel).toUpperCase()); }

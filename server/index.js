@@ -108,9 +108,11 @@ import adminPaymentGatewaysRouter from './routes/admin/paymentGateways.js';
 import adminWalletPromoRulesRouter from './routes/admin/walletPromoRules.js';
 
 import userNotificationsRouter from './routes/userNotifications.js';
+import matchFollowRouter from './routes/matchFollow.js';
 
 app.use(authInlineRouter);
 app.use(userNotificationsRouter);
+app.use(matchFollowRouter);
 app.use(liveRouter);
 app.use('/api', liveScoresPublicRouter);
 app.use('/api/public/sports', publicOddsRouter);
@@ -118,6 +120,10 @@ app.use(walletRouter);
 app.use(betsRouter);
 app.use(supportRouter);
 app.use(growthRouter);
+
+app.all(['/api/exchange', '/api/exchange/*', '/api/v1/exchange', '/api/v1/exchange/*'], (_req, res) => {
+  res.status(404).json({ success: false, code: 'EXCHANGE_NOT_A_PRODUCT', error: 'Matching exchange is not available.' });
+});
 
 app.use('/api/admin/payment-gateways', adminAuth, adminPaymentGatewaysRouter);
 app.use('/api/v1/admin/payment-gateways', adminAuth, adminPaymentGatewaysRouter);

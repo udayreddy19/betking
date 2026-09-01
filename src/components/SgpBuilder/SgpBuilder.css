@@ -1,0 +1,57 @@
+.sgp-builder {
+  margin: 16px 0;
+  padding: 14px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 12px;
+}
+
+.sgp-builder h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.sgp-builder p {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.sgp-builder-market {
+  margin-bottom: 8px;
+}
+
+.sgp-builder-market > span {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.sgp-builder-market button {
+  margin: 0 6px 6px 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border-light);
+  cursor: pointer;
+}
+
+.sgp-builder-market button.on {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: transparent;
+}
+
+.sgp-builder-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.sgp-builder-quote {
+  margin-top: 8px;
+  font-weight: 700;
+}
+
+.sgp-builder-error {
+  color: #b91c1c;
+  margin-top: 8px;
+}

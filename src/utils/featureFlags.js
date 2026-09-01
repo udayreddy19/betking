@@ -23,3 +23,11 @@ export function withoutCasinoLinks(links) {
   if (CASINO_ENABLED) return links;
   return links.filter((link) => !isCasinoPath(link.to));
 }
+
+export function withoutStubProductLinks(links) {
+  return withoutCasinoLinks(links).filter((link) => {
+    if (link.to === '/fantasy' && !FANTASY_JOIN_ENABLED) return false;
+    if (link.to === '/exchange') return false;
+    return true;
+  });
+}

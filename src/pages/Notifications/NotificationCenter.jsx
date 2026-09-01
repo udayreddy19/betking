@@ -33,7 +33,7 @@ function normalizeCategory(n) {
 
 function deepLinkFor(n) {
   const cat = normalizeCategory(n);
-  if (cat === 'BET' || cat === 'SETTLEMENT') return '/sports';
+  if (cat === 'BET' || cat === 'SETTLEMENT') return '/bets';
   if (cat === 'WALLET' || cat === 'WITHDRAWAL') return '/profile';
   if (cat === 'KYC') return '/profile';
   if (cat === 'PROMOTION' || cat === 'REFERRAL') return '/promotions';

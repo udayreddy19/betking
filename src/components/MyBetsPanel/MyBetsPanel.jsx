@@ -106,7 +106,7 @@ function cashoutOfferForBet(placed, liveMatches, tier, quoteByBetId = {}) {
   return getCashoutOffer(placed, tier, legOdds);
 }
 
-export default function MyBetsPanel() {
+export default function MyBetsPanel({ layout = 'sheet' } = {}) {
   const {
     placedBets,
     myBetsCount,
@@ -119,8 +119,9 @@ export default function MyBetsPanel() {
   } = useBetSlip();
   const { creditCashout, showToast, user } = useAuth();
   const liveMatches = useLiveMatches() || [];
-  const navigate = useNavigate();
-  const panelRef = useRef(null);
+  const isPage = layout === 'page';
+  const panelOpen = isPage || isMyBetsOpen;
+  const [sportFilter, setSportFilter] = useState('all');
   const [filter, setFilter] = useState('pending');
   const [cashoutQuotes, setCashoutQuotes] = useState({});
   const [highlightBetId, setHighlightBetId] = useState(null);
@@ -161,12 +162,12 @@ export default function MyBetsPanel() {
   }, []);
 
   useEffect(() => {
-    if (!isMyBetsOpen) return undefined;
+    if (!panelOpen) return undefined;
 
-    // Default to 'Open' (pending) tab every time My Bets panel is opened,
-    // unless a transaction deep-link asked for a specific bet.
-    if (!highlightBetId) setFilter('pending');
+    if (!isPage && !highlightBetId) setFilter('pending');
     void refreshMyBets();
+
+    if (isPage) return undefined;
 
     const handleEscape = (event) => {
       if (event.key === 'Escape') closeMyBets();
@@ -185,15 +186,15 @@ export default function MyBetsPanel() {
       document.removeEventListener('keydown', handleEscape);
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isMyBetsOpen, closeMyBets, refreshMyBets, highlightBetId]);
+  }, [panelOpen, isPage, closeMyBets, refreshMyBets, highlightBetId]);
 
   useEffect(() => {
-    if (!isMyBetsOpen) setHighlightBetId(null);
-  }, [isMyBetsOpen]);
+    if (!panelOpen) setHighlightBetId(null);
+  }, [panelOpen]);
 
   // Live cashout quotes from server (accepted/current odds) — not VIP% of potential.
   useEffect(() => {
-    if (!isMyBetsOpen || DEMO_MODE) return undefined;
+    if (!panelOpen || DEMO_MODE) return undefined;
 
     const pendingCash = placedBets.filter((bet) => {
       const status = String(bet.status || '').toLowerCase();
@@ -229,7 +230,7 @@ export default function MyBetsPanel() {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [isMyBetsOpen, placedBets]);
+  }, [panelOpen, placedBets]);
 
   // Auto-settle pending bets when matches complete
   useEffect(() => {
@@ -295,6 +296,23 @@ export default function MyBetsPanel() {
     }
     return placedBets.filter((b) => normalizeBetStatus(b.status) === filter);
   }, [placedBets, filter, liveMatches, user?.loyaltyTier, cashoutQuotes]);
+
+  const sportsAvailable = useMemo(() => {
+    const set = new Set();
+    for (const b of placedBets) {
+      const sport = b.legs?.[0]?.sport || b.sport;
+      if (sport) set.add(String(sport).toLowerCase());
+    }
+    return [...set];
+  }, [placedBets]);
+
+  const visibleBets = useMemo(() => {
+    if (sportFilter === 'all') return filtered;
+    return filtered.filter((b) => {
+      const sport = String(b.legs?.[0]?.sport || b.sport || 'cricket').toLowerCase();
+      return sport === sportFilter;
+    });
+  }, [filtered, sportFilter]);
 
   const handleCashout = async (bet) => {
     const offer = cashoutOfferForBet(bet, liveMatches, user?.loyaltyTier, cashoutQuotes);
@@ -434,8 +452,9 @@ export default function MyBetsPanel() {
 
   return (
     <AnimatePresence>
-      {isMyBetsOpen ? (
+      {panelOpen ? (
         <>
+          {!isPage && (
           <motion.div
             key="my-bets-backdrop"
             className="my-bets-backdrop"
@@ -446,9 +465,10 @@ export default function MyBetsPanel() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
           />
+          )}
           <motion.div
             key="my-bets-panel"
-            className="my-bets-panel"
+            className={`my-bets-panel${isPage ? ' my-bets-panel--page' : ''}`}
             ref={panelRef}
             role="dialog"
             aria-modal="true"
@@ -460,9 +480,11 @@ export default function MyBetsPanel() {
           >
         <div className="my-bets-header">
           <h3>My bets <span className="my-bets-count">{myBetsCount}</span></h3>
+          {!isPage && (
           <button type="button" className="my-bets-close" onClick={closeMyBets} aria-label="Close my bets">
             <IoClose />
           </button>
+          )}
         </div>
 
         <div className="my-bets-filters">
@@ -481,13 +503,35 @@ export default function MyBetsPanel() {
           ))}
         </div>
 
+        {isPage && sportsAvailable.length > 0 && (
+          <div className="my-bets-filters">
+            <button
+              type="button"
+              className={`my-bets-filter ${sportFilter === 'all' ? 'active' : ''}`}
+              onClick={() => setSportFilter('all')}
+            >
+              All sports
+            </button>
+            {sportsAvailable.map((s) => (
+              <button
+                key={s}
+                type="button"
+                className={`my-bets-filter ${sportFilter === s ? 'active' : ''}`}
+                onClick={() => setSportFilter(s)}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="my-bets-body">
-          {myBetsLoading && filtered.length === 0 ? (
+          {myBetsLoading && visibleBets.length === 0 ? (
             <div className="my-bets-loading" aria-live="polite">
               <div className="my-bets-loading-spinner" aria-hidden="true" />
               <p>Loading your bets…</p>
             </div>
-          ) : filtered.length === 0 ? (
+          ) : visibleBets.length === 0 ? (
             <div className="my-bets-empty">
               <div className="my-bets-empty-icon">📋</div>
               <h4>No bets here</h4>
@@ -500,7 +544,7 @@ export default function MyBetsPanel() {
               }</p>
             </div>
           ) : (
-            filtered.map((placed) => {
+            visibleBets.map((placed) => {
               const cashoutOffer = cashoutOfferForBet(placed, liveMatches, user?.loyaltyTier, cashoutQuotes);
               return (
                 <div className={`my-bets-card my-bets-card--${placed.status || 'pending'}${highlightBetId && String(placed.id) === String(highlightBetId) ? ' my-bets-card--highlight' : ''}`} key={placed.id}>

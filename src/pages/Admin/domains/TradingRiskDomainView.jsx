@@ -53,6 +53,8 @@ export default function TradingRiskDomainView({ subModule }) {
   const showGgrDesk = subModule === 'ggr-liability';
   const showSuspensionQueue = subModule === 'suspension';
   const showFraud = subModule === 'fraud-signals';
+  const showOddsHealth = subModule === 'odds-health';
+  const [oddsHealth, setOddsHealth] = useState(null);
 
   const loadSuspensions = useCallback(() => {
     adminApiClient.get('/trading/suspended-markets')
@@ -84,6 +86,15 @@ export default function TradingRiskDomainView({ subModule }) {
       });
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    if (!showOddsHealth) return undefined;
+    let cancelled = false;
+    adminApiClient.get('/odds-model/health')
+      .then((data) => { if (!cancelled) setOddsHealth(data.data || data); })
+      .catch(() => { if (!cancelled) setOddsHealth(null); });
+    return () => { cancelled = true; };
+  }, [showOddsHealth]);
 
   useEffect(() => {
     if (!showGgrDesk) return undefined;
@@ -241,14 +252,18 @@ export default function TradingRiskDomainView({ subModule }) {
       ? '04 · Suspended Markets Queue'
       : showFraud
         ? '04 · Risk / Fraud Console'
-        : '04 · Trading Desk & Live Risk Exposure Console';
+        : showOddsHealth
+          ? '04 · Odds model health'
+          : '04 · Trading Desk & Live Risk Exposure Console';
   const hint = showGgrDesk
     ? 'Ledger GGR, hold percentage, and open/persisted market liability for traders.'
     : showSuspensionQueue
       ? 'Active suspension causes. Resume clears one cause; market reopens only when none remain. Requires confirmation and audit.'
       : showFraud
         ? 'Risk signals and fraud cases. Flag / review / restrict / escalate — no auto-ban from weak signals.'
-        : 'Live match pricing risk from OddsEngineV3. Stake liability shows once open bets are ledger-backed.';
+        : showOddsHealth
+          ? 'Daily ritual: inverted books, lock-price rate, and settlement ingest. Death-over / player-prop markets stay shadow until observations exist.'
+          : 'Live match pricing risk from OddsEngineV3. Stake liability shows once open bets are ledger-backed.';
 
   return (
     <div>
@@ -259,6 +274,15 @@ export default function TradingRiskDomainView({ subModule }) {
         </p>
         {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
       </div>
+
+      {showOddsHealth && (
+        <AdminCard>
+          <p style={{ fontSize: '0.85rem' }}>{oddsHealth?.ritual || 'Daily trading ritual: inverted books, lock prices, settlement ingest.'}</p>
+          <pre style={{ fontSize: '0.72rem', whiteSpace: 'pre-wrap' }}>
+            {JSON.stringify(oddsHealth?.settlementIngest || oddsHealth, null, 2)}
+          </pre>
+        </AdminCard>
+      )}
 
       {showOddsDesk && !showFraud && (
         <div style={{ marginBottom: 16 }}>

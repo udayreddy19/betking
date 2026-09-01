@@ -20,23 +20,25 @@ import { useUserNotifications } from '../../hooks/useUserNotifications';
 import '../MyBetsPanel/MyBetsPanel.css';
 import '../PromotionsPanel/PromotionsPanel.css';
 import BrandLogo, { BrandWordmark } from '../BrandLogo/BrandLogo';
-import { withoutCasinoLinks } from '../../utils/featureFlags';
+import { withoutStubProductLinks } from '../../utils/featureFlags';
 import { hoverScale, pressScale, springUi } from '../../utils/motionPresets';
 import './Header.css';
 
 const BALANCE_VISIBLE_KEY = 'oddsyra_balance_visible';
 
-const navLinks = withoutCasinoLinks([
+const navLinks = withoutStubProductLinks([
   { to: '/live-betting', label: 'Live Betting' },
   { to: '/sports', label: 'Sports' },
   { to: '/casino', label: 'Casino' },
   { to: '/live-casino', label: 'Live Casino' },
   { to: '/fantasy', label: 'Fantasy' },
+  { to: '/bets', label: 'My Bets' },
   { to: '/promotions', label: 'Win Free' },
 ]);
 
-const moreLinks = withoutCasinoLinks([
+const moreLinks = withoutStubProductLinks([
   { to: '/profile', label: 'My Profile' },
+  { to: '/invite', label: 'Invite friends' },
   { to: '/profile?tab=support', label: 'Support tickets' },
   { to: '/admin', label: '🛡️ Admin Portal' },
   { to: '/srl', label: 'OddsYra SRL' },

@@ -45,7 +45,7 @@ export default function SupportDomainView({
   const [internalNotes, setInternalNotes] = useState([]);
   const [drawerTab, setDrawerTab] = useState('messages'); // 'messages' | 'internal_notes' | 'financial_review'
   const [loadingThread, setLoadingThread] = useState(false);
-  const [replyMessage, setReplyMessage] = useState('');
+  const [macros, setMacros] = useState([]);
   const [internalNoteText, setInternalNoteText] = useState('');
   const [finReviewReason, setFinReviewReason] = useState('');
   const [assignAgentName, setAssignAgentName] = useState('');
@@ -72,7 +72,9 @@ export default function SupportDomainView({
   const focusHandledRef = useRef(null);
 
   const loadData = useCallback(() => {
-    // Load tickets & metrics
+    adminApiClient.get('/support/macros')
+      .then((data) => setMacros(data.macros || []))
+      .catch(() => setMacros([]));
     adminApiClient.get('/support/tickets')
       .then((data) => {
         setTickets(data.tickets || []);
@@ -658,6 +660,20 @@ export default function SupportDomainView({
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {macros.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {macros.map((m) => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          className="admin-btn admin-btn--sm admin-btn--secondary"
+                          onClick={() => setReplyMessage(m.text)}
+                        >
+                          {m.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <textarea
                     ref={replyRef}
                     value={replyMessage}

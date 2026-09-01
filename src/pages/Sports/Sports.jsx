@@ -39,12 +39,14 @@ import {
   matchOddsStateKey,
   provisionalWinnerMarketsFromMatch,
 } from '../../services/oddsService';
-import { subscribeLiveChannel } from '../../services/liveFeedSocket';
+import { subscribeLiveChannel, isLiveFeedSocketOpen } from '../../services/liveFeedSocket';
+import { MATCH_ODDS_POLL_MS, MATCH_ODDS_WS_FALLBACK_POLL_MS } from '../../config/livePolling';
 import { getMarketCategoriesForSport } from '../../utils/marketCategoryLabels';
 import { useMatchWatchlist } from '../../hooks/useMatchWatchlist';
 import LiveScoresFeedBanner from '../../components/LiveScoresFeedBanner/LiveScoresFeedBanner';
 import { mediaQueryMatches, subscribeMediaQuery } from '../../utils/browserCompat';
-import './Sports.css';
+import SgpBuilder from '../../components/SgpBuilder/SgpBuilder';
+import { apiFetch } from '../../utils/apiClient';
 
 function filterByLeague(matchList, activeLeague, cricketSeries = []) {
   if (!activeLeague || activeLeague === 'all') return matchList;
@@ -314,8 +316,8 @@ export default function Sports() {
   const matchDetailVersion = useSyncExternalStore(subscribeGlobalMatchDetails, getGlobalMatchDetailVersion, () => 0);
   const { tickerMessage, cricketSeries, scoresError, refreshScores, isScoresLoading } = useLiveSportsMeta();
   const { addBet, isBetSelected } = useBetSlip();
-  const { user, showToast } = useAuth();
-  const { ids: watchlistIds, count: watchlistCount } = useMatchWatchlist();
+  const { user, showToast, isLoggedIn } = useAuth();
+  const { ids: watchlistIds, count: watchlistCount, toggle: toggleWatch } = useMatchWatchlist();
   const isAdminUser = user?.role === 'admin' || user?.email === 'admin@oddsyra.com';
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
@@ -535,9 +537,11 @@ export default function Sports() {
     loadOdds();
     let lastOddsWs = 0;
     const poll = setInterval(() => {
-      if (Date.now() - lastOddsWs < 4000) return;
+      if (isLiveFeedSocketOpen() && lastOddsWs && Date.now() - lastOddsWs < MATCH_ODDS_WS_FALLBACK_POLL_MS) {
+        return;
+      }
       loadOdds();
-    }, 2000);
+    }, MATCH_ODDS_POLL_MS);
 
     const unsubOdds = subscribeLiveChannel(`odds:match:${matchId}`, (msg) => {
       if (isCancelled) return;
@@ -1215,6 +1219,36 @@ export default function Sports() {
                     <p className="sports-empty">No bettable markets for this match yet. Odds will appear when the book is open.</p>
                   )}
 
+                  {canBetActive && !isMatchFinished(activeMatch) && (
+                    <>
+                      {isLoggedIn && (
+                        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                          <button
+                            type="button"
+                            className="sports-empty-action"
+                            onClick={async () => {
+                              const id = activeMatch.id || activeMatch.matchId;
+                              toggleWatch(activeMatch);
+                              try {
+                                const http = await apiFetch('/api/v1/user/follows', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ matchId: id, thresholdPct: 8 }),
+                                });
+                                if (!http.ok) throw new Error('follow failed');
+                                showToast?.('Following this match for price alerts', 'success');
+                              } catch {
+                                showToast?.('Saved locally. Sign-in follow sync failed.', 'info');
+                              }
+                            }}
+                          >
+                            Follow + 8% price alert
+                          </button>
+                        </div>
+                      )}
+                      <SgpBuilder match={activeMatch} markets={matchMarkets} />
+                    </>
+                  )}
                   {canBetActive && !isMatchFinished(activeMatch) && matchMarkets.map((market) => {
                 if (!showCategory(market.category)) return null;
                 if (market.status && market.status !== 'OPEN') return null;

@@ -79,6 +79,21 @@ describe('Book integrity', () => {
     expect(snap.markets.some((m) => m.marketId === 'match_winner_super_over')).toBe(false);
   });
 
+  it('does not invent soccer prices without provider odds', () => {
+    const snap = generateV3({
+      matchId: 'soccer_np',
+      sport: 'soccer',
+      isLive: true,
+      matchState: 'in',
+      team1: { name: 'Arsenal' },
+      team2: { name: 'Chelsea' },
+      liveDetails: { score1: 1, score2: 0 },
+      stateVersion: 1,
+    });
+    expect(snap.status).toBe('NOT_AVAILABLE');
+    expect(snap.markets).toEqual([]);
+  });
+
   it('lengthens the side with high liability', () => {
     riskAdjustmentEngine.recordBetLiability('mkt_ou', 'sel_over', 50000, 95000);
     const shifted = riskAdjustmentEngine.applyTwoWayShift(0.5, 0.5, 'mkt_ou', 'sel_over', 'sel_under');

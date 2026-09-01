@@ -1655,10 +1655,12 @@ function CrmComposerPanel() {
         body,
         limit: 50,
       };
-      const path = mode === 'dry' ? '/growth/crm-composer/dry-run' : '/growth/crm-composer/preview';
+      const path = mode === 'send'
+        ? '/growth/crm-composer/send'
+        : (mode === 'dry' ? '/growth/crm-composer/dry-run' : '/growth/crm-composer/preview');
       const data = await adminApiClient.post(path, payload);
       setResult(data);
-      showToast(mode === 'dry' ? 'Dry-run recorded (no send)' : 'Preview ready', 'success');
+      showToast(mode === 'send' ? `Sent ${data.sent || 0}` : (mode === 'dry' ? 'Dry-run recorded (no send)' : 'Preview ready'), 'success');
     } catch (err) {
       showToast(err.message || 'Composer failed', 'error');
     } finally {
@@ -1669,9 +1671,9 @@ function CrmComposerPanel() {
   return (
     <div>
       <div style={{ marginBottom: 16 }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>CRM Composer (dry-run)</h2>
+        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>CRM Composer</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
-          Server finalizes recipients and excludes marketing opt-outs. No frontend recipient bypass. Uses existing emailService / promos@oddsyra.com.
+          Preview and dry-run first. Send uses emailService and skips marketing opt-outs. No cash credits.
         </p>
       </div>
       <div style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 12 }}>
@@ -1690,6 +1692,7 @@ function CrmComposerPanel() {
         <div style={{ display: 'flex', gap: 8 }}>
           <button type="button" className="admin-btn" disabled={busy} onClick={() => run('preview')}>Preview audience</button>
           <button type="button" className="admin-btn admin-btn--secondary" disabled={busy} onClick={() => run('dry')}>Dry-run (audit)</button>
+          <button type="button" className="admin-btn admin-btn--primary" disabled={busy || !subject || !body} onClick={() => run('send')}>Send (honors opt-out)</button>
         </div>
       </div>
       {result && (
@@ -1697,6 +1700,48 @@ function CrmComposerPanel() {
           {JSON.stringify(result, null, 2)}
         </pre>
       )}
+      <PromoClawbackPanel />
+    </div>
+  );
+}
+
+function PromoClawbackPanel() {
+  const { showToast } = useAdminToast();
+  const [userId, setUserId] = useState('');
+  const [amount, setAmount] = useState('');
+  const [reason, setReason] = useState('BONUS_ABUSE');
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    setBusy(true);
+    try {
+      const data = await adminApiClient.post('/growth/promotions/clawback', {
+        userId,
+        amount: Number(amount),
+        reason,
+      });
+      showToast(`Clawback queued as ${data.makerChecker?.requestId || 'maker-checker'}`, 'success');
+    } catch (err) {
+      showToast(err.message || 'Clawback failed', 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--admin-border)' }}>
+      <h3 style={{ margin: '0 0 8px' }}>Promo clawback</h3>
+      <p style={{ fontSize: '0.78rem', color: 'var(--admin-text-muted)' }}>
+        Opens a BONUS_ADJUSTMENT maker-checker case. Does not debit cash.
+      </p>
+      <div style={{ display: 'grid', gap: 8, maxWidth: 420 }}>
+        <input placeholder="User id" value={userId} onChange={(e) => setUserId(e.target.value)} />
+        <input placeholder="Bonus amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
+        <input placeholder="Reason" value={reason} onChange={(e) => setReason(e.target.value)} />
+        <button type="button" className="admin-btn" disabled={busy || !userId || !amount} onClick={submit}>
+          Queue clawback
+        </button>
+      </div>
     </div>
   );
 }

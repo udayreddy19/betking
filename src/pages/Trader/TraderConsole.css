@@ -37,6 +37,57 @@
   box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
 
-.text-danger {
-  color: #ef4444;
+.trader-card--span {
+  grid-column: 1 / -1;
+}
+
+.trader-hint {
+  font-size: 0.85rem;
+  color: var(--color-text-muted, #64748b);
+  margin-bottom: 12px;
+}
+
+.trader-kill-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.trader-kill-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.trader-kill-row input {
+  padding: 8px 10px;
+  border: 1px solid var(--color-border-light, #e2e8f0);
+  border-radius: 8px;
+}
+
+.trader-kill-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.trader-kill-actions button {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border-light, #e2e8f0);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.trader-kill-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.trader-message {
+  margin-top: 10px;
+  font-size: 0.85rem;
 }

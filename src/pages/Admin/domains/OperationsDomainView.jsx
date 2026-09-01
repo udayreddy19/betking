@@ -842,6 +842,11 @@ function BackupsDrPanel() {
           </p>
         )}
         {error && <p style={{ color: '#fbbf24' }}>{error}</p>}
+        {summary?.goLive && (
+          <p style={{ fontSize: '0.78rem' }}>
+            PITR: {summary.pitrCertified ? 'drill logged' : 'NOT VERIFIED'} · {summary.note}
+          </p>
+        )}
       </div>
       <AdminDataTable
         title="Backup log"

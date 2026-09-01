@@ -22,7 +22,8 @@ export default function Footer() {
           <div className="footer-section">
             <h4>More</h4>
             <Link to="/live-betting">Live Betting</Link>
-            <Link to="/fantasy">Fantasy</Link>
+            <Link to="/bets">My Bets</Link>
+            <Link to="/invite">Invite</Link>
             <Link to="/promotions">Promotions</Link>
             <Link to="/profile">My Profile</Link>
           </div>

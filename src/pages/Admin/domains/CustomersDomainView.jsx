@@ -61,6 +61,14 @@ function maskAadhaar(num) {
   return num.length > 4 ? `●●●● ●●●● ${num.slice(-4)}` : num;
 }
 
+const KYC_REJECT_REASONS = [
+  { id: 'DOCUMENTS_UNREADABLE', label: 'Documents unreadable' },
+  { id: 'NAME_MISMATCH', label: 'Name mismatch vs beneficiary' },
+  { id: 'EXPIRED_DOCUMENT', label: 'Expired document' },
+  { id: 'SUSPECTED_FRAUD', label: 'Suspected fraud — send to risk' },
+  { id: 'INCOMPLETE_SUBMISSION', label: 'Incomplete submission' },
+];
+
 const KYC_FILTERS = [
   { value: 'ALL', label: 'All' },
   { value: 'NEEDS_KYC', label: 'Needs KYC' },
@@ -226,6 +234,7 @@ export default function CustomersDomainView({
   const [restrictConfirm, setRestrictConfirm] = useState(null);
   const [unrestrictConfirm, setUnrestrictConfirm] = useState(null);
   const [kycRejectConfirm, setKycRejectConfirm] = useState(null);
+  const [kycRejectReason, setKycRejectReason] = useState('INCOMPLETE_SUBMISSION');
   const [walletConfirm, setWalletConfirm] = useState(null);
   const [walletAmount, setWalletAmount] = useState('');
   const [walletDirection, setWalletDirection] = useState('CREDIT');
@@ -793,11 +802,23 @@ export default function CustomersDomainView({
       <div style={{ marginBottom: '16px' }}>
         <div className="admin-flex-between" style={{ flexWrap: 'wrap' }}>
           <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>{heading}</h2>
-          {subModule === 'kyc-queue' && (
-            <button type="button" className="admin-btn admin-btn--secondary" onClick={() => loadKycQueue()}>
-              {kycLoading ? 'Refreshing…' : '↻ Refresh queue'}
-            </button>
-          )}
+                {subModule === 'kyc-queue' && (
+                  <>
+                    <button type="button" className="admin-btn admin-btn--secondary" onClick={() => loadKycQueue()}>
+                      {kycLoading ? 'Refreshing…' : '↻ Refresh queue'}
+                    </button>
+                    <select
+                      value={kycRejectReason}
+                      onChange={(e) => setKycRejectReason(e.target.value)}
+                      className="admin-input"
+                      style={{ fontSize: '0.78rem' }}
+                    >
+                      {KYC_REJECT_REASONS.map((r) => (
+                        <option key={r.id} value={r.id}>{r.label}</option>
+                      ))}
+                    </select>
+                  </>
+                )}
         </div>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>{hint}</p>
         {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
@@ -990,16 +1011,17 @@ export default function CustomersDomainView({
         variant="danger"
         icon="❌"
         title={`Reject KYC for ${kycRejectConfirm?.name || kycRejectConfirm?.id}?`}
-        description="The rejection reason will be visible in the audit log. The user will need to resubmit documents."
+        description="The coded reason is stored on the case and shown to the user. Withdrawals stay blocked until a new submission is approved."
         requireReason
-        reasonPlaceholder="Rejection reason (e.g. Documents could not be verified)..."
-        reasonDefault="Documents could not be verified"
+        reasonPlaceholder="Rejection reason..."
+        reasonDefault={kycRejectReason}
         details={[
           { label: 'User', value: kycRejectConfirm?.name || '—' },
           { label: 'PAN', value: maskPAN(kycRejectConfirm?.panNumber || user360?.kyc?.panMasked) },
+          { label: 'Reason code', value: kycRejectReason },
         ]}
         confirmLabel="Reject KYC"
-        onConfirm={(reason) => kycRejectConfirm && handleKycDecision(kycRejectConfirm, 'REJECTED', reason)}
+        onConfirm={(reason) => kycRejectConfirm && handleKycDecision(kycRejectConfirm, 'REJECTED', `${kycRejectReason}: ${reason}`)}
         onCancel={() => setKycRejectConfirm(null)}
         loading={actionBusy}
       />

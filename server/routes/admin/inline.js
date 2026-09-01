@@ -939,6 +939,14 @@ router.post('/api/admin/trading/suspend-market', adminAuth, requireRole('SUPER_A
       details: { reason, activeCauses: result.activeCauses },
     });
 
+    const matchId = req.body?.matchId;
+    if (matchId) {
+      try {
+        const { buildMatchOddsPayload } = await import('../../../lib/liveScoresApiHandlers.mjs');
+        await buildMatchOddsPayload({ matchId, force: true });
+      } catch { /* best-effort WS */ }
+    }
+
     res.json({ success: true, ...result, timestamp: new Date().toISOString() });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2105,6 +2113,54 @@ router.post('/api/admin/growth/crm-composer/dry-run', adminAuth, requireRole('SU
   }
 });
 
+router.post('/api/admin/growth/crm-composer/send', adminAuth, requireRole('SUPER_ADMIN', 'MARKETING_ADMIN'), async (req, res) => {
+  try {
+    const { sendCrmComposer } = await import('../../../lib/crmComposerEngine.mjs');
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    const body = req.body || {};
+    const result = await sendCrmComposer({
+      adminId: req.admin?.id,
+      includeSegmentIds: body.includeSegmentIds || body.include || [],
+      excludeSegmentIds: body.excludeSegmentIds || body.exclude || [],
+      templateSubject: body.subject,
+      templateBody: body.body,
+    });
+    await logAdminAction({
+      actorId: req.admin?.id,
+      action: 'CRM_COMPOSER_SEND',
+      details: { sent: result.sent, skippedOptOut: result.skippedOptOut, failed: result.failed },
+      riskLevel: 'MEDIUM',
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 400).json({ success: false, error: err.message, code: err.code });
+  }
+});
+
+router.post('/api/admin/growth/promotions/clawback', adminAuth, requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'MARKETING_ADMIN'), async (req, res) => {
+  try {
+    const { requestPromoClawback, pausePromotionCampaign } = await import('../../../lib/promoClawbackEngine.mjs');
+    const body = req.body || {};
+    if (body.pauseCampaignId) {
+      await pausePromotionCampaign({
+        campaignId: body.pauseCampaignId,
+        adminId: req.admin?.id,
+        reason: body.reason,
+      });
+    }
+    const mc = await requestPromoClawback({
+      userId: body.userId,
+      amount: body.amount,
+      promoCode: body.promoCode,
+      adminId: req.admin?.id,
+      reason: body.reason,
+    });
+    res.json({ success: true, makerChecker: mc });
+  } catch (err) {
+    res.status(err.status || 400).json({ success: false, error: err.message });
+  }
+});
+
 router.post('/api/admin/growth/segments/:id/refresh', adminAuth, requireRole('SUPER_ADMIN', 'MARKETING_ADMIN'), async (req, res) => {
   try {
     const { refreshCustomerSegmentMemberships } = await import('../../../lib/crmEngine.mjs');
@@ -2778,6 +2834,11 @@ router.get('/api/admin/support/knowledge-base', async (req, res) => {
 });
 
 // ── Admin Live Chat Queue & Management ──
+router.get(['/api/admin/support/macros', '/api/v1/admin/support/macros'], async (req, res) => {
+  const { SUPPORT_MACROS } = await import('../../../lib/supportMacros.mjs');
+  res.json({ success: true, macros: SUPPORT_MACROS });
+});
+
 router.get(['/api/admin/support/live-chats', '/api/v1/admin/support/live-chats'], async (req, res) => {
   try {
     const { filter = 'ALL' } = req.query;

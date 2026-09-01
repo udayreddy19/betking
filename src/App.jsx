@@ -26,7 +26,7 @@ import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import RouteSeo from './components/RouteSeo/RouteSeo';
 import PhoneRequiredGate from './components/PhoneRequiredGate/PhoneRequiredGate';
 import { getAdminSessionState } from './utils/adminSession';
-import { CASINO_ENABLED } from './utils/featureFlags';
+import { FANTASY_JOIN_ENABLED } from './utils/featureFlags';
 
 import Home from './pages/Home/Home';
 import Register from './pages/Register/Register';
@@ -53,6 +53,8 @@ const ApiDocs = lazy(() => import('./pages/ApiDocs/ApiDocs'));
 const Vip = lazy(() => import('./pages/Vip/Vip'));
 const IPLSRLAdmin = lazy(() => import('./pages/Admin/IPLSRL/IPLSRLAdmin'));
 const NotificationCenter = lazy(() => import('./pages/Notifications/NotificationCenter'));
+const MyBetsPage = lazy(() => import('./pages/MyBets/MyBetsPage'));
+const InvitePage = lazy(() => import('./pages/Invite/InvitePage'));
 const WalletDashboard = lazy(() => import('./pages/Wallet/WalletDashboard'));
 const SupportHome = lazy(() => import('./pages/Support/SupportHome'));
 const TicketsListPage = lazy(() => import('./pages/Support/TicketsListPage'));
@@ -128,7 +130,10 @@ function AppLayout() {
               <Route path="/deposit" element={<Navigate to="/wallet/deposit" replace />} />
               <Route path="/casino" element={CASINO_ENABLED ? <Casino /> : <CasinoComingSoon />} />
               <Route path="/live-casino" element={CASINO_ENABLED ? <LiveCasino /> : <CasinoComingSoon />} />
-              <Route path="/fantasy" element={<Fantasy />} />
+              <Route path="/fantasy" element={FANTASY_JOIN_ENABLED ? <Fantasy /> : <CasinoComingSoon />} />
+              <Route path="/bets" element={<MyBetsPage />} />
+              <Route path="/invite" element={<InvitePage />} />
+              <Route path="/exchange" element={<CasinoComingSoon />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/wallet" element={<WalletDashboard />} />
               <Route path="/register" element={<Register />} />
