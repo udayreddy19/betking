@@ -127,6 +127,7 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
   const [highlightBetId, setHighlightBetId] = useState(null);
   const [expandedEvidence, setExpandedEvidence] = useState({});
   const [loadedEvidence, setLoadedEvidence] = useState({});
+  const panelRef = useRef(null);
 
   const toggleEvidence = async (betId, existingEvidence) => {
     const isOpening = !expandedEvidence[betId];
