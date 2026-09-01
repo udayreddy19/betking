@@ -121,7 +121,7 @@ app.use(betsRouter);
 app.use(supportRouter);
 app.use(growthRouter);
 
-app.all(['/api/exchange', '/api/exchange/*', '/api/v1/exchange', '/api/v1/exchange/*'], (_req, res) => {
+app.all(['/api/exchange', '/api/exchange/{*path}', '/api/v1/exchange', '/api/v1/exchange/{*path}'], (_req, res) => {
   res.status(404).json({ success: false, code: 'EXCHANGE_NOT_A_PRODUCT', error: 'Matching exchange is not available.' });
 });
 
