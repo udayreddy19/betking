@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { responsibleGamingEngine } from '../../lib/responsibleGaming.mjs';
+import { stakeLimitEngine } from '../../lib/stakeLimitEngine.mjs';
 
-describe('responsible gaming limit enforcement', () => {
+describe('responsible gaming unlimited deposits and stakes', () => {
   const userId = 'usr_rg_limits_01';
 
   beforeEach(() => {
@@ -9,24 +10,27 @@ describe('responsible gaming limit enforcement', () => {
     responsibleGamingEngine.userDepositsTodayMap.delete(userId);
   });
 
-  it('rejects a deposit above the daily limit', async () => {
+  it('allows a deposit above a stored daily limit', async () => {
     await responsibleGamingEngine.setLimits(userId, { depositLimitDaily: 5000 });
     const res = await responsibleGamingEngine.validateDepositAttempt(userId, 6000);
-    expect(res.allowed).toBe(false);
-    expect(res.reason).toBe('DEPOSIT_LIMIT_EXCEEDED');
-  });
-
-  it('allows a deposit within the daily limit', async () => {
-    await responsibleGamingEngine.setLimits(userId, { depositLimitDaily: 5000 });
-    const res = await responsibleGamingEngine.validateDepositAttempt(userId, 4000);
     expect(res.allowed).toBe(true);
   });
 
-  it('rejects a stake above the per-bet limit', async () => {
+  it('allows a stake above a stored per-bet limit', async () => {
     await responsibleGamingEngine.setLimits(userId, { stakeLimitPerBet: 10000 });
     const res = await responsibleGamingEngine.validateBetPlacementAttempt(userId, 15000);
+    expect(res.allowed).toBe(true);
+  });
+
+  it('still blocks deposits during cooling-off', async () => {
+    await responsibleGamingEngine.setCoolingOff(userId, { hours: 24, reason: 'test' });
+    const res = await responsibleGamingEngine.validateDepositAttempt(userId, 100);
     expect(res.allowed).toBe(false);
-    expect(res.reason).toBe('STAKE_LIMIT_EXCEEDED');
+    expect(res.reason).toBe('USER_IN_COOLING_OFF');
+  });
+
+  it('does not cap stake at the old ₹1 lakh max', () => {
+    expect(stakeLimitEngine.validateStake(250000)).toBe(250000);
   });
 
   it('does not cache default limits when the user has no row', async () => {

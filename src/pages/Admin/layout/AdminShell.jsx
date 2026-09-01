@@ -84,7 +84,7 @@ const DOMAIN_GROUPS = [
         role: null,
         subModules: [
           { id: 'catalog', label: 'Sports & Leagues Catalog' },
-          { id: 'iplsrl-console', label: 'IPLSRL Console' },
+          { id: 'iplsrl-console', label: 'OddsYra SRL Console' },
           { id: 'rosters', label: 'Team Rosters & Squads' },
           { id: 'providers', label: 'Data Feed Latency Monitors' },
         ],

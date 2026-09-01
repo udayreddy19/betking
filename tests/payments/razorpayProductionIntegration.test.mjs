@@ -347,23 +347,15 @@ test('ODDSYRA — COMPLETE RAZORPAY API + WEBHOOK INTEGRATION TEST SUITE', async
     );
   });
 
-  await t.test('TEST 10: Deposit bounds validation (Min ₹100, Max ₹500000, max 2 decimals)', async () => {
+  await t.test('TEST 10: Deposit bounds validation (Min ₹1,000, no maximum, max 2 decimals)', async () => {
     const userId = `usr_test_${Date.now()}_10`;
     await createTestUserAndWallet(userId, 0);
 
-    // Reject under minimum ₹100
     await assert.rejects(
       async () => depositEngine.createOrder({ userId, amount: 50, provider: 'RAZORPAY' }),
-      /DEPOSIT_LIMIT.*Minimum deposit is ₹100/
+      /DEPOSIT_LIMIT.*Minimum deposit/
     );
 
-    // Reject over maximum ₹500000
-    await assert.rejects(
-      async () => depositEngine.createOrder({ userId, amount: 600000, provider: 'RAZORPAY' }),
-      /DEPOSIT_LIMIT.*Maximum deposit is ₹500000/
-    );
-
-    // Reject invalid decimals (> 2 decimals)
     await assert.rejects(
       async () => depositEngine.createOrder({ userId, amount: 500.123, provider: 'RAZORPAY' }),
       /INVALID_AMOUNT/

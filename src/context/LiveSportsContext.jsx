@@ -65,9 +65,8 @@ function preferMatchEntity(existing, incoming) {
 }
 
 function mergeSrlMatches(matches) {
-  const apiSrl = attachOdds(matches.filter(isSrlMatch));
-  const apiMatches = matches.filter((m) => !isSrlMatch(m));
-  const srl = apiSrl.length > 0 ? apiSrl : attachOdds(getIplSrlMatches());
+  const apiMatches = (matches || []).filter((m) => !isSrlMatch(m));
+  const srl = attachOdds(getIplSrlMatches());
 
   const seenIds = new Set();
   const seenPairs = new Map();

@@ -90,7 +90,7 @@ export const featuredLeagues = [
   { id: 'aus-ban', name: 'Bangladesh tour of Australia', sport: 'cricket', icon: 'flame', matchLeagues: ['Bangladesh tour of Australia', 'Bangladesh tour of Australia, 2026', 'Bangladesh tour of Australia 2026', 'Test Series Australia vs Bangladesh'] },
   { id: 'eng-pak', name: 'Pakistan tour of England', sport: 'cricket', icon: 'flame', matchLeagues: ['Pakistan tour of England', 'Pakistan tour of England 2026', 'Pakistan tour of England, 2026', 'Test Series England vs Pakistan'] },
   { id: 'qcl', name: 'Quantum Cricket League', sport: 'cricket', icon: 'flame', matchLeagues: ['Quantum Cricket League', 'Global Super League', 'Global Super League 2026'] },
-  { id: 'ipl-srl', name: 'OddsYra SRL', sport: 'cricket', icon: 'flame', breadcrumb: 'OddsYra SRL — admin-approved simulated matches', matchLeagues: ['OddsYra SRL'] },
+  { id: 'ipl-srl', name: 'OddsYra SRL', sport: 'cricket', icon: 'flame', breadcrumb: 'OddsYra SRL — simulated matches', matchLeagues: ['OddsYra SRL'] },
   { id: 't20-intl-srl', name: 'T20 International SRL', sport: 'cricket', icon: 'flame', matchLeagues: ['T20 International SRL', 'T20 International'] },
   { id: 'tt-elite', name: 'TT Elite Series', sport: 'table-tennis', icon: 'flame', matchLeagues: ['TT Elite Series'] },
   { id: 'cpl', name: 'Caribbean Premier League', sport: 'cricket', icon: 'flame', matchLeagues: ['Caribbean Premier League', 'Caribbean Premier League 2026', 'Caribbean Premier League, 2026', 'CPL', 'CPL 2026'] },

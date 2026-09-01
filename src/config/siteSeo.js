@@ -29,7 +29,10 @@ export const ROUTE_META = {
     title: 'Promotions & Bonuses | OddsYra',
     description: 'Welcome bonuses, free bets, and weekly promotions for sports betting on OddsYra.',
   },
-  '/fantasy': {
+  '/srl': {
+    title: 'OddsYra SRL — Simulated Cricket | OddsYra',
+    description: 'OddsYra SRL begins 10 August. Simulated T20 cricket with live matches, fixture schedule, and in-play betting — no external score feed.',
+  },
     title: 'Fantasy Sports | OddsYra',
     description: 'Build fantasy teams and compete across cricket and football on OddsYra.',
   },

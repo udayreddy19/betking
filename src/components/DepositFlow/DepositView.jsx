@@ -12,7 +12,7 @@ import {
   FiZap,
 } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
-import { MIN_DEPOSIT_INR, MAX_DEPOSIT_INR } from '../../utils/vipBenefits';
+import { MIN_DEPOSIT_INR } from '../../utils/vipBenefits';
 import { apiFetch, fetchMe } from '../../utils/apiClient';
 import { formatInr } from '../../utils/walletBalance';
 import { DEMO_MODE } from '../../utils/featureFlags';
@@ -135,17 +135,12 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
     }
     const num = parseInt(raw, 10);
     if (!Number.isNaN(num)) {
-      if (num > MAX_DEPOSIT_INR) {
-        setAmountStr(String(MAX_DEPOSIT_INR));
-        setErrorMsg(`Maximum deposit limit is ${formatInr(MAX_DEPOSIT_INR)}.`);
-      } else {
-        setAmountStr(String(num));
-      }
+      setAmountStr(String(num));
     }
   };
 
   const parsedAmount = parseInt(amountStr, 10) || 0;
-  const isAmountValid = parsedAmount >= MIN_DEPOSIT_INR && parsedAmount <= MAX_DEPOSIT_INR;
+  const isAmountValid = parsedAmount >= MIN_DEPOSIT_INR;
 
   const handleQuickAmount = (val) => {
     setAmountStr(String(val));
@@ -411,11 +406,7 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
     if (submitLockRef.current || isLoading || isProcessing) return;
 
     if (!isAmountValid) {
-      if (parsedAmount < MIN_DEPOSIT_INR) {
-        setErrorMsg(`Minimum deposit is ${formatInr(MIN_DEPOSIT_INR)}.`);
-      } else {
-        setErrorMsg(`Maximum deposit is ${formatInr(MAX_DEPOSIT_INR)}.`);
-      }
+      setErrorMsg(`Minimum deposit is ${formatInr(MIN_DEPOSIT_INR)}.`);
       return;
     }
 
@@ -645,8 +636,6 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
 
                 <div className="deposit-limits-helper">
                   <span>Min {formatInr(MIN_DEPOSIT_INR)}</span>
-                  <span>•</span>
-                  <span>Max {formatInr(MAX_DEPOSIT_INR)}</span>
                 </div>
 
                 {/* Quick Amount Chips */}

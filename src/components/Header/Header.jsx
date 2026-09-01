@@ -39,6 +39,7 @@ const moreLinks = withoutCasinoLinks([
   { to: '/profile', label: 'My Profile' },
   { to: '/profile?tab=support', label: 'Support tickets' },
   { to: '/admin', label: '🛡️ Admin Portal' },
+  { to: '/srl', label: 'OddsYra SRL' },
   { to: '/help', label: 'Help Center' },
   { to: '/promotions', label: 'Promotions' },
   { to: '/casino', label: 'Casino' },

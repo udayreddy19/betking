@@ -26,8 +26,8 @@ async function runPhase456AcceptanceTest() {
     console.log(`✅ TEST 1/5 PASSED: 7-Domain Risk Engine evaluated cleanly! (Bonus Decision: ${bonusEval.decision}, Score: ${bonusEval.score}).`);
     passCount++;
 
-    // 2. High Value Bet Manual Review Trigger (Stake = ₹35,000 > ₹25,000 Threshold)
-    console.log('   ⏳ Test 2/5: Testing High-Value Bet Escrow Trigger (Stake = ₹35,000)...');
+    // 2. Large stakes are accepted without a manual-review desk hold
+    console.log('   ⏳ Test 2/5: Testing that a ₹35,000 stake is accepted without manual review...');
     const betEval = await globalRiskOrchestrator.evaluateBetRequest({
       userId: testUserId,
       matchId: 'match_ind_aus_01',
@@ -38,31 +38,30 @@ async function runPhase456AcceptanceTest() {
       stake: 35000,
     });
 
-    if (betEval.decision !== 'MANUAL_REVIEW') {
-      throw new Error(`Expected decision MANUAL_REVIEW for ₹35,000 bet, got '${betEval.decision}'`);
+    if (betEval.decision !== 'ACCEPT' && betEval.decision !== 'ACCEPT_WITH_LIMIT') {
+      throw new Error(`Expected ACCEPT for ₹35,000 bet, got '${betEval.decision}'`);
     }
-    console.log(`✅ TEST 2/5 PASSED: High-Value Bet escalated to Manual Review Queue! (Bet ID: ${betEval.betId}).`);
+    console.log(`✅ TEST 2/5 PASSED: Large stake accepted without desk hold! (Decision: ${betEval.decision}).`);
     passCount++;
 
-    // 3. Inspect Admin High-Value Bet Queue
-    console.log('   ⏳ Test 3/5: Inspecting Admin High-Value Bet Review Queue...');
+    // 3. High-value review queue stays empty for unlimited wagering
+    console.log('   ⏳ Test 3/5: Confirming High-Value Bet Review Queue is not blocking placement...');
     const queue = globalRiskOrchestrator.getHighValueReviewQueue();
-    const queuedBet = queue.find(b => b.betId === betEval.betId);
-
-    if (!queuedBet || queuedBet.status !== 'PENDING_MANUAL_REVIEW') {
-      throw new Error('High-value bet missing from Admin Review Queue');
+    if (queue.length > 0) {
+      throw new Error('High-value review queue should not hold bets when wagering is unlimited');
     }
-    console.log(`✅ TEST 3/5 PASSED: Bet found in Admin Review Queue! (Potential Payout: ₹${queuedBet.potentialPayout}).`);
+    console.log('✅ TEST 3/5 PASSED: Review queue is empty; large stakes are not escrowed.');
     passCount++;
 
-    // 4. Admin Manual Approval Workflow
-    console.log('   ⏳ Test 4/5: Testing Admin Approval of High-Value Bet...');
-    const approveRes = await globalRiskOrchestrator.approveHighValueBet(betEval.betId, 'trader_vikram');
-
-    if (!approveRes.success || approveRes.bet.status !== 'APPROVED') {
-      throw new Error('Failed to approve high-value bet');
+    // 4. Approve helper still exists for any queued items
+    console.log('   ⏳ Test 4/5: Testing Admin Approval helper rejects unknown bet ids...');
+    try {
+      await globalRiskOrchestrator.approveHighValueBet('missing_bet', 'trader_vikram');
+      throw new Error('Expected missing high-value bet to throw');
+    } catch (err) {
+      if (!String(err.message).includes('not found')) throw err;
     }
-    console.log(`✅ TEST 4/5 PASSED: High-value bet approved by trader_vikram! (Status: ${approveRes.bet.status}).`);
+    console.log('✅ TEST 4/5 PASSED: Admin approval helper still validates queue membership.');
     passCount++;
 
     // 5. Betting Exposure & Liability Calculation

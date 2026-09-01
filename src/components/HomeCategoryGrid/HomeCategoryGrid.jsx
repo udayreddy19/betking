@@ -18,6 +18,7 @@ export default function HomeCategoryGrid({ liveCount = 0 }) {
 
   const shortcuts = [
     { id: 'in-play', label: 'In-play', link: '/live-betting', Icon: NavLiveIcon, count: liveCount },
+    { id: 'srl', label: 'SRL', link: '/srl', iconSport: 'cricket' },
     { id: 'cricket', label: 'Cricket', link: '/sports?sport=cricket', iconSport: 'cricket' },
     { id: 'soccer', label: 'Soccer', link: '/sports?sport=soccer', iconSport: 'soccer' },
     { id: 'promos', label: 'Promos', link: '/promotions', Icon: NavPromotionsIcon },

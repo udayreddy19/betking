@@ -7,6 +7,7 @@ import MatchCard from '../../components/MatchCard/MatchCard';
 import HomeCategoryGrid from '../../components/HomeCategoryGrid/HomeCategoryGrid';
 import { sportsCategories, featuredLeagues } from '../../data/mockData';
 import { homePromoSlides } from '../../data/homePageData';
+import { getSrlHomeBanner, SRL_PAGE_PATH } from '../../data/oddsyraSrlSeason';
 import { useLiveMatches, useLiveSportsMeta } from '../../context/LiveSportsContext';
 import LiveScoresFeedBanner from '../../components/LiveScoresFeedBanner/LiveScoresFeedBanner';
 import { filterMatches, compareMatchesForSportsBoard } from '../../utils/matchFilters';
@@ -136,6 +137,7 @@ export default function Home() {
   }, [matches, watchlistIds]);
 
   const promo = homePromoSlides[promoIndex];
+  const srlBanner = getSrlHomeBanner();
 
   return (
     <div className="home-page container" id="home-page">
@@ -146,10 +148,22 @@ export default function Home() {
       />
       <button
         type="button"
+        className="home-srl-banner"
+        onClick={() => navigate(SRL_PAGE_PATH)}
+      >
+        <span className="home-srl-banner__kicker">{srlBanner.kicker}</span>
+        <span className="home-srl-banner__title">{srlBanner.title}</span>
+        <span className="home-srl-banner__subtitle">{srlBanner.subtitle}</span>
+        <span className="home-srl-banner__cta">{srlBanner.cta}</span>
+      </button>
+
+      <button
+        type="button"
         className="home-promo-banner"
         style={{ background: promo.gradient }}
         onClick={() => {
-          if (promo.id === 'sports') navigate('/live-betting');
+          if (promo.id === 'srl') navigate(SRL_PAGE_PATH);
+          else if (promo.id === 'sports') navigate('/live-betting');
           else navigate('/promotions');
         }}
       >

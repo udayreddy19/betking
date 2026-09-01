@@ -343,14 +343,15 @@ export default function Sports() {
   useEffect(() => subscribeMediaQuery('(min-width: 1025px)', setIsWideLayout), []);
 
   const isIplSrlView = isSameLeague(activeLeague, 'ipl-srl', cricketSeries);
+  const boardStateTab = isIplSrlView && activeStateTab === 'live' ? 'bettable' : activeStateTab;
 
   const baseSportPool = useMemo(() => {
     return filterByLeague(
-      filterMatches(matches || [], { sport: activeSport, stateTab: activeStateTab, searchQuery }),
+      filterMatches(matches || [], { sport: activeSport, stateTab: boardStateTab, searchQuery }),
       activeLeague,
       cricketSeries,
     );
-  }, [matches, activeSport, activeLeague, activeStateTab, searchQuery, cricketSeries]);
+  }, [matches, activeSport, activeLeague, boardStateTab, searchQuery, cricketSeries]);
 
   const stateCounts = useMemo(() => {
     const sportFiltered = filterMatchesBySport(matches || [], activeSport);

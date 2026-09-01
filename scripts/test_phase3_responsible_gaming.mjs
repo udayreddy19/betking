@@ -21,14 +21,14 @@ async function runPhase3AcceptanceTest() {
     console.log('✅ TEST 1/5 PASSED: Responsible Gaming Limits configured cleanly!');
     passCount++;
 
-    // 2. Reject Transaction Exceeding Daily Deposit Limit (₹6,000 > ₹5,000)
-    console.log('   ⏳ Test 2/5: Testing Server-Side Rejection of Deposit Exceeding Daily Limit (₹6,000)...');
+    // 2. Unlimited deposits (stored daily limit is display-only)
+    console.log('   ⏳ Test 2/5: Testing that a deposit above the stored daily limit is allowed (₹6,000)...');
     const rejectRes = await responsibleGamingEngine.validateDepositAttempt(testUserId, 6000);
 
-    if (rejectRes.allowed || rejectRes.reason !== 'DEPOSIT_LIMIT_EXCEEDED') {
-      throw new Error(`Expected deposit rejection with DEPOSIT_LIMIT_EXCEEDED, got: ${JSON.stringify(rejectRes)}`);
+    if (!rejectRes.allowed) {
+      throw new Error(`Expected unlimited deposit approval, got: ${JSON.stringify(rejectRes)}`);
     }
-    console.log(`✅ TEST 2/5 PASSED: Transaction rejected server-side cleanly! (${rejectRes.message}).`);
+    console.log('✅ TEST 2/5 PASSED: Deposit above stored daily limit allowed!');
     passCount++;
 
     // 3. Approve Valid Deposit (₹4,000 <= ₹5,000)
@@ -42,14 +42,14 @@ async function runPhase3AcceptanceTest() {
     console.log('✅ TEST 3/5 PASSED: Valid deposit approved and recorded server-side!');
     passCount++;
 
-    // 4. Per-Bet Stake Limit Enforcement (Attempt ₹15,000 > ₹10,000 limit)
-    console.log('   ⏳ Test 4/5: Testing Per-Bet Stake Limit Enforcement (Attempt ₹15,000)...');
+    // 4. Unlimited per-bet stake (stored stake limit is display-only)
+    console.log('   ⏳ Test 4/5: Testing that a stake above the stored per-bet limit is allowed (₹15,000)...');
     const stakeRes = await responsibleGamingEngine.validateBetPlacementAttempt(testUserId, 15000);
 
-    if (stakeRes.allowed || stakeRes.reason !== 'STAKE_LIMIT_EXCEEDED') {
-      throw new Error(`Expected stake rejection with STAKE_LIMIT_EXCEEDED, got: ${JSON.stringify(stakeRes)}`);
+    if (!stakeRes.allowed) {
+      throw new Error(`Expected unlimited stake approval, got: ${JSON.stringify(stakeRes)}`);
     }
-    console.log(`✅ TEST 4/5 PASSED: Bet stake limit violation rejected server-side! (${stakeRes.message}).`);
+    console.log('✅ TEST 4/5 PASSED: Stake above stored per-bet limit allowed!');
     passCount++;
 
     // 5. Cooling-Off & Self-Exclusion Enforcement

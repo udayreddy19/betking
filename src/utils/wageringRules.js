@@ -3,8 +3,8 @@ import { getBenefitsForTier } from './vipBenefits.js';
 export const BONUS_MIN_BET_ODDS = 1.75;
 export const BONUS_WAGERING_MULTIPLIER = 5;
 export const MIN_STAKE_INR = 10;
-/** Soft UI mirror of server StakeLimitEngine default — server remains authoritative. */
-export const MAX_STAKE_INR = 100000;
+/** No per-bet maximum — server StakeLimitEngine also allows unlimited stake. */
+export const MAX_STAKE_INR = Number.POSITIVE_INFINITY;
 
 /** Quick stake chips shown on betslip / quick-bet sheets. */
 export const QUICK_STAKE_PRESETS = [100, 200, 500, 1000];

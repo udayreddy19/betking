@@ -5,7 +5,6 @@ import { getWalletBreakdown, formatInr } from '../../utils/walletBalance';
 import {
   BONUS_MIN_BET_ODDS,
   MIN_STAKE_INR,
-  MAX_STAKE_INR,
   QUICK_STAKE_PRESETS,
   sanitizeStakeInput,
   canBetWithBonusOnLegs,
@@ -88,10 +87,6 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
     }
     if (amountToDeduct < MIN_STAKE_INR) {
       showToast(`Minimum stake is ${formatInr(MIN_STAKE_INR)}.`, 'error');
-      return;
-    }
-    if (amountToDeduct > MAX_STAKE_INR) {
-      showToast(`Maximum stake allowed is ${formatInr(MAX_STAKE_INR)} (server-enforced).`, 'error');
       return;
     }
 

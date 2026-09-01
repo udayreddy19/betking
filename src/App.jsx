@@ -59,6 +59,7 @@ const TicketsListPage = lazy(() => import('./pages/Support/TicketsListPage'));
 const CreateTicketPage = lazy(() => import('./pages/Support/CreateTicketPage'));
 const TicketDetailPage = lazy(() => import('./pages/Support/TicketDetailPage'));
 const MyRewards = lazy(() => import('./pages/Rewards/MyRewards'));
+const OddsYraSrl = lazy(() => import('./pages/Srl/OddsYraSrl'));
 const DepositPage = lazy(() => import('./pages/Wallet/DepositPage'));
 
 function CasinoComingSoon() {
@@ -150,11 +151,13 @@ function AppLayout() {
               />
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/*" element={<Admin />} />
-              <Route path="/iplsrl" element={<Navigate to="/sports?league=ipl-srl" replace />} />
-              <Route path="/iplsrl/match-center" element={<Navigate to="/sports?league=ipl-srl" replace />} />
-              <Route path="/iplsrl/standings" element={<Navigate to="/sports?league=ipl-srl" replace />} />
-              <Route path="/iplsrl/stats" element={<Navigate to="/sports?league=ipl-srl" replace />} />
-              <Route path="/iplsrl/teams" element={<Navigate to="/sports?league=ipl-srl" replace />} />
+              <Route path="/srl" element={<OddsYraSrl />} />
+              <Route path="/oddsyra-srl" element={<Navigate to="/srl" replace />} />
+              <Route path="/iplsrl" element={<Navigate to="/srl" replace />} />
+              <Route path="/iplsrl/match-center" element={<Navigate to="/srl" replace />} />
+              <Route path="/iplsrl/standings" element={<Navigate to="/srl?tab=schedule" replace />} />
+              <Route path="/iplsrl/stats" element={<Navigate to="/srl" replace />} />
+              <Route path="/iplsrl/teams" element={<Navigate to="/srl?tab=schedule" replace />} />
               <Route
                 path="/trader"
                 element={(

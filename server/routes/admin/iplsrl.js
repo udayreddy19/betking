@@ -95,6 +95,27 @@ router.post('/matches/speed', async (req, res) => {
   }
 });
 
+router.post('/matches/seek', async (req, res) => {
+  try {
+    const { seekIPLSRLMatch } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const { matchId, elapsedMs, deltaMs, marker, pause } = req.body || {};
+    if (!matchId) return res.status(400).json({ error: 'matchId required' });
+    res.json(seekIPLSRLMatch(matchId, { elapsedMs, deltaMs, marker, pause }, req.admin?.id || 'admin'));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/reset', async (req, res) => {
+  try {
+    const { resetIPLSRLMatch } = await import('../../../lib/iplSrlAdminControl.mjs');
+    if (!req.body?.matchId) return res.status(400).json({ error: 'matchId required' });
+    res.json(resetIPLSRLMatch(req.body.matchId, req.admin?.id || 'admin'));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 router.post('/matches/delivery', async (req, res) => {
   try {
     const { triggerDelivery } = await import('../../../lib/iplSrlAdminControl.mjs');

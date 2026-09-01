@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { IoClose, IoSettingsOutline } from '../../icons';
 import { useBetSlip } from '../../context/BetSlipContext';
 import BetSlipFooter from './BetSlipFooter';
-import { MIN_STAKE_INR, MAX_STAKE_INR, BONUS_MIN_BET_ODDS, QUICK_STAKE_PRESETS, sanitizeStakeInput } from '../../utils/wageringRules';
+import { MIN_STAKE_INR, BONUS_MIN_BET_ODDS, QUICK_STAKE_PRESETS, sanitizeStakeInput } from '../../utils/wageringRules';
 import { formatOddsChangeAnnouncement, ODDS_STATUS } from '../../utils/oddsChangeHandler';
 import './BetSlip.css';
 
@@ -97,7 +97,7 @@ export default function BetSlip({ showFooter = true, hidePerBetStakes = false })
           />
           <div className="betslip-settings-panel__info">
             <p><strong>Min stake:</strong> ₹{MIN_STAKE_INR}</p>
-            <p><strong>Max stake:</strong> ₹{MAX_STAKE_INR.toLocaleString()} (server-enforced)</p>
+            <p><strong>Max stake:</strong> unlimited</p>
             <p><strong>Bonus:</strong> odds ≥ {BONUS_MIN_BET_ODDS.toFixed(2)}, rotate 5× before withdrawing winnings</p>
             <p><strong>Free bet:</strong> any odds, like cash (profit only)</p>
             <p>Verify Aadhaar and PAN to withdraw. Bonus itself cannot be withdrawn.</p>

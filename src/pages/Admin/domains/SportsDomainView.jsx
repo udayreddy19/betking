@@ -43,7 +43,7 @@ export default function SportsDomainView({ subModule = 'catalog' }) {
                 : '03 · Sports Catalog & Data Provider Governance'}
           </h2>
           <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
-            Live catalog derived from aggregator matches ({totalMatches} total). Use Sports → IPLSRL Console for SRL operator control.
+            Live catalog derived from aggregator matches ({totalMatches} total). Use Sports → OddsYra SRL Console for match control.
           </p>
           {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
         </div>

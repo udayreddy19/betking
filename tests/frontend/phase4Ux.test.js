@@ -40,9 +40,9 @@ describe('Phase 4 bet-slip UX helpers', () => {
     expect(isNonAcceptableMarketError({ code: 'ODDS_CHANGED' })).toBe(false);
   });
 
-  it('exposes min/max stake messaging constants aligned with server defaults', () => {
+  it('exposes min stake and unlimited max stake constants', () => {
     expect(MIN_STAKE_INR).toBe(10);
-    expect(MAX_STAKE_INR).toBe(100000);
+    expect(MAX_STAKE_INR).toBe(Number.POSITIVE_INFINITY);
   });
 });
 

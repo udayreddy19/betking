@@ -34,13 +34,6 @@ export function canDepositAmount(user, amount) {
   const rg = normalizeRgState(user);
   const amt = Number(amount) || 0;
   if (amt <= 0) return { ok: false, error: 'Enter a valid deposit amount.' };
-  if (rg.dailyDepositUsed + amt > rg.dailyDepositLimit) {
-    const left = Math.max(0, rg.dailyDepositLimit - rg.dailyDepositUsed);
-    return {
-      ok: false,
-      error: `Daily deposit limit reached. You can deposit up to ₹${left.toLocaleString('en-IN')} more today.`,
-    };
-  }
   return { ok: true, rg };
 }
 
@@ -51,12 +44,5 @@ export function canStakeAmount(user, amount) {
   const rg = normalizeRgState(user);
   const amt = Number(amount) || 0;
   if (amt <= 0) return { ok: false, error: 'Enter a valid stake.' };
-  if (rg.dailyStakeUsed + amt > rg.dailyStakeLimit) {
-    const left = Math.max(0, rg.dailyStakeLimit - rg.dailyStakeUsed);
-    return {
-      ok: false,
-      error: `Daily stake limit reached. You can stake up to ₹${left.toLocaleString('en-IN')} more today.`,
-    };
-  }
   return { ok: true, rg };
 }
