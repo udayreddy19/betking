@@ -26,7 +26,7 @@ import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import RouteSeo from './components/RouteSeo/RouteSeo';
 import PhoneRequiredGate from './components/PhoneRequiredGate/PhoneRequiredGate';
 import { getAdminSessionState } from './utils/adminSession';
-import { FANTASY_JOIN_ENABLED } from './utils/featureFlags';
+import { CASINO_ENABLED, FANTASY_JOIN_ENABLED } from './utils/featureFlags';
 
 import Home from './pages/Home/Home';
 import Register from './pages/Register/Register';
