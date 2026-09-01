@@ -715,6 +715,11 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
   const [scorecardInnings, setScorecardInnings] = useState('');
   const [expandedStatsInnings, setExpandedStatsInnings] = useState('team1');
 
+  useEffect(() => {
+    setSelectedInnings('');
+    setScorecardInnings('');
+  }, [match?.id]);
+
   const sport = String(match?.sport || 'cricket').toLowerCase();
   const team1 = match?.team1?.name || 'Team 1';
   const team2 = match?.team2?.name || 'Team 2';
@@ -1107,8 +1112,13 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
             );
           })()}
 
+          {(() => {
+            const showInningsSelect = isTestMatch(match) || (canonicalSnapshot?.innings?.length || 0) > 2;
+            if (!showInningsSelect) return null;
+            return (
           <div className="live-widget-innings-select-wrap">
             <select
+              key={match?.id}
               className="live-widget-innings-select"
               value={activeInnings}
               onChange={(e) => {
@@ -1118,7 +1128,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
             >
               {canonicalSnapshot?.innings?.length > 0 ? (
                 canonicalSnapshot.innings.map((inn) => (
-                  <option key={inn.inningsId} value={inn.inningsName}>
+                  <option key={`${match?.id}-${inn.inningsId}`} value={inn.inningsName}>
                     {inn.inningsLabel || inn.inningsName} ({inn.score}/{inn.wickets}{inn.overs ? ` · ${inn.overs} ov` : ''})
                   </option>
                 ))
@@ -1130,6 +1140,8 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
               )}
             </select>
           </div>
+            );
+          })()}
 
           <div className="live-widget-timeline" aria-hidden="true">
             <div className="live-widget-timeline-track">
@@ -1226,9 +1238,9 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
                 </div>
 
                 {(!b1.name && !b2.name) ? (
-                  <div className="cric-field-table__row">
-                    <span className="cric-field-table__name" style={{ color: 'var(--text-muted, #94a3b8)', fontStyle: 'italic' }}>
-                      Current batters unavailable
+                  <div className="cric-field-table__row cric-field-table__row--empty">
+                    <span className="cric-field-table__name">
+                      No batters yet
                     </span>
                     <span>—</span>
                     <span>—</span>

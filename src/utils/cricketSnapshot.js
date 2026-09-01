@@ -45,6 +45,28 @@ export function teamNameMatches(teamName, token) {
   return false;
 }
 
+function resolveInningsBattingTeam(rawName, team1Name, team2Name, inningsNumber) {
+  if (teamNameMatches(team1Name, rawName)) return team1Name;
+  if (teamNameMatches(team2Name, rawName)) return team2Name;
+  if (!rawName) return (Number(inningsNumber) % 2 === 1) ? team1Name : team2Name;
+  return null;
+}
+
+function oversLookEmpty(overs) {
+  const n = normalizeCricbuzzOvers(overs);
+  return !n || n === '0.0' || n === '0';
+}
+
+function pickScorecardOvers(innRaw, ld, isTeam1Batting, runs) {
+  const fromCard = innRaw?.scoreDetails?.overs ?? innRaw?.overs;
+  if (!oversLookEmpty(fromCard)) return normalizeCricbuzzOvers(fromCard);
+  const completedFallback = isTeam1Batting ? ld.firstOvers : (ld.chaseOvers || ld.overs2);
+  if (!oversLookEmpty(completedFallback)) return normalizeCricbuzzOvers(completedFallback);
+  if (Number(runs) > 0) return normalizeCricbuzzOvers(completedFallback || '0.0');
+  const live = isTeam1Batting ? (ld.firstOvers || ld.overs) : (ld.chaseOvers || ld.overs2);
+  return normalizeCricbuzzOvers(live || '0.0');
+}
+
 export function isPlaceholderPlayer(name) {
   if (!name || typeof name !== 'string') return true;
   const clean = name.trim().toLowerCase();
@@ -134,19 +156,17 @@ export function buildCanonicalMatchSnapshot(match) {
   if (scorecardInningsRaw.length > 0) {
     scorecardInningsRaw.forEach((innRaw, idx) => {
       const inningsNumber = Number(innRaw.inningsId ?? innRaw.innings ?? innRaw.inningsNumber ?? (idx + 1));
-      let battingTeamName = innRaw.batTeamName || innRaw.battingTeam || innRaw.teamName || '';
-      if (!battingTeamName) {
-        if (innRaw.batTeamId && teamNameMatches(team1Name, innRaw.batTeamId)) battingTeamName = team1Name;
-        else if (innRaw.batTeamId && teamNameMatches(team2Name, innRaw.batTeamId)) battingTeamName = team2Name;
-        else battingTeamName = (inningsNumber % 2 === 1) ? team1Name : team2Name;
-      }
-      const isTeam1Batting = teamNameMatches(team1Name, battingTeamName);
-      const normalizedBatTeam = isTeam1Batting ? team1Name : team2Name;
+      const battingTeamName = innRaw.batTeamName || innRaw.battingTeam || innRaw.teamName
+        || (innRaw.batTeamId && teamNameMatches(team1Name, innRaw.batTeamId) ? team1Name : '')
+        || (innRaw.batTeamId && teamNameMatches(team2Name, innRaw.batTeamId) ? team2Name : '');
+      const normalizedBatTeam = resolveInningsBattingTeam(battingTeamName, team1Name, team2Name, inningsNumber);
+      if (!normalizedBatTeam) return;
+      const isTeam1Batting = teamNameMatches(team1Name, normalizedBatTeam);
       const normalizedBowlTeam = isTeam1Batting ? team2Name : team1Name;
 
       const runs = Number(innRaw.scoreDetails?.runs ?? innRaw.runs ?? (isTeam1Batting ? ld.firstRuns ?? ld.score1 ?? ld.runs : ld.chaseRuns ?? ld.score2 ?? ld.runs) ?? 0);
       const wickets = Number(innRaw.scoreDetails?.wickets ?? innRaw.wickets ?? (isTeam1Batting ? ld.firstWickets ?? ld.wickets1 ?? ld.wickets : ld.chaseWickets ?? ld.wickets2 ?? ld.wickets) ?? 0);
-      const overs = normalizeCricbuzzOvers(innRaw.scoreDetails?.overs || innRaw.overs || (isTeam1Batting ? ld.firstOvers || ld.overs : ld.chaseOvers || ld.overs2) || '0.0');
+      const overs = pickScorecardOvers(innRaw, ld, isTeam1Batting, runs);
 
       const batters = (innRaw.batters || []).map((b) => ({
         id: b.id || b.batId || null,
@@ -253,16 +273,14 @@ export function buildCanonicalMatchSnapshot(match) {
     });
   }
 
-  // Handle multi-innings from ld.testInnings when scorecardInnings was omitted
-  if (inningsList.length === 0 && testInningsRaw.length > 0) {
+  // Handle multi-innings from ld.testInnings when scorecardInnings was omitted (Tests only)
+  if (isTest && inningsList.length === 0 && testInningsRaw.length > 0) {
     testInningsRaw.forEach((tInn, idx) => {
       const inningsNumber = Number(tInn.inningsId ?? (idx + 1));
-      let battingTeamName = tInn.batTeam || tInn.teamName || tInn.team || '';
-      if (!battingTeamName) {
-        battingTeamName = (inningsNumber % 2 === 1) ? team1Name : team2Name;
-      }
-      const isTeam1Batting = teamNameMatches(team1Name, battingTeamName);
-      const normalizedBatTeam = isTeam1Batting ? team1Name : team2Name;
+      const battingTeamName = tInn.batTeam || tInn.teamName || tInn.team || '';
+      const normalizedBatTeam = resolveInningsBattingTeam(battingTeamName, team1Name, team2Name, inningsNumber);
+      if (!normalizedBatTeam) return;
+      const isTeam1Batting = teamNameMatches(team1Name, normalizedBatTeam);
       const normalizedBowlTeam = isTeam1Batting ? team2Name : team1Name;
 
       const runs = Number(tInn.runs ?? 0);
@@ -469,6 +487,11 @@ export function buildCanonicalMatchSnapshot(match) {
       reconciliation: { status: 'RECONCILIATION_PARTIAL_DATA', isReconciled: true, calculatedTotal: t2Runs, actualTotal: t2Runs },
       isCurrent: true,
     });
+  }
+
+  if (!isTest && inningsList.length > 2) {
+    inningsList.sort((a, b) => Number(a.inningsNumber) - Number(b.inningsNumber));
+    inningsList.length = 2;
   }
 
   // Determine which innings is currently in progress

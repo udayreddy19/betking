@@ -1352,6 +1352,14 @@
     white-space: nowrap;
   }
 
+  .cric-field-table__row--empty .cric-field-table__name {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    font-style: italic;
+    opacity: 0.85;
+  }
+
   .cric-field-footer {
     grid-template-columns: 1fr;
     gap: 10px;
