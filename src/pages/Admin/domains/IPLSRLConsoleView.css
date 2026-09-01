@@ -397,6 +397,59 @@
 .srl-btn-green { background: #16a34a; }
 .srl-btn-violet { background: #6d28d9; }
 
+.srl-book {
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(52, 211, 153, 0.28);
+  background: rgba(52, 211, 153, 0.08);
+  margin-bottom: 12px;
+}
+
+.srl-book-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.srl-book-side {
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--admin-panel);
+  border: 1px solid var(--admin-border);
+}
+
+.srl-book-side.is-heavy {
+  border-color: rgba(52, 211, 153, 0.55);
+}
+
+.srl-book-side span {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--admin-text-muted);
+  margin-bottom: 4px;
+}
+
+.srl-book-side strong {
+  display: block;
+  font-size: 1.05rem;
+}
+
+.srl-book-side em {
+  display: block;
+  margin-top: 4px;
+  font-style: normal;
+  font-size: 0.72rem;
+  color: var(--admin-text-muted);
+}
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.08);
+}
+
 .srl-winner {
   padding: 12px;
   border-radius: 12px;
@@ -466,7 +519,8 @@
   .srl-desk,
   .srl-settings,
   .srl-scoreboard,
-  .srl-actions {
+  .srl-actions,
+  .srl-book-grid {
     grid-template-columns: 1fr;
   }
 }

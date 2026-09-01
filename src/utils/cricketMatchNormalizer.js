@@ -353,8 +353,14 @@ export function normalizeMatch(raw = {}, previous = {}, options = {}) {
     const chaseHasRunsOrWickets = (chaseRuns != null && Number(chaseRuns) > 0) || (chaseWickets != null && Number(chaseWickets) > 0);
     const chaseHasOvers = chaseOvers && chaseOvers !== '0.0' && chaseOvers !== '0';
     const isExplicitSecondInnings = Number(rawLd.inningsId) >= 2;
+    const firstOversNorm = normalizeCricbuzzOvers(firstOvers ?? '0.0');
+    const chaseOversNorm = chaseHasOvers ? normalizeCricbuzzOvers(chaseOvers) : '';
+    const chaseOversCopiedFromFirst = chaseHasOvers && chaseOversNorm === firstOversNorm;
 
-    const isMirroredScore = Number(firstRuns) > 0 && Number(firstRuns) === Number(chaseRuns) && Number(firstWickets) === Number(chaseWickets) && !chaseHasOvers;
+    const isMirroredScore = Number(firstRuns) > 0
+      && Number(firstRuns) === Number(chaseRuns)
+      && Number(firstWickets ?? 0) === Number(chaseWickets ?? 0)
+      && (!chaseHasOvers || chaseOversCopiedFromFirst);
     const hasValidChase = (isExplicitSecondInnings || chaseHasRunsOrWickets || chaseHasOvers) && !isMirroredScore;
 
     if (hasValidChase) {

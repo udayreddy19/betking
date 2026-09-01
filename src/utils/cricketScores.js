@@ -142,6 +142,19 @@ export function resolveCricketTeamScores(match, ld = {}) {
   };
 }
 
+/** Compact cricket line for My Bets / bet cards. Never repeats a copied first-innings total as 42/2 : 42/2. */
+export function formatCricketInlineScore(match, ld = {}) {
+  const live = { ...(match?.liveDetails || {}), ...ld };
+  const scores = resolveCricketTeamScores(match || { sport: 'cricket', liveDetails: live }, live);
+  const t1 = scores.team1.hasBatted ? scores.team1.displayScore : '';
+  const t2 = scores.team2.hasBatted ? scores.team2.displayScore : '';
+  if (t1 && t2 && t1 === t2 && looksLikeMirroredFirstInnings(match, live)) {
+    return t1;
+  }
+  if (t1 && t2) return `${t1} : ${t2}`;
+  return t1 || t2 || null;
+}
+
 export function flattenCricketTeamScores(scores) {
   return {
     runs: scores.team1.runs,

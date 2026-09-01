@@ -21,11 +21,19 @@
 }
 
 .srl-page-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(12rem, 0.55fr);
+  gap: 24px 32px;
+  align-items: center;
   background: linear-gradient(135deg, #1a1408 0%, #3d2a12 45%, #c2410c 140%);
   border-radius: 18px;
-  padding: var(--space-6) var(--space-6) var(--space-7);
+  padding: 28px 32px;
   margin-bottom: var(--space-5);
   color: #f4f1ea;
+}
+
+.srl-page-hero-copy {
+  min-width: 0;
 }
 
 .srl-page-kicker {
@@ -47,15 +55,15 @@
 
 .srl-page-lead {
   margin: 0 0 10px;
-  max-width: 40rem;
+  max-width: none;
   font-size: 1rem;
   font-weight: 600;
   color: #fed7aa;
 }
 
 .srl-page-note {
-  margin: 0 0 16px;
-  max-width: 42rem;
+  margin: 0 0 18px;
+  max-width: none;
   font-size: 0.88rem;
   line-height: 1.45;
   color: rgba(244, 241, 234, 0.78);
@@ -184,7 +192,41 @@
   white-space: nowrap;
 }
 
+.srl-page-hero-aside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  text-align: right;
+}
+
+.srl-page-hero-aside strong {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+}
+
+.srl-page-hero-aside span {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fdba74;
+}
+
 @media (max-width: 720px) {
+  .srl-page-hero {
+    grid-template-columns: 1fr;
+    padding: 22px 20px;
+  }
+
+  .srl-page-hero-aside {
+    align-items: flex-start;
+    text-align: left;
+  }
+
   .srl-schedule-row {
     grid-template-columns: 1fr;
   }

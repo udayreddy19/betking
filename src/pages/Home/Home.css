@@ -6,19 +6,41 @@
 }
 
 .home-srl-banner {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px 24px;
   width: 100%;
   margin-bottom: var(--space-4);
-  padding: 16px 18px 18px;
+  padding: 18px 22px;
   border: none;
   border-radius: 16px;
   text-align: left;
   cursor: pointer;
   background: linear-gradient(135deg, #1a1408 0%, #7c2d12 52%, #ea580c 130%);
   color: #f4f1ea;
+}
+
+.home-srl-banner__copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.home-srl-banner__cta {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: #7dff6b;
+  color: #0b0e12;
+  font-size: 0.82rem;
+  font-weight: 800;
 }
 
 .home-srl-banner:active {
@@ -48,26 +70,18 @@
   color: rgba(254, 215, 170, 0.95);
 }
 
-.home-srl-banner__cta {
-  margin-top: 6px;
-  font-size: 0.82rem;
-  font-weight: 800;
-  color: #7dff6b;
-}
-
 /* ── Hero promo ── */
 .home-promo-banner {
-  display: flex;
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) 72px;
   align-items: center;
-  justify-content: flex-start;
-  gap: var(--space-6);
   width: 100%;
   border: 1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
   border-radius: 16px;
   padding: var(--space-8) var(--space-8) var(--space-10);
   margin-bottom: var(--space-5);
   cursor: pointer;
-  text-align: left;
+  text-align: center;
   position: relative;
   overflow: hidden;
   min-height: 148px;
@@ -98,6 +112,7 @@
 .home-promo-banner__coin {
   position: relative;
   z-index: 1;
+  justify-self: start;
   flex-shrink: 0;
   width: 72px;
   height: 72px;
@@ -160,7 +175,10 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  align-items: flex-start;
+  align-items: center;
+  text-align: center;
+  justify-self: center;
+  grid-column: 2;
 }
 
 [data-theme='dark'] .home-promo-dot {
@@ -438,11 +456,27 @@
   .home-watchlist { order: 4; }
   .home-boosted { order: 5; }
 
+  .home-srl-banner {
+    grid-template-columns: 1fr;
+  }
+
+  .home-srl-banner__cta {
+    justify-self: start;
+  }
+
   .home-promo-banner {
-    padding: 12px 14px;
+    grid-template-columns: 56px minmax(0, 1fr);
+    text-align: left;
+    padding: 12px 14px 28px;
     min-height: 0;
     gap: 12px;
     margin-bottom: var(--space-4);
+  }
+
+  .home-promo-banner__text {
+    align-items: flex-start;
+    text-align: left;
+    justify-self: start;
   }
 
   .home-promo-banner::before {

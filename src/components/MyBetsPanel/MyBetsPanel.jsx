@@ -7,7 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useLiveMatches } from '../../context/LiveSportsContext';
 import { getCashoutOffer } from '../../utils/wageringRules';
 import { formatInr } from '../../utils/walletBalance';
-import { teamNameMatches } from '../../utils/cricketScores';
+import { teamNameMatches, formatCricketInlineScore } from '../../utils/cricketScores';
 import { DEMO_MODE } from '../../utils/featureFlags';
 import { apiFetch } from '../../utils/apiClient';
 import { matchIdsEqual } from '../../../lib/matchIdPublic.mjs';
@@ -409,25 +409,14 @@ export default function MyBetsPanel() {
 
     const ld = match?.liveDetails || leg.liveDetails || {};
 
-    if (match?.sport === 'cricket' || match?.sport === 'virtual-cricket' || leg.sport === 'cricket') {
-      const s1 = ld.runs ?? ld.firstRuns;
-      const w1 = ld.wickets ?? ld.firstWickets;
-      const o1 = ld.overs ?? ld.firstOvers;
-      const s2 = ld.score2 ?? ld.chaseRuns;
-      const w2 = ld.wickets2 ?? ld.chaseWickets;
-      const o2 = ld.overs2 ?? ld.chaseOvers;
+    const isCricket = /cricket/i.test(String(match?.sport || leg.sport || ''))
+      || ld.wickets != null
+      || ld.firstWickets != null
+      || ld.overs != null;
 
-      if (s1 != null || s2 != null) {
-        const p1 = w1 === 10 ? `${s1} All Out` : `${s1 || 0}/${w1 || 0}`;
-        const p2 = w2 === 10 ? `${s2} All Out` : `${s2 || 0}/${w2 || 0}`;
-
-        if (s2 != null && (s2 > 0 || w2 > 0 || o2)) {
-          return `${p1} : ${p2}`;
-        }
-        if (s1 != null && (s1 > 0 || w1 > 0)) {
-          return `${p1} (${o1 || '0.0'} ov)`;
-        }
-      }
+    if (isCricket) {
+      const cricketLine = formatCricketInlineScore(match || { sport: 'cricket', liveDetails: ld }, ld);
+      if (cricketLine) return cricketLine;
     }
 
     if (ld.score1 != null || ld.home != null || ld.runs != null) {

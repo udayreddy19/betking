@@ -4,7 +4,7 @@ export const homePromoSlides = [
   {
     id: 'srl',
     title: 'ODDSYRA SRL',
-    subtitle: 'BEGINS 10 AUGUST — SIMULATED CRICKET',
+    subtitle: 'BEGINS 10 SEPTEMBER — SIMULATED CRICKET',
     gradient: 'linear-gradient(135deg, #1a1408 0%, #7c2d12 55%, #ea580c 140%)',
     accent: '#fdba74',
     emoji: '⚡',

@@ -1,26 +1,7 @@
-/** OddsYra SRL public season — in-house simulated cricket, no feed provider. */
-
-export const SRL_LAUNCH_AT = Date.parse('2026-08-10T00:00:00+05:30');
-export const SRL_LAUNCH_LABEL = '10 August';
-export const SRL_PAGE_PATH = '/srl';
-
-export function isSrlSeasonLive(now = Date.now()) {
-  return Number(now) >= SRL_LAUNCH_AT;
-}
-
-export function getSrlHomeBanner(now = Date.now()) {
-  if (!isSrlSeasonLive(now)) {
-    return {
-      kicker: 'Coming soon',
-      title: 'OddsYra SRL begins 10 August',
-      subtitle: 'Simulated cricket on OddsYra — live matches, the full schedule, and in-play markets. No external feed.',
-      cta: 'View schedule',
-    };
-  }
-  return {
-    kicker: 'Now live',
-    title: 'OddsYra SRL is live',
-    subtitle: 'Season opened 10 August. Simulated cricket around the clock — matches, schedule, and betting.',
-    cta: 'Open SRL',
-  };
-}
+export {
+  SRL_LAUNCH_AT,
+  SRL_LAUNCH_LABEL,
+  SRL_PAGE_PATH,
+  isSrlSeasonLive,
+  getSrlHomeBanner,
+} from '../../lib/oddsyraSrlSeason.mjs';

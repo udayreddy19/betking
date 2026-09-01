@@ -59,6 +59,11 @@ function formatClock(ms) {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+function formatInr(amount) {
+  const n = Number(amount) || 0;
+  return `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+}
+
 function fixtureFilter(m, filter) {
   if (filter === 'live') return m.controlStatus === 'LIVE' || m.controlStatus === 'PAUSED';
   if (filter === 'upcoming') return m.controlStatus === 'READY' || m.controlStatus === 'ARMED';
@@ -277,6 +282,9 @@ export default function IPLSRLConsoleView() {
                           ? `Scripted winner: ${m.forcedWinnerName}`
                           : `${m.score?.innings1?.runs || 0}/${m.score?.innings1?.wickets || 0} → ${m.score?.innings2?.runs || 0}/${m.score?.innings2?.wickets || 0}`}
                     </div>
+                    <div className="srl-fixture-meta" style={{ marginTop: 4 }}>
+                      Open stake {m.homeShort} {formatInr(m.book?.home?.stake)} · {m.awayShort} {formatInr(m.book?.away?.stake)}
+                    </div>
                     <div className="srl-progress-mini" aria-hidden="true">
                       <i style={{ width: `${Math.max(0, Math.min(100, m.clock?.progressPct || 0))}%` }} />
                     </div>
@@ -313,6 +321,35 @@ export default function IPLSRLConsoleView() {
                     </div>
                   </div>
                   {selected.commentary && <p className="srl-commentary">{selected.commentary}</p>}
+
+                  <div className="srl-book">
+                    <div className="srl-winner-label">Open stakes · match winner</div>
+                    <div className="srl-book-grid">
+                      <div className={`srl-book-side${selected.book?.heavier === 'home' ? ' is-heavy' : ''}`}>
+                        <span>{selected.homeShort}</span>
+                        <strong>{formatInr(selected.book?.home?.stake)}</strong>
+                        <em>{selected.book?.home?.bets || 0} bets · pays {formatInr(selected.book?.home?.payout)} if they win</em>
+                      </div>
+                      <div className={`srl-book-side${selected.book?.heavier === 'away' ? ' is-heavy' : ''}`}>
+                        <span>{selected.awayShort}</span>
+                        <strong>{formatInr(selected.book?.away?.stake)}</strong>
+                        <em>{selected.book?.away?.bets || 0} bets · pays {formatInr(selected.book?.away?.payout)} if they win</em>
+                      </div>
+                    </div>
+                    {selected.book?.other?.stake > 0 && (
+                      <p className="srl-hint" style={{ margin: '8px 0 0' }}>
+                        Other markets: {formatInr(selected.book.other.stake)} across {selected.book.other.bets} bets
+                      </p>
+                    )}
+                    <p className="srl-hint" style={{ margin: '8px 0 0' }}>
+                      Total open {formatInr(selected.book?.totalStake)}.
+                      {selected.book?.heavier === 'home'
+                        ? ` More money is on ${selected.homeShort} — declaring them winner pays ${formatInr(selected.book.home.payout)}.`
+                        : selected.book?.heavier === 'away'
+                          ? ` More money is on ${selected.awayShort} — declaring them winner pays ${formatInr(selected.book.away.payout)}.`
+                          : ' Stakes are even or empty.'}
+                    </p>
+                  </div>
 
                   <div className="srl-timeline">
                     <div className="srl-timeline-top">

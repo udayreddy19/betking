@@ -66,22 +66,28 @@ export default function OddsYraSrl() {
       </nav>
 
       <header className="srl-page-hero">
-        <p className="srl-page-kicker">{banner.kicker}</p>
-        <h1>{banner.title}</h1>
-        <p className="srl-page-lead">{banner.subtitle}</p>
-        <p className="srl-page-note">
-          OddsYra SRL is our own simulated T20 league. There is no Cricbuzz or 10Cric feed —
-          scores, schedule, and markets are generated here. Season start: {SRL_LAUNCH_LABEL}.
-        </p>
-        <div className="srl-page-hero-actions">
-          <Link className="srl-page-cta" to="/sports?league=ipl-srl">Bet on SRL</Link>
-          <button
-            type="button"
-            className="srl-page-cta srl-page-cta--ghost"
-            onClick={() => setSearchParams({ tab: 'schedule' })}
-          >
-            Full schedule
-          </button>
+        <div className="srl-page-hero-copy">
+          <p className="srl-page-kicker">{banner.kicker}</p>
+          <h1>{banner.title}</h1>
+          <p className="srl-page-lead">{banner.subtitle}</p>
+          <p className="srl-page-note">
+            OddsYra SRL is our own simulated T20 league. There is no Cricbuzz or 10Cric feed —
+            scores, schedule, and markets are generated here.
+          </p>
+          <div className="srl-page-hero-actions">
+            <Link className="srl-page-cta" to="/sports?league=ipl-srl">Bet on SRL</Link>
+            <button
+              type="button"
+              className="srl-page-cta srl-page-cta--ghost"
+              onClick={() => setSearchParams({ tab: 'schedule' })}
+            >
+              Full schedule
+            </button>
+          </div>
+        </div>
+        <div className="srl-page-hero-aside" aria-hidden="true">
+          <strong>{SRL_LAUNCH_LABEL}</strong>
+          <span>Season start</span>
         </div>
       </header>
 
