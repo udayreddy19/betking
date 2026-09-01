@@ -9,6 +9,7 @@ import AdminFilterBar, { FilterDateRange } from '../components/AdminFilterBar';
 import AdminKPI from '../components/AdminKPI';
 import { AdminKpiDrillDrawer, useAdminKpiDrilldown } from '../hooks/useAdminKpiDrilldown';
 import PaymentGatewaysView from './PaymentGatewaysView';
+import EmergencyControlsPanel from '../components/EmergencyControlsPanel';
 
 function money(n) {
   if (n == null || Number.isNaN(Number(n))) return '—';
@@ -1384,6 +1385,11 @@ function FinanceControlCenterPanel() {
         </p>
         {error && <p style={{ color: '#fbbf24' }}>{error}</p>}
       </div>
+      <EmergencyControlsPanel
+        compact
+        title="Pause deposits & withdrawals"
+        typesToShow={['DEPOSITS_PAUSE', 'WITHDRAWALS_PAUSE', 'MAINTENANCE_MODE']}
+      />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12 }}>
         {cards.map((c) => (
           <div key={c.label} className="telemetry-card" style={{ padding: 12 }}>

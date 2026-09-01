@@ -3,6 +3,7 @@ import { adminApiClient } from '../api/adminApiClient';
 import AdminDataTable from '../components/AdminDataTable';
 import { StatusBadge } from '../components/AdminBadge';
 import IPLSRLConsoleView from './IPLSRLConsoleView';
+import EmergencyControlsPanel from '../components/EmergencyControlsPanel';
 
 export default function SportsDomainView({ subModule = 'catalog' }) {
   const [sports, setSports] = useState([]);
@@ -48,6 +49,12 @@ export default function SportsDomainView({ subModule = 'catalog' }) {
           {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
         </div>
       </div>
+
+      <EmergencyControlsPanel
+        compact
+        title="Pause the sports book"
+        typesToShow={['SPORT_PAUSE', 'GLOBAL_BETTING_PAUSE']}
+      />
 
       <AdminDataTable
         title={subModule === 'providers' ? 'Provider Feed Telemetry' : 'Sports Catalog & Provider Feed Telemetry'}

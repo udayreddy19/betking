@@ -120,6 +120,37 @@ router.post('/matches/reset', async (req, res) => {
   }
 });
 
+router.post('/matches/betting', async (req, res) => {
+  try {
+    const { setIPLSRLBettingClosed } = await import('../../../lib/iplSrlAdminControl.mjs');
+    if (!req.body?.matchId) return res.status(400).json({ error: 'matchId required' });
+    await jsonSnap(res, setIPLSRLBettingClosed(req.body.matchId, !!req.body.closed, req.admin?.id || 'admin'));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/season/jump', async (req, res) => {
+  try {
+    const { jumpIPLSRLSeason } = await import('../../../lib/iplSrlAdminControl.mjs');
+    await jsonSnap(res, jumpIPLSRLSeason({
+      matchNo: req.body?.matchNo,
+      at: req.body?.at,
+    }, req.admin?.id || 'admin'));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/season/reset-clock', async (req, res) => {
+  try {
+    const { resetIPLSRLSeasonClock } = await import('../../../lib/iplSrlAdminControl.mjs');
+    await jsonSnap(res, resetIPLSRLSeasonClock(req.admin?.id || 'admin'));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 router.post('/matches/delivery', async (req, res) => {
   try {
     const { triggerDelivery } = await import('../../../lib/iplSrlAdminControl.mjs');

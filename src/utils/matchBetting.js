@@ -198,6 +198,7 @@ export function isMatchFinished(match) {
 /** Whether odds can be selected for this match (live + upcoming). */
 export function isMatchBettable(match) {
   if (!match || isCricketMatchCompleted(match)) return false;
+  if (match.bettingClosed || match.operator?.bettingClosed) return false;
   const state = getMatchState(match);
   return state === 'in' || state === 'pre';
 }

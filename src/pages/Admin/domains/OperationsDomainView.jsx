@@ -6,6 +6,7 @@ import AdminKPI from '../components/AdminKPI';
 import { useAdminToast } from '../components/AdminToastContext';
 import { AdminKpiDrillDrawer, useAdminKpiDrilldown } from '../hooks/useAdminKpiDrilldown';
 import { startVisibleInterval } from '../utils/visibleInterval';
+import EmergencyControlsPanel from '../components/EmergencyControlsPanel';
 
 function fmt(v) {
   if (v == null || Number.isNaN(Number(v))) return 'N/A';
@@ -1209,7 +1210,7 @@ export default function OperationsDomainView({ subModule = 'health-matrix', onNa
   useEffect(() => {
     let cancelled = false;
 
-    if (['settlement-queue', 'control-tower', 'alerts', 'incidents', 'production-health', 'production-readiness', 'production-certification', 'notifications', 'backups-dr'].includes(subModule)) {
+    if (['settlement-queue', 'control-tower', 'kill-switches', 'alerts', 'incidents', 'production-health', 'production-readiness', 'production-certification', 'notifications', 'backups-dr'].includes(subModule)) {
       return undefined;
     }
 
@@ -1266,6 +1267,19 @@ export default function OperationsDomainView({ subModule = 'health-matrix', onNa
   }, [subModule]);
 
   if (subModule === 'control-tower') return <ControlTowerOpsPanel onNavigate={onNavigate} />;
+  if (subModule === 'kill-switches') {
+    return (
+      <div>
+        <div style={{ marginBottom: 16 }}>
+          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>12 · Platform kill switches</h2>
+          <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
+            Pause betting, cashout, deposits, or withdrawals. These flags are enforced in the money path, not only in this UI.
+          </p>
+        </div>
+        <EmergencyControlsPanel showHistory />
+      </div>
+    );
+  }
   if (subModule === 'alerts') return <AlertsPanel />;
   if (subModule === 'incidents') return <IncidentsPanel />;
   if (subModule === 'production-health') return <ProductionHealthPanel />;

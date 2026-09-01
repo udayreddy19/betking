@@ -41,6 +41,7 @@ function normalizeServices(payload) {
 export default function AdminStatusBar() {
   const [health, setHealth] = useState(null);
   const [loadError, setLoadError] = useState(false);
+  const [emergency, setEmergency] = useState(null);
   const [serverTime, setServerTime] = useState(() => new Date().toISOString().slice(0, 16).replace('T', ' '));
 
   useEffect(() => {
@@ -57,6 +58,13 @@ export default function AdminStatusBar() {
           if (cancelled) return;
           setHealth(null);
           setLoadError(true);
+        });
+      adminApiClient.get('/emergency/state')
+        .then((data) => {
+          if (!cancelled) setEmergency(data);
+        })
+        .catch(() => {
+          if (!cancelled) setEmergency(null);
         });
     };
 
@@ -88,6 +96,16 @@ export default function AdminStatusBar() {
   return (
     <footer className="admin-healthbar" role="status" aria-label="System health">
       <div className="admin-healthbar__items">
+        {emergency && !emergency.isNormal && (
+          <div
+            className="admin-health-chip admin-health-chip--down"
+            title={emergency.systemStatus || 'Emergency pause active'}
+          >
+            <span className="admin-health-chip__dot" aria-hidden="true" />
+            <span className="admin-health-chip__name">Kill switch</span>
+            <span className="admin-health-chip__status">{emergency.systemStatus || 'ACTIVE'}</span>
+          </div>
+        )}
         {services.map((svc) => (
           <div
             key={svc.name}

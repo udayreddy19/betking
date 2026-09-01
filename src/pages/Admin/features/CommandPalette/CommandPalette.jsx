@@ -42,6 +42,7 @@ const QUICK_ACTIONS = [
   { id: 'open_iplsrl', label: 'Open OddsYra SRL Console', icon: '🏟️', domain: 'sports', subModuleId: 'iplsrl-console', allowedRoles: ['SUPER_ADMIN', 'TRADING_ADMIN', 'OPERATIONS_ADMIN'] },
   { id: 'open_audit', label: 'Open Audit Trail', icon: '📋', domain: 'security-governance', subModuleId: 'audit-trail', allowedRoles: ['SUPER_ADMIN', 'OPERATIONS_ADMIN', 'RISK_ANALYST'] },
   { id: 'open_control', label: 'Open Control Tower', icon: '📡', domain: 'control-tower', subModuleId: 'overview', allowedRoles: null },
+  { id: 'open_kill_switches', label: 'Open platform kill switches', icon: '⛔', domain: 'control-tower', subModuleId: 'kill-switches', allowedRoles: ['SUPER_ADMIN', 'OPERATIONS_ADMIN'] },
   { id: 'open_api_explorer', label: 'Open API Explorer', icon: '🔌', domain: 'api-explorer', subModuleId: 'overview', allowedRoles: ['SUPER_ADMIN', 'OPERATIONS_ADMIN'] },
 ];
 

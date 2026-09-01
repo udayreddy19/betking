@@ -188,6 +188,25 @@
   font-size: 0.82rem;
 }
 
+.srl-jump {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.srl-jump .srl-field {
+  min-width: 7rem;
+}
+
+.srl-jump .srl-input {
+  height: 40px;
+}
+
+.srl-fixture.is-closed {
+  border-color: rgba(251, 191, 36, 0.4);
+}
+
 .srl-fixture-list {
   display: grid;
   gap: 8px;

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { adminApiClient } from '../api/adminApiClient';
 import { useAdminToast } from '../components/AdminToastContext';
+import AdminConfirmDialog from '../components/AdminConfirmDialog';
 import { startVisibleInterval } from '../utils/visibleInterval';
 import './IPLSRLConsoleView.css';
 
@@ -75,6 +76,27 @@ function fixtureFilter(m, filter) {
   return true;
 }
 
+function declarePreview(match, teamId) {
+  const book = match?.book || {};
+  const home = book.home || { stake: 0, payout: 0, bets: 0 };
+  const away = book.away || { stake: 0, payout: 0, bets: 0 };
+  const other = book.other || { stake: 0, payout: 0, bets: 0 };
+  const isHome = teamId === match.homeTeamId;
+  const payout = isHome ? home.payout : away.payout;
+  const total = Number(book.totalStake) || (home.stake + away.stake + other.stake);
+  const house = total - payout;
+  const short = isHome ? match.homeShort : match.awayShort;
+  return {
+    teamId,
+    short,
+    payout,
+    house,
+    total,
+    bets: isHome ? home.bets : away.bets,
+    heavier: book.heavier === (isHome ? 'home' : 'away'),
+  };
+}
+
 function pickDefaultMatchId(matches) {
   return matches.find((m) => m.controlStatus === 'LIVE' || m.controlStatus === 'PAUSED')?.matchId
     || matches.find((m) => m.controlStatus === 'READY' || m.controlStatus === 'ARMED')?.matchId
@@ -93,6 +115,9 @@ export default function IPLSRLConsoleView() {
   const [selectedMatchId, setSelectedMatchId] = useState(null);
   const [busy, setBusy] = useState(false);
   const [dragMs, setDragMs] = useState(null);
+  const [jumpNo, setJumpNo] = useState('1');
+  const [jumpAt, setJumpAt] = useState('live');
+  const [declareAsk, setDeclareAsk] = useState(null);
   const draggingRef = useRef(false);
 
   const applySnap = useCallback((data) => {
@@ -159,6 +184,11 @@ export default function IPLSRLConsoleView() {
   const clock = selected?.clock || {};
   const durationMs = Math.max(1, Number(clock.durationMs) || 1);
   const elapsedMs = dragMs != null ? dragMs : Number(clock.elapsedMs) || 0;
+  const seasonClock = snap?.seasonClock || {};
+
+  useEffect(() => {
+    if (selected?.matchNo) setJumpNo(String(selected.matchNo));
+  }, [selectedMatchId, selected?.matchNo]);
 
   const run = async (fn, okMsg) => {
     setBusy(true);
@@ -196,8 +226,8 @@ export default function IPLSRLConsoleView() {
           <p className="srl-console-kicker">Sports · OddsYra SRL</p>
           <h2>Match control</h2>
           <p>
-            Fixtures auto-play on the published clock. Pause, scrub, skip overs, change speed, or declare a winner
-            — including while the match is live. The desk lists all 74 matches (70 league + 4 playoffs).
+            Fixtures auto-play on the published clock. Pause, scrub, close betting, jump the season to a match, or
+            declare a winner with a payout preview. The desk lists all 74 matches.
           </p>
           {error && <p className="srl-console-error">{error}</p>}
         </div>
@@ -271,6 +301,62 @@ export default function IPLSRLConsoleView() {
               </label>
             </Panel>
 
+            <Panel title="Season clock" hint={seasonClock.jumped ? 'Offset from wall clock' : 'Following wall clock'}>
+              <p className="srl-hint" style={{ margin: '0 0 10px' }}>
+                {seasonClock.label || 'Wall clock'}
+                {seasonClock.jumped ? ' · users see this time, not real time' : ''}
+              </p>
+              <div className="srl-jump">
+                <label className="srl-field">
+                  Match #
+                  <input
+                    className="srl-input"
+                    type="number"
+                    min={1}
+                    max={74}
+                    value={jumpNo}
+                    disabled={busy}
+                    onChange={(e) => setJumpNo(e.target.value)}
+                  />
+                </label>
+                <label className="srl-field">
+                  Land at
+                  <select
+                    className="srl-input"
+                    value={jumpAt}
+                    disabled={busy}
+                    onChange={(e) => setJumpAt(e.target.value)}
+                  >
+                    <option value="start">Before toss</option>
+                    <option value="live">In play</option>
+                    <option value="end">Result in</option>
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  className="srl-btn srl-btn-blue"
+                  disabled={busy}
+                  onClick={() => run(
+                    () => adminApiClient.post('/iplsrl/season/jump', { matchNo: Number(jumpNo), at: jumpAt }),
+                    `Season jumped to match #${jumpNo}`,
+                  )}
+                >
+                  Jump
+                </button>
+                <button
+                  type="button"
+                  className="srl-btn srl-btn-slate"
+                  disabled={busy || !seasonClock.jumped}
+                  onClick={() => run(
+                    () => adminApiClient.post('/iplsrl/season/reset-clock'),
+                    'Season back on wall clock',
+                  )}
+                >
+                  Real time
+                </button>
+              </div>
+            </Panel>
+
             <Panel title="Fixtures" hint={`${fixtures.length} of ${counts.all} shown · 70 league + 4 playoffs`}>
               <div className="srl-filters" style={{ marginBottom: 12 }}>
                 {FILTERS.map((f) => (
@@ -298,7 +384,7 @@ export default function IPLSRLConsoleView() {
                   <button
                     key={m.matchId}
                     type="button"
-                    className={`srl-fixture${selectedMatchId === m.matchId ? ' is-on' : ''}${m.playoff ? ' is-playoff' : ''}`}
+                    className={`srl-fixture${selectedMatchId === m.matchId ? ' is-on' : ''}${m.playoff ? ' is-playoff' : ''}${m.bettingClosed ? ' is-closed' : ''}`}
                     onClick={() => setSelectedMatchId(m.matchId)}
                   >
                     <div className="srl-fixture-top">
@@ -306,7 +392,7 @@ export default function IPLSRLConsoleView() {
                         {m.matchNo ? `#${m.matchNo} ` : ''}
                         {m.homeShort} vs {m.awayShort}
                       </strong>
-                      <StatusPill value={m.controlStatus} />
+                      <StatusPill value={m.bettingClosed ? 'BET OFF' : m.controlStatus} />
                     </div>
                     <div className="srl-fixture-meta">
                       {m.matchNo ? `#${m.matchNo}` : ''} {m.stageLabel || 'League'} · {m.date} · {m.timeDisplay || '—'} · {PHASE_LABEL[m.clock?.phase] || m.venue}
@@ -456,6 +542,20 @@ export default function IPLSRLConsoleView() {
                     >
                       Reset to clock
                     </button>
+                    <button
+                      type="button"
+                      className={`srl-btn ${selected.bettingClosed ? 'srl-btn-teal' : 'srl-btn-orange'}`}
+                      disabled={busy || selected.controlStatus === 'COMPLETED'}
+                      onClick={() => run(
+                        () => adminApiClient.post('/iplsrl/matches/betting', {
+                          matchId: selected.matchId,
+                          closed: !selected.bettingClosed,
+                        }),
+                        selected.bettingClosed ? 'Betting opened' : 'Betting closed for users',
+                      )}
+                    >
+                      {selected.bettingClosed ? 'Open betting' : 'Close betting'}
+                    </button>
                   </div>
 
                   <div className="srl-winner">
@@ -505,10 +605,7 @@ export default function IPLSRLConsoleView() {
                         type="button"
                         className="srl-btn srl-btn-amber"
                         disabled={busy || selected.controlStatus === 'COMPLETED'}
-                        onClick={() => run(
-                          () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/declare`, { teamId: selected.homeTeamId }),
-                          `${selected.homeShort} declared winner`,
-                        )}
+                        onClick={() => setDeclareAsk(declarePreview(selected, selected.homeTeamId))}
                       >
                         Declare {selected.homeShort} now
                       </button>
@@ -516,10 +613,7 @@ export default function IPLSRLConsoleView() {
                         type="button"
                         className="srl-btn srl-btn-amber"
                         disabled={busy || selected.controlStatus === 'COMPLETED'}
-                        onClick={() => run(
-                          () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/declare`, { teamId: selected.awayTeamId }),
-                          `${selected.awayShort} declared winner`,
-                        )}
+                        onClick={() => setDeclareAsk(declarePreview(selected, selected.awayTeamId))}
                       >
                         Declare {selected.awayShort} now
                       </button>
@@ -631,6 +725,34 @@ export default function IPLSRLConsoleView() {
           </div>
         </Panel>
       )}
+
+      <AdminConfirmDialog
+        isOpen={!!declareAsk}
+        variant="warning"
+        icon="🏏"
+        title={`Declare ${declareAsk?.short} winner?`}
+        description="This settles the match for users and pays match-winner bets. Betting on this fixture closes."
+        details={declareAsk ? [
+          { label: 'Winner', value: declareAsk.short },
+          { label: 'Open stake on this side', value: `${declareAsk.bets} bets` },
+          { label: 'Payout if they win', value: formatInr(declareAsk.payout) },
+          { label: 'House after payout', value: formatInr(declareAsk.house) },
+          { label: 'All open stake', value: formatInr(declareAsk.total) },
+        ] : []}
+        confirmLabel={`Declare ${declareAsk?.short || ''}`}
+        cancelLabel="Cancel"
+        loading={busy}
+        onCancel={() => setDeclareAsk(null)}
+        onConfirm={() => {
+          const ask = declareAsk;
+          setDeclareAsk(null);
+          if (!ask || !selected) return;
+          run(
+            () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/declare`, { teamId: ask.teamId }),
+            `${ask.short} declared winner`,
+          );
+        }}
+      />
     </div>
   );
 }

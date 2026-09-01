@@ -6,6 +6,7 @@ import { StatusBadge } from '../components/AdminBadge';
 import AdminKPI from '../components/AdminKPI';
 import AdminCard from '../components/AdminCard';
 import AdminConfirmDialog from '../components/AdminConfirmDialog';
+import EmergencyControlsPanel from '../components/EmergencyControlsPanel';
 import { AdminKpiDrillDrawer, useAdminKpiDrilldown } from '../hooks/useAdminKpiDrilldown';
 
 function moneyOrDash(value) {
@@ -43,6 +44,7 @@ export default function TradingRiskDomainView({ subModule }) {
   const [error, setError] = useState(null);
   const [suspendTarget, setSuspendTarget] = useState(null);
   const [resumeTarget, setResumeTarget] = useState(null);
+  const [suspendLiveBook, setSuspendLiveBook] = useState(false);
   const [suspending, setSuspending] = useState(false);
   const [resuming, setResuming] = useState(false);
   const { showToast } = useAdminToast();
@@ -158,6 +160,22 @@ export default function TradingRiskDomainView({ subModule }) {
     return () => { cancelled = true; };
   }, [selectedMatchId, showGgrDesk]);
 
+  const handleSuspendLiveBook = async (reason) => {
+    setSuspending(true);
+    try {
+      const result = await adminApiClient.post('/trading/suspend-live-book', {
+        reason: reason || 'MANUAL_ADMIN_LIVE_BOOK',
+      });
+      showToast(`Suspended ${result.count || 0} live match-winner markets`, 'success');
+      setSuspendLiveBook(false);
+      if (showSuspensionQueue) loadSuspensions();
+    } catch (err) {
+      showToast(err.message || 'Live book suspend failed', 'error');
+    } finally {
+      setSuspending(false);
+    }
+  };
+
   const handleMarketSuspend = async (reason) => {
     if (!suspendTarget) return;
     setSuspending(true);
@@ -242,6 +260,25 @@ export default function TradingRiskDomainView({ subModule }) {
         </p>
         {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
       </div>
+
+      {showOddsDesk && !showFraud && (
+        <>
+          <EmergencyControlsPanel
+            compact
+            title="Book-wide pauses"
+            typesToShow={['GLOBAL_BETTING_PAUSE', 'CASHOUT_PAUSE', 'SPORT_PAUSE', 'MARKET_SUSPENSION']}
+          />
+          <div style={{ marginBottom: 16 }}>
+            <button
+              type="button"
+              className="admin-btn admin-btn--danger admin-btn--sm"
+              onClick={() => setSuspendLiveBook(true)}
+            >
+              Suspend all live match-winner markets
+            </button>
+          </div>
+        </>
+      )}
 
       {showGgrDesk && deskMetrics && (
         <>
@@ -522,6 +559,21 @@ export default function TradingRiskDomainView({ subModule }) {
         onConfirm={handleMarketResume}
         onCancel={() => setResumeTarget(null)}
         loading={resuming}
+      />
+
+      <AdminConfirmDialog
+        isOpen={suspendLiveBook}
+        variant="danger"
+        icon="⛔"
+        title="Suspend all live match-winner markets?"
+        description="Adds a MANUAL_ADMIN_LIVE_BOOK cause on every live match-winner market in the trading book and OddsYra SRL window. Individual markets can be resumed from the suspension queue."
+        requireReason
+        reasonPlaceholder="Reason for live-book freeze…"
+        reasonDefault="MANUAL_ADMIN_LIVE_BOOK"
+        confirmLabel="Suspend live book"
+        onConfirm={handleSuspendLiveBook}
+        onCancel={() => setSuspendLiveBook(false)}
+        loading={suspending}
       />
     </div>
   );

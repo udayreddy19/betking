@@ -62,6 +62,7 @@ const DOMAIN_GROUPS = [
           { id: 'overview', label: 'Operational Overview' },
           { id: 'telemetry', label: 'Telemetry & SLA Monitors' },
           { id: 'incidents', label: 'Live System Incidents' },
+          { id: 'kill-switches', label: 'Kill switches' },
         ],
       },
       {
@@ -216,6 +217,7 @@ const DOMAIN_GROUPS = [
         role: ADMIN_ROLES.OPERATIONS_ADMIN,
         subModules: [
           { id: 'control-tower', label: 'Control Tower' },
+          { id: 'kill-switches', label: 'Kill switches' },
           { id: 'alerts', label: 'Alerts' },
           { id: 'incidents', label: 'Incidents' },
           { id: 'production-health', label: 'Production Health' },

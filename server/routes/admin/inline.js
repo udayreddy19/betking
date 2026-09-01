@@ -957,6 +957,48 @@ router.get('/api/admin/trading/suspended-markets', adminAuth, requireRole('SUPER
   }
 });
 
+router.post('/api/admin/trading/suspend-live-book', adminAuth, requireRole('SUPER_ADMIN', 'TRADING_ADMIN', 'RISK_ANALYST', 'OPERATIONS_ADMIN'), async (req, res) => {
+  try {
+    const reason = String(req.body?.reason || 'MANUAL_ADMIN_LIVE_BOOK').trim() || 'MANUAL_ADMIN_LIVE_BOOK';
+    const { buildTradingExposures } = await import('../../../lib/adminLiveOps.mjs');
+    const { getIplSrlMatches } = await import('../../../lib/iplSrlSimulator.mjs');
+    const { marketSuspensionEngine } = await import('../../../lib/marketSuspensionEngine.mjs');
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+
+    const book = await buildTradingExposures({ limit: 200 });
+    const ids = new Set();
+    for (const row of book.exposures || []) {
+      if (row.matchId) ids.add(row.matchId);
+    }
+    for (const match of getIplSrlMatches(new Date()) || []) {
+      const live = match.status === 'LIVE' || match.live === true;
+      if (live && match.id) ids.add(match.id);
+    }
+
+    const markets = [];
+    for (const matchId of ids) {
+      const marketId = `${matchId}:match_winner`;
+      const result = await marketSuspensionEngine.addSuspensionCause(
+        marketId,
+        reason,
+        'ADMIN',
+        req.admin?.id || 'admin',
+      );
+      markets.push({ matchId, marketId, activeCauses: result?.activeCauses || [] });
+    }
+
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      action: 'LIVE_BOOK_SUSPENDED',
+      details: { reason, count: markets.length },
+    });
+
+    res.json({ success: true, count: markets.length, markets, timestamp: new Date().toISOString() });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.post('/api/admin/trading/resume-market', adminAuth, requireRole('SUPER_ADMIN', 'TRADING_ADMIN', 'RISK_ANALYST'), async (req, res) => {
   try {
     const { marketId, marketKey, reason = 'MANUAL_ADMIN' } = req.body;

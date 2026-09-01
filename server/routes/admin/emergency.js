@@ -9,7 +9,7 @@ const router = Router();
 let pgQuery = null;
 async function getQuery() { if (!pgQuery) { const m = await import('../../../db/pg.js'); pgQuery = m.query; } return pgQuery; }
 
-const EMERGENCY_TYPES = ['GLOBAL_BETTING_PAUSE','DEPOSITS_PAUSE','WITHDRAWALS_PAUSE','SPORT_PAUSE','COMPETITION_PAUSE','MARKET_SUSPENSION','PROVIDER_DISABLE','MAINTENANCE_MODE'];
+const EMERGENCY_TYPES = ['GLOBAL_BETTING_PAUSE','CASHOUT_PAUSE','DEPOSITS_PAUSE','WITHDRAWALS_PAUSE','SPORT_PAUSE','COMPETITION_PAUSE','MARKET_SUSPENSION','PROVIDER_DISABLE','MAINTENANCE_MODE'];
 
 // GET /emergency/state — current system state
 router.get('/state', async (req, res) => {
@@ -41,6 +41,9 @@ router.post('/activate', requireRole('SUPER_ADMIN', 'OPERATIONS_ADMIN'), async (
     await q('INSERT INTO emergency_actions_log (state_type, action, reason, actor_id, correlation_id, tenant_id) VALUES ($1, $2, $3, $4, $5, $6)',
       [stateType, 'ACTIVATED', reason, req.admin.id, req.correlationId, req.admin.tenant]);
     await logAdminAction({ actorId: req.admin.id, action: `EMERGENCY_ACTIVATED:${stateType}`, details: { reason, stateType } });
+    const { invalidateEmergencyCache, getActiveEmergencyTypes, syncKillSwitchesFromTypes } = await import('../../../lib/emergencyState.mjs');
+    invalidateEmergencyCache();
+    syncKillSwitchesFromTypes(await getActiveEmergencyTypes());
     res.json({ stateType, status: 'ACTIVATED', reason, activatedBy: req.admin.id });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -57,6 +60,9 @@ router.post('/deactivate', requireRole('SUPER_ADMIN', 'OPERATIONS_ADMIN'), async
     await q('INSERT INTO emergency_actions_log (state_type, action, reason, actor_id, correlation_id, tenant_id) VALUES ($1, $2, $3, $4, $5, $6)',
       [stateType, 'DEACTIVATED', reason, req.admin.id, req.correlationId, req.admin.tenant]);
     await logAdminAction({ actorId: req.admin.id, action: `EMERGENCY_DEACTIVATED:${stateType}`, details: { reason, stateType } });
+    const { invalidateEmergencyCache, getActiveEmergencyTypes, syncKillSwitchesFromTypes } = await import('../../../lib/emergencyState.mjs');
+    invalidateEmergencyCache();
+    syncKillSwitchesFromTypes(await getActiveEmergencyTypes());
     res.json({ stateType, status: 'DEACTIVATED', reason, deactivatedBy: req.admin.id });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

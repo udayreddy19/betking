@@ -5,6 +5,7 @@ import AdminTabs from '../components/AdminTabs';
 import { AdminKpiDrillDrawer, useAdminKpiDrilldown } from '../hooks/useAdminKpiDrilldown';
 import { startVisibleInterval } from '../utils/visibleInterval';
 import { useAdminToast } from '../components/AdminToastContext';
+import EmergencyControlsPanel from '../components/EmergencyControlsPanel';
 
 /** Display helper — never invent metrics */
 export function formatMetric(value, prefix = '') {
@@ -39,7 +40,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
   const getNormalizedSubModule = (sm) => {
     if (sm === 'health') return 'telemetry';
     if (sm === 'security') return 'incidents';
-    if (['overview', 'telemetry', 'incidents'].includes(sm)) return sm;
+    if (['overview', 'telemetry', 'incidents', 'kill-switches'].includes(sm)) return sm;
     return 'overview';
   };
 
@@ -121,6 +122,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
     { id: 'overview', label: '🔴 Operational Overview' },
     { id: 'telemetry', label: '🟢 Telemetry & SLA Monitors' },
     { id: 'incidents', label: '🛡️ Live System Incidents' },
+    { id: 'kill-switches', label: '⛔ Kill switches' },
   ];
 
   const actionRequired = data?.actionRequired || [];
@@ -319,6 +321,10 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
             Retry
           </button>
         </div>
+      )}
+
+      {activeTab !== 'kill-switches' && (
+        <EmergencyControlsPanel compact title="Platform kill switches" />
       )}
 
       {/* ── PART 3: CRITICAL ACTION REQUIRED CENTER ── */}
@@ -1155,6 +1161,12 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {activeTab === 'kill-switches' && (
+        <div style={{ marginTop: 20 }}>
+          <EmergencyControlsPanel title="Platform kill switches" showHistory />
         </div>
       )}
 
