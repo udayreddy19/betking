@@ -273,7 +273,7 @@ export default function IPLSRLConsoleView() {
                       <StatusPill value={m.controlStatus} />
                     </div>
                     <div className="srl-fixture-meta">
-                      {m.date} · {m.timeDisplay || '—'} · {PHASE_LABEL[m.clock?.phase] || m.venue}
+                      {m.matchNo ? `#${m.matchNo}` : ''} {m.stageLabel || 'League'} · {m.date} · {m.timeDisplay || '—'} · {PHASE_LABEL[m.clock?.phase] || m.venue}
                     </div>
                     <div className="srl-fixture-note" style={{ color: m.forcedWinnerName ? '#34d399' : undefined }}>
                       {m.controlStatus === 'COMPLETED'

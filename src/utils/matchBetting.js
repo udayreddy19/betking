@@ -118,7 +118,7 @@ export function getMatchState(match) {
     return 'post';
   }
 
-  if (time === 'ft' || combined.includes('full time') || combined.includes('final')) {
+  if (time === 'ft' || combined.includes('full time')) {
     return 'post';
   }
 

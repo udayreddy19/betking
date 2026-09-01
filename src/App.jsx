@@ -155,7 +155,7 @@ function AppLayout() {
               <Route path="/oddsyra-srl" element={<Navigate to="/srl" replace />} />
               <Route path="/iplsrl" element={<Navigate to="/srl" replace />} />
               <Route path="/iplsrl/match-center" element={<Navigate to="/srl" replace />} />
-              <Route path="/iplsrl/standings" element={<Navigate to="/srl?tab=schedule" replace />} />
+              <Route path="/iplsrl/standings" element={<Navigate to="/srl?tab=points" replace />} />
               <Route path="/iplsrl/stats" element={<Navigate to="/srl" replace />} />
               <Route path="/iplsrl/teams" element={<Navigate to="/srl?tab=schedule" replace />} />
               <Route
