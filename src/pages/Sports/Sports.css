@@ -826,7 +826,7 @@
 }
 
 .sports-mobile-live-widget {
-  display: none;
+  display: block;
   margin-bottom: var(--space-3);
 }
 
@@ -1406,16 +1406,6 @@
     padding: 0 var(--space-3);
   }
 
-  /* Match detail — focus on live widget + markets */
-  .sports-page--match .sports-breadcrumbs,
-  .sports-page--match .sports-match-ticker--browse,
-  .sports-page--match .sports-live-status-bar,
-  .sports-page--match .sports-league-chips--browse,
-  .sports-page--match .sports-search--mobile,
-  .sports-page--match .sports-sport-chips {
-    display: none;
-  }
-
   .sports-page--match .sports-mobile-match-nav {
     display: flex;
     flex-direction: column;
@@ -1445,7 +1435,7 @@
   }
 
   .sports-match-banner--desktop-only {
-    display: none;
+    display: block;
   }
 
   .sports-mobile-live-widget {

@@ -1073,8 +1073,7 @@ export default function Sports() {
 
           {viewMode === 'match' && activeMatch ? (
             <>
-              {!isWideLayout && (
-                <div className="sports-mobile-live-widget">
+              <div className="sports-mobile-live-widget">
                   {activeMatch._betDeepLinkStub ? (
                     <div className="live-graphic-card-10cric" style={{ padding: '28px 18px', textAlign: 'center' }}>
                       <div className="live-widget-inn-badge" style={{ marginBottom: 12 }}>OPEN BET</div>
@@ -1101,7 +1100,6 @@ export default function Sports() {
                     </ErrorBoundary>
                   )}
                 </div>
-              )}
 
               {(() => {
                 const { team1Score, team2Score, isLive, isFinished } = getMatchScores(activeMatch);
@@ -1247,7 +1245,6 @@ export default function Sports() {
                           </button>
                         </div>
                       )}
-                      <SgpBuilder match={activeMatch} markets={matchMarkets} />
                     </>
                   )}
                   {canBetActive && !isMatchFinished(activeMatch) && matchMarkets.map((market) => {
@@ -1294,6 +1291,9 @@ export default function Sports() {
                   </div>
                 );
               })}
+                  {canBetActive && !isMatchFinished(activeMatch) && (
+                    <SgpBuilder match={activeMatch} markets={matchMarkets} />
+                  )}
                 </>
               )}
 
@@ -1333,27 +1333,6 @@ export default function Sports() {
         </div>
 
         <aside className="sports-right">
-          {isWideLayout && activeMatch && (
-            <div className="sports-desktop-live-widget">
-              {activeMatch._betDeepLinkStub ? (
-                <div className="live-graphic-card-10cric" style={{ padding: '28px 18px', textAlign: 'center' }}>
-                  <div className="live-widget-inn-badge" style={{ marginBottom: 12 }}>OPEN BET</div>
-                  <div className="live-widget-teams-row" style={{ marginBottom: 12 }}>
-                    <span className="live-widget-team">{teamDisplayName(activeMatch.team1)}</span>
-                    <span className="live-widget-scoreline live-widget-scoreline--vs">VS</span>
-                    <span className="live-widget-team">{teamDisplayName(activeMatch.team2)}</span>
-                  </div>
-                  <p className="live-widget-prematch-status">
-                    This fixture left the live board. Your bet stays open until it is settled.
-                  </p>
-                </div>
-              ) : (
-                <ErrorBoundary resetKey={activeMatch?.id}>
-                  <LiveMatchGraphicWidget match={activeMatch} />
-                </ErrorBoundary>
-              )}
-            </div>
-          )}
           <div className="sports-search sports-search--desktop">
             <div className="sports-search-wrapper">
               <FiSearch className="sports-search-icon" />

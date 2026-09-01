@@ -31,7 +31,9 @@
   margin: 0 6px 6px 0;
   padding: 6px 10px;
   border-radius: 8px;
-  border: 1px solid var(--color-border-light);
+  border: 1px solid var(--color-border, #d4d4d8);
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #111);
   cursor: pointer;
 }
 
@@ -43,7 +45,23 @@
 
 .sgp-builder-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+}
+
+.sgp-builder-actions button {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border, #d4d4d8);
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #111);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sgp-builder-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .sgp-builder-quote {

@@ -134,7 +134,7 @@
   border-top-color: var(--color-border);
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 900px) {
   .sports-league-sidebar {
     display: none;
   }
