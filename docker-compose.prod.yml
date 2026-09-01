@@ -89,10 +89,13 @@ services:
     networks:
       - oddsyra-prod-net
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5001/health || exit 1"]
+      # /health hits Postgres (and can 503 when the pool is busy). That used to
+      # mark the container unhealthy and nginx then served HTML 503 to Admin.
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5001/liveness || exit 1"]
       interval: 10s
-      timeout: 5s
+      timeout: 3s
       retries: 3
+      start_period: 20s
     deploy:
       resources:
         limits:

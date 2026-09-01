@@ -454,29 +454,37 @@ router.get('/api/admin/db/tables', requireRole('SUPER_ADMIN'), async (req, res) 
 
     res.json({ success: true, totalDbSize, availableDiskStorage, tables: tablesWithCounts });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    const { isPostgresBusyError } = await import('../../../db/pg.js');
+    const busy = isPostgresBusyError(err);
+    res.status(busy ? 503 : 500).json({
+      error: busy ? 'Database is busy. Retry in a few seconds.' : err.message,
+      code: busy ? 'DB_BUSY' : undefined,
+    });
   }
 });
 
 router.get('/api/admin/db/tables/:tableName', requireRole('SUPER_ADMIN'), async (req, res) => {
   const tableName = String(req.params.tableName || '');
   try {
-    const { query } = await import('../../../db/pg.js');
+    const { query, queryWithTimeout, isPostgresBusyError } = await import('../../../db/pg.js');
     const {
       assertPublicTable,
       getTableColumns,
       getPrimaryKeyColumns,
+      getTableRowEstimate,
       HIDDEN_COLUMNS,
       DELETE_BLOCKED_TABLES,
     } = await import('../../../lib/adminDbBrowser.mjs');
 
     await assertPublicTable(query, tableName);
     const allCols = await getTableColumns(query, tableName);
-    const primaryKey = await getPrimaryKeyColumns(query, tableName);
     const safeCols = allCols.filter((col) => !HIDDEN_COLUMNS.has(col.column_name));
     const colList = safeCols.map((col) => `"${col.column_name}"`).join(', ') || '*';
-    const countRes = await query(`SELECT COUNT(*)::int AS c FROM "${tableName}"`);
-    const rowsRes = await query(`SELECT ${colList} FROM "${tableName}" LIMIT 200`);
+    const [primaryKey, estimatedCount, rowsRes] = await Promise.all([
+      getPrimaryKeyColumns(query, tableName),
+      getTableRowEstimate(query, tableName),
+      queryWithTimeout(`SELECT ${colList} FROM "${tableName}" LIMIT 200`, undefined, 12000),
+    ]);
     const canMutate = primaryKey.length > 0;
 
     res.json({
@@ -487,11 +495,16 @@ router.get('/api/admin/db/tables/:tableName', requireRole('SUPER_ADMIN'), async 
       editable: canMutate,
       deletable: canMutate && !DELETE_BLOCKED_TABLES.has(tableName),
       rows: rowsRes.rows,
-      totalCount: countRes.rows[0]?.c ?? rowsRes.rows.length,
+      totalCount: Math.max(estimatedCount, rowsRes.rows.length),
       limit: 200,
     });
   } catch (err) {
-    res.status(err.status || 500).json({ error: err.message, code: err.code });
+    const { isPostgresBusyError } = await import('../../../db/pg.js');
+    const busy = isPostgresBusyError(err);
+    res.status(err.status || (busy ? 503 : 500)).json({
+      error: busy ? 'Database is busy. Retry in a few seconds.' : err.message,
+      code: err.code || (busy ? 'DB_BUSY' : undefined),
+    });
   }
 });
 
@@ -689,13 +702,13 @@ router.delete('/api/admin/db/tables/:tableName', adminAuth, requireRole('SUPER_A
 router.post('/api/admin/db/query', adminAuth, requireRole('SUPER_ADMIN'), async (req, res) => {
   try {
     const { validateReadOnlySql, fieldsFromResult, rowsFromResult, sqlWithRowCap, MAX_SQL_ROWS } = await import('../../../lib/adminSqlConsole.mjs');
-    const { queryRead } = await import('../../../db/pg.js');
+    const { queryWithTimeout } = await import('../../../db/pg.js');
     const { logAdminAction } = await import('../../middleware/auditLogger.js');
 
     const validated = validateReadOnlySql(req.body?.sql);
     const sql = sqlWithRowCap(validated);
     const started = Date.now();
-    const result = await queryRead(sql);
+    const result = await queryWithTimeout(sql, undefined, 15000);
     const { rows, truncated } = rowsFromResult(result, MAX_SQL_ROWS);
 
     await logAdminAction({
@@ -720,7 +733,11 @@ router.post('/api/admin/db/query', adminAuth, requireRole('SUPER_ADMIN'), async 
       durationMs: Date.now() - started,
     });
   } catch (err) {
-    res.status(err.status || 500).json({ error: err.message, code: err.code });
+    const busy = (await import('../../../db/pg.js')).isPostgresBusyError(err);
+    res.status(err.status || (busy ? 503 : 500)).json({
+      error: busy ? 'Database is busy. Retry in a few seconds.' : err.message,
+      code: err.code || (busy ? 'DB_BUSY' : undefined),
+    });
   }
 });
 

@@ -172,6 +172,14 @@ async function request(endpoint, options = {}) {
     headers,
   });
 
+  const method = String(options.method || 'GET').toUpperCase();
+  const transient = response.status === 502 || response.status === 503 || response.status === 504;
+  const retrySafe = method === 'GET' || String(endpoint).includes('/db/query') || String(endpoint).includes('/db/tables');
+  if (transient && retrySafe && !options._upstreamRetry) {
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    return request(endpoint, { ...options, _upstreamRetry: true });
+  }
+
   if (response.status === 401 && !options._retried) {
     localStorage.removeItem('adminToken');
     if (IS_PROD_CLIENT) {
@@ -198,10 +206,10 @@ async function request(endpoint, options = {}) {
     try {
       errorData = await response.json();
     } catch {
-      const fallback = (response.statusText || '').trim();
       errorData = {
-        message: fallback
-          || `API request failed (HTTP ${response.status})`,
+        message: [502, 503, 504].includes(response.status)
+          ? 'The API is briefly unavailable. Retry in a few seconds.'
+          : ((response.statusText || '').trim() || `API request failed (HTTP ${response.status})`),
       };
     }
     const error = new Error(

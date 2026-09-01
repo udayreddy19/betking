@@ -114,6 +114,26 @@ export async function queryRead(text, params) {
   }
 }
 
+export function isPostgresBusyError(err) {
+  const msg = String(err?.message || '');
+  const code = String(err?.code || '');
+  return code === '57014'
+    || code === '53300'
+    || /statement timeout|timeout exceeded when trying to connect|remaining connection slots|too many clients/i.test(msg);
+}
+
+/** One-shot query with SET LOCAL statement_timeout so admin console cannot hold a pool slot for 60s. */
+export async function queryWithTimeout(text, params, timeoutMs = 12000) {
+  const ms = Math.max(1000, Math.min(Number(timeoutMs) || 12000, 55000));
+  const client = await pool.connect();
+  try {
+    await client.query(`SET LOCAL statement_timeout = ${ms}`);
+    return await client.query(text, params);
+  } finally {
+    client.release();
+  }
+}
+
 export async function withTransaction(callback) {
   const client = await pool.connect();
   try {
