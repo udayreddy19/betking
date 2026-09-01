@@ -70,35 +70,44 @@ export default function SgpBuilder({ match, markets = [] }) {
   if (openMarkets.length < 2) return null;
 
   return (
-    <div className="sgp-builder">
-      <h3>Same-game parlay</h3>
-      <p>Priced with the server correlation engine — not a flat discount.</p>
-      <div className="sgp-builder-picks">
-        {openMarkets.slice(0, 8).map((market) => (
-          <div key={market.marketId} className="sgp-builder-market">
-            <span>{market.title || market.name}</span>
-            <div>
-              {(market.options || market.selections || []).filter((s) => Number(s.odds) >= 1.01).slice(0, 3).map((opt) => {
+    <div className="sgp-builder sports-market-panel">
+      <div className="sports-market-panel-header sgp-builder-head">
+        <span>Same-game parlay</span>
+      </div>
+      <p className="sgp-builder-hint">Pick two or more legs from this match, then price. This is not a copy of the book above — selected legs are correlated on the server.</p>
+      {openMarkets.slice(0, 6).map((market) => {
+        const options = (market.options || market.selections || []).filter((s) => Number(s.odds) >= 1.01).slice(0, 4);
+        const gridClass = options.length >= 3 ? 'three-col' : 'two-col';
+        return (
+          <div key={market.marketId || market.key} className="sgp-builder-market">
+            <p className="sgp-builder-market-title">{market.title || market.name}</p>
+            <div className={`sports-market-odds-grid ${gridClass}`}>
+              {options.map((opt) => {
                 const key = `${market.marketId}:${opt.selectionId || opt.selection}`;
                 const on = picked.some((p) => p.key === key);
                 return (
                   <button
                     key={key}
                     type="button"
-                    className={on ? 'on' : ''}
+                    className={`sports-market-odds-btn${on ? ' selected' : ''}`}
                     onClick={() => toggle(market, opt)}
                   >
-                    {opt.name} {Number(opt.odds).toFixed(2)}
+                    <span>{opt.name}</span>
+                    <span className="odds-val">{Number(opt.odds).toFixed(2)}</span>
                   </button>
                 );
               })}
             </div>
           </div>
-        ))}
-      </div>
+        );
+      })}
       <div className="sgp-builder-actions">
-        <button type="button" onClick={price} disabled={picked.length < 2}>Price SGP</button>
-        <button type="button" onClick={addToSlip} disabled={picked.length < 2}>Add legs to slip</button>
+        <button type="button" className="sports-empty-action" onClick={price} disabled={picked.length < 2}>
+          Price SGP
+        </button>
+        <button type="button" className="sports-empty-action" onClick={addToSlip} disabled={picked.length < 2}>
+          Add legs to slip
+        </button>
       </div>
       {quote?.valid && (
         <p className="sgp-builder-quote">

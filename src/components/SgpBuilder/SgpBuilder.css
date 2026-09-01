@@ -1,75 +1,52 @@
 .sgp-builder {
-  margin: 16px 0;
-  padding: 14px;
-  border: 1px solid var(--color-border-light);
-  border-radius: 12px;
+  margin: 16px 0 8px;
 }
 
-.sgp-builder h3 {
-  margin: 0 0 4px;
-  font-size: 1rem;
+.sgp-builder-head {
+  cursor: default;
 }
 
-.sgp-builder p {
-  margin: 0 0 10px;
+.sgp-builder-hint {
+  margin: 8px 0 0;
   font-size: 0.8rem;
-  color: var(--color-text-muted);
+  font-weight: 500;
+  color: var(--color-text-muted, #64748b);
 }
 
 .sgp-builder-market {
-  margin-bottom: 8px;
+  margin-top: 12px;
 }
 
-.sgp-builder-market > span {
-  display: block;
-  font-size: 0.75rem;
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-
-.sgp-builder-market button {
-  margin: 0 6px 6px 0;
-  padding: 6px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--color-border, #d4d4d8);
-  background: var(--color-surface, #fff);
+.sgp-builder-market-title {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 800;
   color: var(--color-text, #111);
-  cursor: pointer;
 }
 
-.sgp-builder-market button.on {
-  background: var(--color-primary);
-  color: #fff;
-  border-color: transparent;
+.sgp-builder-market .sports-market-odds-grid {
+  margin-top: 8px;
 }
 
 .sgp-builder-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  margin-top: 14px;
 }
 
-.sgp-builder-actions button {
-  padding: 8px 14px;
-  border-radius: 8px;
-  border: 1px solid var(--color-border, #d4d4d8);
-  background: var(--color-surface, #fff);
-  color: var(--color-text, #111);
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.sgp-builder-actions button:disabled {
+.sgp-builder-actions .sports-empty-action:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
 
 .sgp-builder-quote {
-  margin-top: 8px;
+  margin-top: 10px;
   font-weight: 700;
 }
 
 .sgp-builder-error {
   color: #b91c1c;
   margin-top: 8px;
+  font-size: 0.85rem;
 }
