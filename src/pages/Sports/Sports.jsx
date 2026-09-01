@@ -47,6 +47,7 @@ import LiveScoresFeedBanner from '../../components/LiveScoresFeedBanner/LiveScor
 import { mediaQueryMatches, subscribeMediaQuery } from '../../utils/browserCompat';
 import SgpBuilder from '../../components/SgpBuilder/SgpBuilder';
 import { apiFetch } from '../../utils/apiClient';
+import './Sports.css';
 
 function filterByLeague(matchList, activeLeague, cricketSeries = []) {
   if (!activeLeague || activeLeague === 'all') return matchList;
