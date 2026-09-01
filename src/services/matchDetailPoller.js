@@ -211,6 +211,11 @@ async function pollLoop(key) {
     const gap = s.isLive ? LIVE_GAP_MS : IDLE_GAP_MS;
     const t0 = Date.now();
 
+    if (typeof document !== 'undefined' && document.hidden) {
+      await sleep(12_000);
+      continue;
+    }
+
     try {
       const full = await fetchDetail(s.match, false);
       if (full) emit(key, mergeDetails(pollers.get(key)?.detail, full, { isFull: true, match: s.match }));

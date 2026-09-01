@@ -10,6 +10,7 @@ router.get('/live-scores', async (req, res) => {
   try {
     const force = req.query.refresh === '1';
     const payload = await buildLiveScoresPayload({ force });
+    res.set('Cache-Control', force ? 'no-store' : 'public, max-age=1, stale-while-revalidate=2');
     res.json(payload);
   } catch (error) {
     console.error('[Live Scores]', error);

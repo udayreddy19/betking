@@ -23,6 +23,11 @@ describe('P1/P2 hardening source contracts', () => {
     expect(src).not.toMatch(/maximum-scale\s*=\s*1/);
   });
 
+  it('does not block first paint on Razorpay checkout.js', () => {
+    const src = readFileSync(join(root, 'index.html'), 'utf8');
+    expect(src).not.toMatch(/<script[^>]+checkout\.razorpay\.com/);
+  });
+
   it('uses Redis-backed consumeRateLimitSlot for support tickets', () => {
     const src = readFileSync(join(root, 'server/routes/support.js'), 'utf8');
     expect(src).toMatch('consumeRateLimitSlot');

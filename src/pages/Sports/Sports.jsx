@@ -39,11 +39,11 @@ import {
   matchOddsStateKey,
   provisionalWinnerMarketsFromMatch,
 } from '../../services/oddsService';
-import { subscribeLiveChannel } from '../../services/liveFeedSocket';
+import { subscribeLiveChannel, isLiveFeedSocketOpen } from '../../services/liveFeedSocket';
 import { getMarketCategoriesForSport } from '../../utils/marketCategoryLabels';
 import { useMatchWatchlist } from '../../hooks/useMatchWatchlist';
 import LiveScoresFeedBanner from '../../components/LiveScoresFeedBanner/LiveScoresFeedBanner';
-import { mediaQueryMatches, subscribeMediaQuery } from '../../utils/browserCompat';
+import { mediaQueryMatches, subscribeMediaQuery, runWhenIdle } from '../../utils/browserCompat';
 import './Sports.css';
 
 function filterByLeague(matchList, activeLeague, cricketSeries = []) {
@@ -534,9 +534,11 @@ export default function Sports() {
     loadOdds();
     let lastOddsWs = 0;
     const poll = setInterval(() => {
+      if (document.hidden) return;
+      if (isLiveFeedSocketOpen() && Date.now() - lastOddsWs < 8000) return;
       if (Date.now() - lastOddsWs < 4000) return;
       loadOdds();
-    }, 2000);
+    }, 4000);
 
     const unsubOdds = subscribeLiveChannel(`odds:match:${matchId}`, (msg) => {
       if (isCancelled) return;
@@ -555,29 +557,7 @@ export default function Sports() {
       unsubOdds();
       unsubScores();
     };
-  }, [activeMatch?.id, activeMatch?.matchId, activeMatch?.matchState, activeMatch?.isLive]);
-
-  useEffect(() => {
-    const m = activeMatch;
-    const matchId = m?.id || m?.matchId;
-    if (!matchId || !oddsStateKey) return undefined;
-    if (isMatchFinished(m) || !isMatchBettable(m)) {
-      setMatchMarkets([]);
-      return undefined;
-    }
-    let isCancelled = false;
-    fetchAuthoritativeMatchOdds(
-      matchId,
-      m.team1?.name || m.team1,
-      m.team2?.name || m.team2,
-      { match: m },
-    ).then((snapshot) => {
-      if (isCancelled) return;
-      if (snapshot?.matchId && snapshot.matchId !== matchId) return;
-      if (snapshot?.markets?.length) setMatchMarkets(snapshot.markets);
-    });
-    return () => { isCancelled = true; };
-  }, [activeMatch?.id, activeMatch?.matchId, oddsStateKey]);
+  }, [activeMatch?.id, activeMatch?.matchId, activeMatch?.matchState, activeMatch?.isLive, oddsStateKey]);
 
   const liveMatchPrefetchKey = useMemo(
     () => liveMatches.slice(0, 3).map((match) => {
@@ -588,14 +568,16 @@ export default function Sports() {
   );
 
   useEffect(() => {
-    if (!liveMatchPrefetchKey) return;
-    const seen = new Set();
-    liveMatches.slice(0, 3).forEach((match) => {
-      if (seen.has(match.id)) return;
-      seen.add(match.id);
-      prefetchMatchDetail(match);
-      fetchAuthoritativeMatchOdds(match.id, match.team1?.name || match.team1, match.team2?.name || match.team2, { match });
-    });
+    if (!liveMatchPrefetchKey) return undefined;
+    return runWhenIdle(() => {
+      const seen = new Set();
+      liveMatches.slice(0, 3).forEach((match) => {
+        if (seen.has(match.id)) return;
+        seen.add(match.id);
+        prefetchMatchDetail(match);
+        fetchAuthoritativeMatchOdds(match.id, match.team1?.name || match.team1, match.team2?.name || match.team2, { match });
+      });
+    }, 1200);
   }, [liveMatchPrefetchKey]);
 
   const selectMatch = useCallback((matchId) => {

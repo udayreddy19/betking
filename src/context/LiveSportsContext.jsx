@@ -11,6 +11,7 @@ import { normalizeApiMatches } from '../utils/matchFilters';
 import { fetchLiveScores } from '../services/liveScoresService';
 import { subscribeLiveChannel, isLiveFeedSocketOpen } from '../services/liveFeedSocket';
 import { LIVE_SCORES_POLL_MS, LIVE_SCORES_WS_FALLBACK_POLL_MS } from '../config/livePolling';
+import { runWhenIdle } from '../utils/browserCompat';
 import { getIplSrlMatches } from '../../lib/iplSrlSimulator.mjs';
 import { cricketScoreWeight, cricketSourceRank, getCanonicalMatchPairKey } from '../../lib/matchPairKey.mjs';
 
@@ -316,12 +317,12 @@ export function LiveSportsProvider({ children }) {
   }, []);
 
   const refreshScores = useCallback(async (options = {}) => {
-    const { force = false } = options;
+    const { force = false, includeGateway = false } = options;
     const isInitialLoad = !hasLoadedRef.current;
     if (isInitialLoad) setIsScoresLoading(true);
 
     try {
-      const data = await fetchLiveScores({ force });
+      const data = await fetchLiveScores({ force, includeGateway: force ? true : includeGateway });
       applyScoresPayload(data);
     } catch (error) {
       if (!mountedRef.current) return;
@@ -352,15 +353,20 @@ export function LiveSportsProvider({ children }) {
       intervalId = setTimeout(async () => {
         if (cancelled) return;
         if (!document.hidden) {
-          await refreshScores();
+          await refreshScores({ includeGateway: false });
         }
         scheduleNext();
       }, ms);
     };
 
-    refreshScores().then(() => {
+    refreshScores({ includeGateway: false }).then(() => {
       if (!cancelled) scheduleNext();
     });
+    const cancelIdleGateway = runWhenIdle(() => {
+      if (!cancelled && !document.hidden) {
+        void refreshScores({ includeGateway: true });
+      }
+    }, 2500);
 
     const unsubScores = subscribeLiveChannel('scores:live', (msg) => {
       if (cancelled || !msg?.payload) return;
@@ -368,7 +374,7 @@ export function LiveSportsProvider({ children }) {
     });
 
     const onVisibility = () => {
-      if (!document.hidden) refreshScores();
+      if (!document.hidden) refreshScores({ includeGateway: false });
     };
     document.addEventListener('visibilitychange', onVisibility);
 
@@ -376,6 +382,7 @@ export function LiveSportsProvider({ children }) {
       cancelled = true;
       mountedRef.current = false;
       unsubScores();
+      cancelIdleGateway();
       if (intervalId) clearTimeout(intervalId);
       document.removeEventListener('visibilitychange', onVisibility);
     };

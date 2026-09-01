@@ -10,43 +10,79 @@ import { cricketScoreWeight, cricketSourceRank, getCanonicalMatchPairKey } from 
 export { normalizeTeamName };
 
 const lastKnownLiveMatches = new Map();
+const inflightByKey = new Map();
+
+function asMatchList(value) {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value?.matches)) return value.matches;
+  if (Array.isArray(value?.data)) return value.data;
+  return [];
+}
+
+function fetchLegacyLiveScores(url) {
+  const noStore = url.includes('refresh=1');
+  return fetch(url, { cache: noStore ? 'no-store' : 'default' })
+    .then(async (r) => {
+      const data = await r.json().catch(() => ({}));
+      return { httpOk: r.ok, ...data };
+    })
+    .catch(() => ({
+      matches: [],
+      httpOk: false,
+      feedError: { code: 'LIVE_SCORES_UNREACHABLE', message: 'Could not reach live score API. Tap Retry.' },
+    }));
+}
+
+async function fetchGatewayLiveMatches() {
+  const [cricket, football, basketball, tennis, f1, hockey, americanFootball] = await Promise.all([
+    sportsGatewayClient.getCricket('live'),
+    sportsGatewayClient.getFootball('live'),
+    sportsGatewayClient.getBasketball('live'),
+    sportsGatewayClient.getTennis('live'),
+    sportsGatewayClient.getFormula1('live'),
+    sportsGatewayClient.getHockey('live'),
+    sportsGatewayClient.getAmericanFootball('live'),
+  ]);
+  return [
+    ...asMatchList(cricket),
+    ...asMatchList(football),
+    ...asMatchList(basketball),
+    ...asMatchList(tennis),
+    ...asMatchList(f1),
+    ...asMatchList(hockey),
+    ...asMatchList(americanFootball),
+  ];
+}
 
 /**
- * Fetch live scores from unified OddsYra API & Gateway.
+ * Fetch live scores from unified OddsYra API, optionally merging Gateway sports.
+ * Gateway fan-out is opt-in so first paint is one request, not eight.
  */
 export async function fetchLiveScores(options = {}) {
+  const includeGateway = options.includeGateway === true || (options.force === true && options.includeGateway !== false);
   const url = options.force ? '/api/live-scores?refresh=1' : '/api/live-scores';
+  const inflightKey = `${url}:${includeGateway ? 'gw' : 'fast'}`;
+  if (inflightByKey.has(inflightKey)) return inflightByKey.get(inflightKey);
 
+  const pending = loadLiveScores(url, includeGateway).finally(() => {
+    inflightByKey.delete(inflightKey);
+  });
+  inflightByKey.set(inflightKey, pending);
+  return pending;
+}
+
+async function loadLiveScores(url, includeGateway) {
   try {
-    const [legacyRes, gatewayCricket, gatewayFootball, gatewayBasketball, gatewayTennis, gatewayF1, gatewayHockey, gatewayAmericanFootball] = await Promise.all([
-      fetch(url, { cache: 'no-store' })
-        .then(async (r) => {
-          const data = await r.json().catch(() => ({}));
-          return { httpOk: r.ok, ...data };
-        })
-        .catch(() => ({ matches: [], httpOk: false, feedError: { code: 'LIVE_SCORES_UNREACHABLE', message: 'Could not reach live score API. Tap Retry.' } })),
-      sportsGatewayClient.getCricket('live'),
-      sportsGatewayClient.getFootball('live'),
-      sportsGatewayClient.getBasketball('live'),
-      sportsGatewayClient.getTennis('live'),
-      sportsGatewayClient.getFormula1('live'),
-      sportsGatewayClient.getHockey('live'),
-      sportsGatewayClient.getAmericanFootball('live'),
+    const [legacyRes, gatewayRaw] = await Promise.all([
+      fetchLegacyLiveScores(url),
+      includeGateway ? fetchGatewayLiveMatches() : Promise.resolve([]),
     ]);
 
     const legacyMatches = legacyRes.matches || [];
     const legacyIds = new Set(legacyMatches.map((m) => String(m.id)));
 
     // Standardize gateway matches to application & canonical format
-    const gatewayMatches = [
-      ...(Array.isArray(gatewayCricket) ? gatewayCricket : []),
-      ...(Array.isArray(gatewayFootball) ? gatewayFootball : []),
-      ...(Array.isArray(gatewayBasketball) ? gatewayBasketball : []),
-      ...(Array.isArray(gatewayTennis) ? gatewayTennis : []),
-      ...(Array.isArray(gatewayF1) ? gatewayF1 : []),
-      ...(Array.isArray(gatewayHockey) ? gatewayHockey : []),
-      ...(Array.isArray(gatewayAmericanFootball) ? gatewayAmericanFootball : []),
-    ].map((g) => ({
+    const gatewayMatches = gatewayRaw.map((g) => ({
       id: g.matchId || g.id || `gwy_${Date.now()}`,
       sport: typeof g.sport === 'object' ? (g.sport?.slug || g.sport?.sportName || 'cricket') : (g.sport || 'cricket'),
       league: typeof g.league === 'object' ? (g.league?.leagueName || 'International League') : (g.competition || g.league || 'International League'),
@@ -190,7 +226,7 @@ export async function fetchLiveScores(options = {}) {
       },
       sources: {
         ...(legacyRes.sources || {}),
-        gateway: 'ok',
+        ...(includeGateway ? { gateway: 'ok' } : {}),
       },
       feedError: legacyRes.feedError || null,
       status: legacyRes.status,

@@ -65,6 +65,7 @@ function ensurePolling(userId) {
   fetchNotifications(userId);
   if (!pollTimer) {
     pollTimer = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
       if (cachedUserId) fetchNotifications(cachedUserId);
     }, 20000);
   }

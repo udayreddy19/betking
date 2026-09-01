@@ -7,6 +7,7 @@ import { playBetSound, playWinSound } from '../utils/soundEffects';
 import { isMatchBettable } from '../utils/matchBetting';
 import { apiFetch } from '../utils/apiClient';
 import { DEMO_MODE } from '../utils/featureFlags';
+import { startVisibleInterval } from '../utils/visibleInterval';
 import { subscribeLiveChannel } from '../services/liveFeedSocket';
 import {
   isFinancialEventForUser,
@@ -478,10 +479,10 @@ export function BetSlipProvider({ children }) {
       }
     };
     load();
-    const timer = setInterval(load, 15000);
+    const stop = startVisibleInterval(load, 15000, { runImmediately: false });
     return () => {
       cancelled = true;
-      clearInterval(timer);
+      stop();
     };
   }, [user?.userId, user?.email]);
 
@@ -568,8 +569,7 @@ export function BetSlipProvider({ children }) {
   useEffect(() => {
     if (DEMO_MODE || bets.length === 0) return undefined;
     void refreshSlipOdds({ silent: true });
-    const timer = setInterval(() => refreshSlipOdds({ silent: true }), 30000);
-    return () => clearInterval(timer);
+    return startVisibleInterval(() => refreshSlipOdds({ silent: true }), 30000, { runImmediately: false });
   }, [bets.length, refreshSlipOdds]);
 
   useEffect(() => {

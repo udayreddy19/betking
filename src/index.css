@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Syne:wght@600;700;800&display=swap');
-
 :root {
   /* Night Pitch — warm paper + turf lime (not purple casino) */
   --color-bg: #efeae0;
@@ -636,4 +634,13 @@ svg.cursor-pointer,
 .animated-icon-wrap:hover svg,
 .itshover-icon-wrap:hover svg {
   will-change: transform;
+}
+
+.page-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+  color: var(--color-text-muted);
+  font-weight: 600;
 }
