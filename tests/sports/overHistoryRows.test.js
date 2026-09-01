@@ -34,4 +34,16 @@ describe('buildOverHistoryRows', () => {
     expect(rows[rows.length - 1].overNum).toBe(3);
     expect(rows[rows.length - 1].balls.length).toBe(3);
   });
+
+  it('does not show 1st-innings overs while the chase is in progress', () => {
+    const rows = buildOverHistoryRows(null, 'm4', {
+      liveDetails: { inningsId: 2, chaseOvers: '6.0', overs: '6.0' },
+      overHistory: [
+        { overNum: 6, inningsId: 1, balls: ['6', '6', '6', '6', '6', '6'], isCurrent: false },
+        { overNum: 6, inningsId: 2, balls: ['6', '1', '•', '1', '4', '4'], isCurrent: false },
+      ],
+    });
+    expect(rows).toHaveLength(1);
+    expect(rows[0].balls).toEqual(['6', '1', '•', '1', '4', '4']);
+  });
 });

@@ -291,7 +291,7 @@ function QuickBetPanel({
           disabled={stakeNum < MIN_STAKE_INR || isPlacing || oddsChanged}
           onClick={onPlace}
         >
-          {isPlacing ? 'Placing…' : 'Place bet'}
+          {isPlacing ? 'Placing…' : (betCount > 1 ? 'Place this single only' : 'Place bet')}
         </button>
         <p className="mobile-betslip-return-hint">
           {activeSource === 'freebet' ? 'Potential profit' : 'Potential return'}

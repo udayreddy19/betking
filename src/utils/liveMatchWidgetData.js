@@ -219,12 +219,22 @@ function currentOverNumberFromOvers(oversStr, match) {
 function apiOverHistoryRows(match) {
   const rows = match?.overHistory;
   if (!Array.isArray(rows) || !rows.length) return [];
+  const ld = match?.liveDetails || {};
+  const currentInn = Number(ld.inningsId || (isCricketSecondInnings(match, ld) ? 2 : 1));
+  const scoped = rows.filter((row) => {
+    const inn = Number(row.inningsId || row.innings || 0);
+    if (!inn) return true;
+    return inn === currentInn;
+  });
 
-  return rows.map((row, idx) => ({
+  const mapped = scoped.map((row, idx) => ({
     overNum: row.overNum,
+    inningsId: row.inningsId || row.innings,
     balls: (row.balls || []).map((b) => formatBallOutcome(b)),
-    isCurrent: row.isCurrent ?? idx === rows.length - 1,
+    isCurrent: row.isCurrent ?? idx === scoped.length - 1,
   }));
+  const withBalls = mapped.filter((row) => (row.balls || []).some((b) => b && b !== '…'));
+  return withBalls.length ? withBalls : mapped;
 }
 
 function rowsFromFieldState(fieldState) {
@@ -264,8 +274,9 @@ function generateOverHistoryFromScore(match) {
 
 function fallbackCurrentOverRow(match) {
   const oversStr = battingOversStr(match);
-  const { ball } = parseOvers(normalizeMatchOvers(oversStr, match));
-  const count = Math.max(1, ball || 1);
+  const { over, ball } = parseOvers(normalizeMatchOvers(oversStr, match));
+  if (ball === 0) return [];
+  const count = Math.max(1, ball);
   return [{
     overNum: currentOverNumberFromOvers(oversStr, match),
     balls: Array.from({ length: count }, () => '…'),

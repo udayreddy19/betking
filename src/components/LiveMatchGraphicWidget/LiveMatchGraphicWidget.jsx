@@ -287,7 +287,7 @@ function OverHistoryBar({ rows, inningsNum }) {
       <div className="cric-over-history" ref={scrollRef} role="region" aria-label="Ball-by-ball over history">
         {displayRows.map((row) => (
           <div
-            key={row.overNum}
+            key={`${row.inningsId || 'x'}-${row.overNum}`}
             className={`cric-over-history__block${row.isCurrent ? ' cric-over-history__block--current' : ''}`}
           >
             <span className="cric-over-history__label">OVER {row.overNum}</span>
@@ -803,8 +803,9 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
 
   // Derived Bowler strictly from selected innings view or live details
   let bowler = selectedInningsView?.currentBowler?.name
-    || selectedInningsView?.bowlers?.[0]?.name
     || (match?.liveDetails?.bowler?.name && !isPlaceholderPlayerName(match.liveDetails.bowler.name) ? match.liveDetails.bowler.name : '')
+    || fieldState?.bowler
+    || selectedInningsView?.bowlers?.[selectedInningsView.bowlers.length - 1]?.name
     || '';
   if (typeof bowler === 'object' && bowler?.name) bowler = bowler.name;
   bowler = displayPlayerName(bowler) || bowler;
@@ -967,9 +968,20 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
     ? selectedInningsView.sixes
     : (match?.liveDetails?.sixes != null ? Number(match.liveDetails.sixes) : null);
 
-  const inningsExtrasTotal = selectedInningsView?.extras?.total != null
-    ? selectedInningsView.extras.total
-    : (match?.liveDetails?.extras != null ? Number(match.liveDetails.extras) : null);
+  const inningsExtrasTotal = (() => {
+    if (selectedInningsView?.extras?.total != null) return Number(selectedInningsView.extras.total);
+    const raw = match?.liveDetails?.extras;
+    if (raw == null) return null;
+    if (typeof raw === 'number') return raw;
+    if (typeof raw === 'object' && raw.total != null) return Number(raw.total);
+    if (typeof raw === 'object') {
+      const sum = ['byes', 'legByes', 'wides', 'noBalls', 'penalty', 'penaltyRuns']
+        .reduce((s, k) => s + (Number(raw[k]) || 0), 0);
+      return sum || null;
+    }
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  })();
 
   const extrasBreakdownText = useMemo(() => {
     const ex = selectedInningsView?.extras;

@@ -45,4 +45,39 @@ describe('over completion settlement', () => {
     expect(res?.outcome).toBe('WON');
     expect(res.reason).toMatch(/runs=13/);
   });
+
+  it('settles 2nd-innings over 6 from that innings, not 1st-innings over 6', async () => {
+    const res = await evaluateOverMarketBet({
+      market_id: 'i2_next_over_6_total',
+      market_name: '2nd Innings — Over 6 Total',
+      selection_id: 'sel_under_12.5',
+      selection_name: 'Under 12.5',
+    }, {
+      id: 'oy_over_i2',
+      sport: 'cricket',
+      isLive: true,
+      matchState: 'in',
+      matchType: 'T20',
+      liveDetails: {
+        inningsId: 2,
+        overs: '6.0',
+        chaseOvers: '6.0',
+        chaseRuns: 103,
+        chaseWickets: 1,
+        chaseTeamName: 'Jalandhar Warriors',
+        firstOvers: '20.0',
+        firstRuns: 264,
+        firstWickets: 5,
+        firstTeamName: 'Amritsar Soormas',
+      },
+      team1: { name: 'Jalandhar Warriors', shortName: 'JW', runs: 103, wickets: 1, overs: '6.0' },
+      team2: { name: 'Amritsar Soormas', shortName: 'AS', runs: 264, wickets: 5, overs: '20.0' },
+      overHistory: [
+        { overNum: 6, inningsId: 1, runs: 48, balls: ['6', '6', '6', '6', '6', '6', '6', '6'], isCurrent: false },
+        { overNum: 6, inningsId: 2, runs: 16, balls: ['6', '1', '•', '1', '4', '4'], isCurrent: false },
+      ],
+    });
+    expect(res?.reason).toMatch(/runs=16/);
+    expect(res?.outcome).toBe('LOST');
+  });
 });

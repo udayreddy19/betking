@@ -610,10 +610,14 @@ export function BetSlipProvider({ children }) {
       showToast('That market is not currently bettable', 'error');
       return false;
     }
-    const existing = bets.find(b => b.matchId === match.id && b.selection === selection);
+    // Read betsRef so several addBet calls in one tap (SGP) keep every leg.
+    const prevBets = betsRef.current;
+    const existing = prevBets.find(b => b.matchId === match.id && b.selection === selection);
 
-    if (existing) {
-      setBets(prev => prev.filter(b => b.id !== existing.id));
+    if (existing && !options.keepExisting) {
+      const nextBets = prevBets.filter(b => b.id !== existing.id);
+      betsRef.current = nextBets;
+      setBets(nextBets);
       setSinglesStakes(s => {
         const next = { ...s };
         delete next[existing.id];
@@ -623,19 +627,23 @@ export function BetSlipProvider({ children }) {
       return false;
     }
 
-    let filtered = bets;
+    if (existing && options.keepExisting) {
+      return true;
+    }
+
+    let filtered = prevBets;
     if (options.singlePerMatch) {
-      filtered = bets.filter(b => b.matchId !== match.id);
-    } else if (betType === 'multi') {
+      filtered = prevBets.filter(b => b.matchId !== match.id);
+    } else if (betType === 'multi' && !options.asMulti) {
       const isMainMarket = ['1', '2', 'X'].includes(selection);
       filtered = isMainMarket
-        ? bets.filter(b => !(b.matchId === match.id && ['1', '2', 'X'].includes(b.selection)))
-        : bets;
+        ? prevBets.filter(b => !(b.matchId === match.id && ['1', '2', 'X'].includes(b.selection)))
+        : prevBets;
     }
 
     const label = getSelectionName(match, selection, selectionName);
     const betId = `${match.id}-${selection}`;
-    const removedIds = bets
+    const removedIds = prevBets
       .filter(b => !filtered.includes(b))
       .map(b => b.id);
     const defaultStake = isPromoLocked ? String(promoAmount) : (stake || '100');
@@ -657,7 +665,9 @@ export function BetSlipProvider({ children }) {
       timestamp: Date.now(),
     };
 
-    setBets([...filtered, newBet]);
+    const nextBets = [...filtered, newBet];
+    betsRef.current = nextBets;
+    setBets(nextBets);
 
     setSinglesStakes(s => {
       const next = { ...s };
@@ -688,13 +698,34 @@ export function BetSlipProvider({ children }) {
       setIsMobileOpen(false);
     } else if (!skipMobileOpen) {
       showToast(`Added to betslip: ${label} @ ${Number(odds).toFixed(2)}`, 'success');
-    } else {
-      // Modal / embedded slip already visible — don't stack the quick sheet.
-      setIsMobileOpen(false);
     }
 
     return true;
-  }, [bets, showToast, betType, stake, isPromoLocked, promoAmount]);
+  }, [showToast, betType, stake, isPromoLocked, promoAmount]);
+
+  const addSgpLegs = useCallback((match, legs = []) => {
+    const list = Array.isArray(legs) ? legs.filter((leg) => Number(leg.odds) > 1) : [];
+    if (list.length < 2) {
+      showToast('Pick at least two same-match legs for a parlay.', 'error');
+      return false;
+    }
+    for (const leg of list) {
+      addBet(match, leg.selectionId || leg.selection, leg.odds, leg.selectionName || leg.name, {
+        marketId: leg.marketId,
+        marketName: leg.marketName,
+        keepExisting: true,
+        skipMobileOpen: true,
+        silentAdd: true,
+        asMulti: true,
+      });
+    }
+    setBetType('multi');
+    setStake((prev) => prev || '100');
+    setQuickBet(null);
+    setIsMobileOpen(true);
+    showToast(`Added ${list.length}-leg same-game parlay. Place it as a Multi — not a Single.`, 'success');
+    return true;
+  }, [addBet, showToast]);
 
   const removeBet = useCallback((betId) => {
     setBets(prev => prev.filter(b => b.id !== betId));
@@ -1222,6 +1253,7 @@ export function BetSlipProvider({ children }) {
     bets,
     placedBets,
     addBet,
+    addSgpLegs,
     removeBet,
     clearAll,
     placeBets,
@@ -1276,6 +1308,7 @@ export function BetSlipProvider({ children }) {
     bets,
     placedBets,
     addBet,
+    addSgpLegs,
     removeBet,
     clearAll,
     placeBets,

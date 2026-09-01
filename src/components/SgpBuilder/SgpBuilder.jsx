@@ -4,11 +4,12 @@ import { apiFetch } from '../../utils/apiClient';
 import './SgpBuilder.css';
 
 export default function SgpBuilder({ match, markets = [] }) {
-  const { addBet } = useBetSlip();
+  const { addSgpLegs } = useBetSlip();
   const matchId = match?.id || match?.matchId;
   const [picked, setPicked] = useState([]);
   const [quote, setQuote] = useState(null);
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
 
   const openMarkets = useMemo(
     () => (markets || []).filter((m) => (!m.status || m.status === 'OPEN') && (m.options || m.selections || []).some((s) => s.bettable !== false && Number(s.odds) >= 1.01)),
@@ -25,6 +26,7 @@ export default function SgpBuilder({ match, markets = [] }) {
         key,
         matchId,
         marketId: market.marketId,
+        marketName: market.title || market.name,
         selectionId: option.selectionId || option.selection,
         selectionName: option.name,
         odds: option.odds,
@@ -32,39 +34,57 @@ export default function SgpBuilder({ match, markets = [] }) {
       }];
     });
     setQuote(null);
+    setError('');
+  };
+
+  const quoteCombo = async () => {
+    if (picked.length < 2) {
+      setError('Pick at least two same-match legs.');
+      return null;
+    }
+    const http = await apiFetch('/api/bets/quote-selections', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ selections: picked }),
+    });
+    const res = await http.json();
+    if (res?.sgp && res.sgp.valid === false) {
+      setError(res.sgp.telemetry?.reason || 'These picks cannot be combined (for example two different winners).');
+      setQuote(res.sgp);
+      return null;
+    }
+    setQuote(res.sgp || null);
+    return res.sgp || { valid: true };
   };
 
   const price = async () => {
+    setError('');
+    setBusy(true);
+    try {
+      await quoteCombo();
+    } catch (err) {
+      setError(err.message || 'Quote failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const addToSlip = async () => {
     setError('');
     if (picked.length < 2) {
       setError('Pick at least two same-match legs.');
       return;
     }
+    setBusy(true);
     try {
-      const http = await apiFetch('/api/bets/quote-selections', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ selections: picked }),
-      });
-      const res = await http.json();
-      if (!res?.sgp?.valid) {
-        setError(res?.sgp?.telemetry?.reason || 'This combination cannot be priced as an SGP.');
-        setQuote(res?.sgp || null);
-        return;
-      }
-      setQuote(res.sgp);
+      const sgp = await quoteCombo();
+      if (!sgp) return;
+      addSgpLegs(match, picked);
     } catch (err) {
-      setError(err.message || 'Quote failed');
+      setError(err.message || 'Could not add parlay to slip');
+    } finally {
+      setBusy(false);
     }
-  };
-
-  const addToSlip = () => {
-    picked.forEach((leg) => {
-      addBet(match, leg.selectionId, leg.odds, leg.selectionName, {
-        marketId: leg.marketId,
-        matchId: leg.matchId,
-      });
-    });
   };
 
   if (openMarkets.length < 2) return null;
@@ -74,7 +94,9 @@ export default function SgpBuilder({ match, markets = [] }) {
       <div className="sports-market-panel-header sgp-builder-head">
         <span>Same-game parlay</span>
       </div>
-      <p className="sgp-builder-hint">Pick two or more legs from this match, then price. This is not a copy of the book above — selected legs are correlated on the server.</p>
+      <p className="sgp-builder-hint">
+        Picks here stay off your slip until you add the parlay. Then place it as a Multi. The green book above is for singles.
+      </p>
       {openMarkets.slice(0, 6).map((market) => {
         const options = (market.options || market.selections || []).filter((s) => Number(s.odds) >= 1.01).slice(0, 4);
         const gridClass = options.length >= 3 ? 'three-col' : 'two-col';
@@ -102,11 +124,11 @@ export default function SgpBuilder({ match, markets = [] }) {
         );
       })}
       <div className="sgp-builder-actions">
-        <button type="button" className="sports-empty-action" onClick={price} disabled={picked.length < 2}>
-          Price SGP
+        <button type="button" className="sports-empty-action" onClick={price} disabled={picked.length < 2 || busy}>
+          Price combo
         </button>
-        <button type="button" className="sports-empty-action" onClick={addToSlip} disabled={picked.length < 2}>
-          Add legs to slip
+        <button type="button" className="sports-empty-action" onClick={addToSlip} disabled={picked.length < 2 || busy}>
+          {picked.length < 2 ? 'Add parlay to slip' : `Add ${picked.length}-leg parlay to slip`}
         </button>
       </div>
       {quote?.valid && (

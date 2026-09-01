@@ -191,20 +191,40 @@ export function buildCanonicalMatchSnapshot(match) {
         economy: b.economy || (b.overs > 0 ? (b.runs / oversToBalls(b.overs) * 6).toFixed(1) : '0.0'),
       })).filter((b) => b.name && !isPlaceholderPlayer(b.name));
 
-      const atCreaseBatters = batters.filter((b) => b.isAtCrease);
-      const striker = atCreaseBatters[0] || null;
-      const nonStriker = atCreaseBatters[1] || null;
+      const atCreaseBatters = batters.filter((b) => b.isAtCrease && ((b.balls ?? 0) > 0 || (b.runs ?? 0) > 0 || /batting/i.test(String(b.dismissal || ''))));
+      const liveStriker = ld.batter1?.name && !isPlaceholderPlayer(ld.batter1.name) ? ld.batter1 : null;
+      const liveNon = ld.batter2?.name && !isPlaceholderPlayer(ld.batter2.name) ? ld.batter2 : null;
+      const mergeCrease = (card, live) => {
+        if (!card && !live) return null;
+        if (!card) return { ...live, isAtCrease: true, notOut: true };
+        if (!live) return card;
+        const same = String(card.name).toLowerCase().includes(String(live.name).toLowerCase())
+          || String(live.name).toLowerCase().includes(String(card.name).toLowerCase());
+        if (!same) return card;
+        return {
+          ...card,
+          name: live.name || card.name,
+          runs: Math.max(Number(card.runs) || 0, Number(live.runs) || 0),
+          balls: Math.max(Number(card.balls) || 0, Number(live.balls) || 0),
+          fours: Math.max(Number(card.fours) || 0, Number(live.fours) || 0),
+          sixes: Math.max(Number(card.sixes) || 0, Number(live.sixes) || 0),
+        };
+      };
+      const striker = mergeCrease(atCreaseBatters[0], liveStriker) || atCreaseBatters[0] || liveStriker;
+      const nonStriker = mergeCrease(atCreaseBatters[1], liveNon) || atCreaseBatters[1] || liveNon;
 
       // Active bowler in this innings: prioritize liveDetails bowler if matching, else active bowler with balls or first/last
       let currentBowler = null;
       if (ld.bowler?.name && bowlers.some((b) => b.name.toLowerCase() === ld.bowler.name.toLowerCase())) {
         currentBowler = bowlers.find((b) => b.name.toLowerCase() === ld.bowler.name.toLowerCase());
       } else {
-        currentBowler = bowlers.find((b) => /\.\d*[1-9]/.test(String(b.overs || ''))) || bowlers[0] || null;
+        currentBowler = bowlers.find((b) => /\.\d*[1-9]/.test(String(b.overs || ''))) || bowlers[bowlers.length - 1] || null;
       }
 
+      const isLiveInnings = Number(ld.inningsId) === inningsNumber
+        || idx === scorecardInningsRaw.length - 1;
       const rawExtras = innRaw.extrasData || innRaw.extrasBreakdown || innRaw.extras;
-      const extras = parseExtrasObject(rawExtras ?? (idx === 0 ? ld.extras : null));
+      const extras = parseExtrasObject(rawExtras ?? (isLiveInnings ? (ld.extrasBreakdown || ld.extras) : null));
 
       // Calculate fours and sixes
       let fours = innRaw.fours != null ? Number(innRaw.fours) : null;
@@ -212,11 +232,12 @@ export function buildCanonicalMatchSnapshot(match) {
       if (batters.length > 0) {
         fours = batters.reduce((s, b) => s + (b.fours ?? 0), 0);
         sixes = batters.reduce((s, b) => s + (b.sixes ?? 0), 0);
-      } else if (fours == null && idx === 0 && ld.fours != null) {
-        fours = Number(ld.fours);
       }
-      if (sixes == null && idx === 0 && ld.sixes != null) {
-        sixes = Number(ld.sixes);
+      if (isLiveInnings && ld.fours != null) fours = Math.max(Number(fours) || 0, Number(ld.fours));
+      if (isLiveInnings && ld.sixes != null) sixes = Math.max(Number(sixes) || 0, Number(ld.sixes));
+      if (extras.total == null && isLiveInnings && batters.length > 0) {
+        const gap = runs - batters.reduce((s, b) => s + (b.runs ?? 0), 0);
+        if (gap > 0 && gap < 40) extras.total = gap;
       }
 
       // Reconcile score
@@ -602,9 +623,11 @@ export function deriveSelectedInningsView(snapshot, selectedInningsNameOrId = nu
 
   const isCurrentLive = Boolean(selected.isCurrent && snapshot.match.isLive);
 
-  const striker = selected.currentBatters?.striker || selected.batters?.[0] || null;
-  const nonStriker = selected.currentBatters?.nonStriker || selected.batters?.[1] || null;
-  const currentBowler = selected.currentBowler || selected.bowlers?.[0] || null;
+  const striker = selected.currentBatters?.striker || null;
+  const nonStriker = selected.currentBatters?.nonStriker || null;
+  const currentBowler = selected.currentBowler
+    || selected.bowlers?.[selected.bowlers.length - 1]
+    || null;
 
   return {
     snapshotId: snapshot.snapshotId,
