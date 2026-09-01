@@ -6,7 +6,6 @@ import { useAdminRole, hasPermission, PERMISSIONS } from '../permissions/AdminRB
 import { StatusBadge } from '../components/AdminBadge';
 import AdminConfirmDialog from '../components/AdminConfirmDialog';
 import AdminFilterBar, { FilterSelect, FilterSearch } from '../components/AdminFilterBar';
-import EmergencyControlsPanel from '../components/EmergencyControlsPanel';
 
 function money(n) {
   if (n == null || Number.isNaN(Number(n))) return '—';
@@ -171,12 +170,6 @@ export default function BettingDomainView({
           </p>
         )}
       </div>
-
-      <EmergencyControlsPanel
-        compact
-        title="Pause betting & cashout"
-        typesToShow={['GLOBAL_BETTING_PAUSE', 'CASHOUT_PAUSE']}
-      />
 
       {/* Filter Bar */}
       <AdminFilterBar label="Filters">

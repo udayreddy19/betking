@@ -62,7 +62,6 @@ const DOMAIN_GROUPS = [
           { id: 'overview', label: 'Operational Overview' },
           { id: 'telemetry', label: 'Telemetry & SLA Monitors' },
           { id: 'incidents', label: 'Live System Incidents' },
-          { id: 'kill-switches', label: 'Kill switches' },
         ],
       },
       {

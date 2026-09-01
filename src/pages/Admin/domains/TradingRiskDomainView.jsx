@@ -6,7 +6,6 @@ import { StatusBadge } from '../components/AdminBadge';
 import AdminKPI from '../components/AdminKPI';
 import AdminCard from '../components/AdminCard';
 import AdminConfirmDialog from '../components/AdminConfirmDialog';
-import EmergencyControlsPanel from '../components/EmergencyControlsPanel';
 import { AdminKpiDrillDrawer, useAdminKpiDrilldown } from '../hooks/useAdminKpiDrilldown';
 
 function moneyOrDash(value) {
@@ -262,22 +261,15 @@ export default function TradingRiskDomainView({ subModule }) {
       </div>
 
       {showOddsDesk && !showFraud && (
-        <>
-          <EmergencyControlsPanel
-            compact
-            title="Book-wide pauses"
-            typesToShow={['GLOBAL_BETTING_PAUSE', 'CASHOUT_PAUSE', 'SPORT_PAUSE', 'MARKET_SUSPENSION']}
-          />
-          <div style={{ marginBottom: 16 }}>
-            <button
-              type="button"
-              className="admin-btn admin-btn--danger admin-btn--sm"
-              onClick={() => setSuspendLiveBook(true)}
-            >
-              Suspend all live match-winner markets
-            </button>
-          </div>
-        </>
+        <div style={{ marginBottom: 16 }}>
+          <button
+            type="button"
+            className="admin-btn admin-btn--danger admin-btn--sm"
+            onClick={() => setSuspendLiveBook(true)}
+          >
+            Suspend all live match-winner markets
+          </button>
+        </div>
       )}
 
       {showGgrDesk && deskMetrics && (
