@@ -33,6 +33,7 @@ export const ROUTE_META = {
     title: 'OddsYra SRL — Simulated Cricket | OddsYra',
     description: 'OddsYra SRL begins 10 August. Simulated T20 cricket with live matches, fixture schedule, and in-play betting — no external score feed.',
   },
+  '/fantasy': {
     title: 'Fantasy Sports | OddsYra',
     description: 'Build fantasy teams and compete across cricket and football on OddsYra.',
   },
