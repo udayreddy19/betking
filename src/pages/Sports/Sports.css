@@ -1435,7 +1435,7 @@
   }
 
   .sports-match-banner--desktop-only {
-    display: block;
+    display: none;
   }
 
   .sports-mobile-live-widget {
