@@ -2750,7 +2750,12 @@ function DiscreteRewardsAdminPanel() {
           {
             header: 'User',
             key: 'userId',
-            render: (r) => <span style={{ fontSize: '0.78rem' }}>{r.userId}</span>,
+            render: (r) => (
+              <span style={{ fontSize: '0.78rem' }}>
+                <div>{r.userEmail || r.userUsername || r.userId}</div>
+                <div className="admin-text-mono" style={{ fontSize: '0.68rem', color: 'var(--admin-text-muted)' }}>{r.userId}</div>
+              </span>
+            ),
           },
           {
             header: 'Type',
