@@ -191,9 +191,17 @@
 .srl-fixture-list {
   display: grid;
   gap: 8px;
-  max-height: min(62vh, 560px);
+  max-height: min(72vh, 820px);
   overflow-y: auto;
   padding-right: 2px;
+}
+
+.srl-fixture-search {
+  margin-bottom: 12px;
+}
+
+.srl-fixture.is-playoff {
+  border-color: rgba(251, 146, 60, 0.35);
 }
 
 .srl-fixture {

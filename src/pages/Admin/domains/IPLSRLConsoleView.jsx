@@ -13,6 +13,8 @@ const TABS = [
 
 const FILTERS = [
   { id: 'all', label: 'All' },
+  { id: 'league', label: 'League' },
+  { id: 'playoffs', label: 'Playoffs' },
   { id: 'live', label: 'Live' },
   { id: 'upcoming', label: 'Upcoming' },
   { id: 'done', label: 'Completed' },
@@ -65,16 +67,26 @@ function formatInr(amount) {
 }
 
 function fixtureFilter(m, filter) {
+  if (filter === 'league') return !m.playoff;
+  if (filter === 'playoffs') return !!m.playoff;
   if (filter === 'live') return m.controlStatus === 'LIVE' || m.controlStatus === 'PAUSED';
   if (filter === 'upcoming') return m.controlStatus === 'READY' || m.controlStatus === 'ARMED';
   if (filter === 'done') return m.controlStatus === 'COMPLETED';
   return true;
 }
 
+function pickDefaultMatchId(matches) {
+  return matches.find((m) => m.controlStatus === 'LIVE' || m.controlStatus === 'PAUSED')?.matchId
+    || matches.find((m) => m.controlStatus === 'READY' || m.controlStatus === 'ARMED')?.matchId
+    || matches[0]?.matchId
+    || null;
+}
+
 export default function IPLSRLConsoleView() {
   const { showToast } = useAdminToast();
   const [tab, setTab] = useState('desk');
   const [filter, setFilter] = useState('all');
+  const [query, setQuery] = useState('');
   const [snap, setSnap] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -87,7 +99,7 @@ export default function IPLSRLConsoleView() {
     setSnap(data);
     setSelectedMatchId((prev) => {
       if (prev && data.matches?.some((m) => m.matchId === prev)) return prev;
-      return data.matches?.[0]?.matchId || null;
+      return pickDefaultMatchId(data.matches || []);
     });
   }, []);
 
@@ -124,16 +136,25 @@ export default function IPLSRLConsoleView() {
     const matches = snap?.matches || [];
     return {
       all: matches.length,
+      league: matches.filter((m) => fixtureFilter(m, 'league')).length,
+      playoffs: matches.filter((m) => fixtureFilter(m, 'playoffs')).length,
       live: matches.filter((m) => fixtureFilter(m, 'live')).length,
       upcoming: matches.filter((m) => fixtureFilter(m, 'upcoming')).length,
       done: matches.filter((m) => fixtureFilter(m, 'done')).length,
     };
   }, [snap]);
 
-  const fixtures = useMemo(
-    () => (snap?.matches || []).filter((m) => fixtureFilter(m, filter)),
-    [snap, filter],
-  );
+  const fixtures = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return (snap?.matches || []).filter((m) => {
+      if (!fixtureFilter(m, filter)) return false;
+      if (!q) return true;
+      const hay = [
+        m.matchNo, m.stageLabel, m.homeShort, m.awayShort, m.homeTeam, m.awayTeam, m.matchId,
+      ].join(' ').toLowerCase();
+      return hay.includes(q);
+    });
+  }, [snap, filter, query]);
 
   const clock = selected?.clock || {};
   const durationMs = Math.max(1, Number(clock.durationMs) || 1);
@@ -175,12 +196,15 @@ export default function IPLSRLConsoleView() {
           <p className="srl-console-kicker">Sports · OddsYra SRL</p>
           <h2>Match control</h2>
           <p>
-            Fixtures auto-play on the published clock. Pause, scrub the timeline, skip overs or innings,
-            change speed, or declare a winner instantly — including while the match is live for users.
+            Fixtures auto-play on the published clock. Pause, scrub, skip overs, change speed, or declare a winner
+            — including while the match is live. The desk lists all 74 matches (70 league + 4 playoffs).
           </p>
           {error && <p className="srl-console-error">{error}</p>}
         </div>
         <div className="srl-console-stats">
+          <div className="srl-stat"><strong>{counts.all}</strong><span>Matches</span></div>
+          <div className="srl-stat"><strong>{counts.league}</strong><span>League</span></div>
+          <div className="srl-stat"><strong>{counts.playoffs}</strong><span>Playoffs</span></div>
           <div className="srl-stat"><strong>{counts.live}</strong><span>Live</span></div>
           <div className="srl-stat"><strong>{counts.upcoming}</strong><span>Upcoming</span></div>
           <div className="srl-stat"><strong>{counts.done}</strong><span>Done</span></div>
@@ -247,7 +271,7 @@ export default function IPLSRLConsoleView() {
               </label>
             </Panel>
 
-            <Panel title="Fixtures" hint={`${fixtures.length} shown`}>
+            <Panel title="Fixtures" hint={`${fixtures.length} of ${counts.all} shown · 70 league + 4 playoffs`}>
               <div className="srl-filters" style={{ marginBottom: 12 }}>
                 {FILTERS.map((f) => (
                   <button
@@ -260,16 +284,28 @@ export default function IPLSRLConsoleView() {
                   </button>
                 ))}
               </div>
+              <label className="srl-field srl-fixture-search">
+                Search fixtures
+                <input
+                  type="search"
+                  value={query}
+                  placeholder="Team, #, Qualifier…"
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+              </label>
               <div className="srl-fixture-list">
                 {fixtures.map((m) => (
                   <button
                     key={m.matchId}
                     type="button"
-                    className={`srl-fixture${selectedMatchId === m.matchId ? ' is-on' : ''}`}
+                    className={`srl-fixture${selectedMatchId === m.matchId ? ' is-on' : ''}${m.playoff ? ' is-playoff' : ''}`}
                     onClick={() => setSelectedMatchId(m.matchId)}
                   >
                     <div className="srl-fixture-top">
-                      <strong>{m.homeShort} vs {m.awayShort}</strong>
+                      <strong>
+                        {m.matchNo ? `#${m.matchNo} ` : ''}
+                        {m.homeShort} vs {m.awayShort}
+                      </strong>
                       <StatusPill value={m.controlStatus} />
                     </div>
                     <div className="srl-fixture-meta">
@@ -493,13 +529,13 @@ export default function IPLSRLConsoleView() {
               )}
             </Panel>
 
-            <Panel title="Standings snapshot">
+            <Panel title="Standings snapshot" hint="10 teams · W=2 pts">
               <div className="srl-standings">
                 {(snap.standings || []).map((row) => (
                   <div key={row.teamId} className="srl-stand-row">
                     <span className="srl-hint">{row.rank}</span>
                     <strong>{row.shortName}</strong>
-                    <span className="srl-hint">{row.points} pts</span>
+                    <span className="srl-hint">{row.played ?? row.matches ?? 0} P · {row.won ?? 0} W · {row.points} pts</span>
                   </div>
                 ))}
               </div>

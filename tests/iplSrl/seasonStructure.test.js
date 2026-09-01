@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  getIplSrlDeskMatches,
   getIplSrlMatches,
   getIplSrlPointsTable,
   getIplSrlSeasonMatches,
@@ -63,5 +64,14 @@ describe('OddsYra SRL IPL season structure', () => {
     expect(q1.team1.key).not.toBe('tbd');
     expect(q1.team2.key).not.toBe('tbd');
     expect(q1.team1.key).not.toBe(q1.team2.key);
+  });
+
+  it('exposes all 74 season matches on the admin desk', () => {
+    const desk = getIplSrlDeskMatches(now);
+    expect(desk).toHaveLength(74);
+    expect(desk.filter((m) => !m.playoff)).toHaveLength(70);
+    expect(desk[0].matchNo).toBe(1);
+    expect(desk[69].matchNo).toBe(70);
+    expect(desk[73].stageLabel).toBe('Final');
   });
 });
