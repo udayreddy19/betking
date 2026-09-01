@@ -601,6 +601,63 @@ export async function sendBonusCreditedEmail({
   return await sendEmail({ to: email, subject, html, from: PROMOS_FROM, replyTo: PROMOS_REPLY_TO });
 }
 
+export async function sendAdminGiftEmail({
+  email,
+  name,
+  amount = 0,
+  rewardType = 'freebet',
+  title,
+  expiresAt = null,
+}) {
+  if (!email) {
+    return { success: false, error: 'Recipient email is required' };
+  }
+  const greeting = name || String(email).split('@')[0];
+  const isFreebet = String(rewardType).toLowerCase() === 'freebet';
+  const kind = isFreebet ? 'Free Bet' : 'Bonus';
+  const inr = `₹${Number(amount || 0).toLocaleString('en-IN')}`;
+  const subject = `A gift from OddsYra: ${inr} ${kind}`;
+  const ctaHref = `${FRONTEND_URL}/rewards`;
+  const expiryLabel = expiresAt
+    ? new Date(expiresAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' })
+    : null;
+
+  const extraDetailsHtml = `
+    <tr>
+      <td class="oy-td" style="padding:12px 24px 0;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f6f2ea;border-radius:8px;padding:14px;">
+          <tr>
+            <td style="font-size:14px;color:#5c6570;">Gift:</td>
+            <td align="right" style="font-size:16px;font-weight:700;color:#1f8a4c;">${inr} ${escapeHtml(kind)}</td>
+          </tr>
+          ${title ? `
+          <tr>
+            <td style="font-size:13px;color:#5c6570;padding-top:6px;">Title:</td>
+            <td align="right" style="font-size:13px;font-weight:600;padding-top:6px;">${escapeHtml(title)}</td>
+          </tr>` : ''}
+          ${expiryLabel ? `
+          <tr>
+            <td style="font-size:13px;color:#5c6570;padding-top:6px;">Use by:</td>
+            <td align="right" style="font-size:13px;font-weight:600;padding-top:6px;">${escapeHtml(expiryLabel)} IST</td>
+          </tr>` : ''}
+        </table>
+      </td>
+    </tr>
+  `;
+
+  const html = renderTransactionalEmail({
+    heading: `You received a ${kind} gift`,
+    greetingName: greeting,
+    introHtml: `OddsYra has added <strong>${inr} ${escapeHtml(kind)}</strong> to your account. It is in your wallet and on My Rewards. Place it as an exact stake on sports.`,
+    extraHtml: extraDetailsHtml,
+    ctaLabel: 'Open My Rewards',
+    ctaHref,
+    noteHtml: 'This gift is credited to your promotional balance, not cash. Free bet stakes are not returned; winnings from a winning free bet are paid as cash. Terms apply.',
+  });
+
+  return await sendEmail({ to: email, subject, html, from: PROMOS_FROM, replyTo: PROMOS_REPLY_TO });
+}
+
 /* ========================================================================
  * APPROVED CATEGORY 5: REFERRAL REWARDS
  * ======================================================================== */

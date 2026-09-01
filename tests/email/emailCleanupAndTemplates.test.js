@@ -10,6 +10,7 @@ import {
   sendKycReminderEmail,
   sendDepositFreebetEmail,
   sendBonusCreditedEmail,
+  sendAdminGiftEmail,
   sendReferralRewardEmail,
   sendPromotionalCampaignEmail,
   sendSupportTicketCreatedUserEmail,
@@ -100,6 +101,21 @@ describe('ODDSYRA — Email Event Cleanup & Unified Template Implementation', ()
       expiryDays: 7,
     });
     expect(res.success).toBe(true);
+  });
+
+  it('TEST 9b: Admin gift email includes amount, gift wording, and rewards CTA', async () => {
+    const res = await sendAdminGiftEmail({
+      email: testEmail,
+      name: 'Faizu',
+      amount: 750,
+      rewardType: 'freebet',
+      title: 'VIP gift',
+      expiresAt: '2026-09-15T18:30:00.000Z',
+    });
+    expect(res.success).toBe(true);
+    expect(String(res.html || '')).toMatch(/750/);
+    expect(String(res.html || '')).toMatch(/gift/i);
+    expect(String(res.html || '')).toMatch(/\/rewards/);
   });
 
   it('TEST 10: Referral reward email confirms reward credit for referrer and referee', async () => {

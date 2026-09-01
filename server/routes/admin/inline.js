@@ -1860,7 +1860,35 @@ router.post('/api/admin/rewards/issue', async (req, res) => {
     } catch {
       /* notification is best-effort */
     }
-    res.json({ success: true, reward, recipient: reward.recipient || null });
+    let emailSent = false;
+    try {
+      const { sendAdminGiftEmail } = await import('../../../server/auth/emailService.js');
+      let email = reward.recipient?.email || null;
+      let name = reward.recipient?.name || null;
+      if (!email && reward.user_id) {
+        const { query } = await import('../../../db/pg.js');
+        const u = await query(
+          `SELECT email, first_name FROM users WHERE user_id = $1 LIMIT 1`,
+          [reward.user_id],
+        );
+        email = u.rows[0]?.email || null;
+        name = name || u.rows[0]?.first_name || null;
+      }
+      if (email) {
+        const mail = await sendAdminGiftEmail({
+          email,
+          name,
+          amount: reward.amount,
+          rewardType: reward.reward_type,
+          title: reward.title,
+          expiresAt: reward.expires_at,
+        });
+        emailSent = Boolean(mail?.success);
+      }
+    } catch {
+      /* email is best-effort; grant already committed */
+    }
+    res.json({ success: true, reward, recipient: reward.recipient || null, emailSent });
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
   }

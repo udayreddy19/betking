@@ -2549,7 +2549,8 @@ function DiscreteRewardsAdminPanel() {
         reason: issueForm.reason || 'Admin Issued',
       });
       const who = result?.recipient?.email || result?.reward?.user_id || issueForm.userId;
-      showToast(`Issued ₹${issueForm.amount} ${issueForm.rewardType} to ${who}. It is in their wallet and My Rewards.`, 'success');
+      const mailNote = result?.emailSent ? ` Email sent to ${result.recipient?.email || who}.` : '';
+      showToast(`Issued ₹${issueForm.amount} ${issueForm.rewardType} to ${who}.${mailNote}`, 'success');
       setIssueForm({
         userId: '',
         rewardType: 'freebet',
