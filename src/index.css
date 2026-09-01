@@ -205,11 +205,12 @@ html {
   color-scheme: light;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  touch-action: manipulation;
 }
 
-@supports (height: 100dvh) {
+@supports (height: 100svh) {
   :root {
-    --app-height: 100dvh;
+    --app-height: 100svh;
   }
 }
 
@@ -327,12 +328,22 @@ button {
 
 input, select, textarea {
   font-family: inherit;
-  font-size: inherit;
+  font-size: 16px;
   border: none;
   outline: none;
   -webkit-appearance: none;
   appearance: none;
   border-radius: var(--radius-md);
+  touch-action: manipulation;
+}
+
+/* iOS Safari zooms the whole page if a focused field is under 16px. */
+@media (max-width: 1024px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="file"]):not([type="color"]):not([type="image"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
 }
 
 /* Scrollbar Styling */

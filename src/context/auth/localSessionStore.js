@@ -47,6 +47,7 @@ export function toSessionUser(stored) {
     username: stored.email,
     displayName: stored.displayName,
     phone: stored.phone,
+    userId: stored.userId,
     balance: stored.balance,
     lockedDepositBalance: stored.lockedDepositBalance ?? 0,
     winningsBalance: stored.winningsBalance ?? Math.max(
@@ -63,7 +64,38 @@ export function toSessionUser(stored) {
     loyaltyPoints: stored.loyaltyPoints ?? stored.coins ?? 0,
     vipPoints: stored.vipPoints ?? stored.loyaltyPoints ?? stored.coins ?? 0,
     coins: stored.loyaltyPoints ?? stored.coins ?? 0,
+    walletReady: stored.walletReady !== false && stored.balance != null,
     ...normalizeRgState(stored),
+  };
+}
+
+/**
+ * After a valid token, never invent ₹0 just because /me failed.
+ * Reuse the cached wallet when it is the same account; otherwise mark balances unknown.
+ */
+export function sessionWithoutInventedWallet(userPayload, previous = null) {
+  const cached = previous && (previous.email || previous.userId) ? previous : null;
+  const sameAccount = cached && (
+    (userPayload?.userId && cached.userId === userPayload.userId)
+    || (userPayload?.email && cached.email === userPayload.email)
+  );
+  if (sameAccount) {
+    return {
+      ...cached,
+      userId: userPayload.userId || cached.userId,
+      email: userPayload.email || cached.email,
+      displayName: userPayload.displayName || cached.displayName,
+      phone: userPayload.phone || cached.phone,
+      walletReady: cached.balance != null && cached.walletReady !== false,
+    };
+  }
+  return {
+    userId: userPayload?.userId,
+    email: userPayload?.email,
+    username: userPayload?.email,
+    displayName: userPayload?.displayName || userPayload?.email?.split('@')[0],
+    phone: userPayload?.phone || '',
+    walletReady: false,
   };
 }
 

@@ -24,7 +24,7 @@
   width: var(--sidebar-width);
   max-width: 90vw;
   height: 100vh;
-  height: 100dvh;
+  height: 100svh;
   height: var(--app-height);
   padding-top: var(--safe-top);
   background: var(--material-fill-heavy, var(--color-surface));

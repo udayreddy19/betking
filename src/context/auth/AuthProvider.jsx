@@ -53,6 +53,7 @@ import {
   getClaimedPromos,
   saveClaimedPromo,
   readCachedSession,
+  sessionWithoutInventedWallet,
 } from './localSessionStore';
 
 let sessionRestorePromise = null;
@@ -268,24 +269,14 @@ export function AuthProvider({ children }) {
       }
 
       const me = await fetchMe();
-      const sessionUser = mapServerUserToSession(me) || toSessionUser({
-        userId: data.user?.userId,
-        email: normalizedEmail,
-        displayName: displayName.trim(),
-        phone: phone?.trim() || '',
-        balance: 0,
-        lockedDepositBalance: 0,
-        winningsBalance: 0,
-        bonusBalance: 0,
-        freebetBalance: 0,
-        loyaltyLevel: 1,
-        loyaltyRank: 'BRONZE',
-        loyaltyTier: 'BRONZE',
-        xpToNext: 1000,
-        notifications: 0,
-        loyaltyPoints: 0,
-        coins: 0,
-      });
+      const sessionUser = me
+        ? mapServerUserToSession(me)
+        : sessionWithoutInventedWallet({
+          userId: data.user?.userId,
+          email: normalizedEmail,
+          displayName: displayName.trim(),
+          phone: phone?.trim() || '',
+        }, readCachedSession());
 
       if (DEMO_MODE) {
         const users = getStoredUsers();
@@ -437,14 +428,12 @@ export function AuthProvider({ children }) {
 
         const me = await fetchMe();
         const sessionUser = me
-          ? mapServerUserToSession(me)
-          : toSessionUser({
+          ? mapServerUserToSession(me, readCachedSession())
+          : sessionWithoutInventedWallet({
             userId: data.user.userId,
             email: data.user.email,
             displayName: data.user.displayName || normalizedEmail.split('@')[0],
-            balance: 0,
-            winningsBalance: 0,
-          });
+          }, readCachedSession());
 
         setUser(sessionUser);
         setAuthStatus('authenticated');
@@ -476,33 +465,30 @@ export function AuthProvider({ children }) {
   }, [setUser, showToast]);
 
   const completeGoogleAuth = useCallback(async (userPayload) => {
-    const sessionUser = userPayload?.email
-      ? toSessionUser({
-        userId: userPayload.userId,
-        email: userPayload.email,
-        displayName: userPayload.displayName || userPayload.email.split('@')[0],
-        phone: userPayload.phone || '',
-        balance: 0,
-        winningsBalance: 0,
-      })
-      : null;
-
-    if (sessionUser) {
-      setUser(sessionUser);
-      setAuthStatus('authenticated');
-      setIsLoginModalOpen(false);
-    }
+    if (!userPayload?.email) return false;
 
     try {
       const me = await fetchMe();
       if (me) {
-        setUser(mapServerUserToSession(me));
+        setUser(mapServerUserToSession(me, readCachedSession()));
+        setAuthStatus('authenticated');
+        setIsLoginModalOpen(false);
+        void syncTransactions(userPayload.email);
+        return true;
       }
     } catch {
-      // Session already set from OAuth payload above.
+      // Fall through without inventing a ₹0 wallet.
     }
 
-    void syncTransactions(userPayload?.email || sessionUser?.email);
+    setUser(sessionWithoutInventedWallet({
+      userId: userPayload.userId,
+      email: userPayload.email,
+      displayName: userPayload.displayName || userPayload.email.split('@')[0],
+      phone: userPayload.phone || '',
+    }, readCachedSession()));
+    setAuthStatus('authenticated');
+    setIsLoginModalOpen(false);
+    void syncTransactions(userPayload.email);
     return true;
   }, [setUser, syncTransactions]);
 
@@ -908,7 +894,6 @@ export function AuthProvider({ children }) {
       return {
         ...prev,
         balance: prev.balance + creditedRupees,
-        winningsBalance: (prev.winningsBalance ?? 0) + creditedRupees,
         loyaltyPoints: remainingPoints,
         vipPoints,
         coins: remainingPoints,

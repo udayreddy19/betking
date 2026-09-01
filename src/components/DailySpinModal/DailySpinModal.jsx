@@ -31,6 +31,7 @@ function formatExpiryLabel(prize) {
 export default function DailySpinModal({ isOpen, onClose }) {
   const { updateUser, refreshWallet, showToast } = useAuth();
   const [isSpinning, setIsSpinning] = useState(false);
+  const [wheelPhase, setWheelPhase] = useState('idle');
   const [rotationDegree, setRotationDegree] = useState(0);
   const [wonPrize, setWonPrize] = useState(null);
   const [prizeMeta, setPrizeMeta] = useState(null);
@@ -48,7 +49,11 @@ export default function DailySpinModal({ isOpen, onClose }) {
   };
 
   useEffect(() => {
-    if (!isOpen) return undefined;
+    if (!isOpen) {
+      setIsSpinning(false);
+      setWheelPhase('idle');
+      return undefined;
+    }
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     let cancelled = false;
@@ -89,16 +94,24 @@ export default function DailySpinModal({ isOpen, onClose }) {
     if (isSpinning || hasSpunToday) return;
 
     setIsSpinning(true);
+    setWheelPhase('waiting');
     setWonPrize(null);
+
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const abortTimer = controller
+      ? window.setTimeout(() => controller.abort(), 20000)
+      : null;
 
     try {
       const res = await apiFetch('/api/v1/rewards/daily-spin', {
         method: 'POST',
         body: JSON.stringify({}),
+        signal: controller?.signal,
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.prize) {
         setIsSpinning(false);
+        setWheelPhase('idle');
         showToast(data.error || 'Could not save spin. Try again.', 'error');
         return;
       }
@@ -112,6 +125,7 @@ export default function DailySpinModal({ isOpen, onClose }) {
 
       if (data.alreadySpun) {
         setIsSpinning(false);
+        setWheelPhase('idle');
         setWonPrize(prize);
         showToast(data.prize?.expired
           ? 'Your spin prize expired after 24 hours.'
@@ -119,9 +133,11 @@ export default function DailySpinModal({ isOpen, onClose }) {
         return;
       }
 
+      setWheelPhase('landing');
       landOnIndex(prize.index);
       window.setTimeout(() => {
         setIsSpinning(false);
+        setWheelPhase('done');
         setWonPrize(prize);
         playWinSound();
         refreshWallet?.();
@@ -136,7 +152,10 @@ export default function DailySpinModal({ isOpen, onClose }) {
       }, 5200);
     } catch {
       setIsSpinning(false);
+      setWheelPhase('idle');
       showToast('Could not save spin. Try again.', 'error');
+    } finally {
+      if (abortTimer) window.clearTimeout(abortTimer);
     }
   };
 
@@ -170,10 +189,10 @@ export default function DailySpinModal({ isOpen, onClose }) {
             <div className="wheel-pointer">▼</div>
 
             <motion.div
-              className="wheel-canvas"
-              animate={{ rotate: rotationDegree }}
+              className={`wheel-canvas${wheelPhase === 'waiting' ? ' wheel-canvas--waiting' : ''}`}
+              animate={wheelPhase === 'waiting' ? false : { rotate: rotationDegree }}
               transition={{
-                duration: 5,
+                duration: wheelPhase === 'landing' || wheelPhase === 'done' ? 5 : 0,
                 ease: [0.12, 0, 0.25, 1],
               }}
             >

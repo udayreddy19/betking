@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { HiOutlineMenu, HiOutlineClipboardList, HiOutlineUser, IoGiftOutline, FiChevronDown, FiZap, FiShield, IoNotifications, IoEyeOutline, IoEyeOffOutline } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
-import { getWalletBreakdown, formatInr, getWalletBreakdownLines, getWithdrawableHint } from '../../utils/walletBalance';
+import { getWalletBreakdown, formatInr, formatHeaderWalletAmount, getWalletBreakdownLines, getWithdrawableHint } from '../../utils/walletBalance';
 import { getLoyaltySummary, LOYALTY_MIN_REDEEM_POINTS } from '../../utils/loyaltyPoints';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
 import MyBetsPanel from '../MyBetsPanel/MyBetsPanel';
@@ -481,7 +481,9 @@ function Header() {
                   >
                     <span className="balance-amount-text">
                       <RupeeSymbol size={14} />
-                      {balanceVisible ? formatBalanceAmount(wallet.total) : maskedBalance}
+                      {balanceVisible
+                        ? (user?.walletReady === false ? '…' : formatBalanceAmount(wallet.total))
+                        : maskedBalance}
                     </span>
                     <span
                       role="button"
@@ -589,7 +591,7 @@ function Header() {
                       <div className="header-wallet-menu__hero">
                         <span className="header-wallet-menu__hero-label">Total balance</span>
                         <span className="header-wallet-menu__hero-amount">
-                          {balanceVisible ? formatInr(wallet.total) : '₹ ✦✦✦'}
+                          {formatHeaderWalletAmount(user, wallet.total, { visible: balanceVisible })}
                         </span>
                         <div className="header-wallet-menu__hero-chips">
                           {walletBreakdownLines.map((line) => (
@@ -597,7 +599,9 @@ function Header() {
                               key={line.key}
                               className={`header-wallet-menu__chip header-wallet-menu__chip--${line.tone}`}
                             >
-                              {line.label} {balanceVisible ? formatInr(line.value) : '✦✦✦'}
+                              {line.label} {user?.walletReady === false && balanceVisible
+                                ? '…'
+                                : (balanceVisible ? formatInr(line.value) : '✦✦✦')}
                             </span>
                           ))}
                         </div>
@@ -607,7 +611,7 @@ function Header() {
                         <div className="header-wallet-menu__withdraw-head">
                           <span className="header-wallet-menu__withdraw-label">Withdrawable</span>
                           <span className="header-wallet-menu__withdraw-amount">
-                            {balanceVisible ? formatInr(wallet.withdrawable) : '₹ ✦✦✦'}
+                            {formatHeaderWalletAmount(user, wallet.withdrawable, { visible: balanceVisible })}
                           </span>
                         </div>
                         <p className="header-wallet-menu__withdraw-note">{withdrawableHint}</p>

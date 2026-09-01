@@ -637,13 +637,6 @@ export async function verifyEmail(queryFn, token) {
  * @param {string} userId
  */
 export async function getMe(queryFn, userId) {
-  try {
-    const { refreshSpinGrantsForUser } = await import('../../lib/spinGrantEngine.mjs');
-    await refreshSpinGrantsForUser(userId);
-  } catch {
-    // Spin grant table may not exist on older DB snapshots.
-  }
-
   const result = await queryFn(
     `SELECT u.user_id, u.email, u.phone, u.first_name, u.last_name,
             u.role, u.status, u.email_verified_at, u.phone_verified_at,

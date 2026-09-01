@@ -2531,7 +2531,7 @@ router.get('/api/v1/admin/support/tickets/unresolved', async (req, res) => {
   }
 });
 
-router.get('/api/v1/admin/support/tickets/metrics', async (req, res) => {
+router.get(['/api/admin/support/tickets/metrics', '/api/v1/admin/support/tickets/metrics'], async (req, res) => {
   try {
     const { supportEngine } = await import('../../../lib/supportEngine.mjs');
     const metrics = supportEngine.getAdminMetrics();
@@ -2757,7 +2757,7 @@ router.post(['/api/admin/support/tickets/:id/priority', '/api/v1/admin/support/t
 });
 
 // ── Financial Safety: Request Financial Review (Maker-Checker link without direct balance modification) ──
-router.post('/api/v1/admin/support/financial-review-request', async (req, res) => {
+router.post(['/api/admin/support/financial-review-request', '/api/v1/admin/support/financial-review-request'], async (req, res) => {
   const { userId, ticketId, reason, transactionId, betId, amount } = req.body || {};
   const requestedBy = req.admin?.id || 'support_agent';
   if (!userId || !reason) {

@@ -6,6 +6,8 @@ import {
   mediaQueryMatches,
   subscribeMediaQuery,
   copyToClipboard,
+  bindAppViewport,
+  isEditableFocusTarget,
 } from '../../src/utils/browserCompat.js';
 
 function memoryStorage() {
@@ -80,6 +82,46 @@ describe('browserCompat', () => {
     vi.stubGlobal('navigator', { clipboard: { writeText } });
     await expect(copyToClipboard('hello')).resolves.toBe(true);
     expect(writeText).toHaveBeenCalledWith('hello');
+    vi.unstubAllGlobals();
+  });
+
+  it('treats text fields as editable focus targets', () => {
+    expect(isEditableFocusTarget({ tagName: 'TEXTAREA', type: '', isContentEditable: false })).toBe(true);
+    expect(isEditableFocusTarget({ tagName: 'INPUT', type: 'text', isContentEditable: false })).toBe(true);
+    expect(isEditableFocusTarget({ tagName: 'INPUT', type: 'checkbox', isContentEditable: false })).toBe(false);
+    expect(isEditableFocusTarget(null)).toBe(false);
+  });
+
+  it('keeps --app-height on the layout viewport when the visual viewport shrinks (keyboard)', () => {
+    const props = {};
+    const documentElement = {
+      style: {
+        setProperty: (key, value) => { props[key] = value; },
+        getPropertyValue: (key) => props[key] || '',
+      },
+      clientHeight: 800,
+    };
+    const fakeWindow = {
+      innerHeight: 800,
+      visualViewport: {
+        height: 390,
+        offsetTop: 0,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      },
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      setTimeout: vi.fn(),
+    };
+    vi.stubGlobal('window', fakeWindow);
+    vi.stubGlobal('document', {
+      documentElement,
+      body: { tagName: 'BODY' },
+      activeElement: { tagName: 'BODY' },
+    });
+    const unbind = bindAppViewport();
+    expect(props['--app-height']).toBe('800px');
+    unbind();
     vi.unstubAllGlobals();
   });
 });

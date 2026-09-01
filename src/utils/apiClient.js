@@ -147,5 +147,6 @@ export function mapServerUserToSession(serverUser, previous = null) {
     role: serverUser.role || previous?.role || 'USER',
     kycStatus: serverUser.kycStatus,
     status: serverUser.status,
+    walletReady: true,
   };
 }

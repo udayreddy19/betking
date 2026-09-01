@@ -9,9 +9,12 @@ import { getAdminSessionState } from '../../../utils/adminSession';
 const API_BASE = '/api/admin';
 
 let sessionPromise = null;
+/** After a failed silent bootstrap, do not keep POSTing /admin-login (hits the 5/min limiter). */
+let silentBootstrapBlocked = false;
 
 function storeAdminSession(data, desiredRole) {
   if (!data?.token) throw new Error('Admin session missing token');
+  silentBootstrapBlocked = false;
   localStorage.setItem('adminToken', data.token);
   localStorage.setItem('adminRole', data.role || desiredRole || 'SUPER_ADMIN');
   return data.token;
@@ -97,6 +100,12 @@ export async function ensureAdminSession(roleOverride, credentials) {
     return storeAdminSession(data, desiredRole);
   }
 
+  if (IS_PROD_CLIENT && silentBootstrapBlocked) {
+    const err = new Error('Sign in with an admin account to continue.');
+    err.code = 'ADMIN_LOGIN_REQUIRED';
+    throw err;
+  }
+
   if (!sessionPromise) {
     sessionPromise = (async () => {
       try {
@@ -107,6 +116,7 @@ export async function ensureAdminSession(roleOverride, credentials) {
         }
 
         if (IS_PROD_CLIENT) {
+          silentBootstrapBlocked = true;
           const err = new Error('Sign in with an admin account to continue.');
           err.code = 'ADMIN_LOGIN_REQUIRED';
           throw err;
@@ -118,6 +128,7 @@ export async function ensureAdminSession(roleOverride, credentials) {
         );
         return storeAdminSession(data, desiredRole);
       } catch (err) {
+        if (IS_PROD_CLIENT) silentBootstrapBlocked = true;
         if (existing && (err.code === 'ADMIN_LOGIN_REQUIRED' || err.code === 'ADMIN_LOGIN_DISABLED')) {
           return existing;
         }
@@ -137,7 +148,7 @@ async function request(endpoint, options = {}) {
     localStorage.removeItem('adminToken');
     token = null;
   }
-  if (!token) {
+  if (!token && !IS_PROD_CLIENT) {
     try {
       token = await ensureAdminSession();
     } catch {
@@ -162,9 +173,15 @@ async function request(endpoint, options = {}) {
   });
 
   if (response.status === 401 && !options._retried) {
+    localStorage.removeItem('adminToken');
+    if (IS_PROD_CLIENT) {
+      const error = new Error('Authentication required');
+      error.status = 401;
+      error.code = 'AUTH_REQUIRED';
+      throw error;
+    }
     try {
-      localStorage.removeItem('adminToken');
-      // Force bootstrap even if a stale-looking token was cached client-side
+      // Dev-only: passwordless bootstrap after a stale token.
       token = await ensureAdminSession(localStorage.getItem('adminRole') || 'SUPER_ADMIN');
       if (!token) throw new Error('Admin session bootstrap failed');
       return request(endpoint, { ...options, _retried: true });

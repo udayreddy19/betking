@@ -50,4 +50,28 @@ describe('wallet breakdown labels', () => {
     expect(lines.some((l) => l.key === 'bonus')).toBe(false);
     expect(lines.some((l) => l.key === 'available')).toBe(true);
   });
+
+  it('hides winnings in compact mode when net P/L is not positive', () => {
+    const negative = getWalletBreakdown({
+      ...user,
+      winningsBalance: -110,
+      bonusBalance: 0,
+      freebetBalance: 0,
+      reservedBalance: 0,
+      lockedDepositBalance: 0,
+    });
+    const compact = getWalletBreakdownLines(negative, { compact: true });
+    expect(compact.some((l) => l.key === 'winnings')).toBe(false);
+
+    const full = getWalletBreakdownLines(negative, { compact: false });
+    const winnings = full.find((l) => l.key === 'winnings');
+    expect(winnings.label).toBe('Net P/L');
+    expect(winnings.value).toBe(-110);
+  });
+
+  it('does not paint ₹0 when wallet is not ready', async () => {
+    const { formatHeaderWalletAmount } = await import('../../src/utils/walletBalance.js');
+    expect(formatHeaderWalletAmount({ walletReady: false }, 0)).toBe('…');
+    expect(formatHeaderWalletAmount({ walletReady: true }, 191)).toBe('₹191');
+  });
 });

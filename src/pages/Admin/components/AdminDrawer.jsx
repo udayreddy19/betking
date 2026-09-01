@@ -5,23 +5,48 @@ import { createPortal } from 'react-dom';
 /**
  * Right-side slide-over drawer with header, scrollable body, and Escape-to-close.
  * Used for Customer 360, bet details, KYC review, etc.
+ * Initial focus runs only when the drawer opens — never on each parent re-render.
  */
 export default function AdminDrawer({ isOpen, onClose, title, subtitle, width, children, actions }) {
   const drawerRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+  const wasOpenRef = useRef(false);
 
   useEffect(() => {
-    if (!isOpen) return undefined;
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      wasOpenRef.current = false;
+      return undefined;
+    }
+
     const onKey = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') onCloseRef.current?.();
     };
     window.addEventListener('keydown', onKey);
-    // Trap focus inside drawer
-    const timer = setTimeout(() => drawerRef.current?.focus(), 80);
+
+    // Focus the drawer shell only on open — not on every parent re-render.
+    // Re-focusing after each keystroke steals the caret from reply/note fields.
+    const justOpened = !wasOpenRef.current;
+    wasOpenRef.current = true;
+    let timer;
+    if (justOpened) {
+      timer = setTimeout(() => {
+        const active = document.activeElement;
+        const insideDrawer = drawerRef.current?.contains(active);
+        if (!insideDrawer || active === document.body) {
+          drawerRef.current?.focus();
+        }
+      }, 80);
+    }
+
     return () => {
       window.removeEventListener('keydown', onKey);
-      clearTimeout(timer);
+      if (timer) clearTimeout(timer);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (typeof document === 'undefined') return null;
 

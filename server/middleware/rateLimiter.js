@@ -66,11 +66,19 @@ export async function consumeRateLimitSlot({
   return { allowed: true, count, remaining: Math.max(0, maxRequests - count), ...base };
 }
 
+/**
+ * Client identity for rate-limit keys. Express `trust proxy` is 1, so req.ip
+ * is the leftmost trusted hop. Do not fall back to spoofable X-Forwarded-For.
+ */
+export function rateLimitClientKey(req) {
+  return String(req?.ip || 'unknown_ip');
+}
+
 export function createRateLimiter({
   windowSeconds = parseInt(process.env.AUTH_RATE_LIMIT_WINDOW, 10) || 60,
   maxRequests = 10,
   prefix = 'rl',
-  keyGenerator = (req) => req.ip || req.headers['x-forwarded-for'] || 'unknown_ip',
+  keyGenerator = rateLimitClientKey,
 } = {}) {
   return async (req, res, next) => {
     const clientKey = keyGenerator(req);
@@ -97,6 +105,13 @@ export function createRateLimiter({
 export const loginRateLimiter = createRateLimiter({
   prefix: 'rl:login',
   maxRequests: parseInt(process.env.AUTH_LOGIN_RATE_LIMIT, 10) || 5,
+  windowSeconds: parseInt(process.env.AUTH_RATE_LIMIT_WINDOW, 10) || 60,
+});
+
+/** Admin password + MFA share this bucket, not the public login bucket. */
+export const adminLoginRateLimiter = createRateLimiter({
+  prefix: 'rl:admin_login',
+  maxRequests: parseInt(process.env.AUTH_ADMIN_LOGIN_RATE_LIMIT, 10) || 20,
   windowSeconds: parseInt(process.env.AUTH_RATE_LIMIT_WINDOW, 10) || 60,
 });
 
@@ -142,7 +157,7 @@ export const adminApiRateLimiter = createRateLimiter({
   prefix: 'rl:admin_api',
   maxRequests: parseInt(process.env.ADMIN_API_RATE_LIMIT, 10) || 120,
   windowSeconds: 60,
-  keyGenerator: (req) => `admin:${req.admin?.id || req.ip || 'anon'}`,
+  keyGenerator: (req) => `admin:${req.admin?.id || rateLimitClientKey(req)}`,
 });
 
 /** Sensitive admin mutations (finance / security / config) */
@@ -150,5 +165,5 @@ export const adminMutationRateLimiter = createRateLimiter({
   prefix: 'rl:admin_mut',
   maxRequests: parseInt(process.env.ADMIN_MUTATION_RATE_LIMIT, 10) || 30,
   windowSeconds: 60,
-  keyGenerator: (req) => `adminmut:${req.admin?.id || req.ip || 'anon'}`,
+  keyGenerator: (req) => `adminmut:${req.admin?.id || rateLimitClientKey(req)}`,
 });

@@ -6,6 +6,7 @@ import {
   expireSpinGrants,
   consumeSpinGrants,
   ensureSpinGrantSchema,
+  getActiveSpinGrantSummary,
   SPIN_PRIZE_TTL_MS,
 } from '../../lib/spinGrantEngine.mjs';
 import { spinDateInKolkata } from '../../lib/dailySpinPrizes.mjs';
@@ -115,5 +116,43 @@ describe('daily spin prize 24h expiry', () => {
     );
     expect(Number(grants.rows[0].remaining_amount)).toBe(200);
     expect(grants.rows[0].status).toBe('ACTIVE');
+  });
+
+  it('reads grant summary without expiring unused prizes', async () => {
+    const spinDate = spinDateInKolkata();
+    const spinId = `spin_${userId}_${spinDate}_ro`;
+    const expiredAt = new Date(Date.now() - 60_000);
+
+    await query(
+      `INSERT INTO daily_spins (spin_id, user_id, spin_date, prize_type, prize_value, prize_index, prize_expires_at)
+       VALUES ($1, $2, $3, 'bonus', 150, 0, $4)`,
+      [spinId, userId, spinDate, expiredAt],
+    );
+    await query(`UPDATE wallets SET bonus_balance = 150 WHERE wallet_id = $1`, [walletId]);
+    await createSpinGrant(query, {
+      userId,
+      spinId,
+      grantType: 'bonus',
+      amount: 150,
+      expiresAt: expiredAt,
+    });
+
+    const summary = await getActiveSpinGrantSummary(query, userId);
+    expect(summary.bonusRemaining).toBe(0);
+
+    const grant = await query(
+      `SELECT status, remaining_amount FROM spin_wallet_grants WHERE user_id = $1 AND spin_id = $2`,
+      [userId, spinId],
+    );
+    expect(grant.rows[0].status).toBe('ACTIVE');
+    expect(Number(grant.rows[0].remaining_amount)).toBe(150);
+
+    const expired = await expireSpinGrants(query, userId);
+    expect(expired.expiredBonus).toBe(150);
+    const after = await query(
+      `SELECT status, remaining_amount FROM spin_wallet_grants WHERE user_id = $1 AND spin_id = $2`,
+      [userId, spinId],
+    );
+    expect(after.rows[0].status).toBe('EXPIRED');
   });
 });

@@ -113,7 +113,7 @@
   max-width: calc(100vw - 32px);
   height: 560px;
   max-height: calc(100vh - 100px);
-  max-height: calc(var(--app-height, 100vh) - 100px);
+  max-height: calc(var(--app-height, 100svh) - 100px);
   background: #0f172a !important; /* Solid dark background */
   color: #f8fafc;
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -520,7 +520,7 @@
   border: none;
   outline: none;
   color: #f8fafc;
-  font-size: 13px;
+  font-size: 16px;
 }
 
 [data-theme='light'] .live-chat-input-bar input {
@@ -645,7 +645,7 @@
   background: #1e293b;
   border: 1px solid rgba(255, 255, 255, 0.14);
   color: #f8fafc;
-  font-size: 13px;
+  font-size: 16px;
   outline: none;
   transition: border-color 0.2s ease;
 }
@@ -713,6 +713,42 @@
   border-radius: 8px;
   color: #fca5a5;
   font-size: 12px;
+}
+
+.in-sheet-form-notice {
+  padding: 8px 12px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 8px;
+  color: #fbbf24;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.in-sheet-inline-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #93c5fd;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.live-chat-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  margin-left: 4px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
 }
 
 .in-sheet-btn {
@@ -824,10 +860,100 @@
 }
 
 .in-sheet-ticket-card {
+  display: block;
+  width: 100%;
+  text-align: left;
   padding: 10px 12px;
   background: #1e293b;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
+  color: inherit;
+  font: inherit;
+}
+
+.in-sheet-ticket-card-toggle {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.in-sheet-ticket-card--selected {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.35);
+}
+
+.ticket-card-thread {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  max-height: 180px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ticket-card-thread-empty {
+  margin: 0;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.ticket-thread-msg {
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.ticket-thread-msg p {
+  margin: 2px 0 0;
+}
+
+.ticket-thread-msg-label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.ticket-thread-msg--user {
+  background: rgba(37, 99, 235, 0.18);
+  align-self: flex-end;
+  max-width: 92%;
+}
+
+.ticket-thread-msg--agent {
+  background: rgba(255, 255, 255, 0.06);
+  align-self: flex-start;
+  max-width: 92%;
+}
+
+[data-theme='light'] .ticket-thread-msg--user {
+  background: rgba(37, 99, 235, 0.12);
+}
+
+[data-theme='light'] .ticket-thread-msg--agent {
+  background: #f1f5f9;
+}
+
+.ticket-card-reply {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.ticket-card-closed-note {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: #94a3b8;
 }
 
 [data-theme='light'] .in-sheet-ticket-card {
@@ -877,6 +1003,7 @@
 }
 
 .ticket-card-subject {
+  display: block;
   margin: 0 0 6px 0;
   font-size: 13px;
   font-weight: 700;
@@ -910,14 +1037,14 @@
 @media (max-width: 768px) {
   .live-chat-support-wrapper--open {
     padding: 12px;
-    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(12px + max(var(--kb-inset, 0px), calc(80px + env(safe-area-inset-bottom, 0px))));
   }
 
   .live-chat-sheet,
   .live-chat-container {
-    width: calc(100vw - 24px);
-    max-width: calc(100vw - 24px);
-    height: min(520px, calc(var(--app-height, 100vh) - 160px - env(safe-area-inset-bottom, 0px)));
-    max-height: calc(var(--app-height, 100vh) - 160px - env(safe-area-inset-bottom, 0px));
+    width: 100%;
+    max-width: 100%;
+    height: min(520px, calc(100svh - 140px - env(safe-area-inset-bottom, 0px) - var(--kb-inset, 0px)));
+    max-height: calc(100svh - 100px - env(safe-area-inset-bottom, 0px) - var(--kb-inset, 0px));
   }
 }

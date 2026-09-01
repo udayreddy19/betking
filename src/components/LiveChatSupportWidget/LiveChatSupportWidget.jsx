@@ -4,6 +4,11 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../utils/apiClient';
 import {
+  extractTicketsFromResponse,
+  ticketId,
+  ticketReference,
+} from '../../utils/supportTickets';
+import {
   createEmptyIntake,
   nextSupportTurn,
   buildTicketPayload,
@@ -30,6 +35,13 @@ const TICKET_CATEGORIES = [
 
 function storageKey(userId) {
   return `oddsyra_support_chat_v2_${userId || 'guest'}`;
+}
+
+function keepFieldVisible(event) {
+  const el = event.currentTarget;
+  window.setTimeout(() => {
+    el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, 50);
 }
 
 function nowStamp() {
@@ -101,6 +113,12 @@ export default function LiveChatSupportWidget() {
   // In-Sheet My Tickets State
   const [userTickets, setUserTickets] = useState([]);
   const [loadingTickets, setLoadingTickets] = useState(false);
+  const [ticketsError, setTicketsError] = useState('');
+  const [selectedTicketId, setSelectedTicketId] = useState(null);
+  const [ticketReply, setTicketReply] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
+  const [replyError, setReplyError] = useState('');
+  const ticketReplyRef = useRef(null);
 
   const isAdminRoute = location.pathname.startsWith('/admin');
 
@@ -160,28 +178,81 @@ export default function LiveChatSupportWidget() {
     }
   }, [isOpen, activeTab, messages, scrollToBottom]);
 
-  // Fetch user tickets when My Tickets tab is selected
   const fetchUserTickets = useCallback(async () => {
-    if (!isLoggedIn) return;
+    if (!isLoggedIn) return [];
     setLoadingTickets(true);
+    setTicketsError('');
     try {
       const res = await apiFetch('/api/v1/support/tickets', { method: 'GET' });
-      if (res.ok) {
-        const data = await res.json();
-        setUserTickets(data.data?.tickets || data.data || []);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || 'Could not load tickets.');
       }
-    } catch {
-      // ignore
+      const list = extractTicketsFromResponse(data);
+      setUserTickets(list);
+      return list;
+    } catch (err) {
+      setTicketsError(err.message || 'Could not load tickets.');
+      return [];
     } finally {
       setLoadingTickets(false);
     }
   }, [isLoggedIn]);
 
   useEffect(() => {
-    if (isOpen && activeTab === 'my_tickets') {
+    if (isOpen && isLoggedIn) {
       fetchUserTickets();
     }
-  }, [isOpen, activeTab, fetchUserTickets]);
+  }, [isOpen, isLoggedIn, activeTab, fetchUserTickets]);
+
+  useEffect(() => {
+    if (activeTab !== 'my_tickets') return;
+    if (selectedTicketId || userTickets.length === 0) return;
+    setSelectedTicketId(ticketId(userTickets[0]));
+  }, [activeTab, userTickets, selectedTicketId]);
+
+  const isClosedTicket = (status) => {
+    const s = String(status || '').toUpperCase();
+    return s === 'CLOSED' || s === 'RESOLVED';
+  };
+
+  const handleTicketReply = async (event, ticket) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const text = ticketReply.trim();
+    if (!ticket || !text || sendingReply) return;
+    const ref = ticketReference(ticket) || ticketId(ticket);
+    setSendingReply(true);
+    setReplyError('');
+    try {
+      const res = await apiFetch(`/api/v1/support/tickets/${encodeURIComponent(ref)}/messages`, {
+        method: 'POST',
+        body: JSON.stringify({ text }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Could not send reply.');
+      const sent = data.message || {
+        id: `local_${Date.now()}`,
+        senderType: 'user',
+        text,
+        createdAt: new Date().toISOString(),
+      };
+      setTicketReply('');
+      setUserTickets((prev) =>
+        prev.map((row) => {
+          if (ticketId(row) !== ticketId(ticket)) return row;
+          return { ...row, messages: [...(row.messages || []), sent] };
+        })
+      );
+      showToast?.('Reply sent.', 'success');
+      fetchUserTickets();
+    } catch (err) {
+      setReplyError(err.message || 'Could not send reply.');
+    } finally {
+      setSendingReply(false);
+      requestAnimationFrame(() => ticketReplyRef.current?.focus());
+    }
+  };
 
   // WebSocket Live Agent Handler
   const connectLiveChatWs = useCallback((conversationId) => {
@@ -379,12 +450,40 @@ export default function LiveChatSupportWidget() {
       });
 
       const data = await res.json().catch(() => ({}));
+      if (res.status === 409 || data.isDuplicate) {
+        const existing = data.activeTicket || data.data?.activeTicket || null;
+        const list = await fetchUserTickets();
+        const existingId = ticketId(existing);
+        if (existing && !list.some((t) => ticketId(t) === existingId)) {
+          const merged = extractTicketsFromResponse({ tickets: [existing] });
+          setUserTickets((prev) => {
+            const ids = new Set(prev.map(ticketId));
+            return [...merged.filter((t) => !ids.has(ticketId(t))), ...prev];
+          });
+        }
+        if (existingId) setSelectedTicketId(existingId);
+        setTicketError('');
+        setActiveTab('my_tickets');
+        const ref = ticketReference(existing) || data.ticketReference;
+        showToast?.(
+          ref
+            ? `You already have open ticket ${ref}. Opening it now.`
+            : 'You already have an active ticket for this issue.',
+          'info'
+        );
+        return;
+      }
       if (!res.ok) {
         throw new Error(data.error || 'Failed to submit support ticket.');
       }
 
-      const created = data.data || {};
-      const refNum = created.referenceNumber || created.ticketReference || `TICK-${Date.now().toString().slice(-6)}`;
+      const created = data.ticket || data.data || {};
+      const refNum = data.ticketReference
+        || created.referenceNumber
+        || created.ticketReference
+        || created.ticketNumber
+        || created.conversationNumber
+        || `TICK-${Date.now().toString().slice(-6)}`;
       setCreatedTicketResult({
         id: created.id,
         referenceNumber: refNum,
@@ -395,6 +494,7 @@ export default function LiveChatSupportWidget() {
       showToast?.(`Ticket ${refNum} created successfully!`, 'success');
       setTicketSubject('');
       setTicketDescription('');
+      fetchUserTickets();
 
       // Also append notice to chat history
       setMessages((prev) => [
@@ -502,6 +602,9 @@ export default function LiveChatSupportWidget() {
                 onClick={() => setActiveTab('my_tickets')}
               >
                 📋 My Tickets
+                {userTickets.length > 0 && (
+                  <span className="live-chat-tab-count">{userTickets.length}</span>
+                )}
               </button>
             </div>
 
@@ -574,6 +677,7 @@ export default function LiveChatSupportWidget() {
                       }
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
+                      onFocus={keepFieldVisible}
                       onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                       disabled={chatSession?.status === 'ENDED'}
                     />
@@ -655,6 +759,23 @@ export default function LiveChatSupportWidget() {
 
                     {ticketError && <div className="in-sheet-form-error">{ticketError}</div>}
 
+                    {userTickets.some((t) =>
+                      String(t.category || '').toUpperCase() === String(ticketCategory).toUpperCase()
+                      && ['OPEN', 'ASSIGNED', 'IN_PROGRESS', 'WAITING_FOR_USER', 'PENDING_USER', 'PENDING_INTERNAL', 'ESCALATED', 'REOPENED'].includes(String(t.status || '').toUpperCase())
+                    ) && (
+                      <div className="in-sheet-form-notice">
+                        You already have an open {TICKET_CATEGORIES.find((c) => c.value === ticketCategory)?.label || ticketCategory} ticket.
+                        {' '}
+                        <button
+                          type="button"
+                          className="in-sheet-inline-link"
+                          onClick={() => setActiveTab('my_tickets')}
+                        >
+                          View it in My Tickets
+                        </button>
+                      </div>
+                    )}
+
                     <div className="form-row">
                       <label>Category</label>
                       <select
@@ -691,6 +812,7 @@ export default function LiveChatSupportWidget() {
                         placeholder="Brief summary of the issue..."
                         value={ticketSubject}
                         onChange={(e) => setTicketSubject(e.target.value)}
+                        onFocus={keepFieldVisible}
                         className="in-sheet-input"
                         required
                       />
@@ -703,6 +825,7 @@ export default function LiveChatSupportWidget() {
                         placeholder="Please provide full details (bet ID, transaction ref, etc.)..."
                         value={ticketDescription}
                         onChange={(e) => setTicketDescription(e.target.value)}
+                        onFocus={keepFieldVisible}
                         className="in-sheet-textarea"
                         required
                       />
@@ -736,11 +859,22 @@ export default function LiveChatSupportWidget() {
                       Log In
                     </button>
                   </div>
-                ) : loadingTickets ? (
+                ) : loadingTickets && userTickets.length === 0 ? (
                   <div className="in-sheet-loading">Loading your tickets...</div>
+                ) : ticketsError ? (
+                  <div className="in-sheet-empty-tickets">
+                    <p>{ticketsError}</p>
+                    <button
+                      type="button"
+                      className="in-sheet-btn in-sheet-btn--secondary"
+                      onClick={() => fetchUserTickets()}
+                    >
+                      Retry
+                    </button>
+                  </div>
                 ) : userTickets.length === 0 ? (
                   <div className="in-sheet-empty-tickets">
-                    <p>You have no active support tickets.</p>
+                    <p>You have no support tickets yet.</p>
                     <button
                       type="button"
                       className="in-sheet-btn in-sheet-btn--secondary"
@@ -751,21 +885,94 @@ export default function LiveChatSupportWidget() {
                   </div>
                 ) : (
                   <div className="in-sheet-ticket-list">
-                    {userTickets.map((t) => (
-                      <div key={t.id} className="in-sheet-ticket-card">
-                        <div className="ticket-card-header">
-                          <span className="ticket-card-ref">{t.referenceNumber || t.ticketReference || `#${t.id.slice(0, 8)}`}</span>
-                          <span className={`ticket-status-pill status--${String(t.status || 'open').toLowerCase()}`}>
-                            {t.status}
-                          </span>
-                        </div>
-                        <h5 className="ticket-card-subject">{t.subject}</h5>
-                        <div className="ticket-card-meta">
-                          <span>{t.category}</span>
-                          <span>{new Date(t.createdAt).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-                    ))}
+                    {userTickets.map((t) => {
+                      const id = ticketId(t);
+                      const ref = ticketReference(t);
+                      const selected = selectedTicketId === id;
+                      const closed = isClosedTicket(t.status);
+                      const created = t.createdAt ? new Date(t.createdAt) : null;
+                      const createdLabel = created && !Number.isNaN(created.getTime())
+                        ? created.toLocaleDateString()
+                        : '';
+                      const thread = t.messages || [];
+                      return (
+                        <article
+                          key={id}
+                          className={`in-sheet-ticket-card ${selected ? 'in-sheet-ticket-card--selected' : ''}`}
+                        >
+                          <button
+                            type="button"
+                            className="in-sheet-ticket-card-toggle"
+                            onClick={() => setSelectedTicketId(selected ? null : id)}
+                          >
+                            <div className="ticket-card-header">
+                              <span className="ticket-card-ref">{ref || id}</span>
+                              <span className={`ticket-status-pill status--${String(t.status || 'open').toLowerCase()}`}>
+                                {t.status}
+                              </span>
+                            </div>
+                            <span className="ticket-card-subject">{t.subject}</span>
+                            <div className="ticket-card-meta">
+                              <span>{t.category}</span>
+                              <span>{createdLabel}</span>
+                            </div>
+                          </button>
+                          {selected && (
+                            <>
+                              <div className="ticket-card-thread">
+                                {thread.length === 0 ? (
+                                  <p className="ticket-card-thread-empty">No messages yet.</p>
+                                ) : (
+                                  thread.map((msg) => {
+                                    const sender = String(msg.senderType || msg.sender_type || msg.sender || 'user').toLowerCase();
+                                    const isAgent = sender === 'admin' || sender === 'agent' || sender === 'system';
+                                    return (
+                                      <div
+                                        key={msg.messageId || msg.id || msg.createdAt}
+                                        className={`ticket-thread-msg ${isAgent ? 'ticket-thread-msg--agent' : 'ticket-thread-msg--user'}`}
+                                      >
+                                        <span className="ticket-thread-msg-label">
+                                          {isAgent ? (msg.agentName || 'Support') : 'You'}
+                                        </span>
+                                        <p>{msg.text}</p>
+                                      </div>
+                                    );
+                                  })
+                                )}
+                              </div>
+                              {closed ? (
+                                <p className="ticket-card-closed-note">This ticket is closed. Create a new ticket if you still need help.</p>
+                              ) : (
+                                <form
+                                  className="ticket-card-reply"
+                                  onSubmit={(e) => handleTicketReply(e, t)}
+                                >
+                                  {replyError && <div className="in-sheet-form-error">{replyError}</div>}
+                                  <textarea
+                                    ref={ticketReplyRef}
+                                    rows={2}
+                                    className="in-sheet-textarea"
+                                    placeholder="Write a reply to support…"
+                                    value={ticketReply}
+                                    onChange={(e) => setTicketReply(e.target.value)}
+                                    onClick={(e) => e.stopPropagation()}
+                                    onFocus={keepFieldVisible}
+                                    disabled={sendingReply}
+                                  />
+                                  <button
+                                    type="submit"
+                                    className="in-sheet-btn in-sheet-btn--primary in-sheet-btn--full"
+                                    disabled={sendingReply || !ticketReply.trim()}
+                                  >
+                                    {sendingReply ? 'Sending…' : 'Send reply'}
+                                  </button>
+                                </form>
+                              )}
+                            </>
+                          )}
+                        </article>
+                      );
+                    })}
                   </div>
                 )}
               </div>

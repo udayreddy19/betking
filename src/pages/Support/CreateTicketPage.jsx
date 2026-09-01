@@ -96,6 +96,17 @@ export default function CreateTicketPage() {
       });
 
       const data = await res.json().catch(() => ({}));
+      if (res.status === 409 || data.isDuplicate) {
+        const ref = data.ticketReference
+          || data.activeTicket?.ticketReference
+          || data.activeTicket?.ticketNumber
+          || data.activeTicket?.conversationId;
+        if (ref) {
+          navigate(`/support/tickets/${encodeURIComponent(ref)}`);
+          return;
+        }
+        throw new Error(data.error || 'You already have an active support request for this issue.');
+      }
       if (!res.ok) {
         throw new Error(data.error || 'Failed to submit support ticket.');
       }

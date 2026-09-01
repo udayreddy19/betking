@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { apiFetch } from '../../utils/apiClient';
+import { extractTicketsFromResponse } from '../../utils/supportTickets';
 
 function formatTime(value) {
   if (!value) return '';
@@ -28,8 +29,7 @@ export default function ProfileSupportTab({ onOpenChat }) {
       const res = await apiFetch('/api/v1/support/tickets');
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Could not load tickets.');
-      const list = data.tickets || data.conversations || [];
-      setTickets(Array.isArray(list) ? list : []);
+      setTickets(extractTicketsFromResponse(data));
     } catch (err) {
       setTickets([]);
       setError(err.message || 'Could not load tickets.');

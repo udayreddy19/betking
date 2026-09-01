@@ -46,6 +46,13 @@ export function formatInr(amount) {
   return `₹${formatted}`;
 }
 
+/** Header amount: never paint ₹0 just because /me has not returned yet. */
+export function formatHeaderWalletAmount(user, amount, { visible = true } = {}) {
+  if (!visible) return '₹ ✦✦✦';
+  if (user?.walletReady === false) return '…';
+  return formatInr(amount);
+}
+
 /**
  * Balance lines for wallet UI — labels match backend bucket semantics.
  * Always show core buckets; hide promotional/reserved when zero.
@@ -53,9 +60,19 @@ export function formatInr(amount) {
 export function getWalletBreakdownLines(wallet, { compact = true } = {}) {
   const lines = [
     { key: 'available', label: 'Available', value: wallet.availableBalance, tone: 'cash' },
-    { key: 'winnings', label: 'Winnings', value: wallet.winnings ?? wallet.netProfit, tone: 'cash' },
-    { key: 'withdrawable', label: 'Withdrawable', value: wallet.withdrawable, tone: 'cash' },
   ];
+  const winningsValue = Number(wallet.winnings ?? wallet.netProfit ?? 0);
+  if (!compact || winningsValue > 0) {
+    lines.push({
+      key: 'winnings',
+      label: winningsValue < 0 ? 'Net P/L' : 'Winnings',
+      value: winningsValue,
+      tone: 'cash',
+    });
+  }
+  lines.push(
+    { key: 'withdrawable', label: 'Withdrawable', value: wallet.withdrawable, tone: 'cash' },
+  );
   if (!compact || wallet.lockedDeposit > 0) {
     lines.push({ key: 'locked', label: 'Locked deposit', value: wallet.lockedDeposit, tone: 'locked' });
   }

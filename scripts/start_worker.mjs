@@ -1,3 +1,4 @@
+import './workerRole.mjs';
 import { startBackgroundWorkers, stopBackgroundWorkers } from '../lib/schedulerWorker.mjs';
 
 startBackgroundWorkers();

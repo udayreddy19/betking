@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { loginRateLimiter, registerRateLimiter } from '../middleware/rateLimiter.js';
+import { loginRateLimiter, registerRateLimiter, adminLoginRateLimiter } from '../middleware/rateLimiter.js';
 import { requireAuth } from '../middleware/userAuth.js';
 
 const router = Router();
@@ -43,7 +43,7 @@ async function attachAdminSessionTelemetry(req, payload, { adminIdHint = null, m
   }
 }
 
-router.post('/api/auth/admin-login', loginRateLimiter, async (req, res) => {
+router.post('/api/auth/admin-login', adminLoginRateLimiter, async (req, res) => {
   try {
     const { ADMIN_ROLES } = await import('../middleware/adminAuth.js');
     const {
@@ -141,7 +141,7 @@ router.post('/api/auth/admin-login', loginRateLimiter, async (req, res) => {
   }
 });
 
-router.post('/api/auth/admin-mfa/verify', loginRateLimiter, async (req, res) => {
+router.post('/api/auth/admin-mfa/verify', adminLoginRateLimiter, async (req, res) => {
   try {
     const { completeAdminMfa } = await import('../../lib/adminLoginFlow.mjs');
     const payload = await completeAdminMfa(req.body?.mfaToken, req.body?.code, { enroll: false });
@@ -156,7 +156,7 @@ router.post('/api/auth/admin-mfa/verify', loginRateLimiter, async (req, res) => 
   }
 });
 
-router.post('/api/auth/admin-mfa/confirm', loginRateLimiter, async (req, res) => {
+router.post('/api/auth/admin-mfa/confirm', adminLoginRateLimiter, async (req, res) => {
   try {
     const { completeAdminMfa } = await import('../../lib/adminLoginFlow.mjs');
     const payload = await completeAdminMfa(req.body?.mfaToken, req.body?.code, { enroll: true });

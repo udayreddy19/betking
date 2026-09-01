@@ -8,30 +8,18 @@ import { query } from '../../db/pg.js';
 import { supportEngine, SUPPORT_CATEGORIES } from '../../lib/supportEngine.mjs';
 import { createBetDispute } from '../../lib/supportTicketEngine.mjs';
 import { optionalAuth } from '../middleware/userAuth.js';
+import { consumeRateLimitSlot, rateLimitClientKey } from '../middleware/rateLimiter.js';
 
 const router = Router();
 
-// In-memory rate limiting map for user support messages & ticket creation
-const rateLimitMap = new Map();
-
-function checkSupportRateLimit(key, maxRequests = 10, windowMs = 60000) {
-  const now = Date.now();
-  const entry = rateLimitMap.get(key) || { count: 0, resetAt: now + windowMs };
-
-  if (now > entry.resetAt) {
-    entry.count = 1;
-    entry.resetAt = now + windowMs;
-    rateLimitMap.set(key, entry);
-    return true;
-  }
-
-  if (entry.count >= maxRequests) {
-    return false;
-  }
-
-  entry.count += 1;
-  rateLimitMap.set(key, entry);
-  return true;
+async function consumeSupportLimit(req, { prefix, maxRequests, windowSeconds }) {
+  const userId = getUserId(req);
+  return consumeRateLimitSlot({
+    key: userId || rateLimitClientKey(req),
+    prefix,
+    maxRequests,
+    windowSeconds,
+  });
 }
 
 function getUserId(req) {
@@ -48,18 +36,28 @@ function requireUser(req, res, next) {
 }
 
 // ── Rate limiter middleware for ticket creation ──
-function ticketCreateRateLimit(req, res, next) {
-  const userId = getUserId(req) || req.ip;
-  if (!checkSupportRateLimit(`ticket_create_${userId}`, 5, 60000)) {
+async function ticketCreateRateLimit(req, res, next) {
+  const result = await consumeSupportLimit(req, {
+    prefix: 'rl:support_ticket',
+    maxRequests: 5,
+    windowSeconds: 60,
+  });
+  if (!result.allowed) {
+    res.setHeader('Retry-After', result.retryAfterSeconds);
     return res.status(429).json({ success: false, error: 'Too many tickets created. Please wait a minute before trying again.' });
   }
   next();
 }
 
 // ── Rate limiter middleware for messages ──
-function messageRateLimit(req, res, next) {
-  const userId = getUserId(req) || req.ip;
-  if (!checkSupportRateLimit(`msg_send_${userId}`, 20, 60000)) {
+async function messageRateLimit(req, res, next) {
+  const result = await consumeSupportLimit(req, {
+    prefix: 'rl:support_msg',
+    maxRequests: 20,
+    windowSeconds: 60,
+  });
+  if (!result.allowed) {
+    res.setHeader('Retry-After', result.retryAfterSeconds);
     return res.status(429).json({ success: false, error: 'Too many messages sent. Please slow down.' });
   }
   next();
@@ -125,11 +123,15 @@ router.get(['/api/support/tickets', '/api/v1/support/tickets'], optionalAuth, re
       offset: Number(offset),
     });
 
+    const tickets = Array.isArray(result?.tickets) ? result.tickets : (Array.isArray(result) ? result : []);
+    const total = Number(result?.total ?? tickets.length);
+
     res.json({
       success: true,
-      tickets: result.tickets,
-      conversations: result.tickets,
-      total: result.total,
+      tickets,
+      conversations: tickets,
+      data: { tickets },
+      total,
       limit: Number(limit),
       offset: Number(offset),
     });
@@ -192,11 +194,24 @@ router.post(
       });
 
       if (ticket.isDuplicate) {
+        const existing = ticket.activeTicket || {};
+        const publicTicket = {
+          id: existing.conversationId,
+          conversationId: existing.conversationId,
+          ticketReference: existing.ticketReference || existing.ticketNumber || existing.conversationNumber,
+          ticketNumber: existing.ticketNumber || existing.ticketReference || existing.conversationNumber,
+          subject: existing.subject,
+          category: existing.category,
+          status: existing.status,
+          createdAt: existing.createdAt,
+        };
         return res.status(409).json({
           success: false,
           isDuplicate: true,
           error: ticket.message,
-          activeTicket: ticket.activeTicket,
+          ticketReference: publicTicket.ticketReference,
+          activeTicket: publicTicket,
+          data: { tickets: [publicTicket], activeTicket: publicTicket },
         });
       }
 

@@ -83,14 +83,14 @@ export default function SupportDomainView({
       });
 
     // Load metrics
-    adminApiClient.get('/v1/admin/support/tickets/metrics')
+    adminApiClient.get('/support/tickets/metrics')
       .then((data) => {
         if (data.metrics) setMetrics(data.metrics);
       })
       .catch(() => {});
 
     // Load live chats
-    adminApiClient.get(`/v1/admin/support/live-chats?filter=${chatFilter}`)
+    adminApiClient.get(`/support/live-chats?filter=${chatFilter}`)
       .then((data) => {
         setLiveChats(data.chats || data.liveChats || []);
         if (data.metrics) setMetrics((prev) => ({ ...prev, ...data.metrics }));
@@ -138,7 +138,8 @@ export default function SupportDomainView({
   }, [selectedTicket?.id, loadThread]);
 
   useEffect(() => {
-    threadEndRef.current?.scrollIntoView?.({ behavior: 'smooth' });
+    if (replyRef.current && document.activeElement === replyRef.current) return;
+    threadEndRef.current?.scrollIntoView?.({ block: 'nearest' });
   }, [threadMessages.length]);
 
   const openTicket = (ticket) => {
@@ -148,12 +149,12 @@ export default function SupportDomainView({
     setDrawerTab('messages');
   };
 
-  const dismissTicket = () => {
+  const dismissTicket = useCallback(() => {
     setSelectedTicket(null);
     setReplyMessage('');
     setInternalNoteText('');
     setThreadMessages([]);
-  };
+  }, []);
 
   const isTicketClosed = (ticket) => {
     const s = String(ticket?.status || '').toUpperCase();
@@ -177,7 +178,7 @@ export default function SupportDomainView({
   const handleAddInternalNote = () => {
     if (!selectedTicket?.id || !internalNoteText.trim() || sending) return;
     setSending(true);
-    adminApiClient.post(`/admin/support/conversations/${selectedTicket.id}/internal-notes`, {
+    adminApiClient.post(`/support/conversations/${selectedTicket.id}/internal-notes`, {
       text: internalNoteText.trim(),
     })
       .then(async () => {
@@ -191,7 +192,7 @@ export default function SupportDomainView({
 
   const handleAssignAgent = () => {
     if (!selectedTicket?.id || !assignAgentName.trim()) return;
-    adminApiClient.post(`/admin/support/conversations/${selectedTicket.id}/assign`, {
+    adminApiClient.post(`/support/conversations/${selectedTicket.id}/assign`, {
       agentId: `agent_${assignAgentName.toLowerCase().replace(/\s+/g, '_')}`,
       agentName: assignAgentName.trim(),
       teamId: 'SUPPORT_AGENT',
@@ -226,7 +227,7 @@ export default function SupportDomainView({
   const handleFinancialReviewRequest = () => {
     if (!selectedTicket?.userId || !finReviewReason.trim()) return;
     setSending(true);
-    adminApiClient.post('/v1/admin/support/financial-review-request', {
+    adminApiClient.post('/support/financial-review-request', {
       userId: selectedTicket.userId,
       ticketId: selectedTicket.id,
       reason: finReviewReason.trim(),
@@ -242,7 +243,7 @@ export default function SupportDomainView({
 
   // Live Chat actions
   const handleAcceptChat = (chat) => {
-    adminApiClient.post(`/v1/admin/support/live-chats/${chat.conversationId}/accept`, {})
+    adminApiClient.post(`/support/live-chats/${chat.conversationId}/accept`, {})
       .then(() => {
         showToast('Live chat accepted. Real-time session active.', 'success');
         setSelectedChat({ ...chat, status: 'ACTIVE' });
@@ -252,7 +253,7 @@ export default function SupportDomainView({
   };
 
   const handleEndChat = (chat) => {
-    adminApiClient.post(`/v1/admin/support/live-chats/${chat.conversationId}/end`, {})
+    adminApiClient.post(`/support/live-chats/${chat.conversationId}/end`, {})
       .then(() => {
         showToast('Live chat ended.', 'success');
         setSelectedChat(null);
@@ -264,7 +265,7 @@ export default function SupportDomainView({
   const handleEscalateChat = () => {
     if (!selectedChat?.conversationId) return;
     setSending(true);
-    adminApiClient.post(`/v1/admin/support/live-chats/${selectedChat.conversationId}/escalate`, {
+    adminApiClient.post(`/support/live-chats/${selectedChat.conversationId}/escalate`, {
       category: escalateCategory,
       priority: escalatePriority,
       subject: `Escalated Chat: ${selectedChat.subject || selectedChat.userId}`,

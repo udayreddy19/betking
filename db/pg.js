@@ -31,20 +31,33 @@ const Pool = pgModule?.Pool || MockPool;
 const connectionString = process.env.DATABASE_URL || 'postgresql://oddsyra_app:oddsyra_dev_pass@127.0.0.1:5432/oddsyra';
 const readConnectionString = process.env.DATABASE_READ_URL || connectionString;
 
+const PG_SESSION_OPTIONS = '-c idle_in_transaction_session_timeout=15s -c statement_timeout=60s';
+
+function resolvePoolMax() {
+  const fromEnv = parseInt(process.env.PG_POOL_MAX, 10);
+  if (Number.isFinite(fromEnv) && fromEnv > 0) return fromEnv;
+  const isWorker = process.env.ODDSYRA_ROLE === 'worker' || process.env.WORKER_PROCESS === '1';
+  return isWorker ? 8 : 12;
+}
+
+const poolMax = resolvePoolMax();
+
 export const pool = new Pool({
   connectionString,
-  max: 20,
+  max: poolMax,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,
+  options: PG_SESSION_OPTIONS,
 });
 
 export const readPool = readConnectionString === connectionString
   ? pool
   : new Pool({
     connectionString: readConnectionString,
-    max: 20,
+    max: poolMax,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 5000,
+    options: PG_SESSION_OPTIONS,
   });
 
 export function isReadReplicaConfigured() {

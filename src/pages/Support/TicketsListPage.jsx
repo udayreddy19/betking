@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../utils/apiClient';
+import { extractTicketsFromResponse } from '../../utils/supportTickets';
 import './SupportPages.css';
 
 function formatDate(val) {
@@ -70,8 +71,9 @@ export default function TicketsListPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Unable to load tickets.');
 
-      setTickets(data.tickets || []);
-      setTotal(data.total || 0);
+      const tickets = extractTicketsFromResponse(data);
+      setTickets(tickets);
+      setTotal(data.total || tickets.length);
     } catch (err) {
       setError(err.message || 'Unable to load your support tickets.');
     } finally {
