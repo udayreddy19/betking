@@ -1792,6 +1792,18 @@ router.post('/api/admin/growth/referral-codes/:code/disable', async (req, res) =
 /* ========================================================================
  * DISCRETE REWARD & EXACT STAKE MANAGEMENT (ADMIN)
  * ======================================================================== */
+router.get('/api/admin/rewards/lookup', async (req, res) => {
+  try {
+    const { resolveRewardRecipient } = await import('../../../lib/discreteRewardEngine.mjs');
+    const q = req.query.q || req.query.userId || req.query.search;
+    const recipient = await resolveRewardRecipient(q);
+    res.json({ success: true, recipient });
+  } catch (err) {
+    res.status(err.code === 'USER_NOT_FOUND' || err.code === 'USER_REQUIRED' || err.code === 'USER_AMBIGUOUS' ? 400 : 500)
+      .json({ success: false, error: err.message, code: err.code });
+  }
+});
+
 router.get('/api/admin/rewards', async (req, res) => {
   try {
     const { adminListRewards } = await import('../../../lib/discreteRewardEngine.mjs');
@@ -1828,14 +1840,27 @@ router.post('/api/admin/rewards/issue', async (req, res) => {
       allowPartialUse: Boolean(req.body?.allowPartialUse),
       expiryDays: req.body?.expiryDays || 7,
       adminId,
+      creditWallet: true,
     });
     await logAdminAction({
       actorId: adminId,
       targetId: reward.reward_id,
       action: 'REWARD_ISSUED',
-      details: { userId: req.body?.userId, amount: req.body?.amount, rewardType: req.body?.rewardType },
+      details: { userId: reward.user_id, amount: req.body?.amount, rewardType: req.body?.rewardType },
     });
-    res.json({ success: true, reward });
+    try {
+      const { notifyUserSupportEvent } = await import('../../../lib/supportNotify.mjs');
+      const kind = reward.reward_type === 'freebet' ? 'Free Bet' : 'Bonus';
+      await notifyUserSupportEvent({
+        userId: reward.user_id,
+        eventType: 'REWARD_ISSUED',
+        subject: `You received a ₹${Number(reward.amount).toLocaleString('en-IN')} ${kind}`,
+        message: `${reward.title || kind} is now in your wallet and on My Rewards. Use it as an exact stake on sports.`,
+      });
+    } catch {
+      /* notification is best-effort */
+    }
+    res.json({ success: true, reward, recipient: reward.recipient || null });
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
   }

@@ -2489,6 +2489,8 @@ function DiscreteRewardsAdminPanel() {
     allowPartialUse: false,
     reason: '',
   });
+  const [recipientPreview, setRecipientPreview] = useState(null);
+  const [recipientError, setRecipientError] = useState('');
 
   const loadRewards = useCallback(async () => {
     setLoading(true);
@@ -2510,15 +2512,32 @@ function DiscreteRewardsAdminPanel() {
     loadRewards();
   }, [loadRewards]);
 
+  const lookupRecipient = async (value) => {
+    const q = String(value || '').trim();
+    if (!q) {
+      setRecipientPreview(null);
+      setRecipientError('');
+      return;
+    }
+    try {
+      const data = await adminApiClient.get(`/rewards/lookup?q=${encodeURIComponent(q)}`);
+      setRecipientPreview(data.recipient || null);
+      setRecipientError('');
+    } catch (err) {
+      setRecipientPreview(null);
+      setRecipientError(err.message || 'User not found');
+    }
+  };
+
   const handleIssueSubmit = async (e) => {
     e.preventDefault();
     if (!issueForm.userId || !issueForm.amount) {
-      showToast('User ID and Amount are required.', 'error');
+      showToast('User ID / email / phone and Amount are required.', 'error');
       return;
     }
     setIssuing(true);
     try {
-      await adminApiClient.post('/rewards/issue', {
+      const result = await adminApiClient.post('/rewards/issue', {
         userId: issueForm.userId,
         rewardType: issueForm.rewardType,
         amount: Number(issueForm.amount),
@@ -2529,7 +2548,8 @@ function DiscreteRewardsAdminPanel() {
         allowPartialUse: Boolean(issueForm.allowPartialUse),
         reason: issueForm.reason || 'Admin Issued',
       });
-      showToast(`Successfully issued ₹${issueForm.amount} ${issueForm.rewardType} to user ${issueForm.userId}!`, 'success');
+      const who = result?.recipient?.email || result?.reward?.user_id || issueForm.userId;
+      showToast(`Issued ₹${issueForm.amount} ${issueForm.rewardType} to ${who}. It is in their wallet and My Rewards.`, 'success');
       setIssueForm({
         userId: '',
         rewardType: 'freebet',
@@ -2541,6 +2561,8 @@ function DiscreteRewardsAdminPanel() {
         allowPartialUse: false,
         reason: '',
       });
+      setRecipientPreview(null);
+      setRecipientError('');
       loadRewards();
     } catch (err) {
       showToast(err.message || 'Failed to issue reward', 'error');
@@ -2594,7 +2616,7 @@ function DiscreteRewardsAdminPanel() {
       <div style={{ marginBottom: '20px' }}>
         <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900 }}>🎁 Discrete Free Bets & Bonuses Management</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.84rem' }}>
-          Issue and inspect discrete promotional reward instruments. Free Bets and Bonuses require exact full-stake usage and are never merged with cash balances.
+          Issue and inspect discrete promotional reward instruments. Free Bets and Bonuses require exact full-stake usage. Issuing credits the user's free-bet or bonus wallet and My Rewards.
         </p>
       </div>
 
@@ -2602,15 +2624,28 @@ function DiscreteRewardsAdminPanel() {
       <AdminCard title="Issue New Discrete Reward Instrument" style={{ marginBottom: '24px' }}>
         <form onSubmit={handleIssueSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '4px' }}>User ID / UUID *</label>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '4px' }}>User ID, email, or phone *</label>
             <input
               type="text"
               className="admin-input"
-              placeholder="e.g. usr_123 or UUID"
+              placeholder="Paste user ID, email, or mobile"
               value={issueForm.userId}
-              onChange={(e) => setIssueForm({ ...issueForm, userId: e.target.value })}
+              onChange={(e) => {
+                setIssueForm({ ...issueForm, userId: e.target.value });
+                setRecipientPreview(null);
+                setRecipientError('');
+              }}
+              onBlur={() => lookupRecipient(issueForm.userId)}
               required
             />
+            {recipientPreview && (
+              <p style={{ margin: '6px 0 0', fontSize: '0.75rem', color: '#10b981' }}>
+                Sends to {recipientPreview.name || 'user'} · {recipientPreview.email} · {recipientPreview.userId}
+              </p>
+            )}
+            {recipientError && (
+              <p style={{ margin: '6px 0 0', fontSize: '0.75rem', color: '#f87171' }}>{recipientError}</p>
+            )}
           </div>
 
           <div>
