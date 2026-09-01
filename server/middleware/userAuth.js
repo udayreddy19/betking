@@ -70,11 +70,44 @@ export function requireAccountStatus(...statuses) {
 /**
  * Require that the user's email has been verified.
  * Must be used AFTER requireAuth.
+ * Enforced in production, or when EMAIL_VERIFICATION_REQUIRED=1.
  */
-export function requireVerified(req, res, next) {
-  // This is checked at the route level where needed by querying the DB
-  // For now, pass through — the authService getMe returns emailVerified status
-  return next();
+export async function requireVerified(req, res, next) {
+  const skip = process.env.NODE_ENV === 'test'
+    || process.env.VITEST === 'true'
+    || process.env.EMAIL_VERIFICATION_REQUIRED === '0';
+  if (skip) return next();
+  if (process.env.NODE_ENV !== 'production' && process.env.EMAIL_VERIFICATION_REQUIRED !== '1') {
+    return next();
+  }
+
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required.', code: 'AUTH_REQUIRED' });
+  }
+
+  try {
+    const { query } = await import('../../db/pg.js');
+    const result = await query(
+      'SELECT email_verified_at FROM users WHERE user_id = $1',
+      [req.user.userId],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'User not found.', code: 'USER_NOT_FOUND' });
+    }
+
+    if (!result.rows[0].email_verified_at) {
+      return res.status(403).json({
+        error: 'Email verification required.',
+        code: 'EMAIL_NOT_VERIFIED',
+      });
+    }
+
+    req.user.emailVerified = true;
+    return next();
+  } catch {
+    return res.status(500).json({ error: 'Internal error.', code: 'INTERNAL_ERROR' });
+  }
 }
 
 /**

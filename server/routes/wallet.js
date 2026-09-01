@@ -1,8 +1,7 @@
 import { Router } from 'express';
-import { requireAuth } from '../middleware/userAuth.js';
+import { requireAuth, requireVerified } from '../middleware/userAuth.js';
 
 const router = Router();
-const isProduction = process.env.NODE_ENV === 'production';
 
 // ── 1. WEBHOOK ENDPOINTS ──────────────────────────────────────────────────────
 
@@ -33,14 +32,9 @@ router.all('/api/webhooks/cashfree', async (req, res) => {
     return res.status(200).json({ status: 'ok', message: 'Cashfree webhook endpoint active' });
   }
 
-  // Handle Cashfree Dashboard Test Ping / Verification Ping
-  const isTestPing = req.body?.event === 'TEST' ||
-    req.body?.type?.includes('TEST') ||
-    req.body?.data?.order?.order_id?.toLowerCase()?.includes('test') ||
-    req.body?.data?.payment?.cf_payment_id?.toString()?.toLowerCase()?.includes('test') ||
-    (!process.env.CASHFREE_WEBHOOK_SECRET && !process.env.CASHFREE_CLIENT_SECRET);
-
-  if (isTestPing) {
+  const eventType = String(req.body?.event || req.body?.type || '');
+  const isDashboardPing = eventType === 'TEST' || eventType === 'WEBHOOK_TEST';
+  if (isDashboardPing && process.env.NODE_ENV !== 'production') {
     return res.status(200).json({ status: 'ok', message: 'Cashfree test webhook received' });
   }
 
@@ -92,10 +86,10 @@ const handleCreateOrder = async (req, res) => {
   }
 };
 
-router.post('/api/payments/razorpay/create-order', requireAuth, handleCreateOrder);
-router.post('/api/payments/cashfree/create-order', requireAuth, handleCreateOrder);
-router.post('/api/v1/payments/cashfree/create-order', requireAuth, handleCreateOrder);
-router.post('/api/v1/payments/create-order', requireAuth, handleCreateOrder);
+router.post('/api/payments/razorpay/create-order', requireAuth, requireVerified, handleCreateOrder);
+router.post('/api/payments/cashfree/create-order', requireAuth, requireVerified, handleCreateOrder);
+router.post('/api/v1/payments/cashfree/create-order', requireAuth, requireVerified, handleCreateOrder);
+router.post('/api/v1/payments/create-order', requireAuth, requireVerified, handleCreateOrder);
 
 // ── 4. PAYMENT VERIFICATION ENDPOINTS ─────────────────────────────────────────
 

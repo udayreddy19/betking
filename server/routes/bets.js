@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth } from '../middleware/userAuth.js';
+import { requireAuth, requireVerified } from '../middleware/userAuth.js';
 import { userFacingBetError } from '../../lib/userFacingErrors.mjs';
 
 const router = Router();
@@ -192,7 +192,7 @@ router.post(['/api/bets/quote-selections', '/api/v1/bets/quote-selections'], req
   }
 });
 
-router.post(['/api/bets/place', '/api/v1/bet/place'], requireAuth, async (req, res) => {
+router.post(['/api/bets/place', '/api/v1/bet/place'], requireAuth, requireVerified, async (req, res) => {
   const idempotencyKey = req.headers['x-idempotency-key'] || req.body.idempotencyKey;
   try {
     const { betPlacementEngine } = await import('../../lib/betPlacementEngine.mjs');
@@ -208,9 +208,13 @@ router.post(['/api/bets/place', '/api/v1/bet/place'], requireAuth, async (req, r
     const code = err.code || err.message?.split(':')[0] || 'BET_PLACEMENT_FAILED';
     if (code === 'ODDS_CHANGED' || code === 'STALE_ODDS' || code === 'ODDS_EXPIRED') {
       statusCode = 409;
+    } else if (err.code === 'RG_UNAVAILABLE' || err.message?.includes('RG_UNAVAILABLE')) {
+      statusCode = 503;
     } else if (err.message?.includes('ACCOUNT_RESTRICTED') || err.message?.includes('ACCOUNT_SUSPENDED')
       || err.code === 'KYC_AGE_REQUIRED' || err.code === 'REALITY_CHECK_REQUIRED' || err.code === 'LOSS_LIMIT_EXCEEDED'
-      || err.message?.includes('KYC_AGE_REQUIRED') || err.message?.includes('REALITY_CHECK_REQUIRED') || err.message?.includes('LOSS_LIMIT_EXCEEDED')) {
+      || err.code === 'STAKE_LIMIT_EXCEEDED' || err.code === 'DEPOSIT_LIMIT_EXCEEDED'
+      || err.message?.includes('KYC_AGE_REQUIRED') || err.message?.includes('REALITY_CHECK_REQUIRED') || err.message?.includes('LOSS_LIMIT_EXCEEDED')
+      || err.message?.includes('STAKE_LIMIT_EXCEEDED') || err.message?.includes('DEPOSIT_LIMIT_EXCEEDED')) {
       statusCode = 403;
     } else if (err.message?.includes('UNAUTHENTICATED')) {
       statusCode = 401;

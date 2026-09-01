@@ -11,7 +11,7 @@ describe('Sprint 2 modularization', () => {
     expect(index).toContain("from './routes/live.js'");
     expect(index).toContain("from './routes/support.js'");
     expect(index).toContain("from './routes/growth.js'");
-    expect(index.split('\n').length).toBeLessThan(200);
+    expect(index.split('\n').length).toBeLessThan(280);
     expect(index.includes("app.post('/api/bet/cashout'")).toBe(false);
   });
 

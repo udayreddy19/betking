@@ -16,9 +16,11 @@ function fmtTs(v) {
 
 function generateRandomPassword() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*';
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
   let password = '';
-  for (let i = 0; i < 12; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  for (let i = 0; i < bytes.length; i++) {
+    password += chars.charAt(bytes[i] % chars.length);
   }
   return password;
 }

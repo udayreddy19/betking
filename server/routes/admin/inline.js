@@ -412,15 +412,15 @@ router.get('/api/admin/jurisdictions/rules', async (req, res) => {
   }
 });
 
-router.get('/api/admin/db/tables', async (req, res) => {
+router.get('/api/admin/db/tables', requireRole('SUPER_ADMIN'), async (req, res) => {
   try {
     const { query } = await import('../../../db/pg.js');
     const { statfsSync } = await import('fs');
 
-    const sizeRes = await query("SELECT pg_size_pretty(pg_database_size('oddsyra')) AS total_db_size;");
-    const totalDbSize = sizeRes.rows[0]?.total_db_size || '8.7 MB';
+    const sizeRes = await query('SELECT pg_size_pretty(pg_database_size(current_database())) AS total_db_size;');
+    const totalDbSize = sizeRes.rows[0]?.total_db_size || 'unknown';
 
-    let availableDiskStorage = '13.0 GB Free of 228.0 GB (48% Used)';
+    let availableDiskStorage = 'unavailable';
     try {
       if (statfsSync) {
         const stats = statfsSync('/');
@@ -431,28 +431,26 @@ router.get('/api/admin/db/tables', async (req, res) => {
         const usedPct = Math.round(((totalBytes - freeBytes) / totalBytes) * 100);
         availableDiskStorage = `${freeGb} GB Free / ${totalGb} GB Total (${usedPct}% Used)`;
       }
-    } catch (err) {
+    } catch {
       // Fallback
     }
 
     const tablesRes = await query(`
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public' 
-      ORDER BY table_name ASC;
+      SELECT c.relname AS table_name,
+             COALESCE(s.n_live_tup, 0)::bigint AS row_count,
+             pg_size_pretty(pg_total_relation_size(c.oid)) AS table_size
+      FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      LEFT JOIN pg_stat_user_tables s ON s.relid = c.oid
+      WHERE n.nspname = 'public' AND c.relkind = 'r'
+      ORDER BY c.relname ASC
     `);
 
-    const tablesWithCounts = await Promise.all(
-      tablesRes.rows.map(async (row) => {
-        const countRes = await query(`SELECT COUNT(*) FROM "${row.table_name}"`);
-        const sizeRes = await query(`SELECT pg_size_pretty(pg_total_relation_size('"${row.table_name}"')) AS table_size`);
-        return {
-          tableName: row.table_name,
-          rowCount: parseInt(countRes.rows[0].count, 10),
-          tableSize: sizeRes.rows[0]?.table_size || '16 kB',
-        };
-      })
-    );
+    const tablesWithCounts = tablesRes.rows.map((row) => ({
+      tableName: row.table_name,
+      rowCount: parseInt(row.row_count, 10) || 0,
+      tableSize: row.table_size || '16 kB',
+    }));
 
     res.json({ success: true, totalDbSize, availableDiskStorage, tables: tablesWithCounts });
   } catch (err) {
@@ -460,7 +458,7 @@ router.get('/api/admin/db/tables', async (req, res) => {
   }
 });
 
-router.get('/api/admin/db/tables/:tableName', async (req, res) => {
+router.get('/api/admin/db/tables/:tableName', requireRole('SUPER_ADMIN'), async (req, res) => {
   const tableName = String(req.params.tableName || '');
   try {
     const { query } = await import('../../../db/pg.js');

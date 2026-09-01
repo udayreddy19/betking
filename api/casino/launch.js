@@ -1,1 +1,1 @@
-export { default } from '../casino-launch.js';
+export { default } from '../_gone.js';

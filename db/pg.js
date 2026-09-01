@@ -28,7 +28,15 @@ class MockPool {
 
 const Pool = pgModule?.Pool || MockPool;
 
-const connectionString = process.env.DATABASE_URL || 'postgresql://oddsyra_app:oddsyra_dev_pass@127.0.0.1:5432/oddsyra';
+function resolveConnectionString() {
+  if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('DATABASE_URL is required in production');
+  }
+  return 'postgresql://oddsyra_app@127.0.0.1:5432/oddsyra';
+}
+
+const connectionString = resolveConnectionString();
 const readConnectionString = process.env.DATABASE_READ_URL || connectionString;
 
 const PG_SESSION_OPTIONS = '-c idle_in_transaction_session_timeout=15s -c statement_timeout=60s';

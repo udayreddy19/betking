@@ -3,6 +3,7 @@ import {
   getLivenessStatus,
   getReadinessStatus,
   getSystemHealthStatus,
+  getPublicHealthStatus,
   structuredLog,
   validateProductionEnvironment,
   createProductionIncident,
@@ -22,6 +23,9 @@ describe('Phase 15 DevOps, Health Probes & Operations Tests', () => {
     expect(health.checks.postgres).toBeDefined();
     expect(health.checks.redis).toBeDefined();
     expect(health.checks.outboxQueue).toBeDefined();
+    const pub = getPublicHealthStatus(health);
+    expect(pub.status).toBe(health.status);
+    expect(pub.checks).toBeUndefined();
   });
 
   it('Readiness probe evaluates system health status', async () => {

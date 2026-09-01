@@ -4,14 +4,28 @@ import { requireAuth } from '../middleware/userAuth.js';
 const router = Router();
 const isProduction = process.env.NODE_ENV === 'production';
 
+function isLoopbackSocket(req) {
+  const ip = String(req.socket?.remoteAddress || '').replace('::ffff:', '');
+  return ip === '127.0.0.1' || ip === '::1';
+}
+
+function isInternalReadinessAuthorized(req) {
+  const token = process.env.READINESS_TOKEN || process.env.ADMIN_SECRET_KEY;
+  const provided = req.headers['x-readiness-token'];
+  if (token) {
+    return Boolean(provided) && provided === token;
+  }
+  return isLoopbackSocket(req);
+}
+
 router.get('/health', async (req, res) => {
   try {
-    const { getSystemHealthStatus } = await import('../../lib/devopsEngine.mjs');
+    const { getSystemHealthStatus, getPublicHealthStatus } = await import('../../lib/devopsEngine.mjs');
     const health = await getSystemHealthStatus();
     const statusCode = health.status === 'DOWN' ? 503 : 200;
-    res.status(statusCode).json(health);
+    res.status(statusCode).json(getPublicHealthStatus(health));
   } catch (err) {
-    res.status(500).json({ status: 'DOWN', error: err.message });
+    res.status(500).json({ status: 'DOWN' });
   }
 });
 
@@ -29,12 +43,7 @@ router.get('/readiness', async (req, res) => {
 
 router.get('/internal/readiness', async (req, res) => {
   try {
-    const token = process.env.READINESS_TOKEN || process.env.ADMIN_SECRET_KEY;
-    const provided = req.headers['x-readiness-token'] || req.query.token;
-    const isLocal = ['127.0.0.1', '::1', 'localhost'].includes(req.hostname)
-      || req.ip === '127.0.0.1'
-      || req.ip === '::1';
-    if (!isLocal && token && provided !== token) {
+    if (!isInternalReadinessAuthorized(req)) {
       return res.status(403).json({ error: 'Forbidden' });
     }
     const { getDetailedReadinessStatus } = await import('../../lib/devopsEngine.mjs');
@@ -42,7 +51,7 @@ router.get('/internal/readiness', async (req, res) => {
     const statusCode = body.ready && body.settlementWorker?.healthy !== false ? 200 : 503;
     res.status(statusCode).json(body);
   } catch (err) {
-    res.status(503).json({ ready: false, error: err.message });
+    res.status(503).json({ ready: false });
   }
 });
 
@@ -154,12 +163,12 @@ router.get('/api/health', async (req, res) => {
       status: isHealthy ? 'UP' : 'DEGRADED',
       timestamp: new Date().toISOString(),
       services: {
-        postgresql: pgHealth,
-        redis: redisHealth,
+        postgresql: pgHealth.connected ? 'ok' : 'down',
+        redis: redisHealth.connected ? 'ok' : 'down',
       },
     });
-  } catch (err) {
-    res.status(500).json({ status: 'DOWN', error: err.message });
+  } catch {
+    res.status(500).json({ status: 'DOWN' });
   }
 });
 

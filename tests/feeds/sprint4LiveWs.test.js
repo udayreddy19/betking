@@ -17,6 +17,9 @@ describe('Sprint 4 public live channels', () => {
     expect(await canSubscribeToChannel(anon, 'odds:match:m1')).toBe(true);
     expect(await canSubscribeToChannel(anon, 'scores:match:m1')).toBe(true);
     expect(await canSubscribeToChannel(anon, 'support:conversation:c1')).toBe(false);
+    expect(await canSubscribeToChannel({ ...anon, anonymousOddsOnly: false, role: 'user' }, 'admin:ops')).toBe(false);
+    expect(await canSubscribeToChannel({ anonymousOddsOnly: false, role: 'super_admin', userId: 'adm' }, 'admin:ops')).toBe(true);
+    expect(await canSubscribeToChannel({ anonymousOddsOnly: false, role: 'notanadmin', userId: 'x' }, 'admin:ops')).toBe(false);
   });
 });
 

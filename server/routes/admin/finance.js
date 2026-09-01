@@ -7,6 +7,7 @@
 import express from 'express';
 import { query, queryRead, withTransaction } from '../../../db/pg.js';
 import { requirePermission } from '../../middleware/adminAuth.js';
+import { randomUUID } from 'crypto';
 import { withdrawalEngine } from '../../../lib/withdrawalEngine.mjs';
 import { financialReconciliationEngine } from '../../../lib/financialReconciliationEngine.mjs';
 
@@ -190,44 +191,60 @@ router.post('/adjustments', requirePermission('finance'), async (req, res) => {
       return res.status(400).json({ error: 'userId, type (CREDIT/DEBIT), amount, and reason are required' });
     }
 
-    const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount <= 0) {
+    const paise = Math.round(Number(amount) * 100);
+    if (!Number.isFinite(paise) || paise <= 0) {
       return res.status(400).json({ error: 'Invalid adjustment amount' });
     }
+    const numAmount = (paise / 100).toFixed(2);
+    const adminId = req.admin?.id || 'admin';
 
     const result = await withTransaction(async (client) => {
-      const wRes = await client.query('SELECT wallet_id, balance FROM wallets WHERE user_id = $1 FOR UPDATE', [userId]);
+      const wRes = await client.query(
+        `SELECT wallet_id, balance, COALESCE(reserved_balance, 0) AS reserved_balance
+         FROM wallets WHERE user_id = $1 FOR UPDATE`,
+        [userId],
+      );
       if (wRes.rows.length === 0) throw new Error(`Wallet not found for user ${userId}`);
 
       const wallet = wRes.rows[0];
-      const curBalance = parseFloat(wallet.balance);
-      let newBalance = curBalance;
+      const txId = `tx_adj_${randomUUID()}`;
+      let updated;
 
       if (type === 'CREDIT') {
-        newBalance = curBalance + numAmount;
+        updated = await client.query(
+          `UPDATE wallets SET balance = balance + $1::numeric, updated_at = NOW()
+           WHERE wallet_id = $2
+           RETURNING balance`,
+          [numAmount, wallet.wallet_id],
+        );
       } else if (type === 'DEBIT') {
-        if (curBalance < numAmount) throw new Error('INSUFFICIENT_FUNDS for debit adjustment');
-        newBalance = curBalance - numAmount;
+        updated = await client.query(
+          `UPDATE wallets SET balance = balance - $1::numeric, updated_at = NOW()
+           WHERE wallet_id = $2
+             AND (balance - COALESCE(reserved_balance, 0)) >= $1::numeric
+           RETURNING balance`,
+          [numAmount, wallet.wallet_id],
+        );
+        if (updated.rowCount === 0) throw new Error('INSUFFICIENT_FUNDS for debit adjustment');
       } else {
         throw new Error('Type must be CREDIT or DEBIT');
       }
 
-      await client.query('UPDATE wallets SET balance = $1, updated_at = NOW() WHERE wallet_id = $2', [newBalance, wallet.wallet_id]);
+      const newBalance = updated.rows[0].balance;
 
-      const txId = `tx_adj_${Date.now()}`;
       await client.query(
         `INSERT INTO transactions (transaction_id, user_id, type, amount, status, created_at)
          VALUES ($1, $2, 'ADMIN_ADJUSTMENT', $3, 'SUCCESS', NOW())`,
-        [txId, userId, numAmount]
+        [txId, userId, numAmount],
       );
 
       await client.query(
         `INSERT INTO ledger_entries (wallet_id, transaction_id, type, amount, balance_after, description, created_at)
          VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
-        [wallet.wallet_id, txId, type, numAmount, newBalance, `Admin Adjustment by ${req.user.id}: ${reason}`]
+        [wallet.wallet_id, txId, type, numAmount, newBalance, `Admin Adjustment by ${adminId}: ${reason}`],
       );
 
-      return { userId, walletId: wallet.wallet_id, newBalance, type, amount: numAmount };
+      return { userId, walletId: wallet.wallet_id, newBalance, type, amount: Number(numAmount) };
     });
 
     res.json({ success: true, ...result });
