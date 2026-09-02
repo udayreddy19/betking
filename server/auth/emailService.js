@@ -33,10 +33,39 @@ export function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
-const SMTP_FROM = process.env.SMTP_FROM || 'OddsYra Security <no-reply@oddsyra.com>';
+/** Mailbox map — oddsyra.com
+ *  no-reply@  transactional / security (FROM)
+ *  promos@    marketing / campaigns (FROM)
+ *  support@   player support inbox + Reply-To
+ *  alerts@    ops / SLA / ticket alerts (TO)
+ */
+const SMTP_FROM = process.env.SMTP_FROM || 'OddsYra <no-reply@oddsyra.com>';
 export const PROMOS_FROM = process.env.PROMOS_FROM || 'OddsYra Promotions <promos@oddsyra.com>';
 export const PROMOS_REPLY_TO = process.env.PROMOS_REPLY_TO || 'promos@oddsyra.com';
+export const SUPPORT_FROM = process.env.SUPPORT_FROM || 'OddsYra Support <support@oddsyra.com>';
+export const SUPPORT_REPLY_TO = process.env.SUPPORT_REPLY_TO || 'support@oddsyra.com';
+export const SUPPORT_INBOX_EMAIL = process.env.SUPPORT_INBOX_EMAIL || 'support@oddsyra.com';
+export const ALERTS_FROM = process.env.ALERTS_FROM || 'OddsYra Alerts <alerts@oddsyra.com>';
+export const SUPPORT_ALERT_EMAIL = process.env.SUPPORT_ALERT_EMAIL
+  || process.env.ALERTS_EMAIL
+  || 'alerts@oddsyra.com';
 const PRIMARY_DAILY_LIMIT = Math.max(0, parseInt(process.env.SMTP_PRIMARY_DAILY_LIMIT || '0', 10) || 0);
+
+/** Ops alert recipients: alerts@ first, then support inbox if different. */
+export function resolveOpsAlertRecipients() {
+  const primary = String(
+    process.env.SUPPORT_ALERT_EMAIL
+    || process.env.ALERTS_EMAIL
+    || SUPPORT_ALERT_EMAIL
+    || 'alerts@oddsyra.com',
+  ).trim();
+  const inbox = String(
+    process.env.SUPPORT_INBOX_EMAIL || SUPPORT_INBOX_EMAIL || 'support@oddsyra.com',
+  ).trim();
+  const list = [primary];
+  if (inbox && inbox.toLowerCase() !== primary.toLowerCase()) list.push(inbox);
+  return list.filter(Boolean);
+}
 
 const quotaState = {
   dayKey: utcDayKey(),
@@ -943,7 +972,13 @@ export async function sendSupportTicketCreatedUserEmail({
     noteHtml: 'You can reply directly to your ticket in the OddsYra Help Center at any time.',
   });
 
-  return await sendEmail({ to: email, subject, html });
+  return await sendEmail({
+    to: email,
+    subject,
+    html,
+    from: SMTP_FROM,
+    replyTo: SUPPORT_REPLY_TO,
+  });
 }
 
 export async function sendSupportAdminReplyEmail({
@@ -1002,7 +1037,13 @@ export async function sendSupportAdminReplyEmail({
     noteHtml: 'Please log in to your OddsYra account to continue the conversation.',
   });
 
-  return await sendEmail({ to: email, subject, html });
+  return await sendEmail({
+    to: email,
+    subject,
+    html,
+    from: SMTP_FROM,
+    replyTo: SUPPORT_REPLY_TO,
+  });
 }
 
 export async function sendSupportTicketClosedEmail({
@@ -1027,27 +1068,36 @@ export async function sendSupportTicketClosedEmail({
     noteHtml: 'Thank you for choosing OddsYra. We appreciate your patience while we resolved your inquiry.',
   });
 
-  return await sendEmail({ to: email, subject, html });
+  return await sendEmail({
+    to: email,
+    subject,
+    html,
+    from: SMTP_FROM,
+    replyTo: SUPPORT_REPLY_TO,
+  });
 }
 
 export async function sendSupportTicketAlertEmail({
   ticketId,
+  ticketNumber,
   priority,
   subject: ticketSubject,
   userId,
   userEmail,
   messagePreview,
+  message,
 }) {
-  const alertTo = process.env.SUPPORT_ALERT_EMAIL || process.env.ADMIN_EMAIL || 'support@oddsyra.com';
-  const subject = `[${priority}] Support Ticket ${ticketId}: ${ticketSubject.slice(0, 40)}`;
+  const resolvedTicketId = ticketId || ticketNumber || 'SUPPORT';
+  const preview = messagePreview || message || '';
+  const subject = `[${priority || 'NORMAL'}] Support Ticket ${resolvedTicketId}: ${String(ticketSubject || '').slice(0, 40)}`;
 
   const bodyHtml = `
-    <p><strong>Ticket ID:</strong> ${escapeHtml(ticketId)}</p>
-    <p><strong>Priority:</strong> ${escapeHtml(priority)}</p>
+    <p><strong>Ticket ID:</strong> ${escapeHtml(resolvedTicketId)}</p>
+    <p><strong>Priority:</strong> ${escapeHtml(priority || 'NORMAL')}</p>
     <p><strong>User:</strong> ${escapeHtml(userId)} (${escapeHtml(userEmail)})</p>
-    <p><strong>Subject:</strong> ${escapeHtml(ticketSubject)}</p>
+    <p><strong>Subject:</strong> ${escapeHtml(ticketSubject || '')}</p>
     <p><strong>Preview:</strong></p>
-    <pre style="background:#f0ede6;padding:12px;border-radius:6px;white-space:pre-wrap;">${escapeHtml(messagePreview || '')}</pre>
+    <pre style="background:#f0ede6;padding:12px;border-radius:6px;white-space:pre-wrap;">${escapeHtml(preview)}</pre>
   `;
 
   const html = renderTransactionalEmail({
@@ -1058,7 +1108,18 @@ export async function sendSupportTicketAlertEmail({
     ctaHref: `${FRONTEND_URL}/admin`,
   });
 
-  return await sendEmail({ to: alertTo, subject, html });
+  const recipients = resolveOpsAlertRecipients();
+  let last = { success: false, error: 'no_recipients' };
+  for (const to of recipients) {
+    last = await sendEmail({
+      to,
+      subject,
+      html,
+      from: SMTP_FROM,
+      replyTo: SUPPORT_REPLY_TO,
+    });
+  }
+  return { ...last, recipients };
 }
 
 export async function sendSupportSlaReminderEmail({
@@ -1068,7 +1129,7 @@ export async function sendSupportSlaReminderEmail({
   breached,
   slaDeadline,
 }) {
-  const alertTo = process.env.SUPPORT_ALERT_EMAIL || process.env.ADMIN_EMAIL || 'support@oddsyra.com';
+  const recipients = resolveOpsAlertRecipients();
   const subject = breached
     ? `[SLA BREACH] Support Ticket ${ticketId}`
     : `[SLA WARNING] Support Ticket ${ticketId} nearing deadline`;
@@ -1087,7 +1148,17 @@ export async function sendSupportSlaReminderEmail({
     ctaHref: `${FRONTEND_URL}/admin`,
   });
 
-  return await sendEmail({ to: alertTo, subject, html });
+  let last = { success: false, error: 'no_recipients' };
+  for (const to of recipients) {
+    last = await sendEmail({
+      to,
+      subject,
+      html,
+      from: SMTP_FROM,
+      replyTo: SUPPORT_REPLY_TO,
+    });
+  }
+  return { ...last, recipients };
 }
 
 /* ========================================================================
