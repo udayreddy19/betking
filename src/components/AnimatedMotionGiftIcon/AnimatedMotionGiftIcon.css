@@ -15,6 +15,10 @@
   75% { transform: translateY(2px) rotate(4deg); }
 }
 
+.aesthetic-motion-gift--paused {
+  animation: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .aesthetic-motion-gift {
     animation: none;

@@ -26,7 +26,7 @@ export default function HomeCategoryGrid({ liveCount = 0 }) {
 
   return (
     <>
-      <nav className="home-quick-links" aria-label="Quick links">
+      <nav className="home-quick-links scroll-row-bleed" aria-label="Quick links">
         {shortcuts.map((item) => {
           const Icon = item.Icon;
           return (
