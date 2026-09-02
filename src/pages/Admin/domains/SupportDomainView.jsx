@@ -49,6 +49,7 @@ export default function SupportDomainView({
   const [internalNoteText, setInternalNoteText] = useState('');
   const [finReviewReason, setFinReviewReason] = useState('');
   const [assignAgentName, setAssignAgentName] = useState('');
+  const [replyMessage, setReplyMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
 
