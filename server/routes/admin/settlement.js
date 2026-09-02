@@ -207,6 +207,12 @@ router.get('/api/admin/settlement/replay/:betId', requireRole('SUPER_ADMIN', 'FI
     const betRes = await query('SELECT * FROM bets WHERE bet_id = $1', [req.params.betId]);
     if (!betRes.rows[0]) return res.status(404).json({ error: 'Bet not found' });
 
+    const legsRes = await query(
+      `SELECT match_id, market_id, selection_id, selection_name, odds, status
+       FROM bet_selections WHERE bet_id = $1 ORDER BY created_at ASC`,
+      [req.params.betId],
+    );
+
     const { aggregateLiveScores } = await import('../../../lib/aggregator.mjs');
     const { matchIdAliases } = await import('../../../lib/matchIdPublic.mjs');
     const { replayBetSettlement } = await import('../../../lib/settlement/settlementReplay.mjs');
@@ -220,8 +226,26 @@ router.get('/api/admin/settlement/replay/:betId', requireRole('SUPER_ADMIN', 'FI
     }
     const matchLookup = (id) => byId.get(String(id)) || null;
 
-    const replay = await replayBetSettlement({ bet: betRes.rows[0], matchLookup });
-    res.json(replay);
+    const bet = {
+      ...betRes.rows[0],
+      selections: legsRes.rows || [],
+    };
+    const replay = await replayBetSettlement({ bet, matchLookup });
+    res.json({
+      ...replay,
+      placedOdds: {
+        accepted: bet.accepted_odds != null ? Number(bet.accepted_odds) : null,
+        requested: bet.odds != null ? Number(bet.odds) : null,
+        legs: (legsRes.rows || []).map((leg) => ({
+          selectionName: leg.selection_name,
+          selectionId: leg.selection_id,
+          marketId: leg.market_id,
+          matchId: leg.match_id,
+          odds: leg.odds != null ? Number(leg.odds) : null,
+          status: leg.status,
+        })),
+      },
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

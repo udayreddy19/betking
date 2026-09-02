@@ -6,15 +6,66 @@ import { useAdminRole, hasPermission, PERMISSIONS } from '../permissions/AdminRB
 import { StatusBadge } from '../components/AdminBadge';
 import AdminConfirmDialog from '../components/AdminConfirmDialog';
 import AdminFilterBar, { FilterSelect, FilterSearch } from '../components/AdminFilterBar';
+import AdminDrawer from '../components/AdminDrawer';
 
 function money(n) {
   if (n == null || Number.isNaN(Number(n))) return '—';
   return `₹${Number(n).toLocaleString()}`;
 }
 
+function formatOdds(n) {
+  if (n == null || Number.isNaN(Number(n))) return '—';
+  return Number(n).toFixed(2);
+}
+
 function isOpenStatus(status) {
   const s = String(status || '').toUpperCase();
   return s === 'OPEN' || s === 'PENDING' || s === 'ACCEPTED';
+}
+
+function PlacedOddsCell({ bet }) {
+  const legs = Array.isArray(bet.legs) ? bet.legs : [];
+  const combined = bet.acceptedOdds ?? bet.odds ?? bet.requestedOdds;
+  if (!legs.length) {
+    return (
+      <span className="admin-text-mono" style={{ fontWeight: 700 }} title="Accepted odds at placement">
+        {formatOdds(combined)}
+      </span>
+    );
+  }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 88 }}>
+      <span className="admin-text-mono" style={{ fontWeight: 700 }} title="Combined / accepted odds">
+        {formatOdds(combined)}
+      </span>
+      {legs.map((leg, i) => (
+        <span
+          key={`${leg.selectionId || leg.marketId || i}-${i}`}
+          className="admin-text-mono"
+          style={{ fontSize: '0.7rem', color: 'var(--admin-text-muted)' }}
+          title={`${leg.selectionName || leg.selectionId || 'leg'} @ ${formatOdds(leg.odds)}`}
+        >
+          {legs.length > 1 ? `L${i + 1} ` : ''}{formatOdds(leg.odds)}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function verifyBadge(result) {
+  if (!result) return null;
+  if (result.error) return { label: 'Error', color: '#f87171' };
+  if (!result.replayed?.outcome) return { label: 'No grade yet', color: '#fbbf24' };
+  const stored = String(result.stored?.status || '').toUpperCase();
+  const replayed = String(result.replayed.outcome || '').toUpperCase();
+  if (result.discrepancy) return { label: 'Mismatch', color: '#f87171' };
+  if (['WON', 'LOST', 'VOID'].includes(stored) && stored === replayed) {
+    return { label: 'Verified', color: '#34d399' };
+  }
+  if (isOpenStatus(stored)) {
+    return { label: `Would be ${replayed}`, color: '#60a5fa' };
+  }
+  return { label: replayed, color: '#94a3b8' };
 }
 
 const STATUS_OPTIONS = [
@@ -50,6 +101,9 @@ export default function BettingDomainView({
   const [highlightId, setHighlightId] = useState(null);
   const [settlingId, setSettlingId] = useState(null);
   const [declareConfirm, setDeclareConfirm] = useState(null);
+  const [verifyBet, setVerifyBet] = useState(null);
+  const [verifyResult, setVerifyResult] = useState(null);
+  const [verifying, setVerifying] = useState(false);
   const { showToast } = useAdminToast();
   const { activeRole } = useAdminRole();
   const canSettle = hasPermission(activeRole, PERMISSIONS.SETTLE_BETS);
@@ -126,6 +180,21 @@ export default function BettingDomainView({
     setDeclareConfirm({ bet, outcome });
   };
 
+  const openVerify = async (bet) => {
+    setVerifyBet(bet);
+    setVerifyResult(null);
+    setVerifying(true);
+    try {
+      const data = await adminApiClient.get(`/settlement/replay/${encodeURIComponent(bet.id)}`);
+      setVerifyResult(data);
+    } catch (err) {
+      setVerifyResult({ error: err.message || 'Verification failed' });
+      showToast(err.message || 'Verification failed', 'error');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   const filtered = useMemo(() => {
     let list = bets;
     if (subModule === 'cashout-reconciliation') {
@@ -144,8 +213,8 @@ export default function BettingDomainView({
   const openCount = filtered.filter((b) => isOpenStatus(b.status)).length;
 
   const titles = {
-    'bets-registry': ['All Bets', 'Browse every bet type and status. Declare open bets to WON / LOST / VOID.', 'Bet Registry'],
-    'settlement-engine': ['Pending & Declare', 'Open, pending, and accepted bets — declare any outcome manually.', 'Pending Desk'],
+    'bets-registry': ['All Bets', 'Browse every bet type and status. See placed odds and verify win/loss against live match state.', 'Bet Registry'],
+    'settlement-engine': ['Pending & Declare', 'Open, pending, and accepted bets — declare any outcome manually. Verify grades against live scores.', 'Pending Desk'],
     'cashout-reconciliation': ['Cashout Reconciliation', 'Cashout-related bets for reconciliation review.', 'Cashout Desk'],
   };
   const [heading, hint, tableTitle] = titles[subModule] || titles['bets-registry'];
@@ -231,13 +300,32 @@ export default function BettingDomainView({
           { header: 'Type', key: 'betType' },
           { header: 'Selection', key: 'selection' },
           { header: 'Stake', key: 'stake', render: (r) => <span style={{ fontWeight: 700 }}>{money(r.stake)}</span> },
-          { header: 'Odds', key: 'odds', render: (r) => (r.odds != null ? Number(r.odds).toFixed(2) : '—') },
+          {
+            header: 'Placed odds',
+            key: 'odds',
+            render: (r) => <PlacedOddsCell bet={r} />,
+          },
           { header: 'Payout', key: 'payout', render: (r) => money(r.payout) },
           { header: 'Placed', key: 'date' },
           {
             header: 'Status',
             key: 'status',
             render: (r) => <StatusBadge status={r.status} />,
+          },
+          {
+            header: 'Verify',
+            key: 'verify',
+            sortable: false,
+            render: (r) => (
+              <button
+                type="button"
+                className="admin-btn admin-btn--secondary admin-btn--sm"
+                disabled={verifying && verifyBet?.id === r.id}
+                onClick={() => openVerify(r)}
+              >
+                {verifying && verifyBet?.id === r.id ? '…' : 'Verify'}
+              </button>
+            ),
           },
           {
             header: 'Declare',
@@ -274,6 +362,117 @@ export default function BettingDomainView({
         ]}
       />
 
+      <AdminDrawer
+        isOpen={!!verifyBet}
+        onClose={() => { setVerifyBet(null); setVerifyResult(null); }}
+        title={verifyBet ? `Verify ${verifyBet.id}` : 'Verify bet'}
+        subtitle={verifyBet ? `${verifyBet.match || '—'} · ${verifyBet.selection || '—'}` : ''}
+        width={440}
+      >
+        {verifyBet && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, fontSize: '0.84rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              <div>
+                <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.72rem' }}>User</div>
+                <div>{verifyBet.userName || verifyBet.userId}</div>
+              </div>
+              <div>
+                <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.72rem' }}>Stored status</div>
+                <StatusBadge status={verifyBet.status} />
+              </div>
+              <div>
+                <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.72rem' }}>Accepted odds</div>
+                <div className="admin-text-mono" style={{ fontWeight: 700 }}>
+                  {formatOdds(verifyBet.acceptedOdds ?? verifyBet.odds)}
+                </div>
+              </div>
+              <div>
+                <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.72rem' }}>Stake / payout</div>
+                <div>{money(verifyBet.stake)} → {money(verifyBet.payout)}</div>
+              </div>
+            </div>
+
+            {(verifyBet.legs || []).length > 0 && (
+              <div>
+                <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.72rem', marginBottom: 6 }}>Placed legs</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {(verifyBet.legs || []).map((leg, i) => (
+                    <div
+                      key={`${leg.selectionId || i}`}
+                      style={{
+                        padding: '8px 10px',
+                        borderRadius: 8,
+                        background: 'var(--admin-surface-2, rgba(255,255,255,0.04))',
+                        border: '1px solid var(--admin-border, rgba(255,255,255,0.08))',
+                      }}
+                    >
+                      <div style={{ fontWeight: 600 }}>{leg.selectionName || leg.selectionId || `Leg ${i + 1}`}</div>
+                      <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.75rem' }}>
+                        {leg.marketId || '—'} · odds <span className="admin-text-mono">{formatOdds(leg.odds)}</span>
+                        {leg.status ? ` · ${leg.status}` : ''}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {verifying && <p style={{ color: 'var(--admin-text-muted)' }}>Re-grading against live match state…</p>}
+
+            {!verifying && verifyResult && (() => {
+              const badge = verifyBadge(verifyResult);
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {badge && (
+                    <div style={{
+                      padding: '10px 12px',
+                      borderRadius: 8,
+                      background: `${badge.color}22`,
+                      border: `1px solid ${badge.color}55`,
+                      color: badge.color,
+                      fontWeight: 700,
+                    }}
+                    >
+                      {badge.label}
+                      {verifyResult.discrepancy
+                        ? ` — stored ${verifyResult.discrepancy.stored}, grader says ${verifyResult.discrepancy.replayed}`
+                        : ''}
+                    </div>
+                  )}
+                  {verifyResult.error && (
+                    <p style={{ color: '#f87171', margin: 0 }}>{verifyResult.error}</p>
+                  )}
+                  {verifyResult.replayed && (
+                    <div>
+                      <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.72rem' }}>Grader outcome</div>
+                      <div style={{ fontWeight: 700 }}>{verifyResult.replayed.outcome || '—'}</div>
+                      {verifyResult.replayed.reason && (
+                        <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.78rem', marginTop: 4 }}>
+                          {verifyResult.replayed.reason}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {!verifyResult.replayed?.outcome && !verifyResult.error && (
+                    <p style={{ color: '#fbbf24', margin: 0 }}>
+                      Match state not available yet — cannot verify win/loss until the feed has this match.
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn--secondary admin-btn--sm"
+                    onClick={() => openVerify(verifyBet)}
+                    disabled={verifying}
+                  >
+                    Re-run verify
+                  </button>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+      </AdminDrawer>
+
       {/* Declare Outcome Confirm */}
       <AdminConfirmDialog
         isOpen={!!declareConfirm}
@@ -291,6 +490,7 @@ export default function BettingDomainView({
           { label: 'Match', value: declareConfirm.bet.match || '—' },
           { label: 'Market', value: declareConfirm.bet.market || '—' },
           { label: 'Selection', value: declareConfirm.bet.selection || '—' },
+          { label: 'Placed odds', value: formatOdds(declareConfirm.bet.acceptedOdds ?? declareConfirm.bet.odds) },
           { label: 'Stake', value: money(declareConfirm.bet.stake) },
           { label: 'Potential Payout', value: money(declareConfirm.bet.payout) },
         ] : []}
