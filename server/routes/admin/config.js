@@ -42,16 +42,31 @@ router.post('/versions', requireRole('SUPER_ADMIN', 'OPERATIONS_ADMIN'), async (
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST /config/versions/:versionId/activate — activate a config version
+// POST /config/versions/:versionId/activate — activate a config version into runtime platform_config
 router.post('/versions/:versionId/activate', requireRole('SUPER_ADMIN'), async (req, res) => {
   try { await ensureTable(); const q = await getQuery();
-    const ver = await q('SELECT config_key, changed_by FROM config_versions WHERE version_id = $1', [req.params.versionId]);
+    const ver = await q('SELECT version_id, config_key, config_value, category, changed_by FROM config_versions WHERE version_id = $1', [req.params.versionId]);
     if (ver.rows.length === 0) return res.status(404).json({ error: 'Version not found' });
     if (ver.rows[0].changed_by === req.admin.id) return res.status(403).json({ error: 'Cannot activate your own config change (maker-checker)' });
-    await q('UPDATE config_versions SET is_active = FALSE WHERE config_key = $1', [ver.rows[0].config_key]);
+    const row = ver.rows[0];
+    await q('UPDATE config_versions SET is_active = FALSE WHERE config_key = $1', [row.config_key]);
     await q('UPDATE config_versions SET is_active = TRUE, approved_by = $1 WHERE version_id = $2', [req.admin.id, req.params.versionId]);
-    await logAdminAction({ actorId: req.admin.id, targetId: req.params.versionId, action: 'CONFIG_VERSION_ACTIVATED' });
-    res.json({ versionId: req.params.versionId, status: 'ACTIVE' });
+    try {
+      const { setConfig } = await import('../../../lib/configEngine.mjs');
+      const value = typeof row.config_value === 'string' ? JSON.parse(row.config_value) : row.config_value;
+      await setConfig({
+        configKey: row.config_key,
+        configValue: value,
+        category: row.category || 'GENERAL',
+        description: `Activated from config version ${row.version_id}`,
+        changedBy: req.admin.id,
+        reason: 'Config version activated',
+      });
+    } catch (applyErr) {
+      return res.status(500).json({ error: `Version marked active but runtime apply failed: ${applyErr.message}` });
+    }
+    await logAdminAction({ actorId: req.admin.id, targetId: req.params.versionId, action: 'CONFIG_VERSION_ACTIVATED', details: { configKey: row.config_key } });
+    res.json({ versionId: req.params.versionId, status: 'ACTIVE', configKey: row.config_key });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

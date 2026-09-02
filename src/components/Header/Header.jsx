@@ -21,36 +21,42 @@ import '../MyBetsPanel/MyBetsPanel.css';
 import '../PromotionsPanel/PromotionsPanel.css';
 import BrandLogo, { BrandWordmark } from '../BrandLogo/BrandLogo';
 import { withoutStubProductLinks } from '../../utils/featureFlags';
+import { useFeatureFlags } from '../../context/FeatureFlagsContext';
 import { hoverScale, pressScale, springUi } from '../../utils/motionPresets';
 import './Header.css';
 
 const BALANCE_VISIBLE_KEY = 'oddsyra_balance_visible';
 
-const navLinks = withoutStubProductLinks([
+const BASE_NAV_LINKS = [
   { to: '/live-betting', label: 'Live Betting' },
   { to: '/sports', label: 'Sports' },
   { to: '/casino', label: 'Casino' },
   { to: '/live-casino', label: 'Live Casino' },
   { to: '/fantasy', label: 'Fantasy' },
   { to: '/bets', label: 'My Bets' },
-  { to: '/promotions', label: 'Win Free' },
-]);
+  { to: '/promotions', label: 'Win Free', flagKey: 'promotion_engine_ui' },
+];
 
-const moreLinks = withoutStubProductLinks([
+const BASE_MORE_LINKS = [
   { to: '/profile', label: 'My Profile' },
-  { to: '/invite', label: 'Invite friends' },
+  { to: '/invite', label: 'Invite friends', flagKey: 'referral_system_ui' },
   { to: '/profile?tab=support', label: 'Support tickets' },
   { to: '/admin', label: '🛡️ Admin Portal' },
   { to: '/srl', label: 'OddsYra SRL' },
   { to: '/help', label: 'Help Center' },
-  { to: '/promotions', label: 'Promotions' },
+  { to: '/promotions', label: 'Promotions', flagKey: 'promotion_engine_ui' },
   { to: '/casino', label: 'Casino' },
-  { to: '/responsible-gaming', label: 'Responsible Gaming' },
-]);
+  { to: '/responsible-gaming', label: 'Responsible Gaming', flagKey: 'responsible_gaming_ui' },
+];
 
 function Header() {
   const { user, isLoggedIn, openLoginModal, openDepositModal, toggleSidebar, redeemLoyaltyPoints, openFinModal } = useAuth();
   const { myBetsCount, isMyBetsOpen, toggleMyBets, closeMyBets } = useBetSlip();
+  const { isEnabled } = useFeatureFlags();
+  const navLinks = withoutStubProductLinks(BASE_NAV_LINKS).filter((l) => !l.flagKey || isEnabled(l.flagKey, true));
+  const moreLinks = withoutStubProductLinks(BASE_MORE_LINKS).filter((l) => !l.flagKey || isEnabled(l.flagKey, true));
+  const promotionsEnabled = isEnabled('promotion_engine_ui', true);
+  const notificationsEnabled = isEnabled('notification_center', true);
   const [isPromosOpen, setIsPromosOpen] = useState(false);
   const [isSpinOpen, setIsSpinOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
@@ -309,6 +315,7 @@ function Header() {
                 <HiOutlineClipboardList className="header-my-bets-icon" aria-hidden="true" />
                 {myBetsCount > 0 && <span className="header-my-bets-badge">{myBetsCount}</span>}
               </motion.button>
+              {notificationsEnabled && (
               <div className="header-notif-wrap" ref={notifRef}>
                 <motion.button
                   type="button"
@@ -402,6 +409,8 @@ function Header() {
                   )}
                 </AnimatePresence>
               </div>
+              )}
+              {promotionsEnabled && (
               <motion.button
                 type="button"
                 className="header-action-icon-btn header-spin-icon-btn"
@@ -420,6 +429,8 @@ function Header() {
                   <FiZap style={{ color: '#f59e0b' }} />
                 </motion.div>
               </motion.button>
+              )}
+              {promotionsEnabled && (
               <motion.button
                 type="button"
                 className={`header-action-icon-btn ${isPromosOpen ? 'active' : ''}`}
@@ -436,6 +447,7 @@ function Header() {
               >
                 <AnimatedMotionGiftIcon size={18} />
               </motion.button>
+              )}
               <motion.button
                 type="button"
                 className={`header-action-icon-btn ${location.pathname.startsWith('/profile') ? 'active' : ''}`}
@@ -682,8 +694,8 @@ function Header() {
         </div>
       </div>
       {isLoggedIn && <MyBetsPanel />}
-      {isLoggedIn && <PromotionsPanel isOpen={isPromosOpen} onClose={closePromos} />}
-      {isLoggedIn && <DailySpinModal isOpen={isSpinOpen} onClose={() => setIsSpinOpen(false)} />}
+      {isLoggedIn && promotionsEnabled && <PromotionsPanel isOpen={isPromosOpen} onClose={closePromos} />}
+      {isLoggedIn && promotionsEnabled && <DailySpinModal isOpen={isSpinOpen} onClose={() => setIsSpinOpen(false)} />}
     </header>
   );
 }

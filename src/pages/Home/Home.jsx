@@ -6,6 +6,7 @@ import SportIcon from '../../components/SportIcon/SportIcon';
 import MatchCard from '../../components/MatchCard/MatchCard';
 import HomeCategoryGrid from '../../components/HomeCategoryGrid/HomeCategoryGrid';
 import { sportsCategories, featuredLeagues } from '../../data/mockData';
+import { useFeatureFlags } from '../../context/FeatureFlagsContext';
 import { homePromoSlides } from '../../data/homePageData';
 import { isSrlSeasonLive, SRL_LAUNCH_LABEL, SRL_PAGE_PATH } from '../../data/oddsyraSrlSeason';
 import { useLiveMatches, useLiveSportsMeta } from '../../context/LiveSportsContext';
@@ -52,6 +53,7 @@ function filterByLeague(matchList, leagueId) {
 export default function Home() {
   const matches = useLiveMatches();
   const { isScoresLoading, scoresError, refreshScores } = useLiveSportsMeta();
+  const { isSportEnabled } = useFeatureFlags();
   const navigate = useNavigate();
   const [activeSport, setActiveSport] = useState('cricket');
   const [activeLeague, setActiveLeague] = useState(null);
@@ -109,9 +111,17 @@ export default function Home() {
   }, [activeSport, matches]);
 
   const homeSportChips = useMemo(() => {
-    const withAction = sportsCategories.filter((c) => c.id === 'all' || (sportCounts[c.id] || 0) > 0);
-    return withAction.length > 1 ? withAction : sportsCategories;
-  }, [sportCounts]);
+    const enabledCats = sportsCategories.filter((c) => c.id === 'all' || isSportEnabled(c.id));
+    const withAction = enabledCats.filter((c) => c.id === 'all' || (sportCounts[c.id] || 0) > 0);
+    return withAction.length > 1 ? withAction : enabledCats;
+  }, [sportCounts, isSportEnabled]);
+
+  useEffect(() => {
+    if (activeSport !== 'all' && !isSportEnabled(activeSport)) {
+      const next = homeSportChips.find((c) => c.id !== 'all')?.id || 'all';
+      setActiveSport(next);
+    }
+  }, [activeSport, homeSportChips, isSportEnabled]);
 
   const sectionTitle = useMemo(() => {
     const sport = sportsCategories.find((c) => c.id === activeSport);

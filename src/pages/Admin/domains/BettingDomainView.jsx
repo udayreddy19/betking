@@ -162,7 +162,14 @@ export default function BettingDomainView({
         outcome,
         reason: `Admin declare ${outcome} (${subModule})`,
       });
-      showToast(`Bet ${bet.id} → ${res.outcome || outcome}${res.status === 'ALREADY_SETTLED' ? ' (already settled)' : ''}`, 'success');
+      if (res.pendingApproval) {
+        showToast(`Settlement queued for approval (${res.requestId || 'pending'})`, 'info');
+      } else {
+        showToast(
+          `Bet ${bet.id} → ${res.outcome || outcome}${res.status === 'ALREADY_SETTLED' ? ' (already settled)' : ''}`,
+          'success',
+        );
+      }
       load();
     } catch (err) {
       showToast(err.message || 'Declare failed', 'error');

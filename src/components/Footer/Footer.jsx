@@ -1,11 +1,21 @@
 import { Link, useLocation } from 'react-router-dom';
 import { UpiLogo, GPayLogo, PhonePeLogo, PaytmLogo } from '../PaymentLogos/PaymentLogos';
 import BrandLogo from '../BrandLogo/BrandLogo';
+import { useFeatureFlags } from '../../context/FeatureFlagsContext';
 import './Footer.css';
 
 export default function Footer() {
   const location = useLocation();
+  const { isEnabled, isSportEnabled } = useFeatureFlags();
   if (location.pathname.startsWith('/admin')) return null;
+
+  const sportLinks = [
+    { to: '/sports?sport=cricket', id: 'cricket', label: 'Cricket' },
+    { to: '/sports?sport=soccer', id: 'soccer', label: 'Soccer' },
+    { to: '/sports?sport=tennis', id: 'tennis', label: 'Tennis' },
+    { to: '/sports?sport=basketball', id: 'basketball', label: 'Basketball' },
+    { to: '/sports?sport=kabaddi', id: 'kabaddi', label: 'Kabaddi' },
+  ].filter((s) => isSportEnabled(s.id));
 
   return (
     <footer className="footer" id="main-footer">
@@ -13,18 +23,16 @@ export default function Footer() {
         <div className="footer-grid">
           <div className="footer-section">
             <h4>Sports</h4>
-            <Link to="/sports?sport=cricket">Cricket</Link>
-            <Link to="/sports?sport=soccer">Soccer</Link>
-            <Link to="/sports?sport=tennis">Tennis</Link>
-            <Link to="/sports?sport=basketball">Basketball</Link>
-            <Link to="/sports?sport=kabaddi">Kabaddi</Link>
+            {sportLinks.map((s) => (
+              <Link key={s.id} to={s.to}>{s.label}</Link>
+            ))}
           </div>
           <div className="footer-section">
             <h4>More</h4>
             <Link to="/live-betting">Live Betting</Link>
             <Link to="/bets">My Bets</Link>
-            <Link to="/invite">Invite</Link>
-            <Link to="/promotions">Promotions</Link>
+            {isEnabled('referral_system_ui', true) && <Link to="/invite">Invite</Link>}
+            {isEnabled('promotion_engine_ui', true) && <Link to="/promotions">Promotions</Link>}
             <Link to="/profile">My Profile</Link>
           </div>
           <div className="footer-section">
@@ -44,7 +52,9 @@ export default function Footer() {
             <h4>About</h4>
             <Link to="/terms">Terms & Conditions</Link>
             <Link to="/privacy">Privacy Policy</Link>
-            <Link to="/responsible-gaming">Responsible Gaming</Link>
+            {isEnabled('responsible_gaming_ui', true) && (
+              <Link to="/responsible-gaming">Responsible Gaming</Link>
+            )}
           </div>
         </div>
 

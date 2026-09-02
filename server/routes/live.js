@@ -351,9 +351,41 @@ router.get('/api/v1/developer/webhooks/deliveries', requireAuth, async (req, res
 router.get('/api/v1/sports', async (req, res) => {
   try {
     const { SPORTS_CATALOG } = await import('../../lib/sportsDataService.mjs');
-    res.json({ version: 'v1', sports: SPORTS_CATALOG });
+    const { hydrateSportFlagsFromStore, isSportEnabled } = await import('../../lib/adminConfig.mjs');
+    await hydrateSportFlagsFromStore().catch(() => null);
+    const sports = (SPORTS_CATALOG || []).filter((s) => {
+      const id = s.id || s.sportId || s.key || s.slug || s.name;
+      return isSportEnabled(id);
+    });
+    res.json({ version: 'v1', sports });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch sports catalog' });
+  }
+});
+
+router.get(['/api/feature-flags', '/api/v1/feature-flags'], async (req, res) => {
+  try {
+    const {
+      hydrateSportFlagsFromStore,
+      getAdminConfigSummary,
+      flagKeyFromSport,
+    } = await import('../../lib/adminConfig.mjs');
+    await hydrateSportFlagsFromStore().catch(() => null);
+    const { getAllFeatureFlags } = await import('../../lib/featureStore.mjs');
+    const { flags } = await getAllFeatureFlags();
+    const map = {};
+    for (const f of flags || []) {
+      map[f.flag_key] = !!f.enabled;
+    }
+    const cfg = getAdminConfigSummary();
+    for (const [sport, enabled] of Object.entries(cfg.enabledSports || {})) {
+      const k = flagKeyFromSport(sport);
+      if (!(k in map)) map[k] = !!enabled;
+    }
+    res.setHeader('Cache-Control', 'public, max-age=15');
+    res.json({ success: true, flags: map });
+  } catch (err) {
+    res.status(500).json({ success: false, flags: {}, error: err.message });
   }
 });
 

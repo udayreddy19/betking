@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { CASINO_ENABLED } from '../../utils/featureFlags';
+import { useFeatureFlags } from '../../context/FeatureFlagsContext';
 import { hoverScale, pressScale, springUi } from '../../utils/motionPresets';
 import {
   IoClose,
@@ -50,6 +51,9 @@ export default function Sidebar() {
     openLoginModal, openDepositModal, openFinModal,
   } = useAuth();
   const { openMyBets } = useBetSlip();
+  const { isEnabled } = useFeatureFlags();
+  const promotionsEnabled = isEnabled('promotion_engine_ui', true);
+  const notificationsEnabled = isEnabled('notification_center', true);
   const navigate = useNavigate();
   const isAdminPage = location.pathname.startsWith('/admin');
   const isDevRoute = location.pathname.startsWith('/developer') || location.pathname.startsWith('/api-docs');
@@ -287,21 +291,25 @@ export default function Sidebar() {
                   <span>Profile</span>
                   <FiChevronRight className="sidebar-list-arrow" />
                 </button>
+                {notificationsEnabled && (
                 <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/notifications'); }}>
                   <IoNotifications className="sidebar-list-icon" />
                   <span>Notifications{unreadCount > 0 ? ` (${unreadCount > 99 ? '99+' : unreadCount})` : ''}</span>
                   <FiChevronRight className="sidebar-list-arrow" />
                 </button>
+                )}
                 <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/profile?tab=support'); }}>
                   <FiHelpCircle className="sidebar-list-icon" />
                   <span>Support</span>
                   <FiChevronRight className="sidebar-list-arrow" />
                 </button>
+                {promotionsEnabled && (
                 <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/promotions'); }}>
                   <HiOutlineTrophy className="sidebar-list-icon" />
                   <span>Promotions</span>
                   <FiChevronRight className="sidebar-list-arrow" />
                 </button>
+                )}
                 {CASINO_ENABLED && (
                   <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/casino'); }}>
                     <MdOutlineStorefront className="sidebar-list-icon" />

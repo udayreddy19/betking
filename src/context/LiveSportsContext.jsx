@@ -13,6 +13,7 @@ import { subscribeLiveChannel, isLiveFeedSocketOpen } from '../services/liveFeed
 import { LIVE_SCORES_POLL_MS, LIVE_SCORES_WS_FALLBACK_POLL_MS } from '../config/livePolling';
 import { getIplSrlMatches } from '../../lib/iplSrlSimulator.mjs';
 import { cricketScoreWeight, cricketSourceRank, getCanonicalMatchPairKey } from '../../lib/matchPairKey.mjs';
+import { useFeatureFlags } from './FeatureFlagsContext';
 
 const LiveMatchesContext = createContext([]);
 const LiveSportsMetaContext = createContext(null);
@@ -231,6 +232,7 @@ function seriesSignature(series) {
 }
 
 export function LiveSportsProvider({ children }) {
+  const { isSportEnabled } = useFeatureFlags();
   const [matches, setMatches] = useState(() => mergeSrlMatches([]));
   const [cricketSeries, setCricketSeries] = useState([]);
   const [tickerMessage, setTickerMessage] = useState('🟢 Syncing live scores...');
@@ -404,8 +406,16 @@ export function LiveSportsProvider({ children }) {
     refreshScores,
   }), [cricketSeries, tickerMessage, scoresError, isScoresLoading, refreshScores]);
 
+  const visibleMatches = useMemo(
+    () => (matches || []).filter((m) => {
+      const sport = String(m?.sport || '').toLowerCase() || 'cricket';
+      return isSportEnabled(sport);
+    }),
+    [matches, isSportEnabled],
+  );
+
   return (
-    <LiveMatchesContext.Provider value={matches}>
+    <LiveMatchesContext.Provider value={visibleMatches}>
       <LiveSportsMetaContext.Provider value={metaValue}>
         {children}
       </LiveSportsMetaContext.Provider>

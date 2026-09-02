@@ -887,23 +887,30 @@ router.get('/api/admin/customers', async (req, res) => {
 
 router.post('/api/admin/customers/:id/restrict', async (req, res) => {
   const { id } = req.params;
-  const { action, reason } = req.body;
+  const { action, reason } = req.body || {};
   try {
-    const { query } = await import('../../../db/pg.js');
-    await query(
-      `INSERT INTO user_profiles (user_id, account_status, updated_at)
-       VALUES ($1, 'RESTRICTED', NOW())
-       ON CONFLICT (user_id) DO UPDATE SET account_status = 'RESTRICTED', updated_at = NOW()`,
-      [id],
-    ).catch(() => null);
+    const { restrictAccount } = await import('../../../lib/accountRestrictionEngine.mjs');
+    const result = await restrictAccount({
+      userId: id,
+      type: String(action || 'PERMANENT_RESTRICTION').toUpperCase(),
+      reason: String(reason || 'Admin security action').slice(0, 500),
+      actorId: req.admin?.id || 'admin',
+    });
     const { logAdminAction } = await import('../../middleware/auditLogger.js');
     await logAdminAction({
       actorId: req.admin?.id || 'admin',
       targetId: id,
       action: 'ACCOUNT_RESTRICTED',
-      details: { action, reason },
+      details: { action, reason, restrictionId: result.restrictionId },
     });
-    res.json({ success: true, userId: id, action, reason, timestamp: new Date().toISOString() });
+    res.json({
+      success: true,
+      userId: id,
+      action,
+      reason,
+      status: 'RESTRICTED',
+      timestamp: new Date().toISOString(),
+    });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -1081,36 +1088,54 @@ router.post('/api/admin/betting/settle', requireRole('SUPER_ADMIN', 'FINANCE_ADM
       return res.status(400).json({ success: false, error: 'outcome must be WON, LOST, or VOID' });
     }
 
-    const { makerCheckerEngine } = await import('../../../lib/makerCheckerEngine.mjs');
+    const { betSettlementEngine } = await import('../../../lib/betSettlementEngine.mjs');
     const { logAdminAction } = await import('../../middleware/auditLogger.js');
     const adminReason = String(reason || '').trim().slice(0, 240);
+    const adminId = req.admin?.id || 'admin';
 
-    const mcReq = await makerCheckerEngine.submitRequest({
-      actionType: 'SETTLEMENT_CORRECTION',
-      targetEntityType: 'bet',
-      targetEntityId: betId,
-      requestPayload: {
-        outcome: forcedOutcome,
-        reason: adminReason || `Manual settlement requested by ${req.admin?.id || 'admin'}`,
-        requestedOutcome: forcedOutcome,
-      },
-      makerId: req.admin?.id || 'admin',
-    });
+    const { query } = await import('../../../db/pg.js');
+    const betRes = await query('SELECT * FROM bets WHERE bet_id = $1', [betId]);
+    if (!betRes.rows.length) {
+      return res.status(404).json({ success: false, error: 'Bet not found' });
+    }
+    const bet = betRes.rows[0];
+
+    const matchState = {
+      matchId: bet.match_id,
+      status: 'COMPLETED',
+      __forcedOutcome: forcedOutcome,
+      __bypassAuth: true,
+      __settlementReason: adminReason
+        || `Admin manual settlement by ${adminId}`,
+    };
+
+    const result = await betSettlementEngine.settleSingleBet({
+      betId,
+      matchState,
+    }, req.correlationId);
+
+    if (!result || result.status === 'ALREADY_SETTLED') {
+      return res.json({
+        success: true,
+        betId,
+        outcome: result?.outcome || forcedOutcome,
+        status: 'ALREADY_SETTLED',
+      });
+    }
 
     await logAdminAction({
-      actorId: req.admin?.id || 'admin',
+      actorId: adminId,
       targetId: betId,
-      action: 'SETTLEMENT_REQUEST_CREATED',
-      details: { outcome: forcedOutcome, reason: adminReason || null, requestId: mcReq.requestId },
+      action: 'BET_SETTLED',
+      details: { outcome: forcedOutcome, payout: result.payout, reason: adminReason || null },
     });
 
     res.json({
       success: true,
-      pendingApproval: true,
-      requestId: mcReq.requestId,
       betId,
-      requestedOutcome: forcedOutcome,
-      message: 'Direct forced settlement is deprecated. Manual settlement request submitted for Maker-Checker dual authorization.',
+      outcome: forcedOutcome,
+      status: `SETTLED_${forcedOutcome}`,
+      payout: result.payout,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
@@ -2452,23 +2477,62 @@ router.post('/api/admin/platform/flags/toggle', async (req, res) => {
   try {
     const { key, enabled } = req.body || {};
     if (!key) return res.status(400).json({ success: false, error: 'key required' });
-    const { setSportEnabledStatus, getAdminConfigSummary } = await import('../../../lib/adminConfig.mjs');
-    const sportMatch = String(key).match(/^SPORT_ENABLED_(.+)$/);
-    if (sportMatch) {
-      const sport = sportMatch[1].toLowerCase().replace(/_/g, '-');
-      const next = enabled == null
+    const {
+      setSportEnabledStatus,
+      getAdminConfigSummary,
+      sportKeyFromFlagKey,
+      flagKeyFromSport,
+    } = await import('../../../lib/adminConfig.mjs');
+    const { upsertFeatureFlag } = await import('../../../lib/featureStore.mjs');
+    const sport = sportKeyFromFlagKey(key);
+    let nextEnabled = enabled;
+    if (String(key) === 'GLOBAL_MARGIN_PCT') {
+      return res.status(400).json({
+        success: false,
+        error: 'GLOBAL_MARGIN_PCT is display-only. Update admin pricing config separately; it is not a boolean flag.',
+      });
+    }
+    if (sport) {
+      nextEnabled = enabled == null
         ? !getAdminConfigSummary().enabledSports?.[sport]
         : !!enabled;
-      setSportEnabledStatus(sport, next);
+      setSportEnabledStatus(sport, nextEnabled);
+      await upsertFeatureFlag({
+        flagKey: flagKeyFromSport(sport),
+        name: `Sport: ${sport}`,
+        description: `Enable ${sport} on sportsbook`,
+        enabled: nextEnabled,
+        updatedBy: req.admin?.id || 'admin',
+        reason: 'Admin sport toggle',
+      });
+    } else if (String(key) !== 'GLOBAL_MARGIN_PCT') {
+      // Persist any other runtime key into the enterprise store so the user app can read it.
+      const current = await (async () => {
+        try {
+          const { isFeatureEnabled } = await import('../../../lib/featureStore.mjs');
+          return await isFeatureEnabled(key);
+        } catch {
+          return false;
+        }
+      })();
+      nextEnabled = enabled == null ? !current : !!enabled;
+      await upsertFeatureFlag({
+        flagKey: key,
+        name: key,
+        description: 'Runtime platform flag',
+        enabled: nextEnabled,
+        updatedBy: req.admin?.id || 'admin',
+        reason: 'Admin flag toggle',
+      });
     }
     const { logAdminAction } = await import('../../middleware/auditLogger.js');
     await logAdminAction({
       actorId: req.admin?.id || 'admin',
       targetId: key,
       action: 'FEATURE_FLAG_TOGGLE',
-      details: { key, enabled },
+      details: { key, enabled: nextEnabled },
     });
-    res.json({ success: true, key, timestamp: new Date().toISOString() });
+    res.json({ success: true, key, enabled: nextEnabled, timestamp: new Date().toISOString() });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -2504,11 +2568,15 @@ router.post('/api/admin/maker-checker/request', async (req, res) => {
 });
 
 router.post('/api/admin/maker-checker/approve', async (req, res) => {
-  const { requestId, checkerId } = req.body;
+  const { requestId, checkerId } = req.body || {};
+  if (!requestId) return res.status(400).json({ success: false, error: 'requestId required' });
   try {
-    const { approveMakerCheckerRequest } = await import('../../../lib/adminIntelligenceEngine.mjs');
-    const result = await approveMakerCheckerRequest({ requestId, checkerId });
-    res.json(result);
+    const { makerCheckerEngine } = await import('../../../lib/makerCheckerEngine.mjs');
+    const result = await makerCheckerEngine.approveRequest(
+      requestId,
+      checkerId || req.admin?.id || 'admin',
+    );
+    res.json({ success: true, ...result });
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
   }
@@ -3040,7 +3108,7 @@ router.post(['/api/admin/support/tickets/:id/priority', '/api/v1/admin/support/t
   }
 });
 
-// ── Financial Safety: Request Financial Review (Maker-Checker link without direct balance modification) ──
+// ── Financial Safety: Request Financial Review (real Maker-Checker queue) ──
 router.post(['/api/admin/support/financial-review-request', '/api/v1/admin/support/financial-review-request'], async (req, res) => {
   const { userId, ticketId, reason, transactionId, betId, amount } = req.body || {};
   const requestedBy = req.admin?.id || 'support_agent';
@@ -3048,20 +3116,39 @@ router.post(['/api/admin/support/financial-review-request', '/api/v1/admin/suppo
     return res.status(400).json({ success: false, error: 'userId and reason are required' });
   }
   try {
-    const requestId = `fin_rev_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-    const { enterpriseAuditEngine } = await import('../../../lib/enterpriseAuditEngine.mjs');
-    enterpriseAuditEngine.recordEvent({
-      who: requestedBy,
-      what: 'FINANCIAL_REVIEW_REQUESTED',
-      reason,
-      referenceId: userId,
-      metadata: { ticketId, transactionId, betId, amount, requestId },
+    const { makerCheckerEngine } = await import('../../../lib/makerCheckerEngine.mjs');
+    const numericAmount = Number(amount);
+    const hasAmount = Number.isFinite(numericAmount) && numericAmount > 0;
+    const mc = await makerCheckerEngine.submitRequest({
+      actionType: hasAmount ? 'MANUAL_CREDIT' : 'FINANCIAL_REVIEW',
+      targetEntityType: 'user',
+      targetEntityId: userId,
+      makerId: requestedBy,
+      requestPayload: {
+        userId,
+        amount: hasAmount ? numericAmount : undefined,
+        direction: 'credit',
+        reason: String(reason).slice(0, 500),
+        ticketId: ticketId || null,
+        transactionId: transactionId || null,
+        betId: betId || null,
+        reviewOnly: !hasAmount,
+      },
+    });
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    await logAdminAction({
+      actorId: requestedBy,
+      targetId: userId,
+      action: 'FINANCIAL_REVIEW_REQUESTED',
+      details: { ticketId, transactionId, betId, amount, requestId: mc.requestId },
     });
     res.status(201).json({
       success: true,
-      requestId,
-      status: 'PENDING_FINANCE_APPROVAL',
-      message: 'Financial review request created and queued for Finance Maker-Checker verification. Support agents cannot directly adjust balances.',
+      requestId: mc.requestId,
+      status: 'PENDING_APPROVAL',
+      message: hasAmount
+        ? 'Manual credit request queued for Finance Maker-Checker approval.'
+        : 'Financial review queued for Finance Maker-Checker. No balance change until approved with an amount.',
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

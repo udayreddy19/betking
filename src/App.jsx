@@ -27,6 +27,7 @@ import RouteSeo from './components/RouteSeo/RouteSeo';
 import PhoneRequiredGate from './components/PhoneRequiredGate/PhoneRequiredGate';
 import { getAdminSessionState } from './utils/adminSession';
 import { CASINO_ENABLED, FANTASY_JOIN_ENABLED } from './utils/featureFlags';
+import { FeatureFlagsProvider, useFeatureFlags } from './context/FeatureFlagsContext';
 
 import Home from './pages/Home/Home';
 import Register from './pages/Register/Register';
@@ -66,6 +67,14 @@ const DepositPage = lazy(() => import('./pages/Wallet/DepositPage'));
 
 function CasinoComingSoon() {
   return <Navigate to="/sports" replace />;
+}
+
+function FlaggedRoute({ flagKey, children, fallback = '/' }) {
+  const { isEnabled, ready } = useFeatureFlags();
+  if (ready && !isEnabled(flagKey, true)) {
+    return <Navigate to={fallback} replace />;
+  }
+  return children;
 }
 
 function PageLoader() {
@@ -132,7 +141,7 @@ function AppLayout() {
               <Route path="/live-casino" element={CASINO_ENABLED ? <LiveCasino /> : <CasinoComingSoon />} />
               <Route path="/fantasy" element={FANTASY_JOIN_ENABLED ? <Fantasy /> : <CasinoComingSoon />} />
               <Route path="/bets" element={<MyBetsPage />} />
-              <Route path="/invite" element={<InvitePage />} />
+              <Route path="/invite" element={<FlaggedRoute flagKey="referral_system_ui"><InvitePage /></FlaggedRoute>} />
               <Route path="/exchange" element={<CasinoComingSoon />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/wallet" element={<WalletDashboard />} />
@@ -141,10 +150,10 @@ function AppLayout() {
               <Route path="/_oauth/google" element={<OAuthGoogleCallback />} />
               <Route path="/verify-email" element={<VerifyEmailPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
-              <Route path="/promotions" element={<Promotions />} />
+              <Route path="/promotions" element={<FlaggedRoute flagKey="promotion_engine_ui"><Promotions /></FlaggedRoute>} />
               <Route path="/rewards" element={<MyRewards />} />
               <Route path="/my-rewards" element={<MyRewards />} />
-              <Route path="/notifications" element={<NotificationCenter />} />
+              <Route path="/notifications" element={<FlaggedRoute flagKey="notification_center"><NotificationCenter /></FlaggedRoute>} />
               <Route path="/vip" element={<Vip />} />
               <Route
                 path="/admin/iplsrl"
@@ -189,7 +198,7 @@ function AppLayout() {
               />
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
-              <Route path="/responsible-gaming" element={<ResponsibleGaming />} />
+              <Route path="/responsible-gaming" element={<FlaggedRoute flagKey="responsible_gaming_ui"><ResponsibleGaming /></FlaggedRoute>} />
               <Route path="/help" element={<Help />} />
               <Route path="/support" element={<SupportHome />} />
               <Route path="/support/tickets" element={<TicketsListPage />} />
@@ -216,13 +225,15 @@ export default function App() {
         <ThemeProvider>
           <BrowserRouter>
             <AuthProvider>
-              <CasinoProvider>
-                <LiveSportsProvider>
-                  <BetSlipProvider>
-                    <AppLayout />
-                  </BetSlipProvider>
-                </LiveSportsProvider>
-              </CasinoProvider>
+              <FeatureFlagsProvider>
+                <CasinoProvider>
+                  <LiveSportsProvider>
+                    <BetSlipProvider>
+                      <AppLayout />
+                    </BetSlipProvider>
+                  </LiveSportsProvider>
+                </CasinoProvider>
+              </FeatureFlagsProvider>
             </AuthProvider>
           </BrowserRouter>
         </ThemeProvider>

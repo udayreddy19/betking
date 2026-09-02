@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { adminApiClient } from '../api/adminApiClient';
 import AdminDataTable from '../components/AdminDataTable';
 import { useAdminToast } from '../components/AdminToastContext';
@@ -46,6 +46,122 @@ function approveActionLabel(row) {
   }
   if (l === 'HIGH' || l === 'CRITICAL') return 'Maker review';
   return 'Approve';
+}
+
+function PendingFinancialApprovalsPanel() {
+  const [rows, setRows] = useState([]);
+  const [error, setError] = useState(null);
+  const [processingId, setProcessingId] = useState(null);
+  const { showToast } = useAdminToast();
+
+  const load = useCallback(() => {
+    adminApiClient.get('/maker-checker/pending')
+      .then((data) => {
+        setRows(data.pending || []);
+        setError(null);
+      })
+      .catch((err) => {
+        setRows([]);
+        setError(err.message || 'Failed to load pending approvals');
+      });
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleApprove = async (row) => {
+    if (!row?.id || processingId) return;
+    setProcessingId(row.id);
+    try {
+      await adminApiClient.post(`/maker-checker/${encodeURIComponent(row.id)}/approve`, {});
+      showToast(`Approved ${row.action_type || row.id}`, 'success');
+      load();
+    } catch (err) {
+      showToast(err.message || 'Approve failed', 'error');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleReject = async (row) => {
+    if (!row?.id || processingId) return;
+    const reason = window.prompt('Rejection reason?');
+    if (!reason?.trim()) return;
+    setProcessingId(row.id);
+    try {
+      await adminApiClient.post(`/maker-checker/${encodeURIComponent(row.id)}/reject`, { reason: reason.trim() });
+      showToast(`Rejected ${row.action_type || row.id}`, 'success');
+      load();
+    } catch (err) {
+      showToast(err.message || 'Reject failed', 'error');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  return (
+    <div>
+      <div style={{ marginBottom: 12 }}>
+        <h2 className="admin-page-header__title">Pending financial approvals</h2>
+        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
+          Wallet credits/debits, promo clawbacks, and financial reviews. Approving executes the ledger change (checker cannot be the maker).
+        </p>
+        {error && <p style={{ color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
+      </div>
+      <AdminDataTable
+        title={`Pending (${rows.length})`}
+        emptyMessage="No pending maker-checker requests"
+        data={rows}
+        columns={[
+          { header: 'Request', key: 'id', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.72rem' }}>{r.id}</span> },
+          { header: 'Action', key: 'action_type' },
+          { header: 'Target', key: 'target_entity_id', render: (r) => <span className="admin-text-mono">{r.target_entity_id}</span> },
+          {
+            header: 'Amount',
+            key: 'amount',
+            render: (r) => {
+              let payload = r.request_payload;
+              if (typeof payload === 'string') {
+                try { payload = JSON.parse(payload); } catch { payload = {}; }
+              }
+              const amt = payload?.amount;
+              return amt != null ? `₹${Number(amt).toLocaleString('en-IN')}` : '—';
+            },
+          },
+          { header: 'Maker', key: 'maker_id' },
+          {
+            header: 'Created',
+            key: 'created_at',
+            render: (r) => (r.created_at ? new Date(r.created_at).toLocaleString('en-IN') : '—'),
+          },
+          {
+            header: 'Actions',
+            key: 'actions',
+            sortable: false,
+            render: (r) => (
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--sm admin-btn--success"
+                  disabled={!!processingId}
+                  onClick={() => handleApprove(r)}
+                >
+                  Approve
+                </button>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--sm admin-btn--secondary"
+                  disabled={!!processingId}
+                  onClick={() => handleReject(r)}
+                >
+                  Reject
+                </button>
+              </div>
+            ),
+          },
+        ]}
+      />
+    </div>
+  );
 }
 
 function MakerCheckerPanel() {
@@ -1938,7 +2054,7 @@ export default function FinanceDomainView({
   focusEntityType = null,
   onFocusConsumed = null,
 }) {
-  const moneyIds = ['cash-money', 'deposits-review', 'maker-checker'];
+  const moneyIds = ['cash-money', 'deposits-review', 'maker-checker', 'pending-approvals'];
   const bookIds = [
     'cash-books',
     'ledger',
@@ -1969,6 +2085,7 @@ export default function FinanceDomainView({
     if (id === 'legacy-ledger') return <LegacyLedgerPanel />;
     if (id === 'payment-gateways') return <PaymentGatewaysView />;
     if (id === 'deposits-review') return <DepositsReviewPanel />;
+    if (id === 'pending-approvals') return <PendingFinancialApprovalsPanel />;
     return <MakerCheckerPanel />;
   };
 
@@ -1980,6 +2097,7 @@ export default function FinanceDomainView({
         tabs={[
           { id: 'deposits-review', label: 'Deposits' },
           { id: 'maker-checker', label: 'Withdrawals' },
+          { id: 'pending-approvals', label: 'Approvals' },
         ]}
       >
         {(tab) => renderPanel(tab)}

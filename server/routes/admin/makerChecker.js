@@ -44,35 +44,46 @@ router.post('/submit', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST /maker-checker/:id/approve — checker approves
+// POST /maker-checker/:id/approve — checker approves and executes the action
 router.post('/:id/approve', async (req, res) => {
   try {
-    const q = await getQuery();
-    const reqRow = await q('SELECT * FROM maker_checker_requests WHERE id = $1', [req.params.id]);
-    if (reqRow.rows.length === 0) return res.status(404).json({ error: 'Request not found' });
-    const mcReq = reqRow.rows[0];
-    if (mcReq.status !== 'PENDING_APPROVAL') return res.status(400).json({ error: `Request is already ${mcReq.status}` });
-    if (mcReq.maker_id === req.admin.id) return res.status(403).json({ error: 'MAKER_CHECKER: You cannot approve your own request', code: 'SELF_APPROVAL_PROHIBITED' });
-
-    await q("UPDATE maker_checker_requests SET status = 'APPROVED', checker_id = $1, approved_at = NOW() WHERE id = $2", [req.admin.id, req.params.id]);
-    await logAdminAction({ actorId: req.admin.id, targetId: req.params.id, action: 'MAKER_CHECKER_APPROVED', details: { actionType: mcReq.action_type } });
-    res.json({ requestId: req.params.id, status: 'APPROVED', checkerId: req.admin.id });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+    const { makerCheckerEngine } = await import('../../../lib/makerCheckerEngine.mjs');
+    const result = await makerCheckerEngine.approveRequest(req.params.id, req.admin.id);
+    await logAdminAction({
+      actorId: req.admin.id,
+      targetId: req.params.id,
+      action: 'MAKER_CHECKER_APPROVED',
+      details: { status: result.status },
+    });
+    res.json({ requestId: req.params.id, status: 'APPROVED', checkerId: req.admin.id, ...result });
+  } catch (err) {
+    const status = /SELF_APPROVAL|cannot approve/i.test(err.message) ? 403
+      : /not found/i.test(err.message) ? 404
+      : /already/i.test(err.message) ? 400
+      : 500;
+    res.status(status).json({ error: err.message, code: status === 403 ? 'SELF_APPROVAL_PROHIBITED' : undefined });
+  }
 });
 
 // POST /maker-checker/:id/reject — checker rejects
 router.post('/:id/reject', async (req, res) => {
   try {
-    const q = await getQuery();
     if (!req.body.reason) return res.status(400).json({ error: 'Rejection reason is required' });
-    const reqRow = await q('SELECT * FROM maker_checker_requests WHERE id = $1', [req.params.id]);
-    if (reqRow.rows.length === 0) return res.status(404).json({ error: 'Request not found' });
-    if (reqRow.rows[0].maker_id === req.admin.id) return res.status(403).json({ error: 'MAKER_CHECKER: You cannot reject your own request' });
-
-    await q("UPDATE maker_checker_requests SET status = 'REJECTED', checker_id = $1, rejection_reason = $2 WHERE id = $3", [req.admin.id, req.body.reason, req.params.id]);
-    await logAdminAction({ actorId: req.admin.id, targetId: req.params.id, action: 'MAKER_CHECKER_REJECTED', details: { reason: req.body.reason } });
-    res.json({ requestId: req.params.id, status: 'REJECTED', reason: req.body.reason });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+    const { makerCheckerEngine } = await import('../../../lib/makerCheckerEngine.mjs');
+    const result = await makerCheckerEngine.rejectRequest(req.params.id, req.body.reason, req.admin.id);
+    await logAdminAction({
+      actorId: req.admin.id,
+      targetId: req.params.id,
+      action: 'MAKER_CHECKER_REJECTED',
+      details: { reason: req.body.reason },
+    });
+    res.json({ requestId: req.params.id, status: 'REJECTED', reason: req.body.reason, ...result });
+  } catch (err) {
+    const status = /cannot reject|SELF_APPROVAL/i.test(err.message) ? 403
+      : /not found/i.test(err.message) ? 404
+      : 500;
+    res.status(status).json({ error: err.message });
+  }
 });
 
 export default router;

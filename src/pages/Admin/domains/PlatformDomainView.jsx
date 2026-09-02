@@ -94,7 +94,7 @@ export default function PlatformDomainView({ subModule = 'feature-flags' }) {
     : 'System Feature Flags';
   const hint = subModule === 'api-keys'
     ? 'Registered developer API keys from the platform tables.'
-    : 'Sport enable toggles plus enterprise feature-store rollout flags. Authorization is never bypassed by flags.';
+    : 'Sport and product toggles apply to the live user app within ~30s. Create Enterprise flags (or use suggested keys), then disable to hide those surfaces for players.';
 
   const knownKeys = new Set(storeFlags.map((f) => f.flag_key));
   const missingSuggested = SUGGESTED_PRODUCT_FLAGS.filter((f) => !knownKeys.has(f.flagKey));
@@ -136,9 +136,13 @@ export default function PlatformDomainView({ subModule = 'feature-flags' }) {
                   <button
                     type="button"
                     onClick={() => toggleFlag(flag.key)}
+                    disabled={!!flag.readOnly}
+                    title={flag.readOnly ? 'Display only — not a runtime toggle' : undefined}
                     className={`admin-btn admin-btn--sm ${flag.enabled ? 'admin-btn--success' : 'admin-btn--secondary'}`}
                   >
-                    {flag.enabled ? '● ENABLED' : '○ DISABLED'}
+                    {flag.readOnly
+                      ? `Value ${flag.value ?? '—'}%`
+                      : (flag.enabled ? '● ENABLED' : '○ DISABLED')}
                   </button>
                 </div>
               ))}

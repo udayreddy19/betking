@@ -23,13 +23,12 @@ router.post('/customers/:id/unrestrict', async (req, res) => {
   const { id } = req.params;
   const reason = String(req.body?.reason || 'Admin unrestrict').slice(0, 500);
   try {
-    const { query } = await import('../../../db/pg.js');
-    await query(
-      `INSERT INTO user_profiles (user_id, account_status, updated_at)
-       VALUES ($1, 'ACTIVE', NOW())
-       ON CONFLICT (user_id) DO UPDATE SET account_status = 'ACTIVE', updated_at = NOW()`,
-      [id],
-    );
+    const { releaseAccount } = await import('../../../lib/accountRestrictionEngine.mjs');
+    await releaseAccount({
+      userId: id,
+      actorId: req.admin?.id || 'admin',
+      reason,
+    });
     await logAdminAction({
       actorId: req.admin?.id || 'admin',
       targetId: id,
@@ -89,13 +88,13 @@ router.post('/customers/:id/wallet-adjust-request', async (req, res) => {
   }
   if (!reason) return res.status(400).json({ error: 'reason is required' });
   try {
-    const { createMakerCheckerRequest } = await import('../../../lib/adminIntelligenceEngine.mjs');
+    const { makerCheckerEngine } = await import('../../../lib/makerCheckerEngine.mjs');
     const actionType = direction === 'DEBIT' ? 'MANUAL_DEBIT' : 'MANUAL_CREDIT';
-    const result = await createMakerCheckerRequest({
+    const result = await makerCheckerEngine.submitRequest({
       actionType,
       targetEntityType: 'user',
       targetEntityId: userId,
-      requestPayload: { userId, amount, direction, reason },
+      requestPayload: { userId, amount, direction: direction.toLowerCase(), reason },
       makerId: req.admin?.id || 'admin',
     });
     await logAdminAction({

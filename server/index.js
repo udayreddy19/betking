@@ -176,6 +176,13 @@ httpServer.listen(PORT, async () => {
   logger.info('http_listening', { port: Number(PORT), webhook: '/api/webhooks/razorpay', websocket: '/ws/support' });
 
   try {
+    const { hydrateSportFlagsFromStore } = await import('../lib/adminConfig.mjs');
+    await hydrateSportFlagsFromStore();
+  } catch (err) {
+    logger.warn('sport_flags_hydrate_failed', { error: err.message });
+  }
+
+  try {
     const { logWebPushStartupStatus } = await import('../lib/webPushEngine.mjs');
     logWebPushStartupStatus();
   } catch (err) {
