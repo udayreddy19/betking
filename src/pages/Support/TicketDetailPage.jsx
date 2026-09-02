@@ -2,6 +2,13 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../utils/apiClient';
+import SupportAttachmentList from '../../components/Support/SupportAttachmentList';
+import {
+  SUPPORT_ATTACHMENT_ACCEPT,
+  formatAttachmentSize,
+  uploadSupportAttachment,
+  validateSupportFile,
+} from '../../utils/supportAttachments';
 import './SupportPages.css';
 
 function formatTime(val) {
@@ -25,9 +32,11 @@ export default function TicketDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [replyText, setReplyText] = useState('');
+  const [replyAttachment, setReplyAttachment] = useState(null);
   const [sending, setSending] = useState(false);
   const [reopening, setReopening] = useState(false);
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const loadTicket = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
@@ -64,22 +73,33 @@ export default function TicketDetailPage() {
 
   const handleSendReply = async (e) => {
     e.preventDefault();
-    if (!replyText.trim() || sending) return;
+    if ((!replyText.trim() && !replyAttachment) || sending) return;
 
     setSending(true);
     setError('');
 
     try {
+      let attachments = [];
+      if (replyAttachment) {
+        attachments = [await uploadSupportAttachment(replyAttachment, {
+          conversationId: ticket?.conversationId || ticket?.id,
+        })];
+      }
       const res = await apiFetch(`/api/v1/support/tickets/${ticketReference}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: replyText.trim() }),
+        body: JSON.stringify({
+          text: replyText.trim() || (attachments.length ? 'Sent an attachment' : ''),
+          attachments,
+        }),
       });
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Failed to send message.');
 
       setReplyText('');
+      setReplyAttachment(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
       await loadTicket({ silent: true });
     } catch (err) {
       setError(err.message || 'Could not send message.');
@@ -218,6 +238,7 @@ export default function TicketDetailPage() {
                   <time>{formatTime(when)}</time>
                 </header>
                 <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{m.text}</p>
+                <SupportAttachmentList attachments={m.attachments} />
               </div>
             );
           })}
@@ -234,11 +255,55 @@ export default function TicketDetailPage() {
                 placeholder="Type your reply here..."
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
-                required
               />
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-              <button type="submit" className="support-btn" disabled={sending || !replyText.trim()}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept={SUPPORT_ATTACHMENT_ACCEPT}
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const validationError = validateSupportFile(file);
+                    if (validationError) {
+                      setError(validationError);
+                      e.target.value = '';
+                      return;
+                    }
+                    setReplyAttachment(file);
+                    setError('');
+                  }}
+                />
+                <button
+                  type="button"
+                  className="support-btn support-btn--outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={sending}
+                  style={{ fontSize: '0.8rem', padding: '6px 12px' }}
+                >
+                  Attach file
+                </button>
+                {replyAttachment && (
+                  <span style={{ fontSize: '0.78rem', color: '#60a5fa' }}>
+                    {replyAttachment.name} ({formatAttachmentSize(replyAttachment.size)})
+                    {' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReplyAttachment(null);
+                        if (fileInputRef.current) fileInputRef.current.value = '';
+                      }}
+                      style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', textDecoration: 'underline' }}
+                    >
+                      Remove
+                    </button>
+                  </span>
+                )}
+              </div>
+              <button type="submit" className="support-btn" disabled={sending || (!replyText.trim() && !replyAttachment)}>
                 {sending ? 'Sending Reply…' : 'Send Reply'}
               </button>
             </div>

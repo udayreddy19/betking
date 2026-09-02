@@ -16,8 +16,22 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 app.set('trust proxy', 1);
 
+app.use('/api/support/attachments', express.json({
+  limit: '15mb',
+  verify: (req, res, buf) => { req.rawBody = buf; },
+}));
+app.use('/api/v1/support/attachments', express.json({
+  limit: '15mb',
+  verify: (req, res, buf) => { req.rawBody = buf; },
+}));
+app.use('/api/admin/support/attachments', express.json({
+  limit: '15mb',
+  verify: (req, res, buf) => { req.rawBody = buf; },
+}));
+
 // IMPORTANT: Razorpay Webhooks MUST receive the RAW request body to verify HMAC signatures accurately.
 app.use(express.json({
+  limit: '2mb',
   verify: (req, res, buf) => {
     req.rawBody = buf;
   }

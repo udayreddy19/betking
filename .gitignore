@@ -38,3 +38,4 @@ backups/
 __pycache__/
 *.pyc
 csk_srl/Library/
+data/support_attachments/

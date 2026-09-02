@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../utils/apiClient';
+import {
+  SUPPORT_ATTACHMENT_ACCEPT,
+  formatAttachmentSize,
+  uploadSupportAttachment,
+  validateSupportFile,
+} from '../../utils/supportAttachments';
 import './SupportPages.css';
 
 const TICKET_CATEGORIES = [
@@ -50,17 +56,17 @@ export default function CreateTicketPage() {
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 10 * 1024 * 1024) {
-      setError('File size must be under 10MB.');
+    if (!file) {
+      setAttachment(null);
       return;
     }
-    setAttachment({
-      name: file.name,
-      type: file.type,
-      size: file.size,
-    });
+    const validationError = validateSupportFile(file);
+    if (validationError) {
+      setError(validationError);
+      e.target.value = '';
+      return;
+    }
+    setAttachment(file);
     setError('');
   };
 
@@ -70,8 +76,8 @@ export default function CreateTicketPage() {
       setError('Please enter a subject.');
       return;
     }
-    if (!description.trim()) {
-      setError('Please provide a detailed description.');
+    if (!description.trim() && !attachment) {
+      setError('Please provide a description or attachment.');
       return;
     }
 
@@ -79,14 +85,18 @@ export default function CreateTicketPage() {
     setError('');
 
     try {
+      let uploaded = [];
+      if (attachment) {
+        uploaded = [await uploadSupportAttachment(attachment)];
+      }
       const payload = {
         category,
         subject: subject.trim(),
-        description: description.trim(),
+        description: description.trim() || (uploaded.length ? 'Sent an attachment' : ''),
         priority,
         relatedEntityType: relatedEntityType || undefined,
         relatedEntityId: relatedEntityId?.trim() || undefined,
-        attachments: attachment ? [{ fileName: attachment.name, fileType: attachment.type, fileSize: attachment.size }] : [],
+        attachments: uploaded,
       };
 
       const res = await apiFetch('/api/v1/support/tickets', {
@@ -221,7 +231,7 @@ export default function CreateTicketPage() {
           {/* Description */}
           <div className="support-form-group">
             <label className="support-form-label" htmlFor="ticket-desc">
-              Description <span className="req">*</span>
+              Description
             </label>
             <textarea
               id="ticket-desc"
@@ -230,25 +240,32 @@ export default function CreateTicketPage() {
               placeholder="Please provide complete context: timestamps, amounts, payment reference IDs, or match details..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              required
             />
           </div>
 
           {/* Attachment */}
           <div className="support-form-group">
             <label className="support-form-label" htmlFor="ticket-attachment">
-              Attachment (Optional screenshot or receipt)
+              Attachment (images, DOC/DOCX, XLS/XLSX, PDF — max 10MB)
             </label>
             <input
               id="ticket-attachment"
               type="file"
               className="support-input"
-              accept=".jpg,.jpeg,.png,.webp,.pdf,.txt"
+              accept={SUPPORT_ATTACHMENT_ACCEPT}
               onChange={handleFileChange}
             />
             {attachment && (
               <div className="support-hint" style={{ color: '#60a5fa', marginTop: '6px' }}>
-                Selected: {attachment.name} ({(attachment.size / 1024).toFixed(1)} KB)
+                Selected: {attachment.name} ({formatAttachmentSize(attachment.size)})
+                {' '}
+                <button
+                  type="button"
+                  onClick={() => setAttachment(null)}
+                  style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', textDecoration: 'underline' }}
+                >
+                  Remove
+                </button>
               </div>
             )}
           </div>

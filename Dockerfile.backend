@@ -19,6 +19,9 @@ RUN npm ci --only=production
 # Copy application source code
 COPY . .
 
+# Writable upload directory for support chat attachments (non-root USER node)
+RUN mkdir -p /app/data/support_attachments && chown -R node:node /app/data
+
 # Expose backend API / WebSocket port
 EXPOSE 5001
 

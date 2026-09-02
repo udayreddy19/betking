@@ -1278,8 +1278,12 @@ router.get('/api/admin/support/tickets/:id', async (req, res) => {
 
 router.post('/api/admin/support/tickets/:id/reply', async (req, res) => {
   const { id } = req.params;
-  const { text } = req.body;
-  if (!text?.trim()) return res.status(400).json({ success: false, error: 'text required' });
+  const { text, attachments = [] } = req.body || {};
+  const trimmed = String(text || '').trim();
+  const files = Array.isArray(attachments) ? attachments : [];
+  if (!trimmed && files.length === 0) {
+    return res.status(400).json({ success: false, error: 'text or attachment required' });
+  }
   try {
     const { supportEngine } = await import('../../../lib/supportEngine.mjs');
     const message = await supportEngine.addMessage(id, {
@@ -1291,27 +1295,82 @@ router.post('/api/admin/support/tickets/:id/reply', async (req, res) => {
         || req.admin?.name
         || req.admin?.email
         || (req.admin?.role === 'SUPPORT_AGENT' ? 'OddsYra Support Agent' : 'OddsYra Support'),
-      text: String(text).trim(),
+      text: trimmed || (files.length ? 'Sent an attachment' : ''),
+      attachments: files,
     });
     if (!message) {
       return res.status(404).json({ success: false, error: 'Ticket not found' });
     }
+    try {
+      const { linkAttachmentsToMessage } = await import('../../../lib/supportAttachments.mjs');
+      await linkAttachmentsToMessage({
+        attachmentIds: files.map((f) => f.attachmentId).filter(Boolean),
+        messageId: message.messageId || message.id,
+        conversationId: id,
+      });
+    } catch { /* best-effort */ }
     const { logAdminAction } = await import('../../middleware/auditLogger.js');
     await logAdminAction({
       actorId: req.admin?.id || 'admin',
       targetId: id,
       action: 'SUPPORT_REPLY',
-      details: { textPreview: String(text).slice(0, 120), messageId: message.messageId || message.id },
+      details: {
+        textPreview: trimmed.slice(0, 120),
+        messageId: message.messageId || message.id,
+        attachmentCount: files.length,
+      },
     });
     res.json({
       success: true,
       ticketId: id,
       message,
-      reply: text,
+      reply: trimmed,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/api/admin/support/attachments/upload', async (req, res) => {
+  try {
+    const { fileName, fileType, fileSize, conversationId, base64Data } = req.body || {};
+    const { saveSupportAttachment } = await import('../../../lib/supportAttachments.mjs');
+    const attachment = await saveSupportAttachment({
+      fileName,
+      fileType,
+      fileSize,
+      base64Data,
+      uploadedBy: req.admin?.id || req.admin?.email || 'admin',
+      conversationId: conversationId || null,
+      uploadedByRole: 'admin',
+    });
+    res.status(201).json({ success: true, attachment });
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message });
+  }
+});
+
+router.get('/api/admin/support/attachments/:attachmentId', async (req, res) => {
+  try {
+    const {
+      getSupportAttachmentRecord,
+      readSupportAttachmentFile,
+    } = await import('../../../lib/supportAttachments.mjs');
+    const record = await getSupportAttachmentRecord(req.params.attachmentId);
+    if (!record) return res.status(404).json({ success: false, error: 'Attachment not found' });
+    const buf = await readSupportAttachmentFile(record);
+    if (!buf) return res.status(404).json({ success: false, error: 'File missing' });
+    res.setHeader('Content-Type', record.file_type || 'application/octet-stream');
+    res.setHeader('Content-Length', buf.length);
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="${String(record.file_name || 'attachment').replace(/"/g, '')}"`,
+    );
+    res.setHeader('Cache-Control', 'private, max-age=300');
+    return res.send(buf);
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message });
   }
 });
 

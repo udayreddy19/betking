@@ -5,6 +5,13 @@ import { useAdminToast } from '../components/AdminToastContext';
 import { StatusBadge } from '../components/AdminBadge';
 import AdminDrawer from '../components/AdminDrawer';
 import AdminCard from '../components/AdminCard';
+import SupportAttachmentList from '../../../components/Support/SupportAttachmentList';
+import {
+  SUPPORT_ATTACHMENT_ACCEPT,
+  formatAttachmentSize,
+  uploadSupportAttachment,
+  validateSupportFile,
+} from '../../../utils/supportAttachments';
 
 function formatMsgTime(value) {
   if (!value) return '';
@@ -50,6 +57,7 @@ export default function SupportDomainView({
   const [finReviewReason, setFinReviewReason] = useState('');
   const [assignAgentName, setAssignAgentName] = useState('');
   const [replyMessage, setReplyMessage] = useState('');
+  const [replyAttachment, setReplyAttachment] = useState(null);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
 
@@ -69,6 +77,7 @@ export default function SupportDomainView({
 
   const { showToast } = useAdminToast();
   const replyRef = useRef(null);
+  const replyFileRef = useRef(null);
   const threadEndRef = useRef(null);
   const focusHandledRef = useRef(null);
 
@@ -148,6 +157,8 @@ export default function SupportDomainView({
   const openTicket = (ticket) => {
     setSelectedTicket(ticket);
     setReplyMessage('');
+    setReplyAttachment(null);
+    if (replyFileRef.current) replyFileRef.current.value = '';
     setInternalNoteText('');
     setDrawerTab('messages');
   };
@@ -155,6 +166,8 @@ export default function SupportDomainView({
   const dismissTicket = useCallback(() => {
     setSelectedTicket(null);
     setReplyMessage('');
+    setReplyAttachment(null);
+    if (replyFileRef.current) replyFileRef.current.value = '';
     setInternalNoteText('');
     setThreadMessages([]);
   }, []);
@@ -164,18 +177,33 @@ export default function SupportDomainView({
     return s === 'CLOSED' || s === 'RESOLVED';
   };
 
-  const handleSendReply = () => {
-    if (!selectedTicket?.id || !replyMessage.trim() || sending) return;
+  const handleSendReply = async () => {
+    if (!selectedTicket?.id || (!replyMessage.trim() && !replyAttachment) || sending) return;
     setSending(true);
-    adminApiClient.post(`/support/tickets/${selectedTicket.id}/reply`, { text: replyMessage })
-      .then(async () => {
-        setReplyMessage('');
-        showToast('Response dispatched.', 'success');
-        await loadThread(selectedTicket.id);
-        loadData();
-      })
-      .catch((err) => showToast(err.message || 'Failed to send reply', 'error'))
-      .finally(() => setSending(false));
+    try {
+      let attachments = [];
+      if (replyAttachment) {
+        attachments = [await uploadSupportAttachment(replyAttachment, {
+          conversationId: selectedTicket.id,
+          admin: true,
+          adminPost: (path, body) => adminApiClient.post(path, body),
+        })];
+      }
+      await adminApiClient.post(`/support/tickets/${selectedTicket.id}/reply`, {
+        text: replyMessage.trim() || (attachments.length ? 'Sent an attachment' : ''),
+        attachments,
+      });
+      setReplyMessage('');
+      setReplyAttachment(null);
+      if (replyFileRef.current) replyFileRef.current.value = '';
+      showToast('Response dispatched.', 'success');
+      await loadThread(selectedTicket.id);
+      loadData();
+    } catch (err) {
+      showToast(err.message || 'Failed to send reply', 'error');
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleAddInternalNote = () => {
@@ -654,6 +682,7 @@ export default function SupportDomainView({
                         <div style={{ fontSize: '0.84rem', lineHeight: 1.45, whiteSpace: 'pre-wrap', color: 'var(--admin-text)' }}>
                           {msg.text}
                         </div>
+                        <SupportAttachmentList attachments={msg.attachments} admin />
                       </div>
                     );
                   })}
@@ -685,8 +714,56 @@ export default function SupportDomainView({
                     className="admin-input"
                     style={{ width: '100%', resize: 'vertical', fontSize: '0.84rem' }}
                   />
-                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                    <button type="button" className="admin-btn admin-btn--primary" onClick={handleSendReply} disabled={sending || !replyMessage.trim() || isTicketClosed(selectedTicket)}>
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <input
+                        ref={replyFileRef}
+                        type="file"
+                        accept={SUPPORT_ATTACHMENT_ACCEPT}
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const validationError = validateSupportFile(file);
+                          if (validationError) {
+                            showToast(validationError, 'error');
+                            e.target.value = '';
+                            return;
+                          }
+                          setReplyAttachment(file);
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="admin-btn admin-btn--secondary admin-btn--sm"
+                        onClick={() => replyFileRef.current?.click()}
+                        disabled={sending || isTicketClosed(selectedTicket)}
+                      >
+                        Attach file
+                      </button>
+                      {replyAttachment && (
+                        <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)' }}>
+                          {replyAttachment.name} ({formatAttachmentSize(replyAttachment.size)})
+                          {' '}
+                          <button
+                            type="button"
+                            className="admin-btn admin-btn--sm admin-btn--secondary"
+                            onClick={() => {
+                              setReplyAttachment(null);
+                              if (replyFileRef.current) replyFileRef.current.value = '';
+                            }}
+                          >
+                            Remove
+                          </button>
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn--primary"
+                      onClick={handleSendReply}
+                      disabled={sending || (!replyMessage.trim() && !replyAttachment) || isTicketClosed(selectedTicket)}
+                    >
                       {sending ? 'Sending…' : 'Send Customer Reply'}
                     </button>
                   </div>

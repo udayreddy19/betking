@@ -1,6 +1,13 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiFetch } from '../../utils/apiClient';
 import { extractTicketsFromResponse } from '../../utils/supportTickets';
+import SupportAttachmentList from '../../components/Support/SupportAttachmentList';
+import {
+  SUPPORT_ATTACHMENT_ACCEPT,
+  formatAttachmentSize,
+  uploadSupportAttachment,
+  validateSupportFile,
+} from '../../utils/supportAttachments';
 
 function formatTime(value) {
   if (!value) return '';
@@ -20,7 +27,9 @@ export default function ProfileSupportTab({ onOpenChat }) {
   const [error, setError] = useState('');
   const [selectedId, setSelectedId] = useState(null);
   const [reply, setReply] = useState('');
+  const [replyFile, setReplyFile] = useState(null);
   const [sending, setSending] = useState(false);
+  const fileRef = useRef(null);
 
   const loadTickets = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
@@ -53,17 +62,26 @@ export default function ProfileSupportTab({ onOpenChat }) {
 
   const handleReply = async (event) => {
     event.preventDefault();
-    if (!selected || !reply.trim() || sending) return;
+    if (!selected || (!reply.trim() && !replyFile) || sending) return;
     setSending(true);
     try {
       const id = selected.conversationId || selected.id;
+      let attachments = [];
+      if (replyFile) {
+        attachments = [await uploadSupportAttachment(replyFile, { conversationId: id })];
+      }
       const res = await apiFetch(`/api/v1/support/tickets/${id}/messages`, {
         method: 'POST',
-        body: JSON.stringify({ text: reply.trim() }),
+        body: JSON.stringify({
+          text: reply.trim() || (attachments.length ? 'Sent an attachment' : ''),
+          attachments,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Could not send reply.');
       setReply('');
+      setReplyFile(null);
+      if (fileRef.current) fileRef.current.value = '';
       await loadTickets();
       setSelectedId(id);
     } catch (err) {
@@ -148,7 +166,8 @@ export default function ProfileSupportTab({ onOpenChat }) {
                         {sender === 'admin' ? agentLabel : sender === 'system' ? 'System' : 'You'}
                         <time>{formatTime(when)}</time>
                       </header>
-                      <p>{msg.text}</p>
+                      {msg.text ? <p>{msg.text}</p> : null}
+                      <SupportAttachmentList attachments={msg.attachments} />
                     </article>
                     );
                   })}
@@ -160,9 +179,37 @@ export default function ProfileSupportTab({ onOpenChat }) {
                     onChange={(e) => setReply(e.target.value)}
                     placeholder="Add more details for this ticket…"
                   />
-                  <button type="submit" className="profile-link-btn" disabled={sending || !reply.trim()}>
-                    {sending ? 'Sending…' : 'Send reply'}
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept={SUPPORT_ATTACHMENT_ACCEPT}
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const validationError = validateSupportFile(file);
+                        if (validationError) {
+                          setError(validationError);
+                          e.target.value = '';
+                          return;
+                        }
+                        setReplyFile(file);
+                        setError('');
+                      }}
+                    />
+                    <button type="button" className="profile-link-btn" onClick={() => fileRef.current?.click()} disabled={sending}>
+                      Attach file
+                    </button>
+                    {replyFile && (
+                      <span style={{ fontSize: '0.8rem', color: '#60a5fa' }}>
+                        {replyFile.name} ({formatAttachmentSize(replyFile.size)})
+                      </span>
+                    )}
+                    <button type="submit" className="profile-link-btn" disabled={sending || (!reply.trim() && !replyFile)}>
+                      {sending ? 'Sending…' : 'Send reply'}
+                    </button>
+                  </div>
                 </form>
               </>
             )}

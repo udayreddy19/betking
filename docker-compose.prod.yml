@@ -88,6 +88,8 @@ services:
         condition: service_healthy
     networks:
       - oddsyra-prod-net
+    volumes:
+      - support_attachments_data:/app/data/support_attachments
     healthcheck:
       # /health hits Postgres (and can 503 when the pool is busy). That used to
       # mark the container unhealthy and nginx then served HTML 503 to Admin.
@@ -167,3 +169,4 @@ volumes:
   postgres_data:
   redis_data:
   nginx_logs:
+  support_attachments_data:

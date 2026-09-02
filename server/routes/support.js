@@ -165,9 +165,10 @@ router.post(
         return res.status(400).json({ success: false, error: 'Subject is required.' });
       }
 
+      const files = Array.isArray(attachments) ? attachments : [];
       const initialText = (description || message || '').trim();
-      if (!initialText) {
-        return res.status(400).json({ success: false, error: 'Description is required.' });
+      if (!initialText && files.length === 0) {
+        return res.status(400).json({ success: false, error: 'Description or attachment is required.' });
       }
 
       const normCategory = String(category || 'OTHER').toUpperCase();
@@ -185,13 +186,23 @@ router.post(
         subject: subject.trim(),
         category: normCategory,
         priority,
-        initialMessage: initialText,
-        attachments,
+        initialMessage: initialText || (files.length ? 'Sent an attachment' : ''),
+        attachments: files,
         idempotencyKey,
         relatedEntityType: relatedEntityType || null,
         relatedEntityId: relatedEntityId || null,
         supportType: 'TICKET',
       });
+
+      try {
+        const firstMsg = ticket?.messages?.[0] || ticket?.initialMessage;
+        const { linkAttachmentsToMessage } = await import('../../lib/supportAttachments.mjs');
+        await linkAttachmentsToMessage({
+          attachmentIds: files.map((f) => f.attachmentId).filter(Boolean),
+          messageId: firstMsg?.messageId || firstMsg?.id || ticket?.lastMessageId,
+          conversationId: ticket?.conversationId || ticket?.id,
+        });
+      } catch { /* best-effort */ }
 
       if (ticket.isDuplicate) {
         const existing = ticket.activeTicket || {};
@@ -263,9 +274,10 @@ router.post(
       const userId = req.resolvedUserId;
       const { ticketReference } = req.params;
       const { text, attachments = [], idempotencyKey } = req.body || {};
-
-      if (!text || !text.trim()) {
-        return res.status(400).json({ success: false, error: 'Message text is required.' });
+      const trimmed = String(text || '').trim();
+      const files = Array.isArray(attachments) ? attachments : [];
+      if (!trimmed && files.length === 0) {
+        return res.status(400).json({ success: false, error: 'Message text or attachment is required.' });
       }
 
       const ticket = await supportEngine.getConversationById(ticketReference, 'user');
@@ -282,10 +294,19 @@ router.post(
         senderId: userId,
         senderType: 'user',
         messageType: 'USER_MESSAGE',
-        text: text.trim(),
-        attachments,
+        text: trimmed || (files.length ? 'Sent an attachment' : ''),
+        attachments: files,
         idempotencyKey,
       });
+
+      try {
+        const { linkAttachmentsToMessage } = await import('../../lib/supportAttachments.mjs');
+        await linkAttachmentsToMessage({
+          attachmentIds: files.map((f) => f.attachmentId).filter(Boolean),
+          messageId: message?.messageId || message?.id,
+          conversationId: ticket.conversationId,
+        });
+      } catch { /* best-effort link */ }
 
       res.status(201).json({
         success: true,
@@ -426,9 +447,10 @@ router.post(
       const userId = req.resolvedUserId;
       const { conversationId } = req.params;
       const { text, attachments = [], idempotencyKey } = req.body || {};
-
-      if (!text || !text.trim()) {
-        return res.status(400).json({ success: false, error: 'Message text is required.' });
+      const trimmed = String(text || '').trim();
+      const files = Array.isArray(attachments) ? attachments : [];
+      if (!trimmed && files.length === 0) {
+        return res.status(400).json({ success: false, error: 'Message text or attachment is required.' });
       }
 
       const chat = await supportEngine.getConversationById(conversationId, 'user');
@@ -448,10 +470,19 @@ router.post(
         senderId: userId,
         senderType: 'user',
         messageType: 'USER_MESSAGE',
-        text: text.trim(),
-        attachments,
+        text: trimmed || (files.length ? 'Sent an attachment' : ''),
+        attachments: files,
         idempotencyKey,
       });
+
+      try {
+        const { linkAttachmentsToMessage } = await import('../../lib/supportAttachments.mjs');
+        await linkAttachmentsToMessage({
+          attachmentIds: files.map((f) => f.attachmentId).filter(Boolean),
+          messageId: message?.messageId || message?.id,
+          conversationId: chat.conversationId,
+        });
+      } catch { /* best-effort */ }
 
       res.status(201).json({
         success: true,
@@ -494,7 +525,7 @@ router.post(
   }
 );
 
-// ── Attachment Upload Validation ──
+// ── Attachment Upload ──
 router.post(
   ['/api/support/attachments/upload', '/api/v1/support/attachments/upload'],
   optionalAuth,
@@ -504,45 +535,24 @@ router.post(
     try {
       const userId = req.resolvedUserId;
       const { fileName, fileType, fileSize, conversationId, base64Data } = req.body || {};
-
-      const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf', 'text/plain'];
-      const MAX_SIZE = 10 * 1024 * 1024; // 10MB
-
-      if (!fileName || !fileType) {
-        return res.status(400).json({ success: false, error: 'fileName and fileType are required.' });
-      }
-
-      if (!ALLOWED_MIME_TYPES.includes(fileType)) {
-        return res.status(400).json({ success: false, error: 'Unsupported file type. Allowed: JPG, PNG, WEBP, PDF, TXT.' });
-      }
-
-      if (fileSize && Number(fileSize) > MAX_SIZE) {
-        return res.status(400).json({ success: false, error: 'File size exceeds maximum allowed limit of 10MB.' });
-      }
-
-      const attachId = `att_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-      const safePath = `/secure_attachments/${userId}/${attachId}_${fileName.replace(/[^a-zA-Z0-9._-]/g, '')}`;
-
-      res.status(201).json({
-        success: true,
-        attachment: {
-          attachmentId: attachId,
-          fileName,
-          fileType,
-          fileSize: fileSize || 1024,
-          storagePath: safePath,
-          url: `/api/v1/support/attachments/${attachId}`,
-          uploadedBy: userId,
-          createdAt: new Date().toISOString(),
-        },
+      const { saveSupportAttachment } = await import('../../lib/supportAttachments.mjs');
+      const attachment = await saveSupportAttachment({
+        fileName,
+        fileType,
+        fileSize,
+        base64Data,
+        uploadedBy: userId,
+        conversationId: conversationId || null,
+        uploadedByRole: 'user',
       });
+      res.status(201).json({ success: true, attachment });
     } catch (err) {
-      res.status(500).json({ success: false, error: err.message });
+      res.status(err.status || 500).json({ success: false, error: err.message });
     }
   }
 );
 
-// ── Secure Attachment Access Check ──
+// ── Secure Attachment Download ──
 router.get(
   ['/api/support/attachments/:attachmentId', '/api/v1/support/attachments/:attachmentId'],
   optionalAuth,
@@ -551,16 +561,31 @@ router.get(
     try {
       const userId = req.resolvedUserId;
       const { attachmentId } = req.params;
+      const {
+        getSupportAttachmentRecord,
+        readSupportAttachmentFile,
+        userCanAccessAttachment,
+      } = await import('../../lib/supportAttachments.mjs');
 
-      // In-memory or PG check
-      res.json({
-        success: true,
-        attachmentId,
-        authorized: true,
-        userId,
-      });
+      const record = await getSupportAttachmentRecord(attachmentId);
+      if (!record) return res.status(404).json({ success: false, error: 'Attachment not found' });
+
+      const allowed = await userCanAccessAttachment(record, userId);
+      if (!allowed) return res.status(403).json({ success: false, error: 'Not authorized' });
+
+      const buf = await readSupportAttachmentFile(record);
+      if (!buf) return res.status(404).json({ success: false, error: 'File missing' });
+
+      res.setHeader('Content-Type', record.file_type || 'application/octet-stream');
+      res.setHeader('Content-Length', buf.length);
+      res.setHeader(
+        'Content-Disposition',
+        `inline; filename="${String(record.file_name || 'attachment').replace(/"/g, '')}"`,
+      );
+      res.setHeader('Cache-Control', 'private, max-age=300');
+      return res.send(buf);
     } catch (err) {
-      res.status(500).json({ success: false, error: err.message });
+      res.status(err.status || 500).json({ success: false, error: err.message });
     }
   }
 );

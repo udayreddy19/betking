@@ -13,6 +13,13 @@ import {
   nextSupportTurn,
   buildTicketPayload,
 } from '../../../lib/supportAssistant.mjs';
+import SupportAttachmentList from '../Support/SupportAttachmentList';
+import {
+  SUPPORT_ATTACHMENT_ACCEPT,
+  formatAttachmentSize,
+  uploadSupportAttachment,
+  validateSupportFile,
+} from '../../utils/supportAttachments';
 import {
   FiSend,
   FiShield,
@@ -116,9 +123,15 @@ export default function LiveChatSupportWidget() {
   const [ticketsError, setTicketsError] = useState('');
   const [selectedTicketId, setSelectedTicketId] = useState(null);
   const [ticketReply, setTicketReply] = useState('');
+  const [ticketReplyFile, setTicketReplyFile] = useState(null);
+  const [chatAttachFile, setChatAttachFile] = useState(null);
+  const [ticketAttachFile, setTicketAttachFile] = useState(null);
   const [sendingReply, setSendingReply] = useState(false);
   const [replyError, setReplyError] = useState('');
   const ticketReplyRef = useRef(null);
+  const chatFileRef = useRef(null);
+  const ticketReplyFileRef = useRef(null);
+  const createTicketFileRef = useRef(null);
 
   const isAdminRoute = location.pathname.startsWith('/admin');
 
@@ -220,24 +233,36 @@ export default function LiveChatSupportWidget() {
     event.preventDefault();
     event.stopPropagation();
     const text = ticketReply.trim();
-    if (!ticket || !text || sendingReply) return;
+    if (!ticket || (!text && !ticketReplyFile) || sendingReply) return;
     const ref = ticketReference(ticket) || ticketId(ticket);
     setSendingReply(true);
     setReplyError('');
     try {
+      let attachments = [];
+      if (ticketReplyFile) {
+        attachments = [await uploadSupportAttachment(ticketReplyFile, {
+          conversationId: ticketId(ticket),
+        })];
+      }
       const res = await apiFetch(`/api/v1/support/tickets/${encodeURIComponent(ref)}/messages`, {
         method: 'POST',
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({
+          text: text || (attachments.length ? 'Sent an attachment' : ''),
+          attachments,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Could not send reply.');
       const sent = data.message || {
         id: `local_${Date.now()}`,
         senderType: 'user',
-        text,
+        text: text || 'Sent an attachment',
+        attachments,
         createdAt: new Date().toISOString(),
       };
       setTicketReply('');
+      setTicketReplyFile(null);
+      if (ticketReplyFileRef.current) ticketReplyFileRef.current.value = '';
       setUserTickets((prev) =>
         prev.map((row) => {
           if (ticketId(row) !== ticketId(ticket)) return row;
@@ -272,6 +297,7 @@ export default function LiveChatSupportWidget() {
             sender: 'agent',
             agentName: payload.senderName || 'Support Agent',
             text: payload.text || payload.content,
+            attachments: payload.attachments || [],
             timestamp: nowStamp(),
           };
           setMessages((prev) => [...prev, newMsg]);
@@ -351,38 +377,73 @@ export default function LiveChatSupportWidget() {
   };
 
   const handleSendMessage = async (textToSend = inputText) => {
-    const trimmed = textToSend.trim();
-    if (!trimmed) return;
+    const trimmed = String(textToSend || '').trim();
+    const pendingFile = chatAttachFile;
+    if (!trimmed && !pendingFile) return;
+
+    let attachments = [];
+    try {
+      if (pendingFile) {
+        attachments = [await uploadSupportAttachment(pendingFile, {
+          conversationId: chatSession?.conversationId || null,
+        })];
+      }
+    } catch (err) {
+      showToast?.(err.message || 'Attachment upload failed', 'error');
+      return;
+    }
 
     const userMsg = {
       id: `u_${Date.now()}`,
       sender: 'user',
-      text: trimmed,
+      text: trimmed || (attachments.length ? 'Sent an attachment' : ''),
+      attachments,
       timestamp: nowStamp(),
     };
     setMessages((prev) => [...prev, userMsg]);
     setInputText('');
+    setChatAttachFile(null);
+    if (chatFileRef.current) chatFileRef.current.value = '';
 
     if (isLiveAgentMode && chatSession?.conversationId) {
+      // Always persist via HTTP so attachments and history are stored; WS is best-effort notify.
+      try {
+        await apiFetch(`/api/v1/support/live-chat/${chatSession.conversationId}/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: userMsg.text, attachments }),
+        });
+      } catch {
+        showToast?.('Message may not have been delivered. Please retry.', 'error');
+      }
       if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
         wsRef.current.send(
           JSON.stringify({
             type: 'user_message',
             conversationId: chatSession.conversationId,
-            content: trimmed,
+            content: userMsg.text,
+            attachments,
           })
         );
-      } else {
-        await apiFetch(`/api/v1/support/conversations/${chatSession.conversationId}/messages`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: trimmed }),
-        });
       }
       return;
     }
 
-    // AI Assistant Mode Fallback
+    // AI Assistant Mode Fallback (text only — attachments still shown locally)
+    if (!trimmed) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `a_${Date.now()}`,
+          sender: 'agent',
+          agentName: 'OddsYra Support',
+          text: 'Thanks for the file. For attachments, please create a support ticket so our team can review it.',
+          timestamp: nowStamp(),
+        },
+      ]);
+      return;
+    }
+
     setIsTyping(true);
     setTypingText('OddsYra Support is typing...');
     try {
@@ -427,8 +488,8 @@ export default function LiveChatSupportWidget() {
       setTicketError('Please enter a subject.');
       return;
     }
-    if (!ticketDescription.trim()) {
-      setTicketError('Please provide a description.');
+    if (!ticketDescription.trim() && !ticketAttachFile) {
+      setTicketError('Please provide a description or attachment.');
       return;
     }
 
@@ -436,11 +497,16 @@ export default function LiveChatSupportWidget() {
     setTicketError('');
 
     try {
+      let attachments = [];
+      if (ticketAttachFile) {
+        attachments = [await uploadSupportAttachment(ticketAttachFile)];
+      }
       const payload = {
         category: ticketCategory,
         subject: ticketSubject.trim(),
-        description: ticketDescription.trim(),
+        description: ticketDescription.trim() || (attachments.length ? 'Sent an attachment' : ''),
         priority: ticketPriority,
+        attachments,
       };
 
       const res = await apiFetch('/api/v1/support/tickets', {
@@ -494,6 +560,8 @@ export default function LiveChatSupportWidget() {
       showToast?.(`Ticket ${refNum} created successfully!`, 'success');
       setTicketSubject('');
       setTicketDescription('');
+      setTicketAttachFile(null);
+      if (createTicketFileRef.current) createTicketFileRef.current.value = '';
       fetchUserTickets();
 
       // Also append notice to chat history
@@ -645,7 +713,8 @@ export default function LiveChatSupportWidget() {
                           </div>
                         )}
                         <div className={`chat-bubble chat-bubble--${m.sender}`}>
-                          <p>{m.text}</p>
+                          {m.text ? <p>{m.text}</p> : null}
+                          <SupportAttachmentList attachments={m.attachments} />
                           <span className="chat-bubble-time">{m.timestamp}</span>
                         </div>
                       </div>
@@ -669,6 +738,33 @@ export default function LiveChatSupportWidget() {
                 <div className="live-chat-footer">
                   <div className="live-chat-input-bar">
                     <input
+                      ref={chatFileRef}
+                      type="file"
+                      accept={SUPPORT_ATTACHMENT_ACCEPT}
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const err = validateSupportFile(file);
+                        if (err) {
+                          showToast?.(err, 'error');
+                          e.target.value = '';
+                          return;
+                        }
+                        setChatAttachFile(file);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="live-chat-send-btn"
+                      title="Attach file"
+                      onClick={() => chatFileRef.current?.click()}
+                      disabled={chatSession?.status === 'ENDED'}
+                      style={{ opacity: 0.9 }}
+                    >
+                      📎
+                    </button>
+                    <input
                       type="text"
                       placeholder={
                         chatSession?.status === 'ENDED'
@@ -685,11 +781,27 @@ export default function LiveChatSupportWidget() {
                       type="button"
                       className="live-chat-send-btn"
                       onClick={() => handleSendMessage()}
-                      disabled={!inputText.trim() || isTyping || chatSession?.status === 'ENDED'}
+                      disabled={(!inputText.trim() && !chatAttachFile) || isTyping || chatSession?.status === 'ENDED'}
                     >
                       <FiSend size={18} color="#ffffff" />
                     </button>
                   </div>
+                  {chatAttachFile && (
+                    <div style={{ fontSize: '0.72rem', color: '#60a5fa', padding: '0 8px 6px' }}>
+                      {chatAttachFile.name} ({formatAttachmentSize(chatAttachFile.size)})
+                      {' '}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setChatAttachFile(null);
+                          if (chatFileRef.current) chatFileRef.current.value = '';
+                        }}
+                        style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', textDecoration: 'underline' }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
 
                   <div className="live-chat-footer-actions">
                     <button
@@ -827,8 +939,37 @@ export default function LiveChatSupportWidget() {
                         onChange={(e) => setTicketDescription(e.target.value)}
                         onFocus={keepFieldVisible}
                         className="in-sheet-textarea"
-                        required
                       />
+                    </div>
+
+                    <div className="form-row">
+                      <label>Attachment (optional)</label>
+                      <input
+                        ref={createTicketFileRef}
+                        type="file"
+                        accept={SUPPORT_ATTACHMENT_ACCEPT}
+                        className="in-sheet-input"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) {
+                            setTicketAttachFile(null);
+                            return;
+                          }
+                          const err = validateSupportFile(file);
+                          if (err) {
+                            setTicketError(err);
+                            e.target.value = '';
+                            return;
+                          }
+                          setTicketAttachFile(file);
+                          setTicketError('');
+                        }}
+                      />
+                      {ticketAttachFile && (
+                        <div style={{ fontSize: '0.72rem', color: '#60a5fa', marginTop: 4 }}>
+                          {ticketAttachFile.name} ({formatAttachmentSize(ticketAttachFile.size)})
+                        </div>
+                      )}
                     </div>
 
                     <button
@@ -934,7 +1075,8 @@ export default function LiveChatSupportWidget() {
                                         <span className="ticket-thread-msg-label">
                                           {isAgent ? (msg.agentName || 'Support') : 'You'}
                                         </span>
-                                        <p>{msg.text}</p>
+                                        {msg.text ? <p>{msg.text}</p> : null}
+                                        <SupportAttachmentList attachments={msg.attachments} />
                                       </div>
                                     );
                                   })
@@ -959,10 +1101,46 @@ export default function LiveChatSupportWidget() {
                                     onFocus={keepFieldVisible}
                                     disabled={sendingReply}
                                   />
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+                                    <input
+                                      ref={ticketReplyFileRef}
+                                      type="file"
+                                      accept={SUPPORT_ATTACHMENT_ACCEPT}
+                                      style={{ display: 'none' }}
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+                                        const err = validateSupportFile(file);
+                                        if (err) {
+                                          setReplyError(err);
+                                          e.target.value = '';
+                                          return;
+                                        }
+                                        setTicketReplyFile(file);
+                                        setReplyError('');
+                                      }}
+                                    />
+                                    <button
+                                      type="button"
+                                      className="in-sheet-btn in-sheet-btn--secondary"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        ticketReplyFileRef.current?.click();
+                                      }}
+                                      disabled={sendingReply}
+                                    >
+                                      Attach
+                                    </button>
+                                    {ticketReplyFile && (
+                                      <span style={{ fontSize: '0.72rem', color: '#60a5fa' }}>
+                                        {ticketReplyFile.name}
+                                      </span>
+                                    )}
+                                  </div>
                                   <button
                                     type="submit"
                                     className="in-sheet-btn in-sheet-btn--primary in-sheet-btn--full"
-                                    disabled={sendingReply || !ticketReply.trim()}
+                                    disabled={sendingReply || (!ticketReply.trim() && !ticketReplyFile)}
                                   >
                                     {sendingReply ? 'Sending…' : 'Send reply'}
                                   </button>
