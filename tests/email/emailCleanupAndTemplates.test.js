@@ -13,6 +13,7 @@ import {
   sendAdminGiftEmail,
   sendReferralRewardEmail,
   sendPromotionalCampaignEmail,
+  sendTargetedDepositOfferEmail,
   sendSupportTicketCreatedUserEmail,
   sendSupportAdminReplyEmail,
   sendSupportTicketClosedEmail,
@@ -225,5 +226,22 @@ describe('ODDSYRA — Email Event Cleanup & Unified Template Implementation', ()
       [eventId]
     );
     expect(countRes.rows[0].count).toBe(1);
+  });
+
+  it('maps targeted campaign fields onto the promo offer email', async () => {
+    const result = await sendTargetedDepositOfferEmail({
+      email: testEmail,
+      name: 'Uday',
+      campaignName: 'IPL Reload',
+      promoCode: 'TDFB_TEST',
+      minimumDeposit: 500,
+      freeBetPercentage: 50,
+      maximumFreeBet: 2000,
+      subject: 'Your IPL offer',
+    });
+    expect(result.success).toBe(true);
+    expect(result.html).toContain('50%');
+    expect(result.html).toContain('TDFB_TEST');
+    expect(result.html).toContain('IPL Reload');
   });
 });

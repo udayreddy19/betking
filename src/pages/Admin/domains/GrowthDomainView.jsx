@@ -347,7 +347,7 @@ function TargetedDepositFreeBetPanel() {
         `/growth/deposit-freebet/targeted/${encodeURIComponent(selectedId)}/dispatch`,
         { activate: true },
       );
-      showToast(`Emails sent: ${data.sent || 0} · failed: ${data.failed || 0}`, 'success');
+      showToast(`Emails sent: ${data.sent || 0} · failed: ${data.failed || 0} · skipped: ${data.skipped || 0}`, 'success');
       await loadCampaigns();
       loadDetail(selectedId);
     } catch (err) {

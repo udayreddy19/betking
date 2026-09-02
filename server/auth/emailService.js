@@ -293,7 +293,10 @@ export async function sendEmail({ to, subject, html, text, from = SMTP_FROM, rep
   if (!to) throw new Error('Recipient email is required');
 
   const promosAcc = isPromosFrom(from) ? promosSmtpAccount() : null;
-  const accounts = promosAcc ? [promosAcc] : configuredAccounts();
+  const primaryAccounts = configuredAccounts();
+  const accounts = promosAcc
+    ? [promosAcc, ...primaryAccounts.filter((a) => a.user !== promosAcc.user || a.host !== promosAcc.host)]
+    : primaryAccounts;
 
   if (accounts.length === 0) {
     if (process.env.NODE_ENV === 'production') {
@@ -795,15 +798,43 @@ export async function sendTargetedDepositOfferEmail({
   email,
   name,
   offerTitle,
+  campaignName,
+  subject: subjectOverride,
   matchPercentage,
+  freeBetPercentage,
   minDeposit,
+  minimumDeposit,
   maxBonus,
-  bonusType,
+  maximumFreeBet,
+  promoCode,
+  customBodyHtml,
+  expiryDate,
   validHours = 48,
-}) {
-  const greeting = name || email.split('@')[0];
-  const subject = offerTitle || `Exclusive ${matchPercentage}% Deposit Match Offer`;
-  const ctaHref = `${FRONTEND_URL}/profile`;
+} = {}) {
+  if (!email) {
+    return { success: false, error: 'missing_email' };
+  }
+  const greeting = name || String(email).split('@')[0];
+  const matchPct = Number(matchPercentage ?? freeBetPercentage);
+  const minAmt = Number(minDeposit ?? minimumDeposit ?? 500);
+  const maxAmt = Number(maxBonus ?? maximumFreeBet ?? 5000);
+  let hours = Number(validHours);
+  if (expiryDate) {
+    const ms = new Date(expiryDate).getTime() - Date.now();
+    if (Number.isFinite(ms) && ms > 0) hours = Math.max(1, Math.round(ms / 3600000));
+  }
+  if (!Number.isFinite(hours) || hours <= 0) hours = 48;
+  const title = offerTitle || campaignName || (Number.isFinite(matchPct) ? `${matchPct}% Deposit Match Offer` : 'Exclusive deposit offer');
+  const subject = subjectOverride || offerTitle || (Number.isFinite(matchPct)
+    ? `Exclusive ${matchPct}% Deposit Match Offer`
+    : 'Exclusive deposit offer from OddsYra');
+  const ctaHref = `${FRONTEND_URL}/wallet`;
+
+  const codeRow = promoCode ? `
+          <tr>
+            <td style="font-size:13px;color:#5c6570;padding-top:6px;">Promo code:</td>
+            <td align="right" style="font-size:13px;font-weight:700;padding-top:6px;letter-spacing:0.04em;">${escapeHtml(promoCode)}</td>
+          </tr>` : '';
 
   const detailsHtml = `
     <tr>
@@ -811,46 +842,54 @@ export async function sendTargetedDepositOfferEmail({
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f6f2ea;border-radius:8px;padding:14px;">
           <tr>
             <td style="font-size:14px;color:#5c6570;">Deposit Match:</td>
-            <td align="right" style="font-size:16px;font-weight:700;color:#1f8a4c;">${matchPercentage}% Match</td>
+            <td align="right" style="font-size:16px;font-weight:700;color:#1f8a4c;">${Number.isFinite(matchPct) ? `${matchPct}% Match` : 'Exclusive match'}</td>
           </tr>
           <tr>
             <td style="font-size:13px;color:#5c6570;padding-top:6px;">Min Deposit:</td>
-            <td align="right" style="font-size:13px;font-weight:600;padding-top:6px;">₹${Number(minDeposit || 500).toLocaleString('en-IN')}</td>
+            <td align="right" style="font-size:13px;font-weight:600;padding-top:6px;">₹${minAmt.toLocaleString('en-IN')}</td>
           </tr>
           <tr>
             <td style="font-size:13px;color:#5c6570;padding-top:6px;">Max Bonus:</td>
-            <td align="right" style="font-size:13px;font-weight:600;padding-top:6px;">₹${Number(maxBonus || 5000).toLocaleString('en-IN')}</td>
+            <td align="right" style="font-size:13px;font-weight:600;padding-top:6px;">₹${maxAmt.toLocaleString('en-IN')}</td>
           </tr>
+          ${codeRow}
           <tr>
             <td style="font-size:13px;color:#5c6570;padding-top:6px;">Offer Expires In:</td>
-            <td align="right" style="font-size:13px;font-weight:700;color:#c98a12;padding-top:6px;">${validHours} Hours</td>
+            <td align="right" style="font-size:13px;font-weight:700;color:#c98a12;padding-top:6px;">${hours} Hours</td>
           </tr>
         </table>
       </td>
     </tr>
+    ${customBodyHtml ? `<tr><td class="oy-td" style="padding:12px 24px 0;font-size:14px;line-height:1.55;color:#14181f;">${customBodyHtml}</td></tr>` : ''}
   `;
 
   const html = renderTransactionalEmail({
-    heading: offerTitle || `${matchPercentage}% Deposit Bonus Offer`,
+    heading: title,
     greetingName: greeting,
-    introHtml: `Boost your balance with an exclusive ${matchPercentage}% match on your next deposit. Valid for the next ${validHours} hours.`,
+    introHtml: Number.isFinite(matchPct)
+      ? `Boost your balance with an exclusive ${matchPct}% match on your next qualifying deposit.`
+      : 'You have an exclusive deposit offer waiting on OddsYra.',
     extraHtml: detailsHtml,
     ctaLabel: 'Deposit & Claim Bonus',
     ctaHref,
-    noteHtml: 'Promotional terms apply. Deposit match is credited instantly upon deposit completion.',
+    noteHtml: 'Promotional terms apply. The free bet is credited after a captured qualifying deposit.',
     isMarketing: true,
   });
 
-  return await sendEmail({
-    to: email,
-    subject,
-    html,
-    from: PROMOS_FROM,
-    replyTo: PROMOS_REPLY_TO,
-    headers: {
-      'List-Unsubscribe': `<${FRONTEND_URL}/profile>`,
-    },
-  });
+  try {
+    return await sendEmail({
+      to: email,
+      subject,
+      html,
+      from: PROMOS_FROM,
+      replyTo: PROMOS_REPLY_TO,
+      headers: {
+        'List-Unsubscribe': `<${FRONTEND_URL}/profile>`,
+      },
+    });
+  } catch (err) {
+    return { success: false, error: err.message || 'send_failed', html };
+  }
 }
 
 /* ========================================================================
