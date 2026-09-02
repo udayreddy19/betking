@@ -3,6 +3,7 @@ import { adminApiClient } from '../api/adminApiClient';
 import AdminDataTable from '../components/AdminDataTable';
 import { useAdminToast } from '../components/AdminToastContext';
 import { StatusBadge } from '../components/AdminBadge';
+import { AdminHub } from '../components/AdminTabs';
 
 const FAILED_STATUSES = new Set(['FAILED', 'ERROR', 'DEAD_LETTER', 'DLQ', 'BOUNCED', 'REJECTED']);
 
@@ -41,7 +42,7 @@ function BroadcastPanel() {
   return (
     <div>
       <div style={{ marginBottom: '16px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>09 · Broadcast Notification</h2>
+        <h2 className="admin-page-header__title">Broadcast Notification</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           Send an in-app notification to recent users (capped by limit).
         </p>
@@ -118,6 +119,25 @@ function BroadcastPanel() {
 }
 
 export default function CommunicationsDomainView({ subModule = 'dispatch-logs' }) {
+  const inboxIds = ['mail-inbox', 'dispatch-logs', 'dlq-retry'];
+  if (inboxIds.includes(subModule)) {
+    const initial = subModule === 'mail-inbox' ? 'dispatch-logs' : subModule;
+    return (
+      <AdminHub
+        initialTab={initial}
+        tabs={[
+          { id: 'dispatch-logs', label: 'Sent' },
+          { id: 'dlq-retry', label: 'Failed' },
+        ]}
+      >
+        {(tab) => <CommunicationsPanels subModule={tab} />}
+      </AdminHub>
+    );
+  }
+  return <CommunicationsPanels subModule={subModule} />;
+}
+
+function CommunicationsPanels({ subModule = 'dispatch-logs' }) {
   const [logs, setLogs] = useState([]);
   const [outboxEvents, setOutboxEvents] = useState([]);
   const [error, setError] = useState(null);
@@ -215,16 +235,16 @@ export default function CommunicationsDomainView({ subModule = 'dispatch-logs' }
   };
 
   const titles = {
-    'dispatch-logs': ['09 · Notification Delivery Logs', 'Webhook / notification delivery records from the database.', 'Notification Delivery Logs', logs],
-    templates: ['09 · Message Templates', 'Distinct templates inferred from recent delivery logs.', 'Active Message Templates', templates],
-    'dlq-retry': ['09 · Dead Letter Queue Retries', 'Webhook DLQ plus outbox FAILED / DEAD_LETTER events.', 'Failed Deliveries (DLQ)', failedLogs],
+    'dispatch-logs': ['Notification Delivery Logs', 'Webhook / notification delivery records from the database.', 'Notification Delivery Logs', logs],
+    templates: ['Message Templates', 'Distinct templates inferred from recent delivery logs.', 'Active Message Templates', templates],
+    'dlq-retry': ['Dead Letter Queue Retries', 'Webhook DLQ plus outbox FAILED / DEAD_LETTER events.', 'Failed Deliveries (DLQ)', failedLogs],
   };
   const [heading, hint, tableTitle, data] = titles[subModule] || titles['dispatch-logs'];
 
   return (
     <div>
       <div style={{ marginBottom: '16px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>{heading}</h2>
+        <h2 className="admin-page-header__title">{heading}</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           {hint}
         </p>

@@ -144,9 +144,9 @@ export default function BettingDomainView({
   const openCount = filtered.filter((b) => isOpenStatus(b.status)).length;
 
   const titles = {
-    'bets-registry': ['05 · All Bets', 'Browse every bet type and status. Declare open bets to WON / LOST / VOID.', 'Bet Registry'],
-    'settlement-engine': ['05 · Pending & Declare', 'Open, pending, and accepted bets — declare any outcome manually.', 'Pending Desk'],
-    'cashout-reconciliation': ['05 · Cashout Reconciliation', 'Cashout-related bets for reconciliation review.', 'Cashout Desk'],
+    'bets-registry': ['All Bets', 'Browse every bet type and status. Declare open bets to WON / LOST / VOID.', 'Bet Registry'],
+    'settlement-engine': ['Pending & Declare', 'Open, pending, and accepted bets — declare any outcome manually.', 'Pending Desk'],
+    'cashout-reconciliation': ['Cashout Reconciliation', 'Cashout-related bets for reconciliation review.', 'Cashout Desk'],
   };
   const [heading, hint, tableTitle] = titles[subModule] || titles['bets-registry'];
 
@@ -158,7 +158,7 @@ export default function BettingDomainView({
     <div>
       {/* Header */}
       <div style={{ marginBottom: '16px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>{heading}</h2>
+        <h2 className="admin-page-header__title">{heading}</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           {hint}
           {loading ? ' Loading…' : ` · ${filtered.length} shown · ${openCount} open`}

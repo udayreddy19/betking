@@ -6,6 +6,15 @@ import { adminApiClient } from '../api/adminApiClient';
  * Uses admin-health-* class names (not admin-status-dot) to avoid
  * colliding with Header.css's tiny red .admin-status-dot indicator.
  */
+function titleCaseStatus(status) {
+  const raw = String(status || '').trim();
+  if (!raw) return 'Unknown';
+  return raw
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 function normalizeServices(payload) {
   if (!payload || typeof payload !== 'object') return [];
 
@@ -103,7 +112,7 @@ export default function AdminStatusBar() {
           >
             <span className="admin-health-chip__dot" aria-hidden="true" />
             <span className="admin-health-chip__name">Kill switch</span>
-            <span className="admin-health-chip__status">{emergency.systemStatus || 'ACTIVE'}</span>
+            <span className="admin-health-chip__status">{titleCaseStatus(emergency.systemStatus || 'ACTIVE')}</span>
           </div>
         )}
         {services.map((svc) => (
@@ -114,7 +123,9 @@ export default function AdminStatusBar() {
           >
             <span className="admin-health-chip__dot" aria-hidden="true" />
             <span className="admin-health-chip__name">{svc.name}</span>
-            <span className="admin-health-chip__status">{svc.status}</span>
+            {svc.tone !== 'healthy' && (
+              <span className="admin-health-chip__status">{titleCaseStatus(svc.status)}</span>
+            )}
           </div>
         ))}
       </div>

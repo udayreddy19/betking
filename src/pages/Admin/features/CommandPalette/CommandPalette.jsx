@@ -33,11 +33,11 @@ const ENTITY_META = {
 };
 
 const QUICK_ACTIONS = [
-  { id: 'open_customers', label: 'Open Customers', icon: '👤', domain: 'customers', subModuleId: 'directory', allowedRoles: ['SUPER_ADMIN', 'OPERATIONS_ADMIN', 'RISK_ANALYST', 'SUPPORT_AGENT', 'FINANCE_ADMIN'] },
-  { id: 'open_betting', label: 'Open Betting Registry', icon: '🎲', domain: 'betting', subModuleId: 'bets-registry', allowedRoles: ['SUPER_ADMIN', 'TRADING_ADMIN', 'RISK_ANALYST', 'SUPPORT_AGENT', 'FINANCE_ADMIN'] },
-  { id: 'open_support', label: 'Open Support Queue', icon: '🎫', domain: 'support', subModuleId: 'ticket-queue', allowedRoles: ['SUPER_ADMIN', 'SUPPORT_AGENT', 'OPERATIONS_ADMIN'] },
-  { id: 'open_finance', label: 'Open Finance / Withdrawals', icon: '💰', domain: 'finance', subModuleId: 'maker-checker', allowedRoles: ['SUPER_ADMIN', 'FINANCE_ADMIN'] },
-  { id: 'open_trading', label: 'Open Trading & Risk', icon: '📊', domain: 'trading-risk', subModuleId: 'exposure', allowedRoles: ['SUPER_ADMIN', 'TRADING_ADMIN', 'RISK_ANALYST'] },
+  { id: 'open_customers', label: 'Open Players', icon: '👤', domain: 'customers', subModuleId: 'directory', allowedRoles: ['SUPER_ADMIN', 'OPERATIONS_ADMIN', 'RISK_ANALYST', 'SUPPORT_AGENT', 'FINANCE_ADMIN'] },
+  { id: 'open_betting', label: 'Open Bets', icon: '🎲', domain: 'betting', subModuleId: 'bets-registry', allowedRoles: ['SUPER_ADMIN', 'TRADING_ADMIN', 'RISK_ANALYST', 'SUPPORT_AGENT', 'FINANCE_ADMIN'] },
+  { id: 'open_support', label: 'Open Help', icon: '🎫', domain: 'support', subModuleId: 'ticket-queue', allowedRoles: ['SUPER_ADMIN', 'SUPPORT_AGENT', 'OPERATIONS_ADMIN'] },
+  { id: 'open_finance', label: 'Open Cash / Withdrawals', icon: '💰', domain: 'finance', subModuleId: 'maker-checker', allowedRoles: ['SUPER_ADMIN', 'FINANCE_ADMIN'] },
+  { id: 'open_trading', label: 'Open Risk', icon: '📊', domain: 'trading-risk', subModuleId: 'exposure', allowedRoles: ['SUPER_ADMIN', 'TRADING_ADMIN', 'RISK_ANALYST'] },
   { id: 'open_sports', label: 'Open Sports Catalog', icon: '🏏', domain: 'sports', subModuleId: 'catalog', allowedRoles: ['SUPER_ADMIN', 'TRADING_ADMIN', 'OPERATIONS_ADMIN'] },
   { id: 'open_iplsrl', label: 'Open OddsYra SRL Console', icon: '🏟️', domain: 'sports', subModuleId: 'iplsrl-console', allowedRoles: ['SUPER_ADMIN', 'TRADING_ADMIN', 'OPERATIONS_ADMIN'] },
   { id: 'open_audit', label: 'Open Audit Trail', icon: '📋', domain: 'security-governance', subModuleId: 'audit-trail', allowedRoles: ['SUPER_ADMIN', 'OPERATIONS_ADMIN', 'RISK_ANALYST'] },
@@ -71,13 +71,13 @@ export default function CommandPalette({
     (act) => !act.allowedRoles || act.allowedRoles.includes(activeRole) || activeRole === 'SUPER_ADMIN',
   );
 
-  const panelBg = isDark ? '#111827' : '#ffffff';
-  const panelBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.12)';
-  const textMain = isDark ? '#f3f4f6' : '#0f172a';
-  const textMuted = isDark ? '#9ca3af' : '#64748b';
-  const textSoft = isDark ? '#d1d5db' : '#334155';
-  const rowHover = isDark ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.1)';
-  const rowSelected = isDark ? 'rgba(59,130,246,0.12)' : 'rgba(59,130,246,0.14)';
+  const panelBg = 'var(--admin-panel)';
+  const panelBorder = 'var(--admin-border)';
+  const textMain = 'var(--admin-text)';
+  const textMuted = 'var(--admin-text-muted)';
+  const textSoft = 'var(--admin-text-secondary)';
+  const rowHover = 'var(--admin-surface-hover)';
+  const rowSelected = 'var(--admin-primary-soft)';
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -283,15 +283,15 @@ export default function CommandPalette({
                 style={{
                   flex: 1,
                   padding: '8px 16px',
-                  background: mode === m ? 'rgba(59,130,246,0.1)' : 'transparent',
+                  background: mode === m ? 'var(--admin-primary-soft)' : 'transparent',
                   border: 'none',
-                  borderBottom: mode === m ? '2px solid #3b82f6' : '2px solid transparent',
-                  color: mode === m ? '#60a5fa' : textMuted,
+                  borderBottom: mode === m ? '2px solid var(--admin-primary)' : '2px solid transparent',
+                  color: mode === m ? 'var(--admin-text)' : textMuted,
                   fontSize: '0.8rem',
                   fontWeight: 600,
                   cursor: 'pointer',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
+                  textTransform: 'none',
+                  letterSpacing: 0,
                 }}
               >
                 {m === 'search' ? 'Search' : 'Quick Actions'}

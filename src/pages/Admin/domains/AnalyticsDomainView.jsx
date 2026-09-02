@@ -65,8 +65,8 @@ export default function AnalyticsDomainView({ subModule = 'turnover-ggr' }) {
   };
 
   const heading = subModule === 'bi-exporter'
-    ? '10 · Custom BI Data Exporter'
-    : '10 · Turnover & GGR Reports';
+    ? 'Custom BI Data Exporter'
+    : 'Performance';
   const hint = subModule === 'bi-exporter'
     ? 'Export live BI snapshots as JSON. Metrics come from PostgreSQL — never synthetic.'
     : 'Users, turnover, GGR/NGR, retention, and funnel from authoritative BI queries.';
@@ -94,7 +94,7 @@ export default function AnalyticsDomainView({ subModule = 'turnover-ggr' }) {
     <div>
       <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>{heading}</h2>
+          <h2 className="admin-page-header__title">{heading}</h2>
           <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
             {hint} Click any tile for underlying rows.
           </p>

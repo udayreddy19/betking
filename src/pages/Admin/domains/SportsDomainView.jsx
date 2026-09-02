@@ -35,12 +35,12 @@ export default function SportsDomainView({ subModule = 'catalog' }) {
     <div>
       <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>
+          <h2 className="admin-page-header__title">
             {subModule === 'providers'
-              ? '03 · Data Feed Latency Monitors'
+              ? 'Data feeds'
               : subModule === 'rosters'
-                ? '03 · Team Rosters & Squads'
-                : '03 · Sports Catalog & Data Provider Governance'}
+                ? 'Rosters'
+                : 'Catalog'}
           </h2>
           <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
             Live catalog derived from aggregator matches ({totalMatches} total). Use Sports → OddsYra SRL Console for match control.

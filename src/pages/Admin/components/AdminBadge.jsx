@@ -7,12 +7,12 @@ import React from 'react';
 export default function AdminBadge({ children, variant = 'neutral', dot = true, className = '', style }) {
   const variantClass = `admin-badge--${variant}`;
   const dotColors = {
-    success: '#10b981',
-    warning: '#fbbf24',
-    danger: '#f43f5e',
-    info: '#818cf8',
-    purple: '#c084fc',
-    neutral: '#94a3b8',
+    success: 'var(--admin-success)',
+    warning: 'var(--admin-warning)',
+    danger: 'var(--admin-danger)',
+    info: 'var(--admin-info)',
+    purple: 'var(--admin-accent-purple)',
+    neutral: 'var(--admin-text-muted)',
   };
 
   return (
@@ -22,13 +22,21 @@ export default function AdminBadge({ children, variant = 'neutral', dot = true, 
           className="admin-badge--dot"
           style={{
             background: dotColors[variant] || dotColors.neutral,
-            boxShadow: `0 0 6px ${dotColors[variant] || dotColors.neutral}`,
           }}
         />
       )}
       {children}
     </span>
   );
+}
+
+function titleCaseStatus(status) {
+  const raw = String(status || '').trim();
+  if (!raw) return '—';
+  return raw
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 /**
@@ -54,5 +62,5 @@ export function StatusBadge({ status, customMap }) {
     }
   }
 
-  return <AdminBadge variant={variant}>{status || '—'}</AdminBadge>;
+  return <AdminBadge variant={variant}>{titleCaseStatus(status)}</AdminBadge>;
 }

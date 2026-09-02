@@ -128,11 +128,9 @@ export default function AdminRBACGate({ requiredPermission, requiredRole, domain
         margin: '24px',
         backdropFilter: 'blur(8px)',
       }}>
-        <div style={{ fontSize: '2.4rem', marginBottom: '12px' }}>🔒</div>
-        <h3 style={{ color: '#ef4444', marginBottom: '8px', fontSize: '1.1rem', fontWeight: 800 }}>Access Restricted</h3>
-        <p style={{ color: 'var(--admin-text-muted, #9ca3af)', fontSize: '0.88rem', maxWidth: '400px', margin: '0 auto' }}>
-          Your active role <strong style={{ color: '#f59e0b' }}>{activeRole}</strong> does not have access to this operational module.
-          Switch to <strong style={{ color: '#60a5fa' }}>{requiredRole}</strong> or <strong style={{ color: '#60a5fa' }}>SUPER_ADMIN</strong> to proceed.
+        <h3 className="admin-page-header__title" style={{ marginBottom: 8 }}>No access</h3>
+        <p style={{ color: 'var(--admin-text-muted)', fontSize: '0.88rem', maxWidth: '400px', margin: '0 auto' }}>
+          Role <strong>{activeRole}</strong> cannot open this module. Switch to {requiredRole} or SUPER_ADMIN.
         </p>
       </div>
     );
@@ -150,10 +148,9 @@ export default function AdminRBACGate({ requiredPermission, requiredRole, domain
         margin: '24px',
         backdropFilter: 'blur(8px)',
       }}>
-        <div style={{ fontSize: '2.4rem', marginBottom: '12px' }}>⛔</div>
-        <h3 style={{ color: '#ef4444', marginBottom: '8px', fontSize: '1.1rem', fontWeight: 800 }}>Permission Denied</h3>
-        <p style={{ color: 'var(--admin-text-muted, #9ca3af)', fontSize: '0.88rem', maxWidth: '400px', margin: '0 auto' }}>
-          Action <strong style={{ color: '#f59e0b' }}>{requiredPermission}</strong> requires elevated authorization.
+        <h3 className="admin-page-header__title" style={{ marginBottom: 8 }}>Not allowed</h3>
+        <p style={{ color: 'var(--admin-text-muted)', fontSize: '0.88rem', maxWidth: '400px', margin: '0 auto' }}>
+          <strong>{requiredPermission}</strong> needs a higher role.
         </p>
       </div>
     );

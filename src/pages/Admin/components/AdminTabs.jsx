@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 /**
  * Standardized tab bar / segmented control.
@@ -37,6 +37,17 @@ export default function AdminTabs({ tabs = [], active, onChange, className = '',
           </button>
         );
       })}
+    </div>
+  );
+}
+
+export function AdminHub({ tabs, initialTab, children }) {
+  const [tab, setTab] = useState(initialTab);
+  useEffect(() => { setTab(initialTab); }, [initialTab]);
+  return (
+    <div>
+      <AdminTabs tabs={tabs} active={tab} onChange={setTab} style={{ marginBottom: 16 }} />
+      {typeof children === 'function' ? children(tab) : children}
     </div>
   );
 }

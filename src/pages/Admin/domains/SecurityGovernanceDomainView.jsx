@@ -73,7 +73,7 @@ function SessionsPanel() {
   return (
     <div>
       <div style={{ marginBottom: 16 }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Admin Sessions</h2>
+        <h2 className="admin-page-header__title">Admin Sessions</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           Active admin sessions and recent login history. Revoke does not rewrite JWT expiry; pairs with session records for observability.
         </p>
@@ -138,7 +138,7 @@ function ConfigHealthPanel() {
   return (
     <div>
       <div style={{ marginBottom: 16 }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Configuration Health</h2>
+        <h2 className="admin-page-header__title">Configuration Health</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           Safe metadata only — secret values are never shown.
         </p>
@@ -209,7 +209,7 @@ function AuditCenterPanel() {
   return (
     <div>
       <div style={{ marginBottom: 16 }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Audit Center</h2>
+        <h2 className="admin-page-header__title">Audit Center</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           Append-only audit_events. Admins cannot edit or delete history.
         </p>
@@ -299,7 +299,7 @@ export default function SecurityGovernanceDomainView({ subModule = 'admin-users'
     return (
       <div>
         <div style={{ marginBottom: '16px' }}>
-          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>RBAC Role Matrix</h2>
+          <h2 className="admin-page-header__title">RBAC Role Matrix</h2>
           <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
             Role-to-domain access map used by the admin shell gate.
           </p>

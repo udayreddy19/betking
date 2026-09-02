@@ -7,6 +7,7 @@ import { useAdminToast } from '../components/AdminToastContext';
 import { AdminKpiDrillDrawer, useAdminKpiDrilldown } from '../hooks/useAdminKpiDrilldown';
 import { startVisibleInterval } from '../utils/visibleInterval';
 import EmergencyControlsPanel from '../components/EmergencyControlsPanel';
+import { AdminHub } from '../components/AdminTabs';
 
 function fmt(v) {
   if (v == null || Number.isNaN(Number(v))) return 'N/A';
@@ -122,7 +123,7 @@ function SettlementQueuePanel() {
     <div>
       <div style={{ marginBottom: '16px' }}>
         <div className="admin-flex-between" style={{ flexWrap: 'wrap' }}>
-          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>12 · Settlement Queue & Confidence Monitoring</h2>
+          <h2 className="admin-page-header__title">Settlement</h2>
           <button type="button" className="admin-btn admin-btn--secondary admin-btn--sm" onClick={load}>
             ↻ Refresh
           </button>
@@ -365,7 +366,7 @@ function ControlTowerOpsPanel({ onNavigate }) {
     <div>
       <div className="admin-flex-between" style={{ marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Operations Control Tower</h2>
+          <h2 className="admin-page-header__title">Health overview</h2>
           <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
             Last updated: {lastUpdated ? new Date(lastUpdated).toLocaleString() : '—'}
             {error ? ` · ${error}` : ''}
@@ -512,7 +513,7 @@ function AlertsPanel() {
   return (
     <div>
       <div className="admin-flex-between" style={{ marginBottom: 16 }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Ops Alerts</h2>
+        <h2 className="admin-page-header__title">Ops Alerts</h2>
         <select value={status} onChange={(e) => setStatus(e.target.value)} className="admin-input" style={{ width: 160 }}>
           <option value="OPEN">OPEN</option>
           <option value="ACKNOWLEDGED">ACKNOWLEDGED</option>
@@ -695,7 +696,7 @@ function ProductionHealthPanel() {
     <div>
       <div className="admin-flex-between" style={{ marginBottom: 16 }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Production Health</h2>
+          <h2 className="admin-page-header__title">Production Health</h2>
           <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
             Overall: {health?.overall || 'UNKNOWN'}
             {health?.lastUpdated ? ` · Last updated: ${new Date(health.lastUpdated).toLocaleString()}` : ''}
@@ -753,7 +754,7 @@ function NotificationsPanel() {
   return (
     <div>
       <div className="admin-flex-between" style={{ marginBottom: 16 }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>
+        <h2 className="admin-page-header__title">
           Notification Center
           {unread > 0 ? ` (${unread} unread)` : ''}
         </h2>
@@ -830,7 +831,7 @@ function BackupsDrPanel() {
   return (
     <div>
       <div style={{ marginBottom: 16 }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Backups / DR</h2>
+        <h2 className="admin-page-header__title">Backups / DR</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           Backup log metadata. Isolated restore verification and wallet↔ledger mismatch counts are documented in DR reports — not claimed as production RPO/RTO from local dumps.
         </p>
@@ -887,7 +888,7 @@ function ProductionReadinessPanel() {
     <div>
       <div className="admin-flex-between" style={{ marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Production Readiness / Go-Live</h2>
+          <h2 className="admin-page-header__title">Readiness</h2>
           <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
             Evidence-based gates. Local tests never make production GREEN. No auto-repair of wallets/ledger.
           </p>
@@ -1052,7 +1053,7 @@ function ProductionCertificationPanel() {
     <div>
       <div className="admin-flex-between" style={{ marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>PRODUCTION CERTIFICATION</h2>
+          <h2 className="admin-page-header__title">Production certification</h2>
           <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
             Phase 11 evidence-gated certification. No Force GREEN. No auto-repair. No override.
             Local/staging evidence never satisfies production. Checklist cannot override certification.
@@ -1205,6 +1206,84 @@ function ProductionCertificationPanel() {
 
 
 export default function OperationsDomainView({ subModule = 'health-matrix', onNavigate }) {
+  const statusIds = ['ops-status', 'control-tower', 'alerts', 'incidents'];
+  const healthIds = [
+    'ops-health',
+    'production-health',
+    'production-readiness',
+    'production-certification',
+    'health-matrix',
+  ];
+  const switchIds = ['ops-switches', 'kill-switches', 'notifications'];
+  const queueIds = ['ops-queues', 'outbox-queue', 'settlement-queue'];
+
+  if (statusIds.includes(subModule)) {
+    const initial = subModule === 'ops-status' ? 'control-tower' : subModule;
+    return (
+      <AdminHub
+        initialTab={initial}
+        tabs={[
+          { id: 'control-tower', label: 'Desk' },
+          { id: 'alerts', label: 'Alerts' },
+          { id: 'incidents', label: 'Incidents' },
+        ]}
+      >
+        {(tab) => <OperationsPanels subModule={tab} onNavigate={onNavigate} />}
+      </AdminHub>
+    );
+  }
+
+  if (healthIds.includes(subModule)) {
+    const initial = subModule === 'ops-health' ? 'production-health' : subModule;
+    return (
+      <AdminHub
+        initialTab={initial}
+        tabs={[
+          { id: 'production-health', label: 'Production' },
+          { id: 'production-readiness', label: 'Ready' },
+          { id: 'production-certification', label: 'Certified' },
+          { id: 'health-matrix', label: 'Providers' },
+        ]}
+      >
+        {(tab) => <OperationsPanels subModule={tab} onNavigate={onNavigate} />}
+      </AdminHub>
+    );
+  }
+
+  if (switchIds.includes(subModule)) {
+    const initial = subModule === 'ops-switches' ? 'kill-switches' : subModule;
+    return (
+      <AdminHub
+        initialTab={initial}
+        tabs={[
+          { id: 'kill-switches', label: 'Kill switches' },
+          { id: 'notifications', label: 'Notices' },
+        ]}
+      >
+        {(tab) => <OperationsPanels subModule={tab} onNavigate={onNavigate} />}
+      </AdminHub>
+    );
+  }
+
+  if (queueIds.includes(subModule)) {
+    const initial = subModule === 'ops-queues' ? 'settlement-queue' : subModule;
+    return (
+      <AdminHub
+        initialTab={initial}
+        tabs={[
+          { id: 'settlement-queue', label: 'Settlement' },
+          { id: 'outbox-queue', label: 'Outbox' },
+        ]}
+      >
+        {(tab) => <OperationsPanels subModule={tab} onNavigate={onNavigate} />}
+      </AdminHub>
+    );
+  }
+
+  return <OperationsPanels subModule={subModule} onNavigate={onNavigate} />;
+}
+
+function OperationsPanels({ subModule = 'health-matrix', onNavigate }) {
   const [services, setServices] = useState([]);
   const [metrics, setMetrics] = useState(null);
   const [outboxEvents, setOutboxEvents] = useState([]);
@@ -1276,7 +1355,7 @@ export default function OperationsDomainView({ subModule = 'health-matrix', onNa
     return (
       <div>
         <div style={{ marginBottom: 16 }}>
-          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>12 · Platform kill switches</h2>
+          <h2 className="admin-page-header__title">Kill switches</h2>
           <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
             Pause betting, cashout, deposits, or withdrawals. These flags are enforced in the money path, not only in this UI.
           </p>
@@ -1307,7 +1386,7 @@ export default function OperationsDomainView({ subModule = 'health-matrix', onNa
     return (
       <div>
         <div style={{ marginBottom: '16px' }}>
-          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>12 · Outbox Worker Telemetry</h2>
+          <h2 className="admin-page-header__title">Outbox</h2>
           <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
             Transactional outbox queue depth and in-flight events. Refreshes every 30s. Click any tile for details.
           </p>
@@ -1358,7 +1437,7 @@ export default function OperationsDomainView({ subModule = 'health-matrix', onNa
   return (
     <div>
       <div style={{ marginBottom: '16px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>12 · Infrastructure Health Matrix</h2>
+        <h2 className="admin-page-header__title">Providers</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           Live Postgres ping + aggregator provider status. Unknown services stay UNKNOWN (not faked healthy).
           Click observability tiles for details.

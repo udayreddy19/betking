@@ -247,14 +247,14 @@ export default function TradingRiskDomainView({ subModule }) {
   const winnerMarket = (oddsDebug?.markets || []).find((m) => m.marketId === 'match_winner');
 
   const heading = showGgrDesk
-    ? '04 · GGR / Hold % / Liability Desk'
+    ? 'GGR / Hold % / Liability Desk'
     : showSuspensionQueue
-      ? '04 · Suspended Markets Queue'
+      ? 'Suspended Markets Queue'
       : showFraud
-        ? '04 · Risk / Fraud Console'
+        ? 'Risk / Fraud Console'
         : showOddsHealth
-          ? '04 · Odds model health'
-          : '04 · Trading Desk & Live Risk Exposure Console';
+          ? 'Odds model health'
+          : 'Trading Desk & Live Risk Exposure Console';
   const hint = showGgrDesk
     ? 'Ledger GGR, hold percentage, and open/persisted market liability for traders.'
     : showSuspensionQueue
@@ -268,7 +268,7 @@ export default function TradingRiskDomainView({ subModule }) {
   return (
     <div>
       <div style={{ marginBottom: '16px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>{heading}</h2>
+        <h2 className="admin-page-header__title">{heading}</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           {hint}
         </p>

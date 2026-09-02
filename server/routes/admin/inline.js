@@ -1848,39 +1848,84 @@ router.get('/api/admin/rewards', async (req, res) => {
 
 router.post('/api/admin/rewards/issue', async (req, res) => {
   try {
-    const { issueDiscreteReward } = await import('../../../lib/discreteRewardEngine.mjs');
+    const { issueDiscreteReward, resolveRewardRecipient, ensureDiscreteRewardSchema } = await import('../../../lib/discreteRewardEngine.mjs');
+    const { planPackAmounts, normalizeSplitParts, normalizeSplitEach } = await import('../../../lib/rewardSplit.mjs');
+    const { withTransaction } = await import('../../../db/pg.js');
     const { logAdminAction } = await import('../../middleware/auditLogger.js');
     const adminId = req.admin?.id || req.admin?.adminId || 'admin';
-    const reward = await issueDiscreteReward({
-      userId: req.body?.userId,
-      rewardType: req.body?.rewardType || 'freebet',
-      amount: req.body?.amount,
-      title: req.body?.title,
-      source: req.body?.source || 'ADMIN_GRANT',
-      minOdds: req.body?.minOdds || 1.00,
-      maxOdds: req.body?.maxOdds || null,
-      singleOnly: Boolean(req.body?.singleOnly),
-      accumulatorAllowed: req.body?.accumulatorAllowed !== false,
-      returnsStake: Boolean(req.body?.returnsStake),
-      allowPartialUse: Boolean(req.body?.allowPartialUse),
-      expiryDays: req.body?.expiryDays || 7,
-      adminId,
-      creditWallet: true,
+    await ensureDiscreteRewardSchema();
+    const packEnabled = Boolean(req.body?.splitEnabled) || Number(req.body?.splitParts) > 1;
+    const splitParts = normalizeSplitParts(req.body?.splitParts, { enabled: packEnabled });
+    const splitEach = normalizeSplitEach(req.body?.splitEach, { enabled: packEnabled });
+    let amounts;
+    let totalAmount;
+    if (packEnabled) {
+      amounts = planPackAmounts({ parts: splitParts, each: splitEach });
+      totalAmount = Number(amounts.reduce((sum, n) => sum + n, 0).toFixed(2));
+    } else {
+      totalAmount = Number(req.body?.amount);
+      if (!(totalAmount > 0)) {
+        throw Object.assign(new Error('Amount must be greater than zero'), { status: 400 });
+      }
+      amounts = [Number(totalAmount.toFixed(2))];
+    }
+    const recipient = await resolveRewardRecipient(req.body?.userId);
+    const rewards = [];
+    await withTransaction(async (client) => {
+      for (let i = 0; i < amounts.length; i += 1) {
+        const part = amounts[i];
+        const reward = await issueDiscreteReward({
+          userId: recipient.userId,
+          rewardType: req.body?.rewardType || 'freebet',
+          amount: part,
+          title: amounts.length > 1
+            ? `${req.body?.title || (req.body?.rewardType === 'bonus' ? 'Bonus' : 'Free Bet')} ${i + 1}/${amounts.length}`
+            : req.body?.title,
+          source: req.body?.source || 'ADMIN_GRANT',
+          minOdds: req.body?.minOdds || 1.00,
+          maxOdds: req.body?.maxOdds || null,
+          singleOnly: Boolean(req.body?.singleOnly),
+          accumulatorAllowed: req.body?.accumulatorAllowed !== false,
+          returnsStake: Boolean(req.body?.returnsStake),
+          allowPartialUse: Boolean(req.body?.allowPartialUse),
+          expiryDays: req.body?.expiryDays || 7,
+          adminId,
+          creditWallet: true,
+          client,
+          metadata: {
+            reason: req.body?.reason || null,
+            splitIndex: i + 1,
+            splitParts: amounts.length,
+            parentAmount: totalAmount,
+          },
+        });
+        rewards.push(reward);
+      }
     });
+    const reward = rewards[0];
     await logAdminAction({
       actorId: adminId,
       targetId: reward.reward_id,
       action: 'REWARD_ISSUED',
-      details: { userId: reward.user_id, amount: req.body?.amount, rewardType: req.body?.rewardType },
+      details: {
+        userId: reward.user_id,
+        amount: totalAmount,
+        rewardType: req.body?.rewardType,
+        splitParts: amounts.length,
+        rewardIds: rewards.map((r) => r.reward_id),
+      },
     });
     try {
       const { notifyUserSupportEvent } = await import('../../../lib/supportNotify.mjs');
       const kind = reward.reward_type === 'freebet' ? 'Free Bet' : 'Bonus';
+      const stakeNote = amounts.length > 1
+        ? `${amounts.length} × ₹${Number(amounts[0]).toLocaleString('en-IN')} ${kind.toLowerCase()}s`
+        : `₹${Number(totalAmount).toLocaleString('en-IN')} ${kind}`;
       await notifyUserSupportEvent({
         userId: reward.user_id,
         eventType: 'REWARD_ISSUED',
-        subject: `You received a ₹${Number(reward.amount).toLocaleString('en-IN')} ${kind}`,
-        message: `${reward.title || kind} is now in your wallet and on My Rewards. Use it as an exact stake on sports.`,
+        subject: `You received ${stakeNote}`,
+        message: `${stakeNote} ${amounts.length > 1 ? 'are' : 'is'} now in My Rewards. Each is an exact stake — place them as separate bets.`,
       });
     } catch {
       /* notification is best-effort */
@@ -1888,8 +1933,8 @@ router.post('/api/admin/rewards/issue', async (req, res) => {
     let emailSent = false;
     try {
       const { sendAdminGiftEmail } = await import('../../../server/auth/emailService.js');
-      let email = reward.recipient?.email || null;
-      let name = reward.recipient?.name || null;
+      let email = recipient.email || reward.recipient?.email || null;
+      let name = recipient.name || reward.recipient?.name || null;
       if (!email && reward.user_id) {
         const { query } = await import('../../../db/pg.js');
         const u = await query(
@@ -1903,9 +1948,11 @@ router.post('/api/admin/rewards/issue', async (req, res) => {
         const mail = await sendAdminGiftEmail({
           email,
           name,
-          amount: reward.amount,
+          amount: totalAmount,
           rewardType: reward.reward_type,
-          title: reward.title,
+          title: amounts.length > 1
+            ? `${amounts.length} × ₹${Number(amounts[0]).toLocaleString('en-IN')}`
+            : reward.title,
           expiresAt: reward.expires_at,
         });
         emailSent = Boolean(mail?.success);
@@ -1913,7 +1960,14 @@ router.post('/api/admin/rewards/issue', async (req, res) => {
     } catch {
       /* email is best-effort; grant already committed */
     }
-    res.json({ success: true, reward, recipient: reward.recipient || null, emailSent });
+    res.json({
+      success: true,
+      reward,
+      rewards,
+      splitParts: amounts.length,
+      recipient: recipient || reward.recipient || null,
+      emailSent,
+    });
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
   }
