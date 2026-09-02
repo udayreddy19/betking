@@ -179,4 +179,49 @@
   .home-quick-link:active .home-quick-link-icon {
     transform: scale(0.94);
   }
+
+  .home-quick-link--srl {
+    min-width: 5.25rem;
+  }
+
+  .home-quick-link--srl .home-quick-link-icon {
+    color: #fbbf24;
+    border-color: rgba(251, 191, 36, 0.7);
+    background: linear-gradient(180deg, #3a2a0c 0%, #1a1408 100%);
+    box-shadow:
+      0 0 0 1px rgba(251, 191, 36, 0.35),
+      0 0 14px rgba(245, 158, 11, 0.55);
+    animation: home-srl-glow 2.2s ease-in-out infinite;
+  }
+
+  .home-quick-link--srl .home-quick-link-icon svg {
+    filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.95));
+  }
+
+  .home-quick-link--srl .home-quick-link-label {
+    color: #fbbf24;
+    white-space: normal;
+    max-width: 5rem;
+    line-height: 1.15;
+    font-size: 0.64rem;
+  }
+}
+
+@keyframes home-srl-glow {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(251, 191, 36, 0.3),
+      0 0 10px rgba(245, 158, 11, 0.45);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(251, 191, 36, 0.65),
+      0 0 22px rgba(251, 191, 36, 0.85);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-quick-link--srl .home-quick-link-icon {
+    animation: none;
+  }
 }

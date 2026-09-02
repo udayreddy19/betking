@@ -2915,31 +2915,39 @@ html[data-theme="light"] .admin-badge--info,
 .admin-login__form {
   display: grid;
   gap: 16px;
+  width: 100%;
 }
 
 .admin-login__fields {
   display: grid;
   gap: 14px;
+  width: 100%;
 }
 
 .admin-login__label {
   display: grid;
   gap: 6px;
+  width: 100%;
   font-size: 0.8rem;
   font-weight: 550;
   color: var(--admin-text-secondary);
 }
 
-.admin-login__input {
+.admin-login__input,
+.admin-login__otp {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 11px 12px;
   font-size: 0.92rem;
 }
 
 .admin-login__otp {
-  padding: 14px 12px;
+  height: 52px;
+  padding: 0 12px;
   font-size: 1.45rem;
   font-weight: 650;
-  letter-spacing: 0.42em;
+  letter-spacing: 0.28em;
   text-align: center;
   font-variant-numeric: tabular-nums;
   font-family: var(--admin-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
@@ -3027,11 +3035,14 @@ html[data-theme="light"] .admin-badge--info,
 
 .admin-login__back {
   justify-content: center;
+  width: 100%;
   padding: 4px 0;
 }
 
 .admin-login__submit {
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   margin-top: 2px;
 }
 
