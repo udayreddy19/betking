@@ -347,7 +347,11 @@ function TargetedDepositFreeBetPanel() {
         `/growth/deposit-freebet/targeted/${encodeURIComponent(selectedId)}/dispatch`,
         { activate: true },
       );
-      showToast(`Emails sent: ${data.sent || 0} · failed: ${data.failed || 0} · skipped: ${data.skipped || 0}`, 'success');
+      showToast(
+        `Emails sent: ${data.sent || 0} · failed: ${data.failed || 0} · skipped: ${data.skipped || 0}`
+          + (data.sent ? ' — check inbox/spam for promos@oddsyra.com' : ''),
+        data.sent ? 'success' : (data.failed ? 'error' : 'success'),
+      );
       await loadCampaigns();
       loadDetail(selectedId);
     } catch (err) {
