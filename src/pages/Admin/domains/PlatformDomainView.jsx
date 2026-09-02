@@ -90,8 +90,8 @@ export default function PlatformDomainView({ subModule = 'feature-flags' }) {
   }
 
   const heading = subModule === 'api-keys'
-    ? '11 · Developer API Keys'
-    : '11 · System Feature Flags';
+    ? 'Developer API Keys'
+    : 'System Feature Flags';
   const hint = subModule === 'api-keys'
     ? 'Registered developer API keys from the platform tables.'
     : 'Sport enable toggles plus enterprise feature-store rollout flags. Authorization is never bypassed by flags.';
@@ -102,7 +102,7 @@ export default function PlatformDomainView({ subModule = 'feature-flags' }) {
   return (
     <div>
       <div style={{ marginBottom: '16px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>{heading}</h2>
+        <h2 className="admin-page-header__title">{heading}</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           {hint}
         </p>

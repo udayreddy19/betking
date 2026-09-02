@@ -20,7 +20,7 @@ export default function AdminMfaQr({ otpauthUrl, size = 192 }) {
         width: size,
         margin: 2,
         errorCorrectionLevel: 'M',
-        color: { dark: '#0f172a', light: '#ffffff' },
+        color: { dark: '#121212', light: '#ffffff' },
       }))
       .then((url) => {
         if (!cancelled) setDataUrl(url);
@@ -35,23 +35,11 @@ export default function AdminMfaQr({ otpauthUrl, size = 192 }) {
   }, [otpauthUrl, size]);
 
   if (error) {
-    return <p style={{ margin: 0, fontSize: '0.72rem', color: '#f87171' }}>{error}</p>;
+    return <p className="admin-login__qr-error">{error}</p>;
   }
   if (!dataUrl) {
     return (
-      <div
-        style={{
-          width: size,
-          height: size,
-          margin: '0 auto',
-          borderRadius: 8,
-          background: 'var(--admin-bg, #f1f5f9)',
-          display: 'grid',
-          placeItems: 'center',
-          fontSize: '0.75rem',
-          color: 'var(--admin-text-muted)',
-        }}
-      >
+      <div className="admin-login__qr-placeholder" style={{ width: size, height: size }}>
         Preparing QR…
       </div>
     );
@@ -63,13 +51,7 @@ export default function AdminMfaQr({ otpauthUrl, size = 192 }) {
       alt="Scan this QR code with Google Authenticator or 1Password"
       width={size}
       height={size}
-      style={{
-        display: 'block',
-        margin: '0 auto',
-        borderRadius: 8,
-        border: '1px solid var(--admin-border, #e2e8f0)',
-        background: '#fff',
-      }}
+      className="admin-login__qr-img"
     />
   );
 }

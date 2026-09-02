@@ -9,6 +9,7 @@ import AdminFilterBar, { FilterDateRange } from '../components/AdminFilterBar';
 import AdminKPI from '../components/AdminKPI';
 import { AdminKpiDrillDrawer, useAdminKpiDrilldown } from '../hooks/useAdminKpiDrilldown';
 import PaymentGatewaysView from './PaymentGatewaysView';
+import { AdminHub } from '../components/AdminTabs';
 
 function money(n) {
   if (n == null || Number.isNaN(Number(n))) return '—';
@@ -524,7 +525,7 @@ function LedgerPanel({ focusEntityId = null, focusEntityType = null, onFocusCons
   return (
     <div>
       <div style={{ marginBottom: '16px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>06 · Double-Entry Ledger</h2>
+        <h2 className="admin-page-header__title">Double-Entry Ledger</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           Authoritative wallet ledger entries from PostgreSQL (most recent first).
         </p>
@@ -639,7 +640,7 @@ function PaymentGatewaysPanel() {
   return (
     <div>
       <div style={{ marginBottom: '16px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>06 · Payment Gateways & Live Transactions</h2>
+        <h2 className="admin-page-header__title">Payments</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           Server-authoritative Cashfree & Razorpay integration, webhook processing status, and real-time transaction ledger.
         </p>
@@ -841,7 +842,7 @@ function LegacyLedgerPanel() {
   return (
     <div>
       <div style={{ marginBottom: '16px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>06 · Legacy Ledger Gaps</h2>
+        <h2 className="admin-page-header__title">Legacy Ledger Gaps</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           Wallets where stored balance does not match ledger sum. Accept exception or apply opening ledger credit.
         </p>
@@ -1283,7 +1284,7 @@ function DepositsReviewPanel() {
   return (
     <div>
       <div style={{ marginBottom: '16px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>06 · Deposits Review</h2>
+        <h2 className="admin-page-header__title">Deposits review</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           Recent deposits from PostgreSQL. Refund uses the existing Razorpay + ledger refund path.
         </p>
@@ -1366,10 +1367,10 @@ function FinanceControlCenterPanel() {
   }, []);
 
   const cards = [
-    { label: 'Deposits (24h)', value: kpis?.deposits24h?.total, sub: `${kpis?.deposits24h?.count ?? '—'} tx` },
-    { label: 'Pending WD', value: kpis?.pendingWithdrawals?.total, sub: `${kpis?.pendingWithdrawals?.count ?? '—'} req` },
-    { label: 'Held WD', value: kpis?.heldWithdrawals?.total, sub: `${kpis?.heldWithdrawals?.count ?? '—'} req` },
-    { label: 'Maker/Checker', value: kpis?.pendingMakerChecker, sub: 'pending' },
+    { label: 'Deposits (24h)', value: kpis?.deposits24h?.total, sub: `${kpis?.deposits24h?.count ?? '—'} tx`, money: true },
+    { label: 'Pending withdrawals', value: kpis?.pendingWithdrawals?.total, sub: `${kpis?.pendingWithdrawals?.count ?? '—'} requests`, money: true },
+    { label: 'Held withdrawals', value: kpis?.heldWithdrawals?.total, sub: `${kpis?.heldWithdrawals?.count ?? '—'} requests`, money: true },
+    { label: 'Maker-checker', value: kpis?.pendingMakerChecker, sub: 'pending' },
     { label: 'Recon warnings', value: kpis?.reconciliationWarnings, sub: 'open cases' },
     { label: 'Critical', value: kpis?.criticalIssues, sub: 'recon' },
     { label: 'Failed tx (24h)', value: kpis?.failedTransactions24h, sub: 'transactions' },
@@ -1378,24 +1379,24 @@ function FinanceControlCenterPanel() {
   return (
     <div>
       <div style={{ marginBottom: 16 }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Finance Control Center</h2>
+        <h2 className="admin-page-header__title">Control center</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           Server-side KPIs only. Frontend never mutates balances.
         </p>
         {error && <p style={{ color: '#fbbf24' }}>{error}</p>}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12 }}>
+      <div className="admin-metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
         {cards.map((c) => (
-          <div key={c.label} className="telemetry-card" style={{ padding: 12 }}>
-            <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)' }}>{c.label}</div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 800, marginTop: 4 }}>
+          <div key={c.label} className="admin-metric">
+            <div className="admin-metric__label">{c.label}</div>
+            <div className="admin-metric__value">
               {c.value == null
                 ? '—'
-                : (typeof c.value === 'number' && (c.label.includes('Deposits') || c.label.includes('WD'))
+                : (typeof c.value === 'number' && c.money
                   ? `₹${Number(c.value).toLocaleString()}`
                   : c.value)}
             </div>
-            <div style={{ fontSize: '0.7rem', marginTop: 2 }}>{c.sub}</div>
+            <div className="admin-metric__hint">{c.sub}</div>
           </div>
         ))}
       </div>
@@ -1457,7 +1458,7 @@ function DailyClosingPanel() {
     <div>
       <div style={{ marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end' }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Daily Closing</h2>
+          <h2 className="admin-page-header__title">Daily Closing</h2>
           <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
             Flag-only pack. Opening/expected closing UNAVAILABLE without historical snapshots. Never auto-repairs.
           </p>
@@ -1510,7 +1511,7 @@ function FinanceAnomaliesPanel() {
   return (
     <div>
       <div style={{ marginBottom: 16 }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Financial Anomalies</h2>
+        <h2 className="admin-page-header__title">Financial Anomalies</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           Aggregated from reconciliation, high-risk withdrawals, failed transactions, promo abuse.
         </p>
@@ -1596,7 +1597,7 @@ function WalletInvestigationPanel() {
   return (
     <div>
       <div style={{ marginBottom: 20 }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Wallet Investigation & Financial Timeline</h2>
+          <h2 className="admin-page-header__title">Wallets</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           Forensic lookup by User (Name, Email, Phone, User ID) or Reference ID (Tx ID, Bet ID, Withdrawal ID, Deposit ID).
         </p>
@@ -1863,7 +1864,7 @@ function ReconciliationDashboardPanel() {
     <div>
       <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14 }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Read-Only Financial Reconciliation Dashboard</h2>
+          <h2 className="admin-page-header__title">Reconciliation</h2>
           <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
             Authoritative double-entry ledger audit. Non-mutating: never alters balances or deletes records.
           </p>
@@ -1874,7 +1875,7 @@ function ReconciliationDashboardPanel() {
           disabled={scanning}
           onClick={runReconciliationScan}
         >
-          {scanning ? 'Running Read-Only Scan…' : 'Run Read-Only Reconciliation Scan'}
+          {scanning ? 'Running scan…' : 'Run read-only scan'}
         </button>
       </div>
 
@@ -1937,10 +1938,22 @@ export default function FinanceDomainView({
   focusEntityType = null,
   onFocusConsumed = null,
 }) {
-  const view = useMemo(() => {
-    if (subModule === 'investigation') return <WalletInvestigationPanel />;
-    if (subModule === 'reconciliation') return <ReconciliationDashboardPanel />;
-    if (subModule === 'ledger') {
+  const moneyIds = ['cash-money', 'deposits-review', 'maker-checker'];
+  const bookIds = [
+    'cash-books',
+    'ledger',
+    'reconciliation',
+    'daily-closing',
+    'anomalies',
+    'finance-health',
+    'control-center',
+    'legacy-ledger',
+  ];
+
+  const renderPanel = (id) => {
+    if (id === 'investigation') return <WalletInvestigationPanel />;
+    if (id === 'reconciliation') return <ReconciliationDashboardPanel />;
+    if (id === 'ledger') {
       return (
         <LedgerPanel
           focusEntityId={focusEntityId}
@@ -1949,16 +1962,51 @@ export default function FinanceDomainView({
         />
       );
     }
-    if (subModule === 'control-center') return <FinanceControlCenterPanel />;
-    if (subModule === 'daily-closing') return <DailyClosingPanel />;
-    if (subModule === 'anomalies') return <FinanceAnomaliesPanel />;
-    if (subModule === 'finance-health') return <FinanceHealthPanel />;
-    if (subModule === 'legacy-ledger') return <LegacyLedgerPanel />;
-    if (subModule === 'payment-gateways') return <PaymentGatewaysView />;
-    if (subModule === 'deposits-review') return <DepositsReviewPanel />;
+    if (id === 'control-center') return <FinanceControlCenterPanel />;
+    if (id === 'daily-closing') return <DailyClosingPanel />;
+    if (id === 'anomalies') return <FinanceAnomaliesPanel />;
+    if (id === 'finance-health') return <FinanceHealthPanel />;
+    if (id === 'legacy-ledger') return <LegacyLedgerPanel />;
+    if (id === 'payment-gateways') return <PaymentGatewaysView />;
+    if (id === 'deposits-review') return <DepositsReviewPanel />;
     return <MakerCheckerPanel />;
-  }, [subModule, focusEntityId, focusEntityType, onFocusConsumed]);
+  };
 
-  return view;
+  if (moneyIds.includes(subModule)) {
+    const initial = subModule === 'cash-money' ? 'deposits-review' : subModule;
+    return (
+      <AdminHub
+        initialTab={initial}
+        tabs={[
+          { id: 'deposits-review', label: 'Deposits' },
+          { id: 'maker-checker', label: 'Withdrawals' },
+        ]}
+      >
+        {(tab) => renderPanel(tab)}
+      </AdminHub>
+    );
+  }
+
+  if (bookIds.includes(subModule)) {
+    const initial = subModule === 'cash-books' ? 'ledger' : subModule;
+    return (
+      <AdminHub
+        initialTab={initial}
+        tabs={[
+          { id: 'ledger', label: 'Ledger' },
+          { id: 'reconciliation', label: 'Recon' },
+          { id: 'daily-closing', label: 'Daily close' },
+          { id: 'anomalies', label: 'Anomalies' },
+          { id: 'finance-health', label: 'Health' },
+          { id: 'control-center', label: 'Controls' },
+          { id: 'legacy-ledger', label: 'Legacy' },
+        ]}
+      >
+        {(tab) => renderPanel(tab)}
+      </AdminHub>
+    );
+  }
+
+  return renderPanel(subModule);
 }
 

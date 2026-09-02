@@ -51,205 +51,183 @@ import { AdminToastProvider } from '../components/AdminToastContext';
 
 const DOMAIN_GROUPS = [
   {
-    title: 'CORE OPERATIONS',
+    title: 'Floor',
     items: [
       {
         id: 'control-tower',
-        label: '01 · Control Tower',
+        label: 'Home',
         Icon: ActivityIcon,
         role: ADMIN_ROLES.SUPER_ADMIN,
         subModules: [
-          { id: 'overview', label: 'Operational Overview' },
-          { id: 'telemetry', label: 'Telemetry & SLA Monitors' },
-          { id: 'incidents', label: 'Live System Incidents' },
+          { id: 'overview', label: 'Live' },
+          { id: 'telemetry', label: 'Health' },
+          { id: 'incidents', label: 'Incidents' },
         ],
       },
       {
         id: 'customers',
-        label: '02 · Customers',
+        label: 'Players',
         Icon: UsersIcon,
         role: null,
         subModules: [
-          { id: 'directory', label: 'Customer Directory' },
-          { id: 'kyc-reminders', label: 'KYC Reminders & Email' },
-          { id: 'kyc-queue', label: 'KYC Verification Queue' },
-          { id: 'restrictions', label: 'Account Restrictions' },
-          { id: 'responsible-gaming', label: 'Responsible Gaming Safeguards' },
+          { id: 'directory', label: 'Directory' },
+          { id: 'kyc-queue', label: 'KYC' },
+          { id: 'limits', label: 'Limits' },
         ],
       },
       {
         id: 'sports',
-        label: '03 · Sports',
+        label: 'Sports',
         Icon: LayersIcon,
         role: null,
         subModules: [
-          { id: 'catalog', label: 'Sports & Leagues Catalog' },
-          { id: 'iplsrl-console', label: 'OddsYra SRL Console' },
-          { id: 'rosters', label: 'Team Rosters & Squads' },
-          { id: 'providers', label: 'Data Feed Latency Monitors' },
+          { id: 'catalog', label: 'Matches' },
+          { id: 'iplsrl-console', label: 'SRL' },
+          { id: 'rosters', label: 'Squads' },
+          { id: 'providers', label: 'Feeds' },
         ],
       },
     ],
   },
   {
-    title: 'TRADING & RISK',
+    title: 'Market',
     items: [
       {
         id: 'trading-risk',
-        label: '04 · Trading & Risk',
+        label: 'Risk',
         Icon: ChartBarIcon,
         role: ADMIN_ROLES.TRADING_ADMIN,
         subModules: [
-          { id: 'exposure', label: 'Live Exposure & Risk Desk' },
-          { id: 'ggr-liability', label: 'GGR / Hold / Liability' },
-          { id: 'suspension', label: 'Market Suspension Controls' },
-          { id: 'odds-health', label: 'Odds model health' },
+          { id: 'exposure', label: 'Exposure' },
+          { id: 'ggr-liability', label: 'Liability' },
+          { id: 'suspension', label: 'Markets' },
+          { id: 'odds-health', label: 'Odds' },
         ],
       },
       {
         id: 'betting',
-        label: '05 · Betting',
+        label: 'Bets',
         Icon: FileTextIcon,
         role: null,
         subModules: [
-          { id: 'bets-registry', label: 'All Bets' },
-          { id: 'settlement-engine', label: 'Pending & Declare' },
-          { id: 'cashout-reconciliation', label: 'Cashout Reconciliation' },
+          { id: 'bets-registry', label: 'All bets' },
+          { id: 'settlement-engine', label: 'Settlement' },
+          { id: 'cashout-reconciliation', label: 'Cashout' },
         ],
       },
       {
         id: 'finance',
-        label: '06 · Finance',
+        label: 'Cash',
         Icon: WalletIcon,
         role: ADMIN_ROLES.FINANCE_ADMIN,
         subModules: [
-          { id: 'investigation', label: 'Wallet Investigation & Timeline' },
-          { id: 'reconciliation', label: 'Read-Only Reconciliation' },
-          { id: 'control-center', label: 'Control Center' },
-          { id: 'maker-checker', label: 'Withdrawal workbench' },
-          { id: 'deposits-review', label: 'Deposits Review' },
-          { id: 'finance-health', label: 'Finance Health Center' },
-          { id: 'daily-closing', label: 'Daily Closing' },
-          { id: 'anomalies', label: 'Financial Anomalies' },
-          { id: 'ledger', label: 'Double-Entry Ledger' },
-          { id: 'legacy-ledger', label: 'Legacy Ledger Gaps' },
-          { id: 'payment-gateways', label: 'Razorpay & Bank Gateways' },
+          { id: 'investigation', label: 'Wallets' },
+          { id: 'cash-money', label: 'Pay in / out' },
+          { id: 'cash-books', label: 'Books' },
+          { id: 'payment-gateways', label: 'Payments' },
         ],
       },
     ],
   },
   {
-    title: 'SUPPORT & GROWTH',
+    title: 'Care',
     items: [
       {
         id: 'support',
-        label: '07 · Support',
+        label: 'Help',
         Icon: SupportHeadsetIcon,
         role: ADMIN_ROLES.SUPPORT_AGENT,
         subModules: [
-          { id: 'ticket-queue', label: 'Active Support Ticket Queue' },
-          { id: 'chat-console', label: 'Real-time Agent Console' },
-          { id: 'sla-alerts', label: 'SLA Breach Monitoring' },
+          { id: 'ticket-queue', label: 'Tickets' },
+          { id: 'chat-console', label: 'Chat' },
+          { id: 'sla-alerts', label: 'SLA' },
         ],
       },
       {
         id: 'growth',
-        label: '08 · Growth',
+        label: 'Growth',
         Icon: ZapIcon,
         role: ADMIN_ROLES.MARKETING_ADMIN,
         subModules: [
-          { id: 'overview', label: 'Growth Overview' },
-          { id: 'rewards', label: '🎁 Free Bets & Bonuses' },
-          { id: 'promotions', label: 'Sportsbook Campaigns' },
-          { id: 'deposit-freebet', label: 'Deposit Free Bet' },
-          { id: 'bonus-codes', label: 'Signup Promo Codes' },
-          { id: 'referrals', label: 'Referral Program' },
-          { id: 'promo-abuse', label: 'Promo Abuse Alerts' },
-          { id: 'crm-segments', label: 'CRM Segments' },
-          { id: 'crm-composer', label: 'CRM Composer' },
-          { id: 'promo-roi', label: 'Promotion ROI' },
-          { id: 'vip-tiers', label: 'VIP Loyalty Tiers' },
+          { id: 'overview', label: 'Overview' },
+          { id: 'offers', label: 'Offers' },
+          { id: 'referrals', label: 'Referrals' },
+          { id: 'audience', label: 'Audience' },
+          { id: 'promo-abuse', label: 'Abuse' },
+          { id: 'vip-tiers', label: 'VIP' },
         ],
       },
       {
         id: 'communications',
-        label: '09 · Communications',
+        label: 'Mail',
         Icon: BellRingIcon,
         role: null,
         subModules: [
-          { id: 'dispatch-logs', label: 'Notification Delivery Logs' },
-          { id: 'templates', label: 'Message Templates' },
-          { id: 'dlq-retry', label: 'Dead Letter Queue Retries' },
-          { id: 'broadcast', label: 'Broadcast Notification' },
+          { id: 'mail-inbox', label: 'Delivery' },
+          { id: 'templates', label: 'Templates' },
+          { id: 'broadcast', label: 'Broadcast' },
         ],
       },
     ],
   },
   {
-    title: 'PLATFORM & GOVERNANCE',
+    title: 'System',
     items: [
       {
         id: 'analytics',
-        label: '10 · Analytics',
+        label: 'Reports',
         Icon: ChartBarIcon,
         role: null,
         subModules: [
-          { id: 'turnover-ggr', label: 'Turnover & GGR Reports' },
-          { id: 'bi-exporter', label: 'Custom BI Data Exporter' },
+          { id: 'turnover-ggr', label: 'Performance' },
+          { id: 'bi-exporter', label: 'Export' },
         ],
       },
       {
         id: 'platform',
-        label: '11 · Platform',
+        label: 'Settings',
         Icon: SettingsIcon,
         role: ADMIN_ROLES.SUPER_ADMIN,
         subModules: [
-          { id: 'feature-flags', label: 'System Feature Flags' },
-          { id: 'api-keys', label: 'Developer API Keys' },
-          { id: 'database-tables', label: 'Database Tables' },
+          { id: 'feature-flags', label: 'Feature flags' },
+          { id: 'api-keys', label: 'API keys' },
+          { id: 'database-tables', label: 'Database' },
         ],
       },
       {
         id: 'operations',
-        label: '12 · Operations',
+        label: 'Ops',
         Icon: KeyIcon,
         role: ADMIN_ROLES.OPERATIONS_ADMIN,
         subModules: [
-          { id: 'control-tower', label: 'Control Tower' },
-          { id: 'kill-switches', label: 'Kill switches' },
-          { id: 'alerts', label: 'Alerts' },
-          { id: 'incidents', label: 'Incidents' },
-          { id: 'production-health', label: 'Production Health' },
-          { id: 'production-readiness', label: 'Production Readiness' },
-          { id: 'production-certification', label: 'Production Certification' },
-          { id: 'backups-dr', label: 'Backups / DR' },
-          { id: 'notifications', label: 'Notifications' },
-          { id: 'health-matrix', label: 'Infrastructure Health Matrix' },
-          { id: 'outbox-queue', label: 'Outbox Worker Telemetry' },
-          { id: 'settlement-queue', label: 'Settlement Queue' },
+          { id: 'ops-status', label: 'Status' },
+          { id: 'ops-health', label: 'Health' },
+          { id: 'ops-switches', label: 'Switches' },
+          { id: 'ops-queues', label: 'Queues' },
+          { id: 'backups-dr', label: 'Backups' },
         ],
       },
       {
         id: 'api-explorer',
-        label: '13 · API Explorer',
+        label: 'APIs',
         Icon: SearchIcon,
         role: ADMIN_ROLES.OPERATIONS_ADMIN,
         subModules: [
-          { id: 'overview', label: 'API Catalog' },
-          { id: 'odds-engine', label: 'Odds Engine' },
+          { id: 'overview', label: 'Catalog' },
+          { id: 'odds-engine', label: 'Odds engine' },
         ],
       },
       {
         id: 'security-governance',
-        label: '14 · Security & Governance',
+        label: 'Security',
         Icon: ShieldCheckIcon,
         role: ADMIN_ROLES.SUPER_ADMIN,
         subModules: [
-          { id: 'admin-users', label: 'Admin Accounts & Passwords' },
-          { id: 'audit-trail', label: 'Audit Center' },
-          { id: 'sessions', label: 'Admin Sessions' },
-          { id: 'config-health', label: 'Configuration Health' },
-          { id: 'rbac-matrix', label: 'RBAC Role Matrix' },
+          { id: 'admin-users', label: 'Admins' },
+          { id: 'audit-trail', label: 'Audit' },
+          { id: 'sessions', label: 'Sessions' },
+          { id: 'rbac-matrix', label: 'Roles' },
+          { id: 'config-health', label: 'Config' },
         ],
       },
     ],
@@ -261,13 +239,128 @@ const DEFAULT_ADMIN_DOMAIN = 'control-tower';
 const DEFAULT_ADMIN_SUB = 'overview';
 const ADMIN_NAV_STORAGE_KEY = 'adminNavLocation';
 
+const HIDDEN_SUBS = {
+  growth: [
+    'deposit-freebet',
+    'bonus-codes',
+    'rewards',
+    'discrete-rewards',
+    'promotions',
+    'crm-segments',
+    'crm-composer',
+    'promo-roi',
+  ],
+  customers: ['kyc-reminders', 'restrictions', 'responsible-gaming'],
+  finance: [
+    'deposits-review',
+    'maker-checker',
+    'ledger',
+    'reconciliation',
+    'daily-closing',
+    'anomalies',
+    'finance-health',
+    'control-center',
+    'legacy-ledger',
+  ],
+  operations: [
+    'control-tower',
+    'alerts',
+    'incidents',
+    'production-health',
+    'production-readiness',
+    'production-certification',
+    'health-matrix',
+    'kill-switches',
+    'notifications',
+    'outbox-queue',
+    'settlement-queue',
+  ],
+  communications: ['dispatch-logs', 'dlq-retry'],
+};
+
+const SUB_BREADCRUMB = {
+  'kyc-reminders': 'Directory',
+  restrictions: 'Limits',
+  'responsible-gaming': 'Limits',
+  'deposits-review': 'Pay in / out',
+  'maker-checker': 'Pay in / out',
+  ledger: 'Books',
+  reconciliation: 'Books',
+  'daily-closing': 'Books',
+  anomalies: 'Books',
+  'finance-health': 'Books',
+  'control-center': 'Books',
+  'legacy-ledger': 'Books',
+  'control-tower': 'Status',
+  alerts: 'Status',
+  incidents: 'Status',
+  'production-health': 'Health',
+  'production-readiness': 'Health',
+  'production-certification': 'Health',
+  'health-matrix': 'Health',
+  'kill-switches': 'Switches',
+  notifications: 'Switches',
+  'outbox-queue': 'Queues',
+  'settlement-queue': 'Queues',
+  'dispatch-logs': 'Delivery',
+  'dlq-retry': 'Delivery',
+};
+
+const HUB_FOR = {
+  customers: {
+    'kyc-reminders': 'directory',
+    restrictions: 'limits',
+    'responsible-gaming': 'limits',
+  },
+  finance: {
+    'deposits-review': 'cash-money',
+    'maker-checker': 'cash-money',
+    ledger: 'cash-books',
+    reconciliation: 'cash-books',
+    'daily-closing': 'cash-books',
+    anomalies: 'cash-books',
+    'finance-health': 'cash-books',
+    'control-center': 'cash-books',
+    'legacy-ledger': 'cash-books',
+  },
+  operations: {
+    'control-tower': 'ops-status',
+    alerts: 'ops-status',
+    incidents: 'ops-status',
+    'production-health': 'ops-health',
+    'production-readiness': 'ops-health',
+    'production-certification': 'ops-health',
+    'health-matrix': 'ops-health',
+    'kill-switches': 'ops-switches',
+    notifications: 'ops-switches',
+    'outbox-queue': 'ops-queues',
+    'settlement-queue': 'ops-queues',
+  },
+  communications: {
+    'dispatch-logs': 'mail-inbox',
+    'dlq-retry': 'mail-inbox',
+  },
+  growth: {
+    'bonus-codes': 'offers',
+    'deposit-freebet': 'offers',
+    'targeted-deposit-freebet': 'offers',
+    rewards: 'offers',
+    'discrete-rewards': 'offers',
+    promotions: 'offers',
+    'crm-segments': 'audience',
+    'crm-composer': 'audience',
+    'promo-roi': 'overview',
+  },
+};
+
 function resolveAdminNav(domainId, subModuleId) {
   const domain = ALL_DOMAINS.find((d) => d.id === domainId) || ALL_DOMAINS.find((d) => d.id === DEFAULT_ADMIN_DOMAIN);
   const resolvedDomain = domain?.id || DEFAULT_ADMIN_DOMAIN;
   const subs = domain?.subModules || [];
-  // Legacy URL: Targeted Deposit Free Bet was merged into Deposit Free Bet
   const normalizedSub = subModuleId === 'targeted-deposit-freebet' ? 'deposit-freebet' : subModuleId;
-  const resolvedSub = subs.some((s) => s.id === normalizedSub)
+  const hidden = HIDDEN_SUBS[resolvedDomain] || [];
+  const allowed = subs.some((s) => s.id === normalizedSub) || hidden.includes(normalizedSub);
+  const resolvedSub = allowed
     ? normalizedSub
     : (subs[0]?.id || DEFAULT_ADMIN_SUB);
   return { domainId: resolvedDomain, subModuleId: resolvedSub };
@@ -335,8 +428,6 @@ function AdminShellInner() {
   const [activeDomain, setActiveDomain] = useState(initialNav.domainId);
   const [activeSubModule, setActiveSubModule] = useState(initialNav.subModuleId);
   const [expandedDomains, setExpandedDomains] = useState(() => ({
-    'control-tower': true,
-    customers: true,
     [initialNav.domainId]: true,
   }));
 
@@ -361,7 +452,7 @@ function AdminShellInner() {
     const next = resolveAdminNav(fromUrl.domainId, fromUrl.subModuleId);
     setActiveDomain(next.domainId);
     setActiveSubModule(next.subModuleId);
-    setExpandedDomains((prev) => ({ ...prev, [next.domainId]: true }));
+    setExpandedDomains({ [next.domainId]: true });
     persistAdminNav(next.domainId, next.subModuleId);
     const canonical = adminPathFor(next.domainId, next.subModuleId);
     if (location.pathname !== canonical) {
@@ -437,7 +528,7 @@ function AdminShellInner() {
         if (err.code === 'MFA_REQUIRED' && err.mfaToken) {
           setMfaToken(err.mfaToken);
           setMfaStep('otp');
-          setSessionError('Enter the 6-digit code from your authenticator app.');
+          setSessionError('');
           return;
         }
         if (err.code === 'MFA_SETUP_REQUIRED' && err.mfaToken) {
@@ -445,7 +536,7 @@ function AdminShellInner() {
           setMfaSecret(err.secret || '');
           setMfaOtpauth(err.otpauthUrl || '');
           setMfaStep('setup');
-          setSessionError('Scan or enter this secret in your authenticator, then confirm the code.');
+          setSessionError('');
           return;
         }
         setSessionError(err.message || 'Sign in with an admin account to continue.');
@@ -605,10 +696,10 @@ function AdminShellInner() {
 
   // ─── Navigation Handlers (unchanged) ───
   const toggleDomainExpand = (domainId) => {
-    setExpandedDomains((prev) => ({
-      ...prev,
-      [domainId]: !prev[domainId],
-    }));
+    setExpandedDomains((prev) => {
+      if (prev[domainId]) return {};
+      return { [domainId]: true };
+    });
   };
 
   const handleDomainSelect = (domain) => {
@@ -617,7 +708,7 @@ function AdminShellInner() {
     const isExpanded = !!expandedDomains[domain.id];
 
     if (hasSub && isAlreadyActive && isExpanded) {
-      setExpandedDomains((prev) => ({ ...prev, [domain.id]: false }));
+      setExpandedDomains({});
       return;
     }
 
@@ -625,7 +716,7 @@ function AdminShellInner() {
     setActiveDomain(domain.id);
     if (hasSub) {
       setActiveSubModule(nextSub);
-      setExpandedDomains((prev) => ({ ...prev, [domain.id]: true }));
+      setExpandedDomains({ [domain.id]: true });
     }
     syncAdminLocation(domain.id, nextSub);
     scrollContentToTop();
@@ -635,7 +726,7 @@ function AdminShellInner() {
   const handleSubModuleSelect = (domainId, subModuleId) => {
     setActiveDomain(domainId);
     setActiveSubModule(subModuleId);
-    setExpandedDomains((prev) => ({ ...prev, [domainId]: true }));
+    setExpandedDomains({ [domainId]: true });
     syncAdminLocation(domainId, subModuleId);
     scrollContentToTop();
     setMobileSidebarOpen(false);
@@ -674,7 +765,7 @@ function AdminShellInner() {
     ]);
     flushSync(() => {
       setActiveDomain(domainId);
-      setExpandedDomains((prev) => ({ ...prev, [domainId]: true }));
+      setExpandedDomains({ [domainId]: true });
       setActiveSubModule(nextSub);
       setIsAlertsOpen(false);
       if (entityId && focusTypes.has(type)) {
@@ -749,13 +840,13 @@ function AdminShellInner() {
       if (err.code === 'MFA_REQUIRED' && err.mfaToken) {
         setMfaToken(err.mfaToken);
         setMfaStep('otp');
-        setSessionError('Enter the 6-digit code from your authenticator app.');
+        setSessionError('');
       } else if (err.code === 'MFA_SETUP_REQUIRED' && err.mfaToken) {
         setMfaToken(err.mfaToken);
         setMfaSecret(err.secret || '');
         setMfaOtpauth(err.otpauthUrl || '');
         setMfaStep('setup');
-        setSessionError('Scan or enter this secret in your authenticator, then confirm the code.');
+        setSessionError('');
       } else {
         setSessionReady(false);
         setSessionError(err.message || 'Could not sign in to admin.');
@@ -804,31 +895,16 @@ function AdminShellInner() {
   // ─── Loading State ───
   if (sessionChecking && !sessionReady) {
     return (
-      <div
-        className={`admin-shell ${isDark ? 'admin-shell--dark' : 'admin-shell--light'}`}
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          background: 'var(--admin-bg)',
-          color: 'var(--admin-text)',
-          fontFamily: '-apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif',
-          gap: '14px',
-        }}
-      >
+      <div className={`admin-shell admin-session-boot ${isDark ? 'admin-shell--dark' : 'admin-shell--light'}`}>
         <motion.div
-          animate={{ scale: [1, 1.08, 1], opacity: [0.8, 1, 0.8] }}
+          animate={{ scale: [1, 1.04, 1], opacity: [0.85, 1, 0.85] }}
           transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
         >
-          <BrandLogo size={48} />
+          <BrandLogo size={44} />
         </motion.div>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '1rem', fontWeight: 900, letterSpacing: '0.5px' }}>ODDSYRA ADMIN</div>
-          <div style={{ fontSize: '0.74rem', color: 'var(--admin-text-muted)', marginTop: '4px' }}>
-            Verifying security session…
-          </div>
+          <h1>OddsYra</h1>
+          <p>Checking session…</p>
         </div>
       </div>
     );
@@ -926,16 +1002,17 @@ function AdminShellInner() {
 
   const currentDomainObj = ALL_DOMAINS.find((d) => d.id === activeDomain);
   const currentSubObj = currentDomainObj?.subModules?.find((s) => s.id === activeSubModule);
+  const currentSubLabel = currentSubObj?.label || SUB_BREADCRUMB[activeSubModule];
 
   // ─── Main Authenticated Layout ───
   return (
-    <div className={`admin-shell ${isDark ? 'admin-shell--dark' : 'admin-shell--light'}`} style={{ color: 'var(--admin-text)', fontFamily: '-apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif' }}>
+    <div className={`admin-shell ${isDark ? 'admin-shell--dark' : 'admin-shell--light'}`}>
 
       {/* Sidebar */}
       <AdminSidebar
         domainGroups={DOMAIN_GROUPS}
         activeDomain={activeDomain}
-        activeSubModule={activeSubModule}
+        activeSubModule={HUB_FOR[activeDomain]?.[activeSubModule] || activeSubModule}
         expandedDomains={expandedDomains}
         onDomainSelect={handleDomainSelect}
         onSubModuleSelect={handleSubModuleSelect}
@@ -971,7 +1048,7 @@ function AdminShellInner() {
           onLogout={handleAdminLogout}
           onOpenMobileSidebar={() => setMobileSidebarOpen(true)}
           currentDomainLabel={currentDomainObj?.label}
-          currentSubLabel={currentSubObj?.label}
+          currentSubLabel={currentSubLabel}
           onBreadcrumbHome={() => {
             const home = DOMAIN_GROUPS[0]?.items?.[0];
             if (home) handleDomainSelect(home);
@@ -988,7 +1065,7 @@ function AdminShellInner() {
               <motion.div
                 ref={alertsMenuRef}
                 role="dialog"
-                aria-label="Operational Alerts"
+                    aria-label="Alerts"
                 initial={{ opacity: 0, y: 8, scale: 0.96 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 4, scale: 0.96 }}
@@ -997,25 +1074,14 @@ function AdminShellInner() {
                   position: 'fixed',
                   top: alertsMenuPos.top,
                   right: alertsMenuPos.right,
-                  width: '380px',
-                  maxWidth: 'calc(100vw - 24px)',
-                  background: isDark ? '#0f172a' : '#ffffff',
-                  border: `1px solid ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(15,23,42,0.12)'}`,
-                  borderRadius: '12px',
-                  boxShadow: isDark
-                    ? '0 20px 48px -8px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.08)'
-                    : '0 16px 40px rgba(15,23,42,0.12), 0 0 0 1px rgba(15,23,42,0.06)',
-                  padding: '14px',
                   zIndex: 100000,
-                  color: isDark ? '#f8fafc' : '#0f172a',
-                  fontFamily: '-apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif',
                 }}
-                className={`admin-alerts-menu ${isDark ? 'admin-alerts-menu--dark' : 'admin-alerts-menu--light'}`}
+                className="admin-alerts-menu"
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)'}`, paddingBottom: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: liveAlerts.length ? '#f43f5e' : '#10b981' }} />
-                    <span style={{ fontSize: '0.84rem', fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a' }}>Operational Alerts</span>
+                    <span style={{ fontSize: '0.84rem', fontWeight: 650 }}>Alerts</span>
                   </div>
                   <button
                     type="button"
@@ -1024,18 +1090,9 @@ function AdminShellInner() {
                       adminApiClient.post('/notifications/v2/notifications/read-all').catch(() => {});
                       setLiveAlerts([]);
                     }}
-                    style={{
-                      padding: '4px 10px',
-                      borderRadius: '6px',
-                      border: 'none',
-                      background: 'transparent',
-                      color: '#818cf8',
-                      fontSize: '0.78rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                    }}
+                    className="admin-btn admin-btn--ghost admin-btn--sm"
                   >
-                    Clear All
+                    Clear
                   </button>
                 </div>
 

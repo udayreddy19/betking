@@ -4,14 +4,14 @@ import { motion, AnimatePresence } from 'motion/react';
 function SortIcon({ direction }) {
   if (direction === 'asc') {
     return (
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginLeft: '4px' }}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--admin-primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginLeft: '4px' }}>
         <path d="m18 15-6-6-6 6"/>
       </svg>
     );
   }
   if (direction === 'desc') {
     return (
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginLeft: '4px' }}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--admin-primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginLeft: '4px' }}>
         <path d="m6 9 6 6 6-6"/>
       </svg>
     );
@@ -39,7 +39,7 @@ export default function AdminDataTable({
   searchPlaceholder = 'Search records...',
   pageSize: initialPageSize = 10,
   onRowClick,
-  emptyMessage = 'No operational records found',
+  emptyMessage = 'No records',
   title = '',
   actions = null,
   loading = false,

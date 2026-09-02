@@ -16,7 +16,7 @@ export default function AdminKPI({
   className = '',
   style,
 }) {
-  const trendColor = trend === 'up' ? '#10b981' : trend === 'down' ? '#f43f5e' : 'var(--admin-text-muted)';
+  const trendColor = trend === 'up' ? 'var(--admin-success)' : trend === 'down' ? 'var(--admin-danger)' : 'var(--admin-text-muted)';
   const trendIcon = trend === 'up' ? '↑' : trend === 'down' ? '↓' : '';
   const clickable = typeof onClick === 'function';
   const Tag = clickable ? 'button' : 'div';
@@ -53,7 +53,7 @@ export default function AdminKPI({
             color: clickable ? 'var(--admin-primary)' : 'var(--admin-text-dim)',
             padding: '1px 5px',
             borderRadius: '4px',
-            background: clickable ? 'rgba(99, 102, 241, 0.15)' : 'rgba(148, 163, 184, 0.1)',
+            background: clickable ? 'var(--admin-primary-soft)' : 'var(--admin-chip-bg)',
             fontWeight: 600,
           }}>
             {source}
@@ -65,7 +65,7 @@ export default function AdminKPI({
             color: 'var(--admin-primary)',
             padding: '1px 5px',
             borderRadius: '4px',
-            background: 'rgba(99, 102, 241, 0.15)',
+            background: 'var(--admin-primary-soft)',
             fontWeight: 600,
           }}>
             View →

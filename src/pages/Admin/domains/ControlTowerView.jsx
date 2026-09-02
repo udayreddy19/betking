@@ -4,7 +4,6 @@ import { adminApiClient } from '../api/adminApiClient';
 import AdminTabs from '../components/AdminTabs';
 import { AdminKpiDrillDrawer, useAdminKpiDrilldown } from '../hooks/useAdminKpiDrilldown';
 import { startVisibleInterval } from '../utils/visibleInterval';
-import { useAdminToast } from '../components/AdminToastContext';
 
 /** Display helper — never invent metrics */
 export function formatMetric(value, prefix = '') {
@@ -30,10 +29,55 @@ export function formatRelativeTime(isoString) {
   }
 }
 
+function prettyCta(label) {
+  const raw = String(label || 'Open').replace(/[➔→]/g, '').trim();
+  if (!raw) return 'Open';
+  const lower = raw.toLowerCase();
+  return lower.charAt(0).toUpperCase() + lower.slice(1);
+}
+
+function prettyWorkerStatus(status) {
+  if (!status) return 'Active';
+  return String(status)
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function Metric({ label, children, warn = false, danger = false }) {
+  const color = danger
+    ? 'var(--admin-danger)'
+    : warn
+      ? 'var(--admin-warning)'
+      : undefined;
+  return (
+    <div className="admin-metric">
+      <div className="admin-metric__label">{label}</div>
+      <div className="admin-metric__value" style={color ? { color } : undefined}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function QueueCard({ title, count, hint, hot = false, tone, onClick }) {
+  return (
+    <button
+      type="button"
+      className={`admin-queue-card${hot ? ' is-hot' : ''}`}
+      data-tone={tone}
+      onClick={onClick}
+    >
+      <div className="admin-queue-card__label">{title}</div>
+      <div className="admin-queue-card__value">{formatMetric(count ?? 0)}</div>
+      <div className="admin-queue-card__hint">{hint}</div>
+    </button>
+  );
+}
+
 export default function ControlTowerView({ subModule = 'overview', onSubModuleChange, onNavigate }) {
   const navigate = useNavigate();
   const drill = useAdminKpiDrilldown();
-  const { showToast } = useAdminToast();
 
   // Normalize subModule to match available tabs
   const getNormalizedSubModule = (sm) => {
@@ -50,7 +94,6 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
   const [lastRefreshAt, setLastRefreshAt] = useState(null);
   const [isAutoRefresh, setIsAutoRefresh] = useState(true);
   const [timeRange, setTimeRange] = useState('today');
-  const [searchQuery, setSearchQuery] = useState('');
 
   // Sync tab with external subModule prop
   useEffect(() => {
@@ -100,27 +143,10 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
     return () => stop();
   }, [fetchData, isAutoRefresh]);
 
-  // Quick global search submit
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    const query = searchQuery.trim();
-    if (!query) return;
-
-    if (query.startsWith('usr_') || query.includes('@') || /^\+?[0-9]{10,14}$/.test(query)) {
-      handleDomainNav('customers', 'dossier', { search: query });
-    } else if (query.startsWith('tx_') || query.startsWith('wd_') || query.startsWith('pay_') || query.startsWith('order_')) {
-      handleDomainNav('finance', 'deposits-review', { search: query });
-    } else if (query.startsWith('bet_') || query.startsWith('match_')) {
-      handleDomainNav('betting', 'bet-inspector', { search: query });
-    } else {
-      handleDomainNav('customers', 'dossier', { search: query });
-    }
-  };
-
   const tabs = [
-    { id: 'overview', label: '🔴 Operational Overview' },
-    { id: 'telemetry', label: '🟢 Telemetry & SLA Monitors' },
-    { id: 'incidents', label: '🛡️ Live System Incidents' },
+    { id: 'overview', label: 'Live' },
+    { id: 'telemetry', label: 'Health' },
+    { id: 'incidents', label: 'Incidents' },
   ];
 
   const actionRequired = data?.actionRequired || [];
@@ -134,333 +160,124 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
 
   return (
     <div className="admin-control-tower-page" style={{ padding: '0 0 40px 0' }}>
-      {/* ── TOP CONTROL TOWER BAR ── */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: 16,
-        background: 'var(--admin-card-bg)',
-        padding: '16px 20px',
-        borderRadius: 12,
-        border: '1px solid var(--admin-border)',
-        boxShadow: 'var(--admin-shadow-sm)',
-        marginBottom: 20,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{
-            width: 42,
-            height: 42,
-            borderRadius: 10,
-            background: 'rgba(239, 68, 68, 0.12)',
-            border: '1px solid rgba(239, 68, 68, 0.35)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 20,
-          }}>
-            🗼
-          </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: 'var(--admin-text)', letterSpacing: '-0.01em' }}>
-                ADMIN CONTROL TOWER
-              </h2>
-              <span style={{
-                fontSize: 11,
-                fontWeight: 700,
-                padding: '2px 8px',
-                borderRadius: 999,
-                background: data?.overallHealth === 'HEALTHY' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                color: data?.overallHealth === 'HEALTHY' ? '#10b981' : '#f59e0b',
-                border: `1px solid ${data?.overallHealth === 'HEALTHY' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
-              }}>
-                {data?.overallHealth === 'HEALTHY' ? '● SYSTEM HEALTHY' : '▲ ATTENTION REQUIRED'}
-              </span>
-            </div>
-            <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--admin-text-muted)' }}>
-              Operations Desk · Real-time actionable oversight & incident response
-            </p>
-          </div>
-        </div>
-
-        {/* Global Search Bar */}
-        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '1 1 320px', maxWidth: 450 }}>
-          <div style={{ position: 'relative', width: '100%' }}>
-            <input
-              type="text"
-              placeholder="Search User ID, Email, Bet ID, Tx ID, Withdrawal ID..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="admin-input"
-              style={{
-                width: '100%',
-                padding: '8px 12px 8px 34px',
-                background: 'var(--admin-surface)',
-                border: '1px solid var(--admin-border)',
-                borderRadius: 8,
-                color: 'var(--admin-text)',
-                fontSize: 12,
-                outline: 'none',
-              }}
-            />
-            <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--admin-text-muted)', fontSize: 13 }}>
-              🔍
+      <div className="admin-tower-hero">
+        <div className="admin-tower-hero__titles">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <h2>Home</h2>
+            <span className={`admin-badge ${data?.overallHealth === 'HEALTHY' ? 'admin-badge--success' : 'admin-badge--warning'}`}>
+              {data?.overallHealth === 'HEALTHY' ? 'Healthy' : 'Needs attention'}
             </span>
           </div>
-          <button
-            type="submit"
-            className="admin-btn admin-btn--sm"
-            style={{
-              padding: '8px 14px',
-              fontSize: 12,
-              fontWeight: 600,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            Find
-          </button>
-        </form>
+          <p>Queues, ledger, and live betting in one place. Search from the bar above.</p>
+        </div>
 
-        {/* Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="admin-tower-toolbar">
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value)}
             className="admin-input"
-            style={{
-              padding: '8px 12px',
-              background: 'var(--admin-surface)',
-              border: '1px solid var(--admin-border)',
-              borderRadius: 8,
-              color: 'var(--admin-text)',
-              fontSize: 12,
-              outline: 'none',
-              cursor: 'pointer',
-            }}
           >
             <option value="today">Today (UTC)</option>
-            <option value="24h">Last 24 Hours</option>
-            <option value="7d">Last 7 Days</option>
-            <option value="30d">Last 30 Days</option>
+            <option value="24h">Last 24 hours</option>
+            <option value="7d">Last 7 days</option>
+            <option value="30d">Last 30 days</option>
           </select>
 
           <button
+            type="button"
             onClick={() => setIsAutoRefresh(!isAutoRefresh)}
             title={isAutoRefresh ? 'Pause auto-refresh' : 'Resume auto-refresh'}
             className="admin-btn admin-btn--sm"
-            style={{
-              padding: '8px 12px',
-              background: isAutoRefresh ? 'rgba(16, 185, 129, 0.1)' : 'var(--admin-surface)',
-              border: `1px solid ${isAutoRefresh ? 'rgba(16, 185, 129, 0.3)' : 'var(--admin-border)'}`,
-              borderRadius: 8,
-              color: isAutoRefresh ? '#10b981' : 'var(--admin-text-muted)',
-              fontSize: 12,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-            }}
           >
-            <span style={{ fontSize: 10 }}>{isAutoRefresh ? '🟢' : '⏸️'}</span>
-            {isAutoRefresh ? 'Live (15s)' : 'Paused'}
+            {isAutoRefresh ? 'Live · 15s' : 'Paused'}
           </button>
 
           <button
+            type="button"
             onClick={fetchData}
             disabled={loading}
             className="admin-btn admin-btn--sm admin-btn--primary"
-            style={{
-              padding: '8px 14px',
-              borderRadius: 8,
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: loading ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-            }}
           >
-            <span>⟳</span>
             Refresh
           </button>
         </div>
       </div>
 
-      {/* ── ERROR BANNER (IF ANY) ── */}
       {error && (
-        <div style={{
-          background: 'rgba(239, 68, 68, 0.1)',
-          border: '1px solid rgba(239, 68, 68, 0.3)',
-          borderRadius: 8,
-          padding: '12px 16px',
-          marginBottom: 20,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          color: '#ef4444',
-          fontSize: 13,
-        }}>
-          <div>
-            <strong>⚠️ Operational Notice:</strong> {error}
-          </div>
-          <button
-            onClick={fetchData}
-            className="admin-btn admin-btn--sm"
-            style={{
-              padding: '4px 12px',
-              background: 'rgba(239, 68, 68, 0.15)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              color: '#ef4444',
-              fontSize: 12,
-            }}
-          >
-            Retry
-          </button>
+        <div className="admin-login__error" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <div>{error}</div>
+          <button type="button" onClick={fetchData} className="admin-btn admin-btn--sm">Retry</button>
         </div>
       )}
 
-      {/* ── PART 3: CRITICAL ACTION REQUIRED CENTER ── */}
       <section style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 16 }}>⚡</span>
-            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: 'var(--admin-text)', letterSpacing: '-0.01em' }}>
-              WHAT REQUIRES ATTENTION RIGHT NOW
-            </h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12, gap: 12, flexWrap: 'wrap' }}>
+          <h3 className="admin-section-title" style={{ margin: 0 }}>
+            Needs attention
             {actionRequired.length > 0 && (
-              <span style={{
-                background: '#ef4444',
-                color: '#fff',
-                fontSize: 11,
-                fontWeight: 700,
-                padding: '1px 7px',
-                borderRadius: 999,
-              }}>
-                {actionRequired.length}
-              </span>
+              <span className="admin-badge admin-badge--danger" style={{ marginLeft: 8 }}>{actionRequired.length}</span>
             )}
-          </div>
+          </h3>
           <span style={{ fontSize: 12, color: 'var(--admin-text-muted)' }}>
-            Deterministic priority order: 🔴 Critical ➔ 🟠 High ➔ 🟡 Attention
+            Critical, then high, then the rest
           </span>
         </div>
 
         {loading && !data ? (
-          <div style={{ padding: 30, textAlign: 'center', background: 'var(--admin-card-bg)', borderRadius: 10, border: '1px solid var(--admin-border)', color: 'var(--admin-text-muted)' }}>
-            Loading live operational state...
+          <div className="admin-card" style={{ padding: 24, textAlign: 'center', color: 'var(--admin-text-muted)' }}>
+            Loading…
           </div>
         ) : actionRequired.length === 0 ? (
-          <div style={{
-            background: 'var(--admin-card-bg)',
-            border: '1px solid var(--admin-border)',
-            borderRadius: 10,
-            padding: '20px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 16,
-            boxShadow: 'var(--admin-shadow-sm)',
-          }}>
-            <div style={{
-              width: 36,
-              height: 36,
-              borderRadius: 18,
-              background: 'rgba(16, 185, 129, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 18,
-              color: '#10b981',
-              fontWeight: 800,
-            }}>
-              ✓
-            </div>
+          <div className="admin-card" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <div>
-              <h4 style={{ margin: '0 0 2px', fontSize: 14, fontWeight: 700, color: '#10b981' }}>
-                All Operational Queues are Clear
+              <h4 style={{ margin: '0 0 2px', fontSize: 14, fontWeight: 650, color: 'var(--admin-text)' }}>
+                Nothing waiting
               </h4>
-              <p style={{ margin: 0, fontSize: 12, color: 'var(--admin-text-muted)' }}>
-                No financial inconsistencies, stuck bets, settlement errors, or pending escalations detected.
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--admin-text-muted)' }}>
+                No stuck bets, settlement errors, or open escalations.
               </p>
             </div>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div className="admin-attention-list">
             {actionRequired.map((item) => {
               const isCrit = item.severity === 'CRITICAL';
               const isHigh = item.severity === 'HIGH';
-              const borderColor = isCrit ? 'rgba(239, 68, 68, 0.4)' : isHigh ? 'rgba(249, 115, 22, 0.35)' : 'rgba(234, 179, 8, 0.3)';
-              const badgeColor = isCrit ? '#ef4444' : isHigh ? '#f97316' : '#eab308';
+              const tone = isCrit ? 'critical' : isHigh ? 'high' : 'warn';
 
               return (
                 <div
                   key={item.id}
-                  style={{
-                    background: 'var(--admin-card-bg)',
-                    border: `1px solid ${borderColor}`,
-                    borderRadius: 10,
-                    padding: '14px 18px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    flexWrap: 'wrap',
-                    gap: 14,
-                    boxShadow: 'var(--admin-shadow-sm)',
-                  }}
+                  className={`admin-attention-item admin-attention-item--${tone}`}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: '1 1 450px' }}>
-                    <span style={{ fontSize: 18 }}>{isCrit ? '🔴' : isHigh ? '🟠' : '🟡'}</span>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                        <span style={{
-                          fontSize: 10,
-                          fontWeight: 700,
-                          padding: '1px 6px',
-                          borderRadius: 4,
-                          background: `${badgeColor}22`,
-                          color: badgeColor,
-                          border: `1px solid ${badgeColor}55`,
-                        }}>
-                          {item.severity}
+                  <div style={{ flex: '1 1 450px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3, flexWrap: 'wrap' }}>
+                      <span className={`admin-badge ${isCrit ? 'admin-badge--danger' : isHigh ? 'admin-badge--warning' : 'admin-badge--neutral'}`}>
+                        {item.severity === 'CRITICAL' ? 'Critical' : item.severity === 'HIGH' ? 'High' : 'Watch'}
+                      </span>
+                      <strong style={{ fontSize: 14, color: 'var(--admin-text)' }}>{item.title}</strong>
+                      {item.count != null && (
+                        <span className="admin-badge admin-badge--neutral">
+                          {item.count} {item.count === 1 ? 'item' : 'items'}
                         </span>
-                        <strong style={{ fontSize: 14, color: 'var(--admin-text)' }}>{item.title}</strong>
-                        {item.count != null && (
-                          <span style={{
-                            fontSize: 11,
-                            fontWeight: 600,
-                            padding: '1px 6px',
-                            borderRadius: 999,
-                            background: 'var(--admin-surface)',
-                            color: 'var(--admin-text-secondary)',
-                            border: '1px solid var(--admin-border)',
-                          }}>
-                            {item.count} item{item.count === 1 ? '' : 's'}
-                          </span>
-                        )}
-                      </div>
-                      <p style={{ margin: 0, fontSize: 12, color: 'var(--admin-text-muted)', lineHeight: 1.4 }}>
-                        {item.description}
-                      </p>
+                      )}
                     </div>
+                    <p style={{ margin: 0, fontSize: 13, color: 'var(--admin-text-muted)', lineHeight: 1.45 }}>
+                      {item.description}
+                    </p>
                   </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <button
-                      onClick={() => handleDomainNav(item.domainId, item.subModuleId)}
-                      className="admin-btn admin-btn--sm"
-                      style={{
-                        padding: '7px 14px',
-                        background: isCrit ? '#dc2626' : isHigh ? '#ea580c' : '#ca8a04',
-                        border: 'none',
-                        color: '#fff',
-                        fontSize: 12,
-                        fontWeight: 700,
-                      }}
-                    >
-                      {item.ctaLabel || 'Investigate'} ➔
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const sub = item.subModuleId === 'deposits-review' && /withdraw/i.test(`${item.ctaLabel || ''} ${item.title || ''}`)
+                        ? 'maker-checker'
+                        : item.subModuleId;
+                      handleDomainNav(item.domainId, sub);
+                    }}
+                    className={`admin-btn admin-btn--sm ${isCrit ? 'admin-btn--danger' : 'admin-btn--primary'}`}
+                  >
+                    {prettyCta(item.ctaLabel)}
+                  </button>
                 </div>
               );
             })}
@@ -468,216 +285,26 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
         )}
       </section>
 
-      {/* ── PART 4: ACTION QUEUES BAR ── */}
       <section style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <h3 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: 'var(--admin-text)' }}>
-            ACTIVE OPERATIONAL QUEUES
-          </h3>
-          <span style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>Click to navigate directly to dedicated queue</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12, gap: 12, flexWrap: 'wrap' }}>
+          <h3 className="admin-section-title" style={{ margin: 0 }}>Queues</h3>
+          <span style={{ fontSize: 12, color: 'var(--admin-text-muted)' }}>Open a queue to work it</span>
         </div>
-
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-          gap: 12,
-        }}>
-          {/* 1. Pending Withdrawals */}
-          <div
-            onClick={() => handleDomainNav('finance', 'deposits-review')}
-            style={{
-              background: 'var(--admin-card-bg)',
-              border: (queues.withdrawals?.count || 0) > 0 ? '1px solid rgba(245, 158, 11, 0.5)' : '1px solid var(--admin-border)',
-              borderRadius: 10,
-              padding: '14px 16px',
-              cursor: 'pointer',
-              boxShadow: 'var(--admin-shadow-sm)',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--admin-text-muted)' }}>
-              <span style={{ fontWeight: 600 }}>Withdrawals</span>
-              <span>💸</span>
-            </div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: (queues.withdrawals?.count || 0) > 0 ? '#f59e0b' : 'var(--admin-text)', margin: '4px 0 2px' }}>
-              {formatMetric(queues.withdrawals?.count ?? 0)}
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>
-              Oldest: <strong style={{ color: 'var(--admin-text)' }}>{queues.withdrawals?.oldestAge || 'None'}</strong>
-            </div>
-          </div>
-
-          {/* 2. Pending KYC */}
-          <div
-            onClick={() => handleDomainNav('customers', 'kyc-queue')}
-            style={{
-              background: 'var(--admin-card-bg)',
-              border: (queues.kyc?.count || 0) > 0 ? '1px solid rgba(59, 130, 246, 0.5)' : '1px solid var(--admin-border)',
-              borderRadius: 10,
-              padding: '14px 16px',
-              cursor: 'pointer',
-              boxShadow: 'var(--admin-shadow-sm)',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--admin-text-muted)' }}>
-              <span style={{ fontWeight: 600 }}>Pending KYC</span>
-              <span>🪪</span>
-            </div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: (queues.kyc?.count || 0) > 0 ? '#3b82f6' : 'var(--admin-text)', margin: '4px 0 2px' }}>
-              {formatMetric(queues.kyc?.count ?? 0)}
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>
-              Oldest: <strong style={{ color: 'var(--admin-text)' }}>{queues.kyc?.oldestAge || 'None'}</strong>
-            </div>
-          </div>
-
-          {/* 3. Stuck Bets */}
-          <div
-            onClick={() => handleDomainNav('betting', 'stuck-bets')}
-            style={{
-              background: 'var(--admin-card-bg)',
-              border: (queues.stuckBets?.count || 0) > 0 ? '1px solid rgba(239, 68, 68, 0.5)' : '1px solid var(--admin-border)',
-              borderRadius: 10,
-              padding: '14px 16px',
-              cursor: 'pointer',
-              boxShadow: 'var(--admin-shadow-sm)',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--admin-text-muted)' }}>
-              <span style={{ fontWeight: 600 }}>Stuck Bets</span>
-              <span>🎯</span>
-            </div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: (queues.stuckBets?.count || 0) > 0 ? '#ef4444' : 'var(--admin-text)', margin: '4px 0 2px' }}>
-              {formatMetric(queues.stuckBets?.count ?? 0)}
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>
-              Concluded matches
-            </div>
-          </div>
-
-          {/* 4. Settlement Failures */}
-          <div
-            onClick={() => handleDomainNav('betting', 'settlement-queue')}
-            style={{
-              background: 'var(--admin-card-bg)',
-              border: (queues.settlementFailures?.count || 0) > 0 ? '1px solid rgba(239, 68, 68, 0.5)' : '1px solid var(--admin-border)',
-              borderRadius: 10,
-              padding: '14px 16px',
-              cursor: 'pointer',
-              boxShadow: 'var(--admin-shadow-sm)',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--admin-text-muted)' }}>
-              <span style={{ fontWeight: 600 }}>Settlement Errors</span>
-              <span>⚙️</span>
-            </div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: (queues.settlementFailures?.count || 0) > 0 ? '#ef4444' : '#10b981', margin: '4px 0 2px' }}>
-              {formatMetric(queues.settlementFailures?.count ?? 0)}
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>
-              {queues.settlementFailures?.count === 0 ? 'All settled clean' : 'Requires retry'}
-            </div>
-          </div>
-
-          {/* 5. Payment Failures */}
-          <div
-            onClick={() => handleDomainNav('finance', 'deposits-review')}
-            style={{
-              background: 'var(--admin-card-bg)',
-              border: '1px solid var(--admin-border)',
-              borderRadius: 10,
-              padding: '14px 16px',
-              cursor: 'pointer',
-              boxShadow: 'var(--admin-shadow-sm)',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--admin-text-muted)' }}>
-              <span style={{ fontWeight: 600 }}>Failed Deposits</span>
-              <span>💳</span>
-            </div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--admin-text)', margin: '4px 0 2px' }}>
-              {formatMetric(queues.paymentFailures?.count ?? 0)}
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>
-              Today's webhook fails
-            </div>
-          </div>
-
-          {/* 6. Failed Jobs / Outbox DLQ */}
-          <div
-            onClick={() => handleDomainNav('operations', 'outbox-queue')}
-            style={{
-              background: 'var(--admin-card-bg)',
-              border: (queues.failedJobs?.count || 0) > 0 ? '1px solid rgba(245, 158, 11, 0.5)' : '1px solid var(--admin-border)',
-              borderRadius: 10,
-              padding: '14px 16px',
-              cursor: 'pointer',
-              boxShadow: 'var(--admin-shadow-sm)',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--admin-text-muted)' }}>
-              <span style={{ fontWeight: 600 }}>Failed Outbox Jobs</span>
-              <span>📦</span>
-            </div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: (queues.failedJobs?.count || 0) > 0 ? '#f59e0b' : '#10b981', margin: '4px 0 2px' }}>
-              {formatMetric(queues.failedJobs?.count ?? 0)}
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>
-              Async worker DLQ
-            </div>
-          </div>
-
-          {/* 7. Open Support Tickets */}
-          <div
-            onClick={() => handleDomainNav('support', 'ticket-queue')}
-            style={{
-              background: 'var(--admin-card-bg)',
-              border: '1px solid var(--admin-border)',
-              borderRadius: 10,
-              padding: '14px 16px',
-              cursor: 'pointer',
-              boxShadow: 'var(--admin-shadow-sm)',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--admin-text-muted)' }}>
-              <span style={{ fontWeight: 600 }}>Open Tickets</span>
-              <span>💬</span>
-            </div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: (queues.supportTickets?.count || 0) > 0 ? '#3b82f6' : 'var(--admin-text)', margin: '4px 0 2px' }}>
-              {formatMetric(queues.supportTickets?.count ?? 0)}
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>
-              Customer inquiries
-            </div>
-          </div>
-
-          {/* 8. Security Alerts */}
-          <div
-            onClick={() => handleDomainNav('security', 'audit-explorer')}
-            style={{
-              background: 'var(--admin-card-bg)',
-              border: '1px solid var(--admin-border)',
-              borderRadius: 10,
-              padding: '14px 16px',
-              cursor: 'pointer',
-              boxShadow: 'var(--admin-shadow-sm)',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--admin-text-muted)' }}>
-              <span style={{ fontWeight: 600 }}>Security Alerts</span>
-              <span>🔒</span>
-            </div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: '#10b981', margin: '4px 0 2px' }}>
-              {formatMetric(queues.securityAlerts?.count ?? 0)}
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>
-              Zero open incidents
-            </div>
-          </div>
+        <div className="admin-queue-grid">
+          <QueueCard title="Withdrawals" count={queues.withdrawals?.count} hint={`Oldest: ${queues.withdrawals?.oldestAge || 'None'}`} hot={(queues.withdrawals?.count || 0) > 0} onClick={() => handleDomainNav('finance', 'maker-checker')} />
+          <QueueCard title="Pending KYC" count={queues.kyc?.count} hint={`Oldest: ${queues.kyc?.oldestAge || 'None'}`} hot={(queues.kyc?.count || 0) > 0} onClick={() => handleDomainNav('customers', 'kyc-queue')} />
+          <QueueCard title="Stuck bets" count={queues.stuckBets?.count} hint="Concluded matches" hot={(queues.stuckBets?.count || 0) > 0} tone="danger" onClick={() => handleDomainNav('betting', 'stuck-bets')} />
+          <QueueCard title="Settlement errors" count={queues.settlementFailures?.count} hint={queues.settlementFailures?.count === 0 ? 'All settled' : 'Needs retry'} hot={(queues.settlementFailures?.count || 0) > 0} tone="danger" onClick={() => handleDomainNav('betting', 'settlement-queue')} />
+          <QueueCard title="Failed deposits" count={queues.paymentFailures?.count} hint="Webhook failures today" onClick={() => handleDomainNav('finance', 'deposits-review')} />
+          <QueueCard title="Failed outbox jobs" count={queues.failedJobs?.count} hint="Async worker DLQ" hot={(queues.failedJobs?.count || 0) > 0} onClick={() => handleDomainNav('operations', 'outbox-queue')} />
+          <QueueCard title="Open tickets" count={queues.supportTickets?.count} hint="Customer inquiries" hot={(queues.supportTickets?.count || 0) > 0} onClick={() => handleDomainNav('support', 'ticket-queue')} />
+          <QueueCard title="Security alerts" count={queues.securityAlerts?.count} hint="Open incidents" onClick={() => handleDomainNav('security', 'audit-explorer')} />
         </div>
       </section>
 
+
       {/* ── NAVIGATION TABS ── */}
-      <AdminTabs tabs={tabs} activeTab={activeTab} onTabChange={handleTabChange} />
+      <AdminTabs tabs={tabs} active={activeTab} onChange={handleTabChange} />
 
       {/* ── TAB 1: OPERATIONAL OVERVIEW & DOMAIN CARDS ── */}
       {activeTab === 'overview' && (
@@ -685,105 +312,53 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
           {/* Row 1: Finance & Betting Operational Panels */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 16 }}>
             {/* PART 5: FINANCE OVERVIEW */}
-            <div style={{
-              background: 'var(--admin-card-bg)',
-              border: '1px solid var(--admin-border)',
-              borderRadius: 12,
-              padding: '18px 20px',
-              boxShadow: 'var(--admin-shadow-sm)',
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 16 }}>💳</span>
-                  <h4 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: 'var(--admin-text)' }}>FINANCE & LEDGER OVERVIEW</h4>
-                </div>
-                <button
-                  onClick={() => handleDomainNav('finance', 'finance-health')}
-                  style={{ background: 'none', border: 'none', color: 'var(--admin-primary)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
-                >
-                  View Details ➔
+            <div className="admin-panel">
+              <div className="admin-panel__head">
+                <h4 className="admin-section-title" style={{ margin: 0 }}>Finance</h4>
+                <button type="button" className="admin-link-btn" onClick={() => handleDomainNav('finance', 'finance-health')}>
+                  View details
                 </button>
               </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-                <div style={{ background: 'var(--admin-surface)', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--admin-border)' }}>
-                  <div style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>Total Wallet Cash</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: '#10b981', marginTop: 2 }}>
-                    {formatInr(fin.totalWalletCash)}
-                  </div>
-                </div>
-                <div style={{ background: 'var(--admin-surface)', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--admin-border)' }}>
-                  <div style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>Pending Withdrawals</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: (fin.pendingWithdrawalsCount || 0) > 0 ? '#f59e0b' : 'var(--admin-text)', marginTop: 2 }}>
-                    {formatMetric(fin.pendingWithdrawalsCount)}
-                  </div>
-                </div>
-                <div style={{ background: 'var(--admin-surface)', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--admin-border)' }}>
-                  <div style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>Today's Deposits</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--admin-text)', marginTop: 2 }}>
-                    {formatMetric(fin.depositsTodayCount)} ({formatInr(fin.depositsTodayVolume)})
-                  </div>
-                </div>
-                <div style={{ background: 'var(--admin-surface)', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--admin-border)' }}>
-                  <div style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>Today's Withdrawals</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--admin-text)', marginTop: 2 }}>
-                    {formatMetric(fin.withdrawalsTodayCount)} ({formatInr(fin.withdrawalsTodayVolume)})
-                  </div>
-                </div>
+              <div className="admin-metric-grid" style={{ marginBottom: 14 }}>
+                <Metric label="Wallet cash">{formatInr(fin.totalWalletCash)}</Metric>
+                <Metric label="Pending withdrawals" warn={(fin.pendingWithdrawalsCount || 0) > 0}>{formatMetric(fin.pendingWithdrawalsCount)}</Metric>
+                <Metric label="Deposits today">{formatMetric(fin.depositsTodayCount)} ({formatInr(fin.depositsTodayVolume)})</Metric>
+                <Metric label="Withdrawals today">{formatMetric(fin.withdrawalsTodayCount)} ({formatInr(fin.withdrawalsTodayVolume)})</Metric>
               </div>
-
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--admin-text-muted)', borderTop: '1px solid var(--admin-border)', paddingTop: 10 }}>
-                <span>Wallet Inconsistencies: <strong style={{ color: '#10b981' }}>0 (Verified)</strong></span>
-                <span>Ledger Anomalies: <strong style={{ color: '#10b981' }}>0 (Verified)</strong></span>
+                <span>Wallet gaps: <strong style={{ color: 'var(--admin-success)' }}>0</strong></span>
+                <span>Ledger anomalies: <strong style={{ color: 'var(--admin-success)' }}>0</strong></span>
               </div>
             </div>
 
             {/* PART 6: BETTING OPERATIONS OVERVIEW */}
-            <div style={{
-              background: 'var(--admin-card-bg)',
-              border: '1px solid var(--admin-border)',
-              borderRadius: 12,
-              padding: '18px 20px',
-              boxShadow: 'var(--admin-shadow-sm)',
-            }}>
+            <div className="admin-panel">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 16 }}>🎯</span>
-                  <h4 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: 'var(--admin-text)' }}>BETTING OPERATIONS OVERVIEW</h4>
+                  <h4 className="admin-section-title" style={{ margin: 0 }}>Betting</h4>
                 </div>
                 <button
+                  type="button"
+                  className="admin-link-btn"
                   onClick={() => handleDomainNav('betting', 'betting-desk')}
-                  style={{ background: 'none', border: 'none', color: 'var(--admin-primary)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
                 >
-                  View Desk ➔
+                  Open desk
                 </button>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-                <div style={{ background: 'var(--admin-surface)', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--admin-border)' }}>
-                  <div style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>Live Fixtures (Priced)</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--admin-text)', marginTop: 2 }}>
-                    {formatMetric(bet.liveMatches)} ({formatMetric(bet.matchesWithOdds)} priced)
-                  </div>
-                </div>
-                <div style={{ background: 'var(--admin-surface)', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--admin-border)' }}>
-                  <div style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>Open Bets / Liability</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--admin-text)', marginTop: 2 }}>
-                    {formatMetric(bet.openBets)} ({formatInr(bet.openLiability)})
-                  </div>
-                </div>
-                <div style={{ background: 'var(--admin-surface)', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--admin-border)' }}>
-                  <div style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>Stuck Bets (Finished Matches)</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: (bet.stuckBetsCount || 0) > 0 ? '#ef4444' : '#10b981', marginTop: 2 }}>
-                    {formatMetric(bet.stuckBetsCount)}
-                  </div>
-                </div>
-                <div style={{ background: 'var(--admin-surface)', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--admin-border)' }}>
-                  <div style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>Settlement Worker</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#10b981', marginTop: 2 }}>
-                    ● {bet.settlementWorkerStatus || 'ACTIVE'}
-                  </div>
-                </div>
+              <div className="admin-metric-grid" style={{ marginBottom: 14 }}>
+                <Metric label="Live fixtures">
+                  {formatMetric(bet.liveMatches)} ({formatMetric(bet.matchesWithOdds)} priced)
+                </Metric>
+                <Metric label="Open bets / liability">
+                  {formatMetric(bet.openBets)} ({formatInr(bet.openLiability)})
+                </Metric>
+                <Metric label="Stuck bets" danger={(bet.stuckBetsCount || 0) > 0}>
+                  {formatMetric(bet.stuckBetsCount)}
+                </Metric>
+                <Metric label="Settlement worker">
+                  {prettyWorkerStatus(bet.settlementWorkerStatus)}
+                </Metric>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--admin-text-muted)', borderTop: '1px solid var(--admin-border)', paddingTop: 10 }}>
@@ -796,140 +371,77 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
           {/* Row 2: KYC Overview & Growth/Promotions */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 16 }}>
             {/* PART 7: KYC OVERVIEW */}
-            <div style={{
-              background: 'var(--admin-card-bg)',
-              border: '1px solid var(--admin-border)',
-              borderRadius: 12,
-              padding: '18px 20px',
-              boxShadow: 'var(--admin-shadow-sm)',
-            }}>
+            <div className="admin-panel">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 16 }}>🪪</span>
-                  <h4 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: 'var(--admin-text)' }}>PLAYER KYC OPERATIONS</h4>
+                  <h4 className="admin-section-title" style={{ margin: 0 }}>Players & KYC</h4>
                 </div>
                 <button
+                  type="button"
+                  className="admin-link-btn"
                   onClick={() => handleDomainNav('customers', 'kyc-queue')}
-                  style={{ background: 'none', border: 'none', color: 'var(--admin-primary)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
                 >
-                  Review Queue ➔
+                  Review queue
                 </button>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-                <div style={{ background: 'var(--admin-surface)', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--admin-border)' }}>
-                  <div style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>Pending Submissions</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: (kyc.kycPending || 0) > 0 ? '#3b82f6' : 'var(--admin-text)', marginTop: 2 }}>
-                    {formatMetric(kyc.kycPending)}
-                  </div>
-                </div>
-                <div style={{ background: 'var(--admin-surface)', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--admin-border)' }}>
-                  <div style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>Oldest Case Age</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--admin-text)', marginTop: 2 }}>
-                    {kyc.oldestPendingKycAge || 'No backlog'}
-                  </div>
-                </div>
-                <div style={{ background: 'var(--admin-surface)', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--admin-border)' }}>
-                  <div style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>Verified Today</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#10b981', marginTop: 2 }}>
-                    {formatMetric(kyc.kycVerifiedToday)}
-                  </div>
-                </div>
-                <div style={{ background: 'var(--admin-surface)', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--admin-border)' }}>
-                  <div style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>New Signups Today</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--admin-text)', marginTop: 2 }}>
-                    {formatMetric(kyc.newRegistrationsToday)}
-                  </div>
-                </div>
+              <div className="admin-metric-grid" style={{ marginBottom: 14 }}>
+                <Metric label="Pending submissions" warn={(kyc.kycPending || 0) > 0}>
+                  {formatMetric(kyc.kycPending)}
+                </Metric>
+                <Metric label="Oldest case">{kyc.oldestPendingKycAge || 'No backlog'}</Metric>
+                <Metric label="Verified today">{formatMetric(kyc.kycVerifiedToday)}</Metric>
+                <Metric label="New signups today">{formatMetric(kyc.newRegistrationsToday)}</Metric>
               </div>
 
               <div style={{ fontSize: 11, color: 'var(--admin-text-muted)', borderTop: '1px solid var(--admin-border)', paddingTop: 10 }}>
-                🛡️ PII Masking: Aadhaar & PAN details masked on all display surfaces.
+                Aadhaar and PAN are masked on every admin surface.
               </div>
             </div>
 
             {/* QUICK ACTIONS & EMERGENCY OVERRIDE */}
-            <div style={{
-              background: 'var(--admin-card-bg)',
-              border: '1px solid var(--admin-border)',
-              borderRadius: 12,
-              padding: '18px 20px',
-              boxShadow: 'var(--admin-shadow-sm)',
-            }}>
+            <div className="admin-panel">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 16 }}>⚡</span>
-                  <h4 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: 'var(--admin-text)' }}>OPERATIONAL SHORTCUTS</h4>
+                  <h4 className="admin-section-title" style={{ margin: 0 }}>Shortcuts</h4>
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div className="admin-shortcut-grid">
                 <button
-                  onClick={() => handleDomainNav('finance', 'deposits-review')}
-                  className="admin-card"
-                  style={{
-                    padding: '12px 14px',
-                    borderRadius: 8,
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    background: 'var(--admin-surface)',
-                    border: '1px solid var(--admin-border)',
-                  }}
+                  type="button"
+                  onClick={() => handleDomainNav('finance', 'maker-checker')}
+                  className="admin-shortcut"
                 >
-                  <div style={{ fontSize: 16, marginBottom: 4 }}>💸</div>
-                  <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--admin-text)' }}>Withdrawal Review</div>
-                  <div style={{ fontSize: 10, color: 'var(--admin-text-muted)' }}>Process pending payouts</div>
+                  <div className="admin-shortcut__title">Withdrawal review</div>
+                  <div className="admin-shortcut__hint">Process pending payouts</div>
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => handleDomainNav('betting', 'stuck-bets')}
-                  className="admin-card"
-                  style={{
-                    padding: '12px 14px',
-                    borderRadius: 8,
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    background: 'var(--admin-surface)',
-                    border: '1px solid var(--admin-border)',
-                  }}
+                  className="admin-shortcut"
                 >
-                  <div style={{ fontSize: 16, marginBottom: 4 }}>🔍</div>
-                  <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--admin-text)' }}>Stuck Bet Sweep</div>
-                  <div style={{ fontSize: 10, color: 'var(--admin-text-muted)' }}>Audit delayed settlements</div>
+                  <div className="admin-shortcut__title">Stuck bet sweep</div>
+                  <div className="admin-shortcut__hint">Audit delayed settlements</div>
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => handleDomainNav('finance', 'reconciliation')}
-                  className="admin-card"
-                  style={{
-                    padding: '12px 14px',
-                    borderRadius: 8,
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    background: 'var(--admin-surface)',
-                    border: '1px solid var(--admin-border)',
-                  }}
+                  className="admin-shortcut"
                 >
-                  <div style={{ fontSize: 16, marginBottom: 4 }}>📊</div>
-                  <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--admin-text)' }}>Reconciliation</div>
-                  <div style={{ fontSize: 10, color: 'var(--admin-text-muted)' }}>Run read-only audit</div>
+                  <div className="admin-shortcut__title">Reconciliation</div>
+                  <div className="admin-shortcut__hint">Run read-only audit</div>
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => handleDomainNav('security', 'audit-explorer')}
-                  className="admin-card"
-                  style={{
-                    padding: '12px 14px',
-                    borderRadius: 8,
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    background: 'var(--admin-surface)',
-                    border: '1px solid var(--admin-border)',
-                  }}
+                  className="admin-shortcut"
                 >
-                  <div style={{ fontSize: 16, marginBottom: 4 }}>📜</div>
-                  <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--admin-text)' }}>Audit Log Stream</div>
-                  <div style={{ fontSize: 10, color: 'var(--admin-text-muted)' }}>Inspect sensitive actions</div>
+                  <div className="admin-shortcut__title">Audit log</div>
+                  <div className="admin-shortcut__hint">Inspect sensitive actions</div>
                 </button>
               </div>
             </div>
@@ -948,15 +460,13 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
             padding: '18px 20px',
             boxShadow: 'var(--admin-shadow-sm)',
           }}>
-            <h4 style={{ margin: '0 0 14px', fontSize: 14, fontWeight: 800, color: 'var(--admin-text)' }}>
-              CORE SUBSYSTEMS HEALTH STATUS
-            </h4>
+            <h4 className="admin-section-title">Subsystem health</h4>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
               <div style={{ background: 'var(--admin-surface)', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--admin-border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: 12, color: 'var(--admin-text-muted)', fontWeight: 600 }}>PostgreSQL Database</span>
-                  <span style={{ color: '#10b981', fontWeight: 700, fontSize: 11 }}>🟢 HEALTHY</span>
+                  <span className="admin-inline-status">Healthy</span>
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--admin-text-muted)', marginTop: 4 }}>Primary Node · Connected</div>
               </div>
@@ -964,7 +474,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
               <div style={{ background: 'var(--admin-surface)', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--admin-border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: 12, color: 'var(--admin-text-muted)', fontWeight: 600 }}>Redis Pub/Sub</span>
-                  <span style={{ color: '#10b981', fontWeight: 700, fontSize: 11 }}>🟢 HEALTHY</span>
+                  <span className="admin-inline-status">Healthy</span>
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--admin-text-muted)', marginTop: 4 }}>Live Odds Cache · Connected</div>
               </div>
@@ -972,7 +482,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
               <div style={{ background: 'var(--admin-surface)', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--admin-border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: 12, color: 'var(--admin-text-muted)', fontWeight: 600 }}>Transactional Outbox</span>
-                  <span style={{ color: '#10b981', fontWeight: 700, fontSize: 11 }}>🟢 HEALTHY</span>
+                  <span className="admin-inline-status">Healthy</span>
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--admin-text-muted)', marginTop: 4 }}>0 Pending · 0 DLQ</div>
               </div>
@@ -980,7 +490,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
               <div style={{ background: 'var(--admin-surface)', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--admin-border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: 12, color: 'var(--admin-text-muted)', fontWeight: 600 }}>Payment Gateway</span>
-                  <span style={{ color: '#10b981', fontWeight: 700, fontSize: 11 }}>🟢 Razorpay</span>
+                  <span className="admin-inline-status">Healthy</span>
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--admin-text-muted)', marginTop: 4 }}>Orders & Webhooks Active</div>
               </div>
@@ -988,7 +498,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
               <div style={{ background: 'var(--admin-surface)', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--admin-border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: 12, color: 'var(--admin-text-muted)', fontWeight: 600 }}>Sports Feed Aggregator</span>
-                  <span style={{ color: '#10b981', fontWeight: 700, fontSize: 11 }}>🟢 Multi-Source</span>
+                  <span className="admin-inline-status">Healthy</span>
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--admin-text-muted)', marginTop: 4 }}>Live Tick Active</div>
               </div>
@@ -996,7 +506,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
               <div style={{ background: 'var(--admin-surface)', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--admin-border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: 12, color: 'var(--admin-text-muted)', fontWeight: 600 }}>Email & Push Channels</span>
-                  <span style={{ color: '#10b981', fontWeight: 700, fontSize: 11 }}>🟢 Operational</span>
+                  <span className="admin-inline-status">Operational</span>
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--admin-text-muted)', marginTop: 4 }}>SMTP & WebPush Connected</div>
               </div>
@@ -1011,9 +521,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
             padding: '18px 20px',
             boxShadow: 'var(--admin-shadow-sm)',
           }}>
-            <h4 style={{ margin: '0 0 14px', fontSize: 14, fontWeight: 800, color: 'var(--admin-text)' }}>
-              BACKGROUND WORKER FLEET
-            </h4>
+            <h4 className="admin-section-title">Background workers</h4>
 
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
@@ -1056,38 +564,13 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
             padding: '18px 20px',
             boxShadow: 'var(--admin-shadow-sm)',
           }}>
-            <h4 style={{ margin: '0 0 14px', fontSize: 14, fontWeight: 800, color: 'var(--admin-text)' }}>
-              ADMIN SECURITY & SESSION POSTURE
-            </h4>
+            <h4 className="admin-section-title">Security & sessions</h4>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
-              <div style={{ background: 'var(--admin-surface)', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--admin-border)' }}>
-                <div style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>Failed Logins (24h)</div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: '#10b981', marginTop: 2 }}>
-                  {security.failedLogins24h || 0}
-                </div>
-              </div>
-
-              <div style={{ background: 'var(--admin-surface)', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--admin-border)' }}>
-                <div style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>Active Admin Sessions</div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: '#3b82f6', marginTop: 2 }}>
-                  {security.activeAdminSessions || 1}
-                </div>
-              </div>
-
-              <div style={{ background: 'var(--admin-surface)', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--admin-border)' }}>
-                <div style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>Permission Denials</div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: '#10b981', marginTop: 2 }}>
-                  {security.recentPermissionDenials || 0}
-                </div>
-              </div>
-
-              <div style={{ background: 'var(--admin-surface)', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--admin-border)' }}>
-                <div style={{ fontSize: 11, color: 'var(--admin-text-muted)' }}>MFA Enrolled Admins</div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: '#10b981', marginTop: 2 }}>
-                  {security.mfaEnrolledAdmins || 1}
-                </div>
-              </div>
+            <div className="admin-metric-grid">
+              <Metric label="Failed logins (24h)">{security.failedLogins24h || 0}</Metric>
+              <Metric label="Active admin sessions">{security.activeAdminSessions || 1}</Metric>
+              <Metric label="Permission denials">{security.recentPermissionDenials || 0}</Metric>
+              <Metric label="MFA enrolled admins">{security.mfaEnrolledAdmins || 1}</Metric>
             </div>
           </div>
 
@@ -1100,14 +583,13 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
             boxShadow: 'var(--admin-shadow-sm)',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <h4 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: 'var(--admin-text)' }}>
-                RECENT ADMIN AUDIT TRAIL (IMMUTABLE)
-              </h4>
+              <h4 className="admin-section-title" style={{ margin: 0 }}>Recent admin activity</h4>
               <button
+                type="button"
+                className="admin-link-btn"
                 onClick={() => handleDomainNav('security', 'audit-explorer')}
-                style={{ background: 'none', border: 'none', color: 'var(--admin-primary)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
               >
-                View Full Log ➔
+                Full log
               </button>
             </div>
 

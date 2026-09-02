@@ -35,6 +35,99 @@ const emptyForm = {
   inviteOnly: true,
 };
 
+function packPreview(parts, each) {
+  const n = Math.max(2, Math.min(50, Math.floor(Number(parts) || 0)));
+  const e = Number(each);
+  if (!(n >= 2) || !(e > 0)) return null;
+  const total = Number((n * e).toFixed(2));
+  return {
+    n,
+    each: e,
+    total,
+    label: `${n} × ₹${e.toLocaleString('en-IN')}`,
+    totalLabel: `₹${total.toLocaleString('en-IN')}`,
+  };
+}
+
+function SendAsStakeFields({
+  mode,
+  onMode,
+  parts,
+  each,
+  onParts,
+  onEach,
+  unit = 'free bets',
+  matchTotal,
+  name = 'send-as',
+}) {
+  const pack = mode === 'pack';
+  const preview = packPreview(parts, each);
+  const match = Number(matchTotal);
+  const matchNote = pack && preview && Number.isFinite(match) && match > 0 && Math.abs(preview.total - match) > 0.009
+    ? `Match is ₹${match.toLocaleString('en-IN')}. Pack total is ${preview.totalLabel}.`
+    : null;
+  return (
+    <div className="admin-send-as">
+      <p className="admin-form-label" style={{ margin: 0 }}>Send as</p>
+      <div className="admin-send-as__modes">
+        <label className={`admin-send-as__choice ${!pack ? 'is-on' : ''}`}>
+          <input
+            type="radio"
+            name={name}
+            checked={!pack}
+            onChange={() => onMode('one')}
+          />
+          One stake
+        </label>
+        <label className={`admin-send-as__choice ${pack ? 'is-on' : ''}`}>
+          <input
+            type="radio"
+            name={name}
+            checked={pack}
+            onChange={() => onMode('pack')}
+          />
+          Pack
+        </label>
+      </div>
+      {pack ? (
+        <div className="admin-send-as__pack">
+          <label className="admin-form-label" style={{ margin: 0 }}>How many</label>
+          <input
+            type="number"
+            className="admin-input"
+            min="2"
+            max="50"
+            step="1"
+            value={parts}
+            onChange={(e) => onParts(e.target.value)}
+            style={{ width: 88 }}
+          />
+          <span className="admin-send-as__times">×</span>
+          <div className="tdfb-affix" style={{ width: 140 }}>
+            <span>₹</span>
+            <input
+              className="admin-input"
+              type="number"
+              min="1"
+              step="1"
+              value={each}
+              onChange={(e) => onEach(e.target.value)}
+            />
+          </div>
+          <span className="admin-send-as__hint">
+            {preview
+              ? `${preview.label} = ${preview.totalLabel} · each ${unit.replace(/s$/, '')} is its own bet`
+              : 'Set count and amount for each'}
+          </span>
+        </div>
+      ) : (
+        <p className="admin-send-as__hint">Player gets one instrument for the full amount.</p>
+      )}
+      {matchNote && <p className="tdfb-hint">{matchNote}</p>}
+    </div>
+  );
+}
+
 function TargetedDepositFreeBetPanel() {
   const { showToast } = useAdminToast();
   const [campaigns, setCampaigns] = useState([]);
@@ -62,6 +155,9 @@ function TargetedDepositFreeBetPanel() {
     segmentId: '',
     excludeSegmentId: '',
     vipTiers: '',
+    splitEnabled: false,
+    splitParts: '10',
+    splitEach: '1000',
   });
   const [segments, setSegments] = useState([]);
   const [audiencePreview, setAudiencePreview] = useState(null);
@@ -201,6 +297,9 @@ function TargetedDepositFreeBetPanel() {
         segmentId: form.segmentId || null,
         excludeSegmentIds: form.excludeSegmentId ? [form.excludeSegmentId] : [],
         vipTiers: vipList,
+        splitEnabled: Boolean(form.splitEnabled),
+        splitParts: form.splitEnabled ? form.splitParts : 1,
+        splitEach: form.splitEnabled ? form.splitEach : null,
       });
       showToast(`Campaign created · ${data.campaign?.lifecycleStatus || data.campaign?.status || 'DRAFT'}`, 'success');
       setSelectedId(data.campaign?.id || '');
@@ -388,6 +487,23 @@ function TargetedDepositFreeBetPanel() {
                   <p className="tdfb-hint">Countdown starts when the free bet is credited</p>
                 </div>
               </div>
+              <SendAsStakeFields
+                mode={form.splitEnabled ? 'pack' : 'one'}
+                onMode={(next) => setForm((f) => ({
+                  ...f,
+                  splitEnabled: next === 'pack',
+                  splitEach: next === 'pack' && !Number(f.splitEach)
+                    ? String(Math.max(1, Math.round((Number(f.maxFreeBet) || 10000) / Math.max(2, Number(f.splitParts) || 10))))
+                    : f.splitEach,
+                }))}
+                parts={form.splitParts}
+                each={form.splitEach}
+                onParts={(v) => setForm((f) => ({ ...f, splitParts: v }))}
+                onEach={(v) => setForm((f) => ({ ...f, splitEach: v }))}
+                matchTotal={preview.example}
+                unit="free bets"
+                name="send-as-targeted"
+              />
             </section>
 
             <section className="tdfb-block">
@@ -443,7 +559,7 @@ function TargetedDepositFreeBetPanel() {
                 </div>
                 <span className="tdfb-users__count">{picked.length} selected</span>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 12 }}>
+              <div className="admin-form-grid admin-form-grid--3" style={{ marginBottom: 12 }}>
                 <div className="admin-form-group">
                   <label className="admin-form-label">CRM segment</label>
                   <select
@@ -756,6 +872,9 @@ function DepositFreeBetPanel() {
     freebetExpiryDays: '7',
     startsAt: '',
     endsAt: '',
+    splitEnabled: false,
+    splitParts: '10',
+    splitEach: '1000',
   });
 
   const load = useCallback(() => {
@@ -778,6 +897,11 @@ function DepositFreeBetPanel() {
           freebetExpiryDays: String(c.freebetExpiryDays ?? 7),
           startsAt: c.startsAt ? String(c.startsAt).slice(0, 16) : '',
           endsAt: c.endsAt ? String(c.endsAt).slice(0, 16) : '',
+          splitEnabled: Number(c.splitParts || 1) > 1,
+          splitParts: String(Number(c.splitParts || 1) > 1 ? c.splitParts : 10),
+          splitEach: c.splitEach
+            ? String(c.splitEach)
+            : String(Math.max(1, Math.round((Number(c.maxFreeBet) || 10000) / Math.max(2, Number(c.splitParts) || 10)))),
         });
         setError(null);
       })
@@ -816,6 +940,9 @@ function DepositFreeBetPanel() {
         freebetExpiryDays: form.freebetExpiryDays,
         startsAt: form.startsAt || null,
         endsAt: form.endsAt || null,
+        splitEnabled: Boolean(form.splitEnabled),
+        splitParts: form.splitEnabled ? form.splitParts : 1,
+        splitEach: form.splitEnabled ? form.splitEach : null,
       });
       showToast('Deposit Free Bet campaign saved', 'success');
       await load();
@@ -881,7 +1008,7 @@ function DepositFreeBetPanel() {
             </button>
             {campaign?.code && <span className="admin-badge admin-badge--neutral">{campaign.code}</span>}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+          <div className="admin-form-grid admin-form-grid--3">
             <div className="admin-form-group">
               <label className="admin-form-label">Promotion Name</label>
               <input className="admin-input" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
@@ -904,7 +1031,7 @@ function DepositFreeBetPanel() {
             </div>
             <div className="admin-form-group">
               <label className="admin-form-label">Eligibility</label>
-              <select className="admin-input" value={form.eligibility} onChange={(e) => setForm((f) => ({ ...f, eligibility: e.target.value }))}>
+              <select className="admin-select" value={form.eligibility} onChange={(e) => setForm((f) => ({ ...f, eligibility: e.target.value }))}>
                 <option value="ALL">All users</option>
                 <option value="NEW">New users (first deposit)</option>
                 <option value="EXISTING">Existing users</option>
@@ -922,6 +1049,23 @@ function DepositFreeBetPanel() {
               <label className="admin-form-label">End</label>
               <input className="admin-input" type="datetime-local" value={form.endsAt} onChange={(e) => setForm((f) => ({ ...f, endsAt: e.target.value }))} />
             </div>
+            <SendAsStakeFields
+              mode={form.splitEnabled ? 'pack' : 'one'}
+              onMode={(next) => setForm((f) => ({
+                ...f,
+                splitEnabled: next === 'pack',
+                splitEach: next === 'pack' && !Number(f.splitEach)
+                  ? String(Math.max(1, Math.round((Number(f.maxFreeBet) || 10000) / Math.max(2, Number(f.splitParts) || 10))))
+                  : f.splitEach,
+              }))}
+              parts={form.splitParts}
+              each={form.splitEach}
+              onParts={(v) => setForm((f) => ({ ...f, splitParts: v }))}
+              onEach={(v) => setForm((f) => ({ ...f, splitEach: v }))}
+              matchTotal={previewAmount}
+              unit="free bets"
+              name="send-as-sitewide"
+            />
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem' }}>
@@ -1020,7 +1164,7 @@ function PromotionsPanel() {
   return (
     <div>
       <div style={{ marginBottom: '16px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>08 · Growth, Campaigns & VIP Loyalty Systems</h2>
+        <h2 className="admin-page-header__title">Campaigns</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           Promotions from PostgreSQL. Empty list means no campaigns configured yet.
         </p>
@@ -1186,7 +1330,7 @@ function SignupPromoCodesPanel() {
   return (
     <div>
       <div style={{ marginBottom: '16px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Signup Promo Codes</h2>
+        <h2 className="admin-page-header__title">Signup Promo Codes</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           Create freebet/bonus codes. Mark <strong>Invite only</strong> so the code stays off the public Promotions page —
           only emails you send from <code>promos@oddsyra.com</code> can redeem it.
@@ -1196,7 +1340,7 @@ function SignupPromoCodesPanel() {
 
       <AdminCard title="Create Promo Code" accent="#6366f1" style={{ marginBottom: '20px' }}>
         <form onSubmit={handleCreate}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
+          <div className="admin-form-grid">
             <div className="admin-form-group">
               <label className="admin-form-label">Code</label>
               <input
@@ -1220,7 +1364,7 @@ function SignupPromoCodesPanel() {
               />
             </div>
             <div className="admin-form-group">
-              <label className="admin-form-label">Reward Type</label>
+              <label className="admin-form-label">Reward type</label>
               <select
                 className="admin-select"
                 value={form.rewardType}
@@ -1245,7 +1389,7 @@ function SignupPromoCodesPanel() {
               />
             </div>
             <div className="admin-form-group">
-              <label className="admin-form-label">Max Total Claims</label>
+              <label className="admin-form-label">Max total claims</label>
               <input
                 className="admin-input"
                 type="number"
@@ -1257,7 +1401,7 @@ function SignupPromoCodesPanel() {
               />
             </div>
             <div className="admin-form-group">
-              <label className="admin-form-label">Max Per User</label>
+              <label className="admin-form-label">Max per user</label>
               <input
                 className="admin-input"
                 type="number"
@@ -1270,47 +1414,52 @@ function SignupPromoCodesPanel() {
               />
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '16px', flexWrap: 'wrap' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', cursor: 'pointer', color: 'var(--admin-text)' }}>
-              <input
-                type="checkbox"
-                checked={form.isActive}
-                onChange={(e) => updateField('isActive', e.target.checked)}
-                style={{ accentColor: '#6366f1' }}
-              />
-              Start enabled
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', cursor: 'pointer', color: 'var(--admin-text)' }}>
-              <input
-                type="checkbox"
-                checked={form.inviteOnly}
-                onChange={(e) => updateField('inviteOnly', e.target.checked)}
-                style={{ accentColor: '#0ea5e9' }}
-              />
-              Invite only (hidden from all users until you email them)
-            </label>
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+          <div className="admin-form-actions">
+            <div className="admin-form-actions__checks">
+              <label className="admin-form-check">
+                <input
+                  type="checkbox"
+                  checked={form.isActive}
+                  onChange={(e) => updateField('isActive', e.target.checked)}
+                  style={{ accentColor: '#6366f1' }}
+                />
+                Start enabled
+              </label>
+              <label className="admin-form-check">
+                <input
+                  type="checkbox"
+                  checked={form.inviteOnly}
+                  onChange={(e) => updateField('inviteOnly', e.target.checked)}
+                  style={{ accentColor: '#0ea5e9' }}
+                />
+                Invite only
+              </label>
+            </div>
+            <div className="admin-form-actions__btns">
               <button
                 type="button"
                 onClick={loadCodes}
                 className="admin-btn admin-btn--secondary"
               >
-                ↻ Refresh
+                Refresh
               </button>
               <button
                 type="submit"
                 disabled={saving}
                 className="admin-btn admin-btn--primary"
               >
-                {saving ? 'Saving…' : 'Add Code'}
+                {saving ? 'Saving…' : 'Add code'}
               </button>
             </div>
           </div>
+          {form.inviteOnly && (
+            <p className="tdfb-hint">Hidden from the public promotions page until you email invited players.</p>
+          )}
         </form>
       </AdminCard>
 
       <AdminCard title="Send promo code email" accent="#0ea5e9" style={{ marginBottom: '20px' }}>
-        <form onSubmit={sendInvites} style={{ display: 'grid', gap: 12 }}>
+        <form onSubmit={sendInvites} className="admin-form-stack">
           <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--admin-text-muted)' }}>
             Emails are sent from <strong>promos@oddsyra.com</strong>. For invite-only codes, only these recipients can claim.
           </p>
@@ -1470,7 +1619,7 @@ function VipTiersPanel() {
   return (
     <div>
       <div style={{ marginBottom: '16px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>08 · VIP Loyalty Tiers</h2>
+        <h2 className="admin-page-header__title">VIP Loyalty Tiers</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           Authoritative VIP benefits catalog (min deposit ₹{limits.minDeposit?.toLocaleString() ?? '1,000'} · min withdraw ₹{limits.minWithdraw?.toLocaleString() ?? '1,000'}).
         </p>
@@ -1616,9 +1765,9 @@ function DepositFreeBetHub({ initialTab = 'targeted' }) {
   return (
     <div>
       <div style={{ marginBottom: 16 }}>
-        <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800 }}>Deposit Free Bet</h2>
+        <h2 className="admin-page-header__title">Deposit match</h2>
         <p style={{ margin: '6px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.84rem', maxWidth: '62ch' }}>
-          One place for deposit-match free bets: sitewide rules, or private offers for selected players.
+          Credit free bets after a qualifying deposit. Send the match as one stake, or as a pack you control (for example 10 × ₹1,000).
         </p>
       </div>
       <AdminTabs
@@ -1626,11 +1775,52 @@ function DepositFreeBetHub({ initialTab = 'targeted' }) {
         onChange={setTab}
         style={{ marginBottom: 16 }}
         tabs={[
-          { id: 'targeted', label: 'Targeted (selected users)' },
-          { id: 'global', label: 'Global (all eligible)' },
+          { id: 'targeted', label: 'Targeted' },
+          { id: 'global', label: 'Sitewide' },
         ]}
       />
       {tab === 'global' ? <DepositFreeBetPanel /> : <TargetedDepositFreeBetPanel />}
+    </div>
+  );
+}
+
+function OffersHub({ initialTab = 'rewards' }) {
+  const [tab, setTab] = useState(initialTab);
+  return (
+    <div>
+      <AdminTabs
+        active={tab}
+        onChange={setTab}
+        style={{ marginBottom: 16 }}
+        tabs={[
+          { id: 'rewards', label: 'Issue rewards' },
+          { id: 'codes', label: 'Promo codes' },
+          { id: 'deposit', label: 'Deposit match' },
+          { id: 'campaigns', label: 'Campaigns' },
+        ]}
+      />
+      {tab === 'codes' && <SignupPromoCodesPanel />}
+      {tab === 'deposit' && <DepositFreeBetHub />}
+      {tab === 'campaigns' && <PromotionsPanel />}
+      {tab === 'rewards' && <DiscreteRewardsAdminPanel />}
+    </div>
+  );
+}
+
+function AudienceHub({ initialTab = 'segments' }) {
+  const [tab, setTab] = useState(initialTab);
+  return (
+    <div>
+      <AdminTabs
+        active={tab}
+        onChange={setTab}
+        style={{ marginBottom: 16 }}
+        tabs={[
+          { id: 'segments', label: 'Segments' },
+          { id: 'composer', label: 'Email composer' },
+        ]}
+      />
+      {tab === 'composer' ? <CrmComposerPanel /> : <CrmSegmentsPanel />}
     </div>
   );
 }
@@ -1671,7 +1861,7 @@ function CrmComposerPanel() {
   return (
     <div>
       <div style={{ marginBottom: 16 }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>CRM Composer</h2>
+        <h2 className="admin-page-header__title">CRM Composer</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           Preview and dry-run first. Send uses emailService and skips marketing opt-outs. No cash credits.
         </p>
@@ -1747,18 +1937,25 @@ function PromoClawbackPanel() {
 }
 
 export default function GrowthDomainView({ subModule = 'overview' }) {
-  if (subModule === 'overview' || subModule === 'growth-overview') {
-    return <GrowthOverviewPanel />;
+  if (subModule === 'overview' || subModule === 'growth-overview' || subModule === 'promo-roi') {
+    return <GrowthOverviewPanel initialTab={subModule === 'promo-roi' ? 'roi' : 'dashboard'} />;
   }
-  if (subModule === 'bonus-codes') {
-    return <SignupPromoCodesPanel />;
-  }
-  if (subModule === 'deposit-freebet' || subModule === 'targeted-deposit-freebet') {
-    return (
-      <DepositFreeBetHub
-        initialTab={subModule === 'targeted-deposit-freebet' ? 'targeted' : 'targeted'}
-      />
+  if (
+    subModule === 'offers'
+    || subModule === 'bonus-codes'
+    || subModule === 'deposit-freebet'
+    || subModule === 'targeted-deposit-freebet'
+    || subModule === 'rewards'
+    || subModule === 'discrete-rewards'
+    || subModule === 'promotions'
+  ) {
+    const tab = (
+      subModule === 'bonus-codes' ? 'codes'
+        : (subModule === 'deposit-freebet' || subModule === 'targeted-deposit-freebet') ? 'deposit'
+          : (subModule === 'promotions') ? 'campaigns'
+            : 'rewards'
     );
+    return <OffersHub key={tab} initialTab={tab} />;
   }
   if (subModule === 'vip-tiers') {
     return <VipTiersPanel />;
@@ -1769,22 +1966,14 @@ export default function GrowthDomainView({ subModule = 'overview' }) {
   if (subModule === 'promo-abuse') {
     return <PromoAbuseAlertsPanel />;
   }
-  if (subModule === 'crm-composer') {
-    return <CrmComposerPanel />;
+  if (subModule === 'crm-composer' || subModule === 'crm-segments' || subModule === 'audience') {
+    return <AudienceHub initialTab={subModule === 'crm-composer' ? 'composer' : 'segments'} />;
   }
-  if (subModule === 'crm-segments') {
-    return <CrmSegmentsPanel />;
-  }
-  if (subModule === 'promo-roi') {
-    return <PromoRoiPanel />;
-  }
-  if (subModule === 'rewards' || subModule === 'discrete-rewards') {
-    return <DiscreteRewardsAdminPanel />;
-  }
-  return <PromotionsPanel />;
+  return <OffersHub initialTab="campaigns" />;
 }
 
-function GrowthOverviewPanel() {
+function GrowthOverviewPanel({ initialTab = 'dashboard' }) {
+  const [tab, setTab] = useState(initialTab);
   const [kpis, setKpis] = useState(null);
   const [error, setError] = useState(null);
   const [notes, setNotes] = useState([]);
@@ -1821,12 +2010,25 @@ function GrowthOverviewPanel() {
   return (
     <div>
       <div style={{ marginBottom: 16 }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>08 · Growth Overview</h2>
+        <h2 className="admin-page-header__title">Overview</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
-          Live KPIs from campaigns, segments, referrals, VIP, and freebet grants. Click any tile for details.
+          Campaign health and promo ROI in one place.
         </p>
         {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
       </div>
+      <AdminTabs
+        active={tab}
+        onChange={setTab}
+        style={{ marginBottom: 16 }}
+        tabs={[
+          { id: 'dashboard', label: 'Dashboard' },
+          { id: 'roi', label: 'ROI' },
+        ]}
+      />
+      {tab === 'roi' ? (
+        <PromoRoiPanel />
+      ) : (
+        <>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 16 }}>
         {cards.map((c) => (
           <AdminKPI
@@ -1843,6 +2045,8 @@ function GrowthOverviewPanel() {
       {notes.map((n) => (
         <p key={n} style={{ margin: '0 0 4px', fontSize: '0.74rem', color: 'var(--admin-text-muted)' }}>{n}</p>
       ))}
+        </>
+      )}
     </div>
   );
 }
@@ -1874,7 +2078,7 @@ function PromoRoiPanel() {
   return (
     <div>
       <div style={{ marginBottom: 16 }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Promotion ROI</h2>
+        <h2 className="admin-page-header__title">Promotion ROI</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           Real attributable deposits/bets only. GGR/NGR = N/A (not fabricated).
         </p>
@@ -2053,7 +2257,7 @@ function CrmSegmentsPanel() {
   return (
     <div>
       <div style={{ marginBottom: '16px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>08 · CRM Segments</h2>
+        <h2 className="admin-page-header__title">CRM Segments</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           Multi-condition AND/OR segments with preview, membership sync, and campaign exclusions.
         </p>
@@ -2062,7 +2266,7 @@ function CrmSegmentsPanel() {
 
       <AdminCard title="Create segment" accent="#6366f1" style={{ marginBottom: 16 }}>
         <form onSubmit={create}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 12 }}>
+          <div className="admin-form-grid admin-form-grid--3" style={{ marginBottom: 12 }}>
             <div className="admin-form-group">
               <label className="admin-form-label">Name</label>
               <input className="admin-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="HIGH_DEPOSIT_INACTIVE" required />
@@ -2292,7 +2496,7 @@ function ReferralsAdminPanel() {
 
   return (
     <div>
-      <h2 style={{ margin: '0 0 8px', fontSize: '1.25rem', fontWeight: 800, color: 'var(--admin-text)' }}>Referral Program</h2>
+      <h2 className="admin-page-header__title">Referral program</h2>
       <p style={{ margin: '0 0 16px', color: 'var(--admin-text-muted)', fontSize: '0.85rem' }}>
         User-to-user referrals. Free bet rewards grant on signup attribution (not deposit-locked). Signup promos cannot combine with referral.
       </p>
@@ -2451,7 +2655,7 @@ function PromoAbuseAlertsPanel() {
   return (
     <div>
       <div style={{ marginBottom: '16px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>08 · Promo Abuse Alerts</h2>
+        <h2 className="admin-page-header__title">Promo Abuse Alerts</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           Open promotion abuse signals from eligibility checks. Resolve after review — does not reverse grants automatically.
         </p>
@@ -2533,6 +2737,9 @@ function DiscreteRewardsAdminPanel() {
     returnsStake: false,
     allowPartialUse: false,
     reason: '',
+    splitEnabled: false,
+    splitParts: '10',
+    splitEach: '1000',
   });
   const [recipientPreview, setRecipientPreview] = useState(null);
   const [recipientError, setRecipientError] = useState('');
@@ -2576,26 +2783,42 @@ function DiscreteRewardsAdminPanel() {
 
   const handleIssueSubmit = async (e) => {
     e.preventDefault();
-    if (!issueForm.userId || !issueForm.amount) {
-      showToast('User ID / email / phone and Amount are required.', 'error');
+    const pack = Boolean(issueForm.splitEnabled);
+    const packEach = Number(issueForm.splitEach);
+    const packParts = Math.max(2, Math.min(50, Math.floor(Number(issueForm.splitParts) || 10)));
+    if (!issueForm.userId) {
+      showToast('User ID / email / phone is required.', 'error');
       return;
     }
+    if (!pack && !issueForm.amount) {
+      showToast('Amount is required for a single stake.', 'error');
+      return;
+    }
+    if (pack && (!(packEach > 0) || packParts < 2)) {
+      showToast('Pack needs a count and an amount for each stake.', 'error');
+      return;
+    }
+    const issueAmount = pack ? Number((packParts * packEach).toFixed(2)) : Number(issueForm.amount);
     setIssuing(true);
     try {
       const result = await adminApiClient.post('/rewards/issue', {
         userId: issueForm.userId,
         rewardType: issueForm.rewardType,
-        amount: Number(issueForm.amount),
-        title: issueForm.title || `${issueForm.rewardType === 'freebet' ? 'Free Bet' : 'Bonus'} ₹${issueForm.amount}`,
+        amount: issueAmount,
+        title: issueForm.title || `${issueForm.rewardType === 'freebet' ? 'Free Bet' : 'Bonus'} ₹${issueAmount}`,
         minOdds: Number(issueForm.minOdds || 1.00),
         expiryDays: Number(issueForm.expiryDays || 7),
         returnsStake: Boolean(issueForm.returnsStake),
         allowPartialUse: Boolean(issueForm.allowPartialUse),
         reason: issueForm.reason || 'Admin Issued',
+        splitEnabled: pack,
+        splitParts: pack ? packParts : 1,
+        splitEach: pack ? packEach : null,
       });
       const who = result?.recipient?.email || result?.reward?.user_id || issueForm.userId;
       const mailNote = result?.emailSent ? ` Email sent to ${result.recipient?.email || who}.` : '';
-      showToast(`Issued ₹${issueForm.amount} ${issueForm.rewardType} to ${who}.${mailNote}`, 'success');
+      const splitNote = result?.splitParts > 1 ? ` as ${result.splitParts} × ₹${packEach.toLocaleString('en-IN')}` : '';
+      showToast(`Issued ₹${issueAmount} ${issueForm.rewardType} to ${who}${splitNote}.${mailNote}`, 'success');
       setIssueForm({
         userId: '',
         rewardType: 'freebet',
@@ -2606,6 +2829,9 @@ function DiscreteRewardsAdminPanel() {
         returnsStake: false,
         allowPartialUse: false,
         reason: '',
+        splitEnabled: false,
+        splitParts: '10',
+        splitEach: '1000',
       });
       setRecipientPreview(null);
       setRecipientError('');
@@ -2660,7 +2886,7 @@ function DiscreteRewardsAdminPanel() {
   return (
     <div>
       <div style={{ marginBottom: '20px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900 }}>🎁 Discrete Free Bets & Bonuses Management</h2>
+        <h2 className="admin-page-header__title">Rewards</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.84rem' }}>
           Issue and inspect discrete promotional reward instruments. Free Bets and Bonuses require exact full-stake usage. Issuing credits the user's free-bet or bonus wallet and My Rewards.
         </p>
@@ -2668,9 +2894,9 @@ function DiscreteRewardsAdminPanel() {
 
       {/* Issue Form */}
       <AdminCard title="Issue New Discrete Reward Instrument" style={{ marginBottom: '24px' }}>
-        <form onSubmit={handleIssueSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '4px' }}>User ID, email, or phone *</label>
+        <form onSubmit={handleIssueSubmit} className="admin-form-grid admin-form-grid--3">
+          <div className="admin-form-group">
+            <label className="admin-form-label">User ID, email, or phone</label>
             <input
               type="text"
               className="admin-input"
@@ -2685,42 +2911,44 @@ function DiscreteRewardsAdminPanel() {
               required
             />
             {recipientPreview && (
-              <p style={{ margin: '6px 0 0', fontSize: '0.75rem', color: '#10b981' }}>
+              <p style={{ margin: 0, fontSize: '0.75rem', color: '#10b981' }}>
                 Sends to {recipientPreview.name || 'user'} · {recipientPreview.email} · {recipientPreview.userId}
               </p>
             )}
             {recipientError && (
-              <p style={{ margin: '6px 0 0', fontSize: '0.75rem', color: '#f87171' }}>{recipientError}</p>
+              <p style={{ margin: 0, fontSize: '0.75rem', color: '#f87171' }}>{recipientError}</p>
             )}
           </div>
 
-          <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '4px' }}>Reward Instrument Type *</label>
+          <div className="admin-form-group">
+            <label className="admin-form-label">Reward type</label>
             <select
-              className="admin-input"
+              className="admin-select"
               value={issueForm.rewardType}
               onChange={(e) => setIssueForm({ ...issueForm, rewardType: e.target.value })}
             >
-              <option value="freebet">🎁 Free Bet (Profit Only)</option>
-              <option value="bonus">⭐ Bonus Credit</option>
+              <option value="freebet">Free bet (profit only)</option>
+              <option value="bonus">Bonus credit</option>
             </select>
           </div>
 
-          <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '4px' }}>Exact Amount (₹) *</label>
-            <input
-              type="number"
-              className="admin-input"
-              placeholder="500"
-              value={issueForm.amount}
-              onChange={(e) => setIssueForm({ ...issueForm, amount: e.target.value })}
-              required
-              min="1"
-            />
-          </div>
+          {!issueForm.splitEnabled && (
+            <div className="admin-form-group">
+              <label className="admin-form-label">Exact amount (₹)</label>
+              <input
+                type="number"
+                className="admin-input"
+                placeholder="10000"
+                value={issueForm.amount}
+                onChange={(e) => setIssueForm({ ...issueForm, amount: e.target.value })}
+                required
+                min="1"
+              />
+            </div>
+          )}
 
-          <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '4px' }}>Reward Title</label>
+          <div className="admin-form-group">
+            <label className="admin-form-label">Reward title</label>
             <input
               type="text"
               className="admin-input"
@@ -2730,8 +2958,8 @@ function DiscreteRewardsAdminPanel() {
             />
           </div>
 
-          <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '4px' }}>Min Odds</label>
+          <div className="admin-form-group">
+            <label className="admin-form-label">Min odds</label>
             <input
               type="number"
               step="0.05"
@@ -2742,8 +2970,8 @@ function DiscreteRewardsAdminPanel() {
             />
           </div>
 
-          <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '4px' }}>Expiry (Days)</label>
+          <div className="admin-form-group">
+            <label className="admin-form-label">Expiry (days)</label>
             <input
               type="number"
               className="admin-input"
@@ -2754,8 +2982,8 @@ function DiscreteRewardsAdminPanel() {
             />
           </div>
 
-          <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '4px' }}>Reason / Campaign</label>
+          <div className="admin-form-group">
+            <label className="admin-form-label">Reason / campaign</label>
             <input
               type="text"
               className="admin-input"
@@ -2765,13 +2993,33 @@ function DiscreteRewardsAdminPanel() {
             />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingTop: '20px' }}>
+          <SendAsStakeFields
+            mode={issueForm.splitEnabled ? 'pack' : 'one'}
+            onMode={(next) => setIssueForm((f) => ({
+              ...f,
+              splitEnabled: next === 'pack',
+              splitEach: next === 'pack' && !Number(f.splitEach)
+                ? String(Math.max(1, Math.round((Number(f.amount) || 10000) / Math.max(2, Number(f.splitParts) || 10))))
+                : f.splitEach,
+              amount: next === 'one' && Number(f.splitParts) > 1 && Number(f.splitEach) > 0
+                ? String(Number((Number(f.splitParts) * Number(f.splitEach)).toFixed(2)))
+                : f.amount,
+            }))}
+            parts={issueForm.splitParts}
+            each={issueForm.splitEach}
+            onParts={(v) => setIssueForm((f) => ({ ...f, splitParts: v }))}
+            onEach={(v) => setIssueForm((f) => ({ ...f, splitEach: v }))}
+            unit={issueForm.rewardType === 'bonus' ? 'bonuses' : 'free bets'}
+            name="send-as-issue"
+          />
+
+          <div className="admin-form-span">
             <button
               type="submit"
               className="admin-btn admin-btn--primary"
               disabled={issuing}
             >
-              {issuing ? 'Issuing…' : 'Issue Reward →'}
+              {issuing ? 'Issuing…' : 'Issue reward'}
             </button>
           </div>
         </form>

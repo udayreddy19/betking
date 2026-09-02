@@ -10,6 +10,7 @@ import AdminCard from '../components/AdminCard';
 import AdminTabs from '../components/AdminTabs';
 import KycReminderUsersPanel from '../../../components/DatabaseInspector/KycReminderUsersPanel';
 import { useAdminRole, canAccessDomain, hasPermission, PERMISSIONS } from '../permissions/AdminRBACGate';
+import { AdminHub } from '../components/AdminTabs';
 
 const DOSSIER_TABS = [
   { id: 'profile', label: 'Profile' },
@@ -160,7 +161,7 @@ function ResponsibleGamingAdminPanel() {
   return (
     <div>
       <div style={{ marginBottom: '16px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>02 · Responsible Gaming Safeguards</h2>
+        <h2 className="admin-page-header__title">Responsible Gaming Safeguards</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           Active player-set limits, cooling-off, and self-exclusion from `responsible_gaming_limits`. Read-only — never bypasses enforcement.
         </p>
@@ -201,7 +202,44 @@ function ResponsibleGamingAdminPanel() {
   );
 }
 
-export default function CustomersDomainView({
+export default function CustomersDomainView(props) {
+  const sub = props.subModule || 'directory';
+  const playerIds = ['directory', 'kyc-reminders'];
+  const limitIds = ['limits', 'restrictions', 'responsible-gaming'];
+
+  if (playerIds.includes(sub)) {
+    return (
+      <AdminHub
+        initialTab={sub}
+        tabs={[
+          { id: 'directory', label: 'All players' },
+          { id: 'kyc-reminders', label: 'Needs KYC' },
+        ]}
+      >
+        {(tab) => <CustomersDomainPanels {...props} subModule={tab} />}
+      </AdminHub>
+    );
+  }
+
+  if (limitIds.includes(sub)) {
+    const initial = sub === 'limits' ? 'restrictions' : sub;
+    return (
+      <AdminHub
+        initialTab={initial}
+        tabs={[
+          { id: 'restrictions', label: 'Restricted' },
+          { id: 'responsible-gaming', label: 'Responsible play' },
+        ]}
+      >
+        {(tab) => <CustomersDomainPanels {...props} subModule={tab} />}
+      </AdminHub>
+    );
+  }
+
+  return <CustomersDomainPanels {...props} />;
+}
+
+function CustomersDomainPanels({
   subModule = 'directory',
   focusEntityId = null,
   focusEntityType = null,
@@ -571,11 +609,11 @@ export default function CustomersDomainView({
   }, [users, subModule, kycCases]);
 
   const titles = {
-    directory: ['02 · Customer Directory', 'Live customer directory from PostgreSQL. Filter by KYC and send completion reminders.', 'Customer Directory'],
-    'kyc-reminders': ['02 · KYC Reminders & Email', 'Users who have not completed KYC. Send Zoho/SMTP completion emails — delivery is logged in kyc_reminder_log.', 'Needs KYC'],
-    'kyc-queue': ['02 · KYC Verification Queue', 'Review submitted PAN / Aadhaar and approve or reject identity verification.', 'KYC Queue'],
-    restrictions: ['02 · Account Restrictions', 'Restricted / suspended accounts requiring review.', 'Restricted Accounts'],
-    'responsible-gaming': ['02 · Responsible Gaming Safeguards', 'High-risk or self-exclusion related accounts.', 'RG Watchlist'],
+    directory: ['Customer Directory', 'Live customer directory from PostgreSQL. Filter by KYC and send completion reminders.', 'Customer Directory'],
+    'kyc-reminders': ['KYC Reminders & Email', 'Users who have not completed KYC. Send Zoho/SMTP completion emails — delivery is logged in kyc_reminder_log.', 'Needs KYC'],
+    'kyc-queue': ['KYC Verification Queue', 'Review submitted PAN / Aadhaar and approve or reject identity verification.', 'KYC Queue'],
+    restrictions: ['Account Restrictions', 'Restricted / suspended accounts requiring review.', 'Restricted Accounts'],
+    'responsible-gaming': ['Responsible Gaming Safeguards', 'High-risk or self-exclusion related accounts.', 'RG Watchlist'],
   };
   const [heading, hint, tableTitle] = titles[subModule] || titles.directory;
   const showReminderUi = subModule === 'directory';
@@ -611,8 +649,8 @@ export default function CustomersDomainView({
   return (
     <div>
       <div style={{ marginBottom: '20px' }}>
-          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: 'var(--admin-text)' }}>
-            02 · KYC Reminders & Email
+          <h2 className="admin-page-header__title">
+            KYC reminders
           </h2>
           <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
             Users who have not completed KYC. Send Zoho/SMTP completion emails — delivery is logged in kyc_reminder_log.
@@ -801,7 +839,7 @@ export default function CustomersDomainView({
     <div>
       <div style={{ marginBottom: '16px' }}>
         <div className="admin-flex-between" style={{ flexWrap: 'wrap' }}>
-          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>{heading}</h2>
+          <h2 className="admin-page-header__title">{heading}</h2>
                 {subModule === 'kyc-queue' && (
                   <>
                     <button type="button" className="admin-btn admin-btn--secondary" onClick={() => loadKycQueue()}>
