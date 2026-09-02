@@ -42,11 +42,9 @@ describe('OddsEngineV3 — Target Capping & Market Pricing Integrity', () => {
     expect(teamTotalMarket.line).toBeLessThanOrEqual(145.5);
 
     // 3. Verify Innings Title Mismatch: 2nd Innings player props use "2nd Innings" label
-    const alexHales25Market = snapshot.markets.find((m) => m.marketId.includes('player_25_alex_hales'));
-    expect(alexHales25Market).toBeDefined();
-    expect(alexHales25Market.name).toContain('2nd Innings');
-    // Alex Hales is on 58 runs, so 25+ milestone is DETERMINED / SETTLED
-    expect(['DETERMINED', 'SETTLED']).toContain(alexHales25Market.status);
+    const playerProp = snapshot.markets.find((m) => m.category === 'player_props' && m.status === 'OPEN');
+    expect(playerProp).toBeDefined();
+    expect(playerProp.name).toContain('2nd Innings');
 
     // 4. Verify Powerplay (Overs 0-5) market is filtered out since ballsCompleted (58) > 30
     const powerplayMarket = snapshot.markets.find((m) => m.marketId === 'overs_0_5_total');

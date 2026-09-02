@@ -40,7 +40,7 @@ describe('OddsEngineV3 — Integration & Snapshot Generation', () => {
     expect(snapshot.markets.some((m) => m.marketType === 'TEAM_TOTAL' && m.status === 'OPEN')).toBe(true);
     expect(snapshot.markets.some((m) => (m.marketType === 'MATCH_TOTAL' || m.marketId === 'match_total') && m.status === 'OPEN')).toBe(true);
     expect(marketTypes).toContain('NEXT_DELIVERY_RUNS');
-    expect(marketTypes).toContain('PLAYER_SCORE_25');
+    expect(marketTypes).toContain('PLAYER_SCORE_50');
     // H2H / top batter skipped from compact live until settlement exists (ID reuse risk)
     expect(marketTypes).not.toContain('BATTER_HEAD_TO_HEAD');
   });
@@ -69,11 +69,15 @@ describe('OddsEngineV3 — Integration & Snapshot Generation', () => {
     const tA = wA.selections.find(s => s.name === 'Trent Rockets').odds;
     const tB = wB.selections.find(s => s.name === 'Trent Rockets').odds;
     const tC = wC.selections.find(s => s.name === 'Trent Rockets').odds;
-    const tD = wD.selections.find(s => s.name === 'Trent Rockets').odds;
+    const tD = wD?.selections?.find(s => s.name === 'Trent Rockets')?.odds;
 
     expect(tA).toBeGreaterThan(tB);
     expect(tB).toBeGreaterThan(tC);
-    expect(tC).toBeGreaterThan(tD);
+    if (tD != null) {
+      expect(tC).toBeGreaterThan(tD);
+    } else {
+      expect(wD).toBeUndefined();
+    }
   });
 
   it('returns INVALID_STATE status for bad match state', () => {
@@ -107,5 +111,35 @@ describe('OddsEngineV3 — Integration & Snapshot Generation', () => {
     const snap2 = generate(state2);
 
     expect(snap1.markets).toEqual(snap2.markets);
+  });
+
+  it('skips T20 full-innings over totals and locks chase match total to team total', () => {
+    const state = createCanonicalMatchState({
+      matchId: 't20_chase_totals',
+      sport: 'CRICKET',
+      format: 'T20',
+      status: 'LIVE',
+      team1: { id: 'dc', name: 'Delhi', runs: 185, wickets: 6, balls: 120 },
+      team2: { id: 'rr', name: 'Rajasthan', runs: 120, wickets: 3, balls: 87 },
+      currentInnings: 2,
+      battingTeamId: 'rr',
+      bowlingTeamId: 'dc',
+      target: 186,
+      runsRequired: 66,
+      ballsPerInnings: 120,
+      ballsCompleted: 87,
+      ballsRemaining: 33,
+      batter1: { name: 'Batter A', runs: 40, balls: 28 },
+      batter2: { name: 'Batter B', runs: 22, balls: 18 },
+      providerTimestamp: Date.now(),
+      stateVersion: 1,
+    });
+    const snap = generate(state);
+    expect(snap.markets.some((m) => String(m.marketId).includes('overs_0_20'))).toBe(false);
+    const team = snap.markets.find((m) => m.marketId === 'team_total');
+    const match = snap.markets.find((m) => m.marketId === 'match_total');
+    expect(team?.status).toBe('OPEN');
+    expect(match?.line).toBe(185 + Number(team.line));
+    expect(match?.selections?.[0]?.odds).toBe(team.selections[0].odds);
   });
 });

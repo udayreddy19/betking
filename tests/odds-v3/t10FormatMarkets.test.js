@@ -5,6 +5,10 @@ import { buildCanonicalFromMatch } from '../../lib/odds-v3/buildCanonicalFromMat
 import { nextBallSlot, resolveCricketFormat } from '../../lib/odds-v3/format/CricketFormatRules.mjs';
 
 describe('T10 live book', () => {
+  it('treats SRL as T20', () => {
+    expect(resolveCricketFormat({ league: 'Indian Premier League SRL' })).toBe('T20');
+  });
+
   it('detects T10 from the series name even when matchType is T20', () => {
     expect(resolveCricketFormat({
       matchType: 'T20',
@@ -61,7 +65,8 @@ describe('T10 live book', () => {
 
     expect(names.some((n) => /0 to 15/.test(n))).toBe(false);
     expect(names.some((n) => /0 to 20/.test(n))).toBe(false);
-    expect(names.some((n) => /0 to 10/.test(n))).toBe(true);
+    expect(names.some((n) => /0 to 10/.test(n))).toBe(false);
+    expect(snapshot.markets.some((m) => m.marketId === 'team_total')).toBe(true);
 
     const delivery = snapshot.markets.find((m) => m.marketType === 'NEXT_DELIVERY_RUNS');
     expect(delivery.name).toBe('Over 7 Ball 1 - Delivery Result');
@@ -70,6 +75,7 @@ describe('T10 live book', () => {
     expect(nextOver.name).toMatch(/Next Over \(7\)/);
 
     const winner = snapshot.markets.find((m) => m.marketType === 'MATCH_WINNER');
+    expect(winner).toBeTruthy();
     const chase = winner.selections.find((s) => s.name === 'FC Germania Gustavsburg');
     const defend = winner.selections.find((s) => s.name === 'Darmstadt Sultans');
     expect(chase.odds).toBeGreaterThan(defend.odds);
@@ -96,6 +102,7 @@ describe('T10 live book', () => {
       stateVersion: 1,
     });
     const snapshot = generate(state);
-    expect(snapshot.markets.some((m) => /0 to 20/.test(m.name))).toBe(true);
+    expect(snapshot.markets.some((m) => /0 to 15/.test(m.name))).toBe(true);
+    expect(snapshot.markets.some((m) => /0 to 20/.test(m.name))).toBe(false);
   });
 });
