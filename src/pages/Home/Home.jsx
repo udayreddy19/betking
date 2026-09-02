@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { FiChevronLeft, FiChevronRight } from '../../icons';
 import FilterChips from '../../components/FilterChips/FilterChips';
 import SportIcon from '../../components/SportIcon/SportIcon';
@@ -21,6 +21,27 @@ import './Home.css';
 
 const HOME_MATCH_LIMIT = 12;
 
+function prefersReducedMotion() {
+  return typeof window !== 'undefined'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function getPromoStride(track) {
+  const slide = track?.firstElementChild;
+  if (!slide) return 0;
+  const gap = Number.parseFloat(getComputedStyle(track).gap || '0') || 0;
+  return slide.getBoundingClientRect().width + gap;
+}
+
+function getPromoIndexFromScroll(track) {
+  const stride = getPromoStride(track);
+  if (!stride) return 0;
+  return Math.max(
+    0,
+    Math.min(homePromoSlides.length - 1, Math.round(track.scrollLeft / stride)),
+  );
+}
+
 function filterByLeague(matchList, leagueId) {
   if (!leagueId) return matchList;
   const meta = getLeagueMeta(leagueId);
@@ -37,6 +58,12 @@ export default function Home() {
   const [promoIndex, setPromoIndex] = useState(0);
   const matchScrollRef = useRef(null);
   const watchlistScrollRef = useRef(null);
+  const promoScrollRef = useRef(null);
+  const promoIndexRef = useRef(0);
+  const promoAutoplayPaused = useRef(false);
+  const promoAutoplayResumeId = useRef(0);
+  const promoPointerStartX = useRef(0);
+  const promoDidSwipe = useRef(false);
   const { ids: watchlistIds, count: watchlistCount } = useMatchWatchlist();
 
   const liveCount = useMemo(
@@ -114,11 +141,61 @@ export default function Home() {
     });
   }, [matches, activeSport, activeLeague]);
 
+  const scrollPromoTo = (index, behavior = 'smooth') => {
+    const track = promoScrollRef.current;
+    if (!track) return;
+    const stride = getPromoStride(track);
+    if (!stride) return;
+    const clamped = ((index % homePromoSlides.length) + homePromoSlides.length) % homePromoSlides.length;
+    const motion = prefersReducedMotion() ? 'auto' : behavior;
+    track.scrollTo({ left: clamped * stride, behavior: motion });
+    promoIndexRef.current = clamped;
+    setPromoIndex(clamped);
+  };
+
+  const pausePromoAutoplay = () => {
+    promoAutoplayPaused.current = true;
+    window.clearTimeout(promoAutoplayResumeId.current);
+    promoAutoplayResumeId.current = window.setTimeout(() => {
+      promoAutoplayPaused.current = false;
+    }, 8000);
+  };
+
+  useEffect(() => {
+    const track = promoScrollRef.current;
+    if (!track) return undefined;
+
+    const syncIndexFromScroll = () => {
+      const next = getPromoIndexFromScroll(track);
+      promoIndexRef.current = next;
+      setPromoIndex((prev) => (prev === next ? prev : next));
+    };
+
+    const snapToCurrent = () => {
+      const stride = getPromoStride(track);
+      if (!stride) return;
+      track.scrollTo({ left: promoIndexRef.current * stride, behavior: 'auto' });
+    };
+
+    track.addEventListener('scroll', syncIndexFromScroll, { passive: true });
+    window.addEventListener('resize', snapToCurrent);
+    return () => {
+      track.removeEventListener('scroll', syncIndexFromScroll);
+      window.removeEventListener('resize', snapToCurrent);
+    };
+  }, []);
+
   useEffect(() => {
     const timer = setInterval(() => {
-      setPromoIndex((i) => (i + 1) % homePromoSlides.length);
+      if (promoAutoplayPaused.current || document.hidden || prefersReducedMotion()) return;
+      const track = promoScrollRef.current;
+      const current = track ? getPromoIndexFromScroll(track) : promoIndexRef.current;
+      scrollPromoTo(current + 1);
     }, 5000);
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+      window.clearTimeout(promoAutoplayResumeId.current);
+    };
   }, []);
 
   const scroll = (ref, direction) => {
@@ -136,15 +213,22 @@ export default function Home() {
     return (matches || []).filter((m) => idSet.has(String(m.id)));
   }, [matches, watchlistIds]);
 
-  const promoRaw = homePromoSlides[promoIndex];
-  const promo = promoRaw.id === 'srl'
-    ? {
-      ...promoRaw,
-      subtitle: isSrlSeasonLive()
-        ? 'NOW LIVE — SIMULATED CRICKET'
-        : `BEGINS ${SRL_LAUNCH_LABEL.toUpperCase()} — SIMULATED CRICKET`,
-    }
-    : promoRaw;
+  const resolvePromoSlide = (slide) => (
+    slide.id === 'srl'
+      ? {
+        ...slide,
+        subtitle: isSrlSeasonLive()
+          ? 'NOW LIVE — SIMULATED CRICKET'
+          : `BEGINS ${SRL_LAUNCH_LABEL.toUpperCase()} — SIMULATED CRICKET`,
+      }
+      : slide
+  );
+
+  const promoSlidePath = (id) => {
+    if (id === 'srl') return SRL_PAGE_PATH;
+    if (id === 'sports') return '/live-betting';
+    return '/promotions';
+  };
 
   return (
     <div className="home-page container" id="home-page">
@@ -154,33 +238,78 @@ export default function Home() {
         retrying={isScoresLoading}
       />
 
-      <button
-        type="button"
-        className="home-promo-banner"
-        style={{ background: promo.gradient }}
-        onClick={() => {
-          if (promo.id === 'srl') navigate(SRL_PAGE_PATH);
-          else if (promo.id === 'sports') navigate('/live-betting');
-          else navigate('/promotions');
+      <div
+        className="home-promo-carousel"
+        role="region"
+        aria-roledescription="carousel"
+        aria-label="Featured promotions"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+          e.preventDefault();
+          pausePromoAutoplay();
+          scrollPromoTo(promoIndex + (e.key === 'ArrowRight' ? 1 : -1));
         }}
       >
-        <div className="home-promo-banner__coin">
-          {promo.emoji === '🎁' ? <AnimatedMotionGiftIcon size={32} /> : <span>{promo.emoji}</span>}
+        <div
+          className="home-promo-track"
+          ref={promoScrollRef}
+          onPointerDown={(e) => {
+            promoPointerStartX.current = e.clientX;
+            promoDidSwipe.current = false;
+            pausePromoAutoplay();
+          }}
+          onPointerMove={(e) => {
+            if (Math.abs(e.clientX - promoPointerStartX.current) > 10) {
+              promoDidSwipe.current = true;
+            }
+          }}
+        >
+          {homePromoSlides.map((raw, i) => {
+            const slide = resolvePromoSlide(raw);
+            return (
+              <Link
+                key={slide.id}
+                to={promoSlidePath(slide.id)}
+                className="home-promo-banner"
+                style={{ background: slide.gradient, '--promo-accent': slide.accent }}
+                aria-label={`${slide.title}. ${slide.subtitle}`}
+                aria-hidden={i === promoIndex ? undefined : 'true'}
+                tabIndex={i === promoIndex ? 0 : -1}
+                draggable={false}
+                onClick={(e) => {
+                  if (promoDidSwipe.current) e.preventDefault();
+                }}
+              >
+                <div className="home-promo-banner__coin">
+                  {slide.emoji === '🎁'
+                    ? <AnimatedMotionGiftIcon size={32} paused={i !== promoIndex} />
+                    : <span>{slide.emoji}</span>}
+                </div>
+                <div className="home-promo-banner__text">
+                  <span className="home-promo-banner__title">{slide.title}</span>
+                  <span className="home-promo-banner__subtitle">{slide.subtitle}</span>
+                </div>
+              </Link>
+            );
+          })}
         </div>
-        <div className="home-promo-banner__text">
-          <span className="home-promo-banner__title">{promo.title}</span>
-          <span className="home-promo-banner__subtitle">{promo.subtitle}</span>
-        </div>
-        <div className="home-promo-banner__dots">
+        <div className="home-promo-banner__dots" role="group" aria-label="Promotion slides">
           {homePromoSlides.map((s, i) => (
-            <span
+            <button
               key={s.id}
+              type="button"
               className={`home-promo-dot ${i === promoIndex ? 'active' : ''}`}
-              onClick={(e) => { e.stopPropagation(); setPromoIndex(i); }}
+              aria-label={`Show ${s.title}`}
+              aria-pressed={i === promoIndex}
+              onClick={() => {
+                pausePromoAutoplay();
+                scrollPromoTo(i);
+              }}
             />
           ))}
         </div>
-      </button>
+      </div>
 
       <HomeCategoryGrid liveCount={liveCount} />
 
