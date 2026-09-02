@@ -167,8 +167,9 @@ function TargetedDepositFreeBetPanel() {
     const pct = Number(form.matchPercent) || 0;
     const max = Number(form.maxFreeBet) || 0;
     const example = Number(Math.min((pct / 100) * min, max).toFixed(2));
-    return { min, pct, max, example };
-  }, [form.minDeposit, form.matchPercent, form.maxFreeBet]);
+    const pack = form.splitEnabled ? packPreview(form.splitParts, form.splitEach) : null;
+    return { min, pct, max, example, pack };
+  }, [form.minDeposit, form.matchPercent, form.maxFreeBet, form.splitEnabled, form.splitParts, form.splitEach]);
 
   const loadCampaigns = useCallback(() => {
     return adminApiClient.get('/growth/deposit-freebet/targeted')
@@ -705,16 +706,21 @@ function TargetedDepositFreeBetPanel() {
               </div>
               <div className="tdfb-preview__arrow" aria-hidden>→</div>
               <div>
-                <span>Free bet</span>
-                <strong>{money(preview.example)}</strong>
+                <span>{preview.pack ? 'Free bet pack' : 'Free bet'}</span>
+                <strong>{preview.pack ? preview.pack.label : money(preview.example)}</strong>
               </div>
             </div>
             <ul className="tdfb-preview__meta">
               <li><span>Match</span><strong>{preview.pct}%</strong></li>
-              <li><span>Cap</span><strong>{money(preview.max)}</strong></li>
+              <li><span>Cap</span><strong>{preview.pack ? preview.pack.totalLabel : money(preview.max)}</strong></li>
               <li><span>Expiry</span><strong>{form.freebetExpiryDays || '—'} days</strong></li>
               <li><span>Players</span><strong>{picked.length}</strong></li>
             </ul>
+            {preview.pack && (
+              <p className="tdfb-preview__from" style={{ marginTop: 0 }}>
+                Email shows <strong>{preview.pack.label}</strong> (total {preview.pack.totalLabel}), not one stake.
+              </p>
+            )}
             <p className="tdfb-preview__from">
               From <code>promos@oddsyra.com</code> · credit on CAPTURED deposit
             </p>

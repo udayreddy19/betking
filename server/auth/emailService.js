@@ -839,6 +839,8 @@ export async function sendTargetedDepositOfferEmail({
   customBodyHtml,
   expiryDate,
   validHours = 48,
+  splitParts,
+  splitEach,
 } = {}) {
   if (!email) {
     return { success: false, error: 'missing_email' };
@@ -847,6 +849,10 @@ export async function sendTargetedDepositOfferEmail({
   const matchPct = Number(matchPercentage ?? freeBetPercentage);
   const minAmt = Number(minDeposit ?? minimumDeposit ?? 500);
   const maxAmt = Number(maxBonus ?? maximumFreeBet ?? 5000);
+  const parts = Math.floor(Number(splitParts) || 1);
+  const eachAmt = Number(splitEach);
+  const isPack = parts > 1 && Number.isFinite(eachAmt) && eachAmt > 0;
+  const packTotal = isPack ? Number((parts * eachAmt).toFixed(2)) : maxAmt;
   let hours = Number(validHours);
   if (expiryDate) {
     const ms = new Date(expiryDate).getTime() - Date.now();
@@ -858,6 +864,16 @@ export async function sendTargetedDepositOfferEmail({
     ? `Exclusive ${matchPct}% Deposit Match Offer`
     : 'Exclusive deposit offer from OddsYra');
   const ctaHref = `${FRONTEND_URL}/wallet`;
+
+  const bonusLabel = isPack
+    ? `${parts} × ₹${eachAmt.toLocaleString('en-IN')}`
+    : `₹${maxAmt.toLocaleString('en-IN')}`;
+  const bonusSub = isPack
+    ? `<tr>
+            <td style="font-size:12px;color:#5c6570;padding-top:4px;">Pack total:</td>
+            <td align="right" style="font-size:12px;font-weight:600;padding-top:4px;">₹${packTotal.toLocaleString('en-IN')}</td>
+          </tr>`
+    : '';
 
   const codeRow = promoCode ? `
           <tr>
@@ -878,9 +894,10 @@ export async function sendTargetedDepositOfferEmail({
             <td align="right" style="font-size:13px;font-weight:600;padding-top:6px;">₹${minAmt.toLocaleString('en-IN')}</td>
           </tr>
           <tr>
-            <td style="font-size:13px;color:#5c6570;padding-top:6px;">Max Bonus:</td>
-            <td align="right" style="font-size:13px;font-weight:600;padding-top:6px;">₹${maxAmt.toLocaleString('en-IN')}</td>
+            <td style="font-size:13px;color:#5c6570;padding-top:6px;">${isPack ? 'Free bet pack:' : 'Max Bonus:'}</td>
+            <td align="right" style="font-size:13px;font-weight:700;padding-top:6px;color:#1f8a4c;">${bonusLabel}</td>
           </tr>
+          ${bonusSub}
           ${codeRow}
           <tr>
             <td style="font-size:13px;color:#5c6570;padding-top:6px;">Offer Expires In:</td>
@@ -892,16 +909,24 @@ export async function sendTargetedDepositOfferEmail({
     ${customBodyHtml ? `<tr><td class="oy-td" style="padding:12px 24px 0;font-size:14px;line-height:1.55;color:#14181f;">${customBodyHtml}</td></tr>` : ''}
   `;
 
+  const introHtml = isPack
+    ? (Number.isFinite(matchPct)
+      ? `Boost your balance with an exclusive ${matchPct}% match — credited as <strong>${parts} free bets of ₹${eachAmt.toLocaleString('en-IN')}</strong> each after your next qualifying deposit.`
+      : `You have an exclusive deposit offer — credited as <strong>${parts} free bets of ₹${eachAmt.toLocaleString('en-IN')}</strong> each.`)
+    : (Number.isFinite(matchPct)
+      ? `Boost your balance with an exclusive ${matchPct}% match on your next qualifying deposit.`
+      : 'You have an exclusive deposit offer waiting on OddsYra.');
+
   const html = renderTransactionalEmail({
     heading: title,
     greetingName: greeting,
-    introHtml: Number.isFinite(matchPct)
-      ? `Boost your balance with an exclusive ${matchPct}% match on your next qualifying deposit.`
-      : 'You have an exclusive deposit offer waiting on OddsYra.',
+    introHtml,
     extraHtml: detailsHtml,
     ctaLabel: 'Deposit & Claim Bonus',
     ctaHref,
-    noteHtml: 'Promotional terms apply. The free bet is credited after a captured qualifying deposit.',
+    noteHtml: isPack
+      ? `Promotional terms apply. After a captured qualifying deposit you receive ${parts} separate free bets of ₹${eachAmt.toLocaleString('en-IN')} each (total ₹${packTotal.toLocaleString('en-IN')}).`
+      : 'Promotional terms apply. The free bet is credited after a captured qualifying deposit.',
     isMarketing: true,
   });
 

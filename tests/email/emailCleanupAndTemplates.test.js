@@ -243,5 +243,25 @@ describe('ODDSYRA — Email Event Cleanup & Unified Template Implementation', ()
     expect(result.html).toContain('50%');
     expect(result.html).toContain('TDFB_TEST');
     expect(result.html).toContain('IPL Reload');
+    expect(result.html).toContain('Max Bonus');
+  });
+
+  it('shows pack format in targeted offer email when split parts are set', async () => {
+    const result = await sendTargetedDepositOfferEmail({
+      email: testEmail,
+      name: 'Uday',
+      campaignName: 'Pack Offer',
+      promoCode: 'PACK10',
+      minimumDeposit: 10000,
+      freeBetPercentage: 100,
+      maximumFreeBet: 10000,
+      splitParts: 10,
+      splitEach: 1000,
+      subject: 'Pack offer',
+    });
+    expect(result.success).toBe(true);
+    expect(result.html).toContain('10 × ₹1,000');
+    expect(result.html).toContain('Free bet pack');
+    expect(result.html).toContain('10 free bets of ₹1,000');
   });
 });
