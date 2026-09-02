@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { generate as generateV3 } from '../../lib/odds-v3/OddsEngineV3.mjs';
 import { createCanonicalMatchState } from '../../lib/odds-v3/models/CanonicalMatchState.mjs';
 import {
+  alignChaseTotalMarkets,
   alignWinnerMarkets,
   assertBettableQuote,
   oddsQuoteChanged,
@@ -42,6 +43,41 @@ describe('Book integrity', () => {
     expect(so.selections[0].odds).toBe(8.2);
     expect(so.selections[1].odds).toBe(1.12);
     expect(so.selections[0].selectionId).toBe('so1');
+  });
+
+  it('locks chase match-total line and prices onto batting team total', () => {
+    const markets = alignChaseTotalMarkets([
+      {
+        marketId: 'team_total',
+        status: 'OPEN',
+        line: 154.5,
+        selections: [
+          { selectionId: 'sel_over_154.5', name: 'Over 154.5', odds: 1.77, probability: 0.56 },
+          { selectionId: 'sel_under_154.5', name: 'Under 154.5', odds: 2.04, probability: 0.44 },
+        ],
+      },
+      {
+        marketId: 'match_total',
+        status: 'OPEN',
+        line: 339.5,
+        selections: [
+          { selectionId: 'sel_over_339.5', name: 'Over 339.5', odds: 1.86, probability: 0.52 },
+          { selectionId: 'sel_under_339.5', name: 'Under 339.5', odds: 1.94, probability: 0.48 },
+        ],
+      },
+    ], {
+      currentInnings: 2,
+      battingTeamId: 'rr',
+      bowlingTeamId: 'dc',
+      team1: { id: 'rr', runs: 120 },
+      team2: { id: 'dc', runs: 185 },
+    });
+    const matchTotal = markets.find((m) => m.marketId === 'match_total');
+    expect(matchTotal.line).toBe(339.5);
+    expect(matchTotal.chaseLockedTo).toBe('team_total');
+    expect(matchTotal.selections[0].odds).toBe(1.77);
+    expect(matchTotal.selections[1].odds).toBe(2.04);
+    expect(matchTotal.selections[0].name).toBe('Over 339.5');
   });
 
   it('suspends markets that print at the 1.01 floor', () => {
