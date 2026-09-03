@@ -53,6 +53,7 @@ export default function FinancialModals({ modalType, onClose }) {
   const [lastSubmittedDetails, setLastSubmittedDetails] = useState('');
   const [acceptBonusForfeit, setAcceptBonusForfeit] = useState(false);
   const [forfeitedBonusAmount, setForfeitedBonusAmount] = useState(0);
+  const [forfeitedBonusWinningsAmount, setForfeitedBonusWinningsAmount] = useState(0);
 
   const loadPendingWithdrawals = useCallback(async () => {
     if (DEMO_MODE) return;
@@ -104,8 +105,12 @@ export default function FinancialModals({ modalType, onClose }) {
           : `Only ${formatInr(wallet.withdrawable)} can be withdrawn.`,
       );
     }
-    if (wallet.bonus > 0 && !acceptBonusForfeit) {
-      return notify(`Withdrawing winnings will set your remaining bonus of ${formatInr(wallet.bonus)} to ₹0. Tick the confirmation below to continue.`);
+    const hasBonusFundsToForfeit = (wallet.bonus > 0) || (wallet.lockedBonusWinnings > 0);
+    if (hasBonusFundsToForfeit && !acceptBonusForfeit) {
+      const items = [];
+      if (wallet.bonus > 0) items.push(`remaining bonus of ${formatInr(wallet.bonus)}`);
+      if (wallet.lockedBonusWinnings > 0) items.push(`bonus winnings of ${formatInr(wallet.lockedBonusWinnings)}`);
+      return notify(`Withdrawing now will forfeit your ${items.join(' and ')} to ₹0. Tick the confirmation below to continue.`);
     }
 
     let detailsString = '';
@@ -156,13 +161,14 @@ export default function FinancialModals({ modalType, onClose }) {
     setWithdrawStatus('processing');
     setLastSubmittedDetails(detailsString);
 
-    const { success, withdrawalId, error, forfeitedBonus } = await withdrawFunds(amt, methodLabel, bankDetailsPayload);
+    const { success, withdrawalId, error, forfeitedBonus, forfeitedLockedWinnings } = await withdrawFunds(amt, methodLabel, bankDetailsPayload);
     if (!success) {
       setWithdrawStatus(null);
       notify(error || 'Withdrawal failed. Please check your available balance.');
       return;
     }
     setForfeitedBonusAmount(Number(forfeitedBonus || (acceptBonusForfeit ? wallet.bonus : 0)));
+    setForfeitedBonusWinningsAmount(Number(forfeitedLockedWinnings || (acceptBonusForfeit ? wallet.lockedBonusWinnings : 0)));
     setWithdrawStatus('success');
     setPendingWithdrawals(prev => [
       {
@@ -239,9 +245,14 @@ export default function FinancialModals({ modalType, onClose }) {
                 <p className="fin-muted" style={{ fontSize: '0.85rem', marginTop: '6px' }}>
                   ₹{withdrawAmount} requested via <strong>{withdrawMethod === 'BANK_TRANSFER' ? 'Direct Bank Transfer' : withdrawMethod === 'PAYTM' ? 'Paytm Wallet' : 'UPI'}</strong>.
                 </p>
-                {forfeitedBonusAmount > 0 && (
+                {(forfeitedBonusAmount > 0 || forfeitedBonusWinningsAmount > 0) && (
                   <div className="fin-bonus-forfeit-warn" style={{ marginTop: '12px', textAlign: 'left' }}>
-                    Remaining bonus of <strong>{formatInr(forfeitedBonusAmount)}</strong> has been set to ₹0 because you withdrew winnings.
+                    {forfeitedBonusAmount > 0 && (
+                      <div>Remaining bonus of <strong>{formatInr(forfeitedBonusAmount)}</strong> was forfeited to ₹0.</div>
+                    )}
+                    {forfeitedBonusWinningsAmount > 0 && (
+                      <div>All winnings won from bonus (<strong>{formatInr(forfeitedBonusWinningsAmount)}</strong>) were forfeited to ₹0.</div>
+                    )}
                   </div>
                 )}
                 <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
@@ -296,12 +307,16 @@ export default function FinancialModals({ modalType, onClose }) {
                       Includes {formatInr(wallet.freebets)} freebet (not withdrawable).
                     </p>
                   )}
-                  {wallet.bonus > 0 && (
+                  {(wallet.bonus > 0 || wallet.lockedBonusWinnings > 0) && (
                     <div className="fin-bonus-forfeit-warn">
-                      <strong>Bonus in wallet: {formatInr(wallet.bonus)}</strong>
+                      <strong>
+                        Active Bonus In Wallet: {wallet.bonus > 0 ? `Bonus ${formatInr(wallet.bonus)}` : ''}
+                        {wallet.bonus > 0 && wallet.lockedBonusWinnings > 0 ? ' + ' : ''}
+                        {wallet.lockedBonusWinnings > 0 ? `Bonus Winnings ${formatInr(wallet.lockedBonusWinnings)}` : ''}
+                      </strong>
                       <p>
-                        If you withdraw winnings now, this remaining bonus will be set to <strong>₹0</strong> and cannot be used again.
-                        Finish 5× playthrough at {BONUS_MIN_BET_ODDS}+ odds first if you want to keep the bonus.
+                        <strong>WARNING:</strong> While you have an active bonus, requesting a withdrawal will immediately and permanently forfeit your entire bonus balance AND all winnings won from that bonus to <strong>₹0</strong>.
+                        Complete the 5x rollover requirement (minimum odds 1.75) first if you want to keep and withdraw bonus profits.
                       </p>
                       <label className="fin-bonus-forfeit-check">
                         <input
@@ -309,7 +324,7 @@ export default function FinancialModals({ modalType, onClose }) {
                           checked={acceptBonusForfeit}
                           onChange={(e) => setAcceptBonusForfeit(e.target.checked)}
                         />
-                        I understand my remaining bonus of {formatInr(wallet.bonus)} will become ₹0
+                        I understand that my remaining bonus {wallet.bonus > 0 ? `(${formatInr(wallet.bonus)})` : ''} and all bonus winnings {wallet.lockedBonusWinnings > 0 ? `(${formatInr(wallet.lockedBonusWinnings)})` : ''} will be permanently forfeited to ₹0.
                       </label>
                     </div>
                   )}

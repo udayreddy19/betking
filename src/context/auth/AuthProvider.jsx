@@ -1078,19 +1078,28 @@ export function AuthProvider({ children }) {
           return { success: false, maxWithdrawable: 0, status: 'FAILED', error: message };
         }
         await refreshWallet();
-        const forfeited = Number(data.forfeitedBonus || 0);
+        const forfeitedBonus = Number(data.forfeitedBonus || 0);
+        const forfeitedLockedWinnings = Number(data.forfeitedLockedWinnings || 0);
+        let forfeitMsg = '';
+        if (forfeitedBonus > 0 && forfeitedLockedWinnings > 0) {
+          forfeitMsg = ` Remaining bonus (${formatInr(forfeitedBonus)}) and bonus winnings (${formatInr(forfeitedLockedWinnings)}) were forfeited to ₹0.`;
+        } else if (forfeitedBonus > 0) {
+          forfeitMsg = ` Remaining bonus (${formatInr(forfeitedBonus)}) was forfeited to ₹0.`;
+        } else if (forfeitedLockedWinnings > 0) {
+          forfeitMsg = ` Bonus winnings (${formatInr(forfeitedLockedWinnings)}) were forfeited to ₹0.`;
+        }
+
         showToast(
-          forfeited > 0
-            ? `Withdrawal of ${formatInr(amt)} requested. Remaining bonus ${formatInr(forfeited)} was forfeited.`
-            : `Withdrawal of ${formatInr(amt)} requested. Awaiting finance approval.`,
-          forfeited > 0 ? 'warning' : 'info',
+          `Withdrawal of ${formatInr(amt)} requested.${forfeitMsg} Awaiting finance approval.`,
+          (forfeitedBonus > 0 || forfeitedLockedWinnings > 0) ? 'warning' : 'info',
         );
         return {
           success: true,
           maxWithdrawable: Number(data.availableBalance || 0),
           status: data.status || 'PENDING_REVIEW',
           withdrawalId: data.withdrawalId,
-          forfeitedBonus: forfeited,
+          forfeitedBonus,
+          forfeitedLockedWinnings,
         };
       } catch {
         showToast('Unable to reach withdrawals service.', 'error');

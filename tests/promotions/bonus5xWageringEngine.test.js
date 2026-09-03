@@ -22,10 +22,17 @@ describe('ODDSYRA — BONUS 5X WAGERING & ROLLOVER ENGINE SUITE', () => {
     promoCode = `PROMO_5X_SPEC_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     await query(`INSERT INTO users (user_id, email, password_hash) VALUES ($1, $2, 'hash') ON CONFLICT (user_id) DO NOTHING;`, [testUserId, `${testUserId}@example.com`]);
     await query(`INSERT INTO user_profiles (user_id, account_status, kyc_status) VALUES ($1, 'ACTIVE', 'VERIFIED') ON CONFLICT (user_id) DO NOTHING;`, [testUserId]);
+    await query(`INSERT INTO kyc_cases (case_id, user_id, status, pan_number, aadhaar_number, updated_at)
+                 VALUES ($1, $2, 'VERIFIED', 'ABCDE1234F', '123456789012', NOW())
+                 ON CONFLICT DO NOTHING;`, [`case_${testUserId}`, testUserId]);
     await query(`INSERT INTO wallets (wallet_id, user_id, balance, bonus_balance, locked_bonus_winnings, currency)
                  VALUES ($1, $2, 5000.00, 0.00, 0.00, 'INR')
                  ON CONFLICT (wallet_id) DO UPDATE SET balance = 5000.00, bonus_balance = 0.00, locked_bonus_winnings = 0.00;`,
                  [`wal_${testUserId}`, testUserId]);
+    await query(`INSERT INTO deposits (id, deposit_id, user_id, order_id, amount, refunded_amount, status, created_at)
+                 VALUES ($1, $1, $2, $1, 5000.00, 0.00, 'COMPLETED', NOW() - INTERVAL '3 hours')
+                 ON CONFLICT DO NOTHING;`,
+                 [`dep_${testUserId}_setup`, testUserId]);
     await query(`INSERT INTO transactions (transaction_id, user_id, type, amount, status)
                  VALUES ($1, $2, 'DEPOSIT', 2500.00, 'SUCCESS')`,
                  [`tx_dep_${testUserId}_${Date.now()}`, testUserId]);
@@ -273,5 +280,64 @@ describe('ODDSYRA — BONUS 5X WAGERING & ROLLOVER ENGINE SUITE', () => {
     const recon = await financialReconciliationEngine.reconcileBonusWagering({ userId: testUserId });
     expect(recon.reconciled).toBe(true);
     expect(recon.issueCount).toBe(0);
+  });
+
+  it('10. Withdrawal with Active Bonus: Bonus principal and all bonus winnings are completely forfeited to 0', async () => {
+    const { withdrawalEngine } = await import('../../lib/withdrawalEngine.mjs');
+
+    const claim = await claimPromotionBonus({ userId: testUserId, promoCode, depositAmount: 2500.00 });
+    const betId = `bet_win_forfeit_${Date.now()}`;
+    await insertTestBet({ betId, userId: testUserId, stake: 2500.00, odds: 1.75, payout: 4375.00, status: 'WON' });
+
+    // Settle winnings into locked_bonus_winnings
+    await query(`UPDATE wallets SET bonus_balance = 2500.00, locked_bonus_winnings = 1875.00 WHERE user_id = $1`, [testUserId]);
+    await withTransaction((client) => recordBonusWageringInTx(client, {
+      userId: testUserId,
+      betId,
+      stake: 2500.00,
+      odds: 1.75,
+      outcome: 'WON',
+      profit: 1875.00,
+    }));
+
+    // Check balances before withdrawal
+    const beforeWallet = await query('SELECT balance, bonus_balance, locked_bonus_winnings FROM wallets WHERE user_id = $1', [testUserId]);
+    expect(Number(beforeWallet.rows[0].balance)).toBe(5000.00);
+    expect(Number(beforeWallet.rows[0].bonus_balance)).toBe(2500.00);
+    expect(Number(beforeWallet.rows[0].locked_bonus_winnings)).toBe(1875.00);
+
+    // User requests a withdrawal of ₹1,000 cash
+    const wdRes = await withdrawalEngine.requestWithdrawal({
+      userId: testUserId,
+      amount: 1000.00,
+      bankDetails: { method: 'UPI', upiId: 'user@okhdfcbank' },
+    });
+
+    expect(wdRes.amount).toBe(1000.00);
+    expect(wdRes.forfeitedBonus).toBe(2500.00);
+    expect(wdRes.forfeitedLockedWinnings).toBe(1875.00);
+
+    // Verify wallet after withdrawal:
+    // Bonus balance must be 0.00!
+    // Locked bonus winnings must be 0.00!
+    // Cash balance must be 4,000.00 (5,000 - 1,000)!
+    const afterWallet = await query('SELECT balance, bonus_balance, locked_bonus_winnings, reserved_balance FROM wallets WHERE user_id = $1', [testUserId]);
+    expect(Number(afterWallet.rows[0].bonus_balance)).toBe(0.00);
+    expect(Number(afterWallet.rows[0].locked_bonus_winnings)).toBe(0.00);
+    expect(Number(afterWallet.rows[0].balance)).toBe(4000.00);
+    expect(Number(afterWallet.rows[0].reserved_balance)).toBe(1000.00);
+
+    // Verify user_bonuses is FORFEITED and locked_winnings is 0.00
+    const bRes = await query('SELECT status, locked_winnings FROM user_bonuses WHERE id = $1', [claim.bonusId]);
+    expect(bRes.rows[0].status).toBe('FORFEITED');
+    expect(Number(bRes.rows[0].locked_winnings)).toBe(0.00);
+
+    // Verify audit transactions exist for both forfeitures
+    const forfeitTx = await query("SELECT type, amount FROM transactions WHERE user_id = $1 AND type IN ('BONUS_FORFEIT', 'BONUS_WINNINGS_FORFEIT') ORDER BY type ASC", [testUserId]);
+    expect(forfeitTx.rows.length).toBe(2);
+    expect(forfeitTx.rows[0].type).toBe('BONUS_FORFEIT');
+    expect(Number(forfeitTx.rows[0].amount)).toBe(2500.00);
+    expect(forfeitTx.rows[1].type).toBe('BONUS_WINNINGS_FORFEIT');
+    expect(Number(forfeitTx.rows[1].amount)).toBe(1875.00);
   });
 });
