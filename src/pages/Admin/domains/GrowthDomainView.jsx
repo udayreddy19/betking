@@ -2417,6 +2417,14 @@ function ReferralsAdminPanel() {
   const [q, setQ] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
+  const [settings, setSettings] = useState({
+    rewardKind: 'freebet',
+    referredReward: 500,
+    referrerReward: 500,
+    enabled: true,
+  });
+  const [settingsDraft, setSettingsDraft] = useState(null);
+  const [savingSettings, setSavingSettings] = useState(false);
   const { showToast } = useAdminToast();
 
   const load = useCallback(() => {
@@ -2428,6 +2436,9 @@ function ReferralsAdminPanel() {
       .then((data) => {
         setRows(data.referrals || []);
         setMetrics(data.metrics || data.stats || {});
+        if (data.config) {
+          setSettings((prev) => ({ ...prev, ...data.config }));
+        }
         setError(data.error || null);
       })
       .catch((err) => {
@@ -2446,8 +2457,44 @@ function ReferralsAdminPanel() {
       .catch(() => setAnalytics(null));
   }, [from, to]);
 
+  const loadSettings = useCallback(() => {
+    return adminApiClient.get('/growth/referrals/settings')
+      .then((data) => {
+        if (data?.config) {
+          setSettings(data.config);
+          setSettingsDraft(null);
+        }
+      })
+      .catch(() => null);
+  }, []);
+
   useEffect(() => { load(); }, [load]);
   useEffect(() => { loadAnalytics(); }, [loadAnalytics]);
+  useEffect(() => { loadSettings(); }, [loadSettings]);
+
+  const editSettings = settingsDraft || settings;
+
+  const saveSettings = () => {
+    setSavingSettings(true);
+    adminApiClient.put('/growth/referrals/settings', {
+      rewardKind: editSettings.rewardKind,
+      referredReward: Number(editSettings.referredReward),
+      referrerReward: Number(editSettings.referrerReward),
+      enabled: editSettings.enabled !== false,
+    })
+      .then((res) => {
+        const next = res.config || editSettings;
+        setSettings(next);
+        setSettingsDraft(null);
+        showToast(
+          `Referral reward → ${next.rewardKind === 'bonus' ? 'Bonus' : 'Free Bet'} `
+          + `(friend ₹${next.referredReward}, you ₹${next.referrerReward})`,
+          'success',
+        );
+      })
+      .catch((err) => showToast(err.message || 'Failed to save settings', 'error'))
+      .finally(() => setSavingSettings(false));
+  };
 
   const retry = (id) => {
     adminApiClient.post(`/growth/referrals/${encodeURIComponent(id)}/retry-reward`, { reason: 'Admin retry' })
@@ -2503,13 +2550,78 @@ function ReferralsAdminPanel() {
   const kpiQualified = funnel.qualified ?? metrics.qualified ?? metrics.qualified_count ?? rowCounts.qualified;
   const kpiRewarded = funnel.rewarded ?? metrics.rewarded ?? metrics.rewarded_count ?? rowCounts.rewarded;
   const kpiRewardValue = funnel.reward_value ?? metrics.reward_value ?? metrics.rewardValue;
+  const rewardLabel = editSettings.rewardKind === 'bonus' ? 'Bonus' : 'Free Bet';
 
   return (
     <div>
       <h2 className="admin-page-header__title">Referral program</h2>
       <p style={{ margin: '0 0 16px', color: 'var(--admin-text-muted)', fontSize: '0.85rem' }}>
-        User-to-user referrals. Free bet rewards grant on signup attribution (not deposit-locked). Signup promos cannot combine with referral.
+        User-to-user referrals. Rewards grant on signup attribution (not deposit-locked).
+        Signup promos cannot combine with referral. Current payout: <strong>{rewardLabel}</strong>.
       </p>
+
+      <AdminCard title="Reward settings" accent="#8b5cf6" style={{ marginBottom: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, alignItems: 'end' }}>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.78rem', color: 'var(--admin-text-muted)' }}>
+            Reward type
+            <select
+              value={editSettings.rewardKind || 'freebet'}
+              onChange={(e) => setSettingsDraft({ ...editSettings, rewardKind: e.target.value })}
+              style={{ padding: '8px 10px', borderRadius: 6 }}
+            >
+              <option value="freebet">Free bet</option>
+              <option value="bonus">Bonus</option>
+            </select>
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.78rem', color: 'var(--admin-text-muted)' }}>
+            Friend gets (₹)
+            <input
+              type="number"
+              min="0"
+              step="1"
+              value={editSettings.referredReward ?? 500}
+              onChange={(e) => setSettingsDraft({ ...editSettings, referredReward: e.target.value })}
+              style={{ padding: '8px 10px', borderRadius: 6 }}
+            />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.78rem', color: 'var(--admin-text-muted)' }}>
+            Referrer gets (₹)
+            <input
+              type="number"
+              min="0"
+              step="1"
+              value={editSettings.referrerReward ?? 500}
+              onChange={(e) => setSettingsDraft({ ...editSettings, referrerReward: e.target.value })}
+              style={{ padding: '8px 10px', borderRadius: 6 }}
+            />
+          </label>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="admin-btn admin-btn--sm admin-btn--success"
+              disabled={savingSettings || !settingsDraft}
+              onClick={saveSettings}
+            >
+              {savingSettings ? 'Saving…' : 'Save settings'}
+            </button>
+            {settingsDraft && (
+              <button
+                type="button"
+                className="admin-btn admin-btn--sm admin-btn--secondary"
+                disabled={savingSettings}
+                onClick={() => setSettingsDraft(null)}
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+        </div>
+        <p style={{ margin: '10px 0 0', fontSize: '0.75rem', color: 'var(--admin-text-dim)' }}>
+          Free bet credits <code>freebet_balance</code>. Bonus credits <code>bonus_balance</code> (wagering applies).
+          Changes apply to new grants only — already rewarded referrals are unchanged.
+        </p>
+      </AdminCard>
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 16 }}>
         {[
           ['Total', 'referralActivityToday', kpiTotal],
@@ -2545,7 +2657,7 @@ function ReferralsAdminPanel() {
         />
         <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} title="Analytics from" />
         <input type="date" value={to} onChange={(e) => setTo(e.target.value)} title="Analytics to" />
-        <button type="button" onClick={() => { load(); loadAnalytics(); }}>Refresh</button>
+        <button type="button" onClick={() => { load(); loadAnalytics(); loadSettings(); }}>Refresh</button>
         <button type="button" className="admin-btn admin-btn--sm" onClick={reconcile}>Reconcile Pending</button>
       </div>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}

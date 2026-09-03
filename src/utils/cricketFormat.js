@@ -51,6 +51,28 @@ function oversIsExactly(value, whole) {
   return w === whole && b === 0;
 }
 
+/** League / series text only — ignore provider matchType which is often wrongly "T20". */
+export function collectLeagueFormatText(match) {
+  return [
+    match?.league,
+    match?.seriesName,
+    match?.competition,
+    match?.tournament,
+    match?.eventName,
+    match?.matchHeader?.seriesName,
+    match?.matchHeader?.matchDescription,
+  ].filter(Boolean).join(' ');
+}
+
+const T10_SERIES_RE = /\bT10\b|\bT-10\b|\bTEN10\b|\bT10I\b|\b10[\s-]?OVERS?\b|\bEUROPEAN\s*CRICKET\s*SERIES\b|\bECS\b|\bABU\s*DHABI\s*T10\b|\bMAX60\b|\bGERMAN\s*SUPER\s*LEAGUE\b|\bFRANKFURT\s*T10\b|\bQUANTUM\s*CRICKET\b|\bWEENEET\b|\bSIERRA\s*LEONE\s*T10\b|\bLLAMA\s*T10\b|\bDREAM11\s*T10\b|\bFANCODE\s*ECS\b|\bQCL\b/;
+
+export function looksLikeT10Series(matchOrText) {
+  const raw = typeof matchOrText === 'string'
+    ? matchOrText.toUpperCase()
+    : collectLeagueFormatText(matchOrText).toUpperCase();
+  return T10_SERIES_RE.test(raw);
+}
+
 /** First innings finished at 10.0 overs (not mid-T20 at 10.0). */
 function inferT10FromLive(match) {
   const ld = match?.liveDetails || {};
@@ -72,7 +94,21 @@ function inferT10FromLive(match) {
 export function detectCricketMatchFormat(match) {
   if (!match) return 'T20';
 
-  // 1. Comprehensive text analysis across league, competition, title, description, commentary
+  // 1. League/series first — providers often stamp T10 fixtures as matchType T20
+  if (looksLikeT10Series(match) || inferT10FromLive(match)) {
+    return 'T10';
+  }
+
+  // Virtual cricket matches (e.g. Quantum Cricket League, (V) teams)
+  if (
+    String(match.sport || '').toLowerCase() === 'virtual-cricket'
+    || /Quantum Cricket League/i.test(match.league || '')
+    || /\(V\)/i.test(match.team1?.name || (typeof match.team1 === 'string' ? match.team1 : ''))
+  ) {
+    return 'T10';
+  }
+
+  // 2. Comprehensive text analysis across league, competition, title, description, commentary
   const raw = collectMatchFormatText(match).toUpperCase();
 
   // Test / Multi-Day / First Class
@@ -81,8 +117,8 @@ export function detectCricketMatchFormat(match) {
     return 'TEST';
   }
 
-  // T10 (explicit league/title or inferred from 10-over innings)
-  if (/\bT10\b|\bT-10\b|\bTEN10\b|\b10[\s-]?OVERS?\b|\bEUROPEAN\s*CRICKET\s*SERIES\b|\bECS\s*T10\b|\bABU\s*DHABI\s*T10\b|\bMAX60\b/.test(raw) || inferT10FromLive(match)) {
+  // Explicit T10 tokens anywhere (title/id/commentary) — after league check for completeness
+  if (/\bT10\b|\bT-10\b|\bTEN10\b|\b10[\s-]?OVERS?\b|\bMAX60\b/.test(raw)) {
     return 'T10';
   }
 
@@ -97,16 +133,7 @@ export function detectCricketMatchFormat(match) {
     return 'ODI';
   }
 
-  // Virtual cricket matches (e.g. Quantum Cricket League, (V) teams)
-  if (
-    String(match.sport || '').toLowerCase() === 'virtual-cricket'
-    || /Quantum Cricket League/i.test(match.league || '')
-    || /\(V\)/i.test(match.team1?.name || (typeof match.team1 === 'string' ? match.team1 : ''))
-  ) {
-    return 'T10';
-  }
-
-  // 2. Direct authoritative provider format fields
+  // 3. Direct authoritative provider format fields (T10 before T20 — never let bare T20 win over T10)
   const direct = String(
     match.matchFormat
     || match.format
@@ -120,18 +147,18 @@ export function detectCricketMatchFormat(match) {
   const upperDirect = direct.toUpperCase();
   if (/^TEST$|^TEST\s*MATCH$/i.test(upperDirect)) return 'TEST';
   if (/^ODI$|^ONE\s*DAY\s*INTERNATIONAL$/i.test(upperDirect)) return 'ODI';
-  if (/^T20$|^TWENTY20$|^T20I$/i.test(upperDirect)) return 'T20';
   if (/^T10$|^TEN10$|^T10I$/i.test(upperDirect)) return 'T10';
   if (/^FIRST[\s-_]?CLASS$|^FC$/i.test(upperDirect)) return 'FIRST_CLASS';
   if (/^LIST[\s-_]?A$/i.test(upperDirect)) return 'LIST_A';
   if (/^THE[\s-_]?HUNDRED$|^100\s*BALL$/i.test(upperDirect)) return 'THE_HUNDRED';
+  if (/^T20$|^TWENTY20$|^T20I$/i.test(upperDirect)) return 'T20';
 
-  // T20 leagues / keywords
+  // T20 leagues / keywords (exclude series already classified as T10 above)
   if (/\bT20\b|\bTWENTY20\b|\b20[\s-]?OVERS?\b|\bIPL\b|\bBBL\b|\bPSL\b|\bCPL\b|\bSA20\b|\bILT20\b|\bBPL\b|\bSUPER\s*SMASH\b|\bBLAST\b|\bT20\s*BLAST\b|\bSMAT\b|\bMLC\b|\bSRL\b/.test(raw)) {
     return 'T20';
   }
 
-  // 3. Fallback based on maximum overs or observed overs
+  // 4. Fallback based on maximum overs or observed overs
   const seen = Math.max(
     oversWhole(match?.liveDetails?.overs),
     oversWhole(match?.liveDetails?.firstOvers),
@@ -145,6 +172,13 @@ export function detectCricketMatchFormat(match) {
   if (seen > 10) return 'T20';
 
   return 'T20';
+}
+
+/** True when this fixture should be treated as T10 for UI / viewer gating. */
+export function isMatchT10(match) {
+  if (!match) return false;
+  const format = detectCricketMatchFormat(match);
+  return format === 'T10';
 }
 
 /**
@@ -183,6 +217,7 @@ export function isMatchSRL(match) {
   if (!match) return false;
   if (match.isSRL === true || match.isSrl === true) return true;
   if (match.isSRL === false || match.isSrl === false) return false;
+  if (match.source === 'srl' || String(match.id || '').startsWith('srl_')) return true;
 
   const raw = [
     match.league,

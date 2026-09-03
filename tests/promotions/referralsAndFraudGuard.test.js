@@ -155,4 +155,43 @@ describe('Referral program', () => {
     expect(q.qualified).toBe(false);
     expect(String(q.reason || '')).toMatch(/promo/i);
   });
+
+  it('grants bonus_balance when rewardKind is bonus', async () => {
+    const {
+      updateReferralProgramSettings,
+      __resetReferralConfigCacheForTests,
+    } = await import('../../lib/referralLoyaltyEngine.mjs');
+
+    await updateReferralProgramSettings({
+      rewardKind: 'bonus',
+      referredReward: 500,
+      referrerReward: 500,
+    }, { adminId: 'test', reason: 'unit test bonus' });
+
+    try {
+      const reg = await processReferralRegistration({
+        referrerUserId: referrer,
+        referredUserId: referred,
+        referralCode: 'BONUS500',
+      });
+      expect(reg.reward?.success).toBe(true);
+
+      const wallets = await query(
+        `SELECT user_id, bonus_balance, freebet_balance FROM wallets WHERE user_id IN ($1, $2)`,
+        [referrer, referred],
+      );
+      const byId = Object.fromEntries(wallets.rows.map((r) => [r.user_id, r]));
+      expect(Number(byId[referred].bonus_balance)).toBe(500);
+      expect(Number(byId[referrer].bonus_balance)).toBe(500);
+      expect(Number(byId[referred].freebet_balance)).toBe(0);
+      expect(Number(byId[referrer].freebet_balance)).toBe(0);
+    } finally {
+      await updateReferralProgramSettings({
+        rewardKind: 'freebet',
+        referredReward: 500,
+        referrerReward: 500,
+      }, { adminId: 'test', reason: 'restore freebet' }).catch(() => null);
+      __resetReferralConfigCacheForTests();
+    }
+  });
 });

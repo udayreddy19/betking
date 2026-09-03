@@ -7,7 +7,8 @@ import AdminCard from '../components/AdminCard';
 import DatabaseInspector from '../../../components/DatabaseInspector/DatabaseInspector';
 
 const SUGGESTED_PRODUCT_FLAGS = [
-  { flagKey: 'oddsyra_srl_ui', name: 'OddsYra SRL', description: 'SRL matches, Sports chip, and /srl page for players' },
+  { flagKey: 'oddsyra_srl_ui', name: 'SRL', description: 'All SRL matches, Sports SRL chip, and /srl page for players' },
+  { flagKey: 'oddsyra_t10_ui', name: 'T10', description: 'All T10 matches (ECS, Abu Dhabi T10, German Super League, etc.) for players' },
   { flagKey: 'new_admin_ui', name: 'New Admin UI', description: 'Gradual rollout for modernized Admin shell' },
   { flagKey: 'referral_system_ui', name: 'Referral UX', description: 'Refer & Earn surfaces' },
   { flagKey: 'promotion_engine_ui', name: 'Promotions UX', description: 'Campaign / free-bet UI' },
@@ -18,6 +19,12 @@ const SUGGESTED_PRODUCT_FLAGS = [
   { flagKey: 'experimental_ux', name: 'Experimental UX', description: 'Non-production UX experiments' },
 ];
 
+function withProductFlagMeta(flag) {
+  const key = flag.flagKey || flag.flag_key;
+  const suggested = SUGGESTED_PRODUCT_FLAGS.find((f) => f.flagKey === key);
+  if (!suggested) return flag;
+  return { ...flag, name: suggested.name, description: suggested.description };
+}
 export default function PlatformDomainView({ subModule = 'feature-flags' }) {
   const [apiKeys, setApiKeys] = useState([]);
   const [featureFlags, setFeatureFlags] = useState([]);
@@ -71,16 +78,17 @@ export default function PlatformDomainView({ subModule = 'feature-flags' }) {
   };
 
   const upsertStoreFlag = (flag, enabled) => {
+    const meta = withProductFlagMeta(flag);
     adminApiClient.post('/platform/feature-store/upsert', {
-      flagKey: flag.flagKey || flag.flag_key,
-      name: flag.name,
-      description: flag.description,
+      flagKey: meta.flagKey || meta.flag_key,
+      name: meta.name,
+      description: meta.description,
       enabled,
-      rolloutPercentage: flag.rollout_percentage ?? flag.rolloutPercentage ?? 100,
+      rolloutPercentage: meta.rollout_percentage ?? meta.rolloutPercentage ?? 100,
       reason: enabled ? 'Admin enable' : 'Admin disable',
     })
       .then(() => {
-        showToast(`${flag.flagKey || flag.flag_key} → ${enabled ? 'ENABLED' : 'DISABLED'}`, 'success');
+        showToast(`${meta.flagKey || meta.flag_key} → ${enabled ? 'ENABLED' : 'DISABLED'}`, 'success');
         loadFeatureStore();
       })
       .catch((err) => showToast(err.message || 'Feature store update failed', 'error'));
@@ -162,7 +170,9 @@ export default function PlatformDomainView({ subModule = 'feature-flags' }) {
               </p>
             )}
             <div style={{ display: 'grid', gap: '8px' }}>
-              {storeFlags.map((flag) => (
+              {storeFlags.map((flag) => {
+                const meta = withProductFlagMeta(flag);
+                return (
                 <div
                   key={flag.flag_key}
                   style={{
@@ -179,10 +189,10 @@ export default function PlatformDomainView({ subModule = 'feature-flags' }) {
                   <div>
                     <strong className="admin-text-mono" style={{ fontSize: '0.84rem' }}>{flag.flag_key}</strong>
                     <p style={{ margin: '3px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.76rem' }}>
-                      {flag.name} · rollout {flag.rollout_percentage ?? 100}% · {flag.environment || 'all'}
+                      {meta.name} · rollout {flag.rollout_percentage ?? 100}% · {flag.environment || 'all'}
                     </p>
-                    {flag.description && (
-                      <p style={{ margin: '2px 0 0', color: 'var(--admin-text-dim)', fontSize: '0.72rem' }}>{flag.description}</p>
+                    {meta.description && (
+                      <p style={{ margin: '2px 0 0', color: 'var(--admin-text-dim)', fontSize: '0.72rem' }}>{meta.description}</p>
                     )}
                   </div>
                   <button
@@ -193,7 +203,8 @@ export default function PlatformDomainView({ subModule = 'feature-flags' }) {
                     {flag.enabled ? '● ENABLED' : '○ DISABLED'}
                   </button>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             {missingSuggested.length > 0 && (

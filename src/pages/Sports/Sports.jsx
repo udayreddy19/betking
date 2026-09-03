@@ -55,30 +55,8 @@ function filterByLeague(matchList, activeLeague, cricketSeries = []) {
     String(activeLeague).toLowerCase().includes('srl');
 
   if (isSrlLeague) {
-    return matchList.filter((match) => {
-      const isSrlMatch = match.source === 'srl' ||
-        String(match.id || '').startsWith('srl_') ||
-        String(match.league || '').toLowerCase().includes('srl') ||
-        String(match.seriesName || '').toLowerCase().includes('srl');
-
-      if (!isSrlMatch) return false;
-
-      if (activeLeague === 'ipl-srl'
-        || activeLeague === 'oddsyra-srl'
-        || String(activeLeague).toLowerCase().includes('oddsyra srl')) {
-        // Admin-gated OddsYra SRL only — exclude external feed SRL products
-        return match.source === 'srl'
-          || String(match.id || '').startsWith('srl_ipl_')
-          || (
-            match.league === 'OddsYra SRL'
-            && match.source !== '10cric2026'
-            && match.source !== 'live'
-            && !String(match.id || '').startsWith('10cric_')
-            && !String(match.id || '').startsWith('oy_')
-          );
-      }
-      return true;
-    });
+    // Viewer flag gates the board; chip shows every SRL fixture (OddsYra + feed SRL).
+    return matchList.filter((match) => isMatchSRL(match));
   }
 
   const dynamicSeries = cricketSeries.find(
@@ -903,7 +881,7 @@ export default function Sports() {
                 className={`sports-league-chip sports-league-chip--srl ${isIplSrlView ? 'active' : ''}`}
                 onClick={selectSrlBoard}
               >
-                OddsYra SRL{stateCounts.srl > 0 ? ` (${stateCounts.srl})` : ''}
+                SRL{stateCounts.srl > 0 ? ` (${stateCounts.srl})` : ''}
               </button>
             )}
             <button
@@ -954,7 +932,7 @@ export default function Sports() {
               <div className="sports-ticker-empty">
                 <p>
                   {isIplSrlView
-                    ? `No OddsYra SRL matches${searchQuery ? ` for "${searchQuery}"` : ''} right now.`
+                    ? `No SRL matches${searchQuery ? ` for "${searchQuery}"` : ''} right now.`
                     : `No ${activeStateTab !== 'all' ? activeStateTab : ''} matches found${searchQuery ? ` for "${searchQuery}"` : ''}.`}
                 </p>
                 {isLiveBettingPage ? (

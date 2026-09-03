@@ -42,7 +42,7 @@ const BASE_MORE_LINKS = [
   { to: '/invite', label: 'Invite friends', flagKey: 'referral_system_ui' },
   { to: '/profile?tab=support', label: 'Support tickets' },
   { to: '/admin', label: '🛡️ Admin Portal' },
-  { to: '/srl', label: 'OddsYra SRL', flagKey: 'oddsyra_srl_ui' },
+  { to: '/sports?league=ipl-srl', label: 'SRL', flagKey: 'oddsyra_srl_ui' },
   { to: '/help', label: 'Help Center' },
   { to: '/promotions', label: 'Promotions', flagKey: 'promotion_engine_ui' },
   { to: '/casino', label: 'Casino' },

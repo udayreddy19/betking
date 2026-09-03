@@ -1847,6 +1847,59 @@ router.get('/api/admin/growth/referrals', async (req, res) => {
   }
 });
 
+router.get('/api/admin/growth/referrals/settings', async (req, res) => {
+  try {
+    const { getReferralProgramConfigAsync, rewardKindLabel } = await import('../../../lib/referralLoyaltyEngine.mjs');
+    const config = await getReferralProgramConfigAsync();
+    res.json({
+      success: true,
+      config: {
+        ...config,
+        rewardLabel: rewardKindLabel(config.rewardKind),
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.put('/api/admin/growth/referrals/settings', async (req, res) => {
+  try {
+    const { updateReferralProgramSettings, rewardKindLabel } = await import('../../../lib/referralLoyaltyEngine.mjs');
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    const body = req.body || {};
+    const config = await updateReferralProgramSettings({
+      rewardKind: body.rewardKind,
+      referredReward: body.referredReward,
+      referrerReward: body.referrerReward,
+      enabled: body.enabled,
+      minDeposit: body.minDeposit,
+      requireKyc: body.requireKyc,
+      requireRiskClearance: body.requireRiskClearance,
+      maxReferralsPerUser: body.maxReferralsPerUser,
+    }, {
+      adminId: req.admin?.id || 'admin',
+      reason: body.reason || 'Admin referral settings update',
+    });
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: 'referral_program',
+      action: 'REFERRAL_SETTINGS_UPDATED',
+      details: {
+        rewardKind: config.rewardKind,
+        referredReward: config.referredReward,
+        referrerReward: config.referrerReward,
+      },
+    });
+    res.json({
+      success: true,
+      config: { ...config, rewardLabel: rewardKindLabel(config.rewardKind) },
+    });
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message });
+  }
+});
+
 router.get('/api/admin/growth/referrals/analytics', async (req, res) => {
   try {
     const { getReferralAnalytics } = await import('../../../lib/referralLoyaltyEngine.mjs');
@@ -2511,15 +2564,19 @@ router.post('/api/admin/platform/flags/toggle', async (req, res) => {
         current = false;
       }
       // Default-on product surfaces (not yet written to store)
-      if (!exists && String(key) === 'oddsyra_srl_ui') current = true;
+      if (!exists && (String(key) === 'oddsyra_srl_ui' || String(key) === 'oddsyra_t10_ui')) {
+        current = true;
+      }
       nextEnabled = enabled == null ? !current : !!enabled;
-      const isSrl = String(key) === 'oddsyra_srl_ui';
+      const productMeta = String(key) === 'oddsyra_srl_ui'
+        ? { name: 'SRL', description: 'Show all SRL matches, Sports SRL chip, and /srl page to players' }
+        : String(key) === 'oddsyra_t10_ui'
+          ? { name: 'T10', description: 'Show all T10 matches (ECS, Abu Dhabi T10, German Super League, etc.) to players' }
+          : null;
       await upsertFeatureFlag({
         flagKey: key,
-        name: isSrl ? 'OddsYra SRL' : key,
-        description: isSrl
-          ? 'Show OddsYra SRL matches, Sports chip, and /srl page to players'
-          : 'Runtime platform flag',
+        name: productMeta?.name || key,
+        description: productMeta?.description || 'Runtime platform flag',
         enabled: nextEnabled,
         updatedBy: req.admin?.id || 'admin',
         reason: 'Admin flag toggle',

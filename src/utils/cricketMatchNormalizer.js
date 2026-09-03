@@ -30,15 +30,16 @@ export const CRICKET_FORMATS = Object.freeze({
  */
 export function detectCanonicalFormat(match = {}) {
   const ld = match.liveDetails || {};
-  const rawFormat = String(
-    match.matchFormat
-    || match.format
-    || ld.matchFormat
-    || match.matchType
-    || match.league
-    || match.seriesName
-    || ''
-  ).toLowerCase();
+  // Join all fields so provider matchType "T20" cannot hide a T10 series name.
+  const rawFormat = [
+    match.league,
+    match.seriesName,
+    match.competition,
+    match.matchFormat,
+    match.format,
+    ld.matchFormat,
+    match.matchType,
+  ].filter(Boolean).join(' ').toLowerCase();
 
   const isSRL = /\bsrl\b|simulated reality/i.test(
     `${match.id || ''} ${match.league || ''} ${match.seriesName || ''} ${match.team1?.name || ''} ${match.team2?.name || ''}`
@@ -50,7 +51,8 @@ export function detectCanonicalFormat(match = {}) {
   if (/hundred|100-ball/i.test(rawFormat)) {
     return CRICKET_FORMATS.THE_HUNDRED;
   }
-  if (/\bt10\b|ten10|t-10/i.test(rawFormat)) {
+  // T10 before T20 — Cricbuzz often buckets T10 under the T20 typeMatches block
+  if (/\bt10\b|ten10|t-10|european cricket series|\becs\b|abu dhabi t10|max60|german super league|quantum cricket|\bqcl\b|10[\s-]?overs?/i.test(rawFormat)) {
     return CRICKET_FORMATS.T10;
   }
   if (/\bt20\b|twenty20|t-20|ipl|bbl|psl|cpl|lpl|bpl|sa20|super smash/i.test(rawFormat)) {

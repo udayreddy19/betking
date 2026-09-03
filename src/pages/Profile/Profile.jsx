@@ -360,7 +360,7 @@ export default function Profile() {
               {joinedViaReferral ? (
                 <p className="profile-loyalty-meta">
                   Signup promo unavailable. Your account joined through a referral.
-                  Referral free bets are credited when a friend signs up with your code.
+                  Referral rewards are credited when a friend signs up with your code.
                 </p>
               ) : (
                 <p className="profile-loyalty-meta">

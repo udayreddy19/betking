@@ -51,6 +51,7 @@ export default function ProfileReferralCard({ onLoaded } = {}) {
 
   const referredReward = Number(data.referredReward || 500);
   const referrerReward = Number(data.referrerReward || 500);
+  const rewardLabel = data.rewardLabel || (data.rewardKind === 'bonus' ? 'Bonus' : 'Free Bet');
   const historyList = Array.isArray(data.history) ? data.history : [];
   const totalEarned = Number(data.stats?.rewardsEarned || 0);
 
@@ -69,7 +70,7 @@ export default function ProfileReferralCard({ onLoaded } = {}) {
       try {
         await navigator.share({
           title: 'Join OddsYra',
-          text: `Use my referral code ${data.code} and get a ₹${referredReward} free bet on OddsYra.`,
+          text: `Use my referral code ${data.code} and get a ₹${referredReward} ${rewardLabel.toLowerCase()} on OddsYra.`,
           url: data.link,
         });
       } catch { /* cancelled */ }
@@ -99,7 +100,7 @@ export default function ProfileReferralCard({ onLoaded } = {}) {
       </div>
 
       <p className="profile-loyalty-meta" style={{ margin: '4px 0 12px', lineHeight: 1.45 }}>
-        Invite friends with your referral link. They get a <strong>₹{referredReward} Free Bet</strong> upon first deposit — and you earn <strong>₹{referrerReward} Free Bet</strong>.
+        Invite friends with your referral link. They get a <strong>₹{referredReward} {rewardLabel}</strong> upon first deposit — and you earn <strong>₹{referrerReward} {rewardLabel}</strong>.
       </p>
 
       {/* Referral Link / Code Box */}
@@ -132,7 +133,7 @@ export default function ProfileReferralCard({ onLoaded } = {}) {
       </div>
 
       <div className="profile-loyalty-meta" style={{ margin: '8px 0 10px', fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>
-        Rewards earned: <strong style={{ color: 'var(--color-text)' }}>{formatInr(totalEarned)}</strong> · Reward per friend: <strong>₹{referrerReward} Free Bet</strong>
+        Rewards earned: <strong style={{ color: 'var(--color-text)' }}>{formatInr(totalEarned)}</strong> · Reward per friend: <strong>₹{referrerReward} {rewardLabel}</strong>
       </div>
 
       {/* Referred Friends History (Fixed-Height Scrollable Container) */}
@@ -164,7 +165,7 @@ export default function ProfileReferralCard({ onLoaded } = {}) {
                   <div>
                     <div style={{ fontWeight: 700, color: 'var(--color-text)' }}>{row.referred_mask || 'Friend'}</div>
                     <div style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)' }}>
-                      {row.rewarded_at ? `₹${referrerReward} Free Bet credited` : (row.status === 'QUALIFIED' ? 'Pending settlement credit' : 'Awaiting qualifying deposit')}
+                      {row.rewarded_at ? `₹${referrerReward} ${rewardLabel} credited` : (row.status === 'QUALIFIED' ? 'Pending settlement credit' : 'Awaiting qualifying deposit')}
                     </div>
                   </div>
                 </div>

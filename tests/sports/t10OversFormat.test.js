@@ -13,6 +13,20 @@ describe('T10 overs format detection', () => {
     expect(getMatchMaxOvers(match)).toBe(10);
   });
 
+  it('treats German Super League / ECS series as T10 even without T10 in the title', () => {
+    expect(resolveCricketOversFormat({
+      matchType: 'T20',
+      matchFormat: 'T20',
+      league: 'German Super League',
+      seriesName: 'German Super League, 2026',
+    })).toBe('T10');
+    expect(resolveCricketOversFormat({
+      matchType: 'T20',
+      league: 'ECS Hungary',
+      seriesName: 'ECS Hungary, 2026',
+    })).toBe('T10');
+  });
+
   it('treats Quantum Cricket League virtual games as T10', () => {
     const match = {
       league: 'Quantum Cricket League',
