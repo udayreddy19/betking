@@ -134,13 +134,13 @@ function ComposeMailPanel() {
     setCtaPath(tpl.ctaPath || '');
   };
 
-  const selectPlayer = (user) => {
+  const addRecipient = (user) => {
     const email = String(user.email || '').trim().toLowerCase();
     if (!email || !email.includes('@')) {
       showToast('That player has no email on file', 'error');
-      return;
+      return false;
     }
-    const name = playerDisplayName(user);
+    const name = playerDisplayName(user) || email.split('@')[0];
     setRecipients((prev) => {
       if (prev.some((r) => r.email === email)) return prev;
       return [...prev, {
@@ -153,6 +153,7 @@ function ComposeMailPanel() {
     setGreetingName(name);
     setToQuery('');
     setHits([]);
+    return true;
   };
 
   const removeRecipient = (email) => {
@@ -163,12 +164,18 @@ function ComposeMailPanel() {
 
   const addTypedEmail = () => {
     const typed = toQuery.trim().replace(/,+$/, '');
-    if (!typed.includes('@')) return false;
-    const email = typed.toLowerCase();
+    const angled = typed.match(/^(.*?)\s*<([^>]+@[^>]+)>$/);
+    const email = String(angled ? angled[2] : typed).trim().toLowerCase();
+    const name = angled ? angled[1].replace(/^["']|["']$/g, '').trim() : '';
+    if (!email.includes('@')) {
+      if (hits[0]) return addRecipient(hits[0]);
+      return false;
+    }
     setRecipients((prev) => {
       if (prev.some((r) => r.email === email)) return prev;
-      return [...prev, { email, name: email.split('@')[0], phone: '' }].slice(0, 25);
+      return [...prev, { email, name: name || email.split('@')[0], phone: '' }].slice(0, 25);
     });
+    if (name) setGreetingName(name);
     setToQuery('');
     setHits([]);
     return true;
@@ -264,12 +271,13 @@ function ComposeMailPanel() {
           </div>
         </fieldset>
 
-        <label className="admin-compose-mail__label">
+        <div className="admin-compose-mail__label">
           To
           <div className="admin-compose-mail__to">
             {recipients.map((r) => (
               <span key={r.email} className="admin-compose-mail__chip">
-                <span>{r.name || r.email}</span>
+                <span className="admin-compose-mail__chip-name">{r.name || r.email}</span>
+                {r.name && r.email ? <span className="admin-compose-mail__chip-email">{r.email}</span> : null}
                 <button type="button" aria-label={`Remove ${r.email}`} onClick={() => removeRecipient(r.email)}>×</button>
               </span>
             ))}
@@ -279,7 +287,8 @@ function ComposeMailPanel() {
               onChange={(e) => setToQuery(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ',') {
-                  if (addTypedEmail()) e.preventDefault();
+                  e.preventDefault();
+                  addTypedEmail();
                 }
                 if (e.key === 'Backspace' && !toQuery && recipients.length) {
                   removeRecipient(recipients[recipients.length - 1].email);
@@ -290,12 +299,13 @@ function ComposeMailPanel() {
               autoCorrect="off"
               autoCapitalize="off"
               spellCheck="false"
+              data-1p-ignore="true"
+              data-lpignore="true"
               name="oddsyra-compose-to"
-              required={recipients.length === 0}
             />
             {toQuery.trim().length >= 2 && (
               <div className="admin-compose-mail__hits" role="listbox">
-                {searching && <div className="admin-compose-mail__hit-empty">Searching…</div>}
+                {searching && hits.length === 0 && <div className="admin-compose-mail__hit-empty">Searching…</div>}
                 {!searching && hits.length === 0 && (
                   <div className="admin-compose-mail__hit-empty">
                     {toQuery.includes('@') ? 'Press Enter to use this email' : 'No matching players'}
@@ -309,8 +319,11 @@ function ComposeMailPanel() {
                       key={id || user.email}
                       type="button"
                       className="admin-compose-mail__hit"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => selectPlayer(user)}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        addRecipient(user);
+                      }}
                     >
                       <strong>{name || 'Player'}</strong>
                       <span>{[user.email, user.phone].filter(Boolean).join(' · ')}</span>
@@ -320,7 +333,7 @@ function ComposeMailPanel() {
               </div>
             )}
           </div>
-        </label>
+        </div>
 
         <label className="admin-compose-mail__label">
           Subject
