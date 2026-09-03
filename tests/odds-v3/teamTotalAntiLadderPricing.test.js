@@ -78,21 +78,21 @@ describe('Live team_total anti-ladder pricing', () => {
       selectionId: 'o',
       name: 'Over',
       probability: 0.42,
-      overround: 0.08,
+      overround: 0.10,
     });
     const under = priceSelection({
       selectionId: 'u',
       name: 'Under',
       probability: 0.58,
-      overround: 0.08,
+      overround: 0.10,
     });
     expect(over.odds).toBeGreaterThan(MAX_LIVE_TOTAL_OVER_ODDS);
-    const capped = applyLiveTotalOverOddsCap(over, under, 0.08);
+    const capped = applyLiveTotalOverOddsCap(over, under, 0.10);
     expect(capped.overSel.odds).toBeLessThanOrEqual(MAX_LIVE_TOTAL_OVER_ODDS);
     expect(capped.underSel.odds).toBeGreaterThan(1.01);
   });
 
-  it('does not offer ~2.2 Over on a mid/late innings ladder step', () => {
+  it('does not offer soft Over on a mid/late innings ladder step', () => {
     // Mirrors cb_154551-style steps: score climbing, Over previously sold ~2.2
     const steps = [
       { runs: 132, ballsCompleted: 96, ballsRemaining: 24 },
@@ -124,7 +124,7 @@ describe('Live team_total anti-ladder pricing', () => {
       selectionId: 'o',
       name: 'Over',
       probability: late.pOver,
-      overround: 0.08,
+      overround: 0.10,
     });
     expect(over.odds).toBeLessThan(1.7);
   });
