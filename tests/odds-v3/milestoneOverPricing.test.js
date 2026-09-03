@@ -84,10 +84,39 @@ describe('Milestone overs 0–N pricing', () => {
     expect(milestone(markets, 5)?.line).toBeGreaterThanOrEqual(30.5);
     expect(milestone(markets, 10)?.line).toBeGreaterThanOrEqual(60.5);
     expect(milestone(markets, 15)?.line).toBeGreaterThanOrEqual(85.5);
-    for (const overs of [5, 10, 15, 20]) {
-      const over = overSel(milestone(markets, overs));
+    // 50-over book includes mid/late windows (not full 50 = team_total)
+    for (const overs of [5, 10, 15, 20, 25, 30, 40, 45]) {
+      const m = milestone(markets, overs);
+      expect(m?.status).toBe('OPEN');
+      expect(m.line).toBeGreaterThan(0);
+      const over = overSel(m);
       if (over) expect(over.odds).toBeLessThanOrEqual(MAX_LIVE_TOTAL_OVER_ODDS);
     }
+    expect(milestone(markets, 50)).toBeUndefined();
+  });
+
+  it('offers long-form milestone windows for Test with 60% early cuts', () => {
+    const state = liveState({ format: 'TEST' });
+    const markets = generateExtendedOverMarkets(state);
+    for (const overs of [5, 10, 15, 20, 25, 30, 40, 50, 60]) {
+      const m = milestone(markets, overs);
+      expect(m?.status, `expected OPEN 0–${overs}`).toBe('OPEN');
+      expect(m.line).toBeGreaterThan(0);
+    }
+    // Full configured innings not duplicated as a milestone
+    expect(milestone(markets, 75)).toBeUndefined();
+
+    // 0–40 cuts after 24 overs (144 balls); 0–60 after 36 overs (216 balls)
+    const at24 = generateExtendedOverMarkets(liveState({
+      format: 'TEST', runs: 70, wickets: 2, ballsCompleted: 144,
+    }));
+    expect(milestone(at24, 40)?.status).toBe('SUSPENDED');
+    expect(milestone(at24, 50)?.status).toBe('OPEN');
+
+    const at36 = generateExtendedOverMarkets(liveState({
+      format: 'TEST', runs: 110, wickets: 3, ballsCompleted: 216,
+    }));
+    expect(milestone(at36, 60)?.status).toBe('SUSPENDED');
   });
 
   it('uses format powerplay split for The Hundred', () => {
@@ -143,6 +172,13 @@ describe('Milestone overs 0–N pricing', () => {
       format: 'ODI', runs: 65, wickets: 1, ballsCompleted: 71,
     }));
     expect(milestone(odi11, 20)?.status).toBe('OPEN');
+
+    // ODI 0–40: after 24 overs → 25th over
+    const odi24 = generateExtendedOverMarkets(liveState({
+      format: 'ODI', runs: 120, wickets: 2, ballsCompleted: 144,
+    }));
+    expect(milestone(odi24, 40)?.status).toBe('SUSPENDED');
+    expect(milestone(odi24, 45)?.status).toBe('OPEN');
   });
 
   it('caps soft live milestone Over odds like team totals', () => {
