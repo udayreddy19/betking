@@ -270,4 +270,59 @@ describe('Team Total Market Finality & Evidence Policy', () => {
     expect(payload.attemptCount).toBe(3);
     expect(payload.retryCount).toBe(2);
   });
+
+  // Regression: Over 169.5 marked LOST on stale chaseRuns=142 while card showed 183/175
+  it('14. Unscoped team_total grades 1st innings even while chase is live', () => {
+    const match = {
+      status: 'COMPLETED',
+      team1: { runs: 183, wickets: 4 },
+      team2: { runs: 175, wickets: 7 },
+      liveDetails: { inningsId: 2, firstRuns: 183, chaseRuns: 142 },
+    };
+    const graded = evaluateTotalsMarketBet(sampleBetOver, match);
+    expect(graded.outcome).toBe('WON');
+    expect(graded.reason).toContain('team_total_i1_final=183');
+  });
+
+  it('15. Stale chaseRuns cannot beat higher team2.runs for i2 Over', () => {
+    const betI2 = {
+      ...sampleBetOver,
+      selection_id: 'sel_over_169.5',
+      selection_name: 'Over 169.5',
+      placement_snapshot: {
+        inningsAtPlacement: 2,
+        legs: [{ ...sampleBetOver.placement_snapshot.legs[0], line: 169.5, innings: 2, selectionSide: 'OVER' }],
+      },
+    };
+    const match = {
+      status: 'COMPLETED',
+      team1: { runs: 183 },
+      team2: { runs: 175 },
+      liveDetails: { inningsId: 2, firstRuns: 183, chaseRuns: 142 },
+    };
+    const graded = evaluateTotalsMarketBet(betI2, match);
+    expect(graded.outcome).toBe('WON');
+    expect(graded.reason).toBe('team_total_i2_final=175_line=169.5');
+  });
+
+  it('16. Mid-chase stale cache must not finalize Over as LOST under line', () => {
+    const betI2 = {
+      ...sampleBetOver,
+      selection_id: 'sel_over_169.5',
+      selection_name: 'Over 169.5',
+      placement_snapshot: {
+        inningsAtPlacement: 2,
+        legs: [{ line: 169.5, marketId: 'team_total', selectionSide: 'OVER', innings: 2 }],
+      },
+    };
+    const match = {
+      status: 'LIVE',
+      isLive: true,
+      team1: { runs: 183 },
+      team2: { runs: 142 },
+      liveDetails: { inningsId: 2, firstRuns: 183, chaseRuns: 142 },
+      cachedAt: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
+    };
+    expect(evaluateTotalsMarketBet(betI2, match)).toBeNull();
+  });
 });
