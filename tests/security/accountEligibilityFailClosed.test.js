@@ -43,4 +43,35 @@ describe('accountEligibilityEngine fail-closed', () => {
       status: 'ACTIVE',
     });
   });
+
+  it('blocks betting when account is on BETTING_HOLD', async () => {
+    query.mockResolvedValueOnce({
+      rows: [{
+        user_id: 'usr_1',
+        user_status: 'ACTIVE',
+        account_state: 'BETTING_HOLD',
+        reason: 'ladder abuse',
+        restricted_until: null,
+      }],
+    });
+    await expect(
+      accountEligibilityEngine.verifyEligibility('usr_1', { forBetting: true }),
+    ).rejects.toThrow(/ACCOUNT_ON_HOLD/);
+  });
+
+  it('allows deposits when only BETTING_HOLD is set', async () => {
+    query.mockResolvedValueOnce({
+      rows: [{
+        user_id: 'usr_1',
+        user_status: 'ACTIVE',
+        account_state: 'BETTING_HOLD',
+        reason: 'ladder abuse',
+        restricted_until: null,
+      }],
+    });
+    await expect(accountEligibilityEngine.verifyEligibility('usr_1')).resolves.toMatchObject({
+      eligible: true,
+      userId: 'usr_1',
+    });
+  });
 });

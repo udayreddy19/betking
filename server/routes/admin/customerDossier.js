@@ -41,6 +41,51 @@ router.post('/customers/:id/unrestrict', async (req, res) => {
   }
 });
 
+router.post('/customers/:id/hold', async (req, res) => {
+  const { id } = req.params;
+  const reason = String(req.body?.reason || 'Admin betting hold').slice(0, 500);
+  try {
+    const { holdAccountBetting } = await import('../../../lib/accountRestrictionEngine.mjs');
+    const result = await holdAccountBetting({
+      userId: id,
+      actorId: req.admin?.id || 'admin',
+      reason,
+      expiresAt: req.body?.expiresAt || null,
+    });
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: id,
+      action: 'ACCOUNT_BETTING_HOLD',
+      details: { reason },
+    });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/customers/:id/unhold', async (req, res) => {
+  const { id } = req.params;
+  const reason = String(req.body?.reason || 'Admin betting unhold').slice(0, 500);
+  try {
+    const { unholdAccountBetting } = await import('../../../lib/accountRestrictionEngine.mjs');
+    const result = await unholdAccountBetting({
+      userId: id,
+      actorId: req.admin?.id || 'admin',
+      reason,
+    });
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: id,
+      action: 'ACCOUNT_BETTING_UNHOLD',
+      details: { reason },
+    });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 router.post('/support/conversations', async (req, res) => {
   const userId = String(req.body?.userId || '').trim();
   if (!userId) return res.status(400).json({ error: 'userId is required' });

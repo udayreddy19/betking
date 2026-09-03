@@ -94,6 +94,12 @@ function isRestrictedStatus(status) {
   return s.includes('RESTRICT') || s.includes('SUSPEND') || s.includes('LOCK');
 }
 
+function isBettingHold(user) {
+  if (user?.bettingHold === true || user?.bettingHold === 't' || user?.bettingHold === 'true') return true;
+  const s = String(user?.controlState || user?.status || '').toUpperCase();
+  return s === 'BETTING_HOLD' || s === 'ON_HOLD' || s.includes('HOLD');
+}
+
 function isPendingKyc(status) {
   return PENDING_KYC.has(String(status || '').toUpperCase());
 }
@@ -271,6 +277,8 @@ function CustomersDomainPanels({
   const [confirm, setConfirm] = useState(null);
   const [restrictConfirm, setRestrictConfirm] = useState(null);
   const [unrestrictConfirm, setUnrestrictConfirm] = useState(null);
+  const [holdConfirm, setHoldConfirm] = useState(null);
+  const [unholdConfirm, setUnholdConfirm] = useState(null);
   const [kycRejectConfirm, setKycRejectConfirm] = useState(null);
   const [kycRejectReason, setKycRejectReason] = useState('INCOMPLETE_SUBMISSION');
   const [walletConfirm, setWalletConfirm] = useState(null);
@@ -457,13 +465,49 @@ function CustomersDomainPanels({
     try {
       await adminApiClient.post(`/customers/${user.id}/unrestrict`, { reason: reason || 'Admin unrestrict' });
       showToast(`User ${user.id} unrestricted.`, 'success');
-      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, status: 'ACTIVE' } : u)));
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, status: 'ACTIVE', bettingHold: false } : u)));
       if (selectedUser?.id === user.id) refresh360();
     } catch (err) {
       showToast(err.message || 'Unrestrict failed', 'error');
     } finally {
       setActionBusy(false);
       setUnrestrictConfirm(null);
+    }
+  };
+
+  const handleHold = async (user, reason) => {
+    setActionBusy(true);
+    try {
+      await adminApiClient.post(`/customers/${user.id}/hold`, { reason: reason || 'Admin betting hold' });
+      showToast(`Betting held for ${user.id}.`, 'success');
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, bettingHold: true, controlState: 'BETTING_HOLD' } : u)));
+      if (selectedUser?.id === user.id) {
+        setSelectedUser((prev) => (prev ? { ...prev, bettingHold: true, controlState: 'BETTING_HOLD' } : prev));
+        refresh360();
+      }
+    } catch (err) {
+      showToast(err.message || 'Hold failed', 'error');
+    } finally {
+      setActionBusy(false);
+      setHoldConfirm(null);
+    }
+  };
+
+  const handleUnhold = async (user, reason) => {
+    setActionBusy(true);
+    try {
+      await adminApiClient.post(`/customers/${user.id}/unhold`, { reason: reason || 'Admin betting unhold' });
+      showToast(`Betting unheld for ${user.id}.`, 'success');
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, bettingHold: false, controlState: 'ACTIVE' } : u)));
+      if (selectedUser?.id === user.id) {
+        setSelectedUser((prev) => (prev ? { ...prev, bettingHold: false, controlState: 'ACTIVE' } : prev));
+        refresh360();
+      }
+    } catch (err) {
+      showToast(err.message || 'Unhold failed', 'error');
+    } finally {
+      setActionBusy(false);
+      setUnholdConfirm(null);
     }
   };
 
@@ -762,23 +806,42 @@ function CustomersDomainPanels({
             <span style={{ fontSize: '0.73rem', color: 'var(--admin-text-muted)', fontWeight: 700, alignSelf: 'center' }}>Cooldown</span>
           )}
           {subModule !== 'kyc-queue' && (
-            isRestrictedStatus(r.status) ? (
-              <button
-                type="button"
-                className="admin-btn admin-btn--success admin-btn--sm"
-                onClick={() => setUnrestrictConfirm(r)}
-              >
-                Unrestrict
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="admin-btn admin-btn--danger admin-btn--sm"
-                onClick={() => setRestrictConfirm(r)}
-              >
+            <>
+              {isBettingHold(r) ? (
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--success admin-btn--sm"
+                  onClick={() => setUnholdConfirm(r)}
+                >
+                  Unhold
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--secondary admin-btn--sm"
+                  onClick={() => setHoldConfirm(r)}
+                >
+                  Hold
+                </button>
+              )}
+              {isRestrictedStatus(r.status) ? (
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--success admin-btn--sm"
+                  onClick={() => setUnrestrictConfirm(r)}
+                >
+                  Unrestrict
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--danger admin-btn--sm"
+                  onClick={() => setRestrictConfirm(r)}
+                >
                   Restrict
                 </button>
-            )
+              )}
+            </>
           )}
               </div>
       );
@@ -790,6 +853,15 @@ function CustomersDomainPanels({
       <button type="button" className="admin-btn admin-btn--ghost admin-btn--sm" onClick={refresh360} disabled={user360Loading}>
         ↻ Refresh
       </button>
+      {isBettingHold(selectedUser) || isBettingHold({ status: accountStatus, bettingHold: selectedUser?.bettingHold, controlState: user360?.controlState }) ? (
+        <button type="button" className="admin-btn admin-btn--success admin-btn--sm" onClick={() => setUnholdConfirm(selectedUser)}>
+          Unhold bets
+        </button>
+      ) : (
+        <button type="button" className="admin-btn admin-btn--secondary admin-btn--sm" onClick={() => setHoldConfirm(selectedUser)}>
+          Hold bets
+        </button>
+      )}
       {isRestrictedStatus(accountStatus) ? (
         <button type="button" className="admin-btn admin-btn--success admin-btn--sm" onClick={() => setUnrestrictConfirm(selectedUser)}>
           Unrestrict
@@ -1041,6 +1113,44 @@ function CustomersDomainPanels({
         confirmLabel="Remove Restriction"
         onConfirm={(reason) => unrestrictConfirm && handleUnrestrict(unrestrictConfirm, reason)}
         onCancel={() => setUnrestrictConfirm(null)}
+        loading={actionBusy}
+      />
+
+      <AdminConfirmDialog
+        isOpen={!!holdConfirm}
+        variant="warning"
+        icon="⏸"
+        title={`Hold betting for ${holdConfirm?.name || holdConfirm?.id}?`}
+        description="User will not be able to place bets until you unhold. Deposits and withdrawals stay available."
+        requireReason
+        reasonPlaceholder="Hold reason (e.g. Soft Over ladder abuse, under review)…"
+        reasonDefault="Admin betting hold"
+        details={[
+          { label: 'User ID', value: holdConfirm?.id || '—' },
+          { label: 'Email', value: holdConfirm?.email || '—' },
+        ]}
+        confirmLabel="Hold bets"
+        onConfirm={(reason) => holdConfirm && handleHold(holdConfirm, reason)}
+        onCancel={() => setHoldConfirm(null)}
+        loading={actionBusy}
+      />
+
+      <AdminConfirmDialog
+        isOpen={!!unholdConfirm}
+        variant="success"
+        icon="▶️"
+        title={`Unhold betting for ${unholdConfirm?.name || unholdConfirm?.id}?`}
+        description="User will be able to place bets again."
+        requireReason
+        reasonPlaceholder="Unhold reason..."
+        reasonDefault="Admin betting unhold"
+        details={[
+          { label: 'User ID', value: unholdConfirm?.id || '—' },
+          { label: 'Email', value: unholdConfirm?.email || '—' },
+        ]}
+        confirmLabel="Unhold"
+        onConfirm={(reason) => unholdConfirm && handleUnhold(unholdConfirm, reason)}
+        onCancel={() => setUnholdConfirm(null)}
         loading={actionBusy}
       />
 

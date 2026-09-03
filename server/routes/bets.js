@@ -211,6 +211,7 @@ router.post(['/api/bets/place', '/api/v1/bet/place'], requireAuth, requireVerifi
     } else if (err.code === 'RG_UNAVAILABLE' || err.message?.includes('RG_UNAVAILABLE')) {
       statusCode = 503;
     } else if (err.message?.includes('ACCOUNT_RESTRICTED') || err.message?.includes('ACCOUNT_SUSPENDED')
+      || err.code === 'ACCOUNT_ON_HOLD' || err.message?.includes('ACCOUNT_ON_HOLD')
       || err.code === 'KYC_AGE_REQUIRED' || err.code === 'REALITY_CHECK_REQUIRED' || err.code === 'LOSS_LIMIT_EXCEEDED'
       || err.code === 'STAKE_LIMIT_EXCEEDED' || err.code === 'DEPOSIT_LIMIT_EXCEEDED'
       || err.message?.includes('KYC_AGE_REQUIRED') || err.message?.includes('REALITY_CHECK_REQUIRED') || err.message?.includes('LOSS_LIMIT_EXCEEDED')
