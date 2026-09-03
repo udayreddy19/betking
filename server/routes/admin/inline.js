@@ -1077,69 +1077,51 @@ router.post('/api/admin/betting/settle', requireRole('SUPER_ADMIN', 'FINANCE_ADM
     return res.status(400).json({ success: false, error: 'betId and outcome required' });
   }
   try {
-    const normOutcome = String(outcome).toUpperCase();
-    const forcedOutcome = (
-      normOutcome === 'WON' || normOutcome === 'WIN'
-    ) ? 'WON'
-      : (normOutcome === 'LOST' || normOutcome === 'LOSE' || normOutcome === 'LOSS') ? 'LOST'
-      : (normOutcome === 'VOID' || normOutcome === 'PUSH' || normOutcome === 'REFUND') ? 'VOID'
-      : null;
+    const { adminDeclareBetOutcome, normalizeAdminOutcome } = await import('../../../lib/adminBetRedeclare.mjs');
+    const forcedOutcome = normalizeAdminOutcome(outcome);
     if (!forcedOutcome) {
       return res.status(400).json({ success: false, error: 'outcome must be WON, LOST, or VOID' });
     }
 
-    const { betSettlementEngine } = await import('../../../lib/betSettlementEngine.mjs');
     const { logAdminAction } = await import('../../middleware/auditLogger.js');
     const adminReason = String(reason || '').trim().slice(0, 240);
     const adminId = req.admin?.id || 'admin';
 
-    const { query } = await import('../../../db/pg.js');
-    const betRes = await query('SELECT * FROM bets WHERE bet_id = $1', [betId]);
-    if (!betRes.rows.length) {
-      return res.status(404).json({ success: false, error: 'Bet not found' });
-    }
-    const bet = betRes.rows[0];
-
-    const matchState = {
-      matchId: bet.match_id,
-      status: 'COMPLETED',
-      __forcedOutcome: forcedOutcome,
-      __bypassAuth: true,
-      __settlementReason: adminReason
-        || `Admin manual settlement by ${adminId}`,
-    };
-
-    const result = await betSettlementEngine.settleSingleBet({
+    const result = await adminDeclareBetOutcome({
       betId,
-      matchState,
-    }, req.correlationId);
-
-    if (!result || result.status === 'ALREADY_SETTLED') {
-      return res.json({
-        success: true,
-        betId,
-        outcome: result?.outcome || forcedOutcome,
-        status: 'ALREADY_SETTLED',
-      });
-    }
+      outcome: forcedOutcome,
+      reason: adminReason,
+      adminId,
+      correlationId: req.correlationId,
+    });
 
     await logAdminAction({
       actorId: adminId,
       targetId: betId,
-      action: 'BET_SETTLED',
-      details: { outcome: forcedOutcome, payout: result.payout, reason: adminReason || null },
+      action: result.redeclared ? 'BET_REDECLARED' : 'BET_SETTLED',
+      details: {
+        outcome: result.outcome || forcedOutcome,
+        priorStatus: result.priorStatus || null,
+        priorOutcome: result.priorOutcome || null,
+        payout: result.payout,
+        reason: adminReason || null,
+        outstandingCash: result.outstandingCash || 0,
+      },
     });
 
     res.json({
       success: true,
       betId,
-      outcome: forcedOutcome,
-      status: `SETTLED_${forcedOutcome}`,
+      outcome: result.outcome || forcedOutcome,
+      status: result.status || `SETTLED_${forcedOutcome}`,
       payout: result.payout,
+      redeclared: Boolean(result.redeclared),
+      outstandingCash: result.outstandingCash || 0,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    const code = err.status || 500;
+    res.status(code).json({ success: false, error: err.message });
   }
 });
 

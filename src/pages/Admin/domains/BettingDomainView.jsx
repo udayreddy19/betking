@@ -24,6 +24,12 @@ function isOpenStatus(status) {
   return s === 'OPEN' || s === 'PENDING' || s === 'ACCEPTED';
 }
 
+function canDeclareStatus(status) {
+  const s = String(status || '').toUpperCase();
+  if (s === 'CASHED_OUT') return false;
+  return isOpenStatus(s) || ['WON', 'LOST', 'VOID', 'REFUNDED', 'SETTLED'].includes(s);
+}
+
 function PlacedOddsCell({ bet }) {
   const legs = Array.isArray(bet.legs) ? bet.legs : [];
   const combined = bet.acceptedOdds ?? bet.odds ?? bet.requestedOdds;
@@ -166,8 +172,16 @@ export default function BettingDomainView({
       if (res.pendingApproval) {
         showToast(`Settlement queued for approval (${res.requestId || 'pending'})`, 'info');
       } else {
+        const suffix = res.status === 'ALREADY_SETTLED'
+          ? ' (already settled)'
+          : res.redeclared
+            ? ' (redeclared)'
+            : '';
+        const outstanding = Number(res.outstandingCash) > 0
+          ? ` · outstanding clawback ₹${Number(res.outstandingCash).toLocaleString()}`
+          : '';
         showToast(
-          `Bet ${bet.id} → ${res.outcome || outcome}${res.status === 'ALREADY_SETTLED' ? ' (already settled)' : ''}`,
+          `Bet ${bet.id} → ${res.outcome || outcome}${suffix}${outstanding}`,
           'success',
         );
       }
@@ -340,11 +354,10 @@ export default function BettingDomainView({
             key: 'actions',
             sortable: false,
             render: (r) => {
-              const open = isOpenStatus(r.status);
-              if (!open) {
+              if (!canDeclareStatus(r.status)) {
                 return (
                   <span style={{ color: 'var(--admin-text-muted)', fontSize: '0.73rem', fontVariantNumeric: 'tabular-nums' }}>
-                    {r.settledAt || 'Settled'}
+                    {r.settledAt || String(r.status || 'Settled')}
                   </span>
                 );
               }
@@ -352,8 +365,9 @@ export default function BettingDomainView({
                 return <span style={{ color: 'var(--admin-text-dim)', fontSize: '0.73rem' }}>No access</span>;
               }
               const busy = settlingId === r.id;
+              const settled = !isOpenStatus(r.status);
               return (
-                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', alignItems: 'center' }}>
                   <button type="button" disabled={busy} className="admin-btn admin-btn--success admin-btn--sm" onClick={() => openDeclare(r, 'WON')}>
                     Win
                   </button>
@@ -363,6 +377,11 @@ export default function BettingDomainView({
                   <button type="button" disabled={busy} className="admin-btn admin-btn--secondary admin-btn--sm" onClick={() => openDeclare(r, 'VOID')} style={{ color: '#fbbf24' }}>
                     Void
                   </button>
+                  {settled && r.settledAt && (
+                    <span style={{ color: 'var(--admin-text-muted)', fontSize: '0.68rem', fontVariantNumeric: 'tabular-nums' }}>
+                      {r.settledAt}
+                    </span>
+                  )}
                 </div>
               );
             },
@@ -502,14 +521,22 @@ export default function BettingDomainView({
         isOpen={!!declareConfirm}
         variant={outcomeVariant}
         icon={outcomeIcon}
-        title={`Declare bet as ${outcomeLabel}?`}
-        description={declareConfirm?.outcome === 'VOID'
-          ? 'The stake will be refunded to the user\'s wallet. This action is logged and irreversible.'
-          : declareConfirm?.outcome === 'WON'
-            ? 'The payout will be credited to the user\'s wallet immediately. This action is logged and irreversible.'
-            : 'The user\'s stake is forfeited. This action is logged and irreversible.'}
+        title={`${declareConfirm && !isOpenStatus(declareConfirm.bet.status) ? 'Redeclare' : 'Declare'} bet as ${outcomeLabel}?`}
+        description={(() => {
+          const settled = declareConfirm && !isOpenStatus(declareConfirm.bet.status);
+          const base = declareConfirm?.outcome === 'VOID'
+            ? 'The stake will be refunded to the user\'s wallet.'
+            : declareConfirm?.outcome === 'WON'
+              ? 'The payout will be credited to the user\'s wallet immediately.'
+              : 'The user\'s stake is forfeited.';
+          const redeclareNote = settled
+            ? ' Prior settlement credits are clawed back first, then this outcome is applied. Logged.'
+            : ' This action is logged.';
+          return `${base}${redeclareNote}`;
+        })()}
         details={declareConfirm ? [
           { label: 'Bet ID', value: declareConfirm.bet.id },
+          { label: 'Current status', value: declareConfirm.bet.status || '—' },
           { label: 'User', value: declareConfirm.bet.userName || declareConfirm.bet.userId || '—' },
           { label: 'Match', value: declareConfirm.bet.match || '—' },
           { label: 'Market', value: declareConfirm.bet.market || '—' },
@@ -518,7 +545,7 @@ export default function BettingDomainView({
           { label: 'Stake', value: money(declareConfirm.bet.stake) },
           { label: 'Potential Payout', value: money(declareConfirm.bet.payout) },
         ] : []}
-        confirmLabel={`Declare ${outcomeLabel}`}
+        confirmLabel={`${declareConfirm && !isOpenStatus(declareConfirm.bet.status) ? 'Redeclare' : 'Declare'} ${outcomeLabel}`}
         onConfirm={handleDeclare}
         onCancel={() => setDeclareConfirm(null)}
         loading={!!settlingId}
