@@ -31,17 +31,11 @@ import { getLoyaltySummary } from '../../utils/loyaltyPoints';
 import { useUserNotifications } from '../../hooks/useUserNotifications';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
 import './Sidebar.css';
+import { formatIstShort } from '../../utils/istTime';
 
 function formatNotifTime(value) {
   if (!value) return '';
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatIstShort(value, '');
 }
 
 export default function Sidebar() {

@@ -4,11 +4,12 @@ import AdminDataTable from '../components/AdminDataTable';
 import { StatusBadge } from '../components/AdminBadge';
 import { ADMIN_ROLES, ROLE_ALLOWED_DOMAINS } from '../permissions/AdminRBACGate';
 import { useAdminToast } from '../components/AdminToastContext';
+import { formatIst, formatIstDateTime } from '../../../utils/istTime';
 
 function fmtTs(v) {
   if (!v) return '—';
   try {
-    return new Date(v).toLocaleString();
+    return formatIstDateTime(v);
   } catch {
     return String(v);
   }

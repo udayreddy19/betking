@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useUserNotifications } from '../../hooks/useUserNotifications';
 import './NotificationCenter.css';
+import { formatIst, formatIstDateTime } from '../../utils/istTime';
 
 const CATEGORIES = [
   { id: 'ALL', label: 'All' },
@@ -129,7 +130,7 @@ export default function NotificationCenter() {
                   <span className="notif-center__body">{n.body || n.message || ''}</span>
                   <time dateTime={n.createdAt || n.created_at}>
                     {n.createdAt || n.created_at
-                      ? new Date(n.createdAt || n.created_at).toLocaleString()
+                      ? formatIstDateTime(n.createdAt || n.created_at)
                       : ''}
                   </time>
                 </button>

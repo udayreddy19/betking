@@ -11,6 +11,7 @@ import AdminTabs from '../components/AdminTabs';
 import KycReminderUsersPanel from '../../../components/DatabaseInspector/KycReminderUsersPanel';
 import { useAdminRole, canAccessDomain, hasPermission, PERMISSIONS } from '../permissions/AdminRBACGate';
 import { AdminHub } from '../components/AdminTabs';
+import { formatIst, formatIstDateTime } from '../../../utils/istTime';
 
 const DOSSIER_TABS = [
   { id: 'profile', label: 'Profile' },
@@ -40,12 +41,13 @@ function money(n) {
 function formatReminderAt(value) {
   if (!value) return '—';
   try {
-    return new Date(value).toLocaleString(undefined, {
+    return formatIst(value, {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
+      hour12: true,
     });
   } catch {
     return String(value);
@@ -107,12 +109,13 @@ function isPendingKyc(status) {
 function formatDt(value) {
   if (!value) return '—';
   try {
-    return new Date(value).toLocaleString(undefined, {
+    return formatIst(value, {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
+      hour12: true,
     });
   } catch {
     return String(value);
@@ -190,17 +193,17 @@ function ResponsibleGamingAdminPanel() {
           {
             header: 'Cooling-off',
             key: 'coolingOffUntil',
-            render: (r) => (r.coolingOffUntil ? new Date(r.coolingOffUntil).toLocaleString('en-IN') : '—'),
+            render: (r) => (r.coolingOffUntil ? formatIstDateTime(r.coolingOffUntil) : '—'),
           },
           {
             header: 'Self-exclusion',
             key: 'selfExcludedUntil',
-            render: (r) => (r.selfExcludedUntil ? new Date(r.selfExcludedUntil).toLocaleString('en-IN') : '—'),
+            render: (r) => (r.selfExcludedUntil ? formatIstDateTime(r.selfExcludedUntil) : '—'),
           },
           {
             header: 'Updated',
             key: 'updatedAt',
-            render: (r) => (r.updatedAt ? new Date(r.updatedAt).toLocaleString('en-IN') : '—'),
+            render: (r) => (r.updatedAt ? formatIstDateTime(r.updatedAt) : '—'),
           },
         ]}
       />
@@ -1066,7 +1069,7 @@ function CustomersDomainPanels({
                   {u.name || u.id}
                   {' · '}
                   {u.email || 'no email'}
-                  {u.cooldownUntil ? ` · cooldown until ${new Date(u.cooldownUntil).toLocaleString('en-IN')}` : ''}
+                  {u.cooldownUntil ? ` · cooldown until ${formatIstDateTime(u.cooldownUntil)}` : ''}
                 </li>
               ))}
               {confirm.users.length > 12 && (

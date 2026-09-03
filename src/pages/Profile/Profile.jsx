@@ -21,6 +21,7 @@ import ProfileDepositFreebetCard from './ProfileDepositFreebetCard';
 import ProfileMarketingPrefsCard from './ProfileMarketingPrefsCard';
 import '../Legal/LegalPage.css';
 import './Profile.css';
+import { formatIst, formatIstDateTime } from '../../utils/istTime';
 
 export default function Profile() {
   const {
@@ -184,7 +185,7 @@ export default function Profile() {
     const headers = ['Transaction ID', 'Date', 'Type', 'Description', 'Amount (INR)'];
     const rows = transactions.map((t) => [
       t.id,
-      t.createdAt ? new Date(t.createdAt).toLocaleString() : '',
+      t.createdAt ? formatIstDateTime(t.createdAt) : '',
       t.type,
       `"${(t.label || '').replace(/"/g, '""')}"`,
       t.amount,
@@ -408,7 +409,7 @@ export default function Profile() {
               <p>
                 Take a short break. Cooling-off blocks deposits and bet placement until the period ends.
                 {user?.coolingOffUntil && new Date(user.coolingOffUntil) > new Date()
-                  ? ` Active until ${new Date(user.coolingOffUntil).toLocaleString('en-IN')}.`
+                  ? ` Active until ${formatIstDateTime(user.coolingOffUntil)}.`
                   : ''}
               </p>
               <div className="rg-exclude-controls">

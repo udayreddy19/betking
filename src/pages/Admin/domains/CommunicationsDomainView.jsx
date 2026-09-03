@@ -32,6 +32,23 @@ const FALLBACK_TEMPLATES = [
   { id: 'referral', name: 'Referral', group: 'ops', heading: 'Invite friends, earn rewards', subject: 'Share OddsYra and earn referral rewards', body: 'Invite friends to OddsYra with your referral link.\n\nWhen they verify, you both can earn a free bet. Open your profile to copy your code.', ctaLabel: 'Get referral link', ctaPath: '/profile', mailboxId: 'promos' },
   { id: 'responsible-gaming', name: 'Responsible gaming', group: 'ops', heading: 'Play within your limits', subject: 'Set limits on your OddsYra account', body: 'You can set deposit, loss, and session limits any time from your OddsYra profile.\n\nIf you need a break, use time-out or self-exclusion. Help is always available.', ctaLabel: 'Set limits', ctaPath: '/profile?tab=responsible-gaming', mailboxId: 'support' },
   { id: 'account-hold', name: 'Account hold', group: 'ops', heading: 'Your account needs a review', subject: 'Action needed on your OddsYra account', body: 'We have placed a temporary review on your OddsYra account.\n\nBetting or withdrawals may be limited until this is cleared. Reply to this email if you have questions.', ctaLabel: 'Contact support', ctaPath: '/profile?tab=support', mailboxId: 'alerts' },
+  { id: 'need-info', name: 'Need more info', group: 'more', heading: 'We need a bit more information', subject: 'OddsYra Support needs a few details', body: 'Thanks for writing in.\n\nTo finish this request we need a little more information from you. Reply to this email with the details and we will pick it up right away.', ctaLabel: 'Reply in app', ctaPath: '/profile?tab=support', mailboxId: 'support' },
+  { id: 'looking-into-it', name: 'Looking into it', group: 'more', heading: 'We are looking into this', subject: 'OddsYra Support is reviewing your request', body: 'We have received your request and our team is reviewing it now.\n\nNo action is needed from you yet. We will email you as soon as we have an update.', ctaLabel: 'Open support', ctaPath: '/profile?tab=support', mailboxId: 'support' },
+  { id: 'delay-apology', name: 'Delay apology', group: 'more', heading: 'Sorry for the delay', subject: 'Sorry for the wait — OddsYra Support', body: 'Sorry this has taken longer than it should.\n\nYour request is still open with our team and we are treating it as a priority. We will come back to you shortly.', ctaLabel: 'Open ticket', ctaPath: '/profile?tab=support', mailboxId: 'support' },
+  { id: 'kyc-approved', name: 'KYC approved', group: 'more', heading: 'Your KYC is approved', subject: 'Your OddsYra account is fully verified', body: 'Your KYC documents have been approved.\n\nYour OddsYra account is now fully verified, with higher limits and withdrawals unlocked.', ctaLabel: 'View account', ctaPath: '/profile', mailboxId: 'no-reply' },
+  { id: 'withdrawal-paid', name: 'Withdrawal paid', group: 'more', heading: 'Your withdrawal has been paid', subject: 'Your OddsYra withdrawal has been sent', body: 'Your withdrawal has been paid from OddsYra.\n\nPlease check your UPI or bank app. If it does not show in a few minutes, reply with the UTR and we will check the payout.', ctaLabel: 'Open wallet', ctaPath: '/wallet', mailboxId: 'support' },
+  { id: 'withdrawal-declined', name: 'Withdrawal declined', group: 'more', heading: 'Your withdrawal could not be paid', subject: 'Update on your OddsYra withdrawal', body: 'We could not complete your withdrawal this time.\n\nThe amount remains in your OddsYra wallet. Please check your UPI / bank details and request again, or reply if you need help.', ctaLabel: 'Open wallet', ctaPath: '/wallet', mailboxId: 'support' },
+  { id: 'upi-needed', name: 'UPI needed', group: 'more', heading: 'We need your UPI ID', subject: 'OddsYra needs a UPI ID for your payout', body: 'To pay your withdrawal we need a valid UPI ID on your account.\n\nPlease reply with the UPI ID and the name registered on it, and we will process the payout.', ctaLabel: 'Open wallet', ctaPath: '/wallet', mailboxId: 'support' },
+  { id: 'bank-needed', name: 'Bank details needed', group: 'more', heading: 'We need your bank details', subject: 'OddsYra needs bank details for your payout', body: 'To complete your withdrawal we need your bank account details.\n\nPlease reply with account holder name, account number, and IFSC. They must match your KYC name.', ctaLabel: 'Open wallet', ctaPath: '/wallet', mailboxId: 'support' },
+  { id: 'verify-email', name: 'Verify email', group: 'more', heading: 'Please verify your email', subject: 'Verify your OddsYra email address', body: 'Please verify your email so we can keep your OddsYra account secure.\n\nOpen your profile and request a new verification link if the last one expired.', ctaLabel: 'Open profile', ctaPath: '/profile', mailboxId: 'no-reply' },
+  { id: 'account-restored', name: 'Account restored', group: 'more', heading: 'Your account is active again', subject: 'Your OddsYra account has been restored', body: 'The review on your OddsYra account is complete and access has been restored.\n\nYou can log in, place bets, and use your wallet as usual.', ctaLabel: 'Open OddsYra', ctaPath: '/sports', mailboxId: 'no-reply' },
+  { id: 'bet-void', name: 'Bet voided', group: 'more', heading: 'Your bet was voided', subject: 'Update on your OddsYra bet', body: 'One of your bets was voided and the stake has been returned to your wallet.\n\nThis usually happens when the market is cancelled or the selection did not get a fair chance. Open Bets for the details.', ctaLabel: 'View bets', ctaPath: '/my-bets', mailboxId: 'support' },
+  { id: 'settlement-delay', name: 'Settlement delay', group: 'more', heading: 'Your bet is still being settled', subject: 'OddsYra is settling your bet', body: 'Your bet is still being settled. Official result confirmation can take a little time after the match.\n\nWinnings, if any, will be credited automatically. No action is needed from you.', ctaLabel: 'View bets', ctaPath: '/my-bets', mailboxId: 'support' },
+  { id: 'promo-code', name: 'Promo code', group: 'more', heading: 'Your promo code is ready', subject: 'Your exclusive OddsYra promo code', body: 'Here is an exclusive OddsYra promo code for you.\n\nOpen Promotions, enter the code, and follow the terms on screen. Codes are one-time and may expire.', ctaLabel: 'Apply code', ctaPath: '/promotions', mailboxId: 'promos' },
+  { id: 'deposit-offer', name: 'Deposit offer', group: 'more', heading: 'A deposit offer for you', subject: 'Deposit and unlock your OddsYra offer', body: 'A deposit offer is waiting on your OddsYra account.\n\nMake a qualifying deposit and the free bet / bonus will credit after the payment is captured. Terms apply.', ctaLabel: 'View offer', ctaPath: '/promotions', mailboxId: 'promos' },
+  { id: 'cashback', name: 'Cashback', group: 'more', heading: 'Your cashback is ready', subject: 'OddsYra cashback has been credited', body: 'Cashback from your recent play has been credited to your OddsYra account.\n\nOpen Rewards to see the amount and when it expires.', ctaLabel: 'View rewards', ctaPath: '/rewards', mailboxId: 'promos' },
+  { id: 'daily-spin', name: 'Daily spin', group: 'more', heading: 'Your daily spin is waiting', subject: 'Spin today on OddsYra', body: 'Your OddsYra daily spin is ready.\n\nOpen Rewards, spin once, and claim whatever lands — free bets and other prizes are in the wheel.', ctaLabel: 'Spin now', ctaPath: '/rewards', mailboxId: 'promos' },
+  { id: 'cricket-offer', name: 'Cricket offer', group: 'more', heading: 'Cricket markets are live', subject: 'Cricket is live on OddsYra', body: 'Live cricket markets are up on OddsYra.\n\nOpen Sports, pick a match, and use any free bet waiting on your account. Odds move fast — bet in play while the over is live.', ctaLabel: 'Open cricket', ctaPath: '/sports', mailboxId: 'promos' },
 ];
 
 function playerDisplayName(user) {
@@ -113,6 +130,10 @@ function ComposeMailPanel() {
   );
   const opsTemplates = useMemo(
     () => templates.filter((t) => t.group === 'ops'),
+    [templates],
+  );
+  const moreTemplates = useMemo(
+    () => templates.filter((t) => t.group === 'more'),
     [templates],
   );
 
@@ -247,6 +268,10 @@ function ComposeMailPanel() {
         <div className="admin-compose-mail__shortcuts-label">More shortcuts</div>
       )}
       {opsTemplates.length > 0 && renderTemplateRow(opsTemplates)}
+      {moreTemplates.length > 0 && (
+        <div className="admin-compose-mail__shortcuts-label">Also</div>
+      )}
+      {moreTemplates.length > 0 && renderTemplateRow(moreTemplates)}
 
       <form onSubmit={handleSend} className="admin-compose-mail__form">
         <fieldset className="admin-compose-mail__from">

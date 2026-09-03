@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { MotionConfig } from 'motion/react';
 import { ThemeProvider } from './context/ThemeContext';
@@ -7,6 +7,7 @@ import { LiveSportsProvider } from './context/LiveSportsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CasinoProvider } from './context/CasinoContext';
 import { springUi } from './utils/motionPresets';
+import { lazyWithRetry } from './utils/lazyWithRetry';
 
 import Header from './components/Header/Header';
 import Footer from './components/Footer/Footer';
@@ -40,30 +41,30 @@ import ResponsibleGaming from './pages/Legal/ResponsibleGaming';
 import Help from './pages/Legal/Help';
 import NotFound from './pages/Legal/NotFound';
 
-const VerifyEmailPage = lazy(() => import('./pages/Auth/VerifyEmailPage'));
-const ResetPasswordPage = lazy(() => import('./pages/Auth/ResetPasswordPage'));
-const OAuthGoogleCallback = lazy(() => import('./pages/Auth/OAuthGoogleCallback'));
-const CompleteProfile = lazy(() => import('./pages/Auth/CompleteProfile'));
+const VerifyEmailPage = lazyWithRetry(() => import('./pages/Auth/VerifyEmailPage'));
+const ResetPasswordPage = lazyWithRetry(() => import('./pages/Auth/ResetPasswordPage'));
+const OAuthGoogleCallback = lazyWithRetry(() => import('./pages/Auth/OAuthGoogleCallback'));
+const CompleteProfile = lazyWithRetry(() => import('./pages/Auth/CompleteProfile'));
 
-const Sports = lazy(() => import('./pages/Sports/Sports'));
-const Casino = lazy(() => import('./pages/Casino/Casino'));
-const LiveCasino = lazy(() => import('./pages/LiveCasino/LiveCasino'));
-const Admin = lazy(() => import('./pages/Admin/Admin'));
-const TraderConsole = lazy(() => import('./pages/Trader/TraderConsole'));
-const ApiDocs = lazy(() => import('./pages/ApiDocs/ApiDocs'));
-const Vip = lazy(() => import('./pages/Vip/Vip'));
-const IPLSRLAdmin = lazy(() => import('./pages/Admin/IPLSRL/IPLSRLAdmin'));
-const NotificationCenter = lazy(() => import('./pages/Notifications/NotificationCenter'));
-const MyBetsPage = lazy(() => import('./pages/MyBets/MyBetsPage'));
-const InvitePage = lazy(() => import('./pages/Invite/InvitePage'));
-const WalletDashboard = lazy(() => import('./pages/Wallet/WalletDashboard'));
-const SupportHome = lazy(() => import('./pages/Support/SupportHome'));
-const TicketsListPage = lazy(() => import('./pages/Support/TicketsListPage'));
-const CreateTicketPage = lazy(() => import('./pages/Support/CreateTicketPage'));
-const TicketDetailPage = lazy(() => import('./pages/Support/TicketDetailPage'));
-const MyRewards = lazy(() => import('./pages/Rewards/MyRewards'));
-const OddsYraSrl = lazy(() => import('./pages/Srl/OddsYraSrl'));
-const DepositPage = lazy(() => import('./pages/Wallet/DepositPage'));
+const Sports = lazyWithRetry(() => import('./pages/Sports/Sports'));
+const Casino = lazyWithRetry(() => import('./pages/Casino/Casino'));
+const LiveCasino = lazyWithRetry(() => import('./pages/LiveCasino/LiveCasino'));
+const Admin = lazyWithRetry(() => import('./pages/Admin/Admin'));
+const TraderConsole = lazyWithRetry(() => import('./pages/Trader/TraderConsole'));
+const ApiDocs = lazyWithRetry(() => import('./pages/ApiDocs/ApiDocs'));
+const Vip = lazyWithRetry(() => import('./pages/Vip/Vip'));
+const IPLSRLAdmin = lazyWithRetry(() => import('./pages/Admin/IPLSRL/IPLSRLAdmin'));
+const NotificationCenter = lazyWithRetry(() => import('./pages/Notifications/NotificationCenter'));
+const MyBetsPage = lazyWithRetry(() => import('./pages/MyBets/MyBetsPage'));
+const InvitePage = lazyWithRetry(() => import('./pages/Invite/InvitePage'));
+const WalletDashboard = lazyWithRetry(() => import('./pages/Wallet/WalletDashboard'));
+const SupportHome = lazyWithRetry(() => import('./pages/Support/SupportHome'));
+const TicketsListPage = lazyWithRetry(() => import('./pages/Support/TicketsListPage'));
+const CreateTicketPage = lazyWithRetry(() => import('./pages/Support/CreateTicketPage'));
+const TicketDetailPage = lazyWithRetry(() => import('./pages/Support/TicketDetailPage'));
+const MyRewards = lazyWithRetry(() => import('./pages/Rewards/MyRewards'));
+const OddsYraSrl = lazyWithRetry(() => import('./pages/Srl/OddsYraSrl'));
+const DepositPage = lazyWithRetry(() => import('./pages/Wallet/DepositPage'));
 
 function CasinoComingSoon() {
   return <Navigate to="/sports" replace />;

@@ -10,6 +10,7 @@ import AnimatedMotionGiftIcon from '../AnimatedMotionGiftIcon/AnimatedMotionGift
 import './DailySpinModal.css';
 
 import { playWinSound } from '../../utils/soundEffects';
+import { formatIst } from '../../utils/istTime';
 
 const WHEEL_SECTORS = DAILY_SPIN_PRIZES;
 
@@ -17,12 +18,12 @@ function formatExpiryLabel(prize) {
   if (!prize || prize.type === 'xp') return null;
   if (prize.expired) return 'Expired — unused spin credit was removed';
   if (prize.expiresAt) {
-    const dt = new Date(prize.expiresAt);
-    return `Use within ${SPIN_PRIZE_TTL_HOURS}h · expires ${dt.toLocaleString('en-IN', {
+    return `Use within ${SPIN_PRIZE_TTL_HOURS}h · expires ${formatIst(prize.expiresAt, {
       hour: '2-digit',
       minute: '2-digit',
       day: 'numeric',
       month: 'short',
+      hour12: true,
     })}`;
   }
   return `Use bonus/freebet within ${SPIN_PRIZE_TTL_HOURS} hours or it expires`;

@@ -3,6 +3,7 @@ import AdminCard from '../../components/AdminCard';
 import ApiTestButton from './ApiTestButton';
 import ApiResponseViewer from './ApiResponseViewer';
 import ApiStatusBadge from './ApiStatusBadge';
+import { formatIst, formatIstDateTime } from '../../../../utils/istTime';
 
 export default function OddsEnginePanel({ api, result, testing, onTest }) {
   const summary = result?.summary || {};
@@ -47,7 +48,7 @@ export default function OddsEnginePanel({ api, result, testing, onTest }) {
           </div>
           <div>
             <span>Generated</span>
-            <strong>{summary.generatedAt ? new Date(summary.generatedAt).toLocaleString() : '—'}</strong>
+            <strong>{summary.generatedAt ? formatIstDateTime(summary.generatedAt) : '—'}</strong>
           </div>
           <div>
             <span>Duration</span>

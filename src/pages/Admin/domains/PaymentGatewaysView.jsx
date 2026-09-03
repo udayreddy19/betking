@@ -11,6 +11,7 @@ import {
   SettingsIcon,
 } from '../../../icons/animate/index';
 import './PaymentGatewaysView.css';
+import { formatIst, formatIstDateTime } from '../../../utils/istTime';
 
 export default function PaymentGatewaysView() {
   const [gateways, setGateways] = useState([]);
@@ -333,7 +334,7 @@ export default function PaymentGatewaysView() {
 
                   <div className="pg-volume-footer">
                     <span>Settled Volume: <strong className="pg-volume-highlight">₹{(stats.successVolumeInr || 0).toLocaleString('en-IN')}</strong></span>
-                    <span>Last Payment: <strong>{stats.lastPaymentAt ? new Date(stats.lastPaymentAt).toLocaleString('en-IN') : 'None'}</strong></span>
+                    <span>Last Payment: <strong>{stats.lastPaymentAt ? formatIstDateTime(stats.lastPaymentAt) : 'None'}</strong></span>
                   </div>
                 </div>
 

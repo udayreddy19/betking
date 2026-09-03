@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FiActivity, FiUsers, FiDollarSign, FiShield, FiSearch, FiCheckCircle, FiRefreshCw, FiCpu, FiAlertTriangle } from '../../icons';
 import './AdminControlCenter.css';
+import { formatIst, formatIstDateTime } from '../../utils/istTime';
 
 export default function AdminControlCenter() {
   const [overview, setOverview] = useState(null);
@@ -181,7 +182,7 @@ export default function AdminControlCenter() {
                     <span className="acc-timeline-badge">{item.type}</span>
                     <div>
                       <h5 className="font-bold text-slate-200 text-xs">{item.title}</h5>
-                      <p className="text-xs text-slate-400">{item.details} • {new Date(item.timestamp).toLocaleString()}</p>
+                      <p className="text-xs text-slate-400">{item.details} • {formatIstDateTime(item.timestamp)}</p>
                     </div>
                   </div>
                 ))}

@@ -5,6 +5,7 @@ import { formatInr } from '../../utils/walletBalance';
 import { FANTASY_CONTESTS, loadFantasyEntries, saveFantasyEntry } from '../../data/fantasyContests';
 import { DEMO_MODE, FANTASY_JOIN_ENABLED } from '../../utils/featureFlags';
 import './Fantasy.css';
+import { formatIst, formatIstDateTime } from '../../utils/istTime';
 
 export default function Fantasy() {
   const { user, isLoggedIn, openLoginModal, showToast } = useAuth();
@@ -131,7 +132,7 @@ export default function Fantasy() {
                   <span>
                     {entry.entryFee === 0 ? 'Free' : formatInr(entry.entryFee)}
                     {' · '}
-                    {new Date(entry.joinedAt).toLocaleString('en-IN')}
+                    {formatIstDateTime(entry.joinedAt)}
                   </span>
                 </li>
               ))}

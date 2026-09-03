@@ -1,16 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { adminApiClient } from '../../pages/Admin/api/adminApiClient';
+import { formatIst } from '../../utils/istTime';
 import './KycReminderUsersPanel.css';
 
 function formatWhen(value) {
   if (!value) return null;
   try {
-    return new Date(value).toLocaleString(undefined, {
+    return formatIst(value, {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
+      hour12: true,
     });
   } catch {
     return String(value);

@@ -7,6 +7,7 @@ import AdminCard from '../components/AdminCard';
 import AdminTabs from '../components/AdminTabs';
 import AdminKPI from '../components/AdminKPI';
 import { AdminKpiDrillDrawer, useAdminKpiDrilldown } from '../hooks/useAdminKpiDrilldown';
+import { formatIst, formatIstDateTime, formatIstDate } from '../../../utils/istTime';
 
 function money(n) {
   if (n == null || Number.isNaN(Number(n))) return '—';
@@ -1739,7 +1740,7 @@ function VipTiersPanel() {
             {
               header: 'When',
               key: 'changedAt',
-              render: (r) => (r.changedAt ? new Date(r.changedAt).toLocaleString() : '—'),
+              render: (r) => (r.changedAt ? formatIstDateTime(r.changedAt) : '—'),
             },
           ]}
         />
@@ -2383,7 +2384,7 @@ function CrmSegmentsPanel() {
           { header: 'Description', key: 'description', render: (r) => r.description || '—' },
           { header: 'Members', key: 'member_count', render: (r) => (r.member_count != null ? Number(r.member_count).toLocaleString() : '0') },
           { header: 'Auto-eval', key: 'auto_evaluate', render: (r) => (r.auto_evaluate ? 'Yes' : 'No') },
-          { header: 'Updated', key: 'updated_at', render: (r) => (r.updated_at ? new Date(r.updated_at).toLocaleString('en-IN') : '—') },
+          { header: 'Updated', key: 'updated_at', render: (r) => (r.updated_at ? formatIstDateTime(r.updated_at) : '—') },
           {
             header: 'Actions',
             key: 'actions',
@@ -2807,7 +2808,7 @@ function PromoAbuseAlertsPanel() {
           {
             header: 'Created',
             key: 'created_at',
-            render: (r) => (r.created_at ? new Date(r.created_at).toLocaleString('en-IN') : '—'),
+            render: (r) => (r.created_at ? formatIstDateTime(r.created_at) : '—'),
           },
           {
             header: 'Action',
@@ -3235,7 +3236,7 @@ function DiscreteRewardsAdminPanel() {
           {
             header: 'Expires At',
             key: 'expiresAt',
-            render: (r) => (r.expiresAt ? new Date(r.expiresAt).toLocaleDateString() : '—'),
+            render: (r) => (r.expiresAt ? formatIstDate(r.expiresAt) : '—'),
           },
           {
             header: 'Used In Bet',
@@ -3343,7 +3344,7 @@ function DiscreteRewardsAdminPanel() {
                         <td style={{ padding: '8px' }}>{l.previous_status || '—'} → {l.new_status}</td>
                         <td style={{ padding: '8px', fontFamily: 'monospace' }}>{l.bet_id || '—'}</td>
                         <td style={{ padding: '8px' }}>{l.notes || '—'}</td>
-                        <td style={{ padding: '8px', whiteSpace: 'nowrap' }}>{new Date(l.created_at).toLocaleString()}</td>
+                        <td style={{ padding: '8px', whiteSpace: 'nowrap' }}>{formatIstDateTime(l.created_at)}</td>
                       </tr>
                     ))}
                   </tbody>

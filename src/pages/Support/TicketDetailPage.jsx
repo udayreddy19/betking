@@ -10,17 +10,11 @@ import {
   validateSupportFile,
 } from '../../utils/supportAttachments';
 import './SupportPages.css';
+import { formatIstShort } from '../../utils/istTime';
 
 function formatTime(val) {
   if (!val) return '';
-  const d = new Date(val);
-  if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatIstShort(val, '');
 }
 
 export default function TicketDetailPage() {

@@ -3,6 +3,7 @@ import AdminCard from '../../components/AdminCard';
 import ApiStatusBadge from './ApiStatusBadge';
 import ApiConfigurationBadge from './ApiConfigurationBadge';
 import ApiTestButton from './ApiTestButton';
+import { formatIst, formatIstDateTime } from '../../../../utils/istTime';
 
 function relativeTime(iso) {
   if (!iso) return 'Never';
@@ -15,7 +16,7 @@ function relativeTime(iso) {
   if (m < 60) return `${m} min ago`;
   const h = Math.round(m / 60);
   if (h < 48) return `${h}h ago`;
-  return new Date(iso).toLocaleString();
+  return formatIstDateTime(iso);
 }
 
 export default function ApiCard({

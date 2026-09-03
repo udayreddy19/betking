@@ -10,6 +10,7 @@ import AdminKPI from '../components/AdminKPI';
 import { AdminKpiDrillDrawer, useAdminKpiDrilldown } from '../hooks/useAdminKpiDrilldown';
 import PaymentGatewaysView from './PaymentGatewaysView';
 import { AdminHub } from '../components/AdminTabs';
+import { formatIst, formatIstDateTime, todayIstYmd } from '../../../utils/istTime';
 
 function money(n) {
   if (n == null || Number.isNaN(Number(n))) return '—';
@@ -145,7 +146,7 @@ function PendingFinancialApprovalsPanel() {
           {
             header: 'Created',
             key: 'created_at',
-            render: (r) => (r.created_at ? new Date(r.created_at).toLocaleString('en-IN') : '—'),
+            render: (r) => (r.created_at ? formatIstDateTime(r.created_at) : '—'),
           },
           {
             header: 'Actions',
@@ -219,7 +220,7 @@ function MakerCheckerPanel() {
     if (dateFrom || dateTo) {
       const ts = w.createdAt || w.created_at || w.requestedAt;
       if (ts) {
-        const d = new Date(ts).toISOString().slice(0, 10);
+        const d = todayIstYmd(ts);
         if (dateFrom && d < dateFrom) return false;
         if (dateTo && d > dateTo) return false;
       }
@@ -922,7 +923,7 @@ function PaymentGatewaysPanel() {
             {
               header: 'Created At',
               key: 'createdAt',
-              render: (r) => (r.createdAt ? new Date(r.createdAt).toLocaleString('en-IN') : '—'),
+              render: (r) => (r.createdAt ? formatIstDateTime(r.createdAt) : '—'),
             },
             {
               header: 'Actions',
@@ -1183,7 +1184,7 @@ function FinanceHealthPanel() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `reconciliation-cases-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `reconciliation-cases-${todayIstYmd()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     showToast('Exported reconciliation cases (audit snapshot only)', 'success');
@@ -1333,7 +1334,7 @@ function FinanceHealthPanel() {
           {
             header: 'Detected',
             key: 'detected_at',
-            render: (r) => (r.detected_at ? new Date(r.detected_at).toLocaleString('en-IN') : '—'),
+            render: (r) => (r.detected_at ? formatIstDateTime(r.detected_at) : '—'),
           },
           {
             header: 'Action',
@@ -1461,7 +1462,7 @@ function DepositsReviewPanel() {
           {
             header: 'Created',
             key: 'createdAt',
-            render: (r) => (r.createdAt ? new Date(r.createdAt).toLocaleString('en-IN') : '—'),
+            render: (r) => (r.createdAt ? formatIstDateTime(r.createdAt) : '—'),
           },
           {
             header: 'Action',
@@ -1569,7 +1570,7 @@ function FinanceControlCenterPanel() {
 }
 
 function DailyClosingPanel() {
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(() => todayIstYmd());
   const [pack, setPack] = useState(null);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -1678,7 +1679,7 @@ function FinanceAnomaliesPanel() {
           { header: 'Severity', key: 'severity', render: (r) => <StatusBadge status={r.severity} /> },
           { header: 'Status', key: 'status' },
           { header: 'Entity', key: 'affectedEntity' },
-          { header: 'Detected', key: 'detectedAt', render: (r) => (r.detectedAt ? new Date(r.detectedAt).toLocaleString() : '—') },
+          { header: 'Detected', key: 'detectedAt', render: (r) => (r.detectedAt ? formatIstDateTime(r.detectedAt) : '—') },
           { header: 'Evidence', key: 'evidence', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.7rem' }}>{JSON.stringify(r.evidence || {}).slice(0, 80)}</span> },
         ]}
       />
@@ -1920,7 +1921,7 @@ function WalletInvestigationPanel() {
                   {
                     header: 'Timestamp',
                     key: 'createdAt',
-                    render: (r) => (r.createdAt ? new Date(r.createdAt).toLocaleString('en-IN') : '—'),
+                    render: (r) => (r.createdAt ? formatIstDateTime(r.createdAt) : '—'),
                   },
                   {
                     header: 'Event & Description',

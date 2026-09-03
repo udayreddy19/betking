@@ -19,6 +19,7 @@ import { DEMO_MODE } from '../../utils/featureFlags';
 import { cleanKycMessage, isKycError, KYC_PROFILE_PATH } from '../../utils/kycUi';
 import RazorpayModal from '../RazorpayModal/RazorpayModal';
 import './DepositView.css';
+import { formatIstDateTime } from '../../utils/istTime';
 
 const QUICK_AMOUNTS = [1000, 2500, 5000, 10000, 25000, 50000];
 
@@ -244,7 +245,7 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
             amount: depositAmt,
             orderId: orderData.orderId || orderData.depositId,
             method: PAYMENT_METHODS.find((m) => m.id === selectedMethod)?.name || 'UPI',
-            date: new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }),
+            date: formatIstDateTime(new Date()),
           });
           setIsSuccess(true);
         } else {
@@ -254,7 +255,7 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
               amount: depositAmt,
               orderId: orderData.orderId || orderData.depositId,
               method: PAYMENT_METHODS.find((m) => m.id === selectedMethod)?.name || 'UPI',
-              date: new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }),
+              date: formatIstDateTime(new Date()),
             });
             setIsSuccess(true);
           } else {
@@ -268,7 +269,7 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
             amount: depositAmt,
             orderId: orderData.orderId || orderData.depositId,
             method: PAYMENT_METHODS.find((m) => m.id === selectedMethod)?.name || 'UPI',
-            date: new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }),
+            date: formatIstDateTime(new Date()),
           });
           setIsSuccess(true);
         } else {
@@ -343,7 +344,7 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
               amount: depositAmt,
               orderId: response?.razorpay_payment_id || orderData.orderId,
               method: PAYMENT_METHODS.find((m) => m.id === selectedMethod)?.name || 'UPI',
-              date: new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }),
+              date: formatIstDateTime(new Date()),
             });
             setIsSuccess(true);
           } catch (confirmErr) {
@@ -353,7 +354,7 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
                 amount: depositAmt,
                 orderId: response?.razorpay_payment_id || orderData.orderId,
                 method: PAYMENT_METHODS.find((m) => m.id === selectedMethod)?.name || 'UPI',
-                date: new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }),
+                date: formatIstDateTime(new Date()),
               });
               setIsSuccess(true);
             } else {
@@ -396,7 +397,7 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
       amount: parsedAmount,
       orderId: `DEMO_${Date.now().toString(36).toUpperCase()}`,
       method: PAYMENT_METHODS.find((m) => m.id === selectedMethod)?.name || 'UPI',
-      date: new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }),
+      date: formatIstDateTime(new Date()),
     });
     setIsSuccess(true);
   };

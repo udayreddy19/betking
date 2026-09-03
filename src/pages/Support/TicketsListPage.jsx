@@ -4,16 +4,10 @@ import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../utils/apiClient';
 import { extractTicketsFromResponse } from '../../utils/supportTickets';
 import './SupportPages.css';
+import { formatIstDate } from '../../utils/istTime';
 
 function formatDate(val) {
-  if (!val) return '—';
-  const d = new Date(val);
-  if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
+  return formatIstDate(val, '—');
 }
 
 function StatusBadge({ status }) {

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import AdminTabs from '../../components/AdminTabs';
 import ApiJsonViewer from './ApiJsonViewer';
 import ApiStatusBadge from './ApiStatusBadge';
+import { formatIst, formatIstDateTime } from '../../../../utils/istTime';
 
 function SportsFormatted({ summary }) {
   const matches = summary?.matches || [];
@@ -79,7 +80,7 @@ export default function ApiResponseViewer({ result, api }) {
         <ApiStatusBadge status={result.healthStatus} />
         <span>HTTP {result.statusCode ?? '—'}</span>
         <span>{result.responseTimeMs != null ? `${result.responseTimeMs}ms` : '—'}</span>
-        <span>{result.fetchedAt ? new Date(result.fetchedAt).toLocaleString() : ''}</span>
+        <span>{result.fetchedAt ? formatIstDateTime(result.fetchedAt) : ''}</span>
         {result.mock && <span className="api-explorer__mock">MOCK</span>}
       </div>
       {result.error && (

@@ -23,7 +23,7 @@ describe('Admin compose email', () => {
 
   it('lists instant templates with a mailbox each', () => {
     const templates = listAdminComposeTemplates();
-    expect(templates.length).toBeGreaterThanOrEqual(12);
+    expect(templates.length).toBeGreaterThanOrEqual(28);
     for (const tpl of templates) {
       expect(tpl.mailboxId).toBeTruthy();
       expect(boxesHas(tpl.mailboxId)).toBe(true);

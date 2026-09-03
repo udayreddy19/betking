@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { adminApiClient } from '../api/adminApiClient';
+import { formatIst, formatIstDateTime } from '../../../utils/istTime';
 
 export default function LedgerConsistencyPanel() {
   const [auditData, setAuditData] = useState(null);
@@ -68,7 +69,7 @@ export default function LedgerConsistencyPanel() {
                 {auditData.isHealthy ? '✅ Ledger Invariant Validated & Consistent' : '⚠️ Balance Discrepancy Detected'}
               </div>
               <div style={{ fontSize: '0.78rem', color: 'var(--admin-text-muted)', marginTop: '4px' }}>
-                Execution Time: {auditData.executionTimeMs}ms · Audited at {new Date(auditData.auditedAt).toLocaleString()}
+                Execution Time: {auditData.executionTimeMs}ms · Audited at {formatIstDateTime(auditData.auditedAt)}
               </div>
             </div>
             <span style={{

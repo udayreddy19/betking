@@ -19,6 +19,7 @@ import {
 } from '../../icons';
 import { apiFetch } from '../../utils/apiClient';
 import './WalletDashboard.css';
+import { formatIst, formatIstDateTime } from '../../utils/istTime';
 
 export default function WalletDashboard() {
   const navigate = useNavigate();
@@ -296,7 +297,7 @@ export default function WalletDashboard() {
                       <div className="wallet-tx-info">
                         <span className="wallet-tx-info__label">{tx.label}</span>
                         <span className="wallet-tx-info__time">
-                          {tx.createdAt ? new Date(tx.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '—'}
+                          {tx.createdAt ? formatIst(tx.createdAt, { dateStyle: 'medium', timeStyle: 'short' }) : '—'}
                         </span>
                       </div>
                     </div>
@@ -393,7 +394,7 @@ export default function WalletDashboard() {
                           {tx.utr ? <span className="wallet-table__subtext"> · UTR {tx.utr}</span> : null}
                         </td>
                         <td>
-                          {tx.createdAt ? new Date(tx.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '—'}
+                          {tx.createdAt ? formatIst(tx.createdAt, { dateStyle: 'medium', timeStyle: 'short' }) : '—'}
                         </td>
                         <td>{getStatusBadge(tx.status)}</td>
                         <td style={{ textAlign: 'right' }}>
@@ -491,7 +492,7 @@ export default function WalletDashboard() {
                   <div className="wallet-detail-row">
                     <span className="wallet-detail-row__key">Date & Time</span>
                     <span className="wallet-detail-row__val">
-                      {selectedTx.createdAt ? new Date(selectedTx.createdAt).toLocaleString('en-IN', { dateStyle: 'full', timeStyle: 'medium' }) : '—'}
+                      {selectedTx.createdAt ? formatIst(selectedTx.createdAt, { dateStyle: 'full', timeStyle: 'medium' }) : '—'}
                     </span>
                   </div>
 

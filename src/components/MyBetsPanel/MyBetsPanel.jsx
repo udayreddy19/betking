@@ -14,6 +14,7 @@ import { matchIdsEqual } from '../../../lib/matchIdPublic.mjs';
 import { findLiveMatch } from '../../utils/findLiveMatch';
 import { springSheet } from '../../utils/motionPresets';
 import './MyBetsPanel.css';
+import { formatIst, formatIstDateTime } from '../../utils/istTime';
 
 function parseOversCompleted(oversStr) {
   const m = String(oversStr ?? '').trim().match(/^(\d+)(?:\.(\d+))?$/);
@@ -562,7 +563,7 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
                       </span>
                     </div>
                     <span className="my-bets-time">
-                      {new Date(placed.placedAt).toLocaleString('en-IN')}
+                      {formatIstDateTime(placed.placedAt)}
                     </span>
                   </div>
 
@@ -644,7 +645,7 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
                   )}
                   {placed.settledAt && (
                     <div className="my-bets-settled-at">
-                      Settled {new Date(placed.settledAt).toLocaleString('en-IN')}
+                      Settled {formatIstDateTime(placed.settledAt)}
                     </div>
                   )}
 
@@ -757,7 +758,7 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
                                   <span className="my-bets-evidence-source">Source: {evidence?.source || 'Verified match event feed'}</span>
                                   {evidence?.verifiedAt && (
                                     <span className="my-bets-evidence-time">
-                                      Verified: {new Date(evidence.verifiedAt).toLocaleString('en-IN', {
+                                      Verified: {formatIst(evidence.verifiedAt, {
                                         day: '2-digit',
                                         month: 'short',
                                         year: 'numeric',
@@ -784,7 +785,7 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
                         <span className="my-bets-timeline__label">{step.label}</span>
                         {step.at ? (
                           <span className="my-bets-timeline__at">
-                            {new Date(step.at).toLocaleString('en-IN', {
+                            {formatIst(step.at, {
                               day: '2-digit',
                               month: 'short',
                               hour: '2-digit',

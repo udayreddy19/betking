@@ -11,6 +11,7 @@ import { getBenefitsForTier, MIN_WITHDRAW_INR } from '../../utils/vipBenefits';
 import { apiFetch } from '../../utils/apiClient';
 import { DEMO_MODE } from '../../utils/featureFlags';
 import './FinancialModals.css';
+import { formatIst, formatIstDateTime } from '../../utils/istTime';
 
 function statusColor(status) {
   if (status === 'won') return '#16a34a';
@@ -485,7 +486,7 @@ export default function FinancialModals({ modalType, onClose }) {
                     <div className="fin-muted" style={{ fontSize: '0.75rem' }}>
                       {w.method || 'UPI'}
                       {w.details ? ` · ${w.details}` : ''}
-                      {w.createdAt ? ` · ${new Date(w.createdAt).toLocaleString('en-IN')}` : (w.date ? ` · ${w.date}` : '')}
+                      {w.createdAt ? ` · ${formatIstDateTime(w.createdAt)}` : (w.date ? ` · ${w.date}` : '')}
                     </div>
                     <div style={{ fontSize: '0.7rem', color: '#eab308', fontWeight: 700, marginTop: '2px' }}>
                       {formatWithdrawalStatus(w.status)}
@@ -533,7 +534,7 @@ export default function FinancialModals({ modalType, onClose }) {
                     <div>
                       <div style={{ fontWeight: 800, color: positive ? '#166534' : '#991b1b' }}>{tx.label || tx.type}</div>
                       <div style={{ fontSize: '0.7rem', color: positive ? '#15803d' : '#b91c1c' }}>
-                        {tx.id} · {tx.createdAt ? new Date(tx.createdAt).toLocaleString('en-IN') : ''}
+                        {tx.id} · {tx.createdAt ? formatIstDateTime(tx.createdAt) : ''}
                       </div>
                     </div>
                     <span style={{ fontWeight: 900, color: positive ? '#16a34a' : '#dc2626' }}>
@@ -560,7 +561,7 @@ export default function FinancialModals({ modalType, onClose }) {
                         {bet.type?.toUpperCase()}
                         {bet.fundSource === 'bonus' ? ' · BONUS' : ' · CASH'}
                         {' · '}
-                        {new Date(bet.placedAt).toLocaleString('en-IN')}
+                        {formatIstDateTime(bet.placedAt)}
                       </span>
                       <span style={{ color: statusColor(status), fontWeight: 800 }}>{status.toUpperCase()}</span>
                     </div>

@@ -8,6 +8,7 @@ import { AdminKpiDrillDrawer, useAdminKpiDrilldown } from '../hooks/useAdminKpiD
 import { startVisibleInterval } from '../utils/visibleInterval';
 import EmergencyControlsPanel from '../components/EmergencyControlsPanel';
 import { AdminHub } from '../components/AdminTabs';
+import { formatIst, formatIstDateTime } from '../../../utils/istTime';
 
 function fmt(v) {
   if (v == null || Number.isNaN(Number(v))) return 'N/A';
@@ -368,7 +369,7 @@ function ControlTowerOpsPanel({ onNavigate }) {
         <div>
           <h2 className="admin-page-header__title">Health overview</h2>
           <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
-            Last updated: {lastUpdated ? new Date(lastUpdated).toLocaleString() : '—'}
+            Last updated: {lastUpdated ? formatIstDateTime(lastUpdated) : '—'}
             {error ? ` · ${error}` : ''}
             {' · Click any tile for details'}
           </p>
@@ -699,7 +700,7 @@ function ProductionHealthPanel() {
           <h2 className="admin-page-header__title">Production Health</h2>
           <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
             Overall: {health?.overall || 'UNKNOWN'}
-            {health?.lastUpdated ? ` · Last updated: ${new Date(health.lastUpdated).toLocaleString()}` : ''}
+            {health?.lastUpdated ? ` · Last updated: ${formatIstDateTime(health.lastUpdated)}` : ''}
             {error ? ` · ${error}` : ''}
             {' · Click any tile for details'}
           </p>
@@ -837,7 +838,7 @@ function BackupsDrPanel() {
         </p>
         {summary && (
           <p style={{ fontSize: '0.78rem', marginTop: 8 }}>
-            Last backup: {summary.lastBackupAt ? new Date(summary.lastBackupAt).toLocaleString() : '—'}
+            Last backup: {summary.lastBackupAt ? formatIstDateTime(summary.lastBackupAt) : '—'}
             {' · '}Status: {summary.lastStatus || '—'}
             {' · '}Age: {summary.ageHours != null ? `${summary.ageHours}h` : '—'}
           </p>
@@ -859,7 +860,7 @@ function BackupsDrPanel() {
           { header: 'Status', key: 'status', render: (r) => <StatusBadge status={r.status} /> },
           { header: 'Size', key: 'size_bytes', render: (r) => (r.size_bytes != null ? `${Math.round(r.size_bytes / 1024 / 1024)} MB` : '—') },
           { header: 'Duration', key: 'duration_ms', render: (r) => (r.duration_ms != null ? `${r.duration_ms} ms` : '—') },
-          { header: 'When', key: 'created_at', render: (r) => (r.created_at ? new Date(r.created_at).toLocaleString() : '—') },
+          { header: 'When', key: 'created_at', render: (r) => (r.created_at ? formatIstDateTime(r.created_at) : '—') },
         ]}
       />
     </div>

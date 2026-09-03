@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { adminApiClient } from '../api/adminApiClient';
+import { formatIstClock } from '../../../utils/istTime';
 
 /**
  * Global system status strip showing provider / infra health.
@@ -51,7 +52,7 @@ export default function AdminStatusBar() {
   const [health, setHealth] = useState(null);
   const [loadError, setLoadError] = useState(false);
   const [emergency, setEmergency] = useState(null);
-  const [serverTime, setServerTime] = useState(() => new Date().toISOString().slice(0, 16).replace('T', ' '));
+  const [serverTime, setServerTime] = useState(() => formatIstClock());
 
   useEffect(() => {
     let cancelled = false;
@@ -80,8 +81,8 @@ export default function AdminStatusBar() {
     loadHealth();
     const interval = setInterval(loadHealth, 30000);
     const clockInterval = setInterval(() => {
-      setServerTime(new Date().toISOString().slice(0, 16).replace('T', ' '));
-    }, 30000);
+      setServerTime(formatIstClock());
+    }, 1000);
 
     return () => {
       cancelled = true;
@@ -129,7 +130,7 @@ export default function AdminStatusBar() {
           </div>
         ))}
       </div>
-      <div className="admin-healthbar__clock">{serverTime} UTC</div>
+      <div className="admin-healthbar__clock">{serverTime} IST</div>
     </footer>
   );
 }

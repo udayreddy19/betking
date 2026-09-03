@@ -12,17 +12,11 @@ import {
   uploadSupportAttachment,
   validateSupportFile,
 } from '../../../utils/supportAttachments';
+import { formatIstShort } from '../../../utils/istTime';
 
 function formatMsgTime(value) {
   if (!value) return '';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatIstShort(value, '');
 }
 
 export default function SupportDomainView({
