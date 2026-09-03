@@ -103,6 +103,54 @@ describe('Milestone overs 0–N pricing', () => {
     expect(milestone(markets, 10)?.line).toBeGreaterThanOrEqual(68.5);
   });
 
+  it('drops 0–10 from the 7th over and 0–15 from the 10th over', () => {
+    const at6 = generateExtendedOverMarkets(liveState({
+      format: 'T20',
+      runs: 45,
+      wickets: 1,
+      ballsCompleted: 36, // 6.0 — still in window for 0–10? cutoff is 36 = start of 7th
+    }));
+    // ballsCompleted >= 36 → 0–10 suspended
+    expect(milestone(at6, 10)?.status).toBe('SUSPENDED');
+    expect(milestone(at6, 15)?.status).toBe('OPEN');
+
+    const at7 = generateExtendedOverMarkets(liveState({
+      format: 'T20',
+      runs: 52,
+      wickets: 1,
+      ballsCompleted: 37, // 6.1 — 7th over
+    }));
+    expect(milestone(at7, 10)?.status).toBe('SUSPENDED');
+    expect(milestone(at7, 15)?.status).toBe('OPEN');
+
+    const at10 = generateExtendedOverMarkets(liveState({
+      format: 'T20',
+      runs: 78,
+      wickets: 2,
+      ballsCompleted: 54, // 9.0 — start of 10th over
+    }));
+    expect(milestone(at10, 10)?.status).toBe('SUSPENDED');
+    expect(milestone(at10, 15)?.status).toBe('SUSPENDED');
+
+    // Still open just before cutoffs
+    const at5x5 = generateExtendedOverMarkets(liveState({
+      format: 'T20',
+      runs: 40,
+      wickets: 1,
+      ballsCompleted: 35, // 5.5
+    }));
+    expect(milestone(at5x5, 10)?.status).toBe('OPEN');
+    expect(milestone(at5x5, 15)?.status).toBe('OPEN');
+
+    const at9x5 = generateExtendedOverMarkets(liveState({
+      format: 'T20',
+      runs: 72,
+      wickets: 2,
+      ballsCompleted: 53, // 8.5
+    }));
+    expect(milestone(at9x5, 15)?.status).toBe('OPEN');
+  });
+
   it('caps soft live milestone Over odds like team totals', () => {
     const markets = generateExtendedOverMarkets(liveState({ format: 'T20' }));
     for (const overs of [5, 10, 15]) {
@@ -113,21 +161,5 @@ describe('Milestone overs 0–N pricing', () => {
       }
     }
   });
-
-  it('does not sell a 1.8-style Over with one over left in the window', () => {
-    const markets = generateExtendedOverMarkets(liveState({
-      format: 'T20',
-      runs: 80,
-      wickets: 2,
-      ballsCompleted: 54,
-    }));
-    const m = milestone(markets, 10);
-    expect(m?.status).toBe('OPEN');
-    expect(m.line).toBeGreaterThanOrEqual(83.5);
-    const over = overSel(m);
-    expect(over?.odds).toBeDefined();
-    if (over.odds <= 2.25) {
-      expect(over.odds).toBeLessThanOrEqual(MAX_LIVE_TOTAL_OVER_ODDS);
-    }
-  });
 });
+

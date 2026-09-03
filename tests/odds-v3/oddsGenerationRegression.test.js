@@ -748,6 +748,43 @@ describe('Odds generation regressions', () => {
     expect(!pp || pp.status === 'SUSPENDED').toBe(true);
   });
 
+  it('drops overs_0_10 from the 7th over and overs_0_15 from the 10th', () => {
+    const mid = buildCanonicalFromMatch({
+      id: 'ms_cut_7',
+      sport: 'cricket',
+      isLive: true,
+      matchState: 'in',
+      matchFormat: 'T20',
+      team1: { name: 'India', shortName: 'IND', runs: 55, wickets: 1 },
+      team2: { name: 'Australia', shortName: 'AUS', runs: 0, wickets: 0 },
+      liveDetails: {
+        runs: 55, wickets: 1, overs: '6.2',
+        firstRuns: 55, firstWickets: 1, firstOvers: '6.2', firstTeamName: 'India', inningsId: 1,
+      },
+    });
+    expect(mid.ballsCompleted).toBe(38);
+    const snap7 = generate(mid);
+    expect((snap7.markets || []).some((m) => m.marketId === 'i1_overs_0_10_total' && m.status === 'OPEN')).toBe(false);
+    expect((snap7.markets || []).some((m) => m.marketId === 'i1_overs_0_15_total' && m.status === 'OPEN')).toBe(true);
+
+    const late = buildCanonicalFromMatch({
+      id: 'ms_cut_10',
+      sport: 'cricket',
+      isLive: true,
+      matchState: 'in',
+      matchFormat: 'T20',
+      team1: { name: 'India', shortName: 'IND', runs: 82, wickets: 2 },
+      team2: { name: 'Australia', shortName: 'AUS', runs: 0, wickets: 0 },
+      liveDetails: {
+        runs: 82, wickets: 2, overs: '9.1',
+        firstRuns: 82, firstWickets: 2, firstOvers: '9.1', firstTeamName: 'India', inningsId: 1,
+      },
+    });
+    expect(late.ballsCompleted).toBe(55);
+    const snap10 = generate(late);
+    expect((snap10.markets || []).some((m) => m.marketId === 'i1_overs_0_15_total' && m.status === 'OPEN')).toBe(false);
+  });
+
   it('does not treat unlabeled overs2 alone as chase', () => {
     const state = buildCanonicalFromMatch({
       id: 'overs2_away_first',
