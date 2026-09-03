@@ -3,6 +3,7 @@ import { adminApiClient } from '../api/adminApiClient';
 import AdminDataTable from '../components/AdminDataTable';
 import { StatusBadge } from '../components/AdminBadge';
 import IPLSRLConsoleView from './IPLSRLConsoleView';
+import AdminRostersView from './AdminRostersView';
 
 export default function SportsDomainView({ subModule = 'catalog' }) {
   const [sports, setSports] = useState([]);
@@ -10,7 +11,7 @@ export default function SportsDomainView({ subModule = 'catalog' }) {
   const [totalMatches, setTotalMatches] = useState(0);
 
   useEffect(() => {
-    if (subModule === 'iplsrl-console') return undefined;
+    if (subModule === 'iplsrl-console' || subModule === 'rosters') return undefined;
     let cancelled = false;
     adminApiClient.get('/sports/catalog')
       .then((data) => {
@@ -31,16 +32,16 @@ export default function SportsDomainView({ subModule = 'catalog' }) {
     return <IPLSRLConsoleView />;
   }
 
+  if (subModule === 'rosters') {
+    return <AdminRostersView />;
+  }
+
   return (
     <div>
       <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
         <div>
           <h2 className="admin-page-header__title">
-            {subModule === 'providers'
-              ? 'Data feeds'
-              : subModule === 'rosters'
-                ? 'Rosters'
-                : 'Catalog'}
+            {subModule === 'providers' ? 'Data feeds' : 'Catalog'}
           </h2>
           <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
             Live catalog derived from aggregator matches ({totalMatches} total). Use Sports → OddsYra SRL Console for match control.

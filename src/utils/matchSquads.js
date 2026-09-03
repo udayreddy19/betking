@@ -8,21 +8,47 @@ function genderToken(name) {
   return '';
 }
 
-function teamsMatch(teamA, teamB) {
+/** Strip gender / virtual markers so "England" can match scorecard "England Women". */
+function baseTeamKey(name) {
+  return normalizeTeamKey(name)
+    .replace(/\b(women'?s?|wmn|men'?s?)\b/gi, ' ')
+    .replace(/\(\s*[wmv]\s*\)/gi, ' ')
+    .replace(/\bvirtual\b/gi, ' ')
+    .replace(/\s+/g, '')
+    .trim();
+}
+
+/**
+ * Match team labels across feed variants.
+ * Allows England ↔ England Women (admin bet titles often drop "Women"),
+ * but never Women's ↔ Men's when both genders are explicit,
+ * and never fuzzy-matches women franchises onto men's club names (Gujarat Women ↛ Gujarat Titans).
+ */
+export function teamsMatch(teamA, teamB) {
   if (!teamA || !teamB) return false;
   const ga = genderToken(teamA);
   const gb = genderToken(teamB);
   if (ga && gb && ga !== gb) return false;
-  if (isWomensOrVirtualSide(teamA) !== isWomensOrVirtualSide(teamB)
-    && (isWomensOrVirtualSide(teamA) || isWomensOrVirtualSide(teamB))) {
-    return false;
-  }
+
   const a = normalizeTeamKey(teamA).replace(/\s+/g, '');
   const b = normalizeTeamKey(teamB).replace(/\s+/g, '');
   if (!a || !b) return false;
   if (a === b) return true;
-  if (a.length >= 6 && b.length >= 6 && (b.includes(a) || a.includes(b))) return true;
-  return false;
+
+  const womenA = isWomensOrVirtualSide(teamA);
+  const womenB = isWomensOrVirtualSide(teamB);
+
+  // Same gender class — allow fuzzy includes (ENG Women ≈ England Women)
+  if (womenA === womenB) {
+    if (a.length >= 6 && b.length >= 6 && (b.includes(a) || a.includes(b))) return true;
+    return false;
+  }
+
+  // One side unmarked (e.g. bet title "England") vs feed "England Women":
+  // exact base-key only — no fuzzy includes (avoids Gujarat Women → Gujarat Titans).
+  const sa = baseTeamKey(teamA);
+  const sb = baseTeamKey(teamB);
+  return !!(sa && sb && sa === sb);
 }
 
 function squadsFromScorecard(match, team1Name, team2Name) {
@@ -54,6 +80,44 @@ function squadsFromScorecard(match, team1Name, team2Name) {
   };
 }
 
+/** Last-resort XI from live crease when feeds omit squads/scorecard. */
+function squadsFromLiveDetails(match, team1Name, team2Name) {
+  const ld = match?.liveDetails || {};
+  const map = new Map();
+  const push = (p, role) => {
+    if (!p?.name || isPlaceholderPlayerName(p.name)) return;
+    const key = p.name.toLowerCase();
+    const prev = map.get(key) || {};
+    map.set(key, { ...prev, ...p, name: p.name, role: prev.role || role || p.role || 'Player' });
+  };
+  push(ld.batter1, 'Batter');
+  push(ld.batter2, 'Batter');
+  push(ld.bowler, 'Bowler');
+  for (const p of ld.battingOrder || ld.batters || []) push(p, 'Batter');
+  for (const p of ld.bowlingOrder || ld.bowlers || []) push(p, 'Bowler');
+
+  const players = [...map.values()];
+  if (!players.length) return null;
+
+  const batName = ld.chaseTeamName || ld.firstTeamName || ld.battingTeam || null;
+  const battingIsTeam1 = batName ? teamsMatch(batName, team1Name) : true;
+  const batters = players.filter((p) => !/bowl/i.test(String(p.role || '')));
+  const bowlers = players.filter((p) => /bowl/i.test(String(p.role || '')));
+
+  return {
+    team1: {
+      name: team1Name,
+      players: battingIsTeam1 ? batters : bowlers,
+    },
+    team2: {
+      name: team2Name,
+      players: battingIsTeam1 ? bowlers : batters,
+    },
+    fromApi: true,
+    partial: true,
+  };
+}
+
 /** Map API squads to home/away team names on the match card. */
 export function resolveMatchSquads(match, team1Name, team2Name) {
   const squads = match?.squads;
@@ -75,6 +139,11 @@ export function resolveMatchSquads(match, team1Name, team2Name) {
   const fromScorecard = squadsFromScorecard(match, team1Name, team2Name);
   if (fromScorecard && (fromScorecard.team1.players.length || fromScorecard.team2.players.length)) {
     return fromScorecard;
+  }
+
+  const fromLive = squadsFromLiveDetails(match, team1Name, team2Name);
+  if (fromLive && (fromLive.team1.players.length || fromLive.team2.players.length)) {
+    return fromLive;
   }
 
   // Fallback to rich roster dataset lookup

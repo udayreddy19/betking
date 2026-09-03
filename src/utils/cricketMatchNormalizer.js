@@ -344,26 +344,89 @@ export function normalizeMatch(raw = {}, previous = {}, options = {}) {
     }
   } else {
     // Legacy / LiveDetails fields extraction
-    const firstRuns = rawLd.firstRuns ?? raw.runs ?? rawLd.score1 ?? raw.score1;
-    const firstWickets = rawLd.firstWickets ?? raw.wickets ?? rawLd.wickets1 ?? raw.wickets1;
-    const firstOvers = rawLd.firstOvers ?? raw.overs ?? '0.0';
+    let firstRuns = rawLd.firstRuns ?? raw.runs ?? rawLd.score1 ?? raw.score1 ?? raw.team1?.runs;
+    let firstWickets = rawLd.firstWickets ?? raw.wickets ?? rawLd.wickets1 ?? raw.wickets1 ?? raw.team1?.wickets;
+    let firstOvers = rawLd.firstOvers ?? rawLd.overs ?? raw.overs ?? raw.team1?.overs ?? '0.0';
 
-    const chaseRuns = rawLd.chaseRuns ?? rawLd.score2 ?? raw.score2;
-    const chaseWickets = rawLd.chaseWickets ?? rawLd.wickets2 ?? raw.wickets2;
-    const chaseOvers = rawLd.chaseOvers ?? rawLd.overs2;
+    const inningsId = Number(rawLd.inningsId) || 0;
+    const explicitChaseRuns = rawLd.chaseRuns;
+    const explicitChaseWickets = rawLd.chaseWickets;
+    const explicitChaseOvers = rawLd.chaseOvers;
+    const oversMeaningful = (o) => o != null && String(o).trim() !== ''
+      && String(o) !== '0' && String(o) !== '0.0';
 
-    const chaseHasRunsOrWickets = (chaseRuns != null && Number(chaseRuns) > 0) || (chaseWickets != null && Number(chaseWickets) > 0);
-    const chaseHasOvers = chaseOvers && chaseOvers !== '0.0' && chaseOvers !== '0';
-    const isExplicitSecondInnings = Number(rawLd.inningsId) >= 2;
+    // Never promote team-aligned score2/wickets2 into chase unless chase is already indicated.
+    // Explicit chaseRuns:0 must NOT fall through to score2 via ?? (that invents 0 + wickets2).
+    const chaseIndicated = inningsId >= 2
+      || Number(explicitChaseRuns) > 0
+      || Number(explicitChaseWickets) > 0
+      || oversMeaningful(explicitChaseOvers)
+      || !!(rawLd.chaseTeamName && rawLd.firstTeamName && explicitChaseRuns != null);
+
+    let chaseRuns = explicitChaseRuns != null
+      ? explicitChaseRuns
+      : (chaseIndicated ? (rawLd.score2 ?? raw.score2) : undefined);
+    let chaseWickets = explicitChaseWickets != null
+      ? explicitChaseWickets
+      : (chaseIndicated && (Number(chaseRuns) > 0 || oversMeaningful(explicitChaseOvers))
+        ? (rawLd.wickets2 ?? raw.wickets2)
+        : undefined);
+    let chaseOvers = explicitChaseOvers != null
+      ? explicitChaseOvers
+      : (chaseIndicated ? rawLd.overs2 : undefined);
+
+    // Sparse ld on a completed chase: restore from team card scores
+    const t1Card = Number(raw.team1?.runs) || 0;
+    const t2Card = Number(raw.team2?.runs) || 0;
+    if (inningsId >= 2 && t1Card > 0 && t2Card > 0
+      && (chaseRuns == null || Number(chaseRuns) === 0)
+      && (chaseWickets == null || Number(chaseWickets) === 0)
+      && !oversMeaningful(chaseOvers)) {
+      const chaseIsHome = rawLd.chaseTeamName
+        ? matchesTeamIdentifier(homeTeam, rawLd.chaseTeamName)
+        : false;
+      firstRuns = chaseIsHome ? t2Card : t1Card;
+      firstWickets = chaseIsHome ? Number(raw.team2?.wickets || 0) : Number(raw.team1?.wickets || 0);
+      firstOvers = chaseIsHome ? (raw.team2?.overs || '0.0') : (raw.team1?.overs || firstOvers);
+      chaseRuns = chaseIsHome ? t1Card : t2Card;
+      chaseWickets = chaseIsHome ? Number(raw.team1?.wickets || 0) : Number(raw.team2?.wickets || 0);
+      chaseOvers = chaseIsHome ? (raw.team1?.overs || '0.0') : (raw.team2?.overs || '0.0');
+    }
+
+    const chaseHasRuns = chaseRuns != null && Number(chaseRuns) > 0;
+    const chaseHasWickets = chaseWickets != null && Number(chaseWickets) > 0;
+    const chaseHasOvers = oversMeaningful(chaseOvers);
+    const isExplicitSecondInnings = inningsId >= 2;
     const firstOversNorm = normalizeCricbuzzOvers(firstOvers ?? '0.0');
     const chaseOversNorm = chaseHasOvers ? normalizeCricbuzzOvers(chaseOvers) : '';
     const chaseOversCopiedFromFirst = chaseHasOvers && chaseOversNorm === firstOversNorm;
 
-    const isMirroredScore = Number(firstRuns) > 0
+    const sameTotalMirrored = Number(firstRuns) > 0
       && Number(firstRuns) === Number(chaseRuns)
-      && Number(firstWickets ?? 0) === Number(chaseWickets ?? 0)
-      && (!chaseHasOvers || chaseOversCopiedFromFirst);
-    const hasValidChase = (isExplicitSecondInnings || chaseHasRunsOrWickets || chaseHasOvers) && !isMirroredScore;
+      && Number(firstWickets ?? 0) === Number(chaseWickets ?? 0);
+    const firstInningsCommentary = /first\s+innings/i.test(String(rawLd.commentary || raw.time || ''))
+      && !/second\s+innings|2nd\s+innings/i.test(String(rawLd.commentary || raw.time || ''));
+    const isMirroredScore = sameTotalMirrored
+      && (firstInningsCommentary || !chaseHasOvers || chaseOversCopiedFromFirst
+        || Number(raw.team1?.runs) === Number(raw.team2?.runs));
+
+    // Fake stub: 0 runs + N wickets @ 0.0 while first innings incomplete (e.g. 36/2 → "need 37")
+    const fakeChaseStub = (Number(chaseRuns || 0) === 0)
+      && chaseHasWickets
+      && !chaseHasOvers
+      && Number(firstWickets ?? 0) < 10
+      && !(rawLd.declared || rawLd.declared1)
+      && oversToBalls(firstOversNorm) < 300;
+
+    const hasValidChase = !fakeChaseStub
+      && !isMirroredScore
+      && (
+        (isExplicitSecondInnings && (chaseHasRuns || chaseHasOvers || !!rawLd.chaseTeamName || !!rawLd.batter1?.name
+          || (Number(chaseRuns) === 0 && Number(chaseWickets || 0) === 0 && Number(firstRuns) > 0)))
+        || chaseHasRuns
+        || (chaseHasWickets && chaseHasOvers)
+        || (chaseHasOvers && Number(firstRuns) > 0)
+      );
 
     if (hasValidChase) {
       const isTeam1First = rawLd.firstTeamName ? matchesTeamIdentifier(homeTeam, rawLd.firstTeamName) : true;
@@ -537,8 +600,9 @@ export function normalizeMatch(raw = {}, previous = {}, options = {}) {
   // Full detailed multi-innings string for match detail view (e.g. "202 & 256/3d")
   const formatDetailedInningsSummary = (inningsList) => {
     if (!inningsList || inningsList.length === 0) return '—';
-    return inningsList.map((i, idx) => {
-      if (idx === 0 && inningsList.length > 1 && i.wickets === 10) return `${i.runs}`;
+    return inningsList.map((i) => {
+      // All-out totals conventionally drop the /10 (e.g. "250" not "250/10")
+      if (i.wickets === 10 && !i.declared) return `${i.runs}`;
       return `${i.runs}/${i.wickets}${i.declared ? 'd' : ''}`;
     }).join(' & ');
   };

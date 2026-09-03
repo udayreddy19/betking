@@ -817,10 +817,15 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
     const t1Runs = Number(resolvedScores.team1?.runs) || 0;
     const t2Runs = Number(resolvedScores.team2?.runs) || 0;
     const missingFirstInnings = (t1Runs === 0 && t2Runs > 0) || (t2Runs === 0 && t1Runs > 0);
-    if (target && required != null && Number(required) <= 0 && Number(target) > 1 && !missingFirstInnings) {
+    const ldChase = match?.liveDetails || {};
+    const fakeNeedText = Number(ldChase.chaseRuns || 0) === 0
+      && Number(ldChase.chaseWickets || 0) > 0
+      && isEmptyOversValue(ldChase.chaseOvers)
+      && Number(ldChase.firstWickets ?? 10) < 10;
+    if (target && required != null && Number(required) <= 0 && Number(target) > 1 && !missingFirstInnings && !fakeNeedText) {
       return `${batTeam || team2} won`;
     }
-    if (target && required > 0) {
+    if (target && required > 0 && !fakeNeedText && !missingFirstInnings) {
       return `${batTeam || 'Team'} need ${required} runs to win`;
     }
     if (isTestMatch(match) && matchStateObj?.leadTrailState?.lead) {

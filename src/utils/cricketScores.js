@@ -170,6 +170,41 @@ export function isEmptyOversValue(value) {
   return value == null || value === '' || value === 0 || value === '0' || value === '0.0';
 }
 
+/**
+ * Detect invented chase boards like "0/2 at 0.0 overs" while first innings is still
+ * incomplete (e.g. Ireland 36/2 mid-innings → fake "England need 37").
+ */
+export function looksLikeFakeChaseStub(ld = {}, match = null) {
+  const chaseRuns = Number(ld.chaseRuns);
+  const chaseWickets = Number(ld.chaseWickets ?? 0);
+  const chaseOversEmpty = isEmptyOversValue(ld.chaseOvers ?? ld.overs2);
+  const zeroOrMissingChaseRuns = !Number.isFinite(chaseRuns) || chaseRuns === 0;
+
+  // Impossible: wickets without balls faced at chase start
+  if (!(zeroOrMissingChaseRuns && chaseWickets > 0 && chaseOversEmpty)) {
+    return false;
+  }
+
+  // Real chase start is 0/0 at 0.0 — not 0/N
+  const firstRuns = Number(ld.firstRuns ?? ld.runs ?? ld.score1 ?? 0);
+  const firstWickets = Number(ld.firstWickets ?? ld.wickets ?? ld.wickets1 ?? 0);
+  const firstOvers = ld.firstOvers ?? ld.overs ?? '0.0';
+  const firstBalls = oversToBalls(firstOvers);
+  const declared = !!(ld.declared || ld.declared1 || ld.firstDeclared);
+  const firstComplete = declared || firstWickets >= 10 || firstBalls >= 300; // ODI full; T20 still <10 wkts mid-innings
+
+  // Mid first-innings total used as target (36/2 → need 37) is the classic corruption
+  if (firstRuns > 0 && firstWickets < 10 && !declared && firstBalls < 300) {
+    return true;
+  }
+
+  // No batting progress and no named batters — stub only
+  const hasCrease = !!(ld.batter1?.name || ld.batter2?.name);
+  if (!hasCrease && !firstComplete) return true;
+
+  return false;
+}
+
 export function isCricketSecondInnings(match, ld = {}) {
   const format = detectCanonicalFormat({ ...match, liveDetails: ld });
   if (format === CRICKET_FORMATS.TEST) {
@@ -177,11 +212,32 @@ export function isCricketSecondInnings(match, ld = {}) {
   }
 
   if (looksLikeMirroredFirstInnings(match, ld)) return false;
+  if (looksLikeFakeChaseStub(ld, match)) return false;
 
   const inningsId = Number(ld.inningsId) || 0;
-  if (inningsId >= 2) return true;
 
-  const chaseProgress = Number(ld.chaseRuns) > 0 || Number(ld.chaseWickets) > 0;
+  // Explicit chase fields only — never treat team-aligned wickets2 as chaseProgress
+  const chaseRunsProgress = Number(ld.chaseRuns) > 0;
+  const chaseWicketsProgress = Number(ld.chaseWickets) > 0
+    && (chaseRunsProgress || !isEmptyOversValue(ld.chaseOvers) || !!ld.chaseTeamName);
+  const chaseProgress = chaseRunsProgress || chaseWicketsProgress;
+
+  if (inningsId >= 2) {
+    // inningsId alone can leak from a bad poll — require corroboration unless chase looks real
+    if (chaseProgress) return true;
+    if (ld.chaseTeamName && ld.chaseOvers != null) return true;
+    if (!isEmptyOversValue(ld.chaseOvers) && Number(ld.firstRuns) > 0) return true;
+    if (ld.batter1?.name || ld.batter2?.name) return true;
+    // Bare inningsId=2 with 0/N @ 0.0 and no crease → reject (handled by fake stub above too)
+    if (Number(ld.chaseRuns || 0) === 0 && Number(ld.chaseWickets || 0) === 0 && isEmptyOversValue(ld.chaseOvers)) {
+      // Genuine chase just started: 0/0 @ 0.0 with chaseTeamName or first innings complete
+      if (ld.chaseTeamName || Number(ld.firstWickets) >= 10 || Number(ld.firstRuns) > 0) return true;
+    }
+    if (Number(ld.chaseRuns || 0) === 0 && Number(ld.chaseWickets || 0) > 0 && isEmptyOversValue(ld.chaseOvers)) {
+      return false;
+    }
+    return true;
+  }
 
   if (inningsId === 1) {
     if (chaseProgress) return true;

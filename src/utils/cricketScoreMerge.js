@@ -1,5 +1,5 @@
 import { normalizeCricbuzzOvers, oversToBalls } from './oversUtils.js';
-import { flattenCricketTeamScores, isCricketSecondInnings, resolveCricketTeamScores } from './cricketScores.js';
+import { flattenCricketTeamScores, isCricketSecondInnings, isEmptyOversValue, resolveCricketTeamScores } from './cricketScores.js';
 import { isPlaceholderPlayerName } from './cricketPlayers.js';
 
 function batterStatWeight(player) {
@@ -87,25 +87,36 @@ function pickMonotonicInt(prev, next) {
 export function mergeCricketLiveDetails(prev = {}, next = {}, match = null) {
   const merged = { ...prev, ...next };
 
-  // Never treat wickets2/score2 alone as chase (away batting first)
+  // Never treat wickets2/score2 alone as chase (away batting first).
+  // Do not stick to a previous false inningsId=2 / chaseRuns without corroboration from next.
   const probe = { liveDetails: merged, team1: match?.team1, team2: match?.team2, matchState: match?.matchState, isLive: match?.isLive };
+  const nextSaysSecond = Number(next.inningsId) >= 2
+    || Number(next.chaseRuns) > 0
+    || (Number(next.chaseWickets) > 0 && !isEmptyOversValue(next.chaseOvers) && Number(next.chaseRuns) >= 0)
+    || (next.chaseTeamName && next.chaseOvers != null && Number(next.firstRuns) > 0);
   const isSecondInnings = isCricketSecondInnings(probe, merged)
-    || (Number(next.inningsId) >= 2)
-    || (Number(prev.inningsId) >= 2)
-    || (Number(next.chaseRuns) > 0)
-    || (Number(prev.chaseRuns) > 0);
+    || (nextSaysSecond && isCricketSecondInnings(probe, { ...merged, ...next, inningsId: next.inningsId ?? 2 }));
 
   if (!isSecondInnings) {
     merged.chaseRuns = undefined;
     merged.chaseWickets = undefined;
     merged.chaseOvers = undefined;
     if (Number(merged.inningsId) !== 2) merged.chaseTeamName = undefined;
+    // Clear leaked false-chase inningsId when still first innings
+    if (Number(prev.inningsId) >= 2 && Number(next.inningsId) !== 2 && Number(next.chaseRuns || 0) === 0) {
+      merged.inningsId = next.inningsId ?? 1;
+    }
     // Keep team-aligned score2/wickets2; never invent chase from them
     merged.score2 = next.score2 ?? prev.score2 ?? 0;
     merged.wickets2 = next.wickets2 ?? prev.wickets2 ?? 0;
-    merged.overs2 = (Number(merged.inningsId) === 1 || merged.inningsId == null)
-      ? '0.0'
-      : (next.overs2 ?? prev.overs2 ?? '0.0');
+    // Do not force overs2='0.0' while retaining wickets2 — that creates 0/N @ 0.0 cards
+    if (next.overs2 != null) {
+      merged.overs2 = next.overs2;
+    } else if (Number(merged.inningsId) === 1 || merged.inningsId == null) {
+      merged.overs2 = prev.overs2 && prev.overs2 !== '0.0' ? prev.overs2 : '0.0';
+    } else {
+      merged.overs2 = next.overs2 ?? prev.overs2 ?? '0.0';
+    }
 
     const prevFirst = prev.firstRuns ?? prev.runs;
     const nextFirst = next.firstRuns ?? next.runs;

@@ -59,7 +59,11 @@ function oversLookEmpty(overs) {
 
 function pickScorecardOvers(innRaw, ld, isTeam1Batting, runs) {
   const fromCard = innRaw?.scoreDetails?.overs ?? innRaw?.overs;
-  if (!oversLookEmpty(fromCard)) return normalizeCricbuzzOvers(fromCard);
+  // Trust scorecard overs including explicit 0.0 at innings start — do not
+  // fall back to the other innings' clock (that painted "82.0" onto a 0/0 XI).
+  if (fromCard != null && String(fromCard).trim() !== '') {
+    return normalizeCricbuzzOvers(fromCard);
+  }
   const completedFallback = isTeam1Batting ? ld.firstOvers : (ld.chaseOvers || ld.overs2);
   if (!oversLookEmpty(completedFallback)) return normalizeCricbuzzOvers(completedFallback);
   if (Number(runs) > 0) return normalizeCricbuzzOvers(completedFallback || '0.0');
@@ -386,13 +390,31 @@ export function buildCanonicalMatchSnapshot(match) {
       isCurrent: true,
     });
 
-    const isSecond = Boolean(ld.chaseRuns != null || ld.chaseOvers || ld.chaseTeamName || (Number(ld.inningsId) >= 2));
+    const chaseOversMeaningful = ld.chaseOvers != null
+      && String(ld.chaseOvers).trim() !== ''
+      && String(ld.chaseOvers) !== '0'
+      && String(ld.chaseOvers) !== '0.0';
+    const fakeChaseStub = Number(ld.chaseRuns || 0) === 0
+      && Number(ld.chaseWickets || 0) > 0
+      && !chaseOversMeaningful
+      && firstWkts < 10;
+    const isSecond = !fakeChaseStub && (
+      Number(ld.chaseRuns) > 0
+      || chaseOversMeaningful
+      || (ld.chaseTeamName && (Number(ld.chaseRuns) >= 0 && ld.chaseRuns != null))
+      || (Number(ld.inningsId) >= 2 && (Number(ld.chaseRuns) > 0 || chaseOversMeaningful || Number(ld.chaseWickets || 0) === 0))
+    );
     if (isSecond) {
       const secondBatTeam = firstBowlTeam;
       const secondBowlTeam = firstBatTeam;
-      const chaseRuns = Number(ld.chaseRuns ?? (!isTeam1BattingFirst ? match.team1?.runs ?? ld.score1 : match.team2?.runs ?? ld.score2) ?? 0);
-      const chaseWkts = Number(ld.chaseWickets ?? (!isTeam1BattingFirst ? match.team1?.wickets ?? ld.wickets1 : match.team2?.wickets ?? ld.wickets2) ?? 0);
-      const chaseOvs = normalizeCricbuzzOvers(ld.chaseOvers || (!isTeam1BattingFirst ? match.team1?.overs : match.team2?.overs) || '0.0');
+      const chaseRuns = Number(
+        ld.chaseRuns != null
+          ? ld.chaseRuns
+          : 0,
+      );
+      // Never fall back chase wickets to first-innings / opposing team wickets for empty stubs
+      const chaseWkts = Number(ld.chaseWickets != null ? ld.chaseWickets : 0);
+      const chaseOvs = normalizeCricbuzzOvers(ld.chaseOvers || '0.0');
 
       inningsList.push({
         inningsId: 2,

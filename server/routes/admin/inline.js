@@ -925,6 +925,15 @@ router.get('/api/admin/sports/catalog', async (req, res) => {
   }
 });
 
+router.get('/api/admin/sports/rosters', async (req, res) => {
+  try {
+    const { buildSportsRosters } = await import('../../../lib/adminLiveOps.mjs');
+    res.json(await buildSportsRosters({ limit: Number(req.query.limit) || 80 }));
+  } catch (err) {
+    res.status(500).json({ error: err.message, matches: [] });
+  }
+});
+
 router.get('/api/admin/trading/exposure', async (req, res) => {
   try {
     const { buildTradingExposures } = await import('../../../lib/adminLiveOps.mjs');
