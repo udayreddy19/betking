@@ -55,7 +55,7 @@ describe('Acca client-odds rejection', () => {
 });
 
 describe('Placement liability cap', () => {
-  it('allows bets even when in-memory exposure is at the old liability ceiling', async () => {
+  it('rejects bets when in-memory exposure exceeds house liability ceiling', async () => {
     const matchId = `m_liab_${Date.now()}`;
     recordBetExposure({
       matchId,
@@ -65,7 +65,7 @@ describe('Placement liability cap', () => {
       odds: 3.0,
     });
 
-    const stake = await enforceBetRisk({
+    await expect(enforceBetRisk({
       userId: 'usr_liab_test',
       stake: 5000,
       betType: 'SINGLE',
@@ -75,8 +75,7 @@ describe('Placement liability cap', () => {
         selectionId: 'home',
         odds: 2.0,
       }],
-    });
-    expect(stake).toBe(5000);
+    })).rejects.toThrow(/RISK_REJECTED|liability/i);
   });
 
   it('allows small stakes within remaining capacity', async () => {

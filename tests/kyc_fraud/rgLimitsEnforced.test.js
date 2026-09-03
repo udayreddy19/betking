@@ -29,8 +29,9 @@ describe('responsible gaming unlimited deposits and stakes', () => {
     expect(res.reason).toBe('USER_IN_COOLING_OFF');
   });
 
-  it('does not cap stake at the old ₹1 lakh max', () => {
-    expect(stakeLimitEngine.validateStake(250000)).toBe(250000);
+  it('enforces the house global max stake', () => {
+    expect(() => stakeLimitEngine.validateStake(250000)).toThrow(/STAKE_LIMIT_EXCEEDED/);
+    expect(stakeLimitEngine.validateStake(1000)).toBe(1000);
   });
 
   it('does not cache default limits when the user has no row', async () => {
