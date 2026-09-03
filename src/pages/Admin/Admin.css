@@ -1045,7 +1045,14 @@ textarea.admin-input {
 }
 
 .admin-verify-live .live-graphic-card-10cric {
-  max-height: min(420px, 46vh);
+  max-height: none;
+  overflow: visible;
+}
+
+.admin-verify-live .live-widget-scrollable-body {
+  flex: none;
+  overflow: visible;
+  max-height: none;
 }
 
 .admin-verify-live .live-widget-tab {
