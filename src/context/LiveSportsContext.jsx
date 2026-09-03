@@ -14,6 +14,7 @@ import { LIVE_SCORES_POLL_MS, LIVE_SCORES_WS_FALLBACK_POLL_MS } from '../config/
 import { getIplSrlMatches } from '../../lib/iplSrlSimulator.mjs';
 import { cricketScoreWeight, cricketSourceRank, getCanonicalMatchPairKey } from '../../lib/matchPairKey.mjs';
 import { useFeatureFlags } from './FeatureFlagsContext';
+import { isMatchSRL } from '../utils/cricketFormat';
 
 const LiveMatchesContext = createContext([]);
 const LiveSportsMetaContext = createContext(null);
@@ -232,7 +233,7 @@ function seriesSignature(series) {
 }
 
 export function LiveSportsProvider({ children }) {
-  const { isSportEnabled } = useFeatureFlags();
+  const { isSportEnabled, isEnabled } = useFeatureFlags();
   const [matches, setMatches] = useState(() => mergeSrlMatches([]));
   const [cricketSeries, setCricketSeries] = useState([]);
   const [tickerMessage, setTickerMessage] = useState('🟢 Syncing live scores...');
@@ -409,9 +410,11 @@ export function LiveSportsProvider({ children }) {
   const visibleMatches = useMemo(
     () => (matches || []).filter((m) => {
       const sport = String(m?.sport || '').toLowerCase() || 'cricket';
-      return isSportEnabled(sport);
+      if (!isSportEnabled(sport)) return false;
+      if (!isEnabled('oddsyra_srl_ui', true) && isMatchSRL(m)) return false;
+      return true;
     }),
-    [matches, isSportEnabled],
+    [matches, isSportEnabled, isEnabled],
   );
 
   return (

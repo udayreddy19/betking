@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { homeCategoryTiles } from '../../data/homePageData';
 import { CASINO_ENABLED } from '../../utils/featureFlags';
+import { useFeatureFlags } from '../../context/FeatureFlagsContext';
 import {
   NavLiveIcon,
   NavPromotionsIcon,
@@ -12,6 +13,8 @@ const TILE_IMAGE_FALLBACK = 'https://images.unsplash.com/photo-1540747913346-19e
 
 export default function HomeCategoryGrid({ liveCount = 0 }) {
   const navigate = useNavigate();
+  const { isEnabled } = useFeatureFlags();
+  const srlEnabled = isEnabled('oddsyra_srl_ui', true);
   const tiles = CASINO_ENABLED
     ? homeCategoryTiles
     : homeCategoryTiles.filter((tile) => tile.id !== 'casino');
@@ -22,7 +25,7 @@ export default function HomeCategoryGrid({ liveCount = 0 }) {
     { id: 'cricket', label: 'Cricket', link: '/sports?sport=cricket', iconSport: 'cricket' },
     { id: 'soccer', label: 'Soccer', link: '/sports?sport=soccer', iconSport: 'soccer' },
     { id: 'promos', label: 'Promos', link: '/promotions', Icon: NavPromotionsIcon },
-  ];
+  ].filter((item) => item.id !== 'srl' || srlEnabled);
 
   return (
     <>

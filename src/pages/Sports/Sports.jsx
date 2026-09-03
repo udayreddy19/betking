@@ -10,6 +10,7 @@ import { sportsCategories } from '../../data/mockData';
 import { useLiveMatches, useLiveSportsMeta } from '../../context/LiveSportsContext';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { useAuth } from '../../context/AuthContext';
+import { useFeatureFlags } from '../../context/FeatureFlagsContext';
 import { isMatchBettable, isTrulyLiveMatch, getMatchState, isMatchFinished } from '../../utils/matchBetting';
 import { resolveCricketTeamScores, resolveCricketTossText, isCricketSecondInnings } from '../../utils/cricketScores';
 import { isTeamBattingInMatch } from '../../utils/teamFlags';
@@ -315,6 +316,8 @@ export default function Sports() {
   const { tickerMessage, cricketSeries, scoresError, refreshScores, isScoresLoading } = useLiveSportsMeta();
   const { addBet, isBetSelected } = useBetSlip();
   const { user, showToast, isLoggedIn } = useAuth();
+  const { isEnabled } = useFeatureFlags();
+  const srlEnabled = isEnabled('oddsyra_srl_ui', true);
   const { ids: watchlistIds, count: watchlistCount, toggle: toggleWatch } = useMatchWatchlist();
   const isAdminUser = user?.role === 'admin' || user?.email === 'admin@oddsyra.com';
   const [searchParams, setSearchParams] = useSearchParams();
@@ -707,6 +710,7 @@ export default function Sports() {
   }, [setSearchParams]);
 
   const selectSrlBoard = useCallback(() => {
+    if (!srlEnabled) return;
     setActiveLeague('ipl-srl');
     setActiveStateTab('all');
     setViewMode('league');
@@ -718,7 +722,21 @@ export default function Sports() {
       next.delete('match');
       return next;
     }, { replace: true });
-  }, [setSearchParams]);
+  }, [setSearchParams, srlEnabled]);
+
+  useEffect(() => {
+    if (srlEnabled) return;
+    if (!isIplSrlView && !String(activeLeague || '').toLowerCase().includes('srl')) return;
+    setActiveLeague('all');
+    setActiveStateTab('live');
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('league', 'all');
+      next.set('tab', 'live');
+      next.delete('match');
+      return next;
+    }, { replace: true });
+  }, [srlEnabled, isIplSrlView, activeLeague, setSearchParams]);
 
   useEffect(() => {
     const sport = searchParams.get('sport');
@@ -877,15 +895,17 @@ export default function Sports() {
             >
               Upcoming{stateCounts.upcoming > 0 ? ` (${stateCounts.upcoming})` : ''}
             </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={isIplSrlView}
-              className={`sports-league-chip sports-league-chip--srl ${isIplSrlView ? 'active' : ''}`}
-              onClick={selectSrlBoard}
-            >
-              OddsYra SRL{stateCounts.srl > 0 ? ` (${stateCounts.srl})` : ''}
-            </button>
+            {srlEnabled && (
+              <button
+                type="button"
+                role="tab"
+                aria-selected={isIplSrlView}
+                className={`sports-league-chip sports-league-chip--srl ${isIplSrlView ? 'active' : ''}`}
+                onClick={selectSrlBoard}
+              >
+                OddsYra SRL{stateCounts.srl > 0 ? ` (${stateCounts.srl})` : ''}
+              </button>
+            )}
             <button
               type="button"
               role="tab"

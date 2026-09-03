@@ -7,6 +7,7 @@ import AdminCard from '../components/AdminCard';
 import DatabaseInspector from '../../../components/DatabaseInspector/DatabaseInspector';
 
 const SUGGESTED_PRODUCT_FLAGS = [
+  { flagKey: 'oddsyra_srl_ui', name: 'OddsYra SRL', description: 'SRL matches, Sports chip, and /srl page for players' },
   { flagKey: 'new_admin_ui', name: 'New Admin UI', description: 'Gradual rollout for modernized Admin shell' },
   { flagKey: 'referral_system_ui', name: 'Referral UX', description: 'Refer & Earn surfaces' },
   { flagKey: 'promotion_engine_ui', name: 'Promotions UX', description: 'Campaign / free-bet UI' },
@@ -91,10 +92,10 @@ export default function PlatformDomainView({ subModule = 'feature-flags' }) {
 
   const heading = subModule === 'api-keys'
     ? 'Developer API Keys'
-    : 'System Feature Flags';
+    : 'System Viewer Flags';
   const hint = subModule === 'api-keys'
     ? 'Registered developer API keys from the platform tables.'
-    : 'Sport and product toggles apply to the live user app within ~30s. Create Enterprise flags (or use suggested keys), then disable to hide those surfaces for players.';
+    : 'Sport and product toggles apply to the live user app within ~30s. Disable OddsYra SRL to hide SRL matches and the /srl page for players.';
 
   const knownKeys = new Set(storeFlags.map((f) => f.flag_key));
   const missingSuggested = SUGGESTED_PRODUCT_FLAGS.filter((f) => !knownKeys.has(f.flagKey));

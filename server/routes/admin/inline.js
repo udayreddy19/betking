@@ -2515,19 +2515,29 @@ router.post('/api/admin/platform/flags/toggle', async (req, res) => {
       });
     } else if (String(key) !== 'GLOBAL_MARGIN_PCT') {
       // Persist any other runtime key into the enterprise store so the user app can read it.
-      const current = await (async () => {
-        try {
-          const { isFeatureEnabled } = await import('../../../lib/featureStore.mjs');
-          return await isFeatureEnabled(key);
-        } catch {
-          return false;
+      let current = false;
+      let exists = false;
+      try {
+        const { getAllFeatureFlags } = await import('../../../lib/featureStore.mjs');
+        const { flags } = await getAllFeatureFlags();
+        const row = (flags || []).find((f) => f.flag_key === String(key));
+        if (row) {
+          exists = true;
+          current = !!row.enabled;
         }
-      })();
+      } catch {
+        current = false;
+      }
+      // Default-on product surfaces (not yet written to store)
+      if (!exists && String(key) === 'oddsyra_srl_ui') current = true;
       nextEnabled = enabled == null ? !current : !!enabled;
+      const isSrl = String(key) === 'oddsyra_srl_ui';
       await upsertFeatureFlag({
         flagKey: key,
-        name: key,
-        description: 'Runtime platform flag',
+        name: isSrl ? 'OddsYra SRL' : key,
+        description: isSrl
+          ? 'Show OddsYra SRL matches, Sports chip, and /srl page to players'
+          : 'Runtime platform flag',
         enabled: nextEnabled,
         updatedBy: req.admin?.id || 'admin',
         reason: 'Admin flag toggle',

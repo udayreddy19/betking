@@ -190,7 +190,7 @@ const DOMAIN_GROUPS = [
         Icon: SettingsIcon,
         role: ADMIN_ROLES.SUPER_ADMIN,
         subModules: [
-          { id: 'feature-flags', label: 'Feature flags' },
+          { id: 'feature-flags', label: 'Viewer flags' },
           { id: 'api-keys', label: 'API keys' },
           { id: 'database-tables', label: 'Database' },
         ],

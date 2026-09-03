@@ -53,7 +53,8 @@ function filterByLeague(matchList, leagueId) {
 export default function Home() {
   const matches = useLiveMatches();
   const { isScoresLoading, scoresError, refreshScores } = useLiveSportsMeta();
-  const { isSportEnabled } = useFeatureFlags();
+  const { isSportEnabled, isEnabled } = useFeatureFlags();
+  const srlEnabled = isEnabled('oddsyra_srl_ui', true);
   const navigate = useNavigate();
   const [activeSport, setActiveSport] = useState('cricket');
   const [activeLeague, setActiveLeague] = useState(null);
@@ -151,12 +152,35 @@ export default function Home() {
     });
   }, [matches, activeSport, activeLeague]);
 
+  const promoSlides = useMemo(
+    () => (srlEnabled ? homePromoSlides : homePromoSlides.filter((s) => s.id !== 'srl')),
+    [srlEnabled],
+  );
+
+  const resolvePromoSlide = (slide) => (
+    slide.id === 'srl'
+      ? {
+        ...slide,
+        subtitle: isSrlSeasonLive()
+          ? 'NOW LIVE — SIMULATED CRICKET'
+          : `BEGINS ${SRL_LAUNCH_LABEL.toUpperCase()} — SIMULATED CRICKET`,
+      }
+      : slide
+  );
+
+  const promoSlidePath = (id) => {
+    if (id === 'srl') return SRL_PAGE_PATH;
+    if (id === 'sports') return '/live-betting';
+    return '/promotions';
+  };
+
   const scrollPromoTo = (index, behavior = 'smooth') => {
     const track = promoScrollRef.current;
     if (!track) return;
     const stride = getPromoStride(track);
     if (!stride) return;
-    const clamped = ((index % homePromoSlides.length) + homePromoSlides.length) % homePromoSlides.length;
+    const len = Math.max(1, promoSlides.length);
+    const clamped = ((index % len) + len) % len;
     const motion = prefersReducedMotion() ? 'auto' : behavior;
     track.scrollTo({ left: clamped * stride, behavior: motion });
     promoIndexRef.current = clamped;
@@ -223,23 +247,6 @@ export default function Home() {
     return (matches || []).filter((m) => idSet.has(String(m.id)));
   }, [matches, watchlistIds]);
 
-  const resolvePromoSlide = (slide) => (
-    slide.id === 'srl'
-      ? {
-        ...slide,
-        subtitle: isSrlSeasonLive()
-          ? 'NOW LIVE — SIMULATED CRICKET'
-          : `BEGINS ${SRL_LAUNCH_LABEL.toUpperCase()} — SIMULATED CRICKET`,
-      }
-      : slide
-  );
-
-  const promoSlidePath = (id) => {
-    if (id === 'srl') return SRL_PAGE_PATH;
-    if (id === 'sports') return '/live-betting';
-    return '/promotions';
-  };
-
   return (
     <div className="home-page container" id="home-page">
       <LiveScoresFeedBanner
@@ -275,7 +282,7 @@ export default function Home() {
             }
           }}
         >
-          {homePromoSlides.map((raw, i) => {
+          {promoSlides.map((raw, i) => {
             const slide = resolvePromoSlide(raw);
             return (
               <Link
@@ -305,7 +312,7 @@ export default function Home() {
           })}
         </div>
         <div className="home-promo-banner__dots" role="group" aria-label="Promotion slides">
-          {homePromoSlides.map((s, i) => (
+          {promoSlides.map((s, i) => (
             <button
               key={s.id}
               type="button"

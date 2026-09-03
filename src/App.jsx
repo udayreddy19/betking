@@ -165,7 +165,7 @@ function AppLayout() {
               />
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/*" element={<Admin />} />
-              <Route path="/srl" element={<OddsYraSrl />} />
+              <Route path="/srl" element={<FlaggedRoute flagKey="oddsyra_srl_ui"><OddsYraSrl /></FlaggedRoute>} />
               <Route path="/oddsyra-srl" element={<Navigate to="/srl" replace />} />
               <Route path="/iplsrl" element={<Navigate to="/srl" replace />} />
               <Route path="/iplsrl/match-center" element={<Navigate to="/srl" replace />} />
