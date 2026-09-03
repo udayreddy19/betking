@@ -163,6 +163,7 @@ const DOMAIN_GROUPS = [
         Icon: BellRingIcon,
         role: null,
         subModules: [
+          { id: 'compose', label: 'Compose' },
           { id: 'mail-inbox', label: 'Delivery' },
           { id: 'templates', label: 'Templates' },
           { id: 'broadcast', label: 'Broadcast' },

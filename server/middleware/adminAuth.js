@@ -23,10 +23,10 @@ const ROLE_PERMISSIONS = {
   SUPER_ADMIN: '*', // all permissions
   FINANCE_ADMIN: ['finance', 'betting', 'reconciliation', 'withdrawal', 'wallet'],
   TRADING_ADMIN: ['trading', 'betting', 'sports', 'markets', 'odds', 'risk'],
-  SUPPORT_AGENT: ['support', 'customers', 'tickets', 'cases', 'kyc'],
+  SUPPORT_AGENT: ['support', 'customers', 'tickets', 'cases', 'kyc', 'communications'],
   RISK_ANALYST: ['risk', 'fraud', 'analytics', 'security', 'reconciliation', 'kyc'],
   MARKETING_ADMIN: ['growth', 'promotions', 'communications', 'analytics'],
-  OPERATIONS_ADMIN: ['operations', 'platform', 'providers', 'emergency', 'incidents', 'analytics', 'kyc', 'api-explorer'],
+  OPERATIONS_ADMIN: ['operations', 'platform', 'providers', 'emergency', 'incidents', 'analytics', 'kyc', 'api-explorer', 'communications'],
 };
 
 export function generateAdminToken(adminId, role, tenantId = 'oddsyra_in') {

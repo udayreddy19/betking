@@ -20,10 +20,10 @@ const ROLE_ALLOWED_DOMAINS = {
   [ADMIN_ROLES.SUPER_ADMIN]: null, // null = all
   [ADMIN_ROLES.FINANCE_ADMIN]: ['finance', 'betting'],
   [ADMIN_ROLES.TRADING_ADMIN]: ['trading-risk', 'betting', 'sports'],
-  [ADMIN_ROLES.SUPPORT_AGENT]: ['support', 'customers'],
+  [ADMIN_ROLES.SUPPORT_AGENT]: ['support', 'customers', 'communications'],
   [ADMIN_ROLES.RISK_ANALYST]: ['trading-risk', 'analytics', 'security-governance'],
   [ADMIN_ROLES.MARKETING_ADMIN]: ['growth', 'communications', 'analytics'],
-  [ADMIN_ROLES.OPERATIONS_ADMIN]: ['operations', 'platform', 'analytics', 'betting', 'support', 'api-explorer'],
+  [ADMIN_ROLES.OPERATIONS_ADMIN]: ['operations', 'platform', 'analytics', 'betting', 'support', 'api-explorer', 'communications'],
 };
 
 export { ROLE_ALLOWED_DOMAINS };

@@ -318,7 +318,16 @@ function markPrimaryQuotaFailure() {
 /**
  * Server-authoritative multi-provider mail dispatcher
  */
-export async function sendEmail({ to, subject, html, text, from = SMTP_FROM, replyTo, headers = {} }) {
+export async function sendEmail({
+  to,
+  subject,
+  html,
+  text,
+  from = SMTP_FROM,
+  replyTo,
+  headers = {},
+  forceFrom = false,
+}) {
   if (!to) throw new Error('Recipient email is required');
 
   const promosAcc = isPromosFrom(from) ? promosSmtpAccount() : null;
@@ -356,12 +365,12 @@ export async function sendEmail({ to, subject, html, text, from = SMTP_FROM, rep
     try {
       const transport = createTransport(account);
       const mailOptions = {
-        from: account.from || from,
+        from: forceFrom ? from : (account.from || from),
         to,
         subject,
         html,
         text: text || html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
-        replyTo: replyTo || account.from || from,
+        replyTo: replyTo || (forceFrom ? from : (account.from || from)),
         headers,
       };
 
@@ -1210,4 +1219,290 @@ export async function sendGenericNotificationEmail({ to, subject, text, html }) 
     html: html || `<p>${escapeHtml(text || '')}</p>`,
     text: text || '',
   });
+}
+
+/* ========================================================================
+ * ADMIN COMPOSE — instant templates + mailbox picker (@oddsyra.com)
+ * ======================================================================== */
+
+export const ADMIN_COMPOSE_MAILBOXES = [
+  {
+    id: 'no-reply',
+    email: 'no-reply@oddsyra.com',
+    label: 'No-reply',
+    description: 'Transactional / security notices',
+    from: SMTP_FROM,
+    replyTo: SUPPORT_REPLY_TO,
+    isMarketing: false,
+  },
+  {
+    id: 'promos',
+    email: 'promos@oddsyra.com',
+    label: 'Promotions',
+    description: 'Marketing and campaign emails',
+    from: PROMOS_FROM,
+    replyTo: PROMOS_REPLY_TO,
+    isMarketing: true,
+  },
+  {
+    id: 'support',
+    email: 'support@oddsyra.com',
+    label: 'Support',
+    description: 'Player support replies',
+    from: SUPPORT_FROM,
+    replyTo: SUPPORT_REPLY_TO,
+    isMarketing: false,
+  },
+  {
+    id: 'alerts',
+    email: 'alerts@oddsyra.com',
+    label: 'Alerts',
+    description: 'Ops / SLA notifications',
+    from: ALERTS_FROM,
+    replyTo: SUPPORT_ALERT_EMAIL,
+    isMarketing: false,
+  },
+];
+
+export const ADMIN_COMPOSE_TEMPLATES = [
+  {
+    id: 'blank',
+    name: 'Blank',
+    heading: 'Message from OddsYra',
+    subject: '',
+    body: '',
+    ctaLabel: '',
+    ctaPath: '',
+    mailboxId: 'no-reply',
+  },
+  {
+    id: 'support-update',
+    name: 'Support update',
+    heading: 'Update on your support request',
+    subject: 'Update from OddsYra Support',
+    body: 'Thanks for contacting OddsYra Support.\n\nWe have reviewed your request and wanted to share a quick update.\n\nIf you still need help, reply to this email or open your ticket in the app.',
+    ctaLabel: 'Open support',
+    ctaPath: '/profile?tab=support',
+    mailboxId: 'support',
+  },
+  {
+    id: 'account-notice',
+    name: 'Account notice',
+    heading: 'Account notice',
+    subject: 'Important notice about your OddsYra account',
+    body: 'We are writing with an important update about your OddsYra account.\n\nPlease review the details below and take any action required.\n\nIf this does not look right, contact support immediately.',
+    ctaLabel: 'View account',
+    ctaPath: '/profile',
+    mailboxId: 'no-reply',
+  },
+  {
+    id: 'promo-announce',
+    name: 'Promo announcement',
+    heading: 'A special offer for you',
+    subject: 'Exclusive offer from OddsYra',
+    body: 'We have a limited-time offer waiting for you on OddsYra.\n\nClaim it before it expires — terms apply.',
+    ctaLabel: 'View promotions',
+    ctaPath: '/promotions',
+    mailboxId: 'promos',
+  },
+  {
+    id: 'kyc-nudge',
+    name: 'KYC reminder',
+    heading: 'Complete your KYC',
+    subject: 'Finish KYC to unlock full OddsYra access',
+    body: 'Your OddsYra account is almost ready.\n\nComplete KYC verification to unlock higher limits and withdrawals.\n\nIt only takes a few minutes.',
+    ctaLabel: 'Complete KYC',
+    ctaPath: '/profile?tab=kyc',
+    mailboxId: 'no-reply',
+  },
+  {
+    id: 'welcome-back',
+    name: 'Welcome back',
+    heading: 'Welcome back to OddsYra',
+    subject: 'We saved your spot at OddsYra',
+    body: 'It has been a while — markets are live and fresh offers are waiting.\n\nLog in to pick up where you left off.',
+    ctaLabel: 'Open OddsYra',
+    ctaPath: '/sports',
+    mailboxId: 'promos',
+  },
+];
+
+function plainTextToIntroHtml(body) {
+  const paragraphs = String(body || '')
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter(Boolean);
+  if (paragraphs.length === 0) return '<p style="margin:0;"> </p>';
+  return paragraphs
+    .map((block) => {
+      const lines = escapeHtml(block).replace(/\n/g, '<br>');
+      return `<p style="margin:0 0 12px;">${lines}</p>`;
+    })
+    .join('');
+}
+
+function parseComposeRecipients(to) {
+  const list = String(to || '')
+    .split(/[,;\s]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const valid = [];
+  const invalid = [];
+  for (const addr of list) {
+    if (emailRe.test(addr)) valid.push(addr);
+    else invalid.push(addr);
+  }
+  return { valid: [...new Set(valid.map((a) => a.toLowerCase()))], invalid };
+}
+
+export function listAdminComposeMailboxes() {
+  return ADMIN_COMPOSE_MAILBOXES.map(({ id, email, label, description, isMarketing }) => ({
+    id,
+    email,
+    label,
+    description,
+    isMarketing,
+  }));
+}
+
+export function listAdminComposeTemplates() {
+  return ADMIN_COMPOSE_TEMPLATES.map((t) => ({
+    id: t.id,
+    name: t.name,
+    heading: t.heading,
+    subject: t.subject,
+    body: t.body,
+    ctaLabel: t.ctaLabel,
+    ctaPath: t.ctaPath,
+    mailboxId: t.mailboxId,
+  }));
+}
+
+/**
+ * Send a branded admin-composed email from a selected @oddsyra.com mailbox.
+ */
+export async function sendAdminComposeEmail({
+  mailboxId,
+  to,
+  subject,
+  body,
+  heading,
+  greetingName,
+  ctaLabel,
+  ctaHref,
+}) {
+  const mailbox = ADMIN_COMPOSE_MAILBOXES.find((m) => m.id === mailboxId);
+  if (!mailbox) {
+    const err = new Error('Unknown mailbox — choose no-reply, promos, support, or alerts');
+    err.status = 400;
+    err.code = 'INVALID_MAILBOX';
+    throw err;
+  }
+
+  const { valid, invalid } = parseComposeRecipients(to);
+  if (invalid.length) {
+    const err = new Error(`Invalid recipient(s): ${invalid.join(', ')}`);
+    err.status = 400;
+    err.code = 'INVALID_RECIPIENT';
+    throw err;
+  }
+  if (valid.length === 0) {
+    const err = new Error('At least one recipient email is required');
+    err.status = 400;
+    err.code = 'MISSING_RECIPIENT';
+    throw err;
+  }
+  if (valid.length > 25) {
+    const err = new Error('Maximum 25 recipients per send');
+    err.status = 400;
+    err.code = 'TOO_MANY_RECIPIENTS';
+    throw err;
+  }
+
+  const cleanSubject = String(subject || '').trim().slice(0, 200);
+  const cleanBody = String(body || '').trim().slice(0, 12000);
+  if (!cleanSubject) {
+    const err = new Error('Subject is required');
+    err.status = 400;
+    throw err;
+  }
+  if (!cleanBody) {
+    const err = new Error('Body is required');
+    err.status = 400;
+    throw err;
+  }
+
+  const safeHeading = String(heading || cleanSubject).trim().slice(0, 120) || 'Message from OddsYra';
+  let resolvedCtaHref = null;
+  if (ctaHref) {
+    try {
+      const parsed = new URL(String(ctaHref).trim());
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+        resolvedCtaHref = parsed.toString();
+      }
+    } catch {
+      resolvedCtaHref = null;
+    }
+  }
+  const resolvedCtaLabel = ctaLabel ? String(ctaLabel).trim().slice(0, 60) : '';
+
+  const html = renderTransactionalEmail({
+    heading: safeHeading,
+    greetingName: greetingName ? String(greetingName).trim().slice(0, 80) : undefined,
+    introHtml: plainTextToIntroHtml(cleanBody),
+    ctaLabel: resolvedCtaLabel || undefined,
+    ctaHref: resolvedCtaHref || undefined,
+    isMarketing: mailbox.isMarketing,
+    noteHtml: mailbox.isMarketing
+      ? `You can manage promotional email preferences in your <a href="${FRONTEND_URL}/profile" style="color:#166b3a;">OddsYra profile</a>.`
+      : undefined,
+  });
+
+  const headers = mailbox.isMarketing
+    ? { 'List-Unsubscribe': `<${FRONTEND_URL}/profile>` }
+    : {};
+
+  const results = [];
+  let sent = 0;
+  let failed = 0;
+  for (const recipient of valid) {
+    try {
+      const result = await sendEmail({
+        to: recipient,
+        subject: cleanSubject,
+        html,
+        from: mailbox.from,
+        replyTo: mailbox.replyTo,
+        headers,
+        forceFrom: true,
+      });
+      if (result?.success === false) {
+        failed += 1;
+        results.push({ to: recipient, success: false, error: result.error || 'Send failed' });
+      } else {
+        sent += 1;
+        results.push({
+          to: recipient,
+          success: true,
+          messageId: result.messageId,
+          provider: result.provider || (result.json ? 'json' : null),
+        });
+      }
+    } catch (err) {
+      failed += 1;
+      results.push({ to: recipient, success: false, error: err.message });
+    }
+  }
+
+  return {
+    success: failed === 0,
+    mailbox: { id: mailbox.id, email: mailbox.email, label: mailbox.label },
+    subject: cleanSubject,
+    sent,
+    failed,
+    total: valid.length,
+    html,
+    results,
+  };
 }

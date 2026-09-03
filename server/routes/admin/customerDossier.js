@@ -172,6 +172,66 @@ router.post('/users/:userId/pii-view', async (req, res) => {
   }
 });
 
+const COMPOSE_ROLES = new Set(['SUPER_ADMIN', 'MARKETING_ADMIN', 'OPERATIONS_ADMIN', 'SUPPORT_AGENT']);
+
+function requireComposeRole(req, res) {
+  const role = String(req.admin?.role || req.admin?.activeRole || '').toUpperCase();
+  if (role && !COMPOSE_ROLES.has(role)) {
+    res.status(403).json({ success: false, error: 'Compose mail requires marketing, support, ops, or super admin' });
+    return false;
+  }
+  return true;
+}
+
+router.get('/communications/mailboxes', async (req, res) => {
+  if (!requireComposeRole(req, res)) return;
+  try {
+    const { listAdminComposeMailboxes, listAdminComposeTemplates } = await import('../../auth/emailService.js');
+    res.json({
+      success: true,
+      mailboxes: listAdminComposeMailboxes(),
+      templates: listAdminComposeTemplates(),
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message, mailboxes: [], templates: [] });
+  }
+});
+
+router.post('/communications/compose', async (req, res) => {
+  if (!requireComposeRole(req, res)) return;
+  try {
+    const { sendAdminComposeEmail } = await import('../../auth/emailService.js');
+    const body = req.body || {};
+    const result = await sendAdminComposeEmail({
+      mailboxId: body.mailboxId || body.fromMailbox || body.from,
+      to: body.to,
+      subject: body.subject,
+      body: body.body || body.message,
+      heading: body.heading,
+      greetingName: body.greetingName || body.name,
+      ctaLabel: body.ctaLabel,
+      ctaHref: body.ctaHref || body.ctaUrl,
+    });
+    const { html: _html, ...payload } = result;
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: result.mailbox?.email || 'compose',
+      action: 'ADMIN_COMPOSE_EMAIL_SEND',
+      details: {
+        mailboxId: result.mailbox?.id,
+        subject: result.subject,
+        sent: result.sent,
+        failed: result.failed,
+        recipients: (result.results || []).map((r) => r.to),
+      },
+      riskLevel: 'MEDIUM',
+    });
+    res.json(payload);
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message, code: err.code });
+  }
+});
+
 router.post('/communications/broadcast', async (req, res) => {
   const role = String(req.admin?.role || '').toUpperCase();
   if (role && role !== 'SUPER_ADMIN' && role !== 'MARKETING_ADMIN' && role !== 'OPERATIONS_ADMIN') {
