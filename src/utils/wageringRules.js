@@ -100,12 +100,22 @@ export function allocateCashStake(user, cashAmount) {
   };
 }
 
+export const BONUS_MIN_QUALIFYING_ODDS = 1.75;
+
+/** Decimal-safe check for bonus wagering qualification (minimum odds >= 1.75). */
+export function isQualifyingBonusOdds(odds) {
+  const num = Number(odds);
+  if (!Number.isFinite(num) || num <= 0) return false;
+  const rounded = Math.round(num * 10000) / 10000;
+  return rounded >= BONUS_MIN_QUALIFYING_ODDS;
+}
+
 /** Split bet win payout: full payout → balance; net profit → cumulative winnings */
 export function splitBetWinPayout(bet) {
   const payout = Number(bet.payout) || 0;
   const stake = Number(bet.stake) || 0;
   if (payout <= 0 || stake <= 0) {
-    return { cashCredit: 0, bonusCredit: 0, freebetCredit: 0, winningsCredit: 0 };
+    return { cashCredit: 0, bonusCredit: 0, freebetCredit: 0, lockedBonusWinningsCredit: 0, winningsCredit: 0 };
   }
 
   const bonusStake = Number(bet.bonusStake) || 0;
@@ -115,13 +125,17 @@ export function splitBetWinPayout(bet) {
   let cashCredit = 0;
   let bonusCredit = 0;
   let freebetCredit = 0;
+  let lockedBonusWinningsCredit = 0;
   let winningsCredit = 0;
 
   if (bonusStake > 0) {
     const bonusShare = (bonusStake / stake) * payout;
-    // Model B (Full Rollover Lock): all returns (stake + winnings) from bonus bets remain locked in bonus_balance
-    // until the 5x rollover requirement at min odds (>= 1.75) is completed.
-    bonusCredit += bonusShare;
+    // Original bonus stake component returns to bonus_balance (subject to rollover requirement)
+    const returnedStake = Math.min(bonusStake, bonusShare);
+    // Profit component goes to locked_bonus_winnings (escrow) until 5x turnover is completed
+    const bonusProfit = Math.max(0, parseFloat((bonusShare - returnedStake).toFixed(2)));
+    bonusCredit += returnedStake;
+    lockedBonusWinningsCredit += bonusProfit;
   }
 
   if (freebetStake > 0) {
@@ -137,7 +151,7 @@ export function splitBetWinPayout(bet) {
     winningsCredit += parseFloat((cashPayout - cashStake).toFixed(2));
   }
 
-  return { cashCredit, bonusCredit, freebetCredit, winningsCredit };
+  return { cashCredit, bonusCredit, freebetCredit, lockedBonusWinningsCredit, winningsCredit };
 }
 
 export function computeBetProfit(payout, stake) {

@@ -17,10 +17,11 @@ export function getWalletBreakdown(user) {
   const available = getAvailableBalance(user);
   const lockedDeposit = getLockedDepositAmount(user);
   const bonus = Number(user?.bonusBalance ?? 0);
+  const lockedBonusWinnings = Number(user?.lockedBonusWinnings ?? user?.locked_bonus_winnings ?? 0);
   const freebets = Number(user?.freebetBalance ?? 0);
   const bonusAndFreebets = bonus + freebets;
   const pendingWithdrawal = reserved;
-  const total = parseFloat((cashBalance + bonusAndFreebets).toFixed(2));
+  const total = parseFloat((cashBalance + bonusAndFreebets + lockedBonusWinnings).toFixed(2));
 
   return {
     total,
@@ -30,6 +31,7 @@ export function getWalletBreakdown(user) {
     availableBalance: available,
     withdrawable,
     lockedDeposit,
+    lockedBonusWinnings,
     pendingWithdrawal,
     bonus,
     freebets,
@@ -76,6 +78,9 @@ export function getWalletBreakdownLines(wallet, { compact = true } = {}) {
   if (!compact || wallet.lockedDeposit > 0) {
     lines.push({ key: 'locked', label: 'Locked deposit', value: wallet.lockedDeposit, tone: 'locked' });
   }
+  if (!compact || wallet.lockedBonusWinnings > 0) {
+    lines.push({ key: 'locked_bonus_winnings', label: 'Locked bonus winnings', value: wallet.lockedBonusWinnings, tone: 'locked' });
+  }
   if (!compact || wallet.pendingWithdrawal > 0) {
     lines.push({
       key: 'reserved',
@@ -100,6 +105,9 @@ export function getWalletBucketRows(wallet) {
 
 /** Short withdrawable helper copy for wallet UI. */
 export function getWithdrawableHint(wallet) {
+  if (wallet.lockedBonusWinnings > 0) {
+    return `Bonus winnings (${formatInr(wallet.lockedBonusWinnings)}) are locked until 5x turnover is completed.`;
+  }
   if (wallet.lockedDeposit > 0) {
     return `Wager ${formatInr(wallet.lockedDeposit)} of your deposit before withdrawing it.`;
   }

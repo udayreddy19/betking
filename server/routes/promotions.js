@@ -26,7 +26,10 @@ router.post('/claim', requireAuth, async (req, res) => {
 router.get('/user/bonuses', requireAuth, async (req, res) => {
   try {
     const result = await query(
-      `SELECT ub.id, ub.promotion_id, p.name, p.code, ub.bonus_amount, ub.wagering_required, ub.wagering_completed, ub.status, ub.expires_at
+      `SELECT ub.id, ub.promotion_id, p.name, p.code, ub.bonus_amount, ub.wagering_required, ub.wagering_completed,
+              COALESCE(ub.locked_winnings, 0) AS locked_winnings,
+              COALESCE(ub.released_winnings, 0) AS released_winnings,
+              ub.status, ub.expires_at, ub.completed_at
        FROM user_bonuses ub
        JOIN promotions p ON p.id = ub.promotion_id
        WHERE ub.user_id = $1
@@ -48,6 +51,11 @@ router.get('/user/bonuses', requireAuth, async (req, res) => {
         wageringCompleted: compAmt,
         progressPercentage: pct,
         remainingWagering: Math.max(0.00, parseFloat((reqAmt - compAmt).toFixed(2))),
+        lockedWinnings: parseFloat(row.locked_winnings || 0),
+        releasedWinnings: parseFloat(row.released_winnings || 0),
+        minOdds: 1.75,
+        wageringMultiplier: 5,
+        completedAt: row.completed_at,
         status: row.status,
         expiresAt: row.expires_at,
       };

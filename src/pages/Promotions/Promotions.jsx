@@ -271,27 +271,71 @@ export default function Promotions() {
           </div>
           <div className="promotions-active-list">
             {activeBonuses.map((bonus) => {
-              const required = Number(bonus.wagering_required || 0);
-              const done = Number(bonus.wagering_completed || 0);
+              const bonusAmt = Number(bonus.bonus_amount || bonus.bonusAmount || 0);
+              const required = Number(bonus.wagering_required || bonus.wageringRequired || 0);
+              const done = Number(bonus.wagering_completed || bonus.wageringCompleted || 0);
+              const remaining = Math.max(0, required - done);
               const progress = required > 0 ? Math.min(100, Math.round((done / required) * 100)) : 0;
+              const isCompleted = bonus.status === 'COMPLETED' || bonus.status === 'RELEASED' || (required > 0 && done >= required);
+              const lockedWinnings = Number(bonus.locked_winnings || bonus.lockedWinnings || 0);
+
               return (
-                <div key={bonus.id} className="promo-active-card">
+                <div key={bonus.id || bonus.bonusId} className="promo-active-card">
                   <div className="promo-active-card__top">
-                    <h4>{bonus.promo_name || bonus.name || 'Bonus'}</h4>
-                    <span className="promo-active-status">{bonus.status}</span>
+                    <h4>{bonus.promo_name || bonus.promotionName || bonus.name || 'Bonus'}</h4>
+                    <span className={`promo-active-status ${isCompleted ? 'promo-active-status--completed' : ''}`}>
+                      {isCompleted ? '✓ COMPLETED' : 'IN PROGRESS'}
+                    </span>
                   </div>
                   <p className="promo-active-amount">
-                    ₹{Number(bonus.bonus_amount || 0).toLocaleString('en-IN')}
+                    ₹{bonusAmt.toLocaleString('en-IN')} Bonus
                   </p>
+
+                  <div className="promo-wagering-details" style={{ fontSize: '0.85rem', color: '#94a3b8', margin: '8px 0', lineHeight: '1.6' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Wagering Requirement:</span>
+                      <strong style={{ color: '#f8fafc' }}>5x</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Required Turnover:</span>
+                      <strong style={{ color: '#f8fafc' }}>₹{required.toLocaleString('en-IN')}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Completed Turnover:</span>
+                      <strong style={{ color: '#38bdf8' }}>₹{done.toLocaleString('en-IN')}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Remaining Turnover:</span>
+                      <strong style={{ color: remaining > 0 ? '#fbbf24' : '#4ade80' }}>₹{remaining.toLocaleString('en-IN')}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Min. Qualifying Odds:</span>
+                      <strong style={{ color: '#f8fafc' }}>1.75</strong>
+                    </div>
+                    {lockedWinnings > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, paddingTop: 4, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                        <span>Locked Winnings:</span>
+                        <strong style={{ color: '#a855f7' }}>₹{lockedWinnings.toLocaleString('en-IN')}</strong>
+                      </div>
+                    )}
+                  </div>
+
                   {required > 0 && (
                     <>
-                      <div className="promo-active-bar" aria-hidden="true">
-                        <div style={{ width: `${progress}%` }} />
+                      <div className="promo-active-bar" aria-hidden="true" style={{ marginTop: 8 }}>
+                        <div style={{ width: `${progress}%`, background: isCompleted ? '#22c55e' : 'linear-gradient(90deg, #38bdf8, #818cf8)' }} />
                       </div>
-                      <p className="promo-bonus-amount">
-                        Wagering ₹{done.toLocaleString('en-IN')} / ₹{required.toLocaleString('en-IN')}
-                      </p>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginTop: 4 }}>
+                        <span style={{ color: '#94a3b8' }}>Progress</span>
+                        <span style={{ fontWeight: 700, color: isCompleted ? '#4ade80' : '#38bdf8' }}>{progress}%</span>
+                      </div>
                     </>
+                  )}
+
+                  {isCompleted && (
+                    <p style={{ fontSize: '0.85rem', color: '#4ade80', marginTop: 10, fontWeight: 600 }}>
+                      ✓ WAGERING COMPLETED — Eligible winnings are available in cash according to bonus terms.
+                    </p>
                   )}
                 </div>
               );

@@ -222,8 +222,16 @@ export default function WalletDashboard() {
                 <div className="wallet-breakdown-cell">
                   <span className="wallet-breakdown-cell__title">Bonus Balance</span>
                   <span className="wallet-breakdown-cell__value wallet-breakdown-cell__value--bonus">{formatInr(wallet.bonus)}</span>
-                  <span className="wallet-breakdown-cell__desc">Promotional bonus credit. <strong>Must be used in full in one eligible bet.</strong></span>
+                  <span className="wallet-breakdown-cell__desc">Promotional bonus credit. Subject to 5x turnover requirement at min odds 1.75.</span>
                 </div>
+
+                {wallet.lockedBonusWinnings > 0 && (
+                  <div className="wallet-breakdown-cell">
+                    <span className="wallet-breakdown-cell__title">Locked Bonus Winnings</span>
+                    <span className="wallet-breakdown-cell__value" style={{ color: '#a855f7' }}>{formatInr(wallet.lockedBonusWinnings)}</span>
+                    <span className="wallet-breakdown-cell__desc">Bonus profits held in escrow until 5x turnover at min odds 1.75 is completed.</span>
+                  </div>
+                )}
 
                 <div className="wallet-breakdown-cell">
                   <span className="wallet-breakdown-cell__title">Free Bet Value</span>

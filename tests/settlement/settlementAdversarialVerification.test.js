@@ -301,16 +301,17 @@ describe('Bet Settlement Adversarial Verification & Stress Test Suite', () => {
       assert.strictEqual(totalWalletDelta, expectedLedgerCredit);
     });
 
-    it('WON (Bonus): Profit credited to bonus; stake NOT returned; Ledger Credit equals profit', () => {
+    it('WON (Bonus): Principal returned to bonus, profit to lockedBonusWinnings; cashCredit is 0', () => {
       const bet = { stake: 50, fund_source: 'bonus' };
       const payout = 150; // Stake 50, Profit 100
 
       const credits = splitSettlementWinCredits(bet, payout);
       assert.strictEqual(credits.cashCredit, 0);
       assert.strictEqual(credits.winningsCredit, 0);
-      assert.strictEqual(credits.bonusCredit, 150); // Locked rollover bonus payout
+      assert.strictEqual(credits.bonusCredit, 50); // Original bonus principal component
+      assert.strictEqual(credits.lockedBonusWinningsCredit, 100); // Locked bonus profit component
 
-      const totalWalletDelta = credits.bonusCredit;
+      const totalWalletDelta = credits.bonusCredit + credits.lockedBonusWinningsCredit;
       assert.strictEqual(totalWalletDelta, 150);
     });
 

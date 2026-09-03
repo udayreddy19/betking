@@ -172,7 +172,11 @@ router.get('/api/v1/user/bonuses', requireAuth, async (req, res) => {
   try {
     const { query } = await import('../../db/pg.js');
     const bonusesRes = await query(`
-      SELECT ub.id, ub.bonus_amount, ub.wagering_required, ub.wagering_completed, ub.status, ub.expires_at,
+      SELECT ub.id, ub.bonus_amount, ub.wagering_required, ub.wagering_completed,
+             COALESCE(ub.locked_winnings, 0) AS locked_winnings,
+             COALESCE(ub.released_winnings, 0) AS released_winnings,
+             ub.status, ub.expires_at, ub.completed_at,
+             1.75 AS min_odds, 5.0 AS wagering_multiplier,
              p.name AS promo_name, p.code
       FROM user_bonuses ub
       JOIN promotions p ON ub.promotion_id = p.id
