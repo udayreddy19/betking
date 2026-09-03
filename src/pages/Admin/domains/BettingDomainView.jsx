@@ -375,7 +375,8 @@ export default function BettingDomainView({
         onClose={() => { setVerifyBet(null); setVerifyResult(null); }}
         title={verifyBet ? `Verify ${verifyBet.id}` : 'Verify bet'}
         subtitle={verifyBet ? `${verifyBet.match || '—'} · ${verifyBet.selection || '—'}` : ''}
-        width={720}
+        width={390}
+        className="admin-drawer--phone"
       >
         {verifyBet && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14, fontSize: '0.84rem' }}>

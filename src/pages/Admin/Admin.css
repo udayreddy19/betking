@@ -1032,12 +1032,26 @@ textarea.admin-input {
   padding: 20px;
 }
 
+.admin-drawer--phone .admin-drawer__header {
+  padding: 12px 14px;
+}
+
+.admin-drawer--phone .admin-drawer__body {
+  padding: 12px;
+}
+
 .admin-verify-live {
-  margin: 0 -4px 4px;
+  margin: 0 0 4px;
 }
 
 .admin-verify-live .live-graphic-card-10cric {
-  max-height: min(520px, 58vh);
+  max-height: min(420px, 46vh);
+}
+
+.admin-verify-live .live-widget-tab {
+  padding: 5px 8px;
+  font-size: 0.68rem;
+  gap: 4px;
 }
 
 /* ── 12. MODAL ── */

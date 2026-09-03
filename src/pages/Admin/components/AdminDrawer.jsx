@@ -7,7 +7,7 @@ import { createPortal } from 'react-dom';
  * Used for Customer 360, bet details, KYC review, etc.
  * Initial focus runs only when the drawer opens — never on each parent re-render.
  */
-export default function AdminDrawer({ isOpen, onClose, title, subtitle, width, children, actions }) {
+export default function AdminDrawer({ isOpen, onClose, title, subtitle, width, className, children, actions }) {
   const drawerRef = useRef(null);
   const onCloseRef = useRef(onClose);
   const wasOpenRef = useRef(false);
@@ -68,7 +68,7 @@ export default function AdminDrawer({ isOpen, onClose, title, subtitle, width, c
           {/* Drawer Panel */}
           <motion.div
             ref={drawerRef}
-            className="admin-drawer"
+            className={`admin-drawer${className ? ` ${className}` : ''}`}
             role="dialog"
             aria-modal="true"
             aria-label={title || 'Details'}
@@ -77,7 +77,7 @@ export default function AdminDrawer({ isOpen, onClose, title, subtitle, width, c
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 350 }}
-            style={width ? { width: `min(${width}px, 90vw)` } : undefined}
+            style={width ? { width: `min(${width}px, 100vw)` } : undefined}
           >
             {/* Header */}
             <div className="admin-drawer__header">
