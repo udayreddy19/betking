@@ -1037,11 +1037,15 @@ export function AuthProvider({ children }) {
   }, [setUser, recordTx]);
 
   // Step 1: User submits a withdrawal request (Deducts balance, status = PENDING_APPROVAL)
-  const withdrawFunds = useCallback(async (amount, method = 'UPI', details = '') => {
+  const withdrawFunds = useCallback(async (amount, method = 'UPI', detailsOrBank = '') => {
     const amt = Number(amount) || 0;
     if (amt <= 0) {
       return { success: false, maxWithdrawable: 0, status: 'FAILED' };
     }
+
+    const bankDetails = (detailsOrBank && typeof detailsOrBank === 'object')
+      ? { method: method || detailsOrBank.method || 'UPI', ...detailsOrBank }
+      : { method: method || 'UPI', details: detailsOrBank || '' };
 
     if (!DEMO_MODE) {
       try {
@@ -1049,7 +1053,7 @@ export function AuthProvider({ children }) {
           method: 'POST',
           body: JSON.stringify({
             amount: amt,
-            bankDetails: { method: method || 'UPI', details: details || '' },
+            bankDetails,
           }),
         });
         const data = await res.json().catch(() => ({}));
@@ -1121,7 +1125,7 @@ export function AuthProvider({ children }) {
         method: method || 'UPI',
         utr: 'PENDING_ADMIN',
         status: 'PENDING_APPROVAL',
-        details: details || 'UPI Withdrawal',
+        details: bankDetails.details || bankDetails.upiId || 'UPI Withdrawal',
         label: `Withdrawal request (${method}) · Pending Admin Approval`,
       });
       if (forfeitedBonus > 0) {

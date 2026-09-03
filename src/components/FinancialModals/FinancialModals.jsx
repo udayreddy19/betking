@@ -109,11 +109,17 @@ export default function FinancialModals({ modalType, onClose }) {
 
     let detailsString = '';
     let methodLabel = 'UPI';
+    let bankDetailsPayload = { method: 'UPI' };
 
     if (withdrawMethod === 'UPI') {
-      if (!upiId.trim()) return notify('Please enter a valid UPI ID (e.g. name@upi)');
-      detailsString = `UPI ID: ${upiId.trim()}`;
+      const vpa = upiId.trim();
+      if (!vpa) return notify('Please enter a valid UPI ID (e.g. name@upi)');
+      if (!/^[a-zA-Z0-9.\-_]{2,}@[a-zA-Z][a-zA-Z0-9.\-]{1,}$/.test(vpa)) {
+        return notify('UPI ID must look like name@upi (e.g. name@oksbi)');
+      }
+      detailsString = `UPI ID: ${vpa}`;
       methodLabel = 'UPI';
+      bankDetailsPayload = { method: 'UPI', upiId: vpa, vpa, details: detailsString };
     } else if (withdrawMethod === 'BANK_TRANSFER') {
       if (!bankAccountName.trim()) return notify('Please enter the Account Holder Name');
       if (!bankName.trim()) return notify('Please enter the Bank Name');
@@ -125,18 +131,31 @@ export default function FinancialModals({ modalType, onClose }) {
       }
       detailsString = `Bank: ${bankName.trim()} | A/C: ${bankAccountNumber.trim()} | IFSC: ${bankIfsc.trim().toUpperCase()} | Name: ${bankAccountName.trim()}`;
       methodLabel = 'BANK_TRANSFER';
+      bankDetailsPayload = {
+        method: 'BANK_TRANSFER',
+        accountHolderName: bankAccountName.trim(),
+        bankName: bankName.trim(),
+        accountNumber: bankAccountNumber.trim(),
+        ifsc: bankIfsc.trim().toUpperCase(),
+        details: detailsString,
+      };
     } else if (withdrawMethod === 'PAYTM') {
       if (!paytmNumber.trim() || paytmNumber.trim().length < 10) {
         return notify('Please enter a valid 10-digit Paytm Mobile Number');
       }
       detailsString = `Paytm Wallet: ${paytmNumber.trim()}`;
       methodLabel = 'PAYTM';
+      bankDetailsPayload = {
+        method: 'PAYTM',
+        paytmNumber: paytmNumber.trim(),
+        details: detailsString,
+      };
     }
 
     setWithdrawStatus('processing');
     setLastSubmittedDetails(detailsString);
 
-    const { success, withdrawalId, error, forfeitedBonus } = await withdrawFunds(amt, methodLabel, detailsString);
+    const { success, withdrawalId, error, forfeitedBonus } = await withdrawFunds(amt, methodLabel, bankDetailsPayload);
     if (!success) {
       setWithdrawStatus(null);
       notify(error || 'Withdrawal failed. Please check your available balance.');

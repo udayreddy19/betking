@@ -213,7 +213,7 @@ describe.runIf(hasDb)('Full money flow: deposit → bet → WIN → withdraw', (
     const wd = await withdrawalEngine.requestWithdrawal({
       userId,
       amount: withdrawAmt,
-      bankDetails: { account: '9999', method: 'UPI' },
+      bankDetails: { method: 'UPI', upiId: 'flow@oksbi', account: '9999' },
     });
     expect(wd.success).toBe(true);
     expect(['PENDING_REVIEW', 'HOLD'].includes(wd.status)).toBe(true);

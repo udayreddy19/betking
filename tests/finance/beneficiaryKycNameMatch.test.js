@@ -43,6 +43,41 @@ describe('beneficiaryKycNameMatch', () => {
     expect(extractDeclaredAccountHolderFromBankDetails({ method: 'UPI', details: 'UPI ID: user@upi' })).toBe(null);
     expect(maskBankDetailsForAdmin('Bank: HDFC | A/C: 5010023456789 | Name: X')).toContain('•••••••••6789');
   });
+
+  it('normalizes UPI / bank transfer into structured destination fields', async () => {
+    const {
+      normalizeWithdrawalBankDetails,
+      assertWithdrawalDestinationComplete,
+    } = await import('../../lib/beneficiaryKycNameMatch.mjs');
+
+    const fromLegacy = normalizeWithdrawalBankDetails({
+      method: 'UPI',
+      details: 'UPI ID: saireddy79@nyes',
+    });
+    expect(fromLegacy.upiId).toBe('saireddy79@nyes');
+    expect(fromLegacy.vpa).toBe('saireddy79@nyes');
+
+    const structured = assertWithdrawalDestinationComplete({
+      method: 'UPI',
+      upiId: 'name@oksbi',
+    });
+    expect(structured.upiId).toBe('name@oksbi');
+    expect(structured.details).toBe('UPI ID: name@oksbi');
+
+    const bank = assertWithdrawalDestinationComplete({
+      method: 'BANK_TRANSFER',
+      accountHolderName: 'Sai Reddy',
+      bankName: 'HDFC Bank',
+      accountNumber: '5010023456789',
+      ifsc: 'hdfc0001234',
+    });
+    expect(bank.ifsc).toBe('HDFC0001234');
+    expect(bank.accountNumber).toBe('5010023456789');
+    expect(bank.details).toContain('Name: Sai Reddy');
+
+    expect(() => assertWithdrawalDestinationComplete({ method: 'UPI', details: '' }))
+      .toThrow(/UPI_ID_REQUIRED/);
+  });
 });
 
 describe('beneficiaryKycNameMatch withdrawal gate', () => {
@@ -94,7 +129,7 @@ describe('beneficiaryKycNameMatch withdrawal gate', () => {
     const res = await withdrawalEngine.requestWithdrawal({
       userId,
       amount: 1000,
-      bankDetails: { method: 'UPI', details: 'Name: Someone Else' },
+      bankDetails: { method: 'UPI', upiId: 'someone@upi', details: 'UPI ID: someone@upi' },
     });
     expect(res.success).toBe(true);
   });
@@ -103,7 +138,11 @@ describe('beneficiaryKycNameMatch withdrawal gate', () => {
     process.env.WITHDRAWAL_REQUIRE_BENEFICIARY_KYC_MATCH = '1';
     expect(isBeneficiaryKycMatchEnforced()).toBe(true);
     await expect(
-      withdrawalEngine.requestWithdrawal({ userId, amount: 1000, bankDetails: {} }),
+      withdrawalEngine.requestWithdrawal({
+        userId,
+        amount: 1000,
+        bankDetails: { method: 'UPI', upiId: 'testuser@oksbi' },
+      }),
     ).rejects.toMatchObject({
       code: expect.stringMatching(/KYC_IDENTITY_NAME_NOT_AVAILABLE|BENEFICIARY_NOT_VERIFIED|BENEFICIARY_NAME_MISSING/),
     });
@@ -115,7 +154,11 @@ describe('beneficiaryKycNameMatch withdrawal gate', () => {
 
   it('blocks approval when enforcement is on even if request was created while gate was off', async () => {
     process.env.WITHDRAWAL_REQUIRE_BENEFICIARY_KYC_MATCH = '0';
-    const req = await withdrawalEngine.requestWithdrawal({ userId, amount: 1000, bankDetails: {} });
+    const req = await withdrawalEngine.requestWithdrawal({
+      userId,
+      amount: 1000,
+      bankDetails: { method: 'UPI', upiId: 'testuser@oksbi' },
+    });
     process.env.WITHDRAWAL_REQUIRE_BENEFICIARY_KYC_MATCH = '1';
 
     await expect(

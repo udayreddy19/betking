@@ -5,6 +5,7 @@ import { query } from '../../db/pg.js';
 describe('Phase 6 Withdrawal & Fund Reservation Security Tests', () => {
   const userId = 'usr_wdr_101';
   const walletId = 'w_wdr_101';
+  const upiBank = { method: 'UPI', upiId: 'pipeline@oksbi', details: 'UPI ID: pipeline@oksbi' };
 
   beforeEach(async () => {
     await query(`INSERT INTO users (user_id, email, password_hash) VALUES ($1, $2, 'hash') ON CONFLICT (user_id) DO NOTHING;`, [userId, `${userId}@example.com`]);
@@ -28,7 +29,7 @@ describe('Phase 6 Withdrawal & Fund Reservation Security Tests', () => {
   });
 
   it('should process valid withdrawal request and reserve funds', async () => {
-    const res = await withdrawalEngine.requestWithdrawal({ userId, amount: 2000.00, bankDetails: { account: '1234' } });
+    const res = await withdrawalEngine.requestWithdrawal({ userId, amount: 2000.00, bankDetails: upiBank });
     expect(res.success).toBe(true);
     expect(res.status).toBe('PENDING_REVIEW');
     expect(res.reservedBalance).toBe(2000.00);
@@ -41,8 +42,8 @@ describe('Phase 6 Withdrawal & Fund Reservation Security Tests', () => {
 
   it('CRITICAL CONCURRENCY: 2 simultaneous ₹4000 withdrawals on ₹5000 balance -> ONE succeeds, ONE fails, balance = ₹5000, reserved = ₹4000', async () => {
     const results = await Promise.allSettled([
-      withdrawalEngine.requestWithdrawal({ userId, amount: 4000.00 }),
-      withdrawalEngine.requestWithdrawal({ userId, amount: 4000.00 }),
+      withdrawalEngine.requestWithdrawal({ userId, amount: 4000.00, bankDetails: upiBank }),
+      withdrawalEngine.requestWithdrawal({ userId, amount: 4000.00, bankDetails: upiBank }),
     ]);
 
     const fulfilled = results.filter(r => r.status === 'fulfilled');
@@ -58,7 +59,7 @@ describe('Phase 6 Withdrawal & Fund Reservation Security Tests', () => {
   });
 
   it('CRITICAL: admin rejection must REVERSE reserved funds via WITHDRAWAL_REVERSAL ledger entry', async () => {
-    const reqRes = await withdrawalEngine.requestWithdrawal({ userId, amount: 3000.00 });
+    const reqRes = await withdrawalEngine.requestWithdrawal({ userId, amount: 3000.00, bankDetails: upiBank });
     const withdrawalId = reqRes.withdrawalId;
 
     const revRes = await withdrawalEngine.reviewWithdrawal({
@@ -82,14 +83,14 @@ describe('Phase 6 Withdrawal & Fund Reservation Security Tests', () => {
 
   it('rejects withdrawals below ₹1,000', async () => {
     await expect(
-      withdrawalEngine.requestWithdrawal({ userId, amount: 500.00 }),
+      withdrawalEngine.requestWithdrawal({ userId, amount: 500.00, bankDetails: upiBank }),
     ).rejects.toThrow(/Minimum withdrawal amount is ₹1000/);
   });
 
   it('requires verified Aadhaar and PAN before withdrawal', async () => {
     await query(`DELETE FROM kyc_cases WHERE user_id = $1;`, [userId]);
     await expect(
-      withdrawalEngine.requestWithdrawal({ userId, amount: 200.00 }),
+      withdrawalEngine.requestWithdrawal({ userId, amount: 200.00, bankDetails: upiBank }),
     ).rejects.toThrow('KYC_REQUIRED');
   });
 
@@ -106,7 +107,7 @@ describe('Phase 6 Withdrawal & Fund Reservation Security Tests', () => {
       VALUES ($1, $2, $3, 150.00, 750.00, 0.00, 'ACTIVE')
     `, [`ubonus_${userId}`, userId, promoId]);
 
-    const res = await withdrawalEngine.requestWithdrawal({ userId, amount: 2000.00 });
+    const res = await withdrawalEngine.requestWithdrawal({ userId, amount: 2000.00, bankDetails: upiBank });
     expect(res.success).toBe(true);
     expect(res.forfeitedBonus).toBe(150);
 
@@ -119,7 +120,7 @@ describe('Phase 6 Withdrawal & Fund Reservation Security Tests', () => {
   });
 
   it('lists PENDING_REVIEW withdrawals for cancel UI and user cancel restores funds', async () => {
-    const reqRes = await withdrawalEngine.requestWithdrawal({ userId, amount: 1500.00, bankDetails: { method: 'UPI', details: 'user@upi' } });
+    const reqRes = await withdrawalEngine.requestWithdrawal({ userId, amount: 1500.00, bankDetails: upiBank });
     const listed = await withdrawalEngine.listCancellableWithdrawals(userId);
     expect(listed.count).toBe(1);
     expect(listed.withdrawals[0].id).toBe(reqRes.withdrawalId);
@@ -145,7 +146,7 @@ describe('Phase 6 Withdrawal & Fund Reservation Security Tests', () => {
   });
 
   it('refuses cancel for another user\'s withdrawal', async () => {
-    const reqRes = await withdrawalEngine.requestWithdrawal({ userId, amount: 1200.00 });
+    const reqRes = await withdrawalEngine.requestWithdrawal({ userId, amount: 1200.00, bankDetails: upiBank });
     await expect(
       withdrawalEngine.cancelWithdrawal({ userId: 'usr_other', withdrawalId: reqRes.withdrawalId }),
     ).rejects.toThrow(/FORBIDDEN/);
