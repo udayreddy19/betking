@@ -94,11 +94,34 @@ describe('never-event settlement (innings ended early)', () => {
     expect(res?.scoreSource).toBe('innings_final_early_end');
   });
 
-  it('match-over fallback VOIDs next_over', () => {
-    expect(evaluateBetAfterMatchOver({ market_id: 'i1_next_over_18_total' })).toEqual({
+  it('match-over fallback VOIDs next_over only when never-bowled is proven', () => {
+    expect(evaluateBetAfterMatchOver({ market_id: 'i1_next_over_18_total' })).toBeNull();
+    expect(evaluateBetAfterMatchOver({ market_id: 'i1_next_over_18_total' }, earlyEndChase)).toEqual({
       outcome: 'VOID',
       reason: 'over_never_bowled_match_over',
     });
+  });
+
+  it('does not blind-void next_over when chase is still live (County false-final)', () => {
+    const countyLive = {
+      id: 'cb_county',
+      league: 'County Championship Division 1',
+      matchState: 'in',
+      isLive: true,
+      startTime: new Date(Date.now() - 10 * 3600 * 1000).toISOString(),
+      liveDetails: {
+        inningsId: 2,
+        firstRuns: 194,
+        firstWickets: 10,
+        chaseRuns: 92,
+        chaseWickets: 0,
+        chaseOvers: '23.0',
+        overs: '23.0',
+      },
+      team1: { name: 'Somerset', runs: 194, wickets: 10 },
+      team2: { name: 'Glamorgan', runs: 92, wickets: 0 },
+    };
+    expect(evaluateBetAfterMatchOver({ market_id: 'i2_next_over_24_total' }, countyLive)).toBeNull();
   });
 
   it('stays PENDING while innings still live before the over', async () => {
