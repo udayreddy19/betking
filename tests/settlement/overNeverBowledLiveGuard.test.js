@@ -48,30 +48,14 @@ describe('isOverNeverCompleted live chase guard', () => {
     expect(isInningsComplete(match, 2)).toBe(false);
   });
 
-  it('voids never-bowled after explicit match final with overs short of target', () => {
+  it('does not void when status was falsely marked COMPLETED but chase still batting', () => {
     const match = liveChaseMatch({
       matchState: 'post',
       isCompleted: true,
       status: 'COMPLETED',
-      liveDetails: {
-        inningsId: 2,
-        firstRuns: 194,
-        firstWickets: 10,
-        chaseRuns: 92,
-        chaseWickets: 0,
-        chaseOvers: '23.0',
-        overs: '23.0',
-        runs: 92,
-        wickets: 0,
-      },
-      scorecardInnings: [
-        { inningsId: 1, wickets: 10, scoreDetails: { runs: 194, wickets: 10 } },
-        { inningsId: 2, wickets: 0, scoreDetails: { runs: 92, wickets: 0 } },
-      ],
+      isLive: false,
     });
-    // Explicit final + innings advanced? bat may still say innings 2.
-    // With explicit final, isOverNeverCompleted may void if overs < 24.
-    expect(isExplicitOrNever(match)).toBe(true);
+    expect(isOverNeverCompleted(match, 2, 24)).toBe(false);
   });
 });
 
