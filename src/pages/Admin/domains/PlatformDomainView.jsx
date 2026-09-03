@@ -7,7 +7,8 @@ import AdminCard from '../components/AdminCard';
 import DatabaseInspector from '../../../components/DatabaseInspector/DatabaseInspector';
 
 const SUGGESTED_PRODUCT_FLAGS = [
-  { flagKey: 'oddsyra_srl_ui', name: 'SRL', description: 'All SRL matches, Sports SRL chip, and /srl page for players' },
+  { flagKey: 'oddsyra_srl_ui', name: 'OddsYra SRL', description: 'In-house OddsYra SRL league, dedicated /srl page, and header/navigation entries' },
+  { flagKey: 'other_srl_ui', name: 'Other SRLs', description: 'Other simulated reality matches (T20 International SRL, BBL SRL, PSL SRL, etc.) for players' },
   { flagKey: 'oddsyra_t10_ui', name: 'T10', description: 'All T10 matches (ECS, Abu Dhabi T10, German Super League, etc.) for players' },
   { flagKey: 'new_admin_ui', name: 'New Admin UI', description: 'Gradual rollout for modernized Admin shell' },
   { flagKey: 'referral_system_ui', name: 'Referral UX', description: 'Refer & Earn surfaces' },
@@ -103,7 +104,7 @@ export default function PlatformDomainView({ subModule = 'feature-flags' }) {
     : 'System Viewer Flags';
   const hint = subModule === 'api-keys'
     ? 'Registered developer API keys from the platform tables.'
-    : 'Sport and product toggles apply to the live user app within ~30s. Disable OddsYra SRL to hide SRL matches and the /srl page for players.';
+    : 'Sport and product toggles apply to the live user app within ~30s. Separate toggles allow disabling OddsYra SRL and Other SRLs independently.';
 
   const knownKeys = new Set(storeFlags.map((f) => f.flag_key));
   const missingSuggested = SUGGESTED_PRODUCT_FLAGS.filter((f) => !knownKeys.has(f.flagKey));

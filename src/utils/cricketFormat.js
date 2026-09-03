@@ -243,6 +243,41 @@ export function isMatchSRL(match) {
 }
 
 /**
+ * Detects if a match is specifically an in-house OddsYra SRL fixture.
+ * @param {object} match
+ * @returns {boolean}
+ */
+export function isMatchOddsYraSRL(match) {
+  if (!match) return false;
+  if (match.source === 'srl') return true;
+  const id = String(match.id || '');
+  if (id.startsWith('srl_ipl_') || id.startsWith('srl_')) return true;
+
+  const raw = [
+    match.league,
+    match.seriesName,
+    match.competition,
+    match.tournament,
+    match.name,
+    match.eventName,
+    match.matchName,
+  ].filter(Boolean).join(' ').toUpperCase();
+
+  return raw.includes('ODDSYRA SRL');
+}
+
+/**
+ * Detects if a match is an external / feed SRL fixture (T20 International SRL, BBL SRL, etc.)
+ * rather than an in-house OddsYra SRL match.
+ * @param {object} match
+ * @returns {boolean}
+ */
+export function isMatchOtherSRL(match) {
+  if (!match) return false;
+  return isMatchSRL(match) && !isMatchOddsYraSRL(match);
+}
+
+/**
  * Returns compact match card format badge text (e.g. "🏏 TEST", "🏏 ODI", "🏏 T20", "🏏 T10", "🏏 FIRST CLASS", "🏏 LIST A", "🏏 CRICKET").
  */
 export function getCricketFormatCardBadge(formatOrMatch) {

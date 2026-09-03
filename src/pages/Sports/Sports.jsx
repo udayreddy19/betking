@@ -21,6 +21,8 @@ import {
   resolveCricketOversFormat,
   getCricketFormatCardBadge,
   isMatchSRL,
+  isMatchOddsYraSRL,
+  isMatchOtherSRL,
 } from '../../utils/cricketFormat';
 import { prefetchMatchDetail, enrichFromPoller, subscribeGlobalMatchDetails, getGlobalMatchDetailVersion } from '../../services/matchDetailPoller';
 import { useMatchDetail } from '../../hooks/useMatchDetail';
@@ -295,7 +297,9 @@ export default function Sports() {
   const { addBet, isBetSelected } = useBetSlip();
   const { user, showToast, isLoggedIn } = useAuth();
   const { isEnabled } = useFeatureFlags();
-  const srlEnabled = isEnabled('oddsyra_srl_ui', true);
+  const oddsyraSrlEnabled = isEnabled('oddsyra_srl_ui', true);
+  const otherSrlEnabled = isEnabled('other_srl_ui', true);
+  const srlEnabled = oddsyraSrlEnabled;
   const { ids: watchlistIds, count: watchlistCount, toggle: toggleWatch } = useMatchWatchlist();
   const isAdminUser = user?.role === 'admin' || user?.email === 'admin@oddsyra.com';
   const [searchParams, setSearchParams] = useSearchParams();
@@ -344,7 +348,7 @@ export default function Sports() {
     let completed = 0;
     let srl = 0;
     for (const m of pool) {
-      if (isMatchSRL(m)) srl += 1;
+      if (isMatchOddsYraSRL(m)) srl += 1;
       const s = getMatchState(m);
       if (s === 'in') live += 1;
       else if (s === 'pre') upcoming += 1;
@@ -703,8 +707,10 @@ export default function Sports() {
   }, [setSearchParams, srlEnabled]);
 
   useEffect(() => {
-    if (srlEnabled) return;
-    if (!isIplSrlView && !String(activeLeague || '').toLowerCase().includes('srl')) return;
+    const isOtherSrlLeague = activeLeague === 't20-intl-srl' || (!isIplSrlView && String(activeLeague || '').toLowerCase().includes('srl'));
+    const shouldRedirectOddsYra = !oddsyraSrlEnabled && isIplSrlView;
+    const shouldRedirectOther = !otherSrlEnabled && isOtherSrlLeague;
+    if (!shouldRedirectOddsYra && !shouldRedirectOther) return;
     setActiveLeague('all');
     setActiveStateTab('live');
     setSearchParams((prev) => {
@@ -714,7 +720,7 @@ export default function Sports() {
       next.delete('match');
       return next;
     }, { replace: true });
-  }, [srlEnabled, isIplSrlView, activeLeague, setSearchParams]);
+  }, [oddsyraSrlEnabled, otherSrlEnabled, isIplSrlView, activeLeague, setSearchParams]);
 
   useEffect(() => {
     const sport = searchParams.get('sport');

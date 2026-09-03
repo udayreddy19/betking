@@ -16,6 +16,8 @@ import {
   getCricketFormatBanner,
   getCricketFormatCardBadge,
   isMatchSRL,
+  isMatchOddsYraSRL,
+  isMatchOtherSRL,
   isTestMatch,
 } from './cricketFormat.js';
 
@@ -24,6 +26,8 @@ export {
   getCricketFormatBanner,
   getCricketFormatCardBadge,
   isMatchSRL,
+  isMatchOddsYraSRL,
+  isMatchOtherSRL,
   isTestMatch,
 };
 

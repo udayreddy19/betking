@@ -14,7 +14,7 @@ import { LIVE_SCORES_POLL_MS, LIVE_SCORES_WS_FALLBACK_POLL_MS } from '../config/
 import { getIplSrlMatches } from '../../lib/iplSrlSimulator.mjs';
 import { cricketScoreWeight, cricketSourceRank, getCanonicalMatchPairKey } from '../../lib/matchPairKey.mjs';
 import { useFeatureFlags } from './FeatureFlagsContext';
-import { isMatchSRL, isMatchT10 } from '../utils/cricketFormat';
+import { isMatchSRL, isMatchOddsYraSRL, isMatchOtherSRL, isMatchT10 } from '../utils/cricketFormat';
 
 const LiveMatchesContext = createContext([]);
 const LiveSportsMetaContext = createContext(null);
@@ -411,7 +411,8 @@ export function LiveSportsProvider({ children }) {
     () => (matches || []).filter((m) => {
       const sport = String(m?.sport || '').toLowerCase() || 'cricket';
       if (!isSportEnabled(sport)) return false;
-      if (!isEnabled('oddsyra_srl_ui', true) && isMatchSRL(m)) return false;
+      if (!isEnabled('oddsyra_srl_ui', true) && isMatchOddsYraSRL(m)) return false;
+      if (!isEnabled('other_srl_ui', true) && isMatchOtherSRL(m)) return false;
       if (!isEnabled('oddsyra_t10_ui', true) && isMatchT10(m)) return false;
       return true;
     }),

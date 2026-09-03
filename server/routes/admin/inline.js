@@ -2573,15 +2573,17 @@ router.post('/api/admin/platform/flags/toggle', async (req, res) => {
         current = false;
       }
       // Default-on product surfaces (not yet written to store)
-      if (!exists && (String(key) === 'oddsyra_srl_ui' || String(key) === 'oddsyra_t10_ui')) {
+      if (!exists && (String(key) === 'oddsyra_srl_ui' || String(key) === 'other_srl_ui' || String(key) === 'oddsyra_t10_ui')) {
         current = true;
       }
       nextEnabled = enabled == null ? !current : !!enabled;
       const productMeta = String(key) === 'oddsyra_srl_ui'
-        ? { name: 'SRL', description: 'Show all SRL matches, Sports SRL chip, and /srl page to players' }
-        : String(key) === 'oddsyra_t10_ui'
-          ? { name: 'T10', description: 'Show all T10 matches (ECS, Abu Dhabi T10, German Super League, etc.) to players' }
-          : null;
+        ? { name: 'OddsYra SRL', description: 'Show in-house OddsYra SRL matches, Sports SRL chip, and /srl page to players' }
+        : String(key) === 'other_srl_ui'
+          ? { name: 'Other SRLs', description: 'Show other simulated reality matches (T20 International SRL, BBL SRL, etc.) to players' }
+          : String(key) === 'oddsyra_t10_ui'
+            ? { name: 'T10', description: 'Show all T10 matches (ECS, Abu Dhabi T10, German Super League, etc.) to players' }
+            : null;
       await upsertFeatureFlag({
         flagKey: key,
         name: productMeta?.name || key,
