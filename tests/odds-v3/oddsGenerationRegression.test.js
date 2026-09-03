@@ -785,6 +785,26 @@ describe('Odds generation regressions', () => {
     expect((snap10.markets || []).some((m) => m.marketId === 'i1_overs_0_15_total' && m.status === 'OPEN')).toBe(false);
   });
 
+  it('drops overs_0_5 from the 4th over (60% early cut for all windows)', () => {
+    const state = buildCanonicalFromMatch({
+      id: 'ms_cut_5',
+      sport: 'cricket',
+      isLive: true,
+      matchState: 'in',
+      matchFormat: 'T20',
+      team1: { name: 'India', shortName: 'IND', runs: 30, wickets: 0 },
+      team2: { name: 'Australia', shortName: 'AUS', runs: 0, wickets: 0 },
+      liveDetails: {
+        runs: 30, wickets: 0, overs: '3.0',
+        firstRuns: 30, firstWickets: 0, firstOvers: '3.0', firstTeamName: 'India', inningsId: 1,
+      },
+    });
+    expect(state.ballsCompleted).toBe(18);
+    const snap = generate(state);
+    expect((snap.markets || []).some((m) => m.marketId === 'i1_overs_0_5_total' && m.status === 'OPEN')).toBe(false);
+    expect((snap.markets || []).some((m) => m.marketId === 'i1_overs_0_10_total' && m.status === 'OPEN')).toBe(true);
+  });
+
   it('does not treat unlabeled overs2 alone as chase', () => {
     const state = buildCanonicalFromMatch({
       id: 'overs2_away_first',

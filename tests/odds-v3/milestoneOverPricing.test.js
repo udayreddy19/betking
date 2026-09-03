@@ -103,52 +103,46 @@ describe('Milestone overs 0–N pricing', () => {
     expect(milestone(markets, 10)?.line).toBeGreaterThanOrEqual(68.5);
   });
 
-  it('drops 0–10 from the 7th over and 0–15 from the 10th over', () => {
-    const at6 = generateExtendedOverMarkets(liveState({
-      format: 'T20',
-      runs: 45,
-      wickets: 1,
-      ballsCompleted: 36, // 6.0 — still in window for 0–10? cutoff is 36 = start of 7th
+  it('drops every 0–N market once ~60% of its window is bowled', () => {
+    // 0–5: after 3 overs (18 balls) → 4th over
+    const at3 = generateExtendedOverMarkets(liveState({
+      format: 'T20', runs: 28, wickets: 0, ballsCompleted: 18,
     }));
-    // ballsCompleted >= 36 → 0–10 suspended
+    expect(milestone(at3, 5)?.status).toBe('SUSPENDED');
+    expect(milestone(at3, 10)?.status).toBe('OPEN');
+    expect(milestone(at3, 15)?.status).toBe('OPEN');
+
+    // Still open in 3rd over (2.5 = 17 balls)
+    const at2x5 = generateExtendedOverMarkets(liveState({
+      format: 'T20', runs: 24, wickets: 0, ballsCompleted: 17,
+    }));
+    expect(milestone(at2x5, 5)?.status).toBe('OPEN');
+
+    // 0–10: after 6 overs → 7th over
+    const at6 = generateExtendedOverMarkets(liveState({
+      format: 'T20', runs: 45, wickets: 1, ballsCompleted: 36,
+    }));
     expect(milestone(at6, 10)?.status).toBe('SUSPENDED');
     expect(milestone(at6, 15)?.status).toBe('OPEN');
 
-    const at7 = generateExtendedOverMarkets(liveState({
-      format: 'T20',
-      runs: 52,
-      wickets: 1,
-      ballsCompleted: 37, // 6.1 — 7th over
+    // 0–15: after 9 overs → 10th over
+    const at9 = generateExtendedOverMarkets(liveState({
+      format: 'T20', runs: 78, wickets: 2, ballsCompleted: 54,
     }));
-    expect(milestone(at7, 10)?.status).toBe('SUSPENDED');
-    expect(milestone(at7, 15)?.status).toBe('OPEN');
+    expect(milestone(at9, 10)?.status).toBe('SUSPENDED');
+    expect(milestone(at9, 15)?.status).toBe('SUSPENDED');
 
-    const at10 = generateExtendedOverMarkets(liveState({
-      format: 'T20',
-      runs: 78,
-      wickets: 2,
-      ballsCompleted: 54, // 9.0 — start of 10th over
+    // ODI 0–20: after 12 overs → 13th over
+    const odi12 = generateExtendedOverMarkets(liveState({
+      format: 'ODI', runs: 70, wickets: 1, ballsCompleted: 72,
     }));
-    expect(milestone(at10, 10)?.status).toBe('SUSPENDED');
-    expect(milestone(at10, 15)?.status).toBe('SUSPENDED');
+    expect(milestone(odi12, 20)?.status).toBe('SUSPENDED');
+    expect(milestone(odi12, 15)?.status).toBe('SUSPENDED');
 
-    // Still open just before cutoffs
-    const at5x5 = generateExtendedOverMarkets(liveState({
-      format: 'T20',
-      runs: 40,
-      wickets: 1,
-      ballsCompleted: 35, // 5.5
+    const odi11 = generateExtendedOverMarkets(liveState({
+      format: 'ODI', runs: 65, wickets: 1, ballsCompleted: 71,
     }));
-    expect(milestone(at5x5, 10)?.status).toBe('OPEN');
-    expect(milestone(at5x5, 15)?.status).toBe('OPEN');
-
-    const at9x5 = generateExtendedOverMarkets(liveState({
-      format: 'T20',
-      runs: 72,
-      wickets: 2,
-      ballsCompleted: 53, // 8.5
-    }));
-    expect(milestone(at9x5, 15)?.status).toBe('OPEN');
+    expect(milestone(odi11, 20)?.status).toBe('OPEN');
   });
 
   it('caps soft live milestone Over odds like team totals', () => {
