@@ -251,6 +251,34 @@ router.get('/api/admin/settlement/replay/:betId', requireRole('SUPER_ADMIN', 'FI
   }
 });
 
+router.get('/api/admin/settlement/resettle-wrong-lost-totals', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN', 'TRADING_ADMIN'), async (req, res) => {
+  try {
+    const { scanWrongLostTotals } = await import('../../../lib/resettleWrongLostTotalsScan.mjs');
+    const report = await scanWrongLostTotals({
+      lookbackDays: Number(req.query.lookbackDays) || 7,
+      limit: Math.min(Number(req.query.limit) || 200, 500),
+    });
+    res.json(report);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/api/admin/settlement/resettle-wrong-lost-totals/:betId/approve', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN'), async (req, res) => {
+  try {
+    const { approveWrongLostTotalsCorrection } = await import('../../../lib/resettleWrongLostTotalsScan.mjs');
+    const result = await approveWrongLostTotalsCorrection({
+      betId: req.params.betId,
+      adminId: req.admin?.sub || req.admin?.id || req.user?.userId || 'admin',
+      reason: req.body?.reason || 'Admin approved wrong LOST totals resettle',
+      force: Boolean(req.body?.force),
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message });
+  }
+});
+
 router.get('/api/admin/settlement/reversals', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN', 'TRADING_ADMIN'), async (req, res) => {
   try {
     const { listPendingReversals } = await import('../../../lib/settlement/settlementReversal.mjs');
