@@ -41,6 +41,8 @@ describe('Withdrawal review concurrency / CAS', () => {
         withdrawalId,
         adminId: 'admin_a',
         decision: 'APPROVE',
+        paidAmount: 200,
+        payoutRef: `RACEUTR${Date.now()}`,
       }),
       withdrawalEngine.reviewWithdrawal({
         withdrawalId,

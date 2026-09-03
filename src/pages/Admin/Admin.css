@@ -1032,6 +1032,14 @@ textarea.admin-input {
   padding: 20px;
 }
 
+.admin-verify-live {
+  margin: 0 -4px 4px;
+}
+
+.admin-verify-live .live-graphic-card-10cric {
+  max-height: min(520px, 58vh);
+}
+
 /* ── 12. MODAL ── */
 
 .admin-modal-overlay {

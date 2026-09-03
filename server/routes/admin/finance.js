@@ -67,13 +67,17 @@ router.get('/withdrawals', requirePermission('finance'), async (req, res) => {
 /** POST /api/admin/finance/withdrawals/:id/review */
 router.post('/withdrawals/:id/review', requirePermission('finance'), async (req, res) => {
   try {
-    const { decision, reason, forceApprove } = req.body;
+    const { decision, reason, forceApprove, paidAmount, payoutRef, utr, referenceNumber } = req.body;
     const result = await withdrawalEngine.reviewWithdrawal({
       withdrawalId: req.params.id,
       adminId: req.admin?.id || req.user?.id || 'admin',
       decision,
       reason,
       forceApprove: Boolean(forceApprove),
+      paidAmount,
+      payoutRef,
+      utr,
+      referenceNumber,
     });
     res.json(result);
   } catch (err) {

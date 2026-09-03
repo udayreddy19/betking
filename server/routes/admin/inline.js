@@ -1186,6 +1186,10 @@ router.post('/api/admin/finance/withdrawals/:id/approve', requireRole('SUPER_ADM
       decision: 'APPROVE',
       reason: req.body?.reason || '',
       forceApprove: Boolean(req.body?.forceApprove),
+      paidAmount: req.body?.paidAmount,
+      payoutRef: req.body?.payoutRef || req.body?.utr || req.body?.referenceNumber,
+      utr: req.body?.utr,
+      referenceNumber: req.body?.referenceNumber,
     });
     const { logAdminAction } = await import('../../middleware/auditLogger.js');
     const action = result.status === 'PENDING_CHECKER'
@@ -1203,6 +1207,8 @@ router.post('/api/admin/finance/withdrawals/:id/approve', requireRole('SUPER_ADM
         role: result.role || null,
         makerAdminId: result.makerAdminId || null,
         checkerAdminId: result.checkerAdminId || null,
+        paidAmount: result.paidAmount || null,
+        payoutRef: result.payoutRef || null,
         idempotent: Boolean(result.idempotent),
       },
     });
@@ -1213,7 +1219,9 @@ router.post('/api/admin/finance/withdrawals/:id/approve', requireRole('SUPER_ADM
       role: result.role || null,
       makerAdminId: result.makerAdminId || null,
       checkerAdminId: result.checkerAdminId || null,
-      payoutTriggered: result.status === 'APPROVED',
+        payoutTriggered: result.status === 'APPROVED',
+      paidAmount: result.paidAmount || null,
+      payoutRef: result.payoutRef || null,
       message: result.message || null,
       timestamp: new Date().toISOString(),
     });

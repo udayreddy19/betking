@@ -38,14 +38,28 @@ function approveNeedsForce(row) {
   return st === 'PENDING_CHECKER' && l === 'CRITICAL';
 }
 
+function isFinalPaidAction(row) {
+  const st = String(row?.status || '').toUpperCase();
+  if (st === 'PENDING_CHECKER') return true;
+  if (st === 'PENDING_REVIEW' || st === 'HOLD' || st === 'PENDING' || st === 'REQUESTED') {
+    return !riskNeedsForce(row?.riskLevel);
+  }
+  return false;
+}
+
+function payoutAmountDefault(row) {
+  const n = Number(row?.amount);
+  return Number.isFinite(n) ? n.toFixed(2) : '';
+}
+
 function approveActionLabel(row) {
   const st = String(row?.status || '').toUpperCase();
   const l = String(row?.riskLevel || '').toUpperCase();
   if (st === 'PENDING_CHECKER') {
-    return l === 'CRITICAL' ? 'Force checker approve' : 'Checker approve';
+    return l === 'CRITICAL' ? 'Force Paid' : 'Paid';
   }
   if (l === 'HIGH' || l === 'CRITICAL') return 'Maker review';
-  return 'Approve';
+  return 'Paid';
 }
 
 function PendingFinancialApprovalsPanel() {
@@ -237,11 +251,16 @@ function MakerCheckerPanel() {
     }
   };
 
-  const handleApproveWithdrawal = async (reason) => {
+  const handleApproveWithdrawal = async (reason, extra = {}) => {
     if (!approveTarget) return;
     const force = approveNeedsForce(approveTarget);
+    const paid = isFinalPaidAction(approveTarget);
     if (force && !String(reason || '').trim()) {
       showToast('Force-approve requires a reason', 'error');
+      return;
+    }
+    if (paid && (!String(extra.paidAmount || '').trim() || !String(extra.payoutRef || '').trim())) {
+      showToast('Enter the amount sent and UTR / reference number', 'error');
       return;
     }
     setProcessing(true);
@@ -250,14 +269,19 @@ function MakerCheckerPanel() {
         reqId: approveTarget.id,
         reason: reason || '',
         forceApprove: force,
+        paidAmount: extra.paidAmount || undefined,
+        payoutRef: extra.payoutRef || undefined,
+        utr: extra.payoutRef || undefined,
       });
       const st = String(data?.status || '').toUpperCase();
       showToast(
         st === 'PENDING_CHECKER'
           ? `Maker review recorded for ${approveTarget.id} — awaiting checker.`
-          : force
-            ? `Withdrawal ${approveTarget.id} force-approved by checker.`
-            : `Withdrawal ${approveTarget.id} approved.`,
+          : paid
+            ? `Marked paid ${approveTarget.id}${data?.payoutRef ? ` · ${data.payoutRef}` : ''}.`
+            : force
+              ? `Withdrawal ${approveTarget.id} force-approved by checker.`
+              : `Withdrawal ${approveTarget.id} approved.`,
         'success',
       );
       load();
@@ -340,6 +364,7 @@ function MakerCheckerPanel() {
           return (
             <div style={{ fontSize: '0.78rem', display: 'grid', gap: 6 }}>
               <div><strong>Maker:</strong> {r.makerAdminId || '—'} · <strong>Checker:</strong> {r.checkerAdminId || '—'}</div>
+              <div><strong>Destination:</strong> {r.destination || r.upiId || '—'}</div>
               <div><strong>Force required:</strong> {approveNeedsForce(r) ? 'Yes (CRITICAL checker)' : 'No'}</div>
               <div>
                 <strong>Signals:</strong>{' '}
@@ -366,6 +391,13 @@ function MakerCheckerPanel() {
             render: (r) => <StatusBadge status={String(r.status || 'PENDING').toUpperCase()} />,
           },
           { header: 'Method', key: 'method' },
+          {
+            header: 'Destination',
+            key: 'destination',
+            render: (r) => (
+              <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.destination || r.upiId || '—'}</span>
+            ),
+          },
           {
             header: 'Risk',
             key: 'riskLevel',
@@ -472,18 +504,21 @@ function MakerCheckerPanel() {
         description={
           String(approveTarget?.status || '').toUpperCase() === 'PENDING_CHECKER'
             ? (approveNeedsForce(approveTarget)
-              ? `CRITICAL risk — checker must differ from maker (${approveTarget?.makerAdminId || 'maker'}) and provide forceApprove + reason.`
-              : `Checker approval required. Maker was ${approveTarget?.makerAdminId || 'another admin'}; you cannot be the same admin.`)
+              ? `CRITICAL risk — checker must differ from maker (${approveTarget?.makerAdminId || 'maker'}) and provide force + reason, then amount and UTR after you send the money.`
+              : `Send the payout from your UPI / bank app, then enter the amount and UTR. Maker was ${approveTarget?.makerAdminId || 'another admin'}; you cannot be the same admin.`)
             : riskNeedsForce(approveTarget?.riskLevel)
               ? `Risk is ${String(approveTarget?.riskLevel || '').toUpperCase()}. This records a maker review and moves the request to PENDING_CHECKER for a different admin.`
-              : 'Funds will be released to the user\'s bank account. This action is irreversible.'
+              : 'Send the payout from your UPI / bank app, then enter the exact amount and UTR / reference number. This is irreversible.'
         }
         requireReason={approveNeedsForce(approveTarget)}
         reasonPlaceholder="Force-approve reason (required for CRITICAL checker)…"
+        requirePayoutProof={isFinalPaidAction(approveTarget)}
+        payoutAmountDefault={payoutAmountDefault(approveTarget)}
         details={[
           { label: 'Request ID', value: approveTarget?.id || '—' },
           { label: 'User', value: approveTarget?.userName || approveTarget?.userId || '—' },
           { label: 'Amount', value: money(approveTarget?.amount) },
+          { label: 'Destination', value: approveTarget?.destination || approveTarget?.upiId || approveTarget?.method || '—' },
           { label: 'Method', value: approveTarget?.method || '—' },
           { label: 'Status', value: approveTarget?.status || '—' },
           { label: 'Risk level', value: approveTarget?.riskLevel || '—' },

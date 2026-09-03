@@ -18,6 +18,8 @@ import AdminModal from './AdminModal';
  *     ]}
  *     requireReason           // shows reason textarea
  *     reasonPlaceholder="Enter rejection reason..."
+ *     requirePayoutProof      // shows amount + UTR fields for manual Paid
+ *     payoutAmountDefault="1500.00"
  *     confirmLabel="Reject Withdrawal"
  *     cancelLabel="Cancel"
  *     onConfirm={(reason) => handleReject(reason)}
@@ -35,6 +37,8 @@ export default function AdminConfirmDialog({
   requireReason = false,
   reasonPlaceholder = 'Enter reason...',
   reasonDefault = '',
+  requirePayoutProof = false,
+  payoutAmountDefault = '',
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
   onConfirm,
@@ -44,20 +48,34 @@ export default function AdminConfirmDialog({
   children,
 }) {
   const [reason, setReason] = useState(reasonDefault);
+  const [paidAmount, setPaidAmount] = useState(payoutAmountDefault);
+  const [payoutRef, setPayoutRef] = useState('');
   const reasonRef = useRef(null);
+  const payoutRefInput = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
       setReason(reasonDefault);
-      if (requireReason) {
+      setPaidAmount(payoutAmountDefault || '');
+      setPayoutRef('');
+      if (requirePayoutProof) {
+        setTimeout(() => payoutRefInput.current?.focus(), 120);
+      } else if (requireReason) {
         setTimeout(() => reasonRef.current?.focus(), 120);
       }
     }
-  }, [isOpen, reasonDefault, requireReason]);
+  }, [isOpen, reasonDefault, requireReason, requirePayoutProof, payoutAmountDefault]);
+
+  const payoutReady = !requirePayoutProof
+    || (String(paidAmount || '').trim() && String(payoutRef || '').trim().length >= 8);
+  const reasonReady = !requireReason || Boolean(reason.trim());
 
   const handleConfirm = () => {
-    if (requireReason && !reason.trim()) return;
-    onConfirm(reason.trim());
+    if (!reasonReady || !payoutReady) return;
+    onConfirm(reason.trim(), {
+      paidAmount: String(paidAmount || '').trim(),
+      payoutRef: String(payoutRef || '').trim(),
+    });
   };
 
   const iconVariant = {
@@ -116,6 +134,58 @@ export default function AdminConfirmDialog({
                 <span className="admin-confirm-dialog__detail-value">{d.value}</span>
               </div>
             ))}
+          </div>
+        )}
+
+        {requirePayoutProof && (
+          <div style={{ margin: '12px 0', display: 'grid', gap: 10 }}>
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '0.76rem',
+                fontWeight: 700,
+                color: 'var(--admin-text-muted)',
+                marginBottom: '6px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.4px',
+              }}>
+                Amount sent (₹) <span style={{ color: 'var(--admin-danger)' }}>*</span>
+              </label>
+              <input
+                className="admin-input"
+                type="number"
+                inputMode="decimal"
+                min="0"
+                step="0.01"
+                value={paidAmount}
+                onChange={(e) => setPaidAmount(e.target.value)}
+                placeholder="Amount as shown in UPI / bank app"
+                style={{ width: '100%', boxSizing: 'border-box' }}
+              />
+            </div>
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '0.76rem',
+                fontWeight: 700,
+                color: 'var(--admin-text-muted)',
+                marginBottom: '6px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.4px',
+              }}>
+                UTR / reference number <span style={{ color: 'var(--admin-danger)' }}>*</span>
+              </label>
+              <input
+                ref={payoutRefInput}
+                className="admin-input"
+                type="text"
+                autoComplete="off"
+                value={payoutRef}
+                onChange={(e) => setPayoutRef(e.target.value)}
+                placeholder="From your UPI or bank app"
+                style={{ width: '100%', boxSizing: 'border-box', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}
+              />
+            </div>
           </div>
         )}
 
@@ -187,7 +257,7 @@ export default function AdminConfirmDialog({
             type="button"
             className={`admin-btn ${confirmBtnClass}`}
             onClick={handleConfirm}
-            disabled={loading || (requireReason && !reason.trim())}
+            disabled={loading || !reasonReady || !payoutReady}
           >
             {loading ? 'Processing…' : confirmLabel}
           </button>

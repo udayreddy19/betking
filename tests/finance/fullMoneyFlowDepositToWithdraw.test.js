@@ -265,6 +265,8 @@ describe.runIf(hasDb)('Full money flow: deposit → bet → WIN → withdraw', (
         adminId: 'admin_e2e_checker',
         decision: 'APPROVE',
         reason: 'E2E checker approve',
+        paidAmount: withdrawAmt,
+        payoutRef: `E2ECHK${Date.now()}`,
       };
       if (riskLevel === 'CRITICAL') {
         checkerOpts.forceApprove = true;
@@ -280,6 +282,8 @@ describe.runIf(hasDb)('Full money flow: deposit → bet → WIN → withdraw', (
         adminId: 'admin_e2e',
         decision: 'APPROVE',
         reason: 'E2E low-risk approve',
+        paidAmount: withdrawAmt,
+        payoutRef: `E2ELOW${Date.now()}`,
       });
       expect(approved.success).toBe(true);
       w = await wallet();

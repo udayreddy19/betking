@@ -114,6 +114,8 @@ describe.runIf(hasDb)('Withdrawal maker-checker dual control', () => {
       adminId: 'admin_checker',
       decision: 'APPROVE',
       reason: 'Checker ok',
+      paidAmount: 2000,
+      payoutRef: `MCCHK${Date.now()}`,
     });
     expect(approved.status).toBe('APPROVED');
     expect(approved.checkerAdminId).toBe('admin_checker');
@@ -156,6 +158,8 @@ describe.runIf(hasDb)('Withdrawal maker-checker dual control', () => {
       decision: 'APPROVE',
       forceApprove: true,
       reason: 'Manual override after enhanced review',
+      paidAmount: 2500,
+      payoutRef: `MCCRIT${Date.now()}`,
     });
     expect(ok.status).toBe('APPROVED');
   });

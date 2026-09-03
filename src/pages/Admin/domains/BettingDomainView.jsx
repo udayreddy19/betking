@@ -7,6 +7,7 @@ import { StatusBadge } from '../components/AdminBadge';
 import AdminConfirmDialog from '../components/AdminConfirmDialog';
 import AdminFilterBar, { FilterSelect, FilterSearch } from '../components/AdminFilterBar';
 import AdminDrawer from '../components/AdminDrawer';
+import AdminVerifyLiveMatch from '../components/AdminVerifyLiveMatch';
 
 function money(n) {
   if (n == null || Number.isNaN(Number(n))) return '—';
@@ -374,10 +375,25 @@ export default function BettingDomainView({
         onClose={() => { setVerifyBet(null); setVerifyResult(null); }}
         title={verifyBet ? `Verify ${verifyBet.id}` : 'Verify bet'}
         subtitle={verifyBet ? `${verifyBet.match || '—'} · ${verifyBet.selection || '—'}` : ''}
-        width={440}
+        width={720}
       >
         {verifyBet && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14, fontSize: '0.84rem' }}>
+            <AdminVerifyLiveMatch
+              match={verifyResult?.match || {
+                id: verifyBet.matchId || verifyBet.legs?.[0]?.matchId,
+                matchId: verifyBet.matchId || verifyBet.legs?.[0]?.matchId,
+                sport: 'cricket',
+                team1: verifyBet.match?.includes(' vs ')
+                  ? { name: String(verifyBet.match).split(' vs ')[0] }
+                  : null,
+                team2: verifyBet.match?.includes(' vs ')
+                  ? { name: String(verifyBet.match).split(' vs ').slice(1).join(' vs ') }
+                  : null,
+                isLive: isOpenStatus(verifyBet.status),
+                matchState: isOpenStatus(verifyBet.status) ? 'in' : 'post',
+              }}
+            />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               <div>
                 <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.72rem' }}>User</div>

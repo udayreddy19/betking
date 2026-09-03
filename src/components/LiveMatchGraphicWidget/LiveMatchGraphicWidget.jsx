@@ -1208,6 +1208,16 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
             <button
               type="button"
               role="tab"
+              aria-selected={activeWidgetTab === 'lineups'}
+              onClick={() => setActiveWidgetTab('lineups')}
+              className={`live-widget-tab ${activeWidgetTab === 'lineups' ? 'active' : ''}`}
+            >
+              <LiveWidgetTabIcon Icon={HiOutlineUsers} active={activeWidgetTab === 'lineups'} />
+              Lineups
+            </button>
+            <button
+              type="button"
+              role="tab"
               aria-selected={activeWidgetTab === 'commentary'}
               onClick={() => setActiveWidgetTab('commentary')}
               className={`live-widget-tab ${activeWidgetTab === 'commentary' ? 'active' : ''}`}

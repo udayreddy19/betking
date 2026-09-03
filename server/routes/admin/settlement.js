@@ -215,7 +215,7 @@ router.get('/api/admin/settlement/replay/:betId', requireRole('SUPER_ADMIN', 'FI
 
     const { aggregateLiveScores } = await import('../../../lib/aggregator.mjs');
     const { matchIdAliases } = await import('../../../lib/matchIdPublic.mjs');
-    const { replayBetSettlement } = await import('../../../lib/settlement/settlementReplay.mjs');
+    const { replayBetSettlement, matchSnapshotForAdmin } = await import('../../../lib/settlement/settlementReplay.mjs');
 
     const snap = await aggregateLiveScores({ force: true });
     const byId = new Map();
@@ -231,8 +231,40 @@ router.get('/api/admin/settlement/replay/:betId', requireRole('SUPER_ADMIN', 'FI
       selections: legsRes.rows || [],
     };
     const replay = await replayBetSettlement({ bet, matchLookup });
+
+    let match = replay.match || null;
+    if (!match && replay.matchId) {
+      try {
+        const { reconstructMatchFromDb } = await import('../../../lib/eventPersistence.mjs');
+        const fromDb = await reconstructMatchFromDb(replay.matchId);
+        if (fromDb) {
+          match = matchSnapshotForAdmin(fromDb);
+        }
+      } catch {
+        match = null;
+      }
+    }
+    if (!match) {
+      const snap0 = bet.placement_snapshot;
+      const leg0 = Array.isArray(snap0?.legs) ? snap0.legs[0] : null;
+      const t1 = leg0?.team1Name || snap0?.team1Name;
+      const t2 = leg0?.team2Name || snap0?.team2Name;
+      if (replay.matchId && (t1 || t2)) {
+        match = {
+          id: replay.matchId,
+          matchId: replay.matchId,
+          sport: 'cricket',
+          team1: t1 ? { name: t1 } : null,
+          team2: t2 ? { name: t2 } : null,
+          isLive: true,
+          matchState: 'in',
+        };
+      }
+    }
+
     res.json({
       ...replay,
+      match,
       placedOdds: {
         accepted: bet.accepted_odds != null ? Number(bet.accepted_odds) : null,
         requested: bet.odds != null ? Number(bet.odds) : null,
