@@ -15,67 +15,33 @@ const FALLBACK_MAILBOXES = [
 ];
 
 const FALLBACK_TEMPLATES = [
-  {
-    id: 'blank',
-    name: 'Blank',
-    heading: 'Message from OddsYra',
-    subject: '',
-    body: '',
-    ctaLabel: '',
-    ctaPath: '',
-    mailboxId: 'no-reply',
-  },
-  {
-    id: 'support-update',
-    name: 'Support update',
-    heading: 'Update on your support request',
-    subject: 'Update from OddsYra Support',
-    body: 'Thanks for contacting OddsYra Support.\n\nWe have reviewed your request and wanted to share a quick update.\n\nIf you still need help, reply to this email or open your ticket in the app.',
-    ctaLabel: 'Open support',
-    ctaPath: '/profile?tab=support',
-    mailboxId: 'support',
-  },
-  {
-    id: 'account-notice',
-    name: 'Account notice',
-    heading: 'Account notice',
-    subject: 'Important notice about your OddsYra account',
-    body: 'We are writing with an important update about your OddsYra account.\n\nPlease review the details below and take any action required.\n\nIf this does not look right, contact support immediately.',
-    ctaLabel: 'View account',
-    ctaPath: '/profile',
-    mailboxId: 'no-reply',
-  },
-  {
-    id: 'promo-announce',
-    name: 'Promo announcement',
-    heading: 'A special offer for you',
-    subject: 'Exclusive offer from OddsYra',
-    body: 'We have a limited-time offer waiting for you on OddsYra.\n\nClaim it before it expires — terms apply.',
-    ctaLabel: 'View promotions',
-    ctaPath: '/promotions',
-    mailboxId: 'promos',
-  },
-  {
-    id: 'kyc-nudge',
-    name: 'KYC reminder',
-    heading: 'Complete your KYC',
-    subject: 'Finish KYC to unlock full OddsYra access',
-    body: 'Your OddsYra account is almost ready.\n\nComplete KYC verification to unlock higher limits and withdrawals.\n\nIt only takes a few minutes.',
-    ctaLabel: 'Complete KYC',
-    ctaPath: '/profile?tab=kyc',
-    mailboxId: 'no-reply',
-  },
-  {
-    id: 'welcome-back',
-    name: 'Welcome back',
-    heading: 'Welcome back to OddsYra',
-    subject: 'We saved your spot at OddsYra',
-    body: 'It has been a while — markets are live and fresh offers are waiting.\n\nLog in to pick up where you left off.',
-    ctaLabel: 'Open OddsYra',
-    ctaPath: '/sports',
-    mailboxId: 'promos',
-  },
+  { id: 'blank', name: 'Blank', group: 'core', heading: 'Message from OddsYra', subject: '', body: '', ctaLabel: '', ctaPath: '', mailboxId: 'no-reply' },
+  { id: 'support-update', name: 'Support update', group: 'core', heading: 'Update on your support request', subject: 'Update from OddsYra Support', body: 'Thanks for contacting OddsYra Support.\n\nWe have reviewed your request and wanted to share a quick update.\n\nIf you still need help, reply to this email or open your ticket in the app.', ctaLabel: 'Open support', ctaPath: '/profile?tab=support', mailboxId: 'support' },
+  { id: 'account-notice', name: 'Account notice', group: 'core', heading: 'Account notice', subject: 'Important notice about your OddsYra account', body: 'We are writing with an important update about your OddsYra account.\n\nPlease review the details below and take any action required.\n\nIf this does not look right, contact support immediately.', ctaLabel: 'View account', ctaPath: '/profile', mailboxId: 'no-reply' },
+  { id: 'promo-announce', name: 'Promo announcement', group: 'core', heading: 'A special offer for you', subject: 'Exclusive offer from OddsYra', body: 'We have a limited-time offer waiting for you on OddsYra.\n\nClaim it before it expires — terms apply.', ctaLabel: 'View promotions', ctaPath: '/promotions', mailboxId: 'promos' },
+  { id: 'kyc-nudge', name: 'KYC reminder', group: 'core', heading: 'Complete your KYC', subject: 'Finish KYC to unlock full OddsYra access', body: 'Your OddsYra account is almost ready.\n\nComplete KYC verification to unlock higher limits and withdrawals.\n\nIt only takes a few minutes.', ctaLabel: 'Complete KYC', ctaPath: '/profile?tab=kyc', mailboxId: 'no-reply' },
+  { id: 'welcome-back', name: 'Welcome back', group: 'core', heading: 'Welcome back to OddsYra', subject: 'We saved your spot at OddsYra', body: 'It has been a while — markets are live and fresh offers are waiting.\n\nLog in to pick up where you left off.', ctaLabel: 'Open OddsYra', ctaPath: '/sports', mailboxId: 'promos' },
+  { id: 'ticket-closed', name: 'Ticket closed', group: 'ops', heading: 'Your support ticket is resolved', subject: 'Your OddsYra support ticket is closed', body: 'We have closed your support ticket as resolved.\n\nIf anything is still outstanding, reply to this email or reopen the ticket from your profile.', ctaLabel: 'View ticket', ctaPath: '/profile?tab=support', mailboxId: 'support' },
+  { id: 'kyc-rejected', name: 'KYC rejected', group: 'ops', heading: 'KYC needs another look', subject: 'Please resubmit your OddsYra KYC documents', body: 'We could not verify your KYC documents this time.\n\nPlease upload clear, matching ID and address documents from your profile. Withdrawals stay limited until KYC is approved.', ctaLabel: 'Resubmit KYC', ctaPath: '/profile?tab=kyc', mailboxId: 'no-reply' },
+  { id: 'security-alert', name: 'Security alert', group: 'ops', heading: 'Security notice', subject: 'Security notice for your OddsYra account', body: 'We noticed a security-related change on your OddsYra account.\n\nIf this was you, no action is needed. If it was not, change your password and contact support immediately.', ctaLabel: 'Secure account', ctaPath: '/profile', mailboxId: 'no-reply' },
+  { id: 'withdrawal-help', name: 'Withdrawal help', group: 'ops', heading: 'About your withdrawal', subject: 'Update on your OddsYra withdrawal', body: 'We are writing about your recent withdrawal request.\n\nPlease keep your UPI / bank details ready. If we need anything else, reply to this email and our support team will follow up.', ctaLabel: 'Open wallet', ctaPath: '/wallet', mailboxId: 'support' },
+  { id: 'deposit-help', name: 'Deposit help', group: 'ops', heading: 'Need help depositing?', subject: 'Help with your OddsYra deposit', body: 'If a deposit did not show in your wallet, check the payment app first.\n\nIf the amount was deducted but not credited, reply with the UTR / reference and we will look into it.', ctaLabel: 'Open wallet', ctaPath: '/wallet', mailboxId: 'support' },
+  { id: 'free-bet', name: 'Free bet', group: 'ops', heading: 'Your free bet is waiting', subject: 'A free bet has been added to your OddsYra account', body: 'A free bet is ready on your OddsYra account.\n\nOpen Sports, pick a market, and use the free bet before it expires. Stake is not returned.', ctaLabel: 'Use free bet', ctaPath: '/sports', mailboxId: 'promos' },
+  { id: 'bonus-expiry', name: 'Bonus expiry', group: 'ops', heading: 'Your bonus is about to expire', subject: 'Your OddsYra bonus expires soon', body: 'A bonus or free bet on your account is close to expiry.\n\nLog in and use it before it lapses. Unused rewards cannot be restored after expiry.', ctaLabel: 'View rewards', ctaPath: '/rewards', mailboxId: 'promos' },
+  { id: 'vip-perk', name: 'VIP perk', group: 'ops', heading: 'A VIP perk for you', subject: 'Your OddsYra VIP perk is ready', body: 'Thanks for playing with OddsYra — a VIP perk is waiting on your account.\n\nOpen Rewards to review the details and claim it.', ctaLabel: 'View VIP', ctaPath: '/rewards', mailboxId: 'promos' },
+  { id: 'referral', name: 'Referral', group: 'ops', heading: 'Invite friends, earn rewards', subject: 'Share OddsYra and earn referral rewards', body: 'Invite friends to OddsYra with your referral link.\n\nWhen they verify, you both can earn a free bet. Open your profile to copy your code.', ctaLabel: 'Get referral link', ctaPath: '/profile', mailboxId: 'promos' },
+  { id: 'responsible-gaming', name: 'Responsible gaming', group: 'ops', heading: 'Play within your limits', subject: 'Set limits on your OddsYra account', body: 'You can set deposit, loss, and session limits any time from your OddsYra profile.\n\nIf you need a break, use time-out or self-exclusion. Help is always available.', ctaLabel: 'Set limits', ctaPath: '/profile?tab=responsible-gaming', mailboxId: 'support' },
+  { id: 'account-hold', name: 'Account hold', group: 'ops', heading: 'Your account needs a review', subject: 'Action needed on your OddsYra account', body: 'We have placed a temporary review on your OddsYra account.\n\nBetting or withdrawals may be limited until this is cleared. Reply to this email if you have questions.', ctaLabel: 'Contact support', ctaPath: '/profile?tab=support', mailboxId: 'alerts' },
 ];
+
+function playerDisplayName(user) {
+  const name = String(user?.name || user?.displayName || '').trim();
+  if (name) return name;
+  const firstLast = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim();
+  if (firstLast) return firstLast;
+  const email = String(user?.email || '').trim();
+  return email.includes('@') ? email.split('@')[0] : '';
+}
 
 function ComposeMailPanel() {
   const { showToast } = useAdminToast();
@@ -83,7 +49,10 @@ function ComposeMailPanel() {
   const [templates, setTemplates] = useState(FALLBACK_TEMPLATES);
   const [mailboxId, setMailboxId] = useState('support');
   const [templateId, setTemplateId] = useState('blank');
-  const [to, setTo] = useState('');
+  const [toQuery, setToQuery] = useState('');
+  const [recipients, setRecipients] = useState([]);
+  const [hits, setHits] = useState([]);
+  const [searching, setSearching] = useState(false);
   const [subject, setSubject] = useState('');
   const [heading, setHeading] = useState('Message from OddsYra');
   const [greetingName, setGreetingName] = useState('');
@@ -105,10 +74,54 @@ function ComposeMailPanel() {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    const q = toQuery.trim();
+    if (q.length < 2) {
+      setHits([]);
+      setSearching(false);
+      return undefined;
+    }
+    let cancelled = false;
+    setSearching(true);
+    const timer = setTimeout(() => {
+      adminApiClient.get(`/customers?q=${encodeURIComponent(q)}&limit=12`)
+        .then((data) => {
+          if (cancelled) return;
+          setHits(data.users || data.customers || []);
+        })
+        .catch(() => {
+          if (!cancelled) setHits([]);
+        })
+        .finally(() => {
+          if (!cancelled) setSearching(false);
+        });
+    }, 280);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [toQuery]);
+
   const selectedMailbox = useMemo(
     () => mailboxes.find((m) => m.id === mailboxId) || mailboxes[0],
     [mailboxes, mailboxId],
   );
+
+  const coreTemplates = useMemo(
+    () => templates.filter((t) => (t.group || 'core') === 'core'),
+    [templates],
+  );
+  const opsTemplates = useMemo(
+    () => templates.filter((t) => t.group === 'ops'),
+    [templates],
+  );
+
+  const toValue = useMemo(() => {
+    const emails = recipients.map((r) => r.email).filter(Boolean);
+    const typed = toQuery.trim();
+    if (typed.includes('@') && !emails.includes(typed.toLowerCase())) emails.push(typed);
+    return emails.join(', ');
+  }, [recipients, toQuery]);
 
   const applyTemplate = (id) => {
     const tpl = templates.find((t) => t.id === id) || FALLBACK_TEMPLATES[0];
@@ -121,9 +134,50 @@ function ComposeMailPanel() {
     setCtaPath(tpl.ctaPath || '');
   };
 
+  const selectPlayer = (user) => {
+    const email = String(user.email || '').trim().toLowerCase();
+    if (!email || !email.includes('@')) {
+      showToast('That player has no email on file', 'error');
+      return;
+    }
+    const name = playerDisplayName(user);
+    setRecipients((prev) => {
+      if (prev.some((r) => r.email === email)) return prev;
+      return [...prev, {
+        id: user.id || user.userId || user.user_id,
+        email,
+        name,
+        phone: user.phone || '',
+      }].slice(0, 25);
+    });
+    setGreetingName(name);
+    setToQuery('');
+    setHits([]);
+  };
+
+  const removeRecipient = (email) => {
+    const next = recipients.filter((r) => r.email !== email);
+    setRecipients(next);
+    setGreetingName(next.length ? (next[next.length - 1].name || '') : '');
+  };
+
+  const addTypedEmail = () => {
+    const typed = toQuery.trim().replace(/,+$/, '');
+    if (!typed.includes('@')) return false;
+    const email = typed.toLowerCase();
+    setRecipients((prev) => {
+      if (prev.some((r) => r.email === email)) return prev;
+      return [...prev, { email, name: email.split('@')[0], phone: '' }].slice(0, 25);
+    });
+    setToQuery('');
+    setHits([]);
+    return true;
+  };
+
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!to.trim() || !subject.trim() || !body.trim()) {
+    const to = toValue.trim();
+    if (!to || !subject.trim() || !body.trim()) {
       showToast('To, subject, and body are required', 'error');
       return;
     }
@@ -135,7 +189,7 @@ function ComposeMailPanel() {
         : undefined;
       const res = await adminApiClient.post('/communications/compose', {
         mailboxId,
-        to: to.trim(),
+        to,
         subject: subject.trim(),
         body: body.trim(),
         heading: heading.trim() || subject.trim(),
@@ -156,28 +210,36 @@ function ComposeMailPanel() {
     }
   };
 
+  const renderTemplateRow = (items) => (
+    <div className="admin-compose-mail__templates" role="list">
+      {items.map((tpl) => (
+        <button
+          key={tpl.id}
+          type="button"
+          role="listitem"
+          className={`admin-compose-mail__tpl${templateId === tpl.id ? ' is-active' : ''}`}
+          onClick={() => applyTemplate(tpl.id)}
+        >
+          {tpl.name}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
     <div className="admin-compose-mail">
       <div style={{ marginBottom: 16 }}>
         <h2 className="admin-page-header__title">Compose email</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
-          Send branded OddsYra mail from any @oddsyra.com mailbox. Pick a template to fill subject and body instantly.
+          Search a player by name, email, or mobile, then pick a shortcut to fill subject and body.
         </p>
       </div>
 
-      <div className="admin-compose-mail__templates" role="list">
-        {templates.map((tpl) => (
-          <button
-            key={tpl.id}
-            type="button"
-            role="listitem"
-            className={`admin-compose-mail__tpl${templateId === tpl.id ? ' is-active' : ''}`}
-            onClick={() => applyTemplate(tpl.id)}
-          >
-            {tpl.name}
-          </button>
-        ))}
-      </div>
+      {renderTemplateRow(coreTemplates)}
+      {opsTemplates.length > 0 && (
+        <div className="admin-compose-mail__shortcuts-label">More shortcuts</div>
+      )}
+      {opsTemplates.length > 0 && renderTemplateRow(opsTemplates)}
 
       <form onSubmit={handleSend} className="admin-compose-mail__form">
         <fieldset className="admin-compose-mail__from">
@@ -204,13 +266,60 @@ function ComposeMailPanel() {
 
         <label className="admin-compose-mail__label">
           To
-          <input
-            className="admin-input"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-            placeholder="player@email.com (comma-separate up to 25)"
-            required
-          />
+          <div className="admin-compose-mail__to">
+            {recipients.map((r) => (
+              <span key={r.email} className="admin-compose-mail__chip">
+                <span>{r.name || r.email}</span>
+                <button type="button" aria-label={`Remove ${r.email}`} onClick={() => removeRecipient(r.email)}>×</button>
+              </span>
+            ))}
+            <input
+              className="admin-compose-mail__to-input"
+              value={toQuery}
+              onChange={(e) => setToQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ',') {
+                  if (addTypedEmail()) e.preventDefault();
+                }
+                if (e.key === 'Backspace' && !toQuery && recipients.length) {
+                  removeRecipient(recipients[recipients.length - 1].email);
+                }
+              }}
+              placeholder={recipients.length ? 'Add another…' : 'Search name, email, or mobile'}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck="false"
+              name="oddsyra-compose-to"
+              required={recipients.length === 0}
+            />
+            {toQuery.trim().length >= 2 && (
+              <div className="admin-compose-mail__hits" role="listbox">
+                {searching && <div className="admin-compose-mail__hit-empty">Searching…</div>}
+                {!searching && hits.length === 0 && (
+                  <div className="admin-compose-mail__hit-empty">
+                    {toQuery.includes('@') ? 'Press Enter to use this email' : 'No matching players'}
+                  </div>
+                )}
+                {hits.map((user) => {
+                  const id = user.id || user.userId || user.user_id;
+                  const name = playerDisplayName(user);
+                  return (
+                    <button
+                      key={id || user.email}
+                      type="button"
+                      className="admin-compose-mail__hit"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => selectPlayer(user)}
+                    >
+                      <strong>{name || 'Player'}</strong>
+                      <span>{[user.email, user.phone].filter(Boolean).join(' · ')}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </label>
 
         <label className="admin-compose-mail__label">
@@ -235,13 +344,16 @@ function ComposeMailPanel() {
             />
           </label>
           <label className="admin-compose-mail__label">
-            Greeting name (optional)
+            Greeting name
             <input
               className="admin-input"
               value={greetingName}
               onChange={(e) => setGreetingName(e.target.value)}
-              placeholder="Hi {name},"
+              placeholder={greetingName ? '' : 'Hi “selected user”,'}
             />
+            {greetingName ? (
+              <span className="admin-compose-mail__hint">Sends as Hi <strong>{greetingName}</strong>,</span>
+            ) : null}
           </label>
         </div>
 

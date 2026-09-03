@@ -3479,7 +3479,16 @@ html[data-theme="light"] .admin-badge--info,
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin: 0 0 16px;
+  margin: 0 0 12px;
+}
+
+.admin-compose-mail__shortcuts-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--admin-text-muted);
+  margin: 2px 0 8px;
 }
 
 .admin-compose-mail__tpl {
@@ -3572,6 +3581,106 @@ html[data-theme="light"] .admin-badge--info,
   gap: 4px;
   font-size: 0.76rem;
   font-weight: 700;
+}
+
+.admin-compose-mail__hint {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--admin-text-muted);
+}
+
+.admin-compose-mail__to {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 6px 8px;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  background: var(--admin-panel);
+}
+
+.admin-compose-mail__to:focus-within {
+  border-color: var(--admin-border-focus);
+}
+
+.admin-compose-mail__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px 3px 8px;
+  border-radius: 999px;
+  background: var(--admin-primary-soft);
+  color: var(--admin-text);
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.admin-compose-mail__chip button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.admin-compose-mail__to-input {
+  flex: 1 1 180px;
+  min-width: 160px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--admin-text);
+  font-size: 0.84rem;
+  padding: 4px 2px;
+}
+
+.admin-compose-mail__hits {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 8;
+  max-height: 240px;
+  overflow: auto;
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  background: var(--admin-panel);
+  box-shadow: var(--admin-shadow-lg);
+}
+
+.admin-compose-mail__hit,
+.admin-compose-mail__hit-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--admin-text);
+  text-align: left;
+  font-size: 0.78rem;
+}
+
+.admin-compose-mail__hit {
+  cursor: pointer;
+}
+
+.admin-compose-mail__hit span,
+.admin-compose-mail__hit-empty {
+  color: var(--admin-text-muted);
+  font-weight: 500;
+}
+
+.admin-compose-mail__hit:hover {
+  background: var(--admin-surface-hover);
 }
 
 .admin-compose-mail__row {
