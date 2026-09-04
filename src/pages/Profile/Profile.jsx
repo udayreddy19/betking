@@ -404,6 +404,60 @@ export default function Profile() {
         {activeTab === 'rg' && (
           <div className="profile-rg-section">
 
+            <div className="rg-card-box">
+              <h3><FiSliders /> Deposit, stake &amp; loss limits</h3>
+              <p>
+                Limits you set are enforced. Deposits and bets that would exceed a limit are blocked until the next period resets (IST calendar day/week).
+              </p>
+              <form onSubmit={handleSaveLimits} className="rg-form">
+                <div className="rg-form-group">
+                  <label htmlFor="rg-deposit-limit">Daily deposit limit (₹)</label>
+                  <input
+                    id="rg-deposit-limit"
+                    type="number"
+                    min="0"
+                    step="100"
+                    value={depositLimit}
+                    onChange={(e) => setDepositLimit(e.target.value)}
+                  />
+                </div>
+                <div className="rg-form-group">
+                  <label htmlFor="rg-stake-limit">Daily stake limit (₹)</label>
+                  <input
+                    id="rg-stake-limit"
+                    type="number"
+                    min="0"
+                    step="100"
+                    value={stakeLimit}
+                    onChange={(e) => setStakeLimit(e.target.value)}
+                  />
+                </div>
+                <div className="rg-form-group">
+                  <label htmlFor="rg-loss-daily">Daily loss limit (₹)</label>
+                  <input
+                    id="rg-loss-daily"
+                    type="number"
+                    min="0"
+                    step="100"
+                    value={lossLimitDaily}
+                    onChange={(e) => setLossLimitDaily(e.target.value)}
+                  />
+                </div>
+                <div className="rg-form-group">
+                  <label htmlFor="rg-loss-weekly">Weekly loss limit (₹)</label>
+                  <input
+                    id="rg-loss-weekly"
+                    type="number"
+                    min="0"
+                    step="100"
+                    value={lossLimitWeekly}
+                    onChange={(e) => setLossLimitWeekly(e.target.value)}
+                  />
+                </div>
+                <button type="submit" className="profile-link-btn">Save limits</button>
+              </form>
+            </div>
+
             <div className="rg-card-box warning">
               <h3><FiShield /> Cooling-off</h3>
               <p>

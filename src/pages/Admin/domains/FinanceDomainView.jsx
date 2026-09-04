@@ -11,6 +11,7 @@ import { AdminKpiDrillDrawer, useAdminKpiDrilldown } from '../hooks/useAdminKpiD
 import PaymentGatewaysView from './PaymentGatewaysView';
 import { AdminHub } from '../components/AdminTabs';
 import { formatIst, formatIstDateTime, todayIstYmd } from '../../../utils/istTime';
+import { useNavAttentionCount } from '../context/AdminNavAttentionContext';
 
 function money(n) {
   if (n == null || Number.isNaN(Number(n))) return '—';
@@ -2101,6 +2102,8 @@ export default function FinanceDomainView({
     'control-center',
     'legacy-ledger',
   ];
+  const withdrawalsCount = useNavAttentionCount('finance', 'cash-money');
+  const approvalsCount = useNavAttentionCount('finance', 'pending-approvals');
 
   const renderPanel = (id) => {
     if (id === 'investigation') return <WalletInvestigationPanel />;
@@ -2126,14 +2129,15 @@ export default function FinanceDomainView({
   };
 
   if (moneyIds.includes(subModule)) {
+    // cash-money → Deposits; maker-checker → Withdrawals; pending-approvals → Approvals
     const initial = subModule === 'cash-money' ? 'deposits-review' : subModule;
     return (
       <AdminHub
         initialTab={initial}
         tabs={[
           { id: 'deposits-review', label: 'Deposits' },
-          { id: 'maker-checker', label: 'Withdrawals' },
-          { id: 'pending-approvals', label: 'Approvals' },
+          { id: 'maker-checker', label: 'Withdrawals', count: withdrawalsCount },
+          { id: 'pending-approvals', label: 'Approvals', count: approvalsCount },
         ]}
       >
         {(tab) => renderPanel(tab)}

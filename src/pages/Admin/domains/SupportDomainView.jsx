@@ -13,10 +13,30 @@ import {
   validateSupportFile,
 } from '../../../utils/supportAttachments';
 import { formatIstShort } from '../../../utils/istTime';
+import { useNavAttentionCount } from '../context/AdminNavAttentionContext';
 
 function formatMsgTime(value) {
   if (!value) return '';
   return formatIstShort(value, '');
+}
+
+const OPEN_TICKET_STATUSES = new Set([
+  'OPEN', 'ASSIGNED', 'IN_PROGRESS', 'ESCALATED', 'REOPENED',
+  'PENDING', 'PENDING_INTERNAL', 'WAITING', 'ACTIVE', 'WAITING_FOR_USER',
+]);
+
+function isSlaBreachedTicket(t) {
+  if (!t) return false;
+  const status = String(t.status || '').toUpperCase();
+  if (!OPEN_TICKET_STATUSES.has(status) || status === 'RESOLVED' || status === 'CLOSED' || status === 'ENDED') {
+    return false;
+  }
+  if (String(t.sla || '').toUpperCase() === 'BREACHED') return true;
+  if (t.slaDueAt) {
+    const due = new Date(t.slaDueAt).getTime();
+    if (Number.isFinite(due) && due < Date.now()) return true;
+  }
+  return false;
 }
 
 export default function SupportDomainView({
@@ -25,7 +45,13 @@ export default function SupportDomainView({
   focusEntityType = null,
   onFocusConsumed = null,
 }) {
-  const [activeTab, setActiveTab] = useState('tickets'); // 'tickets' | 'live-chat'
+  const isSlaDesk = subModule === 'sla-alerts';
+  const ticketCount = useNavAttentionCount('support', 'ticket-queue');
+  const chatCount = useNavAttentionCount('support', 'chat-console');
+  const slaCount = useNavAttentionCount('support', 'sla-alerts');
+  const [activeTab, setActiveTab] = useState(() => (
+    subModule === 'chat-console' ? 'live-chat' : 'tickets'
+  )); // 'tickets' | 'live-chat'
   const [tickets, setTickets] = useState([]);
   const [liveChats, setLiveChats] = useState([]);
   const [metrics, setMetrics] = useState({
@@ -135,6 +161,11 @@ export default function SupportDomainView({
     const timer = setInterval(loadData, 10000);
     return () => clearInterval(timer);
   }, [loadData]);
+
+  useEffect(() => {
+    if (subModule === 'chat-console') setActiveTab('live-chat');
+    else setActiveTab('tickets');
+  }, [subModule]);
 
   useEffect(() => {
     if (!selectedTicket?.id) return undefined;
@@ -307,6 +338,7 @@ export default function SupportDomainView({
 
   // Filtered Tickets
   const filteredTickets = tickets.filter((t) => {
+    if (isSlaDesk && !isSlaBreachedTicket(t)) return false;
     if (statusFilter && String(t.status).toUpperCase() !== statusFilter) return false;
     if (categoryFilter && String(t.category).toUpperCase() !== categoryFilter) return false;
     if (priorityFilter && String(t.priority).toUpperCase() !== priorityFilter) return false;
@@ -332,7 +364,23 @@ export default function SupportDomainView({
         <AdminCard title="RESOLVED TODAY" value={metrics.resolvedToday || 0} variant="success" />
         <AdminCard title="ACTIVE LIVE CHATS" value={metrics.activeLiveChats || 0} variant="primary" />
         <AdminCard title="WAITING CHATS" value={metrics.waitingLiveChats || 0} variant="warning" />
+        {isSlaDesk && (
+          <AdminCard title="SLA BREACHED" value={slaCount || filteredTickets.length || 0} variant="danger" />
+        )}
       </div>
+
+      {isSlaDesk && (
+        <div style={{
+          padding: '10px 14px',
+          borderRadius: 8,
+          border: '1px solid rgba(248, 113, 113, 0.35)',
+          background: 'rgba(248, 113, 113, 0.08)',
+          color: 'var(--admin-text)',
+          fontSize: '0.84rem',
+        }}>
+          SLA desk — open tickets/conversations with <code>sla_due_at</code> in the past. Closed/resolved items are excluded.
+        </div>
+      )}
 
       {/* Primary Sub-Tabs */}
       <div style={{ display: 'flex', gap: '12px', borderBottom: '1px solid var(--admin-border)', paddingBottom: '8px' }}>
@@ -341,15 +389,22 @@ export default function SupportDomainView({
           className={`admin-btn ${activeTab === 'tickets' ? 'admin-btn--primary' : 'admin-btn--secondary'}`}
           onClick={() => setActiveTab('tickets')}
         >
-          🎫 Ticket Queue ({filteredTickets.length})
+          {isSlaDesk ? '⚠ SLA Breached' : '🎫 Ticket Queue'}
+          {' '}({filteredTickets.length}
+          {!isSlaDesk && ticketCount != null ? ` · ${ticketCount} need reply` : ''}
+          )
         </button>
-        <button
-          type="button"
-          className={`admin-btn ${activeTab === 'live-chat' ? 'admin-btn--primary' : 'admin-btn--secondary'}`}
-          onClick={() => setActiveTab('live-chat')}
-        >
-          💬 Live Chat Control ({liveChats.length})
-        </button>
+        {!isSlaDesk && (
+          <button
+            type="button"
+            className={`admin-btn ${activeTab === 'live-chat' ? 'admin-btn--primary' : 'admin-btn--secondary'}`}
+            onClick={() => setActiveTab('live-chat')}
+          >
+            💬 Live Chat Control ({liveChats.length}
+            {chatCount != null ? ` · ${chatCount} waiting` : ''}
+            )
+          </button>
+        )}
       </div>
 
       {/* ── TAB 1: TICKET QUEUE ── */}

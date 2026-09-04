@@ -4,6 +4,7 @@ import AdminDataTable from '../components/AdminDataTable';
 import { useAdminToast } from '../components/AdminToastContext';
 import { StatusBadge } from '../components/AdminBadge';
 import { AdminHub } from '../components/AdminTabs';
+import { useNavAttentionCount } from '../context/AdminNavAttentionContext';
 import AdminConfirmDialog from '../components/AdminConfirmDialog';
 
 const FAILED_STATUSES = new Set(['FAILED', 'ERROR', 'DEAD_LETTER', 'DLQ', 'BOUNCED', 'REJECTED']);
@@ -31,7 +32,7 @@ const FALLBACK_TEMPLATES = [
   { id: 'bonus-expiry', name: 'Bonus expiry', group: 'ops', heading: 'Your bonus is about to expire', subject: 'Your OddsYra bonus expires soon', body: 'A bonus or free bet on your account is close to expiry.\n\nLog in and use it before it lapses. Unused rewards cannot be restored after expiry.', ctaLabel: 'View rewards', ctaPath: '/rewards', mailboxId: 'promos' },
   { id: 'vip-perk', name: 'VIP perk', group: 'ops', heading: 'A VIP perk for you', subject: 'Your OddsYra VIP perk is ready', body: 'Thanks for playing with OddsYra — a VIP perk is waiting on your account.\n\nOpen Rewards to review the details and claim it.', ctaLabel: 'View VIP', ctaPath: '/rewards', mailboxId: 'promos' },
   { id: 'referral', name: 'Referral', group: 'ops', heading: 'Invite friends, earn rewards', subject: 'Share OddsYra and earn referral rewards', body: 'Invite friends to OddsYra with your referral link.\n\nWhen they verify, you both can earn a free bet. Open your profile to copy your code.', ctaLabel: 'Get referral link', ctaPath: '/profile', mailboxId: 'promos' },
-  { id: 'responsible-gaming', name: 'Responsible gaming', group: 'ops', heading: 'Play within your limits', subject: 'Set limits on your OddsYra account', body: 'You can set deposit, loss, and session limits any time from your OddsYra profile.\n\nIf you need a break, use time-out or self-exclusion. Help is always available.', ctaLabel: 'Set limits', ctaPath: '/profile?tab=responsible-gaming', mailboxId: 'support' },
+  { id: 'responsible-gaming', name: 'Responsible gaming', group: 'ops', heading: 'Play within your limits', subject: 'Set limits on your OddsYra account', body: 'You can set deposit, loss, and session limits any time from your OddsYra profile. Deposit, stake, and loss limits are enforced when set.\n\nIf you need a break, use time-out or self-exclusion. Help is always available.', ctaLabel: 'Set limits', ctaPath: '/profile?tab=rg', mailboxId: 'support' },
   { id: 'account-hold', name: 'Account hold', group: 'ops', heading: 'Your account needs a review', subject: 'Action needed on your OddsYra account', body: 'We have placed a temporary review on your OddsYra account.\n\nBetting or withdrawals may be limited until this is cleared. Reply to this email if you have questions.', ctaLabel: 'Contact support', ctaPath: '/profile?tab=support', mailboxId: 'alerts' },
   { id: 'need-info', name: 'Need more info', group: 'more', heading: 'We need a bit more information', subject: 'OddsYra Support needs a few details', body: 'Thanks for writing in.\n\nTo finish this request we need a little more information from you. Reply to this email with the details and we will pick it up right away.', ctaLabel: 'Reply in app', ctaPath: '/profile?tab=support', mailboxId: 'support' },
   { id: 'looking-into-it', name: 'Looking into it', group: 'more', heading: 'We are looking into this', subject: 'OddsYra Support is reviewing your request', body: 'We have received your request and our team is reviewing it now.\n\nNo action is needed from you yet. We will email you as soon as we have an update.', ctaLabel: 'Open support', ctaPath: '/profile?tab=support', mailboxId: 'support' },
@@ -609,6 +610,7 @@ function BroadcastPanel() {
 
 export default function CommunicationsDomainView({ subModule = 'dispatch-logs' }) {
   const inboxIds = ['mail-inbox', 'dispatch-logs', 'dlq-retry'];
+  const failedCount = useNavAttentionCount('communications', 'dlq-retry');
   if (inboxIds.includes(subModule)) {
     const initial = subModule === 'mail-inbox' ? 'dispatch-logs' : subModule;
     return (
@@ -616,7 +618,7 @@ export default function CommunicationsDomainView({ subModule = 'dispatch-logs' }
         initialTab={initial}
         tabs={[
           { id: 'dispatch-logs', label: 'Sent' },
-          { id: 'dlq-retry', label: 'Failed' },
+          { id: 'dlq-retry', label: 'Failed', count: failedCount },
         ]}
       >
         {(tab) => <CommunicationsPanels subModule={tab} />}

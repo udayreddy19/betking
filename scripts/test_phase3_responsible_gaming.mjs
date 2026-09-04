@@ -21,14 +21,14 @@ async function runPhase3AcceptanceTest() {
     console.log('✅ TEST 1/5 PASSED: Responsible Gaming Limits configured cleanly!');
     passCount++;
 
-    // 2. Unlimited deposits (stored daily limit is display-only)
-    console.log('   ⏳ Test 2/5: Testing that a deposit above the stored daily limit is allowed (₹6,000)...');
+    // 2. Reject deposit above daily limit (limits are enforced when set)
+    console.log('   ⏳ Test 2/5: Testing rejection of deposit above daily limit (₹6,000)...');
     const rejectRes = await responsibleGamingEngine.validateDepositAttempt(testUserId, 6000);
 
-    if (!rejectRes.allowed) {
-      throw new Error(`Expected unlimited deposit approval, got: ${JSON.stringify(rejectRes)}`);
+    if (rejectRes.allowed || rejectRes.reason !== 'DEPOSIT_LIMIT_DAILY') {
+      throw new Error(`Expected DEPOSIT_LIMIT_DAILY rejection, got: ${JSON.stringify(rejectRes)}`);
     }
-    console.log('✅ TEST 2/5 PASSED: Deposit above stored daily limit allowed!');
+    console.log('✅ TEST 2/5 PASSED: Deposit above daily limit rejected!');
     passCount++;
 
     // 3. Approve Valid Deposit (₹4,000 <= ₹5,000)
@@ -42,14 +42,14 @@ async function runPhase3AcceptanceTest() {
     console.log('✅ TEST 3/5 PASSED: Valid deposit approved and recorded server-side!');
     passCount++;
 
-    // 4. Unlimited per-bet stake (stored stake limit is display-only)
-    console.log('   ⏳ Test 4/5: Testing that a stake above the stored per-bet limit is allowed (₹15,000)...');
+    // 4. Reject stake above per-bet limit (limits are enforced when set)
+    console.log('   ⏳ Test 4/5: Testing rejection of stake above per-bet limit (₹15,000)...');
     const stakeRes = await responsibleGamingEngine.validateBetPlacementAttempt(testUserId, 15000);
 
-    if (!stakeRes.allowed) {
-      throw new Error(`Expected unlimited stake approval, got: ${JSON.stringify(stakeRes)}`);
+    if (stakeRes.allowed) {
+      throw new Error(`Expected stake limit rejection, got: ${JSON.stringify(stakeRes)}`);
     }
-    console.log('✅ TEST 4/5 PASSED: Stake above stored per-bet limit allowed!');
+    console.log('✅ TEST 4/5 PASSED: Stake above per-bet limit rejected!');
     passCount++;
 
     // 5. Cooling-Off & Self-Exclusion Enforcement

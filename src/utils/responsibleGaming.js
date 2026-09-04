@@ -1,4 +1,7 @@
-/** Responsible gaming — daily limits (IST calendar day) */
+/** Responsible gaming — daily limits (IST calendar day).
+ * Deposit and stake limits are enforced client-side here and server-side via
+ * lib/responsibleGaming.mjs when a limit is set (finite and > 0).
+ */
 export const DEFAULT_DAILY_DEPOSIT_LIMIT = 50000;
 export const DEFAULT_DAILY_STAKE_LIMIT = 25000;
 

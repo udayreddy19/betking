@@ -3,7 +3,7 @@ import { adminAuth, requireRole, requirePermission } from '../../middleware/admi
 
 const router = Router();
 
-router.get('/api/admin/risk/accounts', async (req, res) => {
+router.get('/api/admin/risk/accounts', requirePermission('risk', 'fraud'), async (req, res) => {
   try {
     const { fraudGraphEngine } = await import('../../../lib/fraudGraphEngine.mjs');
     res.json({ accounts: fraudGraphEngine.getFlaggedAccounts() });
@@ -12,7 +12,7 @@ router.get('/api/admin/risk/accounts', async (req, res) => {
   }
 });
 
-router.get('/api/admin/risk/accounts/:id', async (req, res) => {
+router.get('/api/admin/risk/accounts/:id', requirePermission('risk', 'fraud'), async (req, res) => {
   try {
     const { fraudGraphEngine } = await import('../../../lib/fraudGraphEngine.mjs');
     const details = fraudGraphEngine.getAccountDetails(req.params.id);
@@ -23,7 +23,7 @@ router.get('/api/admin/risk/accounts/:id', async (req, res) => {
   }
 });
 
-router.post('/api/admin/risk/accounts/:id/restrict', async (req, res) => {
+router.post('/api/admin/risk/accounts/:id/restrict', requirePermission('risk', 'fraud'), async (req, res) => {
   const { category, operatorNotes, operatorId } = req.body;
   try {
     const { fraudGraphEngine } = await import('../../../lib/fraudGraphEngine.mjs');
@@ -51,7 +51,7 @@ router.post('/api/admin/risk/accounts/:id/restrict', async (req, res) => {
   }
 });
 
-router.post('/api/admin/risk/accounts/:id/verification', async (req, res) => {
+router.post('/api/admin/risk/accounts/:id/verification', requirePermission('risk', 'fraud'), async (req, res) => {
   const { verificationType, operatorNotes, operatorId } = req.body;
   try {
     const { fraudGraphEngine } = await import('../../../lib/fraudGraphEngine.mjs');
@@ -79,7 +79,7 @@ router.post('/api/admin/risk/accounts/:id/verification', async (req, res) => {
   }
 });
 
-router.post('/api/admin/risk/accounts/:id/release', async (req, res) => {
+router.post('/api/admin/risk/accounts/:id/release', requirePermission('risk', 'fraud'), async (req, res) => {
   const { operatorReason, operatorId } = req.body;
   try {
     const { fraudGraphEngine } = await import('../../../lib/fraudGraphEngine.mjs');
@@ -111,7 +111,7 @@ router.post('/api/admin/risk/accounts/:id/release', async (req, res) => {
   }
 });
 
-router.get('/api/admin/command-center/kpis', async (req, res) => {
+router.get('/api/admin/command-center/kpis', requireRole('SUPER_ADMIN', 'OPERATIONS_ADMIN', 'FINANCE_ADMIN', 'RISK_ANALYST'), async (req, res) => {
   try {
     const { platformReadinessEngine } = await import('../../../lib/platformReadinessEngine.mjs');
     const { providerHealthManager } = await import('../../../lib/providerHealthManager.mjs');
@@ -218,7 +218,7 @@ router.get('/api/admin/event-replay/snapshots', async (req, res) => {
   }
 });
 
-router.post('/api/admin/search/global', async (req, res) => {
+router.post('/api/admin/search/global', requireRole('SUPER_ADMIN', 'OPERATIONS_ADMIN', 'SUPPORT_AGENT', 'FINANCE_ADMIN', 'RISK_ANALYST'), async (req, res) => {
   const { query } = req.body;
   try {
     const { searchEngine } = await import('../../../lib/searchEngine.mjs');
@@ -741,7 +741,7 @@ router.post('/api/admin/db/query', adminAuth, requireRole('SUPER_ADMIN'), async 
   }
 });
 
-router.get('/api/admin/financial/reconciliation', async (req, res) => {
+router.get('/api/admin/financial/reconciliation', requirePermission('finance', 'reconciliation'), async (req, res) => {
   try {
     const { runFullReconciliationAudit } = await import('../../../lib/reconciliationEngine.mjs');
     const result = await runFullReconciliationAudit();
@@ -751,7 +751,7 @@ router.get('/api/admin/financial/reconciliation', async (req, res) => {
   }
 });
 
-router.get('/api/admin/reconciliation/cases', async (req, res) => {
+router.get('/api/admin/reconciliation/cases', requirePermission('finance', 'reconciliation'), async (req, res) => {
   try {
     const { getReconciliationCasesMetrics } = await import('../../../lib/reconciliationEngine.mjs');
     const metrics = await getReconciliationCasesMetrics();
@@ -761,7 +761,7 @@ router.get('/api/admin/reconciliation/cases', async (req, res) => {
   }
 });
 
-router.post('/api/admin/reconciliation/cases/:id/resolve', async (req, res) => {
+router.post('/api/admin/reconciliation/cases/:id/resolve', requirePermission('finance', 'reconciliation'), async (req, res) => {
   const { id } = req.params;
   const { resolution, notes } = req.body;
   try {
@@ -860,7 +860,7 @@ router.get('/api/admin/bets/:betId/investigate', async (req, res) => {
   }
 });
 
-router.get('/api/admin/control-tower/metrics', async (req, res) => {
+router.get('/api/admin/control-tower/metrics', requireRole('SUPER_ADMIN', 'OPERATIONS_ADMIN', 'FINANCE_ADMIN', 'RISK_ANALYST'), async (req, res) => {
   try {
     const { buildControlTowerMetrics } = await import('../../../lib/adminLiveOps.mjs');
     const { enrichControlTowerFinancials } = await import('../../../lib/adminDomainData.mjs');
@@ -1154,7 +1154,7 @@ router.get('/api/admin/finance/withdrawals/pending', requirePermission('finance'
 });
 
 /** Admin: fetch declared + verified names for a withdrawal (read-only). */
-router.get('/api/admin/finance/withdrawals/:id/name', async (req, res) => {
+router.get('/api/admin/finance/withdrawals/:id/name', requirePermission('finance', 'withdrawal'), async (req, res) => {
   const { id } = req.params;
   try {
     const { lookupWithdrawalBeneficiaryName } = await import('../../../lib/adminDomainData.mjs');
@@ -1290,7 +1290,7 @@ router.get('/api/admin/finance/gateways', async (req, res) => {
   }
 });
 
-router.get('/api/admin/support/tickets', async (req, res) => {
+router.get('/api/admin/support/tickets', requirePermission('support', 'tickets'), async (req, res) => {
   try {
     const { listSupportTickets } = await import('../../../lib/adminDomainData.mjs');
     res.json(await listSupportTickets({ limit: 200 }));
@@ -1299,7 +1299,7 @@ router.get('/api/admin/support/tickets', async (req, res) => {
   }
 });
 
-router.get('/api/admin/support/tickets/:id', async (req, res) => {
+router.get('/api/admin/support/tickets/:id', requirePermission('support', 'tickets'), async (req, res) => {
   try {
     const { supportEngine } = await import('../../../lib/supportEngine.mjs');
     const conversation = await supportEngine.getConversationById(req.params.id, 'admin');
@@ -1310,7 +1310,7 @@ router.get('/api/admin/support/tickets/:id', async (req, res) => {
   }
 });
 
-router.post('/api/admin/support/tickets/:id/reply', async (req, res) => {
+router.post('/api/admin/support/tickets/:id/reply', requirePermission('support', 'tickets'), async (req, res) => {
   const { id } = req.params;
   const { text, attachments = [] } = req.body || {};
   const trimmed = String(text || '').trim();
@@ -1366,7 +1366,7 @@ router.post('/api/admin/support/tickets/:id/reply', async (req, res) => {
   }
 });
 
-router.post('/api/admin/support/attachments/upload', async (req, res) => {
+router.post('/api/admin/support/attachments/upload', requirePermission('support', 'tickets'), async (req, res) => {
   try {
     const { fileName, fileType, fileSize, conversationId, base64Data } = req.body || {};
     const { saveSupportAttachment } = await import('../../../lib/supportAttachments.mjs');
@@ -1385,7 +1385,7 @@ router.post('/api/admin/support/attachments/upload', async (req, res) => {
   }
 });
 
-router.get('/api/admin/support/attachments/:attachmentId', async (req, res) => {
+router.get('/api/admin/support/attachments/:attachmentId', requirePermission('support', 'tickets'), async (req, res) => {
   try {
     const {
       getSupportAttachmentRecord,
@@ -1408,7 +1408,7 @@ router.get('/api/admin/support/attachments/:attachmentId', async (req, res) => {
   }
 });
 
-router.post('/api/admin/support/tickets/:id/close', async (req, res) => {
+router.post('/api/admin/support/tickets/:id/close', requirePermission('support', 'tickets'), async (req, res) => {
   const { id } = req.params;
   try {
     const { supportEngine } = await import('../../../lib/supportEngine.mjs');
@@ -1533,7 +1533,7 @@ router.post('/api/admin/growth/signup-codes', async (req, res) => {
   }
 });
 
-router.post('/api/admin/growth/signup-codes/:id/send-invites', async (req, res) => {
+router.post('/api/admin/growth/signup-codes/:id/send-invites', requireRole('SUPER_ADMIN', 'MARKETING_ADMIN', 'OPERATIONS_ADMIN'), async (req, res) => {
   try {
     const { sendSignupPromoInvites } = await import('../../../lib/signupPromoCodes.mjs');
     const adminId = req.admin?.id || req.admin?.adminId || 'admin';
@@ -1620,7 +1620,7 @@ router.put('/api/admin/growth/deposit-freebet', async (req, res) => {
   }
 });
 
-router.post('/api/admin/growth/deposit-freebet/grants/:id/send-email', async (req, res) => {
+router.post('/api/admin/growth/deposit-freebet/grants/:id/send-email', requireRole('SUPER_ADMIN', 'MARKETING_ADMIN', 'OPERATIONS_ADMIN'), async (req, res) => {
   try {
     const { sendDepositFreebetGrantEmail } = await import('../../../lib/depositFreebetEngine.mjs');
     const adminId = req.admin?.id || req.admin?.adminId || 'admin';
@@ -1992,7 +1992,7 @@ router.get('/api/admin/rewards', async (req, res) => {
   }
 });
 
-router.post('/api/admin/rewards/issue', async (req, res) => {
+router.post('/api/admin/rewards/issue', requireRole('SUPER_ADMIN', 'MARKETING_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN'), async (req, res) => {
   try {
     const { issueDiscreteReward, resolveRewardRecipient, ensureDiscreteRewardSchema } = await import('../../../lib/discreteRewardEngine.mjs');
     const { planPackAmounts, normalizeSplitParts, normalizeSplitEach } = await import('../../../lib/rewardSplit.mjs');
@@ -2625,7 +2625,7 @@ router.get('/api/admin/operations/health', async (req, res) => {
   }
 });
 
-router.get('/api/admin/security/audit', async (req, res) => {
+router.get('/api/admin/security/audit', requireRole('SUPER_ADMIN', 'OPERATIONS_ADMIN', 'RISK_ANALYST'), async (req, res) => {
   try {
     const { listAuditLogs } = await import('../../../lib/adminDomainData.mjs');
     res.json(await listAuditLogs({ limit: 200 }));
@@ -2634,7 +2634,7 @@ router.get('/api/admin/security/audit', async (req, res) => {
   }
 });
 
-router.post('/api/admin/maker-checker/request', async (req, res) => {
+router.post('/api/admin/maker-checker/request', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN', 'SUPPORT_AGENT'), async (req, res) => {
   const { actionType, targetEntityType, targetEntityId, requestPayload, makerId } = req.body;
   try {
     const { createMakerCheckerRequest } = await import('../../../lib/adminIntelligenceEngine.mjs');
@@ -2645,7 +2645,7 @@ router.post('/api/admin/maker-checker/request', async (req, res) => {
   }
 });
 
-router.post('/api/admin/maker-checker/approve', async (req, res) => {
+router.post('/api/admin/maker-checker/approve', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN'), async (req, res) => {
   const { requestId, checkerId } = req.body || {};
   if (!requestId) return res.status(400).json({ success: false, error: 'requestId required' });
   try {
@@ -2660,7 +2660,7 @@ router.post('/api/admin/maker-checker/approve', async (req, res) => {
   }
 });
 
-router.get('/api/admin/fraud/signals', async (req, res) => {
+router.get('/api/admin/fraud/signals', requirePermission('risk', 'fraud'), async (req, res) => {
   try {
     const { query } = await import('../../../db/pg.js');
     const signalsRes = await query(`
@@ -2675,7 +2675,7 @@ router.get('/api/admin/fraud/signals', async (req, res) => {
   }
 });
 
-router.get('/api/admin/fraud/cases', async (req, res) => {
+router.get('/api/admin/fraud/cases', requirePermission('risk', 'fraud'), async (req, res) => {
   try {
     const { query } = await import('../../../db/pg.js');
     const casesRes = await query(`
@@ -2690,7 +2690,7 @@ router.get('/api/admin/fraud/cases', async (req, res) => {
   }
 });
 
-router.post('/api/admin/fraud/cases/:id/update', async (req, res) => {
+router.post('/api/admin/fraud/cases/:id/update', requirePermission('risk', 'fraud'), async (req, res) => {
   const { id } = req.params;
   const { status, notes, resolution, investigatorId } = req.body;
   try {
@@ -2977,7 +2977,7 @@ router.get(['/api/admin/support/conversations/:id', '/api/v1/admin/support/ticke
   }
 });
 
-router.post(['/api/admin/support/conversations/:id/assign', '/api/v1/admin/support/tickets/:id/assign'], async (req, res) => {
+router.post(['/api/admin/support/conversations/:id/assign', '/api/v1/admin/support/tickets/:id/assign'], requirePermission('support', 'tickets'), async (req, res) => {
   const { agentId, agentName, teamId, assignedBy } = req.body;
   try {
     const { supportEngine } = await import('../../../lib/supportEngine.mjs');
@@ -2989,7 +2989,7 @@ router.post(['/api/admin/support/conversations/:id/assign', '/api/v1/admin/suppo
   }
 });
 
-router.post(['/api/admin/support/conversations/:id/escalate', '/api/v1/admin/support/tickets/:id/escalate'], async (req, res) => {
+router.post(['/api/admin/support/conversations/:id/escalate', '/api/v1/admin/support/tickets/:id/escalate'], requirePermission('support', 'tickets'), async (req, res) => {
   const { escalatedBy, fromTeam, toTeam, reason } = req.body;
   try {
     const { supportEngine } = await import('../../../lib/supportEngine.mjs');
@@ -3001,7 +3001,7 @@ router.post(['/api/admin/support/conversations/:id/escalate', '/api/v1/admin/sup
   }
 });
 
-router.post(['/api/admin/support/conversations/:id/resolve', '/api/v1/admin/support/tickets/:id/resolve'], async (req, res) => {
+router.post(['/api/admin/support/conversations/:id/resolve', '/api/v1/admin/support/tickets/:id/resolve'], requirePermission('support', 'tickets'), async (req, res) => {
   const { resolutionCode, resolutionSummary, resolvedBy } = req.body;
   try {
     const { supportEngine } = await import('../../../lib/supportEngine.mjs');
@@ -3012,7 +3012,7 @@ router.post(['/api/admin/support/conversations/:id/resolve', '/api/v1/admin/supp
   }
 });
 
-router.post(['/api/admin/support/conversations/:id/status', '/api/v1/admin/support/tickets/:id/status'], async (req, res) => {
+router.post(['/api/admin/support/conversations/:id/status', '/api/v1/admin/support/tickets/:id/status'], requirePermission('support', 'tickets'), async (req, res) => {
   const { status, resolutionReason, actorId } = req.body;
   try {
     const { supportEngine } = await import('../../../lib/supportEngine.mjs');
@@ -3058,7 +3058,7 @@ router.post('/api/v1/admin/security/account-controls', adminAuth, requireRole('S
   }
 });
 
-router.post('/api/admin/support/conversations/:id/internal-notes', async (req, res) => {
+router.post('/api/admin/support/conversations/:id/internal-notes', requirePermission('support', 'tickets'), async (req, res) => {
   const { agentId, text } = req.body;
   try {
     const { supportEngine } = await import('../../../lib/supportEngine.mjs');
@@ -3076,7 +3076,7 @@ router.post('/api/admin/support/conversations/:id/internal-notes', async (req, r
   }
 });
 
-router.post('/api/admin/support/conversations/:id/resolve', async (req, res) => {
+router.post('/api/admin/support/conversations/:id/resolve', requirePermission('support', 'tickets'), async (req, res) => {
   const { resolutionReason, agentId } = req.body;
   try {
     const { supportEngine } = await import('../../../lib/supportEngine.mjs');
@@ -3115,7 +3115,7 @@ router.get(['/api/admin/support/macros', '/api/v1/admin/support/macros'], async 
   res.json({ success: true, macros: SUPPORT_MACROS });
 });
 
-router.get(['/api/admin/support/live-chats', '/api/v1/admin/support/live-chats'], async (req, res) => {
+router.get(['/api/admin/support/live-chats', '/api/v1/admin/support/live-chats'], requirePermission('support', 'tickets'), async (req, res) => {
   try {
     const { filter = 'ALL' } = req.query;
     const agentId = req.admin?.id || 'admin';
@@ -3128,7 +3128,7 @@ router.get(['/api/admin/support/live-chats', '/api/v1/admin/support/live-chats']
   }
 });
 
-router.post(['/api/admin/support/live-chats/:id/accept', '/api/v1/admin/support/live-chats/:id/accept'], async (req, res) => {
+router.post(['/api/admin/support/live-chats/:id/accept', '/api/v1/admin/support/live-chats/:id/accept'], requirePermission('support', 'tickets'), async (req, res) => {
   const { id } = req.params;
   const agentId = req.body?.agentId || req.admin?.id || 'admin';
   const agentName = req.body?.agentName || req.admin?.displayName || req.admin?.name || 'OddsYra Agent';
@@ -3141,7 +3141,7 @@ router.post(['/api/admin/support/live-chats/:id/accept', '/api/v1/admin/support/
   }
 });
 
-router.post(['/api/admin/support/live-chats/:id/end', '/api/v1/admin/support/live-chats/:id/end'], async (req, res) => {
+router.post(['/api/admin/support/live-chats/:id/end', '/api/v1/admin/support/live-chats/:id/end'], requirePermission('support', 'tickets'), async (req, res) => {
   const { id } = req.params;
   const endedBy = req.admin?.id || 'admin';
   try {
@@ -3153,7 +3153,7 @@ router.post(['/api/admin/support/live-chats/:id/end', '/api/v1/admin/support/liv
   }
 });
 
-router.post(['/api/admin/support/live-chats/:id/escalate', '/api/v1/admin/support/live-chats/:id/escalate'], async (req, res) => {
+router.post(['/api/admin/support/live-chats/:id/escalate', '/api/v1/admin/support/live-chats/:id/escalate'], requirePermission('support', 'tickets'), async (req, res) => {
   const { id } = req.params;
   const { category = 'OTHER', priority = 'NORMAL', subject, assignedAgentId, assignedAgentName } = req.body || {};
   const agentId = req.admin?.id || 'admin';
@@ -3173,7 +3173,7 @@ router.post(['/api/admin/support/live-chats/:id/escalate', '/api/v1/admin/suppor
   }
 });
 
-router.post(['/api/admin/support/tickets/:id/priority', '/api/v1/admin/support/tickets/:id/priority'], async (req, res) => {
+router.post(['/api/admin/support/tickets/:id/priority', '/api/v1/admin/support/tickets/:id/priority'], requirePermission('support', 'tickets'), async (req, res) => {
   const { id } = req.params;
   const { priority } = req.body;
   const actorId = req.admin?.id || 'admin';
@@ -3187,7 +3187,7 @@ router.post(['/api/admin/support/tickets/:id/priority', '/api/v1/admin/support/t
 });
 
 // ── Financial Safety: Request Financial Review (real Maker-Checker queue) ──
-router.post(['/api/admin/support/financial-review-request', '/api/v1/admin/support/financial-review-request'], async (req, res) => {
+router.post(['/api/admin/support/financial-review-request', '/api/v1/admin/support/financial-review-request'], requirePermission('support', 'tickets', 'finance'), async (req, res) => {
   const { userId, ticketId, reason, transactionId, betId, amount } = req.body || {};
   const requestedBy = req.admin?.id || 'support_agent';
   if (!userId || !reason) {

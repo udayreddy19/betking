@@ -37,5 +37,12 @@ describe('adminCloseTicket', () => {
       [convId],
     );
     expect(String(db.rows[0].status).toUpperCase()).toBe('CLOSED');
+
+    const unread = await query(
+      `SELECT unread_admin_count, unread_user_count FROM support_conversations WHERE conversation_id = $1`,
+      [convId],
+    );
+    expect(Number(unread.rows[0].unread_admin_count)).toBe(0);
+    expect(Number(unread.rows[0].unread_user_count)).toBe(0);
   });
 });

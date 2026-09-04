@@ -23,16 +23,8 @@ export default function AdminTabs({ tabs = [], active, onChange, className = '',
             onClick={() => onChange(id)}
           >
             {label}
-            {count != null && (
-              <span style={{
-                marginLeft: '6px',
-                fontSize: '0.68rem',
-                fontWeight: 800,
-                opacity: 0.75,
-                fontVariantNumeric: 'tabular-nums',
-              }}>
-                {count}
-              </span>
+            {count != null && Number(count) > 0 && (
+              <span className="admin-subtab__count">{count}</span>
             )}
           </button>
         );

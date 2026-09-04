@@ -22,7 +22,7 @@ import {
 } from '../../../icons/animate/index';
 import SupportHeadsetIcon from '../../../icons/SupportHeadsetIcon';
 import BrandLogo from '../../../components/BrandLogo/BrandLogo';
-import AdminRBACGate, { ADMIN_ROLES, AdminRoleProvider, useAdminRole } from '../permissions/AdminRBACGate';
+import AdminRBACGate, { ADMIN_ROLES, AdminRoleProvider, useAdminRole, canAccessDomain } from '../permissions/AdminRBACGate';
 import CommandPalette from '../features/CommandPalette/CommandPalette';
 import ThemeToggle from '../../../components/ThemeToggle/ThemeToggle';
 import { useTheme } from '../../../context/ThemeContext';
@@ -48,6 +48,7 @@ import SecurityGovernanceDomainView from '../domains/SecurityGovernanceDomainVie
 import ApiExplorerDomainView from '../domains/ApiExplorerDomainView';
 import { ensureAdminSession, adminApiClient } from '../api/adminApiClient';
 import { AdminToastProvider } from '../components/AdminToastContext';
+import { AdminNavAttentionProvider } from '../context/AdminNavAttentionContext';
 
 const DOMAIN_GROUPS = [
   {
@@ -255,6 +256,7 @@ const HIDDEN_SUBS = {
   finance: [
     'deposits-review',
     'maker-checker',
+    'pending-approvals',
     'ledger',
     'reconciliation',
     'daily-closing',
@@ -285,6 +287,7 @@ const SUB_BREADCRUMB = {
   'responsible-gaming': 'Limits',
   'deposits-review': 'Pay in / out',
   'maker-checker': 'Pay in / out',
+  'pending-approvals': 'Pay in / out',
   ledger: 'Books',
   reconciliation: 'Books',
   'daily-closing': 'Books',
@@ -316,6 +319,7 @@ const HUB_FOR = {
   finance: {
     'deposits-review': 'cash-money',
     'maker-checker': 'cash-money',
+    'pending-approvals': 'cash-money',
     ledger: 'cash-books',
     reconciliation: 'cash-books',
     'daily-closing': 'cash-books',
@@ -487,6 +491,11 @@ function AdminShellInner() {
   const contentScrollRef = useRef(null);
   const alertsBellRef = useRef(null);
   const alertsMenuRef = useRef(null);
+  const preferAttentionLandingRef = useRef(false);
+  const activeDomainRef = useRef(activeDomain);
+  activeDomainRef.current = activeDomain;
+  const activeRoleRef = useRef(activeRole);
+  activeRoleRef.current = activeRole;
 
   const scrollContentToTop = () => {
     const run = () => {
@@ -571,6 +580,43 @@ function AdminShellInner() {
             subModules: attention?.subModules || {},
             updatedAt: attention?.updatedAt || null,
           });
+
+          // After login: if Status has nothing pending, land on the highest-attention allowed domain
+          if (preferAttentionLandingRef.current) {
+            preferAttentionLandingRef.current = false;
+            const domains = attention?.domains || {};
+            const ctCount = Number(domains['control-tower']?.count || 0);
+            if (activeDomainRef.current === 'control-tower' && ctCount <= 0) {
+              const role = activeRoleRef.current;
+              let bestDomain = null;
+              let bestCount = 0;
+              for (const domain of ALL_DOMAINS) {
+                if (domain.id === 'control-tower') continue;
+                if (!canAccessDomain(role, domain.id, domain.role)) continue;
+                const n = Number(domains[domain.id]?.count || 0);
+                if (n > bestCount) {
+                  bestCount = n;
+                  bestDomain = domain;
+                }
+              }
+              if (bestDomain && bestCount > 0) {
+                let nextSub = bestDomain.subModules?.[0]?.id || DEFAULT_ADMIN_SUB;
+                let bestSub = -1;
+                for (const sub of bestDomain.subModules || []) {
+                  const n = Number(attention?.subModules?.[`${bestDomain.id}:${sub.id}`]?.count || 0);
+                  if (n > bestSub) {
+                    bestSub = n;
+                    nextSub = sub.id;
+                  }
+                }
+                setActiveDomain(bestDomain.id);
+                setActiveSubModule(nextSub);
+                setExpandedDomains({ [bestDomain.id]: true });
+                syncAdminLocation(bestDomain.id, nextSub, { replace: true });
+              }
+            }
+          }
+
           const alerts = [];
           Object.entries(data.providerSources || {}).forEach(([name, status]) => {
             if (status === 'error') {
@@ -859,6 +905,7 @@ function AdminShellInner() {
         });
       }
       syncRoleFromJwt();
+      preferAttentionLandingRef.current = true;
       setSessionReady(true);
       setAdminTotp('');
       setMfaToken('');
@@ -1035,6 +1082,7 @@ function AdminShellInner() {
 
   // ─── Main Authenticated Layout ───
   return (
+    <AdminNavAttentionProvider value={navAttention}>
     <div className={`admin-shell ${isDark ? 'admin-shell--dark' : 'admin-shell--light'}`}>
 
       {/* Sidebar */}
@@ -1318,5 +1366,6 @@ function AdminShellInner() {
         onNavigate={handleCommandNavigate}
       />
     </div>
+    </AdminNavAttentionProvider>
   );
 }
