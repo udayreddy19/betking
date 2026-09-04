@@ -327,6 +327,7 @@ export async function sendEmail({
   text,
   from = SMTP_FROM,
   replyTo,
+  cc,
   headers = {},
   forceFrom = false,
 }) {
@@ -337,6 +338,7 @@ export async function sendEmail({
   const accounts = promosAcc
     ? [promosAcc, ...primaryAccounts.filter((a) => a.user !== promosAcc.user || a.host !== promosAcc.host)]
     : primaryAccounts;
+  const ccList = Array.isArray(cc) ? cc.filter(Boolean).join(', ') : (cc || undefined);
 
   if (accounts.length === 0) {
     if (process.env.NODE_ENV === 'production') {
@@ -347,13 +349,14 @@ export async function sendEmail({
     const result = await transport.sendMail({
       from,
       to,
+      cc: ccList,
       subject,
       html,
       text: text || html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
       replyTo: replyTo || from,
       headers,
     });
-    return { success: true, messageId: result.messageId, json: true, html };
+    return { success: true, messageId: result.messageId, json: true, html, subject };
   }
 
   let lastErr = null;
@@ -369,6 +372,7 @@ export async function sendEmail({
       const mailOptions = {
         from: forceFrom ? from : (account.from || from),
         to,
+        cc: ccList,
         subject,
         html,
         text: text || html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
@@ -389,7 +393,7 @@ export async function sendEmail({
       deliveryMetrics.lastAt = new Date().toISOString();
       deliveryMetrics.lastError = null;
 
-      return { success: true, messageId: info.messageId, provider: account.name, html };
+      return { success: true, messageId: info.messageId, provider: account.name, html, subject };
     } catch (err) {
       lastErr = err;
       if (account.name === 'primary') {
@@ -1232,6 +1236,12 @@ export async function sendDepositOpsNotificationEmail({
   paymentId,
   provider,
   depositId,
+  method = null,
+  utr = null,
+  subjectPrefix = '',
+  cc = null,
+  adminHref = null,
+  testNote = null,
 }) {
   const to = String(PAYMENTS_ALERT_EMAIL || 'payments@oddsyra.com').trim();
   if (!to) return { success: false, error: 'no_payments_recipient' };
@@ -1244,33 +1254,162 @@ export async function sendDepositOpsNotificationEmail({
     || String(userEmail || '').trim()
     || String(userId || 'Unknown user');
   const gateway = String(provider || 'GATEWAY').toUpperCase();
+  const ctaHref = adminHref || `${FRONTEND_URL}/admin?domain=finance&subModule=deposits-review`;
 
-  const subject = `Deposit received: ${amountLabel} by ${displayName}`;
+  const subject = `${subjectPrefix}Deposit received: ${amountLabel} by ${displayName}`;
   const bodyHtml = `
     <p><strong>${escapeHtml(amountLabel)}</strong> was deposited to OddsYra by
        <strong>${escapeHtml(displayName)}</strong>.</p>
+    ${testNote ? `<p><em>${escapeHtml(testNote)}</em></p>` : ''}
     <p><strong>User ID:</strong> ${escapeHtml(userId || '—')}</p>
     <p><strong>Email:</strong> ${escapeHtml(userEmail || '—')}</p>
     <p><strong>Gateway:</strong> ${escapeHtml(gateway)}</p>
+    <p><strong>Method:</strong> ${escapeHtml(method || '—')}</p>
+    <p><strong>UTR / Ref:</strong> ${escapeHtml(utr || '—')}</p>
     <p><strong>Deposit ID:</strong> ${escapeHtml(depositId || '—')}</p>
     <p><strong>Payment ID:</strong> ${escapeHtml(paymentId || '—')}</p>
   `;
 
   const html = renderTransactionalEmail({
-    heading: 'Deposit received',
+    heading: subjectPrefix.includes('HIGH') ? 'High-value deposit received' : 'Deposit received',
     greetingName: 'Payments',
     introHtml: bodyHtml,
-    ctaLabel: 'Open Admin',
-    ctaHref: `${FRONTEND_URL}/admin`,
+    ctaLabel: 'Open deposits in Admin',
+    ctaHref,
   });
 
-  return sendEmail({
+  const result = await sendEmail({
+    to,
+    cc,
+    subject,
+    html,
+    from: SMTP_FROM,
+    replyTo: SUPPORT_REPLY_TO,
+  });
+  return { ...result, subject };
+}
+
+/**
+ * Hourly (or configured) digest of small deposits queued for payments@.
+ */
+export async function sendDepositOpsDigestEmail({
+  items = [],
+  count,
+  totalAmount,
+  totalLabel,
+  adminHref = null,
+}) {
+  const to = String(PAYMENTS_ALERT_EMAIL || 'payments@oddsyra.com').trim();
+  if (!to) return { success: false, error: 'no_payments_recipient' };
+
+  const n = count ?? items.length;
+  const total = totalLabel
+    || (Number.isFinite(Number(totalAmount))
+      ? `₹${Number(totalAmount).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`
+      : '—');
+  const subject = `Deposit digest: ${n} deposits · ${total}`;
+  const rowsHtml = items.slice(0, 50).map((item) => `
+    <tr>
+      <td style="padding:6px 8px;border-bottom:1px solid #e8e4dc;">${escapeHtml(item.amountLabel || item.amount)}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #e8e4dc;">${escapeHtml(item.userName || item.userEmail || item.userId || '—')}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #e8e4dc;">${escapeHtml(item.provider || '—')}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #e8e4dc;">${escapeHtml(item.paymentId || '—')}</td>
+    </tr>
+  `).join('');
+
+  const bodyHtml = `
+    <p><strong>${escapeHtml(String(n))}</strong> small deposits totaling
+       <strong>${escapeHtml(total)}</strong> were credited since the last digest.</p>
+    <table style="width:100%;border-collapse:collapse;font-size:14px;margin-top:12px;">
+      <thead>
+        <tr>
+          <th align="left" style="padding:6px 8px;border-bottom:2px solid #cfc8ba;">Amount</th>
+          <th align="left" style="padding:6px 8px;border-bottom:2px solid #cfc8ba;">User</th>
+          <th align="left" style="padding:6px 8px;border-bottom:2px solid #cfc8ba;">Gateway</th>
+          <th align="left" style="padding:6px 8px;border-bottom:2px solid #cfc8ba;">Payment</th>
+        </tr>
+      </thead>
+      <tbody>${rowsHtml || '<tr><td colspan="4">No rows</td></tr>'}</tbody>
+    </table>
+    ${items.length > 50 ? `<p><em>Showing first 50 of ${escapeHtml(String(items.length))}.</em></p>` : ''}
+  `;
+
+  const html = renderTransactionalEmail({
+    heading: 'Deposit digest',
+    greetingName: 'Payments',
+    introHtml: bodyHtml,
+    ctaLabel: 'Open deposits in Admin',
+    ctaHref: adminHref || `${FRONTEND_URL}/admin?domain=finance&subModule=deposits-review`,
+  });
+
+  const result = await sendEmail({
     to,
     subject,
     html,
     from: SMTP_FROM,
     replyTo: SUPPORT_REPLY_TO,
   });
+  return { ...result, subject };
+}
+
+/**
+ * Ops alert for withdrawal paid / rejected / hold (not player-facing).
+ */
+export async function sendWithdrawalOpsNotificationEmail({
+  userId,
+  userName,
+  userEmail,
+  amount,
+  status,
+  withdrawalId,
+  utr = null,
+  reason = null,
+  adminHref = null,
+}) {
+  const to = String(PAYMENTS_ALERT_EMAIL || 'payments@oddsyra.com').trim();
+  if (!to) return { success: false, error: 'no_payments_recipient' };
+
+  const amountNum = Number(amount);
+  const amountLabel = Number.isFinite(amountNum)
+    ? `₹${amountNum.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`
+    : String(amount ?? '');
+  const displayName = String(userName || '').trim()
+    || String(userEmail || '').trim()
+    || String(userId || 'Unknown user');
+  const st = String(status || 'UPDATE').toUpperCase();
+  const verb = st === 'APPROVED' || st === 'PAID'
+    ? 'was paid out from OddsYra to'
+    : st === 'REJECTED' || st === 'FAILED'
+      ? 'withdrawal failed / was rejected for'
+      : 'withdrawal needs attention for';
+  const subject = `Withdrawal ${st}: ${amountLabel} — ${displayName}`;
+  const bodyHtml = `
+    <p><strong>${escapeHtml(amountLabel)}</strong> ${escapeHtml(verb)}
+       <strong>${escapeHtml(displayName)}</strong>.</p>
+    <p><strong>Status:</strong> ${escapeHtml(st)}</p>
+    <p><strong>User ID:</strong> ${escapeHtml(userId || '—')}</p>
+    <p><strong>Email:</strong> ${escapeHtml(userEmail || '—')}</p>
+    <p><strong>Withdrawal ID:</strong> ${escapeHtml(withdrawalId || '—')}</p>
+    <p><strong>UTR / Ref:</strong> ${escapeHtml(utr || '—')}</p>
+    ${reason ? `<p><strong>Reason:</strong> ${escapeHtml(reason)}</p>` : ''}
+  `;
+
+  const html = renderTransactionalEmail({
+    heading: `Withdrawal ${st}`,
+    greetingName: 'Payments',
+    introHtml: bodyHtml,
+    ctaLabel: 'Open withdrawals in Admin',
+    ctaHref: adminHref || `${FRONTEND_URL}/admin?domain=finance&subModule=pending-approvals`,
+  });
+
+  const result = await sendEmail({
+    to,
+    subject,
+    html,
+    from: SMTP_FROM,
+    replyTo: SUPPORT_REPLY_TO,
+  });
+  return { ...result, subject };
 }
 
 /* ========================================================================
