@@ -31,8 +31,9 @@ export async function executeWalletTransaction({
     }
   }
 
+  let result;
   try {
-    const result = await withTransaction(async (client) => {
+    result = await withTransaction(async (client) => {
       // 2. Standardized Lock Order: Lock wallet row FIRST with SELECT FOR UPDATE
       const walletRes = await client.query(`
         SELECT wallet_id, balance, bonus_balance
@@ -94,18 +95,19 @@ export async function executeWalletTransaction({
         status: 'COMPLETED',
       };
     });
-
-    if (idempotencyKey) {
-      await idempotencyEngine.complete(idempotencyKey, result);
-    }
-
-    return result;
   } catch (err) {
     if (idempotencyKey) {
       await idempotencyEngine.fail(idempotencyKey, err.message);
     }
     throw err;
   }
+
+  // complete after successful commit — do not fail() if this throws
+  if (idempotencyKey) {
+    await idempotencyEngine.complete(idempotencyKey, result);
+  }
+
+  return result;
 }
 
 /**
@@ -132,8 +134,9 @@ export async function executeBetPlacementTransaction({
     }
   }
 
+  let result;
   try {
-    const result = await withTransaction(async (client) => {
+    result = await withTransaction(async (client) => {
       // Lock wallet row
       const wRes = await client.query(`SELECT wallet_id, balance FROM wallets WHERE user_id = $1 FOR UPDATE`, [userId]);
       if (wRes.rows.length === 0) throw new Error('WALLET_NOT_FOUND');
@@ -171,13 +174,13 @@ export async function executeBetPlacementTransaction({
 
       return { success: true, betId, stake: numericStake, odds: numericOdds, potentialPayout: numericPayout, newBalance: newBal };
     });
-
-    if (idempotencyKey) await idempotencyEngine.complete(idempotencyKey, result);
-    return result;
   } catch (err) {
     if (idempotencyKey) await idempotencyEngine.fail(idempotencyKey, err.message);
     throw err;
   }
+
+  if (idempotencyKey) await idempotencyEngine.complete(idempotencyKey, result);
+  return result;
 }
 
 /**
@@ -196,8 +199,9 @@ export async function executeSettlementTransaction({
     if (idCheck.status === 'PROCESSING') throw new Error('IDEMPOTENCY_CONFLICT: Settlement is currently processing');
   }
 
+  let result;
   try {
-    const result = await withTransaction(async (client) => {
+    result = await withTransaction(async (client) => {
       // Check double settlement
       const sCheck = await client.query(`SELECT settlement_id FROM settlements WHERE match_id = $1 AND selection_id = $2`, [matchId, selectionId]);
       if (sCheck.rows.length > 0) {
@@ -254,11 +258,11 @@ export async function executeSettlementTransaction({
 
       return { success: true, settlementId, betsSettled: settledCount, totalPayoutAmount: totalPayout };
     });
-
-    await idempotencyEngine.complete(settlementKey, result);
-    return result;
   } catch (err) {
     await idempotencyEngine.fail(settlementKey, err.message);
     throw err;
   }
+
+  await idempotencyEngine.complete(settlementKey, result);
+  return result;
 }

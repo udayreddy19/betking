@@ -203,8 +203,11 @@ router.post('/adjustments', requirePermission('finance'), async (req, res) => {
     const adminId = req.admin?.id || 'admin';
 
     const result = await withTransaction(async (client) => {
+      // Withdrawal holds already subtract from balance and add reserved_balance —
+      // playable cash is balance (minus locked deposits), not balance - reserved.
       const wRes = await client.query(
-        `SELECT wallet_id, balance, COALESCE(reserved_balance, 0) AS reserved_balance
+        `SELECT wallet_id, balance,
+                COALESCE(locked_deposit_balance, 0) AS locked_deposit_balance
          FROM wallets WHERE user_id = $1 FOR UPDATE`,
         [userId],
       );
@@ -225,7 +228,7 @@ router.post('/adjustments', requirePermission('finance'), async (req, res) => {
         updated = await client.query(
           `UPDATE wallets SET balance = balance - $1::numeric, updated_at = NOW()
            WHERE wallet_id = $2
-             AND (balance - COALESCE(reserved_balance, 0)) >= $1::numeric
+             AND (balance - COALESCE(locked_deposit_balance, 0)) >= $1::numeric
            RETURNING balance`,
           [numAmount, wallet.wallet_id],
         );

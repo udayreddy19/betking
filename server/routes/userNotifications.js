@@ -20,7 +20,7 @@ router.get('/api/v1/user/notifications', requireAuth, async (req, res) => {
     const category = req.query.category ? String(req.query.category).toUpperCase() : null;
 
     let q = `
-      SELECT id, user_id, event_type, category, channel, subject, body, is_read, created_at, delivered_at
+      SELECT id, user_id, event_type, category, channel, subject, body, is_read, created_at, delivered_at, metadata
       FROM notifications
       WHERE user_id = $1
     `;
@@ -34,15 +34,31 @@ router.get('/api/v1/user/notifications', requireAuth, async (req, res) => {
     q += ` ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
     params.push(limit, offset);
 
-    const [rowsRes, countRes] = await Promise.all([
-      query(q, params),
-      query(
-        `SELECT count(*)::int AS total, count(*) FILTER (WHERE is_read = FALSE)::int AS unread
-         FROM notifications
-         WHERE user_id = $1`,
-        [userId],
-      ),
-    ]);
+    let rowsRes;
+    try {
+      rowsRes = await query(q, params);
+    } catch {
+      // metadata column may be absent pre-migration 120
+      const fallbackQ = `
+        SELECT id, user_id, event_type, category, channel, subject, body, is_read, created_at, delivered_at
+        FROM notifications
+        WHERE user_id = $1
+        ${category && category !== 'ALL' ? 'AND category = $2' : ''}
+        ORDER BY created_at DESC
+        LIMIT $${category && category !== 'ALL' ? 3 : 2} OFFSET $${category && category !== 'ALL' ? 4 : 3}
+      `;
+      const fallbackParams = category && category !== 'ALL'
+        ? [userId, category, limit, offset]
+        : [userId, limit, offset];
+      rowsRes = await query(fallbackQ, fallbackParams);
+    }
+
+    const countRes = await query(
+      `SELECT count(*)::int AS total, count(*) FILTER (WHERE is_read = FALSE)::int AS unread
+       FROM notifications
+       WHERE user_id = $1`,
+      [userId],
+    );
 
     const stats = countRes.rows[0] || { total: 0, unread: 0 };
 

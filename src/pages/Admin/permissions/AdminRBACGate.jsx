@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { getAdminSessionState } from '../../../utils/adminSession';
 
 /**
  * Server-backed Permission and Role Gate for Admin Control Center.
- * Uses React Context so role changes from the header dropdown
- * are reactive and trigger re-renders across all gated components.
+ * Active role comes from the admin JWT after login. Free role switching is
+ * DEV-only (preview); production always mirrors the token role.
  */
 
 export const ADMIN_ROLES = {
@@ -18,12 +19,13 @@ export const ADMIN_ROLES = {
 
 const ROLE_ALLOWED_DOMAINS = {
   [ADMIN_ROLES.SUPER_ADMIN]: null, // null = all
-  [ADMIN_ROLES.FINANCE_ADMIN]: ['finance', 'betting', 'analytics'],
+  // control-tower: server READ_OPS allows FINANCE / RISK / OPERATIONS landing
+  [ADMIN_ROLES.FINANCE_ADMIN]: ['finance', 'betting', 'analytics', 'control-tower'],
   [ADMIN_ROLES.TRADING_ADMIN]: ['trading-risk', 'betting', 'sports', 'analytics'],
   [ADMIN_ROLES.SUPPORT_AGENT]: ['support', 'customers', 'communications'],
-  [ADMIN_ROLES.RISK_ANALYST]: ['trading-risk', 'analytics', 'security-governance'],
+  [ADMIN_ROLES.RISK_ANALYST]: ['trading-risk', 'analytics', 'security-governance', 'control-tower'],
   [ADMIN_ROLES.MARKETING_ADMIN]: ['growth', 'communications', 'analytics'],
-  [ADMIN_ROLES.OPERATIONS_ADMIN]: ['operations', 'platform', 'analytics', 'betting', 'support', 'api-explorer', 'communications', 'customers'],
+  [ADMIN_ROLES.OPERATIONS_ADMIN]: ['operations', 'platform', 'analytics', 'betting', 'support', 'api-explorer', 'communications', 'customers', 'control-tower'],
 };
 
 export { ROLE_ALLOWED_DOMAINS };
@@ -45,9 +47,16 @@ export function hasPermission(role, permission) {
   if (!role || role === ADMIN_ROLES.SUPER_ADMIN) return true;
 
   switch (permission) {
+    case PERMISSIONS.VIEW_CUSTOMERS:
+      return role === ADMIN_ROLES.SUPPORT_AGENT
+        || role === ADMIN_ROLES.OPERATIONS_ADMIN
+        || role === ADMIN_ROLES.RISK_ANALYST
+        || role === ADMIN_ROLES.FINANCE_ADMIN;
+    case PERMISSIONS.EDIT_CUSTOMERS:
+      return role === ADMIN_ROLES.SUPPORT_AGENT
+        || role === ADMIN_ROLES.OPERATIONS_ADMIN;
     case PERMISSIONS.VIEW_PII:
-      return role === ADMIN_ROLES.SUPER_ADMIN
-        || role === ADMIN_ROLES.SUPPORT_AGENT
+      return role === ADMIN_ROLES.SUPPORT_AGENT
         || role === ADMIN_ROLES.RISK_ANALYST
         || role === ADMIN_ROLES.OPERATIONS_ADMIN;
     case PERMISSIONS.APPROVE_WITHDRAWAL:
@@ -65,8 +74,10 @@ export function hasPermission(role, permission) {
       return role === ADMIN_ROLES.MARKETING_ADMIN;
     case PERMISSIONS.VIEW_SECURITY:
       return role === ADMIN_ROLES.OPERATIONS_ADMIN || role === ADMIN_ROLES.RISK_ANALYST;
+    case PERMISSIONS.MANAGE_PLATFORM:
+      return role === ADMIN_ROLES.OPERATIONS_ADMIN;
     default:
-      return true;
+      return false;
   }
 }
 
@@ -82,25 +93,52 @@ export function canAccessDomain(role, domainId, domainRequiredRole) {
   return false;
 }
 
+function roleFromAdminJwt() {
+  const session = getAdminSessionState();
+  if (session.valid && session.payload?.role) return session.payload.role;
+  return null;
+}
+
 // ── React Context for reactive role state ──
 
 const AdminRoleContext = createContext({
   activeRole: ADMIN_ROLES.SUPER_ADMIN,
   setActiveRole: () => {},
+  syncRoleFromJwt: () => {},
+  rolePreviewEnabled: false,
 });
 
 export function AdminRoleProvider({ children }) {
+  const rolePreviewEnabled = Boolean(import.meta.env.DEV);
   const [activeRole, setActiveRoleState] = useState(
-    () => localStorage.getItem('adminRole') || ADMIN_ROLES.SUPER_ADMIN
+    () => roleFromAdminJwt() || localStorage.getItem('adminRole') || ADMIN_ROLES.SUPER_ADMIN
   );
 
-  const setActiveRole = useCallback((newRole) => {
-    setActiveRoleState(newRole);
-    localStorage.setItem('adminRole', newRole);
+  const syncRoleFromJwt = useCallback(() => {
+    const jwtRole = roleFromAdminJwt();
+    if (!jwtRole) return jwtRole;
+    setActiveRoleState(jwtRole);
+    localStorage.setItem('adminRole', jwtRole);
+    return jwtRole;
   }, []);
 
+  // Keep UI role aligned with token after login / refresh (always).
+  useEffect(() => {
+    syncRoleFromJwt();
+  }, [syncRoleFromJwt]);
+
+  const setActiveRole = useCallback((newRole) => {
+    // Production: ignore free switches — JWT is source of truth.
+    if (!import.meta.env.DEV) {
+      syncRoleFromJwt();
+      return;
+    }
+    setActiveRoleState(newRole);
+    localStorage.setItem('adminRole', newRole);
+  }, [syncRoleFromJwt]);
+
   return (
-    <AdminRoleContext.Provider value={{ activeRole, setActiveRole }}>
+    <AdminRoleContext.Provider value={{ activeRole, setActiveRole, syncRoleFromJwt, rolePreviewEnabled }}>
       {children}
     </AdminRoleContext.Provider>
   );

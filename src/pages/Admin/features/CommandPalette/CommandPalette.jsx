@@ -6,6 +6,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { adminApiClient } from '../../api/adminApiClient';
 import { useTheme } from '../../../../context/ThemeContext';
+import { useAdminRole } from '../../permissions/AdminRBACGate';
+import { getAdminSessionState } from '../../../../utils/adminSession';
 
 const ENTITY_META = {
   users: { icon: '👤', label: 'Users', color: '#3b82f6', domain: 'customers', subModuleId: 'directory' },
@@ -53,6 +55,9 @@ export default function CommandPalette({
   onNavigate,
 }) {
   const { isDark } = useTheme();
+  const { activeRole: contextRole } = useAdminRole();
+  const jwtRole = getAdminSessionState().payload?.role;
+  const activeRole = contextRole || jwtRole || 'SUPER_ADMIN';
   const [query, setQuery] = useState('');
   const [results, setResults] = useState({});
   const [totalCount, setTotalCount] = useState(0);
@@ -64,9 +69,6 @@ export default function CommandPalette({
   const inputRef = useRef(null);
   const debounceRef = useRef(null);
 
-  const activeRole = typeof window !== 'undefined'
-    ? (localStorage.getItem('adminRole') || localStorage.getItem('oddsyra_admin_role') || 'SUPER_ADMIN')
-    : 'SUPER_ADMIN';
   const availableQuickActions = QUICK_ACTIONS.filter(
     (act) => !act.allowedRoles || act.allowedRoles.includes(activeRole) || activeRole === 'SUPER_ADMIN',
   );

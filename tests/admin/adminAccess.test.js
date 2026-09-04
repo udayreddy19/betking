@@ -20,13 +20,25 @@ describe('admin access eligibility', () => {
     expect(isAdminEligibleUser({ email: 'player@oddsyra.com', role: 'USER' })).toBe(false);
   });
 
-  it('maps operator accounts to SUPER_ADMIN by default', () => {
+  it('maps ADMIN accounts to SUPER_ADMIN and preserves explicit admin roles', () => {
     expect(adminJwtRoleForUser({ role: 'ADMIN' })).toBe('SUPER_ADMIN');
     expect(adminJwtRoleForUser({ role: 'FINANCE_ADMIN' })).toBe('FINANCE_ADMIN');
+    expect(adminJwtRoleForUser({ admin_role: 'RISK_ANALYST', role: 'USER' })).toBe('RISK_ANALYST');
   });
 
-  it('ignores a client-requested admin role', () => {
-    expect(adminJwtRoleForUser({ role: 'USER' }, 'FINANCE_ADMIN')).not.toBe('FINANCE_ADMIN');
+  it('defaults allowlisted USER accounts to OPERATIONS_ADMIN (not SUPER_ADMIN)', () => {
+    expect(adminJwtRoleForUser({ role: 'USER' }, 'FINANCE_ADMIN')).toBe('OPERATIONS_ADMIN');
     expect(adminJwtRoleForUser({ role: 'ADMIN' }, 'FINANCE_ADMIN')).toBe('SUPER_ADMIN');
+  });
+
+  it('honors ADMIN_DEFAULT_ROLE for allowlisted users without an admin role', () => {
+    const prev = process.env.ADMIN_DEFAULT_ROLE;
+    process.env.ADMIN_DEFAULT_ROLE = 'FINANCE_ADMIN';
+    try {
+      expect(adminJwtRoleForUser({ role: 'USER' })).toBe('FINANCE_ADMIN');
+    } finally {
+      if (prev == null) delete process.env.ADMIN_DEFAULT_ROLE;
+      else process.env.ADMIN_DEFAULT_ROLE = prev;
+    }
   });
 });

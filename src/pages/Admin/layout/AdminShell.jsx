@@ -461,7 +461,7 @@ function AdminShellInner() {
     }
   }, [location.pathname, navigate, syncAdminLocation]);
 
-  const { activeRole, setActiveRole } = useAdminRole();
+  const { activeRole, setActiveRole, syncRoleFromJwt, rolePreviewEnabled } = useAdminRole();
   const { isDark } = useTheme();
   const [globalSearch, setGlobalSearch] = useState('');
   const [isAlertsOpen, setIsAlertsOpen] = useState(false);
@@ -513,13 +513,16 @@ function AdminShellInner() {
     scrollContentToTop();
   }, [activeDomain, activeSubModule]);
 
-  // Session bootstrap
+  // Session bootstrap — production uses JWT role; DEV may pass preview role override
   React.useEffect(() => {
     let cancelled = false;
     setSessionChecking(true);
-    ensureAdminSession(activeRole)
+    const roleForSession = rolePreviewEnabled ? activeRole : undefined;
+    ensureAdminSession(roleForSession)
       .then(() => {
         if (cancelled) return;
+        // In DEV, keep the preview role switch; production always mirrors JWT.
+        if (!rolePreviewEnabled) syncRoleFromJwt();
         setSessionReady(true);
         setSessionError('');
       })
@@ -547,7 +550,7 @@ function AdminShellInner() {
         setSessionChecking(false);
       });
     return () => { cancelled = true; };
-  }, [activeRole]);
+  }, [activeRole, rolePreviewEnabled, syncRoleFromJwt]);
 
   // Live alerts polling
   React.useEffect(() => {
@@ -824,14 +827,18 @@ function AdminShellInner() {
     setSessionError('');
     try {
       if (mfaStep !== 'password') {
-        await ensureAdminSession(activeRole, {
+        await ensureAdminSession(rolePreviewEnabled ? activeRole : undefined, {
           totpCode: adminTotp,
           mfaToken,
           enroll: mfaStep === 'setup',
         });
       } else {
-        await ensureAdminSession(activeRole, { email: adminEmail, password: adminPassword });
+        await ensureAdminSession(rolePreviewEnabled ? activeRole : undefined, {
+          email: adminEmail,
+          password: adminPassword,
+        });
       }
+      syncRoleFromJwt();
       setSessionReady(true);
       setAdminTotp('');
       setMfaToken('');
@@ -870,6 +877,7 @@ function AdminShellInner() {
   };
 
   const handleRoleChange = (newRole) => {
+    if (!rolePreviewEnabled) return;
     setActiveRole(newRole);
   };
 
@@ -1039,6 +1047,7 @@ function AdminShellInner() {
           onSearchClick={() => openCommandPalette(globalSearch)}
           activeRole={activeRole}
           onRoleChange={handleRoleChange}
+          rolePreviewEnabled={rolePreviewEnabled}
           liveAlerts={liveAlerts}
           alertsBellRef={alertsBellRef}
           onToggleAlerts={() => {

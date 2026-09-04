@@ -33,6 +33,9 @@ function dispatch(msg) {
   if (msg.eventType === 'BET_CASHED_OUT' && msg.payload?.userId) {
     channels.push(`user:${msg.payload.userId}`);
   }
+  if (msg.eventType === 'user.notification.created' && (msg.payload?.userId || msg.userId)) {
+    channels.push(`user:${msg.payload?.userId || msg.userId}`);
+  }
   if (msg.eventType === 'admin.alert.created' || msg.channel === 'admin:ops') {
     channels.push('admin:ops');
   }

@@ -3,7 +3,7 @@ import { responsibleGamingEngine } from '../../lib/responsibleGaming.mjs';
 import { stakeLimitEngine } from '../../lib/stakeLimitEngine.mjs';
 import { query } from '../../db/pg.js';
 
-describe('responsible gaming unlimited deposits and stakes', () => {
+describe('responsible gaming deposit and stake limit enforcement', () => {
   const userId = 'usr_rg_limits_01';
 
   beforeEach(async () => {
@@ -12,16 +12,18 @@ describe('responsible gaming unlimited deposits and stakes', () => {
     await query(`DELETE FROM responsible_gaming_limits WHERE user_id = $1`, [userId]).catch(() => null);
   });
 
-  it('allows a deposit above a stored daily limit', async () => {
+  it('rejects a deposit above a stored daily limit', async () => {
     await responsibleGamingEngine.setLimits(userId, { depositLimitDaily: 5000 });
     const res = await responsibleGamingEngine.validateDepositAttempt(userId, 6000);
-    expect(res.allowed).toBe(true);
+    expect(res.allowed).toBe(false);
+    expect(res.reason).toBe('DEPOSIT_LIMIT_DAILY');
   });
 
-  it('allows a stake above a stored per-bet limit', async () => {
+  it('rejects a stake above a stored per-bet limit', async () => {
     await responsibleGamingEngine.setLimits(userId, { stakeLimitPerBet: 10000 });
     const res = await responsibleGamingEngine.validateBetPlacementAttempt(userId, 15000);
-    expect(res.allowed).toBe(true);
+    expect(res.allowed).toBe(false);
+    expect(res.reason).toBe('STAKE_LIMIT_PER_BET');
   });
 
   it('still blocks deposits during cooling-off', async () => {

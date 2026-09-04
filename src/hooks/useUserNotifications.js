@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { apiFetch } from '../utils/apiClient';
+import { subscribeLiveChannel } from '../services/liveFeedSocket';
 
 let cachedNotifications = [];
 let cachedUserId = null;
@@ -18,6 +19,42 @@ function subscribe(listener) {
 
 function getSnapshot() {
   return cachedNotifications;
+}
+
+function prependFromWs(payload) {
+  if (!payload || !cachedUserId) return;
+  const userId = payload.userId;
+  if (userId && String(userId) !== String(cachedUserId)) return;
+  const id = payload.notificationId || payload.id;
+  if (!id) {
+    void fetchNotifications(cachedUserId);
+    return;
+  }
+  if (cachedNotifications.some((n) => n.id === id)) return;
+  const meta = payload.metadata || {
+    conversationId: payload.conversationId || null,
+    ticketId: payload.ticketId || payload.ticketReference || null,
+    ticketReference: payload.ticketReference || payload.ticketId || null,
+  };
+  cachedNotifications = [
+    {
+      id,
+      user_id: userId || cachedUserId,
+      event_type: payload.eventType,
+      eventType: payload.eventType,
+      category: payload.category || 'SUPPORT',
+      subject: payload.subject,
+      body: payload.message || payload.body,
+      is_read: false,
+      created_at: new Date().toISOString(),
+      metadata: meta,
+      conversationId: payload.conversationId,
+      ticketId: payload.ticketId || payload.ticketReference,
+      ticketReference: payload.ticketReference || payload.ticketId,
+    },
+    ...cachedNotifications,
+  ];
+  emit();
 }
 
 async function fetchNotifications(userId) {
@@ -72,7 +109,7 @@ function ensurePolling(userId) {
 
 /**
  * Shared user notifications for header, sidebar, and mobile menu badge.
- * One poll serves all subscribers.
+ * One poll serves all subscribers; WebSocket prepends for instant bell updates.
  */
 export function useUserNotifications(isLoggedIn, userId) {
   const notifications = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
@@ -81,6 +118,19 @@ export function useUserNotifications(isLoggedIn, userId) {
 
   useEffect(() => {
     ensurePolling(activeUserId);
+  }, [activeUserId]);
+
+  useEffect(() => {
+    if (!activeUserId) return undefined;
+    const channel = `user:${activeUserId}`;
+    return subscribeLiveChannel(channel, (msg) => {
+      if (msg?.eventType === 'WS_RECONNECTED') {
+        void fetchNotifications(activeUserId);
+        return;
+      }
+      if (msg?.eventType !== 'user.notification.created') return;
+      prependFromWs(msg.payload || msg);
+    });
   }, [activeUserId]);
 
   const refresh = useCallback(async () => {

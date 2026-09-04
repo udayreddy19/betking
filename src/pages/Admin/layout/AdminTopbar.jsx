@@ -39,6 +39,7 @@ export default function AdminTopbar({
   onSearchClick,
   activeRole,
   onRoleChange,
+  rolePreviewEnabled = false,
   liveAlerts,
   alertsBellRef,
   onToggleAlerts,
@@ -146,25 +147,46 @@ export default function AdminTopbar({
         </div>
 
         <div className="admin-topbar__role">
-          <span style={{ fontSize: '0.7rem', color: 'var(--admin-text-muted)' }}>Role</span>
-          <select
-            value={activeRole}
-            onChange={(e) => onRoleChange(e.target.value)}
-            className="admin-select"
-            style={{
-              padding: '2px 6px',
-              borderRadius: 'var(--admin-radius-sm)',
-              fontSize: '0.74rem',
-              fontWeight: 600,
-              minWidth: 'auto',
-              backgroundPosition: 'right 4px center',
-              paddingRight: '18px',
-            }}
-          >
-            {Object.values(ADMIN_ROLES).map((role) => (
-              <option key={role} value={role}>{role}</option>
-            ))}
-          </select>
+          <span style={{ fontSize: '0.7rem', color: 'var(--admin-text-muted)' }}>
+            {rolePreviewEnabled ? 'Role (preview)' : 'Role'}
+          </span>
+          {rolePreviewEnabled ? (
+            <select
+              value={activeRole}
+              onChange={(e) => onRoleChange(e.target.value)}
+              className="admin-select"
+              title="DEV only — UI preview; JWT role is unchanged"
+              style={{
+                padding: '2px 6px',
+                borderRadius: 'var(--admin-radius-sm)',
+                fontSize: '0.74rem',
+                fontWeight: 600,
+                minWidth: 'auto',
+                backgroundPosition: 'right 4px center',
+                paddingRight: '18px',
+              }}
+            >
+              {Object.values(ADMIN_ROLES).map((role) => (
+                <option key={role} value={role}>{role}</option>
+              ))}
+            </select>
+          ) : (
+            <span
+              className="admin-select"
+              style={{
+                display: 'inline-block',
+                padding: '2px 8px',
+                borderRadius: 'var(--admin-radius-sm)',
+                fontSize: '0.74rem',
+                fontWeight: 600,
+                lineHeight: '1.6',
+                border: '1px solid var(--admin-border)',
+                color: 'var(--admin-text)',
+              }}
+            >
+              {activeRole}
+            </span>
+          )}
         </div>
 
         <AdminProfileSection onLogout={onLogout} />

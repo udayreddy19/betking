@@ -12,6 +12,7 @@ const CATEGORIES = [
   { id: 'SETTLEMENT', label: 'Settlement' },
   { id: 'KYC', label: 'KYC' },
   { id: 'SECURITY', label: 'Security' },
+  { id: 'SUPPORT', label: 'Support' },
   { id: 'PROMOTION', label: 'Promo' },
   { id: 'REFERRAL', label: 'Referral' },
   { id: 'WITHDRAWAL', label: 'Withdrawal' },
@@ -26,14 +27,34 @@ function normalizeCategory(n) {
   if (/SETTLE|PAYOUT|WON|LOST|VOID/.test(raw)) return 'SETTLEMENT';
   if (/KYC/.test(raw)) return 'KYC';
   if (/SECURITY|LOGIN|MFA/.test(raw)) return 'SECURITY';
+  if (/SUPPORT|TICKET|LIVE.?CHAT/.test(raw)) return 'SUPPORT';
   if (/PROMO|BONUS|SPIN/.test(raw)) return 'PROMOTION';
   if (/REFERRAL/.test(raw)) return 'REFERRAL';
   if (/WITHDRAW/.test(raw)) return 'WITHDRAWAL';
   return 'SYSTEM';
 }
 
+function supportTicketRef(n) {
+  const meta = n.metadata && typeof n.metadata === 'object' ? n.metadata : {};
+  return (
+    meta.ticketReference
+    || meta.ticketId
+    || meta.ticketNumber
+    || meta.conversationId
+    || n.ticketReference
+    || n.ticketId
+    || n.conversationId
+    || null
+  );
+}
+
 function deepLinkFor(n) {
   const cat = normalizeCategory(n);
+  if (cat === 'SUPPORT') {
+    const ref = supportTicketRef(n);
+    if (ref) return `/support/tickets/${encodeURIComponent(ref)}`;
+    return '/support';
+  }
   if (cat === 'BET' || cat === 'SETTLEMENT') return '/bets';
   if (cat === 'WALLET' || cat === 'WITHDRAWAL') return '/profile';
   if (cat === 'KYC') return '/profile';
