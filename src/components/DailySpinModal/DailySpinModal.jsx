@@ -26,7 +26,7 @@ function formatExpiryLabel(prize) {
       hour12: true,
     })}`;
   }
-  return `Use bonus/freebet within ${SPIN_PRIZE_TTL_HOURS} hours or it expires`;
+  return `Use bonus within ${SPIN_PRIZE_TTL_HOURS} hours or it expires`;
 }
 
 export default function DailySpinModal({ isOpen, onClose }) {
@@ -183,7 +183,7 @@ export default function DailySpinModal({ isOpen, onClose }) {
               <FiZap /> DAILY VIP REWARD WHEEL
             </div>
             <h2 id="daily-spin-title">Spin & Win Free Bonus Rewards!</h2>
-            <p>Bonus and freebet prizes must be used within {SPIN_PRIZE_TTL_HOURS} hours or they expire. Loyalty XP is credited instantly.</p>
+            <p>Every spin lands ₹100, ₹200, ₹500, or ₹750 bonus. Use it within {SPIN_PRIZE_TTL_HOURS} hours or it expires.</p>
           </div>
 
           <div className="wheel-wrapper">

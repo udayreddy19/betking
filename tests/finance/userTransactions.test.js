@@ -77,7 +77,7 @@ describe('userTransactions mapping', () => {
     expect(win.label).toBe('Bet Win');
   });
 
-  it('keeps UPI on deposits/withdrawals and source tags on bonuses', () => {
+  it('keeps UPI on deposits/withdrawals and labels promo methods clearly', () => {
     expect(mapTransactionRow({
       transaction_id: 'dep_1',
       type: 'DEPOSIT',
@@ -103,6 +103,33 @@ describe('userTransactions mapping', () => {
       method: 'LOYALTY_REDEEM',
       status: 'COMPLETED',
       created_at: '2026-01-01T10:00:00.000Z',
-    }).label).toBe('Bonus · LOYALTY_REDEEM');
+    })).toMatchObject({ type: 'loyalty_redeem', label: 'Loyalty Redemption', amount: 64.4 });
+
+    expect(mapTransactionRow({
+      transaction_id: 'tx_sp_1',
+      type: 'BONUS_CLAIM',
+      amount: 500,
+      method: 'SIGNUP_FREEBET',
+      status: 'COMPLETED',
+      created_at: '2026-01-01T10:00:00.000Z',
+    })).toMatchObject({ type: 'freebet', label: 'Signup Free Bet', amount: 500 });
+
+    expect(mapTransactionRow({
+      transaction_id: 'tx_spin_1',
+      type: 'BONUS_CLAIM',
+      amount: 500,
+      method: 'DAILY_SPIN_FREEBET',
+      status: 'COMPLETED',
+      created_at: '2026-01-01T10:00:00.000Z',
+    })).toMatchObject({ type: 'freebet', label: 'Daily Spin Free Bet', amount: 500 });
+
+    expect(mapTransactionRow({
+      transaction_id: 'tx_spin_xp',
+      type: 'BONUS_CLAIM',
+      amount: 1000,
+      method: 'DAILY_SPIN_XP',
+      status: 'COMPLETED',
+      created_at: '2026-01-01T10:00:00.000Z',
+    })).toMatchObject({ type: 'xp', label: 'Daily Spin XP', amount: 1000 });
   });
 });
