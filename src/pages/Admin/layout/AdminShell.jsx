@@ -620,8 +620,11 @@ function AdminShellInner() {
           }
 
           (notifPayload.notifications || []).forEach((n) => {
+            const severity = String(n.priority || n.severity || '').toUpperCase();
             const isSupport = String(n.category || '').toUpperCase() === 'SUPPORT'
               || String(n.action_target_type || '') === 'support_conversation';
+            // Only surface support + high/critical — skip bulk noise that inflated the bell
+            if (!isSupport && !['HIGH', 'CRITICAL', 'URGENT'].includes(severity)) return;
             alerts.push({
               id: n.notification_id || n.id,
               title: n.title || n.subject || n.heading || 'Admin alert',
@@ -629,10 +632,7 @@ function AdminShellInner() {
               category: isSupport ? 'support' : String(n.category || 'ops').toLowerCase(),
               domainId: isSupport ? 'support' : 'control-tower',
               subModuleId: isSupport ? 'ticket-queue' : 'overview',
-              type: String(n.priority || n.severity || 'HIGH').toUpperCase() === 'URGENT'
-                || String(n.priority || '').toUpperCase() === 'CRITICAL'
-                ? 'CRITICAL'
-                : (String(n.priority || 'HIGH').toUpperCase() || 'HIGH'),
+              type: severity === 'URGENT' || severity === 'CRITICAL' ? 'CRITICAL' : 'HIGH',
               notificationId: n.notification_id || n.id || null,
               conversationId: n.action_target_id || null,
             });

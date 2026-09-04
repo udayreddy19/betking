@@ -708,9 +708,10 @@
 }
 .admin-nav-domain__badge {
   font-size: 0.62rem;
-  font-weight: 800;
-  background: var(--admin-danger, #c0392b);
-  color: #fff;
+  font-weight: 700;
+  background: var(--admin-primary-soft, color-mix(in srgb, var(--admin-primary, #1f8a4c) 18%, transparent));
+  color: var(--admin-primary-hover, var(--admin-primary, #1f8a4c));
+  border: 1px solid color-mix(in srgb, var(--admin-primary, #1f8a4c) 28%, transparent);
   min-width: 18px;
   height: 18px;
   display: inline-flex;
@@ -731,6 +732,7 @@
   height: 8px;
   padding: 0;
   border: 1.5px solid var(--admin-sidebar-bg, #f7f4ef);
+  background: var(--admin-primary, #1f8a4c);
 }
 .admin-nav-domain.has-badge .admin-nav-domain__icon {
   opacity: 1;
@@ -810,10 +812,11 @@
   height: 16px;
   padding: 0 4px;
   border-radius: var(--admin-radius-full, 999px);
-  background: var(--admin-danger, #c0392b);
-  color: #fff;
+  background: var(--admin-primary-soft, color-mix(in srgb, var(--admin-primary, #1f8a4c) 18%, transparent));
+  color: var(--admin-primary-hover, var(--admin-primary, #1f8a4c));
+  border: 1px solid color-mix(in srgb, var(--admin-primary, #1f8a4c) 28%, transparent);
   font-size: 0.58rem;
-  font-weight: 800;
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
