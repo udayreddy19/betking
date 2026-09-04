@@ -638,7 +638,7 @@ function AdminShellInner() {
               desc: `${data.pendingWithdrawals} request(s) in finance queue`,
               category: 'finance',
               domainId: 'finance',
-              subModuleId: 'maker-checker',
+              subModuleId: 'cash-money',
               type: 'HIGH',
             });
           }
