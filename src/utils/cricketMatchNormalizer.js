@@ -378,6 +378,20 @@ export function normalizeMatch(raw = {}, previous = {}, options = {}) {
     // Sparse ld on a completed chase: restore from team card scores
     const t1Card = Number(raw.team1?.runs) || 0;
     const t2Card = Number(raw.team2?.runs) || 0;
+
+    if (inningsId >= 2 && (!Number(firstRuns) || Number(firstRuns) === 0)) {
+      const firstIsAway = rawLd.firstTeamName
+        ? matchesTeamIdentifier(awayTeam, rawLd.firstTeamName)
+        : false;
+      if (firstIsAway && t2Card > 0) {
+        firstRuns = t2Card;
+        if (!Number(firstWickets)) firstWickets = Number(raw.team2?.wickets || 0);
+      } else if (t1Card > 0) {
+        firstRuns = t1Card;
+        if (!Number(firstWickets)) firstWickets = Number(raw.team1?.wickets || 0);
+      }
+    }
+
     if (inningsId >= 2 && t1Card > 0 && t2Card > 0
       && (chaseRuns == null || Number(chaseRuns) === 0)
       && (chaseWickets == null || Number(chaseWickets) === 0)

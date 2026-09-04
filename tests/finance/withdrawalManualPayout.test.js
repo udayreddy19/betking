@@ -60,6 +60,7 @@ describe.runIf(hasDb)('Manual payout UTR on final approve', () => {
       ON CONFLICT (user_id) DO UPDATE SET kyc_status = 'VERIFIED', account_status = 'ACTIVE'
     `, [userId]);
     await query(`DELETE FROM ledger_entries WHERE wallet_id = $1`, [walletId]);
+    await query(`DELETE FROM deposits WHERE user_id = $1`, [userId]);
     await query(`DELETE FROM transactions WHERE user_id = $1`, [userId]);
     await query(`DELETE FROM withdrawals WHERE user_id = $1`, [userId]);
     await query(`DELETE FROM wallets WHERE user_id = $1`, [userId]);
@@ -67,6 +68,12 @@ describe.runIf(hasDb)('Manual payout UTR on final approve', () => {
       `INSERT INTO wallets (wallet_id, user_id, balance, reserved_balance, currency)
        VALUES ($1, $2, 5000, 1500, 'INR')`,
       [walletId, userId],
+    );
+    await query(
+      `INSERT INTO deposits (id, deposit_id, user_id, order_id, amount, refunded_amount, status, created_at)
+       VALUES ($1, $1, $2, $1, 5000.00, 0.00, 'COMPLETED', NOW() - INTERVAL '3 hours')
+       ON CONFLICT DO NOTHING`,
+      [`dep_${userId}_setup`, userId],
     );
   });
 

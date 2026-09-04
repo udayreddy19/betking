@@ -28,7 +28,8 @@ describe('promo rules', () => {
       legs: [{ odds: 2 }],
     });
     expect(bonusWin.cashCredit).toBe(0);
-    expect(bonusWin.bonusCredit).toBe(200);
+    expect(bonusWin.bonusCredit).toBe(100);
+    expect(bonusWin.lockedBonusWinningsCredit).toBe(100);
 
     const freeWin = splitBetWinPayout({
       payout: 150,

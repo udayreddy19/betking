@@ -14,8 +14,8 @@ describe('notification channel honesty', () => {
   });
 
   it('does not claim EMAIL delivered when SMTP is missing', async () => {
-    delete process.env.SMTP_HOST;
-    delete process.env.SMTP_USER;
+    process.env.SMTP_HOST = '';
+    process.env.SMTP_USER = '';
     const { dispatchNotificationChannel } = await import('../../lib/notificationChannels.mjs');
     const result = await dispatchNotificationChannel('EMAIL', 'a@b.com', 'hello', 'subj');
     expect(result.delivered).toBe(false);

@@ -41,7 +41,7 @@ describe('P3 replica, metrics, notify, flags', () => {
     expect(isWebPushConfigured()).toBe(false);
     const sms = await dispatchNotificationChannel('SMS', '9999999999', 'hello');
     expect(sms.skipped).toBe(true);
-    expect(sms.reason).toBe('EMAIL_FAILOVER_NOT_MONITORED');
+    expect(sms.reason).toBe('SMS_DISABLED_BY_POLICY');
     const inn = await dispatchNotificationChannel('IN_APP', 'u1', 'hello');
     expect(inn.delivered).toBe(true);
   });

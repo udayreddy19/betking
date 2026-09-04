@@ -1,13 +1,15 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { responsibleGamingEngine } from '../../lib/responsibleGaming.mjs';
 import { stakeLimitEngine } from '../../lib/stakeLimitEngine.mjs';
+import { query } from '../../db/pg.js';
 
 describe('responsible gaming unlimited deposits and stakes', () => {
   const userId = 'usr_rg_limits_01';
 
-  beforeEach(() => {
+  beforeEach(async () => {
     responsibleGamingEngine.limitsMap.delete(userId);
     responsibleGamingEngine.userDepositsTodayMap.delete(userId);
+    await query(`DELETE FROM responsible_gaming_limits WHERE user_id = $1`, [userId]).catch(() => null);
   });
 
   it('allows a deposit above a stored daily limit', async () => {

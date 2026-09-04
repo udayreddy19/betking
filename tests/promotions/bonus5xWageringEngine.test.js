@@ -25,10 +25,16 @@ describe('ODDSYRA — BONUS 5X WAGERING & ROLLOVER ENGINE SUITE', () => {
     await query(`INSERT INTO kyc_cases (case_id, user_id, status, pan_number, aadhaar_number, updated_at)
                  VALUES ($1, $2, 'VERIFIED', 'ABCDE1234F', '123456789012', NOW())
                  ON CONFLICT DO NOTHING;`, [`case_${testUserId}`, testUserId]);
-    await query(`INSERT INTO wallets (wallet_id, user_id, balance, bonus_balance, locked_bonus_winnings, currency)
-                 VALUES ($1, $2, 5000.00, 0.00, 0.00, 'INR')
-                 ON CONFLICT (wallet_id) DO UPDATE SET balance = 5000.00, bonus_balance = 0.00, locked_bonus_winnings = 0.00;`,
+    await query(`INSERT INTO wallets (wallet_id, user_id, balance, bonus_balance, locked_bonus_winnings, reserved_balance, currency)
+                 VALUES ($1, $2, 5000.00, 0.00, 0.00, 0.00, 'INR')
+                 ON CONFLICT (wallet_id) DO UPDATE SET balance = 5000.00, bonus_balance = 0.00, locked_bonus_winnings = 0.00, reserved_balance = 0.00;`,
                  [`wal_${testUserId}`, testUserId]);
+    await query(`DELETE FROM bonus_wagering_ledger WHERE user_id = $1;`, [testUserId]);
+    await query(`DELETE FROM user_bonuses WHERE user_id = $1;`, [testUserId]);
+    await query(`DELETE FROM bets WHERE user_id = $1;`, [testUserId]);
+    await query(`DELETE FROM ledger_entries WHERE wallet_id = $1;`, [`wal_${testUserId}`]);
+    await query(`DELETE FROM transactions WHERE user_id = $1;`, [testUserId]);
+
     await query(`INSERT INTO deposits (id, deposit_id, user_id, order_id, amount, refunded_amount, status, created_at)
                  VALUES ($1, $1, $2, $1, 5000.00, 0.00, 'COMPLETED', NOW() - INTERVAL '3 hours')
                  ON CONFLICT DO NOTHING;`,
@@ -36,10 +42,6 @@ describe('ODDSYRA — BONUS 5X WAGERING & ROLLOVER ENGINE SUITE', () => {
     await query(`INSERT INTO transactions (transaction_id, user_id, type, amount, status)
                  VALUES ($1, $2, 'DEPOSIT', 2500.00, 'SUCCESS')`,
                  [`tx_dep_${testUserId}_${Date.now()}`, testUserId]);
-
-    await query(`DELETE FROM bonus_wagering_ledger WHERE user_id = $1;`, [testUserId]);
-    await query(`DELETE FROM user_bonuses WHERE user_id = $1;`, [testUserId]);
-    await query(`DELETE FROM bets WHERE user_id = $1;`, [testUserId]);
 
     await createPromotion({
       name: '5x Rollover Test Promo',
@@ -290,7 +292,7 @@ describe('ODDSYRA — BONUS 5X WAGERING & ROLLOVER ENGINE SUITE', () => {
     await insertTestBet({ betId, userId: testUserId, stake: 2500.00, odds: 1.75, payout: 4375.00, status: 'WON' });
 
     // Settle winnings into locked_bonus_winnings
-    await query(`UPDATE wallets SET bonus_balance = 2500.00, locked_bonus_winnings = 1875.00 WHERE user_id = $1`, [testUserId]);
+    await query(`UPDATE wallets SET balance = 5000.00, reserved_balance = 0.00, bonus_balance = 2500.00, locked_bonus_winnings = 1875.00 WHERE user_id = $1`, [testUserId]);
     await withTransaction((client) => recordBonusWageringInTx(client, {
       userId: testUserId,
       betId,

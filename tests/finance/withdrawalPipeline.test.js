@@ -23,9 +23,15 @@ describe('Phase 6 Withdrawal & Fund Reservation Security Tests', () => {
     await query(`DELETE FROM user_bonuses WHERE user_id = $1;`, [userId]);
     await query(`DELETE FROM ledger_entries WHERE wallet_id IN (SELECT wallet_id FROM wallets WHERE user_id = $1);`, [userId]);
     await query(`DELETE FROM withdrawals WHERE user_id = $1;`, [userId]);
-    await query(`DELETE FROM transactions WHERE user_id = $1;`, [userId]);
+    await query(`DELETE FROM deposits WHERE user_id = $1;`, [userId]);
     await query(`DELETE FROM wallets WHERE user_id = $1;`, [userId]);
     await query(`INSERT INTO wallets (wallet_id, user_id, balance, reserved_balance, winnings_balance, currency) VALUES ($1, $2, 5000.00, 0.00, 5000.00, 'INR');`, [walletId, userId]);
+    await query(`INSERT INTO deposits (id, deposit_id, user_id, order_id, amount, refunded_amount, status, created_at)
+                 VALUES ($1, $1, $2, $1, 5000.00, 0.00, 'COMPLETED', NOW() - INTERVAL '3 hours')
+                 ON CONFLICT DO NOTHING;`, [`dep_${userId}_setup`, userId]);
+    await query(`INSERT INTO transactions (transaction_id, user_id, type, amount, status, created_at)
+                 VALUES ($1, $2, 'DEPOSIT', 5000.00, 'SUCCESS', NOW() - INTERVAL '3 hours')
+                 ON CONFLICT DO NOTHING;`, [`tx_dep_${userId}`, userId]);
   });
 
   it('should process valid withdrawal request and reserve funds', async () => {

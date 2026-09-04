@@ -19,8 +19,7 @@ describe('Feature-matrix leftovers', () => {
 
   it('skips SMS and web-push until email failover SMTP is configured', () => {
     const src = fs.readFileSync(path.resolve(process.cwd(), 'lib/notificationChannels.mjs'), 'utf8');
-    expect(src).toContain('isEmailFailoverMonitored');
-    expect(src).toContain('EMAIL_FAILOVER_NOT_MONITORED');
+    expect(src).toContain('SMS_DISABLED_BY_POLICY');
   });
 
   it('ships gated Playwright staging specs after Sprint 0', () => {

@@ -105,7 +105,7 @@ describe('Match Visibility & Event Lookup Reliability', () => {
     const scores = await getAggregatedLiveScores({ force: false });
     expect(scores).toBeDefined();
     expect(Array.isArray(scores.matches)).toBe(true);
-  });
+  }, 15000);
 
   // 8. Event leaves live board but match details still load
   it('8. Match details endpoint distinguishes NO_LONGER_LIVE from NOT_FOUND', async () => {

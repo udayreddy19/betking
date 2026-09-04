@@ -3,7 +3,18 @@ import React from 'react';
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, prevResetKey: props.resetKey };
+  }
+
+  static getDerivedStateFromProps(props, state) {
+    if (props.resetKey !== state.prevResetKey) {
+      return {
+        hasError: false,
+        error: null,
+        prevResetKey: props.resetKey
+      };
+    }
+    return null;
   }
 
   static getDerivedStateFromError(error) {
@@ -12,13 +23,6 @@ export default class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('Unhandled React Error Boundary caught an error:', error, errorInfo);
-  }
-
-  componentDidUpdate(prevProps) {
-    if (!this.state.hasError) return;
-    if (prevProps.resetKey !== this.props.resetKey) {
-      this.setState({ hasError: false, error: null });
-    }
   }
 
   render() {
