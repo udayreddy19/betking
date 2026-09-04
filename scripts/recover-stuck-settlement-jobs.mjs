@@ -13,10 +13,17 @@ import { query } from '../db/pg.js';
 import { recoverStuckProcessingSettlementJobs } from '../lib/settlement/settlementDeadLetterRecovery.mjs';
 
 function arg(name, fallback = null) {
-  const hit = process.argv.find((a) => a === `--${name}` || a.startsWith(`--${name}=`));
-  if (!hit) return fallback;
-  if (hit === `--${name}`) return true;
-  return hit.slice(name.length + 3);
+  const argv = process.argv;
+  for (let i = 0; i < argv.length; i += 1) {
+    const a = argv[i];
+    if (a === `--${name}`) {
+      const next = argv[i + 1];
+      if (next != null && !next.startsWith('--')) return next;
+      return true;
+    }
+    if (a.startsWith(`--${name}=`)) return a.slice(name.length + 3);
+  }
+  return fallback;
 }
 
 async function main() {
