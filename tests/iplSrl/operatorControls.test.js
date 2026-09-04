@@ -68,4 +68,11 @@ describe('OddsYra SRL operator controls', () => {
     expect(row.book.home.payout).toBe(1800);
     expect(row.book.totalStake - row.book.home.payout).toBe(-400);
   });
+
+  it('matches selection ids with and without sel_ prefix', async () => {
+    const { sameSrlSelectionId } = await import('../../lib/iplSrlAdminControl.mjs');
+    expect(sameSrlSelectionId('sel_csk', 'csk')).toBe(true);
+    expect(sameSrlSelectionId('1', '1')).toBe(true);
+    expect(sameSrlSelectionId('sel_mi', 'sel_csk')).toBe(false);
+  });
 });

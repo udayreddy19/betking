@@ -488,6 +488,120 @@
   margin-bottom: 8px;
 }
 
+.srl-markets {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  background: rgba(167, 139, 250, 0.08);
+}
+
+.srl-market-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.srl-chip.is-on {
+  background: rgba(167, 139, 250, 0.35);
+  border-color: rgba(167, 139, 250, 0.7);
+  color: #fff;
+}
+
+.srl-market-list {
+  display: grid;
+  gap: 10px;
+  max-height: 520px;
+  overflow: auto;
+}
+
+.srl-market-card {
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-panel);
+}
+
+.srl-market-card.is-locked {
+  opacity: 0.85;
+}
+
+.srl-market-card__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.srl-market-card__head strong {
+  display: block;
+  font-size: 0.86rem;
+}
+
+.srl-market-card__head .srl-hint {
+  display: block;
+  margin-top: 2px;
+  word-break: break-all;
+}
+
+.srl-market-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.srl-market-sels {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 6px;
+}
+
+.srl-market-sel {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border);
+  background: rgba(15, 23, 42, 0.35);
+  color: inherit;
+  cursor: pointer;
+}
+
+.srl-market-sel:hover:not(:disabled) {
+  border-color: rgba(167, 139, 250, 0.7);
+}
+
+.srl-market-sel:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.srl-market-sel.is-won {
+  border-color: rgba(52, 211, 153, 0.7);
+  background: rgba(52, 211, 153, 0.12);
+}
+
+.srl-market-sel span {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.srl-market-sel strong {
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.srl-market-sel em {
+  font-style: normal;
+  font-size: 0.68rem;
+  color: var(--admin-text-muted);
+}
+
 .srl-standings {
   display: grid;
   gap: 6px;

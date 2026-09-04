@@ -39,6 +39,51 @@ router.post('/matches/:matchId/declare', async (req, res) => {
   }
 });
 
+router.get('/matches/:matchId/markets', async (req, res) => {
+  try {
+    const { getIPLSRLMatchMarkets } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const data = await getIPLSRLMatchMarkets(req.params.matchId);
+    res.json(data);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/markets/:marketId/suspend', async (req, res) => {
+  try {
+    const { setIPLSRLMarketSuspended } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const suspended = req.body?.suspended !== false;
+    const data = await setIPLSRLMarketSuspended(
+      req.params.matchId,
+      decodeURIComponent(req.params.marketId),
+      suspended,
+      req.admin?.id || 'admin',
+    );
+    res.json(data);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/markets/:marketId/declare', async (req, res) => {
+  try {
+    const { declareIPLSRLMarketOutcome } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const data = await declareIPLSRLMarketOutcome(req.params.matchId, {
+      marketId: decodeURIComponent(req.params.marketId),
+      winningSelectionId: req.body?.winningSelectionId || req.body?.selectionId || null,
+      voidMarket: !!req.body?.voidMarket,
+      admin: req.admin?.id || 'admin',
+    });
+    const { enrichSnapshotWithStakes } = await import('../../../lib/iplSrlAdminControl.mjs');
+    if (data.snapshot) {
+      data.snapshot = await enrichSnapshotWithStakes(data.snapshot);
+    }
+    res.json(data);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 router.post('/matches/:matchId/force-winner', async (req, res) => {
   try {
     const { setIPLSRLForcedWinner, clearIPLSRLForcedWinner } = await import('../../../lib/iplSrlAdminControl.mjs');

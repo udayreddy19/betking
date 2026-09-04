@@ -118,6 +118,11 @@ export default function IPLSRLConsoleView() {
   const [jumpNo, setJumpNo] = useState('1');
   const [jumpAt, setJumpAt] = useState('live');
   const [declareAsk, setDeclareAsk] = useState(null);
+  const [marketAsk, setMarketAsk] = useState(null);
+  const [marketsDesk, setMarketsDesk] = useState(null);
+  const [marketsLoading, setMarketsLoading] = useState(false);
+  const [marketsError, setMarketsError] = useState(null);
+  const [marketFilter, setMarketFilter] = useState('open');
   const draggingRef = useRef(false);
 
   const applySnap = useCallback((data) => {
@@ -151,6 +156,49 @@ export default function IPLSRLConsoleView() {
   useEffect(() => {
     setDragMs(null);
   }, [selectedMatchId]);
+
+  useEffect(() => {
+    if (!selectedMatchId) {
+      setMarketsDesk(null);
+      setMarketsError(null);
+      return undefined;
+    }
+    let cancelled = false;
+    const loadMarkets = () => {
+      setMarketsLoading(true);
+      adminApiClient.get(`/iplsrl/matches/${encodeURIComponent(selectedMatchId)}/markets`)
+        .then((data) => {
+          if (cancelled) return;
+          setMarketsDesk(data);
+          setMarketsError(null);
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          setMarketsError(err.message || 'Failed to load markets');
+        })
+        .finally(() => {
+          if (!cancelled) setMarketsLoading(false);
+        });
+    };
+    loadMarkets();
+    const stop = startVisibleInterval(loadMarkets, 5000, { runImmediately: false });
+    return () => {
+      cancelled = true;
+      stop();
+    };
+  }, [selectedMatchId]);
+
+  const visibleMarkets = useMemo(() => {
+    const list = marketsDesk?.markets || [];
+    if (marketFilter === 'open') {
+      return list.filter((m) => String(m.status || '').toUpperCase() === 'OPEN' || (m.book?.bets || 0) > 0);
+    }
+    if (marketFilter === 'staked') return list.filter((m) => (m.book?.bets || 0) > 0);
+    if (marketFilter === 'locked') {
+      return list.filter((m) => ['SUSPENDED', 'DETERMINED', 'VOID', 'VOIDED'].includes(String(m.status || '').toUpperCase()));
+    }
+    return list;
+  }, [marketsDesk, marketFilter]);
 
   const selected = useMemo(
     () => snap?.matches?.find((m) => m.matchId === selectedMatchId) || null,
@@ -197,6 +245,16 @@ export default function IPLSRLConsoleView() {
       if (data?.matches || data?.settings) applySnap(data);
       else if (data?.snapshot) applySnap(data.snapshot);
       else await refresh();
+      if (data?.matchId && Array.isArray(data.markets)) setMarketsDesk(data);
+      else if (data?.markets?.matchId && Array.isArray(data.markets.markets)) setMarketsDesk(data.markets);
+      else if (selectedMatchId) {
+        try {
+          const md = await adminApiClient.get(`/iplsrl/matches/${encodeURIComponent(selectedMatchId)}/markets`);
+          setMarketsDesk(md);
+        } catch {
+          // keep previous markets desk
+        }
+      }
       if (okMsg) showToast(okMsg, 'success');
     } catch (err) {
       showToast(err.message || 'Action failed', 'error');
@@ -227,7 +285,7 @@ export default function IPLSRLConsoleView() {
           <h2>Match control</h2>
           <p>
             Fixtures auto-play on the published clock. Pause, scrub, close betting, jump the season to a match, or
-            declare a winner with a payout preview. The desk lists all 74 matches.
+            declare any market outcome with a stake preview. The desk lists all 74 matches.
           </p>
           {error && <p className="srl-console-error">{error}</p>}
         </div>
@@ -619,6 +677,121 @@ export default function IPLSRLConsoleView() {
                       </button>
                     </div>
                   </div>
+
+                  <div className="srl-markets">
+                    <div className="srl-winner-label">
+                      All markets · declare or lock any odd
+                      {marketsDesk ? ` · ${marketsDesk.openBets || 0} open bets · ${formatInr(marketsDesk.openStake)}` : ''}
+                    </div>
+                    <div className="srl-market-filters">
+                      {[
+                        { id: 'open', label: 'Open + staked' },
+                        { id: 'staked', label: 'With stakes' },
+                        { id: 'locked', label: 'Locked / settled' },
+                        { id: 'all', label: 'All odds' },
+                      ].map((f) => (
+                        <button
+                          key={f.id}
+                          type="button"
+                          className={`srl-chip${marketFilter === f.id ? ' is-on' : ''}`}
+                          onClick={() => setMarketFilter(f.id)}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                    {marketsLoading && !marketsDesk && (
+                      <p className="srl-hint">Loading markets…</p>
+                    )}
+                    {marketsError && <p className="srl-console-error">{marketsError}</p>}
+                    <div className="srl-market-list">
+                      {visibleMarkets.map((market) => {
+                        const status = String(market.status || 'OPEN').toUpperCase();
+                        const settled = ['DETERMINED', 'VOID', 'VOIDED'].includes(status);
+                        const mid = encodeURIComponent(market.marketId);
+                        return (
+                          <div key={market.marketId} className={`srl-market-card${settled || status === 'SUSPENDED' ? ' is-locked' : ''}`}>
+                            <div className="srl-market-card__head">
+                              <div>
+                                <strong>{market.title || market.name}</strong>
+                                <span className="srl-hint">
+                                  {market.marketId}
+                                  {market.line != null ? ` · line ${market.line}` : ''}
+                                  {(market.book?.bets || 0) > 0
+                                    ? ` · ${market.book.bets} bets · ${formatInr(market.book.stake)}`
+                                    : ''}
+                                </span>
+                              </div>
+                              <div className="srl-market-card__actions">
+                                <StatusPill value={status} />
+                                <button
+                                  type="button"
+                                  className="srl-chip"
+                                  disabled={busy || settled}
+                                  onClick={() => run(
+                                    () => adminApiClient.post(
+                                      `/iplsrl/matches/${selected.matchId}/markets/${mid}/suspend`,
+                                      { suspended: status !== 'SUSPENDED' },
+                                    ),
+                                    status === 'SUSPENDED' ? 'Market opened' : 'Market locked',
+                                  )}
+                                >
+                                  {status === 'SUSPENDED' ? 'Unlock' : 'Lock'}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="srl-chip"
+                                  disabled={busy || settled}
+                                  onClick={() => setMarketAsk({
+                                    marketId: market.marketId,
+                                    title: market.title || market.name,
+                                    voidMarket: true,
+                                    bets: market.book?.bets || 0,
+                                    stake: market.book?.stake || 0,
+                                  })}
+                                >
+                                  Void
+                                </button>
+                              </div>
+                            </div>
+                            <div className="srl-market-sels">
+                              {(market.selections || []).map((sel) => (
+                                  <button
+                                    key={sel.selectionId}
+                                    type="button"
+                                    className={`srl-market-sel${sel.won ? ' is-won' : ''}`}
+                                    disabled={busy || settled}
+                                    title={settled ? 'Already settled' : 'Declare this selection the winner'}
+                                    onClick={() => setMarketAsk({
+                                      marketId: market.marketId,
+                                      title: market.title || market.name,
+                                      selectionId: sel.selectionId,
+                                      selectionName: sel.name,
+                                      voidMarket: false,
+                                      bets: sel.book?.bets || 0,
+                                      stake: sel.book?.stake || 0,
+                                      payout: sel.book?.payout || 0,
+                                      odds: sel.odds,
+                                    })}
+                                  >
+                                    <span>{sel.name}</span>
+                                    <strong>{sel.odds != null ? Number(sel.odds).toFixed(2) : '—'}</strong>
+                                    <em>
+                                      {(sel.book?.bets || 0) > 0
+                                        ? `${sel.book.bets} · ${formatInr(sel.book.stake)}`
+                                        : 'No open bets'}
+                                    </em>
+                                  </button>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {!marketsLoading && visibleMarkets.length === 0 && (
+                        <p className="srl-hint">No markets in this filter.</p>
+                      )}
+                    </div>
+                  </div>
                 </>
               )}
             </Panel>
@@ -750,6 +923,49 @@ export default function IPLSRLConsoleView() {
           run(
             () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/declare`, { teamId: ask.teamId }),
             `${ask.short} declared winner`,
+          );
+        }}
+      />
+
+      <AdminConfirmDialog
+        isOpen={!!marketAsk}
+        variant={marketAsk?.voidMarket ? 'danger' : 'warning'}
+        icon={marketAsk?.voidMarket ? '⊘' : '✓'}
+        title={marketAsk?.voidMarket
+          ? `Void ${marketAsk?.title}?`
+          : `Declare ${marketAsk?.selectionName}?`}
+        description={marketAsk?.voidMarket
+          ? 'Voids every open bet on this market and locks the line for users.'
+          : 'Pays open bets on this selection and loses all other open bets on the same market. Locks the line for users.'}
+        details={marketAsk ? [
+          { label: 'Market', value: marketAsk.title || marketAsk.marketId },
+          ...(marketAsk.voidMarket ? [] : [
+            { label: 'Winning selection', value: marketAsk.selectionName || marketAsk.selectionId },
+            { label: 'Odds', value: marketAsk.odds != null ? Number(marketAsk.odds).toFixed(2) : '—' },
+          ]),
+          { label: 'Open bets affected', value: String(marketAsk.bets || 0) },
+          { label: 'Open stake', value: formatInr(marketAsk.stake) },
+          ...(marketAsk.voidMarket ? [] : [
+            { label: 'Payout if this wins', value: formatInr(marketAsk.payout) },
+          ]),
+        ] : []}
+        confirmLabel={marketAsk?.voidMarket ? 'Void market' : 'Declare selection'}
+        cancelLabel="Cancel"
+        loading={busy}
+        onCancel={() => setMarketAsk(null)}
+        onConfirm={() => {
+          const ask = marketAsk;
+          setMarketAsk(null);
+          if (!ask || !selected) return;
+          const mid = encodeURIComponent(ask.marketId);
+          run(
+            () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/markets/${mid}/declare`, {
+              winningSelectionId: ask.voidMarket ? null : ask.selectionId,
+              voidMarket: !!ask.voidMarket,
+            }),
+            ask.voidMarket
+              ? `${ask.title} voided`
+              : `${ask.selectionName} declared on ${ask.title}`,
           );
         }}
       />
