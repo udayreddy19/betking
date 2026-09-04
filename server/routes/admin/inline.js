@@ -871,6 +871,16 @@ router.get('/api/admin/control-tower/metrics', async (req, res) => {
   }
 });
 
+/** Sidebar attention badges — pending replies / queues per admin module */
+router.get('/api/admin/nav-attention', async (req, res) => {
+  try {
+    const { buildAdminNavAttention } = await import('../../../lib/adminNavAttention.mjs');
+    res.json(await buildAdminNavAttention());
+  } catch (err) {
+    res.status(500).json({ domains: {}, subModules: {}, error: err.message });
+  }
+});
+
 router.get('/api/admin/customers', requirePermission('customers'), async (req, res) => {
   try {
     const { listCustomers } = await import('../../../lib/adminDomainData.mjs');

@@ -479,6 +479,7 @@ function AdminShellInner() {
   const [mfaOtpauth, setMfaOtpauth] = useState('');
   const [mfaStep, setMfaStep] = useState('password');
   const [liveAlerts, setLiveAlerts] = useState([]);
+  const [navAttention, setNavAttention] = useState({ domains: {}, subModules: {} });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [alertsMenuPos, setAlertsMenuPos] = useState({ top: 56, right: 16 });
@@ -561,9 +562,15 @@ function AdminShellInner() {
         .then(() => Promise.all([
           adminApiClient.get('/control-tower/metrics').catch(() => ({})),
           adminApiClient.get('/notifications/v2/notifications?unreadOnly=true&limit=40').catch(() => ({ notifications: [] })),
+          adminApiClient.get('/nav-attention').catch(() => ({ domains: {}, subModules: {} })),
         ]))
-        .then(([data, notifPayload]) => {
+        .then(([data, notifPayload, attention]) => {
           if (cancelled) return;
+          setNavAttention({
+            domains: attention?.domains || {},
+            subModules: attention?.subModules || {},
+            updatedAt: attention?.updatedAt || null,
+          });
           const alerts = [];
           Object.entries(data.providerSources || {}).forEach(([name, status]) => {
             if (status === 'error') {
@@ -640,7 +647,10 @@ function AdminShellInner() {
           }));
         })
         .catch(() => {
-          if (!cancelled) setLiveAlerts([]);
+          if (!cancelled) {
+            setLiveAlerts([]);
+            setNavAttention({ domains: {}, subModules: {} });
+          }
         });
     };
     const stop = startVisibleInterval(loadAlerts, 30000, { runImmediately: true });
@@ -716,7 +726,17 @@ function AdminShellInner() {
       return;
     }
 
-    const nextSub = hasSub ? domain.subModules[0].id : activeSubModule;
+    let nextSub = hasSub ? domain.subModules[0].id : activeSubModule;
+    if (hasSub) {
+      let best = -1;
+      for (const sub of domain.subModules) {
+        const n = Number(navAttention?.subModules?.[`${domain.id}:${sub.id}`]?.count || 0);
+        if (n > best) {
+          best = n;
+          nextSub = sub.id;
+        }
+      }
+    }
     setActiveDomain(domain.id);
     if (hasSub) {
       setActiveSubModule(nextSub);
@@ -1030,6 +1050,7 @@ function AdminShellInner() {
         onToggleCollapse={() => setSidebarCollapsed((p) => !p)}
         isMobileOpen={mobileSidebarOpen}
         onCloseMobile={() => setMobileSidebarOpen(false)}
+        attention={navAttention}
       />
 
       {/* Main Column */}
