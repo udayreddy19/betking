@@ -3490,7 +3490,7 @@ html[data-theme="light"] .admin-badge--info,
   height: 16px;
   padding: 0 4px;
   border-radius: 999px;
-  background: var(--admin-danger);
+  background: var(--admin-primary, #1f8a4c);
   color: #fff;
   font-size: 0.58rem;
   font-weight: 700;
