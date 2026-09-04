@@ -38,6 +38,7 @@ export function escapeHtml(value) {
  *  promos@    marketing / campaigns (FROM)
  *  support@   player support inbox + Reply-To
  *  alerts@    ops / SLA / ticket alerts (TO)
+ *  payments@  deposit ops notifications (TO)
  */
 const SMTP_FROM = process.env.SMTP_FROM || 'OddsYra <no-reply@oddsyra.com>';
 export const PROMOS_FROM = process.env.PROMOS_FROM || 'OddsYra Promotions <promos@oddsyra.com>';
@@ -49,6 +50,7 @@ export const ALERTS_FROM = process.env.ALERTS_FROM || 'OddsYra Alerts <alerts@od
 export const SUPPORT_ALERT_EMAIL = process.env.SUPPORT_ALERT_EMAIL
   || process.env.ALERTS_EMAIL
   || 'alerts@oddsyra.com';
+export const PAYMENTS_ALERT_EMAIL = process.env.PAYMENTS_ALERT_EMAIL || 'payments@oddsyra.com';
 const PRIMARY_DAILY_LIMIT = Math.max(0, parseInt(process.env.SMTP_PRIMARY_DAILY_LIMIT || '0', 10) || 0);
 
 /** Ops alert recipients: alerts@ first, then support inbox if different. */
@@ -1216,6 +1218,59 @@ export async function sendDepositCompletedEmail() {
 
 export async function sendWithdrawalStatusEmail() {
   return { delivered: false, skipped: true, reason: 'PAYMENT_EMAILS_DISABLED_BY_POLICY' };
+}
+
+/**
+ * Ops alert when a gateway deposit is newly captured (not player-facing).
+ * Player deposit emails remain disabled by policy.
+ */
+export async function sendDepositOpsNotificationEmail({
+  userId,
+  userName,
+  userEmail,
+  amount,
+  paymentId,
+  provider,
+  depositId,
+}) {
+  const to = String(PAYMENTS_ALERT_EMAIL || 'payments@oddsyra.com').trim();
+  if (!to) return { success: false, error: 'no_payments_recipient' };
+
+  const amountNum = Number(amount);
+  const amountLabel = Number.isFinite(amountNum)
+    ? `₹${amountNum.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`
+    : String(amount ?? '');
+  const displayName = String(userName || '').trim()
+    || String(userEmail || '').trim()
+    || String(userId || 'Unknown user');
+  const gateway = String(provider || 'GATEWAY').toUpperCase();
+
+  const subject = `Deposit received: ${amountLabel} by ${displayName}`;
+  const bodyHtml = `
+    <p><strong>${escapeHtml(amountLabel)}</strong> was deposited to OddsYra by
+       <strong>${escapeHtml(displayName)}</strong>.</p>
+    <p><strong>User ID:</strong> ${escapeHtml(userId || '—')}</p>
+    <p><strong>Email:</strong> ${escapeHtml(userEmail || '—')}</p>
+    <p><strong>Gateway:</strong> ${escapeHtml(gateway)}</p>
+    <p><strong>Deposit ID:</strong> ${escapeHtml(depositId || '—')}</p>
+    <p><strong>Payment ID:</strong> ${escapeHtml(paymentId || '—')}</p>
+  `;
+
+  const html = renderTransactionalEmail({
+    heading: 'Deposit received',
+    greetingName: 'Payments',
+    introHtml: bodyHtml,
+    ctaLabel: 'Open Admin',
+    ctaHref: `${FRONTEND_URL}/admin`,
+  });
+
+  return sendEmail({
+    to,
+    subject,
+    html,
+    from: SMTP_FROM,
+    replyTo: SUPPORT_REPLY_TO,
+  });
 }
 
 /* ========================================================================
