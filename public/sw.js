@@ -29,7 +29,7 @@ self.addEventListener('push', (event) => {
     badge: data.badge || '/favicon-32.png',
     tag: data.tag || `oddsyra-notif-${Date.now()}`,
     renotify: true,
-    data: data.data || { url: '/profile/notifications' },
+    data: data.data || { url: '/notifications' },
     vibrate: [100, 50, 100],
   };
 
@@ -41,7 +41,7 @@ self.addEventListener('notificationclick', (event) => {
 
   const targetUrl = (event.notification.data && event.notification.data.url)
     ? event.notification.data.url
-    : '/profile/notifications';
+    : '/notifications';
 
   const fullUrl = new URL(targetUrl, self.location.origin).href;
 

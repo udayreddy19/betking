@@ -145,6 +145,7 @@ export function mapServerUserToSession(serverUser, previous = null) {
     notifications: previous?.notifications ?? 0,
     emailVerified: !!serverUser.emailVerified,
     role: serverUser.role || previous?.role || 'USER',
+    isAdmin: serverUser.isAdmin === true || previous?.isAdmin === true,
     kycStatus: serverUser.kycStatus,
     status: serverUser.status,
     walletReady: true,

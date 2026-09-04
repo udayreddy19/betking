@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { adminAuth, requireRole } from '../../middleware/adminAuth.js';
+import { adminAuth, requireRole, requirePermission } from '../../middleware/adminAuth.js';
 
 const router = Router();
 
@@ -827,7 +827,7 @@ router.get('/api/admin/dashboard/overview', async (req, res) => {
   }
 });
 
-router.get('/api/admin/users/:userId/360', async (req, res) => {
+router.get('/api/admin/users/:userId/360', requirePermission('customers'), async (req, res) => {
   const { userId } = req.params;
   try {
     const { getUser360View } = await import('../../../lib/adminIntelligenceEngine.mjs');
@@ -871,7 +871,7 @@ router.get('/api/admin/control-tower/metrics', async (req, res) => {
   }
 });
 
-router.get('/api/admin/customers', async (req, res) => {
+router.get('/api/admin/customers', requirePermission('customers'), async (req, res) => {
   try {
     const { listCustomers } = await import('../../../lib/adminDomainData.mjs');
     res.json(await listCustomers({
@@ -885,7 +885,7 @@ router.get('/api/admin/customers', async (req, res) => {
   }
 });
 
-router.post('/api/admin/customers/:id/restrict', async (req, res) => {
+router.post('/api/admin/customers/:id/restrict', requirePermission('customers'), async (req, res) => {
   const { id } = req.params;
   const { action, reason } = req.body || {};
   try {
@@ -1134,7 +1134,7 @@ router.post('/api/admin/betting/settle', requireRole('SUPER_ADMIN', 'FINANCE_ADM
   }
 });
 
-router.get('/api/admin/finance/withdrawals/pending', async (req, res) => {
+router.get('/api/admin/finance/withdrawals/pending', requirePermission('finance'), async (req, res) => {
   try {
     const { listPendingWithdrawals } = await import('../../../lib/adminDomainData.mjs');
     res.json(await listPendingWithdrawals({ limit: 200 }));

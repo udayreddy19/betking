@@ -16,8 +16,10 @@ const EXTENDED_ACTION_TYPES = [
   'MANUAL_CREDIT','MANUAL_DEBIT','REFUND','BONUS_ADJUSTMENT',
 ];
 
+const makerCheckerRoles = requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN');
+
 // GET /maker-checker/pending — pending approvals
-router.get('/pending', async (req, res) => {
+router.get('/pending', makerCheckerRoles, async (req, res) => {
   try {
     const q = await getQuery();
     const result = await q("SELECT * FROM maker_checker_requests WHERE status = 'PENDING_APPROVAL' ORDER BY created_at DESC");
@@ -26,7 +28,7 @@ router.get('/pending', async (req, res) => {
 });
 
 // POST /maker-checker/submit — submit a maker-checker request
-router.post('/submit', async (req, res) => {
+router.post('/submit', makerCheckerRoles, async (req, res) => {
   try {
     const q = await getQuery();
     const { actionType, targetEntityType, targetEntityId, requestPayload, reason } = req.body;
@@ -45,7 +47,7 @@ router.post('/submit', async (req, res) => {
 });
 
 // POST /maker-checker/:id/approve — checker approves and executes the action
-router.post('/:id/approve', async (req, res) => {
+router.post('/:id/approve', makerCheckerRoles, async (req, res) => {
   try {
     const { makerCheckerEngine } = await import('../../../lib/makerCheckerEngine.mjs');
     const result = await makerCheckerEngine.approveRequest(req.params.id, req.admin.id);
@@ -66,7 +68,7 @@ router.post('/:id/approve', async (req, res) => {
 });
 
 // POST /maker-checker/:id/reject — checker rejects
-router.post('/:id/reject', async (req, res) => {
+router.post('/:id/reject', makerCheckerRoles, async (req, res) => {
   try {
     if (!req.body.reason) return res.status(400).json({ error: 'Rejection reason is required' });
     const { makerCheckerEngine } = await import('../../../lib/makerCheckerEngine.mjs');

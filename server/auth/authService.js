@@ -10,6 +10,7 @@
 import crypto from 'crypto';
 import { hashPassword, verifyPassword } from './passwordHasher.js';
 import { getWithdrawableAmount, getAvailableBalance } from '../../lib/wageringRules.mjs';
+import { isAdminEligibleUser } from '../../lib/adminAccess.mjs';
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -693,6 +694,7 @@ export async function getMe(queryFn, userId) {
       lastName: u.last_name,
       displayName: u.display_name || [u.first_name, u.last_name].filter(Boolean).join(' '),
       role: u.role || 'USER',
+      isAdmin: isAdminEligibleUser({ email: u.email, role: u.role }),
       status: u.status || 'ACTIVE',
       emailVerified: !!u.email_verified_at,
       phoneVerified: !!u.phone_verified_at,

@@ -5,15 +5,17 @@
 import { Router } from 'express';
 import { query } from '../../db/pg.js';
 import { checkSelfExclusionStatus, applySelfExclusion, validateDepositLimit } from '../../lib/responsibleGamingEngine.mjs';
+import { requireAuth } from '../middleware/userAuth.js';
 
 const router = Router();
 
+/** Identity only from JWT (req.user set by requireAuth). No header spoofing. */
 function getUserId(req) {
-  return req.user?.id || req.user?.userId || req.headers['x-user-id'] || 'guest_user';
+  return req.user?.userId || req.user?.id || null;
 }
 
 // GET /api/responsible-gaming/status — User exclusion and limit status
-router.get('/status', async (req, res) => {
+router.get('/status', requireAuth, async (req, res) => {
   try {
     const userId = getUserId(req);
     const exclusion = await checkSelfExclusionStatus(userId);
@@ -35,7 +37,7 @@ router.get('/status', async (req, res) => {
 });
 
 // POST /api/responsible-gaming/self-exclude — Request self-exclusion
-router.post('/self-exclude', async (req, res) => {
+router.post('/self-exclude', requireAuth, async (req, res) => {
   try {
     const userId = getUserId(req);
     const { durationType = '24H', reason } = req.body || {};
@@ -47,7 +49,7 @@ router.post('/self-exclude', async (req, res) => {
 });
 
 // POST /api/responsible-gaming/deposit-limits — Set or request change to deposit limits
-router.post('/deposit-limits', async (req, res) => {
+router.post('/deposit-limits', requireAuth, async (req, res) => {
   try {
     const userId = getUserId(req);
     const { dailyLimit, weeklyLimit, monthlyLimit } = req.body || {};

@@ -7,7 +7,7 @@ import { Router } from 'express';
 import { query } from '../../db/pg.js';
 import { supportEngine, SUPPORT_CATEGORIES } from '../../lib/supportEngine.mjs';
 import { createBetDispute } from '../../lib/supportTicketEngine.mjs';
-import { optionalAuth } from '../middleware/userAuth.js';
+import { requireAuth, optionalAuth } from '../middleware/userAuth.js';
 import { consumeRateLimitSlot, rateLimitClientKey } from '../middleware/rateLimiter.js';
 
 const router = Router();
@@ -22,17 +22,9 @@ async function consumeSupportLimit(req, { prefix, maxRequests, windowSeconds }) 
   });
 }
 
+/** Identity only from JWT (req.user set by requireAuth / optionalAuth). No header/query spoofing. */
 function getUserId(req) {
-  return req.user?.userId || req.user?.id || req.headers['x-user-id'] || req.query?.userId || null;
-}
-
-function requireUser(req, res, next) {
-  const userId = getUserId(req);
-  if (!userId || userId === 'guest' || userId === 'null') {
-    return res.status(401).json({ success: false, error: 'Authentication required to access support.' });
-  }
-  req.resolvedUserId = userId;
-  return next();
+  return req.user?.userId || req.user?.id || null;
 }
 
 // ── Rate limiter middleware for ticket creation ──
@@ -109,9 +101,9 @@ router.get(['/api/support/overview', '/api/v1/support/overview'], optionalAuth, 
 });
 
 // ── User Ticket List ──
-router.get(['/api/support/tickets', '/api/v1/support/tickets'], optionalAuth, requireUser, async (req, res) => {
+router.get(['/api/support/tickets', '/api/v1/support/tickets'], requireAuth, async (req, res) => {
   try {
-    const userId = req.resolvedUserId;
+    const userId = getUserId(req);
     const { category, status, search, limit = 50, offset = 0 } = req.query;
 
     const result = await supportEngine.getUserConversations(userId, {
@@ -143,12 +135,11 @@ router.get(['/api/support/tickets', '/api/v1/support/tickets'], optionalAuth, re
 // ── Create Support Ticket ──
 router.post(
   ['/api/support/tickets', '/api/v1/support/tickets'],
-  optionalAuth,
-  requireUser,
+  requireAuth,
   ticketCreateRateLimit,
   async (req, res) => {
     try {
-      const userId = req.resolvedUserId;
+      const userId = getUserId(req);
       const {
         category,
         subject,
@@ -201,6 +192,7 @@ router.post(
           attachmentIds: files.map((f) => f.attachmentId).filter(Boolean),
           messageId: firstMsg?.messageId || firstMsg?.id || ticket?.lastMessageId,
           conversationId: ticket?.conversationId || ticket?.id,
+          uploadedBy: userId,
         });
       } catch { /* best-effort */ }
 
@@ -238,9 +230,9 @@ router.post(
 );
 
 // ── Get Specific Ticket (IDOR Protected & Internal Notes Isolated) ──
-router.get(['/api/support/tickets/:ticketReference', '/api/v1/support/tickets/:ticketReference'], optionalAuth, requireUser, async (req, res) => {
+router.get(['/api/support/tickets/:ticketReference', '/api/v1/support/tickets/:ticketReference'], requireAuth, async (req, res) => {
   try {
-    const userId = req.resolvedUserId;
+    const userId = getUserId(req);
     const { ticketReference } = req.params;
 
     const ticket = await supportEngine.getConversationById(ticketReference, 'user');
@@ -266,12 +258,11 @@ router.get(['/api/support/tickets/:ticketReference', '/api/v1/support/tickets/:t
 // ── Reply to Ticket ──
 router.post(
   ['/api/support/tickets/:ticketReference/messages', '/api/v1/support/tickets/:ticketReference/messages'],
-  optionalAuth,
-  requireUser,
+  requireAuth,
   messageRateLimit,
   async (req, res) => {
     try {
-      const userId = req.resolvedUserId;
+      const userId = getUserId(req);
       const { ticketReference } = req.params;
       const { text, attachments = [], idempotencyKey } = req.body || {};
       const trimmed = String(text || '').trim();
@@ -305,6 +296,7 @@ router.post(
           attachmentIds: files.map((f) => f.attachmentId).filter(Boolean),
           messageId: message?.messageId || message?.id,
           conversationId: ticket.conversationId,
+          uploadedBy: userId,
         });
       } catch { /* best-effort link */ }
 
@@ -321,11 +313,10 @@ router.post(
 // ── Reopen Resolved Ticket ──
 router.post(
   ['/api/support/tickets/:ticketReference/reopen', '/api/v1/support/tickets/:ticketReference/reopen'],
-  optionalAuth,
-  requireUser,
+  requireAuth,
   async (req, res) => {
     try {
-      const userId = req.resolvedUserId;
+      const userId = getUserId(req);
       const { ticketReference } = req.params;
       const { reason = 'User requested reopening' } = req.body || {};
 
@@ -339,7 +330,7 @@ router.post(
       }
 
       const updated = await supportEngine.updateStatus(ticket.conversationId, {
-        status: 'OPEN',
+        status: 'REOPENED',
         actorId: userId,
         reason,
       });
@@ -357,12 +348,11 @@ router.post(
 // ── Live Chat: Start Session ──
 router.post(
   ['/api/support/live-chat/start', '/api/v1/support/live-chat/start'],
-  optionalAuth,
-  requireUser,
+  requireAuth,
   messageRateLimit,
   async (req, res) => {
     try {
-      const userId = req.resolvedUserId;
+      const userId = getUserId(req);
       const { initialMessage = 'User started live chat', subject } = req.body || {};
 
       const chat = await supportEngine.startLiveChat({
@@ -384,9 +374,9 @@ router.post(
 );
 
 // ── Live Chat: Get Active Session ──
-router.get(['/api/support/live-chat/active', '/api/v1/support/live-chat/active'], optionalAuth, requireUser, async (req, res) => {
+router.get(['/api/support/live-chat/active', '/api/v1/support/live-chat/active'], requireAuth, async (req, res) => {
   try {
-    const userId = req.resolvedUserId;
+    const userId = getUserId(req);
     const activeChat = Array.from(supportEngine.conversations.values()).find(
       (c) => c.userId === userId && c.supportType === 'LIVE_CHAT' && ['WAITING', 'ACTIVE'].includes(c.status)
     );
@@ -410,11 +400,10 @@ router.get(['/api/support/live-chat/active', '/api/v1/support/live-chat/active']
 // ── Live Chat: Get Specific Session (IDOR Protected) ──
 router.get(
   ['/api/support/live-chat/:conversationId', '/api/v1/support/live-chat/:conversationId'],
-  optionalAuth,
-  requireUser,
+  requireAuth,
   async (req, res) => {
     try {
-      const userId = req.resolvedUserId;
+      const userId = getUserId(req);
       const { conversationId } = req.params;
 
       const chat = await supportEngine.getConversationById(conversationId, 'user');
@@ -439,12 +428,11 @@ router.get(
 // ── Live Chat: Send Message ──
 router.post(
   ['/api/support/live-chat/:conversationId/messages', '/api/v1/support/live-chat/:conversationId/messages'],
-  optionalAuth,
-  requireUser,
+  requireAuth,
   messageRateLimit,
   async (req, res) => {
     try {
-      const userId = req.resolvedUserId;
+      const userId = getUserId(req);
       const { conversationId } = req.params;
       const { text, attachments = [], idempotencyKey } = req.body || {};
       const trimmed = String(text || '').trim();
@@ -481,6 +469,7 @@ router.post(
           attachmentIds: files.map((f) => f.attachmentId).filter(Boolean),
           messageId: message?.messageId || message?.id,
           conversationId: chat.conversationId,
+          uploadedBy: userId,
         });
       } catch { /* best-effort */ }
 
@@ -497,11 +486,10 @@ router.post(
 // ── Live Chat: End Session ──
 router.post(
   ['/api/support/live-chat/:conversationId/end', '/api/v1/support/live-chat/:conversationId/end'],
-  optionalAuth,
-  requireUser,
+  requireAuth,
   async (req, res) => {
     try {
-      const userId = req.resolvedUserId;
+      const userId = getUserId(req);
       const { conversationId } = req.params;
 
       const chat = await supportEngine.getConversationById(conversationId, 'user');
@@ -528,12 +516,11 @@ router.post(
 // ── Attachment Upload ──
 router.post(
   ['/api/support/attachments/upload', '/api/v1/support/attachments/upload'],
-  optionalAuth,
-  requireUser,
+  requireAuth,
   messageRateLimit,
   async (req, res) => {
     try {
-      const userId = req.resolvedUserId;
+      const userId = getUserId(req);
       const { fileName, fileType, fileSize, conversationId, base64Data } = req.body || {};
       const { saveSupportAttachment } = await import('../../lib/supportAttachments.mjs');
       const attachment = await saveSupportAttachment({
@@ -555,11 +542,10 @@ router.post(
 // ── Secure Attachment Download ──
 router.get(
   ['/api/support/attachments/:attachmentId', '/api/v1/support/attachments/:attachmentId'],
-  optionalAuth,
-  requireUser,
+  requireAuth,
   async (req, res) => {
     try {
-      const userId = req.resolvedUserId;
+      const userId = getUserId(req);
       const { attachmentId } = req.params;
       const {
         getSupportAttachmentRecord,
@@ -580,7 +566,9 @@ router.get(
       res.setHeader('Content-Length', buf.length);
       res.setHeader(
         'Content-Disposition',
-        `inline; filename="${String(record.file_name || 'attachment').replace(/"/g, '')}"`,
+        `${String(record.file_type || '').toLowerCase().startsWith('image/') && !String(record.file_type || '').toLowerCase().includes('svg')
+          ? 'inline'
+          : 'attachment'}; filename="${String(record.file_name || 'attachment').replace(/"/g, '')}"`,
       );
       res.setHeader('Cache-Control', 'private, max-age=300');
       return res.send(buf);
@@ -591,9 +579,9 @@ router.get(
 );
 
 // ── POST /api/support/disputes — User opens a dispute for a settled bet ──
-router.post('/api/support/disputes', optionalAuth, requireUser, async (req, res) => {
+router.post('/api/support/disputes', requireAuth, async (req, res) => {
   try {
-    const userId = req.resolvedUserId;
+    const userId = getUserId(req);
     const { betId, reason } = req.body || {};
     if (!betId) return res.status(400).json({ error: 'betId is required' });
 
@@ -605,9 +593,9 @@ router.post('/api/support/disputes', optionalAuth, requireUser, async (req, res)
 });
 
 // ── GET /api/support/disputes — List user disputes ──
-router.get('/api/support/disputes', optionalAuth, requireUser, async (req, res) => {
+router.get('/api/support/disputes', requireAuth, async (req, res) => {
   try {
-    const userId = req.resolvedUserId;
+    const userId = getUserId(req);
     const result = await query(
       `SELECT * FROM bet_disputes WHERE user_id = $1 ORDER BY created_at DESC`,
       [userId]

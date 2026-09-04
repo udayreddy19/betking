@@ -703,7 +703,7 @@ router.post('/razorpay/reconcile/:orderId', requirePermission('finance'), async 
     const provider = paymentProviderService.getProvider('RAZORPAY');
     const paymentStatus = await provider.fetchPaymentStatus(orderId);
 
-    if (paymentStatus.status !== 'captured' && paymentStatus.status !== 'authorized' && paymentStatus.status !== 'SUCCESS') {
+    if (paymentStatus.status !== 'captured' && paymentStatus.status !== 'SUCCESS' && paymentStatus.status !== 'PAID') {
       return res.json({
         success: false,
         message: `No captured payment found on Razorpay for order '${orderId}'`,

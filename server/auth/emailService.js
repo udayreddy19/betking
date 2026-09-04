@@ -993,7 +993,7 @@ export async function sendSupportTicketCreatedUserEmail({
   const resolvedTicketId = ticketId || ticketNumber || 'SUPPORT';
   const greeting = userName || name || (email ? email.split('@')[0] : 'Valued Customer');
   const subject = `We've received your support request [${resolvedTicketId}]`;
-  const ctaHref = `${FRONTEND_URL}/profile`;
+  const ctaHref = `${FRONTEND_URL}/support/tickets/${encodeURIComponent(resolvedTicketId)}`;
 
   const extraDetailsHtml = `
     <tr>
@@ -1063,7 +1063,7 @@ export async function sendSupportAdminReplyEmail({
   }
 
   const subject = `Update on your support request [${resolvedTicketId}]`;
-  const ctaHref = replyUrl || `${FRONTEND_URL}/profile`;
+  const ctaHref = replyUrl || `${FRONTEND_URL}/support/tickets/${encodeURIComponent(resolvedTicketId)}`;
 
   const formattedReplyHtml = formatMessageForEmail(resolvedReply);
 
@@ -1107,12 +1107,12 @@ export async function sendSupportTicketClosedEmail({
   const resolvedTicketId = ticketId || ticketNumber || 'SUPPORT';
   const greeting = userName || name || (email ? email.split('@')[0] : 'Valued Customer');
   const subject = `Your support request has been resolved [${resolvedTicketId}]`;
-  const ctaHref = `${FRONTEND_URL}/profile`;
+  const ctaHref = `${FRONTEND_URL}/support/tickets/${encodeURIComponent(resolvedTicketId)}`;
 
   const html = renderTransactionalEmail({
     heading: 'Support Ticket Resolved',
     greetingName: greeting,
-    introHtml: `Your support ticket <strong>${escapeHtml(resolvedTicketId)}</strong> has been marked as resolved and closed. If you have any further questions or if your issue persists, you can easily reopen the ticket from your profile.`,
+    introHtml: `Your support ticket <strong>${escapeHtml(resolvedTicketId)}</strong> has been marked as resolved and closed. If you have any further questions or if your issue persists, you can easily reopen the ticket from Support.`,
     ctaLabel: 'View Support History',
     ctaHref,
     noteHtml: 'Thank you for choosing OddsYra. We appreciate your patience while we resolved your inquiry.',
@@ -1985,8 +1985,23 @@ export async function sendAdminComposeEmail({
   const results = [];
   let sent = 0;
   let failed = 0;
+  let skipped = 0;
   for (const recipient of valid) {
     try {
+      if (mailbox.isMarketing) {
+        const { query } = await import('../../../db/pg.js');
+        const { canSendPromotionalEmail } = await import('../../lib/notificationPreferencesEngine.mjs');
+        const userRes = await query(
+          `SELECT user_id FROM users WHERE LOWER(TRIM(email)) = LOWER(TRIM($1)) LIMIT 1`,
+          [recipient],
+        );
+        const uid = userRes.rows[0]?.user_id;
+        if (uid && !(await canSendPromotionalEmail(uid))) {
+          skipped += 1;
+          results.push({ to: recipient, success: false, skipped: true, error: 'marketing_opt_out' });
+          continue;
+        }
+      }
       const result = await sendEmail({
         to: recipient,
         subject: cleanSubject,
@@ -2015,11 +2030,12 @@ export async function sendAdminComposeEmail({
   }
 
   return {
-    success: failed === 0,
-    mailbox: { id: mailbox.id, email: mailbox.email, label: mailbox.label },
-    subject: cleanSubject,
+    success: failed === 0 && skipped < valid.length,
     sent,
     failed,
+    skipped,
+    mailbox: { id: mailbox.id, email: mailbox.email, label: mailbox.label },
+    subject: cleanSubject,
     total: valid.length,
     html,
     results,

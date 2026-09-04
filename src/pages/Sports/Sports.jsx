@@ -11,6 +11,7 @@ import { useLiveMatches, useLiveSportsMeta } from '../../context/LiveSportsConte
 import { useBetSlip } from '../../context/BetSlipContext';
 import { useAuth } from '../../context/AuthContext';
 import { useFeatureFlags } from '../../context/FeatureFlagsContext';
+import { isAdminEligibleUser } from '../../utils/isAdminEligibleUser';
 import { isMatchBettable, isTrulyLiveMatch, getMatchState, isMatchFinished } from '../../utils/matchBetting';
 import { resolveCricketTeamScores, resolveCricketTossText, isCricketSecondInnings } from '../../utils/cricketScores';
 import { isTeamBattingInMatch } from '../../utils/teamFlags';
@@ -301,7 +302,7 @@ export default function Sports() {
   const otherSrlEnabled = isEnabled('other_srl_ui', true);
   const srlEnabled = oddsyraSrlEnabled;
   const { ids: watchlistIds, count: watchlistCount, toggle: toggleWatch } = useMatchWatchlist();
-  const isAdminUser = user?.role === 'admin' || user?.email === 'admin@oddsyra.com';
+  const isAdminUser = isAdminEligibleUser(user);
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();

@@ -3,15 +3,18 @@
  */
 
 import { Router } from 'express';
+import { requireRole } from '../../middleware/adminAuth.js';
 
 const router = Router();
+
+const iplsrlRoles = requireRole('SUPER_ADMIN', 'TRADING_ADMIN', 'OPERATIONS_ADMIN');
 
 async function jsonSnap(res, payload) {
   const { enrichSnapshotWithStakes } = await import('../../../lib/iplSrlAdminControl.mjs');
   res.json(await enrichSnapshotWithStakes(payload));
 }
 
-router.get('/control', async (req, res) => {
+router.get('/control', iplsrlRoles, async (req, res) => {
   try {
     const { getIPLSRLControlSnapshot } = await import('../../../lib/iplSrlAdminControl.mjs');
     await jsonSnap(res, getIPLSRLControlSnapshot());
@@ -20,7 +23,7 @@ router.get('/control', async (req, res) => {
   }
 });
 
-router.post('/settings', async (req, res) => {
+router.post('/settings', iplsrlRoles, async (req, res) => {
   try {
     const { updateIPLSRLGlobalSettings } = await import('../../../lib/iplSrlAdminControl.mjs');
     await jsonSnap(res, updateIPLSRLGlobalSettings({ ...req.body, admin: req.admin?.id || 'admin' }));
@@ -29,7 +32,7 @@ router.post('/settings', async (req, res) => {
   }
 });
 
-router.post('/matches/:matchId/declare', async (req, res) => {
+router.post('/matches/:matchId/declare', iplsrlRoles, async (req, res) => {
   try {
     const { declareIPLSRLWinner } = await import('../../../lib/iplSrlAdminControl.mjs');
     if (!req.body?.teamId) return res.status(400).json({ error: 'teamId required' });
@@ -39,7 +42,7 @@ router.post('/matches/:matchId/declare', async (req, res) => {
   }
 });
 
-router.get('/matches/:matchId/markets', async (req, res) => {
+router.get('/matches/:matchId/markets', iplsrlRoles, async (req, res) => {
   try {
     const { getIPLSRLMatchMarkets } = await import('../../../lib/iplSrlAdminControl.mjs');
     const data = await getIPLSRLMatchMarkets(req.params.matchId);
@@ -49,7 +52,7 @@ router.get('/matches/:matchId/markets', async (req, res) => {
   }
 });
 
-router.post('/matches/:matchId/markets/:marketId/suspend', async (req, res) => {
+router.post('/matches/:matchId/markets/:marketId/suspend', iplsrlRoles, async (req, res) => {
   try {
     const { setIPLSRLMarketSuspended } = await import('../../../lib/iplSrlAdminControl.mjs');
     const suspended = req.body?.suspended !== false;
@@ -65,7 +68,7 @@ router.post('/matches/:matchId/markets/:marketId/suspend', async (req, res) => {
   }
 });
 
-router.post('/matches/:matchId/markets/:marketId/declare', async (req, res) => {
+router.post('/matches/:matchId/markets/:marketId/declare', iplsrlRoles, async (req, res) => {
   try {
     const { declareIPLSRLMarketOutcome } = await import('../../../lib/iplSrlAdminControl.mjs');
     const data = await declareIPLSRLMarketOutcome(req.params.matchId, {
@@ -84,7 +87,7 @@ router.post('/matches/:matchId/markets/:marketId/declare', async (req, res) => {
   }
 });
 
-router.post('/matches/:matchId/force-winner', async (req, res) => {
+router.post('/matches/:matchId/force-winner', iplsrlRoles, async (req, res) => {
   try {
     const { setIPLSRLForcedWinner, clearIPLSRLForcedWinner } = await import('../../../lib/iplSrlAdminControl.mjs');
     const admin = req.admin?.id || 'admin';
@@ -97,7 +100,7 @@ router.post('/matches/:matchId/force-winner', async (req, res) => {
   }
 });
 
-router.post('/matches/start', async (req, res) => {
+router.post('/matches/start', iplsrlRoles, async (req, res) => {
   try {
     const { startIPLSRLControlledMatch } = await import('../../../lib/iplSrlAdminControl.mjs');
     if (!req.body?.matchId) return res.status(400).json({ error: 'matchId required' });
@@ -108,7 +111,7 @@ router.post('/matches/start', async (req, res) => {
   }
 });
 
-router.post('/matches/pause', async (req, res) => {
+router.post('/matches/pause', iplsrlRoles, async (req, res) => {
   try {
     const { pauseIPLSRLControlledMatch } = await import('../../../lib/iplSrlAdminControl.mjs');
     if (!req.body?.matchId) return res.status(400).json({ error: 'matchId required' });
@@ -119,7 +122,7 @@ router.post('/matches/pause', async (req, res) => {
   }
 });
 
-router.post('/matches/resume', async (req, res) => {
+router.post('/matches/resume', iplsrlRoles, async (req, res) => {
   try {
     const { resumeIPLSRLControlledMatch } = await import('../../../lib/iplSrlAdminControl.mjs');
     if (!req.body?.matchId) return res.status(400).json({ error: 'matchId required' });
@@ -133,7 +136,7 @@ router.post('/matches/resume', async (req, res) => {
   }
 });
 
-router.post('/matches/speed', async (req, res) => {
+router.post('/matches/speed', iplsrlRoles, async (req, res) => {
   try {
     const { setIPLSRLMatchSpeed } = await import('../../../lib/iplSrlAdminControl.mjs');
     const { matchId, speed } = req.body || {};
@@ -144,7 +147,7 @@ router.post('/matches/speed', async (req, res) => {
   }
 });
 
-router.post('/matches/seek', async (req, res) => {
+router.post('/matches/seek', iplsrlRoles, async (req, res) => {
   try {
     const { seekIPLSRLMatch } = await import('../../../lib/iplSrlAdminControl.mjs');
     const { matchId, elapsedMs, deltaMs, marker, pause } = req.body || {};
@@ -155,7 +158,7 @@ router.post('/matches/seek', async (req, res) => {
   }
 });
 
-router.post('/matches/reset', async (req, res) => {
+router.post('/matches/reset', iplsrlRoles, async (req, res) => {
   try {
     const { resetIPLSRLMatch } = await import('../../../lib/iplSrlAdminControl.mjs');
     if (!req.body?.matchId) return res.status(400).json({ error: 'matchId required' });
@@ -165,7 +168,7 @@ router.post('/matches/reset', async (req, res) => {
   }
 });
 
-router.post('/matches/betting', async (req, res) => {
+router.post('/matches/betting', iplsrlRoles, async (req, res) => {
   try {
     const { setIPLSRLBettingClosed } = await import('../../../lib/iplSrlAdminControl.mjs');
     if (!req.body?.matchId) return res.status(400).json({ error: 'matchId required' });
@@ -175,7 +178,7 @@ router.post('/matches/betting', async (req, res) => {
   }
 });
 
-router.post('/season/jump', async (req, res) => {
+router.post('/season/jump', iplsrlRoles, async (req, res) => {
   try {
     const { jumpIPLSRLSeason } = await import('../../../lib/iplSrlAdminControl.mjs');
     await jsonSnap(res, jumpIPLSRLSeason({
@@ -187,7 +190,7 @@ router.post('/season/jump', async (req, res) => {
   }
 });
 
-router.post('/season/reset-clock', async (req, res) => {
+router.post('/season/reset-clock', iplsrlRoles, async (req, res) => {
   try {
     const { resetIPLSRLSeasonClock } = await import('../../../lib/iplSrlAdminControl.mjs');
     await jsonSnap(res, resetIPLSRLSeasonClock(req.admin?.id || 'admin'));
@@ -196,7 +199,7 @@ router.post('/season/reset-clock', async (req, res) => {
   }
 });
 
-router.post('/matches/delivery', async (req, res) => {
+router.post('/matches/delivery', iplsrlRoles, async (req, res) => {
   try {
     const { triggerDelivery } = await import('../../../lib/iplSrlAdminControl.mjs');
     if (!req.body?.matchId) return res.status(400).json({ error: 'matchId required' });
@@ -207,7 +210,7 @@ router.post('/matches/delivery', async (req, res) => {
   }
 });
 
-router.post('/teams/:teamId/rating', async (req, res) => {
+router.post('/teams/:teamId/rating', iplsrlRoles, async (req, res) => {
   try {
     const { updateTeamStrength } = await import('../../../lib/iplSrlAdminControl.mjs');
     await jsonSnap(res, updateTeamStrength(req.params.teamId, req.body?.strengthRating, req.admin?.id || 'admin'));
@@ -216,7 +219,7 @@ router.post('/teams/:teamId/rating', async (req, res) => {
   }
 });
 
-router.post('/teams', async (req, res) => {
+router.post('/teams', iplsrlRoles, async (req, res) => {
   try {
     const { adminCreateTeam } = await import('../../../lib/iplSrlAdminControl.mjs');
     const result = await adminCreateTeam(req.body || {}, req.admin?.id || 'admin');
@@ -226,7 +229,7 @@ router.post('/teams', async (req, res) => {
   }
 });
 
-router.post('/players', async (req, res) => {
+router.post('/players', iplsrlRoles, async (req, res) => {
   try {
     const { adminCreatePlayer } = await import('../../../lib/iplSrlAdminControl.mjs');
     const result = await adminCreatePlayer(req.body || {}, req.admin?.id || 'admin');
@@ -236,7 +239,7 @@ router.post('/players', async (req, res) => {
   }
 });
 
-router.patch('/players/:playerId', async (req, res) => {
+router.patch('/players/:playerId', iplsrlRoles, async (req, res) => {
   try {
     const { adminUpdatePlayer } = await import('../../../lib/iplSrlAdminControl.mjs');
     const result = await adminUpdatePlayer(req.params.playerId, req.body || {}, req.admin?.id || 'admin');
