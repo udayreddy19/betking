@@ -255,7 +255,10 @@ export default function IPLSRLConsoleView() {
           // keep previous markets desk
         }
       }
-      if (okMsg) showToast(okMsg, 'success');
+      if (okMsg) {
+        const board = data?.play?.scoreDisplay ? ` · board ${data.play.scoreDisplay}` : '';
+        showToast(`${okMsg}${board}`, 'success');
+      }
     } catch (err) {
       showToast(err.message || 'Action failed', 'error');
     } finally {
@@ -285,7 +288,7 @@ export default function IPLSRLConsoleView() {
           <h2>Match control</h2>
           <p>
             Fixtures auto-play on the published clock. Pause, scrub, close betting, jump the season to a match, or
-            declare any market outcome with a stake preview. The desk lists all 74 matches.
+            declare any market — the board seeks to that score (e.g. Over 88.5 → 89 by 10 overs).
           </p>
           {error && <p className="srl-console-error">{error}</p>}
         </div>
@@ -936,12 +939,13 @@ export default function IPLSRLConsoleView() {
           : `Declare ${marketAsk?.selectionName}?`}
         description={marketAsk?.voidMarket
           ? 'Voids every open bet on this market and locks the line for users.'
-          : 'Pays open bets on this selection and loses all other open bets on the same market. Locks the line for users.'}
+          : 'Pays this selection, loses other open bets on the market, locks the line, and seeks the match clock so the scoreboard matches the declare (e.g. Over 88.5 → 89 by that over).'}
         details={marketAsk ? [
           { label: 'Market', value: marketAsk.title || marketAsk.marketId },
           ...(marketAsk.voidMarket ? [] : [
             { label: 'Winning selection', value: marketAsk.selectionName || marketAsk.selectionId },
             { label: 'Odds', value: marketAsk.odds != null ? Number(marketAsk.odds).toFixed(2) : '—' },
+            { label: 'Board effect', value: 'Seek + score anchor to match this result' },
           ]),
           { label: 'Open bets affected', value: String(marketAsk.bets || 0) },
           { label: 'Open stake', value: formatInr(marketAsk.stake) },
@@ -949,7 +953,7 @@ export default function IPLSRLConsoleView() {
             { label: 'Payout if this wins', value: formatInr(marketAsk.payout) },
           ]),
         ] : []}
-        confirmLabel={marketAsk?.voidMarket ? 'Void market' : 'Declare selection'}
+        confirmLabel={marketAsk?.voidMarket ? 'Void market' : 'Declare & play'}
         cancelLabel="Cancel"
         loading={busy}
         onCancel={() => setMarketAsk(null)}
@@ -965,7 +969,7 @@ export default function IPLSRLConsoleView() {
             }),
             ask.voidMarket
               ? `${ask.title} voided`
-              : `${ask.selectionName} declared on ${ask.title}`,
+              : `${ask.selectionName} declared — board updated`,
           );
         }}
       />

@@ -75,4 +75,52 @@ describe('OddsYra SRL operator controls', () => {
     expect(sameSrlSelectionId('1', '1')).toBe(true);
     expect(sameSrlSelectionId('sel_mi', 'sel_csk')).toBe(false);
   });
+
+  it('maps Over/Under lines to scoreboard targets for overs markets', async () => {
+    const {
+      parseSrlOversTotalMarketId,
+      targetRunsForOuDeclare,
+    } = await import('../../lib/iplSrlAdminControl.mjs');
+    expect(parseSrlOversTotalMarketId('i1_overs_0_10_total')).toEqual({
+      innings: 1,
+      targetOver: 10,
+    });
+    expect(targetRunsForOuDeclare('over', 88.5)).toBe(89);
+    expect(targetRunsForOuDeclare('under', 88.5)).toBe(88);
+  });
+
+  it('rebases live score from a declare anchor at 10 overs', async () => {
+    const { applySrlScoreAnchors } = await import('../../lib/iplSrlSimulator.mjs');
+    const sim = {
+      first: {
+        timeline: Array.from({ length: 120 }, (_, i) => ({
+          runs: Math.floor(i * 1.4),
+          wickets: 0,
+          overs: `${Math.floor(i / 6)}.${i % 6}`,
+        })),
+      },
+      second: { timeline: [] },
+    };
+    const naturalAt10 = sim.first.timeline[59].runs;
+    const live = {
+      inningsId: 1,
+      phase: 'first',
+      firstTeamName: 'Gujarat Titans',
+      runs: naturalAt10,
+      firstRuns: naturalAt10,
+      firstWickets: 1,
+      firstOvers: '10.0',
+      overs: '10.0',
+      wickets: 1,
+    };
+    const next = applySrlScoreAnchors(live, sim, [{
+      innings: 1,
+      atOver: 10,
+      ballIndex: 59,
+      runs: 89,
+      naturalRunsAtAnchor: naturalAt10,
+    }]);
+    expect(next.firstRuns).toBe(89);
+    expect(next.runs).toBe(89);
+  });
 });
