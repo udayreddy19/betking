@@ -7,7 +7,7 @@ import { getWalletBreakdown, formatInr, getWithdrawableHint } from '../../utils/
 import {
   BONUS_MIN_BET_ODDS,
 } from '../../utils/wageringRules';
-import { getBenefitsForTier, MIN_WITHDRAW_INR } from '../../utils/vipBenefits';
+import { getBenefitsForTier, MIN_WITHDRAW_INR, LOYALTY_MIN_REDEEM_POINTS } from '../../utils/vipBenefits';
 import { apiFetch } from '../../utils/apiClient';
 import { DEMO_MODE } from '../../utils/featureFlags';
 import './FinancialModals.css';
@@ -627,11 +627,11 @@ export default function FinancialModals({ modalType, onClose }) {
               <div>
                 <div style={{ fontWeight: 800, color: '#92400e' }}>Redeem loyalty points</div>
                 <div style={{ fontSize: '0.75rem', color: '#b45309' }}>
-                  You have {user.loyaltyPoints ?? user.coins ?? 0} pts · 1000 pts unlocks wallet credit
+                  You have {user.loyaltyPoints ?? user.coins ?? 0} pts · {LOYALTY_MIN_REDEEM_POINTS} pts unlocks wallet credit
                 </div>
               </div>
               <button
-                onClick={() => notify('Use Redeem in the wallet menu when you reach 1000 points.')}
+                onClick={() => notify(`Use Redeem in the wallet menu when you reach ${LOYALTY_MIN_REDEEM_POINTS} points.`)}
                 style={{ background: '#f59e0b', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: 800, cursor: 'pointer' }}
               >
                 Open wallet

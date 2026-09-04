@@ -1,35 +1,39 @@
 import { describe, it, expect } from 'vitest';
 import {
-  calculateEarnedPoints,
-  resolveVipTier,
+  pointsFromSpendAtTier,
+  loyaltyTierFromPoints,
+  resolveVipTierProgress,
   calculateDailyStreak,
-} from '../../lib/vipRewardEngine.mjs';
+  VIP_TIER_POINTS,
+  LOYALTY_POINTS_PER_100_STANDARD,
+} from '../../lib/vipBenefits.mjs';
 
-describe('Gamification — VIP Loyalty Progression & Daily Streak Engine', () => {
-  describe('Loyalty Point Accrual & Tiers', () => {
-    it('accrues 1.0 point per ₹100 wagered', () => {
-      expect(calculateEarnedPoints(1000)).toBe(10.0);
-      expect(calculateEarnedPoints(250)).toBe(2.5);
+describe('Gamification — VIP loyalty (vipBenefits) & daily streak', () => {
+  describe('Loyalty point accrual & tiers', () => {
+    it('accrues standard points per ₹100 wagered at BRONZE', () => {
+      expect(pointsFromSpendAtTier(1000, 'BRONZE')).toBe(10 * LOYALTY_POINTS_PER_100_STANDARD);
+      expect(pointsFromSpendAtTier(250, 'BRONZE')).toBe(Math.floor(2.5 * LOYALTY_POINTS_PER_100_STANDARD));
     });
 
     it('resolves correct tier and progress to next tier', () => {
-      const gold = resolveVipTier(6000);
+      const gold = resolveVipTierProgress(VIP_TIER_POINTS.GOLD + 1000);
       expect(gold.tier).toBe('GOLD');
-      expect(gold.cashbackPct).toBe(2.0);
+      expect(loyaltyTierFromPoints(VIP_TIER_POINTS.GOLD)).toBe('GOLD');
       expect(gold.nextTier).toBe('PLATINUM');
-      expect(gold.pointsToNextTier).toBe(19000);
+      expect(gold.pointsToNextTier).toBe(VIP_TIER_POINTS.PLATINUM - (VIP_TIER_POINTS.GOLD + 1000));
+      expect(gold.cashbackPct).toBe(5);
     });
 
     it('resolves top tier DIAMOND with 100% progress', () => {
-      const diamond = resolveVipTier(120000);
+      const diamond = resolveVipTierProgress(VIP_TIER_POINTS.DIAMOND + 1000);
       expect(diamond.tier).toBe('DIAMOND');
-      expect(diamond.cashbackPct).toBe(5.0);
+      expect(diamond.cashbackPct).toBe(10);
       expect(diamond.nextTier).toBeNull();
-      expect(diamond.progressPct).toBe(100.0);
+      expect(diamond.progressPct).toBe(100);
     });
   });
 
-  describe('Daily Streak Tracking', () => {
+  describe('Daily streak tracking', () => {
     it('increments streak on consecutive day activity', () => {
       const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
       const res = calculateDailyStreak(4, yesterday);

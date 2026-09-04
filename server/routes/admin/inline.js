@@ -1462,7 +1462,7 @@ router.get('/api/admin/growth/dashboard', requireRole('SUPER_ADMIN', 'MARKETING_
   }
 });
 
-router.get('/api/admin/growth/vip-tiers', async (req, res) => {
+router.get('/api/admin/growth/vip-tiers', requireRole('SUPER_ADMIN', 'MARKETING_ADMIN', 'OPERATIONS_ADMIN'), async (req, res) => {
   try {
     const { listVipTierCatalog } = await import('../../../lib/adminDomainData.mjs');
     res.json(await listVipTierCatalog());
@@ -1471,7 +1471,7 @@ router.get('/api/admin/growth/vip-tiers', async (req, res) => {
   }
 });
 
-router.get('/api/admin/growth/vip-dashboard', async (req, res) => {
+router.get('/api/admin/growth/vip-dashboard', requireRole('SUPER_ADMIN', 'MARKETING_ADMIN', 'OPERATIONS_ADMIN'), async (req, res) => {
   try {
     const { getVipAdminDashboard } = await import('../../../lib/vipEngine.mjs');
     res.json(await getVipAdminDashboard());
@@ -1480,7 +1480,7 @@ router.get('/api/admin/growth/vip-dashboard', async (req, res) => {
   }
 });
 
-router.patch('/api/admin/growth/vip-dashboard/override', async (req, res) => {
+router.patch('/api/admin/growth/vip-dashboard/override', requireRole('SUPER_ADMIN', 'MARKETING_ADMIN'), async (req, res) => {
   try {
     const { adminOverrideVipTier } = await import('../../../lib/vipEngine.mjs');
     const result = await adminOverrideVipTier({

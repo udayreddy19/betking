@@ -63,6 +63,7 @@ describe('VIP vs standard benefits', () => {
     expect(std.earnedPoints).toBe(20);
     expect(vip.earnedPoints).toBe(30);
 
+    await query(`DELETE FROM loyalty_ledger WHERE user_id IN ($1, $2)`, [standardId, vipId]).catch(() => null);
     await query(`DELETE FROM user_loyalty WHERE user_id IN ($1, $2)`, [standardId, vipId]);
     await query(`DELETE FROM users WHERE user_id IN ($1, $2)`, [standardId, vipId]);
   });
