@@ -22,7 +22,7 @@ describe('assertWithdrawalHardBlocks', () => {
   it('rejects when lifetime captured deposits are ₹0', async () => {
     const exec = mockExec([
       {
-        match: (q) => q.includes('FROM deposits') && q.includes('CAPTURED'),
+        match: (q) => q.includes('FROM deposits') && q.includes('PAID'),
         result: { rows: [{ total: 0 }] },
       },
     ]);
@@ -30,6 +30,20 @@ describe('assertWithdrawalHardBlocks', () => {
       code: 'NO_CAPTURED_DEPOSITS',
       status: 400,
     });
+  });
+
+  it('allows when deposits are PAID (gateway success status)', async () => {
+    const exec = mockExec([
+      {
+        match: (q) => q.includes('FROM deposits') && q.includes('PAID'),
+        result: { rows: [{ total: 1500 }] },
+      },
+      {
+        match: (q) => q.includes('FROM bets'),
+        result: { rows: [{ cnt: 0 }] },
+      },
+    ]);
+    await expect(assertWithdrawalHardBlocks({ userId: 'u1', exec })).resolves.toEqual({ ok: true });
   });
 
   it('rejects when open bets exist even with deposits', async () => {

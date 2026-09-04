@@ -297,7 +297,7 @@ router.get('/ops/observability', async (req, res) => {
       query(
         `SELECT
            COUNT(*) FILTER (WHERE UPPER(status) IN ('CREATED','PENDING','INITIATED') AND created_at > NOW() - INTERVAL '1 hour')::int AS pending_1h,
-           COUNT(*) FILTER (WHERE UPPER(status) IN ('CAPTURED','SUCCESS','COMPLETED') AND updated_at > NOW() - INTERVAL '15 minutes')::int AS captured_15m
+           COUNT(*) FILTER (WHERE UPPER(status) IN ('PAID','CAPTURED','SUCCESS','COMPLETED') AND updated_at > NOW() - INTERVAL '15 minutes')::int AS captured_15m
          FROM deposits`,
       ).catch(() => ({ rows: [{}] })),
       query(
