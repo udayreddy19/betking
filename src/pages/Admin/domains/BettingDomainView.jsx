@@ -8,7 +8,6 @@ import AdminConfirmDialog from '../components/AdminConfirmDialog';
 import AdminFilterBar, { FilterSelect, FilterSearch } from '../components/AdminFilterBar';
 import AdminDrawer from '../components/AdminDrawer';
 import AdminVerifyLiveMatch from '../components/AdminVerifyLiveMatch';
-import { AdminHub } from '../components/AdminTabs';
 
 function money(n) {
   if (n == null || Number.isNaN(Number(n))) return '—';
@@ -93,27 +92,7 @@ const TYPE_OPTIONS = [
   { value: 'SYSTEM', label: 'System' },
 ];
 
-export default function BettingDomainView(props) {
-  const subModule = props.subModule || 'bets-registry';
-  const initial = ['bets-registry', 'settlement-engine', 'cashout-reconciliation'].includes(subModule)
-    ? subModule
-    : 'bets-registry';
-  return (
-    <AdminHub
-      domainId="betting"
-      initialTab={initial}
-      tabs={[
-        { id: 'bets-registry', label: 'All bets' },
-        { id: 'settlement-engine', label: 'Settlement' },
-        { id: 'cashout-reconciliation', label: 'Cashout' },
-      ]}
-    >
-      {(tab) => <BettingPanels {...props} subModule={tab} />}
-    </AdminHub>
-  );
-}
-
-function BettingPanels({
+export default function BettingDomainView({
   subModule = 'bets-registry',
   focusEntityId = null,
   focusEntityType = null,

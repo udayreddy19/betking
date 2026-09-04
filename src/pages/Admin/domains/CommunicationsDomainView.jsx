@@ -613,7 +613,6 @@ export default function CommunicationsDomainView({ subModule = 'dispatch-logs' }
     const initial = subModule === 'mail-inbox' ? 'dispatch-logs' : subModule;
     return (
       <AdminHub
-        domainId="communications"
         initialTab={initial}
         tabs={[
           { id: 'dispatch-logs', label: 'Sent' },

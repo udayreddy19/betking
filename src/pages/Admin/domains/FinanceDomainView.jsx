@@ -2129,7 +2129,6 @@ export default function FinanceDomainView({
     const initial = subModule === 'cash-money' ? 'deposits-review' : subModule;
     return (
       <AdminHub
-        domainId="finance"
         initialTab={initial}
         tabs={[
           { id: 'deposits-review', label: 'Deposits' },
@@ -2146,7 +2145,6 @@ export default function FinanceDomainView({
     const initial = subModule === 'cash-books' ? 'ledger' : subModule;
     return (
       <AdminHub
-        domainId="finance"
         initialTab={initial}
         tabs={[
           { id: 'ledger', label: 'Ledger' },
