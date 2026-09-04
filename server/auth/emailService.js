@@ -1633,7 +1633,7 @@ export const ADMIN_COMPOSE_TEMPLATES = [
     group: 'more',
     heading: 'Your daily spin is waiting',
     subject: 'Spin today on OddsYra',
-    body: 'Your OddsYra daily spin is ready.\n\nOpen Rewards, spin once, and claim a ₹100–₹750 bonus credit from the wheel.',
+    body: 'Your OddsYra daily spin is ready.\n\nOpen Rewards, spin once, and claim a ₹100–₹750 bonus or loyalty XP from the wheel.',
     ctaLabel: 'Spin now',
     ctaPath: '/rewards',
     mailboxId: 'promos',

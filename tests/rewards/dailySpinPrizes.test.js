@@ -2,21 +2,32 @@ import { describe, it, expect } from 'vitest';
 import {
   DAILY_SPIN_PRIZES,
   DAILY_SPIN_BONUS_AMOUNTS,
+  DAILY_SPIN_XP_AMOUNTS,
   spinDateInKolkata,
   loyaltyTierFromPoints,
 } from '../../lib/dailySpinPrizes.mjs';
 
 describe('daily spin prizes', () => {
-  it('only awards ₹100 / ₹200 / ₹500 / ₹750 bonus (no freebet, xp, or mega)', () => {
+  it('awards ₹100/200/500/750 bonus plus XP with more XP sectors', () => {
     expect(DAILY_SPIN_PRIZES).toHaveLength(8);
     expect(new Set(DAILY_SPIN_PRIZES.map((p) => p.index)).size).toBe(8);
-    expect(DAILY_SPIN_PRIZES.every((p) => p.type === 'bonus')).toBe(true);
     expect(DAILY_SPIN_PRIZES.some((p) => p.type === 'freebet')).toBe(false);
-    expect(DAILY_SPIN_PRIZES.some((p) => p.type === 'xp')).toBe(false);
-    const values = [...new Set(DAILY_SPIN_PRIZES.map((p) => p.value))].sort((a, b) => a - b);
-    expect(values).toEqual([...DAILY_SPIN_BONUS_AMOUNTS]);
+
+    const bonuses = DAILY_SPIN_PRIZES.filter((p) => p.type === 'bonus');
+    const xps = DAILY_SPIN_PRIZES.filter((p) => p.type === 'xp');
+    expect(bonuses).toHaveLength(4);
+    expect(xps).toHaveLength(4);
+
+    expect([...new Set(bonuses.map((p) => p.value))].sort((a, b) => a - b))
+      .toEqual([...DAILY_SPIN_BONUS_AMOUNTS]);
+    expect([...new Set(xps.map((p) => p.value))].sort((a, b) => a - b))
+      .toEqual([...DAILY_SPIN_XP_AMOUNTS]);
+
     for (const amount of DAILY_SPIN_BONUS_AMOUNTS) {
-      expect(DAILY_SPIN_PRIZES.filter((p) => p.value === amount)).toHaveLength(2);
+      expect(bonuses.filter((p) => p.value === amount)).toHaveLength(1);
+    }
+    for (const amount of DAILY_SPIN_XP_AMOUNTS) {
+      expect(xps.filter((p) => p.value === amount)).toHaveLength(2);
     }
   });
 

@@ -183,7 +183,7 @@ export default function DailySpinModal({ isOpen, onClose }) {
               <FiZap /> DAILY VIP REWARD WHEEL
             </div>
             <h2 id="daily-spin-title">Spin & Win Free Bonus Rewards!</h2>
-            <p>Every spin lands ₹100, ₹200, ₹500, or ₹750 bonus. Use it within {SPIN_PRIZE_TTL_HOURS} hours or it expires.</p>
+            <p>Bonus ₹100–₹750 or 500 / 1,000 XP. Bonus must be used within {SPIN_PRIZE_TTL_HOURS} hours or it expires; XP is credited instantly.</p>
           </div>
 
           <div className="wheel-wrapper">
