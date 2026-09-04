@@ -665,6 +665,17 @@
   color: var(--color-primary-dark);
 }
 
+.sports-market-odds-btn.locked,
+.sports-market-odds-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.sports-market-panel--locked .sports-market-panel-header span {
+  color: #64748b;
+}
+
 .sports-market-suspended {
   display: flex;
   align-items: center;

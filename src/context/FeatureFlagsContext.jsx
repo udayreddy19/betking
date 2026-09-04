@@ -10,7 +10,7 @@ import {
 const FeatureFlagsContext = createContext({
   flags: {},
   ready: false,
-  isEnabled: () => true,
+  isEnabled: () => false,
   isSportEnabled: () => true,
   refresh: async () => {},
 });
@@ -19,6 +19,26 @@ const SPORT_ALIASES = {
   football: 'soccer',
   nfl: 'american-football',
 };
+
+/** Gated product surfaces: off until flags hydrate (then honor map / caller default). */
+const FAIL_CLOSED_UNTIL_READY = new Set([
+  'oddsyra_srl_ui',
+  'other_srl_ui',
+  'oddsyra_t10_ui',
+  'referral_system_ui',
+  'promotion_engine_ui',
+  'notification_center',
+  'responsible_gaming_ui',
+  'MAINTENANCE_MODE',
+  'GLOBAL_BETTING_PAUSE',
+  'CASHOUT_PAUSE',
+  'DEPOSITS_PAUSE',
+  'WITHDRAWALS_PAUSE',
+]);
+
+function isFailClosedUntilReady(flagKey) {
+  return Boolean(flagKey && FAIL_CLOSED_UNTIL_READY.has(flagKey));
+}
 
 export function sportFlagKey(sportId) {
   const raw = String(sportId || '').toLowerCase().replace(/_/g, '-');
@@ -38,7 +58,7 @@ export function FeatureFlagsProvider({ children }) {
         setFlags(data.flags);
       }
     } catch {
-      // Keep last known / empty map — defaults keep features visible.
+      // Keep last known map; fail-closed keys stay off until a successful load.
     } finally {
       setReady(true);
     }
@@ -56,13 +76,16 @@ export function FeatureFlagsProvider({ children }) {
   }, [refresh]);
 
   const isEnabled = useCallback((flagKey, defaultValue = true) => {
-    if (!flagKey) return defaultValue;
-    if (!(flagKey in flags)) return defaultValue;
+    if (!flagKey) return !!defaultValue;
+    // Kill-switch / gated surfaces stay off until the flag map has loaded.
+    if (!ready && isFailClosedUntilReady(flagKey)) return false;
+    if (!(flagKey in flags)) return !!defaultValue;
     return !!flags[flagKey];
-  }, [flags]);
+  }, [flags, ready]);
 
   const isSportEnabledFlag = useCallback((sportId) => {
     const key = sportFlagKey(sportId);
+    // Sports are opt-out: enabled unless an explicit SPORT_ENABLED_* row disables them.
     if (!(key in flags)) return true;
     return !!flags[key];
   }, [flags]);

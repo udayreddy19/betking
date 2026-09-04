@@ -72,7 +72,8 @@ function CasinoComingSoon() {
 
 function FlaggedRoute({ flagKey, children, fallback = '/' }) {
   const { isEnabled, ready } = useFeatureFlags();
-  if (ready && !isEnabled(flagKey, true)) {
+  // Fail closed until flags hydrate; after that missing keys stay on (opt-out toggles).
+  if (!ready || !isEnabled(flagKey, true)) {
     return <Navigate to={fallback} replace />;
   }
   return children;

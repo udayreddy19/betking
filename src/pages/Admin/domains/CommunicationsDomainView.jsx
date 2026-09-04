@@ -4,6 +4,7 @@ import AdminDataTable from '../components/AdminDataTable';
 import { useAdminToast } from '../components/AdminToastContext';
 import { StatusBadge } from '../components/AdminBadge';
 import { AdminHub } from '../components/AdminTabs';
+import AdminConfirmDialog from '../components/AdminConfirmDialog';
 
 const FAILED_STATUSES = new Set(['FAILED', 'ERROR', 'DEAD_LETTER', 'DLQ', 'BOUNCED', 'REJECTED']);
 
@@ -78,6 +79,7 @@ function ComposeMailPanel() {
   const [ctaPath, setCtaPath] = useState('');
   const [sending, setSending] = useState(false);
   const [lastResult, setLastResult] = useState(null);
+  const [confirmSend, setConfirmSend] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -209,6 +211,11 @@ function ComposeMailPanel() {
       showToast('To, subject, and body are required', 'error');
       return;
     }
+    setConfirmSend(true);
+  };
+
+  const executeSend = async () => {
+    const to = toValue.trim();
     setSending(true);
     try {
       const origin = typeof window !== 'undefined' ? window.location.origin : 'https://oddsyra.com';
@@ -226,6 +233,7 @@ function ComposeMailPanel() {
         ctaHref,
       });
       setLastResult(res);
+      setConfirmSend(false);
       if (res.failed > 0) {
         showToast(`Sent ${res.sent || 0}, failed ${res.failed}`, 'error');
       } else {
@@ -441,6 +449,24 @@ function ComposeMailPanel() {
           </p>
         )}
       </form>
+      <AdminConfirmDialog
+        isOpen={confirmSend}
+        variant="danger"
+        icon="📧"
+        title="Send mail?"
+        description="This delivers live email from the selected mailbox. Confirm recipients before continuing."
+        details={[
+          { label: 'From', value: selectedMailbox?.email || mailboxId },
+          { label: 'To', value: toValue || '—' },
+          { label: 'Subject', value: subject || '—' },
+          { label: 'Recipients', value: String(recipients.length || (toValue ? toValue.split(',').length : 0)) },
+        ]}
+        confirmLabel="Send email"
+        cancelLabel="Cancel"
+        loading={sending}
+        onCancel={() => setConfirmSend(false)}
+        onConfirm={executeSend}
+      />
     </div>
   );
 }
@@ -452,6 +478,7 @@ function BroadcastPanel() {
   const [limit, setLimit] = useState('500');
   const [sending, setSending] = useState(false);
   const [lastResult, setLastResult] = useState(null);
+  const [confirmSend, setConfirmSend] = useState(false);
   const { showToast } = useAdminToast();
 
   const handleSend = async (e) => {
@@ -460,6 +487,10 @@ function BroadcastPanel() {
       showToast('Message is required', 'error');
       return;
     }
+    setConfirmSend(true);
+  };
+
+  const executeSend = async () => {
     setSending(true);
     try {
       const res = await adminApiClient.post('/communications/broadcast', {
@@ -469,6 +500,7 @@ function BroadcastPanel() {
         limit: Number(limit) || 500,
       });
       setLastResult(res);
+      setConfirmSend(false);
       showToast(`Broadcast sent to ${res.sent ?? 0} users`, 'success');
     } catch (err) {
       showToast(err.message || 'Broadcast failed', 'error');
@@ -554,6 +586,23 @@ function BroadcastPanel() {
           </p>
         )}
       </form>
+      <AdminConfirmDialog
+        isOpen={confirmSend}
+        variant="warning"
+        icon="📣"
+        title="Send broadcast?"
+        description="This pushes an in-app notification to up to the limit of recent users."
+        details={[
+          { label: 'Title', value: title || 'Announcement' },
+          { label: 'Category', value: category },
+          { label: 'Limit', value: String(limit || 500) },
+        ]}
+        confirmLabel="Send broadcast"
+        cancelLabel="Cancel"
+        loading={sending}
+        onCancel={() => setConfirmSend(false)}
+        onConfirm={executeSend}
+      />
     </div>
   );
 }

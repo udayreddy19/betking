@@ -68,7 +68,7 @@ const DOMAIN_GROUPS = [
         id: 'customers',
         label: 'Players',
         Icon: UsersIcon,
-        role: null,
+        role: ADMIN_ROLES.SUPPORT_AGENT,
         subModules: [
           { id: 'directory', label: 'Directory' },
           { id: 'kyc-queue', label: 'KYC' },
@@ -79,7 +79,7 @@ const DOMAIN_GROUPS = [
         id: 'sports',
         label: 'Sports',
         Icon: LayersIcon,
-        role: null,
+        role: ADMIN_ROLES.TRADING_ADMIN,
         subModules: [
           { id: 'catalog', label: 'Matches' },
           { id: 'iplsrl-console', label: 'SRL' },
@@ -108,7 +108,7 @@ const DOMAIN_GROUPS = [
         id: 'betting',
         label: 'Bets',
         Icon: FileTextIcon,
-        role: null,
+        role: ADMIN_ROLES.TRADING_ADMIN,
         subModules: [
           { id: 'bets-registry', label: 'All bets' },
           { id: 'settlement-engine', label: 'Settlement' },
@@ -161,7 +161,7 @@ const DOMAIN_GROUPS = [
         id: 'communications',
         label: 'Mail',
         Icon: BellRingIcon,
-        role: null,
+        role: ADMIN_ROLES.MARKETING_ADMIN,
         subModules: [
           { id: 'compose', label: 'Compose' },
           { id: 'mail-inbox', label: 'Delivery' },
@@ -178,7 +178,7 @@ const DOMAIN_GROUPS = [
         id: 'analytics',
         label: 'Reports',
         Icon: ChartBarIcon,
-        role: null,
+        role: ADMIN_ROLES.OPERATIONS_ADMIN,
         subModules: [
           { id: 'turnover-ggr', label: 'Performance' },
           { id: 'bi-exporter', label: 'Export' },

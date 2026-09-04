@@ -588,7 +588,8 @@ export function BetSlipProvider({ children }) {
   useEffect(() => {
     if (DEMO_MODE || bets.length === 0) return undefined;
     void refreshSlipOdds({ silent: true });
-    const timer = setInterval(() => refreshSlipOdds({ silent: true }), 30000);
+    // Keep slip odds closer to board freshness (board polls ~2s when live).
+    const timer = setInterval(() => refreshSlipOdds({ silent: true }), 8_000);
     return () => clearInterval(timer);
   }, [bets.length, refreshSlipOdds]);
 
@@ -865,11 +866,13 @@ export function BetSlipProvider({ children }) {
 
     if (!DEMO_MODE) {
       try {
-        const placeSingle = async (bet, stakeAmount) => {
+        const placeSingle = async (bet, stakeAmount, { attachReward = false } = {}) => {
           const finalStake = isPromoLocked ? promoAmount : stakeAmount;
+          // Stable per-selection key so retries after a partial batch cannot double-place.
+          const idemKey = `single-${bet.id}-${user?.userId || 'anon'}-${finalStake}-${bet.odds}`;
           const res = await apiFetch('/api/bets/place', {
             method: 'POST',
-            headers: { 'X-Idempotency-Key': `single-${bet.id}-${attemptId}` },
+            headers: { 'X-Idempotency-Key': idemKey },
             body: JSON.stringify({
               matchId: bet.matchId,
               marketId: bet.marketId || 'match_winner',
@@ -883,7 +886,7 @@ export function BetSlipProvider({ children }) {
               stake: finalStake,
               clientOdds: bet.odds,
               fundSource: stakeSource,
-              rewardId: chosenRewardId,
+              rewardId: attachReward ? chosenRewardId : null,
             }),
           });
           const data = await res.json().catch(() => ({}));
@@ -905,14 +908,44 @@ export function BetSlipProvider({ children }) {
         };
 
         const placeSingles = async (workingBets) => {
+          if (chosenRewardId && workingBets.length > 1) {
+            return {
+              success: false,
+              error: 'A free bet or bonus can only be used on one selection at a time.',
+              code: 'REWARD_SINGLE_ONLY',
+            };
+          }
           const placedIds = [];
-          for (const bet of workingBets) {
+          for (let i = 0; i < workingBets.length; i += 1) {
+            const bet = workingBets[i];
             const stakeAmount = isPromoLocked ? promoAmount : parseFloat(singlesStakes[bet.id] || stake || 0);
             if (!stakeAmount || stakeAmount <= 0) {
-              return { success: false, error: `Enter stake for "${bet.selectionName}"` };
+              if (placedIds.length > 0) {
+                setBets((prev) => prev.filter((b) => !placedIds.includes(b.id)));
+                setSinglesStakes((s) => {
+                  const next = { ...s };
+                  placedIds.forEach((id) => { delete next[id]; });
+                  return next;
+                });
+              }
+              return { success: false, error: `Enter stake for "${bet.selectionName}"`, placedIds };
             }
-            const result = await placeSingle(bet, stakeAmount);
-            if (!result.success) return result;
+            const result = await placeSingle(bet, stakeAmount, {
+              attachReward: Boolean(chosenRewardId) && i === 0,
+            });
+            if (!result.success) {
+              if (placedIds.length > 0) {
+                setBets((prev) => prev.filter((b) => !placedIds.includes(b.id)));
+                setSinglesStakes((s) => {
+                  const next = { ...s };
+                  placedIds.forEach((id) => { delete next[id]; });
+                  return next;
+                });
+                void refreshWallet?.();
+                void refreshAvailableRewards();
+              }
+              return { ...result, placedIds };
+            }
             placedIds.push(bet.id);
           }
           return { success: true, placedIds };

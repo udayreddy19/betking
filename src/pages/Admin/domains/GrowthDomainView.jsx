@@ -8,6 +8,7 @@ import AdminTabs from '../components/AdminTabs';
 import AdminKPI from '../components/AdminKPI';
 import { AdminKpiDrillDrawer, useAdminKpiDrilldown } from '../hooks/useAdminKpiDrilldown';
 import { formatIst, formatIstDateTime, formatIstDate } from '../../../utils/istTime';
+import AdminConfirmDialog from '../components/AdminConfirmDialog';
 
 function money(n) {
   if (n == null || Number.isNaN(Number(n))) return '—';
@@ -1845,6 +1846,10 @@ function CrmComposerPanel() {
   const [body, setBody] = useState('');
   const [result, setResult] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [audienceReady, setAudienceReady] = useState(false);
+  const [confirmSend, setConfirmSend] = useState(false);
+
+  const audienceCount = Number(result?.count ?? result?.audienceCount ?? result?.recipients?.length ?? 0);
 
   const run = async (mode) => {
     setBusy(true);
@@ -1861,12 +1866,31 @@ function CrmComposerPanel() {
         : (mode === 'dry' ? '/growth/crm-composer/dry-run' : '/growth/crm-composer/preview');
       const data = await adminApiClient.post(path, payload);
       setResult(data);
+      if (mode === 'preview' || mode === 'dry') {
+        setAudienceReady(true);
+      }
       showToast(mode === 'send' ? `Sent ${data.sent || 0}` : (mode === 'dry' ? 'Dry-run recorded (no send)' : 'Preview ready'), 'success');
+      if (mode === 'send') {
+        setConfirmSend(false);
+        setAudienceReady(false);
+      }
     } catch (err) {
       showToast(err.message || 'Composer failed', 'error');
     } finally {
       setBusy(false);
     }
+  };
+
+  const requestSend = () => {
+    if (!subject.trim() || !body.trim()) {
+      showToast('Subject and body are required', 'error');
+      return;
+    }
+    if (!audienceReady || audienceCount < 1) {
+      showToast('Run Preview or Dry-run first and confirm a non-empty audience', 'error');
+      return;
+    }
+    setConfirmSend(true);
   };
 
   return (
@@ -1879,10 +1903,10 @@ function CrmComposerPanel() {
       </div>
       <div style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 12 }}>
         <label style={{ fontSize: '0.78rem' }}>Include segment IDs (comma-separated)
-          <input value={include} onChange={(e) => setInclude(e.target.value)} style={{ display: 'block', width: '100%', marginTop: 4 }} />
+          <input value={include} onChange={(e) => { setInclude(e.target.value); setAudienceReady(false); }} style={{ display: 'block', width: '100%', marginTop: 4 }} />
         </label>
         <label style={{ fontSize: '0.78rem' }}>Exclude segment IDs
-          <input value={exclude} onChange={(e) => setExclude(e.target.value)} style={{ display: 'block', width: '100%', marginTop: 4 }} />
+          <input value={exclude} onChange={(e) => { setExclude(e.target.value); setAudienceReady(false); }} style={{ display: 'block', width: '100%', marginTop: 4 }} />
         </label>
         <label style={{ fontSize: '0.78rem' }}>Subject
           <input value={subject} onChange={(e) => setSubject(e.target.value)} style={{ display: 'block', width: '100%', marginTop: 4 }} />
@@ -1890,11 +1914,16 @@ function CrmComposerPanel() {
         <label style={{ fontSize: '0.78rem' }}>Body
           <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={4} style={{ display: 'block', width: '100%', marginTop: 4 }} />
         </label>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button type="button" className="admin-btn" disabled={busy} onClick={() => run('preview')}>Preview audience</button>
           <button type="button" className="admin-btn admin-btn--secondary" disabled={busy} onClick={() => run('dry')}>Dry-run (audit)</button>
-          <button type="button" className="admin-btn admin-btn--primary" disabled={busy || !subject || !body} onClick={() => run('send')}>Send (honors opt-out)</button>
+          <button type="button" className="admin-btn admin-btn--primary" disabled={busy || !subject || !body} onClick={requestSend}>Send (honors opt-out)</button>
         </div>
+        {!audienceReady && (
+          <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--admin-text-muted)' }}>
+            Preview or dry-run required before send.
+          </p>
+        )}
       </div>
       {result && (
         <pre style={{ fontSize: '0.72rem', whiteSpace: 'pre-wrap', maxHeight: 360, overflow: 'auto' }}>
@@ -1902,6 +1931,23 @@ function CrmComposerPanel() {
         </pre>
       )}
       <PromoClawbackPanel />
+      <AdminConfirmDialog
+        isOpen={confirmSend}
+        variant="danger"
+        icon="📧"
+        title="Send CRM email?"
+        description="This sends live email to the previewed audience. Opt-outs are skipped. This cannot be undone."
+        details={[
+          { label: 'Subject', value: subject || '—' },
+          { label: 'Audience (last preview)', value: String(audienceCount || 0) },
+          { label: 'Include segments', value: include || '(none)' },
+        ]}
+        confirmLabel="Send emails"
+        cancelLabel="Cancel"
+        loading={busy}
+        onCancel={() => setConfirmSend(false)}
+        onConfirm={() => run('send')}
+      />
     </div>
   );
 }

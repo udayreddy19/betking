@@ -1238,11 +1238,70 @@ export default function Sports() {
                   )}
                   {canBetActive && !isMatchFinished(activeMatch) && matchMarkets.map((market) => {
                 if (!showCategory(market.category)) return null;
-                if (market.status && market.status !== 'OPEN') return null;
+                const marketStatus = String(market.status || 'OPEN').toUpperCase();
+                const isOpen = !market.status || marketStatus === 'OPEN';
                 const options = (market.options || market.selections || []).filter(
-                  (opt) => opt.bettable !== false && Number(opt.odds) >= 1.01,
+                  (opt) => Number(opt.odds) >= 1.01,
                 );
-                if (options.length === 0) return null;
+                // Show locked/determined markets as locked panels (do not hide).
+                if (!isOpen) {
+                  const isExpanded = expandedMarkets[market.key] !== false;
+                  return (
+                    <div key={market.key} className="sports-market-panel sports-market-panel--locked">
+                      <button
+                        type="button"
+                        className="sports-market-panel-header"
+                        onClick={() => toggleMarket(market.key)}
+                      >
+                        <span>{market.title} · Locked</span>
+                        {isExpanded ? <HiOutlineChevronUp /> : <HiOutlineChevronDown />}
+                      </button>
+                      {isExpanded && (
+                        <div className="sports-market-suspended">
+                          <span>🔒</span>
+                          <p>
+                            {marketStatus === 'DETERMINED' || marketStatus === 'SETTLED'
+                              ? 'Market settled — betting closed'
+                              : 'Market suspended — betting locked'}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+                const bettable = options.filter((opt) => opt.bettable !== false);
+                if (bettable.length === 0) {
+                  if (options.length === 0) return null;
+                  const isExpanded = expandedMarkets[market.key] !== false;
+                  return (
+                    <div key={market.key} className="sports-market-panel sports-market-panel--locked">
+                      <button
+                        type="button"
+                        className="sports-market-panel-header"
+                        onClick={() => toggleMarket(market.key)}
+                      >
+                        <span>{market.title} · Locked</span>
+                        {isExpanded ? <HiOutlineChevronUp /> : <HiOutlineChevronDown />}
+                      </button>
+                      {isExpanded && (
+                        <div className={`sports-market-odds-grid ${options.length === 3 ? 'three-col' : (options.length === 4 ? 'four-col' : (options.length > 4 ? 'multi-col' : 'two-col'))}`}>
+                          {options.map((opt) => (
+                            <button
+                              key={opt.selection}
+                              type="button"
+                              className={`${oddsBtnClass(opt.selection)} locked`}
+                              disabled
+                              title="Line locked"
+                            >
+                              <span>{opt.name}</span>
+                              <span className="odds-val">{Number(opt.odds).toFixed(2)}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
                 const isExpanded = expandedMarkets[market.key] !== false;
                 return (
                   <div key={market.key} className="sports-market-panel">
@@ -1256,8 +1315,8 @@ export default function Sports() {
                     </button>
                     {isExpanded && (
                       canBetActive ? (
-                        <div className={`sports-market-odds-grid ${options.length === 3 ? 'three-col' : (options.length === 4 ? 'four-col' : (options.length > 4 ? 'multi-col' : 'two-col'))}`}>
-                          {options.map((opt) => (
+                        <div className={`sports-market-odds-grid ${bettable.length === 3 ? 'three-col' : (bettable.length === 4 ? 'four-col' : (bettable.length > 4 ? 'multi-col' : 'two-col'))}`}>
+                          {bettable.map((opt) => (
                             <button
                               key={opt.selection}
                               type="button"

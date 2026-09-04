@@ -9,7 +9,7 @@ import AdminFilterBar, { FilterSelect, FilterSearch } from '../components/AdminF
 import AdminCard from '../components/AdminCard';
 import AdminTabs from '../components/AdminTabs';
 import KycReminderUsersPanel from '../../../components/DatabaseInspector/KycReminderUsersPanel';
-import { useAdminRole, canAccessDomain, hasPermission, PERMISSIONS } from '../permissions/AdminRBACGate';
+import { useAdminRole, canAccessDomain, hasPermission, PERMISSIONS, ADMIN_ROLES } from '../permissions/AdminRBACGate';
 import { AdminHub } from '../components/AdminTabs';
 import { formatIst, formatIstDateTime } from '../../../utils/istTime';
 
@@ -258,7 +258,7 @@ function CustomersDomainPanels({
   onNavigate = null,
 }) {
   const { activeRole } = useAdminRole();
-  const canViewCustomers = canAccessDomain(activeRole, 'customers', null);
+  const canViewCustomers = canAccessDomain(activeRole, 'customers', ADMIN_ROLES.SUPPORT_AGENT);
   const roleCanViewPii = hasPermission(activeRole, PERMISSIONS.VIEW_PII);
 
   const [users, setUsers] = useState([]);

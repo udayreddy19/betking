@@ -18,12 +18,12 @@ export const ADMIN_ROLES = {
 
 const ROLE_ALLOWED_DOMAINS = {
   [ADMIN_ROLES.SUPER_ADMIN]: null, // null = all
-  [ADMIN_ROLES.FINANCE_ADMIN]: ['finance', 'betting'],
-  [ADMIN_ROLES.TRADING_ADMIN]: ['trading-risk', 'betting', 'sports'],
+  [ADMIN_ROLES.FINANCE_ADMIN]: ['finance', 'betting', 'analytics'],
+  [ADMIN_ROLES.TRADING_ADMIN]: ['trading-risk', 'betting', 'sports', 'analytics'],
   [ADMIN_ROLES.SUPPORT_AGENT]: ['support', 'customers', 'communications'],
   [ADMIN_ROLES.RISK_ANALYST]: ['trading-risk', 'analytics', 'security-governance'],
   [ADMIN_ROLES.MARKETING_ADMIN]: ['growth', 'communications', 'analytics'],
-  [ADMIN_ROLES.OPERATIONS_ADMIN]: ['operations', 'platform', 'analytics', 'betting', 'support', 'api-explorer', 'communications'],
+  [ADMIN_ROLES.OPERATIONS_ADMIN]: ['operations', 'platform', 'analytics', 'betting', 'support', 'api-explorer', 'communications', 'customers'],
 };
 
 export { ROLE_ALLOWED_DOMAINS };
@@ -73,13 +73,12 @@ export function hasPermission(role, permission) {
 /** Check if a role can access a specific domain */
 export function canAccessDomain(role, domainId, domainRequiredRole) {
   if (!role || role === ADMIN_ROLES.SUPER_ADMIN) return true;
-  // Domains with no required role are accessible to everyone
-  if (!domainRequiredRole) return true;
-  // Check explicit role match
-  if (role === domainRequiredRole) return true;
-  // Check allowed domains list
+  // Explicit allow-list for the active role (never open null-role domains to all admins).
   const allowed = ROLE_ALLOWED_DOMAINS[role];
-  if (allowed && allowed.includes(domainId)) return true;
+  if (allowed === null) return true;
+  if (allowed && domainId && allowed.includes(domainId)) return true;
+  // Fallback: domain's declared required role matches.
+  if (domainRequiredRole && role === domainRequiredRole) return true;
   return false;
 }
 

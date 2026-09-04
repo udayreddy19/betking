@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'motion/react';
 import { ChevronRightIcon, ChevronDownIcon, MenuIcon } from '../../../icons/animate/index';
 import BrandLogo from '../../../components/BrandLogo/BrandLogo';
+import { canAccessDomain, useAdminRole } from '../permissions/AdminRBACGate';
 
 /**
  * Extracted Admin Sidebar — collapsible, mobile-drawer aware.
@@ -20,6 +21,17 @@ export default function AdminSidebar({
   isMobileOpen,
   onCloseMobile,
 }) {
+  const { activeRole } = useAdminRole();
+  const visibleGroups = useMemo(
+    () => domainGroups
+      .map((group) => ({
+        ...group,
+        items: (group.items || []).filter((domain) => canAccessDomain(activeRole, domain.id, domain.role)),
+      }))
+      .filter((group) => group.items.length > 0),
+    [domainGroups, activeRole],
+  );
+
   const sidebarClasses = [
     'admin-shell__sidebar',
     collapsed ? 'admin-shell__sidebar--collapsed' : '',
@@ -42,7 +54,7 @@ export default function AdminSidebar({
         animate={{ opacity: 1, x: 0 }}
         transition={{ type: 'spring', bounce: 0, duration: 0.35 }}
       >
-        <div className={`admin-sidebar-brand${collapsed ? ' admin-sidebar-brand--collapsed' : ''}`}>
+        <div className={`admin-sidebar-brand${collapsed ? ' admin-sidebar-brand--truncated' : ''}`}>
           <BrandLogo size={collapsed ? 26 : 28} />
           <div className="admin-sidebar-brand-text" style={{ minWidth: 0, flex: 1 }}>
             <h1 className="admin-sidebar-brand__name">OddsYra</h1>
@@ -63,7 +75,7 @@ export default function AdminSidebar({
         </div>
 
         <nav className="admin-shell__sidebar-nav" aria-label="Admin navigation">
-          {domainGroups.map((group, idx) => (
+          {visibleGroups.map((group, idx) => (
             <div key={idx} style={{ marginBottom: '8px' }}>
               <div className="admin-sidebar-group-title">
                 {group.title}
