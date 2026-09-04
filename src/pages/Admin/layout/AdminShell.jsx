@@ -48,6 +48,7 @@ import SecurityGovernanceDomainView from '../domains/SecurityGovernanceDomainVie
 import ApiExplorerDomainView from '../domains/ApiExplorerDomainView';
 import { ensureAdminSession, adminApiClient } from '../api/adminApiClient';
 import { AdminToastProvider } from '../components/AdminToastContext';
+import { AdminNavAttentionProvider } from '../context/AdminNavAttentionContext';
 
 const DOMAIN_GROUPS = [
   {
@@ -718,14 +719,6 @@ function AdminShellInner() {
 
   const handleDomainSelect = (domain) => {
     const hasSub = !!(domain.subModules && domain.subModules.length > 0);
-    const isAlreadyActive = activeDomain === domain.id;
-    const isExpanded = !!expandedDomains[domain.id];
-
-    if (hasSub && isAlreadyActive && isExpanded) {
-      setExpandedDomains({});
-      return;
-    }
-
     let nextSub = hasSub ? domain.subModules[0].id : activeSubModule;
     if (hasSub) {
       let best = -1;
@@ -738,10 +731,7 @@ function AdminShellInner() {
       }
     }
     setActiveDomain(domain.id);
-    if (hasSub) {
-      setActiveSubModule(nextSub);
-      setExpandedDomains({ [domain.id]: true });
-    }
+    if (hasSub) setActiveSubModule(nextSub);
     syncAdminLocation(domain.id, nextSub);
     scrollContentToTop();
     setMobileSidebarOpen(false);
@@ -1035,17 +1025,14 @@ function AdminShellInner() {
 
   // ─── Main Authenticated Layout ───
   return (
+    <AdminNavAttentionProvider value={navAttention}>
     <div className={`admin-shell ${isDark ? 'admin-shell--dark' : 'admin-shell--light'}`}>
 
       {/* Sidebar */}
       <AdminSidebar
         domainGroups={DOMAIN_GROUPS}
         activeDomain={activeDomain}
-        activeSubModule={HUB_FOR[activeDomain]?.[activeSubModule] || activeSubModule}
-        expandedDomains={expandedDomains}
         onDomainSelect={handleDomainSelect}
-        onSubModuleSelect={handleSubModuleSelect}
-        onToggleExpand={toggleDomainExpand}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed((p) => !p)}
         isMobileOpen={mobileSidebarOpen}
@@ -1318,5 +1305,6 @@ function AdminShellInner() {
         onNavigate={handleCommandNavigate}
       />
     </div>
+    </AdminNavAttentionProvider>
   );
 }

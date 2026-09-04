@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { motion } from 'motion/react';
-import { ChevronRightIcon, ChevronDownIcon, MenuIcon } from '../../../icons/animate/index';
+import { MenuIcon } from '../../../icons/animate/index';
 import BrandLogo from '../../../components/BrandLogo/BrandLogo';
 import { canAccessDomain, useAdminRole } from '../permissions/AdminRBACGate';
 
@@ -11,17 +11,12 @@ function formatBadgeCount(n) {
 }
 
 /**
- * Extracted Admin Sidebar — collapsible, mobile-drawer aware.
- * All navigation state and domain config is received via props from AdminShell.
+ * Top-level domains only. In-module navigation uses horizontal AdminHub tabs.
  */
 export default function AdminSidebar({
   domainGroups,
   activeDomain,
-  activeSubModule,
-  expandedDomains,
   onDomainSelect,
-  onSubModuleSelect,
-  onToggleExpand,
   collapsed,
   onToggleCollapse,
   isMobileOpen,
@@ -46,7 +41,6 @@ export default function AdminSidebar({
   ].filter(Boolean).join(' ');
 
   const domainAttention = attention?.domains || {};
-  const subAttention = attention?.subModules || {};
 
   return (
     <>
@@ -92,9 +86,7 @@ export default function AdminSidebar({
               </div>
               {group.items.map((domain) => {
                 const isActive = activeDomain === domain.id;
-                const isExpanded = !!expandedDomains[domain.id];
                 const DomainIcon = domain.Icon;
-                const hasSub = domain.subModules && domain.subModules.length > 0;
                 const domainBadge = formatBadgeCount(domainAttention[domain.id]?.count);
                 const domainTitle = domainAttention[domain.id]?.label
                   || (domainBadge ? `${domainBadge} pending` : domain.label);
@@ -106,7 +98,6 @@ export default function AdminSidebar({
                         type="button"
                         className={`admin-nav-domain${isActive ? ' is-active' : ''}${domainBadge ? ' has-badge' : ''}`}
                         onClick={() => onDomainSelect(domain)}
-                        aria-expanded={hasSub ? isExpanded : undefined}
                         title={collapsed ? `${domain.label}${domainBadge ? ` (${domainBadge})` : ''}` : domainTitle}
                       >
                         <span className="admin-nav-domain__icon-wrap">
@@ -125,46 +116,7 @@ export default function AdminSidebar({
                           </span>
                         )}
                       </button>
-                      {hasSub && !collapsed && (
-                        <button
-                          type="button"
-                          className={`admin-nav-chevron${isExpanded ? ' is-open' : ''}${isActive ? ' is-active' : ''}`}
-                          aria-label={isExpanded ? `Collapse ${domain.label}` : `Expand ${domain.label}`}
-                          onClick={() => onToggleExpand(domain.id)}
-                        >
-                          {isExpanded ? <ChevronDownIcon /> : <ChevronRightIcon />}
-                        </button>
-                      )}
                     </div>
-
-                    {isExpanded && hasSub && !collapsed && (
-                      <div className="admin-nav-subs">
-                        {domain.subModules.map((sub) => {
-                          const isSubActive = isActive && activeSubModule === sub.id;
-                          const subBadge = formatBadgeCount(subAttention[`${domain.id}:${sub.id}`]?.count);
-                          const subLabel = subAttention[`${domain.id}:${sub.id}`]?.label;
-                          return (
-                            <button
-                              key={sub.id}
-                              type="button"
-                              className={`admin-nav-sub${isSubActive ? ' is-active' : ''}`}
-                              onClick={() => onSubModuleSelect(domain.id, sub.id)}
-                              title={subLabel || sub.label}
-                            >
-                              <span className="admin-nav-sub__label">{sub.label}</span>
-                              {subBadge && (
-                                <span
-                                  className="admin-nav-sub__badge"
-                                  aria-label={`${subBadge} pending in ${sub.label}`}
-                                >
-                                  {subBadge}
-                                </span>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
                   </div>
                 );
               })}

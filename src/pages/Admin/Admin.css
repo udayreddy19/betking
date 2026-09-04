@@ -601,6 +601,9 @@
   max-width: 100%;
 }
 .admin-subtab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 6px 14px;
   border-radius: var(--admin-radius-sm);
   border: 1px solid transparent;
@@ -613,6 +616,30 @@
   white-space: nowrap;
   outline: none;
   font-family: inherit;
+}
+.admin-subtab__label {
+  line-height: 1.2;
+}
+.admin-subtab__count {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+  background: var(--admin-primary-soft, color-mix(in srgb, var(--admin-primary, #1f8a4c) 18%, transparent));
+  color: var(--admin-primary-hover, var(--admin-primary, #1f8a4c));
+  border: 1px solid color-mix(in srgb, var(--admin-primary, #1f8a4c) 28%, transparent);
+}
+.admin-subtab.active .admin-subtab__count {
+  background: color-mix(in srgb, #fff 22%, transparent);
+  color: inherit;
+  border-color: color-mix(in srgb, currentColor 25%, transparent);
 }
 .admin-subtab:hover {
   color: var(--admin-text);

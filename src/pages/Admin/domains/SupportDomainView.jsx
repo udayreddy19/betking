@@ -13,6 +13,7 @@ import {
   validateSupportFile,
 } from '../../../utils/supportAttachments';
 import { formatIstShort } from '../../../utils/istTime';
+import { AdminHub } from '../components/AdminTabs';
 
 function formatMsgTime(value) {
   if (!value) return '';
@@ -25,7 +26,40 @@ export default function SupportDomainView({
   focusEntityType = null,
   onFocusConsumed = null,
 }) {
-  const [activeTab, setActiveTab] = useState('tickets'); // 'tickets' | 'live-chat'
+  const initial = ['ticket-queue', 'chat-console', 'sla-alerts'].includes(subModule)
+    ? subModule
+    : 'ticket-queue';
+  return (
+    <AdminHub
+      domainId="support"
+      initialTab={initial}
+      tabs={[
+        { id: 'ticket-queue', label: 'Tickets' },
+        { id: 'chat-console', label: 'Chat' },
+        { id: 'sla-alerts', label: 'SLA' },
+      ]}
+    >
+      {(tab) => (
+        <SupportPanels
+          subModule={tab}
+          focusEntityId={focusEntityId}
+          focusEntityType={focusEntityType}
+          onFocusConsumed={onFocusConsumed}
+        />
+      )}
+    </AdminHub>
+  );
+}
+
+function SupportPanels({
+  subModule = 'ticket-queue',
+  focusEntityId = null,
+  focusEntityType = null,
+  onFocusConsumed = null,
+}) {
+  const [activeTab, setActiveTab] = useState(
+    subModule === 'chat-console' ? 'live-chat' : 'tickets',
+  );
   const [tickets, setTickets] = useState([]);
   const [liveChats, setLiveChats] = useState([]);
   const [metrics, setMetrics] = useState({
@@ -74,6 +108,11 @@ export default function SupportDomainView({
   const replyFileRef = useRef(null);
   const threadEndRef = useRef(null);
   const focusHandledRef = useRef(null);
+
+  useEffect(() => {
+    if (subModule === 'chat-console') setActiveTab('live-chat');
+    else setActiveTab('tickets');
+  }, [subModule]);
 
   const loadData = useCallback(() => {
     adminApiClient.get('/support/macros')
@@ -334,23 +373,7 @@ export default function SupportDomainView({
         <AdminCard title="WAITING CHATS" value={metrics.waitingLiveChats || 0} variant="warning" />
       </div>
 
-      {/* Primary Sub-Tabs */}
-      <div style={{ display: 'flex', gap: '12px', borderBottom: '1px solid var(--admin-border)', paddingBottom: '8px' }}>
-        <button
-          type="button"
-          className={`admin-btn ${activeTab === 'tickets' ? 'admin-btn--primary' : 'admin-btn--secondary'}`}
-          onClick={() => setActiveTab('tickets')}
-        >
-          🎫 Ticket Queue ({filteredTickets.length})
-        </button>
-        <button
-          type="button"
-          className={`admin-btn ${activeTab === 'live-chat' ? 'admin-btn--primary' : 'admin-btn--secondary'}`}
-          onClick={() => setActiveTab('live-chat')}
-        >
-          💬 Live Chat Control ({liveChats.length})
-        </button>
-      </div>
+      {/* Hub tabs above replace these legacy buttons */}
 
       {/* ── TAB 1: TICKET QUEUE ── */}
       {activeTab === 'tickets' && (
