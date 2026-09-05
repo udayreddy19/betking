@@ -127,6 +127,11 @@ export function getMatchState(match) {
   }
 
   if (match.isLive === true || explicit === 'in' || statusStr === 'live' || liveStatusStr === 'in_progress' || time === 'live') {
+    // Align with server: toss / markets-open is not live cricket until a ball is bowled.
+    const sport = String(match?.sport || '').toLowerCase();
+    if ((sport === 'cricket' || sport === 'virtual-cricket' || !sport) && !hasCricketPlayStarted(match)) {
+      return 'pre';
+    }
     return 'in';
   }
 

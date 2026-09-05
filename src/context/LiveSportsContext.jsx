@@ -16,6 +16,7 @@ import { cricketScoreWeight, cricketSourceRank, getCanonicalMatchPairKey, getMat
 import { mergeCricketLiveDetails } from '../utils/cricketScoreMerge';
 import { useFeatureFlags } from './FeatureFlagsContext';
 import { isMatchSRL, isMatchOddsYraSRL, isMatchOtherSRL, isMatchT10 } from '../utils/cricketFormat';
+import { passesMatchQualityGate } from '../utils/matchQualityGate';
 
 const LiveMatchesContext = createContext([]);
 const LiveSportsMetaContext = createContext(null);
@@ -440,6 +441,7 @@ export function LiveSportsProvider({ children }) {
       if (!isEnabled('oddsyra_srl_ui', true) && isMatchOddsYraSRL(m)) return false;
       if (!isEnabled('other_srl_ui', true) && isMatchOtherSRL(m)) return false;
       if (!isEnabled('oddsyra_t10_ui', true) && isMatchT10(m)) return false;
+      if (!passesMatchQualityGate(m)) return false;
       return true;
     }),
     [matches, isSportEnabled, isEnabled],

@@ -604,6 +604,19 @@ router.get('/v4/engine', async (_req, res) => {
 });
 
 /**
+ * GET /api/admin/odds-model/platform-readiness
+ */
+router.get('/platform-readiness', async (_req, res) => {
+  try {
+    const { scorePlatformReadiness } = await import('../../../lib/platformReadiness.mjs');
+    const data = await scorePlatformReadiness();
+    return res.json({ success: true, data });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
  * POST /api/admin/odds-model/v4/engine  { mode: 'v3'|'v4'|'shadow' } | { clear: true }
  */
 router.post('/v4/engine', async (req, res) => {

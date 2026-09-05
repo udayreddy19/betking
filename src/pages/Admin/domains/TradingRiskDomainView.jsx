@@ -57,6 +57,7 @@ export default function TradingRiskDomainView({ subModule }) {
   const [oddsHealth, setOddsHealth] = useState(null);
   const [engineStatus, setEngineStatus] = useState(null);
   const [engineSaving, setEngineSaving] = useState(false);
+  const [platformReady, setPlatformReady] = useState(null);
 
   const loadSuspensions = useCallback(() => {
     adminApiClient.get('/trading/suspended-markets')
@@ -95,6 +96,12 @@ export default function TradingRiskDomainView({ subModule }) {
       .catch(() => setEngineStatus(null));
   }, []);
 
+  const loadPlatformReady = useCallback(() => {
+    adminApiClient.get('/odds-model/platform-readiness')
+      .then((data) => setPlatformReady(data.data || data))
+      .catch(() => setPlatformReady(null));
+  }, []);
+
   const setEngineMode = async (mode) => {
     setEngineSaving(true);
     try {
@@ -118,8 +125,9 @@ export default function TradingRiskDomainView({ subModule }) {
   useEffect(() => {
     if (!showOddsHealth && !showOddsDesk) return undefined;
     loadEngineStatus();
+    loadPlatformReady();
     return undefined;
-  }, [showOddsHealth, showOddsDesk, loadEngineStatus]);
+  }, [showOddsHealth, showOddsDesk, loadEngineStatus, loadPlatformReady]);
 
   useEffect(() => {
     if (!showOddsHealth) return undefined;
@@ -315,6 +323,23 @@ export default function TradingRiskDomainView({ subModule }) {
           <pre style={{ fontSize: '0.72rem', whiteSpace: 'pre-wrap' }}>
             {JSON.stringify(oddsHealth?.settlementIngest || oddsHealth, null, 2)}
           </pre>
+        </AdminCard>
+      )}
+
+      {(showOddsDesk || showOddsHealth) && platformReady && (
+        <AdminCard>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>Platform readiness</div>
+              <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.78rem' }}>
+                Product scorecard — feed quality, V4 trading, settlement, admin, security.
+              </p>
+            </div>
+            <div style={{ fontSize: '1.6rem', fontWeight: 700, color: platformReady.qualityScore >= 100 ? '#34d399' : '#fbbf24' }}>
+              {platformReady.qualityScore}
+              <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--admin-text-muted)' }}> / 100</span>
+            </div>
+          </div>
         </AdminCard>
       )}
 
