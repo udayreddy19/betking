@@ -57,4 +57,30 @@ describe('T10 overs format detection', () => {
     expect(getMatchMaxOvers({ league: 'Indian Premier League', matchType: 'T20' })).toBe(20);
     expect(getMatchMaxOvers({ league: 'The Hundred', matchType: '100' })).toBe(20);
   });
+
+  it('treats Oman D50 as 50-over ODI even when matchType is T20', () => {
+    const match = {
+      matchType: 'T20',
+      matchFormat: 'T20',
+      league: 'Oman D50 2026',
+      liveDetails: {
+        inningsId: 2,
+        firstOvers: '48.5',
+        firstRuns: 187,
+        chaseRuns: 39,
+        chaseOvers: '8.3',
+      },
+    };
+    expect(resolveCricketOversFormat(match)).toBe('ODI');
+    expect(resolveCricketFormat(match)).toBe('ODI');
+    expect(getMatchMaxOvers(match)).toBe(50);
+  });
+
+  it('infers ODI when first innings overs exceed 20', () => {
+    expect(resolveCricketOversFormat({
+      matchType: 'T20',
+      league: 'Unknown Cup',
+      liveDetails: { firstOvers: '48.5', inningsId: 2, chaseRuns: 20 },
+    })).toBe('ODI');
+  });
 });

@@ -86,6 +86,29 @@ function inferT10FromLive(match) {
   return false;
 }
 
+/** First innings clearly longer than T20 (e.g. Oman D50 finished at 48.5). */
+function inferOdiFromLive(match) {
+  const ld = match?.liveDetails || {};
+  const firstOvers = oversWhole(ld.firstOvers);
+  const score1Overs = oversWhole(ld.overs1);
+  const team1Overs = oversWhole(match?.team1?.overs);
+  const team2Overs = oversWhole(match?.team2?.overs);
+  const seenFirst = Math.max(firstOvers, score1Overs, team1Overs, team2Overs);
+  // Mid-T20 never reaches 21+ completed overs in an innings.
+  if (seenFirst > 20) return true;
+  // Chase innings past 20 overs also proves 50-over cricket.
+  if (oversWhole(ld.chaseOvers) > 20) return true;
+  if (oversWhole(ld.overs2) > 20 && (Number(ld.inningsId) || 0) >= 2) return true;
+  return false;
+}
+
+function looksLikeOdiSeries(matchOrText) {
+  const raw = typeof matchOrText === 'string'
+    ? matchOrText.toUpperCase()
+    : collectLeagueFormatText(matchOrText).toUpperCase();
+  return /\bODI\b|\bONE[\s-]?DAY\b|\b50[\s-]?OVERS?\b|\bD50\b|\bD[\s-]?50\b|\bLIST[\s-_]?A\b|\bCWC\b|\bVIJAY\s*HAZARE\b|\bROYAL\s*LONDON\b|\bMARSH\s*ONE\s*DAY\b/.test(raw);
+}
+
 /**
  * Canonical cricket match format detector.
  * Normalizes all provider fields into standard format tokens:
@@ -108,6 +131,12 @@ export function detectCricketMatchFormat(match) {
     return 'T10';
   }
 
+  // League/series ODI / D50 must beat a false provider matchType "T20"
+  if (looksLikeOdiSeries(match) || inferOdiFromLive(match)) {
+    if (/LIST[\s-_]?A/i.test(collectLeagueFormatText(match))) return 'LIST_A';
+    return 'ODI';
+  }
+
   // 2. Comprehensive text analysis across league, competition, title, description, commentary
   const raw = collectMatchFormatText(match).toUpperCase();
 
@@ -127,8 +156,8 @@ export function detectCricketMatchFormat(match) {
     return 'THE_HUNDRED';
   }
 
-  // ODI / 50 Over / List A
-  if (/\bODI\b|\bONE[\s-]?DAY\b|\b50[\s-]?OVERS?\b|\bCWC\b|\bWORLD\s*CUP\b|\bVIJAY\s*HAZARE\b|\bROYAL\s*LONDON\b|\bMARSH\s*ONE\s*DAY\b|\bACC\b[\s\S]{0,40}\bPREMIER\s*CUP\b|\bPREMIER\s*CUP\b[\s\S]{0,40}\bACC\b/.test(raw)) {
+  // ODI / 50 Over / List A / D50 (full blob — covers commentary "50 overs")
+  if (/\bODI\b|\bONE[\s-]?DAY\b|\b50[\s-]?OVERS?\b|\bD50\b|\bD[\s-]?50\b|\bCWC\b|\bWORLD\s*CUP\b|\bVIJAY\s*HAZARE\b|\bROYAL\s*LONDON\b|\bMARSH\s*ONE\s*DAY\b|\bACC\b[\s\S]{0,40}\bPREMIER\s*CUP\b|\bPREMIER\s*CUP\b[\s\S]{0,40}\bACC\b/.test(raw)) {
     if (/LIST[\s-_]?A/.test(raw)) return 'LIST_A';
     return 'ODI';
   }
