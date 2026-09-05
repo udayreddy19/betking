@@ -77,11 +77,17 @@ function verifyBadge(result) {
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All statuses' },
-  { value: 'pending', label: 'Pending / Open / Accepted' },
   { value: 'WON', label: 'Won' },
   { value: 'LOST', label: 'Lost' },
   { value: 'VOID', label: 'Void' },
   { value: 'CASHED_OUT', label: 'Cashed out' },
+];
+
+const SETTLEMENT_OPTIONS = [
+  { value: '', label: 'All settlements' },
+  { value: 'pending', label: 'Pending settlement' },
+  { value: 'completed', label: 'Completed settlement' },
+  { value: 'live', label: 'Live settlement' },
 ];
 
 const TYPE_OPTIONS = [
@@ -101,7 +107,8 @@ export default function BettingDomainView({
   const [bets, setBets] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [statusFilter, setStatusFilter] = useState(subModule === 'settlement-engine' ? 'pending' : '');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [settlementFilter, setSettlementFilter] = useState(subModule === 'settlement-engine' ? 'pending' : '');
   const [typeFilter, setTypeFilter] = useState('');
   const [search, setSearch] = useState('');
   const [searchDraft, setSearchDraft] = useState('');
@@ -116,9 +123,16 @@ export default function BettingDomainView({
   const canSettle = hasPermission(activeRole, PERMISSIONS.SETTLE_BETS);
 
   useEffect(() => {
-    if (subModule === 'settlement-engine') setStatusFilter('pending');
-    else if (subModule === 'cashout-reconciliation') setStatusFilter('CASHED_OUT');
-    else setStatusFilter('');
+    if (subModule === 'settlement-engine') {
+      setSettlementFilter('pending');
+      setStatusFilter('');
+    } else if (subModule === 'cashout-reconciliation') {
+      setSettlementFilter('');
+      setStatusFilter('CASHED_OUT');
+    } else {
+      setSettlementFilter('');
+      setStatusFilter('');
+    }
     setTypeFilter('');
     setSearch('');
     setSearchDraft('');
@@ -140,7 +154,7 @@ export default function BettingDomainView({
     setLoading(true);
     const params = new URLSearchParams();
     params.set('limit', '300');
-    if (statusFilter === 'pending') params.set('pendingOnly', '1');
+    if (settlementFilter) params.set('settlement', settlementFilter);
     else if (statusFilter) params.set('status', statusFilter);
     if (typeFilter) params.set('betType', typeFilter);
     if (search.trim()) params.set('q', search.trim());
@@ -155,7 +169,7 @@ export default function BettingDomainView({
         setError(err.message || 'Failed to load bets');
       })
       .finally(() => setLoading(false));
-  }, [statusFilter, typeFilter, search]);
+  }, [settlementFilter, statusFilter, typeFilter, search]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -233,9 +247,10 @@ export default function BettingDomainView({
   }, [bets, subModule, highlightId]);
 
   const openCount = filtered.filter((b) => isOpenStatus(b.status)).length;
+  const completedCount = filtered.filter((b) => !isOpenStatus(b.status)).length;
 
   const titles = {
-    'bets-registry': ['All Bets', 'Browse every bet type and status. See placed odds and verify win/loss against live match state.', 'Bet Registry'],
+    'bets-registry': ['All Bets', 'Browse every bet type and status. Filter by pending, completed, or live settlement. See placed odds and verify win/loss against live match state.', 'Bet Registry'],
     'settlement-engine': ['Pending & Declare', 'Open, pending, and accepted bets — declare any outcome manually. Verify grades against live scores.', 'Pending Desk'],
     'cashout-reconciliation': ['Cashout Reconciliation', 'Cashout-related bets for reconciliation review.', 'Cashout Desk'],
   };
@@ -244,6 +259,13 @@ export default function BettingDomainView({
   const outcomeLabel = declareConfirm?.outcome === 'WON' ? 'Win' : declareConfirm?.outcome === 'LOST' ? 'Loss' : 'Void (refund)';
   const outcomeVariant = declareConfirm?.outcome === 'WON' ? 'success' : declareConfirm?.outcome === 'LOST' ? 'danger' : 'warning';
   const outcomeIcon = declareConfirm?.outcome === 'WON' ? '🏆' : declareConfirm?.outcome === 'LOST' ? '❌' : '↩️';
+  const settlementHint = settlementFilter === 'pending'
+    ? ' · pending settlement'
+    : settlementFilter === 'completed'
+      ? ' · completed settlement'
+      : settlementFilter === 'live'
+        ? ' · live settlement'
+        : '';
 
   return (
     <div>
@@ -252,7 +274,7 @@ export default function BettingDomainView({
         <h2 className="admin-page-header__title">{heading}</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           {hint}
-          {loading ? ' Loading…' : ` · ${filtered.length} shown · ${openCount} open`}
+          {loading ? ' Loading…' : ` · ${filtered.length} shown · ${openCount} open · ${completedCount} settled${settlementHint}`}
         </p>
         {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
         {!canSettle && (
@@ -265,8 +287,21 @@ export default function BettingDomainView({
       {/* Filter Bar */}
       <AdminFilterBar label="Filters">
         <FilterSelect
+          value={settlementFilter}
+          onChange={(value) => {
+            setSettlementFilter(value);
+            if (value) setStatusFilter('');
+          }}
+          options={SETTLEMENT_OPTIONS}
+          placeholder=""
+          style={{ minWidth: 180 }}
+        />
+        <FilterSelect
           value={statusFilter}
-          onChange={setStatusFilter}
+          onChange={(value) => {
+            setStatusFilter(value);
+            if (value) setSettlementFilter('');
+          }}
           options={STATUS_OPTIONS}
           placeholder=""
         />

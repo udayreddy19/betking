@@ -1078,12 +1078,14 @@ router.get('/api/admin/betting/bets', async (req, res) => {
   try {
     const { listBets } = await import('../../../lib/adminDomainData.mjs');
     const pendingOnly = req.query.pendingOnly === '1' || req.query.pendingOnly === 'true';
+    const settlementFilter = String(req.query.settlement || req.query.settlementFilter || '').trim().toLowerCase() || null;
     res.json(await listBets({
       limit: Number(req.query.limit) || 200,
       status: req.query.status || null,
       betType: req.query.betType || null,
       q: req.query.q || null,
-      pendingOnly,
+      pendingOnly: pendingOnly && !settlementFilter,
+      settlementFilter: settlementFilter || (pendingOnly ? 'pending' : null),
     }));
   } catch (err) {
     res.status(500).json({ bets: [], error: err.message });
