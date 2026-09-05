@@ -55,6 +55,8 @@ export default function TradingRiskDomainView({ subModule }) {
   const showFraud = subModule === 'fraud-signals';
   const showOddsHealth = subModule === 'odds-health';
   const [oddsHealth, setOddsHealth] = useState(null);
+  const [engineStatus, setEngineStatus] = useState(null);
+  const [engineSaving, setEngineSaving] = useState(false);
 
   const loadSuspensions = useCallback(() => {
     adminApiClient.get('/trading/suspended-markets')
@@ -86,6 +88,38 @@ export default function TradingRiskDomainView({ subModule }) {
       });
     return () => { cancelled = true; };
   }, []);
+
+  const loadEngineStatus = useCallback(() => {
+    adminApiClient.get('/odds-model/v4/engine')
+      .then((data) => setEngineStatus(data.data || data))
+      .catch(() => setEngineStatus(null));
+  }, []);
+
+  const setEngineMode = async (mode) => {
+    setEngineSaving(true);
+    try {
+      const data = await adminApiClient.post('/odds-model/v4/engine', { mode });
+      setEngineStatus(data.data || data);
+      showToast(
+        mode === 'v4'
+          ? 'V4 live — resource MW + V3 market catalog'
+          : mode === 'shadow'
+            ? 'Shadow — V3 live, V4 compare only'
+            : 'V3 live',
+        'success',
+      );
+    } catch (err) {
+      showToast(err.message || 'Engine switch failed', 'error');
+    } finally {
+      setEngineSaving(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!showOddsHealth && !showOddsDesk) return undefined;
+    loadEngineStatus();
+    return undefined;
+  }, [showOddsHealth, showOddsDesk, loadEngineStatus]);
 
   useEffect(() => {
     if (!showOddsHealth) return undefined;
@@ -281,6 +315,41 @@ export default function TradingRiskDomainView({ subModule }) {
           <pre style={{ fontSize: '0.72rem', whiteSpace: 'pre-wrap' }}>
             {JSON.stringify(oddsHealth?.settlementIngest || oddsHealth, null, 2)}
           </pre>
+        </AdminCard>
+      )}
+
+      {(showOddsDesk || showOddsHealth) && (
+        <AdminCard>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>Odds engine</div>
+              <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.78rem' }}>
+                Exclusive — V4 uses resource Match Winner + the same V3 compact market catalog.
+                {' '}Active: <strong>{engineStatus?.resolved || engineStatus?.active || '…'}</strong>
+                {engineStatus?.source ? ` (${engineStatus.source})` : ''}
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {[
+                { mode: 'v3', label: 'V3 live' },
+                { mode: 'v4', label: 'V4 live' },
+                { mode: 'shadow', label: 'Shadow' },
+              ].map((btn) => {
+                const active = (engineStatus?.resolved || engineStatus?.active) === btn.mode;
+                return (
+                  <button
+                    key={btn.mode}
+                    type="button"
+                    disabled={engineSaving}
+                    className={`admin-btn admin-btn--sm${active ? '' : ' admin-btn--ghost'}`}
+                    onClick={() => setEngineMode(btn.mode)}
+                  >
+                    {btn.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </AdminCard>
       )}
 

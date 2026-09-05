@@ -584,5 +584,53 @@ router.get('/provider-regimes', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/admin/odds-model/v4/engine
+ */
+router.get('/v4/engine', async (_req, res) => {
+  try {
+    const { getEngineModeStatus, resolveOddsEngineMode, getShadowMetrics } = await import('../../../lib/odds-v4/index.mjs');
+    return res.json({
+      success: true,
+      data: {
+        ...getEngineModeStatus(),
+        resolved: resolveOddsEngineMode(),
+        shadow: getShadowMetrics(),
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/admin/odds-model/v4/engine  { mode: 'v3'|'v4'|'shadow' } | { clear: true }
+ */
+router.post('/v4/engine', async (req, res) => {
+  try {
+    const {
+      setRuntimeEngineMode,
+      clearRuntimeEngineMode,
+      resolveOddsEngineMode,
+    } = await import('../../../lib/odds-v4/index.mjs');
+    const updatedBy = req.admin?.email || req.admin?.id || req.admin?.role || 'admin';
+    let status;
+    if (req.body?.clear === true || req.body?.mode === 'env') {
+      status = await clearRuntimeEngineMode({ updatedBy, reason: req.body?.reason });
+    } else {
+      status = await setRuntimeEngineMode(req.body?.mode, {
+        updatedBy,
+        reason: req.body?.reason,
+      });
+    }
+    return res.json({
+      success: true,
+      data: { ...status, resolved: resolveOddsEngineMode() },
+    });
+  } catch (err) {
+    return res.status(err.statusCode || 500).json({ success: false, error: err.message });
+  }
+});
+
 export default router;
 
