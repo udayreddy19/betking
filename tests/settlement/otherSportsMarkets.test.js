@@ -150,6 +150,41 @@ describe('other-sports settlement graders', () => {
     expect(sets.outcome).toBe('WON');
   });
 
+  it('declares finished snooker match_winner from frame score (Hill vs Jones)', async () => {
+    const match = {
+      id: 'oy_snk_hill_jones',
+      sport: 'snooker',
+      isLive: false,
+      isCompleted: true,
+      matchState: 'post',
+      status: 'COMPLETED',
+      winnerSide: '2',
+      team1: { name: 'Hill, Aaron', shortName: 'HIL' },
+      team2: { name: 'Jones, Jak', shortName: 'JON' },
+      score1: 3,
+      score2: 5,
+      liveDetails: { score1: 3, score2: 5 },
+    };
+    const lost = await evaluateBetForSettlement(
+      {
+        market_id: 'match_winner',
+        selection_id: 'sel_hill',
+        selection_name: 'Hill, Aaron',
+      },
+      match,
+    );
+    const won = await evaluateBetForSettlement(
+      {
+        market_id: 'match_winner',
+        selection_id: 'sel_jones',
+        selection_name: 'Jones, Jak',
+      },
+      match,
+    );
+    expect(lost.outcome).toBe('LOST');
+    expect(won.outcome).toBe('WON');
+  });
+
   it('quotes soccer extra markets from the V3 public snapshot', () => {
     const match = {
       id: 'api_soc_q',
