@@ -2002,7 +2002,7 @@ export async function sendAdminComposeEmail({
     try {
       let uid = null;
       if (mailbox.isMarketing) {
-        const { query } = await import('../../../db/pg.js');
+        const { query } = await import('../../db/pg.js');
         const { canSendPromotionalEmail } = await import('../../lib/notificationPreferencesEngine.mjs');
         const userRes = await query(
           `SELECT user_id FROM users WHERE LOWER(TRIM(email)) = LOWER(TRIM($1)) LIMIT 1`,
