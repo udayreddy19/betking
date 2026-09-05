@@ -102,7 +102,9 @@ export default function BettingDomainView({
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
-  const [settlementFilter, setSettlementFilter] = useState(subModule === 'settlement-engine' ? 'pending' : '');
+  const [settlementFilter, setSettlementFilter] = useState(
+    subModule === 'cashout-reconciliation' ? '' : 'pending',
+  );
   const [typeFilter, setTypeFilter] = useState('');
   const [search, setSearch] = useState('');
   const [searchDraft, setSearchDraft] = useState('');
@@ -112,20 +114,17 @@ export default function BettingDomainView({
   const [verifyBet, setVerifyBet] = useState(null);
   const [verifyResult, setVerifyResult] = useState(null);
   const [verifying, setVerifying] = useState(false);
-  const [settlementCounts, setSettlementCounts] = useState({ all: 0, pending: 0, completed: 0, live: 0 });
+  const [settlementCounts, setSettlementCounts] = useState({ pending: 0, completed: 0 });
   const { showToast } = useAdminToast();
   const { activeRole } = useAdminRole();
   const canSettle = hasPermission(activeRole, PERMISSIONS.SETTLE_BETS);
 
   useEffect(() => {
-    if (subModule === 'settlement-engine') {
-      setSettlementFilter('pending');
-      setStatusFilter('');
-    } else if (subModule === 'cashout-reconciliation') {
+    if (subModule === 'cashout-reconciliation') {
       setSettlementFilter('');
       setStatusFilter('CASHED_OUT');
     } else {
-      setSettlementFilter('');
+      setSettlementFilter('pending');
       setStatusFilter('');
     }
     setTypeFilter('');
@@ -163,10 +162,8 @@ export default function BettingDomainView({
         setError(data.note || null);
         if (counts) {
           setSettlementCounts({
-            all: Number(counts.all || 0),
             pending: Number(counts.pending || 0),
             completed: Number(counts.completed || 0),
-            live: Number(counts.live || 0),
           });
         }
       })
@@ -256,7 +253,7 @@ export default function BettingDomainView({
   const completedCount = filtered.filter((b) => !isOpenStatus(b.status)).length;
 
   const titles = {
-    'bets-registry': ['All Bets', 'Browse every bet type and status. Use settlement tabs to triage pending, completed, and live desks. See placed odds and verify win/loss against live match state.', 'Bet Registry'],
+    'bets-registry': ['All Bets', 'Browse every bet type and status. Use settlement tabs to triage pending and completed desks. See placed odds and verify win/loss against live match state.', 'Bet Registry'],
     'settlement-engine': ['Pending & Declare', 'Open, pending, and accepted bets — declare any outcome manually. Verify grades against live scores.', 'Pending Desk'],
     'cashout-reconciliation': ['Cashout Reconciliation', 'Cashout-related bets for reconciliation review.', 'Cashout Desk'],
   };
@@ -269,15 +266,11 @@ export default function BettingDomainView({
     ? ' · pending settlement'
     : settlementFilter === 'completed'
       ? ' · completed settlement'
-      : settlementFilter === 'live'
-        ? ' · live settlement'
-        : '';
+      : '';
 
   const settlementTabs = [
-    { id: '', label: 'All bets', count: settlementCounts.all },
     { id: 'pending', label: 'Pending settlement', count: settlementCounts.pending },
     { id: 'completed', label: 'Completed settlement', count: settlementCounts.completed },
-    { id: 'live', label: 'Live settlement', count: settlementCounts.live },
   ];
 
   return (
