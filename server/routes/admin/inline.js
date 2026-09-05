@@ -1092,6 +1092,15 @@ router.get('/api/admin/betting/bets', async (req, res) => {
   }
 });
 
+router.get('/api/admin/betting/bets/settlement-counts', async (req, res) => {
+  try {
+    const { countBetsBySettlement } = await import('../../../lib/adminDomainData.mjs');
+    res.json(await countBetsBySettlement());
+  } catch (err) {
+    res.status(500).json({ all: 0, pending: 0, completed: 0, live: 0, error: err.message });
+  }
+});
+
 router.post('/api/admin/betting/settle', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'TRADING_ADMIN', 'OPERATIONS_ADMIN'), async (req, res) => {
   const { betId, outcome, reason } = req.body;
   if (!betId || !outcome) {

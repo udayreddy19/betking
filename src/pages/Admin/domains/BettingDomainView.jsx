@@ -7,6 +7,7 @@ import { StatusBadge } from '../components/AdminBadge';
 import AdminConfirmDialog from '../components/AdminConfirmDialog';
 import AdminFilterBar, { FilterSelect, FilterSearch } from '../components/AdminFilterBar';
 import AdminDrawer from '../components/AdminDrawer';
+import AdminTabs from '../components/AdminTabs';
 import AdminVerifyLiveMatch from '../components/AdminVerifyLiveMatch';
 
 function money(n) {
@@ -83,13 +84,6 @@ const STATUS_OPTIONS = [
   { value: 'CASHED_OUT', label: 'Cashed out' },
 ];
 
-const SETTLEMENT_OPTIONS = [
-  { value: '', label: 'All settlements' },
-  { value: 'pending', label: 'Pending settlement' },
-  { value: 'completed', label: 'Completed settlement' },
-  { value: 'live', label: 'Live settlement' },
-];
-
 const TYPE_OPTIONS = [
   { value: '', label: 'All bet types' },
   { value: 'SINGLE', label: 'Single' },
@@ -118,6 +112,7 @@ export default function BettingDomainView({
   const [verifyBet, setVerifyBet] = useState(null);
   const [verifyResult, setVerifyResult] = useState(null);
   const [verifying, setVerifying] = useState(false);
+  const [settlementCounts, setSettlementCounts] = useState({ all: 0, pending: 0, completed: 0, live: 0 });
   const { showToast } = useAdminToast();
   const { activeRole } = useAdminRole();
   const canSettle = hasPermission(activeRole, PERMISSIONS.SETTLE_BETS);
@@ -159,10 +154,21 @@ export default function BettingDomainView({
     if (typeFilter) params.set('betType', typeFilter);
     if (search.trim()) params.set('q', search.trim());
 
-    adminApiClient.get(`/betting/bets?${params.toString()}`)
-      .then((data) => {
+    Promise.all([
+      adminApiClient.get(`/betting/bets?${params.toString()}`),
+      adminApiClient.get('/betting/bets/settlement-counts').catch(() => null),
+    ])
+      .then(([data, counts]) => {
         setBets(data.bets || []);
         setError(data.note || null);
+        if (counts) {
+          setSettlementCounts({
+            all: Number(counts.all || 0),
+            pending: Number(counts.pending || 0),
+            completed: Number(counts.completed || 0),
+            live: Number(counts.live || 0),
+          });
+        }
       })
       .catch((err) => {
         setBets([]);
@@ -250,7 +256,7 @@ export default function BettingDomainView({
   const completedCount = filtered.filter((b) => !isOpenStatus(b.status)).length;
 
   const titles = {
-    'bets-registry': ['All Bets', 'Browse every bet type and status. Filter by pending, completed, or live settlement. See placed odds and verify win/loss against live match state.', 'Bet Registry'],
+    'bets-registry': ['All Bets', 'Browse every bet type and status. Use settlement tabs to triage pending, completed, and live desks. See placed odds and verify win/loss against live match state.', 'Bet Registry'],
     'settlement-engine': ['Pending & Declare', 'Open, pending, and accepted bets — declare any outcome manually. Verify grades against live scores.', 'Pending Desk'],
     'cashout-reconciliation': ['Cashout Reconciliation', 'Cashout-related bets for reconciliation review.', 'Cashout Desk'],
   };
@@ -267,15 +273,38 @@ export default function BettingDomainView({
         ? ' · live settlement'
         : '';
 
+  const settlementTabs = [
+    { id: '', label: 'All bets', count: settlementCounts.all },
+    { id: 'pending', label: 'Pending settlement', count: settlementCounts.pending },
+    { id: 'completed', label: 'Completed settlement', count: settlementCounts.completed },
+    { id: 'live', label: 'Live settlement', count: settlementCounts.live },
+  ];
+
   return (
     <div>
       {/* Header */}
       <div style={{ marginBottom: '16px' }}>
-        <h2 className="admin-page-header__title">{heading}</h2>
-        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
-          {hint}
-          {loading ? ' Loading…' : ` · ${filtered.length} shown · ${openCount} open · ${completedCount} settled${settlementHint}`}
-        </p>
+        <div className="admin-flex-between" style={{ flexWrap: 'wrap', gap: 12, alignItems: 'flex-start' }}>
+          <div>
+            <h2 className="admin-page-header__title">{heading}</h2>
+            <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
+              {hint}
+              {loading ? ' Loading…' : ` · ${filtered.length} shown · ${openCount} open · ${completedCount} settled${settlementHint}`}
+            </p>
+          </div>
+          {subModule !== 'cashout-reconciliation' && (
+            <AdminTabs
+              className="betting-settlement-scope"
+              style={{ marginBottom: 0 }}
+              active={settlementFilter}
+              onChange={(id) => {
+                setSettlementFilter(id);
+                setStatusFilter('');
+              }}
+              tabs={settlementTabs}
+            />
+          )}
+        </div>
         {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
         {!canSettle && (
           <p style={{ margin: '8px 0 0', color: '#fbbf24', fontSize: '0.78rem' }}>
@@ -286,16 +315,6 @@ export default function BettingDomainView({
 
       {/* Filter Bar */}
       <AdminFilterBar label="Filters">
-        <FilterSelect
-          value={settlementFilter}
-          onChange={(value) => {
-            setSettlementFilter(value);
-            if (value) setStatusFilter('');
-          }}
-          options={SETTLEMENT_OPTIONS}
-          placeholder=""
-          style={{ minWidth: 180 }}
-        />
         <FilterSelect
           value={statusFilter}
           onChange={(value) => {
