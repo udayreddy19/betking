@@ -12,7 +12,8 @@ import { fetchLiveScores } from '../services/liveScoresService';
 import { subscribeLiveChannel, isLiveFeedSocketOpen } from '../services/liveFeedSocket';
 import { LIVE_SCORES_POLL_MS, LIVE_SCORES_WS_FALLBACK_POLL_MS } from '../config/livePolling';
 import { getIplSrlMatches } from '../../lib/iplSrlSimulator.mjs';
-import { cricketScoreWeight, cricketSourceRank, getCanonicalMatchPairKey } from '../../lib/matchPairKey.mjs';
+import { cricketScoreWeight, cricketSourceRank, getCanonicalMatchPairKey, getMatchPairKeyCandidates } from '../../lib/matchPairKey.mjs';
+import { mergeCricketLiveDetails } from '../utils/cricketScoreMerge';
 import { useFeatureFlags } from './FeatureFlagsContext';
 import { isMatchSRL, isMatchOddsYraSRL, isMatchOtherSRL, isMatchT10 } from '../utils/cricketFormat';
 
@@ -61,9 +62,37 @@ function preferMatchEntity(existing, incoming) {
     return secondary;
   }
   if (incomingRank !== existingRank) {
-    return primary;
+    return {
+      ...primary,
+      liveDetails: mergeCricketLiveDetails(secondary.liveDetails, primary.liveDetails, primary),
+      sources: [...new Set([
+        ...(Array.isArray(existing.sources) ? existing.sources : [existing.source].filter(Boolean)),
+        ...(Array.isArray(incoming.sources) ? incoming.sources : [incoming.source].filter(Boolean)),
+      ])],
+      crexEventId: existing.crexEventId || incoming.crexEventId,
+      fancodeMatchId: existing.fancodeMatchId || incoming.fancodeMatchId,
+      cricbuzzMatchId: existing.cricbuzzMatchId || incoming.cricbuzzMatchId,
+    };
   }
-  return cricketScoreWeight(incoming) > cricketScoreWeight(existing) ? incoming : existing;
+  const richer = cricketScoreWeight(incoming) > cricketScoreWeight(existing) ? incoming : existing;
+  const other = richer === incoming ? existing : incoming;
+  return {
+    ...richer,
+    liveDetails: mergeCricketLiveDetails(other.liveDetails, richer.liveDetails, richer),
+  };
+}
+
+function pairIndexForMatch(seenPairs, match) {
+  for (const key of getMatchPairKeyCandidates(match)) {
+    if (seenPairs.has(key)) return seenPairs.get(key);
+  }
+  return undefined;
+}
+
+function rememberPairKeys(seenPairs, match, index) {
+  for (const key of getMatchPairKeyCandidates(match)) {
+    seenPairs.set(key, index);
+  }
 }
 
 function mergeSrlMatches(matches) {
@@ -78,22 +107,39 @@ function mergeSrlMatches(matches) {
     if (!match?.id || seenIds.has(match.id)) return;
     const pairKey = getCanonicalMatchPairKey(match);
     // Force SRL sims into their own bucket even when team names collide with real fixtures
-    const keyed = allowSrl || isSrlMatch(match)
-      ? `srl|${pairKey}`
-      : pairKey;
-    if (keyed && seenPairs.has(keyed)) {
-      const existingIdx = seenPairs.get(keyed);
+    if (allowSrl || isSrlMatch(match)) {
+      const keyed = `srl|${pairKey}`;
+      if (keyed && seenPairs.has(keyed)) {
+        const existingIdx = seenPairs.get(keyed);
+        const existing = result[existingIdx];
+        if (existing) {
+          const preferred = preferMatchEntity(existing, match);
+          result[existingIdx] = preferred;
+          seenIds.add(match.id);
+          if (preferred?.id) seenIds.add(preferred.id);
+        }
+        return;
+      }
+      seenIds.add(match.id);
+      if (keyed) seenPairs.set(keyed, result.length);
+      result.push(match);
+      return;
+    }
+
+    const existingIdx = pairIndexForMatch(seenPairs, match);
+    if (existingIdx != null) {
       const existing = result[existingIdx];
       if (existing) {
         const preferred = preferMatchEntity(existing, match);
         result[existingIdx] = preferred;
         seenIds.add(match.id);
         if (preferred?.id) seenIds.add(preferred.id);
+        rememberPairKeys(seenPairs, preferred, existingIdx);
       }
       return;
     }
     seenIds.add(match.id);
-    if (keyed) seenPairs.set(keyed, result.length);
+    rememberPairKeys(seenPairs, match, result.length);
     result.push(match);
   };
 
@@ -101,24 +147,6 @@ function mergeSrlMatches(matches) {
   for (const match of srl) pushUnique(match, { allowSrl: true });
 
   return result;
-}
-
-function playerSlot(player) {
-  if (!player) return null;
-  const name = typeof player === 'string' ? player : player.name;
-  if (!name) return null;
-  return player;
-}
-
-function mergeLiveDetailsPreservePlayers(prevLd = {}, nextLd = {}) {
-  const merged = { ...prevLd, ...nextLd };
-  for (const key of ['batter1', 'batter2', 'bowler']) {
-    merged[key] = playerSlot(nextLd[key]) || playerSlot(prevLd[key]) || nextLd[key] || prevLd[key];
-  }
-  if (!merged.currentOverBalls?.length && prevLd.currentOverBalls?.length) {
-    merged.currentOverBalls = prevLd.currentOverBalls;
-  }
-  return merged;
 }
 
 function matchDisplayKey(match) {
@@ -175,11 +203,6 @@ function mergeMatchesStable(prev, next) {
   const merged = [];
   const seenPairs = new Map();
 
-  const rememberPair = (match, index) => {
-    const key = getCanonicalMatchPairKey(match);
-    if (key) seenPairs.set(key, index);
-  };
-
   for (const candidate of next) {
     processedIds.add(candidate.id);
     const previous = prevById.get(candidate.id);
@@ -191,7 +214,7 @@ function mergeMatchesStable(prev, next) {
     } else {
       chosen = {
         ...candidate,
-        liveDetails: mergeLiveDetailsPreservePlayers(previous.liveDetails, candidate.liveDetails),
+        liveDetails: mergeCricketLiveDetails(previous.liveDetails, candidate.liveDetails, candidate),
         squads: candidate.squads?.length ? candidate.squads : previous.squads,
         scorecardInnings: candidate.scorecardInnings?.length
           ? candidate.scorecardInnings
@@ -199,13 +222,13 @@ function mergeMatchesStable(prev, next) {
       };
     }
 
-    const pairKey = getCanonicalMatchPairKey(chosen);
-    if (pairKey && seenPairs.has(pairKey)) {
-      const existingIdx = seenPairs.get(pairKey);
+    const existingIdx = pairIndexForMatch(seenPairs, chosen);
+    if (existingIdx != null) {
       merged[existingIdx] = preferMatchEntity(merged[existingIdx], chosen);
+      rememberPairKeys(seenPairs, merged[existingIdx], existingIdx);
       continue;
     }
-    rememberPair(chosen, merged.length);
+    rememberPairKeys(seenPairs, chosen, merged.length);
     merged.push(chosen);
   }
 
@@ -213,13 +236,13 @@ function mergeMatchesStable(prev, next) {
   // but never keep a second copy of the same fixture (pair key).
   for (const previous of prev) {
     if (processedIds.has(previous.id)) continue;
-    const pairKey = getCanonicalMatchPairKey(previous);
-    if (pairKey && seenPairs.has(pairKey)) {
-      const existingIdx = seenPairs.get(pairKey);
+    const existingIdx = pairIndexForMatch(seenPairs, previous);
+    if (existingIdx != null) {
       merged[existingIdx] = preferMatchEntity(merged[existingIdx], previous);
+      rememberPairKeys(seenPairs, merged[existingIdx], existingIdx);
       continue;
     }
-    rememberPair(previous, merged.length);
+    rememberPairKeys(seenPairs, previous, merged.length);
     merged.push(previous);
   }
 

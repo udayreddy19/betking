@@ -131,14 +131,25 @@ export function mergeCricketLiveDetails(prev = {}, next = {}, match = null) {
     merged.firstWickets = pickMonotonicInt(prev.firstWickets, next.firstWickets);
     merged.firstOvers = pickHigherOvers(prev.firstOvers, next.firstOvers);
 
-    if (next.chaseRuns != null) merged.chaseRuns = Number(next.chaseRuns);
-    else if (prev.chaseRuns != null) merged.chaseRuns = Number(prev.chaseRuns);
-
-    merged.chaseWickets = next.chaseWickets ?? prev.chaseWickets ?? 0;
-    merged.chaseOvers = next.chaseOvers || prev.chaseOvers || '0.0';
-    merged.score2 = merged.chaseRuns ?? 0;
-    merged.wickets2 = merged.chaseWickets;
-    merged.overs2 = normalizeCricbuzzOvers(merged.chaseOvers);
+    merged.chaseRuns = (prev.chaseRuns != null || next.chaseRuns != null)
+      ? pickMonotonicInt(
+        prev.chaseRuns != null ? Number(prev.chaseRuns) : null,
+        next.chaseRuns != null ? Number(next.chaseRuns) : null,
+      )
+      : undefined;
+    merged.chaseWickets = (prev.chaseWickets != null || next.chaseWickets != null)
+      ? pickMonotonicInt(
+        prev.chaseWickets != null ? Number(prev.chaseWickets) : null,
+        next.chaseWickets != null ? Number(next.chaseWickets) : null,
+      )
+      : undefined;
+    merged.chaseOvers = pickHigherOvers(prev.chaseOvers, next.chaseOvers);
+    if (next.chaseTeamName || prev.chaseTeamName) {
+      merged.chaseTeamName = next.chaseTeamName || prev.chaseTeamName;
+    }
+    merged.score2 = merged.chaseRuns ?? next.score2 ?? prev.score2 ?? 0;
+    merged.wickets2 = merged.chaseWickets ?? next.wickets2 ?? prev.wickets2 ?? 0;
+    merged.overs2 = normalizeCricbuzzOvers(merged.chaseOvers || next.overs2 || prev.overs2);
     // Reset stale first-innings chaseBallNbr when chase is at 0.0 / 0 runs
     const chaseOversStr = String(merged.chaseOvers || '').trim();
     const chaseAtStart = (chaseOversStr === '0' || chaseOversStr === '0.0')
