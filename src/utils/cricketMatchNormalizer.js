@@ -97,8 +97,23 @@ export function normalizeToken(value = '') {
     .toLowerCase()
     .replace(/\(women\)|\bwomen\b|\bw\b$/gi, 'w')
     .replace(/\(men\)|\bmen\b/gi, 'm')
+    .replace(/thunderers/g, 'thunders')
     .replace(/[^a-z0-9]/g, '')
     .trim();
+}
+
+/** When firstTeamName matches neither side, use who actually has the runs. */
+export function resolveFirstInningsIsHome(homeTeam, awayTeam, firstTeamName, homeRuns = 0, awayRuns = 0) {
+  if (firstTeamName) {
+    const home = matchesTeamIdentifier(homeTeam, firstTeamName);
+    const away = matchesTeamIdentifier(awayTeam, firstTeamName);
+    if (home && !away) return true;
+    if (away && !home) return false;
+  }
+  const t1 = Number(homeRuns) || 0;
+  const t2 = Number(awayRuns) || 0;
+  if (t2 > 0 && t1 === 0) return false;
+  return true;
 }
 
 /**
@@ -443,7 +458,13 @@ export function normalizeMatch(raw = {}, previous = {}, options = {}) {
       );
 
     if (hasValidChase) {
-      const isTeam1First = rawLd.firstTeamName ? matchesTeamIdentifier(homeTeam, rawLd.firstTeamName) : true;
+      const isTeam1First = resolveFirstInningsIsHome(
+        homeTeam,
+        awayTeam,
+        rawLd.firstTeamName,
+        Number(raw.team1?.runs ?? rawLd.score1 ?? firstRuns ?? 0),
+        Number(raw.team2?.runs ?? rawLd.score2 ?? chaseRuns ?? 0),
+      );
       const firstTeamName = isTeam1First ? t1Name : t2Name;
       const firstTeamId = isTeam1First ? t1Id : t2Id;
       const firstTeamShort = isTeam1First ? t1Short : t2Short;
@@ -481,15 +502,16 @@ export function normalizeMatch(raw = {}, previous = {}, options = {}) {
         ...chaseScores,
       });
     } else {
-      // 1st Innings only
-      let isTeam1Batting = true;
-      if (rawLd.firstTeamName) {
-        isTeam1Batting = matchesTeamIdentifier(homeTeam, rawLd.firstTeamName);
-      } else {
-        const t1r = Number(raw.team1?.runs ?? rawLd.score1 ?? 0);
-        const t2r = Number(raw.team2?.runs ?? rawLd.score2 ?? 0);
-        if (t2r > 0 && t1r === 0) isTeam1Batting = false;
-      }
+      // 1st Innings only — never flip to team2 just because firstTeamName is a spelling variant
+      const t1r = Number(raw.team1?.runs ?? rawLd.score1 ?? 0);
+      const t2r = Number(raw.team2?.runs ?? rawLd.score2 ?? 0);
+      const isTeam1Batting = resolveFirstInningsIsHome(
+        homeTeam,
+        awayTeam,
+        rawLd.firstTeamName,
+        t1r,
+        t2r,
+      );
 
       const batTeamName = isTeam1Batting ? t1Name : t2Name;
       const batTeamId = isTeam1Batting ? t1Id : t2Id;

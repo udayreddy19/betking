@@ -25,6 +25,34 @@ describe('SL vs India pair key + test score resolve', () => {
     expect(full).toBe('m|real|india|sri lanka');
   });
 
+  it('attributes first-innings runs to Thunders when the feed says Thunderers', () => {
+    const match = {
+      id: 'fc_4248672',
+      sport: 'cricket',
+      matchType: 'ODI',
+      isLive: true,
+      team1: { name: 'Muscat Thunders', shortName: 'MUT', runs: 101, wickets: 5 },
+      team2: { name: 'IAS Invincibles', shortName: 'IAI', runs: 0, wickets: 0 },
+      liveDetails: {
+        runs: 101,
+        wickets: 5,
+        overs: '24.5',
+        score1: 101,
+        wickets1: 5,
+        score2: 0,
+        firstRuns: 101,
+        firstWickets: 5,
+        firstOvers: '24.5',
+        firstTeamName: 'Muscat Thunderers',
+        inningsId: 1,
+      },
+    };
+    const resolved = resolveCricketTeamScores(match, match.liveDetails);
+    expect(resolved.team1.hasBatted).toBe(true);
+    expect(resolved.team1.displayScore).toBe('101/5');
+    expect(resolved.team2.hasBatted).toBe(false);
+  });
+
   it('merges Muscat Thunderers and Muscat Thunders onto one pair key', () => {
     const a = getCanonicalMatchPairKey({
       team1: { name: 'Muscat Thunderers' },

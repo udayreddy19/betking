@@ -36,6 +36,7 @@ export function normalizeTeamToken(name = '') {
     .toLowerCase()
     .replace(/\(women\)|\bwomen\b|\bw\b$/gi, 'w')
     .replace(/\(men\)|\bmen\b/gi, 'm')
+    .replace(/thunderers/g, 'thunders')
     .replace(/[^a-z0-9]/g, '');
 }
 
@@ -351,12 +352,16 @@ export function buildCanonicalMatchSnapshot(match) {
   // If no scorecard innings or testInnings existed, build canonical 1st (and 2nd) innings from liveDetails
   if (inningsList.length === 0) {
     let firstBatTeam = team1Name;
+    const t1rLive = Number(match.team1?.runs ?? ld.score1 ?? 0);
+    const t2rLive = Number(match.team2?.runs ?? ld.score2 ?? 0);
     if (ld.firstTeamName) {
-      firstBatTeam = teamNameMatches(team2Name, ld.firstTeamName) ? team2Name : team1Name;
-    } else {
-      const t1r = Number(match.team1?.runs ?? ld.score1 ?? 0);
-      const t2r = Number(match.team2?.runs ?? ld.score2 ?? 0);
-      if (t2r > 0 && t1r === 0) firstBatTeam = team2Name;
+      const t1Hit = teamNameMatches(team1Name, ld.firstTeamName);
+      const t2Hit = teamNameMatches(team2Name, ld.firstTeamName);
+      if (t2Hit && !t1Hit) firstBatTeam = team2Name;
+      else if (t1Hit && !t2Hit) firstBatTeam = team1Name;
+      else if (t2rLive > 0 && t1rLive === 0) firstBatTeam = team2Name;
+    } else if (t2rLive > 0 && t1rLive === 0) {
+      firstBatTeam = team2Name;
     }
 
     const firstBowlTeam = (firstBatTeam === team1Name) ? team2Name : team1Name;

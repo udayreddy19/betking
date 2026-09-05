@@ -699,6 +699,18 @@ function formatHeaderScore(runs, wickets, { missing = false } = {}) {
   return `${runs}/${wickets}`;
 }
 
+function headerScoreFromSources(resolvedTeam, snapshotInns) {
+  if (resolvedTeam?.hasBatted) {
+    return formatHeaderScore(resolvedTeam.runs, resolvedTeam.wickets);
+  }
+  const latest = snapshotInns?.[snapshotInns.length - 1];
+  if (latest && (Number(latest.score) > 0 || Number(latest.wickets) > 0
+    || (latest.overs && latest.overs !== '0.0' && latest.overs !== '0'))) {
+    return formatHeaderScore(latest.score ?? latest.runs, latest.wickets);
+  }
+  return '—';
+}
+
 export default function LiveMatchGraphicWidget({ match: rawMatch }) {
   const match = useMatchDetail(rawMatch);
 
@@ -1095,16 +1107,18 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
             <span className="live-widget-scoreline">
               {canonicalSnapshot?.headerScores ? (
                 <>
-                  <span title={canonicalSnapshot.headerScores.team1ScoreText} className={!canonicalSnapshot.headerScores.team1HasBatted ? 'score-yet-to-bat' : ''}>
-                    {canonicalSnapshot.headerScores.team1HasBatted
-                      ? (innings ? formatHeaderScore(innings.displayScore1, innings.displayWickets1) : '—')
-                      : '—'}
+                  <span title={canonicalSnapshot.headerScores.team1ScoreText} className={!canonicalSnapshot.headerScores.team1HasBatted && !resolvedScores.team1?.hasBatted ? 'score-yet-to-bat' : ''}>
+                    {headerScoreFromSources(
+                      resolvedScores.team1,
+                      canonicalSnapshot.innings?.filter((inn) => teamNameMatches(team1, inn.battingTeamName)),
+                    )}
                   </span>
                   <span className="live-widget-score-sep">:</span>
-                  <span title={canonicalSnapshot.headerScores.team2ScoreText} className={!canonicalSnapshot.headerScores.team2HasBatted ? 'score-yet-to-bat' : ''}>
-                    {canonicalSnapshot.headerScores.team2HasBatted
-                      ? (innings ? formatHeaderScore(innings.displayScore2, innings.displayWickets2) : '—')
-                      : '—'}
+                  <span title={canonicalSnapshot.headerScores.team2ScoreText} className={!canonicalSnapshot.headerScores.team2HasBatted && !resolvedScores.team2?.hasBatted ? 'score-yet-to-bat' : ''}>
+                    {headerScoreFromSources(
+                      resolvedScores.team2,
+                      canonicalSnapshot.innings?.filter((inn) => teamNameMatches(team2, inn.battingTeamName)),
+                    )}
                   </span>
                 </>
               ) : (
