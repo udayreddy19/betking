@@ -23,7 +23,7 @@ export default function AdminTabs({ tabs = [], active, onChange, className = '',
             onClick={() => onChange(id)}
           >
             {label}
-            {count != null && Number(count) > 0 && (
+            {count != null && (
               <span className="admin-subtab__count">{count}</span>
             )}
           </button>

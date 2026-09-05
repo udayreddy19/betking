@@ -14,6 +14,7 @@ import {
 } from '../../../utils/supportAttachments';
 import { formatIstShort } from '../../../utils/istTime';
 import { useNavAttentionCount } from '../context/AdminNavAttentionContext';
+import AdminTabs from '../components/AdminTabs';
 
 function formatMsgTime(value) {
   if (!value) return '';
@@ -24,6 +25,7 @@ const OPEN_TICKET_STATUSES = new Set([
   'OPEN', 'ASSIGNED', 'IN_PROGRESS', 'ESCALATED', 'REOPENED',
   'PENDING', 'PENDING_INTERNAL', 'WAITING', 'ACTIVE', 'WAITING_FOR_USER',
 ]);
+const CLOSED_TICKET_STATUSES = new Set(['CLOSED', 'RESOLVED', 'ENDED']);
 
 function isSlaBreachedTicket(t) {
   if (!t) return false;
@@ -90,6 +92,7 @@ export default function SupportDomainView({
   const [escalatePriority, setEscalatePriority] = useState('HIGH');
 
   // Filters
+  const [queueScope, setQueueScope] = useState('open'); // 'open' | 'closed'
   const [statusFilter, setStatusFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
@@ -199,7 +202,16 @@ export default function SupportDomainView({
 
   const isTicketClosed = (ticket) => {
     const s = String(ticket?.status || '').toUpperCase();
-    return s === 'CLOSED' || s === 'RESOLVED';
+    return CLOSED_TICKET_STATUSES.has(s);
+  };
+
+  const selectQueueScope = (scope) => {
+    setQueueScope(scope);
+    setActiveTab('tickets');
+    if (scope === 'open' && CLOSED_TICKET_STATUSES.has(statusFilter)) setStatusFilter('');
+    if (scope === 'closed' && statusFilter && !CLOSED_TICKET_STATUSES.has(statusFilter)) {
+      setStatusFilter('');
+    }
   };
 
   const handleSendReply = async () => {
@@ -336,9 +348,16 @@ export default function SupportDomainView({
       .finally(() => setSending(false));
   };
 
+  const openTicketCount = tickets.filter((t) => !isTicketClosed(t)).length;
+  const closedTicketCount = tickets.filter((t) => isTicketClosed(t)).length;
+
   // Filtered Tickets
   const filteredTickets = tickets.filter((t) => {
     if (isSlaDesk && !isSlaBreachedTicket(t)) return false;
+    if (!isSlaDesk) {
+      if (queueScope === 'open' && isTicketClosed(t)) return false;
+      if (queueScope === 'closed' && !isTicketClosed(t)) return false;
+    }
     if (statusFilter && String(t.status).toUpperCase() !== statusFilter) return false;
     if (categoryFilter && String(t.category).toUpperCase() !== categoryFilter) return false;
     if (priorityFilter && String(t.priority).toUpperCase() !== priorityFilter) return false;
@@ -383,7 +402,14 @@ export default function SupportDomainView({
       )}
 
       {/* Primary Sub-Tabs */}
-      <div style={{ display: 'flex', gap: '12px', borderBottom: '1px solid var(--admin-border)', paddingBottom: '8px' }}>
+      <div style={{
+        display: 'flex',
+        gap: '12px',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        borderBottom: '1px solid var(--admin-border)',
+        paddingBottom: '8px',
+      }}>
         <button
           type="button"
           className={`admin-btn ${activeTab === 'tickets' ? 'admin-btn--primary' : 'admin-btn--secondary'}`}
@@ -391,7 +417,7 @@ export default function SupportDomainView({
         >
           {isSlaDesk ? '⚠ SLA Breached' : '🎫 Ticket Queue'}
           {' '}({filteredTickets.length}
-          {!isSlaDesk && ticketCount != null ? ` · ${ticketCount} need reply` : ''}
+          {!isSlaDesk && queueScope === 'open' && ticketCount != null ? ` · ${ticketCount} need reply` : ''}
           )
         </button>
         {!isSlaDesk && (
@@ -404,6 +430,18 @@ export default function SupportDomainView({
             {chatCount != null ? ` · ${chatCount} waiting` : ''}
             )
           </button>
+        )}
+        {!isSlaDesk && (
+          <AdminTabs
+            className="support-queue-scope"
+            style={{ marginBottom: 0, marginLeft: 'auto' }}
+            active={queueScope}
+            onChange={selectQueueScope}
+            tabs={[
+              { id: 'open', label: 'Open tickets', count: openTicketCount },
+              { id: 'closed', label: 'Closed / Resolved', count: closedTicketCount },
+            ]}
+          />
         )}
       </div>
 
@@ -422,12 +460,21 @@ export default function SupportDomainView({
             />
 
             <select className="admin-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              <option value="">All Statuses</option>
-              <option value="OPEN">Open</option>
-              <option value="IN_PROGRESS">In Progress</option>
-              <option value="WAITING_FOR_USER">Waiting for User</option>
-              <option value="RESOLVED">Resolved</option>
-              <option value="CLOSED">Closed</option>
+              <option value="">{queueScope === 'closed' ? 'All closed statuses' : 'All open statuses'}</option>
+              {queueScope === 'closed' ? (
+                <>
+                  <option value="RESOLVED">Resolved</option>
+                  <option value="CLOSED">Closed</option>
+                </>
+              ) : (
+                <>
+                  <option value="OPEN">Open</option>
+                  <option value="IN_PROGRESS">In Progress</option>
+                  <option value="WAITING_FOR_USER">Waiting for User</option>
+                  <option value="ASSIGNED">Assigned</option>
+                  <option value="ESCALATED">Escalated</option>
+                </>
+              )}
             </select>
 
             <select className="admin-select" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
@@ -454,7 +501,9 @@ export default function SupportDomainView({
             data={filteredTickets}
             keyField="id"
             onRowClick={openTicket}
-            emptyMessage="No support tickets match the selected filters."
+            emptyMessage={queueScope === 'closed'
+              ? 'No closed or resolved tickets match the selected filters.'
+              : 'No open tickets match the selected filters.'}
             columns={[
               {
                 header: 'Ticket Ref',
