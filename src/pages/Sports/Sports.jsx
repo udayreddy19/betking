@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect, useCallback, useRef, useSyncExternalStore
 import { Link, useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { FiSearch, FiHome, HiOutlineChevronDown, HiOutlineChevronUp, FiMessageCircle } from '../../icons';
 import TeamJersey from '../../components/TeamJersey/TeamJersey';
-import MatchCountdownTimer from '../../components/MatchCountdownTimer/MatchCountdownTimer';
 import LiveMatchGraphicWidget from '../../components/LiveMatchGraphicWidget/LiveMatchGraphicWidget';
 import ErrorBoundary from '../../components/ErrorBoundary/ErrorBoundary';
 import SportsLeagueSidebar from '../../components/SportsLeagueSidebar/SportsLeagueSidebar';
@@ -16,10 +15,6 @@ import { isMatchBettable, isTrulyLiveMatch, getMatchState, isMatchFinished } fro
 import { resolveCricketTeamScores, resolveCricketTossText, isCricketSecondInnings } from '../../utils/cricketScores';
 import { isTeamBattingInMatch } from '../../utils/teamFlags';
 import {
-  isTestMatch,
-  getTestMatchDayLabel,
-  formatMatchCountdown,
-  resolveCricketOversFormat,
   getCricketFormatCardBadge,
   isMatchSRL,
   isMatchOddsYraSRL,
@@ -1090,90 +1085,6 @@ export default function Sports() {
                     </ErrorBoundary>
                   )}
                 </div>
-
-              {(() => {
-                const { team1Score, team2Score, isLive, isFinished } = getMatchScores(activeMatch);
-                const commText = centralizedState?.commentary || activeMatch.liveDetails?.commentary;
-
-                const matchFormatResolved = resolveCricketOversFormat(activeMatch);
-                const matchFormatBadge = matchFormatResolved === 'THE_HUNDRED'
-                  ? 'HUNDRED'
-                  : matchFormatResolved;
-
-                const isTest = isTestMatch(activeMatch) || matchFormatBadge === 'TEST';
-                const testDayBadge = isTest ? getTestMatchDayLabel(activeMatch) : null;
-                const rawVenue = activeMatch.venue || activeMatch.ground || activeMatch.liveDetails?.venue;
-                const venueText = typeof rawVenue === 'string'
-                  ? rawVenue
-                  : (rawVenue?.venueName || rawVenue?.name || (rawVenue?.city ? `${rawVenue.city}${rawVenue.country ? `, ${rawVenue.country}` : ''}` : null));
-
-                const rawSeries = activeMatch.seriesName || activeMatch.league;
-                const seriesText = typeof rawSeries === 'string' ? rawSeries : (rawSeries?.name || null);
-
-                const tossText = resolveTossText(activeMatch, centralizedState);
-
-                return (
-                  <div className="sports-match-banner sports-match-banner--desktop-only">
-                    <div className="sports-match-banner-time" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '12px' }}>
-                      {isLive ? (
-                        <>
-                          <span className="sports-live-badge-dot" />
-                          <span style={{ color: '#ef4444', fontWeight: 800 }}>LIVE</span>
-                          {isTest && testDayBadge && (
-                            <span style={{ background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '3px 10px', borderRadius: '16px', fontSize: '0.78rem', fontWeight: 800 }}>
-                              📅 {testDayBadge}
-                            </span>
-                          )}
-                        </>
-                      ) : isFinished ? (
-                        <span style={{ color: '#94a3b8', fontWeight: 800 }}>FINISHED</span>
-                      ) : (
-                        <MatchCountdownTimer match={activeMatch} style={{ fontSize: '0.92rem', padding: '6px 18px' }} />
-                      )}
-                    </div>
-
-                    <div className="sports-match-banner-meta-bar">
-                      <span className="sports-format-badge">{matchFormatBadge}</span>
-                      {seriesText && <span className="sports-series-name">🏆 {seriesText}</span>}
-                      {venueText && <span className="sports-venue-tag">📍 {venueText}</span>}
-                    </div>
-
-                    <div className="sports-match-banner-teams">
-                      <div className="sports-match-banner-team-col">
-                        <TeamJersey team={activeMatch.team1} size={48} isFlying={isLive && isTeamBattingInMatch(activeMatch, activeMatch.team1)} />
-                        <span className="sports-match-banner-team">{teamDisplayName(activeMatch.team1)}</span>
-                        {(isLive || isFinished) && team1Score && (
-                          <strong className="sports-match-banner-score">{team1Score}</strong>
-                        )}
-                      </div>
-
-                      <span className="sports-match-banner-vs">VS</span>
-
-                      <div className="sports-match-banner-team-col">
-                        <TeamJersey team={activeMatch.team2} size={48} isFlying={isLive && isTeamBattingInMatch(activeMatch, activeMatch.team2)} />
-                        <span className="sports-match-banner-team">{teamDisplayName(activeMatch.team2)}</span>
-                        {(isLive || isFinished) && team2Score && (
-                          <strong className="sports-match-banner-score">{team2Score}</strong>
-                        )}
-                      </div>
-                    </div>
-
-                    {tossText && (
-                      <div className="sports-toss-badge">
-                        <span>🪙 {tossText}</span>
-                      </div>
-                    )}
-
-                    <p className="sports-match-banner-commentary">
-                      {isTest && testDayBadge
-                        ? `📅 ${testDayBadge} · ${commText || 'Match play active'}`
-                        : (isFinished
-                          ? (commText || 'Match completed')
-                          : (!isLive ? `⏱️ Match ${formatMatchCountdown(activeMatch)}` : (commText || 'Match play active')))}
-                    </p>
-                  </div>
-                );
-              })()}
 
               <div className="sports-market-cats">
                 {marketCategories.map(cat => (

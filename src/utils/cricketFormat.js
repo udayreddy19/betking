@@ -128,7 +128,7 @@ export function detectCricketMatchFormat(match) {
   }
 
   // ODI / 50 Over / List A
-  if (/\bODI\b|\bONE[\s-]?DAY\b|\b50[\s-]?OVERS?\b|\bCWC\b|\bWORLD\s*CUP\b|\bVIJAY\s*HAZARE\b|\bROYAL\s*LONDON\b|\bMARSH\s*ONE\s*DAY\b/.test(raw)) {
+  if (/\bODI\b|\bONE[\s-]?DAY\b|\b50[\s-]?OVERS?\b|\bCWC\b|\bWORLD\s*CUP\b|\bVIJAY\s*HAZARE\b|\bROYAL\s*LONDON\b|\bMARSH\s*ONE\s*DAY\b|\bACC\b[\s\S]{0,40}\bPREMIER\s*CUP\b|\bPREMIER\s*CUP\b[\s\S]{0,40}\bACC\b/.test(raw)) {
     if (/LIST[\s-_]?A/.test(raw)) return 'LIST_A';
     return 'ODI';
   }

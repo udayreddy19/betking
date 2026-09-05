@@ -96,8 +96,9 @@
   display: none;
 }
 
+/* LiveMatchGraphicWidget already shows score/status on all viewports. */
 .sports-match-banner--desktop-only {
-  display: block;
+  display: none;
 }
 
 .sports-right {

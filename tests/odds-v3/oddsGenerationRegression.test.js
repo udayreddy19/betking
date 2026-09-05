@@ -932,4 +932,118 @@ describe('Odds generation regressions', () => {
     }
     expect((snap.markets || []).some((m) => /^team_total_alt_/i.test(m.marketId || '') && m.status === 'OPEN')).toBe(false);
   });
+
+  it('maps cumulative Test wickets onto the current innings and opens winner odds', () => {
+    const state = buildCanonicalFromMatch({
+      id: 'cb_essex_sussex',
+      sport: 'cricket',
+      isLive: true,
+      matchState: 'in',
+      matchFormat: 'TEST',
+      league: 'County Championship Division One',
+      team1: { name: 'Essex', shortName: 'ESS', runs: 374, wickets: 17 },
+      team2: { name: 'Sussex', shortName: 'SUS', runs: 505, wickets: 20 },
+      liveDetails: {
+        inningsId: 1,
+        commentary: 'Fourth innings',
+        testTarget: 506,
+        testInnings: [
+          { inningsId: 1, batTeam: 'SUS', runs: 275, wickets: 10, overs: '99.0' },
+          { inningsId: 2, batTeam: 'ESS', runs: 177, wickets: 10, overs: '58.5' },
+          { inningsId: 3, batTeam: 'SUS', runs: 230, wickets: 10, overs: '50.1' },
+          { inningsId: 4, batTeam: 'ESS', runs: 197, wickets: 7, overs: '53.0' },
+        ],
+        firstRuns: 374,
+        firstWickets: 17,
+        firstTeamName: 'Essex',
+        chaseRuns: 177,
+        chaseWickets: 10,
+        chaseTeamName: 'ESS',
+        chaseOvers: '58.5',
+      },
+    });
+
+    expect(state.format).toBe('TEST');
+    expect(state.team1.runs).toBe(374);
+    expect(state.team2.runs).toBe(505);
+    expect(state.team1.wickets).toBe(7);
+    expect(state.team2.wickets).toBe(10);
+    expect(state.battingTeamId).toBe('ESS');
+    expect(state.target).toBe(506);
+    expect(state.runsRequired).toBe(132);
+
+    const snap = generate(state, { winnerOnly: true });
+    expect(snap.status).not.toBe('INVALID_STATE');
+    const winner = snap.markets.find((m) => m.marketId === 'match_winner');
+    expect(winner?.status).toBe('OPEN');
+    expect(winner.selections.every((s) => Number.isFinite(s.odds) && s.odds > 1)).toBe(true);
+  });
+
+  it('uses liveDetails.runs when score2 is 0 mid-chase so ODI winner odds open', () => {
+    const state = buildCanonicalFromMatch({
+      id: 'cb_mas_hk',
+      sport: 'cricket',
+      isLive: true,
+      matchState: 'in',
+      matchFormat: 'T20',
+      league: 'ACC Men’s Premier Cup 2026',
+      team1: { name: 'Malaysia', shortName: 'MAS', runs: 209, wickets: 10 },
+      team2: { name: 'Hong Kong, China', shortName: 'HK', runs: 36, wickets: 2 },
+      liveDetails: {
+        inningsId: 2,
+        runs: 36,
+        wickets: 2,
+        overs: '8.5',
+        score2: 0,
+        wickets2: 20,
+        firstRuns: 209,
+        firstWickets: 10,
+        firstTeamName: 'Hong Kong, China',
+        firstOvers: '45.0',
+        chaseOvers: '8.5',
+      },
+    });
+
+    expect(state.format).toBe('ODI');
+    expect(state.team1.runs).toBe(36);
+    expect(state.team1.wickets).toBeLessThanOrEqual(10);
+    expect(state.team2.runs).toBe(209);
+    expect(state.target).toBe(210);
+
+    const snap = generate(state, { winnerOnly: true });
+    expect(snap.status).not.toBe('INVALID_STATE');
+    const winner = snap.markets.find((m) => m.marketId === 'match_winner');
+    expect(winner?.status).toBe('OPEN');
+    expect(winner.selections.every((s) => Number.isFinite(s.odds) && s.odds > 1)).toBe(true);
+  });
+
+  it('opens Test winner odds in the second innings when no 4th-innings target exists', () => {
+    const state = buildCanonicalFromMatch({
+      id: 'cb_notts_leics',
+      sport: 'cricket',
+      isLive: true,
+      matchState: 'in',
+      matchFormat: 'TEST',
+      team1: { name: 'Nottinghamshire', shortName: 'NOT', runs: 451, wickets: 8 },
+      team2: { name: 'Leicestershire', shortName: 'LEI', runs: 250, wickets: 7 },
+      liveDetails: {
+        inningsId: 2,
+        firstRuns: 451,
+        firstWickets: 8,
+        firstOvers: '99.5',
+        firstTeamName: 'Nottinghamshire',
+        chaseRuns: 250,
+        chaseWickets: 7,
+        chaseOvers: '105',
+        chaseTeamName: 'Leicestershire',
+      },
+    });
+
+    expect(state.target).toBeNull();
+    const snap = generate(state, { winnerOnly: true });
+    expect(snap.status).not.toBe('INVALID_STATE');
+    const winner = snap.markets.find((m) => m.marketId === 'match_winner');
+    expect(winner?.status).toBe('OPEN');
+    expect(winner.selections.every((s) => Number.isFinite(s.odds) && s.odds > 1)).toBe(true);
+  });
 });
