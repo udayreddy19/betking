@@ -400,6 +400,7 @@ export default function BettingDomainView({
         {verifyBet && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14, fontSize: '0.84rem' }}>
             <AdminVerifyLiveMatch
+              matchName={verifyBet.match}
               match={verifyResult?.match || {
                 id: verifyBet.matchId || verifyBet.legs?.[0]?.matchId,
                 matchId: verifyBet.matchId || verifyBet.legs?.[0]?.matchId,
@@ -410,8 +411,6 @@ export default function BettingDomainView({
                 team2: verifyBet.match?.includes(' vs ')
                   ? { name: String(verifyBet.match).split(' vs ').slice(1).join(' vs ') }
                   : null,
-                isLive: isOpenStatus(verifyBet.status),
-                matchState: isOpenStatus(verifyBet.status) ? 'in' : 'post',
               }}
             />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>

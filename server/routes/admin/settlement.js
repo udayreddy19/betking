@@ -218,13 +218,17 @@ router.get('/api/admin/settlement/replay/:betId', requireRole('SUPER_ADMIN', 'FI
     const { replayBetSettlement, matchSnapshotForAdmin } = await import('../../../lib/settlement/settlementReplay.mjs');
 
     const snap = await aggregateLiveScores({ force: true });
+    const liveList = snap?.matches || [];
+    const { findLiveMatch } = await import('../../../src/utils/findLiveMatch.js');
     const byId = new Map();
-    for (const m of snap?.matches || []) {
+    for (const m of liveList) {
       for (const alias of [m.id, m.matchId, ...(matchIdAliases(m.id || m.matchId) || [])]) {
         if (alias) byId.set(String(alias), m);
       }
     }
-    const matchLookup = (id) => byId.get(String(id)) || null;
+    const matchLookup = (id) => byId.get(String(id))
+      || findLiveMatch(liveList, { matchId: id })
+      || null;
 
     const bet = {
       ...betRes.rows[0],
@@ -260,6 +264,20 @@ router.get('/api/admin/settlement/replay/:betId', requireRole('SUPER_ADMIN', 'FI
           matchState: 'in',
         };
       }
+    }
+
+    const vsName = String(bet.match_name || bet.match || '').trim()
+      || (() => {
+        const t1 = match?.team1?.name;
+        const t2 = match?.team2?.name;
+        return t1 && t2 ? `${t1} vs ${t2}` : '';
+      })();
+    const fromBoard = findLiveMatch(liveList, {
+      matchId: replay.matchId || match?.id || match?.matchId,
+      matchName: vsName,
+    });
+    if (fromBoard) {
+      match = matchSnapshotForAdmin(fromBoard);
     }
 
     res.json({

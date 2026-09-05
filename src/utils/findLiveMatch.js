@@ -1,5 +1,5 @@
 import { matchIdsEqual, matchIdAliases } from '../../lib/matchIdPublic.mjs';
-import { normalizeTeamNameForPair } from '../../lib/matchPairKey.mjs';
+import { cricketScoreWeight, normalizeTeamNameForPair } from '../../lib/matchPairKey.mjs';
 
 function collectMatchIds(match) {
   if (!match) return [];
@@ -63,15 +63,31 @@ export function matchMatchesNameHint(match, nameHint) {
  * Resolve a live-feed match for a bet leg / deep-link.
  * Prefer exact/aliased ids, then "Team A vs Team B" name hints.
  */
+function liveFeedRank(match) {
+  let rank = 0;
+  if (match?.isLive === true || match?.matchState === 'in' || match?.status === 'LIVE') rank += 100;
+  rank += cricketScoreWeight(match);
+  return rank;
+}
+
+/**
+ * Resolve a live-feed match for a bet leg / deep-link.
+ * Prefer exact/aliased ids, then "Team A vs Team B" name hints.
+ * When both exist, keep the live scored listing — not a stale upcoming twin.
+ */
 export function findLiveMatch(matches, { matchId, matchName } = {}) {
   const list = matches || [];
-  if (matchId) {
-    const byId = list.find((m) => matchIdsReferToSame(m, matchId));
-    if (byId) return byId;
+  const byId = matchId ? list.filter((m) => matchIdsReferToSame(m, matchId)) : [];
+  const byName = matchName ? list.filter((m) => matchMatchesNameHint(m, matchName)) : [];
+  const seen = new Set();
+  const candidates = [];
+  for (const m of [...byId, ...byName]) {
+    const id = m?.id || m?.matchId;
+    const key = id || JSON.stringify([m?.team1?.name, m?.team2?.name]);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    candidates.push(m);
   }
-  if (matchName) {
-    const byName = list.find((m) => matchMatchesNameHint(m, matchName));
-    if (byName) return byName;
-  }
-  return null;
+  if (!candidates.length) return null;
+  return candidates.sort((a, b) => liveFeedRank(b) - liveFeedRank(a))[0];
 }

@@ -25,6 +25,24 @@ describe('SL vs India pair key + test score resolve', () => {
     expect(full).toBe('m|real|india|sri lanka');
   });
 
+  it('merges Muscat Thunderers and Muscat Thunders onto one pair key', () => {
+    const a = getCanonicalMatchPairKey({
+      team1: { name: 'Muscat Thunderers' },
+      team2: { name: 'IAS Invincibles' },
+      league: 'SRL T20',
+      id: 'oy_a',
+    });
+    const b = getCanonicalMatchPairKey({
+      team1: { name: 'Muscat Thunders' },
+      team2: { name: 'IAS Invincibles' },
+      league: 'SRL T20',
+      id: 'oy_b',
+    });
+    expect(a).toBe(b);
+    expect(a).toContain('muscat thunders');
+    expect(a).toContain('|srl|');
+  });
+
   it('resolves testInnings batTeam codes so SL is not stuck at 0/0', () => {
     const match = {
       id: 'cb_163017',

@@ -45,4 +45,30 @@ describe('findLiveMatch', () => {
   it('matches name hint with either team order', () => {
     expect(matchMatchesNameHint(matches[0], 'Bangladesh vs Australia')).toBe(true);
   });
+
+  it('prefers the live scored listing when Thunderers/Thunders aliases collide', () => {
+    const twins = [
+      {
+        id: 'oy_upcoming',
+        team1: { name: 'Muscat Thunders' },
+        team2: { name: 'IAS Invincibles' },
+        league: 'SRL T20',
+        isLive: false,
+        matchState: 'pre',
+      },
+      {
+        id: 'oy_live',
+        team1: { name: 'Muscat Thunderers' },
+        team2: { name: 'IAS Invincibles' },
+        league: 'SRL T20',
+        isLive: true,
+        matchState: 'in',
+        liveDetails: { runs: 94, wickets: 3 },
+      },
+    ];
+    expect(findLiveMatch(twins, {
+      matchId: 'oy_upcoming',
+      matchName: 'Muscat Thunders vs IAS Invincibles',
+    })?.id).toBe('oy_live');
+  });
 });

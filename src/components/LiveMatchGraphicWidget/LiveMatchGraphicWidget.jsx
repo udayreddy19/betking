@@ -1022,10 +1022,12 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
   const formatBanner = canonicalSnapshot?.match?.formatBanner || getCricketFormatBanner(match);
   const statusChip = canonicalSnapshot?.match?.isLive ? 'LIVE' : (isMatchFinished ? 'COMPLETED' : 'UPCOMING');
 
+  const oversWhole = parseInt(String(displayOversNormalized).split('.')[0], 10) || 0;
+  const oversExceedCap = !isUnlimitedOvers && oversWhole > Number(maxOvers);
   const inningsBadge = isMatchFinished
     ? 'MATCH COMPLETE'
     : (innings
-      ? (isUnlimitedOvers
+      ? (isUnlimitedOvers || oversExceedCap
         ? `INN ${innings.inningsNum} | ${displayOversNormalized} OV`
         : `INN ${innings.inningsNum} | ${displayOversNormalized}/${maxOvers} OV`)
       : '');
