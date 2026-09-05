@@ -39,6 +39,7 @@ import { isCricketTrackerLive, getMatchState } from '../../utils/matchBetting';
 import { isCricketMatchCompleted } from '../../utils/cricketMatchComplete';
 import { resolveCricketTossText } from '../../utils/cricketScores';
 import { isCricketSecondInnings, isEmptyOversValue, resolveCricketTeamScores, teamNameMatches } from '../../utils/cricketScores';
+import { resolveLabeledTeamSide } from '../../utils/cricketMatchNormalizer';
 import { getMatchMaxOvers, normalizeMatchOvers, oversToBallsForMatch, isTestMatch, getCricketFormatBanner, detectCricketMatchFormat } from '../../utils/cricketFormat';
 import { oversToBalls } from '../../utils/oversUtils';
 import { buildCanonicalMatchSnapshot, deriveSelectedInningsView } from '../../utils/cricketSnapshot';
@@ -80,11 +81,27 @@ function getInningsInfo(match, team1, team2, resolved) {
   if (isChasing) {
     let battingTeam = team2;
     if (ld.chaseTeamName) {
-      if (teamNameMatches(team1, ld.chaseTeamName)) battingTeam = team1;
-      else if (teamNameMatches(team2, ld.chaseTeamName)) battingTeam = team2;
+      const chaseSide = resolveLabeledTeamSide(ld.chaseTeamName, team1, team2, {
+        homeRuns: team1Score.runs,
+        awayRuns: team2Score.runs,
+        homeWickets: team1Score.wickets,
+        awayWickets: team2Score.wickets,
+        homeOvers: team1Score.overs,
+        awayOvers: team2Score.overs,
+      });
+      if (chaseSide === 'home') battingTeam = team1;
+      else if (chaseSide === 'away') battingTeam = team2;
     } else if (ld.firstTeamName) {
       // Chasing team is whoever didn't bat first
-      battingTeam = teamNameMatches(team1, ld.firstTeamName) ? team2 : team1;
+      const firstIsHome = resolveLabeledTeamSide(ld.firstTeamName, team1, team2, {
+        homeRuns: team1Score.runs,
+        awayRuns: team2Score.runs,
+        homeWickets: team1Score.wickets,
+        awayWickets: team2Score.wickets,
+        homeOvers: team1Score.overs,
+        awayOvers: team2Score.overs,
+      }) !== 'away';
+      battingTeam = firstIsHome ? team2 : team1;
     } else {
       // Infer from which side has chase progress on the card
       const t1Active = (team1Score.runs ?? 0) > 0 || oversToBalls(team1Score.overs) > 0;
@@ -121,8 +138,16 @@ function getInningsInfo(match, team1, team2, resolved) {
 
   let battingTeam = team1;
   if (ld.firstTeamName) {
-    if (teamNameMatches(team2, ld.firstTeamName)) battingTeam = team2;
-    else if (teamNameMatches(team1, ld.firstTeamName)) battingTeam = team1;
+    const firstSide = resolveLabeledTeamSide(ld.firstTeamName, team1, team2, {
+      homeRuns: team1Score.runs,
+      awayRuns: team2Score.runs,
+      homeWickets: team1Score.wickets,
+      awayWickets: team2Score.wickets,
+      homeOvers: team1Score.overs,
+      awayOvers: team2Score.overs,
+    });
+    if (firstSide === 'away') battingTeam = team2;
+    else if (firstSide === 'home') battingTeam = team1;
   } else if (team2Score.balls > team1Score.balls) {
     battingTeam = team2;
   }

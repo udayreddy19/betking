@@ -20,6 +20,11 @@ import {
   isMatchOtherSRL,
   isTestMatch,
 } from './cricketFormat.js';
+import {
+  matchesTeamIdentifier,
+  normalizeToken,
+  resolveLabeledTeamSide,
+} from './cricketMatchNormalizer.js';
 
 export {
   detectCricketMatchFormat,
@@ -32,28 +37,21 @@ export {
 };
 
 export function normalizeTeamToken(name = '') {
-  return String(name || '')
-    .toLowerCase()
-    .replace(/\(women\)|\bwomen\b|\bw\b$/gi, 'w')
-    .replace(/\(men\)|\bmen\b/gi, 'm')
-    .replace(/thunderers/g, 'thunders')
-    .replace(/[^a-z0-9]/g, '');
+  return normalizeToken(name);
 }
 
 export function teamNameMatches(teamName, token) {
-  if (!teamName || !token) return false;
-  const team = normalizeTeamToken(teamName);
-  const hint = normalizeTeamToken(token);
-  if (!team || !hint) return false;
-  if (team === hint) return true;
-  if (team.includes(hint) || hint.includes(team)) return true;
-  return false;
+  return matchesTeamIdentifier(teamName, token);
 }
 
-function resolveInningsBattingTeam(rawName, team1Name, team2Name, inningsNumber) {
-  if (teamNameMatches(team1Name, rawName)) return team1Name;
-  if (teamNameMatches(team2Name, rawName)) return team2Name;
+function resolveInningsBattingTeam(rawName, team1Name, team2Name, inningsNumber, scoreHints = {}) {
   if (!rawName) return (Number(inningsNumber) % 2 === 1) ? team1Name : team2Name;
+  const side = resolveLabeledTeamSide(rawName, team1Name, team2Name, {
+    homeRuns: scoreHints.team1Runs,
+    awayRuns: scoreHints.team2Runs,
+  });
+  if (side === 'home') return team1Name;
+  if (side === 'away') return team2Name;
   return null;
 }
 
@@ -354,15 +352,13 @@ export function buildCanonicalMatchSnapshot(match) {
     let firstBatTeam = team1Name;
     const t1rLive = Number(match.team1?.runs ?? ld.score1 ?? 0);
     const t2rLive = Number(match.team2?.runs ?? ld.score2 ?? 0);
-    if (ld.firstTeamName) {
-      const t1Hit = teamNameMatches(team1Name, ld.firstTeamName);
-      const t2Hit = teamNameMatches(team2Name, ld.firstTeamName);
-      if (t2Hit && !t1Hit) firstBatTeam = team2Name;
-      else if (t1Hit && !t2Hit) firstBatTeam = team1Name;
-      else if (t2rLive > 0 && t1rLive === 0) firstBatTeam = team2Name;
-    } else if (t2rLive > 0 && t1rLive === 0) {
-      firstBatTeam = team2Name;
-    }
+    const firstSide = resolveLabeledTeamSide(ld.firstTeamName, team1Name, team2Name, {
+      homeRuns: t1rLive,
+      awayRuns: t2rLive,
+    });
+    if (firstSide === 'away') firstBatTeam = team2Name;
+    else if (firstSide === 'home') firstBatTeam = team1Name;
+    else if (t2rLive > 0 && t1rLive === 0) firstBatTeam = team2Name;
 
     const firstBowlTeam = (firstBatTeam === team1Name) ? team2Name : team1Name;
     const isTeam1BattingFirst = (firstBatTeam === team1Name);
@@ -460,11 +456,40 @@ export function buildCanonicalMatchSnapshot(match) {
   const hasTeam1Innings = inningsList.some((inn) => teamNameMatches(team1Name, inn.battingTeamName));
   const hasTeam2Innings = inningsList.some((inn) => teamNameMatches(team2Name, inn.battingTeamName));
 
-  const t1Runs = Number(match.team1?.runs ?? ld.firstRuns ?? ld.score1 ?? (ld.firstTeamName && teamNameMatches(team1Name, ld.firstTeamName) ? ld.runs : null) ?? 0);
+  const cardT1 = Number(match.team1?.runs) || 0;
+  const cardT2 = Number(match.team2?.runs) || 0;
+  const firstSideForCards = resolveLabeledTeamSide(ld.firstTeamName, team1Name, team2Name, {
+    homeRuns: cardT1,
+    awayRuns: cardT2,
+    homeWickets: Number(match.team1?.wickets) || 0,
+    awayWickets: Number(match.team2?.wickets) || 0,
+  });
+  const chaseSideForCards = resolveLabeledTeamSide(ld.chaseTeamName, team1Name, team2Name, {
+    homeRuns: cardT1,
+    awayRuns: cardT2,
+    homeWickets: Number(match.team1?.wickets) || 0,
+    awayWickets: Number(match.team2?.wickets) || 0,
+  });
+
+  const t1Runs = Number(
+    match.team1?.runs
+    ?? (firstSideForCards === 'home' ? ld.firstRuns : null)
+    ?? (chaseSideForCards === 'home' ? ld.chaseRuns : null)
+    ?? ld.score1
+    ?? (firstSideForCards === 'home' ? ld.runs : null)
+    ?? 0,
+  );
   const t1Wkts = Number(match.team1?.wickets ?? ld.firstWickets ?? ld.wickets1 ?? 0);
   const t1Ovs = normalizeCricbuzzOvers(match.team1?.overs || ld.firstOvers || ld.overs || '0.0');
 
-  const t2Runs = Number(match.team2?.runs ?? ld.chaseRuns ?? ld.score2 ?? (ld.chaseTeamName && teamNameMatches(team2Name, ld.chaseTeamName) ? ld.runs : null) ?? 0);
+  const t2Runs = Number(
+    match.team2?.runs
+    ?? (firstSideForCards === 'away' ? ld.firstRuns : null)
+    ?? (chaseSideForCards === 'away' ? ld.chaseRuns : null)
+    ?? ld.score2
+    ?? (firstSideForCards === 'away' || chaseSideForCards === 'away' ? ld.runs : null)
+    ?? 0,
+  );
   const t2Wkts = Number(match.team2?.wickets ?? ld.chaseWickets ?? ld.wickets2 ?? 0);
   const t2Ovs = normalizeCricbuzzOvers(match.team2?.overs || ld.chaseOvers || ld.overs2 || '0.0');
 

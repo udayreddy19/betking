@@ -90,29 +90,227 @@ export function getFormatMaxOvers(format) {
 }
 
 /**
+ * Feed spelling variants → canonical forms before alphanumeric collapse.
+ * Keep this list short; morphology + edit-distance handle the long tail.
+ */
+const TEAM_TOKEN_SPELLING = [
+  [/thunderers/g, 'thunders'],
+  [/invinciblers/g, 'invincibles'],
+  [/challanger/g, 'challenger'],
+  [/challangers/g, 'challengers'],
+  [/super\s*king'?s?/g, 'super kings'],
+  [/knight\s*rider'?s?/g, 'knight riders'],
+];
+
+/** Shared geographic / filler tokens that must not alone decide a team match. */
+export const WEAK_TEAM_TOKENS = new Set([
+  'south', 'north', 'west', 'east', 'new', 'united', 'royal', 'city', 'town',
+  'county', 'club', 'the', 'and', 'of', 'fc', 'sc', 'cc', 'xi', 'stars', 'super',
+  'kings', 'riders', 'warriors', 'knights', 'tigers', 'lions', 'eagles', 'bulls',
+  'giants', 'titans', 'strikers', 'thunder', 'thunders', 'invincible', 'invincibles',
+]);
+
+/**
  * Normalize team token for alphanumeric comparisons.
  */
 export function normalizeToken(value = '') {
-  return String(value)
+  let out = String(value)
     .toLowerCase()
     .replace(/\(women\)|\bwomen\b|\bw\b$/gi, 'w')
-    .replace(/\(men\)|\bmen\b/gi, 'm')
+    .replace(/\(men\)|\bmen\b/gi, 'm');
+  for (const [pattern, repl] of TEAM_TOKEN_SPELLING) {
+    out = out.replace(pattern, repl);
+  }
+  return out.replace(/[^a-z0-9]/g, '').trim();
+}
+
+/** Collapse common plural / collective endings so Thunderers≈Thunders, Knights≈Knight. */
+export function morphTeamStem(token = '') {
+  const t = String(token || '');
+  if (t.length < 5) return t;
+  // thunderers → thunder (not thunders → thund)
+  if (/[a-z]erers$/.test(t) && t.length > 7) return t.slice(0, -3);
+  if (t.endsWith('ies') && t.length > 5) return `${t.slice(0, -3)}y`;
+  if (t.endsWith('es') && t.length > 5) return t.slice(0, -2);
+  if (t.endsWith('s') && !t.endsWith('ss') && t.length > 5) return t.slice(0, -1);
+  return t;
+}
+
+export function teamTokenEditDistance(a = '', b = '') {
+  const s = String(a);
+  const t = String(b);
+  if (s === t) return 0;
+  if (!s.length) return t.length;
+  if (!t.length) return s.length;
+  const rows = s.length + 1;
+  const cols = t.length + 1;
+  const prev = new Array(cols);
+  const curr = new Array(cols);
+  for (let j = 0; j < cols; j += 1) prev[j] = j;
+  for (let i = 1; i < rows; i += 1) {
+    curr[0] = i;
+    for (let j = 1; j < cols; j += 1) {
+      const cost = s[i - 1] === t[j - 1] ? 0 : 1;
+      curr[j] = Math.min(curr[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost);
+    }
+    for (let j = 0; j < cols; j += 1) prev[j] = curr[j];
+  }
+  return prev[t.length];
+}
+
+/** True for near-miss feed labels (Thunderers/Thunders) without merging Sussex/Somerset. */
+export function tokensNearlyEqual(a = '', b = '') {
+  if (!a || !b) return false;
+  if (a === b) return true;
+  const sa = morphTeamStem(a);
+  const sb = morphTeamStem(b);
+  if (sa && sb && sa.length >= 5 && sa === sb) return true;
+  const maxLen = Math.max(a.length, b.length);
+  if (maxLen < 6) return false;
+  const dist = teamTokenEditDistance(a, b);
+  if (maxLen >= 12) return dist <= 2;
+  if (maxLen >= 8) return dist <= 1;
+  return false;
+}
+
+/** Word tokens used for distinctive overlap checks. */
+export function significantTeamWords(name = '') {
+  return String(name || '')
+    .toLowerCase()
+    .replace(/\(women\)|\bwomen\b|\bw\b$/gi, ' ')
+    .replace(/\(men\)|\bmen\b/gi, ' ')
     .replace(/thunderers/g, 'thunders')
-    .replace(/[^a-z0-9]/g, '')
-    .trim();
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .map((w) => morphTeamStem(w.replace(/[^a-z0-9]/g, '')))
+    .filter((w) => w.length >= 3 && !WEAK_TEAM_TOKENS.has(w));
+}
+
+/**
+ * Require at least one distinctive word in common (or full-token near equality).
+ * Blocks South Africa ↔ South Australia style shared-prefix false friends.
+ */
+export function hasDistinctiveTeamOverlap(nameA = '', nameB = '') {
+  const aTok = normalizeToken(nameA);
+  const bTok = normalizeToken(nameB);
+  if (aTok && bTok && (aTok === bTok || tokensNearlyEqual(aTok, bTok))) return true;
+  const wa = significantTeamWords(nameA);
+  const wb = new Set(significantTeamWords(nameB));
+  if (!wa.length || !wb.size) return false;
+  return wa.some((w) => wb.has(w) || [...wb].some((other) => tokensNearlyEqual(w, other)));
+}
+
+function teamDisplayParts(team) {
+  if (typeof team === 'object' && team) {
+    return {
+      name: team.name || '',
+      shortName: team.shortName || '',
+      id: team.id || team.teamId || null,
+    };
+  }
+  return { name: String(team || ''), shortName: '', id: null };
+}
+
+/** One-sided batting activity from card/live totals (runs, wickets, or overs). */
+export function scoreActivityWeight(runs = 0, wickets = 0, overs = null) {
+  const r = Number(runs) || 0;
+  const w = Number(wickets) || 0;
+  const o = overs == null || overs === '' ? 0 : Number(String(overs).replace(/[^\d.]/g, '')) || 0;
+  return r + w + (o > 0 ? 1 : 0);
+}
+
+function pickSideFromActivity(homeActivity, awayActivity) {
+  if (awayActivity > 0 && homeActivity === 0) return 'away';
+  if (homeActivity > 0 && awayActivity === 0) return 'home';
+  return null;
+}
+
+/**
+ * Resolve a feed label (firstTeamName / chaseTeamName / batTeam) onto home vs away.
+ * Prefer unique identifier hits; then near-miss spelling; then who has the runs.
+ * Never pick a side when both teams match the same weak/ambiguous label.
+ * @returns {'home'|'away'|null}
+ */
+export function resolveLabeledTeamSide(label, homeTeam, awayTeam, {
+  homeRuns = 0,
+  awayRuns = 0,
+  homeWickets = 0,
+  awayWickets = 0,
+  homeOvers = null,
+  awayOvers = null,
+} = {}) {
+  const homeActivity = scoreActivityWeight(homeRuns, homeWickets, homeOvers);
+  const awayActivity = scoreActivityWeight(awayRuns, awayWickets, awayOvers);
+
+  if (!label) {
+    return pickSideFromActivity(homeActivity, awayActivity);
+  }
+
+  const home = matchesTeamIdentifier(homeTeam, label);
+  const away = matchesTeamIdentifier(awayTeam, label);
+  if (home && !away) return 'home';
+  if (away && !home) return 'away';
+  // Ambiguous: both sides hit the same label (e.g. "South") — never guess from the name
+  if (home && away) {
+    return pickSideFromActivity(homeActivity, awayActivity);
+  }
+
+  if (!home && !away) {
+    const { name: hName, shortName: hShort } = teamDisplayParts(homeTeam);
+    const { name: aName, shortName: aShort } = teamDisplayParts(awayTeam);
+    const ln = normalizeToken(label);
+    const hn = normalizeToken(hName);
+    const an = normalizeToken(aName);
+    const hs = normalizeToken(hShort);
+    const as = normalizeToken(aShort);
+
+    const homeNear = (tokensNearlyEqual(hn, ln) || tokensNearlyEqual(hs, ln))
+      && hasDistinctiveTeamOverlap(hName || hShort, label);
+    const awayNear = (tokensNearlyEqual(an, ln) || tokensNearlyEqual(as, ln))
+      && hasDistinctiveTeamOverlap(aName || aShort, label);
+    if (homeNear && !awayNear) return 'home';
+    if (awayNear && !homeNear) return 'away';
+
+    const homeDistinct = hasDistinctiveTeamOverlap(hName, label);
+    const awayDistinct = hasDistinctiveTeamOverlap(aName, label);
+    if (homeDistinct && !awayDistinct) return 'home';
+    if (awayDistinct && !homeDistinct) return 'away';
+
+    if (ln.length >= 6 && hn && an) {
+      const dh = teamTokenEditDistance(hn, ln);
+      const da = teamTokenEditDistance(an, ln);
+      const maxAllowed = ln.length >= 12 ? 2 : 1;
+      if (dh <= maxAllowed && dh + 2 <= da && homeDistinct) return 'home';
+      if (da <= maxAllowed && da + 2 <= dh && awayDistinct) return 'away';
+    }
+  }
+
+  return pickSideFromActivity(homeActivity, awayActivity);
+}
+
+/**
+ * When first/chase labels resolve to the same side, treat labels as corrupt and use cards.
+ */
+export function resolveInningsSidesFromLabels(firstLabel, chaseLabel, homeTeam, awayTeam, activity = {}) {
+  const firstSide = resolveLabeledTeamSide(firstLabel, homeTeam, awayTeam, activity);
+  const chaseSide = resolveLabeledTeamSide(chaseLabel, homeTeam, awayTeam, activity);
+  if (firstSide && chaseSide && firstSide === chaseSide) {
+    return {
+      firstSide: pickSideFromActivity(
+        scoreActivityWeight(activity.homeRuns, activity.homeWickets, activity.homeOvers),
+        scoreActivityWeight(activity.awayRuns, activity.awayWickets, activity.awayOvers),
+      ),
+      chaseSide: null,
+      labelsConflict: true,
+    };
+  }
+  return { firstSide, chaseSide, labelsConflict: false };
 }
 
 /** When firstTeamName matches neither side, use who actually has the runs. */
 export function resolveFirstInningsIsHome(homeTeam, awayTeam, firstTeamName, homeRuns = 0, awayRuns = 0) {
-  if (firstTeamName) {
-    const home = matchesTeamIdentifier(homeTeam, firstTeamName);
-    const away = matchesTeamIdentifier(awayTeam, firstTeamName);
-    if (home && !away) return true;
-    if (away && !home) return false;
-  }
-  const t1 = Number(homeRuns) || 0;
-  const t2 = Number(awayRuns) || 0;
-  if (t2 > 0 && t1 === 0) return false;
+  const side = resolveLabeledTeamSide(firstTeamName, homeTeam, awayTeam, { homeRuns, awayRuns });
+  if (side === 'away') return false;
   return true;
 }
 
@@ -131,10 +329,19 @@ function extractMultiLetterInitials(name = '') {
   return letters.length >= 2 ? letters : '';
 }
 
+function isWeakMatchToken(token = '') {
+  const t = String(token || '').toLowerCase();
+  if (!t) return true;
+  if (WEAK_TEAM_TOKENS.has(t)) return true;
+  if (WEAK_TEAM_TOKENS.has(morphTeamStem(t))) return true;
+  return false;
+}
+
 /**
  * Robust team identifier match.
- * Uses stable IDs first, then short codes and multi-character prefixes.
+ * Uses stable IDs first, then short codes, prefixes, and near-miss spelling.
  * NEVER matches on 1-letter initials to prevent cross-team collision (e.g. Sussex vs Somerset).
+ * Weak shared tokens (South/West/United) never win on prefix/substring alone.
  */
 export function matchesTeamIdentifier(team, candidateName, candidateShort = '', candidateId = null) {
   const teamName = typeof team === 'object' ? (team?.name || '') : String(team || '');
@@ -160,6 +367,12 @@ export function matchesTeamIdentifier(team, candidateName, candidateShort = '', 
   if (cs && tn && cs === tn) return true;
   if (cn && ts && cn === ts) return true;
 
+  // Priority 2b: Morphology / tiny edit distance (Thunderers ↔ Thunders)
+  if (cn && tn && tokensNearlyEqual(cn, tn)) return true;
+  if (cs && ts && tokensNearlyEqual(cs, ts)) return true;
+  if (cs && tn && tokensNearlyEqual(cs, tn)) return true;
+  if (cn && ts && tokensNearlyEqual(cn, ts)) return true;
+
   // Priority 3: Multi-letter initials (min 2 chars, e.g. "CSK", "MI", "ENG", "IND")
   const initials = extractMultiLetterInitials(teamName);
   if (initials && initials.length >= 2) {
@@ -167,16 +380,20 @@ export function matchesTeamIdentifier(team, candidateName, candidateShort = '', 
     if (cs && (cs === initials || initials === cs)) return true;
   }
 
-  // Priority 4: 3+ character prefix match (e.g. "sussex" -> "sus", "somerset" -> "som")
-  if (cn && cn.length >= 3 && tn.length >= 3) {
+  // Priority 4: 3+ character prefix match — skip weak shared prefixes (South/West/New)
+  if (cn && cn.length >= 3 && tn.length >= 3 && !isWeakMatchToken(cn)) {
     if (tn.startsWith(cn) || cn.startsWith(tn)) return true;
   }
-  if (cs && cs.length >= 3 && tn.length >= 3) {
+  if (cs && cs.length >= 3 && tn.length >= 3 && !isWeakMatchToken(cs)) {
     if (tn.startsWith(cs)) return true;
   }
+  // Team short vs feed code (NOT ↔ NOTTS, ESS ↔ ESSEX)
+  if (ts && ts.length >= 3 && cn && cn.length >= 3 && !isWeakMatchToken(ts) && !isWeakMatchToken(cn)) {
+    if (cn.startsWith(ts) || ts.startsWith(cn)) return true;
+  }
 
-  // Priority 5: Substring match only for distinct 4+ character tokens
-  if (cn && cn.length >= 4 && (tn.includes(cn) || cn.includes(tn))) {
+  // Priority 5: Substring match only for distinct 4+ character tokens (not weak fillers)
+  if (cn && cn.length >= 4 && !isWeakMatchToken(cn) && (tn.includes(cn) || cn.includes(tn))) {
     return true;
   }
 
@@ -395,9 +612,10 @@ export function normalizeMatch(raw = {}, previous = {}, options = {}) {
     const t2Card = Number(raw.team2?.runs) || 0;
 
     if (inningsId >= 2 && (!Number(firstRuns) || Number(firstRuns) === 0)) {
-      const firstIsAway = rawLd.firstTeamName
-        ? matchesTeamIdentifier(awayTeam, rawLd.firstTeamName)
-        : false;
+      const firstIsAway = resolveLabeledTeamSide(rawLd.firstTeamName, homeTeam, awayTeam, {
+        homeRuns: t1Card,
+        awayRuns: t2Card,
+      }) === 'away';
       if (firstIsAway && t2Card > 0) {
         firstRuns = t2Card;
         if (!Number(firstWickets)) firstWickets = Number(raw.team2?.wickets || 0);
@@ -411,9 +629,10 @@ export function normalizeMatch(raw = {}, previous = {}, options = {}) {
       && (chaseRuns == null || Number(chaseRuns) === 0)
       && (chaseWickets == null || Number(chaseWickets) === 0)
       && !oversMeaningful(chaseOvers)) {
-      const chaseIsHome = rawLd.chaseTeamName
-        ? matchesTeamIdentifier(homeTeam, rawLd.chaseTeamName)
-        : false;
+      const chaseIsHome = resolveLabeledTeamSide(rawLd.chaseTeamName, homeTeam, awayTeam, {
+        homeRuns: t1Card,
+        awayRuns: t2Card,
+      }) === 'home';
       firstRuns = chaseIsHome ? t2Card : t1Card;
       firstWickets = chaseIsHome ? Number(raw.team2?.wickets || 0) : Number(raw.team1?.wickets || 0);
       firstOvers = chaseIsHome ? (raw.team2?.overs || '0.0') : (raw.team1?.overs || firstOvers);

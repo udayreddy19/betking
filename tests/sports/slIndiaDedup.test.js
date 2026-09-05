@@ -3,7 +3,7 @@ import {
   getCanonicalMatchPairKey,
   normalizeTeamNameForPair,
 } from '../../lib/matchPairKey.mjs';
-import { resolveCricketTeamScores } from '../../src/utils/cricketScores.js';
+import { resolveCricketTeamScores, teamNameMatches } from '../../src/utils/cricketScores.js';
 
 describe('SL vs India pair key + test score resolve', () => {
   it('maps SL/IND codes to the same pair key as full names', () => {
@@ -53,6 +53,40 @@ describe('SL vs India pair key + test score resolve', () => {
     expect(resolved.team2.hasBatted).toBe(false);
   });
 
+  it('attributes runs using card totals when firstTeamName is an unknown spelling', () => {
+    const match = {
+      id: 'fc_unknown_spell',
+      sport: 'cricket',
+      matchType: 'T20',
+      isLive: true,
+      team1: { name: 'Desert Knights', shortName: 'DK', runs: 0, wickets: 0 },
+      team2: { name: 'Coastal Warriors', shortName: 'CW', runs: 88, wickets: 3 },
+      liveDetails: {
+        runs: 88,
+        wickets: 3,
+        overs: '12.1',
+        score1: 0,
+        score2: 88,
+        firstRuns: 88,
+        firstWickets: 3,
+        firstOvers: '12.1',
+        firstTeamName: 'Costal Warriorz',
+        inningsId: 1,
+      },
+    };
+    const resolved = resolveCricketTeamScores(match, match.liveDetails);
+    expect(resolved.team2.hasBatted).toBe(true);
+    expect(resolved.team2.displayScore).toBe('88/3');
+    expect(resolved.team1.hasBatted).toBe(false);
+  });
+
+  it('matches plural/collective near-miss feed labels without colliding counties', () => {
+    expect(teamNameMatches('Desert Knights', 'Desert Knight')).toBe(true);
+    expect(teamNameMatches('Muscat Thunders', 'Muscat Thunderers')).toBe(true);
+    expect(teamNameMatches('Sussex', 'Somerset')).toBe(false);
+    expect(teamNameMatches('South Africa', 'South Australia')).toBe(false);
+  });
+
   it('merges Muscat Thunderers and Muscat Thunders onto one pair key', () => {
     const a = getCanonicalMatchPairKey({
       team1: { name: 'Muscat Thunderers' },
@@ -67,7 +101,7 @@ describe('SL vs India pair key + test score resolve', () => {
       id: 'oy_b',
     });
     expect(a).toBe(b);
-    expect(a).toContain('muscat thunders');
+    expect(a).toContain('muscat thunder');
     expect(a).toContain('|srl|');
   });
 

@@ -5,11 +5,30 @@ import {
   normalizeMatchScore,
   matchesTeamIdentifier,
   normalizeToken,
+  resolveLabeledTeamSide,
+  resolveFirstInningsIsHome,
+  resolveInningsSidesFromLabels,
+  tokensNearlyEqual,
+  hasDistinctiveTeamOverlap,
+  scoreActivityWeight,
   CRICKET_FORMATS,
   detectCanonicalFormat,
 } from './cricketMatchNormalizer.js';
 
-export { normalizeMatch, normalizeMatchScore };
+export {
+  normalizeMatch,
+  normalizeMatchScore,
+  matchesTeamIdentifier,
+  normalizeToken,
+  resolveLabeledTeamSide,
+  resolveFirstInningsIsHome,
+  resolveInningsSidesFromLabels,
+  tokensNearlyEqual,
+  hasDistinctiveTeamOverlap,
+  scoreActivityWeight,
+  CRICKET_FORMATS,
+  detectCanonicalFormat,
+};
 
 /** Wickets in a single innings cannot exceed 10 (except test multi-day formats). */
 export function clampInningsWickets(wickets, match) {
