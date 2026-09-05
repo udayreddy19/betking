@@ -1155,8 +1155,9 @@ export default function Sports() {
                 const options = (market.options || market.selections || []).filter(
                   (opt) => Number(opt.odds) >= 1.01,
                 );
-                // Show locked/determined markets as locked panels (do not hide).
+                // Hide suspended clutter (most_sixes / far-wicket locks). Keep settled visible briefly.
                 if (!isOpen) {
+                  if (marketStatus === 'SUSPENDED') return null;
                   const isExpanded = expandedMarkets[market.key] !== false;
                   return (
                     <div key={market.key} className="sports-market-panel sports-market-panel--locked">

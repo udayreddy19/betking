@@ -183,6 +183,14 @@ httpServer.listen(PORT, async () => {
   }
 
   try {
+    const { waitForEngineModeHydrated, resolveOddsEngineMode } = await import('../lib/odds-v4/EngineModeControl.mjs');
+    await waitForEngineModeHydrated();
+    logger.info('odds_engine_mode_ready', { mode: resolveOddsEngineMode() });
+  } catch (err) {
+    logger.warn('odds_engine_mode_hydrate_failed', { error: err.message });
+  }
+
+  try {
     const { logWebPushStartupStatus } = await import('../lib/webPushEngine.mjs');
     logWebPushStartupStatus();
   } catch (err) {
