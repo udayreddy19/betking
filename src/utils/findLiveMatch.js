@@ -14,6 +14,14 @@ function collectMatchIds(match) {
     match.espnEventId,
     match.tencricEventId != null ? `oy_${match.tencricEventId}` : null,
     match.tencricEventId != null ? `10cric_${match.tencricEventId}` : null,
+    match.flashscoreEventId != null ? `fs_${match.flashscoreEventId}` : null,
+    match.flashscoreEventId,
+    match.crexEventId != null ? `crex_${match.crexEventId}` : null,
+    match.crexEventId,
+    match.guruMatchId != null ? `guru_${match.guruMatchId}` : null,
+    match.guruMatchId,
+    match.crixMatchId != null ? `crix_${match.crixMatchId}` : null,
+    match.crixMatchId,
   ].filter(Boolean).map(String);
 
   const expanded = new Set();

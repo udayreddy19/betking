@@ -14,7 +14,7 @@ router.get('/health-matrix', requirePermission('operations', 'providers'), async
     const { providerHealthEngine } = await import('../../../lib/providerHealthEngine.mjs');
     const { sportsDataRegistry } = await import('../../../lib/sportsDataRegistry.mjs');
 
-    const providers = ['cricbuzz', 'espn', 'fancode', 'srl_engine'];
+    const providers = ['cricbuzz', 'espn', 'fancode', 'srl_engine', 'flashscore', 'cricketguru', 'cricketliveline'];
     const matrix = providers.map(p => {
       const state = providerHealthEngine.getProviderState(p);
       const freshness = providerHealthEngine.evaluateFreshness(p);

@@ -279,11 +279,14 @@ export function LiveSportsProvider({ children }) {
       const primarySource = okSources.includes('cricbuzz') ? 'CRICBUZZ'
         : okSources.includes('fancode') ? 'FanCode'
         : okSources.includes('espn') ? 'ESPN'
+        : okSources.includes('flashscore') ? 'FLASHSCORE'
+        : okSources.includes('cricketguru') ? 'CRICKET GURU'
+        : okSources.includes('cricketliveline') ? 'CRIX'
         : 'API';
 
       const emoji = okSources.includes('cricbuzz') ? '🟢' : '🟡';
 
-      const sportNames = ['cricket', 'soccer', 'basketball', 'tennis', 'american-football'];
+      const sportNames = ['cricket', 'soccer', 'basketball', 'tennis', 'snooker', 'american-football'];
       const sportParts = sportNames
         .filter((s) => counts[s] > 0)
         .map((s) => `${counts[s]} ${s}`);

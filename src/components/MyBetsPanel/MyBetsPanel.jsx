@@ -348,7 +348,7 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
     }
     if (leg.team1Name && leg.team2Name) return `${leg.team1Name} vs ${leg.team2Name}`;
     const raw = String(leg.matchName || '').trim();
-    if (raw && !/^live match$/i.test(raw) && !/^(oy_|10cric_|cb_|crex_|fancode_|fc_|espn_|api_|srl_)/i.test(raw)) {
+    if (raw && !/^live match$/i.test(raw) && !/^(oy_|10cric_|cb_|crex_|fancode_|fc_|espn_|api_|fs_|guru_|crix_|srl_)/i.test(raw)) {
       return raw;
     }
     return 'Open bet fixture';

@@ -9,6 +9,9 @@ describe('classifyLiveFeedHealth', () => {
       cricbuzz: 'error',
       fancode: 'error',
       espn: 'error',
+      flashscore: 'error',
+      cricketguru: 'error',
+      cricketliveline: 'error',
     });
     expect(err?.code).toBe('ALL_PROVIDERS_FAILED');
     expect(err.message).toMatch(/unavailable/i);
@@ -21,6 +24,9 @@ describe('classifyLiveFeedHealth', () => {
       cricbuzz: 'error',
       fancode: 'error',
       espn: 'error',
+      flashscore: 'error',
+      cricketguru: 'error',
+      cricketliveline: 'error',
     })).toBeNull();
   });
 });

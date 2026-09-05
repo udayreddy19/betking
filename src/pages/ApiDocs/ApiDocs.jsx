@@ -25,7 +25,7 @@ import './ApiDocs.css';
 const ENDPOINT_GROUPS = [
   {
     group: 'Canonical Score APIs (Live & Match Collections)',
-    sources: '10Cric (10cric2026.com), Cricbuzz, CREX, FanCode, ESPN, Football-Data.org',
+    sources: '10Cric (10cric2026.com), Cricbuzz, CREX, FanCode, ESPN, Flashscore, Football-Data.org',
     endpoints: [
       { method: 'GET', path: '/api/v1/matches/live', description: 'Live scores across 10Cric, CREX, Cricbuzz & merged providers' },
       { method: 'GET', path: '/api/v1/matches/upcoming', description: 'Upcoming & scheduled matches' },
@@ -36,7 +36,7 @@ const ENDPOINT_GROUPS = [
   },
   {
     group: 'Sport-Specific Live Score APIs',
-    sources: '10Cric (https://www.10cric2026.com), CREX (crex.com), Cricbuzz, FanCode, ESPN',
+    sources: '10Cric, CREX, Cricbuzz, FanCode, ESPN, Flashscore, Cricket Guru, Cricket Liveline',
     endpoints: [
       { method: 'GET', path: '/api/v1/cricket/live', description: 'Live Cricket Scores & Odds (10Cric 2026, CREX, Cricbuzz, FanCode)' },
       { method: 'GET', path: '/api/v1/football/live', description: 'Live Football/Soccer Scores (Football-Data.org, OpenLigaDB)' },
@@ -85,6 +85,9 @@ const PROVIDERS = [
   { id: 'cricbuzz', name: '🏏 Cricbuzz API', keyword: 'cricbuzz', status: 'Operational (Cricbuzz Live Text & Commentary)', latency: '31 ms' },
   { id: 'fancode', name: '📺 FanCode Stream', keyword: 'fancode', status: 'Operational (FanCode Live Stream Telemetry)', latency: '19 ms' },
   { id: 'espn', name: '🌐 ESPN Sports', keyword: 'espn', status: 'Operational (ESPN Global Sports Feed)', latency: '42 ms' },
+  { id: 'flashscore', name: '⚡ Flashscore', keyword: 'flashscore', status: 'Operational (Flashscore live results)', latency: '48 ms' },
+  { id: 'cricketguru', name: '🏏 Cricket Guru', link: 'https://www.cricketguru.com/live-scores', keyword: 'cricketguru', status: 'Operational (Cricket Guru live scores)', latency: '52 ms' },
+  { id: 'cricketliveline', name: '📡 Cricket Liveline', link: 'https://cricketliveline.app', keyword: 'cricketliveline', status: 'Operational (CRIX / Cricket Liveline)', latency: '45 ms' },
   { id: 'football', name: '⚽ Football-Data.org', keyword: 'football', status: 'Operational (Football-Data REST Gateway)', latency: '28 ms' },
 ];
 

@@ -9,6 +9,9 @@ describe('provider outage → no fabricated odds', () => {
       cricbuzz: 'error',
       fancode: 'error',
       espn: 'error',
+      flashscore: 'error',
+      cricketguru: 'error',
+      cricketliveline: 'error',
     });
     expect(err?.code).toBe('ALL_PROVIDERS_FAILED');
   });
@@ -20,6 +23,9 @@ describe('provider outage → no fabricated odds', () => {
       cricbuzz: 'error',
       fancode: 'error',
       espn: 'error',
+      flashscore: 'error',
+      cricketguru: 'error',
+      cricketliveline: 'error',
     })).toBeNull();
   });
 });
