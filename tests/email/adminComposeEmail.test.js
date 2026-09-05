@@ -4,11 +4,19 @@ import {
   listAdminComposeTemplates,
   sendAdminComposeEmail,
   resetEmailDeliveryMetricsForTests,
+  formatPromosFrom,
+  PROMOS_FROM,
 } from '../../server/auth/emailService.js';
 
 describe('Admin compose email', () => {
   beforeEach(() => {
     resetEmailDeliveryMetricsForTests();
+  });
+
+  it('sends promo mail as OddsYra, not OddsYra Promotions', () => {
+    expect(formatPromosFrom('OddsYra Promotions <promos@oddsyra.com>')).toBe('OddsYra <promos@oddsyra.com>');
+    expect(PROMOS_FROM).toBe('OddsYra <promos@oddsyra.com>');
+    expect(PROMOS_FROM).not.toMatch(/promotion/i);
   });
 
   it('lists all @oddsyra.com mailboxes', () => {

@@ -41,7 +41,16 @@ export function escapeHtml(value) {
  *  payments@  deposit ops notifications (TO)
  */
 const SMTP_FROM = process.env.SMTP_FROM || 'OddsYra <no-reply@oddsyra.com>';
-export const PROMOS_FROM = process.env.PROMOS_FROM || 'OddsYra Promotions <promos@oddsyra.com>';
+export const PROMOS_MAILBOX = 'promos@oddsyra.com';
+/** Display name must not include "Promotions" — Gmail files that in Promotions (no phone alert). */
+export function formatPromosFrom(raw) {
+  const src = String(raw || '').trim();
+  const angle = src.match(/<([^>]+)>/);
+  const addr = String(angle?.[1] || src || PROMOS_MAILBOX).toLowerCase();
+  const mailbox = addr.includes('@') ? addr : PROMOS_MAILBOX;
+  return `OddsYra <${mailbox}>`;
+}
+export const PROMOS_FROM = formatPromosFrom(process.env.PROMOS_FROM || `OddsYra <${PROMOS_MAILBOX}>`);
 export const PROMOS_REPLY_TO = process.env.PROMOS_REPLY_TO || 'promos@oddsyra.com';
 export const SUPPORT_FROM = process.env.SUPPORT_FROM || 'OddsYra Support <support@oddsyra.com>';
 export const SUPPORT_REPLY_TO = process.env.SUPPORT_REPLY_TO || 'support@oddsyra.com';
@@ -216,9 +225,9 @@ function renderTransactionalEmail({
   const marketingFooter = isMarketing ? `
     <tr>
       <td class="oy-muted oy-td" style="padding:16px 24px 0;font-size:11px;line-height:1.5;color:#6b7280;text-align:center;">
-        You received this email because you opted in to receive promotional updates from OddsYra.
+        You opted in to OddsYra account updates.
         <br>
-        <a href="${unsubscribeHref}" style="color:#166b3a;text-decoration:underline;">Manage your notification preferences</a> to unsubscribe.
+        <a href="${unsubscribeHref}" style="color:#166b3a;text-decoration:underline;">Manage email preferences</a> to stop these messages.
       </td>
     </tr>
   ` : '';
@@ -333,7 +342,8 @@ export async function sendEmail({
 }) {
   if (!to) throw new Error('Recipient email is required');
 
-  const promosAcc = isPromosFrom(from) ? promosSmtpAccount() : null;
+  const resolvedFrom = isPromosFrom(from) ? formatPromosFrom(from) : from;
+  const promosAcc = isPromosFrom(resolvedFrom) ? promosSmtpAccount() : null;
   const primaryAccounts = configuredAccounts();
   const accounts = promosAcc
     ? [promosAcc, ...primaryAccounts.filter((a) => a.user !== promosAcc.user || a.host !== promosAcc.host)]
@@ -347,13 +357,13 @@ export async function sendEmail({
     }
     const transport = createTransport(null);
     const result = await transport.sendMail({
-      from,
+      from: resolvedFrom,
       to,
       cc: ccList,
       subject,
       html,
       text: text || html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
-      replyTo: replyTo || from,
+      replyTo: replyTo || resolvedFrom,
       headers,
     });
     return { success: true, messageId: result.messageId, json: true, html, subject };
@@ -369,14 +379,16 @@ export async function sendEmail({
 
     try {
       const transport = createTransport(account);
+      const accountFrom = isPromosFrom(account.from) ? formatPromosFrom(account.from) : account.from;
+      const chosenFrom = forceFrom ? resolvedFrom : (accountFrom || resolvedFrom);
       const mailOptions = {
-        from: forceFrom ? from : (account.from || from),
+        from: chosenFrom,
         to,
         cc: ccList,
         subject,
         html,
         text: text || html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
-        replyTo: replyTo || (forceFrom ? from : (account.from || from)),
+        replyTo: replyTo || (forceFrom ? resolvedFrom : (accountFrom || resolvedFrom)),
         headers,
       };
 
@@ -1988,6 +2000,7 @@ export async function sendAdminComposeEmail({
   let skipped = 0;
   for (const recipient of valid) {
     try {
+      let uid = null;
       if (mailbox.isMarketing) {
         const { query } = await import('../../../db/pg.js');
         const { canSendPromotionalEmail } = await import('../../lib/notificationPreferencesEngine.mjs');
@@ -1995,7 +2008,7 @@ export async function sendAdminComposeEmail({
           `SELECT user_id FROM users WHERE LOWER(TRIM(email)) = LOWER(TRIM($1)) LIMIT 1`,
           [recipient],
         );
-        const uid = userRes.rows[0]?.user_id;
+        uid = userRes.rows[0]?.user_id || null;
         if (uid && !(await canSendPromotionalEmail(uid))) {
           skipped += 1;
           results.push({ to: recipient, success: false, skipped: true, error: 'marketing_opt_out' });
@@ -2022,6 +2035,20 @@ export async function sendAdminComposeEmail({
           messageId: result.messageId,
           provider: result.provider || (result.json ? 'json' : null),
         });
+        if (mailbox.isMarketing && uid) {
+          try {
+            const { notifyUserPromoOffer } = await import('../../lib/promoUserNotify.mjs');
+            await notifyUserPromoOffer({
+              userId: uid,
+              subject: cleanSubject,
+              message: cleanBody,
+              url: resolvedCtaHref || '/promotions',
+              eventId: `compose_${mailbox.id}_${uid}_${result.messageId || Date.now()}`,
+            });
+          } catch {
+            // in-app notify is best-effort
+          }
+        }
       }
     } catch (err) {
       failed += 1;

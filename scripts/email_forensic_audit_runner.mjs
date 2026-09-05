@@ -105,7 +105,7 @@ async function runAudit() {
     promosProvider: {
       name: 'Dedicated Promotional Mailbox (promos@oddsyra.com)',
       configured: Boolean(process.env.SMTP_PROMOS_USER || process.env.PROMOS_SMTP_USER || process.env.SMTP_USER),
-      from: process.env.PROMOS_FROM || 'OddsYra Promotions <promos@oddsyra.com>',
+      from: process.env.PROMOS_FROM || 'OddsYra <promos@oddsyra.com>',
       replyTo: 'promos@oddsyra.com'
     },
     metrics: providerMetrics
@@ -123,7 +123,7 @@ async function runAudit() {
       SMTP_PORT: { present: Boolean(process.env.SMTP_PORT), value: process.env.SMTP_PORT || '587' },
       SMTP_FALLBACK_HOST: { present: Boolean(process.env.SMTP_FALLBACK_HOST), value: process.env.SMTP_FALLBACK_HOST || 'Not set (Standby)' },
       SMTP_FALLBACK_USER: { present: Boolean(process.env.SMTP_FALLBACK_USER), value: process.env.SMTP_FALLBACK_USER || 'Not set (Standby)' },
-      PROMOS_FROM: { present: Boolean(process.env.PROMOS_FROM), value: process.env.PROMOS_FROM || 'OddsYra Promotions <promos@oddsyra.com>' },
+      PROMOS_FROM: { present: Boolean(process.env.PROMOS_FROM), value: process.env.PROMOS_FROM || 'OddsYra <promos@oddsyra.com>' },
       FRONTEND_URL: { present: Boolean(process.env.FRONTEND_URL), value: process.env.FRONTEND_URL || 'https://oddsyra.com' }
     },
     verdict: 'PASS (Primary SMTP fully configured; Brevo standby available)'
@@ -337,7 +337,7 @@ async function runAudit() {
     primarySmtpConfigured: true,
     fallbackSmtpConfigured: false,
     fromAddress: 'OddsYra <no-reply@oddsyra.com>',
-    promosFromAddress: 'OddsYra Promotions <promos@oddsyra.com>',
+    promosFromAddress: 'OddsYra <promos@oddsyra.com>',
     activeEmailLogsInDb: 8,
     failedOrStuckEmailJobs: 0,
     deadLetterBacklog: 0,
