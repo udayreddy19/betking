@@ -2415,6 +2415,20 @@ html[data-theme="light"] .tdfb-users__search .admin-input::placeholder,
   gap: 14px;
 }
 
+.tdfb-assign-panel {
+  display: grid;
+  gap: 0;
+}
+
+.tdfb-assign-panel .tdfb-hit {
+  grid-template-columns: minmax(0, 1fr) minmax(80px, auto) auto;
+  cursor: default;
+}
+
+.tdfb-assign-panel .tdfb-users__hits {
+  max-height: 260px;
+}
+
 @media (max-width: 1100px) {
   .tdfb-hero,
   .tdfb-compose {

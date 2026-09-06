@@ -143,6 +143,10 @@ function TargetedDepositFreeBetPanel() {
   const [saving, setSaving] = useState(false);
   const [dispatching, setDispatching] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
+  const [detailSearchQ, setDetailSearchQ] = useState('');
+  const [detailSearchHits, setDetailSearchHits] = useState([]);
+  const [detailSearching, setDetailSearching] = useState(false);
+  const [detailAssigning, setDetailAssigning] = useState(null);
   const [form, setForm] = useState({
     name: '100% Deposit Free Bet',
     code: makeTargetedPromoCode(),
@@ -199,6 +203,9 @@ function TargetedDepositFreeBetPanel() {
 
   useEffect(() => {
     if (selectedId) loadDetail(selectedId);
+    setDetailSearchQ('');
+    setDetailSearchHits([]);
+    setDetailAssigning(null);
   }, [selectedId, loadDetail]);
 
   const searchUsers = async () => {
@@ -210,6 +217,88 @@ function TargetedDepositFreeBetPanel() {
       showToast(err.message || 'User search failed', 'error');
     } finally {
       setSearching(false);
+    }
+  };
+
+  const searchDetailUsers = async () => {
+    const q = String(detailSearchQ || '').trim();
+    if (!q) {
+      showToast('Enter a name, email, or mobile number', 'error');
+      return;
+    }
+    if (!selectedId) {
+      showToast('Select a campaign first', 'error');
+      return;
+    }
+    setDetailSearching(true);
+    try {
+      const data = await adminApiClient.get(`/customers?q=${encodeURIComponent(q)}&limit=50`);
+      setDetailSearchHits(data.users || data.customers || []);
+      if (!(data.users || data.customers || []).length) {
+        showToast('No players matched that search', 'error');
+      }
+    } catch (err) {
+      showToast(err.message || 'User search failed', 'error');
+    } finally {
+      setDetailSearching(false);
+    }
+  };
+
+  const assignUsersToSelected = async (users) => {
+    if (!selectedId) {
+      showToast('Select a campaign first', 'error');
+      return;
+    }
+    const ids = [...new Set(
+      (users || [])
+        .map((u) => String(u.id || u.userId || u.user_id || '').trim())
+        .filter(Boolean),
+    )];
+    if (!ids.length) {
+      showToast('No users to add', 'error');
+      return;
+    }
+    const assignedIds = new Set((detail?.users || []).map((u) => String(u.userId)));
+    const fresh = ids.filter((id) => !assignedIds.has(id));
+    if (!fresh.length) {
+      showToast('Already assigned to this campaign', 'success');
+      return;
+    }
+    setDetailAssigning(fresh.length === 1 ? fresh[0] : 'bulk');
+    try {
+      const data = await adminApiClient.post(
+        `/growth/deposit-freebet/targeted/${encodeURIComponent(selectedId)}/users`,
+        { userIds: fresh },
+      );
+      showToast(
+        `Added ${data.assigned ?? fresh.length} player${(data.assigned ?? fresh.length) === 1 ? '' : 's'}`,
+        'success',
+      );
+      setDetailSearchHits((prev) => prev.filter((u) => {
+        const id = String(u.id || u.userId || u.user_id || '');
+        return !fresh.includes(id);
+      }));
+      await loadDetail(selectedId);
+      await loadCampaigns();
+    } catch (err) {
+      showToast(err.message || 'Failed to assign users', 'error');
+    } finally {
+      setDetailAssigning(null);
+    }
+  };
+
+  const removeAssignedUser = async (userId) => {
+    if (!selectedId || !userId) return;
+    if (!window.confirm('Remove this player from the campaign?')) return;
+    try {
+      await adminApiClient.delete(
+        `/growth/deposit-freebet/targeted/${encodeURIComponent(selectedId)}/users/${encodeURIComponent(userId)}`,
+      );
+      showToast('Player removed', 'success');
+      await loadDetail(selectedId);
+      await loadCampaigns();
+    } catch (err) {
+      showToast(err.message || 'Failed to remove player', 'error');
     }
   };
 
@@ -624,7 +713,7 @@ function TargetedDepositFreeBetPanel() {
                   value={searchQ}
                   onChange={(e) => setSearchQ(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); searchUsers(); } }}
-                  placeholder="Search email, name, or user id"
+                  placeholder="Search email, name, or mobile"
                 />
                 <button type="button" className="admin-btn" onClick={searchUsers} disabled={searching}>
                   {searching ? 'Searching…' : 'Search'}
@@ -824,25 +913,110 @@ function TargetedDepositFreeBetPanel() {
             </div>
 
             <div className="tdfb-detail__tables">
-              <AdminDataTable
-                title="Assigned users"
-                emptyMessage="No users"
-                data={detail.users || []}
-                columns={[
-                  { header: 'User', key: 'userMask' },
-                  { header: 'Email', key: 'email' },
-                  {
-                    header: 'Offer email',
-                    key: 'offerEmailStatus',
-                    render: (r) => <StatusBadge status={r.offerEmailStatus || 'NONE'} />,
-                  },
-                  {
-                    header: 'User ID',
-                    key: 'userId',
-                    render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.72rem' }}>{r.userId}</span>,
-                  },
-                ]}
-              />
+              <div className="tdfb-assign-panel">
+                <div className="tdfb-users__head" style={{ marginBottom: 10 }}>
+                  <div className="tdfb-block__head" style={{ marginBottom: 0 }}>
+                    <h4>Add players</h4>
+                    <p>Search by name, email, or mobile and assign to this campaign</p>
+                  </div>
+                </div>
+                <div className="tdfb-users__search">
+                  <input
+                    className="admin-input"
+                    value={detailSearchQ}
+                    onChange={(e) => setDetailSearchQ(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        searchDetailUsers();
+                      }
+                    }}
+                    placeholder="Search name, email, or mobile number"
+                    aria-label="Search players to assign"
+                  />
+                  <button
+                    type="button"
+                    className="admin-btn"
+                    onClick={searchDetailUsers}
+                    disabled={detailSearching}
+                  >
+                    {detailSearching ? 'Searching…' : 'Search'}
+                  </button>
+                </div>
+                {detailSearchHits.length > 0 && (
+                  <div className="tdfb-users__hits" style={{ marginTop: 10, marginBottom: 12 }}>
+                    {detailSearchHits.map((u) => {
+                      const id = u.id || u.userId || u.user_id;
+                      const already = (detail.users || []).some((x) => String(x.userId) === String(id));
+                      const busy = detailAssigning === id || detailAssigning === 'bulk';
+                      return (
+                        <div key={id} className={`tdfb-hit${already ? ' tdfb-hit--on' : ''}`}>
+                          <span className="tdfb-hit__main">
+                            {u.email || u.name || u.displayName || id}
+                            {u.phone ? ` · ${u.phone}` : ''}
+                          </span>
+                          <span className="admin-text-mono tdfb-hit__id">{id}</span>
+                          <button
+                            type="button"
+                            className="admin-btn admin-btn--sm admin-btn--primary"
+                            disabled={already || busy || !id}
+                            onClick={() => assignUsersToSelected([u])}
+                          >
+                            {already ? 'Assigned' : busy ? 'Adding…' : 'Add'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                    {detailSearchHits.some((u) => {
+                      const id = String(u.id || u.userId || u.user_id || '');
+                      return id && !(detail.users || []).some((x) => String(x.userId) === id);
+                    }) && (
+                      <div style={{ padding: '8px 10px' }}>
+                        <button
+                          type="button"
+                          className="admin-btn admin-btn--sm"
+                          disabled={detailAssigning === 'bulk'}
+                          onClick={() => assignUsersToSelected(detailSearchHits)}
+                        >
+                          {detailAssigning === 'bulk' ? 'Adding…' : 'Add all results'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <AdminDataTable
+                  title="Assigned users"
+                  emptyMessage="No users yet — search above to add players"
+                  data={detail.users || []}
+                  columns={[
+                    { header: 'User', key: 'userMask' },
+                    { header: 'Email', key: 'email' },
+                    {
+                      header: 'Offer email',
+                      key: 'offerEmailStatus',
+                      render: (r) => <StatusBadge status={r.offerEmailStatus || 'NONE'} />,
+                    },
+                    {
+                      header: 'User ID',
+                      key: 'userId',
+                      render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.72rem' }}>{r.userId}</span>,
+                    },
+                    {
+                      header: '',
+                      key: '_remove',
+                      render: (r) => (
+                        <button
+                          type="button"
+                          className="admin-btn admin-btn--sm admin-btn--danger"
+                          onClick={() => removeAssignedUser(r.userId)}
+                        >
+                          Remove
+                        </button>
+                      ),
+                    },
+                  ]}
+                />
+              </div>
               <AdminDataTable
                 title="Claims"
                 emptyMessage="No claims yet — waiting for qualifying deposits"
