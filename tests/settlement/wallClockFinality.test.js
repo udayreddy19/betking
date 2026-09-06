@@ -62,6 +62,7 @@ describe('wallClockFinality', () => {
       isLive: true,
       matchState: 'in',
       status: 'LIVE',
+      time: 'Live',
       score1: 163,
       score2: 145,
       liveDetails: { firstRuns: 163, chaseRuns: 145, wickets: 9, overs: '19.0' },
@@ -71,6 +72,8 @@ describe('wallClockFinality', () => {
     markInferredFinal(match);
     expect(match.matchState).toBe('post');
     expect(match.isLive).toBe(false);
+    expect(match.time).toBe('Completed');
+    expect(isFeedStillLive(match)).toBe(false);
   });
 
   it('may infer final for stale short-format match with no live signal', () => {
