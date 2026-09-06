@@ -600,6 +600,7 @@
   overflow-x: auto;
   width: fit-content;
   max-width: 100%;
+  flex-shrink: 0;
 }
 .admin-seg-group {
   flex-wrap: wrap;
@@ -3509,15 +3510,17 @@ html[data-theme="light"] .admin-badge--info,
 .admin-shell--revamp .admin-subtab-bar,
 .admin-shell--revamp .admin-seg-group {
   display: inline-flex;
-  align-items: stretch;
+  align-items: center;
   flex-wrap: nowrap;
+  flex-shrink: 0;
   gap: 2px;
-  padding: 3px;
+  padding: 4px;
   margin-bottom: 20px;
   width: fit-content;
   max-width: 100%;
+  min-height: 42px;
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: visible;
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-full);
@@ -3528,18 +3531,19 @@ html[data-theme="light"] .admin-badge--info,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  align-self: stretch;
+  flex: 0 0 auto;
   min-height: 34px;
-  height: auto;
+  height: 34px;
   border-radius: 9999px;
   padding: 0 16px;
   font-weight: 500;
-  line-height: 1.2;
+  line-height: 1.25;
   color: var(--admin-text-muted);
   border: 1px solid transparent;
   box-shadow: none;
   background: transparent;
   box-sizing: border-box;
+  white-space: nowrap;
 }
 .admin-shell--revamp .admin-subtab:hover,
 .admin-shell--revamp .admin-seg-group > .admin-btn:hover {
@@ -3559,9 +3563,9 @@ html[data-theme="light"] .admin-badge--info,
 }
 .admin-shell--revamp .admin-seg-group > .admin-btn--sm {
   min-height: 34px;
-  height: auto;
+  height: 34px;
   padding: 0 14px;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 .admin-shell--revamp .admin-subtab.active .admin-subtab__count {
   color: #14532d;

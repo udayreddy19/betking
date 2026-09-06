@@ -727,7 +727,7 @@ export default function SupportDomainView({
 
             {/* Drawer Sub-Navigation */}
             <AdminTabs
-              style={{ marginBottom: 6 }}
+              style={{ marginBottom: 6, flexShrink: 0 }}
               tabs={[
                 { id: 'messages', label: `Messages (${threadMessages.length})` },
                 { id: 'internal_notes', label: `🔒 Internal Notes (${internalNotes.length})` },
@@ -741,7 +741,7 @@ export default function SupportDomainView({
             {drawerTab === 'messages' && (
               <>
                 <div style={{
-                  flex: 1,
+                  flex: '1 1 auto',
                   minHeight: '220px',
                   maxHeight: '340px',
                   overflowY: 'auto',

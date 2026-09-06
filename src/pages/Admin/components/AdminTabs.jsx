@@ -6,7 +6,11 @@ import React, { useState, useEffect } from 'react';
  */
 export default function AdminTabs({ tabs = [], active, onChange, className = '', style }) {
   return (
-    <div className={`admin-subtab-bar ${className}`} style={style} role="tablist">
+    <div
+      className={`admin-subtab-bar ${className}`}
+      style={{ flexShrink: 0, ...style }}
+      role="tablist"
+    >
       {tabs.map((tab) => {
         const id = typeof tab === 'string' ? tab : tab.id;
         const label = typeof tab === 'string' ? tab : tab.label;
