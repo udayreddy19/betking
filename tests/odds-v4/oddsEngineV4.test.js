@@ -171,7 +171,7 @@ describe('OddsEngineV4 — resource MW + V3 catalog', () => {
     expect(p190).toBeLessThan(0.12);
 
     const v4 = generateV4(state, { winnerOnly: false });
-    expect(v4.engineVersion).toBe('4.2.0');
+    expect(v4.engineVersion).toBe('4.3.0');
     expect(v4.v4Meta?.features?.length).toBeGreaterThan(0);
     // Near-target books are intentionally thinner; full 100 score is asserted on mid-chase.
     const teamTotal = v4.markets.find((m) => m.marketId === 'team_total');
@@ -220,10 +220,23 @@ describe('OddsEngineV4 — resource MW + V3 catalog', () => {
   it('scores a full live book at 100/100 on the readiness rubric', () => {
     const state = buildCanonicalFromMatch(chaseMatch());
     const v4 = generateV4(state, { winnerOnly: false });
-    expect(v4.engineVersion).toBe('4.2.0');
+    expect(v4.engineVersion).toBe('4.3.0');
     expect(v4.v4Meta.qualityScore).toBe(100);
     expect(v4.v4Meta.qualityBreakdown.matchWinner).toBe(20);
     expect(v4.v4Meta.qualityBreakdown.houseEdge).toBe(20);
     expect(v4.v4Meta.qualityBreakdown.ops).toBe(5);
+  });
+
+  it('does not emit far-future dismissal markets when chase is 4 down', () => {
+    const state = buildCanonicalFromMatch(chaseMatch());
+    // chaseMatch has chase wickets 4
+    const v4 = generateV4(state, { winnerOnly: false });
+    const dismissalIds = v4.markets
+      .map((m) => m.marketId)
+      .filter((id) => /team_score_at_\d+_dismissal/i.test(id));
+    for (const id of dismissalIds) {
+      const n = Number(String(id).match(/team_score_at_(\d+)_dismissal/i)?.[1]);
+      expect(n).toBeLessThanOrEqual(6); // next or next+1 only (4 down → 5 or 6)
+    }
   });
 });
