@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { IoClose } from '../../icons';
 import { useBetSlip } from '../../context/BetSlipContext';
@@ -118,6 +119,7 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
     myBetsLoading,
   } = useBetSlip();
   const { creditCashout, showToast, user } = useAuth();
+  const navigate = useNavigate();
   const liveMatches = useLiveMatches() || [];
   const isPage = layout === 'page';
   const panelOpen = isPage || isMyBetsOpen;
@@ -419,8 +421,8 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
     } catch {
       // ignore quota / private mode
     }
-    // Full navigation so Sports always mounts on the target match (no intermediate popup).
-    window.location.assign(`/sports?${params.toString()}`);
+    // SPA navigate keeps My Bets state in memory (no full reload flash).
+    navigate(`/sports?${params.toString()}`, { state: { deepLinkMatch: nextMatch } });
   };
 
   const getLegSelectionLabel = (leg) => {

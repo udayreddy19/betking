@@ -31,8 +31,44 @@ import {
 
 const BetSlipContext = createContext(null);
 const PLACED_BETS_KEY = 'oddsyra_placed_bets';
+const PLACED_BETS_CACHE_KEY = 'oddsyra:placed_bets_cache';
 const PENDING_BETSLIP_KEY = 'oddsyra_pending_betslip';
 const ODDS_SYNC_FRESH_MS = 8000;
+
+function readPlacedBetsCache(userKey) {
+  if (!userKey || typeof sessionStorage === 'undefined') return [];
+  try {
+    const raw = sessionStorage.getItem(PLACED_BETS_CACHE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!parsed || parsed.userKey !== String(userKey) || !Array.isArray(parsed.bets)) return [];
+    return parsed.bets;
+  } catch {
+    return [];
+  }
+}
+
+function writePlacedBetsCache(userKey, bets) {
+  if (!userKey || typeof sessionStorage === 'undefined') return;
+  try {
+    sessionStorage.setItem(PLACED_BETS_CACHE_KEY, JSON.stringify({
+      userKey: String(userKey),
+      bets: Array.isArray(bets) ? bets : [],
+      savedAt: Date.now(),
+    }));
+  } catch {
+    // quota / private mode
+  }
+}
+
+function clearPlacedBetsCache() {
+  if (typeof sessionStorage === 'undefined') return;
+  try {
+    sessionStorage.removeItem(PLACED_BETS_CACHE_KEY);
+  } catch {
+    // ignore
+  }
+}
 
 function loadPendingBetslip() {
   try {
@@ -304,8 +340,21 @@ function getSelectionName(match, selection, customName) {
 export function BetSlipProvider({ children }) {
   const { showToast, refreshWallet, user } = useAuth();
   const savedSlip = loadPendingBetslip();
+  const userCacheKey = user?.userId || user?.email || null;
   const [bets, setBets] = useState(() => savedSlip?.bets || []);
-  const [placedBets, setPlacedBets] = useState([]);
+  const [placedBets, setPlacedBets] = useState(() => {
+    if (DEMO_MODE) return [];
+    const key = (() => {
+      try {
+        const raw = sessionStorage.getItem(PLACED_BETS_CACHE_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw)?.userKey || null;
+      } catch {
+        return null;
+      }
+    })();
+    return key ? readPlacedBetsCache(key) : [];
+  });
   const [stake, setStake] = useState(() => savedSlip?.stake || '');
   const [betType, setBetType] = useState(() => savedSlip?.betType || 'singles');
   const [singlesStakes, setSinglesStakes] = useState(() => savedSlip?.singlesStakes || {});
@@ -313,6 +362,7 @@ export function BetSlipProvider({ children }) {
   const [isMyBetsOpen, setIsMyBetsOpen] = useState(false);
   const [myBetsLoading, setMyBetsLoading] = useState(false);
   const myBetsFetchSeq = useRef(0);
+  const placedBetsRef = useRef(placedBets);
   const betsRef = useRef(bets);
   const lastOddsSyncAt = useRef(0);
   const oddsConfirmPendingRef = useRef(false);
@@ -465,6 +515,15 @@ export function BetSlipProvider({ children }) {
   }, [bets]);
 
   useEffect(() => {
+    placedBetsRef.current = placedBets;
+  }, [placedBets]);
+
+  useEffect(() => {
+    if (DEMO_MODE || !userCacheKey) return;
+    writePlacedBetsCache(userCacheKey, placedBets);
+  }, [placedBets, userCacheKey]);
+
+  useEffect(() => {
     if (DEMO_MODE) {
       try {
         const saved = JSON.parse(localStorage.getItem(PLACED_BETS_KEY) || '[]');
@@ -475,19 +534,29 @@ export function BetSlipProvider({ children }) {
       return undefined;
     }
 
+    if (!userCacheKey) {
+      setPlacedBets([]);
+      setMyBetsLoading(false);
+      clearPlacedBetsCache();
+      return undefined;
+    }
+
+    // Instant paint from last successful fetch for this user (survives route changes /
+    // soft remounts). Always align to this user's cache so we never keep another user's list.
+    const cached = readPlacedBetsCache(userCacheKey);
+    setPlacedBets(cached);
+
     let cancelled = false;
-    const load = async () => {
-      if (!user?.userId && !user?.email) {
-        setPlacedBets([]);
-        setMyBetsLoading(false);
-        return;
-      }
+    const load = async ({ silent } = {}) => {
       const seq = ++myBetsFetchSeq.current;
-      setMyBetsLoading(true);
+      const showLoading = !silent && placedBetsRef.current.length === 0;
+      if (showLoading) setMyBetsLoading(true);
       try {
         const rows = await fetchMyBetsFromServer();
         if (!cancelled && seq === myBetsFetchSeq.current) {
-          setPlacedBets(rows.map(mapServerBetToPlaced));
+          const next = rows.map(mapServerBetToPlaced);
+          setPlacedBets(next);
+          writePlacedBetsCache(userCacheKey, next);
         }
       } catch {
         // Keep existing list on transient/auth errors — avoids flashing empty until refresh.
@@ -497,22 +566,27 @@ export function BetSlipProvider({ children }) {
         }
       }
     };
-    load();
-    const timer = setInterval(load, 15000);
+    // First load after login may show spinner only if cache was empty.
+    void load({ silent: cached.length > 0 });
+    const timer = setInterval(() => load({ silent: true }), 15000);
     return () => {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [user?.userId, user?.email]);
+  }, [userCacheKey]);
 
   const refreshMyBets = useCallback(async () => {
     if (DEMO_MODE) return;
     const seq = ++myBetsFetchSeq.current;
-    setMyBetsLoading(true);
+    const silent = placedBetsRef.current.length > 0;
+    if (!silent) setMyBetsLoading(true);
     try {
       const rows = await fetchMyBetsFromServer();
       if (seq === myBetsFetchSeq.current) {
-        setPlacedBets(rows.map(mapServerBetToPlaced));
+        const next = rows.map(mapServerBetToPlaced);
+        setPlacedBets(next);
+        const key = userCacheKey;
+        if (key) writePlacedBetsCache(key, next);
       }
     } catch {
       // keep existing list
@@ -521,7 +595,7 @@ export function BetSlipProvider({ children }) {
         setMyBetsLoading(false);
       }
     }
-  }, []);
+  }, [userCacheKey]);
 
   useEffect(() => {
     if (DEMO_MODE || !user?.userId) return undefined;
