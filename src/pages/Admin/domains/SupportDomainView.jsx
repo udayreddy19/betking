@@ -14,6 +14,7 @@ import {
 } from '../../../utils/supportAttachments';
 import { formatIstShort } from '../../../utils/istTime';
 import { useNavAttentionCount } from '../context/AdminNavAttentionContext';
+import { useAdminUiMode } from '../context/AdminUiModeContext';
 import AdminTabs from '../components/AdminTabs';
 
 function formatMsgTime(value) {
@@ -46,7 +47,9 @@ export default function SupportDomainView({
   focusEntityId = null,
   focusEntityType = null,
   onFocusConsumed = null,
+  onSubModuleChange,
 }) {
+  const { revamp: uiRevamp } = useAdminUiMode();
   const isSlaDesk = subModule === 'sla-alerts';
   const ticketCount = useNavAttentionCount('support', 'ticket-queue');
   const chatCount = useNavAttentionCount('support', 'chat-console');
@@ -401,7 +404,7 @@ export default function SupportDomainView({
         </div>
       )}
 
-      {/* Primary Sub-Tabs */}
+      {/* Classic: Ticket / Chat mode buttons. New UI uses shell pills instead. */}
       <div style={{
         display: 'flex',
         gap: '12px',
@@ -410,31 +413,39 @@ export default function SupportDomainView({
         borderBottom: '1px solid var(--admin-border)',
         paddingBottom: '8px',
       }}>
-        <button
-          type="button"
-          className={`admin-btn ${activeTab === 'tickets' ? 'admin-btn--primary' : 'admin-btn--secondary'}`}
-          onClick={() => setActiveTab('tickets')}
-        >
-          {isSlaDesk ? '⚠ SLA Breached' : '🎫 Ticket Queue'}
-          {' '}({filteredTickets.length}
-          {!isSlaDesk && queueScope === 'open' && ticketCount != null ? ` · ${ticketCount} need reply` : ''}
-          )
-        </button>
-        {!isSlaDesk && (
+        {!uiRevamp && (
+          <button
+            type="button"
+            className={`admin-btn ${activeTab === 'tickets' ? 'admin-btn--primary' : 'admin-btn--secondary'}`}
+            onClick={() => {
+              setActiveTab('tickets');
+              onSubModuleChange?.(isSlaDesk ? 'sla-alerts' : 'ticket-queue');
+            }}
+          >
+            {isSlaDesk ? '⚠ SLA Breached' : '🎫 Ticket Queue'}
+            {' '}({filteredTickets.length}
+            {!isSlaDesk && queueScope === 'open' && ticketCount != null ? ` · ${ticketCount} need reply` : ''}
+            )
+          </button>
+        )}
+        {!uiRevamp && !isSlaDesk && (
           <button
             type="button"
             className={`admin-btn ${activeTab === 'live-chat' ? 'admin-btn--primary' : 'admin-btn--secondary'}`}
-            onClick={() => setActiveTab('live-chat')}
+            onClick={() => {
+              setActiveTab('live-chat');
+              onSubModuleChange?.('chat-console');
+            }}
           >
             💬 Live Chat Control ({liveChats.length}
             {chatCount != null ? ` · ${chatCount} waiting` : ''}
             )
           </button>
         )}
-        {!isSlaDesk && (
+        {!isSlaDesk && activeTab === 'tickets' && (
           <AdminTabs
             className="support-queue-scope"
-            style={{ marginBottom: 0, marginLeft: 'auto' }}
+            style={{ marginBottom: 0, marginLeft: uiRevamp ? 0 : 'auto' }}
             active={queueScope}
             onChange={selectQueueScope}
             tabs={[
@@ -577,18 +588,18 @@ export default function SupportDomainView({
       {/* ── TAB 2: LIVE CHAT QUEUE ── */}
       {activeTab === 'live-chat' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {['ALL', 'WAITING', 'ACTIVE', 'MY_CHATS', 'UNASSIGNED'].map((f) => (
-              <button
-                key={f}
-                type="button"
-                className={`admin-btn ${chatFilter === f ? 'admin-btn--primary' : 'admin-btn--secondary'} admin-btn--sm`}
-                onClick={() => setChatFilter(f)}
-              >
-                {f.replace('_', ' ')}
-              </button>
-            ))}
-          </div>
+          <AdminTabs
+            style={{ marginBottom: 0 }}
+            tabs={[
+              { id: 'ALL', label: 'ALL' },
+              { id: 'WAITING', label: 'WAITING' },
+              { id: 'ACTIVE', label: 'ACTIVE' },
+              { id: 'MY_CHATS', label: 'MY CHATS' },
+              { id: 'UNASSIGNED', label: 'UNASSIGNED' },
+            ]}
+            active={chatFilter}
+            onChange={setChatFilter}
+          />
 
           <AdminDataTable
             data={liveChats}
@@ -715,29 +726,16 @@ export default function SupportDomainView({
             </div>
 
             {/* Drawer Sub-Navigation */}
-            <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--admin-border)', paddingBottom: '6px' }}>
-              <button
-                type="button"
-                className={`admin-btn ${drawerTab === 'messages' ? 'admin-btn--primary' : 'admin-btn--secondary'} admin-btn--sm`}
-                onClick={() => setDrawerTab('messages')}
-              >
-                Messages ({threadMessages.length})
-              </button>
-              <button
-                type="button"
-                className={`admin-btn ${drawerTab === 'internal_notes' ? 'admin-btn--primary' : 'admin-btn--secondary'} admin-btn--sm`}
-                onClick={() => setDrawerTab('internal_notes')}
-              >
-                🔒 Internal Notes ({internalNotes.length})
-              </button>
-              <button
-                type="button"
-                className={`admin-btn ${drawerTab === 'financial_review' ? 'admin-btn--primary' : 'admin-btn--secondary'} admin-btn--sm`}
-                onClick={() => setDrawerTab('financial_review')}
-              >
-                💰 Financial Review
-              </button>
-            </div>
+            <AdminTabs
+              style={{ marginBottom: 6 }}
+              tabs={[
+                { id: 'messages', label: `Messages (${threadMessages.length})` },
+                { id: 'internal_notes', label: `🔒 Internal Notes (${internalNotes.length})` },
+                { id: 'financial_review', label: '💰 Financial Review' },
+              ]}
+              active={drawerTab}
+              onChange={setDrawerTab}
+            />
 
             {/* Messages Feed Tab */}
             {drawerTab === 'messages' && (

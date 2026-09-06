@@ -11,6 +11,7 @@ import AdminTabs from '../components/AdminTabs';
 import KycReminderUsersPanel from '../../../components/DatabaseInspector/KycReminderUsersPanel';
 import { useAdminRole, canAccessDomain, hasPermission, PERMISSIONS, ADMIN_ROLES } from '../permissions/AdminRBACGate';
 import { AdminHub } from '../components/AdminTabs';
+import { useAdminUiMode } from '../context/AdminUiModeContext';
 import { formatIst, formatIstDateTime } from '../../../utils/istTime';
 
 const DOSSIER_TABS = [
@@ -213,13 +214,20 @@ function ResponsibleGamingAdminPanel() {
 
 export default function CustomersDomainView(props) {
   const sub = props.subModule || 'directory';
+  const onSubModuleChange = props.onSubModuleChange;
+  const { revamp: uiRevamp } = useAdminUiMode();
   const playerIds = ['directory', 'kyc-reminders'];
   const limitIds = ['limits', 'restrictions', 'responsible-gaming'];
 
   if (playerIds.includes(sub)) {
+    // New UI: Directory vs KYC are already shell pills — don't double up.
+    if (uiRevamp) {
+      return <CustomersDomainPanels {...props} subModule={sub} />;
+    }
     return (
       <AdminHub
         initialTab={sub}
+        onTabChange={onSubModuleChange}
         tabs={[
           { id: 'directory', label: 'All players' },
           { id: 'kyc-reminders', label: 'Needs KYC' },
@@ -235,6 +243,7 @@ export default function CustomersDomainView(props) {
     return (
       <AdminHub
         initialTab={initial}
+        onTabChange={onSubModuleChange}
         tabs={[
           { id: 'restrictions', label: 'Restricted' },
           { id: 'responsible-gaming', label: 'Responsible play' },
@@ -950,22 +959,16 @@ function CustomersDomainPanels({
         >
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
             <div style={{ fontWeight: 800, fontSize: '0.82rem', minWidth: '72px' }}>Find user</div>
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-              {[
+            <AdminTabs
+              style={{ marginBottom: 0 }}
+              tabs={[
                 { id: 'all', label: 'All' },
                 { id: 'email', label: 'Email' },
                 { id: 'phone', label: 'Mobile' },
-              ].map((opt) => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  className={`admin-btn admin-btn--sm ${searchBy === opt.id ? 'admin-btn--primary' : 'admin-btn--secondary'}`}
-                  onClick={() => setSearchBy(opt.id)}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+              ]}
+              active={searchBy}
+              onChange={setSearchBy}
+            />
             <div style={{ flex: '1 1 220px', minWidth: '200px' }}>
               <FilterSearch
                 value={searchQ}

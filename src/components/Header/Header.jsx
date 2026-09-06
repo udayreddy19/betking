@@ -205,8 +205,14 @@ function Header() {
     redeemLoyaltyPoints(pts);
   }, [redeemLoyaltyPoints]);
 
+  // Clear menus/panels on route change, but leave Daily Spin alone
+  // (opening spin must not race with pathname effects).
   useEffect(() => {
-    closeHeaderOverlays();
+    closePromos();
+    closeMyBets();
+    setIsNotifOpen(false);
+    setIsWalletOpen(false);
+    setIsMoreOpen(false);
   }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (isAdminPage) return null;
@@ -416,7 +422,9 @@ function Header() {
                 className="header-action-icon-btn header-spin-icon-btn"
                 id="daily-spin-btn"
                 title="Spin & Win Daily Rewards"
-                onClick={() => setIsSpinOpen(true)}
+                onClick={() => {
+                  window.setTimeout(() => setIsSpinOpen(true), 0);
+                }}
                 whileHover={{ scale: hoverScale }}
                 whileTap={{ scale: pressScale }}
                 transition={springUi}
@@ -695,7 +703,8 @@ function Header() {
       </div>
       {isLoggedIn && <MyBetsPanel />}
       {isLoggedIn && promotionsEnabled && <PromotionsPanel isOpen={isPromosOpen} onClose={closePromos} />}
-      {isLoggedIn && promotionsEnabled && <DailySpinModal isOpen={isSpinOpen} onClose={() => setIsSpinOpen(false)} />}
+      {/* Mount whenever logged in so sidebar/header open events always have a target */}
+      {isLoggedIn && <DailySpinModal isOpen={isSpinOpen} onClose={() => setIsSpinOpen(false)} />}
     </header>
   );
 }

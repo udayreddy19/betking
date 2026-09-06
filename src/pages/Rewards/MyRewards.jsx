@@ -79,9 +79,22 @@ export default function MyRewards() {
               Discrete reward instruments for sports betting. Each reward is placed as a single exact stake.
             </p>
           </div>
-          <button className="my-rewards-refresh-btn" onClick={fetchRewards} disabled={loading}>
-            {loading ? 'Refreshing…' : '↻ Refresh'}
-          </button>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <button
+              type="button"
+              className="my-rewards-refresh-btn"
+              onClick={() => {
+                window.setTimeout(() => {
+                  window.dispatchEvent(new Event('oddsyra:open-daily-spin'));
+                }, 50);
+              }}
+            >
+              Daily spin
+            </button>
+            <button className="my-rewards-refresh-btn" onClick={fetchRewards} disabled={loading}>
+              {loading ? 'Refreshing…' : '↻ Refresh'}
+            </button>
+          </div>
         </div>
 
         {/* Stats Summary Cards */}

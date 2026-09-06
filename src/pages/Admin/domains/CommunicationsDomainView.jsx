@@ -608,7 +608,7 @@ function BroadcastPanel() {
   );
 }
 
-export default function CommunicationsDomainView({ subModule = 'dispatch-logs' }) {
+export default function CommunicationsDomainView({ subModule = 'dispatch-logs', onSubModuleChange }) {
   const inboxIds = ['mail-inbox', 'dispatch-logs', 'dlq-retry'];
   const failedCount = useNavAttentionCount('communications', 'dlq-retry');
   if (inboxIds.includes(subModule)) {
@@ -616,6 +616,7 @@ export default function CommunicationsDomainView({ subModule = 'dispatch-logs' }
     return (
       <AdminHub
         initialTab={initial}
+        onTabChange={onSubModuleChange}
         tabs={[
           { id: 'dispatch-logs', label: 'Sent' },
           { id: 'dlq-retry', label: 'Failed', count: failedCount },

@@ -2090,6 +2090,7 @@ export default function FinanceDomainView({
   focusEntityId = null,
   focusEntityType = null,
   onFocusConsumed = null,
+  onSubModuleChange,
 }) {
   const moneyIds = ['cash-money', 'deposits-review', 'maker-checker', 'pending-approvals'];
   const bookIds = [
@@ -2134,6 +2135,7 @@ export default function FinanceDomainView({
     return (
       <AdminHub
         initialTab={initial}
+        onTabChange={onSubModuleChange}
         tabs={[
           { id: 'deposits-review', label: 'Deposits' },
           { id: 'maker-checker', label: 'Withdrawals', count: withdrawalsCount },
@@ -2150,6 +2152,7 @@ export default function FinanceDomainView({
     return (
       <AdminHub
         initialTab={initial}
+        onTabChange={onSubModuleChange}
         tabs={[
           { id: 'ledger', label: 'Ledger' },
           { id: 'reconciliation', label: 'Recon' },

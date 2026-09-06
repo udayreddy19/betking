@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../../context/AuthContext';
@@ -13,6 +13,8 @@ import { playWinSound } from '../../utils/soundEffects';
 import { formatIst } from '../../utils/istTime';
 
 const WHEEL_SECTORS = DAILY_SPIN_PRIZES;
+/** Ignore backdrop dismiss from the same tap that opened the modal (mobile ghost click). */
+const OPEN_GUARD_MS = 450;
 
 function formatExpiryLabel(prize) {
   if (!prize || prize.type === 'xp') return null;
@@ -37,6 +39,7 @@ export default function DailySpinModal({ isOpen, onClose }) {
   const [wonPrize, setWonPrize] = useState(null);
   const [prizeMeta, setPrizeMeta] = useState(null);
   const [hasSpunToday, setHasSpunToday] = useState(false);
+  const openedAtRef = useRef(0);
 
   const applyWallet = (wallet, spinGrants = null) => {
     if (!wallet) return;
@@ -49,12 +52,18 @@ export default function DailySpinModal({ isOpen, onClose }) {
     });
   };
 
+  const requestClose = useCallback(() => {
+    if (Date.now() - openedAtRef.current < OPEN_GUARD_MS) return;
+    onClose?.();
+  }, [onClose]);
+
   useEffect(() => {
     if (!isOpen) {
       setIsSpinning(false);
       setWheelPhase('idle');
       return undefined;
     }
+    openedAtRef.current = Date.now();
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     let cancelled = false;
@@ -69,6 +78,10 @@ export default function DailySpinModal({ isOpen, onClose }) {
           setHasSpunToday(true);
           setPrizeMeta(data.prize);
           setWonPrize(WHEEL_SECTORS[data.prize.index] || data.prize);
+        } else {
+          setHasSpunToday(false);
+          setPrizeMeta(null);
+          setWonPrize(null);
         }
       } catch {
         // Keep local UI if status fetch fails.
@@ -162,7 +175,7 @@ export default function DailySpinModal({ isOpen, onClose }) {
 
   return createPortal(
     <AnimatePresence>
-      <div className="daily-spin-backdrop" onClick={onClose} role="presentation">
+      <div className="daily-spin-backdrop" onClick={requestClose} role="presentation">
         <motion.div
           className="daily-spin-modal"
           role="dialog"
@@ -174,7 +187,7 @@ export default function DailySpinModal({ isOpen, onClose }) {
           exit={{ opacity: 0, scale: 0.92, y: 16 }}
           transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
         >
-          <button type="button" className="spin-close-btn" onClick={onClose} aria-label="Close spin wheel">
+          <button type="button" className="spin-close-btn" onClick={requestClose} aria-label="Close spin wheel">
             <FiX />
           </button>
 

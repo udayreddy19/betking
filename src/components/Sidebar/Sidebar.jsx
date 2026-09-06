@@ -259,18 +259,23 @@ export default function Sidebar() {
                   <span>Bonuses</span>
                   <FiChevronRight className="sidebar-list-arrow" />
                 </button>
+                {promotionsEnabled && (
                 <button
                   type="button"
                   className="sidebar-list-item"
                   onClick={() => {
                     closeSidebar();
-                    window.dispatchEvent(new Event('oddsyra:open-daily-spin'));
+                    // Defer open so the same tap cannot hit the modal backdrop and dismiss it.
+                    window.setTimeout(() => {
+                      window.dispatchEvent(new Event('oddsyra:open-daily-spin'));
+                    }, 50);
                   }}
                 >
                   <FiZap className="sidebar-list-icon" />
                   <span>Daily spin</span>
                   <FiChevronRight className="sidebar-list-arrow" />
                 </button>
+                )}
                 <button type="button" className="sidebar-list-item" onClick={() => handleFinModal('cancel-wd')}>
                   <MdOutlineCancel className="sidebar-list-icon" />
                   <span>Cancel withdrawal</span>

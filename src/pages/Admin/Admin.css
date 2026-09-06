@@ -587,7 +587,8 @@
 
 /* ── 7. TABS (Segmented Control) ── */
 
-.admin-subtab-bar {
+.admin-subtab-bar,
+.admin-seg-group {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -599,6 +600,14 @@
   overflow-x: auto;
   width: fit-content;
   max-width: 100%;
+}
+.admin-seg-group {
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  margin-bottom: 0;
 }
 .admin-subtab {
   padding: 6px 14px;
@@ -3310,27 +3319,63 @@ html[data-theme="light"] .admin-badge--info,
 /* New UI: domain sub-modules as content segmented control */
 .admin-shell__domain-seg {
   margin: 0 0 16px;
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  padding: 4px 0 12px;
+  background: linear-gradient(
+    to bottom,
+    var(--admin-bg) 70%,
+    color-mix(in srgb, var(--admin-bg) 70%, transparent)
+  );
 }
-.admin-shell--revamp .admin-subtab-bar {
-  border-radius: var(--admin-radius-full);
-  padding: 4px;
+
+/* Shared pill segmented control (Directory / KYC / Limits look) */
+.admin-shell--revamp .admin-subtab-bar,
+.admin-shell--revamp .admin-seg-group {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 2px;
+  padding: 4px;
+  margin-bottom: 20px;
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-full);
 }
-.admin-shell--revamp .admin-subtab {
+.admin-shell--revamp .admin-subtab,
+.admin-shell--revamp .admin-seg-group > .admin-btn {
   border-radius: calc(var(--admin-radius-full) - 2px);
   padding: 7px 16px;
   font-weight: 500;
   color: var(--admin-text-muted);
+  border-color: transparent;
+  box-shadow: none;
+  background: transparent;
 }
-.admin-shell--revamp .admin-subtab:hover {
+.admin-shell--revamp .admin-subtab:hover,
+.admin-shell--revamp .admin-seg-group > .admin-btn:hover {
   color: var(--admin-text);
   background: color-mix(in srgb, var(--admin-text-muted) 8%, transparent);
 }
-.admin-shell--revamp .admin-subtab.active {
+.admin-shell--revamp .admin-subtab.active,
+.admin-shell--revamp .admin-seg-group > .admin-btn--primary {
   background: var(--admin-primary-soft);
   color: var(--admin-text);
   font-weight: 700;
   border-color: transparent;
+}
+.admin-shell--revamp .admin-seg-group > .admin-btn--secondary {
+  background: transparent;
+  color: var(--admin-text-muted);
+}
+.admin-shell--revamp .admin-seg-group > .admin-btn--sm {
+  height: auto;
+  min-height: 0;
+  line-height: 1.25;
 }
 .admin-shell--revamp .admin-subtab.active .admin-subtab__count {
   color: #14532d;
@@ -3343,6 +3388,18 @@ html[data-theme="light"] .admin-badge--info,
 .admin-shell--revamp .admin-shell__sidebar--revamp .admin-nav-chevron,
 .admin-shell--revamp .admin-shell__sidebar--revamp .admin-nav-subs {
   display: none;
+}
+
+@media (max-width: 767px) {
+  .admin-shell--revamp .admin-shell__domain-seg {
+    margin: 0 -12px 14px;
+    padding: 8px 12px 10px;
+  }
+  .admin-shell--revamp .admin-shell__domain-seg .admin-subtab-bar,
+  .admin-shell--revamp .admin-seg-group {
+    width: 100%;
+    max-width: 100%;
+  }
 }
 
 .admin-topbar__role {

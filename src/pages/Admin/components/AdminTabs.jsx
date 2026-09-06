@@ -33,12 +33,25 @@ export default function AdminTabs({ tabs = [], active, onChange, className = '',
   );
 }
 
-export function AdminHub({ tabs, initialTab, children }) {
+/**
+ * Hub of related sub-views under one domain module.
+ * `onTabChange` lets the shell keep `/admin/:domain/:sub` in sync.
+ * `hideTabs` keeps hub state/routing without rendering a second pill row.
+ */
+export function AdminHub({ tabs, initialTab, children, onTabChange, hideTabs = false }) {
   const [tab, setTab] = useState(initialTab);
   useEffect(() => { setTab(initialTab); }, [initialTab]);
+
+  const handleChange = (id) => {
+    setTab(id);
+    onTabChange?.(id);
+  };
+
   return (
     <div>
-      <AdminTabs tabs={tabs} active={tab} onChange={setTab} style={{ marginBottom: 16 }} />
+      {!hideTabs && (
+        <AdminTabs tabs={tabs} active={tab} onChange={handleChange} style={{ marginBottom: 16 }} />
+      )}
       {typeof children === 'function' ? children(tab) : children}
     </div>
   );

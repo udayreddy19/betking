@@ -7,7 +7,7 @@ import { useAdminToast } from '../components/AdminToastContext';
 import { AdminKpiDrillDrawer, useAdminKpiDrilldown } from '../hooks/useAdminKpiDrilldown';
 import { startVisibleInterval } from '../utils/visibleInterval';
 import EmergencyControlsPanel from '../components/EmergencyControlsPanel';
-import { AdminHub } from '../components/AdminTabs';
+import AdminTabs, { AdminHub } from '../components/AdminTabs';
 import { formatIst, formatIstDateTime } from '../../../utils/istTime';
 
 function fmt(v) {
@@ -377,18 +377,12 @@ function ControlTowerOpsPanel({ onNavigate }) {
         <button type="button" className="admin-btn admin-btn--secondary admin-btn--sm" onClick={load}>↻ Refresh</button>
       </div>
 
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
-        {FILTERS.map((f) => (
-          <button
-            key={f}
-            type="button"
-            className={`admin-btn admin-btn--sm ${filter === f ? 'admin-btn--primary' : 'admin-btn--secondary'}`}
-            onClick={() => setFilter(f)}
-          >
-            {f}
-          </button>
-        ))}
-      </div>
+      <AdminTabs
+        style={{ marginBottom: 16 }}
+        tabs={FILTERS.map((f) => ({ id: f, label: f }))}
+        active={filter}
+        onChange={setFilter}
+      />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 24 }}>
         {cards.map((c) => (
@@ -1206,7 +1200,7 @@ function ProductionCertificationPanel() {
 
 
 
-export default function OperationsDomainView({ subModule = 'health-matrix', onNavigate }) {
+export default function OperationsDomainView({ subModule = 'health-matrix', onNavigate, onSubModuleChange }) {
   const statusIds = ['ops-status', 'control-tower', 'alerts', 'incidents'];
   const healthIds = [
     'ops-health',
@@ -1223,6 +1217,7 @@ export default function OperationsDomainView({ subModule = 'health-matrix', onNa
     return (
       <AdminHub
         initialTab={initial}
+        onTabChange={onSubModuleChange}
         tabs={[
           { id: 'control-tower', label: 'Desk' },
           { id: 'alerts', label: 'Alerts' },
@@ -1239,6 +1234,7 @@ export default function OperationsDomainView({ subModule = 'health-matrix', onNa
     return (
       <AdminHub
         initialTab={initial}
+        onTabChange={onSubModuleChange}
         tabs={[
           { id: 'production-health', label: 'Production' },
           { id: 'production-readiness', label: 'Ready' },
@@ -1256,6 +1252,7 @@ export default function OperationsDomainView({ subModule = 'health-matrix', onNa
     return (
       <AdminHub
         initialTab={initial}
+        onTabChange={onSubModuleChange}
         tabs={[
           { id: 'kill-switches', label: 'Kill switches' },
           { id: 'notifications', label: 'Notices' },
@@ -1271,6 +1268,7 @@ export default function OperationsDomainView({ subModule = 'health-matrix', onNa
     return (
       <AdminHub
         initialTab={initial}
+        onTabChange={onSubModuleChange}
         tabs={[
           { id: 'settlement-queue', label: 'Settlement' },
           { id: 'outbox-queue', label: 'Outbox' },

@@ -3,16 +3,19 @@ import React, { createContext, useCallback, useContext, useMemo, useState } from
 const STORAGE_KEY = 'oddsyra-admin-ui-revamp';
 
 const AdminUiModeContext = createContext({
-  revamp: false,
+  revamp: true,
   setRevamp: () => {},
   toggleRevamp: () => {},
 });
 
+/** First visit → New UI. Explicit Classic (`0`) or New (`1`) is respected. */
 function readStoredRevamp() {
   try {
-    return localStorage.getItem(STORAGE_KEY) === '1';
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw === null) return true;
+    return raw === '1';
   } catch {
-    return false;
+    return true;
   }
 }
 

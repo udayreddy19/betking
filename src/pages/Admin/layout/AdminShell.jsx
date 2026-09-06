@@ -373,6 +373,19 @@ function resolveAdminNav(domainId, subModuleId) {
   return { domainId: resolvedDomain, subModuleId: resolvedSub };
 }
 
+/** Roll hub-child attention into the shell parent pill (e.g. withdrawals → Pay in / out). */
+function shellSubAttentionCount(domainId, shellSubId, attention) {
+  const subs = attention?.subModules || {};
+  let total = Number(subs[`${domainId}:${shellSubId}`]?.count || 0);
+  const map = HUB_FOR[domainId] || {};
+  for (const [childId, parentId] of Object.entries(map)) {
+    if (parentId === shellSubId) {
+      total += Number(subs[`${domainId}:${childId}`]?.count || 0);
+    }
+  }
+  return total;
+}
+
 function parseAdminPath(pathname) {
   const parts = String(pathname || '')
     .replace(/^\/admin\/?/, '')
@@ -1038,6 +1051,7 @@ function AdminShellInner() {
           focusEntityType={focusNav?.entityType || null}
           onFocusConsumed={() => setFocusNav(null)}
           onNavigate={handleCommandNavigate}
+          onSubModuleChange={(id) => handleSubModuleSelect('customers', id)}
         />
       );
       case 'sports': return <SportsDomainView subModule={activeSubModule} />;
@@ -1056,6 +1070,7 @@ function AdminShellInner() {
           focusEntityId={focusNav?.entityId || null}
           focusEntityType={focusNav?.entityType || null}
           onFocusConsumed={() => setFocusNav(null)}
+          onSubModuleChange={(id) => handleSubModuleSelect('finance', id)}
         />
       );
       case 'support': return (
@@ -1064,13 +1079,25 @@ function AdminShellInner() {
           focusEntityId={focusNav?.entityId || null}
           focusEntityType={focusNav?.entityType || null}
           onFocusConsumed={() => setFocusNav(null)}
+          onSubModuleChange={(id) => handleSubModuleSelect('support', id)}
         />
       );
       case 'growth': return <GrowthDomainView subModule={activeSubModule} />;
-      case 'communications': return <CommunicationsDomainView subModule={activeSubModule} />;
+      case 'communications': return (
+        <CommunicationsDomainView
+          subModule={activeSubModule}
+          onSubModuleChange={(id) => handleSubModuleSelect('communications', id)}
+        />
+      );
       case 'analytics': return <AnalyticsDomainView subModule={activeSubModule} />;
       case 'platform': return <PlatformDomainView subModule={activeSubModule} />;
-      case 'operations': return <OperationsDomainView subModule={activeSubModule} onNavigate={handleCommandNavigate} />;
+      case 'operations': return (
+        <OperationsDomainView
+          subModule={activeSubModule}
+          onNavigate={handleCommandNavigate}
+          onSubModuleChange={(id) => handleSubModuleSelect('operations', id)}
+        />
+      );
       case 'api-explorer': return <ApiExplorerDomainView subModule={activeSubModule} />;
       case 'security-governance': return <SecurityGovernanceDomainView subModule={activeSubModule} />;
       default: return (
@@ -1087,7 +1114,7 @@ function AdminShellInner() {
   const currentSubLabel = currentSubObj?.label || SUB_BREADCRUMB[activeSubModule];
   const hubMappedSub = HUB_FOR[activeDomain]?.[activeSubModule] || activeSubModule;
   const revampSubTabs = (currentDomainObj?.subModules || []).map((sub) => {
-    const badge = navAttention?.subModules?.[`${activeDomain}:${sub.id}`]?.count;
+    const badge = shellSubAttentionCount(activeDomain, sub.id, navAttention);
     return {
       id: sub.id,
       label: sub.label,
