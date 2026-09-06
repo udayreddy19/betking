@@ -352,7 +352,18 @@ export default function Sports() {
   // My Bets / open-bet clicks pass the fixture in location.state so we open it
   // immediately instead of waiting on id-alias resolution.
   useEffect(() => {
-    const deep = location.state?.deepLinkMatch;
+    let deep = location.state?.deepLinkMatch || null;
+    if (!deep) {
+      try {
+        const raw = sessionStorage.getItem('oddsyra:deepLinkMatch');
+        if (raw) {
+          deep = JSON.parse(raw);
+          sessionStorage.removeItem('oddsyra:deepLinkMatch');
+        }
+      } catch {
+        deep = null;
+      }
+    }
     if (!deep) return;
     const id = deep.id || deep.matchId;
     if (!id) return;

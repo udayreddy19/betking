@@ -1,6 +1,4 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { IoClose } from '../../icons';
 import { useBetSlip } from '../../context/BetSlipContext';
@@ -14,8 +12,6 @@ import { apiFetch } from '../../utils/apiClient';
 import { matchIdsEqual } from '../../../lib/matchIdPublic.mjs';
 import { findLiveMatch } from '../../utils/findLiveMatch';
 import { springSheet } from '../../utils/motionPresets';
-import LiveMatchGraphicWidget from '../LiveMatchGraphicWidget/LiveMatchGraphicWidget';
-import ErrorBoundary from '../ErrorBoundary/ErrorBoundary';
 import './MyBetsPanel.css';
 import { formatIst, formatIstDateTime } from '../../utils/istTime';
 
@@ -131,7 +127,6 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
   const [highlightBetId, setHighlightBetId] = useState(null);
   const [expandedEvidence, setExpandedEvidence] = useState({});
   const [loadedEvidence, setLoadedEvidence] = useState({});
-  const [peekMatch, setPeekMatch] = useState(null);
   const panelRef = useRef(null);
 
   const toggleEvidence = async (betId, existingEvidence) => {
@@ -409,8 +404,6 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
       isLive: true,
       matchState: 'in',
     };
-    setPeekMatch(nextMatch);
-    closeMyBets();
 
     const params = new URLSearchParams({
       sport,
@@ -419,21 +412,16 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
       tab: 'live',
     });
     if (displayName && /\svs\.?\s/i.test(displayName)) params.set('teams', displayName);
-    navigate(`/sports?${params.toString()}`, {
-      replace: false,
-      state: { deepLinkMatch: nextMatch },
-    });
-  };
 
-  // Keep peek tracker live as the board updates.
-  const livePeekMatch = useMemo(() => {
-    if (!peekMatch) return null;
-    const id = peekMatch.id || peekMatch.matchId;
-    const hint = peekMatch.team1?.name && peekMatch.team2?.name
-      ? `${peekMatch.team1.name} vs ${peekMatch.team2.name}`
-      : peekMatch.matchName;
-    return findLiveMatch(liveMatches, { matchId: id, matchName: hint }) || peekMatch;
-  }, [peekMatch, liveMatches]);
+    closeMyBets();
+    try {
+      sessionStorage.setItem('oddsyra:deepLinkMatch', JSON.stringify(nextMatch));
+    } catch {
+      // ignore quota / private mode
+    }
+    // Full navigation so Sports always mounts on the target match (no intermediate popup).
+    window.location.assign(`/sports?${params.toString()}`);
+  };
 
   const getLegSelectionLabel = (leg) => {
     const match = resolveLegMatch(leg);
@@ -485,7 +473,6 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
   };
 
   return (
-    <>
     <AnimatePresence>
       {panelOpen ? (
         <>
@@ -843,60 +830,5 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
         </>
       ) : null}
     </AnimatePresence>
-    {livePeekMatch && typeof document !== 'undefined' && createPortal(
-      <div className="my-bets-match-peek" role="dialog" aria-modal="true" aria-label="Match details">
-        <div className="my-bets-match-peek__backdrop" onClick={() => setPeekMatch(null)} aria-hidden="true" />
-        <div className="my-bets-match-peek__sheet">
-          <div className="my-bets-match-peek__header">
-            <div>
-              <div className="my-bets-match-peek__eyebrow">Open bet · match</div>
-              <h3>
-                {(livePeekMatch.team1?.name || livePeekMatch.team1 || 'Team 1')}
-                {' vs '}
-                {(livePeekMatch.team2?.name || livePeekMatch.team2 || 'Team 2')}
-              </h3>
-            </div>
-            <button
-              type="button"
-              className="my-bets-close"
-              onClick={() => setPeekMatch(null)}
-              aria-label="Close match details"
-            >
-              <IoClose />
-            </button>
-          </div>
-          <div className="my-bets-match-peek__body">
-            <ErrorBoundary resetKey={livePeekMatch.id || livePeekMatch.matchId}>
-              <LiveMatchGraphicWidget match={livePeekMatch} />
-            </ErrorBoundary>
-          </div>
-          <div className="my-bets-match-peek__footer">
-            <button
-              type="button"
-              className="my-bets-match-peek__sports-btn"
-              onClick={() => {
-                const id = livePeekMatch.id || livePeekMatch.matchId;
-                const sport = String(livePeekMatch.sport || 'cricket').toLowerCase();
-                const t1 = livePeekMatch.team1?.name || livePeekMatch.team1;
-                const t2 = livePeekMatch.team2?.name || livePeekMatch.team2;
-                const params = new URLSearchParams({
-                  sport: sport === 'football' ? 'soccer' : sport,
-                  league: 'all',
-                  match: String(id),
-                  tab: 'live',
-                });
-                if (t1 && t2) params.set('teams', `${t1} vs ${t2}`);
-                setPeekMatch(null);
-                window.location.assign(`/sports?${params.toString()}`);
-              }}
-            >
-              Open full Sports page
-            </button>
-          </div>
-        </div>
-      </div>,
-      document.body,
-    )}
-    </>
   );
 }
