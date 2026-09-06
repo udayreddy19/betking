@@ -153,7 +153,7 @@ function TargetedDepositFreeBetPanel() {
     freebetExpiryDays: '7',
     startsAt: '',
     endsAt: '',
-    emailSubject: '100% Deposit Free Bet Offer Just for You',
+    emailSubject: 'Your OddsYra wallet has an update',
     segmentId: '',
     excludeSegmentId: '',
     vipTiers: '',
@@ -516,7 +516,7 @@ function TargetedDepositFreeBetPanel() {
             <section className="tdfb-block">
               <div className="tdfb-block__head">
                 <h4>Email copy</h4>
-                <p>Sent from no-reply@oddsyra.com as account mail (avoids Gmail Promotions tab)</p>
+                <p>Outbound mail is a short wallet update from no-reply@ (offer details stay in-app so Gmail does not Promotions-tab it)</p>
               </div>
               <div className="admin-form-group">
                 <label className="admin-form-label">Subject line</label>
