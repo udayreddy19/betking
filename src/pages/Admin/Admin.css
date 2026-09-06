@@ -3346,18 +3346,19 @@ html[data-theme="light"] .admin-badge--info,
 
 /*
  * New UI radius (Customer Directory look):
- * controls → full pill; panels/cards → soft 28–32px.
+ * controls → full pill; panels/lists/cards → soft 16–32px (not stadium).
  * Scoped to .admin-shell--revamp so Classic stays unchanged.
  */
 .admin-shell--revamp {
-  --admin-radius-sm: 9999px;
-  --admin-radius: 9999px;
-  --admin-radius-md: 9999px;
+  --admin-radius-sm: 12px;
+  --admin-radius: 16px;
+  --admin-radius-md: 16px;
   --admin-radius-lg: 28px;
   --admin-radius-xl: 32px;
   --admin-radius-full: 9999px;
 }
 
+/* Pills on interactive controls only — keep lists/panels soft via tokens above */
 .admin-shell--revamp .admin-btn:not(.admin-btn--icon),
 .admin-shell--revamp .admin-input,
 .admin-shell--revamp .admin-select,
@@ -3367,9 +3368,17 @@ html[data-theme="light"] .admin-badge--info,
 .admin-shell--revamp .admin-compose-mail__tpl,
 .admin-shell--revamp .admin-compose-mail__to,
 .admin-shell--revamp .admin-compose-mail__chip,
+.admin-shell--revamp .admin-send-as__choice,
+.admin-shell--revamp .tdfb-affix,
 .admin-shell--revamp input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
 .admin-shell--revamp select {
   border-radius: var(--admin-radius-full);
+}
+
+/* Prefix/suffix fields: outer pill, square inner so ₹/etc. sit flush */
+.admin-shell--revamp .tdfb-affix .admin-input,
+.admin-shell--revamp .tdfb-affix input {
+  border-radius: 0;
 }
 
 .admin-shell--revamp textarea,
@@ -3382,35 +3391,155 @@ html[data-theme="light"] .admin-badge--info,
 .admin-shell--revamp .admin-drawer,
 .admin-shell--revamp .admin-compose-mail__form,
 .admin-shell--revamp .admin-compose-mail__mailbox,
+.admin-shell--revamp .admin-compose-mail__hits,
+.admin-shell--revamp .admin-send-as,
+.admin-shell--revamp .tdfb-kpi,
+.admin-shell--revamp .tdfb-users__hits,
+.admin-shell--revamp .admin-lookup-suggest,
 .admin-shell--revamp .telemetry-card {
   border-radius: var(--admin-radius-lg);
+}
+
+/* Match control heights so input + button rows stay level */
+.admin-shell--revamp .admin-btn:not(.admin-btn--icon):not(.admin-btn--sm):not(.admin-btn--lg) {
+  min-height: 38px;
+  height: 38px;
+  padding: 0 16px;
+  box-sizing: border-box;
+  line-height: 1.2;
+}
+.admin-shell--revamp .admin-btn--sm {
+  min-height: 34px;
+  height: 34px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  line-height: 1.2;
+}
+.admin-shell--revamp .admin-btn--lg {
+  min-height: 44px;
+  height: 44px;
+  padding: 0 20px;
+  box-sizing: border-box;
+  line-height: 1.2;
+}
+.admin-shell--revamp .admin-input,
+.admin-shell--revamp .admin-select,
+.admin-shell--revamp input.admin-input,
+.admin-shell--revamp select.admin-select {
+  height: 38px;
+  box-sizing: border-box;
+  line-height: 1.2;
+}
+.admin-shell--revamp textarea.admin-input {
+  height: auto;
+  min-height: 112px;
+}
+
+.admin-shell--revamp .tdfb-users__search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.admin-shell--revamp .tdfb-users__search .admin-input {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.admin-shell--revamp .tdfb-users__search .admin-btn {
+  flex: 0 0 auto;
+}
+
+/* Hit lists / lookup menus: inset content so pills don't clip on the curve */
+.admin-shell--revamp .tdfb-users__hits,
+.admin-shell--revamp .admin-lookup-suggest {
+  overflow: auto;
+}
+.admin-shell--revamp .tdfb-hit {
+  display: grid;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+.admin-shell--revamp .tdfb-hit .admin-btn {
+  justify-self: end;
+  flex-shrink: 0;
+}
+.admin-shell--revamp .tdfb-users__hits .tdfb-hit:first-child {
+  padding-top: 14px;
+}
+.admin-shell--revamp .tdfb-users__hits .tdfb-hit:last-child {
+  padding-bottom: 14px;
+}
+.admin-shell--revamp .tdfb-kpi {
+  padding: 14px 16px 12px;
+}
+.admin-shell--revamp .admin-send-as {
+  padding: 14px 16px;
+}
+.admin-shell--revamp .admin-send-as__choice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 16px;
+  box-sizing: border-box;
+  line-height: 1.2;
+}
+.admin-shell--revamp .admin-lookup-suggest__row {
+  padding: 12px 18px;
+  box-sizing: border-box;
+}
+.admin-shell--revamp .admin-lookup-suggest__head {
+  padding: 10px 18px 8px;
+}
+.admin-shell--revamp .admin-table-header {
+  align-items: center;
+  gap: 12px;
+}
+.admin-shell--revamp .admin-table-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 /* Shared pill segmented control (Directory / KYC / Limits look) */
 .admin-shell--revamp .admin-subtab-bar,
 .admin-shell--revamp .admin-seg-group {
   display: inline-flex;
-  align-items: center;
-  flex-wrap: wrap;
+  align-items: stretch;
+  flex-wrap: nowrap;
   gap: 2px;
-  padding: 4px;
+  padding: 3px;
   margin-bottom: 20px;
   width: fit-content;
   max-width: 100%;
   overflow-x: auto;
+  overflow-y: hidden;
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-full);
+  box-sizing: border-box;
 }
 .admin-shell--revamp .admin-subtab,
 .admin-shell--revamp .admin-seg-group > .admin-btn {
-  border-radius: calc(var(--admin-radius-full) - 2px);
-  padding: 7px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  min-height: 34px;
+  height: auto;
+  border-radius: 9999px;
+  padding: 0 16px;
   font-weight: 500;
+  line-height: 1.2;
   color: var(--admin-text-muted);
-  border-color: transparent;
+  border: 1px solid transparent;
   box-shadow: none;
   background: transparent;
+  box-sizing: border-box;
 }
 .admin-shell--revamp .admin-subtab:hover,
 .admin-shell--revamp .admin-seg-group > .admin-btn:hover {
@@ -3429,9 +3558,10 @@ html[data-theme="light"] .admin-badge--info,
   color: var(--admin-text-muted);
 }
 .admin-shell--revamp .admin-seg-group > .admin-btn--sm {
+  min-height: 34px;
   height: auto;
-  min-height: 0;
-  line-height: 1.25;
+  padding: 0 14px;
+  line-height: 1.2;
 }
 .admin-shell--revamp .admin-subtab.active .admin-subtab__count {
   color: #14532d;
@@ -3444,6 +3574,23 @@ html[data-theme="light"] .admin-badge--info,
 .admin-shell--revamp .admin-shell__sidebar--revamp .admin-nav-chevron,
 .admin-shell--revamp .admin-shell__sidebar--revamp .admin-nav-subs {
   display: none;
+}
+
+.admin-shell--revamp .admin-nav-domain {
+  border-radius: var(--admin-radius-full);
+}
+.admin-shell--revamp .admin-filter-bar {
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+}
+.admin-shell--revamp .admin-filter-bar .admin-input,
+.admin-shell--revamp .admin-filter-bar .admin-select,
+.admin-shell--revamp .admin-filter-bar .admin-btn {
+  vertical-align: middle;
+}
+.admin-shell--revamp .admin-drawer .admin-subtab-bar {
+  max-width: 100%;
 }
 
 @media (max-width: 767px) {

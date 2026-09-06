@@ -1758,7 +1758,7 @@ function WalletInvestigationPanel() {
 
       {/* SEARCH BAR & USER LOOKUP DROPDOWN */}
       <div style={{ position: 'relative', maxWidth: 720, marginBottom: 24 }}>
-        <form onSubmit={handleSearch} style={{ display: 'flex', gap: 10 }}>
+        <form onSubmit={handleSearch} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ position: 'relative', flex: 1 }}>
             <input
               type="search"
@@ -1767,7 +1767,7 @@ function WalletInvestigationPanel() {
               onChange={(e) => handleQueryChange(e.target.value)}
               onFocus={() => setShowSuggestions(true)}
               className="admin-input"
-              style={{ width: '100%', padding: '10px 14px', borderRadius: 'var(--admin-radius)', fontSize: '0.9rem' }}
+              style={{ width: '100%', padding: '0 14px', fontSize: '0.9rem' }}
             />
           </div>
           <button type="submit" className="admin-btn admin-btn--primary" disabled={loading || !query.trim()}>
@@ -1778,6 +1778,7 @@ function WalletInvestigationPanel() {
         {/* QUICK USER SUGGESTIONS / AUTOCOMPLETE */}
         {showSuggestions && userSuggestions.length > 0 && (
           <div
+            className="admin-lookup-suggest"
             style={{
               position: 'absolute',
               top: '100%',
@@ -1786,22 +1787,22 @@ function WalletInvestigationPanel() {
               zIndex: 50,
               background: 'var(--admin-card-bg, #1e293b)',
               border: '1px solid var(--admin-border, #334155)',
-              borderRadius: 'var(--admin-radius)',
+              borderRadius: 'var(--admin-radius-lg)',
               boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
               marginTop: 4,
               maxHeight: 280,
               overflowY: 'auto',
             }}
           >
-            <div style={{ padding: '6px 12px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--admin-text-muted)', borderBottom: '1px solid var(--admin-border)' }}>
+            <div className="admin-lookup-suggest__head" style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--admin-text-muted)', borderBottom: '1px solid var(--admin-border)' }}>
               {suggestionsLoading ? 'Searching users…' : 'MATCHING USERS (Click to Investigate)'}
             </div>
             {userSuggestions.map((u) => (
               <div
                 key={u.userId}
+                className="admin-lookup-suggest__row"
                 onClick={() => investigateTarget(u.userId)}
                 style={{
-                  padding: '10px 14px',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
