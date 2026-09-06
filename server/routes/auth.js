@@ -33,8 +33,11 @@ async function attachAdminSessionTelemetry(req, payload, { adminIdHint = null, m
       userAgent,
       mfaVerified: mfaUsed || Boolean(payload?.mfaVerified),
     });
+    const { generateAdminToken } = await import('../middleware/adminAuth.js');
+    const role = payload.role || 'SUPER_ADMIN';
     return {
       ...payload,
+      token: generateAdminToken(adminId, role, 'oddsyra_in', { sessionId: sess.sessionId }),
       sessionId: sess.sessionId,
       sessionRisk: risk,
     };

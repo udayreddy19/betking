@@ -29,13 +29,15 @@ const ROLE_PERMISSIONS = {
   OPERATIONS_ADMIN: ['operations', 'platform', 'providers', 'emergency', 'incidents', 'analytics', 'kyc', 'api-explorer', 'communications'],
 };
 
-export function generateAdminToken(adminId, role, tenantId = 'oddsyra_in') {
-  return signHs256({
+export function generateAdminToken(adminId, role, tenantId = 'oddsyra_in', opts = {}) {
+  const payload = {
     sub: adminId,
     role: role || ADMIN_ROLES.SUPER_ADMIN,
     tenant: tenantId,
     type: 'admin',
-  }, '8h');
+  };
+  if (opts.sessionId) payload.sid = String(opts.sessionId);
+  return signHs256(payload, '8h');
 }
 
 export function generateAdminMfaPendingToken(adminId, role, tenantId = 'oddsyra_in') {
@@ -56,7 +58,7 @@ export function verifyAdminToken(token) {
  * Extracts admin identity from JWT or X-Admin-Role header (dev mode).
  * Attaches `req.admin` with { id, role, tenant }.
  */
-export function adminAuth(req, res, next) {
+export async function adminAuth(req, res, next) {
   // Extract token from Authorization header
   const authHeader = req.headers['authorization'];
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
@@ -70,10 +72,33 @@ export function adminAuth(req, res, next) {
     const isAdminRole = role && Object.values(ADMIN_ROLES).includes(role);
     const isUserAccess = decoded.type === 'access' || role === 'USER';
     if (isAdminRole && !isUserAccess && decoded.type === 'admin') {
+      const sid = decoded.sid ? String(decoded.sid) : null;
+      const requireSid = process.env.NODE_ENV === 'production'
+        || process.env.ADMIN_REQUIRE_SESSION === '1';
+      if (requireSid && !sid) {
+        return res.status(401).json({ error: 'Admin session required', code: 'ADMIN_SESSION_REQUIRED' });
+      }
+      if (sid) {
+        try {
+          const { isAdminSessionActive } = await import('../../lib/adminSessionEngine.mjs');
+          const active = await isAdminSessionActive(sid, decoded.sub);
+          if (!active) {
+            return res.status(401).json({ error: 'Admin session revoked', code: 'ADMIN_SESSION_REVOKED' });
+          }
+        } catch (err) {
+          if (requireSid) {
+            return res.status(503).json({
+              error: 'Admin session check unavailable',
+              code: 'ADMIN_SESSION_CHECK_FAILED',
+            });
+          }
+        }
+      }
       req.admin = {
         id: decoded.sub,
         role,
         tenant: decoded.tenant || 'oddsyra_in',
+        sessionId: sid,
       };
       return next();
     }
