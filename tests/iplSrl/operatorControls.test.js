@@ -11,6 +11,7 @@ import {
 import {
   applySrlStakeRows,
   getIPLSRLControlSnapshot,
+  getIPLSRLMatchMarkets,
   jumpIPLSRLSeason,
   resetIPLSRLSeasonClock,
   setIPLSRLBettingClosed,
@@ -122,5 +123,26 @@ describe('OddsYra SRL operator controls', () => {
     }]);
     expect(next.firstRuns).toBe(89);
     expect(next.runs).toBe(89);
+  });
+
+  it('match markets desk exposes toss + full V4 user book for control', async () => {
+    const match = getIplSrlSeasonMatches(SRL_LAUNCH_AT)[0];
+    const desk = await getIPLSRLMatchMarkets(match.id);
+    expect(desk.engine).toBe('OddsEngineV4');
+    expect(desk.marketCount).toBeGreaterThanOrEqual(20);
+    const ids = desk.markets.map((m) => m.marketId);
+    expect(ids).toContain('toss_winner');
+    expect(ids).toContain('toss_and_bat');
+    expect(ids).toContain('toss_and_bowl');
+    expect(ids).toContain('team_bat_first');
+    expect(ids).toContain('match_winner');
+    expect(ids).toContain('match_total');
+    expect(desk.tossMarkets?.length).toBeGreaterThanOrEqual(4);
+    expect(ids.slice(0, 4)).toEqual([
+      'toss_winner',
+      'toss_and_bat',
+      'toss_and_bowl',
+      'team_bat_first',
+    ]);
   });
 });

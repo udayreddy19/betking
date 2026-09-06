@@ -122,7 +122,7 @@ export default function IPLSRLConsoleView() {
   const [marketsDesk, setMarketsDesk] = useState(null);
   const [marketsLoading, setMarketsLoading] = useState(false);
   const [marketsError, setMarketsError] = useState(null);
-  const [marketFilter, setMarketFilter] = useState('open');
+  const [marketFilter, setMarketFilter] = useState('all');
   const draggingRef = useRef(false);
 
   const applySnap = useCallback((data) => {
@@ -195,7 +195,19 @@ export default function IPLSRLConsoleView() {
     }
     if (marketFilter === 'staked') return list.filter((m) => (m.book?.bets || 0) > 0);
     if (marketFilter === 'locked') {
-      return list.filter((m) => ['SUSPENDED', 'DETERMINED', 'VOID', 'VOIDED'].includes(String(m.status || '').toUpperCase()));
+      return list.filter((m) => ['SUSPENDED', 'DETERMINED', 'VOID', 'VOIDED', 'SETTLED'].includes(String(m.status || '').toUpperCase()));
+    }
+    if (marketFilter === 'toss') {
+      return list.filter((m) => /toss|bat_first/i.test(`${m.marketId} ${m.title || ''} ${m.name || ''}`));
+    }
+    if (marketFilter === 'winner') {
+      return list.filter((m) => /match_winner|winner|most_|top_|h2h/i.test(String(m.marketId || '')));
+    }
+    if (marketFilter === 'totals') {
+      return list.filter((m) => /total|range|btts|fours|sixes|wickets|ladder/i.test(String(m.marketId || '')));
+    }
+    if (marketFilter === 'innings') {
+      return list.filter((m) => /^i[12]_/i.test(String(m.marketId || '')) || /innings|team_total|over_|delivery|wicket_in|dismissal/i.test(String(m.marketId || '')));
     }
     return list;
   }, [marketsDesk, marketFilter]);
@@ -683,15 +695,21 @@ export default function IPLSRLConsoleView() {
 
                   <div className="srl-markets">
                     <div className="srl-winner-label">
-                      All markets · declare or lock any odd
-                      {marketsDesk ? ` · ${marketsDesk.openBets || 0} open bets · ${formatInr(marketsDesk.openStake)}` : ''}
+                      All user odds · toss, winner, totals, innings — lock / declare / void
+                      {marketsDesk
+                        ? ` · ${marketsDesk.marketCount ?? marketsDesk.markets?.length ?? 0} markets · ${marketsDesk.openBets || 0} open bets · ${formatInr(marketsDesk.openStake)}`
+                        : ''}
                     </div>
                     <div className="srl-market-filters">
                       {[
+                        { id: 'all', label: 'All odds' },
+                        { id: 'toss', label: 'Toss' },
+                        { id: 'winner', label: 'Winner' },
+                        { id: 'totals', label: 'Totals' },
+                        { id: 'innings', label: 'Innings / overs' },
                         { id: 'open', label: 'Open + staked' },
                         { id: 'staked', label: 'With stakes' },
                         { id: 'locked', label: 'Locked / settled' },
-                        { id: 'all', label: 'All odds' },
                       ].map((f) => (
                         <button
                           key={f.id}
@@ -700,6 +718,9 @@ export default function IPLSRLConsoleView() {
                           onClick={() => setMarketFilter(f.id)}
                         >
                           {f.label}
+                          {f.id === 'toss' && marketsDesk?.tossMarkets?.length
+                            ? ` · ${marketsDesk.tossMarkets.length}`
+                            : ''}
                         </button>
                       ))}
                     </div>
