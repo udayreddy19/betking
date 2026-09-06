@@ -259,7 +259,6 @@ export default function Sidebar() {
                   <span>Bonuses</span>
                   <FiChevronRight className="sidebar-list-arrow" />
                 </button>
-                {promotionsEnabled && (
                 <button
                   type="button"
                   className="sidebar-list-item"
@@ -275,7 +274,6 @@ export default function Sidebar() {
                   <span>Daily spin</span>
                   <FiChevronRight className="sidebar-list-arrow" />
                 </button>
-                )}
                 <button type="button" className="sidebar-list-item" onClick={() => handleFinModal('cancel-wd')}>
                   <MdOutlineCancel className="sidebar-list-icon" />
                   <span>Cancel withdrawal</span>

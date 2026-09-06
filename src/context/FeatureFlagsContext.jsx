@@ -77,9 +77,10 @@ export function FeatureFlagsProvider({ children }) {
 
   const isEnabled = useCallback((flagKey, defaultValue = true) => {
     if (!flagKey) return !!defaultValue;
-    // Kill-switch / gated surfaces stay off until the flag map has loaded,
-    // and stay off if hydrate failed / key still missing after ready.
-    if (isFailClosedUntilReady(flagKey) && (!(flagKey in flags) || !ready)) {
+    // Fail-closed surfaces stay off only until flags hydrate.
+    // After hydrate, missing keys honor the caller default (opt-in kill switches
+    // pass false; product UX flags typically pass true).
+    if (isFailClosedUntilReady(flagKey) && !ready) {
       return false;
     }
     if (!(flagKey in flags)) return !!defaultValue;

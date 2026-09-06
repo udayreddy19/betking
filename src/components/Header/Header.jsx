@@ -416,7 +416,7 @@ function Header() {
                 </AnimatePresence>
               </div>
               )}
-              {promotionsEnabled && (
+              {isLoggedIn && (
               <motion.button
                 type="button"
                 className="header-action-icon-btn header-spin-icon-btn"
