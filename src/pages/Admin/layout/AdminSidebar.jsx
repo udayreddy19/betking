@@ -13,6 +13,7 @@ function formatBadgeCount(n) {
 /**
  * Extracted Admin Sidebar — collapsible, mobile-drawer aware.
  * All navigation state and domain config is received via props from AdminShell.
+ * When `revamp` is true, domain sub-modules are hidden (shown as content pills instead).
  */
 export default function AdminSidebar({
   domainGroups,
@@ -27,6 +28,7 @@ export default function AdminSidebar({
   isMobileOpen,
   onCloseMobile,
   attention = null,
+  revamp = false,
 }) {
   const { activeRole } = useAdminRole();
   const visibleGroups = useMemo(
@@ -43,6 +45,7 @@ export default function AdminSidebar({
     'admin-shell__sidebar',
     collapsed ? 'admin-shell__sidebar--collapsed' : '',
     isMobileOpen ? 'is-mobile-open' : '',
+    revamp ? 'admin-shell__sidebar--revamp' : '',
   ].filter(Boolean).join(' ');
 
   const domainAttention = attention?.domains || {};
@@ -64,7 +67,7 @@ export default function AdminSidebar({
         animate={{ opacity: 1, x: 0 }}
         transition={{ type: 'spring', bounce: 0, duration: 0.35 }}
       >
-        <div className={`admin-sidebar-brand${collapsed ? ' admin-sidebar-brand--truncated' : ''}`}>
+        <div className={`admin-sidebar-brand${collapsed ? ' admin-sidebar-brand--collapsed' : ''}`}>
           <BrandLogo size={collapsed ? 26 : 28} />
           <div className="admin-sidebar-brand-text" style={{ minWidth: 0, flex: 1 }}>
             <h1 className="admin-sidebar-brand__name">OddsYra</h1>
@@ -92,9 +95,9 @@ export default function AdminSidebar({
               </div>
               {group.items.map((domain) => {
                 const isActive = activeDomain === domain.id;
-                const isExpanded = !!expandedDomains[domain.id];
+                const isExpanded = !revamp && !!expandedDomains[domain.id];
                 const DomainIcon = domain.Icon;
-                const hasSub = domain.subModules && domain.subModules.length > 0;
+                const hasSub = !revamp && domain.subModules && domain.subModules.length > 0;
                 const domainBadge = formatBadgeCount(domainAttention[domain.id]?.count);
                 const domainTitle = domainAttention[domain.id]?.label
                   || (domainBadge ? `${domainBadge} pending` : domain.label);

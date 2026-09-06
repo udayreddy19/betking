@@ -50,6 +50,8 @@ export default function AdminTopbar({
   currentSubLabel,
   onBreadcrumbHome,
   onBreadcrumbDomain,
+  uiRevamp = false,
+  onToggleUiRevamp,
 }) {
   const showSub = Boolean(
     currentSubLabel &&
@@ -118,6 +120,21 @@ export default function AdminTopbar({
       </div>
 
       <div className="admin-topbar__actions">
+        {typeof onToggleUiRevamp === 'function' && (
+          <button
+            type="button"
+            className={`admin-ui-mode-toggle${uiRevamp ? ' is-on' : ''}`}
+            onClick={onToggleUiRevamp}
+            aria-pressed={uiRevamp}
+            title={uiRevamp ? 'Switch to classic Admin UI' : 'Switch to new Admin UI'}
+          >
+            <span className="admin-ui-mode-toggle__track" aria-hidden="true">
+              <span className={`admin-ui-mode-toggle__thumb${uiRevamp ? ' is-on' : ''}`} />
+            </span>
+            <span className="admin-ui-mode-toggle__label">{uiRevamp ? 'New UI' : 'Classic'}</span>
+          </button>
+        )}
+
         <ThemeToggle />
 
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>

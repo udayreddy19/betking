@@ -49,6 +49,8 @@ import ApiExplorerDomainView from '../domains/ApiExplorerDomainView';
 import { ensureAdminSession, adminApiClient } from '../api/adminApiClient';
 import { AdminToastProvider } from '../components/AdminToastContext';
 import { AdminNavAttentionProvider } from '../context/AdminNavAttentionContext';
+import { AdminUiModeProvider, useAdminUiMode } from '../context/AdminUiModeContext';
+import AdminTabs from '../components/AdminTabs';
 
 const DOMAIN_GROUPS = [
   {
@@ -412,11 +414,13 @@ function persistAdminNav(domainId, subModuleId) {
 
 export default function AdminShell() {
   return (
-    <AdminRoleProvider>
-      <AdminToastProvider>
-        <AdminShellInner />
-      </AdminToastProvider>
-    </AdminRoleProvider>
+    <AdminUiModeProvider>
+      <AdminRoleProvider>
+        <AdminToastProvider>
+          <AdminShellInner />
+        </AdminToastProvider>
+      </AdminRoleProvider>
+    </AdminUiModeProvider>
   );
 }
 
@@ -467,6 +471,7 @@ function AdminShellInner() {
 
   const { activeRole, setActiveRole, syncRoleFromJwt, rolePreviewEnabled } = useAdminRole();
   const { isDark } = useTheme();
+  const { revamp: uiRevamp, toggleRevamp } = useAdminUiMode();
   const [globalSearch, setGlobalSearch] = useState('');
   const [isAlertsOpen, setIsAlertsOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
@@ -767,7 +772,8 @@ function AdminShellInner() {
     const isAlreadyActive = activeDomain === domain.id;
     const isExpanded = !!expandedDomains[domain.id];
 
-    if (hasSub && isAlreadyActive && isExpanded) {
+    // Classic only: re-clicking an expanded domain collapses the sub-tree.
+    if (!uiRevamp && hasSub && isAlreadyActive && isExpanded) {
       setExpandedDomains({});
       return;
     }
@@ -1079,17 +1085,27 @@ function AdminShellInner() {
   const currentDomainObj = ALL_DOMAINS.find((d) => d.id === activeDomain);
   const currentSubObj = currentDomainObj?.subModules?.find((s) => s.id === activeSubModule);
   const currentSubLabel = currentSubObj?.label || SUB_BREADCRUMB[activeSubModule];
+  const hubMappedSub = HUB_FOR[activeDomain]?.[activeSubModule] || activeSubModule;
+  const revampSubTabs = (currentDomainObj?.subModules || []).map((sub) => {
+    const badge = navAttention?.subModules?.[`${activeDomain}:${sub.id}`]?.count;
+    return {
+      id: sub.id,
+      label: sub.label,
+      count: badge > 0 ? badge : undefined,
+    };
+  });
+  const showRevampSubTabs = uiRevamp && revampSubTabs.length > 1;
 
   // ─── Main Authenticated Layout ───
   return (
     <AdminNavAttentionProvider value={navAttention}>
-    <div className={`admin-shell ${isDark ? 'admin-shell--dark' : 'admin-shell--light'}`}>
+    <div className={`admin-shell ${isDark ? 'admin-shell--dark' : 'admin-shell--light'}${uiRevamp ? ' admin-shell--revamp' : ''}`}>
 
       {/* Sidebar */}
       <AdminSidebar
         domainGroups={DOMAIN_GROUPS}
         activeDomain={activeDomain}
-        activeSubModule={HUB_FOR[activeDomain]?.[activeSubModule] || activeSubModule}
+        activeSubModule={hubMappedSub}
         expandedDomains={expandedDomains}
         onDomainSelect={handleDomainSelect}
         onSubModuleSelect={handleSubModuleSelect}
@@ -1099,6 +1115,7 @@ function AdminShellInner() {
         isMobileOpen={mobileSidebarOpen}
         onCloseMobile={() => setMobileSidebarOpen(false)}
         attention={navAttention}
+        revamp={uiRevamp}
       />
 
       {/* Main Column */}
@@ -1135,6 +1152,8 @@ function AdminShellInner() {
           onBreadcrumbDomain={() => {
             if (currentDomainObj) handleDomainSelect(currentDomainObj);
           }}
+          uiRevamp={uiRevamp}
+          onToggleUiRevamp={toggleRevamp}
         />
 
         {/* Alerts Popover (portal) */}
@@ -1339,6 +1358,15 @@ function AdminShellInner() {
 
         {/* Domain View Content */}
         <main ref={contentScrollRef} className="admin-shell__main">
+          {showRevampSubTabs && (
+            <div className="admin-shell__domain-seg">
+              <AdminTabs
+                tabs={revampSubTabs}
+                active={hubMappedSub}
+                onChange={(subId) => handleSubModuleSelect(activeDomain, subId)}
+              />
+            </div>
+          )}
           <AnimatePresence mode="wait">
             <motion.div
               key={`${activeDomain}-${activeSubModule}`}

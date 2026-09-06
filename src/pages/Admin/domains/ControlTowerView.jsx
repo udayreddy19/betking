@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminApiClient } from '../api/adminApiClient';
 import AdminTabs from '../components/AdminTabs';
+import { useAdminUiMode } from '../context/AdminUiModeContext';
 import { AdminKpiDrillDrawer, useAdminKpiDrilldown } from '../hooks/useAdminKpiDrilldown';
 import { startVisibleInterval } from '../utils/visibleInterval';
 
@@ -78,6 +79,7 @@ function QueueCard({ title, count, hint, hot = false, tone, onClick }) {
 export default function ControlTowerView({ subModule = 'overview', onSubModuleChange, onNavigate }) {
   const navigate = useNavigate();
   const drill = useAdminKpiDrilldown();
+  const { revamp: uiRevamp } = useAdminUiMode();
 
   // Normalize subModule to match available tabs
   const getNormalizedSubModule = (sm) => {
@@ -303,8 +305,10 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
       </section>
 
 
-      {/* ── NAVIGATION TABS ── */}
-      <AdminTabs tabs={tabs} active={activeTab} onChange={handleTabChange} />
+      {/* Domain tabs live in the shell when New UI is on */}
+      {!uiRevamp && (
+        <AdminTabs tabs={tabs} active={activeTab} onChange={handleTabChange} />
+      )}
 
       {/* ── TAB 1: OPERATIONAL OVERVIEW & DOMAIN CARDS ── */}
       {activeTab === 'overview' && (
