@@ -191,14 +191,14 @@
   overflow-y: auto;
 }
 
-/* Stretch dense studio views (Schema console, etc.) to fill the viewport */
-.admin-shell__main:has(.schema-console) {
+/* Stretch dense studio views (DB inspector, etc.) to fill the viewport */
+.admin-shell__main:has(.db-inspector-container) {
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-.admin-shell__main:has(.schema-console) > * {
+.admin-shell__main:has(.db-inspector-container) > * {
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
