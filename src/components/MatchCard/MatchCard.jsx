@@ -8,7 +8,8 @@ import SportIcon from '../SportIcon/SportIcon';
 import TeamJersey from '../TeamJersey/TeamJersey';
 import MatchCountdownTimer from '../MatchCountdownTimer/MatchCountdownTimer';
 import { isMatchBettable, isMatchLive, isMatchFinished, hasCricketPlayStarted } from '../../utils/matchBetting';
-import { resolveCricketTeamScores } from '../../utils/cricketScores';
+import { resolveCricketTeamScores, looksLikeMirroredFirstInnings, isCricketSecondInnings } from '../../utils/cricketScores';
+import { resolveFirstInningsIsHome } from '../../utils/cricketMatchNormalizer';
 import { isTeamBattingInMatch } from '../../utils/teamFlags';
 import {
   isTestMatch,
@@ -113,6 +114,23 @@ export default function MatchCard({ match, variant = 'default' }) {
       const scores = resolveCricketTeamScores(displayMatch, ld);
       if (scores.team1.hasBatted) team1Score = scores.team1.displayScore;
       if (scores.team2.hasBatted) team2Score = scores.team2.displayScore;
+      if (
+        team1Score
+        && team2Score
+        && team1Score === team2Score
+        && looksLikeMirroredFirstInnings(displayMatch, ld)
+        && isCricketSecondInnings(displayMatch, ld)
+      ) {
+        const firstIsHome = resolveFirstInningsIsHome(
+          displayMatch.team1,
+          displayMatch.team2,
+          ld.firstTeamName,
+          Number(displayMatch.team1?.runs || 0),
+          Number(displayMatch.team2?.runs || 0),
+        );
+        if (firstIsHome) team2Score = null;
+        else team1Score = null;
+      }
     }
     inlineScore = team1Score && team2Score ? `${team1Score} vs ${team2Score}` : (team1Score || team2Score);
   } else if (match.sport === 'soccer' || match.sport === 'esoccer') {

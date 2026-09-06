@@ -562,7 +562,13 @@ export function normalizeMatch(raw = {}, previous = {}, options = {}) {
       });
     }
 
-    if (!hasAway && (t2r > 0 || (t2o && t2o !== '0.0' && t2o !== '0') || t2w > 0)) {
+    // Don't invent a second innings from a mirrored first-innings card (172/10 on both teams).
+    const mirroredAwayCard = hasHome
+      && t2r > 0
+      && t2r === t1r
+      && t2w === t1w
+      && (t1w >= 10 || t2w >= 10);
+    if (!hasAway && !mirroredAwayCard && (t2r > 0 || (t2o && t2o !== '0.0' && t2o !== '0') || t2w > 0)) {
       rawInnings.push({
         inningsId: rawInnings.length + 1,
         batTeamId: t2Id,

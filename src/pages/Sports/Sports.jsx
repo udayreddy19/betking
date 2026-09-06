@@ -12,7 +12,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useFeatureFlags } from '../../context/FeatureFlagsContext';
 import { isAdminEligibleUser } from '../../utils/isAdminEligibleUser';
 import { isMatchBettable, isTrulyLiveMatch, getMatchState, isMatchFinished } from '../../utils/matchBetting';
-import { resolveCricketTeamScores, resolveCricketTossText, isCricketSecondInnings } from '../../utils/cricketScores';
+import { resolveCricketTeamScores, resolveCricketTossText, isCricketSecondInnings, looksLikeMirroredFirstInnings } from '../../utils/cricketScores';
+import { resolveFirstInningsIsHome } from '../../utils/cricketMatchNormalizer';
 import { isTeamBattingInMatch } from '../../utils/teamFlags';
 import {
   getCricketFormatCardBadge,
@@ -111,6 +112,27 @@ function getMatchScores(match) {
     const resolved = resolveCricketTeamScores(enriched, ld);
     team1Score = resolved.team1.hasBatted ? resolved.team1.displayScore : '';
     team2Score = resolved.team2.hasBatted ? resolved.team2.displayScore : '';
+    // Provider sometimes mirrors first-innings all-out onto both cards (172/10 : 172/10).
+    if (
+      team1Score
+      && team2Score
+      && team1Score === team2Score
+      && looksLikeMirroredFirstInnings(enriched, ld)
+    ) {
+      const second = isCricketSecondInnings(enriched, ld);
+      if (second) {
+        // Keep the side that actually batted first; blank the chase card until real chase totals arrive.
+        const firstIsHome = resolveFirstInningsIsHome(
+          enriched.team1,
+          enriched.team2,
+          ld.firstTeamName,
+          Number(enriched.team1?.runs || 0),
+          Number(enriched.team2?.runs || 0),
+        );
+        if (firstIsHome) team2Score = '';
+        else team1Score = '';
+      }
+    }
   } else if (!team1Score || team1Score === '0/0' || !team2Score || team2Score === '0/0') {
     team1Score = String(ld.score1 ?? 0);
     team2Score = String(ld.score2 ?? 0);
