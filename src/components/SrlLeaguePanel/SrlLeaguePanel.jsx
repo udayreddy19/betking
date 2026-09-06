@@ -30,6 +30,15 @@ function teamScoreLine(match, teamName, side) {
   return `${score.runs ?? 0}/${score.wickets ?? 0}${overs}`;
 }
 
+function findCardMarket(match, marketId) {
+  return (match?.engineCardMarkets || []).find((m) => m.marketId === marketId && m.status === 'OPEN') || null;
+}
+
+function fmtOdds(n) {
+  const v = Number(n);
+  return v > 1 ? v.toFixed(2) : '—';
+}
+
 export default function SrlLeaguePanel({
   matches,
   onSelectMatch,
@@ -54,7 +63,10 @@ export default function SrlLeaguePanel({
         {matches.map((match) => {
           const isLive = isTrulyLiveMatch(match);
           const markets = match.srlMarkets;
+          const tossMkt = !isLive ? findCardMarket(match, 'toss_winner') : null;
           const extra = match.extraMarkets ?? 24;
+          const t1Odds = Number(match.odds?.team1);
+          const t2Odds = Number(match.odds?.team2);
 
           return (
             <article key={match.id} className={`srl-match-card ${isLive ? 'srl-match-card--live' : ''}`}>
@@ -64,8 +76,8 @@ export default function SrlLeaguePanel({
                   const tossText = resolveCricketTossText(match);
                   if (!tossText) return null;
                   return (
-                    <span className="srl-match-card__toss" style={{ fontSize: '0.72rem', color: 'var(--color-accent-gold)', marginLeft: 'auto', marginRight: '8px' }}>
-                      🪙 {tossText}
+                    <span className="srl-match-card__toss">
+                      {tossText}
                     </span>
                   );
                 })()}
@@ -102,42 +114,79 @@ export default function SrlLeaguePanel({
               </button>
 
               <div className="srl-match-card__markets">
+                {tossMkt?.selections?.length >= 2 && (
+                  <div className="srl-match-card__odds-row srl-match-card__odds-row--toss">
+                    <span className="srl-match-card__strip-label">Toss</span>
+                    {tossMkt.selections.map((sel) => (
+                      <button
+                        key={sel.selectionId}
+                        type="button"
+                        className={`srl-odds-btn ${isBetSelected(match.id, sel.selectionId) ? 'selected' : ''}`}
+                        onClick={() => onQuickBet(
+                          match,
+                          sel.selectionId,
+                          sel.odds,
+                          sel.name,
+                          'toss_winner',
+                        )}
+                      >
+                        <span>{sel.name?.split(' ').pop() || sel.name}</span>
+                        <strong>{fmtOdds(sel.odds)}</strong>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 <div className="srl-match-card__odds-row">
+                  <span className="srl-match-card__strip-label">Winner</span>
                   <button
                     type="button"
                     className={`srl-odds-btn ${isBetSelected(match.id, '1') ? 'selected' : ''}`}
-                    onClick={() => onQuickBet(match, '1', match.odds?.team1, match.team1.name)}
+                    onClick={() => onQuickBet(match, '1', t1Odds, match.team1.name, 'match_winner')}
                   >
                     <span>1</span>
-                    <strong>{Number(match.odds?.team1) > 1 ? Number(match.odds.team1).toFixed(2) : '—'}</strong>
+                    <strong>{fmtOdds(t1Odds)}</strong>
                   </button>
                   <button
                     type="button"
                     className={`srl-odds-btn ${isBetSelected(match.id, '2') ? 'selected' : ''}`}
-                    onClick={() => onQuickBet(match, '2', match.odds?.team2, match.team2.name)}
+                    onClick={() => onQuickBet(match, '2', t2Odds, match.team2.name, 'match_winner')}
                   >
                     <span>2</span>
-                    <strong>{Number(match.odds?.team2) > 1 ? Number(match.odds.team2).toFixed(2) : '—'}</strong>
+                    <strong>{fmtOdds(t2Odds)}</strong>
                   </button>
                 </div>
 
-                {isLive && markets?.totalRuns != null && (
+                {markets?.totalRuns != null && (
                   <div className="srl-match-card__ou-row">
+                    <span className="srl-match-card__strip-label">Total</span>
                     <button
                       type="button"
                       className={`srl-ou-btn ${isBetSelected(match.id, 'Over') ? 'selected' : ''}`}
-                      onClick={() => onQuickBet(match, 'Over', markets.overOdds, `Over ${markets.totalRuns}`)}
+                      onClick={() => onQuickBet(
+                        match,
+                        'Over',
+                        markets.overOdds,
+                        `Over ${markets.totalRuns}`,
+                        'match_total',
+                      )}
                     >
                       <span className="srl-ou-btn__label">Over {markets.totalRuns}</span>
-                      <strong>{Number(markets.overOdds).toFixed(2)}</strong>
+                      <strong>{fmtOdds(markets.overOdds)}</strong>
                     </button>
                     <button
                       type="button"
                       className={`srl-ou-btn ${isBetSelected(match.id, 'Under') ? 'selected' : ''}`}
-                      onClick={() => onQuickBet(match, 'Under', markets.underOdds, `Under ${markets.totalRuns}`)}
+                      onClick={() => onQuickBet(
+                        match,
+                        'Under',
+                        markets.underOdds,
+                        `Under ${markets.totalRuns}`,
+                        'match_total',
+                      )}
                     >
                       <span className="srl-ou-btn__label">Under {markets.totalRuns}</span>
-                      <strong>{Number(markets.underOdds).toFixed(2)}</strong>
+                      <strong>{fmtOdds(markets.underOdds)}</strong>
                     </button>
                   </div>
                 )}

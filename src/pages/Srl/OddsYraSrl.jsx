@@ -79,11 +79,16 @@ export default function OddsYraSrl() {
     navigate(`/sports?league=ipl-srl&match=${encodeURIComponent(matchId)}`);
   };
 
-  const quickBet = (match, selection, odds, selectionName) => {
+  const quickBet = (match, selection, odds, selectionName, marketId = 'match_winner') => {
     if (!(Number(odds) > 1)) return;
+    const marketName = marketId === 'toss_winner'
+      ? 'Toss Winner'
+      : marketId === 'match_total'
+        ? 'Match Total'
+        : 'Match Winner';
     addBet(match, selection, odds, selectionName, {
-      marketName: 'Match Winner',
-      marketId: 'match_winner',
+      marketName,
+      marketId,
       silentAdd: true,
     });
   };

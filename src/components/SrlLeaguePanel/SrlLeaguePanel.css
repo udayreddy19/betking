@@ -108,7 +108,39 @@
 .srl-match-card__ou-row {
   display: flex;
   gap: 6px;
-  flex: 1 1 auto;
+  flex: 1 1 100%;
+  align-items: stretch;
+}
+
+.srl-match-card__strip-label {
+  flex: 0 0 48px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.62rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.srl-match-card__odds-row--toss .srl-odds-btn span {
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.srl-match-card__toss {
+  flex: 1;
+  min-width: 0;
+  margin-left: auto;
+  margin-right: 8px;
+  font-size: 0.72rem;
+  color: var(--color-accent-gold, #c9a227);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
 }
 
 .srl-odds-btn,

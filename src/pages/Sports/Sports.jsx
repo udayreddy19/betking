@@ -855,8 +855,19 @@ export default function Sports() {
 
   const quickBet = (match, selection, odds, selectionName, marketId = 'match_winner') => {
     if (odds == null || Number.isNaN(Number(odds))) return;
+    const marketName = marketId === 'toss_winner'
+      ? 'Toss Winner'
+      : marketId === 'match_total'
+        ? 'Match Total'
+        : marketId === 'toss_and_bat'
+          ? 'Toss Winner Bats'
+          : marketId === 'toss_and_bowl'
+            ? 'Toss Winner Bowls'
+            : marketId === 'team_bat_first'
+              ? 'Team to Bat First'
+              : 'Match Winner';
     addBet(match, selection, odds, selectionName, {
-      marketName: 'Match Winner',
+      marketName,
       marketId,
       silentAdd: true,
     });

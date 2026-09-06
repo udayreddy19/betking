@@ -116,4 +116,12 @@ describe('OddsEngineV4 — Toss family', () => {
     expect(ids).toContain('toss_winner');
     expect(ids).toContain('toss_and_bat');
   });
+
+  it('scores OddsYra SRL + V4 readiness at 100', async () => {
+    const { scoreSrlV4Readiness } = await import('../../lib/srlV4Readiness.mjs');
+    const score = scoreSrlV4Readiness();
+    expect(score.qualityScore).toBe(100);
+    expect(score.checks.cardHasToss).toBe(true);
+    expect(score.checks.defaultV4).toBe(true);
+  });
 });
