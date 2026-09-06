@@ -356,32 +356,38 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
 
   const handleLegClick = (leg) => {
     if (!leg) return;
+    const nameHint = leg.team1Name && leg.team2Name
+      ? `${leg.team1Name} vs ${leg.team2Name}`
+      : leg.matchName;
     const live = resolveLegMatch(leg)
       || findLiveMatch(liveMatches, {
         matchId: leg.matchId,
-        matchName: leg.team1Name && leg.team2Name
-          ? `${leg.team1Name} vs ${leg.team2Name}`
-          : leg.matchName,
+        matchName: nameHint,
       });
-    // Also try matching when matchName is a single team (match-winner selection)
-    const byTeam = !live && leg.selectionName
+    // Prefer name match over a loose selection-name guess (avoids wrong fixture).
+    const byName = !live && nameHint
+      ? findLiveMatch(liveMatches, { matchName: nameHint })
+      : null;
+    const byTeam = !live && !byName && leg.selectionName
       ? (liveMatches || []).find((m) => {
         const t1 = String(m.team1?.name || '').toLowerCase();
         const t2 = String(m.team2?.name || '').toLowerCase();
         const tip = String(leg.selectionName || '').toLowerCase();
-        return tip.length > 2 && (t1.includes(tip) || t2.includes(tip) || tip.includes(t1) || tip.includes(t2));
+        return tip.length > 3 && (t1.includes(tip) || t2.includes(tip) || tip.includes(t1) || tip.includes(t2));
       })
       : null;
-    const resolved = live || byTeam;
-    const matchId = resolved?.id || leg.matchId;
+    const resolved = live || byName || byTeam;
+    const matchId = resolved?.id || resolved?.matchId || leg.matchId;
     if (!matchId || String(matchId).includes('-leg-')) {
       showToast?.('This match is no longer on the board.', 'info');
       return;
     }
     const rawSport = String(resolved?.sport || leg.sport || 'cricket').toLowerCase();
     const sport = rawSport === 'football' ? 'soccer' : rawSport;
-    const displayName = resolved
-      ? `${resolved.team1?.name || resolved.team1} vs ${resolved.team2?.name || resolved.team2}`
+    const t1Name = resolved?.team1?.name || resolved?.team1 || leg.team1Name;
+    const t2Name = resolved?.team2?.name || resolved?.team2 || leg.team2Name;
+    const displayName = (t1Name && t2Name && !/\[object object\]/i.test(String(t1Name)))
+      ? `${t1Name} vs ${t2Name}`
       : getLegDisplayName(leg);
     const params = new URLSearchParams({
       sport,
@@ -389,22 +395,23 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
       match: String(matchId),
       tab: 'live',
     });
-    if (
-      displayName
-      && !/^live match$/i.test(displayName)
-      && displayName !== 'Open bet fixture'
-      && displayName !== 'Match'
-      && /\svs\.?\s/i.test(displayName)
-      && !/\[object object\]/i.test(displayName)
-    ) {
+    if (displayName && /\svs\.?\s/i.test(displayName) && displayName !== 'Open bet fixture') {
       params.set('teams', displayName);
-    } else if (leg.team1Name && leg.team2Name) {
-      params.set('teams', `${leg.team1Name} vs ${leg.team2Name}`);
     }
-    const target = `/sports?${params.toString()}`;
-    // Close sheet after navigation is queued so Sports can apply the deep link.
+    const deepLinkMatch = resolved || {
+      id: matchId,
+      matchId,
+      sport,
+      team1: t1Name ? { name: String(t1Name) } : { name: 'Team 1' },
+      team2: t2Name ? { name: String(t2Name) } : { name: 'Team 2' },
+      matchName: displayName,
+      isLive: true,
+      matchState: 'in',
+    };
     closeMyBets();
-    navigate(target);
+    // Pass the match object in router state so Sports can open it even when
+    // the live-board id alias has not resolved yet.
+    navigate(`/sports?${params.toString()}`, { state: { deepLinkMatch } });
   };
 
   const getLegSelectionLabel = (leg) => {

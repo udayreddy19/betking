@@ -345,8 +345,25 @@ export default function Sports() {
   });
   const [isWideLayout, setIsWideLayout] = useState(() => mediaQueryMatches('(min-width: 1025px)'));
   const [persistedMatchFallback, setPersistedMatchFallback] = useState(null);
+  const [pendingDeepLinkMatch, setPendingDeepLinkMatch] = useState(null);
 
   useEffect(() => subscribeMediaQuery('(min-width: 1025px)', setIsWideLayout), []);
+
+  // My Bets / open-bet clicks pass the fixture in location.state so we open it
+  // immediately instead of waiting on id-alias resolution.
+  useEffect(() => {
+    const deep = location.state?.deepLinkMatch;
+    if (!deep) return;
+    const id = deep.id || deep.matchId;
+    if (!id) return;
+    const sportRaw = String(deep.sport || 'cricket').toLowerCase();
+    setPendingDeepLinkMatch(deep);
+    setSelectedMatchId(String(id));
+    setViewMode('match');
+    setActiveLeague('all');
+    setActiveStateTab('live');
+    setActiveSport(sportRaw === 'football' ? 'soccer' : sportRaw);
+  }, [location.state, location.key]);
 
   const isIplSrlView = isSameLeague(activeLeague, 'ipl-srl', cricketSeries);
   const boardStateTab = isIplSrlView && activeStateTab === 'live' ? 'bettable' : activeStateTab;
@@ -429,10 +446,18 @@ export default function Sports() {
       })
         || findLiveMatch(sportMatches, { matchId: targetId, matchName: matchTeamsHint })
         || findLiveMatch(liveMatches, { matchId: targetId, matchName: matchTeamsHint });
+
+      // Prefer live board, but never fall back to a different match while resolving.
       if (selected) {
         lastActiveMatchRef.current = selected;
         return selected;
       }
+
+      if (pendingDeepLinkMatch && matchIdsReferToSame(pendingDeepLinkMatch, targetId)) {
+        lastActiveMatchRef.current = pendingDeepLinkMatch;
+        return pendingDeepLinkMatch;
+      }
+
       if (persistedMatchFallback) {
         const fbId = persistedMatchFallback.id || persistedMatchFallback.matchId;
         if (fbId && (String(fbId) === String(targetId) || matchIdsReferToSame(persistedMatchFallback, targetId))) {
@@ -468,7 +493,7 @@ export default function Sports() {
         isCompleted: true,
         time: 'Left live board',
         liveDetails: {
-          commentary: 'This fixture is no longer listed on the live board. Your bet stays open until settlement.',
+          commentary: 'This fixture is no longer listed on the live board. Your bet stays open until it is settled.',
         },
         _betDeepLinkStub: true,
       };
@@ -493,9 +518,18 @@ export default function Sports() {
     isScoresLoading,
     activeSport,
     persistedMatchFallback,
+    pendingDeepLinkMatch,
   ]);
 
   const activeMatch = useMatchDetail(baseActiveMatch);
+
+  useEffect(() => {
+    if (!pendingDeepLinkMatch || !activeMatch || activeMatch._betDeepLinkStub) return;
+    const pendingId = pendingDeepLinkMatch.id || pendingDeepLinkMatch.matchId;
+    if (pendingId && matchIdsReferToSame(activeMatch, pendingId)) {
+      setPendingDeepLinkMatch(null);
+    }
+  }, [activeMatch, pendingDeepLinkMatch]);
 
   useEffect(() => {
     if (activeMatch?.id) {
@@ -618,6 +652,7 @@ export default function Sports() {
   }, [liveMatchPrefetchKey]);
 
   const selectMatch = useCallback((matchId) => {
+    setPendingDeepLinkMatch(null);
     setSelectedMatchId(matchId);
     setViewMode('match');
     setSearchParams(prev => {
@@ -633,6 +668,7 @@ export default function Sports() {
 
   const showLeagueOverview = useCallback((leagueId = activeLeague) => {
     const resolved = resolveLeagueId(leagueId, cricketSeries);
+    setPendingDeepLinkMatch(null);
     setActiveLeague(resolved);
     setViewMode('league');
     setSelectedMatchId(null);
