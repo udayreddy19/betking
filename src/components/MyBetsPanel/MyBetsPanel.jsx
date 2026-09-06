@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { IoClose } from '../../icons';
@@ -13,6 +14,8 @@ import { apiFetch } from '../../utils/apiClient';
 import { matchIdsEqual } from '../../../lib/matchIdPublic.mjs';
 import { findLiveMatch } from '../../utils/findLiveMatch';
 import { springSheet } from '../../utils/motionPresets';
+import LiveMatchGraphicWidget from '../LiveMatchGraphicWidget/LiveMatchGraphicWidget';
+import ErrorBoundary from '../ErrorBoundary/ErrorBoundary';
 import './MyBetsPanel.css';
 import { formatIst, formatIstDateTime } from '../../utils/istTime';
 
@@ -128,6 +131,7 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
   const [highlightBetId, setHighlightBetId] = useState(null);
   const [expandedEvidence, setExpandedEvidence] = useState({});
   const [loadedEvidence, setLoadedEvidence] = useState({});
+  const [peekMatch, setPeekMatch] = useState(null);
   const panelRef = useRef(null);
 
   const toggleEvidence = async (betId, existingEvidence) => {
@@ -354,7 +358,9 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
     return 'Open bet fixture';
   };
 
-  const handleLegClick = (leg) => {
+  const handleLegClick = (event, leg) => {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
     if (!leg) return;
     const nameHint = leg.team1Name && leg.team2Name
       ? `${leg.team1Name} vs ${leg.team2Name}`
@@ -364,7 +370,6 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
         matchId: leg.matchId,
         matchName: nameHint,
       });
-    // Prefer name match over a loose selection-name guess (avoids wrong fixture).
     const byName = !live && nameHint
       ? findLiveMatch(liveMatches, { matchName: nameHint })
       : null;
@@ -377,42 +382,58 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
       })
       : null;
     const resolved = live || byName || byTeam;
-    const matchId = resolved?.id || resolved?.matchId || leg.matchId;
-    if (!matchId || String(matchId).includes('-leg-')) {
+    const id = String(resolved?.id || resolved?.matchId || leg.matchId || '').trim();
+    if (!id || id.includes('-leg-')) {
       showToast?.('This match is no longer on the board.', 'info');
       return;
     }
     const rawSport = String(resolved?.sport || leg.sport || 'cricket').toLowerCase();
     const sport = rawSport === 'football' ? 'soccer' : rawSport;
-    const t1Name = resolved?.team1?.name || resolved?.team1 || leg.team1Name;
-    const t2Name = resolved?.team2?.name || resolved?.team2 || leg.team2Name;
-    const displayName = (t1Name && t2Name && !/\[object object\]/i.test(String(t1Name)))
+    const t1Name = resolved?.team1?.name
+      || (typeof resolved?.team1 === 'string' ? resolved.team1 : null)
+      || leg.team1Name;
+    const t2Name = resolved?.team2?.name
+      || (typeof resolved?.team2 === 'string' ? resolved.team2 : null)
+      || leg.team2Name;
+    const displayName = (t1Name && t2Name)
       ? `${t1Name} vs ${t2Name}`
       : getLegDisplayName(leg);
-    const params = new URLSearchParams({
+
+    const nextMatch = resolved || {
+      id,
+      matchId: id,
       sport,
-      league: 'all',
-      match: String(matchId),
-      tab: 'live',
-    });
-    if (displayName && /\svs\.?\s/i.test(displayName) && displayName !== 'Open bet fixture') {
-      params.set('teams', displayName);
-    }
-    const deepLinkMatch = resolved || {
-      id: matchId,
-      matchId,
-      sport,
-      team1: t1Name ? { name: String(t1Name) } : { name: 'Team 1' },
-      team2: t2Name ? { name: String(t2Name) } : { name: 'Team 2' },
+      team1: { name: String(t1Name || 'Team 1') },
+      team2: { name: String(t2Name || 'Team 2') },
       matchName: displayName,
       isLive: true,
       matchState: 'in',
     };
+    setPeekMatch(nextMatch);
     closeMyBets();
-    // Pass the match object in router state so Sports can open it even when
-    // the live-board id alias has not resolved yet.
-    navigate(`/sports?${params.toString()}`, { state: { deepLinkMatch } });
+
+    const params = new URLSearchParams({
+      sport,
+      league: 'all',
+      match: id,
+      tab: 'live',
+    });
+    if (displayName && /\svs\.?\s/i.test(displayName)) params.set('teams', displayName);
+    navigate(`/sports?${params.toString()}`, {
+      replace: false,
+      state: { deepLinkMatch: nextMatch },
+    });
   };
+
+  // Keep peek tracker live as the board updates.
+  const livePeekMatch = useMemo(() => {
+    if (!peekMatch) return null;
+    const id = peekMatch.id || peekMatch.matchId;
+    const hint = peekMatch.team1?.name && peekMatch.team2?.name
+      ? `${peekMatch.team1.name} vs ${peekMatch.team2.name}`
+      : peekMatch.matchName;
+    return findLiveMatch(liveMatches, { matchId: id, matchName: hint }) || peekMatch;
+  }, [peekMatch, liveMatches]);
 
   const getLegSelectionLabel = (leg) => {
     const match = resolveLegMatch(leg);
@@ -464,6 +485,7 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
   };
 
   return (
+    <>
     <AnimatePresence>
       {panelOpen ? (
         <>
@@ -584,7 +606,12 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
                       <div
                         key={leg.id}
                         className="my-bets-leg my-bets-leg--clickable"
-                        onClick={() => handleLegClick(leg)}
+                        role="button"
+                        tabIndex={0}
+                        onClick={(e) => handleLegClick(e, leg)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') handleLegClick(e, leg);
+                        }}
                         title="Click to view match details"
                       >
                         <div className="my-bets-market">{leg.marketName}</div>
@@ -816,5 +843,60 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
         </>
       ) : null}
     </AnimatePresence>
+    {livePeekMatch && typeof document !== 'undefined' && createPortal(
+      <div className="my-bets-match-peek" role="dialog" aria-modal="true" aria-label="Match details">
+        <div className="my-bets-match-peek__backdrop" onClick={() => setPeekMatch(null)} aria-hidden="true" />
+        <div className="my-bets-match-peek__sheet">
+          <div className="my-bets-match-peek__header">
+            <div>
+              <div className="my-bets-match-peek__eyebrow">Open bet · match</div>
+              <h3>
+                {(livePeekMatch.team1?.name || livePeekMatch.team1 || 'Team 1')}
+                {' vs '}
+                {(livePeekMatch.team2?.name || livePeekMatch.team2 || 'Team 2')}
+              </h3>
+            </div>
+            <button
+              type="button"
+              className="my-bets-close"
+              onClick={() => setPeekMatch(null)}
+              aria-label="Close match details"
+            >
+              <IoClose />
+            </button>
+          </div>
+          <div className="my-bets-match-peek__body">
+            <ErrorBoundary resetKey={livePeekMatch.id || livePeekMatch.matchId}>
+              <LiveMatchGraphicWidget match={livePeekMatch} />
+            </ErrorBoundary>
+          </div>
+          <div className="my-bets-match-peek__footer">
+            <button
+              type="button"
+              className="my-bets-match-peek__sports-btn"
+              onClick={() => {
+                const id = livePeekMatch.id || livePeekMatch.matchId;
+                const sport = String(livePeekMatch.sport || 'cricket').toLowerCase();
+                const t1 = livePeekMatch.team1?.name || livePeekMatch.team1;
+                const t2 = livePeekMatch.team2?.name || livePeekMatch.team2;
+                const params = new URLSearchParams({
+                  sport: sport === 'football' ? 'soccer' : sport,
+                  league: 'all',
+                  match: String(id),
+                  tab: 'live',
+                });
+                if (t1 && t2) params.set('teams', `${t1} vs ${t2}`);
+                setPeekMatch(null);
+                window.location.assign(`/sports?${params.toString()}`);
+              }}
+            >
+              Open full Sports page
+            </button>
+          </div>
+        </div>
+      </div>,
+      document.body,
+    )}
+    </>
   );
 }
