@@ -1057,7 +1057,9 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
     || match?.liveStatus === 'COMPLETED'
     || isCricketMatchCompleted(match);
   const formatBanner = canonicalSnapshot?.match?.formatBanner || getCricketFormatBanner(match);
-  const statusChip = canonicalSnapshot?.match?.isLive ? 'LIVE' : (isMatchFinished ? 'COMPLETED' : 'UPCOMING');
+  const statusChip = (canonicalSnapshot?.match?.isLive || showCricketTracker) && !isMatchFinished
+    ? 'LIVE'
+    : (isMatchFinished ? 'COMPLETED' : 'UPCOMING');
 
   const oversWhole = parseInt(String(displayOversNormalized).split('.')[0], 10) || 0;
   const oversExceedCap = !isUnlimitedOvers && oversWhole > Number(maxOvers);
@@ -1117,8 +1119,8 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
         <div className="live-widget-body">
           <div className="live-widget-format-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
             <span className="cricket-format-badge">{formatBanner}</span>
-            <span className={`cricket-status-chip ${canonicalSnapshot?.match?.isLive ? 'chip-live' : (isMatchFinished ? 'chip-completed' : 'chip-upcoming')}`}>
-              {canonicalSnapshot?.match?.isLive ? '● LIVE' : statusChip}
+            <span className={`cricket-status-chip ${(canonicalSnapshot?.match?.isLive || showCricketTracker) && !isMatchFinished ? 'chip-live' : (isMatchFinished ? 'chip-completed' : 'chip-upcoming')}`}>
+              {(canonicalSnapshot?.match?.isLive || showCricketTracker) && !isMatchFinished ? '● LIVE' : statusChip}
             </span>
             {inningsBadge && <span className="cricket-inn-badge">{inningsBadge}</span>}
             <MatchCountdownTimer match={match} style={{ fontSize: '0.78rem', padding: '2px 10px' }} />

@@ -28,7 +28,7 @@ import { centralizedMatchEngine } from '../../services/centralizedMatchStateEngi
 import { filterMatches, compareMatchesForSportsBoard } from '../../utils/matchFilters';
 import { resolveLeagueId, getLeagueMeta, isSameLeague, groupMatchesByLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
 import { matchIdsEqual } from '../../../lib/matchIdPublic.mjs';
-import { findLiveMatch } from '../../utils/findLiveMatch';
+import { findLiveMatch, matchIdsReferToSame } from '../../utils/findLiveMatch';
 import { formatTeamShortName, teamDisplayName, asDisplayText } from '../../utils/teamShortName';
 import SrlLeaguePanel from '../../components/SrlLeaguePanel/SrlLeaguePanel';
 import {
@@ -433,12 +433,20 @@ export default function Sports() {
         lastActiveMatchRef.current = selected;
         return selected;
       }
-      if (persistedMatchFallback && (persistedMatchFallback.id === targetId || persistedMatchFallback.matchId === targetId)) {
-        lastActiveMatchRef.current = persistedMatchFallback;
-        return persistedMatchFallback;
+      if (persistedMatchFallback) {
+        const fbId = persistedMatchFallback.id || persistedMatchFallback.matchId;
+        if (fbId && (String(fbId) === String(targetId) || matchIdsReferToSame(persistedMatchFallback, targetId))) {
+          lastActiveMatchRef.current = persistedMatchFallback;
+          return persistedMatchFallback;
+        }
       }
-      // Keep waiting while scores load — avoid flashing "Match not found"
-      if (isScoresLoading) return lastActiveMatchRef.current;
+      // Never keep the previously viewed match when deep-linking to a different id
+      // (My Bets click used to look like "nothing happened").
+      if (isScoresLoading) {
+        const last = lastActiveMatchRef.current;
+        if (last && matchIdsReferToSame(last, targetId)) return last;
+        return null;
+      }
 
       // Bet deep-link for a fixture that left the live board — still open match view.
       const parts = String(matchTeamsHint || '')
@@ -484,6 +492,7 @@ export default function Sports() {
     matchTeamsHint,
     isScoresLoading,
     activeSport,
+    persistedMatchFallback,
   ]);
 
   const activeMatch = useMatchDetail(baseActiveMatch);
@@ -759,6 +768,7 @@ export default function Sports() {
       // Always resolve league from URL when opening a match. Missing league → all
       // so My Bets deep-links are not stuck behind a previous league filter.
       setActiveLeague(league ? resolveLeagueId(league, cricketSeries) : 'all');
+      if (sport) setActiveSport(sport);
     } else {
       setSelectedMatchId(null);
       setViewMode('league');

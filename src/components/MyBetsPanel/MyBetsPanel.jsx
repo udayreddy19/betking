@@ -383,11 +383,11 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
     const displayName = resolved
       ? `${resolved.team1?.name || resolved.team1} vs ${resolved.team2?.name || resolved.team2}`
       : getLegDisplayName(leg);
-    closeMyBets();
     const params = new URLSearchParams({
       sport,
       league: 'all',
       match: String(matchId),
+      tab: 'live',
     });
     if (
       displayName
@@ -395,12 +395,16 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
       && displayName !== 'Open bet fixture'
       && displayName !== 'Match'
       && /\svs\.?\s/i.test(displayName)
+      && !/\[object object\]/i.test(displayName)
     ) {
       params.set('teams', displayName);
     } else if (leg.team1Name && leg.team2Name) {
       params.set('teams', `${leg.team1Name} vs ${leg.team2Name}`);
     }
-    navigate(`/sports?${params.toString()}`);
+    const target = `/sports?${params.toString()}`;
+    // Close sheet after navigation is queued so Sports can apply the deep link.
+    closeMyBets();
+    navigate(target);
   };
 
   const getLegSelectionLabel = (leg) => {

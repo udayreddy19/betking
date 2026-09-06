@@ -446,20 +446,26 @@ export default function BettingDomainView({
       >
         {verifyBet && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14, fontSize: '0.84rem' }}>
-            <AdminVerifyLiveMatch
-              matchName={verifyBet.match}
-              match={verifyResult?.match || {
-                id: verifyBet.matchId || verifyBet.legs?.[0]?.matchId,
-                matchId: verifyBet.matchId || verifyBet.legs?.[0]?.matchId,
-                sport: 'cricket',
-                team1: verifyBet.match?.includes(' vs ')
-                  ? { name: String(verifyBet.match).split(' vs ')[0] }
-                  : null,
-                team2: verifyBet.match?.includes(' vs ')
-                  ? { name: String(verifyBet.match).split(' vs ').slice(1).join(' vs ') }
-                  : null,
-              }}
-            />
+            {verifying && !verifyResult?.match ? (
+              <p style={{ color: 'var(--admin-text-muted)', margin: 0 }}>
+                Loading live match board…
+              </p>
+            ) : (
+              <AdminVerifyLiveMatch
+                matchName={verifyBet.match}
+                match={verifyResult?.match || {
+                  id: verifyBet.matchId || verifyBet.legs?.[0]?.matchId,
+                  matchId: verifyBet.matchId || verifyBet.legs?.[0]?.matchId,
+                  sport: 'cricket',
+                  team1: verifyBet.match?.includes(' vs ')
+                    ? { name: String(verifyBet.match).split(/\s+vs\.?\s+/i)[0] }
+                    : null,
+                  team2: verifyBet.match?.includes(' vs ')
+                    ? { name: String(verifyBet.match).split(/\s+vs\.?\s+/i).slice(1).join(' vs ') }
+                    : null,
+                }}
+              />
+            )}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               <div>
                 <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.72rem' }}>User</div>

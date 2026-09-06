@@ -2,6 +2,8 @@ import React, { useMemo } from 'react';
 import LiveMatchGraphicWidget from '../../../components/LiveMatchGraphicWidget/LiveMatchGraphicWidget';
 import { useLiveMatches } from '../../../context/LiveSportsContext';
 import { findLiveMatch } from '../../../utils/findLiveMatch';
+import { cricketScoreWeight } from '../../../../lib/matchPairKey.mjs';
+import { hasCricketPlayStarted } from '../../../utils/matchBetting';
 
 function teamName(team) {
   if (!team) return '';
@@ -14,6 +16,23 @@ function vsHint(match, matchName) {
   const t2 = teamName(match?.team2);
   if (t1 && t2) return `${t1} vs ${t2}`;
   return matchName || '';
+}
+
+function liveRank(match) {
+  if (!match) return -1;
+  let rank = cricketScoreWeight(match) * 10;
+  if (hasCricketPlayStarted(match)) rank += 500;
+  if (match.isLive === true || match.matchState === 'in' || String(match.status || '').toUpperCase() === 'LIVE') {
+    rank += 100;
+  }
+  return rank;
+}
+
+/** Prefer the candidate with real scoreboard evidence over a stale UPCOMING twin. */
+function pickRicherMatch(...candidates) {
+  return candidates
+    .filter((m) => m && (m.id || m.matchId || teamName(m.team1)))
+    .sort((a, b) => liveRank(b) - liveRank(a))[0] || null;
 }
 
 /**
@@ -29,8 +48,9 @@ export default function AdminVerifyLiveMatch({ match, matchName }) {
       matchId: match?.id || match?.matchId,
       matchName: hint,
     });
-    const resolved = fromBoard || match;
-    if (!resolved?.id && !resolved?.matchId) return null;
+    // Client board can still hold an upcoming twin; prefer verify/API payload when it has play.
+    const resolved = pickRicherMatch(match, fromBoard);
+    if (!resolved?.id && !resolved?.matchId && !teamName(resolved?.team1)) return null;
     return {
       ...resolved,
       id: resolved.id || resolved.matchId,
