@@ -11,6 +11,18 @@ import { SRL_LAUNCH_AT } from '../../lib/oddsyraSrlSeason.mjs';
 describe('OddsYra SRL IPL season structure', () => {
   const now = SRL_LAUNCH_AT;
 
+  const istDayKey = (ms) => new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date(ms));
+
+  const istWeekday = (ms) => new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Kolkata',
+    weekday: 'short',
+  }).format(new Date(ms));
+
   it('has 74 matches: 70 league and 4 playoffs', () => {
     const season = getIplSrlSeasonMatches(now);
     expect(SRL_SEASON_MATCH_COUNT).toBe(74);
@@ -34,6 +46,56 @@ describe('OddsYra SRL IPL season structure', () => {
     }
     expect(Object.keys(played)).toHaveLength(10);
     expect(Object.values(played).every((n) => n === 14)).toBe(true);
+  });
+
+  it('schedules 1 match on weekdays and 2 on weekends (IST)', () => {
+    const league = getIplSrlSeasonMatches(now).filter((m) => !m.playoff);
+    const byDay = {};
+    for (const match of league) {
+      const key = istDayKey(match.startTime);
+      byDay[key] = byDay[key] || [];
+      byDay[key].push(match);
+    }
+    for (const [day, matches] of Object.entries(byDay)) {
+      const weekday = istWeekday(matches[0].startTime);
+      const weekend = weekday === 'Sat' || weekday === 'Sun';
+      if (weekend) {
+        expect(matches.length, day).toBe(2);
+      } else {
+        expect(matches.length, day).toBe(1);
+      }
+    }
+  });
+
+  it('spreads franchises early — no team dominates the opening slate', () => {
+    const league = getIplSrlSeasonMatches(now).filter((m) => !m.playoff).slice(0, 10);
+    const counts = {};
+    for (const match of league) {
+      counts[match.team1.key] = (counts[match.team1.key] || 0) + 1;
+      counts[match.team2.key] = (counts[match.team2.key] || 0) + 1;
+    }
+    expect(Math.max(...Object.values(counts))).toBeLessThanOrEqual(3);
+    expect(counts.csk || 0).toBeLessThanOrEqual(3);
+  });
+
+  it('avoids the same franchise twice on a double-header day', () => {
+    const league = getIplSrlSeasonMatches(now).filter((m) => !m.playoff);
+    const byDay = {};
+    for (const match of league) {
+      const key = istDayKey(match.startTime);
+      byDay[key] = byDay[key] || [];
+      byDay[key].push(match);
+    }
+    for (const matches of Object.values(byDay)) {
+      if (matches.length < 2) continue;
+      const teams = new Set();
+      for (const m of matches) {
+        expect(teams.has(m.team1.key)).toBe(false);
+        expect(teams.has(m.team2.key)).toBe(false);
+        teams.add(m.team1.key);
+        teams.add(m.team2.key);
+      }
+    }
   });
 
   it('keeps playoff sides TBD until the league is finished', () => {
