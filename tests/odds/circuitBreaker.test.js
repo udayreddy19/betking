@@ -36,6 +36,14 @@ describe('OddsEngine V3 — Circuit Breaker & Volatility Filter', () => {
       expect(res.reason).toContain('FEED_LATENCY_EXCEEDED');
     });
 
+    it('does not trip FEED_STALE just because evaluate() was idle between aggregator polls', () => {
+      const first = evaluateFeedCircuitBreaker('test_match_1', {});
+      expect(first.isTripped).toBe(false);
+      // Simulate a gap larger than the old maxStaleTickAgeMs (5s) between board polls.
+      const second = evaluateFeedCircuitBreaker('test_match_1', {});
+      expect(second.isTripped).toBe(false);
+    });
+
     it('suspends markets when circuit breaker is tripped', () => {
       const markets = [
         { marketId: 'm1', status: 'OPEN', selections: [{ id: 's1', price: 1.95 }] },
