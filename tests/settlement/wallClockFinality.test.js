@@ -4,6 +4,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   inferWallClockMatchFinal,
+  inferOffBoardCricketStaleFinal,
   isMultiDayCricket,
   isFeedStillLive,
   markInferredFinal,
@@ -48,6 +49,28 @@ describe('wallClockFinality', () => {
     };
     expect(isFeedStillLive(match)).toBe(true);
     expect(inferWallClockMatchFinal(match)).toBe(false);
+  });
+
+  it('infers final when cricket left the live board but Redis is still LIVE', () => {
+    const now = Date.now();
+    const match = {
+      league: 'T20 League',
+      matchType: 'T20',
+      sport: 'cricket',
+      startTime: new Date(now - 2 * 3600 * 1000).toISOString(),
+      cachedAt: new Date(now - 45 * 60 * 1000).toISOString(),
+      isLive: true,
+      matchState: 'in',
+      status: 'LIVE',
+      score1: 163,
+      score2: 145,
+      liveDetails: { firstRuns: 163, chaseRuns: 145, wickets: 9, overs: '19.0' },
+    };
+    expect(inferOffBoardCricketStaleFinal(match, { onLiveBoard: true, now })).toBe(false);
+    expect(inferOffBoardCricketStaleFinal(match, { onLiveBoard: false, now })).toBe(true);
+    markInferredFinal(match);
+    expect(match.matchState).toBe('post');
+    expect(match.isLive).toBe(false);
   });
 
   it('may infer final for stale short-format match with no live signal', () => {
