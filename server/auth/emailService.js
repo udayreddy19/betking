@@ -883,35 +883,89 @@ export async function sendTargetedDepositOfferEmail({
     return { success: false, error: 'missing_email' };
   }
   const greeting = name || String(email).split('@')[0];
-  // Keep internal campaign fields for logs / future use — do NOT put them in the email body.
-  // Gmail Promotions classifiers key off Free/Bonus/Offer/%/Promo copy even from no-reply@.
-  void offerTitle;
-  void campaignName;
-  void matchPercentage;
-  void freeBetPercentage;
-  void minDeposit;
-  void minimumDeposit;
-  void maxBonus;
-  void maximumFreeBet;
-  void promoCode;
-  void customBodyHtml;
-  void expiryDate;
-  void validHours;
-  void splitParts;
-  void splitEach;
-
-  const subject = sanitizeAccountEmailSubject(subjectOverride)
-    || 'Your OddsYra wallet has an update';
+  const matchPct = Number(matchPercentage ?? freeBetPercentage);
+  const minAmt = Number(minDeposit ?? minimumDeposit ?? 500);
+  const maxAmt = Number(maxBonus ?? maximumFreeBet ?? 5000);
+  const parts = Math.floor(Number(splitParts) || 1);
+  const eachAmt = Number(splitEach);
+  const isPack = parts > 1 && Number.isFinite(eachAmt) && eachAmt > 0;
+  const packTotal = isPack ? Number((parts * eachAmt).toFixed(2)) : maxAmt;
+  let hours = Number(validHours);
+  if (expiryDate) {
+    const ms = new Date(expiryDate).getTime() - Date.now();
+    if (Number.isFinite(ms) && ms > 0) hours = Math.max(1, Math.round(ms / 3600000));
+  }
+  if (!Number.isFinite(hours) || hours <= 0) hours = 48;
+  const title = offerTitle || campaignName || (Number.isFinite(matchPct) ? `${matchPct}% deposit match on your account` : 'Deposit match on your account');
+  const subject = subjectOverride || offerTitle || (Number.isFinite(matchPct)
+    ? `Your ${matchPct}% deposit match is ready`
+    : 'Your OddsYra deposit match is ready');
   const ctaHref = `${FRONTEND_URL}/wallet`;
 
-  // Password-reset style: short account notice. Offer math stays inside the logged-in wallet.
+  const bonusLabel = isPack
+    ? `${parts} × ₹${eachAmt.toLocaleString('en-IN')}`
+    : `₹${maxAmt.toLocaleString('en-IN')}`;
+  const bonusSub = isPack
+    ? `<tr>
+            <td style="font-size:12px;color:#5c6570;padding-top:4px;">Pack total:</td>
+            <td align="right" style="font-size:12px;font-weight:600;padding-top:4px;">₹${packTotal.toLocaleString('en-IN')}</td>
+          </tr>`
+    : '';
+
+  const codeRow = promoCode ? `
+          <tr>
+            <td style="font-size:13px;color:#5c6570;padding-top:6px;">Promo code:</td>
+            <td align="right" style="font-size:13px;font-weight:700;padding-top:6px;letter-spacing:0.04em;">${escapeHtml(promoCode)}</td>
+          </tr>` : '';
+
+  const detailsHtml = `
+    <tr>
+      <td class="oy-td" style="padding:12px 24px 0;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f6f2ea;border-radius:8px;padding:14px;">
+          <tr>
+            <td style="font-size:14px;color:#5c6570;">Deposit Match:</td>
+            <td align="right" style="font-size:16px;font-weight:700;color:#1f8a4c;">${Number.isFinite(matchPct) ? `${matchPct}% Match` : 'Exclusive match'}</td>
+          </tr>
+          <tr>
+            <td style="font-size:13px;color:#5c6570;padding-top:6px;">Min Deposit:</td>
+            <td align="right" style="font-size:13px;font-weight:600;padding-top:6px;">₹${minAmt.toLocaleString('en-IN')}</td>
+          </tr>
+          <tr>
+            <td style="font-size:13px;color:#5c6570;padding-top:6px;">${isPack ? 'Free bet pack:' : 'Max Bonus:'}</td>
+            <td align="right" style="font-size:13px;font-weight:700;padding-top:6px;color:#1f8a4c;">${bonusLabel}</td>
+          </tr>
+          ${bonusSub}
+          ${codeRow}
+          <tr>
+            <td style="font-size:13px;color:#5c6570;padding-top:6px;">Offer Expires In:</td>
+            <td align="right" style="font-size:13px;font-weight:700;color:#c98a12;padding-top:6px;">${hours} Hours</td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    ${customBodyHtml ? `<tr><td class="oy-td" style="padding:12px 24px 0;font-size:14px;line-height:1.55;color:#14181f;">${customBodyHtml}</td></tr>` : ''}
+  `;
+
+  const introHtml = isPack
+    ? (Number.isFinite(matchPct)
+      ? `A deposit match of <strong>${matchPct}%</strong> is ready on your account — credited as <strong>${parts} free bets of ₹${eachAmt.toLocaleString('en-IN')}</strong> each after your next qualifying deposit.`
+      : `A deposit match is ready on your account — credited as <strong>${parts} free bets of ₹${eachAmt.toLocaleString('en-IN')}</strong> each.`)
+    : (Number.isFinite(matchPct)
+      ? `A <strong>${matchPct}%</strong> deposit match is ready on your OddsYra account for your next qualifying deposit.`
+      : 'A deposit match is ready on your OddsYra account.');
+
+  // Targeted 1:1 assigned offers → transactional account mail (no-reply), not promos@.
+  // Gmail files promos@ + List-Unsubscribe / marketing footers into Promotions (no phone alert).
   const html = renderTransactionalEmail({
-    heading: 'Wallet update',
+    heading: title,
     greetingName: greeting,
-    introHtml: 'There is an update on your OddsYra wallet. Sign in to review the details and any next steps on your account.',
+    introHtml,
+    extraHtml: detailsHtml,
     ctaLabel: 'Open wallet',
     ctaHref,
-    noteHtml: 'If you did not expect this message, contact <strong>support@oddsyra.com</strong>.',
+    noteHtml: isPack
+      ? `Account terms apply. After a captured qualifying deposit you receive ${parts} separate free bets of ₹${eachAmt.toLocaleString('en-IN')} each (total ₹${packTotal.toLocaleString('en-IN')}).`
+      : 'Account terms apply. The free bet is credited after a captured qualifying deposit.',
     isMarketing: false,
   });
 
@@ -924,6 +978,7 @@ export async function sendTargetedDepositOfferEmail({
       replyTo: SUPPORT_REPLY_TO,
       forceFrom: true,
       headers: {
+        // Help clients treat as personal account mail, not a blast list.
         'X-Auto-Response-Suppress': 'OOF, AutoReply',
       },
     });
@@ -931,17 +986,6 @@ export async function sendTargetedDepositOfferEmail({
     return { success: false, error: err.message || 'send_failed', html };
   }
 }
-
-/** Strip blast/promo wording that Gmail routes to Promotions (no phone alert). */
-export function sanitizeAccountEmailSubject(raw) {
-  const s = String(raw || '').trim();
-  if (!s) return '';
-  if (/free\s*bet|offer|promo|bonus|exclusive|claim|deal|discount|%\s*deposit|just for you|limited time/i.test(s)) {
-    return '';
-  }
-  return s.slice(0, 180);
-}
-
 
 /* ========================================================================
  * APPROVED CATEGORY 7: SUPPORT EMAILS
