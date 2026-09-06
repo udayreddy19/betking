@@ -198,7 +198,7 @@ function SettlementQueuePanel() {
           marginBottom: '20px',
           background: 'rgba(15, 23, 42, 0.6)',
           border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: '8px',
+          borderRadius: 'var(--admin-radius)',
         }}>
           <div className="admin-flex-between">
             <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700 }}>
@@ -907,7 +907,7 @@ function ProductionReadinessPanel() {
           marginBottom: 16,
           padding: 12,
           border: '1px solid var(--admin-border)',
-          borderRadius: 8,
+          borderRadius: 'var(--admin-radius)',
           background: go.goLiveBlockedByTestFunding ? 'rgba(251,191,36,0.08)' : undefined,
         }}>
           <div style={{ fontWeight: 800 }}>GO/NO-GO: {go.decision}</div>
@@ -939,7 +939,7 @@ function ProductionReadinessPanel() {
       )}
 
       {Array.isArray(data?.whyNotGreen) && data.whyNotGreen.length > 0 && (
-        <div style={{ marginBottom: 16, padding: 12, border: '1px solid var(--admin-border)', borderRadius: 8 }}>
+        <div style={{ marginBottom: 16, padding: 12, border: '1px solid var(--admin-border)', borderRadius: 'var(--admin-radius)' }}>
           <div style={{ fontWeight: 800, marginBottom: 6 }}>Why not GREEN?</div>
           <ul style={{ margin: 0, paddingLeft: 18, fontSize: '0.78rem', maxHeight: 220, overflow: 'auto' }}>
             {data.whyNotGreen.slice(0, 40).map((w) => (
@@ -1069,7 +1069,7 @@ function ProductionCertificationPanel() {
       {error && <p style={{ color: '#fbbf24' }}>{error}</p>}
 
       {go && (
-        <div style={{ marginBottom: 16, padding: 12, border: '1px solid var(--admin-border)', borderRadius: 8 }}>
+        <div style={{ marginBottom: 16, padding: 12, border: '1px solid var(--admin-border)', borderRadius: 'var(--admin-radius)' }}>
           <div style={{ fontWeight: 800, fontSize: '1.05rem' }}>
             {go.decision === 'GO' ? 'GO' : 'NO-GO'}
             {' · '}
@@ -1116,7 +1116,7 @@ function ProductionCertificationPanel() {
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
             {Object.entries(checklistSections).map(([section, items]) => (
-              <div key={section} style={{ border: '1px solid var(--admin-border)', borderRadius: 8, padding: 10 }}>
+              <div key={section} style={{ border: '1px solid var(--admin-border)', borderRadius: 'var(--admin-radius)', padding: 10 }}>
                 <div style={{ fontWeight: 700, fontSize: '0.78rem', marginBottom: 6 }}>{section}</div>
                 {(items || []).map((item) => (
                   <div key={item.gate} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: '0.72rem', marginBottom: 4 }}>

@@ -1301,7 +1301,7 @@ function FinanceHealthPanel() {
                 key={c.label}
                 style={{
                   border: '1px solid var(--admin-border)',
-                  borderRadius: 8,
+                  borderRadius: 'var(--admin-radius)',
                   padding: '10px 12px',
                   background: 'var(--admin-surface)',
                 }}
@@ -1767,7 +1767,7 @@ function WalletInvestigationPanel() {
               onChange={(e) => handleQueryChange(e.target.value)}
               onFocus={() => setShowSuggestions(true)}
               className="admin-input"
-              style={{ width: '100%', padding: '10px 14px', borderRadius: 8, fontSize: '0.9rem' }}
+              style={{ width: '100%', padding: '10px 14px', borderRadius: 'var(--admin-radius)', fontSize: '0.9rem' }}
             />
           </div>
           <button type="submit" className="admin-btn admin-btn--primary" disabled={loading || !query.trim()}>
@@ -1786,7 +1786,7 @@ function WalletInvestigationPanel() {
               zIndex: 50,
               background: 'var(--admin-card-bg, #1e293b)',
               border: '1px solid var(--admin-border, #334155)',
-              borderRadius: 8,
+              borderRadius: 'var(--admin-radius)',
               boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
               marginTop: 4,
               maxHeight: 280,
@@ -1834,7 +1834,7 @@ function WalletInvestigationPanel() {
       </div>
 
       {error && (
-        <div style={{ padding: '12px 16px', background: '#fee2e2', color: '#991b1b', borderRadius: 8, marginBottom: 20, fontSize: '0.88rem' }}>
+        <div style={{ padding: '12px 16px', background: '#fee2e2', color: '#991b1b', borderRadius: 'var(--admin-radius)', marginBottom: 20, fontSize: '0.88rem' }}>
           {error}
         </div>
       )}
@@ -1844,7 +1844,7 @@ function WalletInvestigationPanel() {
           {/* USER & WALLET SUMMARY */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
             {/* USER CARD */}
-            <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 12, padding: 20 }}>
+            <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 'var(--admin-radius-lg)', padding: 20 }}>
               <h3 style={{ margin: '0 0 12px', fontSize: '1rem', fontWeight: 700 }}>Target User Profile</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: '0.85rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -1875,7 +1875,7 @@ function WalletInvestigationPanel() {
             </div>
 
             {/* WALLET BREAKDOWN CARD */}
-            <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 12, padding: 20 }}>
+            <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 'var(--admin-radius-lg)', padding: 20 }}>
               <h3 style={{ margin: '0 0 12px', fontSize: '1rem', fontWeight: 700 }}>Live Wallet Breakdown</h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: '0.85rem' }}>
                 <div>
@@ -1907,7 +1907,7 @@ function WalletInvestigationPanel() {
           </div>
 
           {/* CHRONOLOGICAL FINANCIAL TIMELINE */}
-          <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 12, padding: 20 }}>
+          <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 'var(--admin-radius-lg)', padding: 20 }}>
             <h3 style={{ margin: '0 0 16px', fontSize: '1rem', fontWeight: 700 }}>
               Chronological Financial Timeline ({data.timeline?.length || 0} events)
             </h3>
@@ -2034,34 +2034,34 @@ function ReconciliationDashboardPanel() {
 
       {/* KPI METRIC CARDS */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 24 }}>
-        <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 10, padding: 16 }}>
+        <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 'var(--admin-radius-lg)', padding: 16 }}>
           <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.75rem', fontWeight: 700 }}>TOTAL ACTIVE WALLETS</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: 4 }}>{overview?.totalWallets ?? '—'}</div>
         </div>
 
-        <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 10, padding: 16 }}>
+        <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 'var(--admin-radius-lg)', padding: 16 }}>
           <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.75rem', fontWeight: 700 }}>STORED CASH BALANCE SUM</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981', marginTop: 4 }}>{money(overview?.totalCashBalance)}</div>
         </div>
 
-        <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 10, padding: 16 }}>
+        <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 'var(--admin-radius-lg)', padding: 16 }}>
           <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.75rem', fontWeight: 700 }}>BONUS BALANCE SUM</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#a855f7', marginTop: 4 }}>{money(overview?.totalBonusBalance)}</div>
         </div>
 
-        <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 10, padding: 16 }}>
+        <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 'var(--admin-radius-lg)', padding: 16 }}>
           <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.75rem', fontWeight: 700 }}>RESERVED WITHDRAWAL SUM</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f59e0b', marginTop: 4 }}>{money(overview?.totalReservedBalance)}</div>
         </div>
 
-        <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 10, padding: 16 }}>
+        <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 'var(--admin-radius-lg)', padding: 16 }}>
           <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.75rem', fontWeight: 700 }}>NEGATIVE BALANCE WALLETS</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 800, color: overview?.negativeBalanceWalletsCount === 0 ? '#10b981' : '#ef4444', marginTop: 4 }}>
             {overview?.negativeBalanceWalletsCount ?? 0}
           </div>
         </div>
 
-        <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 10, padding: 16 }}>
+        <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 'var(--admin-radius-lg)', padding: 16 }}>
           <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.75rem', fontWeight: 700 }}>ORPHAN LEDGER ENTRIES</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 800, color: overview?.orphanLedgerCount === 0 ? '#10b981' : '#ef4444', marginTop: 4 }}>
             {overview?.orphanLedgerCount ?? 0}
@@ -2071,7 +2071,7 @@ function ReconciliationDashboardPanel() {
 
       {/* RECONCILIATION SCAN REPORT */}
       {scanResult && (
-        <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 12, padding: 20, marginBottom: 24 }}>
+        <div style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)', borderRadius: 'var(--admin-radius-lg)', padding: 20, marginBottom: 24 }}>
           <h3 style={{ margin: '0 0 12px', fontSize: '1.1rem', fontWeight: 700 }}>Latest Scan Report</h3>
           <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', fontSize: '0.88rem' }}>
             <div><strong>Status:</strong> {scanResult.status || 'OK'}</div>

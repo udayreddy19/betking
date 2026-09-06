@@ -60,7 +60,7 @@ export default function AdminRostersView() {
           style={{
             minWidth: 220,
             padding: '8px 12px',
-            borderRadius: 8,
+            borderRadius: 'var(--admin-radius)',
             border: '1px solid var(--admin-border, #334155)',
             background: 'var(--admin-surface, #0f172a)',
             color: 'inherit',

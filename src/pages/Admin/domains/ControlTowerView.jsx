@@ -460,14 +460,14 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
           <div style={{
             background: 'var(--admin-card-bg)',
             border: '1px solid var(--admin-border)',
-            borderRadius: 12,
+            borderRadius: 'var(--admin-radius-lg)',
             padding: '18px 20px',
             boxShadow: 'var(--admin-shadow-sm)',
           }}>
             <h4 className="admin-section-title">Subsystem health</h4>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
-              <div style={{ background: 'var(--admin-surface)', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--admin-border)' }}>
+              <div style={{ background: 'var(--admin-surface)', padding: '12px 14px', borderRadius: 'var(--admin-radius)', border: '1px solid var(--admin-border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: 12, color: 'var(--admin-text-muted)', fontWeight: 600 }}>PostgreSQL Database</span>
                   <span className="admin-inline-status">Healthy</span>
@@ -475,7 +475,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
                 <div style={{ fontSize: 11, color: 'var(--admin-text-muted)', marginTop: 4 }}>Primary Node · Connected</div>
               </div>
 
-              <div style={{ background: 'var(--admin-surface)', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--admin-border)' }}>
+              <div style={{ background: 'var(--admin-surface)', padding: '12px 14px', borderRadius: 'var(--admin-radius)', border: '1px solid var(--admin-border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: 12, color: 'var(--admin-text-muted)', fontWeight: 600 }}>Redis Pub/Sub</span>
                   <span className="admin-inline-status">Healthy</span>
@@ -483,7 +483,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
                 <div style={{ fontSize: 11, color: 'var(--admin-text-muted)', marginTop: 4 }}>Live Odds Cache · Connected</div>
               </div>
 
-              <div style={{ background: 'var(--admin-surface)', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--admin-border)' }}>
+              <div style={{ background: 'var(--admin-surface)', padding: '12px 14px', borderRadius: 'var(--admin-radius)', border: '1px solid var(--admin-border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: 12, color: 'var(--admin-text-muted)', fontWeight: 600 }}>Transactional Outbox</span>
                   <span className="admin-inline-status">Healthy</span>
@@ -491,7 +491,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
                 <div style={{ fontSize: 11, color: 'var(--admin-text-muted)', marginTop: 4 }}>0 Pending · 0 DLQ</div>
               </div>
 
-              <div style={{ background: 'var(--admin-surface)', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--admin-border)' }}>
+              <div style={{ background: 'var(--admin-surface)', padding: '12px 14px', borderRadius: 'var(--admin-radius)', border: '1px solid var(--admin-border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: 12, color: 'var(--admin-text-muted)', fontWeight: 600 }}>Payment Gateway</span>
                   <span className="admin-inline-status">Healthy</span>
@@ -499,7 +499,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
                 <div style={{ fontSize: 11, color: 'var(--admin-text-muted)', marginTop: 4 }}>Orders & Webhooks Active</div>
               </div>
 
-              <div style={{ background: 'var(--admin-surface)', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--admin-border)' }}>
+              <div style={{ background: 'var(--admin-surface)', padding: '12px 14px', borderRadius: 'var(--admin-radius)', border: '1px solid var(--admin-border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: 12, color: 'var(--admin-text-muted)', fontWeight: 600 }}>Sports Feed Aggregator</span>
                   <span className="admin-inline-status">Healthy</span>
@@ -507,7 +507,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
                 <div style={{ fontSize: 11, color: 'var(--admin-text-muted)', marginTop: 4 }}>Live Tick Active</div>
               </div>
 
-              <div style={{ background: 'var(--admin-surface)', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--admin-border)' }}>
+              <div style={{ background: 'var(--admin-surface)', padding: '12px 14px', borderRadius: 'var(--admin-radius)', border: '1px solid var(--admin-border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: 12, color: 'var(--admin-text-muted)', fontWeight: 600 }}>Email & Push Channels</span>
                   <span className="admin-inline-status">Operational</span>
@@ -521,7 +521,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
           <div style={{
             background: 'var(--admin-card-bg)',
             border: '1px solid var(--admin-border)',
-            borderRadius: 12,
+            borderRadius: 'var(--admin-radius-lg)',
             padding: '18px 20px',
             boxShadow: 'var(--admin-shadow-sm)',
           }}>
@@ -564,7 +564,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
           <div style={{
             background: 'var(--admin-card-bg)',
             border: '1px solid var(--admin-border)',
-            borderRadius: 12,
+            borderRadius: 'var(--admin-radius-lg)',
             padding: '18px 20px',
             boxShadow: 'var(--admin-shadow-sm)',
           }}>
@@ -582,7 +582,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
           <div style={{
             background: 'var(--admin-card-bg)',
             border: '1px solid var(--admin-border)',
-            borderRadius: 12,
+            borderRadius: 'var(--admin-radius-lg)',
             padding: '18px 20px',
             boxShadow: 'var(--admin-shadow-sm)',
           }}>
@@ -609,7 +609,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
                     style={{
                       background: 'var(--admin-surface)',
                       border: '1px solid var(--admin-border)',
-                      borderRadius: 8,
+                      borderRadius: 'var(--admin-radius)',
                       padding: '10px 14px',
                       display: 'flex',
                       justifyContent: 'space-between',

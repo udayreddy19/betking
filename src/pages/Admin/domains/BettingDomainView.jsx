@@ -496,7 +496,7 @@ export default function BettingDomainView({
                       key={`${leg.selectionId || i}`}
                       style={{
                         padding: '8px 10px',
-                        borderRadius: 8,
+                        borderRadius: 'var(--admin-radius)',
                         background: 'var(--admin-surface-2, rgba(255,255,255,0.04))',
                         border: '1px solid var(--admin-border, rgba(255,255,255,0.08))',
                       }}
@@ -521,7 +521,7 @@ export default function BettingDomainView({
                   {badge && (
                     <div style={{
                       padding: '10px 12px',
-                      borderRadius: 8,
+                      borderRadius: 'var(--admin-radius)',
                       background: `${badge.color}22`,
                       border: `1px solid ${badge.color}55`,
                       color: badge.color,

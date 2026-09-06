@@ -63,13 +63,13 @@ export default function RiskSyndicateMonitorPanel() {
       </div>
 
       {actionNotice && (
-        <div style={{ padding: '12px 16px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', color: '#10b981', fontSize: '0.84rem' }}>
+        <div style={{ padding: '12px 16px', borderRadius: 'var(--admin-radius)', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', color: '#10b981', fontSize: '0.84rem' }}>
           {actionNotice}
         </div>
       )}
 
       {error && (
-        <div style={{ padding: '12px 16px', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#ef4444', fontSize: '0.84rem' }}>
+        <div style={{ padding: '12px 16px', borderRadius: 'var(--admin-radius)', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#ef4444', fontSize: '0.84rem' }}>
           {error}
         </div>
       )}
@@ -80,13 +80,13 @@ export default function RiskSyndicateMonitorPanel() {
           ⚡ Coordinated Syndicate Spikes ({syndicates.length})
         </h3>
         {syndicates.length === 0 ? (
-          <div style={{ padding: '16px', borderRadius: '8px', background: 'var(--admin-panel-alt, rgba(255,255,255,0.02))', border: '1px solid var(--admin-border)', fontSize: '0.84rem', color: 'var(--admin-text-muted)' }}>
+          <div style={{ padding: '16px', borderRadius: 'var(--admin-radius)', background: 'var(--admin-panel-alt, rgba(255,255,255,0.02))', border: '1px solid var(--admin-border)', fontSize: '0.84rem', color: 'var(--admin-text-muted)' }}>
             No active syndicate patterns detected in the current window.
           </div>
         ) : (
           <div style={{ display: 'grid', gap: '10px' }}>
             {syndicates.map((syn, idx) => (
-              <div key={idx} style={{ padding: '14px', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div key={idx} style={{ padding: '14px', borderRadius: 'var(--admin-radius)', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <div style={{ fontWeight: 800, color: '#ef4444', fontSize: '0.88rem' }}>
                     🚨 {syn.accountsCount} Coordinated Accounts · Total Stake ₹{Number(syn.totalStake || 0).toLocaleString()}
@@ -117,7 +117,7 @@ export default function RiskSyndicateMonitorPanel() {
         <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--admin-text)', marginBottom: '10px' }}>
           Recent Risk Signals & Geo Anomaly Logs
         </h3>
-        <div style={{ overflowX: 'auto', border: '1px solid var(--admin-border)', borderRadius: '10px' }}>
+        <div style={{ overflowX: 'auto', border: '1px solid var(--admin-border)', borderRadius: 'var(--admin-radius-lg)' }}>
           <table className="db-data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>

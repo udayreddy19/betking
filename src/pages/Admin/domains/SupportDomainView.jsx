@@ -394,7 +394,7 @@ export default function SupportDomainView({
       {isSlaDesk && (
         <div style={{
           padding: '10px 14px',
-          borderRadius: 8,
+          borderRadius: 'var(--admin-radius)',
           border: '1px solid rgba(248, 113, 113, 0.35)',
           background: 'rgba(248, 113, 113, 0.08)',
           color: 'var(--admin-text)',
@@ -875,7 +875,7 @@ export default function SupportDomainView({
                 </div>
                 <div style={{ maxHeight: '200px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {internalNotes.map((n, i) => (
-                    <div key={i} style={{ padding: '8px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '6px', fontSize: '0.82rem' }}>
+                    <div key={i} style={{ padding: '8px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: 'var(--admin-radius)', fontSize: '0.82rem' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', color: '#fbbf24', fontSize: '0.72rem', marginBottom: '3px' }}>
                         <span>{n.agentId || 'Support Agent'}</span>
                         <span>{formatMsgTime(n.createdAt)}</span>
@@ -934,7 +934,7 @@ export default function SupportDomainView({
           justifyContent: 'center',
           zIndex: 9999,
         }}>
-          <div style={{ background: 'var(--admin-surface, #1e293b)', padding: '24px', borderRadius: '12px', width: '420px', border: '1px solid var(--admin-border)' }}>
+          <div style={{ background: 'var(--admin-surface, #1e293b)', padding: '24px', borderRadius: 'var(--admin-radius-lg)', width: '420px', border: '1px solid var(--admin-border)' }}>
             <h3 style={{ margin: '0 0 12px 0' }}>Escalate Chat to Support Ticket</h3>
             <p style={{ fontSize: '0.84rem', color: 'var(--admin-text-muted)', margin: '0 0 16px 0' }}>
               This will create an authoritative ticket, copy the chat history, and notify the user.

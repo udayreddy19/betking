@@ -415,7 +415,7 @@ export default function PaymentGatewaysView() {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
-          <div style={{ background: 'var(--admin-card-bg-subtle, rgba(255,255,255,0.03))', padding: 14, borderRadius: 8, border: '1px solid var(--admin-border, #333)' }}>
+          <div style={{ background: 'var(--admin-card-bg-subtle, rgba(255,255,255,0.03))', padding: 14, borderRadius: 'var(--admin-radius)', border: '1px solid var(--admin-border, #333)' }}>
             <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: 6 }}>
               Minimum Deposit Amount (INR)
             </label>
@@ -433,7 +433,7 @@ export default function PaymentGatewaysView() {
                   background: 'var(--admin-input-bg, #1e1e1e)',
                   color: 'inherit',
                   border: '1px solid var(--admin-border, #444)',
-                  borderRadius: 6,
+                  borderRadius: 'var(--admin-radius)',
                   fontWeight: 700,
                 }}
               />
@@ -443,7 +443,7 @@ export default function PaymentGatewaysView() {
             </p>
           </div>
 
-          <div style={{ background: 'var(--admin-card-bg-subtle, rgba(255,255,255,0.03))', padding: 14, borderRadius: 8, border: '1px solid var(--admin-border, #333)' }}>
+          <div style={{ background: 'var(--admin-card-bg-subtle, rgba(255,255,255,0.03))', padding: 14, borderRadius: 'var(--admin-radius)', border: '1px solid var(--admin-border, #333)' }}>
             <span style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: 6 }}>
               Free Bet Exact Stake Rule
             </span>
@@ -464,7 +464,7 @@ export default function PaymentGatewaysView() {
             </p>
           </div>
 
-          <div style={{ background: 'var(--admin-card-bg-subtle, rgba(255,255,255,0.03))', padding: 14, borderRadius: 8, border: '1px solid var(--admin-border, #333)' }}>
+          <div style={{ background: 'var(--admin-card-bg-subtle, rgba(255,255,255,0.03))', padding: 14, borderRadius: 'var(--admin-radius)', border: '1px solid var(--admin-border, #333)' }}>
             <span style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: 6 }}>
               Bonus Exact Stake Rule
             </span>

@@ -89,26 +89,26 @@ export default function TradingDeskHeatmapPanel({ matchId = 'live_match_1' }) {
       </div>
 
       {actionNotice && (
-        <div style={{ padding: '12px 16px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', color: '#10b981', fontSize: '0.84rem', fontWeight: 600 }}>
+        <div style={{ padding: '12px 16px', borderRadius: 'var(--admin-radius)', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', color: '#10b981', fontSize: '0.84rem', fontWeight: 600 }}>
           {actionNotice}
         </div>
       )}
 
       {error && (
-        <div style={{ padding: '12px 16px', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#ef4444', fontSize: '0.84rem' }}>
+        <div style={{ padding: '12px 16px', borderRadius: 'var(--admin-radius)', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#ef4444', fontSize: '0.84rem' }}>
           {error}
         </div>
       )}
 
       {heatmapData && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-          <div style={{ padding: '14px', borderRadius: '10px', background: 'var(--admin-panel-alt, rgba(255,255,255,0.03))', border: '1px solid var(--admin-border)' }}>
+          <div style={{ padding: '14px', borderRadius: 'var(--admin-radius-lg)', background: 'var(--admin-panel-alt, rgba(255,255,255,0.03))', border: '1px solid var(--admin-border)' }}>
             <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-dim)', textTransform: 'uppercase' }}>Live Score</div>
             <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--admin-text)', marginTop: '4px' }}>
               {heatmapData.currentScore || 0} / {heatmapData.currentOvers || 0} ov
             </div>
           </div>
-          <div style={{ padding: '14px', borderRadius: '10px', background: 'var(--admin-panel-alt, rgba(255,255,255,0.03))', border: '1px solid var(--admin-border)' }}>
+          <div style={{ padding: '14px', borderRadius: 'var(--admin-radius-lg)', background: 'var(--admin-panel-alt, rgba(255,255,255,0.03))', border: '1px solid var(--admin-border)' }}>
             <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-dim)', textTransform: 'uppercase' }}>Total Book Stakes</div>
             <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#3b82f6', marginTop: '4px' }}>
               ₹{Number(heatmapData.totalStakesCollected || 0).toLocaleString()}
@@ -118,7 +118,7 @@ export default function TradingDeskHeatmapPanel({ matchId = 'live_match_1' }) {
       )}
 
       {/* Heatmap Ladder Table */}
-      <div style={{ overflowX: 'auto', border: '1px solid var(--admin-border)', borderRadius: '10px' }}>
+      <div style={{ overflowX: 'auto', border: '1px solid var(--admin-border)', borderRadius: 'var(--admin-radius-lg)' }}>
         <table className="db-data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
@@ -154,7 +154,7 @@ export default function TradingDeskHeatmapPanel({ matchId = 'live_match_1' }) {
                     {isProfit ? '+' : ''}₹{bucket.netHousePnL.toLocaleString()}
                   </td>
                   <td style={{ padding: '10px 14px', textAlign: 'center' }}>
-                    <span style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 800, background: zoneBg, color: zoneColor }}>
+                    <span style={{ padding: '4px 10px', borderRadius: 'var(--admin-radius)', fontSize: '0.72rem', fontWeight: 800, background: zoneBg, color: zoneColor }}>
                       {bucket.colorZone.replace('_', ' ')}
                     </span>
                   </td>

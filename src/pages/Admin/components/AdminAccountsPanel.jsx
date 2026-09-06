@@ -218,7 +218,7 @@ export default function AdminAccountsPanel() {
       </div>
 
       {error && (
-        <div style={{ padding: '10px 14px', borderRadius: '8px', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', color: '#fbbf24', fontSize: '0.82rem' }}>
+        <div style={{ padding: '10px 14px', borderRadius: 'var(--admin-radius)', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', color: '#fbbf24', fontSize: '0.82rem' }}>
           {error}
         </div>
       )}
@@ -231,19 +231,19 @@ export default function AdminAccountsPanel() {
 
       {/* KPI Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-        <div style={{ padding: '14px', borderRadius: '10px', background: 'var(--admin-surface)', border: '1px solid var(--admin-border)' }}>
+        <div style={{ padding: '14px', borderRadius: 'var(--admin-radius-lg)', background: 'var(--admin-surface)', border: '1px solid var(--admin-border)' }}>
           <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Total Admins</div>
           <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--admin-text)', marginTop: '4px' }}>{admins.length}</div>
         </div>
-        <div style={{ padding: '14px', borderRadius: '10px', background: 'var(--admin-surface)', border: '1px solid var(--admin-border)' }}>
+        <div style={{ padding: '14px', borderRadius: 'var(--admin-radius-lg)', background: 'var(--admin-surface)', border: '1px solid var(--admin-border)' }}>
           <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Active Accounts</div>
           <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#10b981', marginTop: '4px' }}>{activeCount}</div>
         </div>
-        <div style={{ padding: '14px', borderRadius: '10px', background: 'var(--admin-surface)', border: '1px solid var(--admin-border)' }}>
+        <div style={{ padding: '14px', borderRadius: 'var(--admin-radius-lg)', background: 'var(--admin-surface)', border: '1px solid var(--admin-border)' }}>
           <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Super Admins</div>
           <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#818cf8', marginTop: '4px' }}>{superCount}</div>
         </div>
-        <div style={{ padding: '14px', borderRadius: '10px', background: 'var(--admin-surface)', border: '1px solid var(--admin-border)' }}>
+        <div style={{ padding: '14px', borderRadius: 'var(--admin-radius-lg)', background: 'var(--admin-surface)', border: '1px solid var(--admin-border)' }}>
           <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>MFA Enrolled</div>
           <div style={{ fontSize: '1.6rem', fontWeight: 800, color: mfaCount === admins.length ? '#10b981' : '#f59e0b', marginTop: '4px' }}>
             {mfaCount} / {admins.length}
@@ -395,7 +395,7 @@ export default function AdminAccountsPanel() {
               maxWidth: '520px',
               background: 'var(--admin-panel, #0f172a)',
               border: '1px solid var(--admin-border-bright, rgba(255,255,255,0.15))',
-              borderRadius: '14px',
+              borderRadius: 'var(--admin-radius-lg)',
               padding: '24px',
               color: 'var(--admin-text, #f8fafc)',
               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)',
@@ -569,7 +569,7 @@ export default function AdminAccountsPanel() {
               maxWidth: '540px',
               background: 'var(--admin-panel, #0f172a)',
               border: '1px solid var(--admin-border-bright, rgba(255,255,255,0.15))',
-              borderRadius: '14px',
+              borderRadius: 'var(--admin-radius-lg)',
               padding: '24px',
               color: 'var(--admin-text, #f8fafc)',
               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)',
@@ -685,7 +685,7 @@ export default function AdminAccountsPanel() {
               </div>
 
               {/* Password Section */}
-              <div style={{ padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--admin-border)' }}>
+              <div style={{ padding: '12px', borderRadius: 'var(--admin-radius)', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--admin-border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <label style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--admin-text)' }}>
                     Change Password (Optional)

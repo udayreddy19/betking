@@ -526,7 +526,7 @@ function BroadcastPanel() {
           flexDirection: 'column',
           gap: 12,
           padding: 16,
-          borderRadius: 12,
+          borderRadius: 'var(--admin-radius-lg)',
           border: '1px solid var(--admin-border)',
           background: 'var(--admin-surface)',
         }}

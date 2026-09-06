@@ -2532,7 +2532,7 @@ html[data-theme="light"] .tdfb-users__search .admin-input::placeholder,
 }
 .admin-table-card {
   border: 1px solid var(--admin-border);
-  border-radius: 10px;
+  border-radius: var(--admin-radius-lg);
   padding: 12px 14px;
   background: var(--admin-surface);
 }
@@ -2605,7 +2605,7 @@ html[data-theme="light"] .tdfb-users__search .admin-input::placeholder,
   width: 100%;
   text-align: left;
   padding: 12px;
-  border-radius: 12px;
+  border-radius: var(--admin-radius-lg);
   border: 1px solid var(--admin-border);
   background: var(--admin-surface);
   color: var(--admin-text);
@@ -3344,6 +3344,48 @@ html[data-theme="light"] .admin-badge--info,
   );
 }
 
+/*
+ * New UI radius (Customer Directory look):
+ * controls → full pill; panels/cards → soft 28–32px.
+ * Scoped to .admin-shell--revamp so Classic stays unchanged.
+ */
+.admin-shell--revamp {
+  --admin-radius-sm: 9999px;
+  --admin-radius: 9999px;
+  --admin-radius-md: 9999px;
+  --admin-radius-lg: 28px;
+  --admin-radius-xl: 32px;
+  --admin-radius-full: 9999px;
+}
+
+.admin-shell--revamp .admin-btn:not(.admin-btn--icon),
+.admin-shell--revamp .admin-input,
+.admin-shell--revamp .admin-select,
+.admin-shell--revamp .admin-chip,
+.admin-shell--revamp .admin-badge,
+.admin-shell--revamp .admin-topbar__role,
+.admin-shell--revamp .admin-compose-mail__tpl,
+.admin-shell--revamp .admin-compose-mail__to,
+.admin-shell--revamp .admin-compose-mail__chip,
+.admin-shell--revamp input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+.admin-shell--revamp select {
+  border-radius: var(--admin-radius-full);
+}
+
+.admin-shell--revamp textarea,
+.admin-shell--revamp textarea.admin-input,
+.admin-shell--revamp .admin-card,
+.admin-shell--revamp .admin-filter-bar,
+.admin-shell--revamp .admin-table-container,
+.admin-shell--revamp .admin-table-card,
+.admin-shell--revamp .admin-modal,
+.admin-shell--revamp .admin-drawer,
+.admin-shell--revamp .admin-compose-mail__form,
+.admin-shell--revamp .admin-compose-mail__mailbox,
+.admin-shell--revamp .telemetry-card {
+  border-radius: var(--admin-radius-lg);
+}
+
 /* Shared pill segmented control (Directory / KYC / Limits look) */
 .admin-shell--revamp .admin-subtab-bar,
 .admin-shell--revamp .admin-seg-group {
@@ -3735,7 +3777,7 @@ html[data-theme="light"] .admin-badge--info,
   border: 1px solid var(--admin-border);
   background: var(--admin-surface);
   color: var(--admin-text);
-  border-radius: 8px;
+  border-radius: var(--admin-radius);
   padding: 7px 12px;
   font-size: 0.76rem;
   font-weight: 650;
@@ -3757,7 +3799,7 @@ html[data-theme="light"] .admin-badge--info,
   flex-direction: column;
   gap: 14px;
   padding: 16px;
-  border-radius: 12px;
+  border-radius: var(--admin-radius-lg);
   border: 1px solid var(--admin-border);
   background: var(--admin-surface);
 }
@@ -3787,7 +3829,7 @@ html[data-theme="light"] .admin-badge--info,
   gap: 2px;
   padding: 10px 12px;
   border: 1px solid var(--admin-border);
-  border-radius: 10px;
+  border-radius: var(--admin-radius);
   cursor: pointer;
   background: var(--admin-panel);
 }
@@ -3837,7 +3879,7 @@ html[data-theme="light"] .admin-badge--info,
   min-height: 42px;
   padding: 6px 8px;
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
+  border-radius: var(--admin-radius);
   background: var(--admin-panel);
   overflow: visible;
 }
@@ -3852,7 +3894,7 @@ html[data-theme="light"] .admin-badge--info,
   gap: 6px;
   max-width: 100%;
   padding: 4px 6px 4px 8px;
-  border-radius: 8px;
+  border-radius: var(--admin-radius);
   background: var(--admin-primary-soft);
   color: var(--admin-text);
   font-size: 0.72rem;
@@ -3903,7 +3945,7 @@ html[data-theme="light"] .admin-badge--info,
   max-height: 240px;
   overflow: auto;
   border: 1px solid var(--admin-border);
-  border-radius: 10px;
+  border-radius: var(--admin-radius-lg);
   background: var(--admin-panel);
   box-shadow: var(--admin-shadow-lg);
 }

@@ -1262,7 +1262,7 @@ function AdminShellInner() {
                           width: '100%',
                           textAlign: 'left',
                           padding: '12px',
-                          borderRadius: '10px',
+                          borderRadius: 'var(--admin-radius-lg)',
                           border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0'}`,
                           background: isDark ? 'rgba(15,23,42,0.8)' : '#f8fafc',
                           overflow: 'visible',
@@ -1345,7 +1345,7 @@ function AdminShellInner() {
                               onClick={(e) => handleAlertAction(e, alert, 'ack')}
                               style={{
                                 padding: '4px 10px',
-                                borderRadius: '6px',
+                                borderRadius: 'var(--admin-radius)',
                                 border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.1)'}`,
                                 background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.04)',
                                 color: isDark ? '#cbd5e1' : '#334155',
@@ -1361,7 +1361,7 @@ function AdminShellInner() {
                               onClick={(e) => handleAlertAction(e, alert, 'resolve')}
                               style={{
                                 padding: '4px 10px',
-                                borderRadius: '6px',
+                                borderRadius: 'var(--admin-radius)',
                                 border: '1px solid rgba(99,102,241,0.3)',
                                 background: 'rgba(99,102,241,0.15)',
                                 color: '#818cf8',

@@ -1860,7 +1860,7 @@ function VipTiersPanel() {
           margin: '12px 0 20px',
           padding: 12,
           border: '1px solid var(--admin-border)',
-          borderRadius: 10,
+          borderRadius: 'var(--admin-radius-lg)',
           background: 'var(--admin-surface)',
         }}
       >
@@ -2788,7 +2788,7 @@ function ReferralsAdminPanel() {
             <select
               value={editSettings.rewardKind || 'freebet'}
               onChange={(e) => setSettingsDraft({ ...editSettings, rewardKind: e.target.value })}
-              style={{ padding: '8px 10px', borderRadius: 6 }}
+              style={{ padding: '8px 10px', borderRadius: 'var(--admin-radius)' }}
             >
               <option value="freebet">Free bet</option>
               <option value="bonus">Bonus</option>
@@ -2802,7 +2802,7 @@ function ReferralsAdminPanel() {
               step="1"
               value={editSettings.referredReward ?? 500}
               onChange={(e) => setSettingsDraft({ ...editSettings, referredReward: e.target.value })}
-              style={{ padding: '8px 10px', borderRadius: 6 }}
+              style={{ padding: '8px 10px', borderRadius: 'var(--admin-radius)' }}
             />
           </label>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.78rem', color: 'var(--admin-text-muted)' }}>
@@ -2813,7 +2813,7 @@ function ReferralsAdminPanel() {
               step="1"
               value={editSettings.referrerReward ?? 500}
               onChange={(e) => setSettingsDraft({ ...editSettings, referrerReward: e.target.value })}
-              style={{ padding: '8px 10px', borderRadius: 6 }}
+              style={{ padding: '8px 10px', borderRadius: 'var(--admin-radius)' }}
             />
           </label>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -2864,7 +2864,7 @@ function ReferralsAdminPanel() {
       </div>
       <AdminKpiDrillDrawer drill={drillRef} />
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12, alignItems: 'center' }}>
-        <select value={status} onChange={(e) => setStatus(e.target.value)} style={{ padding: '6px 10px', borderRadius: 6 }}>
+        <select value={status} onChange={(e) => setStatus(e.target.value)} style={{ padding: '6px 10px', borderRadius: 'var(--admin-radius)' }}>
           <option value="">All statuses</option>
           {['REGISTERED', 'FRAUD_REVIEW', 'QUALIFIED', 'REWARDED', 'REJECTED'].map((s) => (
             <option key={s} value={s}>{s}</option>
@@ -2874,7 +2874,7 @@ function ReferralsAdminPanel() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search code, user, email…"
-          style={{ padding: '6px 10px', borderRadius: 6, minWidth: 220 }}
+          style={{ padding: '6px 10px', borderRadius: 'var(--admin-radius)', minWidth: 220 }}
         />
         <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} title="Analytics from" />
         <input type="date" value={to} onChange={(e) => setTo(e.target.value)} title="Analytics to" />
@@ -3517,7 +3517,7 @@ function DiscreteRewardsAdminPanel() {
         }}>
           <div style={{
             background: 'var(--admin-surface, #ffffff)',
-            borderRadius: '12px',
+            borderRadius: 'var(--admin-radius-lg)',
             maxWidth: '750px',
             width: '100%',
             maxHeight: '85vh',

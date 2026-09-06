@@ -234,7 +234,7 @@ function AuditCenterPanel() {
             <input
               value={filters[key]}
               onChange={(e) => setFilters((f) => ({ ...f, [key]: e.target.value }))}
-              style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid var(--admin-border)' }}
+              style={{ padding: '6px 8px', borderRadius: 'var(--admin-radius)', border: '1px solid var(--admin-border)' }}
             />
           </label>
         ))}

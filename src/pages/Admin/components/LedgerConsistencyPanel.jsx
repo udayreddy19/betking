@@ -47,7 +47,7 @@ export default function LedgerConsistencyPanel() {
       </div>
 
       {error && (
-        <div style={{ padding: '12px 16px', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#ef4444', fontSize: '0.84rem' }}>
+        <div style={{ padding: '12px 16px', borderRadius: 'var(--admin-radius)', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#ef4444', fontSize: '0.84rem' }}>
           {error}
         </div>
       )}
@@ -57,7 +57,7 @@ export default function LedgerConsistencyPanel() {
           {/* Top Status Banner */}
           <div style={{
             padding: '16px 20px',
-            borderRadius: '10px',
+            borderRadius: 'var(--admin-radius-lg)',
             background: auditData.isHealthy ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.15)',
             border: `1px solid ${auditData.isHealthy ? '#10b981' : '#ef4444'}`,
             display: 'flex',
@@ -86,25 +86,25 @@ export default function LedgerConsistencyPanel() {
 
           {/* Metric Cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-            <div style={{ padding: '14px', borderRadius: '10px', background: 'var(--admin-panel-alt, rgba(255,255,255,0.03))', border: '1px solid var(--admin-border)' }}>
+            <div style={{ padding: '14px', borderRadius: 'var(--admin-radius-lg)', background: 'var(--admin-panel-alt, rgba(255,255,255,0.03))', border: '1px solid var(--admin-border)' }}>
               <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-dim)', textTransform: 'uppercase' }}>Total Wallets</div>
               <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--admin-text)', marginTop: '4px' }}>
                 {auditData.totalWallets?.toLocaleString()}
               </div>
             </div>
-            <div style={{ padding: '14px', borderRadius: '10px', background: 'var(--admin-panel-alt, rgba(255,255,255,0.03))', border: '1px solid var(--admin-border)' }}>
+            <div style={{ padding: '14px', borderRadius: 'var(--admin-radius-lg)', background: 'var(--admin-panel-alt, rgba(255,255,255,0.03))', border: '1px solid var(--admin-border)' }}>
               <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-dim)', textTransform: 'uppercase' }}>Total Wallet Sum</div>
               <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#3b82f6', marginTop: '4px' }}>
                 ₹{auditData.totalWalletBalanceSum?.toLocaleString()}
               </div>
             </div>
-            <div style={{ padding: '14px', borderRadius: '10px', background: 'var(--admin-panel-alt, rgba(255,255,255,0.03))', border: '1px solid var(--admin-border)' }}>
+            <div style={{ padding: '14px', borderRadius: 'var(--admin-radius-lg)', background: 'var(--admin-panel-alt, rgba(255,255,255,0.03))', border: '1px solid var(--admin-border)' }}>
               <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-dim)', textTransform: 'uppercase' }}>Negative Balances</div>
               <div style={{ fontSize: '1.3rem', fontWeight: 800, color: auditData.negativeBalanceWallets === 0 ? '#10b981' : '#ef4444', marginTop: '4px' }}>
                 {auditData.negativeBalanceWallets}
               </div>
             </div>
-            <div style={{ padding: '14px', borderRadius: '10px', background: 'var(--admin-panel-alt, rgba(255,255,255,0.03))', border: '1px solid var(--admin-border)' }}>
+            <div style={{ padding: '14px', borderRadius: 'var(--admin-radius-lg)', background: 'var(--admin-panel-alt, rgba(255,255,255,0.03))', border: '1px solid var(--admin-border)' }}>
               <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-dim)', textTransform: 'uppercase' }}>Ledger Entries</div>
               <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--admin-text)', marginTop: '4px' }}>
                 {auditData.ledgerEntriesAudited?.toLocaleString()}

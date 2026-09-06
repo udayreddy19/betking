@@ -57,7 +57,7 @@ export function AdminToastProvider({ children }) {
                   alignItems: 'center',
                   gap: '12px',
                   padding: '14px 18px',
-                  borderRadius: '10px',
+                  borderRadius: 'var(--admin-radius-lg)',
                   background: 'var(--admin-panel)',
                   backdropFilter: 'blur(16px)',
                   WebkitBackdropFilter: 'blur(16px)',

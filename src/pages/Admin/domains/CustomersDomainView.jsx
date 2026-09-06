@@ -138,7 +138,7 @@ function DossierStat({ label, value, accent }) {
   return (
     <div style={{
       padding: '10px 12px',
-      borderRadius: 8,
+      borderRadius: 'var(--admin-radius)',
       background: 'var(--admin-surface-2, rgba(0,0,0,0.04))',
       border: '1px solid var(--admin-border, rgba(0,0,0,0.06))',
     }}>
@@ -1059,7 +1059,7 @@ function CustomersDomainPanels({
             maxHeight: 160,
             overflow: 'auto',
             border: '1px solid var(--admin-border)',
-            borderRadius: 8,
+            borderRadius: 'var(--admin-radius)',
             padding: '8px 10px',
             fontSize: '0.76rem',
             background: 'var(--admin-bg)',
@@ -1288,7 +1288,7 @@ function CustomersDomainPanels({
               <div style={{ padding: '12px 0', color: 'var(--admin-text-muted)', fontSize: '0.85rem' }}>Loading full dossier…</div>
             )}
             {user360Error && (
-              <div style={{ padding: '10px 12px', marginBottom: 12, borderRadius: 8, background: 'rgba(239,68,68,0.1)', color: '#b91c1c', fontSize: '0.82rem' }}>
+              <div style={{ padding: '10px 12px', marginBottom: 12, borderRadius: 'var(--admin-radius)', background: 'rgba(239,68,68,0.1)', color: '#b91c1c', fontSize: '0.82rem' }}>
                 {user360Error}
           </div>
             )}
@@ -1498,7 +1498,7 @@ function CustomersDomainPanels({
                   <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--admin-text-muted)', marginBottom: 6, textTransform: 'uppercase' }}>Recent bets</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 180, overflow: 'auto' }}>
                     {user360.recentBets.slice(0, 10).map((b) => (
-                      <div key={b.bet_id} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: '0.78rem', padding: '6px 8px', borderRadius: 6, background: 'var(--admin-surface-2, rgba(0,0,0,0.03))' }}>
+                      <div key={b.bet_id} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: '0.78rem', padding: '6px 8px', borderRadius: 'var(--admin-radius)', background: 'var(--admin-surface-2, rgba(0,0,0,0.03))' }}>
                         <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {b.match_id || b.bet_id} · ₹{Number(b.stake).toLocaleString()} @ {b.odds}
                         </span>
@@ -1673,7 +1673,7 @@ function CustomersDomainPanels({
                       key={d.deviceId || d.device_id || d.id}
                       style={{
                         padding: '8px 10px',
-                        borderRadius: 8,
+                        borderRadius: 'var(--admin-radius)',
                         border: '1px solid var(--admin-border)',
                         fontSize: '0.78rem',
                       }}
@@ -1750,7 +1750,7 @@ function CustomersDomainPanels({
                       }}
                       style={{
                         padding: '8px 10px',
-                        borderRadius: 8,
+                        borderRadius: 'var(--admin-radius)',
                         border: '1px solid var(--admin-border, rgba(0,0,0,0.08))',
                         background: 'transparent',
                         textAlign: 'left',
@@ -1779,7 +1779,7 @@ function CustomersDomainPanels({
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 200, overflow: 'auto' }}>
                   {user360.notifications.slice(0, 15).map((n) => (
-                    <div key={n.id} style={{ fontSize: '0.78rem', padding: '6px 8px', borderRadius: 6, background: 'var(--admin-surface-2, rgba(0,0,0,0.03))' }}>
+                    <div key={n.id} style={{ fontSize: '0.78rem', padding: '6px 8px', borderRadius: 'var(--admin-radius)', background: 'var(--admin-surface-2, rgba(0,0,0,0.03))' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                         <strong>{n.subject || n.eventType}</strong>
                         <StatusBadge status={n.status} />
@@ -1804,7 +1804,7 @@ function CustomersDomainPanels({
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 220, overflow: 'auto' }}>
                   {user360.auditTrail.slice(0, 20).map((a) => (
-                    <div key={a.id} style={{ fontSize: '0.78rem', padding: '6px 8px', borderRadius: 6, border: '1px solid var(--admin-border, rgba(0,0,0,0.06))' }}>
+                    <div key={a.id} style={{ fontSize: '0.78rem', padding: '6px 8px', borderRadius: 'var(--admin-radius)', border: '1px solid var(--admin-border, rgba(0,0,0,0.06))' }}>
                       <div style={{ fontWeight: 700 }}>{a.action}</div>
                       <div style={{ color: 'var(--admin-text-muted)' }}>
                         {a.actorId} · {formatDt(a.createdAt)}

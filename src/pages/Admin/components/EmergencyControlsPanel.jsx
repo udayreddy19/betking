@@ -83,7 +83,7 @@ export default function EmergencyControlsPanel({
         marginBottom: compact ? 16 : 24,
         background: 'var(--admin-card-bg)',
         border: activeSet.size ? '1px solid rgba(239, 68, 68, 0.35)' : '1px solid var(--admin-border)',
-        borderRadius: 12,
+        borderRadius: 'var(--admin-radius-lg)',
         padding: compact ? '12px 14px' : '16px 18px',
       }}
     >
@@ -114,7 +114,7 @@ export default function EmergencyControlsPanel({
               key={def.type}
               style={{
                 border: `1px solid ${active ? 'rgba(239, 68, 68, 0.4)' : 'var(--admin-border)'}`,
-                borderRadius: 10,
+                borderRadius: 'var(--admin-radius-lg)',
                 padding: '10px 12px',
                 background: active ? 'rgba(239, 68, 68, 0.08)' : 'var(--admin-surface)',
               }}
