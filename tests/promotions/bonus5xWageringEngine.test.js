@@ -342,4 +342,42 @@ describe('ODDSYRA — BONUS 5X WAGERING & ROLLOVER ENGINE SUITE', () => {
     expect(forfeitTx.rows[1].type).toBe('BONUS_WINNINGS_FORFEIT');
     expect(Number(forfeitTx.rows[1].amount)).toBe(1875.00);
   });
+
+  it('10. Losing the last bonus stake forfeits orphaned locked bonus winnings', async () => {
+    const { forfeitLockedBonusWinningsIfBonusExhausted } = await import('../../lib/promotionsEngine.mjs');
+
+    await query(`UPDATE wallets SET bonus_balance = 100.00, locked_bonus_winnings = 2525.00 WHERE user_id = $1`, [testUserId]);
+    const kept = await withTransaction((client) => forfeitLockedBonusWinningsIfBonusExhausted(client, {
+      userId: testUserId,
+      betId: 'bet_keep',
+      reason: 'test_keep',
+    }));
+    expect(kept.forfeited).toBe(false);
+    expect(kept.reason).toBe('bonus_principal_remaining');
+
+    await query(`UPDATE wallets SET bonus_balance = 0.00, locked_bonus_winnings = 2525.00 WHERE user_id = $1`, [testUserId]);
+    const lost = await withTransaction((client) => forfeitLockedBonusWinningsIfBonusExhausted(client, {
+      userId: testUserId,
+      betId: 'bet_last_bonus_lost',
+      reason: 'bonus_principal_lost',
+    }));
+    expect(lost.forfeited).toBe(true);
+    expect(lost.amount).toBe(2525.00);
+
+    const wallet = await query(
+      'SELECT bonus_balance, locked_bonus_winnings FROM wallets WHERE user_id = $1',
+      [testUserId],
+    );
+    expect(Number(wallet.rows[0].bonus_balance)).toBe(0);
+    expect(Number(wallet.rows[0].locked_bonus_winnings)).toBe(0);
+
+    const tx = await query(
+      `SELECT type, amount FROM transactions
+       WHERE user_id = $1 AND type = 'BONUS_WINNINGS_FORFEIT'
+       ORDER BY created_at DESC LIMIT 1`,
+      [testUserId],
+    );
+    expect(tx.rows[0]?.type).toBe('BONUS_WINNINGS_FORFEIT');
+    expect(Number(tx.rows[0]?.amount)).toBe(2525.00);
+  });
 });
