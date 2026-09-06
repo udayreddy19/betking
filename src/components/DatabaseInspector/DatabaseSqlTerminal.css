@@ -1,5 +1,5 @@
 /* ==========================================================================
-   DATABASE SQL TERMINAL STYLES
+   DATABASE SQL TERMINAL — aligned with Schema console surfaces
    ========================================================================== */
 
 .db-sql-terminal {
@@ -24,14 +24,21 @@
   font-weight: 700;
   cursor: pointer;
   text-align: left;
+  transition:
+    background var(--admin-transition-fast),
+    transform var(--admin-transition-fast);
 }
 
 .db-sql-terminal-toggle:hover {
   background: color-mix(in srgb, var(--admin-text) 4%, var(--admin-surface));
 }
 
+.db-sql-terminal-toggle:active {
+  transform: scale(0.995);
+}
+
 .db-sql-terminal-toggle:focus-visible {
-  outline: 2px solid var(--admin-accent, #6366f1);
+  outline: 2px solid var(--admin-primary);
   outline-offset: -2px;
 }
 
@@ -45,7 +52,7 @@
   font-size: 0.72rem;
   font-weight: 600;
   color: var(--admin-text-muted);
-  font-family: var(--admin-font-mono, monospace);
+  font-family: var(--admin-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
 }
 
 .db-sql-terminal-toggle svg {
@@ -63,6 +70,7 @@
   gap: 10px;
   max-height: min(42vh, 420px);
   overflow: auto;
+  background: var(--admin-panel);
 }
 
 .db-sql-terminal-editor {
@@ -79,16 +87,17 @@
   border: 1px solid var(--admin-border);
   background: var(--admin-input-bg);
   color: var(--admin-text);
-  font-family: var(--admin-font-mono, monospace);
+  font-family: var(--admin-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
   font-size: 0.8rem;
   line-height: 1.45;
   resize: vertical;
+  transition: border-color var(--admin-transition-fast), box-shadow var(--admin-transition-fast);
 }
 
 .db-sql-terminal-input:focus {
   outline: none;
-  border-color: rgba(99, 102, 241, 0.6);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 3px var(--admin-primary-softer);
 }
 
 .db-sql-terminal-toolbar {
@@ -106,14 +115,21 @@
   color: var(--admin-text-muted);
   font-size: 0.72rem;
   font-weight: 700;
-  font-family: var(--admin-font-mono, monospace);
+  font-family: var(--admin-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
   cursor: pointer;
-  transition: all 0.12s ease;
+  transition:
+    color var(--admin-transition-fast),
+    border-color var(--admin-transition-fast),
+    transform var(--admin-transition-fast);
 }
 
 .db-sql-snippet:hover:not(:disabled) {
   color: var(--admin-text);
   border-color: var(--admin-border-bright);
+}
+
+.db-sql-snippet:active:not(:disabled) {
+  transform: scale(0.96);
 }
 
 .db-sql-run {
@@ -124,12 +140,22 @@
   padding: 6px 14px;
   border-radius: var(--admin-radius-sm);
   border: none;
-  background: var(--admin-btn-primary-bg, #6366f1);
-  color: #fff;
+  background: var(--admin-primary);
+  color: var(--admin-on-primary, #fff);
   font-size: 0.78rem;
   font-weight: 800;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition:
+    background var(--admin-transition-fast),
+    transform var(--admin-transition-fast);
+}
+
+.db-sql-run:hover:not(:disabled) {
+  background: var(--admin-primary-hover);
+}
+
+.db-sql-run:active:not(:disabled) {
+  transform: scale(0.96);
 }
 
 .db-sql-run:disabled {
@@ -137,19 +163,24 @@
   cursor: wait;
 }
 
+.db-sql-run:focus-visible {
+  outline: 2px solid var(--admin-primary);
+  outline-offset: 2px;
+}
+
 .db-sql-kbd {
   font-size: 0.68rem;
   font-weight: 600;
   color: var(--admin-text-dim);
-  font-family: var(--admin-font-mono, monospace);
+  font-family: var(--admin-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
 }
 
 .db-sql-terminal-error {
   padding: 8px 12px;
   border-radius: var(--admin-radius-sm);
-  background: rgba(244, 63, 94, 0.1);
-  border: 1px solid rgba(244, 63, 94, 0.3);
-  color: #fb7185;
+  background: color-mix(in srgb, var(--admin-danger) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--admin-danger) 35%, transparent);
+  color: var(--admin-danger);
   font-size: 0.78rem;
   font-weight: 600;
 }
@@ -194,9 +225,9 @@
   text-align: left;
   background: var(--admin-surface);
   border-bottom: 1px solid var(--admin-border);
-  color: #818cf8;
+  color: var(--admin-primary);
   font-weight: 750;
-  font-family: var(--admin-font-mono, monospace);
+  font-family: var(--admin-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
   white-space: nowrap;
 }
 
@@ -212,7 +243,7 @@
 }
 
 .db-sql-result-table tr:hover td {
-  background: rgba(255, 255, 255, 0.025);
+  background: color-mix(in srgb, var(--admin-text) 3%, transparent);
 }
 
 .db-sql-null {
@@ -231,7 +262,21 @@
   background: var(--admin-bg);
   color: var(--admin-text);
   font-size: 0.74rem;
-  font-family: var(--admin-font-mono, monospace);
+  font-family: var(--admin-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
   white-space: pre-wrap;
   word-break: break-all;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .db-sql-terminal-toggle,
+  .db-sql-snippet,
+  .db-sql-run {
+    transition: none;
+  }
+
+  .db-sql-terminal-toggle:active,
+  .db-sql-snippet:active:not(:disabled),
+  .db-sql-run:active:not(:disabled) {
+    transform: none;
+  }
 }

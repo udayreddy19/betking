@@ -335,33 +335,36 @@ export default function DatabaseInspector() {
   };
 
   const formatCount = (n) => Number(n || 0).toLocaleString();
+  const selectedMeta = tables.find((t) => t.tableName === selectedTable);
 
   return (
-    <div className="db-inspector-container">
-      <div className="db-inspector-header">
-        <div className="db-inspector-title">
-          <p className="db-inspector-kicker">Platform · Schema</p>
-          <h2 className="db-inspector-heading">Database Tables</h2>
-          <p className="db-inspector-sub">
-            Live PostgreSQL catalog. Browse rows, sort columns, export slices.
-            Sensitive auth fields stay hidden.
+    <div className="schema-console">
+      <header className="schema-console__header">
+        <div className="schema-console__intro">
+          <h2 className="schema-console__title">Schema</h2>
+          <p className="schema-console__subtitle">
+            Live PostgreSQL catalog — browse rows, sort, export. Auth secrets stay hidden.
           </p>
         </div>
-
-        <div className="db-status-pills" aria-label="Database status">
-          <span className="status-pill status-pill--pg">
-            <span className="live-dot" aria-hidden="true" />
-            Size {meta.totalDbSize}
-          </span>
-          <span className="status-pill status-pill--disk">
-            Disk {meta.availableDiskStorage}
-          </span>
-          <span className="status-pill status-pill--recon">
-            {formatCount(tables.length)} tables
-          </span>
+        <div className="schema-console__metrics" aria-label="Database status">
+          <div className="schema-metric">
+            <span className="schema-metric__label">Size</span>
+            <span className="schema-metric__value">
+              <span className="schema-metric__live" aria-hidden="true" />
+              {meta.totalDbSize}
+            </span>
+          </div>
+          <div className="schema-metric">
+            <span className="schema-metric__label">Disk</span>
+            <span className="schema-metric__value">{meta.availableDiskStorage}</span>
+          </div>
+          <div className="schema-metric">
+            <span className="schema-metric__label">Tables</span>
+            <span className="schema-metric__value">{formatCount(tables.length)}</span>
+          </div>
           <button
             type="button"
-            className="refresh-btn"
+            className="schema-refresh"
             onClick={() => {
               fetchTables();
               if (selectedTable) fetchTableData(selectedTable);
@@ -369,32 +372,39 @@ export default function DatabaseInspector() {
             title="Refresh tables and schema"
             aria-label="Refresh tables and schema"
           >
-            ↻
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M21 12a9 9 0 1 1-2.6-6.3" />
+              <path d="M21 3v6h-6" />
+            </svg>
           </button>
         </div>
-      </div>
+      </header>
 
-      {error && (
-        <div className="db-inspector-error" role="alert">
-          <span aria-hidden="true">!</span>
-          <span>{error}</span>
+      {(error || notice) && (
+        <div className="schema-console__alerts">
+          {error && (
+            <div className="schema-banner schema-banner--error" role="alert">
+              <span className="schema-banner__mark" aria-hidden="true">!</span>
+              <span>{error}</span>
+            </div>
+          )}
+          {notice && (
+            <div className="schema-banner schema-banner--ok" role="status">
+              <span className="schema-banner__mark" aria-hidden="true">✓</span>
+              <span>{notice}</span>
+            </div>
+          )}
         </div>
       )}
-      {notice && (
-        <div className="db-inspector-notice" role="status">
-          <span aria-hidden="true">✓</span>
-          <span>{notice}</span>
-        </div>
-      )}
 
-      <div className="db-inspector-workspace">
-        <aside className="db-tables-sidebar" aria-label="Schema catalog">
-          <div className="sidebar-title">
-            <span className="sidebar-title-text">Catalog</span>
-            <span className="sidebar-title-meta">{formatCount(visibleTables.length)}</span>
+      <div className="schema-console__workspace">
+        <aside className="schema-catalog" aria-label="Table catalog">
+          <div className="schema-catalog__head">
+            <span className="schema-catalog__label">Catalog</span>
+            <span className="schema-catalog__count">{formatCount(visibleTables.length)}</span>
           </div>
 
-          <div className="db-table-filter">
+          <label className="schema-search">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <circle cx="11" cy="11" r="8" />
               <path d="m21 21-4.3-4.3" />
@@ -406,24 +416,33 @@ export default function DatabaseInspector() {
               onChange={(e) => setTableFilter(e.target.value)}
               aria-label="Filter tables"
             />
+          </label>
+
+          <div className="schema-sort" role="group" aria-label="Sort tables">
+            {[
+              { id: 'name-asc', label: 'A–Z' },
+              { id: 'name-desc', label: 'Z–A' },
+              { id: 'rows-desc', label: 'Rows ↓' },
+              { id: 'rows-asc', label: 'Rows ↑' },
+            ].map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                className={`schema-sort__btn${tableListSort === opt.id ? ' is-active' : ''}`}
+                aria-pressed={tableListSort === opt.id}
+                onClick={() => setTableListSort(opt.id)}
+              >
+                {opt.label}
+              </button>
+            ))}
           </div>
 
-          <div className="db-table-sort">
-            <span className="db-table-sort-label">Sort</span>
-            <select value={tableListSort} onChange={(e) => setTableListSort(e.target.value)} aria-label="Sort tables">
-              <option value="name-asc">Name A–Z</option>
-              <option value="name-desc">Name Z–A</option>
-              <option value="rows-desc">Rows high → low</option>
-              <option value="rows-asc">Rows low → high</option>
-            </select>
-          </div>
-
-          <div className="tables-list" role="listbox" aria-label="Tables">
+          <div className="schema-catalog__list" role="listbox" aria-label="Tables">
             {loadingTables && tables.length === 0 && (
-              <div className="db-sidebar-empty">Loading catalog…</div>
+              <div className="schema-catalog__empty">Loading catalog…</div>
             )}
             {!loadingTables && visibleTables.length === 0 && (
-              <div className="db-sidebar-empty">
+              <div className="schema-catalog__empty">
                 {tableFilter ? `No tables match “${tableFilter}”` : 'No tables found'}
               </div>
             )}
@@ -435,13 +454,14 @@ export default function DatabaseInspector() {
                   type="button"
                   role="option"
                   aria-selected={isSelected}
-                  className={`table-item-btn${isSelected ? ' active' : ''}`}
+                  className={`schema-table-item${isSelected ? ' is-selected' : ''}`}
                   onClick={() => setSelectedTable(t.tableName)}
                   title={`${t.tableName} · ${formatCount(t.rowCount ?? 0)} rows`}
                 >
-                  <span className="table-name-text">{t.tableName}</span>
-                  <span className="table-count-badge">
-                    {formatCount(t.rowCount ?? 0)}{t.tableSize ? ` · ${t.tableSize}` : ''}
+                  <span className="schema-table-item__name">{t.tableName}</span>
+                  <span className="schema-table-item__meta">
+                    {formatCount(t.rowCount ?? 0)}
+                    {t.tableSize ? ` · ${t.tableSize}` : ''}
                   </span>
                 </button>
               );
@@ -449,45 +469,48 @@ export default function DatabaseInspector() {
           </div>
         </aside>
 
-        <section className="db-table-viewer" aria-label="Table studio">
-          <div className="table-viewer-header">
-            <div className="table-info">
-              <div className="table-info-top">
-                <span className="table-info-name">{selectedTable || 'Select a table'}</span>
-              </div>
-              <div className="table-info-badges">
-                <span className="admin-badge admin-badge--neutral">
-                  {formatCount(tableData.columns.length)} cols
-                </span>
-                <span className="admin-badge admin-badge--neutral">
-                  {formatCount(filteredRows.length)}
-                  {tableData.totalCount ? ` / ${formatCount(tableData.totalCount)}` : ''} rows
-                </span>
+        <section className="schema-studio" aria-label="Row studio">
+          <div className="schema-studio__toolbar">
+            <div className="schema-studio__identity">
+              <h3 className="schema-studio__table-name">
+                {selectedTable || 'Select a table'}
+              </h3>
+              <div className="schema-chips">
                 {selectedTable && (
-                  tableData.primaryKey.length > 0 ? (
-                    <span className="admin-badge admin-badge--info">
-                      PK · {tableData.primaryKey.join(', ')}
+                  <>
+                    <span className="schema-chip">
+                      {formatCount(tableData.columns.length)} cols
                     </span>
-                  ) : (
-                    <span className="admin-badge admin-badge--warning">
-                      No PK · read-only
+                    <span className="schema-chip">
+                      {formatCount(filteredRows.length)}
+                      {tableData.totalCount ? ` / ${formatCount(tableData.totalCount)}` : ''} rows
                     </span>
-                  )
+                    {selectedMeta?.tableSize && (
+                      <span className="schema-chip">{selectedMeta.tableSize}</span>
+                    )}
+                    {tableData.primaryKey.length > 0 ? (
+                      <span className="schema-chip schema-chip--accent">
+                        PK {tableData.primaryKey.join(', ')}
+                      </span>
+                    ) : (
+                      <span className="schema-chip schema-chip--warn">No PK · read-only</span>
+                    )}
+                  </>
                 )}
               </div>
             </div>
 
-            <div className="table-viewer-tools">
+            <div className="schema-studio__tools">
               {sortColumn && (
                 <button
                   type="button"
-                  className="db-clear-sort-btn"
+                  className="schema-tool-btn schema-tool-btn--ghost"
                   onClick={() => { setSortColumn(''); setSortDir('asc'); }}
                 >
                   Clear sort · {sortColumn} {sortDir === 'desc' ? '↓' : '↑'}
                 </button>
               )}
-              <div className="table-search-bar">
+              <label className="schema-search schema-search--compact">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <circle cx="11" cy="11" r="8" />
                   <path d="m21 21-4.3-4.3" />
@@ -499,10 +522,10 @@ export default function DatabaseInspector() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   aria-label="Search loaded rows"
                 />
-              </div>
+              </label>
               <button
                 type="button"
-                className="db-export-btn"
+                className="schema-tool-btn"
                 disabled={!filteredRows.length}
                 onClick={() => exportRows('csv')}
                 title="Export visible rows as CSV"
@@ -511,7 +534,7 @@ export default function DatabaseInspector() {
               </button>
               <button
                 type="button"
-                className="db-export-btn"
+                className="schema-tool-btn"
                 disabled={!filteredRows.length}
                 onClick={() => exportRows('json')}
                 title="Export visible rows as JSON"
@@ -522,7 +545,7 @@ export default function DatabaseInspector() {
           </div>
 
           {selectedTable === 'kyc_reminder_log' && (
-            <div className="db-kyc-slot">
+            <div className="schema-studio__kyc">
               <KycReminderUsersPanel
                 compact
                 title="Send KYC completion emails"
@@ -535,14 +558,14 @@ export default function DatabaseInspector() {
             </div>
           )}
 
-          <div className="table-rows-wrap">
+          <div className="schema-studio__grid">
             {loadingRows ? (
-              <div className="loading-state">
-                <div className="db-loading-pulse" aria-hidden="true" />
+              <div className="schema-state">
+                <div className="schema-spinner" aria-hidden="true" />
                 <span>Loading rows from PostgreSQL…</span>
               </div>
             ) : !selectedTable ? (
-              <div className="empty-state">
+              <div className="schema-state">
                 <AdminEmptyState
                   icon="⊞"
                   title="Select a table"
@@ -550,7 +573,7 @@ export default function DatabaseInspector() {
                 />
               </div>
             ) : filteredRows.length === 0 ? (
-              <div className="empty-state">
+              <div className="schema-state">
                 <AdminEmptyState
                   icon="∅"
                   title={`No rows in ${selectedTable}`}
@@ -562,7 +585,7 @@ export default function DatabaseInspector() {
                 />
               </div>
             ) : (
-              <table className="db-data-table">
+              <table className="schema-grid">
                 <thead>
                   <tr>
                     {tableData.columns.map((col) => {
@@ -572,21 +595,19 @@ export default function DatabaseInspector() {
                         <th key={col.column_name} aria-sort={ariaSort}>
                           <button
                             type="button"
-                            className={`col-header${active ? ' is-active' : ''}`}
+                            className={`schema-col${active ? ' is-active' : ''}`}
                             onClick={() => toggleSort(col.column_name)}
                             title={`${col.column_name} · ${col.data_type} — click to sort`}
                           >
-                            <span className="col-name-row">
-                              <span className="col-name">{col.column_name}</span>
-                              <span className="col-sort-indicator" aria-hidden="true">
-                                {active ? (sortDir === 'desc' ? '↓' : '↑') : ''}
-                              </span>
+                            <span className="schema-col__name">{col.column_name}</span>
+                            <span className="schema-col__sort" aria-hidden="true">
+                              {active ? (sortDir === 'desc' ? '↓' : '↑') : ''}
                             </span>
                           </button>
                         </th>
                       );
                     })}
-                    <th className="db-actions-col">Actions</th>
+                    <th className="schema-grid__actions">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -598,20 +619,20 @@ export default function DatabaseInspector() {
                         return (
                           <td key={col.column_name} title={text !== null ? text : 'NULL'}>
                             {text === null ? (
-                              <span className="null-val">NULL</span>
+                              <span className="schema-null">NULL</span>
                             ) : typeof val === 'object' ? (
-                              <code className="json-code">{text}</code>
+                              <code className="schema-json">{text}</code>
                             ) : (
                               text
                             )}
                           </td>
                         );
                       })}
-                      <td className="db-actions-col">
-                        <div className="db-row-actions">
+                      <td className="schema-grid__actions">
+                        <div className="schema-row-actions">
                           <button
                             type="button"
-                            className="db-edit-btn"
+                            className="schema-row-btn"
                             disabled={!tableData.editable}
                             onClick={() => openEditor(row)}
                           >
@@ -619,7 +640,7 @@ export default function DatabaseInspector() {
                           </button>
                           <button
                             type="button"
-                            className="db-delete-btn"
+                            className="schema-row-btn schema-row-btn--danger"
                             disabled={!tableData.deletable || deletingKey === rowKey(row, tableData.primaryKey, idx)}
                             onClick={() => {
                               setDeleteRow(row);
@@ -640,10 +661,8 @@ export default function DatabaseInspector() {
         </section>
       </div>
 
-      {/* Interactive SQL Console */}
       <DatabaseSqlTerminal selectedTable={selectedTable} />
 
-      {/* Edit Row Modal */}
       <AdminModal
         isOpen={!!editRow}
         onClose={() => !saving && setEditRow(null)}
@@ -671,11 +690,12 @@ export default function DatabaseInspector() {
           </>
         }
       >
-        <div style={{ display: 'grid', gap: '12px' }}>
+        <div className="schema-edit-form">
           {editableColumns.map((col) => (
             <div key={col.column_name} className="admin-form-group">
               <label className="admin-form-label">
-                {col.column_name} <span style={{ color: 'var(--admin-text-dim)', textTransform: 'none' }}>({col.data_type})</span>
+                {col.column_name}{' '}
+                <span className="schema-edit-type">({col.data_type})</span>
               </label>
               <input
                 type="text"
@@ -683,44 +703,25 @@ export default function DatabaseInspector() {
                 value={editDraft[col.column_name] ?? ''}
                 onChange={(e) => setEditDraft((prev) => ({ ...prev, [col.column_name]: e.target.value }))}
                 disabled={saving}
-                style={{ fontFamily: 'var(--admin-font-mono, monospace)' }}
               />
             </div>
           ))}
 
           {selectedTable === 'users' && (
-            <div style={{
-              marginTop: '8px',
-              padding: '14px',
-              borderRadius: '10px',
-              background: 'rgba(99, 102, 241, 0.08)',
-              border: '1px solid rgba(99, 102, 241, 0.25)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px',
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--admin-text)' }}>
-                  🔑 Set / Change Password (Optional)
-                </label>
+            <div className="schema-password-box">
+              <div className="schema-password-box__top">
+                <label className="schema-password-box__label">Set / change password</label>
                 <button
                   type="button"
+                  className="schema-password-box__gen"
                   onClick={() => {
                     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*';
                     let pwd = '';
                     for (let i = 0; i < 12; i++) pwd += chars.charAt(Math.floor(Math.random() * chars.length));
                     setEditDraft((prev) => ({ ...prev, new_password: pwd }));
                   }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#818cf8',
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
                 >
-                  🎲 Generate Password
+                  Generate
                 </button>
               </div>
               <input
@@ -730,23 +731,19 @@ export default function DatabaseInspector() {
                 value={editDraft.new_password ?? ''}
                 onChange={(e) => setEditDraft((prev) => ({ ...prev, new_password: e.target.value }))}
                 disabled={saving}
-                style={{ fontFamily: 'var(--admin-font-mono, monospace)', background: 'var(--admin-panel)' }}
               />
-              <span style={{ fontSize: '0.7rem', color: 'var(--admin-text-muted)' }}>
-                Password will be automatically hashed with scrypt before updating PostgreSQL.
+              <span className="schema-password-box__hint">
+                Hashed with scrypt before writing to PostgreSQL.
               </span>
             </div>
           )}
 
           {editableColumns.length === 0 && selectedTable !== 'users' && (
-            <p style={{ color: 'var(--admin-text-muted)', fontSize: '0.84rem' }}>
-              No editable columns on this table.
-            </p>
+            <p className="schema-edit-empty">No editable columns on this table.</p>
           )}
         </div>
       </AdminModal>
 
-      {/* Delete Row Confirmation Dialog */}
       <AdminConfirmDialog
         isOpen={!!deleteRow}
         variant="danger"
