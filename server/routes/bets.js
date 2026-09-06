@@ -113,8 +113,9 @@ router.get('/api/bets/mine', requireAuth, async (req, res) => {
       return null;
     };
 
-    const { resolveSettlementEvidence } = await import('../../lib/settlementEvidence/settlementEvidenceEngine.mjs');
-    const bets = await Promise.all((result.rows || []).map(async (row) => {
+    // Keep this list endpoint cheap: settlement evidence is loaded on demand via
+    // GET /api/bets/:betId/evidence when the user expands a settled bet card.
+    const bets = (result.rows || []).map((row) => {
       const selections = Array.isArray(row.selections)
         ? row.selections
         : (typeof row.selections === 'string' ? JSON.parse(row.selections) : []);
@@ -124,7 +125,6 @@ router.get('/api/bets/mine', requireAuth, async (req, res) => {
         try { snap = JSON.parse(snap); } catch { snap = null; }
       }
       const snapLeg = Array.isArray(snap?.legs) ? snap.legs[0] : null;
-      const evidence = await resolveSettlementEvidence({ bet: row });
 
       return {
         ...row,
@@ -139,9 +139,9 @@ router.get('/api/bets/mine', requireAuth, async (req, res) => {
         settled_at: row.settled_at || null,
         actual_payout: row.actual_payout != null ? Number(row.actual_payout) : null,
         settlement_reason: row.settlement_reason || null,
-        settlement_evidence: evidence,
+        settlement_evidence: null,
       };
-    }));
+    });
 
     res.json({ success: true, bets });
   } catch (err) {
