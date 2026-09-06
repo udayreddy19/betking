@@ -585,14 +585,25 @@ function AdminShellInner() {
     if (!sessionReady) return undefined;
     let cancelled = false;
     const loadAlerts = () => {
+      // Keep the 30s tick light: nav badges + unread notifs. Full control-tower
+      // metrics (aggregator + multi-query financials) run on a slower cadence.
+      const tasks = [
+        adminApiClient.get('/notifications/v2/notifications?unreadOnly=true&limit=40').catch(() => ({ notifications: [] })),
+        adminApiClient.get('/nav-attention').catch(() => ({ domains: {}, subModules: {} })),
+      ];
+      const shouldLoadMetrics = (loadAlerts._tick = (loadAlerts._tick || 0) + 1) === 1
+        || loadAlerts._tick % 3 === 0;
+      if (shouldLoadMetrics) {
+        tasks.unshift(adminApiClient.get('/control-tower/metrics').catch(() => ({})));
+      } else {
+        tasks.unshift(Promise.resolve(loadAlerts._lastMetrics || {}));
+      }
+
       ensureAdminSession(activeRole)
-        .then(() => Promise.all([
-          adminApiClient.get('/control-tower/metrics').catch(() => ({})),
-          adminApiClient.get('/notifications/v2/notifications?unreadOnly=true&limit=40').catch(() => ({ notifications: [] })),
-          adminApiClient.get('/nav-attention').catch(() => ({ domains: {}, subModules: {} })),
-        ]))
+        .then(() => Promise.all(tasks))
         .then(([data, notifPayload, attention]) => {
           if (cancelled) return;
+          if (shouldLoadMetrics) loadAlerts._lastMetrics = data || {};
           setNavAttention({
             domains: attention?.domains || {},
             subModules: attention?.subModules || {},

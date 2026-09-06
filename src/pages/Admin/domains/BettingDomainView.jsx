@@ -147,7 +147,7 @@ export default function BettingDomainView({
   const load = useCallback(() => {
     setLoading(true);
     const params = new URLSearchParams();
-    params.set('limit', '300');
+    params.set('limit', '100');
     if (settlementFilter) params.set('settlement', settlementFilter);
     else if (statusFilter) params.set('status', statusFilter);
     if (typeFilter) params.set('betType', typeFilter);

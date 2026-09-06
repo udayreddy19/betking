@@ -452,7 +452,6 @@ router.get('/api/admin/settlement/review-queue', requireRole('SUPER_ADMIN', 'FIN
     const limit = Math.min(Number(req.query.limit) || 100, 500);
     const { queryRead } = await import('../../../db/pg.js');
     const { aggregateLiveScores } = await import('../../../lib/aggregator.mjs');
-    const { getCachedCanonicalMatchState } = await import('../../../lib/matchStateCache.mjs');
     const { evaluateSettlementConfidence } = await import('../../../lib/settlement/settlementConfidenceEngine.mjs');
 
     const openBets = (await queryRead(
@@ -468,7 +467,7 @@ router.get('/api/admin/settlement/review-queue', requireRole('SUPER_ADMIN', 'FIN
     const reviewItems = [];
 
     for (const bet of openBets) {
-      const match = liveMatches.get(String(bet.match_id)) || (await getCachedCanonicalMatchState(bet.match_id));
+      const match = liveMatches.get(String(bet.match_id)) || null;
       const confidence = evaluateSettlementConfidence({
         match,
         bet,
@@ -513,7 +512,6 @@ router.get('/api/admin/settlement/blocked', requireRole('SUPER_ADMIN', 'FINANCE_
     const limit = Math.min(Number(req.query.limit) || 100, 500);
     const { queryRead } = await import('../../../db/pg.js');
     const { aggregateLiveScores } = await import('../../../lib/aggregator.mjs');
-    const { getCachedCanonicalMatchState } = await import('../../../lib/matchStateCache.mjs');
     const { evaluateSettlementConfidence } = await import('../../../lib/settlement/settlementConfidenceEngine.mjs');
 
     const openBets = (await queryRead(
@@ -529,7 +527,7 @@ router.get('/api/admin/settlement/blocked', requireRole('SUPER_ADMIN', 'FINANCE_
     const blockedItems = [];
 
     for (const bet of openBets) {
-      const match = liveMatches.get(String(bet.match_id)) || (await getCachedCanonicalMatchState(bet.match_id));
+      const match = liveMatches.get(String(bet.match_id)) || null;
       const confidence = evaluateSettlementConfidence({
         match,
         bet,

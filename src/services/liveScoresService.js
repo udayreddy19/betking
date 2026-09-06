@@ -18,7 +18,10 @@ export async function fetchLiveScores(options = {}) {
   const url = options.force ? '/api/live-scores?refresh=1' : '/api/live-scores';
 
   try {
-    const [legacyRes, gatewayCricket, gatewayFootball, gatewayBasketball, gatewayTennis, gatewayF1, gatewayHockey, gatewayAmericanFootball] = await Promise.all([
+    // Primary board is /api/live-scores (already multi-provider). Gateway sport
+    // fan-out is limited to cricket + football so every 5s tick does not open
+    // 8 parallel upstream requests.
+    const [legacyRes, gatewayCricket, gatewayFootball] = await Promise.all([
       fetch(url, { cache: 'no-store' })
         .then(async (r) => {
           const data = await r.json().catch(() => ({}));
@@ -27,12 +30,12 @@ export async function fetchLiveScores(options = {}) {
         .catch(() => ({ matches: [], httpOk: false, feedError: { code: 'LIVE_SCORES_UNREACHABLE', message: 'Could not reach live score API. Tap Retry.' } })),
       sportsGatewayClient.getCricket('live'),
       sportsGatewayClient.getFootball('live'),
-      sportsGatewayClient.getBasketball('live'),
-      sportsGatewayClient.getTennis('live'),
-      sportsGatewayClient.getFormula1('live'),
-      sportsGatewayClient.getHockey('live'),
-      sportsGatewayClient.getAmericanFootball('live'),
     ]);
+    const gatewayBasketball = [];
+    const gatewayTennis = [];
+    const gatewayF1 = [];
+    const gatewayHockey = [];
+    const gatewayAmericanFootball = [];
 
     const legacyMatches = legacyRes.matches || [];
     const legacyIds = new Set(legacyMatches.map((m) => String(m.id)));
