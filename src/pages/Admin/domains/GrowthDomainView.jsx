@@ -341,7 +341,7 @@ function TargetedDepositFreeBetPanel() {
   const dispatch = async () => {
     if (!selectedId) return;
     const n = detail?.users?.length || 0;
-    if (!window.confirm(`Send this promotion to ${n} users from promos@oddsyra.com and activate the campaign?`)) {
+    if (!window.confirm(`Send this deposit match to ${n} users from no-reply@oddsyra.com (account mail) and activate the campaign?`)) {
       return;
     }
     setDispatching(true);
@@ -352,7 +352,7 @@ function TargetedDepositFreeBetPanel() {
       );
       showToast(
         `Emails sent: ${data.sent || 0} · failed: ${data.failed || 0} · skipped: ${data.skipped || 0}`
-          + (data.sent ? ' — check inbox/spam for promos@oddsyra.com' : ''),
+          + (data.sent ? ' — check Primary inbox for no-reply@oddsyra.com (not Promotions)' : ''),
         data.sent ? 'success' : (data.failed ? 'error' : 'success'),
       );
       await loadCampaigns();
@@ -410,7 +410,7 @@ function TargetedDepositFreeBetPanel() {
           <p className="tdfb-kicker">Private offers</p>
           <h2 className="tdfb-title">Targeted campaigns</h2>
           <p className="tdfb-lede">
-            Select players, send from <code>promos@oddsyra.com</code>, credit free bet only after a CAPTURED qualifying deposit.
+            Select players, send as account mail from <code>no-reply@oddsyra.com</code>, credit free bet only after a CAPTURED qualifying deposit.
           </p>
         </div>
         <ol className="tdfb-steps" aria-label="Campaign workflow">
@@ -516,7 +516,7 @@ function TargetedDepositFreeBetPanel() {
             <section className="tdfb-block">
               <div className="tdfb-block__head">
                 <h4>Email copy</h4>
-                <p>Sent from promos@oddsyra.com when you press Send promotion</p>
+                <p>Sent from no-reply@oddsyra.com as account mail (avoids Gmail Promotions tab)</p>
               </div>
               <div className="admin-form-group">
                 <label className="admin-form-label">Subject line</label>
@@ -724,7 +724,7 @@ function TargetedDepositFreeBetPanel() {
               </p>
             )}
             <p className="tdfb-preview__from">
-              From <code>promos@oddsyra.com</code> · credit on CAPTURED deposit
+              From <code>no-reply@oddsyra.com</code> · credit on CAPTURED deposit
             </p>
           </div>
         </aside>

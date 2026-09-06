@@ -896,10 +896,10 @@ export async function sendTargetedDepositOfferEmail({
     if (Number.isFinite(ms) && ms > 0) hours = Math.max(1, Math.round(ms / 3600000));
   }
   if (!Number.isFinite(hours) || hours <= 0) hours = 48;
-  const title = offerTitle || campaignName || (Number.isFinite(matchPct) ? `${matchPct}% Deposit Match Offer` : 'Exclusive deposit offer');
+  const title = offerTitle || campaignName || (Number.isFinite(matchPct) ? `${matchPct}% deposit match on your account` : 'Deposit match on your account');
   const subject = subjectOverride || offerTitle || (Number.isFinite(matchPct)
-    ? `Exclusive ${matchPct}% Deposit Match Offer`
-    : 'Exclusive deposit offer from OddsYra');
+    ? `Your ${matchPct}% deposit match is ready`
+    : 'Your OddsYra deposit match is ready');
   const ctaHref = `${FRONTEND_URL}/wallet`;
 
   const bonusLabel = isPack
@@ -948,23 +948,25 @@ export async function sendTargetedDepositOfferEmail({
 
   const introHtml = isPack
     ? (Number.isFinite(matchPct)
-      ? `Boost your balance with an exclusive ${matchPct}% match — credited as <strong>${parts} free bets of ₹${eachAmt.toLocaleString('en-IN')}</strong> each after your next qualifying deposit.`
-      : `You have an exclusive deposit offer — credited as <strong>${parts} free bets of ₹${eachAmt.toLocaleString('en-IN')}</strong> each.`)
+      ? `A deposit match of <strong>${matchPct}%</strong> is ready on your account — credited as <strong>${parts} free bets of ₹${eachAmt.toLocaleString('en-IN')}</strong> each after your next qualifying deposit.`
+      : `A deposit match is ready on your account — credited as <strong>${parts} free bets of ₹${eachAmt.toLocaleString('en-IN')}</strong> each.`)
     : (Number.isFinite(matchPct)
-      ? `Boost your balance with an exclusive ${matchPct}% match on your next qualifying deposit.`
-      : 'You have an exclusive deposit offer waiting on OddsYra.');
+      ? `A <strong>${matchPct}%</strong> deposit match is ready on your OddsYra account for your next qualifying deposit.`
+      : 'A deposit match is ready on your OddsYra account.');
 
+  // Targeted 1:1 assigned offers → transactional account mail (no-reply), not promos@.
+  // Gmail files promos@ + List-Unsubscribe / marketing footers into Promotions (no phone alert).
   const html = renderTransactionalEmail({
     heading: title,
     greetingName: greeting,
     introHtml,
     extraHtml: detailsHtml,
-    ctaLabel: 'Deposit & Claim Bonus',
+    ctaLabel: 'Open wallet',
     ctaHref,
     noteHtml: isPack
-      ? `Promotional terms apply. After a captured qualifying deposit you receive ${parts} separate free bets of ₹${eachAmt.toLocaleString('en-IN')} each (total ₹${packTotal.toLocaleString('en-IN')}).`
-      : 'Promotional terms apply. The free bet is credited after a captured qualifying deposit.',
-    isMarketing: true,
+      ? `Account terms apply. After a captured qualifying deposit you receive ${parts} separate free bets of ₹${eachAmt.toLocaleString('en-IN')} each (total ₹${packTotal.toLocaleString('en-IN')}).`
+      : 'Account terms apply. The free bet is credited after a captured qualifying deposit.',
+    isMarketing: false,
   });
 
   try {
@@ -972,10 +974,12 @@ export async function sendTargetedDepositOfferEmail({
       to: email,
       subject,
       html,
-      from: PROMOS_FROM,
-      replyTo: PROMOS_REPLY_TO,
+      from: SMTP_FROM,
+      replyTo: SUPPORT_REPLY_TO,
+      forceFrom: true,
       headers: {
-        'List-Unsubscribe': `<${FRONTEND_URL}/profile>`,
+        // Help clients treat as personal account mail, not a blast list.
+        'X-Auto-Response-Suppress': 'OOF, AutoReply',
       },
     });
   } catch (err) {
