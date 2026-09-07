@@ -600,4 +600,40 @@ test('20 repeated loads remain consistent', () => {
   }
 });
 
-console.log('\n🎉 ALL 27 CRICKET FORMAT, BANNER & SCORE STATISTICS TESTS PASSED WITH ZERO FAILURES!\n');
+test('Duleep Trophy with 163 overs + Stumps is FIRST_CLASS not ODI', () => {
+  const match = {
+    id: 'cb_duleep_ez_sz',
+    matchType: 'ODI',
+    league: 'Duleep Trophy',
+    time: '2nd Day • Stumps',
+    team1: { name: 'East Zone', runs: 708, wickets: 10, overs: '163.0' },
+    team2: { name: 'South Zone', runs: 0, wickets: 0, overs: '0.0' },
+    liveDetails: {
+      inningsId: 3,
+      firstOvers: '163.0',
+      overs: '163.0',
+      score1: 708,
+      wickets1: 10,
+      score2: 0,
+      wickets2: 0,
+      status: 'Stumps',
+    },
+  };
+  assert.strictEqual(detectCricketMatchFormat(match), 'FIRST_CLASS');
+  assert.strictEqual(getCricketFormatBanner(match), 'FIRST CLASS');
+});
+
+test('163 overs live board never classifies as ODI even with false matchType', () => {
+  const match = {
+    id: 'cb_fc_long',
+    matchType: 'ODI',
+    format: 'ODI',
+    team1: { name: 'Team A', overs: '112.3' },
+    team2: { name: 'Team B', overs: '0.0' },
+    liveDetails: { firstOvers: '112.3', inningsId: 1 },
+  };
+  assert.notStrictEqual(detectCricketMatchFormat(match), 'ODI');
+  assert.ok(['TEST', 'FIRST_CLASS'].includes(detectCricketMatchFormat(match)));
+});
+
+console.log('\n🎉 ALL CRICKET FORMAT, BANNER & SCORE STATISTICS TESTS PASSED WITH ZERO FAILURES!\n');

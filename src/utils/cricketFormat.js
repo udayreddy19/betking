@@ -86,19 +86,61 @@ function inferT10FromLive(match) {
   return false;
 }
 
-/** First innings clearly longer than T20 (e.g. Oman D50 finished at 48.5). */
+/** First innings clearly longer than T20 but still within 50-over cricket. */
 function inferOdiFromLive(match) {
   const ld = match?.liveDetails || {};
-  const firstOvers = oversWhole(ld.firstOvers);
-  const score1Overs = oversWhole(ld.overs1);
-  const team1Overs = oversWhole(match?.team1?.overs);
-  const team2Overs = oversWhole(match?.team2?.overs);
-  const seenFirst = Math.max(firstOvers, score1Overs, team1Overs, team2Overs);
+  const seenFirst = Math.max(
+    oversWhole(ld.firstOvers),
+    oversWhole(ld.overs1),
+    oversWhole(match?.team1?.overs),
+    oversWhole(match?.team2?.overs),
+    oversWhole(ld.overs),
+  );
+  const seenChase = Math.max(
+    oversWhole(ld.chaseOvers),
+    oversWhole(ld.overs2),
+  );
+  const seen = Math.max(seenFirst, seenChase);
+  // >50 overs is multi-day / first-class — never call that ODI.
+  if (seen > 50) return false;
   // Mid-T20 never reaches 21+ completed overs in an innings.
-  if (seenFirst > 20) return true;
-  // Chase innings past 20 overs also proves 50-over cricket.
-  if (oversWhole(ld.chaseOvers) > 20) return true;
-  if (oversWhole(ld.overs2) > 20 && (Number(ld.inningsId) || 0) >= 2) return true;
+  if (seenFirst > 20 && seenFirst <= 50) return true;
+  if (seenChase > 20 && seenChase <= 50) return true;
+  return false;
+}
+
+/** Multi-day / first-class from live board (overs, day, stumps) or series name. */
+function inferMultiDayFromLive(match) {
+  const ld = match?.liveDetails || {};
+  const seen = Math.max(
+    oversWhole(ld.firstOvers),
+    oversWhole(ld.overs1),
+    oversWhole(ld.chaseOvers),
+    oversWhole(ld.overs2),
+    oversWhole(ld.overs),
+    oversWhole(match?.team1?.overs),
+    oversWhole(match?.team2?.overs),
+  );
+  if (seen > 50) return true;
+
+  const statusBlob = [
+    match?.time,
+    ld.period,
+    ld.day,
+    ld.session,
+    ld.status,
+    ld.commentary,
+    match?.liveStatus,
+  ].filter(Boolean).join(' ');
+  // Day / stumps only — avoid ODI "lunch" drinks misclassifying as multi-day.
+  if (/\b(?:day\s*[1-5]|[1-5](?:st|nd|rd|th)?\s*day|stumps)\b/i.test(statusBlob)) {
+    return true;
+  }
+
+  const league = collectLeagueFormatText(match);
+  if (/\bDULEEP\b|\bIRANI\b|\bRANJI\b|\bSHEFFIELD\s*SHIELD\b|\bCOUNTY\s*CHAMPIONSHIP\b|\bFIRST[\s-_]?CLASS\b|\b4[\s-]?DAY\b|\bFIVE[\s-]?DAY\b/i.test(league)) {
+    return true;
+  }
   return false;
 }
 
@@ -131,6 +173,15 @@ export function detectCricketMatchFormat(match) {
     return 'T10';
   }
 
+  // Multi-day / first-class MUST beat false provider "ODI" (e.g. Duleep 163 ov + Stumps).
+  if (inferMultiDayFromLive(match)) {
+    const league = collectLeagueFormatText(match);
+    if (/\bDULEEP\b|\bIRANI\b|\bRANJI\b|\bSHEFFIELD\s*SHIELD\b|\bCOUNTY\s*CHAMPIONSHIP\b|\bFIRST[\s-_]?CLASS\b|\b4[\s-]?DAY\b/i.test(league)) {
+      return 'FIRST_CLASS';
+    }
+    return 'TEST';
+  }
+
   // League/series ODI / D50 must beat a false provider matchType "T20"
   if (looksLikeOdiSeries(match) || inferOdiFromLive(match)) {
     if (/LIST[\s-_]?A/i.test(collectLeagueFormatText(match))) return 'LIST_A';
@@ -141,8 +192,8 @@ export function detectCricketMatchFormat(match) {
   const raw = collectMatchFormatText(match).toUpperCase();
 
   // Test / Multi-Day / First Class
-  if (/\bTEST\s*MATCH\b|\bTEST\b|\bTESTS\b|\bASHES\b|\bSHEFFIELD\s*SHIELD\b|\bRANJI\s*TROPHY\b|\bCOUNTY\s*CHAMPIONSHIP\b|\b4[\s-]?DAY\b|\bFOUR[\s-]?DAY\b|\b5[\s-]?DAY\b|\bMULTI[\s-]?DAY\b/.test(raw)) {
-    if (/FIRST[\s-_]?CLASS/.test(raw)) return 'FIRST_CLASS';
+  if (/\bTEST\s*MATCH\b|\bTEST\b|\bTESTS\b|\bASHES\b|\bSHEFFIELD\s*SHIELD\b|\bRANJI\s*TROPHY\b|\bDULEEP\b|\bIRANI\b|\bCOUNTY\s*CHAMPIONSHIP\b|\b4[\s-]?DAY\b|\bFOUR[\s-]?DAY\b|\b5[\s-]?DAY\b|\bMULTI[\s-]?DAY\b|\bFIRST[\s-_]?CLASS\b/.test(raw)) {
+    if (/FIRST[\s-_]?CLASS|DULEEP|IRANI|RANJI|SHEFFIELD|COUNTY\s*CHAMPIONSHIP|4[\s-]?DAY/.test(raw)) return 'FIRST_CLASS';
     return 'TEST';
   }
 
@@ -418,8 +469,48 @@ export function getMatchMaxBalls(match) {
 /** Check if match is a Test / Multi-Day match */
 export function isTestMatch(match) {
   if (!match) return false;
+  const format = detectCricketMatchFormat(match);
+  if (format === 'TEST' || format === 'FIRST_CLASS') return true;
   const text = `${match.matchFormat || ''} ${match.matchType || ''} ${match.format || ''} ${match.league || ''} ${match.seriesName || ''} ${match.id || ''}`;
-  return /test|first[- ]?class|4[- ]?day|pak_wi|wi_pak|ind_eng/i.test(text);
+  return /test|first[- ]?class|4[- ]?day|duleep|irani|ranji|pak_wi|wi_pak|ind_eng/i.test(text);
+}
+
+/**
+ * Sanitize provider innings index for display badges.
+ * Caps limited-overs to 2 and multi-day to 4; prefers scorecard / canonical current innings.
+ */
+export function resolveDisplayInningsNumber(match, preferredNum, opts = {}) {
+  const format = detectCricketMatchFormat(match);
+  const maxInns = (format === 'TEST' || format === 'FIRST_CLASS') ? 4 : 2;
+  const scorecardLen = Array.isArray(match?.scorecardInnings)
+    ? match.scorecardInnings.length
+    : (Array.isArray(opts.canonicalInnings) ? opts.canonicalInnings.length : 0);
+  const currentFromCanon = opts.canonicalInnings?.find?.((i) => i?.isCurrent)?.inningsNumber
+    ?? opts.selectedInningsNumber;
+
+  let n = Number(currentFromCanon ?? preferredNum ?? match?.liveDetails?.inningsId ?? 1);
+  if (!Number.isFinite(n) || n < 1) n = 1;
+
+  // Prefer real scorecard length over a bogus provider inningsId (e.g. INN 3 with only 1st inns).
+  if (scorecardLen > 0) {
+    n = Math.min(n, Math.max(scorecardLen, 1));
+  } else {
+    // Infer from team cards when scorecard missing: one completed inns + 0/0 → still INN 1.
+    const t1r = Number(match?.team1?.runs ?? match?.liveDetails?.score1 ?? 0);
+    const t1w = Number(match?.team1?.wickets ?? match?.liveDetails?.wickets1 ?? 0);
+    const t1o = oversWhole(match?.team1?.overs ?? match?.liveDetails?.overs1 ?? match?.liveDetails?.firstOvers);
+    const t2r = Number(match?.team2?.runs ?? match?.liveDetails?.score2 ?? 0);
+    const t2w = Number(match?.team2?.wickets ?? match?.liveDetails?.wickets2 ?? 0);
+    const t2o = oversWhole(match?.team2?.overs ?? match?.liveDetails?.overs2 ?? match?.liveDetails?.chaseOvers);
+    const t1Done = t1w >= 10 || t1o > 50;
+    const t2Done = t2w >= 10 || t2o > 50;
+    const t1Started = t1r > 0 || t1o > 0 || t1w > 0;
+    const t2Started = t2r > 0 || t2o > 0 || t2w > 0;
+    if ((t1Done && !t2Started) || (t2Done && !t1Started)) n = 1;
+    else if (t1Started && t2Started && !t1Done && !t2Done) n = Math.min(n, 2);
+  }
+
+  return Math.min(Math.max(1, Math.round(n)), maxInns);
 }
 
 /** Returns formatted day & session string for Test matches (e.g. "4th Day · Afternoon Session") */

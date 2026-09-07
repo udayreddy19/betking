@@ -40,7 +40,7 @@ import { isCricketMatchCompleted } from '../../utils/cricketMatchComplete';
 import { resolveCricketTossText } from '../../utils/cricketScores';
 import { isCricketSecondInnings, isEmptyOversValue, resolveCricketTeamScores, teamNameMatches } from '../../utils/cricketScores';
 import { resolveLabeledTeamSide } from '../../utils/cricketMatchNormalizer';
-import { getMatchMaxOvers, normalizeMatchOvers, oversToBallsForMatch, isTestMatch, getCricketFormatBanner, detectCricketMatchFormat } from '../../utils/cricketFormat';
+import { getMatchMaxOvers, normalizeMatchOvers, oversToBallsForMatch, isTestMatch, getCricketFormatBanner, detectCricketMatchFormat, resolveDisplayInningsNumber } from '../../utils/cricketFormat';
 import { oversToBalls } from '../../utils/oversUtils';
 import { buildCanonicalMatchSnapshot, deriveSelectedInningsView } from '../../utils/cricketSnapshot';
 import './LiveMatchGraphicWidget.css';
@@ -62,9 +62,28 @@ function getInningsInfo(match, team1, team2, resolved) {
     const w1 = team1Score.wickets ?? 0;
     const s2 = team2Score.runs ?? 0;
     const w2 = team2Score.wickets ?? 0;
+    const matchForInns = {
+      ...match,
+      team1: {
+        ...(typeof match?.team1 === 'object' ? match.team1 : { name: team1 }),
+        runs: s1,
+        wickets: w1,
+        overs: team1Score.overs ?? match?.team1?.overs,
+      },
+      team2: {
+        ...(typeof match?.team2 === 'object' ? match.team2 : { name: team2 }),
+        runs: s2,
+        wickets: w2,
+        overs: team2Score.overs ?? match?.team2?.overs,
+      },
+    };
+
+    const safeInnNum = resolveDisplayInningsNumber(matchForInns, currentInn.number || 1, {
+      canonicalInnings: match?.scorecardInnings,
+    });
 
     return {
-      inningsNum: currentInn.number || 1,
+      inningsNum: safeInnNum,
       battingTeam,
       battingShort: currentInn.batTeamShort || getTeamShort(battingTeam),
       displayScore1: s1,
@@ -72,7 +91,7 @@ function getInningsInfo(match, team1, team2, resolved) {
       displayScore2: s2,
       displayWickets2: w2,
       displayOvers: currentInn.overs || battingScore.overs || '0.0',
-      defaultInnings: `${currentInn.batTeamShort || getTeamDisplayName(battingTeam)} ${currentInn.inningsNum > 1 ? '2ND' : '1ST'} INNS`,
+      defaultInnings: `${currentInn.batTeamShort || getTeamDisplayName(battingTeam)} ${safeInnNum > 1 ? '2ND' : '1ST'} INNS`,
     };
   }
 
@@ -1063,12 +1082,16 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
 
   const oversWhole = parseInt(String(displayOversNormalized).split('.')[0], 10) || 0;
   const oversExceedCap = !isUnlimitedOvers && oversWhole > Number(maxOvers);
+  const displayInningsNum = resolveDisplayInningsNumber(match, innings?.inningsNum, {
+    canonicalInnings: canonicalSnapshot?.innings,
+    selectedInningsNumber: selectedInningsView?.inningsNumber,
+  });
   const inningsBadge = isMatchFinished
     ? 'MATCH COMPLETE'
     : (innings
       ? (isUnlimitedOvers || oversExceedCap
-        ? `INN ${innings.inningsNum} | ${displayOversNormalized} OV`
-        : `INN ${innings.inningsNum} | ${displayOversNormalized}/${maxOvers} OV`)
+        ? `INN ${displayInningsNum} | ${displayOversNormalized} OV`
+        : `INN ${displayInningsNum} | ${displayOversNormalized}/${maxOvers} OV`)
       : '');
 
   useEffect(() => {
@@ -1295,7 +1318,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
         )}
         {activeWidgetTab === 'field' && (
           <div className="cric-panel cric-panel--dark">
-            <OverHistoryBar rows={overHistoryRows} inningsNum={innings?.inningsNum} />
+            <OverHistoryBar rows={overHistoryRows} inningsNum={displayInningsNum} />
 
             <div className="cric-field-scorecard">
               <div className="cric-field-table">
