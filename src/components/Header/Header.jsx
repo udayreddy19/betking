@@ -21,7 +21,6 @@ import '../MyBetsPanel/MyBetsPanel.css';
 import '../PromotionsPanel/PromotionsPanel.css';
 import BrandLogo, { BrandWordmark } from '../BrandLogo/BrandLogo';
 import { withoutStubProductLinks } from '../../utils/featureFlags';
-import { PRIVATE_ACCESS_MODE, REGISTRATION_ENABLED } from '../../utils/privateAccessConfig';
 import { useFeatureFlags } from '../../context/FeatureFlagsContext';
 import { hoverScale, pressScale, springUi } from '../../utils/motionPresets';
 import './Header.css';
@@ -689,15 +688,10 @@ function Header() {
             </button>
           ) : (
             <div className="header-auth-buttons">
-              {PRIVATE_ACCESS_MODE && (
-                <span className="header-private-access-badge" title="Platform currently in private access mode">
-                  PRIVATE ACCESS
-                </span>
-              )}
               <button className="header-login-btn" onClick={openLoginModal} id="login-btn">
                 Log in
               </button>
-              {REGISTRATION_ENABLED && !isRegisterPage && (
+              {!isRegisterPage && (
                 <button className="header-join-btn" onClick={() => navigate('/register')} id="join-btn">
                   <span className="header-join-label-full">Join now</span>
                   <span className="header-join-label-short">Join</span>

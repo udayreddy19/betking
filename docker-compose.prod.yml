@@ -73,12 +73,6 @@ services:
       RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET}
       APP_URL: ${APP_URL:-https://oddsyra.com}
       FRONTEND_URL: ${FRONTEND_URL:-https://oddsyra.com}
-      SITE_URL: ${SITE_URL:-https://oddsyra.com}
-      PRIVATE_ACCESS_MODE: ${PRIVATE_ACCESS_MODE:-true}
-      REGISTRATION_ENABLED: ${REGISTRATION_ENABLED:-false}
-      SEO_INDEXING_ENABLED: ${SEO_INDEXING_ENABLED:-true}
-      AUTHORIZED_USER_EMAILS: ${AUTHORIZED_USER_EMAILS:-}
-      AUTHORIZED_ADMIN_EMAILS: ${AUTHORIZED_ADMIN_EMAILS:-}
       CORS_ORIGIN: ${CORS_ORIGIN:-https://oddsyra.com}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://oddsyra.com,https://www.oddsyra.com}
       ADMIN_EMAILS: ${ADMIN_EMAILS:-}

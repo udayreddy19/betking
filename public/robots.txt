@@ -1,17 +1,11 @@
 User-agent: *
 Allow: /
-
-# Static fallback. Production nginx proxies /robots.txt to the API so env-driven
-# PRIVATE_ACCESS_MODE / SEO_INDEXING_ENABLED policies apply without a rebuild.
 Disallow: /admin
 Disallow: /admin/
-Disallow: /api/
 Disallow: /trader
 Disallow: /developer
 Disallow: /api-docs
 Disallow: /_oauth/
-Disallow: /wallet
-Disallow: /bets
 Disallow: /profile
 Disallow: /complete-profile
 Disallow: /verify-email

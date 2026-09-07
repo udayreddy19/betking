@@ -26,7 +26,6 @@ import {
 } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { isAdminEligibleUser } from '../../utils/isAdminEligibleUser';
-import { REGISTRATION_ENABLED } from '../../utils/privateAccessConfig';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { getLoyaltySummary } from '../../utils/loyaltyPoints';
 import { useUserNotifications } from '../../hooks/useUserNotifications';
@@ -350,9 +349,7 @@ export default function Sidebar() {
             <h3>Welcome to OddsYra</h3>
             <p>Log in or create an account to deposit, bet, and track notifications.</p>
             <button type="button" className="sidebar-guest-btn primary" onClick={handleLogin}>Log in</button>
-            {REGISTRATION_ENABLED && (
-              <button type="button" className="sidebar-guest-btn outline" onClick={handleRegister}>Create account</button>
-            )}
+            <button type="button" className="sidebar-guest-btn outline" onClick={handleRegister}>Create account</button>
             <div className="sidebar-list sidebar-list--guest">
               <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/sports'); }}>
                 <HiOutlineTrophy className="sidebar-list-icon" />

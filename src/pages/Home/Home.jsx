@@ -10,7 +10,6 @@ import { useFeatureFlags } from '../../context/FeatureFlagsContext';
 import { homePromoSlides } from '../../data/homePageData';
 import { isSrlSeasonLive, SRL_LAUNCH_LABEL, SRL_PAGE_PATH } from '../../data/oddsyraSrlSeason';
 import { useLiveMatches, useLiveSportsMeta } from '../../context/LiveSportsContext';
-import { useAuth } from '../../context/AuthContext';
 import LiveScoresFeedBanner from '../../components/LiveScoresFeedBanner/LiveScoresFeedBanner';
 import { filterMatches, compareMatchesForSportsBoard } from '../../utils/matchFilters';
 import { getMatchState } from '../../utils/matchBetting';
@@ -19,8 +18,6 @@ import { useMatchWatchlist } from '../../hooks/useMatchWatchlist';
 import BoostedOddsWidget from '../../components/BoostedOddsWidget/BoostedOddsWidget';
 import AnimatedMotionGiftIcon from '../../components/AnimatedMotionGiftIcon/AnimatedMotionGiftIcon';
 import ErrorBoundary from '../../components/ErrorBoundary/ErrorBoundary';
-import PublicLandingPage from './PublicLandingPage';
-import { isUserAuthorizedForPrivateAccess, PRIVATE_ACCESS_MODE } from '../../utils/privateAccessConfig';
 import './Home.css';
 
 const HOME_MATCH_LIMIT = 12;
@@ -53,7 +50,7 @@ function filterByLeague(matchList, leagueId) {
   return matchList.filter((m) => matchBelongsToLeague(m, meta));
 }
 
-function AuthenticatedHomeSportsDashboard() {
+export default function Home() {
   const matches = useLiveMatches();
   const { isScoresLoading, scoresError, refreshScores } = useLiveSportsMeta();
   const { isSportEnabled, isEnabled } = useFeatureFlags();
@@ -436,77 +433,4 @@ function AuthenticatedHomeSportsDashboard() {
       </section>
     </div>
   );
-}
-
-export default function Home() {
-  const { user, isLoggedIn, authStatus, logout } = useAuth();
-
-  if (authStatus === 'loading') {
-    return (
-      <div style={{
-        minHeight: '70vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 16,
-      }}>
-        <div style={{
-          width: 40,
-          height: 40,
-          borderRadius: '50%',
-          border: '3px solid rgba(99, 102, 241, 0.2)',
-          borderTopColor: '#6366f1',
-          animation: 'spin 0.8s linear infinite',
-        }} />
-        <span style={{ fontSize: 13, color: 'var(--color-text-muted, #94a3b8)', fontWeight: 600 }}>
-          Initializing OddsYra...
-        </span>
-      </div>
-    );
-  }
-
-  if (!isLoggedIn) {
-    return <PublicLandingPage />;
-  }
-
-  if (PRIVATE_ACCESS_MODE && !isUserAuthorizedForPrivateAccess(user)) {
-    return (
-      <div style={{
-        minHeight: '70vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '2rem',
-        textAlign: 'center',
-        maxWidth: 480,
-        margin: '0 auto',
-      }}>
-        <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--text-primary, #ffffff)' }}>
-          Access Restricted
-        </h2>
-        <p style={{ color: 'var(--text-secondary, #94a3b8)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
-          Access to the platform is temporarily restricted while verification processes are completed.
-        </p>
-        <button
-          type="button"
-          onClick={() => logout()}
-          style={{
-            padding: '0.75rem 1.5rem',
-            background: '#2563eb',
-            color: '#fff',
-            borderRadius: 8,
-            border: 'none',
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
-        >
-          Return to Home
-        </button>
-      </div>
-    );
-  }
-
-  return <AuthenticatedHomeSportsDashboard />;
 }

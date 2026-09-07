@@ -3,7 +3,6 @@ import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { IoEyeOutline, IoEyeOffOutline } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { DEMO_MODE } from '../../utils/featureFlags';
-import { REGISTRATION_ENABLED } from '../../utils/privateAccessConfig';
 import BrandLogo, { BrandWordmark } from '../../components/BrandLogo/BrandLogo';
 import { SocialAuthBlock } from '../../components/SocialAuthButtons/SocialAuthButtons';
 import '../../components/SocialAuthButtons/SocialAuthButtons.css';
@@ -65,39 +64,6 @@ export default function Register() {
   useEffect(() => {
     if (error) errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, [error]);
-
-  if (!REGISTRATION_ENABLED) {
-    return (
-      <div className="register-page" id="register-page">
-        <div className="register-form-section" style={{ margin: '4rem auto', textAlign: 'center', maxWidth: 480, padding: '2rem 1.5rem' }}>
-          <div className="register-logo-wrap" style={{ justifyContent: 'center', marginBottom: '1.5rem' }}>
-            <BrandLogo size={44} />
-            <BrandWordmark />
-          </div>
-          <h1 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Registration Paused</h1>
-          <p style={{ color: 'var(--text-secondary, #94a3b8)', lineHeight: 1.6, marginBottom: '2rem' }}>
-            New registrations are temporarily unavailable while platform updates and verification processes are completed.
-          </p>
-          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-            <button
-              type="button"
-              className="private-btn-primary"
-              onClick={() => { openLoginModal(); }}
-              style={{ padding: '0.75rem 1.5rem', background: '#2563eb', color: '#fff', borderRadius: 8, border: 'none', fontWeight: 600, cursor: 'pointer' }}
-            >
-              Log In
-            </button>
-            <Link
-              to="/"
-              style={{ display: 'inline-flex', alignItems: 'center', padding: '0.75rem 1.5rem', border: '1px solid var(--border-color, rgba(255,255,255,0.2))', borderRadius: 8, color: 'inherit', textDecoration: 'none', fontWeight: 600 }}
-            >
-              Back to Home
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (isLoggedIn) {
     return <Navigate to="/sports" replace />;
