@@ -16,6 +16,7 @@ describe('promotionCatalog', () => {
       min_stake: '100',
       wagering_multiplier: '5',
       match_percent: '150',
+      starts_at: null,
       expires_at: '2027-01-01T00:00:00.000Z',
     });
 
@@ -24,6 +25,37 @@ describe('promotionCatalog', () => {
     expect(item.tag).toBe('NEW PLAYERS');
     expect(item.matchPercent).toBe(150);
     expect(item.maxReward).toBe(30000);
+    expect(Array.isArray(item.terms)).toBe(true);
+    expect(item.terms.length).toBeGreaterThan(0);
+    expect(item.terms[0]).toMatch(/first successful sports deposit/i);
+  });
+
+  it('maps MONSOON30 with seasonal terms and window fields', () => {
+    const item = mapDepositPromotionRow({
+      id: 'promo_monsoon30',
+      name: 'Monsoon Deposit Fest — 30% bonus',
+      code: 'MONSOON30',
+      type: 'DEPOSIT_BONUS',
+      max_reward: '5000',
+      min_odds: '1.75',
+      min_stake: '2000',
+      wagering_multiplier: '5',
+      match_percent: '30',
+      starts_at: '2026-09-07T18:31:00.000Z',
+      expires_at: '2026-09-21T18:29:00.000Z',
+    });
+
+    expect(item.tag).toBe('MONSOON FEST');
+    expect(item.matchPercent).toBe(30);
+    expect(item.minStake).toBe(2000);
+    expect(item.maxReward).toBe(5000);
+    expect(item.startsAt).toBeTruthy();
+    expect(item.expiresAt).toBeTruthy();
+    expect(item.terms).toEqual(expect.arrayContaining([
+      expect.stringMatching(/MONSOON30/),
+      expect.stringMatching(/₹2,000/),
+      expect.stringMatching(/max ₹5,000/),
+    ]));
   });
 
   it('maps signup promo code for catalog display', () => {
@@ -42,5 +74,6 @@ describe('promotionCatalog', () => {
     expect(item.rewardType).toBe('freebet');
     expect(item.bonusAmount).toBe(500);
     expect(item.title).toContain('₹500');
+    expect(item.terms.length).toBeGreaterThan(0);
   });
 });

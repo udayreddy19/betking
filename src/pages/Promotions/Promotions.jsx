@@ -82,6 +82,16 @@ function PromoCard({ promo, claiming, onClaim }) {
             Code: <strong>{promo.code}</strong>
           </p>
         )}
+        {Array.isArray(promo.terms) && promo.terms.length > 0 && (
+          <details className="promo-terms">
+            <summary>Terms &amp; Conditions</summary>
+            <ul className="promo-terms-list">
+              {promo.terms.map((term) => (
+                <li key={term}>{term}</li>
+              ))}
+            </ul>
+          </details>
+        )}
         {DEMO_MODE && promo.bonusAmount && (
           <p className="promo-bonus-amount">Demo credit: ₹{promo.bonusAmount.toLocaleString('en-IN')}</p>
         )}

@@ -115,6 +115,34 @@
   color: rgba(255, 255, 255, 0.85);
 }
 
+.promotions-panel-terms {
+  margin-top: var(--space-2);
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.promotions-panel-terms summary {
+  cursor: pointer;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  list-style: none;
+}
+
+.promotions-panel-terms summary::-webkit-details-marker {
+  display: none;
+}
+
+.promotions-panel-terms ul {
+  margin: 6px 0 0;
+  padding-left: 1rem;
+  line-height: 1.45;
+}
+
+.promotions-panel-terms li {
+  margin-bottom: 0.25rem;
+}
+
 .promotions-panel-claim {
   display: inline-block;
   box-sizing: border-box;

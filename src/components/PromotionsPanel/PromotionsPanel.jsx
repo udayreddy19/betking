@@ -142,6 +142,16 @@ export default function PromotionsPanel({ isOpen, onClose }) {
               {promo.code && (
                 <div className="promotions-panel-code">Code: <strong>{promo.code}</strong></div>
               )}
+              {Array.isArray(promo.terms) && promo.terms.length > 0 && (
+                <details className="promotions-panel-terms">
+                  <summary>Terms &amp; Conditions</summary>
+                  <ul>
+                    {promo.terms.map((term) => (
+                      <li key={term}>{term}</li>
+                    ))}
+                  </ul>
+                </details>
+              )}
               <button
                 type="button"
                 className="promotions-panel-claim"
