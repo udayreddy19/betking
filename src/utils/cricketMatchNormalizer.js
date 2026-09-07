@@ -541,6 +541,21 @@ export function normalizeMatch(raw = {}, previous = {}, options = {}) {
     const hasHome = rawInnings.some((inn) => matchesTeamIdentifier(homeTeam, inn.batTeam, inn.batTeamShort, inn.batTeamId));
     const hasAway = rawInnings.some((inn) => matchesTeamIdentifier(awayTeam, inn.batTeam, inn.batTeamShort, inn.batTeamId));
 
+    // Match-detail often ships only the live chase innings. Inventing the missing side with
+    // inningsId = length+1 collides with the chase id and makes the invented side "current"
+    // (AS chasing → need text says FF). Prefer first/chase liveDetails in that case.
+    const oversMeaningfulLd = (o) => o != null && String(o).trim() !== ''
+      && String(o) !== '0' && String(o) !== '0.0';
+    const ldSaysSecond = Number(rawLd.inningsId) >= 2
+      || Number(rawLd.chaseRuns) > 0
+      || oversMeaningfulLd(rawLd.chaseOvers)
+      || !!(rawLd.chaseTeamName && Number(rawLd.firstRuns) > 0);
+    const incompleteScorecardForChase = ldSaysSecond
+      && Number(rawLd.firstRuns) > 0
+      && (rawInnings.length < 2 || !hasHome || !hasAway);
+    if (incompleteScorecardForChase) {
+      rawInnings = [];
+    } else {
     const t1r = Number(raw.team1?.runs ?? rawLd.firstRuns ?? rawLd.score1 ?? (rawLd.firstTeamName && matchesTeamIdentifier(homeTeam, rawLd.firstTeamName) ? rawLd.runs : null) ?? 0);
     const t1w = Number(raw.team1?.wickets ?? rawLd.firstWickets ?? rawLd.wickets1 ?? 0);
     const t1o = normalizeCricbuzzOvers(raw.team1?.overs || rawLd.firstOvers || rawLd.overs || '0.0');
@@ -580,7 +595,9 @@ export function normalizeMatch(raw = {}, previous = {}, options = {}) {
         declared: false,
       });
     }
-  } else {
+    }
+  }
+  if (rawInnings.length === 0) {
     // Legacy / LiveDetails fields extraction
     let firstRuns = rawLd.firstRuns ?? raw.runs ?? rawLd.score1 ?? raw.score1 ?? raw.team1?.runs;
     let firstWickets = rawLd.firstWickets ?? raw.wickets ?? rawLd.wickets1 ?? raw.wickets1 ?? raw.team1?.wickets;
@@ -913,10 +930,32 @@ export function normalizeMatch(raw = {}, previous = {}, options = {}) {
   const homeTotalRuns = homeInnings.reduce((sum, i) => sum + i.runs, 0);
   const awayTotalRuns = awayInnings.reduce((sum, i) => sum + i.runs, 0);
 
-  // Active / Current Innings (Identify from normalized innings)
-  const activeInnings = normalizedInnings.length > 0
-    ? normalizedInnings[normalizedInnings.length - 1]
-    : {
+  // Active / Current Innings — prefer live batting side from labels, not merely last array slot
+  // (partial scorecards can append the bowling side last with a colliding inningsId).
+  const liveInnId = Number(rawLd.inningsId) || 0;
+  const labelActivity = {
+    homeRuns: Number(raw.team1?.runs ?? rawLd.score1 ?? 0),
+    awayRuns: Number(raw.team2?.runs ?? rawLd.score2 ?? 0),
+    homeWickets: Number(raw.team1?.wickets ?? rawLd.wickets1 ?? 0),
+    awayWickets: Number(raw.team2?.wickets ?? rawLd.wickets2 ?? 0),
+  };
+  const chaseSideActive = resolveLabeledTeamSide(rawLd.chaseTeamName, homeTeam, awayTeam, labelActivity);
+  const firstSideActive = resolveLabeledTeamSide(rawLd.firstTeamName, homeTeam, awayTeam, labelActivity);
+  let expectedBatName = null;
+  if (liveInnId >= 2 || chaseSideActive || Number(rawLd.chaseRuns) > 0) {
+    if (chaseSideActive === 'home') expectedBatName = t1Name;
+    else if (chaseSideActive === 'away') expectedBatName = t2Name;
+    else if (firstSideActive === 'home') expectedBatName = t2Name;
+    else if (firstSideActive === 'away') expectedBatName = t1Name;
+  } else if (firstSideActive === 'away') {
+    expectedBatName = t2Name;
+  } else if (firstSideActive === 'home') {
+    expectedBatName = t1Name;
+  }
+
+  const pickActiveInnings = () => {
+    if (!normalizedInnings.length) {
+      return {
         inningsId: 1,
         inningsNum: 1,
         matchInningsId: 1,
@@ -930,6 +969,26 @@ export function normalizeMatch(raw = {}, previous = {}, options = {}) {
         declared: false,
         displayScore: '0/0',
       };
+    }
+    if (expectedBatName) {
+      const byTeam = [...normalizedInnings].reverse().find((inn) => (
+        matchesTeamIdentifier(
+          { name: expectedBatName, shortName: expectedBatName === t1Name ? t1Short : t2Short },
+          inn.batTeam,
+          inn.batTeamShort,
+          inn.batTeamId,
+        )
+      ));
+      if (byTeam) return byTeam;
+    }
+    if (liveInnId > 0) {
+      const byId = [...normalizedInnings].reverse().find((inn) => Number(inn.inningsId) === liveInnId);
+      if (byId) return byId;
+    }
+    return normalizedInnings[normalizedInnings.length - 1];
+  };
+
+  const activeInnings = pickActiveInnings();
 
   const isBattingHome = activeInnings.batTeamId === t1Id;
   const currentBowlTeamName = isBattingHome ? t2Name : t1Name;

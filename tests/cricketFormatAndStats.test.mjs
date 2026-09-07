@@ -714,4 +714,45 @@ test('away batted first without chaseRuns: score2 is first total not chase', () 
   assert.match(snapshot.headerScores.team2ScoreText, /191/);
 });
 
+test('partial scorecard (chase only) does not make bowling side current', () => {
+  const match = {
+    id: 'oy_as_ff_partial_sc',
+    sport: 'cricket',
+    matchType: 'T20',
+    team1: { name: 'Amritsar Soormas', shortName: 'AS', runs: 89, wickets: 2, overs: '8.1' },
+    team2: { name: 'Fazilka Falcons', shortName: 'FF', runs: 191, wickets: 6, overs: '20.0' },
+    liveDetails: {
+      inningsId: 2,
+      firstTeamName: 'Fazilka Falcons',
+      firstRuns: 191,
+      firstWickets: 6,
+      firstOvers: '20.0',
+      score1: 89,
+      score2: 191,
+      wickets1: 2,
+      wickets2: 6,
+      chaseRuns: 89,
+      chaseWickets: 2,
+      chaseOvers: '8.1',
+      chaseTeamName: 'Amritsar Soormas',
+    },
+    // Production match-detail often sends only the live chase innings
+    scorecardInnings: [
+      {
+        inningsId: 2,
+        batTeamName: 'Amritsar Soormas',
+        batTeam: 'Amritsar Soormas',
+        runs: 89,
+        wickets: 2,
+        overs: '8.1',
+      },
+    ],
+  };
+  const scores = resolveCricketTeamScores(match, match.liveDetails);
+  assert.strictEqual(scores.team1.runs, 89);
+  assert.strictEqual(scores.team2.runs, 191);
+  assert.strictEqual(scores.currentInnings.batTeam, 'Amritsar Soormas');
+  assert.strictEqual(scores.currentInnings.runs, 89);
+});
+
 console.log('\n🎉 ALL CRICKET FORMAT, BANNER & SCORE STATISTICS TESTS PASSED WITH ZERO FAILURES!\n');

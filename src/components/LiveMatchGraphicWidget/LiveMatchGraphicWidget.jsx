@@ -869,13 +869,44 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
   bowler = displayPlayerName(bowler) || bowler;
 
   const chaseText = (() => {
-    const required = matchStateObj?.chaseState?.requiredRuns;
-    const target = matchStateObj?.chaseState?.target;
-    const batTeam = matchStateObj?.currentInnings?.batTeam;
+    const ldChase = match?.liveDetails || {};
     const t1Runs = Number(resolvedScores.team1?.runs) || 0;
     const t2Runs = Number(resolvedScores.team2?.runs) || 0;
+    // Never trust engine batTeam alone — partial scorecards can mark the bowling side current.
+    let batTeam = null;
+    if (ldChase.chaseTeamName) {
+      const chaseSide = resolveLabeledTeamSide(ldChase.chaseTeamName, team1, team2, {
+        homeRuns: t1Runs,
+        awayRuns: t2Runs,
+        homeWickets: Number(resolvedScores.team1?.wickets) || 0,
+        awayWickets: Number(resolvedScores.team2?.wickets) || 0,
+      });
+      if (chaseSide === 'home') batTeam = team1;
+      else if (chaseSide === 'away') batTeam = team2;
+      else batTeam = ldChase.chaseTeamName;
+    } else if (ldChase.firstTeamName && isCricketSecondInnings(match, ldChase)) {
+      const firstSide = resolveLabeledTeamSide(ldChase.firstTeamName, team1, team2, {
+        homeRuns: t1Runs,
+        awayRuns: t2Runs,
+        homeWickets: Number(resolvedScores.team1?.wickets) || 0,
+        awayWickets: Number(resolvedScores.team2?.wickets) || 0,
+      });
+      batTeam = firstSide === 'away' ? team1 : (firstSide === 'home' ? team2 : null);
+    }
+    if (!batTeam) {
+      batTeam = matchStateObj?.currentInnings?.batTeam
+        || innings?.battingTeam
+        || null;
+    }
+
+    const chaseRuns = batTeam && teamNameMatches(team1, batTeam) ? t1Runs : t2Runs;
+    const firstRunsForTarget = batTeam && teamNameMatches(team1, batTeam) ? t2Runs : t1Runs;
+    const derivedTarget = firstRunsForTarget > 0 ? firstRunsForTarget + 1 : null;
+    const derivedRequired = derivedTarget != null ? Math.max(0, derivedTarget - chaseRuns) : null;
+
+    const required = derivedRequired ?? matchStateObj?.chaseState?.requiredRuns;
+    const target = derivedTarget ?? matchStateObj?.chaseState?.target;
     const missingFirstInnings = (t1Runs === 0 && t2Runs > 0) || (t2Runs === 0 && t1Runs > 0);
-    const ldChase = match?.liveDetails || {};
     const fakeNeedText = Number(ldChase.chaseRuns || 0) === 0
       && Number(ldChase.chaseWickets || 0) > 0
       && isEmptyOversValue(ldChase.chaseOvers)
