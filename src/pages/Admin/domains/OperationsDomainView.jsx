@@ -425,7 +425,7 @@ function ControlTowerOpsPanel({ onNavigate }) {
       ], 'Betting')}
 
       {(filter === 'All' || filter === 'Promotions') && section('Promotion Operations', tower?.promotions, [
-        ['Active campaigns', 'activeCampaigns'],
+        ['Active campaigns', 'crmActiveCampaigns'],
         ['Freebets issued', 'freebetsIssuedToday'],
         ['Freebets claimed', 'freebetsClaimedToday'],
         ['Abuse blocks today', 'promotionAbuseBlocksToday'],
@@ -436,7 +436,7 @@ function ControlTowerOpsPanel({ onNavigate }) {
       {(filter === 'All' || filter === 'KYC') && section('User / KYC', tower?.usersKyc, [
         ['Registrations today', 'newRegistrationsToday'],
         ['KYC pending', 'kycPending'],
-        ['KYC verified', 'kycVerified'],
+        ['KYC verified', 'kycVerifiedToday'],
         ['Registered users', 'registeredUsers'],
       ], 'KYC')}
 

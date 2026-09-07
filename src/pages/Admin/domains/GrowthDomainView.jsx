@@ -1164,10 +1164,10 @@ function DepositFreeBetPanel() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 16 }}>
         {[
           { label: 'Eligible Users', metric: 'freebetGrants', value: stats?.eligibleUsers ?? 0 },
-          { label: 'Rewards Granted', metric: 'freebetGrants', value: money(stats?.totalFreebetValue) },
-          { label: 'Used', metric: 'freebetGrants', value: money(stats?.usedValue) },
-          { label: 'Emails Sent', metric: 'freebetGrants', value: stats?.emailsSent ?? 0 },
-          { label: 'Emails Failed', metric: 'freebetGrants', value: stats?.emailsFailed ?? 0 },
+          { label: 'Rewards Granted', metric: 'freebetIssued', value: money(stats?.totalFreebetValue) },
+          { label: 'Used', metric: 'freebetConsumed', value: money(stats?.usedValue) },
+          { label: 'Emails Sent', metric: 'emailsSent', value: stats?.emailsSent ?? 0 },
+          { label: 'Emails Failed', metric: 'emailsFailed', value: stats?.emailsFailed ?? 0 },
         ].map((card) => (
           <AdminKPI
             key={card.label}
@@ -1818,8 +1818,8 @@ function VipTiersPanel() {
             { label: 'Loyalty users', metric: 'vipUsers', value: dash.totals?.loyaltyUsers },
             { label: 'VIP points', metric: 'vipUsers', value: dash.totals?.totalVipPoints },
             { label: 'Redeemable pts', metric: 'vipUsers', value: dash.totals?.totalRedeemablePoints },
-            { label: 'Stake (tx)', metric: 'turnover', value: money(dash.totals?.attributedStake) },
-            { label: 'Deposits (tx)', metric: 'Deposits', value: money(dash.totals?.attributedDeposits) },
+            { label: 'Stake (tx)', metric: 'vipUsers', value: money(dash.totals?.attributedStake) },
+            { label: 'Deposits (tx)', metric: 'vipUsers', value: money(dash.totals?.attributedDeposits) },
           ].map((c) => (
             <AdminKPI
               key={c.label}
@@ -2225,14 +2225,14 @@ function GrowthOverviewPanel({ initialTab = 'dashboard' }) {
 
   const cards = [
     { label: 'Active campaigns', metric: 'activeCampaigns', value: kpis?.activeCampaigns },
-    { label: 'Users targeted', metric: 'activeCampaigns', value: kpis?.usersTargeted },
-    { label: 'Emails sent', metric: 'freebetGrants', value: kpis?.emailsSent },
+    { label: 'Users targeted', metric: 'usersTargeted', value: kpis?.usersTargeted },
+    { label: 'Emails sent', metric: 'emailsSent', value: kpis?.emailsSent },
     { label: 'Freebet grants', metric: 'freebetGrants', value: kpis?.freebetGrants },
-    { label: 'Freebet issued', metric: 'freebetGrants', value: kpis ? money(kpis.freebetIssued) : null },
-    { label: 'Freebet consumed', metric: 'freebetGrants', value: kpis ? money(kpis.freebetConsumed) : null },
-    { label: 'Linked deposits', metric: 'Deposits', value: kpis ? money(kpis.depositsLinkedToFreebet) : null },
-    { label: 'Claim conversion', metric: 'freebetGrants', value: kpis?.claimConversion != null ? `${(kpis.claimConversion * 100).toFixed(1)}%` : 'N/A' },
-    { label: 'Referral conversion', metric: 'referralActivityToday', value: kpis?.referralConversion != null ? `${(kpis.referralConversion * 100).toFixed(1)}%` : 'N/A' },
+    { label: 'Freebet issued', metric: 'freebetIssued', value: kpis ? money(kpis.freebetIssued) : null },
+    { label: 'Freebet consumed', metric: 'freebetConsumed', value: kpis ? money(kpis.freebetConsumed) : null },
+    { label: 'Linked deposits', metric: 'depositsLinkedToFreebet', value: kpis ? money(kpis.depositsLinkedToFreebet) : null },
+    { label: 'Claim conversion', metric: 'claimConversion', value: kpis?.claimConversion != null ? `${(kpis.claimConversion * 100).toFixed(1)}%` : 'N/A' },
+    { label: 'Referral conversion', metric: 'referralConversion', value: kpis?.referralConversion != null ? `${(kpis.referralConversion * 100).toFixed(1)}%` : 'N/A' },
     { label: 'VIP users', metric: 'vipUsers', value: kpis?.vipUsers },
     { label: 'Segments', metric: 'segments', value: kpis?.segments },
     { label: 'Abuse alerts open', metric: 'promoAbuseOpen', value: kpis?.promoAbuseOpen },
@@ -2845,12 +2845,12 @@ function ReferralsAdminPanel() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 16 }}>
         {[
-          ['Total', 'referralActivityToday', kpiTotal],
-          ['Registered', 'referralActivityToday', kpiPending],
-          ['Qualified', 'referralActivityToday', kpiQualified],
-          ['Rewarded', 'referralActivityToday', kpiRewarded],
-          ['Reward value', 'referralActivityToday', money(kpiRewardValue)],
-          ['Fraud review', 'promotionAbuse', funnel.fraud_review ?? analytics?.abuse?.fraud_review],
+          ['Total', 'referralsTotal', kpiTotal],
+          ['Registered', 'referralsRegistered', kpiPending],
+          ['Qualified', 'referralsQualified', kpiQualified],
+          ['Rewarded', 'referralsRewarded', kpiRewarded],
+          ['Reward value', 'referralRewardValue', money(kpiRewardValue)],
+          ['Fraud review', 'referralsFraudReview', funnel.fraud_review ?? analytics?.abuse?.fraud_review],
         ].map(([label, metric, val]) => (
           <AdminKPI
             key={label}

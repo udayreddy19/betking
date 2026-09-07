@@ -80,7 +80,7 @@ export default function AnalyticsDomainView({ subModule = 'turnover-ggr' }) {
     { label: 'Active users', metric: 'activeUsers', value: num(users.active), accent: '#34d399' },
     { label: 'Active bettors', metric: 'activeBettors', value: num(users.activeBettors), accent: '#a78bfa' },
     { label: 'Turnover', metric: 'turnover', value: money(betting.turnover), accent: '#fb923c' },
-    { label: 'GGR', metric: 'ggr', value: money(betting.ggr), accent: '#f87171' },
+    { label: 'GGR', metric: 'settledGgr', value: money(betting.ggr), accent: '#f87171' },
     { label: 'NGR', metric: 'NGR', value: money(betting.ngr), accent: '#fbbf24' },
     { label: 'Avg stake', metric: 'Avg stake', value: money(betting.totalBets > 0 ? betting.turnover / betting.totalBets : null), accent: '#818cf8' },
     { label: 'Bet count', metric: 'totalBets', value: num(betting.totalBets), accent: '#60a5fa' },
