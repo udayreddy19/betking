@@ -75,13 +75,14 @@ describe('OtherSportsEngineV4 house protect', () => {
   it('prices soccer 1X2 with thick house book (≥116 pts, no arb)', () => {
     const snap = generate(soccerMatch(), { allowModelOnly: true });
     expect(snap.engine).toBe('OtherSportsEngineV4');
-    expect(snap.engineVersion).toBe(OSV4_ENGINE_VERSION);
+    expect(snap.engineVersion).toBe('4.8.5');
+    expect(snap.osv4Meta?.qualityScore).toBe(10.0);
     expect(snap.houseProtect).toBe(true);
     const mw = snap.markets.find((m) => m.marketId === 'match_winner');
     expect(mw?.status).toBe('OPEN');
     const pts = bookPoints(mw.selections);
-    expect(pts).toBeGreaterThanOrEqual(116);
-    expect(pts).toBeLessThan(160);
+    expect(pts).toBeGreaterThanOrEqual(118);
+    expect(pts).toBeLessThan(180);
   });
 
   it('never publishes soft totals Overs above house cap', () => {
@@ -89,7 +90,7 @@ describe('OtherSportsEngineV4 house protect', () => {
     const goals = snap.markets.find((m) => m.marketId === 'goals_line');
     expect(goals?.status).toBe('OPEN');
     const over = goals.selections.find((s) => String(s.name).startsWith('Over'));
-    expect(Number(over.odds)).toBeLessThanOrEqual(1.35);
+    expect(Number(over.odds)).toBeLessThanOrEqual(1.25);
     const pts = bookPoints(goals.selections);
     expect(pts).toBeGreaterThan(100);
   });
@@ -103,7 +104,7 @@ describe('OtherSportsEngineV4 house protect', () => {
     expect(pts).toBeLessThan(160);
     expect(pts).not.toBeCloseTo(210, 0);
     const yes = dc1x.selections.find((s) => s.selectionId === 'DC:1X');
-    expect(Number(yes.odds)).toBeLessThanOrEqual(1.85);
+    expect(Number(yes.odds)).toBeLessThanOrEqual(1.62);
   });
 
   it('basketball totals use pace + hard Over cap', () => {
@@ -112,7 +113,7 @@ describe('OtherSportsEngineV4 house protect', () => {
     expect(total?.status).toBe('OPEN');
     expect(total.expectedTotal).toBeGreaterThan(100);
     const over = total.selections.find((s) => String(s.name).startsWith('Over'));
-    expect(Number(over.odds)).toBeLessThanOrEqual(1.35);
+    expect(Number(over.odds)).toBeLessThanOrEqual(1.25);
     expect(bookPoints(total.selections)).toBeGreaterThan(100);
   });
 
@@ -157,7 +158,7 @@ describe('OtherSportsEngineV4 house protect', () => {
     const mw = snap.markets.find((m) => m.marketId === 'match_winner');
     expect(mw?.status).toBe('OPEN');
     for (const s of mw.selections) {
-      expect(Number(s.odds)).toBeLessThanOrEqual(3.50);
+      expect(Number(s.odds)).toBeLessThanOrEqual(2.75);
     }
   });
 
@@ -169,8 +170,24 @@ describe('OtherSportsEngineV4 house protect', () => {
     expect(mw?.status).toBe('OPEN');
     for (const s of mw.selections) {
       if (Number(s.probability) >= 0.48) {
-        expect(Number(s.odds)).toBeLessThanOrEqual(1.55);
+        expect(Number(s.odds)).toBeLessThanOrEqual(1.40);
       }
+    }
+  });
+
+  it('applies american-football tune with AF-specific caps', () => {
+    const snap = generate(basketballMatch({
+      sport: 'american-football',
+      liveDetails: { score1: 14, score2: 10, minute: 28 },
+      odds: { home: 1.9, away: 1.95 },
+    }), { allowModelOnly: true });
+    expect(snap.engineVersion).toBe('4.8.5');
+    expect(snap.osv4Meta?.features).toContain('american_football_tune');
+    expect(snap.osv4Meta?.qualityScore).toBe(10.0);
+    const mw = snap.markets.find((m) => m.marketId === 'match_winner');
+    expect(mw?.status).toBe('OPEN');
+    for (const s of mw.selections) {
+      expect(Number(s.odds)).toBeLessThanOrEqual(2.55);
     }
   });
 });

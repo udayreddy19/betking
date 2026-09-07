@@ -69,10 +69,10 @@ describe('OddsEngineV4 — resource MW + V3 catalog', () => {
     const full = generateV4(state, { winnerOnly: false });
     const overs = full.markets.flatMap((m) => m.selections || []).filter((s) => String(s.name).toLowerCase() === 'over');
     expect(overs.length).toBeGreaterThan(0);
-    // Soft Overs capped; correctly long chase Overs may exceed 1.45
+    // Soft Overs capped; correctly long chase Overs may exceed soft cap
     const softOvers = overs.filter((s) => Number(s.probability) >= 0.42);
     if (softOvers.length) {
-      expect(Math.max(...softOvers.map((s) => Number(s.odds)))).toBeLessThanOrEqual(1.45);
+      expect(Math.max(...softOvers.map((s) => Number(s.odds)))).toBeLessThanOrEqual(1.35);
     }
   });
 
@@ -171,7 +171,7 @@ describe('OddsEngineV4 — resource MW + V3 catalog', () => {
     expect(p190).toBeLessThan(0.12);
 
     const v4 = generateV4(state, { winnerOnly: false });
-    expect(v4.engineVersion).toBe('4.6.0');
+    expect(v4.engineVersion).toBe('4.8.5');
     expect(v4.v4Meta?.features?.length).toBeGreaterThan(0);
     // Near-target books are intentionally thinner; full 100 score is asserted on mid-chase.
     const teamTotal = v4.markets.find((m) => m.marketId === 'team_total');
@@ -220,7 +220,7 @@ describe('OddsEngineV4 — resource MW + V3 catalog', () => {
   it('scores a full live book at 100/100 on the readiness rubric', () => {
     const state = buildCanonicalFromMatch(chaseMatch());
     const v4 = generateV4(state, { winnerOnly: false });
-    expect(v4.engineVersion).toBe('4.6.0');
+    expect(v4.engineVersion).toBe('4.8.5');
     expect(v4.v4Meta.qualityScore).toBe(100);
     expect(v4.v4Meta.qualityBreakdown.matchWinner).toBe(20);
     expect(v4.v4Meta.qualityBreakdown.houseEdge).toBe(20);
