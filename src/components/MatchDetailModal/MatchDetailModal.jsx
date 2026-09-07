@@ -416,7 +416,7 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
           </div>
         )}
 
-        {/* Markets Content List - Authoritative Odds Engine V2 Snapshot */}
+        {/* Markets Content List - Authoritative OddsEngine snapshot */}
         <div className="market-content">
 
           {/* DYNAMIC AUTHORITATIVE BETTING MARKETS FROM ODDS ENGINE V2 */}

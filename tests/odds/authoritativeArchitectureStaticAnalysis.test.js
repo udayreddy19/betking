@@ -40,13 +40,21 @@ describe('AUTHORITATIVE ODDS ARCHITECTURE & ANTI-REGRESSION TESTS', () => {
     expect(labels.includes('generateMatchMarkets')).toBe(false);
   });
 
-  it('TEST 5: Live pricing engines must not import legacy oddsEngine.mjs', () => {
-    const pricing = fs.readFileSync(path.resolve(process.cwd(), 'lib/pricingEngine.mjs'), 'utf8');
-    const ai = fs.readFileSync(path.resolve(process.cwd(), 'lib/aiOddsOptimizer.mjs'), 'utf8');
-    expect(pricing.includes('oddsEngine.mjs')).toBe(false);
-    expect(ai.includes('oddsEngine.mjs')).toBe(false);
-    expect(pricing.includes('v3MatchOdds')).toBe(true);
-    expect(ai.includes('v3MatchOdds')).toBe(true);
+  it('TEST 5: Legacy V1/V2 odds engine modules stay deleted', () => {
+    const gone = [
+      'lib/oddsEngine.mjs',
+      'lib/marketEngine.mjs',
+      'lib/pricingEngine.mjs',
+      'lib/aiOddsOptimizer.mjs',
+      'lib/aiPredictionEngine.mjs',
+      'lib/probabilityEngine.mjs',
+      'lib/odds-v3/shadow/OddsShadowRunner.mjs',
+      'lib/engines/cricketFormatRules.mjs',
+      'lib/engines/matchStateValidator.mjs',
+    ];
+    gone.forEach((rel) => {
+      expect(fs.existsSync(path.resolve(process.cwd(), rel)), rel).toBe(false);
+    });
   });
 
   it('TEST 5b: Live placement and settlement must not import legacy oddsEngine.mjs', () => {
