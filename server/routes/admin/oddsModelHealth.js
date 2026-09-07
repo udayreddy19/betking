@@ -604,6 +604,35 @@ router.get('/v4/engine', async (_req, res) => {
 });
 
 /**
+ * GET /api/admin/odds-model/other-sports/engine
+ */
+router.get('/other-sports/engine', async (_req, res) => {
+  try {
+    const {
+      getOtherSportsEngineModeStatus,
+      resolveOtherSportsEngineMode,
+    } = await import('../../../lib/other-sports-v4/index.mjs');
+    let shadow = null;
+    try {
+      const { getOtherSportsShadowMetrics } = await import('../../../lib/other-sports-v4/shadowCompare.mjs');
+      shadow = getOtherSportsShadowMetrics();
+    } catch {
+      shadow = null;
+    }
+    return res.json({
+      success: true,
+      data: {
+        ...getOtherSportsEngineModeStatus(),
+        resolved: resolveOtherSportsEngineMode(),
+        shadow,
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
  * GET /api/admin/odds-model/platform-readiness
  */
 router.get('/platform-readiness', async (_req, res) => {
@@ -639,6 +668,35 @@ router.post('/v4/engine', async (req, res) => {
     return res.json({
       success: true,
       data: { ...status, resolved: resolveOddsEngineMode() },
+    });
+  } catch (err) {
+    return res.status(err.statusCode || 500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/admin/odds-model/other-sports/engine  { mode: 'v3'|'v4'|'shadow' } | { clear: true }
+ */
+router.post('/other-sports/engine', async (req, res) => {
+  try {
+    const {
+      setRuntimeOtherSportsEngineMode,
+      clearRuntimeOtherSportsEngineMode,
+      resolveOtherSportsEngineMode,
+    } = await import('../../../lib/other-sports-v4/index.mjs');
+    const updatedBy = req.admin?.email || req.admin?.id || req.admin?.role || 'admin';
+    let status;
+    if (req.body?.clear === true || req.body?.mode === 'env') {
+      status = await clearRuntimeOtherSportsEngineMode({ updatedBy, reason: req.body?.reason });
+    } else {
+      status = await setRuntimeOtherSportsEngineMode(req.body?.mode, {
+        updatedBy,
+        reason: req.body?.reason,
+      });
+    }
+    return res.json({
+      success: true,
+      data: { ...status, resolved: resolveOtherSportsEngineMode() },
     });
   } catch (err) {
     return res.status(err.statusCode || 500).json({ success: false, error: err.message });

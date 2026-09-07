@@ -57,6 +57,8 @@ export default function TradingRiskDomainView({ subModule }) {
   const [oddsHealth, setOddsHealth] = useState(null);
   const [engineStatus, setEngineStatus] = useState(null);
   const [engineSaving, setEngineSaving] = useState(false);
+  const [otherSportsEngineStatus, setOtherSportsEngineStatus] = useState(null);
+  const [otherSportsEngineSaving, setOtherSportsEngineSaving] = useState(false);
   const [platformReady, setPlatformReady] = useState(null);
 
   const loadSuspensions = useCallback(() => {
@@ -96,6 +98,12 @@ export default function TradingRiskDomainView({ subModule }) {
       .catch(() => setEngineStatus(null));
   }, []);
 
+  const loadOtherSportsEngineStatus = useCallback(() => {
+    adminApiClient.get('/odds-model/other-sports/engine')
+      .then((data) => setOtherSportsEngineStatus(data.data || data))
+      .catch(() => setOtherSportsEngineStatus(null));
+  }, []);
+
   const loadPlatformReady = useCallback(() => {
     adminApiClient.get('/odds-model/platform-readiness')
       .then((data) => setPlatformReady(data.data || data))
@@ -109,10 +117,10 @@ export default function TradingRiskDomainView({ subModule }) {
       setEngineStatus(data.data || data);
       showToast(
         mode === 'v4'
-          ? 'V4 live — resource MW + V3 market catalog'
+          ? 'Cricket V4 live — resource MW + V3 market catalog'
           : mode === 'shadow'
-            ? 'Shadow — V3 live, V4 compare only'
-            : 'V3 live',
+            ? 'Cricket shadow — V3 live, V4 compare only'
+            : 'Cricket V3 live',
         'success',
       );
     } catch (err) {
@@ -122,12 +130,33 @@ export default function TradingRiskDomainView({ subModule }) {
     }
   };
 
+  const setOtherSportsEngineMode = async (mode) => {
+    setOtherSportsEngineSaving(true);
+    try {
+      const data = await adminApiClient.post('/odds-model/other-sports/engine', { mode });
+      setOtherSportsEngineStatus(data.data || data);
+      showToast(
+        mode === 'v4'
+          ? 'Other sports V4 live — house-hardened book'
+          : mode === 'shadow'
+            ? 'Other sports shadow — V3 live, V4 compare only'
+            : 'Other sports V3 live',
+        'success',
+      );
+    } catch (err) {
+      showToast(err.message || 'Other sports engine switch failed', 'error');
+    } finally {
+      setOtherSportsEngineSaving(false);
+    }
+  };
+
   useEffect(() => {
     if (!showOddsHealth && !showOddsDesk) return undefined;
     loadEngineStatus();
+    loadOtherSportsEngineStatus();
     loadPlatformReady();
     return undefined;
-  }, [showOddsHealth, showOddsDesk, loadEngineStatus, loadPlatformReady]);
+  }, [showOddsHealth, showOddsDesk, loadEngineStatus, loadOtherSportsEngineStatus, loadPlatformReady]);
 
   useEffect(() => {
     if (!showOddsHealth) return undefined;
@@ -347,7 +376,7 @@ export default function TradingRiskDomainView({ subModule }) {
         <AdminCard>
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
             <div>
-              <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>Odds engine</div>
+              <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>Cricket odds engine</div>
               <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.78rem' }}>
                 Exclusive — V4 uses resource Match Winner + the same V3 compact market catalog.
                 {' '}Active: <strong>{engineStatus?.resolved || engineStatus?.active || '…'}</strong>
@@ -368,6 +397,42 @@ export default function TradingRiskDomainView({ subModule }) {
                     disabled={engineSaving}
                     className={`admin-btn admin-btn--sm${active ? '' : ' admin-btn--ghost'}`}
                     onClick={() => setEngineMode(btn.mode)}
+                  >
+                    {btn.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </AdminCard>
+      )}
+
+      {(showOddsDesk || showOddsHealth) && (
+        <AdminCard>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>Other sports odds engine</div>
+              <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.78rem' }}>
+                Soccer / basketball / tennis / American football — V4 is house-hardened (thick book + Over/Yes caps).
+                {' '}Active: <strong>{otherSportsEngineStatus?.resolved || otherSportsEngineStatus?.active || '…'}</strong>
+                {otherSportsEngineStatus?.source ? ` (${otherSportsEngineStatus.source})` : ''}
+                {otherSportsEngineStatus?.envDefault ? ` · env ${otherSportsEngineStatus.envDefault}` : ''}
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {[
+                { mode: 'v3', label: 'V3 live' },
+                { mode: 'v4', label: 'V4 live' },
+                { mode: 'shadow', label: 'Shadow' },
+              ].map((btn) => {
+                const active = (otherSportsEngineStatus?.resolved || otherSportsEngineStatus?.active) === btn.mode;
+                return (
+                  <button
+                    key={btn.mode}
+                    type="button"
+                    disabled={otherSportsEngineSaving}
+                    className={`admin-btn admin-btn--sm${active ? '' : ' admin-btn--ghost'}`}
+                    onClick={() => setOtherSportsEngineMode(btn.mode)}
                   >
                     {btn.label}
                   </button>
