@@ -71,25 +71,25 @@ describe('engine dispatch positive cases', () => {
     const { rawSnapshot, mode } = generatePublicMatchOddsSnapshot(cricketLive(), { winnerOnly: true });
     expect(mode).toBe('v4');
     expect(rawSnapshot?.engine).toBe('OddsEngineV4');
-    expect(rawSnapshot?.engineVersion).toBe('4.8.5');
+    expect(rawSnapshot?.engineVersion).toBe('4.8.6');
   });
 
   it('routes soccer to OtherSportsEngineV4 when other-sports mode is v4', async () => {
     await setRuntimeOtherSportsEngineMode('v4', { updatedBy: 'test' });
     const { rawSnapshot } = generatePublicMatchOddsSnapshot(soccerLive(), { winnerOnly: true });
     expect(rawSnapshot?.engine).toBe('OtherSportsEngineV4');
-    expect(rawSnapshot?.engineVersion).toBe('4.8.5');
+    expect(rawSnapshot?.engineVersion).toBe('4.8.6');
   });
 
   it('scorecard lists both primary engines at 10.0', () => {
     const card = getOddsEngineScorecard();
     expect(card).toHaveLength(ODDS_ENGINE_SCORECARD.length);
     expect(card.find((r) => r.engine === 'OddsEngineV4')).toMatchObject({
-      version: '4.8.5',
+      version: '4.8.6',
       score: 10.0,
     });
     expect(card.find((r) => r.engine === 'OtherSportsEngineV4')).toMatchObject({
-      version: '4.8.5',
+      version: '4.8.6',
       score: 10.0,
     });
   });

@@ -75,7 +75,7 @@ describe('OtherSportsEngineV4 house protect', () => {
   it('prices soccer 1X2 with thick house book (≥116 pts, no arb)', () => {
     const snap = generate(soccerMatch(), { allowModelOnly: true });
     expect(snap.engine).toBe('OtherSportsEngineV4');
-    expect(snap.engineVersion).toBe('4.8.5');
+    expect(snap.engineVersion).toBe('4.8.6');
     expect(snap.osv4Meta?.qualityScore).toBe(10.0);
     expect(snap.houseProtect).toBe(true);
     const mw = snap.markets.find((m) => m.marketId === 'match_winner');
@@ -181,7 +181,7 @@ describe('OtherSportsEngineV4 house protect', () => {
       liveDetails: { score1: 14, score2: 10, minute: 28 },
       odds: { home: 1.9, away: 1.95 },
     }), { allowModelOnly: true });
-    expect(snap.engineVersion).toBe('4.8.5');
+    expect(snap.engineVersion).toBe('4.8.6');
     expect(snap.osv4Meta?.features).toContain('american_football_tune');
     expect(snap.osv4Meta?.qualityScore).toBe(10.0);
     const mw = snap.markets.find((m) => m.marketId === 'match_winner');

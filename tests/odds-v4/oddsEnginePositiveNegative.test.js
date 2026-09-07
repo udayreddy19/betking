@@ -5,7 +5,9 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { buildCanonicalFromMatch } from '../../lib/odds-v3/buildCanonicalFromMatch.mjs';
 import { generate as generateV4, V4_ENGINE_VERSION } from '../../lib/odds-v4/OddsEngineV4.mjs';
 import { generate as generateV3 } from '../../lib/odds-v3/OddsEngineV3.mjs';
-import { V4_MARGIN_CONFIG, tightenV4Markets } from '../../lib/odds-v4/v4HouseProtect.mjs';
+import { V4_MARGIN_CONFIG, tightenV4Markets, resolveSrlV4Margins } from '../../lib/odds-v4/v4HouseProtect.mjs';
+import { SRL_MARGIN_CONFIG } from '../../lib/odds-v3/pricing/MarginCalculator.mjs';
+import { enrichIplSrlMatchCard } from '../../lib/iplSrlCardMarkets.mjs';
 import { validateMarketSettlementCompatibility } from '../../lib/settlement/marketSettlementContract.mjs';
 import { getOddsEngineScorecard } from '../../lib/oddsEngineScorecard.mjs';
 
@@ -44,27 +46,38 @@ describe('OddsEngineV4 positive cases', () => {
     delete process.env.ODDS_ENGINE;
   });
 
-  it('emits v4.8.5 identity and scorecard mark 10.0', () => {
-    expect(V4_ENGINE_VERSION).toBe('4.8.5');
+  it('emits v4.8.6 identity and scorecard mark 10.0', () => {
+    expect(V4_ENGINE_VERSION).toBe('4.8.6');
     const row = getOddsEngineScorecard().find((r) => r.engine === 'OddsEngineV4');
     expect(row.score).toBe(10.0);
-    expect(row.version).toBe('4.8.5');
+    expect(row.version).toBe('4.8.6');
   });
 
   it('opens match_winner with thick house book on live chase', () => {
     const snap = generateV4(buildCanonicalFromMatch(liveChase()), { winnerOnly: true });
     expect(snap.engine).toBe('OddsEngineV4');
-    expect(snap.engineVersion).toBe('4.8.5');
+    expect(snap.engineVersion).toBe('4.8.6');
     const mw = snap.markets.find((m) => m.marketId === 'match_winner');
     expect(mw?.status).toBe('OPEN');
     expect(mw.selections.length).toBe(2);
     expect(openImplied(mw)).toBeGreaterThanOrEqual(1.14);
     expect(snap.v4Meta?.features).toEqual(expect.arrayContaining([
-      'house_v485',
+      'house_v486',
       'favorite_cap',
       'book_guardian',
       'soft_leak_suspend',
     ]));
+  });
+
+  it('keeps match_winner selections in team1/team2 order when team2 bats', () => {
+    const state = buildCanonicalFromMatch(liveChase());
+    expect(state.battingTeamId).toBe(state.team2.id);
+    const snap = generateV4(state, { winnerOnly: true });
+    const mw = snap.markets.find((m) => m.marketId === 'match_winner');
+    expect(mw?.selections?.[0]?.selectionId).toBe(`sel_${state.team1.id}`);
+    expect(mw?.selections?.[1]?.selectionId).toBe(`sel_${state.team2.id}`);
+    expect(mw.selections[0].name).toBe(state.team1.name);
+    expect(mw.selections[1].name).toBe(state.team2.name);
   });
 
   it('full book only publishes settlement-compatible open markets', () => {
@@ -114,10 +127,10 @@ describe('OddsEngineV4 positive cases', () => {
     expect(snap.status).toBe('DETERMINED');
   });
 
-  it('features include v4.8.5 house_v485 + min_book_mass + core_only_lock', () => {
+  it('features include v4.8.6 house_v486 + min_book_mass + core_only_lock', () => {
     const snap = generateV4(buildCanonicalFromMatch(liveChase()), { winnerOnly: true });
     expect(snap.v4Meta?.features).toEqual(expect.arrayContaining([
-      'house_v485',
+      'house_v486',
       'min_book_mass',
       'core_only_lock',
       'soft_leak_suspend',
@@ -132,6 +145,30 @@ describe('OddsEngineV4 positive cases', () => {
     const mw3 = v3.markets.find((m) => m.marketId === 'match_winner');
     const mw4 = v4.markets.find((m) => m.marketId === 'match_winner');
     expect(openImplied(mw4)).toBeGreaterThan(openImplied(mw3));
+  });
+
+  it('SRL margins cannot soften V4 Over/favorite ceilings', () => {
+    const m = resolveSrlV4Margins(SRL_MARGIN_CONFIG);
+    expect(m.maxLiveTotalOverOdds).toBeLessThanOrEqual(V4_MARGIN_CONFIG.maxLiveTotalOverOdds);
+    expect(m.maxFavoriteOdds).toBe(V4_MARGIN_CONFIG.maxFavoriteOdds);
+    expect(m.liveMatchWinnerOverround).toBeGreaterThanOrEqual(V4_MARGIN_CONFIG.liveMatchWinnerOverround);
+  });
+
+  it('SRL card maps team1/team2 odds by selectionId when team2 bats', () => {
+    const match = {
+      ...liveChase(),
+      id: 'srl_oy_chase',
+      league: 'OddsYra SRL',
+      team1: { name: 'Alpha', id: 'a', key: 'alpha' },
+      team2: { name: 'Beta', id: 'b', key: 'beta' },
+    };
+    const card = enrichIplSrlMatchCard(match);
+    const mw = card.engineCardMarkets?.find((m) => m.marketId === 'match_winner');
+    expect(mw?.status).toBe('OPEN');
+    const t1Sel = mw.selections.find((s) => s.selectionId === 'sel_a');
+    const t2Sel = mw.selections.find((s) => s.selectionId === 'sel_b');
+    expect(Number(card.odds.team1)).toBe(Number(t1Sel.odds));
+    expect(Number(card.odds.team2)).toBe(Number(t2Sel.odds));
   });
 });
 
