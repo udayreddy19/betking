@@ -400,24 +400,30 @@ export function buildCanonicalMatchSnapshot(match) {
       && String(ld.chaseOvers).trim() !== ''
       && String(ld.chaseOvers) !== '0'
       && String(ld.chaseOvers) !== '0.0';
+    const hasExplicitChaseRuns = ld.chaseRuns != null && ld.chaseRuns !== '';
+    const hasExplicitChaseWkts = ld.chaseWickets != null && ld.chaseWickets !== '';
     const chaseRunsNum = Number(ld.chaseRuns);
-    const chaseWktsNum = Number(ld.chaseWickets || 0);
-    const fakeChaseStub = (Number.isFinite(chaseRunsNum) ? chaseRunsNum : 0) === 0
+    const chaseWktsNum = Number(ld.chaseWickets);
+    const fakeChaseStub = hasExplicitChaseWkts
+      && (!hasExplicitChaseRuns || chaseRunsNum === 0)
       && chaseWktsNum > 0
       && !chaseOversMeaningful
       && firstWkts < 10;
     // Provider copies first-innings total into chase fields (e.g. 708/10 @ 0.0 ov).
     const mirroredChaseTotal = firstRuns > 0
+      && hasExplicitChaseRuns
       && Number.isFinite(chaseRunsNum)
       && chaseRunsNum === firstRuns
+      && hasExplicitChaseWkts
       && chaseWktsNum === firstWkts
       && (!chaseOversMeaningful || normalizeCricbuzzOvers(ld.chaseOvers || '0.0') === firstOvs);
-    const impossibleChaseAtZeroOvers = Number.isFinite(chaseRunsNum)
+    const impossibleChaseAtZeroOvers = hasExplicitChaseRuns
+      && Number.isFinite(chaseRunsNum)
       && chaseRunsNum > 0
       && !chaseOversMeaningful;
-    const chaseActuallyStarted = (Number.isFinite(chaseRunsNum) && chaseRunsNum > 0 && chaseOversMeaningful)
+    const chaseActuallyStarted = (hasExplicitChaseRuns && Number.isFinite(chaseRunsNum) && chaseRunsNum > 0 && chaseOversMeaningful)
       || chaseOversMeaningful
-      || (chaseWktsNum > 0 && chaseOversMeaningful)
+      || (hasExplicitChaseWkts && chaseWktsNum > 0 && chaseOversMeaningful)
       || !!(ld.batter1?.name || ld.batter2?.name);
     const isSecond = !fakeChaseStub
       && !mirroredChaseTotal
@@ -425,15 +431,30 @@ export function buildCanonicalMatchSnapshot(match) {
       && !looksLikeMirroredFirstInnings(match, ld)
       && (
         chaseActuallyStarted
-        || (ld.chaseTeamName && chaseRunsNum === 0 && chaseWktsNum === 0 && firstWkts >= 10 && Number(ld.inningsId) >= 2)
+        || (ld.chaseTeamName && hasExplicitChaseRuns && chaseRunsNum === 0 && hasExplicitChaseWkts && chaseWktsNum === 0 && firstWkts >= 10 && Number(ld.inningsId) >= 2)
       );
     if (isSecond) {
       const secondBatTeam = firstBowlTeam;
       const secondBowlTeam = firstBatTeam;
-      const chaseRuns = Number.isFinite(chaseRunsNum) && !mirroredChaseTotal && !impossibleChaseAtZeroOvers
+      // When chaseRuns is omitted, score1/score2 are team-aligned — pick the chasing side's card,
+      // not score2 (which is the first-innings total when away batted first).
+      const cardChaseRuns = Number(
+        isTeam1BattingFirst
+          ? (match.team2?.runs ?? ld.score2)
+          : (match.team1?.runs ?? ld.score1),
+      ) || 0;
+      const cardChaseWkts = Number(
+        isTeam1BattingFirst
+          ? (match.team2?.wickets ?? ld.wickets2)
+          : (match.team1?.wickets ?? ld.wickets1),
+      ) || 0;
+      const chaseRuns = hasExplicitChaseRuns && Number.isFinite(chaseRunsNum)
+        && !mirroredChaseTotal && !impossibleChaseAtZeroOvers
         ? chaseRunsNum
-        : 0;
-      const chaseWkts = Number.isFinite(chaseWktsNum) && !mirroredChaseTotal ? chaseWktsNum : 0;
+        : (chaseOversMeaningful ? cardChaseRuns : 0);
+      const chaseWkts = hasExplicitChaseWkts && Number.isFinite(chaseWktsNum) && !mirroredChaseTotal
+        ? chaseWktsNum
+        : (chaseOversMeaningful ? cardChaseWkts : 0);
       const chaseOvs = normalizeCricbuzzOvers(chaseOversMeaningful ? ld.chaseOvers : '0.0');
 
       inningsList.push({

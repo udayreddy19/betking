@@ -8,6 +8,7 @@ import {
   detectCricketMatchFormat,
   getCricketFormatBanner,
 } from '../lib/cricketSnapshot.mjs';
+import { resolveCricketTeamScores } from '../src/utils/cricketScores.js';
 
 console.log('🧪 RUNNING CRICKET FORMAT, BANNER & SCORE STATISTICS TEST SUITE (27 TESTS)...\n');
 
@@ -669,6 +670,48 @@ test('mirrored chase 708/10 @ 0.0 does not paint both teams All Out', () => {
   assert.strictEqual(snapshot.headerScores.team1ScoreText, 'Yet to bat');
   assert.strictEqual(snapshot.headerScores.team2HasBatted, true);
   assert.match(snapshot.headerScores.team2ScoreText, /708/);
+});
+
+test('away batted first without chaseRuns: score2 is first total not chase', () => {
+  const match = {
+    id: 'oy_as_ff_chase',
+    sport: 'cricket',
+    matchType: 'T20',
+    team1: { name: 'Amritsar Soormas', shortName: 'AS', runs: 79, wickets: 0, overs: '5.5' },
+    team2: { name: 'Fazilka Falcons', shortName: 'FF', runs: 191, wickets: 6, overs: '20.0' },
+    liveDetails: {
+      inningsId: 2,
+      matchFormat: 'T20',
+      firstTeamName: 'Fazilka Falcons',
+      firstRuns: 191,
+      firstWickets: 6,
+      firstOvers: '20.0',
+      score1: 79,
+      score2: 191,
+      wickets1: 0,
+      wickets2: 6,
+      overs1: '5.5',
+      overs2: '20.0',
+      chaseOvers: '5.5',
+      // production often omits chaseRuns / chaseTeamName
+    },
+  };
+  const scores = resolveCricketTeamScores(match, match.liveDetails);
+  assert.strictEqual(scores.team1.runs, 79);
+  assert.strictEqual(scores.team1.wickets, 0);
+  assert.strictEqual(scores.team2.runs, 191);
+  assert.strictEqual(scores.team2.wickets, 6);
+  assert.strictEqual(scores.currentInnings.batTeam, 'Amritsar Soormas');
+  assert.notStrictEqual(scores.team1.displayScore, scores.team2.displayScore);
+
+  const snapshot = buildCanonicalMatchSnapshot(match);
+  assert.ok(snapshot.innings.length >= 2);
+  const chaseInn = snapshot.innings.find((inn) => inn.inningsNumber === 2 || inn.inningsId === 2);
+  assert.ok(chaseInn);
+  assert.strictEqual(chaseInn.battingTeamName, 'Amritsar Soormas');
+  assert.strictEqual(chaseInn.score, 79);
+  assert.match(snapshot.headerScores.team1ScoreText, /79/);
+  assert.match(snapshot.headerScores.team2ScoreText, /191/);
 });
 
 console.log('\n🎉 ALL CRICKET FORMAT, BANNER & SCORE STATISTICS TESTS PASSED WITH ZERO FAILURES!\n');

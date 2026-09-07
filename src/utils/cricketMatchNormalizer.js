@@ -595,23 +595,62 @@ export function normalizeMatch(raw = {}, previous = {}, options = {}) {
 
     // Never promote team-aligned score2/wickets2 into chase unless chase is already indicated.
     // Explicit chaseRuns:0 must NOT fall through to score2 via ?? (that invents 0 + wickets2).
+    // Critically: score1/score2 are TEAM-aligned (home/away), not first/chase slots.
+    // When the away side batted first, score2 is the first-innings total — using it as
+    // chase copies 191 onto the chasing home side (AS 191/6 while actually on 79).
     const chaseIndicated = inningsId >= 2
       || Number(explicitChaseRuns) > 0
       || Number(explicitChaseWickets) > 0
       || oversMeaningful(explicitChaseOvers)
       || !!(rawLd.chaseTeamName && rawLd.firstTeamName && explicitChaseRuns != null);
 
+    const scoreHintHome = Number(raw.team1?.runs ?? rawLd.score1 ?? raw.score1 ?? 0);
+    const scoreHintAway = Number(raw.team2?.runs ?? rawLd.score2 ?? raw.score2 ?? 0);
+    const firstSideForChase = resolveLabeledTeamSide(rawLd.firstTeamName, homeTeam, awayTeam, {
+      homeRuns: scoreHintHome,
+      awayRuns: scoreHintAway,
+      homeWickets: Number(raw.team1?.wickets ?? rawLd.wickets1 ?? 0),
+      awayWickets: Number(raw.team2?.wickets ?? rawLd.wickets2 ?? 0),
+    });
+    const chaseSideForChase = resolveLabeledTeamSide(rawLd.chaseTeamName, homeTeam, awayTeam, {
+      homeRuns: scoreHintHome,
+      awayRuns: scoreHintAway,
+      homeWickets: Number(raw.team1?.wickets ?? rawLd.wickets1 ?? 0),
+      awayWickets: Number(raw.team2?.wickets ?? rawLd.wickets2 ?? 0),
+    });
+    // Chasing side owns score1/team1 when away batted first (or chaseTeamName is home).
+    const chaseIsHomeSide = chaseSideForChase === 'home'
+      || (chaseSideForChase == null && firstSideForChase === 'away');
+    const chaseIsAwaySide = chaseSideForChase === 'away'
+      || (chaseSideForChase == null && firstSideForChase === 'home');
+
+    const teamAlignedChaseRuns = chaseIsHomeSide
+      ? (rawLd.score1 ?? raw.score1 ?? raw.team1?.runs)
+      : chaseIsAwaySide
+        ? (rawLd.score2 ?? raw.score2 ?? raw.team2?.runs)
+        : (rawLd.score2 ?? raw.score2);
+    const teamAlignedChaseWickets = chaseIsHomeSide
+      ? (rawLd.wickets1 ?? raw.wickets1 ?? raw.team1?.wickets)
+      : chaseIsAwaySide
+        ? (rawLd.wickets2 ?? raw.wickets2 ?? raw.team2?.wickets)
+        : (rawLd.wickets2 ?? raw.wickets2);
+    const teamAlignedChaseOvers = chaseIsHomeSide
+      ? (rawLd.overs1 ?? raw.team1?.overs)
+      : chaseIsAwaySide
+        ? (rawLd.overs2 ?? raw.team2?.overs)
+        : rawLd.overs2;
+
     let chaseRuns = explicitChaseRuns != null
       ? explicitChaseRuns
-      : (chaseIndicated ? (rawLd.score2 ?? raw.score2) : undefined);
+      : (chaseIndicated ? teamAlignedChaseRuns : undefined);
     let chaseWickets = explicitChaseWickets != null
       ? explicitChaseWickets
       : (chaseIndicated && (Number(chaseRuns) > 0 || oversMeaningful(explicitChaseOvers))
-        ? (rawLd.wickets2 ?? raw.wickets2)
+        ? teamAlignedChaseWickets
         : undefined);
     let chaseOvers = explicitChaseOvers != null
       ? explicitChaseOvers
-      : (chaseIndicated ? rawLd.overs2 : undefined);
+      : (chaseIndicated ? teamAlignedChaseOvers : undefined);
 
     // Sparse ld on a completed chase: restore from team card scores
     const t1Card = Number(raw.team1?.runs) || 0;
