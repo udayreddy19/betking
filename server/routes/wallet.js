@@ -65,6 +65,23 @@ router.get('/api/v1/payments/providers', async (req, res) => {
   }
 });
 
+/** Public deposit limits (admin-configurable minimum). */
+router.get('/api/v1/payments/deposit-limits', async (req, res) => {
+  try {
+    const { getWalletPromoRules, DEFAULT_WALLET_PROMO_RULES } = await import('../../lib/walletPromoRules.mjs');
+    const rules = await getWalletPromoRules();
+    const minimumDepositAmount = Number(rules?.minimumDepositAmount)
+      || DEFAULT_WALLET_PROMO_RULES.minimumDepositAmount;
+    res.json({
+      success: true,
+      minimumDepositAmount,
+      currency: 'INR',
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message || 'Unable to load deposit limits' });
+  }
+});
+
 // ── 3. ORDER CREATION ENDPOINTS ───────────────────────────────────────────────
 
 const handleCreateOrder = async (req, res) => {

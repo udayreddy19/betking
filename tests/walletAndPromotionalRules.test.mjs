@@ -9,29 +9,21 @@ import {
 
 test('Strict Free Bet, Bonus Bet, and Minimum Deposit Validation Rules', async (t) => {
   await t.test('1. Minimum Deposit Rules', async () => {
-    // Rejects below ₹1,000
+    const rules = await getWalletPromoRules();
+    const min = Number(rules.minimumDepositAmount) || 1000;
+    const below = Math.max(1, Math.floor(min) - 1);
+
     await assert.rejects(
-      () => validateDepositAmount(100),
-      /DEPOSIT_LIMIT.*Minimum deposit amount is ₹1,000/,
-      '₹100 deposit must be rejected'
-    );
-    await assert.rejects(
-      () => validateDepositAmount(500),
-      /DEPOSIT_LIMIT.*Minimum deposit amount is ₹1,000/,
-      '₹500 deposit must be rejected'
-    );
-    await assert.rejects(
-      () => validateDepositAmount(999),
-      /DEPOSIT_LIMIT.*Minimum deposit amount is ₹1,000/,
-      '₹999 deposit must be rejected'
+      () => validateDepositAmount(below),
+      /DEPOSIT_LIMIT.*Minimum deposit is ₹/,
+      `Deposit below ₹${min} must be rejected`
     );
 
-    // Allows ₹1,000 and above
-    const res1000 = await validateDepositAmount(1000);
-    assert.equal(res1000, 1000, '₹1,000 deposit must be allowed');
+    const allowed = await validateDepositAmount(min);
+    assert.equal(allowed, min, `₹${min} deposit must be allowed`);
 
-    const res2500 = await validateDepositAmount(2500);
-    assert.equal(res2500, 2500, '₹2,500 deposit must be allowed');
+    const resAbove = await validateDepositAmount(min + 1500);
+    assert.equal(resAbove, min + 1500, 'Above-minimum deposit must be allowed');
   });
 
   await t.test('2. Free Bet Full Usage & Partial Rejection', async () => {

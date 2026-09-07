@@ -21,7 +21,7 @@ import RazorpayModal from '../RazorpayModal/RazorpayModal';
 import './DepositView.css';
 import { formatIstDateTime } from '../../utils/istTime';
 
-const QUICK_AMOUNTS = [1000, 2500, 5000, 10000, 25000, 50000];
+const QUICK_AMOUNTS_BASE = [500, 1000, 2500, 5000, 10000, 25000, 50000];
 
 const PAYMENT_METHODS = [
   {
@@ -79,7 +79,8 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [amountStr, setAmountStr] = useState('1000');
+  const [amountStr, setAmountStr] = useState('');
+  const [minDepositInr, setMinDepositInr] = useState(MIN_DEPOSIT_INR);
   const [selectedMethod, setSelectedMethod] = useState('upi');
   const [selectedProvider, setSelectedProvider] = useState('CASHFREE');
   const [availableProviders, setAvailableProviders] = useState([]);
@@ -97,6 +98,13 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
   const inputRef = useRef(null);
   const submitLockRef = useRef(false);
 
+  const quickAmounts = useMemo(() => {
+    const min = Number(minDepositInr) || MIN_DEPOSIT_INR;
+    const aboveMin = QUICK_AMOUNTS_BASE.filter((amt) => amt >= min);
+    if (aboveMin.includes(min)) return aboveMin;
+    return [min, ...aboveMin].sort((a, b) => a - b);
+  }, [minDepositInr]);
+
   // Auto-focus input on mount
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -106,7 +114,7 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
     return () => clearTimeout(timer);
   }, []);
 
-  // Fetch gateway configuration
+  // Fetch gateway configuration + admin-configured min deposit
   useEffect(() => {
     let cancelled = false;
     apiFetch('/api/v1/payments/providers')
@@ -121,6 +129,25 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
         }
       })
       .catch(() => {});
+
+    apiFetch('/api/v1/payments/deposit-limits')
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
+        const min = Number(data?.minimumDepositAmount);
+        if (Number.isFinite(min) && min > 0) {
+          setMinDepositInr(min);
+          setAmountStr((prev) => (prev === '' ? String(min) : prev));
+        } else {
+          setAmountStr((prev) => (prev === '' ? String(MIN_DEPOSIT_INR) : prev));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAmountStr((prev) => (prev === '' ? String(MIN_DEPOSIT_INR) : prev));
+        }
+      });
+
     return () => {
       cancelled = true;
     };
@@ -141,7 +168,7 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
   };
 
   const parsedAmount = parseInt(amountStr, 10) || 0;
-  const isAmountValid = parsedAmount >= MIN_DEPOSIT_INR;
+  const isAmountValid = parsedAmount >= minDepositInr;
 
   const handleQuickAmount = (val) => {
     setAmountStr(String(val));
@@ -407,7 +434,7 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
     if (submitLockRef.current || isLoading || isProcessing) return;
 
     if (!isAmountValid) {
-      setErrorMsg(`Minimum deposit is ${formatInr(MIN_DEPOSIT_INR)}.`);
+      setErrorMsg(`Minimum deposit is ${formatInr(minDepositInr)}.`);
       return;
     }
 
@@ -636,12 +663,12 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
                 </div>
 
                 <div className="deposit-limits-helper">
-                  <span>Min {formatInr(MIN_DEPOSIT_INR)}</span>
+                  <span>Min {formatInr(minDepositInr)}</span>
                 </div>
 
                 {/* Quick Amount Chips */}
                 <div className="deposit-quick-chips-grid">
-                  {QUICK_AMOUNTS.map((amt) => {
+                  {quickAmounts.map((amt) => {
                     const isSelected = parsedAmount === amt;
                     return (
                       <button
