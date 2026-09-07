@@ -10,6 +10,14 @@ export const homePromoSlides = [
     emoji: '⚡',
   },
   {
+    id: 'monsoon',
+    title: 'MONSOON DEPOSIT FEST',
+    subtitle: '30% BONUS UP TO ₹5,000 — CODE MONSOON30',
+    gradient: 'linear-gradient(135deg, #0c4a6e 0%, #0369a1 45%, #0ea5e9 140%)',
+    accent: '#7dd3fc',
+    emoji: '🌧️',
+  },
+  {
     id: 'sports',
     title: 'LIVE CRICKET',
     subtitle: 'IN-PLAY MARKETS OPEN NOW',

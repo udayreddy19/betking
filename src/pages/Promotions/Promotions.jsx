@@ -163,6 +163,18 @@ export default function Promotions() {
     return availableCatalog.filter((promo) => promoKind(promo) === filter);
   }, [availableCatalog, filter]);
 
+  useEffect(() => {
+    if (loading) return undefined;
+    const hash = typeof window !== 'undefined' ? window.location.hash.replace(/^#/, '') : '';
+    if (!hash) return undefined;
+    const el = document.getElementById(hash);
+    if (!el) return undefined;
+    const id = window.setTimeout(() => {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 80);
+    return () => window.clearTimeout(id);
+  }, [loading, filteredCatalog.length]);
+
   const handleClaim = async (promo) => {
     if (!isLoggedIn) {
       openLoginModal();

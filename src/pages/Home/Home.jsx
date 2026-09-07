@@ -171,6 +171,7 @@ export default function Home() {
   const promoSlidePath = (id) => {
     if (id === 'srl') return SRL_PAGE_PATH;
     if (id === 'sports') return '/live-betting';
+    if (id === 'monsoon') return '/promotions#promo-MONSOON30';
     return '/promotions';
   };
 
