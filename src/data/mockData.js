@@ -180,7 +180,7 @@ export const promotions = [
     maxReward: 5000,
     minStake: 2000,
     terms: [
-      'Valid from 8 Sep 2026, 12:01 AM to 21 Sep 2026, 11:59 PM (IST).',
+      'Valid from 7 Sep 2026, 12:01 AM to 21 Sep 2026, 11:59 PM (IST).',
       'Deposit ₹2,000 or more and claim with code MONSOON30.',
       'Get 30% bonus credit — max ₹5,000.',
       'Bonus credited after successful eligible deposit claim.',

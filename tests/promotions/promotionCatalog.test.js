@@ -41,7 +41,7 @@ describe('promotionCatalog', () => {
       min_stake: '2000',
       wagering_multiplier: '5',
       match_percent: '30',
-      starts_at: '2026-09-07T18:31:00.000Z',
+      starts_at: '2026-09-06T18:31:00.000Z',
       expires_at: '2026-09-21T18:29:00.000Z',
     });
 

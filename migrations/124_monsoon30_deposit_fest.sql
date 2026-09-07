@@ -1,5 +1,5 @@
 -- Seasonal Monsoon Deposit Fest — 30% deposit bonus (MONSOON30).
--- Window: 8 Sep 2026 00:01 IST → 21 Sep 2026 23:59 IST.
+-- Window: 7 Sep 2026 00:01 IST → 21 Sep 2026 23:59 IST.
 
 INSERT INTO promotions (
   id, name, code, type, status, budget, used_budget, max_reward, per_user_limit,
@@ -18,7 +18,7 @@ INSERT INTO promotions (
   2000.00,
   5.0,
   30.00,
-  TIMESTAMPTZ '2026-09-08 00:01:00+05:30',
+  TIMESTAMPTZ '2026-09-07 00:01:00+05:30',
   TIMESTAMPTZ '2026-09-21 23:59:00+05:30'
 )
 ON CONFLICT (code) DO UPDATE SET
