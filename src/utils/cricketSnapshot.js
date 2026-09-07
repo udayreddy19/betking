@@ -25,6 +25,7 @@ import {
   normalizeToken,
   resolveLabeledTeamSide,
 } from './cricketMatchNormalizer.js';
+import { looksLikeMirroredFirstInnings } from './cricketScores.js';
 
 export {
   detectCricketMatchFormat,
@@ -399,27 +400,41 @@ export function buildCanonicalMatchSnapshot(match) {
       && String(ld.chaseOvers).trim() !== ''
       && String(ld.chaseOvers) !== '0'
       && String(ld.chaseOvers) !== '0.0';
-    const fakeChaseStub = Number(ld.chaseRuns || 0) === 0
-      && Number(ld.chaseWickets || 0) > 0
+    const chaseRunsNum = Number(ld.chaseRuns);
+    const chaseWktsNum = Number(ld.chaseWickets || 0);
+    const fakeChaseStub = (Number.isFinite(chaseRunsNum) ? chaseRunsNum : 0) === 0
+      && chaseWktsNum > 0
       && !chaseOversMeaningful
       && firstWkts < 10;
-    const isSecond = !fakeChaseStub && (
-      Number(ld.chaseRuns) > 0
+    // Provider copies first-innings total into chase fields (e.g. 708/10 @ 0.0 ov).
+    const mirroredChaseTotal = firstRuns > 0
+      && Number.isFinite(chaseRunsNum)
+      && chaseRunsNum === firstRuns
+      && chaseWktsNum === firstWkts
+      && (!chaseOversMeaningful || normalizeCricbuzzOvers(ld.chaseOvers || '0.0') === firstOvs);
+    const impossibleChaseAtZeroOvers = Number.isFinite(chaseRunsNum)
+      && chaseRunsNum > 0
+      && !chaseOversMeaningful;
+    const chaseActuallyStarted = (Number.isFinite(chaseRunsNum) && chaseRunsNum > 0 && chaseOversMeaningful)
       || chaseOversMeaningful
-      || (ld.chaseTeamName && (Number(ld.chaseRuns) >= 0 && ld.chaseRuns != null))
-      || (Number(ld.inningsId) >= 2 && (Number(ld.chaseRuns) > 0 || chaseOversMeaningful || Number(ld.chaseWickets || 0) === 0))
-    );
+      || (chaseWktsNum > 0 && chaseOversMeaningful)
+      || !!(ld.batter1?.name || ld.batter2?.name);
+    const isSecond = !fakeChaseStub
+      && !mirroredChaseTotal
+      && !impossibleChaseAtZeroOvers
+      && !looksLikeMirroredFirstInnings(match, ld)
+      && (
+        chaseActuallyStarted
+        || (ld.chaseTeamName && chaseRunsNum === 0 && chaseWktsNum === 0 && firstWkts >= 10 && Number(ld.inningsId) >= 2)
+      );
     if (isSecond) {
       const secondBatTeam = firstBowlTeam;
       const secondBowlTeam = firstBatTeam;
-      const chaseRuns = Number(
-        ld.chaseRuns != null
-          ? ld.chaseRuns
-          : 0,
-      );
-      // Never fall back chase wickets to first-innings / opposing team wickets for empty stubs
-      const chaseWkts = Number(ld.chaseWickets != null ? ld.chaseWickets : 0);
-      const chaseOvs = normalizeCricbuzzOvers(ld.chaseOvers || '0.0');
+      const chaseRuns = Number.isFinite(chaseRunsNum) && !mirroredChaseTotal && !impossibleChaseAtZeroOvers
+        ? chaseRunsNum
+        : 0;
+      const chaseWkts = Number.isFinite(chaseWktsNum) && !mirroredChaseTotal ? chaseWktsNum : 0;
+      const chaseOvs = normalizeCricbuzzOvers(chaseOversMeaningful ? ld.chaseOvers : '0.0');
 
       inningsList.push({
         inningsId: 2,
@@ -471,32 +486,65 @@ export function buildCanonicalMatchSnapshot(match) {
     awayWickets: Number(match.team2?.wickets) || 0,
   });
 
+  const mirroredCards = looksLikeMirroredFirstInnings(match, ld)
+    || (cardT1 > 0 && cardT1 === cardT2
+      && Number(match.team1?.wickets || 0) === Number(match.team2?.wickets || 0));
+
+  const t1RunsRaw = match.team1?.runs;
+  const t2RunsRaw = match.team2?.runs;
+  // Never assign score1/score2 to the wrong side when first/chase team labels exist.
   const t1Runs = Number(
-    match.team1?.runs
+    (t1RunsRaw != null && !(mirroredCards && firstSideForCards === 'away') ? t1RunsRaw : null)
     ?? (firstSideForCards === 'home' ? ld.firstRuns : null)
     ?? (chaseSideForCards === 'home' ? ld.chaseRuns : null)
-    ?? ld.score1
+    ?? (firstSideForCards !== 'away' && chaseSideForCards !== 'away' ? ld.score1 : null)
     ?? (firstSideForCards === 'home' ? ld.runs : null)
     ?? 0,
   );
-  const t1Wkts = Number(match.team1?.wickets ?? ld.firstWickets ?? ld.wickets1 ?? 0);
-  const t1Ovs = normalizeCricbuzzOvers(match.team1?.overs || ld.firstOvers || ld.overs || '0.0');
+  const t1Wkts = Number(
+    match.team1?.wickets
+    ?? (firstSideForCards === 'home' ? ld.firstWickets : null)
+    ?? (chaseSideForCards === 'home' ? ld.chaseWickets : null)
+    ?? (firstSideForCards !== 'away' && chaseSideForCards !== 'away' ? ld.wickets1 : null)
+    ?? 0,
+  );
+  const t1Ovs = normalizeCricbuzzOvers(
+    match.team1?.overs
+    || (firstSideForCards === 'home' ? ld.firstOvers : null)
+    || (chaseSideForCards === 'home' ? ld.chaseOvers : null)
+    || (firstSideForCards !== 'away' && chaseSideForCards !== 'away' ? ld.overs : null)
+    || '0.0',
+  );
 
   const t2Runs = Number(
-    match.team2?.runs
+    (t2RunsRaw != null && !(mirroredCards && firstSideForCards === 'home') ? t2RunsRaw : null)
     ?? (firstSideForCards === 'away' ? ld.firstRuns : null)
     ?? (chaseSideForCards === 'away' ? ld.chaseRuns : null)
-    ?? ld.score2
+    ?? (firstSideForCards !== 'home' && chaseSideForCards !== 'home' ? ld.score2 : null)
     ?? (firstSideForCards === 'away' || chaseSideForCards === 'away' ? ld.runs : null)
     ?? 0,
   );
-  const t2Wkts = Number(match.team2?.wickets ?? ld.chaseWickets ?? ld.wickets2 ?? 0);
-  const t2Ovs = normalizeCricbuzzOvers(match.team2?.overs || ld.chaseOvers || ld.overs2 || '0.0');
+  const t2Wkts = Number(
+    match.team2?.wickets
+    ?? (firstSideForCards === 'away' ? ld.firstWickets : null)
+    ?? (chaseSideForCards === 'away' ? ld.chaseWickets : null)
+    ?? (firstSideForCards !== 'home' && chaseSideForCards !== 'home' ? ld.wickets2 : null)
+    ?? 0,
+  );
+  const t2Ovs = normalizeCricbuzzOvers(
+    match.team2?.overs
+    || (firstSideForCards === 'away' ? ld.firstOvers : null)
+    || (chaseSideForCards === 'away' ? ld.chaseOvers : null)
+    || (firstSideForCards !== 'home' && chaseSideForCards !== 'home' ? (ld.overs2 || ld.chaseOvers) : null)
+    || '0.0',
+  );
 
-  const isT1Active = (t1Runs > 0 || (t1Ovs && t1Ovs !== '0.0' && t1Ovs !== '0') || t1Wkts > 0);
-  const isT2Active = (t2Runs > 0 || (t2Ovs && t2Ovs !== '0.0' && t2Ovs !== '0') || t2Wkts > 0);
+  const isT1Active = !mirroredCards
+    && (t1Runs > 0 || (t1Ovs && t1Ovs !== '0.0' && t1Ovs !== '0') || t1Wkts > 0);
+  const isT2Active = (t2Runs > 0 || (t2Ovs && t2Ovs !== '0.0' && t2Ovs !== '0') || t2Wkts > 0)
+    && !(mirroredCards && firstSideForCards === 'home' && hasTeam1Innings);
 
-  if (!hasTeam1Innings && isT1Active) {
+  if (!hasTeam1Innings && isT1Active && !(mirroredCards && firstSideForCards === 'away')) {
     const nextInnNumber = inningsList.length + 1;
     const inningsOrdinal = isTest ? (nextInnNumber > 2 ? '2nd INNS' : '1st INNS') : (nextInnNumber > 1 ? `${nextInnNumber}nd INNS` : '1st INNS');
     const liveBatters = [];

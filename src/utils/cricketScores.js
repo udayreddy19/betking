@@ -83,6 +83,19 @@ export function looksLikeMirroredFirstInnings(match, ld = {}) {
 
   const firstRuns = Number(ld.firstRuns);
   const chaseRuns = Number(ld.chaseRuns);
+  const firstWickets = Number(ld.firstWickets ?? 0);
+  const chaseWickets = Number(ld.chaseWickets ?? 0);
+  const chaseOversEmpty = isEmptyOversValue(ld.chaseOvers ?? ld.overs2);
+  // Classic corruption: chase total equals first total with no chase overs bowled.
+  if (
+    Number.isFinite(firstRuns) && firstRuns > 0
+    && Number.isFinite(chaseRuns) && chaseRuns === firstRuns
+    && chaseWickets === firstWickets
+    && chaseOversEmpty
+  ) {
+    return true;
+  }
+
   const distinctTotals = Number.isFinite(firstRuns) && firstRuns > 0
     && Number.isFinite(chaseRuns)
     && firstRuns !== chaseRuns;
@@ -98,7 +111,7 @@ export function looksLikeMirroredFirstInnings(match, ld = {}) {
   if (distinctTotals || distinctOvers) return false;
   if (firstInningsLabel) return true;
   if (!sameScore) return false;
-  if (sameWkts && w1 > 10) return true;
+  if (sameWkts && w1 >= 10) return true;
   if (ld.chaseTeamName && Number(ld.chaseRuns) > 0 && Number(ld.firstRuns) > 0 && Number(ld.firstRuns) !== Number(ld.chaseRuns)) {
     return false;
   }

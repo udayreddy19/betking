@@ -636,4 +636,39 @@ test('163 overs live board never classifies as ODI even with false matchType', (
   assert.ok(['TEST', 'FIRST_CLASS'].includes(detectCricketMatchFormat(match)));
 });
 
+test('mirrored chase 708/10 @ 0.0 does not paint both teams All Out', () => {
+  const match = {
+    id: 'cb_duleep_mirror',
+    sport: 'cricket',
+    league: 'Duleep Trophy',
+    time: '2nd Day • Stumps',
+    team1: { name: 'East Zone', shortName: 'EZ', runs: 0, wickets: 0, overs: '0.0' },
+    team2: { name: 'South Zone', shortName: 'SZ', runs: 708, wickets: 10, overs: '163.0' },
+    liveDetails: {
+      inningsId: 2,
+      firstRuns: 708,
+      firstWickets: 10,
+      firstOvers: '163.0',
+      firstTeamName: 'South Zone',
+      chaseRuns: 708,
+      chaseWickets: 10,
+      chaseOvers: '0.0',
+      chaseTeamName: 'East Zone',
+      score1: 0,
+      wickets1: 0,
+      score2: 708,
+      wickets2: 10,
+      status: 'Stumps',
+    },
+  };
+  const snapshot = buildCanonicalMatchSnapshot(match);
+  assert.strictEqual(snapshot.innings.length, 1);
+  assert.strictEqual(snapshot.innings[0].battingTeamName, 'South Zone');
+  assert.strictEqual(snapshot.innings[0].score, 708);
+  assert.strictEqual(snapshot.headerScores.team1HasBatted, false);
+  assert.strictEqual(snapshot.headerScores.team1ScoreText, 'Yet to bat');
+  assert.strictEqual(snapshot.headerScores.team2HasBatted, true);
+  assert.match(snapshot.headerScores.team2ScoreText, /708/);
+});
+
 console.log('\n🎉 ALL CRICKET FORMAT, BANNER & SCORE STATISTICS TESTS PASSED WITH ZERO FAILURES!\n');

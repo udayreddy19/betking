@@ -744,6 +744,8 @@ function formatHeaderScore(runs, wickets, { missing = false } = {}) {
 }
 
 function headerScoreFromSources(resolvedTeam, snapshotInns) {
+  // Authoritative resolver said this side has not batted — never invent from a phantom snapshot inns.
+  if (resolvedTeam && resolvedTeam.hasBatted === false) return '—';
   if (resolvedTeam?.hasBatted) {
     return formatHeaderScore(resolvedTeam.runs, resolvedTeam.wickets);
   }
@@ -885,7 +887,19 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
       return `${batTeam || 'Team'} need ${required} runs to win`;
     }
     if (isTestMatch(match) && matchStateObj?.leadTrailState?.lead) {
-      return `${matchStateObj.leadTrailState.leadingTeam} lead by ${matchStateObj.leadTrailState.lead} runs`;
+      const lead = matchStateObj.leadTrailState.lead;
+      const leadingTeam = matchStateObj.leadTrailState.leadingTeam;
+      const t1Bat = !!resolvedScores.team1?.hasBatted;
+      const t2Bat = !!resolvedScores.team2?.hasBatted;
+      // Innings break: only one side has a real total — don't claim a "lead" against a phantom equal score.
+      if (t1Bat !== t2Bat) {
+        const battingDone = t1Bat ? resolvedScores.team1 : resolvedScores.team2;
+        if ((Number(battingDone?.wickets) >= 10 || Number(battingDone?.runs) > 0) && lead > 0) {
+          return `${leadingTeam} lead by ${lead} runs`;
+        }
+      } else if (t1Bat && t2Bat) {
+        return `${leadingTeam} lead by ${lead} runs`;
+      }
     }
     return innings ? getChaseText(match, innings, team1, team2) : null;
   })();
