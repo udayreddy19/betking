@@ -68,6 +68,25 @@ export async function adminAuth(req, res, next) {
     if (!decoded) {
       return res.status(401).json({ error: 'Invalid token', code: 'INVALID_TOKEN' });
     }
+
+    const { isPrivateAccessMode, isAuthorizedAdmin } = await import('../../lib/privateAccessConfig.mjs');
+    if (isPrivateAccessMode()) {
+      try {
+        const { query } = await import('../../db/pg.js');
+        const userRes = await query('SELECT email FROM users WHERE user_id = $1', [decoded.sub]);
+        const email = userRes.rows[0]?.email;
+        if (!email || !isAuthorizedAdmin(email)) {
+          return res.status(403).json({
+            error: 'Access to the platform is temporarily restricted.',
+            message: 'Access to the platform is temporarily restricted.',
+            code: 'PRIVATE_ACCESS_RESTRICTED',
+          });
+        }
+      } catch {
+        return res.status(500).json({ error: 'Internal error.', code: 'INTERNAL_ERROR' });
+      }
+    }
+
     const role = decoded.role;
     const isAdminRole = role && Object.values(ADMIN_ROLES).includes(role);
     const isUserAccess = decoded.type === 'access' || role === 'USER';

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { DEFAULT_OG_IMAGE, SITE_NAME, SITE_URL, metaForPath } from '../../config/siteSeo';
+import { DEFAULT_OG_IMAGE, SITE_NAME, metaForPath } from '../../config/siteSeo';
 
 function upsertMeta(selector, attr, name, content) {
   if (!content || typeof document === 'undefined') return;
@@ -24,22 +24,26 @@ function upsertLink(rel, href) {
   el.setAttribute('href', href);
 }
 
+/**
+ * Client-side SEO sync after hydration.
+ * Canonical strips query params (utm/ref/etc.) so tracking URLs do not become alternate canonicals.
+ * Private/application routes always receive noindex regardless of SEO_INDEXING_ENABLED.
+ */
 export default function RouteSeo() {
   const { pathname } = useLocation();
 
   useEffect(() => {
     const meta = metaForPath(pathname);
-    const url = `${SITE_URL}${meta.path === '/' ? '' : meta.path}`;
 
     document.title = meta.title;
 
     upsertMeta('meta', 'name', 'description', meta.description);
-    upsertMeta('meta', 'name', 'robots', 'index,follow');
+    upsertMeta('meta', 'name', 'robots', meta.robots);
 
     upsertMeta('meta', 'property', 'og:title', meta.title);
     upsertMeta('meta', 'property', 'og:description', meta.description);
     upsertMeta('meta', 'property', 'og:type', 'website');
-    upsertMeta('meta', 'property', 'og:url', url);
+    upsertMeta('meta', 'property', 'og:url', meta.canonical);
     upsertMeta('meta', 'property', 'og:site_name', SITE_NAME);
     upsertMeta('meta', 'property', 'og:image', DEFAULT_OG_IMAGE);
 
@@ -48,7 +52,7 @@ export default function RouteSeo() {
     upsertMeta('meta', 'name', 'twitter:description', meta.description);
     upsertMeta('meta', 'name', 'twitter:image', DEFAULT_OG_IMAGE);
 
-    upsertLink('canonical', url);
+    upsertLink('canonical', meta.canonical);
   }, [pathname]);
 
   return null;

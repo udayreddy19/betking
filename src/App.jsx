@@ -26,6 +26,7 @@ import LiveChatSupportWidget from './components/LiveChatSupportWidget/LiveChatSu
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import RouteSeo from './components/RouteSeo/RouteSeo';
 import PhoneRequiredGate from './components/PhoneRequiredGate/PhoneRequiredGate';
+import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
 import { getAdminSessionState } from './utils/adminSession';
 import { CASINO_ENABLED, FANTASY_JOIN_ENABLED } from './utils/featureFlags';
 import { FeatureFlagsProvider, useFeatureFlags } from './context/FeatureFlagsContext';
@@ -135,28 +136,28 @@ function AppLayout() {
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<Home />} />
-              <Route path="/live-betting" element={<Sports />} />
-              <Route path="/sports" element={<Sports />} />
-              <Route path="/wallet/deposit" element={<DepositPage />} />
+              <Route path="/live-betting" element={<ProtectedRoute><Sports /></ProtectedRoute>} />
+              <Route path="/sports" element={<ProtectedRoute><Sports /></ProtectedRoute>} />
+              <Route path="/wallet/deposit" element={<ProtectedRoute><DepositPage /></ProtectedRoute>} />
               <Route path="/deposit" element={<Navigate to="/wallet/deposit" replace />} />
-              <Route path="/casino" element={CASINO_ENABLED ? <Casino /> : <CasinoComingSoon />} />
-              <Route path="/live-casino" element={CASINO_ENABLED ? <LiveCasino /> : <CasinoComingSoon />} />
-              <Route path="/fantasy" element={FANTASY_JOIN_ENABLED ? <Fantasy /> : <CasinoComingSoon />} />
-              <Route path="/bets" element={<MyBetsPage />} />
-              <Route path="/invite" element={<FlaggedRoute flagKey="referral_system_ui"><InvitePage /></FlaggedRoute>} />
-              <Route path="/exchange" element={<CasinoComingSoon />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/wallet" element={<WalletDashboard />} />
+              <Route path="/casino" element={<ProtectedRoute>{CASINO_ENABLED ? <Casino /> : <CasinoComingSoon />}</ProtectedRoute>} />
+              <Route path="/live-casino" element={<ProtectedRoute>{CASINO_ENABLED ? <LiveCasino /> : <CasinoComingSoon />}</ProtectedRoute>} />
+              <Route path="/fantasy" element={<ProtectedRoute>{FANTASY_JOIN_ENABLED ? <Fantasy /> : <CasinoComingSoon />}</ProtectedRoute>} />
+              <Route path="/bets" element={<ProtectedRoute><MyBetsPage /></ProtectedRoute>} />
+              <Route path="/invite" element={<ProtectedRoute><FlaggedRoute flagKey="referral_system_ui"><InvitePage /></FlaggedRoute></ProtectedRoute>} />
+              <Route path="/exchange" element={<ProtectedRoute><CasinoComingSoon /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/wallet" element={<ProtectedRoute><WalletDashboard /></ProtectedRoute>} />
               <Route path="/register" element={<Register />} />
               <Route path="/complete-profile" element={<CompleteProfile />} />
               <Route path="/_oauth/google" element={<OAuthGoogleCallback />} />
               <Route path="/verify-email" element={<VerifyEmailPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
-              <Route path="/promotions" element={<FlaggedRoute flagKey="promotion_engine_ui"><Promotions /></FlaggedRoute>} />
-              <Route path="/rewards" element={<MyRewards />} />
-              <Route path="/my-rewards" element={<MyRewards />} />
-              <Route path="/notifications" element={<FlaggedRoute flagKey="notification_center"><NotificationCenter /></FlaggedRoute>} />
-              <Route path="/vip" element={<Vip />} />
+              <Route path="/promotions" element={<ProtectedRoute><FlaggedRoute flagKey="promotion_engine_ui"><Promotions /></FlaggedRoute></ProtectedRoute>} />
+              <Route path="/rewards" element={<ProtectedRoute><MyRewards /></ProtectedRoute>} />
+              <Route path="/my-rewards" element={<ProtectedRoute><MyRewards /></ProtectedRoute>} />
+              <Route path="/notifications" element={<ProtectedRoute><FlaggedRoute flagKey="notification_center"><NotificationCenter /></FlaggedRoute></ProtectedRoute>} />
+              <Route path="/vip" element={<ProtectedRoute><Vip /></ProtectedRoute>} />
               <Route
                 path="/admin/iplsrl"
                 element={(
@@ -167,7 +168,7 @@ function AppLayout() {
               />
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/*" element={<Admin />} />
-              <Route path="/srl" element={<FlaggedRoute flagKey="oddsyra_srl_ui"><OddsYraSrl /></FlaggedRoute>} />
+              <Route path="/srl" element={<ProtectedRoute><FlaggedRoute flagKey="oddsyra_srl_ui"><OddsYraSrl /></FlaggedRoute></ProtectedRoute>} />
               <Route path="/oddsyra-srl" element={<Navigate to="/srl" replace />} />
               <Route path="/iplsrl" element={<Navigate to="/srl" replace />} />
               <Route path="/iplsrl/match-center" element={<Navigate to="/srl" replace />} />
@@ -203,9 +204,9 @@ function AppLayout() {
               <Route path="/responsible-gaming" element={<FlaggedRoute flagKey="responsible_gaming_ui"><ResponsibleGaming /></FlaggedRoute>} />
               <Route path="/help" element={<Help />} />
               <Route path="/support" element={<SupportHome />} />
-              <Route path="/support/tickets" element={<TicketsListPage />} />
-              <Route path="/support/tickets/new" element={<CreateTicketPage />} />
-              <Route path="/support/tickets/:ticketReference" element={<TicketDetailPage />} />
+              <Route path="/support/tickets" element={<ProtectedRoute><TicketsListPage /></ProtectedRoute>} />
+              <Route path="/support/tickets/new" element={<ProtectedRoute><CreateTicketPage /></ProtectedRoute>} />
+              <Route path="/support/tickets/:ticketReference" element={<ProtectedRoute><TicketDetailPage /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

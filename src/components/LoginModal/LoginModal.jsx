@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import BrandLogo, { BrandWordmark } from '../BrandLogo/BrandLogo';
 import { SocialAuthBlock } from '../SocialAuthButtons/SocialAuthButtons';
 import { springSheet } from '../../utils/motionPresets';
+import { REGISTRATION_ENABLED } from '../../utils/privateAccessConfig';
 import '../SocialAuthButtons/SocialAuthButtons.css';
 import './LoginModal.css';
 
@@ -100,10 +101,17 @@ export default function LoginModal() {
 
     setLoading(true);
     try {
-      const success = await login(username, password);
-      if (!success) {
-        setError('Invalid email or password. Please try again or create an account.');
+      const result = await login(username, password);
+      if (result === true) return;
+      if (result && typeof result === 'object' && result.ok === false) {
+        setError(result.error || 'Access to the platform is temporarily restricted.');
+        return;
       }
+      setError(
+        REGISTRATION_ENABLED
+          ? 'Invalid email or password. Please try again or create an account.'
+          : 'Invalid email or password. Please try again.',
+      );
     } finally {
       setLoading(false);
     }
@@ -300,9 +308,15 @@ export default function LoginModal() {
                   <button type="button" onClick={() => { resetForm(); setMode('forgot'); }}>
                     Forgot password?
                   </button>
-                  <Link to="/register" onClick={handleRegister}>
-                    Create account
-                  </Link>
+                  {REGISTRATION_ENABLED ? (
+                    <Link to="/register" onClick={handleRegister}>
+                      Create account
+                    </Link>
+                  ) : (
+                    <span className="modal-private-note" style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary, #94a3b8)', alignSelf: 'center' }}>
+                      Private Access Mode
+                    </span>
+                  )}
                 </>
               )}
             </div>

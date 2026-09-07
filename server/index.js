@@ -116,6 +116,7 @@ import supportRouter from './routes/support.js';
 import growthRouter from './routes/growth.js';
 import liveScoresPublicRouter from './routes/public/liveScores.js';
 import publicOddsRouter from './routes/public/odds.js';
+import publicSeoRouter from './routes/public/seo.js';
 import adminInlineRouter from './routes/admin/inline.js';
 import adminSettlementRouter from './routes/admin/settlement.js';
 import adminPaymentGatewaysRouter from './routes/admin/paymentGateways.js';
@@ -125,6 +126,7 @@ import userNotificationsRouter from './routes/userNotifications.js';
 import matchFollowRouter from './routes/matchFollow.js';
 
 app.use(authInlineRouter);
+app.use(publicSeoRouter);
 app.use(userNotificationsRouter);
 app.use(matchFollowRouter);
 app.use(liveRouter);
