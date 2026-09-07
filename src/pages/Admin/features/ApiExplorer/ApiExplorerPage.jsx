@@ -107,7 +107,33 @@ export default function ApiExplorerPage({ subModule = 'overview' }) {
     }
   };
 
-  const oddsApi = apis.find((a) => a.id === 'odds-engine-v3');
+  const oddsApis = [
+    {
+      id: 'odds-engine-v3',
+      title: 'OddsEngineV3',
+      subtitle: 'Sandbox canonical match state — never touches live odds, wallets, or settlement',
+      defaultEngine: 'OddsEngineV3',
+      defaultVersion: '3.0.0',
+      accent: 'var(--admin-accent-violet)',
+    },
+    {
+      id: 'odds-engine-v4',
+      title: 'OddsEngineV4',
+      subtitle: 'Sandbox cricket V4 book (resource MW + house protect) — never touches live odds, wallets, or settlement',
+      defaultEngine: 'OddsEngineV4',
+      defaultVersion: '4.6.0',
+      accent: 'var(--admin-accent)',
+    },
+    {
+      id: 'other-sports-engine-v4',
+      title: 'OtherSportsEngineV4',
+      subtitle: 'Sandbox soccer / basketball / tennis house-hardened book — never touches live odds, wallets, or settlement',
+      defaultEngine: 'OtherSportsEngineV4',
+      defaultVersion: '4.2.0',
+      accent: '#0d9488',
+    },
+  ].map((meta) => ({ ...meta, api: apis.find((a) => a.id === meta.id) }))
+    .filter((row) => row.api);
 
   return (
     <div className="api-explorer">
@@ -154,14 +180,20 @@ export default function ApiExplorerPage({ subModule = 'overview' }) {
             }}
           />
 
-          {(subModule === 'odds-engine' || category === 'ODDS' || subModule === 'overview') && oddsApi && (
+          {(subModule === 'odds-engine' || category === 'ODDS' || subModule === 'overview') && oddsApis.map((row) => (
             <OddsEnginePanel
-              api={oddsApi}
-              result={results['odds-engine-v3']}
-              testing={testingId === 'odds-engine-v3'}
-              onTest={() => runTest(oddsApi)}
+              key={row.id}
+              api={row.api}
+              result={results[row.id]}
+              testing={testingId === row.id}
+              onTest={() => runTest(row.api)}
+              title={row.title}
+              subtitle={row.subtitle}
+              defaultEngine={row.defaultEngine}
+              defaultVersion={row.defaultVersion}
+              accent={row.accent}
             />
-          )}
+          ))}
 
           <ApiCategoryTabs
             categories={payload.categories || []}

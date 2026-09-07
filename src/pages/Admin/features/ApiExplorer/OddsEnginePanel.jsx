@@ -3,19 +3,31 @@ import AdminCard from '../../components/AdminCard';
 import ApiTestButton from './ApiTestButton';
 import ApiResponseViewer from './ApiResponseViewer';
 import ApiStatusBadge from './ApiStatusBadge';
-import { formatIst, formatIstDateTime } from '../../../../utils/istTime';
+import { formatIstDateTime } from '../../../../utils/istTime';
 
-export default function OddsEnginePanel({ api, result, testing, onTest }) {
+export default function OddsEnginePanel({
+  api,
+  result,
+  testing,
+  onTest,
+  title = 'OddsEngineV3',
+  subtitle = 'Sandbox canonical match state — never touches live odds, wallets, or settlement',
+  testLabel,
+  defaultEngine = 'OddsEngineV3',
+  defaultVersion = '3.0.0',
+  accent = 'var(--admin-accent-violet)',
+}) {
   const summary = result?.summary || {};
+  const label = testLabel || `Test ${title}`;
   return (
-    <section className="api-explorer__odds" aria-label="OddsEngineV3 sandbox">
+    <section className="api-explorer__odds" aria-label={`${title} sandbox`}>
       <AdminCard
-        accent="var(--admin-accent-violet)"
-        title="OddsEngineV3"
-        subtitle="Sandbox canonical match state — never touches live odds, wallets, or settlement"
+        accent={accent}
+        title={title}
+        subtitle={subtitle}
         actions={(
           <ApiTestButton
-            label="Test OddsEngineV3"
+            label={label}
             testing={testing}
             onClick={onTest}
           />
@@ -28,11 +40,11 @@ export default function OddsEnginePanel({ api, result, testing, onTest }) {
           </div>
           <div>
             <span>Engine</span>
-            <strong>{summary.engineName || summary.engine || 'OddsEngineV3'}</strong>
+            <strong>{summary.engineName || summary.engine || defaultEngine}</strong>
           </div>
           <div>
             <span>Version</span>
-            <strong>{summary.engineVersion || '3.0.0'}</strong>
+            <strong>{summary.engineVersion || defaultVersion}</strong>
           </div>
           <div>
             <span>Markets</span>

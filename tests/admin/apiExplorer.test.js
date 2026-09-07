@@ -10,7 +10,7 @@ import { sanitizeExplorerPayload, isSensitiveKey, looksLikeSecretValue, assertNo
 import { withTimeout } from '../../lib/api-explorer/timeout.mjs';
 import { ERROR_CODES } from '../../lib/api-explorer/errorCodes.mjs';
 import { allowIndividualTest, allowRefreshAll } from '../../lib/api-explorer/rateLimit.mjs';
-import { testOddsEngineV3, SANDBOX_MATCH_ID } from '../../lib/api-explorer/tests/oddsEngineTest.mjs';
+import { testOddsEngineV3, testOddsEngineV4, testOtherSportsEngineV4, SANDBOX_MATCH_ID, SANDBOX_SOCCER_MATCH_ID } from '../../lib/api-explorer/tests/oddsEngineTest.mjs';
 import { testPostgres } from '../../lib/api-explorer/tests/postgresTest.mjs';
 import { testRedis } from '../../lib/api-explorer/tests/redisTest.mjs';
 import { testJwt } from '../../lib/api-explorer/tests/jwtTest.mjs';
@@ -43,6 +43,8 @@ describe('Admin API Explorer', () => {
     expect(API_REGISTRY.length).toBeGreaterThan(20);
     expect(getApiById('cricbuzz')).toBeTruthy();
     expect(getApiById('odds-engine-v3').fetchMode).toBe('SAFE_TEST');
+    expect(getApiById('odds-engine-v4').fetchMode).toBe('SAFE_TEST');
+    expect(getApiById('other-sports-engine-v4').fetchMode).toBe('SAFE_TEST');
     expect(getApiById('razorpay').requiresConfig).toContain('RAZORPAY_KEY_SECRET');
     expect(getApiById('kyc-cashfree')).toBeTruthy();
     expect(getApiById('football-mock').mock).toBe(true);
@@ -59,6 +61,8 @@ describe('Admin API Explorer', () => {
     const ids = listSafeRefreshIds();
     expect(ids).toContain('postgres');
     expect(ids).toContain('odds-engine-v3');
+    expect(ids).toContain('odds-engine-v4');
+    expect(ids).toContain('other-sports-engine-v4');
     expect(ids).not.toContain('cricbuzz');
     expect(ids).not.toContain('tencric');
     expect(ids).not.toContain('razorpay');
@@ -134,6 +138,24 @@ describe('Admin API Explorer', () => {
     expect(result.summary.matchId).toBe(SANDBOX_MATCH_ID);
     expect(result.summary.marketCount).toBeGreaterThan(0);
     expect(result.summary.pipeline.length).toBeGreaterThan(3);
+  });
+
+  it('runs OddsEngineV4 in sandbox test mode only', async () => {
+    const result = await testOddsEngineV4();
+    expect(result.success).toBe(true);
+    expect(result.summary.sandbox).toBe(true);
+    expect(result.summary.matchId).toBe(SANDBOX_MATCH_ID);
+    expect(result.summary.engineName).toBe('OddsEngineV4');
+    expect(result.summary.marketCount).toBeGreaterThan(0);
+  });
+
+  it('runs OtherSportsEngineV4 in sandbox test mode only', async () => {
+    const result = await testOtherSportsEngineV4();
+    expect(result.success).toBe(true);
+    expect(result.summary.sandbox).toBe(true);
+    expect(result.summary.matchId).toBe(SANDBOX_SOCCER_MATCH_ID);
+    expect(result.summary.engineName).toBe('OtherSportsEngineV4');
+    expect(result.summary.marketCount).toBeGreaterThan(0);
   });
 
   it('runs PostgreSQL and Redis health tests without exposing credentials', async () => {
