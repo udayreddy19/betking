@@ -171,7 +171,7 @@ describe('OddsEngineV4 — resource MW + V3 catalog', () => {
     expect(p190).toBeLessThan(0.12);
 
     const v4 = generateV4(state, { winnerOnly: false });
-    expect(v4.engineVersion).toBe('4.8.6');
+    expect(v4.engineVersion).toBe('4.8.7');
     expect(v4.v4Meta?.features?.length).toBeGreaterThan(0);
     // Near-target books are intentionally thinner; full 100 score is asserted on mid-chase.
     const teamTotal = v4.markets.find((m) => m.marketId === 'team_total');
@@ -220,7 +220,7 @@ describe('OddsEngineV4 — resource MW + V3 catalog', () => {
   it('scores a full live book at 100/100 on the readiness rubric', () => {
     const state = buildCanonicalFromMatch(chaseMatch());
     const v4 = generateV4(state, { winnerOnly: false });
-    expect(v4.engineVersion).toBe('4.8.6');
+    expect(v4.engineVersion).toBe('4.8.7');
     expect(v4.v4Meta.qualityScore).toBe(100);
     expect(v4.v4Meta.qualityBreakdown.matchWinner).toBe(20);
     expect(v4.v4Meta.qualityBreakdown.houseEdge).toBe(20);
