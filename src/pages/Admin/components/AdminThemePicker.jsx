@@ -2,15 +2,18 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useAdminTheme } from '../context/AdminThemeContext';
 
 /**
- * Compact admin theme picker — palette presets for Ops chrome.
+ * Admin theme picker.
+ * - default: compact topbar/login dropdown
+ * - variant="inline": list only (for profile panel)
  */
-export default function AdminThemePicker() {
+export default function AdminThemePicker({ variant = 'dropdown' }) {
   const { themeId, theme, setThemeId, themes } = useAdminTheme();
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
+  const inline = variant === 'inline';
 
   useEffect(() => {
-    if (!open) return undefined;
+    if (inline || !open) return undefined;
     const onDoc = (e) => {
       if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false);
     };
@@ -23,7 +26,46 @@ export default function AdminThemePicker() {
       document.removeEventListener('mousedown', onDoc);
       document.removeEventListener('keydown', onKey);
     };
-  }, [open]);
+  }, [open, inline]);
+
+  const list = (
+    <div
+      className={inline ? 'admin-theme-picker__list' : 'admin-theme-picker__menu'}
+      role="listbox"
+      aria-label="Admin themes"
+    >
+      {themes.map((t) => {
+        const active = t.id === themeId;
+        return (
+          <button
+            key={t.id}
+            type="button"
+            role="option"
+            aria-selected={active}
+            className={`admin-theme-picker__option${active ? ' is-active' : ''}`}
+            onClick={() => {
+              setThemeId(t.id);
+              if (!inline) setOpen(false);
+            }}
+          >
+            <span className="admin-theme-picker__swatches" aria-hidden="true">
+              {t.swatches.map((c) => (
+                <span key={`${t.id}-${c}`} className="admin-theme-picker__dot" style={{ background: c }} />
+              ))}
+            </span>
+            <span className="admin-theme-picker__meta">
+              <span className="admin-theme-picker__name">{t.label}</span>
+              <span className="admin-theme-picker__desc">{t.description}</span>
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  if (inline) {
+    return <div className="admin-theme-picker admin-theme-picker--inline">{list}</div>;
+  }
 
   return (
     <div className="admin-theme-picker" ref={rootRef}>
@@ -42,37 +84,7 @@ export default function AdminThemePicker() {
         </span>
         <span className="admin-theme-picker__label">{theme.label}</span>
       </button>
-
-      {open && (
-        <div className="admin-theme-picker__menu" role="listbox" aria-label="Admin themes">
-          {themes.map((t) => {
-            const active = t.id === themeId;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                role="option"
-                aria-selected={active}
-                className={`admin-theme-picker__option${active ? ' is-active' : ''}`}
-                onClick={() => {
-                  setThemeId(t.id);
-                  setOpen(false);
-                }}
-              >
-                <span className="admin-theme-picker__swatches" aria-hidden="true">
-                  {t.swatches.map((c) => (
-                    <span key={`${t.id}-${c}`} className="admin-theme-picker__dot" style={{ background: c }} />
-                  ))}
-                </span>
-                <span className="admin-theme-picker__meta">
-                  <span className="admin-theme-picker__name">{t.label}</span>
-                  <span className="admin-theme-picker__desc">{t.description}</span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      )}
+      {open ? list : null}
     </div>
   );
 }

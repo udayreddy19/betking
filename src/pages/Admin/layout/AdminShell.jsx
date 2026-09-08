@@ -1205,7 +1205,6 @@ function AdminShellInner() {
           }}
           uiRevamp={uiRevamp}
           onToggleUiRevamp={toggleRevamp}
-          showSiteThemeToggle={adminThemeId === 'match'}
         />
 
         {/* Alerts Popover (portal) */}

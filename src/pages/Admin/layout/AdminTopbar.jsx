@@ -3,35 +3,14 @@ import { motion } from 'motion/react';
 import {
   SearchIcon,
   BellRingIcon,
-  LogOutIcon,
   MenuIcon,
 } from '../../../icons/animate/index';
-import ThemeToggle from '../../../components/ThemeToggle/ThemeToggle';
-import AdminThemePicker from '../components/AdminThemePicker';
+import AdminProfileMenu from '../components/AdminProfileMenu';
 import { ADMIN_ROLES } from '../permissions/AdminRBACGate';
-
-function AdminProfileSection({ onLogout }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-      <div className="admin-topbar__avatar" aria-hidden="true">A</div>
-
-      <motion.button
-        type="button"
-        onClick={onLogout}
-        whileTap={{ scale: 0.97 }}
-        title="Sign out"
-        className="admin-btn admin-btn--ghost admin-btn--icon"
-        style={{ width: '30px', height: '30px', marginLeft: '2px' }}
-      >
-        <LogOutIcon size={14} />
-      </motion.button>
-    </div>
-  );
-}
 
 /**
  * Extracted Admin Topbar — search, alerts, RBAC role, profile, breadcrumbs.
- * All state and handlers are received via props from AdminShell.
+ * Themes live in the admin profile menu.
  */
 export default function AdminTopbar({
   globalSearch,
@@ -53,7 +32,6 @@ export default function AdminTopbar({
   onBreadcrumbDomain,
   uiRevamp = false,
   onToggleUiRevamp,
-  showSiteThemeToggle = true,
 }) {
   const showSub = Boolean(
     currentSubLabel &&
@@ -137,10 +115,6 @@ export default function AdminTopbar({
           </button>
         )}
 
-        <AdminThemePicker />
-
-        {showSiteThemeToggle ? <ThemeToggle /> : null}
-
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
           <motion.button
             ref={alertsBellRef}
@@ -210,7 +184,7 @@ export default function AdminTopbar({
           )}
         </div>
 
-        <AdminProfileSection onLogout={onLogout} />
+        <AdminProfileMenu activeRole={activeRole} onLogout={onLogout} />
       </div>
 
       <style>{`
