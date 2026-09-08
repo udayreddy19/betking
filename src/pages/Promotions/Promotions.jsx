@@ -59,7 +59,7 @@ function isPromoUsed(promo, {
   return false;
 }
 
-function PromoCard({ promo, claiming, onClaim }) {
+function PromoCard({ promo, claiming, onClaim, isLoggedIn }) {
   const reward = rewardLabel(promo);
   return (
     <article className="promo-item" id={`promo-${promo.code || promo.id}`}>
@@ -101,7 +101,7 @@ function PromoCard({ promo, claiming, onClaim }) {
           onClick={() => onClaim(promo)}
           disabled={claiming}
         >
-          {claiming ? 'Claiming…' : 'Claim now'}
+          {claiming ? 'Claiming…' : (isLoggedIn ? 'Claim now' : 'Log in to claim')}
         </button>
       </div>
     </article>
@@ -250,6 +250,7 @@ export default function Promotions() {
               promo={promo}
               claiming={claimingCode === promo.code}
               onClaim={handleClaim}
+              isLoggedIn={isLoggedIn}
             />
           ))}
         </div>

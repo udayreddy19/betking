@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { apiFetch } from '../utils/apiClient';
 import { DEMO_MODE } from '../utils/featureFlags';
 import { promotions as demoPromotions } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
 
 async function fetchCatalogFromApi() {
   const res = await apiFetch('/api/v1/promotions');
@@ -11,6 +12,7 @@ async function fetchCatalogFromApi() {
 }
 
 export function usePromotionCatalog() {
+  const { isLoggedIn } = useAuth();
   const [catalog, setCatalog] = useState(DEMO_MODE ? demoPromotions : []);
   const [loading, setLoading] = useState(!DEMO_MODE);
   const [error, setError] = useState(null);
@@ -44,7 +46,7 @@ export function usePromotionCatalog() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isLoggedIn]);
 
   const reload = async () => {
     if (DEMO_MODE) return demoPromotions;

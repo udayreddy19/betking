@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import { requireAuth } from '../middleware/userAuth.js';
+import { optionalAuth, requireAuth } from '../middleware/userAuth.js';
 
 const router = Router();
 
-router.get('/api/v1/promotions', async (req, res) => {
+router.get('/api/v1/promotions', optionalAuth, async (req, res) => {
   try {
-    const { listPublicPromotionCatalog } = await import('../../lib/promotionCatalog.mjs');
-    const promotions = await listPublicPromotionCatalog();
+    const { listPromotionCatalogForViewer } = await import('../../lib/promotionCatalog.mjs');
+    const promotions = await listPromotionCatalogForViewer(req.user?.userId || null);
     res.json({ success: true, count: promotions.length, promotions });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

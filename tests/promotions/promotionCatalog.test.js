@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   mapDepositPromotionRow,
   mapSignupCodeRow,
+  isPublicCatalogPromotionRow,
 } from '../../lib/promotionCatalog.mjs';
 
 describe('promotionCatalog', () => {
@@ -75,5 +76,12 @@ describe('promotionCatalog', () => {
     expect(item.bonusAmount).toBe(500);
     expect(item.title).toContain('₹500');
     expect(item.terms.length).toBeGreaterThan(0);
+  });
+
+  it('treats targeted and spin grant promos as non-public', () => {
+    expect(isPublicCatalogPromotionRow({ code: 'MONSOON30', is_targeted: false })).toBe(true);
+    expect(isPublicCatalogPromotionRow({ code: 'TDFBADWHOM', is_targeted: true })).toBe(false);
+    expect(isPublicCatalogPromotionRow({ code: 'SPIN_2026-09-08', id: 'promo_spin_2026-09-08' })).toBe(false);
+    expect(isPublicCatalogPromotionRow({ code: 'TDFBQZCJGR', id: 'promo_tdfb_abc' })).toBe(false);
   });
 });
