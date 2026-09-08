@@ -4162,3 +4162,284 @@ html[data-theme="light"] .admin-badge--info,
   }
 }
 
+
+/* ==========================================================================
+   Admin theme picker + palette presets (scoped to .admin-shell)
+   ========================================================================== */
+
+.admin-theme-picker {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.admin-theme-picker__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 10px 0 8px;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-full);
+  background: var(--admin-surface);
+  color: var(--admin-text-muted);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.admin-theme-picker__btn:hover,
+.admin-theme-picker__btn.is-open {
+  color: var(--admin-text);
+  background: var(--admin-surface-hover);
+}
+
+.admin-theme-picker__swatches {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.admin-theme-picker__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--admin-text) 18%, transparent);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.admin-theme-picker__label {
+  max-width: 88px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-theme-picker__menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 80;
+  width: min(280px, calc(100vw - 24px));
+  padding: 6px;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  background: var(--admin-surface-elevated, var(--admin-panel));
+  box-shadow: var(--admin-shadow-lg);
+  display: grid;
+  gap: 2px;
+}
+
+.admin-theme-picker__option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: var(--admin-radius);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.admin-theme-picker__option:hover {
+  background: var(--admin-surface-hover);
+}
+
+.admin-theme-picker__option.is-active {
+  background: var(--admin-primary-softer);
+}
+
+.admin-theme-picker__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.admin-theme-picker__name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--admin-text);
+}
+
+.admin-theme-picker__desc {
+  font-size: 0.7rem;
+  color: var(--admin-text-muted);
+  line-height: 1.35;
+}
+
+/* —— Forest desk (light) —— */
+.admin-shell[data-admin-theme="forest"] {
+  color-scheme: light;
+  --admin-bg: #eef3ef;
+  --admin-panel: #f7faf7;
+  --admin-surface: #fbfdfb;
+  --admin-surface-hover: #e8efe9;
+  --admin-surface-elevated: #ffffff;
+  --admin-border: #cfdad1;
+  --admin-border-bright: #b7c7bb;
+  --admin-border-focus: #1f8a4c;
+  --admin-primary: #1f8a4c;
+  --admin-primary-hover: #166b3a;
+  --admin-on-primary: #f4fff7;
+  --admin-primary-soft: color-mix(in srgb, #1f8a4c 16%, transparent);
+  --admin-primary-softer: color-mix(in srgb, #1f8a4c 10%, transparent);
+  --admin-success: #1f8a4c;
+  --admin-warning: #c98512;
+  --admin-danger: #d6453a;
+  --admin-info: #2a8f9a;
+  --admin-text: #152018;
+  --admin-text-secondary: #4a5a4f;
+  --admin-text-muted: #6f7f74;
+  --admin-text-dim: #6f7f74;
+  --admin-sticky-bg: rgba(247, 250, 247, 0.92);
+  --admin-card-bg: #fbfdfb;
+  --admin-chip-bg: #e8efe9;
+  --admin-input-bg: #f1f6f2;
+  --admin-shadow: 0 8px 24px rgba(21, 32, 24, 0.08);
+  --admin-shadow-sm: 0 1px 2px rgba(21, 32, 24, 0.06);
+  --admin-shadow-lg: 0 16px 40px rgba(21, 32, 24, 0.12);
+}
+
+/* —— Mist (light cool) —— */
+.admin-shell[data-admin-theme="mist"] {
+  color-scheme: light;
+  --admin-bg: #eef1f5;
+  --admin-panel: #f7f8fb;
+  --admin-surface: #fcfdff;
+  --admin-surface-hover: #e8edf4;
+  --admin-surface-elevated: #ffffff;
+  --admin-border: #d0d7e0;
+  --admin-border-bright: #b8c2cf;
+  --admin-border-focus: #2a6f8f;
+  --admin-primary: #2a6f8f;
+  --admin-primary-hover: #1f5670;
+  --admin-on-primary: #f4fbff;
+  --admin-primary-soft: color-mix(in srgb, #2a6f8f 16%, transparent);
+  --admin-primary-softer: color-mix(in srgb, #2a6f8f 10%, transparent);
+  --admin-success: #2f7d57;
+  --admin-warning: #c98512;
+  --admin-danger: #d6453a;
+  --admin-info: #2a6f8f;
+  --admin-text: #12161c;
+  --admin-text-secondary: #4b5563;
+  --admin-text-muted: #6b7280;
+  --admin-text-dim: #6b7280;
+  --admin-sticky-bg: rgba(247, 248, 251, 0.92);
+  --admin-card-bg: #fcfdff;
+  --admin-chip-bg: #e8edf4;
+  --admin-input-bg: #f1f4f8;
+  --admin-shadow: 0 8px 24px rgba(18, 22, 28, 0.08);
+  --admin-shadow-sm: 0 1px 2px rgba(18, 22, 28, 0.06);
+  --admin-shadow-lg: 0 16px 40px rgba(18, 22, 28, 0.12);
+}
+
+/* —— Ops slate (dark) —— */
+.admin-shell[data-admin-theme="slate"] {
+  color-scheme: dark;
+  --admin-bg: #0f1319;
+  --admin-panel: #161c25;
+  --admin-surface: #1b2330;
+  --admin-surface-hover: #243041;
+  --admin-surface-elevated: #222c3b;
+  --admin-border: #2c384a;
+  --admin-border-bright: #3a4a61;
+  --admin-border-focus: #5b8def;
+  --admin-primary: #5b8def;
+  --admin-primary-hover: #7aa3f5;
+  --admin-on-primary: #0b1220;
+  --admin-primary-soft: color-mix(in srgb, #5b8def 22%, transparent);
+  --admin-primary-softer: color-mix(in srgb, #5b8def 12%, transparent);
+  --admin-success: #3dba6c;
+  --admin-warning: #e8a317;
+  --admin-danger: #f07167;
+  --admin-info: #5b8def;
+  --admin-text: #e8edf5;
+  --admin-text-secondary: #a8b3c4;
+  --admin-text-muted: #7d8aa0;
+  --admin-text-dim: #7d8aa0;
+  --admin-sticky-bg: rgba(22, 28, 37, 0.92);
+  --admin-card-bg: #1b2330;
+  --admin-chip-bg: #243041;
+  --admin-input-bg: #121821;
+  --admin-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  --admin-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.28);
+  --admin-shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.45);
+}
+
+/* —— Control navy (dark) —— */
+.admin-shell[data-admin-theme="navy"] {
+  color-scheme: dark;
+  --admin-bg: #070d18;
+  --admin-panel: #0d1524;
+  --admin-surface: #121c2f;
+  --admin-surface-hover: #1a2740;
+  --admin-surface-elevated: #182338;
+  --admin-border: #243352;
+  --admin-border-bright: #31466c;
+  --admin-border-focus: #3d8bfd;
+  --admin-primary: #3d8bfd;
+  --admin-primary-hover: #62a3ff;
+  --admin-on-primary: #061018;
+  --admin-primary-soft: color-mix(in srgb, #3d8bfd 22%, transparent);
+  --admin-primary-softer: color-mix(in srgb, #3d8bfd 12%, transparent);
+  --admin-success: #3dba6c;
+  --admin-warning: #e8a317;
+  --admin-danger: #f07167;
+  --admin-info: #3d8bfd;
+  --admin-text: #e7eefc;
+  --admin-text-secondary: #9fb0cf;
+  --admin-text-muted: #7b8db0;
+  --admin-text-dim: #7b8db0;
+  --admin-sticky-bg: rgba(13, 21, 36, 0.92);
+  --admin-card-bg: #121c2f;
+  --admin-chip-bg: #1a2740;
+  --admin-input-bg: #0a1220;
+  --admin-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
+  --admin-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --admin-shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.5);
+}
+
+/* —— Graphite (dark + turf accent) —— */
+.admin-shell[data-admin-theme="graphite"] {
+  color-scheme: dark;
+  --admin-bg: #0e0e0e;
+  --admin-panel: #161616;
+  --admin-surface: #1c1c1c;
+  --admin-surface-hover: #262626;
+  --admin-surface-elevated: #222222;
+  --admin-border: #2e2e2e;
+  --admin-border-bright: #3d3d3d;
+  --admin-border-focus: #7dff6b;
+  --admin-primary: #7dff6b;
+  --admin-primary-hover: #9aff8c;
+  --admin-on-primary: #0b120c;
+  --admin-primary-soft: color-mix(in srgb, #7dff6b 18%, transparent);
+  --admin-primary-softer: color-mix(in srgb, #7dff6b 10%, transparent);
+  --admin-success: #7dff6b;
+  --admin-warning: #e8a317;
+  --admin-danger: #f07167;
+  --admin-info: #5b8def;
+  --admin-text: #f2f2f2;
+  --admin-text-secondary: #b0b0b0;
+  --admin-text-muted: #888888;
+  --admin-text-dim: #888888;
+  --admin-sticky-bg: rgba(22, 22, 22, 0.92);
+  --admin-card-bg: #1c1c1c;
+  --admin-chip-bg: #262626;
+  --admin-input-bg: #121212;
+  --admin-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  --admin-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --admin-shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.55);
+}
+
+@media (max-width: 720px) {
+  .admin-theme-picker__label {
+    display: none;
+  }
+}

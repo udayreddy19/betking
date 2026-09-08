@@ -24,7 +24,6 @@ import SupportHeadsetIcon from '../../../icons/SupportHeadsetIcon';
 import BrandLogo from '../../../components/BrandLogo/BrandLogo';
 import AdminRBACGate, { ADMIN_ROLES, AdminRoleProvider, useAdminRole, canAccessDomain } from '../permissions/AdminRBACGate';
 import CommandPalette from '../features/CommandPalette/CommandPalette';
-import ThemeToggle from '../../../components/ThemeToggle/ThemeToggle';
 import { useTheme } from '../../../context/ThemeContext';
 import { startVisibleInterval } from '../utils/visibleInterval';
 import AdminMfaQr from '../components/AdminMfaQr';
@@ -50,6 +49,7 @@ import { ensureAdminSession, adminApiClient } from '../api/adminApiClient';
 import { AdminToastProvider } from '../components/AdminToastContext';
 import { AdminNavAttentionProvider } from '../context/AdminNavAttentionContext';
 import { AdminUiModeProvider, useAdminUiMode } from '../context/AdminUiModeContext';
+import { AdminThemeProvider, useAdminTheme } from '../context/AdminThemeContext';
 import AdminTabs from '../components/AdminTabs';
 
 const DOMAIN_GROUPS = [
@@ -427,13 +427,15 @@ function persistAdminNav(domainId, subModuleId) {
 
 export default function AdminShell() {
   return (
-    <AdminUiModeProvider>
-      <AdminRoleProvider>
-        <AdminToastProvider>
-          <AdminShellInner />
-        </AdminToastProvider>
-      </AdminRoleProvider>
-    </AdminUiModeProvider>
+    <AdminThemeProvider>
+      <AdminUiModeProvider>
+        <AdminRoleProvider>
+          <AdminToastProvider>
+            <AdminShellInner />
+          </AdminToastProvider>
+        </AdminRoleProvider>
+      </AdminUiModeProvider>
+    </AdminThemeProvider>
   );
 }
 
@@ -485,6 +487,10 @@ function AdminShellInner() {
   const { activeRole, setActiveRole, syncRoleFromJwt, rolePreviewEnabled } = useAdminRole();
   const { isDark } = useTheme();
   const { revamp: uiRevamp, toggleRevamp } = useAdminUiMode();
+  const { themeId: adminThemeId, theme: adminTheme } = useAdminTheme();
+  const shellIsDark = adminTheme.mode === 'auto'
+    ? isDark
+    : adminTheme.mode === 'dark';
   const [globalSearch, setGlobalSearch] = useState('');
   const [isAlertsOpen, setIsAlertsOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
@@ -1001,7 +1007,10 @@ function AdminShellInner() {
   // ─── Loading State ───
   if (sessionChecking && !sessionReady) {
     return (
-      <div className={`admin-shell admin-session-boot ${isDark ? 'admin-shell--dark' : 'admin-shell--light'}`}>
+      <div
+        className={`admin-shell admin-session-boot ${shellIsDark ? 'admin-shell--dark' : 'admin-shell--light'}`}
+        data-admin-theme={adminThemeId}
+      >
         <motion.div
           animate={{ scale: [1, 1.04, 1], opacity: [0.85, 1, 0.85] }}
           transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
@@ -1020,7 +1029,8 @@ function AdminShellInner() {
   if (!sessionReady) {
     return (
       <AdminLogin
-        isDark={isDark}
+        isDark={shellIsDark}
+        adminThemeId={adminThemeId}
         sessionError={sessionError}
         signingIn={signingIn}
         adminEmail={adminEmail}
@@ -1137,7 +1147,10 @@ function AdminShellInner() {
   // ─── Main Authenticated Layout ───
   return (
     <AdminNavAttentionProvider value={navAttention}>
-    <div className={`admin-shell ${isDark ? 'admin-shell--dark' : 'admin-shell--light'}${uiRevamp ? ' admin-shell--revamp' : ''}`}>
+    <div
+      className={`admin-shell ${shellIsDark ? 'admin-shell--dark' : 'admin-shell--light'}${uiRevamp ? ' admin-shell--revamp' : ''}`}
+      data-admin-theme={adminThemeId}
+    >
 
       {/* Sidebar */}
       <AdminSidebar
@@ -1192,6 +1205,7 @@ function AdminShellInner() {
           }}
           uiRevamp={uiRevamp}
           onToggleUiRevamp={toggleRevamp}
+          showSiteThemeToggle={adminThemeId === 'match'}
         />
 
         {/* Alerts Popover (portal) */}
@@ -1214,7 +1228,7 @@ function AdminShellInner() {
                 }}
                 className="admin-alerts-menu"
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)'}`, paddingBottom: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', borderBottom: `1px solid ${shellIsDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)'}`, paddingBottom: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: liveAlerts.length ? '#f43f5e' : '#10b981' }} />
                     <span style={{ fontSize: '0.84rem', fontWeight: 650 }}>Alerts</span>
@@ -1240,20 +1254,20 @@ function AdminShellInner() {
                       const severity = String(alert.type || 'HIGH').toUpperCase();
                       const severityDotColor = severity === 'CRITICAL' ? '#f43f5e' : severity === 'HIGH' ? '#fbbf24' : '#818cf8';
                       const severityBg = severity === 'CRITICAL'
-                        ? (isDark ? 'rgba(244,63,94,0.14)' : 'rgba(220,38,38,0.1)')
+                        ? (shellIsDark ? 'rgba(244,63,94,0.14)' : 'rgba(220,38,38,0.1)')
                         : severity === 'HIGH'
-                          ? (isDark ? 'rgba(245,158,11,0.14)' : 'rgba(217,119,6,0.12)')
-                          : (isDark ? 'rgba(99,102,241,0.14)' : 'rgba(37,99,235,0.1)');
+                          ? (shellIsDark ? 'rgba(245,158,11,0.14)' : 'rgba(217,119,6,0.12)')
+                          : (shellIsDark ? 'rgba(99,102,241,0.14)' : 'rgba(37,99,235,0.1)');
                       const severityColor = severity === 'CRITICAL'
-                        ? (isDark ? '#fb7185' : '#b91c1c')
+                        ? (shellIsDark ? '#fb7185' : '#b91c1c')
                         : severity === 'HIGH'
-                          ? (isDark ? '#fbbf24' : '#b45309')
-                          : (isDark ? '#818cf8' : '#1d4ed8');
+                          ? (shellIsDark ? '#fbbf24' : '#b45309')
+                          : (shellIsDark ? '#818cf8' : '#1d4ed8');
                       const severityBorder = severity === 'CRITICAL'
-                        ? (isDark ? 'rgba(244,63,94,0.32)' : 'rgba(220,38,38,0.25)')
+                        ? (shellIsDark ? 'rgba(244,63,94,0.32)' : 'rgba(220,38,38,0.25)')
                         : severity === 'HIGH'
-                          ? (isDark ? 'rgba(245,158,11,0.32)' : 'rgba(217,119,6,0.28)')
-                          : (isDark ? 'rgba(99,102,241,0.32)' : 'rgba(37,99,235,0.25)');
+                          ? (shellIsDark ? 'rgba(245,158,11,0.32)' : 'rgba(217,119,6,0.28)')
+                          : (shellIsDark ? 'rgba(99,102,241,0.32)' : 'rgba(37,99,235,0.25)');
                       return (
                       <div
                         key={alert.id}
@@ -1263,8 +1277,8 @@ function AdminShellInner() {
                           textAlign: 'left',
                           padding: '12px',
                           borderRadius: 'var(--admin-radius-lg)',
-                          border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0'}`,
-                          background: isDark ? 'rgba(15,23,42,0.8)' : '#f8fafc',
+                          border: `1px solid ${shellIsDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0'}`,
+                          background: shellIsDark ? 'rgba(15,23,42,0.8)' : '#f8fafc',
                           overflow: 'visible',
                         }}
                       >
@@ -1305,7 +1319,7 @@ function AdminShellInner() {
                             </span>
                             <span style={{
                               fontSize: '0.66rem',
-                              color: isDark ? '#64748b' : '#64748b',
+                              color: shellIsDark ? '#64748b' : '#64748b',
                               textTransform: 'uppercase',
                               letterSpacing: '0.3px',
                               fontWeight: 700,
@@ -1316,14 +1330,14 @@ function AdminShellInner() {
                           <div style={{
                             fontSize: '0.84rem',
                             fontWeight: 750,
-                            color: isDark ? '#f1f5f9' : '#0f172a',
+                            color: shellIsDark ? '#f1f5f9' : '#0f172a',
                             lineHeight: 1.35,
                             wordBreak: 'break-word',
                           }}>{title}</div>
                           {desc ? (
                             <div style={{
                               fontSize: '0.76rem',
-                              color: isDark ? '#94a3b8' : '#475569',
+                              color: shellIsDark ? '#94a3b8' : '#475569',
                               marginTop: '4px',
                               lineHeight: 1.4,
                               wordBreak: 'break-word',
@@ -1331,7 +1345,7 @@ function AdminShellInner() {
                           ) : null}
                           <div style={{
                             fontSize: '0.72rem',
-                            color: isDark ? '#818cf8' : '#4f46e5',
+                            color: shellIsDark ? '#818cf8' : '#4f46e5',
                             marginTop: '8px',
                             fontWeight: 700,
                           }}>
@@ -1346,9 +1360,9 @@ function AdminShellInner() {
                               style={{
                                 padding: '4px 10px',
                                 borderRadius: 'var(--admin-radius)',
-                                border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.1)'}`,
-                                background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.04)',
-                                color: isDark ? '#cbd5e1' : '#334155',
+                                border: `1px solid ${shellIsDark ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.1)'}`,
+                                background: shellIsDark ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.04)',
+                                color: shellIsDark ? '#cbd5e1' : '#334155',
                                 fontSize: '0.72rem',
                                 fontWeight: 700,
                                 cursor: 'pointer',
@@ -1381,7 +1395,7 @@ function AdminShellInner() {
                     <div style={{
                       padding: '20px 14px',
                       textAlign: 'center',
-                      color: isDark ? '#64748b' : '#94a3b8',
+                      color: shellIsDark ? '#64748b' : '#94a3b8',
                       fontSize: '0.8rem',
                     }}>
                       ✓ No active operational alerts

@@ -7,6 +7,7 @@ import {
   MenuIcon,
 } from '../../../icons/animate/index';
 import ThemeToggle from '../../../components/ThemeToggle/ThemeToggle';
+import AdminThemePicker from '../components/AdminThemePicker';
 import { ADMIN_ROLES } from '../permissions/AdminRBACGate';
 
 function AdminProfileSection({ onLogout }) {
@@ -52,6 +53,7 @@ export default function AdminTopbar({
   onBreadcrumbDomain,
   uiRevamp = false,
   onToggleUiRevamp,
+  showSiteThemeToggle = true,
 }) {
   const showSub = Boolean(
     currentSubLabel &&
@@ -135,7 +137,9 @@ export default function AdminTopbar({
           </button>
         )}
 
-        <ThemeToggle />
+        <AdminThemePicker />
+
+        {showSiteThemeToggle ? <ThemeToggle /> : null}
 
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
           <motion.button

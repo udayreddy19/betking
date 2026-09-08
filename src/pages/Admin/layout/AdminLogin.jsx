@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
 import BrandLogo from '../../../components/BrandLogo/BrandLogo';
 import ThemeToggle from '../../../components/ThemeToggle/ThemeToggle';
+import AdminThemePicker from '../components/AdminThemePicker';
 import AdminMfaQr from '../components/AdminMfaQr';
 
 function headingForStep(mfaStep) {
@@ -31,6 +32,7 @@ function headingForStep(mfaStep) {
  */
 export default function AdminLogin({
   isDark,
+  adminThemeId = 'match',
   sessionError,
   signingIn,
   adminEmail,
@@ -60,7 +62,10 @@ export default function AdminLogin({
   };
 
   return (
-    <div className={`admin-shell admin-login ${isDark ? 'admin-shell--dark' : 'admin-shell--light'}`}>
+    <div
+      className={`admin-shell admin-login ${isDark ? 'admin-shell--dark' : 'admin-shell--light'}`}
+      data-admin-theme={adminThemeId}
+    >
       <header className="admin-login__bar">
         <div className="admin-login__brand">
           <BrandLogo size={28} />
@@ -71,7 +76,8 @@ export default function AdminLogin({
         </div>
 
         <div className="admin-login__bar-actions">
-          <ThemeToggle />
+          <AdminThemePicker />
+          {adminThemeId === 'match' ? <ThemeToggle /> : null}
           <Link to="/" className="admin-btn admin-btn--ghost admin-btn--sm">
             Back to sportsbook
           </Link>
