@@ -93,7 +93,7 @@ const TYPE_OPTIONS = [
 ];
 
 export default function BettingDomainView({
-  subModule = 'bets-registry',
+  subModule = 'settlement-engine',
   focusEntityId = null,
   focusEntityType = null,
   onFocusConsumed = null,
@@ -253,11 +253,11 @@ export default function BettingDomainView({
   const completedCount = filtered.filter((b) => !isOpenStatus(b.status)).length;
 
   const titles = {
-    'bets-registry': ['All Bets', 'Browse every bet type and status. Use settlement tabs to triage pending and completed desks. See placed odds and verify win/loss against live match state.', 'Bet Registry'],
-    'settlement-engine': ['Pending & Declare', 'Open, pending, and accepted bets — declare any outcome manually. Verify grades against live scores.', 'Pending Desk'],
+    'settlement-engine': ['Settlement', 'Open, pending, and settled bets — declare outcomes and verify grades against live scores.', 'Settlement Desk'],
     'cashout-reconciliation': ['Cashout Reconciliation', 'Cashout-related bets for reconciliation review.', 'Cashout Desk'],
   };
-  const [heading, hint, tableTitle] = titles[subModule] || titles['bets-registry'];
+  const effectiveSub = subModule === 'bets-registry' ? 'settlement-engine' : subModule;
+  const [heading, hint, tableTitle] = titles[effectiveSub] || titles['settlement-engine'];
 
   const outcomeLabel = declareConfirm?.outcome === 'WON' ? 'Win' : declareConfirm?.outcome === 'LOST' ? 'Loss' : 'Void (refund)';
   const outcomeVariant = declareConfirm?.outcome === 'WON' ? 'success' : declareConfirm?.outcome === 'LOST' ? 'danger' : 'warning';

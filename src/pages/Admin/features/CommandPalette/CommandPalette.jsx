@@ -12,8 +12,8 @@ import { getAdminSessionState } from '../../../../utils/adminSession';
 const ENTITY_META = {
   users: { icon: '👤', label: 'Users', color: '#3b82f6', domain: 'customers', subModuleId: 'directory' },
   user: { icon: '👤', label: 'Users', color: '#3b82f6', domain: 'customers', subModuleId: 'directory' },
-  bets: { icon: '🎲', label: 'Bets', color: '#f59e0b', domain: 'betting', subModuleId: 'bets-registry' },
-  bet: { icon: '🎲', label: 'Bets', color: '#f59e0b', domain: 'betting', subModuleId: 'bets-registry' },
+  bets: { icon: '🎲', label: 'Bets', color: '#f59e0b', domain: 'betting', subModuleId: 'settlement-engine' },
+  bet: { icon: '🎲', label: 'Bets', color: '#f59e0b', domain: 'betting', subModuleId: 'settlement-engine' },
   tickets: { icon: '🎫', label: 'Tickets', color: '#8b5cf6', domain: 'support', subModuleId: 'ticket-queue' },
   ticket: { icon: '🎫', label: 'Tickets', color: '#8b5cf6', domain: 'support', subModuleId: 'ticket-queue' },
   matches: { icon: '🏏', label: 'Matches', color: '#10b981', domain: 'sports', subModuleId: 'catalog' },
@@ -36,7 +36,7 @@ const ENTITY_META = {
 
 const QUICK_ACTIONS = [
   { id: 'open_customers', label: 'Open Players', icon: '👤', domain: 'customers', subModuleId: 'directory', allowedRoles: ['SUPER_ADMIN', 'OPERATIONS_ADMIN', 'RISK_ANALYST', 'SUPPORT_AGENT', 'FINANCE_ADMIN'] },
-  { id: 'open_betting', label: 'Open Bets', icon: '🎲', domain: 'betting', subModuleId: 'bets-registry', allowedRoles: ['SUPER_ADMIN', 'TRADING_ADMIN', 'RISK_ANALYST', 'SUPPORT_AGENT', 'FINANCE_ADMIN'] },
+  { id: 'open_betting', label: 'Open Bets', icon: '🎲', domain: 'betting', subModuleId: 'settlement-engine', allowedRoles: ['SUPER_ADMIN', 'TRADING_ADMIN', 'RISK_ANALYST', 'SUPPORT_AGENT', 'FINANCE_ADMIN'] },
   { id: 'open_support', label: 'Open Help', icon: '🎫', domain: 'support', subModuleId: 'ticket-queue', allowedRoles: ['SUPER_ADMIN', 'SUPPORT_AGENT', 'OPERATIONS_ADMIN'] },
   { id: 'open_finance', label: 'Open Cash / Withdrawals', icon: '💰', domain: 'finance', subModuleId: 'maker-checker', allowedRoles: ['SUPER_ADMIN', 'FINANCE_ADMIN'] },
   { id: 'open_trading', label: 'Open Risk', icon: '📊', domain: 'trading-risk', subModuleId: 'exposure', allowedRoles: ['SUPER_ADMIN', 'TRADING_ADMIN', 'RISK_ANALYST'] },

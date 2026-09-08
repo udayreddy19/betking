@@ -12,6 +12,8 @@ describe('adminNavAttention honesty mapping', () => {
     expect(src).toMatch(/UPPER\(status\) IN \('PENDING', 'OPEN', 'ACCEPTED'\)/);
     // Must not put settlement_jobs count on the bet-declare panel
     expect(src).not.toMatch(/put\('betting',\s*'settlement-engine',\s*settlement/);
+    // All bets tab removed — no separate bets-registry badge
+    expect(src).not.toMatch(/put\('betting',\s*'bets-registry'/);
   });
 
   it('puts settlement job queue attention on Ops, not Bets', () => {

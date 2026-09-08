@@ -114,7 +114,6 @@ const DOMAIN_GROUPS = [
         Icon: FileTextIcon,
         role: ADMIN_ROLES.TRADING_ADMIN,
         subModules: [
-          { id: 'bets-registry', label: 'All bets' },
           { id: 'settlement-engine', label: 'Settlement' },
           { id: 'cashout-reconciliation', label: 'Cashout' },
         ],
@@ -294,6 +293,7 @@ const HIDDEN_SUBS = {
     'settlement-queue',
   ],
   communications: ['dispatch-logs', 'dlq-retry'],
+  betting: ['bets-registry'],
 };
 
 const SUB_BREADCRUMB = {
@@ -323,6 +323,7 @@ const SUB_BREADCRUMB = {
   'settlement-queue': 'Queues',
   'dispatch-logs': 'Delivery',
   'dlq-retry': 'Delivery',
+  'bets-registry': 'Settlement',
 };
 
 const HUB_FOR = {
@@ -371,13 +372,18 @@ const HUB_FOR = {
     'crm-composer': 'audience',
     'promo-roi': 'overview',
   },
+  betting: {
+    'bets-registry': 'settlement-engine',
+  },
 };
 
 function resolveAdminNav(domainId, subModuleId) {
   const domain = ALL_DOMAINS.find((d) => d.id === domainId) || ALL_DOMAINS.find((d) => d.id === DEFAULT_ADMIN_DOMAIN);
   const resolvedDomain = domain?.id || DEFAULT_ADMIN_DOMAIN;
   const subs = domain?.subModules || [];
-  const normalizedSub = subModuleId === 'targeted-deposit-freebet' ? 'deposit-freebet' : subModuleId;
+  let normalizedSub = subModuleId === 'targeted-deposit-freebet' ? 'deposit-freebet' : subModuleId;
+  // All bets was removed — Settlement covers the same desk.
+  if (normalizedSub === 'bets-registry') normalizedSub = 'settlement-engine';
   const hidden = HIDDEN_SUBS[resolvedDomain] || [];
   const allowed = subs.some((s) => s.id === normalizedSub) || hidden.includes(normalizedSub);
   const resolvedSub = allowed
