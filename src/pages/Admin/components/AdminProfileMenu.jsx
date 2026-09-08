@@ -1,18 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { LogOutIcon } from '../../../icons/animate/index';
-import ThemeToggle from '../../../components/ThemeToggle/ThemeToggle';
-import AdminThemePicker from './AdminThemePicker';
 import { useAdminTheme } from '../context/AdminThemeContext';
 
 /**
- * Admin profile menu — avatar opens appearance (themes) + sign out.
+ * Compact avatar menu — jumps to Admin Profile pages + sign out.
  */
 export default function AdminProfileMenu({
   activeRole = 'ADMIN',
   onLogout,
+  onOpenProfile,
 }) {
-  const { theme, themeId } = useAdminTheme();
+  const { theme } = useAdminTheme();
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
 
@@ -34,6 +33,11 @@ export default function AdminProfileMenu({
 
   const initial = String(activeRole || 'A').replace(/[^A-Z]/g, '').slice(0, 1) || 'A';
 
+  const go = (sub) => {
+    setOpen(false);
+    onOpenProfile?.(sub);
+  };
+
   return (
     <div className="admin-profile-menu" ref={rootRef}>
       <button
@@ -48,27 +52,29 @@ export default function AdminProfileMenu({
       </button>
 
       {open && (
-        <div className="admin-profile-menu__panel" role="dialog" aria-label="Admin profile">
+        <div className="admin-profile-menu__panel admin-profile-menu__panel--compact" role="dialog" aria-label="Admin profile">
           <div className="admin-profile-menu__head">
             <div className="admin-topbar__avatar admin-profile-menu__avatar" aria-hidden="true">{initial}</div>
             <div className="admin-profile-menu__identity">
               <div className="admin-profile-menu__title">Admin profile</div>
               <div className="admin-profile-menu__role">{activeRole}</div>
+              <div className="admin-profile-menu__role">Theme · {theme.label}</div>
             </div>
           </div>
 
-          <div className="admin-profile-menu__section">
-            <div className="admin-profile-menu__section-label">Appearance</div>
-            <p className="admin-profile-menu__hint">
-              Current theme: <strong>{theme.label}</strong>
-            </p>
-            <AdminThemePicker variant="inline" />
-            {themeId === 'match' && (
-              <div className="admin-profile-menu__site-theme">
-                <span>Site light / dark</span>
-                <ThemeToggle />
-              </div>
-            )}
+          <div className="admin-profile-menu__links">
+            <button type="button" className="admin-profile-menu__link" onClick={() => go('account')}>
+              Account
+            </button>
+            <button type="button" className="admin-profile-menu__link" onClick={() => go('appearance')}>
+              Appearance & themes
+            </button>
+            <button type="button" className="admin-profile-menu__link" onClick={() => go('security')}>
+              Security
+            </button>
+            <button type="button" className="admin-profile-menu__link" onClick={() => go('session')}>
+              Session
+            </button>
           </div>
 
           <div className="admin-profile-menu__footer">

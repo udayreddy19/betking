@@ -4779,3 +4779,179 @@ html[data-theme="light"] .admin-badge--info,
     display: none;
   }
 }
+
+/* ==========================================================================
+   Admin Profile page
+   ========================================================================== */
+
+.admin-profile-menu__panel--compact {
+  width: min(280px, calc(100vw - 24px));
+  max-height: none;
+}
+
+.admin-profile-menu__links {
+  display: grid;
+  gap: 2px;
+}
+
+.admin-profile-menu__link {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--admin-radius);
+  background: transparent;
+  color: var(--admin-text);
+  text-align: left;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-profile-menu__link:hover {
+  background: var(--admin-surface-hover);
+}
+
+.admin-profile-page__stack {
+  display: grid;
+  gap: 16px;
+  max-width: 880px;
+}
+
+.admin-profile-page__card {
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow-sm);
+  overflow: hidden;
+}
+
+.admin-profile-page__card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 16px 18px 0;
+}
+
+.admin-profile-page__card-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 750;
+  color: var(--admin-text);
+}
+
+.admin-profile-page__card-desc {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: var(--admin-text-muted);
+  line-height: 1.45;
+}
+
+.admin-profile-page__card-body {
+  padding: 14px 18px 18px;
+}
+
+.admin-profile-page__meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+}
+
+.admin-profile-page__meta-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--admin-text-muted);
+  margin-bottom: 4px;
+}
+
+.admin-profile-page__meta-value {
+  font-size: 0.88rem;
+  color: var(--admin-text);
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.admin-profile-page__form {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-profile-page__row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-profile-page__field {
+  display: grid;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: var(--admin-text-secondary);
+}
+
+.admin-profile-page__form-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.admin-profile-page__hint {
+  margin: 0 0 12px;
+  font-size: 0.8rem;
+  color: var(--admin-text-secondary);
+}
+
+.admin-profile-page__hint strong {
+  color: var(--admin-text);
+}
+
+.admin-profile-page__pref-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.admin-profile-page__pref-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--admin-text);
+}
+
+.admin-profile-page__pref-desc {
+  margin-top: 3px;
+  font-size: 0.78rem;
+  color: var(--admin-text-muted);
+  max-width: 420px;
+  line-height: 1.4;
+}
+
+.admin-profile-page .admin-theme-picker--inline .admin-theme-picker__list {
+  max-height: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 6px;
+}
+
+.admin-profile-page .admin-theme-picker__option {
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  background: var(--admin-panel);
+}
+
+.admin-profile-page .admin-theme-picker__option.is-active {
+  border-color: color-mix(in srgb, var(--admin-primary) 45%, var(--admin-border));
+  background: var(--admin-primary-softer);
+}
+
+@media (max-width: 640px) {
+  .admin-profile-page__row {
+    grid-template-columns: 1fr;
+  }
+}

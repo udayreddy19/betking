@@ -84,6 +84,8 @@ export function hasPermission(role, permission) {
 /** Check if a role can access a specific domain */
 export function canAccessDomain(role, domainId, domainRequiredRole) {
   if (!role || role === ADMIN_ROLES.SUPER_ADMIN) return true;
+  // Every authenticated admin can open their own profile.
+  if (domainId === 'admin-profile') return true;
   // Explicit allow-list for the active role (never open null-role domains to all admins).
   const allowed = ROLE_ALLOWED_DOMAINS[role];
   if (allowed === null) return true;

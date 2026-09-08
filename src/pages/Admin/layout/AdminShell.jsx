@@ -45,6 +45,7 @@ import PlatformDomainView from '../domains/PlatformDomainView';
 import OperationsDomainView from '../domains/OperationsDomainView';
 import SecurityGovernanceDomainView from '../domains/SecurityGovernanceDomainView';
 import ApiExplorerDomainView from '../domains/ApiExplorerDomainView';
+import AdminProfileDomainView from '../domains/AdminProfileDomainView';
 import { ensureAdminSession, adminApiClient } from '../api/adminApiClient';
 import { AdminToastProvider } from '../components/AdminToastContext';
 import { AdminNavAttentionProvider } from '../context/AdminNavAttentionContext';
@@ -177,6 +178,18 @@ const DOMAIN_GROUPS = [
   {
     title: 'System',
     items: [
+      {
+        id: 'admin-profile',
+        label: 'Profile',
+        Icon: UsersIcon,
+        role: ADMIN_ROLES.SUPPORT_AGENT,
+        subModules: [
+          { id: 'account', label: 'Account' },
+          { id: 'appearance', label: 'Appearance' },
+          { id: 'security', label: 'Security' },
+          { id: 'session', label: 'Session' },
+        ],
+      },
       {
         id: 'analytics',
         label: 'Reports',
@@ -1121,6 +1134,12 @@ function AdminShellInner() {
       );
       case 'api-explorer': return <ApiExplorerDomainView subModule={activeSubModule} />;
       case 'security-governance': return <SecurityGovernanceDomainView subModule={activeSubModule} />;
+      case 'admin-profile': return (
+        <AdminProfileDomainView
+          subModule={activeSubModule}
+          onLogout={handleAdminLogout}
+        />
+      );
       default: return (
         <ControlTowerView
           subModule={activeSubModule}
@@ -1205,6 +1224,7 @@ function AdminShellInner() {
           }}
           uiRevamp={uiRevamp}
           onToggleUiRevamp={toggleRevamp}
+          onOpenProfile={(sub) => handleSubModuleSelect('admin-profile', sub || 'account')}
         />
 
         {/* Alerts Popover (portal) */}

@@ -32,6 +32,7 @@ export default function AdminTopbar({
   onBreadcrumbDomain,
   uiRevamp = false,
   onToggleUiRevamp,
+  onOpenProfile,
 }) {
   const showSub = Boolean(
     currentSubLabel &&
@@ -184,7 +185,11 @@ export default function AdminTopbar({
           )}
         </div>
 
-        <AdminProfileMenu activeRole={activeRole} onLogout={onLogout} />
+        <AdminProfileMenu
+          activeRole={activeRole}
+          onLogout={onLogout}
+          onOpenProfile={onOpenProfile}
+        />
       </div>
 
       <style>{`
