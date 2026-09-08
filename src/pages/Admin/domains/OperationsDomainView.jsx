@@ -808,13 +808,25 @@ function NotificationsPanel() {
 function BackupsDrPanel() {
   const [rows, setRows] = useState([]);
   const [summary, setSummary] = useState(null);
+  const [schedule, setSchedule] = useState({
+    enabled: false,
+    intervalHours: 24,
+    retainCount: 7,
+    nextRunAt: null,
+    lastRunAt: null,
+    lastStatus: null,
+  });
   const [error, setError] = useState(null);
+  const [running, setRunning] = useState(false);
+  const [savingSchedule, setSavingSchedule] = useState(false);
+  const { showToast } = useAdminToast();
 
-  useEffect(() => {
+  const load = useCallback(() => {
     adminApiClient.get('/operations/backups?limit=50')
       .then((data) => {
         setRows(data.backups || []);
         setSummary(data.summary || null);
+        if (data.schedule) setSchedule((prev) => ({ ...prev, ...data.schedule }));
         setError(null);
       })
       .catch((err) => {
@@ -823,12 +835,48 @@ function BackupsDrPanel() {
       });
   }, []);
 
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const runBackupNow = async () => {
+    setRunning(true);
+    try {
+      const res = await adminApiClient.post('/operations/backups/run', {});
+      const mb = res.sizeBytes != null ? `${(res.sizeBytes / (1024 * 1024)).toFixed(1)} MB` : '';
+      showToast(`Backup complete${mb ? ` (${mb})` : ''}`, 'success');
+      load();
+    } catch (err) {
+      showToast(err.message || 'Backup failed', 'error');
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  const saveSchedule = async () => {
+    setSavingSchedule(true);
+    try {
+      const res = await adminApiClient.put('/operations/backups/schedule', {
+        enabled: Boolean(schedule.enabled),
+        intervalHours: Number(schedule.intervalHours) || 24,
+        retainCount: Number(schedule.retainCount) || 7,
+      });
+      if (res.schedule) setSchedule((prev) => ({ ...prev, ...res.schedule }));
+      showToast(schedule.enabled ? 'Backup schedule saved' : 'Scheduled backups disabled', 'success');
+      load();
+    } catch (err) {
+      showToast(err.message || 'Schedule save failed', 'error');
+    } finally {
+      setSavingSchedule(false);
+    }
+  };
+
   return (
     <div>
       <div style={{ marginBottom: 16 }}>
         <h2 className="admin-page-header__title">Backups / DR</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
-          Backup log metadata. Isolated restore verification and wallet↔ledger mismatch counts are documented in DR reports — not claimed as production RPO/RTO from local dumps.
+          Full PostgreSQL SQL dumps. Schedule automated runs or trigger a manual backup. Isolated restore verification and wallet↔ledger mismatch counts stay in DR reports — dumps are not WAL/PITR.
         </p>
         {summary && (
           <p style={{ fontSize: '0.78rem', marginTop: 8 }}>
@@ -844,13 +892,105 @@ function BackupsDrPanel() {
           </p>
         )}
       </div>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: 16,
+          marginBottom: 20,
+        }}
+      >
+        <div
+          style={{
+            border: '1px solid var(--admin-border, #334155)',
+            borderRadius: 10,
+            padding: 14,
+            background: 'var(--admin-surface, transparent)',
+          }}
+        >
+          <h3 style={{ margin: '0 0 10px', fontSize: '0.95rem', fontWeight: 700 }}>Manual backup</h3>
+          <p style={{ margin: '0 0 12px', fontSize: '0.78rem', color: 'var(--admin-text-muted)' }}>
+            Dump all database data now and write a row to the backup log.
+          </p>
+          <button
+            type="button"
+            className="admin-btn admin-btn--primary"
+            onClick={runBackupNow}
+            disabled={running}
+          >
+            {running ? 'Running backup…' : 'Run backup now'}
+          </button>
+        </div>
+
+        <div
+          style={{
+            border: '1px solid var(--admin-border, #334155)',
+            borderRadius: 10,
+            padding: 14,
+            background: 'var(--admin-surface, transparent)',
+          }}
+        >
+          <h3 style={{ margin: '0 0 10px', fontSize: '0.95rem', fontWeight: 700 }}>Scheduled backups</h3>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', marginBottom: 10 }}>
+            <input
+              type="checkbox"
+              checked={Boolean(schedule.enabled)}
+              onChange={(e) => setSchedule((s) => ({ ...s, enabled: e.target.checked }))}
+            />
+            Enable automatic full dumps
+          </label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
+            <label style={{ fontSize: '0.78rem' }}>
+              Every
+              <select
+                className="admin-input"
+                value={schedule.intervalHours}
+                onChange={(e) => setSchedule((s) => ({ ...s, intervalHours: Number(e.target.value) }))}
+                style={{ marginLeft: 6, width: 100 }}
+              >
+                {[6, 12, 24, 48, 72].map((h) => (
+                  <option key={h} value={h}>{h}h</option>
+                ))}
+              </select>
+            </label>
+            <label style={{ fontSize: '0.78rem' }}>
+              Keep
+              <select
+                className="admin-input"
+                value={schedule.retainCount}
+                onChange={(e) => setSchedule((s) => ({ ...s, retainCount: Number(e.target.value) }))}
+                style={{ marginLeft: 6, width: 90 }}
+              >
+                {[3, 5, 7, 14, 30].map((n) => (
+                  <option key={n} value={n}>{n} files</option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <p style={{ margin: '0 0 10px', fontSize: '0.75rem', color: 'var(--admin-text-muted)' }}>
+            Next run: {schedule.enabled && schedule.nextRunAt ? formatIstDateTime(schedule.nextRunAt) : '—'}
+            {schedule.lastRunAt ? ` · Last scheduled attempt: ${formatIstDateTime(schedule.lastRunAt)}` : ''}
+          </p>
+          <button
+            type="button"
+            className="admin-btn admin-btn--primary"
+            onClick={saveSchedule}
+            disabled={savingSchedule}
+          >
+            {savingSchedule ? 'Saving…' : 'Save schedule'}
+          </button>
+        </div>
+      </div>
+
       <AdminDataTable
         title="Backup log"
         data={rows}
-        emptyMessage="No backups_log rows"
+        emptyMessage="No backups_log rows — run a manual backup or enable the schedule"
         columns={[
           { header: 'ID', key: 'id', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.72rem' }}>{r.id}</span> },
           { header: 'Type', key: 'backup_type' },
+          { header: 'Trigger', key: 'trigger_source', render: (r) => r.trigger_source || '—' },
           { header: 'Status', key: 'status', render: (r) => <StatusBadge status={r.status} /> },
           { header: 'Size', key: 'size_bytes', render: (r) => (r.size_bytes != null ? `${Math.round(r.size_bytes / 1024 / 1024)} MB` : '—') },
           { header: 'Duration', key: 'duration_ms', render: (r) => (r.duration_ms != null ? `${r.duration_ms} ms` : '—') },

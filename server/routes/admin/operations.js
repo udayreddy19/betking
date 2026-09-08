@@ -499,32 +499,28 @@ router.get(
   },
 );
 
-/** GET /operations/backups — backup log (metadata only) */
+/** GET /operations/backups — backup log + schedule */
 router.get(
   '/backups',
   requireRole(...READ_OPS),
   async (req, res) => {
     try {
-      const { query } = await import('../../../db/pg.js');
+      const { listBackupLog, getBackupSchedule } = await import('../../../lib/backupEngine.mjs');
       const lim = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
-      const bkpRes = await query(
-        `SELECT id, backup_type, status, size_bytes, duration_ms, created_at
-         FROM backups_log
-         ORDER BY created_at DESC
-         LIMIT $1`,
-        [lim],
-      );
-      const latest = bkpRes.rows[0] || null;
+      const rows = await listBackupLog({ limit: lim });
+      const latest = rows[0] || null;
       let ageHours = null;
       if (latest?.created_at) {
         ageHours = Math.round((Date.now() - new Date(latest.created_at).getTime()) / 3600000);
       }
       const { getDrPitrStatus } = await import('../../../lib/drPitrStatus.mjs');
       const pitr = await getDrPitrStatus();
+      const schedule = await getBackupSchedule();
       res.json({
         success: true,
-        count: bkpRes.rows.length,
-        backups: bkpRes.rows,
+        count: rows.length,
+        backups: rows,
+        schedule,
         pitr,
         summary: {
           lastBackupAt: latest?.created_at || null,
@@ -535,6 +531,45 @@ router.get(
           note: pitr.note,
         },
       });
+    } catch (err) {
+      handle(err, res);
+    }
+  },
+);
+
+/** POST /operations/backups/run — manual full SQL dump */
+router.post(
+  '/backups/run',
+  requireRole(...OPS_ROLES),
+  async (req, res) => {
+    try {
+      const { runFullDatabaseBackup } = await import('../../../lib/backupEngine.mjs');
+      const result = await runFullDatabaseBackup({
+        trigger: 'MANUAL',
+        actor: adminId(req),
+      });
+      res.json({ success: true, ...result });
+    } catch (err) {
+      handle(err, res);
+    }
+  },
+);
+
+/** PUT /operations/backups/schedule — enable/interval/retain for automated dumps */
+router.put(
+  '/backups/schedule',
+  requireRole(...OPS_ROLES),
+  async (req, res) => {
+    try {
+      const { updateBackupSchedule } = await import('../../../lib/backupEngine.mjs');
+      const body = req.body || {};
+      const patch = {};
+      if (body.enabled != null) patch.enabled = Boolean(body.enabled);
+      if (body.intervalHours != null) patch.intervalHours = Number(body.intervalHours);
+      if (body.retainCount != null) patch.retainCount = Number(body.retainCount);
+      if (body.nextRunAt != null) patch.nextRunAt = body.nextRunAt;
+      const schedule = await updateBackupSchedule(patch, { actor: adminId(req) });
+      res.json({ success: true, schedule });
     } catch (err) {
       handle(err, res);
     }
