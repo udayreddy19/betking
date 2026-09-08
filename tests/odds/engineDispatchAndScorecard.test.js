@@ -81,16 +81,18 @@ describe('engine dispatch positive cases', () => {
     expect(rawSnapshot?.engineVersion).toBe('4.9.0');
   });
 
-  it('scorecard lists both primary engines at 10.0', () => {
+  it('scorecard lists both primary engines with honest audit estimates', () => {
     const card = getOddsEngineScorecard();
     expect(card).toHaveLength(ODDS_ENGINE_SCORECARD.length);
     expect(card.find((r) => r.engine === 'OddsEngineV4')).toMatchObject({
       version: '4.9.0',
-      score: 10.0,
+      score: 8.3,
+      scoreBasis: 'AUDIT_ESTIMATE',
     });
     expect(card.find((r) => r.engine === 'OtherSportsEngineV4')).toMatchObject({
       version: '4.9.0',
-      score: 10.0,
+      score: 8.6,
+      scoreBasis: 'AUDIT_ESTIMATE',
     });
   });
 });
@@ -118,6 +120,6 @@ describe('engine dispatch negative cases', () => {
     const a = getOddsEngineScorecard();
     a[0].score = 0;
     const b = getOddsEngineScorecard();
-    expect(b[0].score).toBe(10.0);
+    expect(b[0].score).toBe(8.3);
   });
 });

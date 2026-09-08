@@ -22,19 +22,26 @@ if (process.env.NODE_ENV !== 'test') {
 
 /**
  * Consume one slot in a sliding window.
- * @returns {Promise<{ allowed: boolean, count: number, remaining: number, retryAfterSeconds: number, limit: number, windowSeconds: number }>}
+ * @returns {Promise<{ allowed: boolean, count: number, remaining: number, retryAfterSeconds: number, limit: number, windowSeconds: number, failClosed?: boolean }>}
  */
 export async function consumeRateLimitSlot({
   key,
   windowSeconds = 60,
   maxRequests = 10,
   prefix = 'rl',
+  failClosed = null,
 } = {}) {
   const windowMs = windowSeconds * 1000;
   const now = Date.now();
   const redisKey = `${prefix}:${key}`;
   const retryAfterSeconds = Math.ceil(windowSeconds);
   const base = { limit: maxRequests, windowSeconds, retryAfterSeconds };
+
+  // Sensitive security prefixes must fail-closed if Redis is unavailable in production (Priority 29)
+  const isSensitive = failClosed != null
+    ? Boolean(failClosed)
+    : (process.env.RATE_LIMIT_FAIL_CLOSED === 'true'
+      || (process.env.NODE_ENV === 'production' && /rl:(login|admin|register|forgot_password|reset_password|withdraw|payment|kyc)/i.test(prefix)));
 
   try {
     const redisHealth = await checkRedisHealth();
@@ -53,7 +60,18 @@ export async function consumeRateLimitSlot({
       return { allowed: true, count, remaining, ...base };
     }
   } catch {
-    // memory fallback
+    // Redis error caught below
+  }
+
+  // If sensitive route requires cluster safety and Redis is down, fail closed
+  if (isSensitive) {
+    return {
+      allowed: false,
+      count: Infinity,
+      remaining: 0,
+      failClosed: true,
+      ...base,
+    };
   }
 
   const timestamps = (memoryRateLimitMap.get(redisKey) || []).filter((ts) => now - ts < windowMs);
@@ -79,6 +97,7 @@ export function createRateLimiter({
   maxRequests = 10,
   prefix = 'rl',
   keyGenerator = rateLimitClientKey,
+  failClosed = null,
 } = {}) {
   return async (req, res, next) => {
     const clientKey = keyGenerator(req);
@@ -87,8 +106,15 @@ export function createRateLimiter({
       windowSeconds,
       maxRequests,
       prefix,
+      failClosed,
     });
     if (!result.allowed) {
+      if (result.failClosed) {
+        return res.status(503).json({
+          error: 'Security rate limit service temporarily unavailable. Request blocked for protection.',
+          code: 'SECURITY_RATE_LIMIT_FAIL_CLOSED',
+        });
+      }
       res.setHeader('Retry-After', result.retryAfterSeconds);
       return res.status(429).json({
         error: 'Too many requests. Please try again later.',

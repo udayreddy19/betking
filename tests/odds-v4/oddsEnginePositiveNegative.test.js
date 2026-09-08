@@ -46,10 +46,11 @@ describe('OddsEngineV4 positive cases', () => {
     delete process.env.ODDS_ENGINE;
   });
 
-  it('emits v4.9.0 identity and scorecard mark 10.0', () => {
+  it('emits v4.9.0 identity and honest scorecard mark (not vanity 10)', () => {
     expect(V4_ENGINE_VERSION).toBe('4.9.0');
     const row = getOddsEngineScorecard().find((r) => r.engine === 'OddsEngineV4');
-    expect(row.score).toBe(10.0);
+    expect(row.score).toBe(8.3);
+    expect(row.scoreBasis).toBe('AUDIT_ESTIMATE');
     expect(row.version).toBe('4.9.0');
   });
 
@@ -139,7 +140,7 @@ describe('OddsEngineV4 positive cases', () => {
       'core_only_lock',
       'soft_leak_suspend',
     ]));
-    expect(snap.v4Meta?.operatorMark).toBe(10.0);
+    expect(snap.v4Meta?.operatorMark).toBeUndefined();
   });
 
   it('thicker MW implied mass than V3 on same state', () => {

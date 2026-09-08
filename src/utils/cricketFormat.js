@@ -22,7 +22,7 @@ export function collectMatchFormatText(match) {
     match?.format,
     match?.sport,
     match?.time,
-    match?.id,
+    // Intentionally omit match.id — ids like "pipe-test-1" falsely match /\bTEST\b/.
     match?.matchHeader?.seriesName,
     match?.matchHeader?.matchFormat,
     match?.matchHeader?.matchDescription,

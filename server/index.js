@@ -90,7 +90,8 @@ app.use((req, res, next) => {
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Content-Security-Policy-Report-Only', CSP_REPORT_ONLY);
+  const cspHeader = process.env.CSP_REPORT_ONLY === 'true' ? 'Content-Security-Policy-Report-Only' : 'Content-Security-Policy';
+  res.setHeader(cspHeader, CSP_REPORT_ONLY);
   next();
 });
 
@@ -130,6 +131,27 @@ app.use(matchFollowRouter);
 app.use(liveRouter);
 app.use('/api', liveScoresPublicRouter);
 app.use('/api/public/sports', publicOddsRouter);
+
+// Dynamic SEO / Private Access Handlers (Priority 30 & 31)
+app.get('/robots.txt', async (_req, res) => {
+  res.setHeader('Content-Type', 'text/plain');
+  const { isSeoIndexingAllowed } = await import('../lib/privateAccessConfig.mjs');
+  if (!isSeoIndexingAllowed()) {
+    return res.send("User-agent: *\nDisallow: /\n");
+  }
+  return res.send(
+    `User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /admin/\nDisallow: /trader\nDisallow: /developer\nDisallow: /api-docs\nDisallow: /_oauth/\nDisallow: /profile\nDisallow: /complete-profile\nDisallow: /verify-email\nDisallow: /reset-password\n\nSitemap: https://oddsyra.com/sitemap.xml\n`
+  );
+});
+
+app.get('/sitemap.xml', async (_req, res) => {
+  const { isPublicSitemapAllowed } = await import('../lib/privateAccessConfig.mjs');
+  if (!isPublicSitemapAllowed()) {
+    return res.status(404).send('Not Found');
+  }
+  res.setHeader('Content-Type', 'application/xml');
+  return res.sendFile(new URL('../public/sitemap.xml', import.meta.url).pathname);
+});
 app.use(walletRouter);
 app.use(betsRouter);
 app.use(supportRouter);

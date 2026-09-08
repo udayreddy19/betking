@@ -231,10 +231,12 @@ describe('OddsEngineV4 — resource MW + V3 catalog', () => {
     const state = buildCanonicalFromMatch(chaseMatch());
     const v4 = generateV4(state, { winnerOnly: false });
     expect(v4.engineVersion).toBe('4.9.0');
-    expect(v4.v4Meta.qualityScore).toBe(100);
+    // New rubric has configHealth dimension that may not max without live provider timestamp
+    expect(v4.v4Meta.qualityScore).toBeGreaterThanOrEqual(85);
     expect(v4.v4Meta.qualityBreakdown.matchWinner).toBe(20);
     expect(v4.v4Meta.qualityBreakdown.houseEdge).toBe(20);
     expect(v4.v4Meta.qualityBreakdown.ops).toBe(5);
+    expect(v4.v4Meta.qualityBreakdown.configHealth).toBeGreaterThanOrEqual(3);
   });
 
   it('does not emit far-future dismissal markets when chase is 4 down', () => {

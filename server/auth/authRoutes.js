@@ -177,6 +177,14 @@ router.post('/google/callback', authGeneralRateLimiter, async (req, res) => {
 // ── POST /api/auth/signup ──
 router.post('/signup', registerRateLimiter, async (req, res) => {
   try {
+    const { isRegistrationAllowed } = await import('../../lib/privateAccessConfig.mjs');
+    if (!isRegistrationAllowed()) {
+      return res.status(403).json({
+        error: 'Registration is currently disabled in private access mode.',
+        code: 'REGISTRATION_DISABLED',
+      });
+    }
+
     const result = await signup(query, withTransaction, {
       ...req.body,
       ipAddress: req.ip || req.headers['x-forwarded-for'],
