@@ -45,7 +45,7 @@
   --admin-shadow: var(--shadow-md);
   --admin-shadow-sm: var(--shadow-sm);
   --admin-shadow-lg: var(--shadow-lg);
-  --admin-sticky-bg: var(--material-fill-heavy, var(--header-bg));
+  --admin-sticky-bg: var(--admin-panel);
   --admin-card-bg: var(--color-surface);
   --admin-chip-bg: var(--color-bg-alt);
   --admin-input-bg: var(--color-bg-alt);
@@ -168,7 +168,7 @@
 .admin-shell__topbar {
   height: var(--admin-topbar-height);
   flex-shrink: 0;
-  background: var(--material-fill-heavy, var(--admin-panel));
+  background: var(--admin-sticky-bg);
   border-bottom: 1px solid var(--admin-border);
   display: flex;
   align-items: center;
@@ -2948,8 +2948,9 @@ html[data-theme="light"] .admin-badge--info,
   justify-content: space-between;
   padding: 0 20px;
   border-bottom: 1px solid var(--admin-border);
-  background: var(--material-fill-heavy, var(--admin-panel));
+  background: var(--admin-sticky-bg);
   backdrop-filter: blur(var(--material-blur, 20px));
+  -webkit-backdrop-filter: blur(var(--material-blur, 20px));
 }
 
 .admin-login__bar-actions {
@@ -4202,11 +4203,21 @@ html[data-theme="light"] .admin-badge--info,
 }
 
 .admin-theme-picker__dot {
-  width: 10px;
-  height: 10px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
-  border: 1px solid color-mix(in srgb, var(--admin-text) 18%, transparent);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.28);
+  flex-shrink: 0;
+}
+
+.admin-shell--dark .admin-theme-picker__dot,
+.admin-shell[data-admin-theme="slate"] .admin-theme-picker__dot,
+.admin-shell[data-admin-theme="navy"] .admin-theme-picker__dot,
+.admin-shell[data-admin-theme="graphite"] .admin-theme-picker__dot,
+.admin-shell[data-admin-theme="aurora"] .admin-theme-picker__dot,
+.admin-shell[data-admin-theme="ink"] .admin-theme-picker__dot,
+.admin-shell[data-admin-theme="signal"] .admin-theme-picker__dot {
+  border-color: rgba(255, 255, 255, 0.35);
 }
 
 .admin-theme-picker__label {
@@ -4221,7 +4232,9 @@ html[data-theme="light"] .admin-badge--info,
   top: calc(100% + 8px);
   right: 0;
   z-index: 80;
-  width: min(280px, calc(100vw - 24px));
+  width: min(300px, calc(100vw - 24px));
+  max-height: min(70vh, 520px);
+  overflow-y: auto;
   padding: 6px;
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-lg);
@@ -4273,9 +4286,24 @@ html[data-theme="light"] .admin-badge--info,
   line-height: 1.35;
 }
 
+/* Match site keeps sportsbook materials. Fixed themes override frosted fills
+   so the header never inherits the public light cream glass. */
+.admin-shell[data-admin-theme="match"] {
+  --admin-sticky-bg: var(--material-fill-heavy, var(--admin-panel));
+}
+
+.admin-shell[data-admin-theme]:not([data-admin-theme="match"]) .admin-shell__topbar,
+.admin-shell[data-admin-theme]:not([data-admin-theme="match"]) .admin-login__bar {
+  background: var(--admin-sticky-bg);
+}
+
 /* —— Forest desk (light) —— */
 .admin-shell[data-admin-theme="forest"] {
   color-scheme: light;
+  --material-fill: rgba(247, 250, 247, 0.78);
+  --material-fill-heavy: rgba(247, 250, 247, 0.96);
+  --material-edge: rgba(21, 32, 24, 0.08);
+  --header-bg: rgba(247, 250, 247, 0.96);
   --admin-bg: #eef3ef;
   --admin-panel: #f7faf7;
   --admin-surface: #fbfdfb;
@@ -4293,11 +4321,13 @@ html[data-theme="light"] .admin-badge--info,
   --admin-warning: #c98512;
   --admin-danger: #d6453a;
   --admin-info: #2a8f9a;
+  --admin-accent-blue: #2a8f9a;
+  --admin-accent-indigo: #1f8a4c;
   --admin-text: #152018;
   --admin-text-secondary: #4a5a4f;
   --admin-text-muted: #6f7f74;
   --admin-text-dim: #6f7f74;
-  --admin-sticky-bg: rgba(247, 250, 247, 0.92);
+  --admin-sticky-bg: #f7faf7;
   --admin-card-bg: #fbfdfb;
   --admin-chip-bg: #e8efe9;
   --admin-input-bg: #f1f6f2;
@@ -4309,6 +4339,10 @@ html[data-theme="light"] .admin-badge--info,
 /* —— Mist (light cool) —— */
 .admin-shell[data-admin-theme="mist"] {
   color-scheme: light;
+  --material-fill: rgba(247, 248, 251, 0.78);
+  --material-fill-heavy: rgba(247, 248, 251, 0.96);
+  --material-edge: rgba(18, 22, 28, 0.08);
+  --header-bg: rgba(247, 248, 251, 0.96);
   --admin-bg: #eef1f5;
   --admin-panel: #f7f8fb;
   --admin-surface: #fcfdff;
@@ -4326,11 +4360,13 @@ html[data-theme="light"] .admin-badge--info,
   --admin-warning: #c98512;
   --admin-danger: #d6453a;
   --admin-info: #2a6f8f;
+  --admin-accent-blue: #2a6f8f;
+  --admin-accent-indigo: #2a6f8f;
   --admin-text: #12161c;
   --admin-text-secondary: #4b5563;
   --admin-text-muted: #6b7280;
   --admin-text-dim: #6b7280;
-  --admin-sticky-bg: rgba(247, 248, 251, 0.92);
+  --admin-sticky-bg: #f7f8fb;
   --admin-card-bg: #fcfdff;
   --admin-chip-bg: #e8edf4;
   --admin-input-bg: #f1f4f8;
@@ -4339,9 +4375,52 @@ html[data-theme="light"] .admin-badge--info,
   --admin-shadow-lg: 0 16px 40px rgba(18, 22, 28, 0.12);
 }
 
-/* —— Ops slate (dark) —— */
+/* —— Glacier (light icy) —— */
+.admin-shell[data-admin-theme="glacier"] {
+  color-scheme: light;
+  --material-fill: rgba(244, 250, 253, 0.8);
+  --material-fill-heavy: rgba(244, 250, 253, 0.97);
+  --material-edge: rgba(15, 36, 48, 0.08);
+  --header-bg: rgba(244, 250, 253, 0.97);
+  --admin-bg: #e8f2f8;
+  --admin-panel: #f4fafd;
+  --admin-surface: #fbfdfe;
+  --admin-surface-hover: #dcecf4;
+  --admin-surface-elevated: #ffffff;
+  --admin-border: #c5d8e4;
+  --admin-border-bright: #a9c5d6;
+  --admin-border-focus: #1f7a9a;
+  --admin-primary: #1f7a9a;
+  --admin-primary-hover: #17607a;
+  --admin-on-primary: #f3fbff;
+  --admin-primary-soft: color-mix(in srgb, #1f7a9a 16%, transparent);
+  --admin-primary-softer: color-mix(in srgb, #1f7a9a 10%, transparent);
+  --admin-success: #2f7d57;
+  --admin-warning: #c98512;
+  --admin-danger: #d6453a;
+  --admin-info: #1f7a9a;
+  --admin-accent-blue: #1f7a9a;
+  --admin-accent-indigo: #1f7a9a;
+  --admin-text: #0f2430;
+  --admin-text-secondary: #3f5a68;
+  --admin-text-muted: #67808c;
+  --admin-text-dim: #67808c;
+  --admin-sticky-bg: #f4fafd;
+  --admin-card-bg: #fbfdfe;
+  --admin-chip-bg: #dcecf4;
+  --admin-input-bg: #ebf4f9;
+  --admin-shadow: 0 8px 24px rgba(15, 36, 48, 0.08);
+  --admin-shadow-sm: 0 1px 2px rgba(15, 36, 48, 0.06);
+  --admin-shadow-lg: 0 16px 40px rgba(15, 36, 48, 0.12);
+}
+
+/* —— Ops slate (dark charcoal + steel blue) —— */
 .admin-shell[data-admin-theme="slate"] {
   color-scheme: dark;
+  --material-fill: rgba(22, 28, 37, 0.78);
+  --material-fill-heavy: rgba(22, 28, 37, 0.97);
+  --material-edge: rgba(255, 255, 255, 0.08);
+  --header-bg: rgba(22, 28, 37, 0.97);
   --admin-bg: #0f1319;
   --admin-panel: #161c25;
   --admin-surface: #1b2330;
@@ -4359,11 +4438,14 @@ html[data-theme="light"] .admin-badge--info,
   --admin-warning: #e8a317;
   --admin-danger: #f07167;
   --admin-info: #5b8def;
+  --admin-accent-blue: #5b8def;
+  --admin-accent-indigo: #5b8def;
+  --admin-accent-cyan: #5b8def;
   --admin-text: #e8edf5;
   --admin-text-secondary: #a8b3c4;
   --admin-text-muted: #7d8aa0;
   --admin-text-dim: #7d8aa0;
-  --admin-sticky-bg: rgba(22, 28, 37, 0.92);
+  --admin-sticky-bg: #161c25;
   --admin-card-bg: #1b2330;
   --admin-chip-bg: #243041;
   --admin-input-bg: #121821;
@@ -4372,9 +4454,13 @@ html[data-theme="light"] .admin-badge--info,
   --admin-shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.45);
 }
 
-/* —— Control navy (dark) —— */
+/* —— Control navy (deep navy) —— */
 .admin-shell[data-admin-theme="navy"] {
   color-scheme: dark;
+  --material-fill: rgba(13, 21, 36, 0.8);
+  --material-fill-heavy: rgba(13, 21, 36, 0.98);
+  --material-edge: rgba(255, 255, 255, 0.07);
+  --header-bg: rgba(13, 21, 36, 0.98);
   --admin-bg: #070d18;
   --admin-panel: #0d1524;
   --admin-surface: #121c2f;
@@ -4392,11 +4478,14 @@ html[data-theme="light"] .admin-badge--info,
   --admin-warning: #e8a317;
   --admin-danger: #f07167;
   --admin-info: #3d8bfd;
+  --admin-accent-blue: #3d8bfd;
+  --admin-accent-indigo: #3d8bfd;
+  --admin-accent-cyan: #3d8bfd;
   --admin-text: #e7eefc;
   --admin-text-secondary: #9fb0cf;
   --admin-text-muted: #7b8db0;
   --admin-text-dim: #7b8db0;
-  --admin-sticky-bg: rgba(13, 21, 36, 0.92);
+  --admin-sticky-bg: #0d1524;
   --admin-card-bg: #121c2f;
   --admin-chip-bg: #1a2740;
   --admin-input-bg: #0a1220;
@@ -4405,9 +4494,13 @@ html[data-theme="light"] .admin-badge--info,
   --admin-shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.5);
 }
 
-/* —— Graphite (dark + turf accent) —— */
+/* —— Graphite (dark + lime) —— */
 .admin-shell[data-admin-theme="graphite"] {
   color-scheme: dark;
+  --material-fill: rgba(22, 22, 22, 0.82);
+  --material-fill-heavy: rgba(22, 22, 22, 0.98);
+  --material-edge: rgba(255, 255, 255, 0.06);
+  --header-bg: rgba(22, 22, 22, 0.98);
   --admin-bg: #0e0e0e;
   --admin-panel: #161616;
   --admin-surface: #1c1c1c;
@@ -4425,14 +4518,136 @@ html[data-theme="light"] .admin-badge--info,
   --admin-warning: #e8a317;
   --admin-danger: #f07167;
   --admin-info: #5b8def;
+  --admin-accent-blue: #5b8def;
+  --admin-accent-indigo: #7dff6b;
+  --admin-accent-green: #7dff6b;
   --admin-text: #f2f2f2;
   --admin-text-secondary: #b0b0b0;
   --admin-text-muted: #888888;
   --admin-text-dim: #888888;
-  --admin-sticky-bg: rgba(22, 22, 22, 0.92);
+  --admin-sticky-bg: #161616;
   --admin-card-bg: #1c1c1c;
   --admin-chip-bg: #262626;
   --admin-input-bg: #121212;
+  --admin-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  --admin-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --admin-shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.55);
+}
+
+/* —— Aurora (dark teal) —— */
+.admin-shell[data-admin-theme="aurora"] {
+  color-scheme: dark;
+  --material-fill: rgba(10, 28, 30, 0.82);
+  --material-fill-heavy: rgba(10, 28, 30, 0.98);
+  --material-edge: rgba(255, 255, 255, 0.07);
+  --header-bg: rgba(10, 28, 30, 0.98);
+  --admin-bg: #071416;
+  --admin-panel: #0a1c1e;
+  --admin-surface: #102628;
+  --admin-surface-hover: #163336;
+  --admin-surface-elevated: #143033;
+  --admin-border: #1f4044;
+  --admin-border-bright: #2a555a;
+  --admin-border-focus: #2ec4b6;
+  --admin-primary: #2ec4b6;
+  --admin-primary-hover: #4ad4c7;
+  --admin-on-primary: #041312;
+  --admin-primary-soft: color-mix(in srgb, #2ec4b6 20%, transparent);
+  --admin-primary-softer: color-mix(in srgb, #2ec4b6 11%, transparent);
+  --admin-success: #2ec4b6;
+  --admin-warning: #e8a317;
+  --admin-danger: #f07167;
+  --admin-info: #3db8d0;
+  --admin-accent-blue: #3db8d0;
+  --admin-accent-indigo: #2ec4b6;
+  --admin-accent-cyan: #2ec4b6;
+  --admin-text: #e6f7f5;
+  --admin-text-secondary: #9ec4bf;
+  --admin-text-muted: #6f9591;
+  --admin-text-dim: #6f9591;
+  --admin-sticky-bg: #0a1c1e;
+  --admin-card-bg: #102628;
+  --admin-chip-bg: #163336;
+  --admin-input-bg: #081618;
+  --admin-shadow: 0 10px 28px rgba(0, 0, 0, 0.42);
+  --admin-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.32);
+  --admin-shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.52);
+}
+
+/* —— Ink (high-contrast black) —— */
+.admin-shell[data-admin-theme="ink"] {
+  color-scheme: dark;
+  --material-fill: rgba(10, 10, 10, 0.86);
+  --material-fill-heavy: rgba(10, 10, 10, 0.98);
+  --material-edge: rgba(255, 255, 255, 0.08);
+  --header-bg: rgba(10, 10, 10, 0.98);
+  --admin-bg: #050505;
+  --admin-panel: #0a0a0a;
+  --admin-surface: #121212;
+  --admin-surface-hover: #1c1c1c;
+  --admin-surface-elevated: #181818;
+  --admin-border: #2a2a2a;
+  --admin-border-bright: #3c3c3c;
+  --admin-border-focus: #8ab4ff;
+  --admin-primary: #8ab4ff;
+  --admin-primary-hover: #a8c7ff;
+  --admin-on-primary: #05080f;
+  --admin-primary-soft: color-mix(in srgb, #8ab4ff 20%, transparent);
+  --admin-primary-softer: color-mix(in srgb, #8ab4ff 11%, transparent);
+  --admin-success: #6ee7a8;
+  --admin-warning: #f0c14a;
+  --admin-danger: #ff7b72;
+  --admin-info: #8ab4ff;
+  --admin-accent-blue: #8ab4ff;
+  --admin-accent-indigo: #8ab4ff;
+  --admin-text: #f5f5f5;
+  --admin-text-secondary: #bdbdbd;
+  --admin-text-muted: #8a8a8a;
+  --admin-text-dim: #8a8a8a;
+  --admin-sticky-bg: #0a0a0a;
+  --admin-card-bg: #121212;
+  --admin-chip-bg: #1c1c1c;
+  --admin-input-bg: #080808;
+  --admin-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+  --admin-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --admin-shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.65);
+}
+
+/* —— Signal (dark + amber) —— */
+.admin-shell[data-admin-theme="signal"] {
+  color-scheme: dark;
+  --material-fill: rgba(22, 18, 12, 0.84);
+  --material-fill-heavy: rgba(22, 18, 12, 0.98);
+  --material-edge: rgba(255, 255, 255, 0.07);
+  --header-bg: rgba(22, 18, 12, 0.98);
+  --admin-bg: #12100c;
+  --admin-panel: #1a160f;
+  --admin-surface: #221c14;
+  --admin-surface-hover: #2e261b;
+  --admin-surface-elevated: #292218;
+  --admin-border: #3a3124;
+  --admin-border-bright: #4d4130;
+  --admin-border-focus: #f0a202;
+  --admin-primary: #f0a202;
+  --admin-primary-hover: #ffb733;
+  --admin-on-primary: #1a1205;
+  --admin-primary-soft: color-mix(in srgb, #f0a202 20%, transparent);
+  --admin-primary-softer: color-mix(in srgb, #f0a202 11%, transparent);
+  --admin-success: #5ecf7a;
+  --admin-warning: #f0a202;
+  --admin-danger: #f07167;
+  --admin-info: #5b8def;
+  --admin-accent-blue: #5b8def;
+  --admin-accent-indigo: #f0a202;
+  --admin-accent-amber: #f0a202;
+  --admin-text: #f6f1e7;
+  --admin-text-secondary: #cbbfaa;
+  --admin-text-muted: #9a8d78;
+  --admin-text-dim: #9a8d78;
+  --admin-sticky-bg: #1a160f;
+  --admin-card-bg: #221c14;
+  --admin-chip-bg: #2e261b;
+  --admin-input-bg: #14110c;
   --admin-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
   --admin-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
   --admin-shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.55);
