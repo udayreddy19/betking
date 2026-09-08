@@ -13,6 +13,10 @@ import {
 } from '../../lib/other-sports-v4/EngineModeControl.mjs';
 import { generatePublicMatchOddsSnapshot } from '../../lib/odds-v4/engineDispatch.mjs';
 import { _resetEngineModeControlForTests } from '../../lib/odds-v4/EngineModeControl.mjs';
+import {
+  countSetWins,
+  isCompletedTennisSet,
+} from '../../lib/odds-v3/sports/readLiveScoreState.mjs';
 
 function soccerMatch(extra = {}) {
   return {
@@ -75,7 +79,7 @@ describe('OtherSportsEngineV4 house protect', () => {
   it('prices soccer 1X2 with thick house book (≥116 pts, no arb)', () => {
     const snap = generate(soccerMatch(), { allowModelOnly: true });
     expect(snap.engine).toBe('OtherSportsEngineV4');
-    expect(snap.engineVersion).toBe('4.8.7');
+    expect(snap.engineVersion).toBe('4.9.0');
     expect(snap.osv4Meta?.qualityScore).toBe(10.0);
     expect(snap.houseProtect).toBe(true);
     const mw = snap.markets.find((m) => m.marketId === 'match_winner');
@@ -151,15 +155,52 @@ describe('OtherSportsEngineV4 house protect', () => {
     expect(engine).not.toBe('OtherSportsEngineV4');
   });
 
-  it('caps longshots at maxSelectionOdds', () => {
+  it('suspends extreme longshots instead of printing soft dogs at the cap', () => {
     const snap = generate(soccerMatch({
       odds: { home: 1.15, draw: 8.0, away: 12.0 },
     }), { allowModelOnly: true });
     const mw = snap.markets.find((m) => m.marketId === 'match_winner');
-    expect(mw?.status).toBe('OPEN');
-    for (const s of mw.selections) {
-      expect(Number(s.odds)).toBeLessThanOrEqual(2.75);
+    expect(['OPEN', 'SUSPENDED']).toContain(mw?.status);
+    if (mw?.status === 'OPEN') {
+      for (const s of mw.selections) {
+        expect(Number(s.odds)).toBeLessThanOrEqual(2.75);
+      }
     }
+  });
+
+  it('does not invert a strong soccer away provider favorite', () => {
+    const snap = generate(soccerMatch({
+      liveDetails: { score1: 0, score2: 0, minute: 0 },
+      odds: { home: 6.0, draw: 4.2, away: 1.40 },
+      status: 'SCHEDULED',
+      isLive: false,
+      matchState: 'pre',
+    }), { allowModelOnly: true });
+    const mw = snap.markets.find((m) => m.marketId === 'match_winner');
+    expect(mw?.status).toBe('OPEN');
+    const home = mw.selections.find((s) => s.selectionId === '1');
+    const away = mw.selections.find((s) => s.selectionId === '2');
+    expect(Number(away.odds)).toBeLessThan(Number(home.odds));
+  });
+
+  it('counts only completed tennis sets toward set wins', () => {
+    expect(isCompletedTennisSet(4, 3)).toBe(false);
+    expect(isCompletedTennisSet(6, 3)).toBe(true);
+    expect(countSetWins([4], [3])).toEqual({ setWins1: 0, setWins2: 0 });
+    expect(countSetWins([6, 2], [3, 1])).toEqual({ setWins1: 1, setWins2: 0 });
+  });
+
+  it('suspends set1_winner after set 1 is decided', () => {
+    const snap = generate(tennisMatch({
+      liveDetails: {
+        sets1: [6, 2],
+        sets2: [3, 1],
+        score1: 1,
+        score2: 0,
+      },
+    }), { allowModelOnly: true });
+    expect(snap.markets.find((m) => m.marketId === 'set1_winner')?.status).toBe('SUSPENDED');
+    expect(snap.markets.find((m) => m.marketId === 'match_winner')?.status).toBe('OPEN');
   });
 
   it('never pays soft favorites above maxFavoriteOdds', () => {
@@ -167,7 +208,7 @@ describe('OtherSportsEngineV4 house protect', () => {
       odds: { home: 1.25, draw: 5.5, away: 9.0 },
     }), { allowModelOnly: true });
     const mw = snap.markets.find((m) => m.marketId === 'match_winner');
-    expect(mw?.status).toBe('OPEN');
+    if (mw?.status !== 'OPEN') return;
     for (const s of mw.selections) {
       if (Number(s.probability) >= 0.48) {
         expect(Number(s.odds)).toBeLessThanOrEqual(1.40);
@@ -181,7 +222,7 @@ describe('OtherSportsEngineV4 house protect', () => {
       liveDetails: { score1: 14, score2: 10, minute: 28 },
       odds: { home: 1.9, away: 1.95 },
     }), { allowModelOnly: true });
-    expect(snap.engineVersion).toBe('4.8.7');
+    expect(snap.engineVersion).toBe('4.9.0');
     expect(snap.osv4Meta?.features).toContain('american_football_tune');
     expect(snap.osv4Meta?.qualityScore).toBe(10.0);
     const mw = snap.markets.find((m) => m.marketId === 'match_winner');

@@ -51,6 +51,18 @@ describe('other-sports settlement graders', () => {
     expect(dcx2.outcome).toBe('LOST');
     expect(dc12.outcome).toBe('WON');
     expect(dc1x.reason).toMatch(/soccer_dc/);
+
+    // Binary :No legs must invert — never both Yes and No WON (arb).
+    const dc1xNo = await evaluateBetForSettlement(
+      { market_id: 'double_chance_1x', selection_id: 'DC:1X:No', selection_name: 'No' },
+      match,
+    );
+    expect(dc1xNo.outcome).toBe('LOST');
+    const dcx2No = await evaluateBetForSettlement(
+      { market_id: 'double_chance_x2', selection_id: 'DC:X2:No', selection_name: 'No' },
+      finishedSoccer(2, 1),
+    );
+    expect(dcx2No.outcome).toBe('WON');
   });
 
   it('voids draw-no-bet on a soccer draw and pays the winner otherwise', () => {

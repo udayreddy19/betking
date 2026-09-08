@@ -46,23 +46,23 @@ describe('OddsEngineV4 positive cases', () => {
     delete process.env.ODDS_ENGINE;
   });
 
-  it('emits v4.8.7 identity and scorecard mark 10.0', () => {
-    expect(V4_ENGINE_VERSION).toBe('4.8.7');
+  it('emits v4.9.0 identity and scorecard mark 10.0', () => {
+    expect(V4_ENGINE_VERSION).toBe('4.9.0');
     const row = getOddsEngineScorecard().find((r) => r.engine === 'OddsEngineV4');
     expect(row.score).toBe(10.0);
-    expect(row.version).toBe('4.8.7');
+    expect(row.version).toBe('4.9.0');
   });
 
   it('opens match_winner with thick house book on live chase', () => {
     const snap = generateV4(buildCanonicalFromMatch(liveChase()), { winnerOnly: true });
     expect(snap.engine).toBe('OddsEngineV4');
-    expect(snap.engineVersion).toBe('4.8.7');
+    expect(snap.engineVersion).toBe('4.9.0');
     const mw = snap.markets.find((m) => m.marketId === 'match_winner');
     expect(mw?.status).toBe('OPEN');
     expect(mw.selections.length).toBe(2);
     expect(openImplied(mw)).toBeGreaterThanOrEqual(1.14);
     expect(snap.v4Meta?.features).toEqual(expect.arrayContaining([
-      'house_v487',
+      'house_v49',
       'favorite_cap',
       'book_guardian',
       'soft_leak_suspend',
@@ -127,11 +127,14 @@ describe('OddsEngineV4 positive cases', () => {
     expect(snap.status).toBe('DETERMINED');
   });
 
-  it('features include v4.8.7 house_v487 + min_book_mass + core_only_lock', () => {
+  it('features include v4.9 house_v49 + integrity fixes + min_book_mass', () => {
     const snap = generateV4(buildCanonicalFromMatch(liveChase()), { winnerOnly: true });
     expect(snap.v4Meta?.features).toEqual(expect.arrayContaining([
-      'house_v487',
+      'house_v49',
       'chase_side_integrity',
+      'odd_even_parity_fix',
+      'post_vol_reteighten',
+      'finite_fairp_over_cap',
       'min_book_mass',
       'core_only_lock',
       'soft_leak_suspend',

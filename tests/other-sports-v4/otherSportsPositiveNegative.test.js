@@ -72,10 +72,10 @@ describe('OtherSportsEngineV4 positive cases', () => {
     await clearRuntimeOtherSportsEngineMode().catch(() => null);
   });
 
-  it('scorecard marks OSV4 at 4.8.7 / 10.0', () => {
-    expect(OSV4_ENGINE_VERSION).toBe('4.8.7');
+  it('scorecard marks OSV4 at 4.9.0 / 10.0', () => {
+    expect(OSV4_ENGINE_VERSION).toBe('4.9.0');
     const row = getOddsEngineScorecard().find((r) => r.engine === 'OtherSportsEngineV4');
-    expect(row.version).toBe('4.8.7');
+    expect(row.version).toBe('4.9.0');
     expect(row.score).toBe(10.0);
   });
 
@@ -94,7 +94,7 @@ describe('OtherSportsEngineV4 positive cases', () => {
   it('prices soccer / basketball / tennis with open moneyline', () => {
     for (const match of [soccer(), basketball(), tennis()]) {
       const snap = generate(match, { allowModelOnly: true });
-      expect(snap.engineVersion).toBe('4.8.7');
+      expect(snap.engineVersion).toBe('4.9.0');
       expect(snap.osv4Meta?.qualityScore).toBe(10.0);
       const mw = snap.markets.find((m) => m.marketId === 'match_winner');
       expect(mw?.status).toBe('OPEN');
@@ -130,7 +130,8 @@ describe('OtherSportsEngineV4 positive cases', () => {
 
   it('soccer late lock suspends extras after minute threshold', () => {
     const snap = generate(soccer({
-      liveDetails: { score1: 2, score2: 1, minute: 84 },
+      // Keep a competitive score so MW stays open; late lock only kills extras.
+      liveDetails: { score1: 1, score2: 1, minute: 84 },
     }), { allowModelOnly: true });
     const mw = snap.markets.find((m) => m.marketId === 'match_winner');
     expect(mw?.status).toBe('OPEN');

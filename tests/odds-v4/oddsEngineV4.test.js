@@ -98,6 +98,16 @@ describe('OddsEngineV4 — resource MW + V3 catalog', () => {
     expect(ids.some((id) => id === 'team_total' || id === 'match_total')).toBe(true);
   });
 
+  it('prices next-delivery Odd below Even (fours are even)', () => {
+    const state = buildCanonicalFromMatch(chaseMatch());
+    const snap = generateV4(state, { winnerOnly: false });
+    const oe = snap.markets.find((m) => /next_delivery_odd_even/i.test(m.marketId));
+    expect(oe?.status).toBe('OPEN');
+    const odd = oe.selections.find((s) => String(s.name).toLowerCase() === 'odd');
+    const even = oe.selections.find((s) => String(s.name).toLowerCase() === 'even');
+    expect(Number(odd.odds)).toBeGreaterThan(Number(even.odds));
+  });
+
   it('offers a richer book than V3 compact (unlocks odd_even / boundaries / H2H families when generated)', () => {
     const state = buildCanonicalFromMatch(chaseMatch());
     const v3 = generateV3(state, { winnerOnly: false });
@@ -171,7 +181,7 @@ describe('OddsEngineV4 — resource MW + V3 catalog', () => {
     expect(p190).toBeLessThan(0.12);
 
     const v4 = generateV4(state, { winnerOnly: false });
-    expect(v4.engineVersion).toBe('4.8.7');
+    expect(v4.engineVersion).toBe('4.9.0');
     expect(v4.v4Meta?.features?.length).toBeGreaterThan(0);
     // Near-target books are intentionally thinner; full 100 score is asserted on mid-chase.
     const teamTotal = v4.markets.find((m) => m.marketId === 'team_total');
@@ -220,7 +230,7 @@ describe('OddsEngineV4 — resource MW + V3 catalog', () => {
   it('scores a full live book at 100/100 on the readiness rubric', () => {
     const state = buildCanonicalFromMatch(chaseMatch());
     const v4 = generateV4(state, { winnerOnly: false });
-    expect(v4.engineVersion).toBe('4.8.7');
+    expect(v4.engineVersion).toBe('4.9.0');
     expect(v4.v4Meta.qualityScore).toBe(100);
     expect(v4.v4Meta.qualityBreakdown.matchWinner).toBe(20);
     expect(v4.v4Meta.qualityBreakdown.houseEdge).toBe(20);
