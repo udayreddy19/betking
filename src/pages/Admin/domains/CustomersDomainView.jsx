@@ -13,6 +13,7 @@ import { useAdminRole, canAccessDomain, hasPermission, PERMISSIONS, ADMIN_ROLES 
 import { AdminHub } from '../components/AdminTabs';
 import { useAdminUiMode } from '../context/AdminUiModeContext';
 import { formatIst, formatIstDateTime } from '../../../utils/istTime';
+import AdminWhatsAppPanel from './AdminWhatsAppPanel';
 
 const DOSSIER_TABS = [
   { id: 'profile', label: 'Profile' },
@@ -301,6 +302,7 @@ function CustomersDomainPanels({
   const [ticketCategory, setTicketCategory] = useState('General');
   const [ticketMessage, setTicketMessage] = useState('');
   const [actionBusy, setActionBusy] = useState(false);
+  const [quickWhatsAppUser, setQuickWhatsAppUser] = useState(null);
   const autoOpenedRef = useRef(null);
   const { showToast } = useAdminToast();
 
@@ -1303,7 +1305,26 @@ function CustomersDomainPanels({
                 <DossierField label="Name">{user360?.user?.name || selectedUser.name || '—'}</DossierField>
                 <DossierField label="User ID" mono>{selectedUser.id}</DossierField>
                 <DossierField label="Email" mono>{user360?.user?.email || selectedUser.email || '—'}</DossierField>
-                <DossierField label="Mobile" mono>{user360?.user?.phone || selectedUser.phone || '—'}</DossierField>
+                <DossierField label="Mobile" mono>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                    <span>{user360?.user?.phone || selectedUser.phone || '—'}</span>
+                    {(user360?.user?.phone || selectedUser.phone) && (
+                      <button
+                        type="button"
+                        onClick={() => setQuickWhatsAppUser({
+                          phone: user360?.user?.phone || selectedUser.phone,
+                          id: selectedUser.id,
+                          name: user360?.user?.name || selectedUser.name,
+                        })}
+                        className="admin-btn admin-btn--secondary admin-btn--xs"
+                        style={{ padding: '2px 8px', fontSize: '0.72rem', color: '#34d399', borderColor: '#05966944' }}
+                        title="Send WhatsApp message via Kapso"
+                      >
+                        💬 WhatsApp
+                      </button>
+                    )}
+                  </span>
+                </DossierField>
                 <DossierField label="Date of birth">{user360?.user?.dateOfBirth || selectedUser.dateOfBirth || '—'}</DossierField>
                 <DossierField label="Registered">{formatDt(user360?.user?.createdAt) !== '—' ? formatDt(user360?.user?.createdAt) : (selectedUser.regDate || '—')}</DossierField>
                 <DossierField label="Last login">{formatDt(user360?.user?.lastLoginAt)}</DossierField>
@@ -1848,6 +1869,62 @@ function CustomersDomainPanels({
           </>
         )}
       </AdminDrawer>
+
+      {quickWhatsAppUser && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.75)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px',
+          }}
+          onClick={() => setQuickWhatsAppUser(null)}
+        >
+          <div
+            style={{
+              background: 'var(--admin-bg-base, #0f172a)',
+              border: '1px solid var(--admin-border, #334155)',
+              borderRadius: '16px',
+              maxWidth: '920px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: '24px',
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.7)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--admin-border, #334155)', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '1.2rem' }}>💬</span>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--admin-text-primary)' }}>
+                  Send WhatsApp to {quickWhatsAppUser.name || quickWhatsAppUser.phone}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setQuickWhatsAppUser(null)}
+                className="admin-btn admin-btn--secondary admin-btn--sm"
+              >
+                ✕ Close
+              </button>
+            </div>
+            <AdminWhatsAppPanel
+              initialRecipient={quickWhatsAppUser.phone}
+              initialUserId={quickWhatsAppUser.id}
+              onDismissQuickModal={() => setQuickWhatsAppUser(null)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

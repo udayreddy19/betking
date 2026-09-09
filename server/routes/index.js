@@ -145,4 +145,8 @@ adminRouter.use('/odds-intelligence', oddsIntelligenceRouter);
 import apiExplorerRouter from './admin/apiExplorer.js';
 adminRouter.use('/api-explorer', apiExplorerRouter);
 
+// Admin WhatsApp Messaging (Kapso API)
+import whatsappRouter from './admin/whatsapp.js';
+adminRouter.use('/whatsapp', whatsappRouter);
+
 export default adminRouter;

@@ -6,6 +6,7 @@ import { StatusBadge } from '../components/AdminBadge';
 import { AdminHub } from '../components/AdminTabs';
 import { useNavAttentionCount } from '../context/AdminNavAttentionContext';
 import AdminConfirmDialog from '../components/AdminConfirmDialog';
+import AdminWhatsAppPanel from './AdminWhatsAppPanel';
 
 const FAILED_STATUSES = new Set(['FAILED', 'ERROR', 'DEAD_LETTER', 'DLQ', 'BOUNCED', 'REJECTED']);
 
@@ -636,7 +637,7 @@ function CommunicationsPanels({ subModule = 'dispatch-logs' }) {
   const { showToast } = useAdminToast();
 
   useEffect(() => {
-    if (subModule === 'broadcast' || subModule === 'compose') return undefined;
+    if (subModule === 'broadcast' || subModule === 'compose' || subModule === 'whatsapp') return undefined;
     let cancelled = false;
     const load = async () => {
       try {
@@ -708,6 +709,10 @@ function CommunicationsPanels({ subModule = 'dispatch-logs' }) {
     })),
     [outboxEvents],
   );
+
+  if (subModule === 'whatsapp') {
+    return <AdminWhatsAppPanel />;
+  }
 
   if (subModule === 'compose') {
     return <ComposeMailPanel />;
