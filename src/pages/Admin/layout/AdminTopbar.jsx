@@ -1,7 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import {
-  SearchIcon,
   BellRingIcon,
   MenuIcon,
 } from '../../../icons/animate/index';
@@ -11,14 +10,10 @@ import AdminThemePicker from '../components/AdminThemePicker';
 import { ADMIN_ROLES } from '../permissions/AdminRBACGate';
 
 /**
- * Extracted Admin Topbar — search, alerts, RBAC role, profile, breadcrumbs,
+ * Extracted Admin Topbar — alerts, RBAC role, profile, breadcrumbs,
  * and direct Light/Dark mode toggling and theme selection.
  */
 export default function AdminTopbar({
-  globalSearch,
-  onSearchChange,
-  onSearchKeyDown,
-  onSearchClick,
   activeRole,
   onRoleChange,
   rolePreviewEnabled = false,
@@ -84,22 +79,6 @@ export default function AdminTopbar({
             )}
           </div>
         )}
-
-        <div className="admin-topbar__search">
-          <span className="admin-topbar__search-icon">
-            <SearchIcon size={14} style={{ display: 'block' }} />
-          </span>
-          <input
-            type="search"
-            placeholder="Search email, mobile, users, bets…"
-            value={globalSearch}
-            onChange={onSearchChange}
-            onKeyDown={onSearchKeyDown}
-            onClick={onSearchClick}
-            className="admin-input"
-          />
-          <span className="admin-topbar__kbd">⌘K</span>
-        </div>
       </div>
 
       <div className="admin-topbar__actions">

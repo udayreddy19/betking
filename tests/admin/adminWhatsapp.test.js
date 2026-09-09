@@ -53,6 +53,15 @@ describe('Admin WhatsApp Router (/api/admin/whatsapp)', () => {
 
   it('dispatches a template WhatsApp message successfully', async () => {
     const app = createApp('SUPER_ADMIN');
+    const spy = vi.spyOn(kapsoService, 'sendTemplateMessage').mockResolvedValueOnce({
+      success: true,
+      logId: 'wal_test_123',
+      messageId: 'mock_tmpl_msg',
+      recipient: '919876543210',
+      templateName: 'oddsyra_support_update',
+      status: 'SENT'
+    });
+
     const payload = {
       to: '9876543210',
       type: 'TEMPLATE',

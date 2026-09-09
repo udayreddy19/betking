@@ -1320,14 +1320,25 @@ function PromotionsPanel() {
   const [roiRows, setRoiRows] = useState([]);
   const [error, setError] = useState(null);
   const [roiNote, setRoiNote] = useState(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({
+    name: '',
+    code: '',
+    type: 'DEPOSIT_BONUS',
+    budget: 100000,
+    maxReward: 5000,
+    wageringMultiplier: 5,
+    minOdds: 1.50,
+    durationDays: 30,
+  });
+  const { showToast } = useAdminToast();
 
-  useEffect(() => {
-    let cancelled = false;
+  const loadData = useCallback(() => {
     Promise.allSettled([
       adminApiClient.get('/growth/promotions'),
       adminApiClient.get('/growth/promo-roi'),
     ]).then(([promoRes, roiRes]) => {
-        if (cancelled) return;
       if (promoRes.status === 'fulfilled') {
         setPromos(promoRes.value.promotions || []);
         setError(promoRes.value.note || null);
@@ -1342,24 +1353,180 @@ function PromotionsPanel() {
         setRoiRows([]);
         setRoiNote(roiRes.reason?.message || 'Promo ROI unavailable');
       }
-      });
-    return () => { cancelled = true; };
+    });
   }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const handleCreatePromo = async (e) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.code.trim()) {
+      showToast('Name and promo code are required', 'error');
+      return;
+    }
+    setCreating(true);
+    try {
+      await adminApiClient.post('/growth/promotions', form);
+      showToast(`Campaign ${form.code} launched successfully!`, 'success');
+      setShowCreate(false);
+      setForm({
+        name: '',
+        code: '',
+        type: 'DEPOSIT_BONUS',
+        budget: 100000,
+        maxReward: 5000,
+        wageringMultiplier: 5,
+        minOdds: 1.50,
+        durationDays: 30,
+      });
+      loadData();
+    } catch (err) {
+      showToast(err.message || 'Failed to launch campaign', 'error');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleTogglePromo = async (id, currentStatus) => {
+    const nextStatus = currentStatus === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
+    try {
+      await adminApiClient.patch(`/growth/promotions/${id}/status`, { status: nextStatus });
+      showToast(`Campaign ${nextStatus.toLowerCase()}`, 'success');
+      loadData();
+    } catch (err) {
+      showToast(err.message || 'Failed to update campaign status', 'error');
+    }
+  };
 
   const na = (v) => (v == null || v === 'N/A' ? 'N/A' : v);
 
   return (
     <div>
-      <div style={{ marginBottom: '16px' }}>
-        <h2 className="admin-page-header__title">Campaigns</h2>
-        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
-          Promotions from PostgreSQL. Empty list means no campaigns configured yet.
-        </p>
-        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
+      <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+        <div>
+          <h2 className="admin-page-header__title">Campaigns & Bonus Engine</h2>
+          <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
+            Authoritative promotional rules, deposit match bonuses, and automated wagering tracking.
+          </p>
+          {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
+        </div>
+        <button
+          type="button"
+          className="admin-btn admin-btn--primary admin-btn--sm"
+          onClick={() => setShowCreate(!showCreate)}
+        >
+          {showCreate ? '✕ Close Builder' : '＋ Launch Campaign'}
+        </button>
       </div>
 
+      {showCreate && (
+        <AdminCard
+          title="Interactive Bonus Campaign Builder"
+          subtitle="Configure budget allocation, turnover multiplier, and qualifying odds."
+          accent="#10b981"
+          style={{ marginBottom: 20 }}
+        >
+          <form onSubmit={handleCreatePromo} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+            <div>
+              <label style={{ fontSize: '0.78rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Campaign Name</label>
+              <input
+                type="text"
+                placeholder="e.g. IPL 100% First Deposit Match"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                className="admin-input"
+                required
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '0.78rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Promo Code</label>
+              <input
+                type="text"
+                placeholder="e.g. IPL100"
+                value={form.code}
+                onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
+                className="admin-input"
+                required
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '0.78rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Reward Type</label>
+              <select
+                value={form.type}
+                onChange={(e) => setForm({ ...form, type: e.target.value })}
+                className="admin-select"
+              >
+                <option value="DEPOSIT_BONUS">Deposit Match Bonus</option>
+                <option value="FREEBET">Free Bet Drop</option>
+                <option value="RELOAD">Reload Bonus</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize: '0.78rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Total Campaign Budget (₹)</label>
+              <input
+                type="number"
+                min="1000"
+                step="5000"
+                value={form.budget}
+                onChange={(e) => setForm({ ...form, budget: Number(e.target.value) || 100000 })}
+                className="admin-input"
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '0.78rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Max Bonus Per User (₹)</label>
+              <input
+                type="number"
+                min="500"
+                step="500"
+                value={form.maxReward}
+                onChange={(e) => setForm({ ...form, maxReward: Number(e.target.value) || 5000 })}
+                className="admin-input"
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '0.78rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Wagering / Rollover Multiplier</label>
+              <select
+                value={form.wageringMultiplier}
+                onChange={(e) => setForm({ ...form, wageringMultiplier: Number(e.target.value) })}
+                className="admin-select"
+              >
+                <option value={1}>1x (Instant Turnover)</option>
+                <option value={3}>3x Rollover</option>
+                <option value={5}>5x Standard Rollover</option>
+                <option value={10}>10x Rollover</option>
+                <option value={15}>15x High Rollover</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize: '0.78rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Min Qualifying Odds</label>
+              <input
+                type="number"
+                min="1.10"
+                max="3.00"
+                step="0.05"
+                value={form.minOdds}
+                onChange={(e) => setForm({ ...form, minOdds: Number(e.target.value) || 1.50 })}
+                className="admin-input"
+              />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+              <button
+                type="submit"
+                disabled={creating}
+                className="admin-btn admin-btn--primary"
+                style={{ width: '100%', height: '36px' }}
+              >
+                {creating ? 'Launching…' : '🚀 Launch Campaign'}
+              </button>
+            </div>
+          </form>
+        </AdminCard>
+      )}
+
       <AdminDataTable
-        title="Sportsbook Campaigns & Bonus Rules"
+        title="Active Sportsbook Campaigns & Bonus Rules"
         emptyMessage="No promotions configured"
         data={promos}
         columns={[
@@ -1367,13 +1534,27 @@ function PromotionsPanel() {
           { header: 'Campaign Name', key: 'name', render: (r) => <span style={{ fontWeight: 700 }}>{r.name}</span> },
           { header: 'Promo Code', key: 'code', render: (r) => <span className="admin-badge admin-badge--neutral">{r.code}</span> },
           { header: 'Type', key: 'type', render: (r) => r.type || '—', hideOnMobile: true },
-          { header: 'Bonus %', key: 'bonusPct', render: (r) => (r.bonusPct != null ? `${r.bonusPct}%` : '—'), hideOnMobile: true },
-          { header: 'Max Bonus', key: 'maxBonus', render: (r) => money(r.maxBonus), hideOnMobile: true },
-          { header: 'Claims', key: 'claims' },
+          { header: 'Max Bonus', key: 'maxBonus', render: (r) => money(r.maxReward || r.maxBonus), hideOnMobile: true },
+          { header: 'Rollover', key: 'wageringMultiplier', render: (r) => `${r.wageringMultiplier || 5}x @ ${r.minOdds || '1.50'}+` },
           {
             header: 'Status',
             key: 'status',
             render: (r) => <StatusBadge status={r.status} />,
+          },
+          {
+            header: 'Action',
+            key: 'action',
+            sortable: false,
+            render: (r) => (
+              <button
+                type="button"
+                className={`admin-btn admin-btn--sm ${r.status === 'ACTIVE' ? 'admin-btn--danger' : 'admin-btn--success'}`}
+                style={{ fontSize: '0.74rem', padding: '3px 8px' }}
+                onClick={() => handleTogglePromo(r.id, r.status)}
+              >
+                {r.status === 'ACTIVE' ? 'Pause' : 'Activate'}
+              </button>
+            ),
           },
         ]}
       />
@@ -1747,6 +1928,11 @@ function VipTiersPanel() {
   const [tiers, setTiers] = useState([]);
   const [limits, setLimits] = useState({ minDeposit: null, minWithdraw: null });
   const [dash, setDash] = useState(null);
+  const [highRollers, setHighRollers] = useState([]);
+  const [rebateModalUser, setRebateModalUser] = useState(null);
+  const [rebateAmount, setRebateAmount] = useState('');
+  const [rebateReason, setRebateReason] = useState('VIP Loss Rebate');
+  const [rebateBusy, setRebateBusy] = useState(false);
   const [error, setError] = useState(null);
   const [overrideUserId, setOverrideUserId] = useState('');
   const [overrideTier, setOverrideTier] = useState('GOLD');
@@ -1758,7 +1944,8 @@ function VipTiersPanel() {
     Promise.allSettled([
       adminApiClient.get('/growth/vip-tiers'),
       adminApiClient.get('/growth/vip-dashboard'),
-    ]).then(([catalog, dashboard]) => {
+      adminApiClient.get('/growth/vip-high-rollers'),
+    ]).then(([catalog, dashboard, hrRes]) => {
       if (catalog.status === 'fulfilled') {
         setTiers(catalog.value.tiers || []);
         setLimits({ minDeposit: catalog.value.minDeposit, minWithdraw: catalog.value.minWithdraw });
@@ -1768,10 +1955,40 @@ function VipTiersPanel() {
         setError(catalog.reason?.message || 'Failed to load VIP tier catalog');
       }
       setDash(dashboard.status === 'fulfilled' ? dashboard.value : null);
-      });
+      if (hrRes.status === 'fulfilled' && hrRes.value?.highRollers) {
+        setHighRollers(hrRes.value.highRollers);
+      }
+    });
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const submitRebate = async (e) => {
+    e.preventDefault();
+    if (!rebateModalUser) return;
+    const amt = parseFloat(rebateAmount);
+    if (!amt || amt <= 0) {
+      showToast('Please enter a valid positive rebate amount', 'error');
+      return;
+    }
+    setRebateBusy(true);
+    try {
+      const res = await adminApiClient.post('/growth/vip/issue-rebate', {
+        userId: rebateModalUser.id,
+        amount: amt,
+        reason: rebateReason.trim() || 'VIP Cashback / Rebate',
+        adminName: 'Admin Desk',
+      });
+      showToast(res.message || `₹${amt.toLocaleString()} credited successfully`, 'success');
+      setRebateModalUser(null);
+      setRebateAmount('');
+      load();
+    } catch (err) {
+      showToast(err.message || 'Failed to issue rebate', 'error');
+    } finally {
+      setRebateBusy(false);
+    }
+  };
 
   const submitOverride = async (e) => {
     e.preventDefault();
@@ -1834,6 +2051,226 @@ function VipTiersPanel() {
         </div>
       )}
       <AdminKpiDrillDrawer drill={drillVip} />
+
+      {/* VIP High-Roller Watchlist & Activity Radar */}
+      <div style={{ margin: '20px 0' }}>
+        <AdminDataTable
+          title="👑 VIP High-Roller Watchlist & Activity Radar"
+          emptyMessage="No high-roller activity recorded yet (Volume ≥ ₹50k or Single Stake ≥ ₹25k)"
+          data={highRollers}
+          columns={[
+            {
+              header: 'Player',
+              key: 'name',
+              render: (r) => (
+                <div>
+                  <div style={{ fontWeight: 700, color: 'var(--admin-text)' }}>{r.name || 'Anonymous VIP'}</div>
+                  <div className="admin-text-mono" style={{ fontSize: '0.74rem', color: 'var(--admin-text-muted)' }}>
+                    {r.phone || r.id}
+                  </div>
+                </div>
+              ),
+            },
+            {
+              header: 'VIP Tier',
+              key: 'vipTier',
+              render: (r) => (
+                <span
+                  className="admin-text-mono"
+                  style={{
+                    fontWeight: 800,
+                    padding: '2px 8px',
+                    borderRadius: '6px',
+                    background:
+                      r.vipTier === 'DIAMOND' ? 'linear-gradient(135deg, #38bdf8, #818cf8)' :
+                      r.vipTier === 'PLATINUM' ? 'linear-gradient(135deg, #a855f7, #ec4899)' :
+                      r.vipTier === 'GOLD' ? 'linear-gradient(135deg, #f59e0b, #d97706)' :
+                      r.vipTier === 'SILVER' ? '#64748b' : '#78716c',
+                    color: '#fff',
+                    fontSize: '0.74rem',
+                  }}
+                >
+                  {r.vipTier || 'BRONZE'}
+                </span>
+              ),
+            },
+            { header: 'Total Bets', key: 'totalBets', render: (r) => Number(r.totalBets || 0).toLocaleString() },
+            {
+              header: 'Turnover (Stake)',
+              key: 'totalStake',
+              render: (r) => (
+                <span style={{ fontWeight: 700, color: 'var(--admin-accent, #6366f1)' }}>
+                  {money(r.totalStake)}
+                </span>
+              ),
+            },
+            {
+              header: 'Max Single Bet',
+              key: 'maxSingleStake',
+              render: (r) => (
+                <span className="admin-text-mono" style={{ fontWeight: 600 }}>
+                  {money(r.maxSingleStake)}
+                </span>
+              ),
+              hideOnMobile: true,
+            },
+            {
+              header: 'House GGR',
+              key: 'netGgr',
+              render: (r) => {
+                const ggr = Number(r.netGgr || 0);
+                return (
+                  <span style={{ fontWeight: 700, color: ggr >= 0 ? '#10b981' : '#ef4444' }}>
+                    {ggr >= 0 ? `+₹${ggr.toLocaleString()}` : `-₹${Math.abs(ggr).toLocaleString()}`}
+                  </span>
+                );
+              },
+            },
+            {
+              header: 'Win Rate',
+              key: 'winRatePct',
+              render: (r) => `${r.winRatePct || 0}%`,
+              hideOnMobile: true,
+            },
+            {
+              header: 'Actions',
+              key: 'actions',
+              render: (r) => (
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn--primary"
+                    style={{ padding: '4px 10px', fontSize: '0.72rem', whiteSpace: 'nowrap' }}
+                    onClick={() => {
+                      setRebateModalUser(r);
+                      setRebateAmount('');
+                      setRebateReason(`VIP Loss Rebate · ${r.name || r.id}`);
+                    }}
+                  >
+                    💰 Issue Rebate
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn--secondary"
+                    style={{ padding: '4px 10px', fontSize: '0.72rem', whiteSpace: 'nowrap' }}
+                    onClick={() => {
+                      setOverrideUserId(r.id);
+                      showToast(`Selected user ${r.name || r.id} for Tier Override below`, 'info');
+                    }}
+                  >
+                    Tier
+                  </button>
+                </div>
+              ),
+            },
+          ]}
+        />
+      </div>
+
+      {rebateModalUser && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(5px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: 16,
+          }}
+          onClick={() => !rebateBusy && setRebateModalUser(null)}
+        >
+          <div
+            style={{
+              background: 'var(--admin-surface, #1e293b)',
+              border: '1px solid var(--admin-border, #334155)',
+              borderRadius: '16px',
+              padding: '24px',
+              maxWidth: '460px',
+              width: '100%',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--admin-text)' }}>
+                💰 Issue VIP Balance Rebate
+              </h3>
+              <button
+                type="button"
+                style={{ background: 'transparent', border: 'none', color: 'var(--admin-text-muted)', fontSize: '1.2rem', cursor: 'pointer' }}
+                onClick={() => !rebateBusy && setRebateModalUser(null)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.04)', marginBottom: 16 }}>
+              <div style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--admin-text)' }}>
+                {rebateModalUser.name || 'Anonymous VIP'}
+              </div>
+              <div style={{ fontSize: '0.74rem', color: 'var(--admin-text-muted)', marginTop: 2 }}>
+                ID: {rebateModalUser.id} · Phone: {rebateModalUser.phone || 'N/A'} · VIP Tier: {rebateModalUser.vipTier || 'BRONZE'}
+              </div>
+            </div>
+
+            <form onSubmit={submitRebate}>
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, marginBottom: 4 }}>
+                  Rebate / Cashback Amount (₹)
+                </label>
+                <input
+                  type="number"
+                  step="100"
+                  min="1"
+                  required
+                  autoFocus
+                  className="admin-input"
+                  placeholder="e.g. 5000"
+                  value={rebateAmount}
+                  onChange={(e) => setRebateAmount(e.target.value)}
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, marginBottom: 4 }}>
+                  Ledger Transaction Memo
+                </label>
+                <input
+                  type="text"
+                  required
+                  className="admin-input"
+                  placeholder="VIP Loss Rebate"
+                  value={rebateReason}
+                  onChange={(e) => setRebateReason(e.target.value)}
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--secondary"
+                  disabled={rebateBusy}
+                  onClick={() => setRebateModalUser(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="admin-btn admin-btn--primary"
+                  disabled={rebateBusy}
+                >
+                  {rebateBusy ? 'Crediting Balance…' : 'Confirm Credit'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {dashTiers.length > 0 && (
         <AdminDataTable
@@ -2169,6 +2606,329 @@ function PromoClawbackPanel() {
   );
 }
 
+function MasterAgentAffiliatesPanel() {
+  const [affiliates, setAffiliates] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [showAddDrawer, setShowAddDrawer] = useState(false);
+  const [name, setName] = useState('');
+  const [code, setCode] = useState('');
+  const [contact, setContact] = useState('');
+  const [commType, setCommType] = useState('REV_SHARE');
+  const [commPct, setCommPct] = useState('25');
+  const [saving, setSaving] = useState(false);
+  const { showToast } = useAdminToast();
+
+  const loadAffiliates = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await adminApiClient.get('/growth/affiliates');
+      setAffiliates(res.affiliates || []);
+    } catch {
+      setAffiliates([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadAffiliates(); }, [loadAffiliates]);
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const res = await adminApiClient.post('/growth/affiliates', {
+        name: name.trim(),
+        code: code.trim(),
+        contact: contact.trim(),
+        commissionType: commType,
+        commissionPct: parseFloat(commPct),
+      });
+      showToast(res.message || 'Affiliate registered', 'success');
+      setShowAddDrawer(false);
+      setName('');
+      setCode('');
+      setContact('');
+      loadAffiliates();
+    } catch (err) {
+      showToast(err.message || 'Failed to register affiliate', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSettle = async (id, affName) => {
+    if (!window.confirm(`Execute commission settlement batch for ${affName}?`)) return;
+    try {
+      const res = await adminApiClient.post(`/growth/affiliates/${id}/settle`);
+      showToast(res.message || 'Settlement completed', 'success');
+      loadAffiliates();
+    } catch (err) {
+      showToast(err.message || 'Settlement failed', 'error');
+    }
+  };
+
+  const totalAccrued = affiliates.reduce((sum, a) => sum + (a.accruedCommission || 0), 0);
+  const totalTurnover = affiliates.reduce((sum, a) => sum + (a.turnover || 0), 0);
+
+  return (
+    <div>
+      <div className="admin-flex-between" style={{ marginBottom: 16 }}>
+        <div>
+          <h2 className="admin-page-header__title">🤝 Master Agent & Affiliate Commission Portal</h2>
+          <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
+            Multi-tier agent network management, revenue share vs turnover commission tracking, and 1-click ledger settlements.
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            type="button"
+            className="admin-btn admin-btn--primary"
+            onClick={() => setShowAddDrawer(!showAddDrawer)}
+          >
+            {showAddDrawer ? '✕ Close Form' : '＋ Register New Partner'}
+          </button>
+          <button
+            type="button"
+            className="admin-btn admin-btn--secondary"
+            onClick={loadAffiliates}
+            disabled={loading}
+          >
+            ↻ Refresh
+          </button>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 20 }}>
+        <AdminCard title="Active Affiliates" value={affiliates.length} accent="#38bdf8" />
+        <AdminCard title="Total Referred Volume" value={money(totalTurnover)} accent="#818cf8" />
+        <AdminCard title="Accrued Commission Due" value={money(totalAccrued)} accent="#f59e0b" />
+        <AdminCard title="Settlement Status" value="Healthy" accent="#10b981" />
+      </div>
+
+      {showAddDrawer && (
+        <form
+          onSubmit={handleRegister}
+          style={{
+            padding: 18,
+            marginBottom: 20,
+            background: 'rgba(255, 255, 255, 0.03)',
+            border: '1px solid var(--admin-border, #334155)',
+            borderRadius: 12,
+          }}
+        >
+          <h3 style={{ margin: '0 0 12px', fontSize: '0.96rem', fontWeight: 800 }}>Register Affiliate Partner</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 14 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, marginBottom: 4 }}>Partner / Agency Name *</label>
+              <input className="admin-input" required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. CricketPulse Media" style={{ width: '100%' }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, marginBottom: 4 }}>Affiliate Promo Code *</label>
+              <input className="admin-input" required value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g. CPULSE" style={{ width: '100%' }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, marginBottom: 4 }}>Contact / Channel</label>
+              <input className="admin-input" value={contact} onChange={(e) => setContact(e.target.value)} placeholder="WhatsApp or Telegram" style={{ width: '100%' }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, marginBottom: 4 }}>Commission Model</label>
+              <select className="admin-input" value={commType} onChange={(e) => setCommType(e.target.value)} style={{ width: '100%' }}>
+                <option value="REV_SHARE">Revenue Share % (Net GGR)</option>
+                <option value="TURNOVER">Turnover % (Gross Volume)</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, marginBottom: 4 }}>Commission % *</label>
+              <input type="number" step="0.5" min="0.5" max="70" required className="admin-input" value={commPct} onChange={(e) => setCommPct(e.target.value)} style={{ width: '100%' }} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+            <button type="button" className="admin-btn admin-btn--secondary" onClick={() => setShowAddDrawer(false)}>Cancel</button>
+            <button type="submit" className="admin-btn admin-btn--primary" disabled={saving}>{saving ? 'Saving…' : '✓ Create Affiliate'}</button>
+          </div>
+        </form>
+      )}
+
+      <AdminDataTable
+        title="Affiliate Partners & Settlement Ledger"
+        emptyMessage="No affiliate partners registered yet"
+        data={affiliates}
+        columns={[
+          {
+            header: 'Partner',
+            key: 'name',
+            render: (r) => (
+              <div>
+                <div style={{ fontWeight: 700, color: 'var(--admin-text)' }}>{r.name}</div>
+                <div style={{ fontSize: '0.74rem', color: 'var(--admin-text-muted)' }}>Code: <span className="admin-text-mono" style={{ color: 'var(--admin-accent)' }}>{r.code}</span> · {r.contact}</div>
+              </div>
+            ),
+          },
+          {
+            header: 'Model',
+            key: 'commissionType',
+            render: (r) => (
+              <span style={{ fontSize: '0.74rem', padding: '2px 8px', borderRadius: 4, background: 'rgba(255,255,255,0.05)', fontWeight: 700 }}>
+                {r.commissionType === 'REV_SHARE' ? `RevShare ${r.commissionPct}%` : `Turnover ${r.commissionPct}%`}
+              </span>
+            ),
+          },
+          { header: 'Referred', key: 'referredUsers', render: (r) => `${r.referredUsers} users` },
+          { header: 'Volume', key: 'turnover', render: (r) => money(r.turnover) },
+          { header: 'House GGR', key: 'ggr', render: (r) => money(r.ggr) },
+          {
+            header: 'Accrued Commission',
+            key: 'accruedCommission',
+            render: (r) => (
+              <span style={{ fontWeight: 800, color: '#f59e0b' }}>
+                {money(r.accruedCommission)}
+              </span>
+            ),
+          },
+          {
+            header: 'Action',
+            key: 'action',
+            render: (r) => (
+              <button
+                type="button"
+                className="admin-btn admin-btn--primary"
+                style={{ padding: '3px 8px', fontSize: '0.72rem' }}
+                onClick={() => handleSettle(r.id, r.name)}
+              >
+                💰 Settle Payout
+              </button>
+            ),
+          },
+        ]}
+      />
+    </div>
+  );
+}
+
+function PlayerRetentionAutomationPanel() {
+  const [cohorts, setCohorts] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [dispatching, setDispatching] = useState(false);
+  const { showToast } = useAdminToast();
+
+  const loadCohorts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await adminApiClient.get('/growth/retention/cohorts');
+      setCohorts(res.cohorts || null);
+    } catch {
+      setCohorts(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadCohorts(); }, [loadCohorts]);
+
+  const handleDispatchCohort = async (cohortKey, users, amount, memo) => {
+    if (!users || !users.length) return;
+    const userIds = users.map((u) => u.user_id);
+    setDispatching(true);
+    try {
+      const res = await adminApiClient.post('/growth/retention/trigger-action', {
+        userIds,
+        amount,
+        memo,
+      });
+      showToast(res.message || 'Retention bonuses issued!', 'success');
+      loadCohorts();
+    } catch (err) {
+      showToast(err.message || 'Failed to dispatch retention action', 'error');
+    } finally {
+      setDispatching(false);
+    }
+  };
+
+  const dormant = cohorts?.dormantHighRollers || { count: 0, users: [] };
+  const unconverted = cohorts?.unconvertedDepositors || { count: 0, users: [] };
+  const badBeat = cohorts?.badBeatStreak || { count: 0, users: [] };
+
+  return (
+    <div>
+      <div className="admin-flex-between" style={{ marginBottom: 16 }}>
+        <div>
+          <h2 className="admin-page-header__title">👥 Automated Player Retention & Re-Engagement</h2>
+          <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
+            Identifies churn-risk cohorts and high-value dormant players, automating 1-click retention free-bet drops and goodwill cashbacks.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="admin-btn admin-btn--secondary"
+          onClick={loadCohorts}
+          disabled={loading}
+        >
+          ↻ Refresh Cohorts
+        </button>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 24 }}>
+        <div style={{ background: 'var(--admin-surface, #1e293b)', border: '1px solid var(--admin-border, #334155)', borderRadius: 12, padding: 18 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f59e0b' }}>🌟 DORMANT HIGH-ROLLERS</span>
+            <span style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--admin-text)' }}>{dormant.count} Players</span>
+          </div>
+          <p style={{ fontSize: '0.76rem', color: 'var(--admin-text-muted)', margin: '8px 0 14px' }}>
+            High turnover bettors (≥₹25,000) inactive for 7+ days. Drop free bet to reactivate.
+          </p>
+          <button
+            type="button"
+            className="admin-btn admin-btn--primary"
+            style={{ width: '100%', fontSize: '0.78rem' }}
+            disabled={dispatching || dormant.count === 0}
+            onClick={() => handleDispatchCohort('dormant', dormant.users, 500, 'Dormant VIP Re-engagement ₹500 Free Bet')}
+          >
+            {dispatching ? 'Dispatching…' : '🚀 Drop ₹500 Free Bet to All'}
+          </button>
+        </div>
+
+        <div style={{ background: 'var(--admin-surface, #1e293b)', border: '1px solid var(--admin-border, #334155)', borderRadius: 12, padding: 18 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#38bdf8' }}>🚀 UNCONVERTED DEPOSITORS</span>
+            <span style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--admin-text)' }}>{unconverted.count} Players</span>
+          </div>
+          <p style={{ fontSize: '0.76rem', color: 'var(--admin-text-muted)', margin: '8px 0 14px' }}>
+            Deposited in the past 48 hours but haven't placed their first bet yet.
+          </p>
+          <button
+            type="button"
+            className="admin-btn admin-btn--primary"
+            style={{ width: '100%', fontSize: '0.78rem' }}
+            disabled={dispatching || unconverted.count === 0}
+            onClick={() => handleDispatchCohort('unconverted', unconverted.users, 250, 'First Bet Insurance ₹250 Free Bet')}
+          >
+            {dispatching ? 'Dispatching…' : '🎁 Send ₹250 Bet Insurance'}
+          </button>
+        </div>
+
+        <div style={{ background: 'var(--admin-surface, #1e293b)', border: '1px solid var(--admin-border, #334155)', borderRadius: 12, padding: 18 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f87171' }}>💔 BAD-BEAT CHURN RISK</span>
+            <span style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--admin-text)' }}>{badBeat.count} Players</span>
+          </div>
+          <p style={{ fontSize: '0.76rem', color: 'var(--admin-text-muted)', margin: '8px 0 14px' }}>
+            Suffered 4+ consecutive lost bets in the last 72 hours. High immediate churn risk.
+          </p>
+          <button
+            type="button"
+            className="admin-btn admin-btn--danger"
+            style={{ width: '100%', fontSize: '0.78rem' }}
+            disabled={dispatching || badBeat.count === 0}
+            onClick={() => handleDispatchCohort('badbeat', badBeat.users, 200, 'Bad-Beat Recovery Goodwill ₹200 Cashback')}
+          >
+            {dispatching ? 'Dispatching…' : '🩹 Credit ₹200 Recovery Bonus'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function GrowthDomainView({ subModule = 'overview' }) {
   if (subModule === 'overview' || subModule === 'growth-overview' || subModule === 'promo-roi') {
     return <GrowthOverviewPanel initialTab={subModule === 'promo-roi' ? 'roi' : 'dashboard'} />;
@@ -2193,8 +2953,11 @@ export default function GrowthDomainView({ subModule = 'overview' }) {
   if (subModule === 'vip-tiers') {
     return <VipTiersPanel />;
   }
-  if (subModule === 'referrals') {
-    return <ReferralsAdminPanel />;
+  if (subModule === 'referrals' || subModule === 'affiliates') {
+    return <MasterAgentAffiliatesPanel />;
+  }
+  if (subModule === 'retention' || subModule === 'cohorts' || subModule === 're-engagement') {
+    return <PlayerRetentionAutomationPanel />;
   }
   if (subModule === 'promo-abuse') {
     return <PromoAbuseAlertsPanel />;
@@ -2256,10 +3019,16 @@ function GrowthOverviewPanel({ initialTab = 'dashboard' }) {
         tabs={[
           { id: 'dashboard', label: 'Dashboard' },
           { id: 'roi', label: 'ROI' },
+          { id: 'retention', label: 'Retention & Cohorts' },
+          { id: 'affiliates', label: 'Agent Affiliates' },
         ]}
       />
       {tab === 'roi' ? (
         <PromoRoiPanel />
+      ) : tab === 'retention' ? (
+        <PlayerRetentionAutomationPanel />
+      ) : tab === 'affiliates' ? (
+        <MasterAgentAffiliatesPanel />
       ) : (
         <>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 16 }}>

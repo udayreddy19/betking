@@ -249,4 +249,98 @@ router.patch('/players/:playerId', iplsrlRoles, async (req, res) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// Advanced Match Control API Extensions
+// ---------------------------------------------------------------------------
+
+router.post('/matches/:matchId/incident', iplsrlRoles, async (req, res) => {
+  try {
+    const { injectIPLSRLIncident } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = injectIPLSRLIncident(req.params.matchId, req.body || {}, req.admin?.id || 'admin');
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/target', iplsrlRoles, async (req, res) => {
+  try {
+    const { pinpointIPLSRLTarget } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = pinpointIPLSRLTarget(req.params.matchId, req.body?.target, req.admin?.id || 'admin');
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/tie-game', iplsrlRoles, async (req, res) => {
+  try {
+    const { triggerIPLSRLTieGame } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = triggerIPLSRLTieGame(req.params.matchId, req.admin?.id || 'admin');
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/rain-delay', iplsrlRoles, async (req, res) => {
+  try {
+    const { toggleIPLSRLRainDelay } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = toggleIPLSRLRainDelay(req.params.matchId, req.body?.isDelayed !== false, req.admin?.id || 'admin');
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/reduce-overs', iplsrlRoles, async (req, res) => {
+  try {
+    const { reduceIPLSRLOvers } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = reduceIPLSRLOvers(req.params.matchId, req.body?.overs, req.admin?.id || 'admin');
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/margin', iplsrlRoles, async (req, res) => {
+  try {
+    const { setIPLSRLMarginDefense } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = setIPLSRLMarginDefense(req.params.matchId, req.body || {}, req.admin?.id || 'admin');
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/commentary', iplsrlRoles, async (req, res) => {
+  try {
+    const { broadcastIPLSRLCommentary } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = broadcastIPLSRLCommentary(req.params.matchId, req.body || {}, req.admin?.id || 'admin');
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/bulk-settle', iplsrlRoles, async (req, res) => {
+  try {
+    const { bulkSettleIPLSRLMarkets } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = await bulkSettleIPLSRLMarkets(req.params.matchId, req.body?.phase || 'toss', req.admin?.id || 'admin');
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/custom', iplsrlRoles, async (req, res) => {
+  try {
+    const { createIPLSRLCustomMatch } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = createIPLSRLCustomMatch(req.body || {}, req.admin?.id || 'admin');
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 export default router;

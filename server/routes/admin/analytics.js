@@ -1,8 +1,24 @@
 import { Router } from 'express';
 import { requirePermission } from '../../middleware/adminAuth.js';
-import { getExecutiveDashboardMetrics, getRetentionAndCohortMetrics, getUserFunnelMetrics, getBIReport } from '../../../lib/businessIntelligenceEngine.mjs';
+import {
+  getExecutiveDashboardMetrics,
+  getRetentionAndCohortMetrics,
+  getUserFunnelMetrics,
+  getFinancialPnlLedger,
+} from '../../../lib/businessIntelligenceEngine.mjs';
 
 const router = Router();
+
+// GET /api/admin/analytics/pnl — Executive Financial P&L & Cashflow Ledger
+router.get('/pnl', requirePermission('analytics', 'finance'), async (req, res) => {
+  try {
+    const { period = '30d' } = req.query;
+    const pnl = await getFinancialPnlLedger({ period });
+    res.json(pnl);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 // GET /api/admin/analytics/reports — Server-side filtered BI report endpoint
 router.get('/reports', requirePermission('analytics'), async (req, res) => {

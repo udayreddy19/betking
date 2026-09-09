@@ -730,9 +730,17 @@ function ProductionHealthPanel() {
 function NotificationsPanel() {
   const [rows, setRows] = useState([]);
   const [unread, setUnread] = useState(0);
+  const [announcements, setAnnouncements] = useState([]);
+  const [showBannerForm, setShowBannerForm] = useState(false);
+  const [bannerTitle, setBannerTitle] = useState('');
+  const [bannerMessage, setBannerMessage] = useState('');
+  const [bannerType, setBannerType] = useState('INFO');
+  const [bannerTarget, setBannerTarget] = useState('ALL');
+  const [bannerHours, setBannerHours] = useState('24');
+  const [submittingBanner, setSubmittingBanner] = useState(false);
   const { showToast } = useAdminToast();
 
-  const load = useCallback(() => {
+  const loadNotifications = useCallback(() => {
     adminApiClient.get('/operations/notifications?limit=50')
       .then((data) => {
         setRows(data.notifications || []);
@@ -741,66 +749,355 @@ function NotificationsPanel() {
       .catch(() => setRows([]));
   }, []);
 
+  const loadAnnouncements = useCallback(() => {
+    adminApiClient.get('/admin/announcements')
+      .then((data) => {
+        if (data && data.announcements) {
+          setAnnouncements(data.announcements);
+        }
+      })
+      .catch(() => setAnnouncements([]));
+  }, []);
+
+  const loadAll = useCallback(() => {
+    loadNotifications();
+    loadAnnouncements();
+  }, [loadNotifications, loadAnnouncements]);
+
   useEffect(() => {
-    const stop = startVisibleInterval(load, 20000, { runImmediately: true });
+    const stop = startVisibleInterval(loadAll, 20000, { runImmediately: true });
     return stop;
-  }, [load]);
+  }, [loadAll]);
+
+  const handleCreateBanner = async (e) => {
+    e.preventDefault();
+    if (!bannerTitle.trim() || !bannerMessage.trim()) {
+      showToast('Title and message are required', 'error');
+      return;
+    }
+    setSubmittingBanner(true);
+    try {
+      await adminApiClient.post('/admin/announcements', {
+        title: bannerTitle.trim(),
+        message: bannerMessage.trim(),
+        type: bannerType,
+        target: bannerTarget,
+        hoursActive: parseInt(bannerHours, 10) || 24,
+        isActive: true,
+      });
+      showToast('Live announcement broadcasted successfully!', 'success');
+      setBannerTitle('');
+      setBannerMessage('');
+      setShowBannerForm(false);
+      loadAnnouncements();
+    } catch (err) {
+      showToast(err.message || 'Failed to broadcast announcement', 'error');
+    } finally {
+      setSubmittingBanner(false);
+    }
+  };
+
+  const handleToggleBanner = async (item) => {
+    try {
+      const res = await adminApiClient.patch(`/admin/announcements/${item.id}/toggle`, {
+        isActive: !item.is_active,
+      });
+      showToast(res.message || 'Banner updated', 'success');
+      loadAnnouncements();
+    } catch (err) {
+      showToast(err.message || 'Failed to update banner', 'error');
+    }
+  };
+
+  const handleDeleteBanner = async (id) => {
+    if (!window.confirm('Delete this broadcast banner permanently?')) return;
+    try {
+      await adminApiClient.delete(`/admin/announcements/${id}`);
+      showToast('Banner removed', 'success');
+      loadAnnouncements();
+    } catch (err) {
+      showToast(err.message || 'Failed to delete banner', 'error');
+    }
+  };
 
   return (
     <div>
-      <div className="admin-flex-between" style={{ marginBottom: 16 }}>
-        <h2 className="admin-page-header__title">
-          Notification Center
-          {unread > 0 ? ` (${unread} unread)` : ''}
-        </h2>
-        <button
-          type="button"
-          className="admin-btn admin-btn--secondary admin-btn--sm"
-          onClick={async () => {
-            await adminApiClient.post('/operations/notifications/read-all', {});
-            showToast('All marked read', 'success');
-            load();
-          }}
-        >
-          Mark all read
-        </button>
-      </div>
-      <AdminDataTable
-        title="Notifications"
-        emptyMessage="No notifications"
-        data={rows.map((n) => ({
-          id: n.notification_id,
-          title: n.title,
-          severity: n.severity || n.priority,
-          category: n.category,
-          read: n.is_read ? 'Yes' : 'Unread',
-          createdAt: n.created_at,
-        }))}
-        columns={[
-          { header: 'Title', key: 'title' },
-          { header: 'Severity', key: 'severity', render: (r) => <StatusBadge status={r.severity} /> },
-          { header: 'Type', key: 'category' },
-          { header: 'Read', key: 'read' },
-          { header: 'Created', key: 'createdAt' },
-          {
-            header: 'Mark read',
-            key: 'mr',
-            sortable: false,
-            render: (r) => (
+      {/* SECTION 1: LIVE BROADCAST BANNER CENTER */}
+      <div style={{ marginBottom: 28, background: 'var(--admin-surface, #1e293b)', border: '1px solid var(--admin-border, #334155)', borderRadius: '16px', padding: '20px' }}>
+        <div className="admin-flex-between" style={{ marginBottom: 16 }}>
+          <div>
+            <h2 className="admin-page-header__title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              📢 Live Player Announcement & Maintenance Center
+            </h2>
+            <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
+              Broadcast real-time maintenance warnings, promo notices, and alerts directly to sportsbook and casino users.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="admin-btn admin-btn--primary"
+            onClick={() => setShowBannerForm(!showBannerForm)}
+          >
+            {showBannerForm ? '✕ Close Builder' : '＋ New Live Broadcast'}
+          </button>
+        </div>
+
+        {showBannerForm && (
+          <form
+            onSubmit={handleCreateBanner}
+            style={{
+              padding: 16,
+              background: 'rgba(255, 255, 255, 0.03)',
+              border: '1px solid var(--admin-border, #334155)',
+              borderRadius: '12px',
+              marginBottom: 20,
+            }}
+          >
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 12 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, marginBottom: 4 }}>
+                  Headline / Title *
+                </label>
+                <input
+                  className="admin-input"
+                  required
+                  placeholder="e.g. Scheduled Gateway Upgrade"
+                  value={bannerTitle}
+                  onChange={(e) => setBannerTitle(e.target.value)}
+                  style={{ width: '100%' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, marginBottom: 4 }}>
+                  Banner Theme / Type
+                </label>
+                <select
+                  className="admin-input"
+                  value={bannerType}
+                  onChange={(e) => setBannerType(e.target.value)}
+                  style={{ width: '100%' }}
+                >
+                  <option value="INFO">ℹ️ INFO (Blue Notification)</option>
+                  <option value="PROMO">🎁 PROMO (Emerald Marketing)</option>
+                  <option value="WARNING">⚠️ WARNING (Amber Alert / Maintenance)</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, marginBottom: 4 }}>
+                  Target Audience
+                </label>
+                <select
+                  className="admin-input"
+                  value={bannerTarget}
+                  onChange={(e) => setBannerTarget(e.target.value)}
+                  style={{ width: '100%' }}
+                >
+                  <option value="ALL">🌐 All Visitors & Players</option>
+                  <option value="SPORTSBOOK">🏏 Sportsbook Bettors Only</option>
+                  <option value="CASINO">🎰 Casino Players Only</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, marginBottom: 4 }}>
+                  Broadcast Duration
+                </label>
+                <select
+                  className="admin-input"
+                  value={bannerHours}
+                  onChange={(e) => setBannerHours(e.target.value)}
+                  style={{ width: '100%' }}
+                >
+                  <option value="1">1 Hour</option>
+                  <option value="6">6 Hours</option>
+                  <option value="12">12 Hours</option>
+                  <option value="24">24 Hours (1 Day)</option>
+                  <option value="72">72 Hours (3 Days)</option>
+                  <option value="168">168 Hours (7 Days)</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, marginBottom: 4 }}>
+                Player Display Message *
+              </label>
+              <textarea
+                className="admin-input"
+                required
+                rows={2}
+                placeholder="Instant UPI & Crypto deposits are running smoothly. Bets placed on tonight's match qualify for 10% cashback!"
+                value={bannerMessage}
+                onChange={(e) => setBannerMessage(e.target.value)}
+                style={{ width: '100%', resize: 'vertical' }}
+              />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
               <button
                 type="button"
-                className="admin-btn admin-btn--sm"
-                onClick={async () => {
-                  await adminApiClient.post(`/operations/notifications/${r.id}/read`, {});
-                  load();
-                }}
+                className="admin-btn admin-btn--secondary"
+                onClick={() => setShowBannerForm(false)}
               >
-                Read
+                Cancel
               </button>
-            ),
-          },
-        ]}
-      />
+              <button
+                type="submit"
+                className="admin-btn admin-btn--primary"
+                disabled={submittingBanner}
+              >
+                {submittingBanner ? 'Publishing…' : '🚀 Publish Live Broadcast'}
+              </button>
+            </div>
+          </form>
+        )}
+
+        <AdminDataTable
+          title="Active & Scheduled Announcements"
+          emptyMessage="No broadcast announcements configured. Click '＋ New Live Broadcast' to post one."
+          data={announcements}
+          columns={[
+            {
+              header: 'Status',
+              key: 'is_active',
+              render: (r) => (
+                <span
+                  style={{
+                    padding: '2px 8px',
+                    borderRadius: '6px',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    background: r.is_active ? 'rgba(16, 185, 129, 0.15)' : 'rgba(100, 116, 139, 0.2)',
+                    color: r.is_active ? '#34d399' : '#94a3b8',
+                    border: `1px solid ${r.is_active ? 'rgba(16, 185, 129, 0.3)' : 'rgba(100, 116, 139, 0.3)'}`,
+                  }}
+                >
+                  {r.is_active ? '● LIVE' : 'PAUSED'}
+                </span>
+              ),
+            },
+            {
+              header: 'Theme',
+              key: 'type',
+              render: (r) => (
+                <span
+                  style={{
+                    padding: '2px 8px',
+                    borderRadius: '6px',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    background:
+                      r.type === 'WARNING' ? 'rgba(239, 68, 68, 0.15)' :
+                      r.type === 'PROMO' ? 'rgba(168, 85, 247, 0.15)' :
+                      'rgba(56, 189, 248, 0.15)',
+                    color:
+                      r.type === 'WARNING' ? '#f87171' :
+                      r.type === 'PROMO' ? '#c084fc' :
+                      '#38bdf8',
+                  }}
+                >
+                  {r.type}
+                </span>
+              ),
+            },
+            {
+              header: 'Title & Message',
+              key: 'title',
+              render: (r) => (
+                <div>
+                  <div style={{ fontWeight: 700, color: 'var(--admin-text)' }}>{r.title}</div>
+                  <div style={{ fontSize: '0.76rem', color: 'var(--admin-text-muted)', marginTop: 2 }}>{r.message}</div>
+                </div>
+              ),
+            },
+            { header: 'Target', key: 'target', render: (r) => r.target || 'ALL', hideOnMobile: true },
+            {
+              header: 'Expires At (IST)',
+              key: 'expires_at',
+              render: (r) => (r.expires_at ? formatIstDateTime(r.expires_at) : 'No Expiry'),
+              hideOnMobile: true,
+            },
+            {
+              header: 'Actions',
+              key: 'actions',
+              render: (r) => (
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn--secondary"
+                    style={{ padding: '3px 8px', fontSize: '0.72rem' }}
+                    onClick={() => handleToggleBanner(r)}
+                  >
+                    {r.is_active ? 'Pause' : 'Activate'}
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn--danger"
+                    style={{ padding: '3px 8px', fontSize: '0.72rem' }}
+                    onClick={() => handleDeleteBanner(r.id)}
+                  >
+                    Delete
+                  </button>
+                </div>
+              ),
+            },
+          ]}
+        />
+      </div>
+
+      {/* SECTION 2: INTERNAL OPS NOTIFICATIONS */}
+      <div>
+        <div className="admin-flex-between" style={{ marginBottom: 16 }}>
+          <h2 className="admin-page-header__title">
+            System Operations Log
+            {unread > 0 ? ` (${unread} unread)` : ''}
+          </h2>
+          <button
+            type="button"
+            className="admin-btn admin-btn--secondary admin-btn--sm"
+            onClick={async () => {
+              await adminApiClient.post('/operations/notifications/read-all', {});
+              showToast('All marked read', 'success');
+              loadNotifications();
+            }}
+          >
+            Mark all read
+          </button>
+        </div>
+        <AdminDataTable
+          title="Internal Alerts"
+          emptyMessage="No system alerts"
+          data={rows.map((n) => ({
+            id: n.notification_id,
+            title: n.title,
+            severity: n.severity || n.priority,
+            category: n.category,
+            read: n.is_read ? 'Yes' : 'Unread',
+            createdAt: n.created_at,
+          }))}
+          columns={[
+            { header: 'Title', key: 'title' },
+            { header: 'Severity', key: 'severity', render: (r) => <StatusBadge status={r.severity} /> },
+            { header: 'Type', key: 'category' },
+            { header: 'Read', key: 'read' },
+            { header: 'Created', key: 'createdAt', render: (r) => (r.createdAt ? formatIstDateTime(r.createdAt) : '—') },
+            {
+              header: 'Mark read',
+              key: 'mr',
+              sortable: false,
+              render: (r) => (
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--sm"
+                  onClick={async () => {
+                    await adminApiClient.post(`/operations/notifications/${r.id}/read`, {});
+                    loadNotifications();
+                  }}
+                >
+                  Read
+                </button>
+              ),
+            },
+          ]}
+        />
+      </div>
     </div>
   );
 }

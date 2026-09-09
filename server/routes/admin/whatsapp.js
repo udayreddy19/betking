@@ -173,7 +173,11 @@ router.post('/send', async (req, res) => {
 
     res.json({ success: true, ...result });
   } catch (err) {
-    res.status(err.status || 500).json({
+    // Upstream 401/403 from Kapso/Meta must NOT masquerade as an admin session 401
+    const upstreamStatus = Number(err.status) || 500;
+    const safeStatus = (upstreamStatus === 401 || upstreamStatus === 403) ? 502 : upstreamStatus;
+
+    res.status(safeStatus).json({
       success: false,
       error: err.message,
       code: err.code || 'WHATSAPP_DISPATCH_FAILED',

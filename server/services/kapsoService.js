@@ -210,8 +210,7 @@ class KapsoService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': this.apiKey,
-          'Authorization': `Bearer ${this.apiKey}`
+          'X-API-Key': this.apiKey
         },
         body: JSON.stringify(payload)
       });
@@ -377,8 +376,7 @@ class KapsoService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': this.apiKey,
-          'Authorization': `Bearer ${this.apiKey}`
+          'X-API-Key': this.apiKey
         },
         body: JSON.stringify(payload)
       });
@@ -463,8 +461,7 @@ class KapsoService {
         const endpoint = `https://api.kapso.ai/meta/whatsapp/v24.0/${this.businessAccountId}/message_templates`;
         const res = await fetch(endpoint, {
           headers: {
-            'X-API-Key': this.apiKey,
-            'Authorization': `Bearer ${this.apiKey}`
+            'X-API-Key': this.apiKey
           }
         });
         if (res.ok) {

@@ -23,7 +23,6 @@ import {
 import SupportHeadsetIcon from '../../../icons/SupportHeadsetIcon';
 import BrandLogo from '../../../components/BrandLogo/BrandLogo';
 import AdminRBACGate, { ADMIN_ROLES, AdminRoleProvider, useAdminRole, canAccessDomain } from '../permissions/AdminRBACGate';
-import CommandPalette from '../features/CommandPalette/CommandPalette';
 import { useTheme } from '../../../context/ThemeContext';
 import { startVisibleInterval } from '../utils/visibleInterval';
 import AdminMfaQr from '../components/AdminMfaQr';
@@ -507,10 +506,7 @@ function AdminShellInner() {
   const { activeRole, setActiveRole, syncRoleFromJwt, rolePreviewEnabled } = useAdminRole();
   const { revamp: uiRevamp, toggleRevamp } = useAdminUiMode();
   const { themeId: adminThemeId, theme: adminTheme, isDark: shellIsDark } = useAdminTheme();
-  const [globalSearch, setGlobalSearch] = useState('');
   const [isAlertsOpen, setIsAlertsOpen] = useState(false);
-  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
-  const [paletteSeedQuery, setPaletteSeedQuery] = useState('');
   const [sessionReady, setSessionReady] = useState(!!localStorage.getItem('adminToken'));
   const [sessionChecking, setSessionChecking] = useState(true);
   const [sessionError, setSessionError] = useState('');
@@ -791,20 +787,6 @@ function AdminShellInner() {
     };
   }, [sessionReady]);
 
-  // Command palette hotkey
-  React.useEffect(() => {
-    if (!sessionReady) return undefined;
-    const handleKeyDown = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        setIsCommandPaletteOpen((prev) => !prev);
-        if (!isCommandPaletteOpen) setPaletteSeedQuery(globalSearch.trim());
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [globalSearch, isCommandPaletteOpen, sessionReady]);
-
   // ─── Navigation Handlers (unchanged) ───
   const toggleDomainExpand = (domainId) => {
     setExpandedDomains((prev) => {
@@ -852,22 +834,6 @@ function AdminShellInner() {
     syncAdminLocation(domainId, subModuleId);
     scrollContentToTop();
     setMobileSidebarOpen(false);
-  };
-
-  const openCommandPalette = (seed = globalSearch) => {
-    setPaletteSeedQuery(seed || '');
-    setIsCommandPaletteOpen(true);
-  };
-
-  const handleGlobalSearchKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      openCommandPalette(globalSearch.trim());
-    }
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-      e.preventDefault();
-      openCommandPalette(globalSearch.trim());
-    }
   };
 
   const handleCommandNavigate = ({ domainId, subModuleId, entityType, entityId }) => {
@@ -1196,14 +1162,6 @@ function AdminShellInner() {
 
         {/* Topbar */}
         <AdminTopbar
-          globalSearch={globalSearch}
-          onSearchChange={(e) => {
-            const next = e.target.value;
-            setGlobalSearch(next);
-            if (next.trim().length >= 2) openCommandPalette(next.trim());
-          }}
-          onSearchKeyDown={handleGlobalSearchKeyDown}
-          onSearchClick={() => openCommandPalette(globalSearch)}
           activeRole={activeRole}
           onRoleChange={handleRoleChange}
           rolePreviewEnabled={rolePreviewEnabled}
@@ -1460,13 +1418,6 @@ function AdminShellInner() {
         {/* Status Bar */}
         <AdminStatusBar />
       </div>
-
-      <CommandPalette
-        isOpen={isCommandPaletteOpen}
-        onClose={() => setIsCommandPaletteOpen(false)}
-        initialQuery={paletteSeedQuery}
-        onNavigate={handleCommandNavigate}
-      />
     </div>
     </AdminNavAttentionProvider>
   );

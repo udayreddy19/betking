@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { adminApiClient } from '../api/adminApiClient';
 import AdminDataTable from '../components/AdminDataTable';
 import { useAdminToast } from '../components/AdminToastContext';
@@ -23,7 +23,26 @@ export default function AnalyticsDomainView({ subModule = 'turnover-ggr' }) {
   const [retention, setRetention] = useState(null);
   const [funnel, setFunnel] = useState(null);
   const [error, setError] = useState(null);
+  const [pnlPeriod, setPnlPeriod] = useState('30d');
+  const [pnlData, setPnlData] = useState(null);
+  const [loadingPnl, setLoadingPnl] = useState(false);
   const { showToast } = useAdminToast();
+
+  const fetchPnl = useCallback((period = pnlPeriod) => {
+    setLoadingPnl(true);
+    adminApiClient.get(`/analytics/pnl?period=${period}`)
+      .then((data) => {
+        setPnlData(data);
+      })
+      .catch(() => {
+        setPnlData(null);
+      })
+      .finally(() => setLoadingPnl(false));
+  }, [pnlPeriod]);
+
+  useEffect(() => {
+    fetchPnl(pnlPeriod);
+  }, [pnlPeriod, fetchPnl]);
 
   useEffect(() => {
     let cancelled = false;
@@ -43,6 +62,46 @@ export default function AnalyticsDomainView({ subModule = 'turnover-ggr' }) {
     });
     return () => { cancelled = true; };
   }, []);
+
+  const exportPnlCsv = () => {
+    if (!pnlData) {
+      showToast('P&L data unavailable for export', 'warning');
+      return;
+    }
+    const lines = [
+      ['OddsYra Financial P&L & GGR Ledger Report', `Period: ${pnlPeriod}`, `Exported At: ${new Date().toISOString()}`].join(','),
+      [],
+      ['Metric', 'Value'].join(','),
+      ['Turnover (INR)', pnlData.turnover || 0].join(','),
+      ['Gross Gaming Revenue (GGR INR)', pnlData.ggr || 0].join(','),
+      ['House Hold %', `${pnlData.holdPct || 0}%`].join(','),
+      ['Player Win Rate %', `${pnlData.playerWinRatePct || 0}%`].join(','),
+      ['Total Bets', pnlData.totalBets || 0].join(','),
+      ['Active Bettors', pnlData.activeBettors || 0].join(','),
+      ['Total Deposits (INR)', pnlData.cashflow?.totalDeposits || 0].join(','),
+      ['Total Withdrawals (INR)', pnlData.cashflow?.totalWithdrawals || 0].join(','),
+      ['Net Platform Cashflow (INR)', pnlData.cashflow?.netCashflow || 0].join(','),
+      [],
+      ['Sport / Vertical Breakdown', 'Turnover (INR)', 'GGR (INR)', 'Hold %', 'Bets Count'].join(','),
+      ...(pnlData.sportBreakdown || []).map((s) => [
+        s.sport.toUpperCase(),
+        s.turnover,
+        s.ggr,
+        `${s.holdPct}%`,
+        s.betsCount,
+      ].join(',')),
+    ];
+
+    const csvContent = lines.map((row) => (Array.isArray(row) ? row.join(',') : row)).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `oddsyra_pnl_ledger_${pnlPeriod}_${Date.now()}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    showToast('P&L Ledger CSV exported successfully!', 'success');
+  };
 
   const exportReport = (report) => {
     const payload = JSON.stringify(report, null, 2);
@@ -100,12 +159,117 @@ export default function AnalyticsDomainView({ subModule = 'turnover-ggr' }) {
           </p>
           {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
         </div>
-        {subModule === 'bi-exporter' && (
-          <button type="button" className="admin-btn admin-btn--primary" onClick={exportOverview}>
-            Export overview JSON
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button type="button" className="admin-btn admin-btn--secondary" onClick={exportPnlCsv}>
+            📥 Export P&L (CSV)
           </button>
-        )}
+          {subModule === 'bi-exporter' && (
+            <button type="button" className="admin-btn admin-btn--primary" onClick={exportOverview}>
+              Export overview JSON
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Executive Financial P&L & Cashflow Ledger Console */}
+      <AdminCard
+        title="Executive Financial P&L & Cashflow Ledger"
+        subtitle="Authoritative PostgreSQL accounting ledger: gross gaming revenue, player win rates, and vertical margins."
+        accent="#38bdf8"
+        style={{ marginBottom: 20 }}
+        actions={
+          <div style={{ display: 'flex', gap: 6 }}>
+            {[
+              { id: 'today', label: 'Today' },
+              { id: 'yesterday', label: 'Yesterday' },
+              { id: '7d', label: '7 Days' },
+              { id: '30d', label: '30 Days' },
+            ].map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={`admin-btn admin-btn--sm${pnlPeriod === t.id ? ' admin-btn--secondary' : ' admin-btn--ghost'}`}
+                style={{ fontSize: '0.74rem', padding: '3px 8px' }}
+                onClick={() => setPnlPeriod(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        }
+      >
+        {pnlData && (
+          <div>
+            {/* P&L Cards */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+              gap: 12,
+              marginBottom: 16,
+            }}>
+              <div style={{ padding: '12px 14px', borderRadius: 'var(--admin-radius-sm)', background: 'var(--admin-bg)', border: '1px solid var(--admin-border)' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Period Handle / Turnover</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#38bdf8', marginTop: 4 }}>
+                  {money(pnlData.turnover)}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-dim)', marginTop: 2 }}>{num(pnlData.totalBets)} bets placed</div>
+              </div>
+
+              <div style={{ padding: '12px 14px', borderRadius: 'var(--admin-radius-sm)', background: 'var(--admin-bg)', border: '1px solid var(--admin-border)' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Gross Gaming Revenue (GGR)</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: pnlData.ggr >= 0 ? '#34d399' : '#f87171', marginTop: 4 }}>
+                  {money(pnlData.ggr)}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-dim)', marginTop: 2 }}>Hold: {pnlData.holdPct}%</div>
+              </div>
+
+              <div style={{ padding: '12px 14px', borderRadius: 'var(--admin-radius-sm)', background: 'var(--admin-bg)', border: '1px solid var(--admin-border)' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Player Win Rate</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fbbf24', marginTop: 4 }}>
+                  {pnlData.playerWinRatePct}%
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-dim)', marginTop: 2 }}>Settled payout: {money(pnlData.settledPayout)}</div>
+              </div>
+
+              <div style={{ padding: '12px 14px', borderRadius: 'var(--admin-radius-sm)', background: 'var(--admin-bg)', border: '1px solid var(--admin-border)' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Net Cashflow (Deposits − Payouts)</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: (pnlData.cashflow?.netCashflow || 0) >= 0 ? '#34d399' : '#fb7185', marginTop: 4 }}>
+                  {money(pnlData.cashflow?.netCashflow)}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-dim)', marginTop: 2 }}>In: {money(pnlData.cashflow?.totalDeposits)} · Out: {money(pnlData.cashflow?.totalWithdrawals)}</div>
+              </div>
+            </div>
+
+            {/* Vertical / Sport Revenue Breakdown */}
+            {Array.isArray(pnlData.sportBreakdown) && pnlData.sportBreakdown.length > 0 && (
+              <div style={{ overflowX: 'auto', border: '1px solid var(--admin-border)', borderRadius: 'var(--admin-radius-sm)' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                  <thead>
+                    <tr style={{ background: 'var(--admin-bg)', borderBottom: '1px solid var(--admin-border)', textAlign: 'left' }}>
+                      <th style={{ padding: '8px 12px', fontWeight: 700 }}>Vertical / Sport</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700 }}>Bets Count</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700 }}>Turnover</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700 }}>GGR</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700 }}>Hold %</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pnlData.sportBreakdown.map((row) => (
+                      <tr key={row.sport} style={{ borderBottom: '1px solid var(--admin-border)' }}>
+                        <td style={{ padding: '8px 12px', fontWeight: 600, textTransform: 'capitalize' }}>{row.sport}</td>
+                        <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'var(--admin-font-mono)' }}>{num(row.betsCount)}</td>
+                        <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700 }}>{money(row.turnover)}</td>
+                        <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: row.ggr >= 0 ? '#34d399' : '#f87171' }}>{money(row.ggr)}</td>
+                        <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 800, color: '#38bdf8' }}>{row.holdPct}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+      </AdminCard>
 
       {!overview && !error && (
         <p style={{ color: 'var(--admin-text-muted)' }}>Loading BI metrics…</p>

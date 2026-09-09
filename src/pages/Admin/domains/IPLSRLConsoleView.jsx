@@ -21,6 +21,15 @@ const FILTERS = [
   { id: 'done', label: 'Completed' },
 ];
 
+const MATCH_ZONES = [
+  { id: 'control', label: '⚡ Control' },
+  { id: 'godmode', label: '🎯 God Mode' },
+  { id: 'risk', label: '🛡️ Risk' },
+  { id: 'weather', label: '🌧️ Weather' },
+  { id: 'broadcast', label: '📢 Broadcast' },
+  { id: 'markets', label: '📊 Markets' },
+];
+
 const PHASE_LABEL = {
   pre: 'Pre-match',
   first: '1st innings',
@@ -104,6 +113,59 @@ function pickDefaultMatchId(matches) {
     || null;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   SCOREBOARD HERO — always visible at top of cockpit
+   ═══════════════════════════════════════════════════════════════════════════ */
+function ScoreboardHero({ match }) {
+  if (!match) return null;
+  const s = match.score || {};
+  const i1 = s.innings1 || {};
+  const i2 = s.innings2 || {};
+  const clock = match.clock || {};
+  const isLive = match.controlStatus === 'LIVE';
+
+  return (
+    <div className="srl-scoreboard-hero">
+      <div className="srl-score-team">
+        <span className="srl-score-team-name">{match.homeShort}</span>
+        <span className="srl-score-runs">{i1.runs || 0}/{i1.wickets || 0}</span>
+        <span className="srl-score-overs">{i1.overs || '0.0'} ov</span>
+      </div>
+
+      <div className="srl-score-divider">
+        <span className="srl-score-vs">vs</span>
+        <span className="srl-score-phase">
+          {isLive && <span className="srl-live-dot" style={{ marginRight: 6 }} />}
+          {PHASE_LABEL[clock.phase] || match.controlStatus}
+        </span>
+        {s.target > 0 && <span className="srl-score-target">T {s.target}</span>}
+      </div>
+
+      <div className="srl-score-team">
+        <span className="srl-score-team-name">{match.awayShort}</span>
+        <span className="srl-score-runs">{i2.runs || 0}/{i2.wickets || 0}</span>
+        <span className="srl-score-overs">{i2.overs || '0.0'} ov</span>
+      </div>
+
+      <div className="srl-score-meta-row" style={{ gridColumn: '1 / -1' }}>
+        <span>{match.venue} · {match.speed}</span>
+        <span>
+          Open: <strong>{formatInr(match.book?.totalStake)}</strong>
+          {' · '}{(match.book?.home?.bets || 0) + (match.book?.away?.bets || 0) + (match.book?.other?.bets || 0)} bets
+        </span>
+        {match.commentary && (
+          <span style={{ fontStyle: 'italic', color: 'var(--srl-accent)', maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {match.commentary}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MAIN COMPONENT
+   ═══════════════════════════════════════════════════════════════════════════ */
 export default function IPLSRLConsoleView() {
   const { showToast } = useAdminToast();
   const [tab, setTab] = useState('desk');
@@ -123,6 +185,18 @@ export default function IPLSRLConsoleView() {
   const [marketsLoading, setMarketsLoading] = useState(false);
   const [marketsError, setMarketsError] = useState(null);
   const [marketFilter, setMarketFilter] = useState('all');
+  const [targetInput, setTargetInput] = useState('');
+  const [oversReductionInput, setOversReductionInput] = useState('12');
+  const [commentaryText, setCommentaryText] = useState('');
+  const [commentaryTag, setCommentaryTag] = useState('DRS_REVIEW');
+  const [marginBump, setMarginBump] = useState('0.05');
+  const [spreadBias, setSpreadBias] = useState('0.00');
+  const [showExhibitionModal, setShowExhibitionModal] = useState(false);
+  const [exhibitionHome, setExhibitionHome] = useState('csk');
+  const [exhibitionAway, setExhibitionAway] = useState('mi');
+  const [exhibitionVenue, setExhibitionVenue] = useState('Wankhede Arena');
+  const [exhibitionPitch, setExhibitionPitch] = useState('BALANCED');
+  const [matchZone, setMatchZone] = useState('control');
   const draggingRef = useRef(false);
 
   const applySnap = useCallback((data) => {
@@ -292,28 +366,29 @@ export default function IPLSRLConsoleView() {
     return <div style={{ padding: 40, color: 'var(--admin-text-muted)' }}>Loading OddsYra SRL console…</div>;
   }
 
+  /* ─── RENDER ─── */
   return (
     <div className="srl-console">
+      {/* ═══ HERO ═══ */}
       <div className="srl-console-hero">
         <div>
           <p className="srl-console-kicker">Sports · OddsYra SRL</p>
-          <h2>Match control</h2>
+          <h2>Match Control</h2>
           <p>
-            Fixtures auto-play on the published clock. Pause, scrub, close betting, jump the season to a match, or
-            declare any market — the board seeks to that score (e.g. Over 88.5 → 89 by 10 overs).
+            Institutional-grade match control cockpit. Select a fixture, manage live play, inject incidents,
+            defend margins, and settle markets — all from one screen.
           </p>
           {error && <p className="srl-console-error">{error}</p>}
         </div>
         <div className="srl-console-stats">
           <div className="srl-stat"><strong>{counts.all}</strong><span>Matches</span></div>
-          <div className="srl-stat"><strong>{counts.league}</strong><span>League</span></div>
-          <div className="srl-stat"><strong>{counts.playoffs}</strong><span>Playoffs</span></div>
           <div className="srl-stat"><strong>{counts.live}</strong><span>Live</span></div>
           <div className="srl-stat"><strong>{counts.upcoming}</strong><span>Upcoming</span></div>
           <div className="srl-stat"><strong>{counts.done}</strong><span>Done</span></div>
         </div>
       </div>
 
+      {/* ═══ TOP TABS ═══ */}
       <div className="srl-tabs">
         {TABS.map((t) => (
           <button
@@ -327,13 +402,15 @@ export default function IPLSRLConsoleView() {
         ))}
       </div>
 
+      {/* ═══════════════ MATCH DESK ═══════════════ */}
       {tab === 'desk' && snap && (
         <div className="srl-desk">
+          {/* ─── LEFT RAIL: Season + Fixtures ─── */}
           <div className="srl-stack">
-            <Panel title="Season conditions" hint={`${snap.season?.name || 'Season'} · Ed ${snap.season?.edition || '—'}`}>
+            <Panel title="Season" hint={`${snap.season?.name || 'Season'} · Ed ${snap.season?.edition || '—'}`}>
               <div className="srl-settings">
                 <label className="srl-field">
-                  Default speed
+                  Speed
                   <select
                     value={snap.settings.speed}
                     disabled={busy}
@@ -370,14 +447,25 @@ export default function IPLSRLConsoleView() {
                   disabled={busy}
                   onChange={(e) => run(() => adminApiClient.post('/iplsrl/settings', { autoPlay: e.target.checked }), e.target.checked ? 'Auto-play on' : 'Auto-play off')}
                 />
-                Auto-play deliveries after a manual start
+                Auto-play after manual start
               </label>
+              <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="srl-btn srl-btn-blue"
+                  style={{ flex: 1 }}
+                  disabled={busy}
+                  onClick={() => setShowExhibitionModal(true)}
+                >
+                  ➕ Exhibition Match
+                </button>
+              </div>
             </Panel>
 
-            <Panel title="Season clock" hint={seasonClock.jumped ? 'Offset from wall clock' : 'Following wall clock'}>
-              <p className="srl-hint" style={{ margin: '0 0 10px' }}>
+            <Panel title="Season clock" hint={seasonClock.jumped ? 'Offset' : 'Wall clock'}>
+              <p className="srl-hint" style={{ margin: '0 0 8px' }}>
                 {seasonClock.label || 'Wall clock'}
-                {seasonClock.jumped ? ' · users see this time, not real time' : ''}
+                {seasonClock.jumped ? ' · users see this time' : ''}
               </p>
               <div className="srl-jump">
                 <label className="srl-field">
@@ -430,8 +518,8 @@ export default function IPLSRLConsoleView() {
               </div>
             </Panel>
 
-            <Panel title="Fixtures" hint={`${fixtures.length} of ${counts.all} shown · 70 league + 4 playoffs`}>
-              <div className="srl-filters" style={{ marginBottom: 12 }}>
+            <Panel title="Fixtures" hint={`${fixtures.length} of ${counts.all}`}>
+              <div className="srl-filters" style={{ marginBottom: 8 }}>
                 {FILTERS.map((f) => (
                   <button
                     key={f.id}
@@ -444,7 +532,7 @@ export default function IPLSRLConsoleView() {
                 ))}
               </div>
               <label className="srl-field srl-fixture-search">
-                Search fixtures
+                Search
                 <input
                   type="search"
                   value={query}
@@ -468,17 +556,14 @@ export default function IPLSRLConsoleView() {
                       <StatusPill value={m.bettingClosed ? 'BET OFF' : m.controlStatus} />
                     </div>
                     <div className="srl-fixture-meta">
-                      {m.matchNo ? `#${m.matchNo}` : ''} {m.stageLabel || 'League'} · {m.date} · {m.timeDisplay || '—'} · {PHASE_LABEL[m.clock?.phase] || m.venue}
+                      {m.stageLabel || 'League'} · {m.date} · {m.timeDisplay || '—'}
                     </div>
                     <div className="srl-fixture-note" style={{ color: m.forcedWinnerName ? '#34d399' : undefined }}>
                       {m.controlStatus === 'COMPLETED'
                         ? (m.score?.result || 'Completed')
                         : m.forcedWinnerName
-                          ? `Scripted winner: ${m.forcedWinnerName}`
+                          ? `Scripted: ${m.forcedWinnerName}`
                           : `${m.score?.innings1?.runs || 0}/${m.score?.innings1?.wickets || 0} → ${m.score?.innings2?.runs || 0}/${m.score?.innings2?.wickets || 0}`}
-                    </div>
-                    <div className="srl-fixture-meta" style={{ marginTop: 4 }}>
-                      Open stake {m.homeShort} {formatInr(m.book?.home?.stake)} · {m.awayShort} {formatInr(m.book?.away?.stake)}
                     </div>
                     <div className="srl-progress-mini" aria-hidden="true">
                       <i style={{ width: `${Math.max(0, Math.min(100, m.clock?.progressPct || 0))}%` }} />
@@ -492,335 +577,650 @@ export default function IPLSRLConsoleView() {
             </Panel>
           </div>
 
+          {/* ─── RIGHT: Match Cockpit ─── */}
           <div className="srl-stack">
-            <Panel title="Selected match" hint={selected?.matchId || 'Pick a fixture'}>
-              {!selected ? (
-                <p className="srl-hint" style={{ margin: 0 }}>Select a fixture from the desk.</p>
-              ) : (
-                <>
-                  <div className="srl-match-title">{selected.homeTeam} vs {selected.awayTeam}</div>
-                  <div className="srl-match-sub">
-                    {selected.venue} · {selected.clockDriven ? 'Published clock' : 'Operator override'} · {selected.speed}
-                  </div>
+            {!selected ? (
+              <Panel title="Select a match" hint="Pick a fixture from the rail">
+                <p className="srl-hint" style={{ margin: 0 }}>Select a fixture to open the cockpit.</p>
+              </Panel>
+            ) : (
+              <>
+                {/* Scoreboard Hero — always visible */}
+                <ScoreboardHero match={selected} />
 
-                  <div className="srl-scoreboard">
-                    <div className="srl-score">
-                      <span>Innings 1</span>
-                      <strong>{selected.score.innings1.runs}/{selected.score.innings1.wickets}</strong>
-                      <em>{selected.score.innings1.overs} ov</em>
-                    </div>
-                    <div className="srl-score">
-                      <span>Innings 2</span>
-                      <strong>{selected.score.innings2.runs}/{selected.score.innings2.wickets}</strong>
-                      <em>{selected.score.innings2.overs} ov{selected.score.target ? ` · T ${selected.score.target}` : ''}</em>
-                    </div>
-                  </div>
-                  {selected.commentary && <p className="srl-commentary">{selected.commentary}</p>}
+                {/* Match Zone Tabs */}
+                <div className="srl-match-tabs">
+                  {MATCH_ZONES.map((z) => (
+                    <button
+                      key={z.id}
+                      type="button"
+                      className={`srl-match-tab${matchZone === z.id ? ' is-on' : ''}`}
+                      onClick={() => setMatchZone(z.id)}
+                    >
+                      {z.label}
+                    </button>
+                  ))}
+                </div>
 
-                  <div className="srl-book">
-                    <div className="srl-winner-label">Open stakes · match winner</div>
-                    <div className="srl-book-grid">
-                      <div className={`srl-book-side${selected.book?.heavier === 'home' ? ' is-heavy' : ''}`}>
-                        <span>{selected.homeShort}</span>
-                        <strong>{formatInr(selected.book?.home?.stake)}</strong>
-                        <em>{selected.book?.home?.bets || 0} bets · pays {formatInr(selected.book?.home?.payout)} if they win</em>
+                {/* ═══ ZONE: CONTROL ═══ */}
+                {matchZone === 'control' && (
+                  <div className="srl-tab-body" key="control">
+                    {/* Timeline */}
+                    <div className="srl-timeline">
+                      <div className="srl-timeline-top">
+                        <span>{PHASE_LABEL[clock.phase] || 'Clock'}</span>
+                        <span>{formatClock(elapsedMs)} / {formatClock(durationMs)}</span>
                       </div>
-                      <div className={`srl-book-side${selected.book?.heavier === 'away' ? ' is-heavy' : ''}`}>
-                        <span>{selected.awayShort}</span>
-                        <strong>{formatInr(selected.book?.away?.stake)}</strong>
-                        <em>{selected.book?.away?.bets || 0} bets · pays {formatInr(selected.book?.away?.payout)} if they win</em>
+                      <input
+                        className="srl-slider"
+                        type="range"
+                        min={0}
+                        max={Math.max(1, durationMs - 1)}
+                        step={Math.max(1000, Number(clock.msPerBall) || 1000)}
+                        value={Math.min(elapsedMs, durationMs - 1)}
+                        disabled={busy || selected.controlStatus === 'COMPLETED'}
+                        onPointerDown={() => {
+                          draggingRef.current = true;
+                          setDragMs(elapsedMs);
+                        }}
+                        onChange={(e) => setDragMs(Number(e.target.value))}
+                        onPointerUp={(e) => {
+                          if (!draggingRef.current) return;
+                          draggingRef.current = false;
+                          commitSeek(Number(e.currentTarget.value), selected.controlStatus === 'PAUSED');
+                        }}
+                      />
+                      <div className="srl-markers">
+                        <button type="button" className="srl-chip" disabled={busy || !selected.canSeek} onClick={() => seek({ marker: 'over_back', pause: true }, 'Rewound one over')}>−1 over</button>
+                        <button type="button" className="srl-chip" disabled={busy || !selected.canSeek} onClick={() => seek({ marker: 'ball' }, 'Advanced one ball')}>+1 ball</button>
+                        <button type="button" className="srl-chip" disabled={busy || !selected.canSeek} onClick={() => seek({ marker: 'over' }, 'Skipped one over')}>+1 over</button>
+                        <button type="button" className="srl-chip" disabled={busy || !selected.canSeek} onClick={() => seek({ marker: 'innings_break', pause: true }, 'Jumped to innings break')}>Innings break</button>
+                        <button type="button" className="srl-chip" disabled={busy || !selected.canSeek} onClick={() => seek({ marker: 'second_innings' }, 'Opened 2nd innings')}>2nd innings</button>
+                        <button type="button" className="srl-chip" disabled={busy || !selected.canSeek} onClick={() => seek({ marker: 'finish', pause: true }, 'Jumped to the death')}>Death overs</button>
                       </div>
                     </div>
-                    {selected.book?.other?.stake > 0 && (
-                      <p className="srl-hint" style={{ margin: '8px 0 0' }}>
-                        Other markets: {formatInr(selected.book.other.stake)} across {selected.book.other.bets} bets
-                      </p>
-                    )}
-                    <p className="srl-hint" style={{ margin: '8px 0 0' }}>
-                      Total open {formatInr(selected.book?.totalStake)}.
-                      {selected.book?.heavier === 'home'
-                        ? ` More money is on ${selected.homeShort} — declaring them winner pays ${formatInr(selected.book.home.payout)}.`
-                        : selected.book?.heavier === 'away'
-                          ? ` More money is on ${selected.awayShort} — declaring them winner pays ${formatInr(selected.book.away.payout)}.`
-                          : ' Stakes are even or empty.'}
-                    </p>
-                  </div>
 
-                  <div className="srl-timeline">
-                    <div className="srl-timeline-top">
-                      <span>{PHASE_LABEL[clock.phase] || 'Clock'}</span>
-                      <span>{formatClock(elapsedMs)} / {formatClock(durationMs)}</span>
-                    </div>
-                    <input
-                      className="srl-slider"
-                      type="range"
-                      min={0}
-                      max={Math.max(1, durationMs - 1)}
-                      step={Math.max(1000, Number(clock.msPerBall) || 1000)}
-                      value={Math.min(elapsedMs, durationMs - 1)}
-                      disabled={busy || selected.controlStatus === 'COMPLETED'}
-                      onPointerDown={() => {
-                        draggingRef.current = true;
-                        setDragMs(elapsedMs);
-                      }}
-                      onChange={(e) => setDragMs(Number(e.target.value))}
-                      onPointerUp={(e) => {
-                        if (!draggingRef.current) return;
-                        draggingRef.current = false;
-                        commitSeek(Number(e.currentTarget.value), selected.controlStatus === 'PAUSED');
-                      }}
-                    />
-                    <div className="srl-markers">
-                      <button type="button" className="srl-chip" disabled={busy || !selected.canSeek} onClick={() => seek({ marker: 'over_back', pause: true }, 'Rewound one over')}>−1 over</button>
-                      <button type="button" className="srl-chip" disabled={busy || !selected.canSeek} onClick={() => seek({ marker: 'ball' }, 'Advanced one ball')}>+1 ball</button>
-                      <button type="button" className="srl-chip" disabled={busy || !selected.canSeek} onClick={() => seek({ marker: 'over' }, 'Skipped one over')}>+1 over</button>
-                      <button type="button" className="srl-chip" disabled={busy || !selected.canSeek} onClick={() => seek({ marker: 'innings_break', pause: true }, 'Jumped to innings break')}>Innings break</button>
-                      <button type="button" className="srl-chip" disabled={busy || !selected.canSeek} onClick={() => seek({ marker: 'second_innings' }, 'Opened 2nd innings')}>2nd innings</button>
-                      <button type="button" className="srl-chip" disabled={busy || !selected.canSeek} onClick={() => seek({ marker: 'finish', pause: true }, 'Jumped to the death')}>Death overs</button>
-                    </div>
-                  </div>
-
-                  <div className="srl-actions">
-                    <button
-                      type="button"
-                      className="srl-btn srl-btn-blue"
-                      disabled={busy || selected.controlStatus === 'LIVE' || selected.controlStatus === 'COMPLETED'}
-                      onClick={() => run(() => adminApiClient.post('/iplsrl/matches/start', { matchId: selected.matchId }), 'Match started for users')}
-                    >
-                      Start / take over
-                    </button>
-                    {selected.canPause ? (
-                      <button type="button" className="srl-btn srl-btn-orange" disabled={busy} onClick={() => run(() => adminApiClient.post('/iplsrl/matches/pause', { matchId: selected.matchId }), 'Paused')}>
-                        Pause
-                      </button>
-                    ) : (
-                      <button type="button" className="srl-btn srl-btn-teal" disabled={busy || !selected.canResume} onClick={() => run(() => adminApiClient.post('/iplsrl/matches/resume', { matchId: selected.matchId }), 'Resumed')}>
-                        Resume
-                      </button>
-                    )}
-                    <select
-                      className="srl-input"
-                      value={selected.speed}
-                      disabled={busy || selected.controlStatus === 'COMPLETED'}
-                      onChange={(e) => run(() => adminApiClient.post('/iplsrl/matches/speed', { matchId: selected.matchId, speed: e.target.value }), `Speed ${e.target.value}`)}
-                      style={{ height: 40 }}
-                    >
-                      {(snap.options?.speeds || []).map((s) => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                    <button
-                      type="button"
-                      className="srl-btn srl-btn-violet"
-                      disabled={busy}
-                      onClick={() => run(() => adminApiClient.post('/iplsrl/matches/reset', { matchId: selected.matchId }), 'Returned to published clock')}
-                    >
-                      Reset to clock
-                    </button>
-                    <button
-                      type="button"
-                      className={`srl-btn ${selected.bettingClosed ? 'srl-btn-teal' : 'srl-btn-orange'}`}
-                      disabled={busy || selected.controlStatus === 'COMPLETED'}
-                      onClick={() => run(
-                        () => adminApiClient.post('/iplsrl/matches/betting', {
-                          matchId: selected.matchId,
-                          closed: !selected.bettingClosed,
-                        }),
-                        selected.bettingClosed ? 'Betting opened' : 'Betting closed for users',
-                      )}
-                    >
-                      {selected.bettingClosed ? 'Open betting' : 'Close betting'}
-                    </button>
-                  </div>
-
-                  <div className="srl-winner">
-                    <div className="srl-winner-label">Winner control · anytime</div>
-                    <div className="srl-actions" style={{ marginBottom: 8 }}>
-                      <button
-                        type="button"
-                        className="srl-btn"
-                        style={actionFill(selected.forcedWinnerTeamId === selected.homeTeamId)}
-                        disabled={busy || selected.controlStatus === 'COMPLETED'}
-                        onClick={() => run(
-                          () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/force-winner`, { teamId: selected.homeTeamId }),
-                          `${selected.homeShort} set to win`,
-                        )}
-                      >
-                        Script {selected.homeShort}
-                      </button>
-                      <button
-                        type="button"
-                        className="srl-btn"
-                        style={actionFill(selected.forcedWinnerTeamId === selected.awayTeamId)}
-                        disabled={busy || selected.controlStatus === 'COMPLETED'}
-                        onClick={() => run(
-                          () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/force-winner`, { teamId: selected.awayTeamId }),
-                          `${selected.awayShort} set to win`,
-                        )}
-                      >
-                        Script {selected.awayShort}
-                      </button>
-                    </div>
-                    {selected.forcedWinnerTeamId && selected.controlStatus !== 'COMPLETED' && (
-                      <button
-                        type="button"
-                        className="srl-btn srl-btn-slate srl-btn-wide"
-                        disabled={busy}
-                        onClick={() => run(
-                          () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/force-winner`, { teamId: null }),
-                          'Winner cleared',
-                        )}
-                        style={{ marginBottom: 8 }}
-                      >
-                        Clear scripted winner
-                      </button>
-                    )}
-                    <div className="srl-actions" style={{ marginBottom: 0 }}>
-                      <button
-                        type="button"
-                        className="srl-btn srl-btn-amber"
-                        disabled={busy || selected.controlStatus === 'COMPLETED'}
-                        onClick={() => setDeclareAsk(declarePreview(selected, selected.homeTeamId))}
-                      >
-                        Declare {selected.homeShort} now
-                      </button>
-                      <button
-                        type="button"
-                        className="srl-btn srl-btn-amber"
-                        disabled={busy || selected.controlStatus === 'COMPLETED'}
-                        onClick={() => setDeclareAsk(declarePreview(selected, selected.awayTeamId))}
-                      >
-                        Declare {selected.awayShort} now
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="srl-markets">
-                    <div className="srl-winner-label">
-                      All user odds · toss, winner, totals, innings — lock / declare / void
-                      {marketsDesk
-                        ? ` · ${marketsDesk.marketCount ?? marketsDesk.markets?.length ?? 0} markets · ${marketsDesk.openBets || 0} open bets · ${formatInr(marketsDesk.openStake)}`
-                        : ''}
-                    </div>
-                    <div className="srl-market-filters">
-                      {[
-                        { id: 'all', label: 'All odds' },
-                        { id: 'toss', label: 'Toss' },
-                        { id: 'winner', label: 'Winner' },
-                        { id: 'totals', label: 'Totals' },
-                        { id: 'innings', label: 'Innings / overs' },
-                        { id: 'open', label: 'Open + staked' },
-                        { id: 'staked', label: 'With stakes' },
-                        { id: 'locked', label: 'Locked / settled' },
-                      ].map((f) => (
+                    {/* Play controls */}
+                    <div className="srl-zone" style={{ marginTop: 12 }}>
+                      <div className="srl-zone-label --accent">Match Controls</div>
+                      <div className="srl-actions">
                         <button
-                          key={f.id}
                           type="button"
-                          className={`srl-chip${marketFilter === f.id ? ' is-on' : ''}`}
-                          onClick={() => setMarketFilter(f.id)}
+                          className="srl-btn srl-btn-blue"
+                          disabled={busy || selected.controlStatus === 'LIVE' || selected.controlStatus === 'COMPLETED'}
+                          onClick={() => run(() => adminApiClient.post('/iplsrl/matches/start', { matchId: selected.matchId }), 'Match started for users')}
                         >
-                          {f.label}
-                          {f.id === 'toss' && marketsDesk?.tossMarkets?.length
-                            ? ` · ${marketsDesk.tossMarkets.length}`
-                            : ''}
+                          ▶ Start
                         </button>
-                      ))}
+                        {selected.canPause ? (
+                          <button type="button" className="srl-btn srl-btn-orange" disabled={busy} onClick={() => run(() => adminApiClient.post('/iplsrl/matches/pause', { matchId: selected.matchId }), 'Paused')}>
+                            ⏸ Pause
+                          </button>
+                        ) : (
+                          <button type="button" className="srl-btn srl-btn-teal" disabled={busy || !selected.canResume} onClick={() => run(() => adminApiClient.post('/iplsrl/matches/resume', { matchId: selected.matchId }), 'Resumed')}>
+                            ▶ Resume
+                          </button>
+                        )}
+                        <select
+                          className="srl-input"
+                          value={selected.speed}
+                          disabled={busy || selected.controlStatus === 'COMPLETED'}
+                          onChange={(e) => run(() => adminApiClient.post('/iplsrl/matches/speed', { matchId: selected.matchId, speed: e.target.value }), `Speed ${e.target.value}`)}
+                          style={{ height: 38, maxWidth: 120 }}
+                        >
+                          {(snap.options?.speeds || []).map((s) => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                        <button
+                          type="button"
+                          className="srl-btn srl-btn-violet"
+                          disabled={busy}
+                          onClick={() => run(() => adminApiClient.post('/iplsrl/matches/reset', { matchId: selected.matchId }), 'Returned to published clock')}
+                        >
+                          Reset to clock
+                        </button>
+                        <button
+                          type="button"
+                          className={`srl-btn ${selected.bettingClosed ? 'srl-btn-teal' : 'srl-btn-orange'}`}
+                          disabled={busy || selected.controlStatus === 'COMPLETED'}
+                          onClick={() => run(
+                            () => adminApiClient.post('/iplsrl/matches/betting', {
+                              matchId: selected.matchId,
+                              closed: !selected.bettingClosed,
+                            }),
+                            selected.bettingClosed ? 'Betting opened' : 'Betting closed for users',
+                          )}
+                        >
+                          {selected.bettingClosed ? '🟢 Open betting' : '🔴 Close betting'}
+                        </button>
+                      </div>
                     </div>
-                    {marketsLoading && !marketsDesk && (
-                      <p className="srl-hint">Loading markets…</p>
+
+                    {/* Winner control */}
+                    <div className="srl-winner" style={{ marginTop: 12 }}>
+                      <div className="srl-winner-label">Winner control</div>
+                      <div className="srl-actions" style={{ marginBottom: 8 }}>
+                        <button
+                          type="button"
+                          className="srl-btn"
+                          style={actionFill(selected.forcedWinnerTeamId === selected.homeTeamId)}
+                          disabled={busy || selected.controlStatus === 'COMPLETED'}
+                          onClick={() => run(
+                            () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/force-winner`, { teamId: selected.homeTeamId }),
+                            `${selected.homeShort} set to win`,
+                          )}
+                        >
+                          Script {selected.homeShort}
+                        </button>
+                        <button
+                          type="button"
+                          className="srl-btn"
+                          style={actionFill(selected.forcedWinnerTeamId === selected.awayTeamId)}
+                          disabled={busy || selected.controlStatus === 'COMPLETED'}
+                          onClick={() => run(
+                            () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/force-winner`, { teamId: selected.awayTeamId }),
+                            `${selected.awayShort} set to win`,
+                          )}
+                        >
+                          Script {selected.awayShort}
+                        </button>
+                      </div>
+                      {selected.forcedWinnerTeamId && selected.controlStatus !== 'COMPLETED' && (
+                        <button
+                          type="button"
+                          className="srl-btn srl-btn-slate srl-btn-wide"
+                          disabled={busy}
+                          onClick={() => run(
+                            () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/force-winner`, { teamId: null }),
+                            'Winner cleared',
+                          )}
+                          style={{ marginBottom: 8 }}
+                        >
+                          Clear scripted winner
+                        </button>
+                      )}
+                      <div className="srl-actions" style={{ marginBottom: 0 }}>
+                        <button
+                          type="button"
+                          className="srl-btn srl-btn-amber"
+                          disabled={busy || selected.controlStatus === 'COMPLETED'}
+                          onClick={() => setDeclareAsk(declarePreview(selected, selected.homeTeamId))}
+                        >
+                          Declare {selected.homeShort} now
+                        </button>
+                        <button
+                          type="button"
+                          className="srl-btn srl-btn-amber"
+                          disabled={busy || selected.controlStatus === 'COMPLETED'}
+                          onClick={() => setDeclareAsk(declarePreview(selected, selected.awayTeamId))}
+                        >
+                          Declare {selected.awayShort} now
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Open stakes */}
+                    <div className="srl-book" style={{ marginTop: 12 }}>
+                      <div className="srl-winner-label" style={{ color: 'var(--srl-live)' }}>Open stakes · match winner</div>
+                      <div className="srl-book-grid">
+                        <div className={`srl-book-side${selected.book?.heavier === 'home' ? ' is-heavy' : ''}`}>
+                          <span>{selected.homeShort}</span>
+                          <strong>{formatInr(selected.book?.home?.stake)}</strong>
+                          <em>{selected.book?.home?.bets || 0} bets · pays {formatInr(selected.book?.home?.payout)}</em>
+                        </div>
+                        <div className={`srl-book-side${selected.book?.heavier === 'away' ? ' is-heavy' : ''}`}>
+                          <span>{selected.awayShort}</span>
+                          <strong>{formatInr(selected.book?.away?.stake)}</strong>
+                          <em>{selected.book?.away?.bets || 0} bets · pays {formatInr(selected.book?.away?.payout)}</em>
+                        </div>
+                      </div>
+                      {selected.book?.other?.stake > 0 && (
+                        <p className="srl-hint" style={{ margin: '8px 0 0' }}>
+                          Other markets: {formatInr(selected.book.other.stake)} across {selected.book.other.bets} bets
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ═══ ZONE: GOD MODE ═══ */}
+                {matchZone === 'godmode' && (
+                  <div className="srl-tab-body" key="godmode">
+                    <div className="srl-zone">
+                      <div className="srl-zone-label --warn" style={{ justifyContent: 'space-between' }}>
+                        <span>⚡ Next-Ball Incident Injector</span>
+                        {selected.incidentQueueLength > 0 && (
+                          <span className="srl-pill srl-pill-live">
+                            {selected.incidentQueueLength} armed
+                          </span>
+                        )}
+                      </div>
+                      <div className="srl-incident-grid">
+                        {[
+                          { type: 'WICKET', subType: 'Bowled', icon: '💥', label: 'Wicket (Bowled)', msg: '💥 Bowled Wicket injected!' },
+                          { type: 'WICKET', subType: 'Caught Behind', icon: '🧤', label: 'Wicket (Caught)', msg: '🧤 Caught Wicket injected!' },
+                          { type: 'SIX', icon: '🚀', label: 'Boundary SIX', msg: '🚀 Boundary SIX injected!' },
+                          { type: 'FOUR', icon: '⚡', label: 'Boundary FOUR', msg: '⚡ Boundary FOUR injected!' },
+                          { type: 'DOT', icon: '🎯', label: 'Dot Ball (0)', msg: '🎯 Dot Ball injected!' },
+                          { type: 'WIDE', icon: '⚠️', label: 'Wide (+1)', msg: '⚠️ Wide (+1 extra) injected!' },
+                          { type: 'NO_BALL', icon: '🚨', label: 'No Ball (+1)', msg: '🚨 No Ball (+1 & Free Hit) injected!' },
+                        ].map((inc) => (
+                          <button
+                            key={`${inc.type}-${inc.subType || ''}`}
+                            type="button"
+                            className="srl-incident-btn"
+                            disabled={busy || selected.controlStatus === 'COMPLETED'}
+                            onClick={() => run(
+                              () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/incident`, {
+                                type: inc.type,
+                                ...(inc.subType ? { subType: inc.subType } : {}),
+                                instant: true,
+                              }),
+                              inc.msg,
+                            )}
+                          >
+                            <span className="srl-incident-icon">{inc.icon}</span>
+                            <span className="srl-incident-label">{inc.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="srl-zone">
+                      <div className="srl-zone-label --accent">🎯 Pinpoint Chase Target & Tie Game</div>
+                      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                        <label className="srl-field" style={{ flex: 1, minWidth: 140 }}>
+                          Chase Target
+                          <input
+                            type="number"
+                            placeholder="e.g. 175"
+                            value={targetInput}
+                            onChange={(e) => setTargetInput(e.target.value)}
+                            className="srl-input"
+                            style={{ height: 36 }}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          className="srl-btn srl-btn-teal"
+                          style={{ height: 36 }}
+                          disabled={busy || !targetInput}
+                          onClick={() => run(
+                            () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/target`, { target: Number(targetInput) }),
+                            `Target pinned to ${targetInput}`,
+                          )}
+                        >
+                          Set Target
+                        </button>
+                        <button
+                          type="button"
+                          className="srl-btn srl-btn-orange"
+                          style={{ height: 36 }}
+                          disabled={busy || selected.controlStatus === 'COMPLETED'}
+                          onClick={() => run(
+                            () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/tie-game`),
+                            '⚔️ Match Anchored for Super Over!',
+                          )}
+                        >
+                          ⚔️ Force Tie (Super Over)
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ═══ ZONE: RISK ═══ */}
+                {matchZone === 'risk' && (
+                  <div className="srl-tab-body" key="risk">
+                    <div className="srl-radar-card">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                        <div className="srl-zone-label --live" style={{ margin: 0 }}>
+                          🛡️ Live Liability Radar
+                        </div>
+                        <span className={`srl-pill ${selected.book?.riskFlag === 'CRITICAL' ? 'srl-pill-completed' : (selected.book?.riskFlag === 'WARNING' ? 'srl-pill-paused' : 'srl-pill-live')}`}>
+                          {selected.book?.riskFlag || 'BALANCED'}
+                        </span>
+                      </div>
+
+                      <div className="srl-radar-stats">
+                        <div className="srl-radar-stat-box">
+                          <label>Home ({selected.homeShort}) Win P&L</label>
+                          <strong style={{ color: (selected.book?.projectedPnlHome ?? 0) >= 0 ? '#10b981' : '#f87171' }}>
+                            {(selected.book?.projectedPnlHome ?? 0) >= 0 ? '+' : ''}{formatInr(selected.book?.projectedPnlHome || 0)}
+                          </strong>
+                        </div>
+                        <div className="srl-radar-stat-box">
+                          <label>Away ({selected.awayShort}) Win P&L</label>
+                          <strong style={{ color: (selected.book?.projectedPnlAway ?? 0) >= 0 ? '#10b981' : '#f87171' }}>
+                            {(selected.book?.projectedPnlAway ?? 0) >= 0 ? '+' : ''}{formatInr(selected.book?.projectedPnlAway || 0)}
+                          </strong>
+                        </div>
+                        <div className="srl-radar-stat-box">
+                          <label>Worst-Case Liability</label>
+                          <strong style={{ color: (selected.book?.worstCaseLiability ?? 0) > 20000 ? '#f59e0b' : 'var(--admin-text)' }}>
+                            {formatInr(selected.book?.worstCaseLiability || 0)}
+                          </strong>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                        <label className="srl-field" style={{ flex: 1, minWidth: 130 }}>
+                          Margin Bump (+%)
+                          <select
+                            value={marginBump}
+                            onChange={(e) => setMarginBump(e.target.value)}
+                            className="srl-input"
+                            style={{ height: 36 }}
+                          >
+                            <option value="0.00">+0% Standard</option>
+                            <option value="0.03">+3% Defensive</option>
+                            <option value="0.05">+5% High-Vol</option>
+                            <option value="0.08">+8% Death Overs</option>
+                            <option value="0.12">+12% Peak Risk</option>
+                          </select>
+                        </label>
+                        <label className="srl-field" style={{ flex: 1, minWidth: 130 }}>
+                          Spread Bias
+                          <select
+                            value={spreadBias}
+                            onChange={(e) => setSpreadBias(e.target.value)}
+                            className="srl-input"
+                            style={{ height: 36 }}
+                          >
+                            <option value="0.00">Neutral (0.00)</option>
+                            <option value="0.05">+{selected.homeShort} / -{selected.awayShort}</option>
+                            <option value="-0.05">+{selected.awayShort} / -{selected.homeShort}</option>
+                          </select>
+                        </label>
+                        <button
+                          type="button"
+                          className="srl-btn srl-btn-blue"
+                          style={{ height: 36 }}
+                          disabled={busy}
+                          onClick={() => run(
+                            () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/margin`, {
+                              marginBump: Number(marginBump),
+                              spreadBias: Number(spreadBias),
+                            }),
+                            'Margin defense updated',
+                          )}
+                        >
+                          Apply Defense
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ═══ ZONE: WEATHER ═══ */}
+                {matchZone === 'weather' && (
+                  <div className="srl-tab-body" key="weather">
+                    <div className="srl-zone">
+                      <div className="srl-zone-label --info">🌧️ DLS Engine & Rain Delays</div>
+                      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          className={`srl-btn ${selected.rainDelay ? 'srl-btn-teal' : 'srl-btn-orange'}`}
+                          disabled={busy || selected.controlStatus === 'COMPLETED'}
+                          onClick={() => run(
+                            () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/rain-delay`, { isDelayed: !selected.rainDelay }),
+                            selected.rainDelay ? 'Rain cleared · Match resumed' : 'Rain delay started · Betting held',
+                          )}
+                        >
+                          {selected.rainDelay ? '☀️ Clear Rain Delay' : '🌧️ Start Rain Delay'}
+                        </button>
+                        <label className="srl-field" style={{ width: 130 }}>
+                          Shorten Overs
+                          <select
+                            value={oversReductionInput}
+                            onChange={(e) => setOversReductionInput(e.target.value)}
+                            className="srl-input"
+                            style={{ height: 36 }}
+                          >
+                            <option value="15">15 overs</option>
+                            <option value="12">12 overs</option>
+                            <option value="10">10 overs</option>
+                            <option value="8">8 overs</option>
+                            <option value="5">5 overs (Min)</option>
+                          </select>
+                        </label>
+                        <button
+                          type="button"
+                          className="srl-btn srl-btn-blue"
+                          style={{ height: 36 }}
+                          disabled={busy || selected.controlStatus === 'COMPLETED'}
+                          onClick={() => run(
+                            () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/reduce-overs`, { overs: Number(oversReductionInput) }),
+                            `Match reduced to ${oversReductionInput} overs (DLS recalculation applied)`,
+                          )}
+                        >
+                          Apply DLS Reduction
+                        </button>
+                      </div>
+                      {selected.dlsTarget && (
+                        <p className="srl-hint" style={{ marginTop: 8, fontWeight: 700, color: 'var(--srl-accent-strong)', fontSize: '0.82rem' }}>
+                          Revised DLS Target: {selected.dlsTarget}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ═══ ZONE: BROADCAST ═══ */}
+                {matchZone === 'broadcast' && (
+                  <div className="srl-tab-body" key="broadcast">
+                    <div className="srl-zone">
+                      <div className="srl-zone-label --accent">📢 Broadcast Live Commentary</div>
+                      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <input
+                          type="text"
+                          placeholder="Type custom breaking commentary..."
+                          value={commentaryText}
+                          onChange={(e) => setCommentaryText(e.target.value)}
+                          className="srl-input"
+                          style={{ flex: 1, minWidth: 200, height: 36 }}
+                        />
+                        <button
+                          type="button"
+                          className="srl-btn srl-btn-blue"
+                          style={{ height: 36 }}
+                          disabled={busy || !commentaryText.trim()}
+                          onClick={() => {
+                            run(
+                              () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/commentary`, { text: commentaryText, eventTag: commentaryTag }),
+                              'Commentary broadcasted!',
+                            );
+                            setCommentaryText('');
+                          }}
+                        >
+                          Broadcast
+                        </button>
+                      </div>
+                      <div className="srl-tag-chips">
+                        {['DRS_REVIEW', 'STRATEGIC_TIMEOUT', 'FREE_HIT', 'INJURY_STOPPAGE', 'GENERAL'].map((tag) => (
+                          <button
+                            key={tag}
+                            type="button"
+                            className={`srl-tag-chip${commentaryTag === tag ? ' is-active' : ''}`}
+                            onClick={() => setCommentaryTag(tag)}
+                          >
+                            {tag.replace('_', ' ')}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {selected.commentary && (
+                      <div className="srl-zone" style={{ marginTop: 12 }}>
+                        <div className="srl-zone-label --accent">Current Commentary</div>
+                        <p className="srl-commentary" style={{ margin: 0 }}>{selected.commentary}</p>
+                      </div>
                     )}
-                    {marketsError && <p className="srl-console-error">{marketsError}</p>}
-                    <div className="srl-market-list">
-                      {visibleMarkets.map((market) => {
-                        const status = String(market.status || 'OPEN').toUpperCase();
-                        const settled = ['DETERMINED', 'VOID', 'VOIDED'].includes(status);
-                        const mid = encodeURIComponent(market.marketId);
-                        return (
-                          <div key={market.marketId} className={`srl-market-card${settled || status === 'SUSPENDED' ? ' is-locked' : ''}`}>
-                            <div className="srl-market-card__head">
-                              <div>
-                                <strong>{market.title || market.name}</strong>
-                                <span className="srl-hint">
-                                  {market.marketId}
-                                  {market.line != null ? ` · line ${market.line}` : ''}
-                                  {(market.book?.bets || 0) > 0
-                                    ? ` · ${market.book.bets} bets · ${formatInr(market.book.stake)}`
-                                    : ''}
-                                </span>
-                              </div>
-                              <div className="srl-market-card__actions">
-                                <StatusPill value={status} />
-                                <button
-                                  type="button"
-                                  className="srl-chip"
-                                  disabled={busy || settled}
-                                  onClick={() => run(
-                                    () => adminApiClient.post(
-                                      `/iplsrl/matches/${selected.matchId}/markets/${mid}/suspend`,
-                                      { suspended: status !== 'SUSPENDED' },
-                                    ),
-                                    status === 'SUSPENDED' ? 'Market opened' : 'Market locked',
-                                  )}
-                                >
-                                  {status === 'SUSPENDED' ? 'Unlock' : 'Lock'}
-                                </button>
-                                <button
-                                  type="button"
-                                  className="srl-chip"
-                                  disabled={busy || settled}
-                                  onClick={() => setMarketAsk({
-                                    marketId: market.marketId,
-                                    title: market.title || market.name,
-                                    voidMarket: true,
-                                    bets: market.book?.bets || 0,
-                                    stake: market.book?.stake || 0,
-                                  })}
-                                >
-                                  Void
-                                </button>
-                              </div>
-                            </div>
-                            <div className="srl-market-sels">
-                              {(market.selections || []).map((sel) => (
+                  </div>
+                )}
+
+                {/* ═══ ZONE: MARKETS ═══ */}
+                {matchZone === 'markets' && (
+                  <div className="srl-tab-body" key="markets">
+                    <div className="srl-markets">
+                      <div className="srl-zone-label --accent" style={{ justifyContent: 'space-between' }}>
+                        <span>
+                          All Markets
+                          {marketsDesk
+                            ? ` · ${marketsDesk.marketCount ?? marketsDesk.markets?.length ?? 0} markets · ${marketsDesk.openBets || 0} bets · ${formatInr(marketsDesk.openStake)}`
+                            : ''}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                        <button
+                          type="button"
+                          className="srl-btn srl-btn-violet"
+                          style={{ fontSize: '0.72rem', padding: '6px 12px' }}
+                          disabled={busy}
+                          onClick={() => run(
+                            () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/bulk-settle`, { phase: 'toss' }),
+                            'Toss markets settled in bulk!',
+                          )}
+                        >
+                          ⚡ Settle Toss
+                        </button>
+                        <button
+                          type="button"
+                          className="srl-btn srl-btn-violet"
+                          style={{ fontSize: '0.72rem', padding: '6px 12px' }}
+                          disabled={busy}
+                          onClick={() => run(
+                            () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/bulk-settle`, { phase: 'innings1' }),
+                            '1st Innings markets settled in bulk!',
+                          )}
+                        >
+                          ⚡ Settle 1st Innings
+                        </button>
+                      </div>
+
+                      <div className="srl-market-filters">
+                        {[
+                          { id: 'all', label: 'All odds' },
+                          { id: 'toss', label: 'Toss' },
+                          { id: 'winner', label: 'Winner' },
+                          { id: 'totals', label: 'Totals' },
+                          { id: 'innings', label: 'Innings / overs' },
+                          { id: 'open', label: 'Open + staked' },
+                          { id: 'staked', label: 'With stakes' },
+                          { id: 'locked', label: 'Locked / settled' },
+                        ].map((f) => (
+                          <button
+                            key={f.id}
+                            type="button"
+                            className={`srl-chip${marketFilter === f.id ? ' is-on' : ''}`}
+                            onClick={() => setMarketFilter(f.id)}
+                          >
+                            {f.label}
+                            {f.id === 'toss' && marketsDesk?.tossMarkets?.length
+                              ? ` · ${marketsDesk.tossMarkets.length}`
+                              : ''}
+                          </button>
+                        ))}
+                      </div>
+                      {marketsLoading && !marketsDesk && (
+                        <p className="srl-hint">Loading markets…</p>
+                      )}
+                      {marketsError && <p className="srl-console-error">{marketsError}</p>}
+                      <div className="srl-market-list">
+                        {visibleMarkets.map((market) => {
+                          const status = String(market.status || 'OPEN').toUpperCase();
+                          const settled = ['DETERMINED', 'VOID', 'VOIDED'].includes(status);
+                          const mid = encodeURIComponent(market.marketId);
+                          return (
+                            <div key={market.marketId} className={`srl-market-card${settled || status === 'SUSPENDED' ? ' is-locked' : ''}`}>
+                              <div className="srl-market-card__head">
+                                <div>
+                                  <strong>{market.title || market.name}</strong>
+                                  <span className="srl-hint">
+                                    {market.marketId}
+                                    {market.line != null ? ` · line ${market.line}` : ''}
+                                    {(market.book?.bets || 0) > 0
+                                      ? ` · ${market.book.bets} bets · ${formatInr(market.book.stake)}`
+                                      : ''}
+                                  </span>
+                                </div>
+                                <div className="srl-market-card__actions">
+                                  <StatusPill value={status} />
                                   <button
-                                    key={sel.selectionId}
                                     type="button"
-                                    className={`srl-market-sel${sel.won ? ' is-won' : ''}`}
+                                    className="srl-chip"
                                     disabled={busy || settled}
-                                    title={settled ? 'Already settled' : 'Declare this selection the winner'}
+                                    onClick={() => run(
+                                      () => adminApiClient.post(
+                                        `/iplsrl/matches/${selected.matchId}/markets/${mid}/suspend`,
+                                        { suspended: status !== 'SUSPENDED' },
+                                      ),
+                                      status === 'SUSPENDED' ? 'Market opened' : 'Market locked',
+                                    )}
+                                  >
+                                    {status === 'SUSPENDED' ? 'Unlock' : 'Lock'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="srl-chip"
+                                    disabled={busy || settled}
                                     onClick={() => setMarketAsk({
                                       marketId: market.marketId,
                                       title: market.title || market.name,
-                                      selectionId: sel.selectionId,
-                                      selectionName: sel.name,
-                                      voidMarket: false,
-                                      bets: sel.book?.bets || 0,
-                                      stake: sel.book?.stake || 0,
-                                      payout: sel.book?.payout || 0,
-                                      odds: sel.odds,
+                                      voidMarket: true,
+                                      bets: market.book?.bets || 0,
+                                      stake: market.book?.stake || 0,
                                     })}
                                   >
-                                    <span>{sel.name}</span>
-                                    <strong>{sel.odds != null ? Number(sel.odds).toFixed(2) : '—'}</strong>
-                                    <em>
-                                      {(sel.book?.bets || 0) > 0
-                                        ? `${sel.book.bets} · ${formatInr(sel.book.stake)}`
-                                        : 'No open bets'}
-                                    </em>
+                                    Void
                                   </button>
-                              ))}
+                                </div>
+                              </div>
+                              <div className="srl-market-sels">
+                                {(market.selections || []).map((sel) => (
+                                    <button
+                                      key={sel.selectionId}
+                                      type="button"
+                                      className={`srl-market-sel${sel.won ? ' is-won' : ''}`}
+                                      disabled={busy || settled}
+                                      title={settled ? 'Already settled' : 'Declare this selection the winner'}
+                                      onClick={() => setMarketAsk({
+                                        marketId: market.marketId,
+                                        title: market.title || market.name,
+                                        selectionId: sel.selectionId,
+                                        selectionName: sel.name,
+                                        voidMarket: false,
+                                        bets: sel.book?.bets || 0,
+                                        stake: sel.book?.stake || 0,
+                                        payout: sel.book?.payout || 0,
+                                        odds: sel.odds,
+                                      })}
+                                    >
+                                      <span>{sel.name}</span>
+                                      <strong>{sel.odds != null ? Number(sel.odds).toFixed(2) : '—'}</strong>
+                                      <em>
+                                        {(sel.book?.bets || 0) > 0
+                                          ? `${sel.book.bets} · ${formatInr(sel.book.stake)}`
+                                          : 'No open bets'}
+                                      </em>
+                                    </button>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
-                      {!marketsLoading && visibleMarkets.length === 0 && (
-                        <p className="srl-hint">No markets in this filter.</p>
-                      )}
+                          );
+                        })}
+                        {!marketsLoading && visibleMarkets.length === 0 && (
+                          <p className="srl-hint">No markets in this filter.</p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </>
-              )}
-            </Panel>
+                )}
+              </>
+            )}
 
-            <Panel title="Standings snapshot" hint="10 teams · W=2 pts">
+            {/* Standings — always visible below cockpit */}
+            <Panel title="Standings" hint="10 teams · W=2 pts">
               <div className="srl-standings">
                 {(snap.standings || []).map((row) => (
                   <div key={row.teamId} className="srl-stand-row">
@@ -835,6 +1235,7 @@ export default function IPLSRLConsoleView() {
         </div>
       )}
 
+      {/* ═══ TEAMS TAB ═══ */}
       {tab === 'teams' && snap && (
         <Panel title="Teams & strength ratings" hint={`${snap.teams?.length || 0} teams`}>
           <div className="srl-table-wrap">
@@ -876,6 +1277,7 @@ export default function IPLSRLConsoleView() {
         </Panel>
       )}
 
+      {/* ═══ PLAYERS TAB ═══ */}
       {tab === 'players' && snap && (
         <Panel title="Player roster" hint={`${snap.players?.length || 0} players`}>
           <div className="srl-table-wrap">
@@ -907,13 +1309,14 @@ export default function IPLSRLConsoleView() {
         </Panel>
       )}
 
+      {/* ═══ AUDIT TAB ═══ */}
       {tab === 'audit' && snap && (
         <Panel title="Operator audit log" hint={`${snap.audit?.length || 0} recent`}>
           <div className="srl-audit">
             {(snap.audit || []).map((a) => (
               <div key={a.id} className="srl-audit-row">
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
-                  <strong style={{ fontSize: '0.84rem' }}>{a.action}</strong>
+                  <strong style={{ fontSize: '0.82rem' }}>{a.action}</strong>
                   <span className="srl-hint">{a.time}</span>
                 </div>
                 <div className="srl-hint" style={{ marginTop: 4 }}>{a.detail}</div>
@@ -923,6 +1326,7 @@ export default function IPLSRLConsoleView() {
         </Panel>
       )}
 
+      {/* ═══ DIALOGS ═══ */}
       <AdminConfirmDialog
         isOpen={!!declareAsk}
         variant="warning"
@@ -994,6 +1398,105 @@ export default function IPLSRLConsoleView() {
           );
         }}
       />
+
+      {/* ═══ EXHIBITION MODAL ═══ */}
+      {showExhibitionModal && (
+        <div className="srl-modal-overlay" onClick={() => setShowExhibitionModal(false)}>
+          <div className="srl-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800 }}>➕ Exhibition Match</h3>
+              <button
+                type="button"
+                className="srl-chip"
+                onClick={() => setShowExhibitionModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <p className="srl-hint" style={{ margin: 0 }}>
+              Create an on-demand virtual fixture with immediate betting markets.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <label className="srl-field">
+                Home Team
+                <select
+                  value={exhibitionHome}
+                  onChange={(e) => setExhibitionHome(e.target.value)}
+                  className="srl-input"
+                >
+                  {(snap?.teams || []).map((t) => (
+                    <option key={t.teamId} value={t.teamId}>{t.shortName} · {t.name}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="srl-field">
+                Away Team
+                <select
+                  value={exhibitionAway}
+                  onChange={(e) => setExhibitionAway(e.target.value)}
+                  className="srl-input"
+                >
+                  {(snap?.teams || []).map((t) => (
+                    <option key={t.teamId} value={t.teamId}>{t.shortName} · {t.name}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <label className="srl-field">
+                Venue
+                <input
+                  type="text"
+                  value={exhibitionVenue}
+                  onChange={(e) => setExhibitionVenue(e.target.value)}
+                  className="srl-input"
+                />
+              </label>
+              <label className="srl-field">
+                Pitch Condition
+                <select
+                  value={exhibitionPitch}
+                  onChange={(e) => setExhibitionPitch(e.target.value)}
+                  className="srl-input"
+                >
+                  <option value="BALANCED">Balanced</option>
+                  <option value="BATTING_PARADISE">Batting Paradise</option>
+                  <option value="SPIN_FRIENDLY">Spin Friendly</option>
+                  <option value="PACE_BOUNCE">Pace & Bounce</option>
+                </select>
+              </label>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 4 }}>
+              <button
+                type="button"
+                className="srl-btn srl-btn-slate"
+                onClick={() => setShowExhibitionModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="srl-btn srl-btn-blue"
+                disabled={busy || exhibitionHome === exhibitionAway}
+                onClick={() => {
+                  run(
+                    () => adminApiClient.post('/iplsrl/matches/custom', {
+                      homeTeamId: exhibitionHome,
+                      awayTeamId: exhibitionAway,
+                      venue: exhibitionVenue,
+                      pitch: exhibitionPitch,
+                    }),
+                    'Exhibition match created & launched live!',
+                  );
+                  setShowExhibitionModal(false);
+                }}
+              >
+                Launch Match
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

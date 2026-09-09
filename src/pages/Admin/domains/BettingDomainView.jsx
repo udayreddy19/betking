@@ -115,9 +115,54 @@ export default function BettingDomainView({
   const [verifyResult, setVerifyResult] = useState(null);
   const [verifying, setVerifying] = useState(false);
   const [settlementCounts, setSettlementCounts] = useState({ pending: 0, completed: 0 });
+  const [feedLatencies, setFeedLatencies] = useState([]);
+  const [feedOverall, setFeedOverall] = useState('OPTIMAL');
+  const [batchSettling, setBatchSettling] = useState(false);
+  const [batchMarketId, setBatchMarketId] = useState('');
+  const [batchWinningSelection, setBatchWinningSelection] = useState('');
   const { showToast } = useAdminToast();
   const { activeRole } = useAdminRole();
   const canSettle = hasPermission(activeRole, PERMISSIONS.SETTLE_BETS);
+
+  const loadFeedLatency = useCallback(() => {
+    adminApiClient.get('/betting/feed-latency')
+      .then((data) => {
+        if (data.feeds) setFeedLatencies(data.feeds);
+        if (data.overallHealth) setFeedOverall(data.overallHealth);
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleBatchSettle = async (marketId, outcome, winningSelection = null) => {
+    if (!canSettle) {
+      showToast('Your role cannot settle markets.', 'error');
+      return;
+    }
+    if (!marketId) {
+      showToast('Please specify a Market ID to settle or void.', 'warning');
+      return;
+    }
+    setBatchSettling(true);
+    try {
+      const res = await adminApiClient.post('/betting/batch-settle-market', {
+        marketId: marketId.trim(),
+        outcome,
+        winningSelectionId: winningSelection ? winningSelection.trim() : null,
+        reason: `Admin 1-Click Instant ${outcome} Settlement`,
+      });
+      showToast(
+        res.message || `Settled ${res.settledCount} bets (₹${Number(res.totalPayout || 0).toLocaleString()} payout)`,
+        'success',
+      );
+      load();
+      setBatchMarketId('');
+      setBatchWinningSelection('');
+    } catch (err) {
+      showToast(err.message || 'Batch settlement failed', 'error');
+    } finally {
+      setBatchSettling(false);
+    }
+  };
 
   useEffect(() => {
     if (subModule === 'cashout-reconciliation') {
@@ -174,7 +219,10 @@ export default function BettingDomainView({
       .finally(() => setLoading(false));
   }, [settlementFilter, statusFilter, typeFilter, search]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    loadFeedLatency();
+  }, [load, loadFeedLatency]);
 
   const handleDeclare = async () => {
     if (!declareConfirm) return;
@@ -305,6 +353,110 @@ export default function BettingDomainView({
           </p>
         )}
       </div>
+
+      {/* Feed Latency Watchdog Bar */}
+      {feedLatencies.length > 0 && (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: '10px',
+          marginBottom: '16px',
+        }}>
+          {feedLatencies.map((feed) => (
+            <div
+              key={feed.id}
+              style={{
+                padding: '10px 14px',
+                borderRadius: 'var(--admin-radius-sm)',
+                background: 'var(--admin-bg)',
+                border: '1px solid var(--admin-border)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
+                  📡 {feed.name}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                  <span style={{ fontSize: '0.92rem', fontWeight: 800, color: feed.latencyMs < 200 ? '#34d399' : '#fbbf24' }}>
+                    {feed.latencyMs}ms
+                  </span>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--admin-text-dim)' }}>
+                    ({feed.packetRatePerMin || 100} pkt/m)
+                  </span>
+                </div>
+              </div>
+              <span style={{
+                padding: '2px 8px',
+                borderRadius: 4,
+                fontSize: '0.7rem',
+                fontWeight: 800,
+                background: 'rgba(52, 211, 153, 0.15)',
+                color: '#34d399',
+              }}>
+                HEALTHY
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Instant Market Settlement & Void Desk */}
+      {canSettle && subModule !== 'cashout-reconciliation' && (
+        <div style={{
+          padding: '14px 16px',
+          borderRadius: 'var(--admin-radius-sm)',
+          background: 'rgba(56, 189, 248, 0.04)',
+          border: '1px solid rgba(56, 189, 248, 0.2)',
+          marginBottom: '16px',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
+            <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#38bdf8' }}>
+              ⚡ 1-Click Instant Market Settlement & Void Desk
+            </div>
+            <div style={{ fontSize: '0.74rem', color: 'var(--admin-text-muted)' }}>
+              Resolves all open bets on the market atomically with instant ledger payouts.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+            <input
+              type="text"
+              placeholder="Market ID (e.g. m_ipl_101:winner)"
+              value={batchMarketId}
+              onChange={(e) => setBatchMarketId(e.target.value)}
+              className="admin-input"
+              style={{ minWidth: '220px', flex: 1 }}
+            />
+            <input
+              type="text"
+              placeholder="Winning Selection ID (optional for Void)"
+              value={batchWinningSelection}
+              onChange={(e) => setBatchWinningSelection(e.target.value)}
+              className="admin-input"
+              style={{ minWidth: '200px', flex: 1 }}
+            />
+            <button
+              type="button"
+              disabled={batchSettling || !batchMarketId.trim()}
+              className="admin-btn admin-btn--success admin-btn--sm"
+              onClick={() => handleBatchSettle(batchMarketId, 'SETTLED', batchWinningSelection)}
+            >
+              {batchSettling ? 'Settling…' : 'Settle Market Winner'}
+            </button>
+            <button
+              type="button"
+              disabled={batchSettling || !batchMarketId.trim()}
+              className="admin-btn admin-btn--danger admin-btn--sm"
+              onClick={() => handleBatchSettle(batchMarketId, 'VOID')}
+            >
+              {batchSettling ? 'Voiding…' : 'Void & Refund All'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Filter Bar */}
       <AdminFilterBar label="Filters">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { adminApiClient } from '../api/adminApiClient';
 import { formatIst, formatIstDateTime } from '../../../utils/istTime';
 
@@ -7,7 +7,7 @@ export default function LedgerConsistencyPanel() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const fetchLedgerAudit = async () => {
+  const fetchLedgerAudit = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -18,11 +18,11 @@ export default function LedgerConsistencyPanel() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchLedgerAudit();
-  }, []);
+  }, [fetchLedgerAudit]);
 
   return (
     <div className="admin-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>

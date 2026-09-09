@@ -1401,6 +1401,13 @@ function DepositsReviewPanel() {
   const [error, setError] = useState(null);
   const [refundTarget, setRefundTarget] = useState(null);
   const [processing, setProcessing] = useState(false);
+  const [showManualModal, setShowManualModal] = useState(false);
+  const [manualUserId, setManualUserId] = useState('');
+  const [manualAmount, setManualAmount] = useState('');
+  const [manualUtr, setManualUtr] = useState('');
+  const [manualReason, setManualReason] = useState('Manual offline UPI deposit proof verified');
+  const [utrStatus, setUtrStatus] = useState(null);
+  const [manualSubmitting, setManualSubmitting] = useState(false);
   const { showToast } = useAdminToast();
 
   const load = () => {
@@ -1416,6 +1423,45 @@ function DepositsReviewPanel() {
   };
 
   useEffect(() => { load(); }, []);
+
+  const handleUtrBlur = async () => {
+    if (!manualUtr.trim() || manualUtr.trim().length < 6) return;
+    try {
+      setUtrStatus({ loading: true });
+      const res = await adminApiClient.get(`/finance/utr-lookup?utr=${encodeURIComponent(manualUtr.trim())}`);
+      setUtrStatus({ isDuplicate: res.isDuplicate, message: res.message, loading: false });
+    } catch {
+      setUtrStatus({ isDuplicate: false, message: 'UTR lookup error', loading: false });
+    }
+  };
+
+  const handleManualCredit = async (e) => {
+    e.preventDefault();
+    if (utrStatus?.isDuplicate) {
+      showToast('Cannot credit duplicate UTR!', 'error');
+      return;
+    }
+    setManualSubmitting(true);
+    try {
+      const res = await adminApiClient.post('/finance/manual-deposit-credit', {
+        userId: manualUserId.trim(),
+        amount: parseFloat(manualAmount),
+        utr: manualUtr.trim(),
+        reason: manualReason.trim(),
+      });
+      showToast(res.message || 'Deposit credited successfully', 'success');
+      setShowManualModal(false);
+      setManualUserId('');
+      setManualAmount('');
+      setManualUtr('');
+      setUtrStatus(null);
+      load();
+    } catch (err) {
+      showToast(err.message || 'Failed to credit manual deposit', 'error');
+    } finally {
+      setManualSubmitting(false);
+    }
+  };
 
   const handleRefund = async (reason) => {
     if (!refundTarget) return;
@@ -1436,12 +1482,21 @@ function DepositsReviewPanel() {
 
   return (
     <div>
-      <div style={{ marginBottom: '16px' }}>
-        <h2 className="admin-page-header__title">Deposits review</h2>
-        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
-          Recent deposits from PostgreSQL. Refund uses the existing Razorpay + ledger refund path.
-        </p>
-        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
+      <div className="admin-flex-between" style={{ marginBottom: '16px' }}>
+        <div>
+          <h2 className="admin-page-header__title">Deposits review</h2>
+          <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
+            Recent deposits from PostgreSQL. Refund uses the existing Razorpay + ledger refund path.
+          </p>
+          {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
+        </div>
+        <button
+          type="button"
+          className="admin-btn admin-btn--primary"
+          onClick={() => setShowManualModal(true)}
+        >
+          ⚡ Clear Manual UPI / UTR
+        </button>
       </div>
 
       <AdminDataTable
@@ -1504,6 +1559,297 @@ function DepositsReviewPanel() {
         onConfirm={handleRefund}
         onCancel={() => setRefundTarget(null)}
         loading={processing}
+      />
+
+      {/* Manual Offline UPI / UTR Clearing Modal */}
+      {showManualModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(5px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: 16,
+          }}
+          onClick={() => !manualSubmitting && setShowManualModal(false)}
+        >
+          <div
+            style={{
+              background: 'var(--admin-surface, #1e293b)',
+              border: '1px solid var(--admin-border, #334155)',
+              borderRadius: '16px',
+              padding: '24px',
+              maxWidth: '480px',
+              width: '100%',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--admin-text)' }}>
+                ⚡ Manual UPI / Offline Deposit Clearing Desk
+              </h3>
+              <button
+                type="button"
+                style={{ background: 'transparent', border: 'none', color: 'var(--admin-text-muted)', fontSize: '1.2rem', cursor: 'pointer' }}
+                onClick={() => !manualSubmitting && setShowManualModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.78rem', color: 'var(--admin-text-muted)', margin: '0 0 16px' }}>
+              Directly credit a player's wallet after verifying offline bank/IMPS transfer proof. Performs automated UTR deduplication to prevent double credit.
+            </p>
+
+            <form onSubmit={handleManualCredit}>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, marginBottom: 4 }}>
+                  User ID *
+                </label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  className="admin-input"
+                  placeholder="usr_..."
+                  value={manualUserId}
+                  onChange={(e) => setManualUserId(e.target.value)}
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, marginBottom: 4 }}>
+                  12-Digit Bank UTR / Reference No. *
+                </label>
+                <input
+                  type="text"
+                  required
+                  className="admin-input"
+                  placeholder="e.g. 424867290123"
+                  value={manualUtr}
+                  onChange={(e) => setManualUtr(e.target.value)}
+                  onBlur={handleUtrBlur}
+                  style={{ width: '100%' }}
+                />
+                {utrStatus && (
+                  <div style={{ fontSize: '0.74rem', marginTop: 4, color: utrStatus.isDuplicate ? '#ef4444' : '#10b981', fontWeight: 600 }}>
+                    {utrStatus.loading ? 'Checking UTR uniqueness…' : utrStatus.message}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, marginBottom: 4 }}>
+                  Deposit Amount (₹) *
+                </label>
+                <input
+                  type="number"
+                  step="100"
+                  min="1"
+                  required
+                  className="admin-input"
+                  placeholder="e.g. 5000"
+                  value={manualAmount}
+                  onChange={(e) => setManualAmount(e.target.value)}
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, marginBottom: 4 }}>
+                  Audit Memo / Reason *
+                </label>
+                <input
+                  type="text"
+                  required
+                  className="admin-input"
+                  value={manualReason}
+                  onChange={(e) => setManualReason(e.target.value)}
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--secondary"
+                  disabled={manualSubmitting}
+                  onClick={() => setShowManualModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="admin-btn admin-btn--primary"
+                  disabled={manualSubmitting || utrStatus?.isDuplicate}
+                >
+                  {manualSubmitting ? 'Crediting Wallet…' : '✓ Confirm & Credit Balance'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AmlSarCompliancePanel() {
+  const [alerts, setAlerts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [actionBusy, setActionBusy] = useState(false);
+  const { showToast } = useAdminToast();
+
+  const loadAml = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await adminApiClient.get('/finance/aml-radar');
+      setAlerts(res.alerts || []);
+    } catch {
+      setAlerts([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadAml(); }, [loadAml]);
+
+  const handleHold = async (userId, action) => {
+    setActionBusy(true);
+    try {
+      const res = await adminApiClient.post('/finance/aml-hold', {
+        userId,
+        action,
+        reason: 'Compliance radar risk threshold exceeded',
+      });
+      showToast(res.message || `Account ${userId} placed on hold`, 'success');
+      loadAml();
+    } catch (err) {
+      showToast(err.message || 'Failed to update account AML hold', 'error');
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const handleExportSar = () => {
+    window.open('/api/admin/finance/aml-export-sar', '_blank');
+    showToast('SAR Compliance export started', 'success');
+  };
+
+  return (
+    <div>
+      <div className="admin-flex-between" style={{ marginBottom: 16 }}>
+        <div>
+          <h2 className="admin-page-header__title">⚖️ Regulatory AML & High-Velocity Thresholds</h2>
+          <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
+            Monitors high-velocity inflows, zero-turnover structuring cashouts, and generates downloadable Suspicious Activity Reports (SAR).
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            type="button"
+            className="admin-btn admin-btn--secondary"
+            onClick={handleExportSar}
+          >
+            📥 Export SAR CSV
+          </button>
+          <button
+            type="button"
+            className="admin-btn admin-btn--secondary"
+            onClick={loadAml}
+            disabled={loading}
+          >
+            ↻ Refresh
+          </button>
+        </div>
+      </div>
+
+      <AdminDataTable
+        title="AML Risk Surveillance Radar"
+        emptyMessage="✓ No accounts currently exceeding regulatory velocity thresholds"
+        data={alerts}
+        columns={[
+          {
+            header: 'User',
+            key: 'userId',
+            render: (r) => (
+              <div>
+                <span className="admin-text-mono" style={{ fontWeight: 700 }}>{r.userId}</span>
+                <div style={{ fontSize: '0.74rem', color: 'var(--admin-text-muted)' }}>Phone: {r.phone}</div>
+              </div>
+            ),
+          },
+          {
+            header: 'Risk / KYC',
+            key: 'riskTier',
+            render: (r) => (
+              <div>
+                <StatusBadge status={r.riskTier} />
+                <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', marginTop: 2 }}>{r.kycStatus}</div>
+              </div>
+            ),
+          },
+          {
+            header: 'Deposits (48h)',
+            key: 'deposits48h',
+            render: (r) => <span style={{ fontWeight: 700, color: 'var(--admin-accent)' }}>{money(r.deposits48h)}</span>,
+          },
+          {
+            header: 'Betting (48h)',
+            key: 'bettingTurnover48h',
+            render: (r) => money(r.bettingTurnover48h),
+          },
+          {
+            header: 'Turnover %',
+            key: 'turnoverRatioPct',
+            render: (r) => (
+              <span style={{ fontWeight: 700, color: r.turnoverRatioPct < 20 ? '#ef4444' : '#10b981' }}>
+                {r.turnoverRatioPct}%
+              </span>
+            ),
+          },
+          {
+            header: 'Trigger Reason',
+            key: 'triggerReason',
+            render: (r) => (
+              <span style={{ fontSize: '0.76rem', color: r.severity === 'CRITICAL' ? '#f87171' : '#fbbf24', fontWeight: 700 }}>
+                {r.triggerReason}
+              </span>
+            ),
+          },
+          {
+            header: 'Compliance Action',
+            key: 'actions',
+            render: (r) => (
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--danger"
+                  style={{ padding: '3px 8px', fontSize: '0.72rem' }}
+                  disabled={actionBusy}
+                  onClick={() => handleHold(r.userId, 'HOLD_WITHDRAWAL')}
+                >
+                  Hold Payout
+                </button>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--secondary"
+                  style={{ padding: '3px 8px', fontSize: '0.72rem' }}
+                  disabled={actionBusy}
+                  onClick={() => handleHold(r.userId, 'SOURCE_OF_FUNDS_REQUIRED')}
+                >
+                  Force KYC
+                </button>
+              </div>
+            ),
+          },
+        ]}
       />
     </div>
   );
@@ -2097,6 +2443,7 @@ export default function FinanceDomainView({
   const bookIds = [
     'cash-books',
     'ledger',
+    'aml-radar',
     'reconciliation',
     'daily-closing',
     'anomalies',
@@ -2110,6 +2457,7 @@ export default function FinanceDomainView({
   const renderPanel = (id) => {
     if (id === 'investigation') return <WalletInvestigationPanel />;
     if (id === 'reconciliation') return <ReconciliationDashboardPanel />;
+    if (id === 'aml-radar') return <AmlSarCompliancePanel />;
     if (id === 'ledger') {
       return (
         <LedgerPanel
@@ -2156,6 +2504,7 @@ export default function FinanceDomainView({
         onTabChange={onSubModuleChange}
         tabs={[
           { id: 'ledger', label: 'Ledger' },
+          { id: 'aml-radar', label: 'AML & SAR' },
           { id: 'reconciliation', label: 'Recon' },
           { id: 'daily-closing', label: 'Daily close' },
           { id: 'anomalies', label: 'Anomalies' },

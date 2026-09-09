@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { adminApiClient } from '../api/adminApiClient';
 
@@ -10,7 +10,7 @@ export default function TradingDeskHeatmapPanel({ matchId = 'live_match_1' }) {
   const [actionNotice, setActionNotice] = useState('');
   const [freezing, setFreezing] = useState(false);
 
-  const fetchHeatmap = async (mId) => {
+  const fetchHeatmap = useCallback(async (mId) => {
     setLoading(true);
     setError('');
     try {
@@ -21,13 +21,13 @@ export default function TradingDeskHeatmapPanel({ matchId = 'live_match_1' }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedMatchId]);
 
   useEffect(() => {
     fetchHeatmap(selectedMatchId);
-  }, [selectedMatchId]);
+  }, [fetchHeatmap, selectedMatchId]);
 
-  const handleQuickFreeze = async (freeze = true) => {
+  const handleQuickFreeze = useCallback(async (freeze = true) => {
     setFreezing(true);
     setActionNotice('');
     setError('');
@@ -44,7 +44,7 @@ export default function TradingDeskHeatmapPanel({ matchId = 'live_match_1' }) {
     } finally {
       setFreezing(false);
     }
-  };
+  }, [selectedMatchId, fetchHeatmap]);
 
   return (
     <div className="admin-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>

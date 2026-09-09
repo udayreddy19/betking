@@ -61,6 +61,127 @@ export default function TradingRiskDomainView({ subModule }) {
   const [otherSportsEngineSaving, setOtherSportsEngineSaving] = useState(false);
   const [platformReady, setPlatformReady] = useState(null);
 
+  // Dynamic Margin & Trading Control State
+  const [marginConfig, setMarginConfig] = useState({
+    defaultOverround: 0.055,
+    liabilitySensitivity: 0.06,
+    activeTier: 'cricket_marquee',
+    sportMargins: { cricket: 0.045, football: 0.050, tennis: 0.040, basketball: 0.050, esports: 0.070 },
+  });
+  const [savingMargin, setSavingMargin] = useState(false);
+  const [fastFreezes, setFastFreezes] = useState([]);
+  const [freezeDuration, setFreezeDuration] = useState(30);
+  const [freezingFast, setFreezingFast] = useState(false);
+  const [simulatedShading, setSimulatedShading] = useState(null);
+  const [liveCockpitMatches, setLiveCockpitMatches] = useState([]);
+  const [cockpitLoading, setCockpitLoading] = useState(false);
+
+  const loadTraderCockpit = useCallback(async () => {
+    try {
+      setCockpitLoading(true);
+      const res = await adminApiClient.get('/trading/cockpit/live-matches');
+      setLiveCockpitMatches(res.matches || []);
+    } catch {
+      setLiveCockpitMatches([]);
+    } finally {
+      setCockpitLoading(false);
+    }
+  }, []);
+
+  const handleToggleMarketSuspension = async (matchId, currentlySuspended) => {
+    try {
+      const res = await adminApiClient.post('/trading/cockpit/suspend-market', {
+        matchId,
+        suspended: !currentlySuspended,
+        reason: currentlySuspended ? 'Trader manual resume' : 'Trader emergency suspension',
+      });
+      showToast(res.message || 'Updated match market status', 'success');
+      loadTraderCockpit();
+    } catch (err) {
+      showToast(err.message || 'Failed to update suspension', 'error');
+    }
+  };
+
+  const handleNudgeOdds = async (matchId, delta) => {
+    try {
+      const res = await adminApiClient.post('/trading/cockpit/nudge-odds', {
+        matchId,
+        nudgeDelta: delta,
+      });
+      showToast(res.message || `Odds nudged by ${delta}`, 'success');
+    } catch (err) {
+      showToast(err.message || 'Failed to nudge odds', 'error');
+    }
+  };
+
+  const loadMarginConfig = useCallback(() => {
+    adminApiClient.get('/trading/margin-config')
+      .then((res) => { if (res.config) setMarginConfig(res.config); })
+      .catch(() => {});
+  }, []);
+
+  const loadFastFreezes = useCallback(() => {
+    adminApiClient.get('/trading/fast-freeze')
+      .then((res) => { setFastFreezes(res.freezes || []); })
+      .catch(() => setFastFreezes([]));
+  }, []);
+
+  const handleSaveMargin = async (newConfig) => {
+    setSavingMargin(true);
+    try {
+      const res = await adminApiClient.post('/trading/margin-config', newConfig || marginConfig);
+      if (res.config) setMarginConfig(res.config);
+      showToast('Trading margin & sensitivity updated', 'success');
+    } catch (err) {
+      showToast(err.message || 'Failed to save margin config', 'error');
+    } finally {
+      setSavingMargin(false);
+    }
+  };
+
+  const handleTriggerFastFreeze = async (targetId, duration = freezeDuration) => {
+    setFreezingFast(true);
+    try {
+      await adminApiClient.post('/trading/fast-freeze', {
+        targetId: targetId || selectedMatchId || 'LIVE_BOOK',
+        durationSeconds: duration,
+        reason: 'IN_PLAY_ADMIN_FAST_FREEZE',
+      });
+      showToast(`Fast freeze activated for ${duration}s (${targetId || 'LIVE_BOOK'})`, 'warning');
+      loadFastFreezes();
+      loadSuspensions();
+    } catch (err) {
+      showToast(err.message || 'Fast freeze failed', 'error');
+    } finally {
+      setFreezingFast(false);
+    }
+  };
+
+  const handleClearFastFreeze = async (targetId) => {
+    try {
+      await adminApiClient.delete(`/trading/fast-freeze/${encodeURIComponent(targetId)}`);
+      showToast(`Fast freeze cleared for ${targetId}`, 'success');
+      loadFastFreezes();
+      loadSuspensions();
+    } catch (err) {
+      showToast(err.message || 'Clear fast freeze failed', 'error');
+    }
+  };
+
+  const handleSimulateShading = async (team1Liab = 75000, team2Liab = 15000) => {
+    try {
+      const res = await adminApiClient.post('/trading/simulate-shading', {
+        selections: [
+          { id: 'TEAM_1', name: 'Team 1 (Heavy Action)', trueProb: 0.55, liability: team1Liab },
+          { id: 'TEAM_2', name: 'Team 2 (Low Action)', trueProb: 0.45, liability: team2Liab },
+        ],
+        baseOverround: marginConfig.defaultOverround,
+        sensitivity: marginConfig.liabilitySensitivity,
+      });
+      setSimulatedShading(res.selections || null);
+    } catch (_) {}
+  };
+
   const loadSuspensions = useCallback(() => {
     adminApiClient.get('/trading/suspended-markets')
       .then((data) => setSuspensions(data.suspensions || []))
@@ -155,8 +276,11 @@ export default function TradingRiskDomainView({ subModule }) {
     loadEngineStatus();
     loadOtherSportsEngineStatus();
     loadPlatformReady();
+    loadMarginConfig();
+    loadFastFreezes();
+    handleSimulateShading();
     return undefined;
-  }, [showOddsHealth, showOddsDesk, loadEngineStatus, loadOtherSportsEngineStatus, loadPlatformReady]);
+  }, [showOddsHealth, showOddsDesk, loadEngineStatus, loadOtherSportsEngineStatus, loadPlatformReady, loadMarginConfig, loadFastFreezes]);
 
   useEffect(() => {
     if (!showOddsHealth) return undefined;
@@ -443,16 +567,223 @@ export default function TradingRiskDomainView({ subModule }) {
         </AdminCard>
       )}
 
-      {showOddsDesk && !showFraud && (
-        <div style={{ marginBottom: 16 }}>
-          <button
-            type="button"
-            className="admin-btn admin-btn--danger admin-btn--sm"
-            onClick={() => setSuspendLiveBook(true)}
-          >
-            Suspend all live match-winner markets
-          </button>
-        </div>
+      {(showOddsDesk || showOddsHealth) && (
+        <AdminCard
+          title="Dynamic Trading & Odds Margin Engine"
+          subtitle="Real-time overround calibration, liability-driven odds shading, and in-play fast freeze protection."
+          accent="#38bdf8"
+        >
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+            {/* Overround Tuning */}
+            <div style={{ padding: '14px', background: 'var(--admin-bg)', borderRadius: 'var(--admin-radius-sm)', border: '1px solid var(--admin-border)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '0.84rem', fontWeight: 700 }}>Base Market Overround</span>
+                <span style={{ fontSize: '1rem', fontWeight: 800, color: '#38bdf8' }}>
+                  {((marginConfig.defaultOverround || 0.05) * 100).toFixed(1)}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0.035"
+                max="0.120"
+                step="0.005"
+                value={marginConfig.defaultOverround || 0.055}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setMarginConfig((prev) => ({ ...prev, defaultOverround: val }));
+                  handleSimulateShading(75000, 15000);
+                }}
+                style={{ width: '100%', accentColor: '#38bdf8', cursor: 'pointer' }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--admin-text-muted)', marginTop: '4px' }}>
+                <span>3.5% (Thin book)</span>
+                <span>12.0% (High hold)</span>
+              </div>
+
+              {/* Sport Presets */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '12px' }}>
+                {[
+                  { label: 'Cricket Marquee (3.5%)', val: 0.035, tier: 'cricket_marquee' },
+                  { label: 'Football Tier 1 (4.0%)', val: 0.040, tier: 'football_tier1' },
+                  { label: 'Tennis GS (4.5%)', val: 0.045, tier: 'tennis_grand_slam' },
+                  { label: 'Cricket Death (7.5%)', val: 0.075, tier: 'cricket_inplay_death' },
+                ].map((preset) => (
+                  <button
+                    key={preset.tier}
+                    type="button"
+                    className="admin-btn admin-btn--ghost admin-btn--sm"
+                    style={{
+                      fontSize: '0.72rem',
+                      padding: '3px 8px',
+                      background: marginConfig.activeTier === preset.tier ? 'rgba(56, 189, 248, 0.15)' : undefined,
+                      borderColor: marginConfig.activeTier === preset.tier ? '#38bdf8' : undefined,
+                    }}
+                    onClick={() => {
+                      const updated = {
+                        ...marginConfig,
+                        defaultOverround: preset.val,
+                        activeTier: preset.tier,
+                      };
+                      setMarginConfig(updated);
+                      handleSaveMargin(updated);
+                      handleSimulateShading(75000, 15000);
+                    }}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Liability Sensitivity */}
+            <div style={{ padding: '14px', background: 'var(--admin-bg)', borderRadius: 'var(--admin-radius-sm)', border: '1px solid var(--admin-border)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '0.84rem', fontWeight: 700 }}>Liability Shading Sensitivity</span>
+                <span style={{ fontSize: '1rem', fontWeight: 800, color: '#a78bfa' }}>
+                  {((marginConfig.liabilitySensitivity || 0.06) * 100).toFixed(1)}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0.00"
+                max="0.12"
+                step="0.01"
+                value={marginConfig.liabilitySensitivity || 0.06}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setMarginConfig((prev) => ({ ...prev, liabilitySensitivity: val }));
+                  handleSimulateShading(75000, 15000);
+                }}
+                style={{ width: '100%', accentColor: '#a78bfa', cursor: 'pointer' }}
+              />
+              <p style={{ fontSize: '0.74rem', color: 'var(--admin-text-muted)', margin: '8px 0 12px' }}>
+                Higher sensitivity automatically shortens odds on heavily bet sides while lengthening opposing lines to attract balanced book volume.
+              </p>
+              <button
+                type="button"
+                className="admin-btn admin-btn--primary admin-btn--sm"
+                disabled={savingMargin}
+                onClick={() => handleSaveMargin()}
+              >
+                {savingMargin ? 'Saving Rules…' : 'Save Margin & Shading Rules'}
+              </button>
+            </div>
+          </div>
+
+          {/* Shaded Odds Simulation Preview */}
+          <div style={{ padding: '14px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 'var(--admin-radius-sm)', border: '1px solid var(--admin-border)', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--admin-text-muted)' }}>
+                ⚡ Real-Time Shading Preview (₹75k vs ₹15k Imbalance)
+              </span>
+              <button
+                type="button"
+                className="admin-btn admin-btn--ghost admin-btn--sm"
+                style={{ fontSize: '0.72rem', padding: '2px 8px' }}
+                onClick={() => handleSimulateShading(75000, 15000)}
+              >
+                Simulate Shift
+              </button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+              {(simulatedShading || [
+                { id: 'TEAM_1', name: 'Team 1 (Heavy Action)', unshadedOdds: 1.82, odds: 1.74, liability: 75000, liabilityShare: 83.3 },
+                { id: 'TEAM_2', name: 'Team 2 (Low Action)', unshadedOdds: 2.05, odds: 2.16, liability: 15000, liabilityShare: 16.7 },
+              ]).map((sel) => (
+                <div key={sel.id} style={{ padding: '10px 12px', borderRadius: 'var(--admin-radius-sm)', background: 'var(--admin-bg)', border: '1px solid var(--admin-border)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: 600 }}>
+                    <span>{sel.name}</span>
+                    <span style={{ color: sel.liabilityShare > 50 ? '#f87171' : '#34d399' }}>{sel.liabilityShare}% action</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '6px' }}>
+                    <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#38bdf8' }}>{sel.odds?.toFixed(2)}</span>
+                    <span style={{ fontSize: '0.75rem', textDecoration: 'line-through', color: 'var(--admin-text-muted)' }}>
+                      {sel.unshadedOdds ? sel.unshadedOdds.toFixed(2) : '—'}
+                    </span>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-dim)' }}>
+                      (₹{Number(sel.liability).toLocaleString()})
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* In-Play Fast Freeze Emergency Control */}
+          <div style={{ padding: '14px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: 'var(--admin-radius-sm)', border: '1px solid rgba(239, 68, 68, 0.25)' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#f87171' }}>
+                  🚨 In-Play Fast Freeze (Wicket / VAR / Suspicious Action)
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', marginTop: '2px' }}>
+                  Temporarily freezes market intake across all live clients with automatic countdown unfreeze.
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '4px' }}>
+                  {[30, 60, 120, 300].map((sec) => (
+                    <button
+                      key={sec}
+                      type="button"
+                      className={`admin-btn admin-btn--sm${freezeDuration === sec ? ' admin-btn--secondary' : ' admin-btn--ghost'}`}
+                      style={{ padding: '3px 8px', fontSize: '0.75rem' }}
+                      onClick={() => setFreezeDuration(sec)}
+                    >
+                      {sec < 60 ? `${sec}s` : `${sec / 60}m`}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  disabled={freezingFast}
+                  className="admin-btn admin-btn--danger admin-btn--sm"
+                  onClick={() => handleTriggerFastFreeze(selectedMatchId, freezeDuration)}
+                >
+                  Freeze {selectedMatchId ? 'Selected Match' : 'Live Book'} ({freezeDuration}s)
+                </button>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--danger admin-btn--ghost admin-btn--sm"
+                  onClick={() => setSuspendLiveBook(true)}
+                >
+                  Permanent Suspend
+                </button>
+              </div>
+            </div>
+
+            {/* Active Freezes List */}
+            {fastFreezes.length > 0 && (
+              <div style={{ marginTop: '10px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {fastFreezes.map((f) => (
+                  <div
+                    key={f.targetId}
+                    style={{
+                      padding: '4px 10px',
+                      background: 'rgba(239, 68, 68, 0.15)',
+                      borderRadius: 'var(--admin-radius-sm)',
+                      border: '1px solid rgba(239, 68, 68, 0.4)',
+                      fontSize: '0.75rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    <span style={{ fontWeight: 700, color: '#f87171' }}>⏱ {f.targetId}</span>
+                    <span style={{ color: 'var(--admin-text-muted)' }}>{f.remainingSeconds}s left</span>
+                    <button
+                      type="button"
+                      style={{ background: 'none', border: 'none', color: '#60a5fa', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, padding: 0 }}
+                      onClick={() => handleClearFastFreeze(f.targetId)}
+                    >
+                      Unfreeze
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </AdminCard>
       )}
 
       {showGgrDesk && deskMetrics && (
@@ -583,6 +914,101 @@ export default function TradingRiskDomainView({ subModule }) {
           ]}
         />
       )}
+
+      {/* LIVE TRADER COCKPIT & EMERGENCY KILL-SWITCH */}
+      <div style={{ marginBottom: 24, background: 'var(--admin-surface, #1e293b)', border: '1px solid var(--admin-border, #334155)', borderRadius: '16px', padding: '18px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <div>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, color: 'var(--admin-text)' }}>
+              ⚡ Live Trader Cockpit & Emergency Market Kill-Switch
+            </h3>
+            <span style={{ fontSize: '0.76rem', color: 'var(--admin-text-muted)' }}>
+              Real-time match book intervention: instant market suspension, +/- odds nudging, and dynamic liability caps.
+            </span>
+          </div>
+          <button
+            type="button"
+            className="admin-btn admin-btn--secondary"
+            onClick={loadTraderCockpit}
+            disabled={cockpitLoading}
+          >
+            ↻ Refresh Cockpit
+          </button>
+        </div>
+
+        <AdminDataTable
+          title="In-Play & Upcoming Matches Switchboard"
+          emptyMessage="No live or upcoming matches found"
+          data={liveCockpitMatches}
+          columns={[
+            {
+              header: 'Match',
+              key: 'title',
+              render: (r) => (
+                <div>
+                  <div style={{ fontWeight: 700, color: 'var(--admin-text)' }}>{r.title}</div>
+                  <div style={{ fontSize: '0.74rem', color: 'var(--admin-text-muted)' }}>
+                    {r.competition} ({r.sport}) · Score: {r.score}
+                  </div>
+                </div>
+              ),
+            },
+            {
+              header: 'Status',
+              key: 'status',
+              render: (r) => <StatusBadge status={r.isSuspended ? 'SUSPENDED' : r.status} />,
+            },
+            { header: 'Active Bets', key: 'activeBets', render: (r) => Number(r.activeBets || 0).toLocaleString() },
+            {
+              header: 'Turnover',
+              key: 'totalStake',
+              render: (r) => (
+                <span style={{ fontWeight: 700, color: 'var(--admin-accent, #6366f1)' }}>
+                  {moneyOrDash(r.totalStake)}
+                </span>
+              ),
+            },
+            {
+              header: 'Market Kill-Switch',
+              key: 'killSwitch',
+              render: (r) => (
+                <button
+                  type="button"
+                  className={r.isSuspended ? 'admin-btn admin-btn--success' : 'admin-btn admin-btn--danger'}
+                  style={{ fontSize: '0.72rem', padding: '4px 10px', whiteSpace: 'nowrap' }}
+                  onClick={() => handleToggleMarketSuspension(r.matchId, r.isSuspended)}
+                >
+                  {r.isSuspended ? '🟢 Resume Market' : '🔴 Suspend Market'}
+                </button>
+              ),
+            },
+            {
+              header: 'Odds Nudge',
+              key: 'oddsNudge',
+              render: (r) => (
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn--secondary"
+                    style={{ fontSize: '0.7rem', padding: '2px 6px' }}
+                    onClick={() => handleNudgeOdds(r.matchId, 0.05)}
+                  >
+                    +0.05
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn--secondary"
+                    style={{ fontSize: '0.7rem', padding: '2px 6px' }}
+                    onClick={() => handleNudgeOdds(r.matchId, -0.05)}
+                  >
+                    -0.05
+                  </button>
+                </div>
+              ),
+            },
+          ]}
+        />
+      </div>
 
       {!showGgrDesk && !showFraud && (
         <AdminDataTable

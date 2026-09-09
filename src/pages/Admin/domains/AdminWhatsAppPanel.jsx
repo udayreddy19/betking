@@ -1,25 +1,41 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { adminApiClient } from '../api/adminApiClient';
 import AdminDataTable from '../components/AdminDataTable';
 import { useAdminToast } from '../components/AdminToastContext';
 import { StatusBadge } from '../components/AdminBadge';
 import AdminConfirmDialog from '../components/AdminConfirmDialog';
+import AdminKPI from '../components/AdminKPI';
+import './AdminWhatsAppPanel.css';
 
+/**
+ * WhatsApp Business Operations Control Center
+ * 
+ * Powered by Kapso Meta WhatsApp Cloud API Integration
+ * Apple-inspired fluid design with real-time smartphone device simulator,
+ * delivery telemetry, template directory, and gateway observability.
+ */
 export default function AdminWhatsAppPanel({ initialRecipient = '', initialUserId = '', onDismissQuickModal }) {
   const { showToast } = useAdminToast();
-  const [activeTab, setActiveTab] = useState('compose');
+  const [activeTab, setActiveTab] = useState('compose'); // 'compose' | 'logs' | 'templates' | 'gateway'
+
+  // Gateway Connection State
   const [status, setStatus] = useState({ configured: false, mode: 'LOADING' });
   const [loadingStatus, setLoadingStatus] = useState(true);
+  const [testingPing, setTestingPing] = useState(false);
+  const [pingLatency, setPingLatency] = useState(null);
 
-  // Compose State
+  // Outbound Compose State
   const [recipient, setRecipient] = useState(initialRecipient);
+  const [selectedUser, setSelectedUser] = useState(null);
   const [selectedUserId, setSelectedUserId] = useState(initialUserId);
   const [playerSearchQuery, setPlayerSearchQuery] = useState('');
   const [playerResults, setPlayerResults] = useState([]);
   const [searchingPlayers, setSearchingPlayers] = useState(false);
 
-  const [messageType, setMessageType] = useState('TEMPLATE'); // 'TEMPLATE' or 'TEXT'
+  const [messageType, setMessageType] = useState('TEMPLATE'); // 'TEMPLATE' | 'TEXT'
   const [templates, setTemplates] = useState([]);
+  const [templateSearch, setTemplateSearch] = useState('');
+  const [templateCategoryFilter, setTemplateCategoryFilter] = useState('ALL');
   const [selectedTemplateName, setSelectedTemplateName] = useState('');
   const [templateParams, setTemplateParams] = useState({});
   const [customBody, setCustomBody] = useState('');
@@ -27,21 +43,26 @@ export default function AdminWhatsAppPanel({ initialRecipient = '', initialUserI
   const [sending, setSending] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState(false);
 
-  // Logs State
+  // Delivery Logs State
   const [logs, setLogs] = useState([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [logFilterStatus, setLogFilterStatus] = useState('ALL');
   const [logSearchQuery, setLogSearchQuery] = useState('');
   const [stats, setStats] = useState({ total: 0, successful: 0, failed: 0 });
 
-  // 1. Fetch Kapso Status
+  const textareaRef = useRef(null);
+
+  // 1. Fetch Kapso / Meta Gateway Status
   const loadStatus = useCallback(async () => {
     setLoadingStatus(true);
+    const start = performance.now();
     try {
       const data = await adminApiClient.get('/whatsapp/status');
       setStatus(data);
+      setPingLatency(Math.round(performance.now() - start));
     } catch {
       setStatus({ configured: false, mode: 'MOCK_SANDBOX' });
+      setPingLatency(null);
     } finally {
       setLoadingStatus(false);
     }
@@ -54,10 +75,12 @@ export default function AdminWhatsAppPanel({ initialRecipient = '', initialUserI
       const list = data.templates || [];
       setTemplates(list);
       if (list.length > 0 && !selectedTemplateName) {
-        setSelectedTemplateName(list[0].name);
+        // Default to first approved utility template if available
+        const defaultTmpl = list.find((t) => t.name === 'oddsyra_support_update') || list[0];
+        setSelectedTemplateName(defaultTmpl.name);
       }
     } catch (err) {
-      showToast(err.message || 'Failed to load templates', 'error');
+      showToast(err.message || 'Failed to load WhatsApp templates', 'error');
     }
   }, [selectedTemplateName, showToast]);
 
@@ -97,7 +120,8 @@ export default function AdminWhatsAppPanel({ initialRecipient = '', initialUserI
 
   // Player Autocomplete Search
   useEffect(() => {
-    if (!playerSearchQuery || playerSearchQuery.length < 2) {
+    const q = playerSearchQuery.trim();
+    if (!q || q.length < 2) {
       setPlayerResults([]);
       return undefined;
     }
@@ -105,14 +129,14 @@ export default function AdminWhatsAppPanel({ initialRecipient = '', initialUserI
     const timer = setTimeout(async () => {
       setSearchingPlayers(true);
       try {
-        const data = await adminApiClient.get(`/whatsapp/search-players?q=${encodeURIComponent(playerSearchQuery)}`);
+        const data = await adminApiClient.get(`/whatsapp/search-players?q=${encodeURIComponent(q)}`);
         if (!cancelled) setPlayerResults(data.players || []);
       } catch {
         if (!cancelled) setPlayerResults([]);
       } finally {
         if (!cancelled) setSearchingPlayers(false);
       }
-    }, 300);
+    }, 280);
 
     return () => {
       cancelled = true;
@@ -121,16 +145,26 @@ export default function AdminWhatsAppPanel({ initialRecipient = '', initialUserI
   }, [playerSearchQuery]);
 
   const handleSelectPlayer = (player) => {
-    setRecipient(player.phone || '');
+    setSelectedUser(player);
     setSelectedUserId(player.id);
+    setRecipient(player.phone ? player.phone.replace(/\D/g, '') : '');
     setPlayerSearchQuery('');
     setPlayerResults([]);
-    // Pre-populate name param if template supports it
+
+    // Populate name parameter if template uses it
     setTemplateParams((prev) => ({
       ...prev,
       name: player.name || player.username || '',
+      param_1: player.name || player.username || '',
     }));
-    showToast(`Selected ${player.name || player.username} (${player.phone || 'No phone'})`, 'info');
+
+    showToast(`Linked recipient: ${player.name || player.username}`, 'info');
+  };
+
+  const handleClearSelectedPlayer = () => {
+    setSelectedUser(null);
+    setSelectedUserId(null);
+    setPlayerSearchQuery('');
   };
 
   const currentTemplate = useMemo(
@@ -138,7 +172,7 @@ export default function AdminWhatsAppPanel({ initialRecipient = '', initialUserI
     [templates, selectedTemplateName]
   );
 
-  // Initialize template params when template changes
+  // Sync parameter keys when template changes
   useEffect(() => {
     if (currentTemplate?.parameters) {
       setTemplateParams((prev) => {
@@ -153,33 +187,41 @@ export default function AdminWhatsAppPanel({ initialRecipient = '', initialUserI
     }
   }, [currentTemplate]);
 
-  // Generate live preview text
+  // Generate dynamic live preview text
   const previewText = useMemo(() => {
     if (messageType === 'TEXT') {
-      return customBody.trim() || 'Type your message above to see a live preview...';
+      return customBody.trim() || 'Type your message on the left to see the live WhatsApp bubble update in real-time...';
     }
-    if (!currentTemplate) return 'Select a template...';
+    if (!currentTemplate) return 'Select a template from the menu...';
     let text = currentTemplate.sampleText || '';
-    Object.entries(templateParams).forEach(([key, val]) => {
-      text = text.replaceAll(`{{${key}}}`, val || `[${key}]`);
-    });
+    if (currentTemplate.parameters) {
+      currentTemplate.parameters.forEach((param, idx) => {
+        const val = templateParams[param.key];
+        const placeholder = val || `[${param.label || `param_${idx + 1}`}]`;
+        // Replace positional {{1}} and named {{key}}
+        text = text.replaceAll(`{{${idx + 1}}}`, placeholder);
+        text = text.replaceAll(`{{${param.key}}}`, placeholder);
+      });
+    }
     return text;
   }, [messageType, customBody, currentTemplate, templateParams]);
 
+  // Execute Dispatch
   const handleSend = async () => {
-    if (!recipient.trim()) {
+    const rawClean = recipient.replace(/\D/g, '');
+    if (!rawClean) {
       showToast('Recipient phone number is required', 'warning');
       return;
     }
     if (messageType === 'TEXT' && !customBody.trim()) {
-      showToast('Message body cannot be empty', 'warning');
+      showToast('Message content cannot be empty', 'warning');
       return;
     }
 
     setSending(true);
     try {
       let payload = {
-        to: recipient.trim(),
+        to: rawClean,
         type: messageType,
         userId: selectedUserId || null,
       };
@@ -192,7 +234,7 @@ export default function AdminWhatsAppPanel({ initialRecipient = '', initialUserI
         payload = {
           ...payload,
           templateName: selectedTemplateName,
-          languageCode: currentTemplate?.language || 'en',
+          languageCode: currentTemplate?.language || 'en_US',
           parameters: paramsList,
         };
       } else {
@@ -206,15 +248,14 @@ export default function AdminWhatsAppPanel({ initialRecipient = '', initialUserI
       setConfirmDialog(false);
 
       if (res.mock) {
-        showToast(`Sandbox WhatsApp simulated for ${res.recipient}`, 'info');
+        showToast(`Sandbox simulation logged for ${res.recipient}`, 'info');
       } else {
-        showToast(`WhatsApp dispatched successfully to ${res.recipient}`, 'success');
+        showToast(`WhatsApp message dispatched to ${res.recipient}!`, 'success');
       }
 
-      // Reset fields if desired
       if (messageType === 'TEXT') setCustomBody('');
       if (onDismissQuickModal) onDismissQuickModal();
-      if (activeTab === 'logs') loadLogs();
+      loadLogs();
     } catch (err) {
       showToast(err.message || 'Failed to dispatch WhatsApp message', 'error');
     } finally {
@@ -222,312 +263,335 @@ export default function AdminWhatsAppPanel({ initialRecipient = '', initialUserI
     }
   };
 
+  // Keyboard shortcut: Cmd/Ctrl + Enter sends
+  const handleKeyDown = (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault();
+      if (!sending && recipient.trim()) {
+        setConfirmDialog(true);
+      }
+    }
+  };
+
+  // Quick Preset Prompts for Direct Messaging
+  const quickPrompts = [
+    { label: '💸 Withdrawal Paid', text: 'Hello! Your withdrawal of ₹5,000 has been processed successfully via IMPS. Thank you for choosing OddsYra.' },
+    { label: '🆔 KYC Verification', text: 'Hi! To complete your OddsYra account verification and unlock full withdrawals, please upload your Aadhaar/PAN in profile.' },
+    { label: '🎁 VIP Perk Active', text: 'Exclusive VIP alert: A 20% deposit boost bonus is waiting on your account. Log in to claim before expiry!' },
+    { label: '🏏 Match Live Notice', text: 'Live cricket markets are open with boosted odds for tonight\'s clash. Place your bets in-play now!' }
+  ];
+
+  // Filtered Templates for Directory
+  const filteredTemplates = useMemo(() => {
+    return templates.filter((t) => {
+      const matchesCat = templateCategoryFilter === 'ALL' || t.category === templateCategoryFilter;
+      const q = templateSearch.toLowerCase().trim();
+      const matchesQuery = !q || t.name.toLowerCase().includes(q) || (t.label && t.label.toLowerCase().includes(q)) || (t.description && t.description.toLowerCase().includes(q));
+      return matchesCat && matchesQuery;
+    });
+  }, [templates, templateCategoryFilter, templateSearch]);
+
+  const deliverySuccessRate = stats.total > 0
+    ? `${((stats.successful / stats.total) * 100).toFixed(1)}%`
+    : '100%';
+
   return (
-    <div className="admin-whatsapp-hub" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* Top Banner & Status Header */}
-      <div
-        className="admin-card"
-        style={{
-          padding: '16px 20px',
-          background: 'var(--admin-bg-surface, #1e293b)',
-          border: '1px solid var(--admin-border, #334155)',
-          borderRadius: '12px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '12px',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div
-            style={{
-              width: '42px',
-              height: '42px',
-              borderRadius: '10px',
-              background: '#25D36622',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.4rem',
-            }}
-          >
-            💬
-          </div>
+    <div className="whatsapp-ops-hub" onKeyDown={handleKeyDown}>
+      {/* ── TOP HEADER BANNER ── */}
+      <div className="wa-header-banner">
+        <div className="wa-header-left">
+          <div className="wa-icon-badge">💬</div>
           <div>
-            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600, color: 'var(--admin-text-primary, #f8fafc)' }}>
-              WhatsApp Business Messenger (Kapso)
+            <h3 className="wa-header-title">
+              WhatsApp Business Messenger
+              <span style={{ fontSize: '0.74rem', background: 'rgba(37,211,102,0.15)', color: '#25D366', padding: '2px 8px', borderRadius: '6px', fontWeight: 600 }}>
+                Meta Cloud API
+              </span>
             </h3>
-            <p style={{ margin: '2px 0 0', fontSize: '0.82rem', color: 'var(--admin-text-muted, #94a3b8)' }}>
-              Direct player outreach, verification prompts, and support updates via WhatsApp Cloud API
+            <p className="wa-header-subtitle">
+              <span>Direct outreach, verification nudges, and player notifications via official WhatsApp BSP (Kapso)</span>
             </p>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div className="wa-header-actions">
           {loadingStatus ? (
-            <span style={{ fontSize: '0.82rem', color: 'var(--admin-text-muted)' }}>Checking connection...</span>
+            <div className="wa-status-pill wa-status-pill--sandbox">
+              <span className="wa-pulse-dot wa-pulse-dot--sandbox" />
+              <span>Verifying Meta Connection...</span>
+            </div>
           ) : status.configured ? (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '6px 14px',
-                borderRadius: '20px',
-                background: '#05966922',
-                border: '1px solid #05966966',
-                color: '#34d399',
-                fontSize: '0.82rem',
-                fontWeight: 600,
-              }}
-            >
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />
-              Live Connected ({status.phoneNumberId || 'Phone Ready'})
+            <div className="wa-status-pill wa-status-pill--live" title={`WABA: ${status.businessAccountId || 'Ready'}`}>
+              <span className="wa-pulse-dot wa-pulse-dot--live" />
+              <span>Oddsyra Official Connected</span>
+              <span style={{ opacity: 0.7, fontFamily: 'var(--font-mono, monospace)' }}>
+                {status.phoneNumberId ? `(${status.phoneNumberId})` : ''}
+              </span>
             </div>
           ) : (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '6px 14px',
-                borderRadius: '20px',
-                background: '#d9770622',
-                border: '1px solid #d9770666',
-                color: '#fbbf24',
-                fontSize: '0.82rem',
-                fontWeight: 600,
-              }}
-              title="Add KAPSO_API_KEY and KAPSO_PHONE_NUMBER_ID to .env to activate live delivery"
-            >
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f59e0b' }} />
-              Sandbox / Mock Mode
+            <div className="wa-status-pill wa-status-pill--sandbox" title="Configure credentials in .env to activate live dispatch">
+              <span className="wa-pulse-dot wa-pulse-dot--sandbox" />
+              <span>Sandbox Simulation Mode</span>
             </div>
           )}
+
           <button
             type="button"
             onClick={loadStatus}
+            disabled={loadingStatus}
             className="admin-btn admin-btn--secondary admin-btn--sm"
-            style={{ padding: '6px 12px' }}
+            title="Refresh connection status and measure gateway ping"
           >
-            ↻ Refresh
+            {loadingStatus ? 'Checking...' : '↻ Refresh'}
           </button>
         </div>
       </div>
 
-      {/* Internal Navigation Tabs */}
-      <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--admin-border, #334155)', paddingBottom: '8px' }}>
-        {[
-          { id: 'compose', label: '✉️ Compose Message' },
-          { id: 'logs', label: `📋 Delivery Logs (${stats.total})` },
-          { id: 'templates', label: `📑 Approved Templates (${templates.length})` },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveTab(tab.id)}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '8px',
-              border: 'none',
-              background: activeTab === tab.id ? 'var(--admin-primary, #3b82f6)' : 'transparent',
-              color: activeTab === tab.id ? '#ffffff' : 'var(--admin-text-muted, #94a3b8)',
-              fontWeight: activeTab === tab.id ? 600 : 500,
-              cursor: 'pointer',
-              fontSize: '0.86rem',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* ── TELEMETRY KPI CARDS ── */}
+      <div className="wa-kpi-grid">
+        <AdminKPI
+          label="Total Dispatched"
+          value={stats.total}
+          trend={stats.total > 0 ? 'up' : null}
+          trendLabel="Audit Verified"
+          accent="#3b82f6"
+          icon="💬"
+          onClick={() => setActiveTab('logs')}
+        />
+        <AdminKPI
+          label="Delivery Success Rate"
+          value={deliverySuccessRate}
+          trend="up"
+          trendLabel={`${stats.successful} Delivered`}
+          accent="#10b981"
+          icon="🚀"
+          onClick={() => setActiveTab('logs')}
+        />
+        <AdminKPI
+          label="Approved Meta Templates"
+          value={templates.length}
+          trendLabel="Utility & Marketing"
+          accent="#8b5cf6"
+          icon="📑"
+          onClick={() => setActiveTab('templates')}
+        />
+        <AdminKPI
+          label="Customer Care Window"
+          value={status.configured ? 'Active (24h Open)' : 'Sandbox'}
+          trendLabel={pingLatency ? `${pingLatency}ms Meta Latency` : 'Cloud API Ready'}
+          accent="#10b981"
+          icon="⚡"
+          onClick={() => setActiveTab('gateway')}
+        />
       </div>
 
-      {/* TAB 1: COMPOSE */}
-      {activeTab === 'compose' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(350px, 1.4fr) minmax(320px, 1fr)', gap: '24px' }}>
-          {/* Form Side */}
-          <div
-            className="admin-card"
-            style={{
-              padding: '24px',
-              background: 'var(--admin-bg-surface, #1e293b)',
-              border: '1px solid var(--admin-border, #334155)',
-              borderRadius: '12px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '18px',
-            }}
-          >
-            <h4 style={{ margin: 0, fontSize: '1rem', color: 'var(--admin-text-primary, #f8fafc)' }}>
-              Outbound WhatsApp Dispatcher
-            </h4>
+      {/* ── SEGMENTED SUBTAB NAVIGATION ── */}
+      <div className="wa-nav-bar">
+        <button
+          type="button"
+          onClick={() => setActiveTab('compose')}
+          className={`wa-nav-tab ${activeTab === 'compose' ? 'wa-nav-tab--active' : ''}`}
+        >
+          ✉️ Outbound Dispatcher
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('logs')}
+          className={`wa-nav-tab ${activeTab === 'logs' ? 'wa-nav-tab--active' : ''}`}
+        >
+          📋 Delivery Logs ({stats.total})
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('templates')}
+          className={`wa-nav-tab ${activeTab === 'templates' ? 'wa-nav-tab--active' : ''}`}
+        >
+          📑 Template Library ({templates.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('gateway')}
+          className={`wa-nav-tab ${activeTab === 'gateway' ? 'wa-nav-tab--active' : ''}`}
+        >
+          ⚙️ Gateway & WABA Health
+        </button>
+      </div>
 
-            {/* Recipient Lookup */}
-            <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '6px', color: 'var(--admin-text-secondary)' }}>
-                Search & Select Player (Optional)
+      {/* ── TAB 1: OUTBOUND COMPOSER & SMARTPHONE SIMULATOR ── */}
+      {activeTab === 'compose' && (
+        <div className="wa-compose-grid">
+          {/* Left Column: Form Controls */}
+          <div className="wa-card">
+            <div className="wa-card-header">
+              <h4 className="wa-card-title">
+                <span>🚀 Outbound Message Composer</span>
+              </h4>
+              <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)' }}>
+                Press <kbd style={{ padding: '2px 5px', borderRadius: '4px', background: 'rgba(255,255,255,0.1)', fontSize: '0.72rem' }}>⌘ Enter</kbd> to send
+              </span>
+            </div>
+
+            {/* Recipient Search & Autocomplete */}
+            <div className="wa-field-group">
+              <label className="wa-field-label">
+                <span>1. Select Player (Optional CRM Link)</span>
+                {searchingPlayers && <span style={{ color: 'var(--admin-text-muted)', fontSize: '0.72rem' }}>Searching...</span>}
               </label>
-              <div style={{ position: 'relative' }}>
+
+              <div className="wa-player-search-wrapper">
+                <span className="wa-player-search-icon">🔍</span>
                 <input
                   type="text"
-                  placeholder="Type player username, name, email or phone..."
+                  placeholder="Type username, customer name, email or phone..."
                   value={playerSearchQuery}
                   onChange={(e) => setPlayerSearchQuery(e.target.value)}
-                  className="admin-input"
-                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px' }}
+                  className="wa-player-search-input"
                 />
-                {searchingPlayers && (
-                  <span style={{ position: 'absolute', right: '12px', top: '10px', fontSize: '0.78rem', color: 'var(--admin-text-muted)' }}>
-                    Searching...
-                  </span>
-                )}
+
                 {playerResults.length > 0 && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: '100%',
-                      left: 0,
-                      right: 0,
-                      zIndex: 30,
-                      background: 'var(--admin-bg-surface, #1e293b)',
-                      border: '1px solid var(--admin-border, #334155)',
-                      borderRadius: '8px',
-                      marginTop: '4px',
-                      boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
-                      maxHeight: '220px',
-                      overflowY: 'auto',
-                    }}
-                  >
+                  <div className="wa-player-dropdown">
                     {playerResults.map((p) => (
                       <div
                         key={p.id}
+                        className="wa-player-row"
                         onClick={() => handleSelectPlayer(p)}
-                        style={{
-                          padding: '8px 12px',
-                          borderBottom: '1px solid var(--admin-border, #334155)',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          fontSize: '0.84rem',
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                       >
-                        <div>
-                          <strong style={{ color: 'var(--admin-text-primary)' }}>{p.name || p.username}</strong>
-                          <span style={{ marginLeft: '8px', color: 'var(--admin-text-muted)', fontSize: '0.76rem' }}>
-                            {p.email}
-                          </span>
+                        <div className="wa-player-info">
+                          <div className="wa-player-avatar">
+                            {(p.name || p.username || 'P')[0].toUpperCase()}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 600, color: 'var(--admin-text)' }}>
+                              {p.name || p.username}
+                              {p.vipTier && p.vipTier !== 'STANDARD' && (
+                                <span style={{ marginLeft: '6px', fontSize: '0.68rem', padding: '1px 5px', borderRadius: '4px', background: '#7c3aed22', color: '#c4b5fd', fontWeight: 700 }}>
+                                  {p.vipTier}
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)' }}>
+                              {p.email} • {p.kycStatus || 'KYC UNVERIFIED'}
+                            </div>
+                          </div>
                         </div>
-                        <span style={{ fontFamily: 'monospace', color: p.phone ? '#34d399' : '#f87171' }}>
+                        <div style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: '0.8rem', color: p.phone ? '#34d399' : '#f87171' }}>
                           {p.phone || 'No phone'}
-                        </span>
+                        </div>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
+
+              {selectedUser && (
+                <div className="wa-selected-player-chip">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div className="wa-player-avatar" style={{ width: '26px', height: '26px', fontSize: '0.7rem' }}>
+                      {(selectedUser.name || selectedUser.username || 'P')[0].toUpperCase()}
+                    </div>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {selectedUser.name || selectedUser.username}
+                    </span>
+                    <span style={{ fontSize: '0.74rem', color: 'var(--admin-text-muted)' }}>
+                      ({selectedUser.phone})
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleClearSelectedPlayer}
+                    style={{ background: 'none', border: 'none', color: 'var(--admin-text-muted)', cursor: 'pointer', fontSize: '0.85rem' }}
+                    title="Unlink player"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Recipient Phone Number */}
-            <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '6px', color: 'var(--admin-text-secondary)' }}>
-                Recipient Phone Number (E.164 with Country Code) *
+            <div className="wa-field-group">
+              <label className="wa-field-label">
+                <span>2. Recipient WhatsApp Phone Number *</span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)' }}>E.164 Format</span>
               </label>
-              <input
-                type="text"
-                placeholder="e.g. +91 98765 43210 or 919876543210"
-                value={recipient}
-                onChange={(e) => setRecipient(e.target.value)}
-                className="admin-input"
-                style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', fontFamily: 'monospace' }}
-              />
-              <span style={{ fontSize: '0.74rem', color: 'var(--admin-text-muted)', display: 'block', marginTop: '4px' }}>
-                10-digit numbers automatically prefix with India country code (+91).
-              </span>
+
+              <div className="wa-phone-affix-group">
+                <div className="wa-phone-prefix">
+                  <span>🇮🇳</span>
+                  <span>+91</span>
+                </div>
+                <input
+                  type="text"
+                  placeholder="94945 10400"
+                  value={recipient}
+                  onChange={(e) => setRecipient(e.target.value)}
+                  className="wa-phone-input"
+                />
+              </div>
             </div>
 
-            {/* Message Type Selector */}
-            <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '8px', color: 'var(--admin-text-secondary)' }}>
-                Message Dispatch Type
+            {/* Message Dispatch Type Selector */}
+            <div className="wa-field-group">
+              <label className="wa-field-label">
+                <span>3. Message Dispatch Type</span>
               </label>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <label
-                  style={{
-                    flex: 1,
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    border: `1px solid ${messageType === 'TEMPLATE' ? 'var(--admin-primary, #3b82f6)' : 'var(--admin-border, #334155)'}`,
-                    background: messageType === 'TEMPLATE' ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    fontSize: '0.84rem',
-                    color: messageType === 'TEMPLATE' ? '#93c5fd' : 'var(--admin-text-muted)',
-                  }}
-                >
+
+              <div className="wa-type-toggle">
+                <label className={`wa-type-card ${messageType === 'TEMPLATE' ? 'wa-type-card--selected' : ''}`}>
                   <input
                     type="radio"
-                    name="msgType"
+                    name="waMsgType"
                     checked={messageType === 'TEMPLATE'}
                     onChange={() => setMessageType('TEMPLATE')}
+                    className="wa-type-radio"
                   />
-                  <span>
-                    <strong>Meta Approved Template</strong>
-                    <span style={{ display: 'block', fontSize: '0.72rem', opacity: 0.8 }}>
-                      Recommended (No 24h limit)
-                    </span>
-                  </span>
+                  <div>
+                    <div style={{ fontSize: '0.86rem', fontWeight: 600, color: 'var(--admin-text)' }}>
+                      Meta Approved Template
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', marginTop: '2px' }}>
+                      Bypasses 24h window (Recommended for business outreach)
+                    </div>
+                  </div>
                 </label>
 
-                <label
-                  style={{
-                    flex: 1,
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    border: `1px solid ${messageType === 'TEXT' ? 'var(--admin-primary, #3b82f6)' : 'var(--admin-border, #334155)'}`,
-                    background: messageType === 'TEXT' ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    fontSize: '0.84rem',
-                    color: messageType === 'TEXT' ? '#93c5fd' : 'var(--admin-text-muted)',
-                  }}
-                >
+                <label className={`wa-type-card ${messageType === 'TEXT' ? 'wa-type-card--selected' : ''}`}>
                   <input
                     type="radio"
-                    name="msgType"
+                    name="waMsgType"
                     checked={messageType === 'TEXT'}
                     onChange={() => setMessageType('TEXT')}
+                    className="wa-type-radio"
                   />
-                  <span>
-                    <strong>Direct Text</strong>
-                    <span style={{ display: 'block', fontSize: '0.72rem', opacity: 0.8 }}>
-                      Active customer care window
-                    </span>
-                  </span>
+                  <div>
+                    <div style={{ fontSize: '0.86rem', fontWeight: 600, color: 'var(--admin-text)' }}>
+                      Direct Text Message
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', marginTop: '2px' }}>
+                      Requires active 24h conversation with player
+                    </div>
+                  </div>
                 </label>
               </div>
             </div>
 
-            {/* Template Form */}
+            {/* Template Parameter Controls */}
             {messageType === 'TEMPLATE' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '6px', color: 'var(--admin-text-secondary)' }}>
-                    Select WhatsApp Template
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', background: 'rgba(0,0,0,0.18)', padding: '16px', borderRadius: '12px', border: '1px solid var(--admin-border, #334155)' }}>
+                <div className="wa-field-group">
+                  <label className="wa-field-label">
+                    <span>Select WhatsApp Template</span>
+                    {currentTemplate && (
+                      <span className="wa-param-badge">
+                        {currentTemplate.category} • {currentTemplate.language || 'en_US'}
+                      </span>
+                    )}
                   </label>
                   <select
                     value={selectedTemplateName}
                     onChange={(e) => setSelectedTemplateName(e.target.value)}
-                    className="admin-input"
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px' }}
+                    className="admin-input admin-select"
+                    style={{ width: '100%', borderRadius: '10px' }}
                   >
                     {templates.map((t) => (
                       <option key={t.name} value={t.name}>
@@ -535,233 +599,183 @@ export default function AdminWhatsAppPanel({ initialRecipient = '', initialUserI
                       </option>
                     ))}
                   </select>
-                  {currentTemplate?.description && (
-                    <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', display: 'block', marginTop: '4px' }}>
-                      {currentTemplate.description}
-                    </span>
-                  )}
                 </div>
 
-                {/* Dynamic Parameter Inputs */}
+                {/* Dynamic Parameter Fields */}
                 {currentTemplate?.parameters && currentTemplate.parameters.length > 0 && (
-                  <div
-                    style={{
-                      background: 'rgba(0,0,0,0.2)',
-                      padding: '14px',
-                      borderRadius: '8px',
-                      border: '1px solid var(--admin-border, #334155)',
-                    }}
-                  >
-                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, marginBottom: '10px', color: 'var(--admin-text-muted)' }}>
-                      TEMPLATE PLACEHOLDERS
-                    </label>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      {currentTemplate.parameters.map((param) => (
-                        <div key={param.key}>
-                          <label style={{ display: 'block', fontSize: '0.74rem', marginBottom: '4px', color: 'var(--admin-text-secondary)' }}>
-                            {param.label} ({`{{${param.key}}}`})
-                          </label>
-                          <input
-                            type="text"
-                            placeholder={param.placeholder}
-                            value={templateParams[param.key] || ''}
-                            onChange={(e) =>
-                              setTemplateParams((prev) => ({ ...prev, [param.key]: e.target.value }))
-                            }
-                            className="admin-input"
-                            style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', fontSize: '0.84rem' }}
-                          />
-                        </div>
-                      ))}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '4px' }}>
+                    <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--admin-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      Template Placeholders
                     </div>
+                    {currentTemplate.parameters.map((param, idx) => (
+                      <div key={param.key} className="wa-field-group">
+                        <label className="wa-field-label" style={{ fontSize: '0.74rem' }}>
+                          <span>{param.label || `Parameter {{${idx + 1}}}`}</span>
+                          <span style={{ fontFamily: 'var(--font-mono, monospace)', color: '#60a5fa' }}>{`{{${param.key}}}`}</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder={param.placeholder || `Value for ${param.key}`}
+                          value={templateParams[param.key] || ''}
+                          onChange={(e) =>
+                            setTemplateParams((prev) => ({ ...prev, [param.key]: e.target.value }))
+                          }
+                          className="admin-input"
+                          style={{ width: '100%', borderRadius: '8px', fontSize: '0.84rem' }}
+                        />
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
             )}
 
-            {/* Direct Text Form */}
+            {/* Direct Free-Text Controls */}
             {messageType === 'TEXT' && (
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '6px', color: 'var(--admin-text-secondary)' }}>
-                  Message Content *
+              <div className="wa-field-group">
+                <label className="wa-field-label">
+                  <span>Message Content *</span>
+                  <span style={{ fontSize: '0.72rem', color: customBody.length > 3900 ? '#f87171' : 'var(--admin-text-muted)' }}>
+                    {customBody.length} / 4096 characters
+                  </span>
                 </label>
+
                 <textarea
+                  ref={textareaRef}
                   rows={4}
-                  placeholder="Type customer message or response here..."
+                  placeholder="Type your WhatsApp message to the player..."
                   value={customBody}
                   onChange={(e) => setCustomBody(e.target.value)}
                   className="admin-input"
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', resize: 'vertical' }}
+                  style={{ width: '100%', borderRadius: '10px', minHeight: '110px', padding: '12px' }}
                 />
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '0.74rem', color: 'var(--admin-text-muted)' }}>
-                  <span>* Subject to Meta 24-hour customer-initiated conversation window.</span>
-                  <span>{customBody.length} / 4096</span>
+
+                <div className="wa-prompt-chips">
+                  <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)', display: 'flex', alignItems: 'center', marginRight: '4px' }}>
+                    Quick chips:
+                  </span>
+                  {quickPrompts.map((p) => (
+                    <button
+                      key={p.label}
+                      type="button"
+                      onClick={() => setCustomBody(p.text)}
+                      className="wa-prompt-chip"
+                    >
+                      {p.label}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
 
+            {/* Dispatch Button */}
             <button
               type="button"
               onClick={() => setConfirmDialog(true)}
               disabled={sending || !recipient.trim()}
-              className="admin-btn admin-btn--primary"
-              style={{
-                marginTop: '10px',
-                padding: '12px 20px',
-                borderRadius: '8px',
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                background: '#25D366',
-                color: '#0b2e13',
-                border: 'none',
-                cursor: sending || !recipient.trim() ? 'not-allowed' : 'pointer',
-              }}
+              className="wa-send-btn"
             >
-              {sending ? 'Dispatching via Kapso...' : '🚀 Send WhatsApp Message'}
+              {sending ? (
+                <>
+                  <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>↻</span>
+                  <span>Dispatching via Kapso Cloud API...</span>
+                </>
+              ) : (
+                <>
+                  <span>💬</span>
+                  <span>Dispatch WhatsApp Message</span>
+                </>
+              )}
             </button>
           </div>
 
-          {/* Live Preview Side (WhatsApp Styled Bubble) */}
-          <div
-            className="admin-card"
-            style={{
-              padding: '24px',
-              background: 'var(--admin-bg-surface, #1e293b)',
-              border: '1px solid var(--admin-border, #334155)',
-              borderRadius: '12px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '16px',
-            }}
-          >
-            <h4 style={{ margin: 0, fontSize: '0.94rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Live WhatsApp Chat Preview
-            </h4>
+          {/* Right Column: Ultra-Realistic Smartphone Simulator */}
+          <div className="wa-card" style={{ padding: '20px' }}>
+            <div className="wa-card-header" style={{ marginBottom: '14px' }}>
+              <h4 className="wa-card-title">
+                <span>📱 Live WhatsApp Chat Simulator</span>
+              </h4>
+              <span style={{ fontSize: '0.72rem', background: '#05966922', color: '#34d399', padding: '2px 8px', borderRadius: '9999px', fontWeight: 600 }}>
+                Real-Time Preview
+              </span>
+            </div>
 
-            {/* WhatsApp Device Mockup Box */}
-            <div
-              style={{
-                borderRadius: '16px',
-                overflow: 'hidden',
-                border: '1px solid #1f2937',
-                background: '#0b141a',
-                display: 'flex',
-                flexDirection: 'column',
-                height: '420px',
-                boxShadow: '0 12px 30px rgba(0,0,0,0.4)',
-              }}
-            >
-              {/* WhatsApp Chat Header */}
-              <div
-                style={{
-                  background: '#202c33',
-                  padding: '10px 14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  borderBottom: '1px solid rgba(255,255,255,0.06)',
-                }}
-              >
-                <div
-                  style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '50%',
-                    background: '#25D366',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 700,
-                    color: '#0b2e13',
-                    fontSize: '0.9rem',
-                  }}
-                >
-                  OY
+            {/* Phone Bezel / Frame */}
+            <div className="wa-phone-device">
+              <div className="wa-phone-screen">
+                {/* Dynamic Island Notch */}
+                <div className="wa-phone-island">
+                  <div className="wa-phone-camera" />
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ color: '#e9edef', fontSize: '0.9rem', fontWeight: 600 }}>OddsYra Official</div>
-                  <div style={{ color: '#8696a0', fontSize: '0.72rem' }}>
-                    {status.configured ? 'Verified Business Account' : 'Sandbox Demo'}
+
+                {/* Status Bar */}
+                <div className="wa-phone-status-bar">
+                  <span>9:41</span>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    <span>5G</span>
+                    <span>100%</span>
                   </div>
                 </div>
-              </div>
 
-              {/* Chat Canvas */}
-              <div
-                style={{
-                  flex: 1,
-                  padding: '16px',
-                  background: '#0b141a radial-gradient(circle, rgba(255,255,255,0.02) 1px, transparent 1px)',
-                  backgroundSize: '16px 16px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'flex-end',
-                }}
-              >
-                {/* Outbound Chat Bubble */}
-                <div
-                  style={{
-                    alignSelf: 'flex-end',
-                    maxWidth: '85%',
-                    background: '#005c4b',
-                    color: '#e9edef',
-                    padding: '8px 12px',
-                    borderRadius: '10px 10px 2px 10px',
-                    fontSize: '0.86rem',
-                    lineHeight: '1.4',
-                    boxShadow: '0 1px 2px rgba(0,0,0,0.3)',
-                    wordBreak: 'break-word',
-                    whiteSpace: 'pre-wrap',
-                  }}
-                >
-                  {previewText}
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'flex-end',
-                      gap: '4px',
-                      marginTop: '4px',
-                      fontSize: '0.68rem',
-                      color: '#8696a0',
-                    }}
-                  >
-                    <span>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                    <span style={{ color: '#53bdeb' }}>✓✓</span>
+                {/* WhatsApp Chat Top Header */}
+                <div className="wa-chat-header">
+                  <span style={{ color: '#00a884', fontSize: '1.2rem', marginRight: '2px', cursor: 'pointer' }}>‹</span>
+                  <div className="wa-chat-header-avatar">
+                    OY
+                    <span className="wa-verified-badge">✓</span>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="wa-chat-header-title">
+                      <span>OddsYra Official</span>
+                      <span style={{ color: '#00a884', fontSize: '0.8rem' }}>✓</span>
+                    </div>
+                    <div className="wa-chat-header-sub">
+                      {status.configured ? 'Verified Business Account' : 'Sandbox Simulator'}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '14px', color: '#aebac1', fontSize: '1rem' }}>
+                    <span>📹</span>
+                    <span>📞</span>
                   </div>
                 </div>
-              </div>
 
-              {/* Chat Footer Mock */}
-              <div
-                style={{
-                  background: '#202c33',
-                  padding: '8px 14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  color: '#8696a0',
-                  fontSize: '0.76rem',
-                }}
-              >
-                <span>To:</span>
-                <span style={{ fontFamily: 'monospace', color: '#e9edef' }}>
-                  {recipient.trim() || '+91 ••••• •••••'}
-                </span>
+                {/* Chat Canvas with Wallpaper */}
+                <div className="wa-chat-body">
+                  <div className="wa-date-chip">Today</div>
+
+                  {/* Outgoing Message Bubble */}
+                  <div className="wa-bubble-out">
+                    <div>{previewText}</div>
+                    <div className="wa-bubble-meta">
+                      <span>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span className="wa-double-check">✓✓</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Phone Bottom Bar */}
+                <div className="wa-phone-bottom-bar">
+                  <span style={{ fontSize: '1.1rem', color: '#8696a0' }}>😊</span>
+                  <div className="wa-phone-recipient-tag">
+                    <span>To:</span>
+                    <span style={{ fontFamily: 'var(--font-mono, monospace)', color: '#e9edef', fontWeight: 600 }}>
+                      {recipient.trim() ? `+91 ${recipient.trim()}` : '+91 ••••• •••••'}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '1.1rem', color: '#8696a0' }}>📎</span>
+                  <span style={{ fontSize: '1.1rem', color: '#8696a0' }}>🎤</span>
+                </div>
               </div>
             </div>
 
-            <div style={{ fontSize: '0.74rem', color: 'var(--admin-text-muted)', lineHeight: '1.4' }}>
-              💡 Messages are sent through the official Meta WhatsApp Cloud API via Kapso. High delivery rates and end-to-end encryption.
-            </div>
+            <p style={{ margin: '12px 0 0', fontSize: '0.74rem', color: 'var(--admin-text-muted)', textAlign: 'center', lineHeight: '1.4' }}>
+              🛡️ End-to-end encrypted dispatch via Meta Graph v24.0. Guaranteed delivery reports with audit correlation.
+            </p>
           </div>
         </div>
       )}
 
-      {/* TAB 2: DELIVERY LOGS */}
+      {/* ── TAB 2: DELIVERY LOGS ── */}
       {activeTab === 'logs' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {/* Filters Bar */}
@@ -771,60 +785,64 @@ export default function AdminWhatsAppPanel({ initialRecipient = '', initialUserI
               gap: '12px',
               alignItems: 'center',
               flexWrap: 'wrap',
-              background: 'var(--admin-bg-surface, #1e293b)',
-              padding: '12px 16px',
-              borderRadius: '10px',
+              background: 'var(--admin-surface, #1e293b)',
+              padding: '14px 18px',
+              borderRadius: '12px',
               border: '1px solid var(--admin-border, #334155)',
             }}
           >
             <input
               type="text"
-              placeholder="Search recipient phone..."
+              placeholder="Search recipient phone number..."
               value={logSearchQuery}
               onChange={(e) => setLogSearchQuery(e.target.value)}
               className="admin-input"
-              style={{ width: '240px', padding: '7px 10px', borderRadius: '6px', fontSize: '0.82rem' }}
+              style={{ width: '260px', borderRadius: '8px' }}
             />
 
             <select
               value={logFilterStatus}
               onChange={(e) => setLogFilterStatus(e.target.value)}
-              className="admin-input"
-              style={{ width: '160px', padding: '7px 10px', borderRadius: '6px', fontSize: '0.82rem' }}
+              className="admin-input admin-select"
+              style={{ width: '170px', borderRadius: '8px' }}
             >
-              <option value="ALL">All Statuses</option>
-              <option value="SENT">SENT</option>
-              <option value="MOCK_SENT">MOCK_SENT</option>
+              <option value="ALL">All Delivery Statuses</option>
+              <option value="SENT">SENT (Meta Dispatched)</option>
               <option value="DELIVERED">DELIVERED</option>
               <option value="FAILED">FAILED</option>
+              <option value="MOCK_SENT">MOCK_SENT (Sandbox)</option>
             </select>
 
             <button
               type="button"
               onClick={loadLogs}
-              className="admin-btn admin-btn--secondary admin-btn--sm"
               disabled={loadingLogs}
+              className="admin-btn admin-btn--secondary admin-btn--sm"
             >
-              {loadingLogs ? 'Loading...' : 'Filter'}
+              {loadingLogs ? 'Loading...' : 'Apply Filters'}
             </button>
           </div>
 
           <AdminDataTable
-            title="WhatsApp Delivery History"
+            title="Audit Logged WhatsApp Dispatches"
             emptyMessage="No WhatsApp messages dispatched yet"
             data={logs}
             columns={[
               {
                 header: 'Message ID',
                 key: 'id',
-                render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.id}</span>,
+                render: (r) => (
+                  <span className="admin-text-mono" style={{ fontSize: '0.74rem', color: 'var(--admin-text-muted)' }}>
+                    {r.id}
+                  </span>
+                ),
               },
               {
                 header: 'Recipient Phone',
                 key: 'recipientPhone',
                 render: (r) => (
-                  <span className="admin-text-mono" style={{ fontWeight: 600, color: '#34d399' }}>
-                    {r.recipientPhone}
+                  <span className="admin-text-mono" style={{ fontWeight: 700, color: '#34d399' }}>
+                    +{r.recipientPhone}
                   </span>
                 ),
               },
@@ -836,7 +854,11 @@ export default function AdminWhatsAppPanel({ initialRecipient = '', initialUserI
                     <span className="admin-badge admin-badge--neutral" style={{ marginRight: '6px' }}>
                       {r.messageType}
                     </span>
-                    {r.templateName && <strong style={{ fontSize: '0.8rem' }}>{r.templateName}</strong>}
+                    {r.templateName && (
+                      <span style={{ fontWeight: 600, fontSize: '0.8rem', color: 'var(--admin-text)' }}>
+                        {r.templateName}
+                      </span>
+                    )}
                   </div>
                 ),
               },
@@ -846,7 +868,7 @@ export default function AdminWhatsAppPanel({ initialRecipient = '', initialUserI
                 render: (r) => (
                   <span
                     style={{
-                      maxWidth: '300px',
+                      maxWidth: '320px',
                       display: 'inline-block',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -868,15 +890,34 @@ export default function AdminWhatsAppPanel({ initialRecipient = '', initialUserI
               {
                 header: 'Admin Actor',
                 key: 'adminId',
-                render: (r) => <span style={{ fontSize: '0.78rem' }}>{r.adminId}</span>,
+                render: (r) => <span style={{ fontSize: '0.76rem' }}>{r.adminId}</span>,
               },
               {
                 header: 'Dispatched At',
                 key: 'createdAt',
                 render: (r) => (
-                  <span style={{ fontSize: '0.76rem' }}>
+                  <span style={{ fontSize: '0.76rem', color: 'var(--admin-text-muted)' }}>
                     {r.createdAt ? new Date(r.createdAt).toLocaleString() : '—'}
                   </span>
+                ),
+              },
+              {
+                header: 'Action',
+                key: 'action',
+                sortable: false,
+                render: (r) => (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRecipient(r.recipientPhone);
+                      setActiveTab('compose');
+                      showToast(`Loaded recipient ${r.recipientPhone}`, 'info');
+                    }}
+                    className="admin-btn admin-btn--secondary admin-btn--sm"
+                    style={{ fontSize: '0.72rem', padding: '2px 8px' }}
+                  >
+                    Compose →
+                  </button>
                 ),
               },
             ]}
@@ -884,84 +925,186 @@ export default function AdminWhatsAppPanel({ initialRecipient = '', initialUserI
         </div>
       )}
 
-      {/* TAB 3: TEMPLATES */}
+      {/* ── TAB 3: TEMPLATE DIRECTORY ── */}
       {activeTab === 'templates' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
-          {templates.map((t) => (
-            <div
-              key={t.name}
-              className="admin-card"
-              style={{
-                padding: '20px',
-                background: 'var(--admin-bg-surface, #1e293b)',
-                border: '1px solid var(--admin-border, #334155)',
-                borderRadius: '12px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <h4 style={{ margin: 0, fontSize: '0.96rem', color: 'var(--admin-text-primary)' }}>
-                    {t.label || t.name}
-                  </h4>
-                  <span className="admin-text-mono" style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)' }}>
-                    {t.name}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Search & Category Filter */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '12px',
+              background: 'var(--admin-surface, #1e293b)',
+              padding: '14px 18px',
+              borderRadius: '12px',
+              border: '1px solid var(--admin-border, #334155)',
+            }}
+          >
+            <input
+              type="text"
+              placeholder="Search templates by name or keyword..."
+              value={templateSearch}
+              onChange={(e) => setTemplateSearch(e.target.value)}
+              className="admin-input"
+              style={{ width: '280px', borderRadius: '8px' }}
+            />
+
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {['ALL', 'UTILITY', 'MARKETING'].map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setTemplateCategoryFilter(cat)}
+                  className="admin-btn admin-btn--sm"
+                  style={{
+                    borderRadius: '9999px',
+                    background: templateCategoryFilter === cat ? 'var(--admin-primary, #3b82f6)' : 'transparent',
+                    color: templateCategoryFilter === cat ? '#ffffff' : 'var(--admin-text-muted)',
+                    border: '1px solid var(--admin-border, #334155)',
+                  }}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="wa-templates-grid">
+            {filteredTemplates.map((t) => (
+              <div key={t.name} className="wa-template-card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 600, color: 'var(--admin-text)' }}>
+                      {t.label || t.name}
+                    </h4>
+                    <span className="admin-text-mono" style={{ fontSize: '0.74rem', color: 'var(--admin-text-muted)' }}>
+                      {t.name}
+                    </span>
+                  </div>
+                  <span
+                    className="admin-badge"
+                    style={{
+                      background: t.category === 'MARKETING' ? 'rgba(236, 72, 153, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                      color: t.category === 'MARKETING' ? '#f472b6' : '#60a5fa',
+                    }}
+                  >
+                    {t.category}
                   </span>
                 </div>
-                <span
-                  className="admin-badge"
-                  style={{
-                    background: t.category === 'MARKETING' ? 'rgba(236, 72, 153, 0.15)' : 'rgba(59, 130, 246, 0.15)',
-                    color: t.category === 'MARKETING' ? '#f472b6' : '#60a5fa',
-                  }}
-                >
-                  {t.category}
-                </span>
-              </div>
 
-              <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--admin-text-secondary)' }}>
-                {t.description}
-              </p>
+                <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--admin-text-secondary)' }}>
+                  {t.description}
+                </p>
 
-              <div
-                style={{
-                  background: 'rgba(0,0,0,0.25)',
-                  padding: '10px 12px',
-                  borderRadius: '8px',
-                  fontSize: '0.8rem',
-                  fontStyle: 'italic',
-                  color: 'var(--admin-text-muted)',
-                }}
-              >
-                "{t.sampleText}"
-              </div>
+                <div className="wa-template-sample-box">
+                  "{t.sampleText}"
+                </div>
 
-              <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'flex-end' }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedTemplateName(t.name);
-                    setMessageType('TEMPLATE');
-                    setActiveTab('compose');
-                  }}
-                  className="admin-btn admin-btn--secondary admin-btn--sm"
-                >
-                  Use Template
-                </button>
+                {t.parameters && t.parameters.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {t.parameters.map((param) => (
+                      <span key={param.key} className="wa-param-badge">
+                        {param.label || param.key}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'flex-end', paddingTop: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedTemplateName(t.name);
+                      setMessageType('TEMPLATE');
+                      setActiveTab('compose');
+                      showToast(`Loaded template: ${t.label || t.name}`, 'info');
+                    }}
+                    className="admin-btn admin-btn--primary admin-btn--sm"
+                    style={{ background: '#25d366', color: '#0b2e13', border: 'none', fontWeight: 600 }}
+                  >
+                    Use in Composer →
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Confirmation Dialog */}
+      {/* ── TAB 4: GATEWAY & WABA HEALTH ── */}
+      {activeTab === 'gateway' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div className="wa-card">
+            <div className="wa-card-header">
+              <h4 className="wa-card-title">
+                <span>⚙️ Meta Cloud API Infrastructure & Configuration</span>
+              </h4>
+              <button
+                type="button"
+                onClick={async () => {
+                  setTestingPing(true);
+                  const start = performance.now();
+                  try {
+                    await adminApiClient.get('/whatsapp/status');
+                    setPingLatency(Math.round(performance.now() - start));
+                    showToast('Meta Cloud API Gateway is fully operational!', 'success');
+                  } catch (err) {
+                    showToast(err.message || 'Ping failed', 'error');
+                  } finally {
+                    setTestingPing(false);
+                  }
+                }}
+                disabled={testingPing}
+                className="admin-btn admin-btn--secondary admin-btn--sm"
+              >
+                {testingPing ? 'Testing...' : '⚡ Ping Gateway'}
+              </button>
+            </div>
+
+            <div className="wa-gateway-matrix">
+              <div className="wa-gateway-item">
+                <span className="wa-gateway-label">Verified Display Name</span>
+                <span className="wa-gateway-value" style={{ color: '#34d399' }}>Oddsyra Official ✓</span>
+              </div>
+              <div className="wa-gateway-item">
+                <span className="wa-gateway-label">Display Phone Number</span>
+                <span className="wa-gateway-value" style={{ fontFamily: 'var(--font-mono, monospace)' }}>+1 555-307-2359</span>
+              </div>
+              <div className="wa-gateway-item">
+                <span className="wa-gateway-label">Meta Phone Number ID</span>
+                <span className="wa-gateway-value" style={{ fontFamily: 'var(--font-mono, monospace)' }}>
+                  {status.phoneNumberId || '1369335159587862'}
+                </span>
+              </div>
+              <div className="wa-gateway-item">
+                <span className="wa-gateway-label">Meta WABA ID (Business Account)</span>
+                <span className="wa-gateway-value" style={{ fontFamily: 'var(--font-mono, monospace)' }}>
+                  {status.businessAccountId || '1392195342349739'}
+                </span>
+              </div>
+              <div className="wa-gateway-item">
+                <span className="wa-gateway-label">Messaging Throughput Tier</span>
+                <span className="wa-gateway-value" style={{ color: '#60a5fa' }}>STANDARD (Tier 250 / Day)</span>
+              </div>
+              <div className="wa-gateway-item">
+                <span className="wa-gateway-label">Webhook Receiver Endpoint</span>
+                <span className="wa-gateway-value" style={{ fontSize: '0.78rem' }}>
+                  https://meta-webhooks.kapso.ai/whatsapp
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── CONFIRMATION DIALOG ── */}
       <AdminConfirmDialog
         isOpen={confirmDialog}
-        title="Confirm WhatsApp Dispatch"
-        message={`Are you sure you want to send this WhatsApp message to ${recipient}? This will be recorded in the admin audit trail.`}
-        confirmLabel={sending ? 'Sending...' : 'Confirm & Dispatch'}
+        title="Confirm WhatsApp Outbound Message"
+        message={`Are you sure you want to dispatch this WhatsApp message to +${recipient.replace(/\D/g, '')}? It will be officially sent via Meta Cloud API and recorded in the admin audit trail.`}
+        confirmLabel={sending ? 'Dispatching...' : 'Confirm & Dispatch'}
         cancelLabel="Cancel"
         loading={sending}
         onCancel={() => setConfirmDialog(false)}

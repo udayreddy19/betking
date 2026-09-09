@@ -30,12 +30,26 @@ export default function PaymentGatewaysView() {
   });
   const [savingRules, setSavingRules] = useState(false);
 
+  const [routingConfig, setRoutingConfig] = useState({
+    routingMode: 'WEIGHTED',
+    weights: { RAZORPAY: 50, CASHFREE: 50, MANUAL_UPI: 0 },
+    autoPayoutRules: {
+      enabled: true,
+      maxInstantAmount: 5000,
+      requireKyc: true,
+      blockIfFraudRisk: true,
+      dailyCapPerUser: 25000,
+    },
+  });
+  const [savingRouting, setSavingRouting] = useState(false);
+
   const fetchGateways = useCallback(async () => {
     try {
       setLoading(true);
-      const [res, rulesRes] = await Promise.allSettled([
+      const [res, rulesRes, routeRes] = await Promise.allSettled([
         adminApiClient.get('/payment-gateways'),
         adminApiClient.get('/wallet-promo-rules'),
+        adminApiClient.get('/payment-gateways/routing'),
       ]);
       if (res.status === 'fulfilled') {
         setGateways(res.value?.gateways || []);
@@ -43,12 +57,28 @@ export default function PaymentGatewaysView() {
       if (rulesRes.status === 'fulfilled' && rulesRes.value?.rules) {
         setPromoRules(rulesRes.value.rules);
       }
+      if (routeRes.status === 'fulfilled' && routeRes.value?.routing) {
+        setRoutingConfig(routeRes.value.routing);
+      }
     } catch (err) {
       showToast(err.message || 'Failed to load payment gateways', 'error');
     } finally {
       setLoading(false);
     }
   }, [showToast]);
+
+  const handleSaveRouting = async () => {
+    setSavingRouting(true);
+    try {
+      const res = await adminApiClient.patch('/payment-gateways/routing', routingConfig);
+      if (res.routing) setRoutingConfig(res.routing);
+      showToast('Gateway auto-routing and payout rules saved!', 'success');
+    } catch (err) {
+      showToast(err.message || 'Failed to save routing rules', 'error');
+    } finally {
+      setSavingRouting(false);
+    }
+  };
 
   const handleSavePromoRules = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
@@ -392,6 +422,178 @@ export default function PaymentGatewaysView() {
             </div>
           );
         })}
+      </div>
+
+      {/* Smart Gateway Auto-Routing & Instant Auto-Payouts */}
+      <div className="pg-card" style={{ marginTop: 24, padding: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <ActivityIcon size={20} />
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>
+                Smart Gateway Auto-Routing & Instant Auto-Payouts
+              </h3>
+              <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: 'var(--admin-text-muted)' }}>
+                Dynamically route deposit volume between providers and automate instant payouts under strict risk thresholds.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleSaveRouting}
+            disabled={savingRouting}
+            className="pg-btn pg-btn-primary-switch--active"
+            style={{ padding: '6px 18px' }}
+          >
+            {savingRouting ? 'Saving Routing…' : 'Save Routing & Payout Rules'}
+          </button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 16 }}>
+          {/* Routing Strategy */}
+          <div style={{ background: 'var(--admin-card-bg-subtle, rgba(255,255,255,0.03))', padding: 14, borderRadius: 'var(--admin-radius)', border: '1px solid var(--admin-border, #333)' }}>
+            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: 8 }}>
+              Deposit Routing Strategy
+            </label>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+              {[
+                { id: 'WEIGHTED', label: 'Weighted Split' },
+                { id: 'HEALTH_PRIORITY', label: 'Health Auto-Failover' },
+                { id: 'PRIMARY', label: 'Primary Only' },
+              ].map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  className={`admin-btn admin-btn--sm${routingConfig.routingMode === m.id ? ' admin-btn--secondary' : ' admin-btn--ghost'}`}
+                  style={{ fontSize: '0.75rem', padding: '3px 8px' }}
+                  onClick={() => setRoutingConfig((p) => ({ ...p, routingMode: m.id }))}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Split Sliders */}
+            {routingConfig.routingMode === 'WEIGHTED' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: 4 }}>
+                    <span style={{ fontWeight: 600 }}>Razorpay Weight</span>
+                    <span style={{ fontWeight: 800, color: '#38bdf8' }}>{routingConfig.weights?.RAZORPAY ?? 50}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={routingConfig.weights?.RAZORPAY ?? 50}
+                    onChange={(e) => {
+                      const rz = Number(e.target.value);
+                      setRoutingConfig((p) => ({
+                        ...p,
+                        weights: { ...p.weights, RAZORPAY: rz, CASHFREE: Math.max(0, 100 - rz - (p.weights?.MANUAL_UPI || 0)) },
+                      }));
+                    }}
+                    style={{ width: '100%', accentColor: '#38bdf8' }}
+                  />
+                </div>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: 4 }}>
+                    <span style={{ fontWeight: 600 }}>Cashfree Weight</span>
+                    <span style={{ fontWeight: 800, color: '#34d399' }}>{routingConfig.weights?.CASHFREE ?? 50}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={routingConfig.weights?.CASHFREE ?? 50}
+                    onChange={(e) => {
+                      const cf = Number(e.target.value);
+                      setRoutingConfig((p) => ({
+                        ...p,
+                        weights: { ...p.weights, CASHFREE: cf, RAZORPAY: Math.max(0, 100 - cf - (p.weights?.MANUAL_UPI || 0)) },
+                      }));
+                    }}
+                    style={{ width: '100%', accentColor: '#34d399' }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Instant Auto-Payout Thresholds */}
+          <div style={{ background: 'var(--admin-card-bg-subtle, rgba(255,255,255,0.03))', padding: 14, borderRadius: 'var(--admin-radius)', border: '1px solid var(--admin-border, #333)' }}>
+            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: 8 }}>
+              ⚡ Instant Auto-Payout Guardrails
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={routingConfig.autoPayoutRules?.enabled ?? true}
+                  onChange={(e) => setRoutingConfig((p) => ({
+                    ...p,
+                    autoPayoutRules: { ...p.autoPayoutRules, enabled: e.target.checked },
+                  }))}
+                  style={{ accentColor: '#10b981' }}
+                />
+                Enable Instant Auto-Payouts
+              </label>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--admin-text-muted)' }}>Max Instant Amount:</span>
+              <span style={{ fontWeight: 700 }}>₹</span>
+              <input
+                type="number"
+                min="500"
+                max="50000"
+                step="500"
+                value={routingConfig.autoPayoutRules?.maxInstantAmount ?? 5000}
+                onChange={(e) => setRoutingConfig((p) => ({
+                  ...p,
+                  autoPayoutRules: { ...p.autoPayoutRules, maxInstantAmount: Number(e.target.value) || 5000 },
+                }))}
+                style={{
+                  width: '120px',
+                  padding: '4px 8px',
+                  background: 'var(--admin-input-bg, #1e1e1e)',
+                  color: 'inherit',
+                  border: '1px solid var(--admin-border, #444)',
+                  borderRadius: 4,
+                  fontWeight: 700,
+                  fontSize: '0.84rem',
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.76rem', color: 'var(--admin-text-muted)' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={routingConfig.autoPayoutRules?.requireKyc ?? true}
+                  onChange={(e) => setRoutingConfig((p) => ({
+                    ...p,
+                    autoPayoutRules: { ...p.autoPayoutRules, requireKyc: e.target.checked },
+                  }))}
+                  style={{ accentColor: '#10b981' }}
+                />
+                Require Verified KYC (blocks unverified users)
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={routingConfig.autoPayoutRules?.blockIfFraudRisk ?? true}
+                  onChange={(e) => setRoutingConfig((p) => ({
+                    ...p,
+                    autoPayoutRules: { ...p.autoPayoutRules, blockIfFraudRisk: e.target.checked },
+                  }))}
+                  style={{ accentColor: '#ef4444' }}
+                />
+                Auto-Hold on Risk / Syndicate Flagged Accounts
+              </label>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Wallet & Promotion Balance Rules Configuration */}
