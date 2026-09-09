@@ -53,7 +53,7 @@ function resolveInningsBattingTeam(rawName, team1Name, team2Name, inningsNumber,
   });
   if (side === 'home') return team1Name;
   if (side === 'away') return team2Name;
-  return null;
+  return rawName || ((Number(inningsNumber) % 2 === 1) ? team1Name : team2Name);
 }
 
 function oversLookEmpty(overs) {
@@ -147,16 +147,16 @@ export function buildCanonicalMatchSnapshot(match) {
   const isSRL = isMatchSRL(match);
   const isTest = matchFormat === 'TEST' || matchFormat === 'FIRST_CLASS' || isTestMatch(match);
 
-  const team1Name = match.team1?.name || match.team1 || match.homeTeam || 'Team 1';
-  const team2Name = match.team2?.name || match.team2 || match.awayTeam || 'Team 2';
+  const ld = match.liveDetails || {};
+  const scorecardInningsRaw = Array.isArray(match.scorecardInnings) ? match.scorecardInnings : [];
+  const testInningsRaw = Array.isArray(ld.testInnings) ? ld.testInnings : [];
+
+  const team1Name = match.team1?.name || match.team1 || match.homeTeam || scorecardInningsRaw[0]?.batTeamName || 'Team 1';
+  const team2Name = match.team2?.name || match.team2 || match.awayTeam || scorecardInningsRaw[1]?.batTeamName || 'Team 2';
   const team1Short = formatTeamShortName(team1Name, match.team1?.shortName);
   const team2Short = formatTeamShortName(team2Name, match.team2?.shortName);
   const team1Display = teamDisplayName(team1Name);
   const team2Display = teamDisplayName(team2Name);
-
-  const ld = match.liveDetails || {};
-  const scorecardInningsRaw = Array.isArray(match.scorecardInnings) ? match.scorecardInnings : [];
-  const testInningsRaw = Array.isArray(ld.testInnings) ? ld.testInnings : [];
 
   // Parse all available innings (supporting up to 4 innings for Test matches)
   const inningsList = [];

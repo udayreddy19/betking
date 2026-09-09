@@ -1,4 +1,4 @@
-import test from 'node:test';
+import { describe, it, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import {
   issueDiscreteReward,
@@ -159,37 +159,44 @@ class MockDbClient {
   }
 }
 
-test('Discrete Reward Engine: 10/10 Hardened Security & Exact Stake Test Suite', async (t) => {
-  const db = new MockDbClient();
-  const USER_A = 'usr_alice_123';
-  const USER_B = 'usr_bob_456';
+describe('Discrete Reward Engine: 10/10 Hardened Security & Exact Stake Test Suite', () => {
+  let db;
+  let USER_A;
+  let USER_B;
+  let fb500;
+  let fb1000;
 
-  // Issue rewards
-  const fb500 = await issueDiscreteReward({
-    userId: USER_A,
-    rewardType: 'freebet',
-    amount: 500,
-    title: 'Welcome ₹500 Free Bet',
-    minOdds: 1.50,
-    returnsStake: false,
-    allowPartialUse: false,
-    expiresAt: new Date(Date.now() + 86400000 * 7),
-    client: db,
+  beforeAll(async () => {
+    db = new MockDbClient();
+    USER_A = 'usr_alice_123';
+    USER_B = 'usr_bob_456';
+
+    fb500 = await issueDiscreteReward({
+      userId: USER_A,
+      rewardType: 'freebet',
+      amount: 500,
+      title: 'Welcome ₹500 Free Bet',
+      minOdds: 1.50,
+      returnsStake: false,
+      allowPartialUse: false,
+      expiresAt: new Date(Date.now() + 86400000 * 7),
+      client: db,
+    });
+
+    fb1000 = await issueDiscreteReward({
+      userId: USER_A,
+      rewardType: 'freebet',
+      amount: 1000,
+      title: 'Loyalty ₹1,000 Free Bet',
+      minOdds: 1.50,
+      returnsStake: false,
+      allowPartialUse: false,
+      expiresAt: new Date(Date.now() + 86400000 * 7),
+      client: db,
+    });
   });
 
-  const fb1000 = await issueDiscreteReward({
-    userId: USER_A,
-    rewardType: 'freebet',
-    amount: 1000,
-    title: 'Loyalty ₹1,000 Free Bet',
-    minOdds: 1.50,
-    returnsStake: false,
-    allowPartialUse: false,
-    expiresAt: new Date(Date.now() + 86400000 * 7),
-    client: db,
-  });
-
-  await t.test('Scenario 1: Reject Partial Stake for Free Bet ₹500', async () => {
+  it('Scenario 1: Reject Partial Stake for Free Bet ₹500', async () => {
     // Attempting ₹100 stake with ₹500 Free Bet
     await assert.rejects(
       async () => {
@@ -227,7 +234,7 @@ test('Discrete Reward Engine: 10/10 Hardened Security & Exact Stake Test Suite',
     );
   });
 
-  await t.test('Scenario 2: Reject Over Stake for Free Bet ₹500', async () => {
+  it('Scenario 2: Reject Over Stake for Free Bet ₹500', async () => {
     // Attempting ₹501 stake with ₹500 Free Bet
     await assert.rejects(
       async () => {
@@ -247,7 +254,7 @@ test('Discrete Reward Engine: 10/10 Hardened Security & Exact Stake Test Suite',
     );
   });
 
-  await t.test('Scenario 3: Reject Below Minimum Odds Requirement', async () => {
+  it('Scenario 3: Reject Below Minimum Odds Requirement', async () => {
     // Attempting 1.30 odds when minOdds is 1.50
     await assert.rejects(
       async () => {
@@ -267,7 +274,7 @@ test('Discrete Reward Engine: 10/10 Hardened Security & Exact Stake Test Suite',
     );
   });
 
-  await t.test('Scenario 4: Accept Exact Stake and Atomically Consume Reward', async () => {
+  it('Scenario 4: Accept Exact Stake and Atomically Consume Reward', async () => {
     const validated = await lockAndValidateRewardForBet({
       rewardId: fb500.reward_id,
       userId: USER_A,
@@ -303,7 +310,7 @@ test('Discrete Reward Engine: 10/10 Hardened Security & Exact Stake Test Suite',
     assert.equal(ledgerEntry.new_status, 'CONSUMED');
   });
 
-  await t.test('Scenario 5: Prevent Double Spending / Reuse of Consumed Reward', async () => {
+  it('Scenario 5: Prevent Double Spending / Reuse of Consumed Reward', async () => {
     await assert.rejects(
       async () => {
         await lockAndValidateRewardForBet({
@@ -322,7 +329,7 @@ test('Discrete Reward Engine: 10/10 Hardened Security & Exact Stake Test Suite',
     );
   });
 
-  await t.test('Scenario 6: Reject Unauthorized User Access', async () => {
+  it('Scenario 6: Reject Unauthorized User Access', async () => {
     // User B attempts to spend User A's ₹1,000 Free Bet
     await assert.rejects(
       async () => {
@@ -342,7 +349,7 @@ test('Discrete Reward Engine: 10/10 Hardened Security & Exact Stake Test Suite',
     );
   });
 
-  await t.test('Scenario 7: Reject Expired Reward', async () => {
+  it('Scenario 7: Reject Expired Reward', async () => {
     const expiredReward = await issueDiscreteReward({
       userId: USER_A,
       rewardType: 'freebet',
@@ -370,7 +377,7 @@ test('Discrete Reward Engine: 10/10 Hardened Security & Exact Stake Test Suite',
     );
   });
 
-  await t.test('Scenario 8: Rewards are Discrete Instruments (Cannot Merge ₹500 + ₹1,000)', async () => {
+  it('Scenario 8: Rewards are Discrete Instruments (Cannot Merge ₹500 + ₹1,000)', async () => {
     // fb1000 requires exact 1000 stake, attempting 1500 fails
     await assert.rejects(
       async () => {
@@ -390,7 +397,7 @@ test('Discrete Reward Engine: 10/10 Hardened Security & Exact Stake Test Suite',
     );
   });
 
-  await t.test('Scenario 9: Multiple Identical Rewards Are Independent Instruments', async () => {
+  it('Scenario 9: Multiple Identical Rewards Are Independent Instruments', async () => {
     const fbA = await issueDiscreteReward({
       userId: USER_A,
       rewardType: 'freebet',
@@ -438,7 +445,7 @@ test('Discrete Reward Engine: 10/10 Hardened Security & Exact Stake Test Suite',
     assert.equal(valB.rewardId, fbB.reward_id);
   });
 
-  await t.test('Scenario 10: Free Bet Settlement Profit Only Rule (returnsStake = false)', async () => {
+  it('Scenario 10: Free Bet Settlement Profit Only Rule (returnsStake = false)', async () => {
     // Bet of ₹500 Free Bet with odds 2.50
     // Total Payout = 500 * 2.50 = 1250
     // Because returns_stake is false, promotional stake (500) is deducted -> 750 profit is credited to cash.

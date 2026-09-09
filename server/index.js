@@ -16,18 +16,8 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 app.set('trust proxy', 1);
 
-app.use('/api/support/attachments', express.json({
-  limit: '15mb',
-  verify: (req, res, buf) => { req.rawBody = buf; },
-}));
-app.use('/api/v1/support/attachments', express.json({
-  limit: '15mb',
-  verify: (req, res, buf) => { req.rawBody = buf; },
-}));
-app.use('/api/admin/support/attachments', express.json({
-  limit: '15mb',
-  verify: (req, res, buf) => { req.rawBody = buf; },
-}));
+const attachmentJson = express.json({ limit: '15mb', verify: (req, res, buf) => { req.rawBody = buf; } });
+app.use(['/api/support/attachments', '/api/v1/support/attachments', '/api/admin/support/attachments'], attachmentJson);
 
 // IMPORTANT: Razorpay Webhooks MUST receive the RAW request body to verify HMAC signatures accurately.
 app.use(express.json({
@@ -161,10 +151,8 @@ app.all(['/api/exchange', '/api/exchange/{*path}', '/api/v1/exchange', '/api/v1/
   res.status(404).json({ success: false, code: 'EXCHANGE_NOT_A_PRODUCT', error: 'Matching exchange is not available.' });
 });
 
-app.use('/api/admin/payment-gateways', adminAuth, adminPaymentGatewaysRouter);
-app.use('/api/v1/admin/payment-gateways', adminAuth, adminPaymentGatewaysRouter);
-app.use('/api/admin/wallet-promo-rules', adminAuth, adminWalletPromoRulesRouter);
-app.use('/api/v1/admin/wallet-promo-rules', adminAuth, adminWalletPromoRulesRouter);
+app.use(['/api/admin/payment-gateways', '/api/v1/admin/payment-gateways'], adminAuth, adminPaymentGatewaysRouter);
+app.use(['/api/admin/wallet-promo-rules', '/api/v1/admin/wallet-promo-rules'], adminAuth, adminWalletPromoRulesRouter);
 app.use('/api/admin', adminRouter);
 
 // All v1 admin endpoints require admin JWT
@@ -197,49 +185,16 @@ initWebSocketServer(httpServer);
 httpServer.listen(PORT, async () => {
   logger.info('http_listening', { port: Number(PORT), webhook: '/api/webhooks/razorpay', websocket: '/ws/support' });
 
-  try {
-    const { hydrateSportFlagsFromStore } = await import('../lib/adminConfig.mjs');
-    await hydrateSportFlagsFromStore();
-  } catch (err) {
-    logger.warn('sport_flags_hydrate_failed', { error: err.message });
-  }
-
-  try {
-    const { waitForEngineModeHydrated, resolveOddsEngineMode } = await import('../lib/odds-v4/EngineModeControl.mjs');
-    await waitForEngineModeHydrated();
-    logger.info('odds_engine_mode_ready', { mode: resolveOddsEngineMode() });
-  } catch (err) {
-    logger.warn('odds_engine_mode_hydrate_failed', { error: err.message });
-  }
-
-  try {
-    const { logWebPushStartupStatus } = await import('../lib/webPushEngine.mjs');
-    logWebPushStartupStatus();
-  } catch (err) {
-    logger.warn('webpush_startup_check_failed', { error: err.message });
-  }
-
-  try {
-    if (process.env.RUN_BACKGROUND_WORKERS !== 'false') {
-      const { startBackgroundWorkers } = await import('../lib/schedulerWorker.mjs');
-      startBackgroundWorkers();
-    }
-  } catch (err) {
-    logger.warn('scheduler_startup_failed', { error: err.message });
-  }
-
-  try {
-    const { hydrateSrlOperatorSessions } = await import('../lib/iplSrlOperatorState.mjs');
-    await hydrateSrlOperatorSessions();
-  } catch (err) {
-    logger.warn('srl_operator_hydrate_failed', { error: err.message });
-  }
-
-  try {
-    const { hydrateMarketLiabilityStore } = await import('../lib/marketLiabilityStore.mjs');
-    await hydrateMarketLiabilityStore();
-  } catch (err) {
-    logger.warn('market_liability_hydrate_failed', { error: err.message });
+  const startupTasks = [
+    ['sport_flags', () => import('../lib/adminConfig.mjs').then((m) => m.hydrateSportFlagsFromStore())],
+    ['odds_engine_mode', () => import('../lib/odds-v4/EngineModeControl.mjs').then(async (m) => { await m.waitForEngineModeHydrated(); logger.info('odds_engine_mode_ready', { mode: m.resolveOddsEngineMode() }); })],
+    ['webpush_startup', () => import('../lib/webPushEngine.mjs').then((m) => m.logWebPushStartupStatus())],
+    ['scheduler', () => process.env.RUN_BACKGROUND_WORKERS !== 'false' && import('../lib/schedulerWorker.mjs').then((m) => m.startBackgroundWorkers())],
+    ['srl_operator', () => import('../lib/iplSrlOperatorState.mjs').then((m) => m.hydrateSrlOperatorSessions())],
+    ['market_liability', () => import('../lib/marketLiabilityStore.mjs').then((m) => m.hydrateMarketLiabilityStore())],
+  ];
+  for (const [name, fn] of startupTasks) {
+    try { await fn(); } catch (err) { logger.warn(`${name}_startup_failed`, { error: err.message }); }
   }
 });
 

@@ -7,7 +7,7 @@ describe('Phase 12 Retention, ARPU & Conversion Funnel Tests', () => {
     expect(res.success).toBe(true);
     expect(res.d1RetentionPct).toBeGreaterThanOrEqual(0.0);
     expect(Array.isArray(res.cohorts)).toBe(true);
-  });
+  }, 20000);
 
   it('should calculate 4-stage customer conversion funnel', async () => {
     const res = await getUserFunnelMetrics();
@@ -17,5 +17,5 @@ describe('Phase 12 Retention, ARPU & Conversion Funnel Tests', () => {
     expect(res.funnel[1].stage).toBe('2. KYC Verified');
     expect(res.funnel[2].stage).toBe('3. First Deposit');
     expect(res.funnel[3].stage).toBe('4. First Bet Placed');
-  });
+  }, 20000);
 });

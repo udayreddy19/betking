@@ -1,4 +1,4 @@
-import test from 'node:test';
+import { describe, it, beforeAll } from 'vitest';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { query } from '../../db/pg.js';
@@ -52,13 +52,13 @@ function generateCashfreeWebhookSignature(rawBody, timestamp) {
   return crypto.createHmac('sha256', CF_WEBHOOK_SECRET).update(payload).digest('base64');
 }
 
-test('ODDSYRA — PRODUCTION PAYMENT GATEWAY MANAGEMENT TEST SUITE', async (t) => {
+describe('ODDSYRA — PRODUCTION PAYMENT GATEWAY MANAGEMENT TEST SUITE', () => {
+  beforeAll(async () => {
+    await query(`UPDATE payment_gateway_configs SET enabled = true, is_primary = true WHERE provider = 'CASHFREE'`);
+    await query(`UPDATE payment_gateway_configs SET enabled = true, is_primary = false WHERE provider = 'RAZORPAY'`);
+  });
 
-  // Reset initial configs
-  await query(`UPDATE payment_gateway_configs SET enabled = true, is_primary = true WHERE provider = 'CASHFREE'`);
-  await query(`UPDATE payment_gateway_configs SET enabled = true, is_primary = false WHERE provider = 'RAZORPAY'`);
-
-  await t.test('1. Default DB Configuration & Primary Resolution', async () => {
+  it('1. Default DB Configuration & Primary Resolution', async () => {
     const configs = await paymentProviderService.getGatewayConfigs();
     assert.equal(configs.length >= 2, true);
     
@@ -74,7 +74,7 @@ test('ODDSYRA — PRODUCTION PAYMENT GATEWAY MANAGEMENT TEST SUITE', async (t) =
     assert.equal(target, 'CASHFREE');
   });
 
-  await t.test('2. Mode: CASHFREE ONLY (Razorpay Disabled) -> All new orders route to Cashfree', async () => {
+  it('2. Mode: CASHFREE ONLY (Razorpay Disabled) -> All new orders route to Cashfree', async () => {
     await paymentProviderService.updateGatewayConfig('RAZORPAY', { enabled: false });
     
     const target = await paymentProviderService.resolveTargetProvider();
@@ -83,13 +83,13 @@ test('ODDSYRA — PRODUCTION PAYMENT GATEWAY MANAGEMENT TEST SUITE', async (t) =
     const userId = `usr_gw_test_${Date.now()}_1`;
     await createTestUserAndWallet(userId, 0);
 
-    const orderRes = await depositEngine.createOrder({ userId, amount: 500 });
+    const orderRes = await depositEngine.createOrder({ userId, amount: 1000 });
     assert.equal(orderRes.success, true);
     assert.equal(orderRes.provider, 'CASHFREE');
     assert.ok(orderRes.orderId.startsWith('dep_'));
   });
 
-  await t.test('3. Mode: RAZORPAY ONLY (Cashfree Disabled, Razorpay Primary) -> All new orders route to Razorpay', async () => {
+  it('3. Mode: RAZORPAY ONLY (Cashfree Disabled, Razorpay Primary) -> All new orders route to Razorpay', async () => {
     await paymentProviderService.updateGatewayConfig('CASHFREE', { enabled: false });
     await paymentProviderService.updateGatewayConfig('RAZORPAY', { enabled: true, isPrimary: true });
 
@@ -105,7 +105,7 @@ test('ODDSYRA — PRODUCTION PAYMENT GATEWAY MANAGEMENT TEST SUITE', async (t) =
     assert.ok(orderRes.orderId.startsWith('order_'));
   });
 
-  await t.test('4. Mode: BOTH ENABLED -> Primary Gateway Switch dynamically changes new order routing', async () => {
+  it('4. Mode: BOTH ENABLED -> Primary Gateway Switch dynamically changes new order routing', async () => {
     await paymentProviderService.updateGatewayConfig('CASHFREE', { enabled: true });
     await paymentProviderService.updateGatewayConfig('RAZORPAY', { enabled: true });
 
@@ -120,12 +120,12 @@ test('ODDSYRA — PRODUCTION PAYMENT GATEWAY MANAGEMENT TEST SUITE', async (t) =
     assert.equal(resolved, 'RAZORPAY');
   });
 
-  await t.test('5. Existing In-Flight Cashfree Order Settles Safely After Cashfree is Disabled', async () => {
+  it('5. Existing In-Flight Cashfree Order Settles Safely After Cashfree is Disabled', async () => {
     // 1. Enable Cashfree and create order
     await paymentProviderService.updateGatewayConfig('CASHFREE', { enabled: true, isPrimary: true });
     const userId = `usr_gw_test_${Date.now()}_5`;
     await createTestUserAndWallet(userId, 0);
-    const orderRes = await depositEngine.createOrder({ userId, amount: 750, provider: 'CASHFREE' });
+    const orderRes = await depositEngine.createOrder({ userId, amount: 1000, provider: 'CASHFREE' });
     assert.equal(orderRes.provider, 'CASHFREE');
 
     // 2. Admin now disables Cashfree
@@ -138,8 +138,8 @@ test('ODDSYRA — PRODUCTION PAYMENT GATEWAY MANAGEMENT TEST SUITE', async (t) =
       event_time: new Date().toISOString(),
       type: 'PAYMENT_SUCCESS_WEBHOOK',
       data: {
-        order: { order_id: orderRes.orderId, order_amount: 750, order_currency: 'INR' },
-        payment: { cf_payment_id: paymentId, payment_status: 'SUCCESS', payment_amount: 750, payment_currency: 'INR' },
+        order: { order_id: orderRes.orderId, order_amount: 1000, order_currency: 'INR' },
+        payment: { cf_payment_id: paymentId, payment_status: 'SUCCESS', payment_amount: 1000, payment_currency: 'INR' },
         customer_details: { customer_id: userId },
       },
     });
@@ -157,15 +157,15 @@ test('ODDSYRA — PRODUCTION PAYMENT GATEWAY MANAGEMENT TEST SUITE', async (t) =
 
     assert.equal(webhookRes.status, 'PAID');
     assert.equal(webhookRes.provider, 'CASHFREE');
-    assert.equal(webhookRes.newBalance, 750);
+    assert.equal(webhookRes.newBalance, 1000);
   });
 
-  await t.test('6. Existing In-Flight Razorpay Order Settles Safely After Razorpay is Disabled', async () => {
+  it('6. Existing In-Flight Razorpay Order Settles Safely After Razorpay is Disabled', async () => {
     // 1. Enable Razorpay and create order
     await paymentProviderService.updateGatewayConfig('RAZORPAY', { enabled: true, isPrimary: true });
     const userId = `usr_gw_test_${Date.now()}_6`;
     await createTestUserAndWallet(userId, 100);
-    const orderRes = await depositEngine.createOrder({ userId, amount: 600, provider: 'RAZORPAY' });
+    const orderRes = await depositEngine.createOrder({ userId, amount: 1000, provider: 'RAZORPAY' });
     assert.equal(orderRes.provider, 'RAZORPAY');
 
     // 2. Admin now disables Razorpay
@@ -185,15 +185,15 @@ test('ODDSYRA — PRODUCTION PAYMENT GATEWAY MANAGEMENT TEST SUITE', async (t) =
 
     assert.equal(verifyRes.status, 'PAID');
     assert.equal(verifyRes.provider, 'RAZORPAY');
-    assert.equal(verifyRes.newBalance, 700);
+    assert.equal(verifyRes.newBalance, 1100);
   });
 
-  await t.test('7. Strict Provider Isolation: Cashfree Webhook Rejects Razorpay Order', async () => {
+  it('7. Strict Provider Isolation: Cashfree Webhook Rejects Razorpay Order', async () => {
     // Create Razorpay order
     await paymentProviderService.updateGatewayConfig('RAZORPAY', { enabled: true });
     const userId = `usr_gw_test_${Date.now()}_7`;
     await createTestUserAndWallet(userId, 0);
-    const orderRes = await depositEngine.createOrder({ userId, amount: 500, provider: 'RAZORPAY' });
+    const orderRes = await depositEngine.createOrder({ userId, amount: 1000, provider: 'RAZORPAY' });
 
     // Cashfree attempts to process Razorpay order -> Throws PROVIDER_MISMATCH
     await assert.rejects(
@@ -202,7 +202,7 @@ test('ODDSYRA — PRODUCTION PAYMENT GATEWAY MANAGEMENT TEST SUITE', async (t) =
           provider: 'CASHFREE',
           providerOrderId: orderRes.orderId,
           providerPaymentId: `cf_fake_${Date.now()}`,
-          amountInINR: 500,
+          amountInINR: 1000,
           userId,
         });
       },
@@ -210,12 +210,12 @@ test('ODDSYRA — PRODUCTION PAYMENT GATEWAY MANAGEMENT TEST SUITE', async (t) =
     );
   });
 
-  await t.test('8. Strict Provider Isolation: Razorpay Webhook Rejects Cashfree Order', async () => {
+  it('8. Strict Provider Isolation: Razorpay Webhook Rejects Cashfree Order', async () => {
     // Create Cashfree order
     await paymentProviderService.updateGatewayConfig('CASHFREE', { enabled: true });
     const userId = `usr_gw_test_${Date.now()}_8`;
     await createTestUserAndWallet(userId, 0);
-    const orderRes = await depositEngine.createOrder({ userId, amount: 500, provider: 'CASHFREE' });
+    const orderRes = await depositEngine.createOrder({ userId, amount: 1000, provider: 'CASHFREE' });
 
     // Razorpay attempts to process Cashfree order -> Throws PROVIDER_MISMATCH
     await assert.rejects(
@@ -224,7 +224,7 @@ test('ODDSYRA — PRODUCTION PAYMENT GATEWAY MANAGEMENT TEST SUITE', async (t) =
           provider: 'RAZORPAY',
           providerOrderId: orderRes.orderId,
           providerPaymentId: `rzp_fake_${Date.now()}`,
-          amountInINR: 500,
+          amountInINR: 1000,
           userId,
         });
       },
@@ -232,7 +232,7 @@ test('ODDSYRA — PRODUCTION PAYMENT GATEWAY MANAGEMENT TEST SUITE', async (t) =
     );
   });
 
-  await t.test('9. Failsafe Mode: If All Gateways Disabled -> Clean Rejection with PAYMENTS_UNAVAILABLE', async () => {
+  it('9. Failsafe Mode: If All Gateways Disabled -> Clean Rejection with PAYMENTS_UNAVAILABLE', async () => {
     await paymentProviderService.updateGatewayConfig('CASHFREE', { enabled: false });
     await paymentProviderService.updateGatewayConfig('RAZORPAY', { enabled: false });
 
@@ -241,9 +241,10 @@ test('ODDSYRA — PRODUCTION PAYMENT GATEWAY MANAGEMENT TEST SUITE', async (t) =
     assert.equal(payload.providers.length, 0);
 
     const userId = `usr_gw_test_${Date.now()}_9`;
+    await createTestUserAndWallet(userId, 0);
     await assert.rejects(
       async () => {
-        await depositEngine.createOrder({ userId, amount: 500 });
+        await depositEngine.createOrder({ userId, amount: 1000 });
       },
       (err) => err.code === 'PAYMENTS_UNAVAILABLE' || err.message.includes('PAYMENTS_UNAVAILABLE')
     );
@@ -253,7 +254,7 @@ test('ODDSYRA — PRODUCTION PAYMENT GATEWAY MANAGEMENT TEST SUITE', async (t) =
     await paymentProviderService.updateGatewayConfig('RAZORPAY', { enabled: true, isPrimary: false });
   });
 
-  await t.test('10. Admin Configuration Audit Logging in DB', async () => {
+  it('10. Admin Configuration Audit Logging in DB', async () => {
     await paymentProviderService.updateGatewayConfig(
       'RAZORPAY',
       { enabled: true, isPrimary: true },
@@ -273,7 +274,7 @@ test('ODDSYRA — PRODUCTION PAYMENT GATEWAY MANAGEMENT TEST SUITE', async (t) =
     await paymentProviderService.updateGatewayConfig('CASHFREE', { enabled: true, isPrimary: true });
   });
 
-  await t.test('11. Safe Test Connection Execution Without Credential Leakage', async () => {
+  it('11. Safe Test Connection Execution Without Credential Leakage', async () => {
     const cfTest = await paymentProviderService.testGatewayConnection('CASHFREE');
     assert.equal(cfTest.provider, 'CASHFREE');
     assert.ok(typeof cfTest.healthy === 'boolean');

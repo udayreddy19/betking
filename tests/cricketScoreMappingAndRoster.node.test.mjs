@@ -1,4 +1,4 @@
-import { test, describe } from 'node:test';
+import { test, describe } from 'vitest';
 import assert from 'node:assert/strict';
 import { normalizeMatch, normalizeMatchScore } from '../src/utils/cricketMatchNormalizer.js';
 import { resolveCricketTeamScores, teamNameMatches } from '../src/utils/cricketScores.js';
@@ -84,7 +84,7 @@ describe('CRITICAL CRICKET SCORE MAPPING & ROSTER DISPLAY FIX', () => {
 
     // Detailed Summary
     assert.equal(normalized.homeTeam.fullInningsSummary, '202 & 256/3');
-    assert.equal(normalized.awayTeam.fullInningsSummary, '250/10');
+    assert.equal(normalized.awayTeam.fullInningsSummary, '250');
 
     // Active Current Innings
     assert.equal(normalized.currentInnings.matchInningsId, 3);

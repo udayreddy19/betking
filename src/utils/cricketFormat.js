@@ -88,6 +88,7 @@ function inferT10FromLive(match) {
 
 /** First innings clearly longer than T20 but still within 50-over cricket. */
 function inferOdiFromLive(match) {
+  if (isHundredMatch(match)) return false;
   const ld = match?.liveDetails || {};
   const seenFirst = Math.max(
     oversWhole(ld.firstOvers),
@@ -111,6 +112,7 @@ function inferOdiFromLive(match) {
 
 /** Multi-day / first-class from live board (overs, day, stumps) or series name. */
 function inferMultiDayFromLive(match) {
+  if (isHundredMatch(match)) return false;
   const ld = match?.liveDetails || {};
   const seen = Math.max(
     oversWhole(ld.firstOvers),
@@ -158,6 +160,10 @@ function looksLikeOdiSeries(matchOrText) {
  */
 export function detectCricketMatchFormat(match) {
   if (!match) return 'T20';
+
+  if (isHundredMatch(match)) {
+    return 'THE_HUNDRED';
+  }
 
   // 1. League/series first — providers often stamp T10 fixtures as matchType T20
   if (looksLikeT10Series(match) || inferT10FromLive(match)) {

@@ -1,4 +1,4 @@
-import test from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { buildCanonicalMatchSnapshot, deriveSelectedInningsView } from '../src/utils/cricketSnapshot.js';
 import { enrichLivePlayersFromScorecard } from '../src/utils/scorecardLivePlayers.js';

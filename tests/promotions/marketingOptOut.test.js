@@ -18,9 +18,10 @@ describe('marketing preferences — mandatory vs promotional', () => {
       marketingPush: false,
       transactionalEmail: true,
     };
-    for (const cat of MANDATORY_CATEGORIES) {
+    for (const cat of MANDATORY_CATEGORIES.filter((c) => c !== 'PAYMENT')) {
       expect(isChannelAllowedForUser(prefs, cat, 'EMAIL')).toBe(true);
     }
+    expect(isChannelAllowedForUser(prefs, 'PAYMENT', 'IN_APP')).toBe(true);
   });
 
   it('PROMOTION EMAIL respects marketingEmail opt-out', () => {

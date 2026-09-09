@@ -2,6 +2,7 @@
  * Cricket Format, Banner & Score Statistics Comprehensive Test Suite (27 Test Cases)
  */
 import assert from 'node:assert';
+import { describe, it } from 'vitest';
 import {
   buildCanonicalMatchSnapshot,
   deriveSelectedInningsView,
@@ -10,19 +11,8 @@ import {
 } from '../lib/cricketSnapshot.mjs';
 import { resolveCricketTeamScores } from '../src/utils/cricketScores.js';
 
-console.log('🧪 RUNNING CRICKET FORMAT, BANNER & SCORE STATISTICS TEST SUITE (27 TESTS)...\n');
-
-let passedTests = 0;
-function test(name, fn) {
-  try {
-    fn();
-    passedTests++;
-    console.log(`✅ Test ${passedTests}: ${name} PASS`);
-  } catch (err) {
-    console.error(`❌ Test FAILED: ${name}`);
-    throw err;
-  }
-}
+describe('Cricket Format, Banner & Score Statistics Comprehensive Test Suite', () => {
+  const test = (name, fn) => it(name, fn);
 
 // ==========================================
 // FORMAT TESTS (1 - 5)
@@ -753,6 +743,7 @@ test('partial scorecard (chase only) does not make bowling side current', () => 
   assert.strictEqual(scores.team2.runs, 191);
   assert.strictEqual(scores.currentInnings.batTeam, 'Amritsar Soormas');
   assert.strictEqual(scores.currentInnings.runs, 89);
+});
 });
 
 console.log('\n🎉 ALL CRICKET FORMAT, BANNER & SCORE STATISTICS TESTS PASSED WITH ZERO FAILURES!\n');

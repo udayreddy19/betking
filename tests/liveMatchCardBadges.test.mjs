@@ -4,6 +4,7 @@
  * badge rendering, consistency with MatchSnapshot, and resilience.
  */
 import assert from 'node:assert';
+import { describe, it } from 'vitest';
 import {
   buildCanonicalMatchSnapshot,
   deriveSelectedInningsView,
@@ -95,171 +96,139 @@ const t20SrlMatch = {
   ],
 };
 
-// 1. LIVE Test match shows LIVE + TEST
-{
-  const snap = buildCanonicalMatchSnapshot(testLiveMatch);
-  assert.strictEqual(snap.match.statusChip, 'LIVE');
-  assert.strictEqual(snap.match.formatCardBadge, '🏏 TEST');
-  assert.strictEqual(snap.match.isSRL, false);
-  console.log('✅ Test 1: LIVE Test match shows LIVE + TEST PASS');
-}
+describe('Live Match Card Format & SRL Badges', () => {
+  it('1. LIVE Test match shows LIVE + TEST', () => {
+    const snap = buildCanonicalMatchSnapshot(testLiveMatch);
+    assert.strictEqual(snap.match.statusChip, 'LIVE');
+    assert.strictEqual(snap.match.formatCardBadge, '🏏 TEST');
+    assert.strictEqual(snap.match.isSRL, false);
+  });
 
-// 2. LIVE ODI shows LIVE + ODI
-{
-  const snap = buildCanonicalMatchSnapshot(odiLiveMatch);
-  assert.strictEqual(snap.match.statusChip, 'LIVE');
-  assert.strictEqual(snap.match.formatCardBadge, '🏏 ODI');
-  assert.strictEqual(snap.match.isSRL, false);
-  console.log('✅ Test 2: LIVE ODI shows LIVE + ODI PASS');
-}
+  it('2. LIVE ODI shows LIVE + ODI', () => {
+    const snap = buildCanonicalMatchSnapshot(odiLiveMatch);
+    assert.strictEqual(snap.match.statusChip, 'LIVE');
+    assert.strictEqual(snap.match.formatCardBadge, '🏏 ODI');
+    assert.strictEqual(snap.match.isSRL, false);
+  });
 
-// 3. LIVE T20 shows LIVE + T20
-{
-  const snap = buildCanonicalMatchSnapshot(t20LiveMatch);
-  assert.strictEqual(snap.match.statusChip, 'LIVE');
-  assert.strictEqual(snap.match.formatCardBadge, '🏏 T20');
-  assert.strictEqual(snap.match.isSRL, false);
-  console.log('✅ Test 3: LIVE T20 shows LIVE + T20 PASS');
-}
-
-// 4. LIVE T10 shows LIVE + T10
-{
-  const snap = buildCanonicalMatchSnapshot(t10LiveMatch);
-  assert.strictEqual(snap.match.statusChip, 'LIVE');
-  assert.strictEqual(snap.match.formatCardBadge, '🏏 T10');
-  assert.strictEqual(snap.match.isSRL, false);
-  console.log('✅ Test 4: LIVE T10 shows LIVE + T10 PASS');
-}
-
-// 5. LIVE SRL shows LIVE + SRL
-{
-  const snap = buildCanonicalMatchSnapshot(srlLiveMatch);
-  assert.strictEqual(snap.match.statusChip, 'LIVE');
-  assert.strictEqual(snap.match.isSRL, true);
-  console.log('✅ Test 5: LIVE SRL shows LIVE + SRL PASS');
-}
-
-// 6. T20 SRL shows LIVE + T20 + SRL if both metadata exist
-{
-  const snap = buildCanonicalMatchSnapshot(t20SrlMatch);
-  assert.strictEqual(snap.match.statusChip, 'LIVE');
-  assert.strictEqual(snap.match.formatCardBadge, '🏏 T20');
-  assert.strictEqual(snap.match.isSRL, true);
-  console.log('✅ Test 6: T20 SRL shows LIVE + T20 + SRL PASS');
-}
-
-// 7. Completed T20 does not show LIVE
-{
-  const completedT20 = { ...t20LiveMatch, status: 'COMPLETED', isLive: false };
-  const snap = buildCanonicalMatchSnapshot(completedT20);
-  assert.strictEqual(snap.match.statusChip, 'COMPLETED');
-  assert.notStrictEqual(snap.match.statusChip, 'LIVE');
-  assert.strictEqual(snap.match.formatCardBadge, '🏏 T20');
-  console.log('✅ Test 7: Completed T20 does not show LIVE PASS');
-}
-
-// 8. Upcoming ODI does not show LIVE
-{
-  const upcomingODI = { ...odiLiveMatch, status: 'UPCOMING', isLive: false, matchState: 'pre' };
-  const snap = buildCanonicalMatchSnapshot(upcomingODI);
-  assert.strictEqual(snap.match.statusChip, 'UPCOMING');
-  assert.notStrictEqual(snap.match.statusChip, 'LIVE');
-  assert.strictEqual(snap.match.formatCardBadge, '🏏 ODI');
-  console.log('✅ Test 8: Upcoming ODI does not show LIVE PASS');
-}
-
-// 9. 0/0 score displays correctly
-{
-  const zeroScoreMatch = {
-    ...t20LiveMatch,
-    scorecardInnings: [
-      { inningsId: 1, batTeamName: 'Chennai Super Kings', runs: 0, wickets: 0, overs: '0.0' },
-    ],
-  };
-  const snap = buildCanonicalMatchSnapshot(zeroScoreMatch);
-  const view = deriveSelectedInningsView(snap, 1);
-  assert.strictEqual(view.score, 0);
-  assert.strictEqual(view.wickets, 0);
-  assert.strictEqual(view.overs, '0.0');
-  console.log('✅ Test 9: 0/0 score displays correctly PASS');
-}
-
-// 10. Missing score does not remove format/status badges
-{
-  const missingScoreMatch = {
-    id: 'missing_score_01',
-    matchFormat: 'T20',
-    status: 'LIVE',
-    isLive: true,
-    team1: { name: 'Team A' },
-    team2: { name: 'Team B' },
-  };
-  const snap = buildCanonicalMatchSnapshot(missingScoreMatch);
-  assert.strictEqual(snap.match.statusChip, 'LIVE');
-  assert.strictEqual(snap.match.formatCardBadge, '🏏 T20');
-  assert.strictEqual(snap.match.isSRL, false);
-  console.log('✅ Test 10: Missing score does not remove format/status badges PASS');
-}
-
-// 11. Mobile layout does not overlap (validating structured badges token metadata)
-{
-  const badges = [
-    { type: 'status', label: 'LIVE', priority: 1 },
-    { type: 'srl', label: '⚡ SRL', priority: 2 },
-    { type: 'format', label: '🏏 T20', priority: 3 },
-  ];
-  // Verify priorities and non-empty badge labels
-  assert.strictEqual(badges[0].priority, 1);
-  assert.strictEqual(badges[1].priority, 2);
-  assert.strictEqual(badges[2].priority, 3);
-  badges.forEach((b) => assert.ok(b.label.length > 0));
-  console.log('✅ Test 11: Mobile layout does not overlap PASS');
-}
-
-// 12. Compact card uses same matchFormat as MatchSnapshot
-{
-  const raw = { ...t20SrlMatch };
-  const cardBadge = getCricketFormatCardBadge(raw);
-  const snap = buildCanonicalMatchSnapshot(raw);
-  assert.strictEqual(cardBadge, snap.match.formatCardBadge);
-  console.log('✅ Test 12: Compact card uses same matchFormat as MatchSnapshot PASS');
-}
-
-// 13. Compact card uses same isSRL as MatchSnapshot
-{
-  const raw = { ...t20SrlMatch };
-  const cardSRL = isMatchSRL(raw);
-  const snap = buildCanonicalMatchSnapshot(raw);
-  assert.strictEqual(cardSRL, snap.match.isSRL);
-  console.log('✅ Test 13: Compact card uses same isSRL as MatchSnapshot PASS');
-}
-
-// 14. Refreshing repeatedly does not change format incorrectly
-{
-  const formats = [];
-  for (let i = 0; i < 25; i++) {
+  it('3. LIVE T20 shows LIVE + T20', () => {
     const snap = buildCanonicalMatchSnapshot(t20LiveMatch);
-    formats.push(snap.match.formatCardBadge);
-  }
-  const allIdentical = formats.every((f) => f === '🏏 T20');
-  assert.strictEqual(allIdentical, true);
-  console.log('✅ Test 14: Refreshing repeatedly does not change format PASS');
-}
+    assert.strictEqual(snap.match.statusChip, 'LIVE');
+    assert.strictEqual(snap.match.formatCardBadge, '🏏 T20');
+    assert.strictEqual(snap.match.isSRL, false);
+  });
 
-// 15. Redis/cache expiry does not remove format metadata
-{
-  // Simulated match stripped of transient cache fields, rehydrated from immutable metadata
-  const cachedMatch = {
-    id: 'cb_test_01',
-    league: 'ICC World Test Championship',
-    matchFormat: 'TEST',
-    status: 'LIVE',
-    isLive: true,
-  };
-  const snap = buildCanonicalMatchSnapshot(cachedMatch);
-  assert.strictEqual(snap.match.formatCardBadge, '🏏 TEST');
-  assert.strictEqual(snap.match.statusChip, 'LIVE');
-  console.log('✅ Test 15: Redis/cache expiry does not remove format metadata PASS');
-}
+  it('4. LIVE T10 shows LIVE + T10', () => {
+    const snap = buildCanonicalMatchSnapshot(t10LiveMatch);
+    assert.strictEqual(snap.match.statusChip, 'LIVE');
+    assert.strictEqual(snap.match.formatCardBadge, '🏏 T10');
+    assert.strictEqual(snap.match.isSRL, false);
+  });
 
-console.log('\n🎉 ALL 15 LIVE MATCH CARD FORMAT & SRL BADGES TESTS PASSED WITH ZERO FAILURES!\n');
+  it('5. LIVE SRL shows LIVE + SRL', () => {
+    const snap = buildCanonicalMatchSnapshot(srlLiveMatch);
+    assert.strictEqual(snap.match.statusChip, 'LIVE');
+    assert.strictEqual(snap.match.isSRL, true);
+  });
+
+  it('6. T20 SRL shows LIVE + T20 + SRL if both metadata exist', () => {
+    const snap = buildCanonicalMatchSnapshot(t20SrlMatch);
+    assert.strictEqual(snap.match.statusChip, 'LIVE');
+    assert.strictEqual(snap.match.formatCardBadge, '🏏 T20');
+    assert.strictEqual(snap.match.isSRL, true);
+  });
+
+  it('7. Completed T20 does not show LIVE', () => {
+    const completedT20 = { ...t20LiveMatch, status: 'COMPLETED', isLive: false };
+    const snap = buildCanonicalMatchSnapshot(completedT20);
+    assert.strictEqual(snap.match.statusChip, 'COMPLETED');
+    assert.notStrictEqual(snap.match.statusChip, 'LIVE');
+    assert.strictEqual(snap.match.formatCardBadge, '🏏 T20');
+  });
+
+  it('8. Upcoming ODI does not show LIVE', () => {
+    const upcomingODI = { ...odiLiveMatch, status: 'UPCOMING', isLive: false, matchState: 'pre' };
+    const snap = buildCanonicalMatchSnapshot(upcomingODI);
+    assert.strictEqual(snap.match.statusChip, 'UPCOMING');
+    assert.notStrictEqual(snap.match.statusChip, 'LIVE');
+    assert.strictEqual(snap.match.formatCardBadge, '🏏 ODI');
+  });
+
+  it('9. 0/0 score displays correctly', () => {
+    const zeroScoreMatch = {
+      ...t20LiveMatch,
+      scorecardInnings: [
+        { inningsId: 1, batTeamName: 'Chennai Super Kings', runs: 0, wickets: 0, overs: '0.0' },
+      ],
+    };
+    const snap = buildCanonicalMatchSnapshot(zeroScoreMatch);
+    const view = deriveSelectedInningsView(snap, 1);
+    assert.strictEqual(view.score, 0);
+    assert.strictEqual(view.wickets, 0);
+    assert.strictEqual(view.overs, '0.0');
+  });
+
+  it('10. Missing score does not remove format/status badges', () => {
+    const missingScoreMatch = {
+      id: 'missing_score_01',
+      matchFormat: 'T20',
+      status: 'LIVE',
+      isLive: true,
+      team1: { name: 'Team A' },
+      team2: { name: 'Team B' },
+    };
+    const snap = buildCanonicalMatchSnapshot(missingScoreMatch);
+    assert.strictEqual(snap.match.statusChip, 'LIVE');
+    assert.strictEqual(snap.match.formatCardBadge, '🏏 T20');
+    assert.strictEqual(snap.match.isSRL, false);
+  });
+
+  it('11. Mobile layout does not overlap (validating structured badges token metadata)', () => {
+    const badges = [
+      { type: 'status', label: 'LIVE', priority: 1 },
+      { type: 'srl', label: '⚡ SRL', priority: 2 },
+      { type: 'format', label: '🏏 T20', priority: 3 },
+    ];
+    assert.strictEqual(badges[0].priority, 1);
+    assert.strictEqual(badges[1].priority, 2);
+    assert.strictEqual(badges[2].priority, 3);
+    badges.forEach((b) => assert.ok(b.label.length > 0));
+  });
+
+  it('12. Compact card uses same matchFormat as MatchSnapshot', () => {
+    const raw = { ...t20SrlMatch };
+    const cardBadge = getCricketFormatCardBadge(raw);
+    const snap = buildCanonicalMatchSnapshot(raw);
+    assert.strictEqual(cardBadge, snap.match.formatCardBadge);
+  });
+
+  it('13. Compact card uses same isSRL as MatchSnapshot', () => {
+    const raw = { ...t20SrlMatch };
+    const cardSRL = isMatchSRL(raw);
+    const snap = buildCanonicalMatchSnapshot(raw);
+    assert.strictEqual(cardSRL, snap.match.isSRL);
+  });
+
+  it('14. Refreshing repeatedly does not change format incorrectly', () => {
+    const formats = [];
+    for (let i = 0; i < 25; i++) {
+      const snap = buildCanonicalMatchSnapshot(t20LiveMatch);
+      formats.push(snap.match.formatCardBadge);
+    }
+    const allIdentical = formats.every((f) => f === '🏏 T20');
+    assert.strictEqual(allIdentical, true);
+  });
+
+  it('15. Redis/cache expiry does not remove format metadata', () => {
+    const cachedMatch = {
+      id: 'cb_test_01',
+      league: 'ICC World Test Championship',
+      matchFormat: 'TEST',
+      status: 'LIVE',
+      isLive: true,
+    };
+    const snap = buildCanonicalMatchSnapshot(cachedMatch);
+    assert.strictEqual(snap.match.formatCardBadge, '🏏 TEST');
+    assert.strictEqual(snap.match.statusChip, 'LIVE');
+  });
+});

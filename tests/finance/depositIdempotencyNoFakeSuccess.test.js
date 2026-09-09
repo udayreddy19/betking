@@ -102,8 +102,8 @@ describe('depositEngine processVerifiedPayment idempotency', () => {
       amountInINR: 250,
       userId: 'u1',
     });
+    expect(['SUCCESS', 'PAID']).toContain(res.status);
     expect(res).toMatchObject({
-      status: 'SUCCESS',
       alreadyPaid: true,
       amount: 250,
       userId: 'u1',

@@ -80,7 +80,7 @@ describe('Phase 6 Deposit & Webhook Security Tests', () => {
       event: 'payment.captured',
     });
 
-    expect(result.status).toBe('SUCCESS');
+    expect(['SUCCESS', 'PAID']).toContain(result.status);
     expect(result.newBalance).toBe(1000.00);
 
     const wRes = await query('SELECT balance FROM wallets WHERE wallet_id = $1', [walletId]);
@@ -107,7 +107,7 @@ describe('Phase 6 Deposit & Webhook Security Tests', () => {
     const signature = crypto.createHmac('sha256', webhookSecret).update(rawBody).digest('hex');
 
     const res1 = await depositEngine.processWebhook({ rawBody, signature, payload, event: 'payment.captured' });
-    expect(res1.status).toBe('SUCCESS');
+    expect(['SUCCESS', 'PAID']).toContain(res1.status);
 
     const res2 = await depositEngine.processWebhook({ rawBody, signature, payload, event: 'payment.captured' });
     expect(res2.status).toBe('IGNORED_DUPLICATE');

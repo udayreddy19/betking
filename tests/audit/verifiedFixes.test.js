@@ -290,6 +290,8 @@ describe('ODDSYRA VERIFIED FIXES TEST SUITE (FIN-001, FIN-002, FIN-003, BET-001,
 
     beforeEach(async () => {
       promoCode = `RELPROMO_${Date.now()}`;
+      await query(`DELETE FROM bonus_wagering_ledger WHERE user_id = $1;`, [promoUser]);
+      await query(`DELETE FROM user_bonuses WHERE user_id = $1;`, [promoUser]);
       await query(`INSERT INTO users (user_id, email, password_hash) VALUES ($1, $2, 'hash') ON CONFLICT (user_id) DO NOTHING;`, [promoUser, `${promoUser}@example.com`]);
       await query(`INSERT INTO user_profiles (user_id, account_status, kyc_status) VALUES ($1, 'ACTIVE', 'VERIFIED') ON CONFLICT (user_id) DO NOTHING;`, [promoUser]);
       await query(`INSERT INTO wallets (wallet_id, user_id, balance, bonus_balance, currency)

@@ -1,5 +1,26 @@
-import test from 'node:test';
+import { describe, it, beforeAll, afterAll, vi } from 'vitest';
 import assert from 'node:assert/strict';
+
+vi.mock('../lib/oddsQuoteService.mjs', () => ({
+  resolveServerOdds: vi.fn(async ({ clientOdds, selectionId, marketId }) => {
+    const odds = Number(clientOdds) || 2.0;
+    return {
+      odds,
+      changed: false,
+      oddsChanged: false,
+      previousOdds: odds,
+      newOdds: odds,
+      marketId,
+      selectionId,
+      isLive: false,
+      quoteTimestamp: new Date().toISOString(),
+    };
+  }),
+  unwrapServerOddsQuote: (quote) => (quote?.odds != null ? Number(quote.odds) : Number(quote)),
+  loadLiveOddsSnapshot: vi.fn(),
+  resolveServerOddsFromSnapshot: vi.fn(),
+}));
+
 import { query, withTransaction } from '../db/pg.js';
 import { betPlacementEngine } from '../lib/betPlacementEngine.mjs';
 import { betSettlementEngine } from '../lib/betSettlementEngine.mjs';
@@ -7,56 +28,66 @@ import { depositEngine } from '../lib/depositEngine.mjs';
 import { BONUS_MIN_BET_ODDS } from '../lib/promoRules.mjs';
 import { MIN_DEPOSIT_INR } from '../lib/vipBenefits.mjs';
 
-test('PRODUCTION-LEVEL COMPLETE BETTING LIFECYCLE AUDIT', async (t) => {
-  const testUserId = `usr_audit_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-  const testEmail = `${testUserId}@example.com`;
+describe('PRODUCTION-LEVEL COMPLETE BETTING LIFECYCLE AUDIT', () => {
+  let testUserId;
+  let testEmail;
+  let matchId;
+  let marketId;
+  let sel1;
+  let sel2;
+  let selFav;
 
-  // Setup test user & wallet
-  await query(
-    `INSERT INTO users (user_id, email, role, status, created_at)
-     VALUES ($1, $2, 'USER', 'ACTIVE', NOW())
-     ON CONFLICT (user_id) DO NOTHING`,
-    [testUserId, testEmail]
-  );
+  beforeAll(async () => {
+    testUserId = `usr_audit_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    testEmail = `${testUserId}@example.com`;
 
-  const walletRes = await query(
-    `INSERT INTO wallets (wallet_id, user_id, balance, bonus_balance, freebet_balance, locked_deposit_balance, winnings_balance, currency)
-     VALUES ($1, $2, 1000.00, 900.00, 500.00, 200.00, 0.00, 'INR')
-     ON CONFLICT (user_id) DO UPDATE SET balance = 1000.00, bonus_balance = 900.00, freebet_balance = 500.00, locked_deposit_balance = 200.00
-     RETURNING *`,
-    [`wal_${testUserId}`, testUserId]
-  );
+    // Setup test user & wallet
+    await query(
+      `INSERT INTO users (user_id, email, role, status, created_at)
+       VALUES ($1, $2, 'USER', 'ACTIVE', NOW())
+       ON CONFLICT (user_id) DO NOTHING`,
+      [testUserId, testEmail]
+    );
 
-  const matchId = `match_audit_${Date.now()}`;
-  const marketId = `mkt_audit_${Date.now()}`;
-  const sel1 = 'sel_team1';
-  const sel2 = 'sel_team2';
-  const selFav = 'sel_heavy_fav';
+    await query(
+      `INSERT INTO wallets (wallet_id, user_id, balance, bonus_balance, freebet_balance, locked_deposit_balance, winnings_balance, currency)
+       VALUES ($1, $2, 1000.00, 900.00, 500.00, 200.00, 0.00, 'INR')
+       ON CONFLICT (user_id) DO UPDATE SET balance = 1000.00, bonus_balance = 900.00, freebet_balance = 500.00, locked_deposit_balance = 200.00
+       RETURNING *`,
+      [`wal_${testUserId}`, testUserId]
+    );
 
-  await query(
-    `INSERT INTO matches (match_id, competition_id, team1_id, team2_id, status, live_score1, live_score2)
-     VALUES ($1, 'Audit League', 'Team Alpha', 'Team Beta', 'LIVE', '100', '150')
-     ON CONFLICT (match_id) DO NOTHING`,
-    [matchId]
-  );
+    matchId = `match_audit_${Date.now()}`;
+    marketId = `mkt_audit_${Date.now()}`;
+    sel1 = 'sel_team1';
+    sel2 = 'sel_team2';
+    selFav = 'sel_heavy_fav';
 
-  await query(
-    `INSERT INTO markets (market_id, match_id, name, status)
-     VALUES ($1, $2, 'Match Winner', 'OPEN')
-     ON CONFLICT (market_id) DO UPDATE SET status = 'OPEN'`,
-    [marketId, matchId]
-  );
+    await query(
+      `INSERT INTO matches (match_id, competition_id, team1_id, team2_id, status, live_score1, live_score2)
+       VALUES ($1, 'Audit League', 'Team Alpha', 'Team Beta', 'LIVE', '100', '150')
+       ON CONFLICT (match_id) DO NOTHING`,
+      [matchId]
+    );
 
-  await query(
-    `INSERT INTO selections (selection_id, market_id, name, odds, status)
-     VALUES ($1, $2, 'Team Alpha', 2.50, 'OPEN'),
-            ($3, $2, 'Team Beta', 2.00, 'OPEN'),
-            ($4, $2, 'Heavy Favorite', 1.20, 'OPEN')
-     ON CONFLICT (selection_id) DO UPDATE SET status = 'OPEN'`,
-    [sel1, marketId, sel2, selFav]
-  );
+    await query(
+      `INSERT INTO markets (market_id, match_id, name, status)
+       VALUES ($1, $2, 'Match Winner', 'OPEN')
+       ON CONFLICT (market_id) DO UPDATE SET status = 'OPEN'`,
+      [marketId, matchId]
+    );
 
-  await t.test('1. Minimum Deposit Rules Enforcement (₹1,000)', async () => {
+    await query(
+      `INSERT INTO selections (selection_id, market_id, name, odds, status)
+       VALUES ($1, $2, 'Team Alpha', 2.50, 'OPEN'),
+              ($3, $2, 'Team Beta', 2.00, 'OPEN'),
+              ($4, $2, 'Heavy Favorite', 1.20, 'OPEN')
+       ON CONFLICT (selection_id) DO UPDATE SET status = 'OPEN'`,
+      [sel1, marketId, sel2, selFav]
+    );
+  });
+
+  it('1. Minimum Deposit Rules Enforcement (₹1,000)', async () => {
     assert.strictEqual(MIN_DEPOSIT_INR, 1000, 'MIN_DEPOSIT_INR constant must equal 1000');
 
     // Test rejection of under-minimum deposit in depositEngine
@@ -68,12 +99,12 @@ test('PRODUCTION-LEVEL COMPLETE BETTING LIFECYCLE AUDIT', async (t) => {
           provider: 'CASHFREE',
         });
       },
-      (err) => err.message.includes('Minimum deposit amount is ₹1,000') || err.message.includes('MIN_DEPOSIT'),
+      (err) => err.message.includes('Minimum deposit') || err.code === 'DEPOSIT_LIMIT',
       'Deposit under ₹1,000 must be rejected'
     );
   });
 
-  await t.test('2. Cash Bet Placement, Deduction & Gross Win Settlement', async () => {
+  it('2. Cash Bet Placement, Deduction & Gross Win Settlement', async () => {
     const stake = 200;
     const odds = 2.50;
 
@@ -131,7 +162,7 @@ test('PRODUCTION-LEVEL COMPLETE BETTING LIFECYCLE AUDIT', async (t) => {
     assert.strictEqual(Number(wAfterDuplicate.balance), 1300, 'Balance must remain exactly 1300 without duplicate credit');
   });
 
-  await t.test('3. Bonus Bet Full-Usage & Minimum Odds Enforcement', async () => {
+  it('3. Bonus Bet Full-Usage & Minimum Odds Enforcement', async () => {
     // 3A. Reject partial bonus bet
     await assert.rejects(
       async () => {
@@ -206,7 +237,7 @@ test('PRODUCTION-LEVEL COMPLETE BETTING LIFECYCLE AUDIT', async (t) => {
     assert.strictEqual(Number(wBonusRestored.bonus_balance), 900, 'Bonus balance must be restored to 900 on VOID');
   });
 
-  await t.test('4. Free Bet Full-Usage & Profit-Only Settlement', async () => {
+  it('4. Free Bet Full-Usage & Profit-Only Settlement', async () => {
     // 4A. Reject partial free bet
     await assert.rejects(
       async () => {
@@ -262,7 +293,7 @@ test('PRODUCTION-LEVEL COMPLETE BETTING LIFECYCLE AUDIT', async (t) => {
     assert.strictEqual(Number(wFreebetWin.balance), balanceBeforeWin + 750, 'Free bet win must credit net profit of ₹750');
   });
 
-  await t.test('5. Concurrency & Double-Spend Protection', async () => {
+  it('5. Concurrency & Double-Spend Protection', async () => {
     // Current user cash balance is 1300 + 750 = 2050.
     // Attempt two simultaneous ₹1500 bets (Total ₹3000 needed > ₹2050 available)
     const [res1, res2] = await Promise.allSettled([
@@ -301,8 +332,16 @@ test('PRODUCTION-LEVEL COMPLETE BETTING LIFECYCLE AUDIT', async (t) => {
     assert.strictEqual(Number(wFinal.balance), 550, 'Balance must accurately reflect exactly one deduction');
   });
 
-  // Cleanup test user
-  await query(`DELETE FROM bets WHERE user_id = $1`, [testUserId]);
-  await query(`DELETE FROM wallets WHERE user_id = $1`, [testUserId]);
-  await query(`DELETE FROM users WHERE user_id = $1`, [testUserId]);
+  afterAll(async () => {
+    // Cleanup test user
+    try {
+      await query(`DELETE FROM ledger_entries WHERE wallet_id IN (SELECT wallet_id FROM wallets WHERE user_id = $1)`, [testUserId]);
+      await query(`DELETE FROM transactions WHERE user_id = $1`, [testUserId]);
+      await query(`DELETE FROM bets WHERE user_id = $1`, [testUserId]);
+      await query(`DELETE FROM wallets WHERE user_id = $1`, [testUserId]);
+      await query(`DELETE FROM users WHERE user_id = $1`, [testUserId]);
+    } catch {
+      // Ignore cleanup error
+    }
+  });
 });

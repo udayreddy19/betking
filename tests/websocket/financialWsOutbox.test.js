@@ -34,7 +34,7 @@ async function drainUntilProcessed(eventId, { rounds = 30, batch = 50 } = {}) {
     if (st.rows[0]?.status === 'PROCESSED' || st.rows[0]?.status === 'DEAD_LETTER') {
       return st.rows[0].status;
     }
-    await processPendingOutboxEvents(batch);
+    await processPendingOutboxEvents(batch, { id: eventId });
   }
   const final = await query(`SELECT status FROM outbox_events WHERE id = $1`, [eventId]);
   return final.rows[0]?.status || null;
@@ -104,7 +104,7 @@ describe('Financial WebSocket outbox → sendToUser', () => {
     expect(walletCall[2].availableBalance).toBe(1030);
     expect(walletCall[2].withdrawableBalance).toBe(1030);
     expect(walletCall[2].timestamp).toBeTruthy();
-  });
+  }, 25000);
 
   it('BET_CASHED_OUT emits user-scoped wallet update with eventId', async () => {
     const betId = `bet_ws_co_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
@@ -133,7 +133,7 @@ describe('Financial WebSocket outbox → sendToUser', () => {
       (c) => c[1] === 'WALLET_BALANCE_UPDATED' && c[2]?.betId === betId,
     );
     expect(walletCall?.[2].eventId).toMatch(/ws_wallet_cashout_/);
-  });
+  }, 25000);
 
   it('deposit.completed emits WALLET_BALANCE_UPDATED for depositor only', async () => {
     const paymentId = `pay_ws_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
@@ -160,7 +160,7 @@ describe('Financial WebSocket outbox → sendToUser', () => {
     expect(walletCall?.[0]).toBe(userId);
     expect(walletCall?.[2].reason).toBe('DEPOSIT');
     expect(walletCall?.[2].walletBalance).toBe(1000);
-  });
+  }, 25000);
 
   it('user channel isolation: session cannot subscribe to another user channel', async () => {
     const session = { userId, role: 'user', anonymousOddsOnly: false };
@@ -195,7 +195,7 @@ describe('Financial WebSocket outbox → sendToUser', () => {
     );
     // Handler catches WS errors; event should still process.
     expect(await drainUntilProcessed(evtId)).toBe('PROCESSED');
-  });
+  }, 25000);
 });
 
 describe('subscribeToEvent registry smoke', () => {

@@ -1,4 +1,4 @@
-import test from 'node:test';
+import { describe, it } from 'vitest';
 import assert from 'node:assert/strict';
 import {
   getWalletPromoRules,
@@ -7,8 +7,8 @@ import {
   validatePromoBetStake,
 } from '../lib/walletPromoRules.mjs';
 
-test('Strict Free Bet, Bonus Bet, and Minimum Deposit Validation Rules', async (t) => {
-  await t.test('1. Minimum Deposit Rules', async () => {
+describe('Strict Free Bet, Bonus Bet, and Minimum Deposit Validation Rules', () => {
+  it('1. Minimum Deposit Rules', async () => {
     const rules = await getWalletPromoRules();
     const min = Number(rules.minimumDepositAmount) || 1000;
     const below = Math.max(1, Math.floor(min) - 1);
@@ -26,7 +26,7 @@ test('Strict Free Bet, Bonus Bet, and Minimum Deposit Validation Rules', async (
     assert.equal(resAbove, min + 1500, 'Above-minimum deposit must be allowed');
   });
 
-  await t.test('2. Free Bet Full Usage & Partial Rejection', async () => {
+  it('2. Free Bet Full Usage & Partial Rejection', async () => {
     const freebetBalance = 500;
 
     // Partial stakes must be rejected
@@ -55,7 +55,7 @@ test('Strict Free Bet, Bonus Bet, and Minimum Deposit Validation Rules', async (
     );
   });
 
-  await t.test('3. Bonus Bet Full Usage & Partial Rejection', async () => {
+  it('3. Bonus Bet Full Usage & Partial Rejection', async () => {
     const bonusBalance = 500;
 
     // Partial stakes must be rejected
@@ -84,7 +84,7 @@ test('Strict Free Bet, Bonus Bet, and Minimum Deposit Validation Rules', async (
     );
   });
 
-  await t.test('4. Cashflow is not restricted by promotional exact stake rules', async () => {
+  it('4. Cashflow is not restricted by promotional exact stake rules', async () => {
     // Normal cash bets are allowed at arbitrary valid amounts
     await assert.doesNotReject(
       () => validatePromoBetStake({ fundSource: 'cash', requestedStake: 250, availableBalance: 1000 }),

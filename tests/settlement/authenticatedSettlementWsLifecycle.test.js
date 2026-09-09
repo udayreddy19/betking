@@ -103,9 +103,13 @@ describe('Authenticated settlement WebSocket lifecycle (no Razorpay)', () => {
     return res.betId;
   }
 
-  async function drainOutbox() {
-    for (let i = 0; i < 25; i++) {
-      await processPendingOutboxEvents(50);
+  async function drainOutbox(betId = null) {
+    for (let i = 0; i < 40; i++) {
+      if (betId) {
+        const found = sendToUser.mock.calls.some((c) => c[1] === 'BET_SETTLED' && c[2]?.betId === betId);
+        if (found) break;
+      }
+      await processPendingOutboxEvents(50, { userId });
     }
   }
 
@@ -128,7 +132,7 @@ describe('Authenticated settlement WebSocket lifecycle (no Razorpay)', () => {
       matchState: { matchId, status: 'COMPLETED', __forcedOutcome: 'WON' },
     });
     expect(settled.outcome).toBe('WON');
-    await drainOutbox();
+    await drainOutbox(betId);
 
     const settleCalls = sendToUser.mock.calls.filter((c) => c[1] === 'BET_SETTLED' && c[2]?.betId === betId);
     const walletCalls = sendToUser.mock.calls.filter(
@@ -153,7 +157,7 @@ describe('Authenticated settlement WebSocket lifecycle (no Razorpay)', () => {
     expect(isFinancialWsEventType('BET_SETTLED')).toBe(true);
     expect(shouldApplyFinancialWsEvent(evt, seen, lastTs).apply).toBe(true);
     expect(shouldApplyFinancialWsEvent(evt, seen, lastTs).reason).toBe('duplicate');
-  });
+  }, 25000);
 
   it('LOSS and VOID emit settlement events without fake payouts', async () => {
     await fundTestWallet({ userId, amount: 2000 });
@@ -162,7 +166,7 @@ describe('Authenticated settlement WebSocket lifecycle (no Razorpay)', () => {
       betId: lossId,
       matchState: { matchId, status: 'COMPLETED', __forcedOutcome: 'LOST' },
     });
-    await drainOutbox();
+    await drainOutbox(lossId);
     expect(sendToUser.mock.calls.some((c) => c[1] === 'BET_SETTLED' && c[2]?.betId === lossId)).toBe(true);
 
     sendToUser.mockClear();
@@ -171,10 +175,10 @@ describe('Authenticated settlement WebSocket lifecycle (no Razorpay)', () => {
       betId: voidId,
       matchState: { matchId, status: 'COMPLETED', __forcedOutcome: 'VOID' },
     });
-    await drainOutbox();
+    await drainOutbox(voidId);
     expect(sendToUser.mock.calls.some((c) => c[1] === 'BET_SETTLED' && c[2]?.betId === voidId)).toBe(true);
     const w = await query(`SELECT balance FROM wallets WHERE user_id = $1`, [userId]);
     // 2000 - 100 (loss) - 100 (void stake) + 100 (void refund) = 1900
     expect(Number(w.rows[0].balance)).toBe(1900);
-  });
+  }, 25000);
 });

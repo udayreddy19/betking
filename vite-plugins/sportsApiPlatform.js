@@ -138,7 +138,7 @@ export function sportsApiPlatformPlugin() {
           }
 
           // Single Match by ID in sport namespace: /api/v1/cricket/matches/:id
-          const sportMatchDetailMatch = pathname.match(/^\/api\/v1\/(cricket|football|basketball|tennis|formula1|hockey|baseball|american-football|multi-sport)\/matches\/([^\/]+)$/);
+          const sportMatchDetailMatch = pathname.match(/^\/api\/v1\/(cricket|football|basketball|tennis|formula1|hockey|baseball|american-football|multi-sport)\/matches\/([^/]+)$/);
           if (sportMatchDetailMatch) {
             const [, sport, matchId] = sportMatchDetailMatch;
             const detail = await getSingleMatchDetails(matchId);
@@ -146,7 +146,7 @@ export function sportsApiPlatformPlugin() {
           }
 
           // Team by ID in sport namespace: /api/v1/cricket/teams/:id
-          const sportTeamMatch = pathname.match(/^\/api\/v1\/(cricket|football|basketball|tennis|formula1|hockey|baseball|american-football|multi-sport)\/teams\/([^\/]+)$/);
+          const sportTeamMatch = pathname.match(/^\/api\/v1\/(cricket|football|basketball|tennis|formula1|hockey|baseball|american-football|multi-sport)\/teams\/([^/]+)$/);
           if (sportTeamMatch) {
             const [, sport, teamId] = sportTeamMatch;
             const teams = getStandardizedTeams();
@@ -155,7 +155,7 @@ export function sportsApiPlatformPlugin() {
           }
 
           // Player by ID in sport namespace: /api/v1/cricket/players/:id
-          const sportPlayerMatch = pathname.match(/^\/api\/v1\/(cricket|football|basketball|tennis|formula1|hockey|baseball|american-football|multi-sport)\/players\/([^\/]+)$/);
+          const sportPlayerMatch = pathname.match(/^\/api\/v1\/(cricket|football|basketball|tennis|formula1|hockey|baseball|american-football|multi-sport)\/players\/([^/]+)$/);
           if (sportPlayerMatch) {
             const [, sport, playerId] = sportPlayerMatch;
             const players = getPlayersForTeam('Hampshire');

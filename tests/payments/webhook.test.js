@@ -32,13 +32,13 @@ describe('Phase 1 Razorpay Webhook Security Tests', () => {
     const invalidUserIds = [null, undefined, '', 'ab', 'user<script>', 'user; DROP TABLE users;--'];
 
     invalidUserIds.forEach(id => {
-      const isValid = Boolean(id && typeof id === 'string' && id.length >= 3 && id.length <= 64 && /^[a-zA-Z0-9_\-\.\@]+$/.test(id));
+      const isValid = Boolean(id && typeof id === 'string' && id.length >= 3 && id.length <= 64 && /^[a-zA-Z0-9_\-.\@]+$/.test(id));
       expect(isValid).toBe(false);
     });
 
     const validUserIds = ['usr_101', 'user.name@oddsyra.com', 'user-123_456'];
     validUserIds.forEach(id => {
-      const isValid = Boolean(id && typeof id === 'string' && id.length >= 3 && id.length <= 64 && /^[a-zA-Z0-9_\-\.\@]+$/.test(id));
+      const isValid = Boolean(id && typeof id === 'string' && id.length >= 3 && id.length <= 64 && /^[a-zA-Z0-9_\-.\@]+$/.test(id));
       expect(isValid).toBe(true);
     });
   });

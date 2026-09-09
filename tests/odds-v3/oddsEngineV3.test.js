@@ -1,8 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { generate } from '../../lib/odds-v3/OddsEngineV3.mjs';
 import { createCanonicalMatchState } from '../../lib/odds-v3/models/CanonicalMatchState.mjs';
+import { clearVolatilityHistory } from '../../lib/odds-v3/volatilityFilter.mjs';
 
 describe('OddsEngineV3 — Integration & Snapshot Generation', () => {
+  beforeEach(() => {
+    clearVolatilityHistory();
+  });
   const baseInput = {
     matchId: 'match_v3_test',
     sport: 'CRICKET',

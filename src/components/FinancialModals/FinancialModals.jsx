@@ -120,7 +120,7 @@ export default function FinancialModals({ modalType, onClose }) {
     if (withdrawMethod === 'UPI') {
       const vpa = upiId.trim();
       if (!vpa) return notify('Please enter a valid UPI ID (e.g. name@upi)');
-      if (!/^[a-zA-Z0-9.\-_]{2,}@[a-zA-Z][a-zA-Z0-9.\-]{1,}$/.test(vpa)) {
+      if (!/^[a-zA-Z0-9.\-_]{2,}@[a-zA-Z][a-zA-Z0-9.-]{1,}$/.test(vpa)) {
         return notify('UPI ID must look like name@upi (e.g. name@oksbi)');
       }
       detailsString = `UPI ID: ${vpa}`;

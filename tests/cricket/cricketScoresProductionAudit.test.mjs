@@ -1,4 +1,4 @@
-import test from 'node:test';
+import { describe, it } from 'vitest';
 import assert from 'node:assert/strict';
 import {
   normalizeMatch,
@@ -14,9 +14,9 @@ import {
 } from '../../src/utils/cricketSnapshot.js';
 import { resolveCricketTeamScores } from '../../src/utils/cricketScores.js';
 
-test('ODDSYRA — CRICKET SCORES, SCORECARD & ROSTER PRODUCTION READINESS AUDIT', async (t) => {
+describe('ODDSYRA — CRICKET SCORES, SCORECARD & ROSTER PRODUCTION READINESS AUDIT', () => {
 
-  await t.test('1. Score Partition Invariant: Opposing teams NEVER share identical mirrored score objects', () => {
+  it('1. Score Partition Invariant: Opposing teams NEVER share identical mirrored score objects', () => {
     // Simulate raw provider payload where only Team 1 has batted
     const rawPayload = {
       id: 'cb_test_001',
@@ -56,7 +56,7 @@ test('ODDSYRA — CRICKET SCORES, SCORECARD & ROSTER PRODUCTION READINESS AUDIT'
     });
   });
 
-  await t.test('2. Multi-Innings Test Match: Sussex vs Somerset 4-innings correctly mapped and partitioned', () => {
+  it('2. Multi-Innings Test Match: Sussex vs Somerset 4-innings correctly mapped and partitioned', () => {
     const rawTestMatch = {
       id: 'test_eng_county_01',
       sport: 'cricket',
@@ -102,7 +102,7 @@ test('ODDSYRA — CRICKET SCORES, SCORECARD & ROSTER PRODUCTION READINESS AUDIT'
     assert.equal(normalized.currentInnings.isChase, true);
   });
 
-  await t.test('3. Match Format Detection & No Naive Overs (Never /50 OV for Test matches)', () => {
+  it('3. Match Format Detection & No Naive Overs (Never /50 OV for Test matches)', () => {
     const testMatch = { matchFormat: 'TEST', league: 'ICC World Test Championship' };
     const odiMatch = { matchFormat: 'ODI', league: 'ICC Cricket World Cup' };
     const t20Match = { matchFormat: 'T20', league: 'Indian Premier League' };
@@ -122,7 +122,7 @@ test('ODDSYRA — CRICKET SCORES, SCORECARD & ROSTER PRODUCTION READINESS AUDIT'
     assert.equal(normT20.maxOvers, 20);
   });
 
-  await t.test('4. Score Monotonicity & Stale Response Rejection', () => {
+  it('4. Score Monotonicity & Stale Response Rejection', () => {
     const validCurrent = {
       id: 'm_123',
       matchId: 'm_123',
@@ -148,7 +148,7 @@ test('ODDSYRA — CRICKET SCORES, SCORECARD & ROSTER PRODUCTION READINESS AUDIT'
     assert.equal(result.homeTeam.innings[0].overs, '19.2');
   });
 
-  await t.test('5. Player Retention: Live batters and bowler are NOT replaced with null or placeholders', () => {
+  it('5. Player Retention: Live batters and bowler are NOT replaced with null or placeholders', () => {
     const richScorecard = {
       id: 'cb_players_01',
       sport: 'cricket',
@@ -191,7 +191,7 @@ test('ODDSYRA — CRICKET SCORES, SCORECARD & ROSTER PRODUCTION READINESS AUDIT'
     assert.equal(isPlaceholderPlayer('Virat Kohli'), false);
   });
 
-  await t.test('6. Extras, Fours & Sixes Calculation without cross-innings contamination', () => {
+  it('6. Extras, Fours & Sixes Calculation without cross-innings contamination', () => {
     const rawInningsData = {
       id: 'm_extras_test',
       scorecardInnings: [
@@ -231,7 +231,7 @@ test('ODDSYRA — CRICKET SCORES, SCORECARD & ROSTER PRODUCTION READINESS AUDIT'
     assert.equal(snapshot.innings[1].extras.total, 8);
   });
 
-  await t.test('7. Single Source of Truth: resolveCricketTeamScores mirrors canonical normalizer output', () => {
+  it('7. Single Source of Truth: resolveCricketTeamScores mirrors canonical normalizer output', () => {
     const match = {
       id: 'm_unified_01',
       sport: 'cricket',

@@ -110,7 +110,7 @@ async function runAudit() {
         channel: 'EMAIL',
         exists: true,
         configured: Boolean(process.env.SMTP_HOST && process.env.SMTP_USER),
-        working: Boolean(process.env.SMTP_HOST && process.env.SMTP_USER) ? 'YES' : 'PARTIAL',
+        working: process.env.SMTP_HOST && process.env.SMTP_USER ? 'YES' : 'PARTIAL',
         provider: 'Primary: Resend SMTP; Fallback: Brevo SMTP with automatic quota failover',
         failureHandling: 'Automatic failover to secondary SMTP on 429/quota error; retry queue in DB',
         retrySupport: 'Notifications queue 3 retry attempts before DEAD_LETTER',
