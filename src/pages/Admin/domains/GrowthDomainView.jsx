@@ -9,6 +9,7 @@ import AdminKPI from '../components/AdminKPI';
 import { AdminKpiDrillDrawer, useAdminKpiDrilldown } from '../hooks/useAdminKpiDrilldown';
 import { formatIst, formatIstDateTime, formatIstDate } from '../../../utils/istTime';
 import AdminConfirmDialog from '../components/AdminConfirmDialog';
+import AdminWhatsAppPanel from './AdminWhatsAppPanel';
 
 function money(n) {
   if (n == null || Number.isNaN(Number(n))) return '—';
@@ -2004,9 +2005,10 @@ function AudienceHub({ initialTab = 'segments' }) {
         tabs={[
           { id: 'segments', label: 'Segments' },
           { id: 'composer', label: 'Email composer' },
+          { id: 'whatsapp', label: '💬 WhatsApp' },
         ]}
       />
-      {tab === 'composer' ? <CrmComposerPanel /> : <CrmSegmentsPanel />}
+      {tab === 'composer' ? <CrmComposerPanel /> : tab === 'whatsapp' ? <AdminWhatsAppPanel /> : <CrmSegmentsPanel />}
     </div>
   );
 }
