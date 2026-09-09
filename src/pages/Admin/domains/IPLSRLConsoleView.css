@@ -1681,6 +1681,278 @@ html[data-theme='dark'] .srl-console,
   box-shadow: 0 0 0 1px var(--srl-accent);
 }
 
+/* ── 1. DYNAMIC MICRO-MARKETS ── */
+.srl-micromarket-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.srl-micromarket-card {
+  background: var(--srl-surface-alt);
+  border: 1px solid var(--srl-border);
+  border-radius: var(--srl-radius-sm);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color var(--srl-transition);
+}
+
+.srl-micromarket-card.is-suspended {
+  opacity: 0.72;
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.03);
+}
+
+.srl-micromarket-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.srl-micromarket-outcomes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--srl-surface);
+  border-radius: var(--srl-radius-xs);
+  padding: 8px 10px;
+  border: 1px solid var(--srl-border);
+}
+
+.srl-micromarket-outcome-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.srl-outcome-name {
+  font-weight: 650;
+  color: var(--admin-text);
+}
+
+.srl-outcome-liability {
+  font-size: 0.72rem;
+  color: var(--srl-text-muted);
+}
+
+.srl-outcome-odds {
+  font-family: var(--font-mono, monospace);
+  font-weight: 800;
+  color: var(--srl-accent-strong);
+}
+
+.srl-micromarket-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ── 2. 2D TACTICAL RADAR (PITCH MAP & WAGON WHEEL) ── */
+.srl-tactical-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.srl-tactical-card {
+  background: var(--srl-surface-alt);
+  border: 1px solid var(--srl-border);
+  border-radius: var(--srl-radius-sm);
+  padding: 14px;
+}
+
+.srl-pitch-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 2px solid rgba(16, 185, 129, 0.4);
+  border-radius: 8px;
+  padding: 8px;
+  background: rgba(16, 185, 129, 0.04);
+}
+
+.srl-crease {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+  text-align: center;
+  padding: 3px 0;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: var(--srl-text-muted);
+}
+
+.srl-pitch-zone {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--srl-surface);
+  border: 1px solid var(--srl-border);
+  font-size: 0.76rem;
+  font-weight: 650;
+  transition: all 0.15s ease;
+}
+
+.srl-pitch-zone:hover {
+  border-color: var(--srl-accent);
+  background: var(--srl-surface-hover);
+}
+
+.srl-pitch-zone strong {
+  font-family: var(--font-mono, monospace);
+  color: var(--srl-accent-strong);
+}
+
+.srl-wagon-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.srl-wagon-sector {
+  background: var(--srl-surface);
+  border: 1px solid var(--srl-border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.srl-wagon-sector-name {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--admin-text);
+  text-transform: capitalize;
+}
+
+.srl-wagon-sector-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.srl-wagon-sector-stats strong {
+  color: #10b981;
+  font-size: 0.84rem;
+}
+
+/* H2H Duel */
+.srl-h2h-duel-box {
+  background: var(--srl-surface);
+  border: 1px solid var(--srl-border);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.srl-h2h-names {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--srl-border);
+}
+
+.srl-h2h-player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.srl-h2h-vs {
+  font-weight: 900;
+  font-size: 0.85rem;
+  color: #f59e0b;
+}
+
+.srl-h2h-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 8px;
+  text-align: center;
+}
+
+.srl-h2h-metric {
+  background: var(--srl-surface-alt);
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--srl-border);
+}
+
+.srl-h2h-metric label {
+  display: block;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  color: var(--srl-text-muted);
+  font-weight: 700;
+}
+
+.srl-h2h-metric span {
+  font-size: 0.95rem;
+  font-weight: 850;
+  font-family: var(--font-mono, monospace);
+}
+
+.srl-h2h-verdict {
+  background: rgba(14, 165, 233, 0.08);
+  border: 1px solid rgba(14, 165, 233, 0.25);
+  padding: 6px 10px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+}
+
+.srl-h2h-verdict strong {
+  color: #38bdf8;
+}
+
+/* ── 3. ATMOSPHERE & ENVIRONMENTAL PHYSICS ── */
+.srl-env-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.srl-env-card {
+  background: var(--srl-surface);
+  border: 1px solid var(--srl-border);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* ── 4. CASHOUT & CIRCUIT BREAKER ── */
+.srl-cashout-config-bar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: var(--srl-surface);
+  border: 1px solid var(--srl-border);
+  padding: 12px 14px;
+  border-radius: 8px;
+}
+
+.srl-circuit-breaker-panel {
+  background: var(--srl-surface);
+  border: 1px solid var(--srl-border);
+  border-radius: 8px;
+  padding: 14px;
+}
+
 /* ── RESPONSIVE ── */
 
 @media (max-width: 1080px) {

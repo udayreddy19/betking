@@ -474,4 +474,125 @@ router.post('/matches/:matchId/player-buff', iplsrlRoles, async (req, res) => {
   }
 });
 
+router.post('/matches/:matchId/environment', iplsrlRoles, async (req, res) => {
+  try {
+    const { setIPLSRLEnvironment } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = setIPLSRLEnvironment(req.params.matchId, req.body || {}, req.admin?.id || 'admin');
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.get('/matches/:matchId/micro-markets', iplsrlRoles, async (req, res) => {
+  try {
+    const { getIPLSRLMicroMarkets } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = getIPLSRLMicroMarkets(req.params.matchId);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/micro-markets/toggle', iplsrlRoles, async (req, res) => {
+  try {
+    const { setIPLSRLMicroMarketStatus } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = setIPLSRLMicroMarketStatus(req.params.matchId, req.body || {}, req.admin?.id || 'admin');
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/micro-markets/margin', iplsrlRoles, async (req, res) => {
+  try {
+    const { setIPLSRLMicroMarketMargin } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = setIPLSRLMicroMarketMargin(req.params.matchId, req.body || {}, req.admin?.id || 'admin');
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/micro-markets/mass-suspend', iplsrlRoles, async (req, res) => {
+  try {
+    const { setIPLSRLMicroMarketsMassSuspend } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = setIPLSRLMicroMarketsMassSuspend(req.params.matchId, !!req.body?.suspend, req.admin?.id || 'admin');
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.get('/matches/:matchId/cashout', iplsrlRoles, async (req, res) => {
+  try {
+    const { getIPLSRLCashout } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = await getIPLSRLCashout(req.params.matchId);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/cashout/config', iplsrlRoles, async (req, res) => {
+  try {
+    const { setIPLSRLCashoutConfig } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = setIPLSRLCashoutConfig(req.params.matchId, req.body || {}, req.admin?.id || 'admin');
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/cashout/sweetener', iplsrlRoles, async (req, res) => {
+  try {
+    const { pushIPLSRLCashoutSweetener } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = pushIPLSRLCashoutSweetener(req.params.matchId, req.body || {}, req.admin?.id || 'admin');
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.get('/matches/:matchId/circuit-breaker', iplsrlRoles, async (req, res) => {
+  try {
+    const { getIPLSRLCircuitBreaker } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = getIPLSRLCircuitBreaker(req.params.matchId);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/circuit-breaker/config', iplsrlRoles, async (req, res) => {
+  try {
+    const { setIPLSRLCircuitBreakerConfig } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = setIPLSRLCircuitBreakerConfig(req.params.matchId, req.body || {}, req.admin?.id || 'admin');
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/circuit-breaker/kill-switch', iplsrlRoles, async (req, res) => {
+  try {
+    const { toggleIPLSRLEmergencyKillSwitch } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = toggleIPLSRLEmergencyKillSwitch(req.params.matchId, req.body?.active, req.admin?.id || 'admin');
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.get('/matches/:matchId/tactical-radar', iplsrlRoles, async (req, res) => {
+  try {
+    const { getIPLSRLTacticalRadar } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = getIPLSRLTacticalRadar(req.params.matchId);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 export default router;
+

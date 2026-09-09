@@ -231,5 +231,134 @@ describe('Advanced OddsYra SRL Match Control Suite', () => {
     expect(buffRes.success).toBe(true);
     expect(buffRes.playerBuffs.striker.buff).toBe('GOD_MODE');
   });
+
+  it('configures environmental physics engine (dew, pitch wear, swing index)', async () => {
+    const { setIPLSRLEnvironment, PITCH_WEAR_TYPES } = await import('../../lib/iplSrlAdminControl.mjs');
+    expect(PITCH_WEAR_TYPES.DRY_DUSTBOWL).toBeDefined();
+
+    const envRes = setIPLSRLEnvironment(testMatchId, {
+      dewFactor: 65,
+      pitchWear: 'DRY_DUSTBOWL',
+      swingIndex: 45,
+      overcast: true,
+    }, 'test_admin');
+
+    expect(envRes.success).toBe(true);
+    expect(envRes.environment.dewFactor).toBe(65);
+    expect(envRes.environment.pitchWear).toBe('DRY_DUSTBOWL');
+    expect(envRes.environment.swingIndex).toBe(45);
+    expect(envRes.environment.overcast).toBe(true);
+  });
+
+  it('manages dynamic micro-markets, per-market hold, and mass-suspension', async () => {
+    const {
+      getIPLSRLMicroMarkets,
+      setIPLSRLMicroMarketStatus,
+      setIPLSRLMicroMarketMargin,
+      setIPLSRLMicroMarketsMassSuspend,
+    } = await import('../../lib/iplSrlAdminControl.mjs');
+
+    const listRes = getIPLSRLMicroMarkets(testMatchId);
+    expect(listRes.totalMarkets).toBeGreaterThanOrEqual(3);
+    const targetMkt = listRes.markets[0];
+    expect(targetMkt.id).toBeDefined();
+
+    // Toggle status
+    const toggleRes = setIPLSRLMicroMarketStatus(testMatchId, {
+      marketId: targetMkt.id,
+      status: 'SUSPENDED',
+    }, 'test_admin');
+    expect(toggleRes.success).toBe(true);
+    expect(toggleRes.market.status).toBe('SUSPENDED');
+
+    // Adjust margin
+    const marginRes = setIPLSRLMicroMarketMargin(testMatchId, {
+      marketId: targetMkt.id,
+      holdPercent: 0.12,
+    }, 'test_admin');
+    expect(marginRes.success).toBe(true);
+    expect(marginRes.market.holdPercent).toBe(0.12);
+
+    // Mass suspend
+    const massRes = setIPLSRLMicroMarketsMassSuspend(testMatchId, true, 'test_admin');
+    expect(massRes.success).toBe(true);
+    expect(massRes.massSuspended).toBe(true);
+    expect(massRes.microMarkets.every((m) => m.status === 'SUSPENDED')).toBe(true);
+  });
+
+  it('controls live cash-out haircut and pushes sweetener buyback offers', async () => {
+    const {
+      getIPLSRLCashout,
+      setIPLSRLCashoutConfig,
+      pushIPLSRLCashoutSweetener,
+    } = await import('../../lib/iplSrlAdminControl.mjs');
+
+    const configRes = setIPLSRLCashoutConfig(testMatchId, {
+      globalHaircut: 0.14,
+      cashoutHalted: false,
+    }, 'test_admin');
+    expect(configRes.success).toBe(true);
+    expect(configRes.cashoutControl.globalHaircut).toBe(0.14);
+
+    const cashoutRes = await getIPLSRLCashout(testMatchId);
+    expect(cashoutRes).toBeDefined();
+    expect(Array.isArray(cashoutRes.positions)).toBe(true);
+    expect(cashoutRes.positions.length).toBeGreaterThan(0);
+
+    const sampleBetId = cashoutRes.positions[0].betId;
+    const sweetRes = pushIPLSRLCashoutSweetener(testMatchId, {
+      betId: sampleBetId,
+      bonusPercent: 5,
+    }, 'test_admin');
+    expect(sweetRes.success).toBe(true);
+    expect(sweetRes.sweetenerOffer.bonusPercent).toBe(5);
+  });
+
+  it('triggers automated circuit breakers and emergency master kill-switch', async () => {
+    const {
+      getIPLSRLCircuitBreaker,
+      setIPLSRLCircuitBreakerConfig,
+      toggleIPLSRLEmergencyKillSwitch,
+    } = await import('../../lib/iplSrlAdminControl.mjs');
+
+    const cbRes = getIPLSRLCircuitBreaker(testMatchId);
+    expect(cbRes.circuitBreaker).toBeDefined();
+    expect(cbRes.circuitBreaker.velocityLimit).toBeGreaterThan(0);
+
+    const setRes = setIPLSRLCircuitBreakerConfig(testMatchId, {
+      velocityLimit: 150000,
+    }, 'test_admin');
+    expect(setRes.success).toBe(true);
+    expect(setRes.circuitBreaker.velocityLimit).toBe(150000);
+
+    // Master kill-switch activation
+    const killRes = toggleIPLSRLEmergencyKillSwitch(testMatchId, true, 'test_admin');
+    expect(killRes.success).toBe(true);
+    expect(killRes.emergencyKillSwitch).toBe(true);
+    expect(killRes.bettingClosed).toBe(true);
+
+    // Disengage kill-switch
+    const disengageRes = toggleIPLSRLEmergencyKillSwitch(testMatchId, false, 'test_admin');
+    expect(disengageRes.success).toBe(true);
+    expect(disengageRes.emergencyKillSwitch).toBe(false);
+  });
+
+  it('generates 2D tactical pitch map and wagon wheel radar', async () => {
+    const { getIPLSRLTacticalRadar } = await import('../../lib/iplSrlAdminControl.mjs');
+    const radar = getIPLSRLTacticalRadar(testMatchId);
+    expect(radar).toBeDefined();
+    expect(radar.pitchHeat).toBeDefined();
+    expect(radar.pitchHeat.GOOD_LENGTH).toBeGreaterThanOrEqual(0);
+    expect(radar.pitchHeat.YORKER).toBeGreaterThanOrEqual(0);
+
+    expect(radar.wagonWheel).toBeDefined();
+    expect(radar.wagonWheel.COVER).toBeDefined();
+    expect(radar.wagonWheel.LONG_ON).toBeDefined();
+
+    expect(radar.h2hMatchup).toBeDefined();
+    expect(radar.h2hMatchup.striker).toBeDefined();
+    expect(radar.h2hMatchup.strikeRate).toBeGreaterThan(0);
+  });
 });
+
 

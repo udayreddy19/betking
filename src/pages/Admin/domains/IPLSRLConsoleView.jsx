@@ -59,15 +59,18 @@ const PLAYER_BUFF_OPTIONS = [
 const MATCH_ZONES = [
   { id: 'control', label: '⚡ Control' },
   { id: 'whatif', label: '🎯 What-If Matrix' },
+  { id: 'micromarkets', label: '⚡ Micro-Markets' },
+  { id: 'tactical', label: '🏟️ Tactical Radar' },
   { id: 'blueprint', label: '📋 Over Blueprint' },
   { id: 'godmode', label: '🎛️ God Mode & AI' },
-  { id: 'risk', label: '🛡️ Risk & Profit' },
+  { id: 'risk', label: '🛡️ Risk & Defense' },
+  { id: 'cashout', label: '💸 Cash-Out Desk' },
   { id: 'wagers', label: '🐋 Wager Tape' },
   { id: 'toss_squad', label: '🪙 Toss & Lineup' },
   { id: 'replay', label: '🎞️ Ball Replay' },
-  { id: 'weather', label: '🌧️ Weather' },
+  { id: 'weather', label: '🌪️ Atmosphere' },
   { id: 'broadcast', label: '📢 Broadcast' },
-  { id: 'markets', label: '📊 Markets' },
+  { id: 'markets', label: '📊 Core Markets' },
 ];
 
 const PHASE_LABEL = {
@@ -213,6 +216,20 @@ function ScoreboardHero({ match }) {
             🎬 AI Director: {match.directorMode.replace('_', ' ')}
           </span>
         )}
+        {match.environment && (
+          <span className="srl-pill srl-pill-live" style={{ fontSize: '0.68rem', padding: '2px 8px', background: 'rgba(14, 165, 233, 0.15)', borderColor: '#0ea5e9', color: '#38bdf8' }}>
+            🌪️ {match.environment.pitchWear?.replace('_', ' ')} · Dew {match.environment.dewFactor}%
+          </span>
+        )}
+        {match.circuitBreaker?.emergencyKillSwitch ? (
+          <span className="srl-pill srl-pill-completed" style={{ fontSize: '0.68rem', padding: '2px 8px', background: 'rgba(239, 68, 68, 0.25)', borderColor: '#ef4444', color: '#f87171', fontWeight: 800 }}>
+            🚨 RED PHONE KILL SWITCH ACTIVE
+          </span>
+        ) : match.circuitBreaker?.isTripped ? (
+          <span className="srl-pill srl-pill-paused" style={{ fontSize: '0.68rem', padding: '2px 8px', background: 'rgba(245, 158, 11, 0.2)', borderColor: '#f59e0b', color: '#fbbf24' }}>
+            ⚠️ CIRCUIT BREAKER TRIPPED
+          </span>
+        ) : null}
         {match.commentary && (
           <span style={{ fontStyle: 'italic', color: 'var(--srl-accent)', maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {match.commentary}
@@ -295,6 +312,31 @@ export default function IPLSRLConsoleView() {
   const [wagerTape, setWagerTape] = useState(null);
   const [wagerTapeLoading, setWagerTapeLoading] = useState(false);
   const [selectedBuffPlayer, setSelectedBuffPlayer] = useState('striker');
+
+  // Dynamic Micro-Markets Desk
+  const [microMarketsData, setMicroMarketsData] = useState([]);
+  const [microMarketsLoading, setMicroMarketsLoading] = useState(false);
+
+  // Tactical Radar (Pitch Map & Wagon Wheel)
+  const [tacticalRadar, setTacticalRadar] = useState(null);
+  const [tacticalLoading, setTacticalLoading] = useState(false);
+
+  // Live Cash-Out Haircut & Buyback Desk
+  const [cashoutData, setCashoutData] = useState(null);
+  const [cashoutLoading, setCashoutLoading] = useState(false);
+
+  // Atmosphere Inputs
+  const [dewFactorInput, setDewFactorInput] = useState(0);
+  const [pitchWearInput, setPitchWearInput] = useState('FRESH_BELTER');
+  const [swingIndexInput, setSwingIndexInput] = useState(15);
+  const [overcastInput, setOvercastInput] = useState(false);
+
+  // Cashout / Circuit Breaker Inputs
+  const [cashoutHaircutInput, setCashoutHaircutInput] = useState('10');
+  const [cbVelocityInput, setCbVelocityInput] = useState('100000');
+  const [cbPowerplayInput, setCbPowerplayInput] = useState('50000');
+  const [cbMiddleInput, setCbMiddleInput] = useState('35000');
+  const [cbDeathInput, setCbDeathInput] = useState('15000');
 
   const applySnap = useCallback((data) => {
     setSnap(data);
@@ -493,6 +535,45 @@ export default function IPLSRLConsoleView() {
     }
   }, [selectedMatchId, showToast]);
 
+  const fetchMicroMarkets = useCallback(async () => {
+    if (!selectedMatchId) return;
+    setMicroMarketsLoading(true);
+    try {
+      const data = await adminApiClient.get(`/iplsrl/matches/${encodeURIComponent(selectedMatchId)}/micro-markets`);
+      setMicroMarketsData(data?.markets || []);
+    } catch (err) {
+      showToast(err.message || 'Failed to load micro-markets', 'error');
+    } finally {
+      setMicroMarketsLoading(false);
+    }
+  }, [selectedMatchId, showToast]);
+
+  const fetchTacticalRadar = useCallback(async () => {
+    if (!selectedMatchId) return;
+    setTacticalLoading(true);
+    try {
+      const data = await adminApiClient.get(`/iplsrl/matches/${encodeURIComponent(selectedMatchId)}/tactical-radar`);
+      setTacticalRadar(data);
+    } catch (err) {
+      showToast(err.message || 'Failed to load tactical radar', 'error');
+    } finally {
+      setTacticalLoading(false);
+    }
+  }, [selectedMatchId, showToast]);
+
+  const fetchCashout = useCallback(async () => {
+    if (!selectedMatchId) return;
+    setCashoutLoading(true);
+    try {
+      const data = await adminApiClient.get(`/iplsrl/matches/${encodeURIComponent(selectedMatchId)}/cashout`);
+      setCashoutData(data);
+    } catch (err) {
+      showToast(err.message || 'Failed to load cashout positions', 'error');
+    } finally {
+      setCashoutLoading(false);
+    }
+  }, [selectedMatchId, showToast]);
+
   useEffect(() => {
     if (matchZone === 'replay' && selectedMatchId) {
       fetchReplay();
@@ -500,8 +581,14 @@ export default function IPLSRLConsoleView() {
       fetchWhatIf();
     } else if (matchZone === 'wagers' && selectedMatchId) {
       fetchWagers();
+    } else if (matchZone === 'micromarkets' && selectedMatchId) {
+      fetchMicroMarkets();
+    } else if (matchZone === 'tactical' && selectedMatchId) {
+      fetchTacticalRadar();
+    } else if (matchZone === 'cashout' && selectedMatchId) {
+      fetchCashout();
     }
-  }, [matchZone, selectedMatchId, fetchReplay, fetchWhatIf, fetchWagers]);
+  }, [matchZone, selectedMatchId, fetchReplay, fetchWhatIf, fetchWagers, fetchMicroMarkets, fetchTacticalRadar, fetchCashout]);
 
   useEffect(() => {
     if (selected) {
@@ -513,6 +600,21 @@ export default function IPLSRLConsoleView() {
       setAwayImpactInput(selected.lineup?.awayImpactPlayer || '');
       if (selected.targetMargin) {
         setProfitMaximizerTarget(String(selected.targetMargin));
+      }
+      if (selected.environment) {
+        setDewFactorInput(selected.environment.dewFactor ?? 0);
+        setPitchWearInput(selected.environment.pitchWear ?? 'FRESH_BELTER');
+        setSwingIndexInput(selected.environment.swingIndex ?? 15);
+        setOvercastInput(!!selected.environment.overcast);
+      }
+      if (selected.cashoutControl) {
+        setCashoutHaircutInput(String(Math.round((selected.cashoutControl.globalHaircut ?? 0.10) * 100)));
+      }
+      if (selected.circuitBreaker) {
+        setCbVelocityInput(String(selected.circuitBreaker.velocityLimit ?? 100000));
+        setCbPowerplayInput(String(selected.circuitBreaker.stageCaps?.powerplay ?? 50000));
+        setCbMiddleInput(String(selected.circuitBreaker.stageCaps?.middle ?? 35000));
+        setCbDeathInput(String(selected.circuitBreaker.stageCaps?.death ?? 15000));
       }
     }
   }, [selected?.matchId]);
@@ -1110,6 +1212,266 @@ export default function IPLSRLConsoleView() {
                   </div>
                 )}
 
+                {/* ═══ ZONE: DYNAMIC MICRO-MARKETS ═══ */}
+                {matchZone === 'micromarkets' && (
+                  <div className="srl-tab-body" key="micromarkets">
+                    <div className="srl-zone">
+                      <div className="srl-zone-label --accent" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                        <span>⚡ Dynamic Micro-Markets & Rapid Flash Desk</span>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <button
+                            type="button"
+                            className="srl-btn srl-btn-slate"
+                            style={{ height: 30, fontSize: '0.72rem', padding: '0 8px' }}
+                            disabled={busy || microMarketsLoading}
+                            onClick={fetchMicroMarkets}
+                          >
+                            🔄 Refresh
+                          </button>
+                          <button
+                            type="button"
+                            className="srl-btn srl-btn-orange"
+                            style={{ height: 30, fontSize: '0.72rem', padding: '0 8px' }}
+                            disabled={busy}
+                            onClick={() => run(
+                              () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/micro-markets/mass-suspend`, { suspend: true }),
+                              'All micro-markets SUSPENDED',
+                            ).then(fetchMicroMarkets)}
+                          >
+                            ⏸️ Mass Suspend All
+                          </button>
+                          <button
+                            type="button"
+                            className="srl-btn srl-btn-teal"
+                            style={{ height: 30, fontSize: '0.72rem', padding: '0 8px' }}
+                            disabled={busy}
+                            onClick={() => run(
+                              () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/micro-markets/mass-suspend`, { suspend: false }),
+                              'All micro-markets OPENED',
+                            ).then(fetchMicroMarkets)}
+                          >
+                            ▶️ Open All
+                          </button>
+                        </div>
+                      </div>
+                      <p className="srl-hint" style={{ margin: '0 0 12px' }}>
+                        Rapid flash markets priced dynamically from in-play match state. Adjust per-market house edge or suspend ahead of volatile deliveries.
+                      </p>
+
+                      {microMarketsLoading && !microMarketsData.length ? (
+                        <p className="srl-hint">Loading micro-markets...</p>
+                      ) : (
+                        <div className="srl-micromarket-grid">
+                          {microMarketsData.map((mkt) => {
+                            const isSuspended = mkt.status === 'SUSPENDED';
+                            return (
+                              <div key={mkt.id} className={`srl-micromarket-card${isSuspended ? ' is-suspended' : ''}`}>
+                                <div className="srl-micromarket-head">
+                                  <div>
+                                    <strong style={{ fontSize: '0.92rem', color: 'var(--admin-text)' }}>{mkt.title}</strong>
+                                    <p className="srl-hint" style={{ margin: '2px 0 0', fontSize: '0.72rem' }}>{mkt.subtitle}</p>
+                                  </div>
+                                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                    <span className={`srl-pill ${isSuspended ? 'srl-pill-paused' : 'srl-pill-live'}`}>
+                                      {mkt.status}
+                                    </span>
+                                    <span className="srl-pill srl-pill-slate">
+                                      {Math.round((mkt.holdPercent || 0.08) * 100)}% Juice
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="srl-micromarket-outcomes">
+                                  {(mkt.outcomes || []).map((outc) => (
+                                    <div key={outc.id} className="srl-micromarket-outcome-row">
+                                      <span className="srl-outcome-name">{outc.label}</span>
+                                      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                                        <span className="srl-outcome-liability" title="Matched Liability">
+                                          Liab: {formatInr(outc.liability || 0)}
+                                        </span>
+                                        <span className="srl-outcome-odds">{Number(outc.odds).toFixed(2)}</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+
+                                <div className="srl-micromarket-actions">
+                                  <button
+                                    type="button"
+                                    className={`srl-btn ${isSuspended ? 'srl-btn-teal' : 'srl-btn-orange'}`}
+                                    style={{ flex: 1, height: 32, fontSize: '0.75rem' }}
+                                    disabled={busy}
+                                    onClick={() => run(
+                                      () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/micro-markets/toggle`, {
+                                        marketId: mkt.id,
+                                        status: isSuspended ? 'OPEN' : 'SUSPENDED',
+                                      }),
+                                      `${mkt.title} is now ${isSuspended ? 'OPEN' : 'SUSPENDED'}`,
+                                    ).then(fetchMicroMarkets)}
+                                  >
+                                    {isSuspended ? '▶️ Resume Market' : '⏸️ Suspend'}
+                                  </button>
+
+                                  <select
+                                    className="srl-input"
+                                    style={{ width: 110, height: 32, fontSize: '0.75rem' }}
+                                    value={String(mkt.holdPercent || 0.08)}
+                                    disabled={busy}
+                                    onChange={(e) => run(
+                                      () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/micro-markets/margin`, {
+                                        marketId: mkt.id,
+                                        holdPercent: Number(e.target.value),
+                                      }),
+                                      `Margin for ${mkt.title} set to ${Math.round(Number(e.target.value) * 100)}%`,
+                                    ).then(fetchMicroMarkets)}
+                                  >
+                                    <option value="0.05">5% Juice</option>
+                                    <option value="0.08">8% Standard</option>
+                                    <option value="0.10">10% Firm</option>
+                                    <option value="0.12">12% High-Edge</option>
+                                    <option value="0.15">15% Max Edge</option>
+                                  </select>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ═══ ZONE: 2D TACTICAL RADAR (PITCH MAP & WAGON WHEEL) ═══ */}
+                {matchZone === 'tactical' && (
+                  <div className="srl-tab-body" key="tactical">
+                    <div className="srl-zone">
+                      <div className="srl-zone-label --info" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                        <span>🏟️ 2D Tactical Pitch Map & Wagon Wheel Visualizer</span>
+                        <button
+                          type="button"
+                          className="srl-btn srl-btn-slate"
+                          style={{ height: 30, fontSize: '0.72rem', padding: '0 8px' }}
+                          disabled={busy || tacticalLoading}
+                          onClick={fetchTacticalRadar}
+                        >
+                          🔄 Refresh Radar
+                        </button>
+                      </div>
+                      <p className="srl-hint" style={{ margin: '0 0 14px' }}>
+                        Real-time delivery trajectory radar tracking pitch length distribution, radial wagon-wheel scoring sectors, and batsman vs bowler duel intelligence.
+                      </p>
+
+                      <div className="srl-tactical-layout">
+                        {/* 2D Pitch Map */}
+                        <div className="srl-tactical-card">
+                          <h4 style={{ margin: '0 0 8px', fontSize: '0.85rem', color: 'var(--srl-accent-strong)' }}>
+                            🎯 2D Pitch Length Density
+                          </h4>
+                          <div className="srl-pitch-field">
+                            <div className="srl-crease --bowling">Bowling Crease</div>
+                            <div className="srl-pitch-zone --short">
+                              <span>Short Pitch (Bouncer)</span>
+                              <strong>{tacticalRadar?.pitchHeat?.SHORT_PITCH || 0} balls</strong>
+                            </div>
+                            <div className="srl-pitch-zone --back">
+                              <span>Back of Length</span>
+                              <strong>{tacticalRadar?.pitchHeat?.BACK_OF_LENGTH || 0} balls</strong>
+                            </div>
+                            <div className="srl-pitch-zone --good">
+                              <span>Good Length (Channel)</span>
+                              <strong>{tacticalRadar?.pitchHeat?.GOOD_LENGTH || 0} balls</strong>
+                            </div>
+                            <div className="srl-pitch-zone --full">
+                              <span>Full Length (Drive)</span>
+                              <strong>{tacticalRadar?.pitchHeat?.FULL_LENGTH || 0} balls</strong>
+                            </div>
+                            <div className="srl-pitch-zone --yorker">
+                              <span>Yorker Zone (Base of Stumps)</span>
+                              <strong>{tacticalRadar?.pitchHeat?.YORKER || 0} balls</strong>
+                            </div>
+                            <div className="srl-crease --popping">Popping Crease & Stumps</div>
+                          </div>
+                        </div>
+
+                        {/* Wagon Wheel Radar */}
+                        <div className="srl-tactical-card">
+                          <h4 style={{ margin: '0 0 8px', fontSize: '0.85rem', color: 'var(--srl-accent-strong)' }}>
+                            🏏 360° Radial Wagon Wheel
+                          </h4>
+                          <div className="srl-wagon-grid">
+                            {Object.entries(tacticalRadar?.wagonWheel || {
+                              THIRD_MAN: { runs: 6, boundaries: 0 },
+                              POINT: { runs: 10, boundaries: 1 },
+                              COVER: { runs: 16, boundaries: 3 },
+                              MID_OFF: { runs: 4, boundaries: 0 },
+                              LONG_ON: { runs: 14, boundaries: 2 },
+                              MID_WICKET: { runs: 18, boundaries: 2 },
+                              SQUARE_LEG: { runs: 9, boundaries: 1 },
+                              FINE_LEG: { runs: 5, boundaries: 0 },
+                            }).map(([sector, data]) => (
+                              <div key={sector} className="srl-wagon-sector">
+                                <span className="srl-wagon-sector-name">{sector.replace('_', ' ')}</span>
+                                <div className="srl-wagon-sector-stats">
+                                  <strong>{data.runs}r</strong>
+                                  <span className="srl-hint" style={{ fontSize: '0.7rem' }}>
+                                    {data.boundaries} bdry
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Head-to-Head Duel Card */}
+                        <div className="srl-tactical-card" style={{ gridColumn: '1 / -1' }}>
+                          <h4 style={{ margin: '0 0 8px', fontSize: '0.85rem', color: 'var(--srl-accent-strong)' }}>
+                            ⚔️ Striker vs Bowler Head-to-Head Intelligence
+                          </h4>
+                          <div className="srl-h2h-duel-box">
+                            <div className="srl-h2h-names">
+                              <div className="srl-h2h-player">
+                                <span className="srl-hint">Striker</span>
+                                <strong>{tacticalRadar?.h2hMatchup?.striker || selected.score?.liveDetails?.batsman || 'Striker'}</strong>
+                              </div>
+                              <span className="srl-h2h-vs">VS</span>
+                              <div className="srl-h2h-player">
+                                <span className="srl-hint">Bowler</span>
+                                <strong>{tacticalRadar?.h2hMatchup?.bowler || selected.score?.liveDetails?.bowler || 'Bowler'}</strong>
+                              </div>
+                            </div>
+                            <div className="srl-h2h-metrics">
+                              <div className="srl-h2h-metric">
+                                <label>Balls Faced</label>
+                                <span>{tacticalRadar?.h2hMatchup?.ballsFaced || 28}</span>
+                              </div>
+                              <div className="srl-h2h-metric">
+                                <label>Runs Scored</label>
+                                <span style={{ color: '#10b981' }}>{tacticalRadar?.h2hMatchup?.runsScored || 42}</span>
+                              </div>
+                              <div className="srl-h2h-metric">
+                                <label>Strike Rate</label>
+                                <span>{tacticalRadar?.h2hMatchup?.strikeRate || '150.0'}</span>
+                              </div>
+                              <div className="srl-h2h-metric">
+                                <label>Dismissals</label>
+                                <span style={{ color: '#f87171' }}>{tacticalRadar?.h2hMatchup?.dismissals || 1}</span>
+                              </div>
+                              <div className="srl-h2h-metric">
+                                <label>Dot Ball %</label>
+                                <span>{tacticalRadar?.h2hMatchup?.dotBallPercent || 32.1}%</span>
+                              </div>
+                            </div>
+                            <div className="srl-h2h-verdict">
+                              <span>Tactical Advantage:</span>
+                              <strong>{tacticalRadar?.h2hMatchup?.verdict || 'High Aggression · 150.0 SR vs Bowler Pace'}</strong>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* ═══ ZONE: OVER BLUEPRINT ═══ */}
                 {matchZone === 'blueprint' && (
                   <div className="srl-tab-body" key="blueprint">
@@ -1621,6 +1983,241 @@ export default function IPLSRLConsoleView() {
                           </div>
                         </div>
                       </div>
+
+                      {/* Automated Circuit Breakers & Master Kill-Switch Sub-Panel */}
+                      <div className="srl-circuit-breaker-panel" style={{ marginTop: 16 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                          <div>
+                            <div className="srl-zone-label --warn" style={{ margin: 0 }}>
+                              🚨 Automated Circuit Breakers & Red Phone Kill-Switch
+                            </div>
+                            <p className="srl-hint" style={{ margin: '4px 0 0' }}>
+                              Auto-trips when unhedged liability spike velocity exceeds threshold. Master Kill-Switch freezes entire fixture instantly.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            className={`srl-btn ${selected.circuitBreaker?.emergencyKillSwitch ? 'srl-btn-teal' : 'srl-btn-orange'}`}
+                            style={{ fontWeight: 800, padding: '8px 16px', letterSpacing: '0.04em', background: selected.circuitBreaker?.emergencyKillSwitch ? '#10b981' : '#dc2626', color: '#fff', borderColor: '#ef4444' }}
+                            disabled={busy}
+                            onClick={() => run(
+                              () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/circuit-breaker/kill-switch`, {
+                                active: !selected.circuitBreaker?.emergencyKillSwitch,
+                              }),
+                              selected.circuitBreaker?.emergencyKillSwitch ? 'Emergency Kill-Switch DISENGAGED · Betting Resumed' : '🚨 EMERGENCY KILL-SWITCH ENGAGED · ALL BETTING FROZEN',
+                            )}
+                          >
+                            {selected.circuitBreaker?.emergencyKillSwitch ? '🟢 Disengage Kill-Switch' : '🚨 RED PHONE KILL-SWITCH'}
+                          </button>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginTop: 12 }}>
+                          <label className="srl-field">
+                            60s Velocity Spike Limit
+                            <input
+                              type="number"
+                              className="srl-input"
+                              value={cbVelocityInput}
+                              onChange={(e) => setCbVelocityInput(e.target.value)}
+                              placeholder="e.g. 100000"
+                            />
+                          </label>
+                          <label className="srl-field">
+                            Powerplay Max Stake
+                            <input
+                              type="number"
+                              className="srl-input"
+                              value={cbPowerplayInput}
+                              onChange={(e) => setCbPowerplayInput(e.target.value)}
+                              placeholder="e.g. 50000"
+                            />
+                          </label>
+                          <label className="srl-field">
+                            Middle Overs Max Stake
+                            <input
+                              type="number"
+                              className="srl-input"
+                              value={cbMiddleInput}
+                              onChange={(e) => setCbMiddleInput(e.target.value)}
+                              placeholder="e.g. 35000"
+                            />
+                          </label>
+                          <label className="srl-field">
+                            Death Overs Max Stake
+                            <input
+                              type="number"
+                              className="srl-input"
+                              value={cbDeathInput}
+                              onChange={(e) => setCbDeathInput(e.target.value)}
+                              placeholder="e.g. 15000"
+                            />
+                          </label>
+                        </div>
+
+                        <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
+                          <button
+                            type="button"
+                            className="srl-btn srl-btn-blue"
+                            style={{ height: 32, fontSize: '0.75rem' }}
+                            disabled={busy}
+                            onClick={() => run(
+                              () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/circuit-breaker/config`, {
+                                velocityLimit: Number(cbVelocityInput),
+                                stageCaps: {
+                                  powerplay: Number(cbPowerplayInput),
+                                  middle: Number(cbMiddleInput),
+                                  death: Number(cbDeathInput),
+                                },
+                              }),
+                              'Circuit breaker limits updated',
+                            )}
+                          >
+                            Save Safety Limits
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ═══ ZONE: LIVE CASH-OUT HAIRCUT & BUYBACK DESK ═══ */}
+                {matchZone === 'cashout' && (
+                  <div className="srl-tab-body" key="cashout">
+                    <div className="srl-zone">
+                      <div className="srl-zone-label --accent" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                        <span>💸 Live Cash-Out Haircut & Strategic Buyback Desk</span>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <button
+                            type="button"
+                            className="srl-btn srl-btn-slate"
+                            style={{ height: 30, fontSize: '0.72rem', padding: '0 8px' }}
+                            disabled={busy || cashoutLoading}
+                            onClick={fetchCashout}
+                          >
+                            🔄 Refresh Cashouts
+                          </button>
+                          <button
+                            type="button"
+                            className={`srl-btn ${selected.cashoutControl?.cashoutHalted ? 'srl-btn-teal' : 'srl-btn-orange'}`}
+                            style={{ height: 30, fontSize: '0.72rem', padding: '0 8px' }}
+                            disabled={busy}
+                            onClick={() => run(
+                              () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/cashout/config`, {
+                                cashoutHalted: !selected.cashoutControl?.cashoutHalted,
+                              }),
+                              selected.cashoutControl?.cashoutHalted ? 'Cash-Out UNFROZEN' : '⚠️ Cash-Out HALTED for users',
+                            ).then(fetchCashout)}
+                          >
+                            {selected.cashoutControl?.cashoutHalted ? '▶️ Unfreeze Cash-Out' : '⏸️ Emergency Cash-Out Halt'}
+                          </button>
+                        </div>
+                      </div>
+                      <p className="srl-hint" style={{ margin: '0 0 14px' }}>
+                        Manage house retention fees on player cash-outs and push sweetener bonuses (+5%) to buy back high-risk whale positions prior to death overs.
+                      </p>
+
+                      <div className="srl-cashout-config-bar">
+                        <label className="srl-field" style={{ flex: 1, minWidth: 200 }}>
+                          House Haircut Fee (%)
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <input
+                              type="range"
+                              min="5"
+                              max="25"
+                              step="1"
+                              value={cashoutHaircutInput}
+                              onChange={(e) => setCashoutHaircutInput(e.target.value)}
+                              className="srl-slider"
+                              style={{ flex: 1 }}
+                            />
+                            <span style={{ fontWeight: 800, minWidth: 40, color: 'var(--srl-accent-strong)' }}>
+                              {cashoutHaircutInput}%
+                            </span>
+                          </div>
+                        </label>
+                        <button
+                          type="button"
+                          className="srl-btn srl-btn-blue"
+                          style={{ height: 36, alignSelf: 'flex-end' }}
+                          disabled={busy}
+                          onClick={() => run(
+                            () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/cashout/config`, {
+                              globalHaircut: Number(cashoutHaircutInput) / 100,
+                            }),
+                            `Global cashout fee set to ${cashoutHaircutInput}%`,
+                          ).then(fetchCashout)}
+                        >
+                          Save Haircut Fee
+                        </button>
+                      </div>
+
+                      {/* Cashout Open Positions Table */}
+                      <div className="srl-cashout-table-wrapper" style={{ marginTop: 14 }}>
+                        <table className="srl-whatif-table">
+                          <thead>
+                            <tr>
+                              <th>Bet ID</th>
+                              <th>Tier</th>
+                              <th>Selection</th>
+                              <th>Stake</th>
+                              <th>Fair Value</th>
+                              <th>House Fee</th>
+                              <th>Cashout Offer</th>
+                              <th>Strategic Buyback Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(cashoutData?.positions || []).map((pos) => (
+                              <tr key={pos.betId}>
+                                <td style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{pos.betId}</td>
+                                <td>
+                                  <span className={`srl-pill ${pos.userTier === 'WHALE' ? 'srl-pill-completed' : (pos.userTier === 'SHARP' ? 'srl-pill-paused' : 'srl-pill-slate')}`}>
+                                    {pos.userTier}
+                                  </span>
+                                </td>
+                                <td><strong>{pos.selection}</strong> @ {pos.odds}</td>
+                                <td>{formatInr(pos.stake)}</td>
+                                <td style={{ color: 'var(--admin-text)' }}>{formatInr(pos.fairValue)}</td>
+                                <td style={{ color: '#f87171' }}>-{formatInr(pos.haircutFee)}</td>
+                                <td>
+                                  <strong style={{ color: '#10b981', fontSize: '0.9rem' }}>
+                                    {formatInr(pos.cashoutOffer)}
+                                  </strong>
+                                  {pos.hasSweetener && (
+                                    <span className="srl-pill srl-pill-live" style={{ marginLeft: 6, fontSize: '0.65rem' }}>
+                                      +5% Sweetener
+                                    </span>
+                                  )}
+                                </td>
+                                <td>
+                                  <button
+                                    type="button"
+                                    className="srl-btn srl-btn-teal"
+                                    style={{ height: 28, fontSize: '0.72rem', padding: '0 8px' }}
+                                    disabled={busy || pos.hasSweetener}
+                                    onClick={() => run(
+                                      () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/cashout/sweetener`, {
+                                        betId: pos.betId,
+                                        bonusPercent: 5,
+                                      }),
+                                      `🎁 +5% Sweetener Buyback pushed for ${pos.betId}!`,
+                                    ).then(fetchCashout)}
+                                  >
+                                    {pos.hasSweetener ? '✓ Sweetener Pushed' : '🎁 Push +5% Buyback'}
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                            {(!cashoutData?.positions || !cashoutData.positions.length) && (
+                              <tr>
+                                <td colSpan={8} style={{ textAlign: 'center', padding: '24px 0', color: 'var(--srl-muted)' }}>
+                                  No active open cashout positions available.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1994,11 +2591,119 @@ export default function IPLSRLConsoleView() {
                   </div>
                 )}
 
-                {/* ═══ ZONE: WEATHER ═══ */}
+                {/* ═══ ZONE: ATMOSPHERE & ENVIRONMENTAL PHYSICS ═══ */}
                 {matchZone === 'weather' && (
                   <div className="srl-tab-body" key="weather">
                     <div className="srl-zone">
-                      <div className="srl-zone-label --info">🌧️ DLS Engine & Rain Delays</div>
+                      <div className="srl-zone-label --info" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                        <span>🌪️ Environmental Physics Engine (Dew, Pitch & Swing)</span>
+                        <span className="srl-pill srl-pill-live">
+                          Active: {selected.environment?.pitchWear?.replace('_', ' ')}
+                        </span>
+                      </div>
+                      <p className="srl-hint" style={{ margin: '0 0 12px' }}>
+                        Atmospheric conditions dynamically alter pitch bounce, ball grip, boundary strike frequency, and wicket mode distributions.
+                      </p>
+
+                      <div className="srl-env-grid">
+                        {/* Dew Factor Slider */}
+                        <div className="srl-env-card">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <strong style={{ fontSize: '0.85rem' }}>💧 Dew Factor (Night Chases)</strong>
+                            <span style={{ fontWeight: 800, color: '#38bdf8' }}>{dewFactorInput}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            step="5"
+                            value={dewFactorInput}
+                            onChange={(e) => setDewFactorInput(Number(e.target.value))}
+                            className="srl-slider"
+                            style={{ margin: '10px 0' }}
+                          />
+                          <p className="srl-hint" style={{ margin: 0, fontSize: '0.72rem' }}>
+                            {dewFactorInput >= 60 ? 'Heavy Dew: Extreme boundary boost (+18%), spin grip suppressed, wet ball wides.' : (dewFactorInput >= 25 ? 'Moderate Dew: Ball slippery, batsmen gain +8% boundary advantage.' : 'Dry Ball: Standard grip and natural spin turn.')}
+                          </p>
+                        </div>
+
+                        {/* Pitch Wear Selector */}
+                        <div className="srl-env-card">
+                          <label className="srl-field">
+                            Pitch Condition & Wear Matrix
+                            <select
+                              value={pitchWearInput}
+                              onChange={(e) => setPitchWearInput(e.target.value)}
+                              className="srl-input"
+                              style={{ height: 36, marginTop: 6 }}
+                            >
+                              <option value="FRESH_BELTER">⚡ Fresh Belter (True bounce, 200+ par)</option>
+                              <option value="DRY_DUSTBOWL">🏜️ Dry Dustbowl (Sharp spin, LBW/Bowled x1.4)</option>
+                              <option value="GREEN_SEAMER">🌿 Green Seamer (Late swing, slips edges x1.5)</option>
+                              <option value="CRACKED_MINEFIELD">💥 Cracked Minefield (Variable bounce chaos)</option>
+                            </select>
+                          </label>
+                          <p className="srl-hint" style={{ margin: '6px 0 0', fontSize: '0.72rem' }}>
+                            Directly modifies batsman edge rate and bowler dismissal probability.
+                          </p>
+                        </div>
+
+                        {/* Swing Index Slider */}
+                        <div className="srl-env-card">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <strong style={{ fontSize: '0.85rem' }}>🍃 Swing & Seam Movement</strong>
+                            <span style={{ fontWeight: 800, color: '#10b981' }}>{swingIndexInput}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            step="5"
+                            value={swingIndexInput}
+                            onChange={(e) => setSwingIndexInput(Number(e.target.value))}
+                            className="srl-slider"
+                            style={{ margin: '10px 0' }}
+                          />
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', cursor: 'pointer' }}>
+                              <input
+                                type="checkbox"
+                                checked={overcastInput}
+                                onChange={(e) => setOvercastInput(e.target.checked)}
+                              />
+                              ☁️ Overcast Skies
+                            </label>
+                            <span className="srl-hint" style={{ fontSize: '0.7rem' }}>
+                              {overcastInput ? 'Enhanced Powerplay Seam' : 'Clear Sun'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
+                        <button
+                          type="button"
+                          className="srl-btn srl-btn-blue"
+                          style={{ height: 36, padding: '0 20px' }}
+                          disabled={busy}
+                          onClick={() => run(
+                            () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/environment`, {
+                              dewFactor: dewFactorInput,
+                              pitchWear: pitchWearInput,
+                              swingIndex: swingIndexInput,
+                              overcast: overcastInput,
+                            }),
+                            `Atmosphere updated: Dew ${dewFactorInput}%, ${pitchWearInput}`,
+                          )}
+                        >
+                          Apply Atmosphere Physics
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* DLS Engine & Rain Delays */}
+                    <div className="srl-zone" style={{ marginTop: 14 }}>
+                      <div className="srl-zone-label --warn">🌧️ DLS Engine & Rain Delays</div>
                       <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                         <button
                           type="button"
