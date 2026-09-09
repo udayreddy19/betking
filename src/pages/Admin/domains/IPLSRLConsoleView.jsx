@@ -134,7 +134,7 @@ function ScoreboardHero({ match }) {
 
       <div className="srl-score-divider">
         <span className="srl-score-vs">vs</span>
-        <span className="srl-score-phase">
+        <span className={`srl-phase-pill ${isLive ? 'is-live' : match.controlStatus === 'COMPLETED' ? 'is-completed' : 'is-pre'}`}>
           {isLive && <span className="srl-live-dot" style={{ marginRight: 6 }} />}
           {PHASE_LABEL[clock.phase] || match.controlStatus}
         </span>
