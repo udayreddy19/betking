@@ -1400,21 +1400,21 @@ export default function IPLSRLConsoleView() {
                           </h4>
                           <div className="srl-wagon-grid">
                             {Object.entries(tacticalRadar?.wagonWheel || {
-                              THIRD_MAN: { runs: 6, boundaries: 0 },
-                              POINT: { runs: 10, boundaries: 1 },
-                              COVER: { runs: 16, boundaries: 3 },
-                              MID_OFF: { runs: 4, boundaries: 0 },
-                              LONG_ON: { runs: 14, boundaries: 2 },
-                              MID_WICKET: { runs: 18, boundaries: 2 },
-                              SQUARE_LEG: { runs: 9, boundaries: 1 },
-                              FINE_LEG: { runs: 5, boundaries: 0 },
+                              THIRD_MAN: { runs: 0, boundaries: 0 },
+                              POINT: { runs: 0, boundaries: 0 },
+                              COVER: { runs: 0, boundaries: 0 },
+                              MID_OFF: { runs: 0, boundaries: 0 },
+                              LONG_ON: { runs: 0, boundaries: 0 },
+                              MID_WICKET: { runs: 0, boundaries: 0 },
+                              SQUARE_LEG: { runs: 0, boundaries: 0 },
+                              FINE_LEG: { runs: 0, boundaries: 0 },
                             }).map(([sector, data]) => (
                               <div key={sector} className="srl-wagon-sector">
                                 <span className="srl-wagon-sector-name">{sector.replace('_', ' ')}</span>
                                 <div className="srl-wagon-sector-stats">
-                                  <strong>{data.runs}r</strong>
+                                  <strong>{data.runs ?? 0}r</strong>
                                   <span className="srl-hint" style={{ fontSize: '0.7rem' }}>
-                                    {data.boundaries} bdry
+                                    {data.boundaries ?? 0} bdry
                                   </span>
                                 </div>
                               </div>
@@ -1442,28 +1442,28 @@ export default function IPLSRLConsoleView() {
                             <div className="srl-h2h-metrics">
                               <div className="srl-h2h-metric">
                                 <label>Balls Faced</label>
-                                <span>{tacticalRadar?.h2hMatchup?.ballsFaced || 28}</span>
+                                <span>{tacticalRadar?.h2hMatchup?.ballsFaced ?? 0}</span>
                               </div>
                               <div className="srl-h2h-metric">
                                 <label>Runs Scored</label>
-                                <span style={{ color: '#10b981' }}>{tacticalRadar?.h2hMatchup?.runsScored || 42}</span>
+                                <span style={{ color: '#10b981' }}>{tacticalRadar?.h2hMatchup?.runsScored ?? 0}</span>
                               </div>
                               <div className="srl-h2h-metric">
                                 <label>Strike Rate</label>
-                                <span>{tacticalRadar?.h2hMatchup?.strikeRate || '150.0'}</span>
+                                <span>{tacticalRadar?.h2hMatchup?.strikeRate ?? '0.0'}</span>
                               </div>
                               <div className="srl-h2h-metric">
                                 <label>Dismissals</label>
-                                <span style={{ color: '#f87171' }}>{tacticalRadar?.h2hMatchup?.dismissals || 1}</span>
+                                <span style={{ color: '#f87171' }}>{tacticalRadar?.h2hMatchup?.dismissals ?? 0}</span>
                               </div>
                               <div className="srl-h2h-metric">
                                 <label>Dot Ball %</label>
-                                <span>{tacticalRadar?.h2hMatchup?.dotBallPercent || 32.1}%</span>
+                                <span>{tacticalRadar?.h2hMatchup?.dotBallPercent ?? 0}%</span>
                               </div>
                             </div>
                             <div className="srl-h2h-verdict">
                               <span>Tactical Advantage:</span>
-                              <strong>{tacticalRadar?.h2hMatchup?.verdict || 'High Aggression · 150.0 SR vs Bowler Pace'}</strong>
+                              <strong>{tacticalRadar?.h2hMatchup?.verdict || 'Awaiting live duel deliveries'}</strong>
                             </div>
                           </div>
                         </div>
