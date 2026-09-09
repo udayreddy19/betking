@@ -21,10 +21,33 @@ const FILTERS = [
   { id: 'done', label: 'Completed' },
 ];
 
+const BLUEPRINT_PRESETS = [
+  { id: 'DEFEND_DEATH_OVER', name: 'Defend Death Over', desc: '6 runs, 1 Wkt (0, 1, W, 0, 1, 0)', icon: '🛡️', balls: [{ type: 'DOT', runs: 0 }, { type: 'SINGLE', runs: 1 }, { type: 'WICKET', runs: 0, subType: 'Bowled' }, { type: 'DOT', runs: 0 }, { type: 'SINGLE', runs: 1 }, { type: 'DOT', runs: 0 }] },
+  { id: 'CHASE_CLIMAX', name: 'Chase Climax Thriller', desc: '17 runs, 4-finish (4, 0, 6, 2, 1, 4)', icon: '⚡', balls: [{ type: 'FOUR', runs: 4 }, { type: 'DOT', runs: 0 }, { type: 'SIX', runs: 6 }, { type: 'DOUBLE', runs: 2 }, { type: 'SINGLE', runs: 1 }, { type: 'FOUR', runs: 4 }] },
+  { id: 'HAT_TRICK_COLLAPSE', name: 'Hat-trick Collapse', desc: '3 Wickets in an Over (W, W, W, 0, 1, 0)', icon: '💥', balls: [{ type: 'WICKET', runs: 0, subType: 'Bowled' }, { type: 'WICKET', runs: 0, subType: 'Caught' }, { type: 'WICKET', runs: 0, subType: 'LBW' }, { type: 'DOT', runs: 0 }, { type: 'SINGLE', runs: 1 }, { type: 'DOT', runs: 0 }] },
+  { id: 'POWERPLAY_BLITZ', name: 'Powerplay Blitz', desc: '22 runs massacre (4, 6, 4, 2, 6, 0)', icon: '🚀', balls: [{ type: 'FOUR', runs: 4 }, { type: 'SIX', runs: 6 }, { type: 'FOUR', runs: 4 }, { type: 'DOUBLE', runs: 2 }, { type: 'SIX', runs: 6 }, { type: 'DOT', runs: 0 }] },
+  { id: 'MAIDEN_OVER', name: 'Maiden Over', desc: '6 Dot Balls (0 runs)', icon: '🎯', balls: [{ type: 'DOT', runs: 0 }, { type: 'DOT', runs: 0 }, { type: 'DOT', runs: 0 }, { type: 'DOT', runs: 0 }, { type: 'DOT', runs: 0 }, { type: 'DOT', runs: 0 }] },
+  { id: 'TIE_SUPER_OVER', name: 'Super Over Thriller', desc: '10 runs / Tie finish (1, 4, 0, 2, 1, 2)', icon: '⚔️', balls: [{ type: 'SINGLE', runs: 1 }, { type: 'FOUR', runs: 4 }, { type: 'DOT', runs: 0 }, { type: 'DOUBLE', runs: 2 }, { type: 'SINGLE', runs: 1 }, { type: 'DOUBLE', runs: 2 }] },
+];
+
+const BALL_TYPE_OPTIONS = [
+  { type: 'DOT', label: '0 Dot', runs: 0 },
+  { type: 'SINGLE', label: '1 Single', runs: 1 },
+  { type: 'DOUBLE', label: '2 Double', runs: 2 },
+  { type: 'FOUR', label: '⚡ 4 Four', runs: 4 },
+  { type: 'SIX', label: '🚀 6 Six', runs: 6 },
+  { type: 'WICKET', label: '💥 Wicket', runs: 0 },
+  { type: 'WIDE', label: '⚠️ Wide (+1)', runs: 1 },
+  { type: 'NO_BALL', label: '🚨 No Ball', runs: 1 },
+];
+
 const MATCH_ZONES = [
   { id: 'control', label: '⚡ Control' },
+  { id: 'blueprint', label: '📋 Over Blueprint' },
   { id: 'godmode', label: '🎯 God Mode' },
-  { id: 'risk', label: '🛡️ Risk' },
+  { id: 'risk', label: '🛡️ Risk & Profit' },
+  { id: 'toss_squad', label: '🪙 Toss & Lineup' },
+  { id: 'replay', label: '🎞️ Ball Replay' },
   { id: 'weather', label: '🌧️ Weather' },
   { id: 'broadcast', label: '📢 Broadcast' },
   { id: 'markets', label: '📊 Markets' },
@@ -147,12 +170,27 @@ function ScoreboardHero({ match }) {
         <span className="srl-score-overs">{i2.overs || '0.0'} ov</span>
       </div>
 
-      <div className="srl-score-meta-row" style={{ gridColumn: '1 / -1' }}>
+      <div className="srl-score-meta-row" style={{ gridColumn: '1 / -1', flexWrap: 'wrap' }}>
         <span>{match.venue} · {match.speed}</span>
         <span>
           Open: <strong>{formatInr(match.book?.totalStake)}</strong>
           {' · '}{(match.book?.home?.bets || 0) + (match.book?.away?.bets || 0) + (match.book?.other?.bets || 0)} bets
         </span>
+        {match.toss?.winner && (
+          <span className="srl-pill srl-pill-live" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
+            🪙 Toss: {match.toss.winner === match.homeTeamId ? match.homeShort : match.awayShort} ({match.toss.decision})
+          </span>
+        )}
+        {match.autoProfitMaximizer && (
+          <span className="srl-pill srl-pill-live" style={{ fontSize: '0.68rem', padding: '2px 8px', background: 'rgba(16, 185, 129, 0.15)', borderColor: '#10b981', color: '#10b981' }}>
+            🛡️ Profit Max: {Math.round((match.targetMargin || 0.06) * 100)}%
+          </span>
+        )}
+        {match.incidentQueueLength > 0 && (
+          <span className="srl-pill srl-pill-paused" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
+            ⚡ {match.incidentQueueLength} Balls Armed
+          </span>
+        )}
         {match.commentary && (
           <span style={{ fontStyle: 'italic', color: 'var(--srl-accent)', maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {match.commentary}
@@ -198,6 +236,34 @@ export default function IPLSRLConsoleView() {
   const [exhibitionPitch, setExhibitionPitch] = useState('BALANCED');
   const [matchZone, setMatchZone] = useState('control');
   const draggingRef = useRef(false);
+
+  // Over Blueprint & Narrative Presets
+  const [selectedBlueprintPreset, setSelectedBlueprintPreset] = useState('DEFEND_DEATH_OVER');
+  const [blueprintBalls, setBlueprintBalls] = useState([
+    { type: 'DOT', runs: 0 },
+    { type: 'SINGLE', runs: 1 },
+    { type: 'WICKET', runs: 0, subType: 'Bowled' },
+    { type: 'DOT', runs: 0 },
+    { type: 'SINGLE', runs: 1 },
+    { type: 'DOT', runs: 0 },
+  ]);
+
+  // Profit Maximizer
+  const [profitMaximizerTarget, setProfitMaximizerTarget] = useState('0.06');
+
+  // Pre-Match Toss & Starting Lineup
+  const [tossWinnerKey, setTossWinnerKey] = useState('');
+  const [tossDecision, setTossDecision] = useState('BAT');
+  const [tossFlipping, setTossFlipping] = useState(false);
+  const [homeXIInput, setHomeXIInput] = useState('');
+  const [awayXIInput, setAwayXIInput] = useState('');
+  const [homeImpactInput, setHomeImpactInput] = useState('');
+  const [awayImpactInput, setAwayImpactInput] = useState('');
+
+  // Ball-by-ball Timeline Replay
+  const [replayDeliveries, setReplayDeliveries] = useState([]);
+  const [replayLoading, setReplayLoading] = useState(false);
+  const [replayFilter, setReplayFilter] = useState('all');
 
   const applySnap = useCallback((data) => {
     setSnap(data);
@@ -357,9 +423,74 @@ export default function IPLSRLConsoleView() {
     msg,
   );
 
-  const commitSeek = (ms, pause) => {
-    setDragMs(null);
-    seek({ elapsedMs: ms, pause }, 'Clock updated');
+  const fetchReplay = useCallback(async () => {
+    if (!selectedMatchId) return;
+    setReplayLoading(true);
+    try {
+      const data = await adminApiClient.get(`/iplsrl/matches/${encodeURIComponent(selectedMatchId)}/replay`);
+      setReplayDeliveries(data?.deliveries || []);
+    } catch (err) {
+      showToast(err.message || 'Failed to load replay', 'error');
+    } finally {
+      setReplayLoading(false);
+    }
+  }, [selectedMatchId, showToast]);
+
+  useEffect(() => {
+    if (matchZone === 'replay' && selectedMatchId) {
+      fetchReplay();
+    }
+  }, [matchZone, selectedMatchId, fetchReplay]);
+
+  useEffect(() => {
+    if (selected) {
+      setTossWinnerKey(selected.toss?.winner || selected.homeTeamId || '');
+      setTossDecision(selected.toss?.decision || 'BAT');
+      setHomeXIInput((selected.lineup?.homePlayingXI || []).join(', '));
+      setAwayXIInput((selected.lineup?.awayPlayingXI || []).join(', '));
+      setHomeImpactInput(selected.lineup?.homeImpactPlayer || '');
+      setAwayImpactInput(selected.lineup?.awayImpactPlayer || '');
+      if (selected.targetMargin) {
+        setProfitMaximizerTarget(String(selected.targetMargin));
+      }
+    }
+  }, [selected?.matchId]);
+
+  const exportAudit = async (format = 'json') => {
+    if (!selected?.matchId) return;
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('oddsyra_admin_token') || '';
+      const res = await fetch(`/api/admin/iplsrl/matches/${encodeURIComponent(selected.matchId)}/export${format === 'csv' ? '?format=csv' : ''}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error(`Export failed (${res.status})`);
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `srl_${selected.matchId}_audit.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+      showToast(`Exported ${format.toUpperCase()} audit log`, 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  const simulateCoinFlip = () => {
+    if (!selected) return;
+    setTossFlipping(true);
+    setTimeout(() => {
+      const winKey = Math.random() > 0.5 ? selected.homeTeamId : selected.awayTeamId;
+      const dec = Math.random() > 0.4 ? 'BAT' : 'BOWL';
+      setTossWinnerKey(winKey);
+      setTossDecision(dec);
+      setTossFlipping(false);
+      const winShort = winKey === selected.homeTeamId ? selected.homeShort : selected.awayShort;
+      showToast(`🪙 Coin landed! ${winShort} won and elected to ${dec} first.`, 'info');
+    }, 500);
   };
 
   if (loading && !snap) {
@@ -782,6 +913,158 @@ export default function IPLSRLConsoleView() {
                   </div>
                 )}
 
+                {/* ═══ ZONE: OVER BLUEPRINT ═══ */}
+                {matchZone === 'blueprint' && (
+                  <div className="srl-tab-body" key="blueprint">
+                    {/* Narrative Presets */}
+                    <div className="srl-zone">
+                      <div className="srl-zone-label --accent" style={{ justifyContent: 'space-between' }}>
+                        <span>📋 Narrative Presets (1-Click 6-Ball Scripts)</span>
+                        {selected.incidentQueueLength > 0 && (
+                          <span className="srl-pill srl-pill-live">
+                            ⚡ {selected.incidentQueueLength} armed in queue
+                          </span>
+                        )}
+                      </div>
+                      <p className="srl-hint" style={{ margin: '0 0 12px' }}>
+                        Queue high-drama narrative sequences for TV thriller finishes, batting collapses, or death-over defenses.
+                      </p>
+                      <div className="srl-blueprint-grid">
+                        {BLUEPRINT_PRESETS.map((p) => (
+                          <div key={p.id} className={`srl-blueprint-card${selectedBlueprintPreset === p.id ? ' is-active' : ''}`}>
+                            <div className="srl-blueprint-card__head">
+                              <span className="srl-blueprint-icon">{p.icon}</span>
+                              <div>
+                                <strong>{p.name}</strong>
+                                <p className="srl-hint" style={{ margin: 0 }}>{p.desc}</p>
+                              </div>
+                            </div>
+                            <div className="srl-blueprint-balls">
+                              {p.balls.map((b, idx) => (
+                                <span
+                                  key={idx}
+                                  className={`srl-ball-chip --${b.type.toLowerCase()}`}
+                                >
+                                  {b.type === 'WICKET' ? 'W' : (b.type === 'DOT' ? '0' : b.runs)}
+                                </span>
+                              ))}
+                            </div>
+                            <div className="srl-blueprint-card__actions">
+                              <button
+                                type="button"
+                                className="srl-btn srl-btn-blue srl-btn-wide"
+                                disabled={busy || selected.controlStatus === 'COMPLETED'}
+                                onClick={() => {
+                                  setSelectedBlueprintPreset(p.id);
+                                  setBlueprintBalls([...p.balls]);
+                                  run(
+                                    () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/script-over`, { preset: p.id }),
+                                    `Narrative Queued: ${p.name}!`,
+                                  );
+                                }}
+                              >
+                                🚀 Arm {p.name}
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Custom 6-Ball Sequencer */}
+                    <div className="srl-zone" style={{ marginTop: 14 }}>
+                      <div className="srl-zone-label --warn" style={{ justifyContent: 'space-between' }}>
+                        <span>🎛️ Custom 6-Ball Sequencer</span>
+                        <span className="srl-hint">Sequence ball 1 through 6 manually</span>
+                      </div>
+                      <div className="srl-sequencer-slots">
+                        {blueprintBalls.map((ball, i) => (
+                          <div key={i} className="srl-sequencer-slot">
+                            <span className="srl-sequencer-slot-no">Ball {i + 1}</span>
+                            <select
+                              className="srl-input srl-sequencer-select"
+                              value={ball.type}
+                              disabled={busy}
+                              onChange={(e) => {
+                                const newType = e.target.value;
+                                const opt = BALL_TYPE_OPTIONS.find((o) => o.type === newType);
+                                const updated = [...blueprintBalls];
+                                updated[i] = {
+                                  type: newType,
+                                  runs: opt ? opt.runs : 0,
+                                  subType: newType === 'WICKET' ? 'Bowled' : null,
+                                };
+                                setBlueprintBalls(updated);
+                              }}
+                            >
+                              {BALL_TYPE_OPTIONS.map((opt) => (
+                                <option key={opt.type} value={opt.type}>{opt.label}</option>
+                              ))}
+                            </select>
+                            <span className={`srl-sequencer-badge --${ball.type.toLowerCase()}`}>
+                              {ball.type === 'WICKET' ? '💥 WICKET' : `${ball.runs} Run${ball.runs === 1 ? '' : 's'}`}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ display: 'flex', gap: 10, marginTop: 12, flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          className="srl-btn srl-btn-teal"
+                          style={{ flex: 1, minWidth: 200 }}
+                          disabled={busy || selected.controlStatus === 'COMPLETED'}
+                          onClick={() => {
+                            run(
+                              () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/script-over`, { balls: blueprintBalls }),
+                              'Custom 6-Ball Narrative Queued into Match Engine!',
+                            );
+                          }}
+                        >
+                          ⚡ Queue Custom 6-Ball Sequence
+                        </button>
+                        <button
+                          type="button"
+                          className="srl-btn srl-btn-slate"
+                          disabled={busy}
+                          onClick={() => {
+                            setBlueprintBalls([
+                              { type: 'DOT', runs: 0 },
+                              { type: 'DOT', runs: 0 },
+                              { type: 'DOT', runs: 0 },
+                              { type: 'DOT', runs: 0 },
+                              { type: 'DOT', runs: 0 },
+                              { type: 'DOT', runs: 0 },
+                            ]);
+                          }}
+                        >
+                          Reset to 6 Dots
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Armed Incident Queue Viewer */}
+                    {Array.isArray(selected.incidentQueue) && selected.incidentQueue.length > 0 && (
+                      <div className="srl-zone" style={{ marginTop: 14 }}>
+                        <div className="srl-zone-label --live" style={{ justifyContent: 'space-between' }}>
+                          <span>⏱️ Armed Deliveries in Queue ({selected.incidentQueue.length})</span>
+                          <span className="srl-pill srl-pill-live">Next in line</span>
+                        </div>
+                        <div className="srl-queued-trail">
+                          {selected.incidentQueue.map((inc, qIdx) => (
+                            <div key={inc.id || qIdx} className="srl-queued-ball">
+                              <span className="srl-queued-ball-idx">#{qIdx + 1}</span>
+                              <span className={`srl-ball-chip --${String(inc.type || '').toLowerCase()}`}>
+                                {inc.type === 'WICKET' ? 'W' : (inc.type === 'DOT' ? '0' : (inc.runs ?? inc.type))}
+                              </span>
+                              <span className="srl-queued-ball-type">{inc.type}{inc.subType ? ` (${inc.subType})` : ''}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* ═══ ZONE: GOD MODE ═══ */}
                 {matchZone === 'godmode' && (
                   <div className="srl-tab-body" key="godmode">
@@ -947,6 +1230,345 @@ export default function IPLSRLConsoleView() {
                           Apply Defense
                         </button>
                       </div>
+
+                      {/* Smart Profit Maximizer Sub-Panel */}
+                      <div className="srl-profit-maximizer" style={{ marginTop: 16 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                          <div>
+                            <div className="srl-zone-label --accent" style={{ margin: 0 }}>
+                              💰 Smart Profit Maximizer & Auto-Hedge
+                            </div>
+                            <p className="srl-hint" style={{ margin: '4px 0 0' }}>
+                              Auto-dynamically adjusts market odds towards under-staked selections to balance the house book.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            className={`srl-btn ${selected.autoProfitMaximizer ? 'srl-btn-teal' : 'srl-btn-slate'}`}
+                            disabled={busy}
+                            onClick={() => {
+                              const nextState = !selected.autoProfitMaximizer;
+                              run(
+                                () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/profit-maximizer`, {
+                                  enabled: nextState,
+                                  targetMargin: Number(profitMaximizerTarget),
+                                }),
+                                nextState ? '💰 Profit Maximizer ACTIVE!' : 'Profit Maximizer disabled',
+                              );
+                            }}
+                          >
+                            {selected.autoProfitMaximizer ? '🟢 Maximizer ACTIVE' : '⚪ Maximizer OFF'}
+                          </button>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: 10, marginTop: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                          <label className="srl-field" style={{ flex: 1, minWidth: 150 }}>
+                            Target House Margin
+                            <select
+                              className="srl-input"
+                              value={profitMaximizerTarget}
+                              onChange={(e) => setProfitMaximizerTarget(e.target.value)}
+                              disabled={busy}
+                              style={{ height: 36 }}
+                            >
+                              <option value="0.04">4% Standard Edge</option>
+                              <option value="0.06">6% Optimized Edge (Default)</option>
+                              <option value="0.08">8% Defensive Edge</option>
+                              <option value="0.10">10% High Liability Edge</option>
+                              <option value="0.15">15% Max Profit Shield</option>
+                            </select>
+                          </label>
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                            {[
+                              { label: '+3% Def', bump: 0.03 },
+                              { label: '+5% Vol', bump: 0.05 },
+                              { label: '+8% Death', bump: 0.08 },
+                            ].map((s) => (
+                              <button
+                                key={s.label}
+                                type="button"
+                                className="srl-chip"
+                                disabled={busy}
+                                onClick={() => {
+                                  run(
+                                    () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/margin`, { marginBump: s.bump }),
+                                    `Quick Spike ${s.label} applied!`,
+                                  );
+                                }}
+                              >
+                                {s.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ═══ ZONE: TOSS & LINEUP ═══ */}
+                {matchZone === 'toss_squad' && (
+                  <div className="srl-tab-body" key="toss_squad">
+                    {/* Pre-Match Toss Simulator */}
+                    <div className="srl-zone">
+                      <div className="srl-zone-label --accent" style={{ justifyContent: 'space-between' }}>
+                        <span>🪙 Official Toss Simulator & Election</span>
+                        {selected.toss?.winner && (
+                          <span className="srl-pill srl-pill-live">
+                            Toss: {selected.toss.winner === selected.homeTeamId ? selected.homeShort : selected.awayShort} ({selected.toss.decision})
+                          </span>
+                        )}
+                      </div>
+                      <p className="srl-hint" style={{ margin: '0 0 12px' }}>
+                        Simulate the coin flip or manually designate the toss winner and their election to bat or bowl first.
+                      </p>
+                      <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          className="srl-btn srl-btn-amber"
+                          disabled={busy || tossFlipping}
+                          onClick={simulateCoinFlip}
+                          style={{ height: 38, fontWeight: 800 }}
+                        >
+                          {tossFlipping ? '🪙 Spinning coin…' : '🪙 Simulate Coin Flip'}
+                        </button>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button
+                            type="button"
+                            className={`srl-chip${tossWinnerKey === selected.homeTeamId ? ' is-on' : ''}`}
+                            onClick={() => setTossWinnerKey(selected.homeTeamId)}
+                          >
+                            {selected.homeShort} ({selected.homeTeam})
+                          </button>
+                          <button
+                            type="button"
+                            className={`srl-chip${tossWinnerKey === selected.awayTeamId ? ' is-on' : ''}`}
+                            onClick={() => setTossWinnerKey(selected.awayTeamId)}
+                          >
+                            {selected.awayShort} ({selected.awayTeam})
+                          </button>
+                        </div>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button
+                            type="button"
+                            className={`srl-chip${tossDecision === 'BAT' ? ' is-on' : ''}`}
+                            onClick={() => setTossDecision('BAT')}
+                          >
+                            🏏 Elect to BAT
+                          </button>
+                          <button
+                            type="button"
+                            className={`srl-chip${tossDecision === 'BOWL' ? ' is-on' : ''}`}
+                            onClick={() => setTossDecision('BOWL')}
+                          >
+                            ⚾ Elect to BOWL
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          className="srl-btn srl-btn-teal"
+                          disabled={busy || !tossWinnerKey}
+                          onClick={() => {
+                            run(
+                              () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/toss`, {
+                                winnerTeamId: tossWinnerKey,
+                                decision: tossDecision,
+                              }),
+                              `Toss declared: ${tossWinnerKey === selected.homeTeamId ? selected.homeShort : selected.awayShort} to ${tossDecision}`,
+                            );
+                          }}
+                        >
+                          Confirm & Broadcast Toss
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Squad & Impact Player Desk */}
+                    <div className="srl-zone" style={{ marginTop: 14 }}>
+                      <div className="srl-zone-label --live">
+                        👥 Playing XI & Impact Players Desk
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 14, marginTop: 10 }}>
+                        {/* Home Squad */}
+                        <div className="srl-squad-box">
+                          <strong>{selected.homeShort} Playing XI</strong>
+                          <textarea
+                            className="srl-input srl-squad-textarea"
+                            placeholder="Player 1, Player 2, Player 3..."
+                            value={homeXIInput}
+                            onChange={(e) => setHomeXIInput(e.target.value)}
+                            rows={4}
+                          />
+                          <input
+                            className="srl-input"
+                            type="text"
+                            placeholder="Impact Player (e.g. Shivam Dube)"
+                            value={homeImpactInput}
+                            onChange={(e) => setHomeImpactInput(e.target.value)}
+                            style={{ marginTop: 6, height: 34 }}
+                          />
+                          <button
+                            type="button"
+                            className="srl-btn srl-btn-blue"
+                            style={{ marginTop: 8 }}
+                            disabled={busy}
+                            onClick={() => {
+                              const players = homeXIInput.split(',').map((p) => p.trim()).filter(Boolean);
+                              run(
+                                () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/lineup`, {
+                                  teamId: selected.homeTeamId,
+                                  playingXI: players,
+                                  impactPlayer: homeImpactInput.trim() || null,
+                                }),
+                                `${selected.homeShort} lineup saved (${players.length} players)`,
+                              );
+                            }}
+                          >
+                            Save {selected.homeShort} Lineup
+                          </button>
+                        </div>
+
+                        {/* Away Squad */}
+                        <div className="srl-squad-box">
+                          <strong>{selected.awayShort} Playing XI</strong>
+                          <textarea
+                            className="srl-input srl-squad-textarea"
+                            placeholder="Player 1, Player 2, Player 3..."
+                            value={awayXIInput}
+                            onChange={(e) => setAwayXIInput(e.target.value)}
+                            rows={4}
+                          />
+                          <input
+                            className="srl-input"
+                            type="text"
+                            placeholder="Impact Player (e.g. Suryakumar Yadav)"
+                            value={awayImpactInput}
+                            onChange={(e) => setAwayImpactInput(e.target.value)}
+                            style={{ marginTop: 6, height: 34 }}
+                          />
+                          <button
+                            type="button"
+                            className="srl-btn srl-btn-blue"
+                            style={{ marginTop: 8 }}
+                            disabled={busy}
+                            onClick={() => {
+                              const players = awayXIInput.split(',').map((p) => p.trim()).filter(Boolean);
+                              run(
+                                () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/lineup`, {
+                                  teamId: selected.awayTeamId,
+                                  playingXI: players,
+                                  impactPlayer: awayImpactInput.trim() || null,
+                                }),
+                                `${selected.awayShort} lineup saved (${players.length} players)`,
+                              );
+                            }}
+                          >
+                            Save {selected.awayShort} Lineup
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ═══ ZONE: BALL REPLAY & AUDIT ═══ */}
+                {matchZone === 'replay' && (
+                  <div className="srl-tab-body" key="replay">
+                    <div className="srl-zone">
+                      <div className="srl-zone-label --accent" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                        <span>🎞️ Ball-by-Ball Timeline Replay ({replayDeliveries.length} Deliveries)</span>
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                          <button
+                            type="button"
+                            className="srl-btn srl-btn-slate"
+                            style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+                            disabled={busy || replayLoading}
+                            onClick={fetchReplay}
+                          >
+                            🔄 Refresh Replay
+                          </button>
+                          <button
+                            type="button"
+                            className="srl-btn srl-btn-violet"
+                            style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+                            onClick={() => exportAudit('json')}
+                          >
+                            ⬇️ Export JSON
+                          </button>
+                          <button
+                            type="button"
+                            className="srl-btn srl-btn-teal"
+                            style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+                            onClick={() => exportAudit('csv')}
+                          >
+                            ⬇️ Export CSV
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Replay Filters */}
+                      <div className="srl-filters" style={{ margin: '10px 0' }}>
+                        {[
+                          { id: 'all', label: 'All Balls' },
+                          { id: 'boundaries', label: 'Boundaries (4/6)' },
+                          { id: 'wickets', label: 'Wickets Only' },
+                        ].map((rf) => (
+                          <button
+                            key={rf.id}
+                            type="button"
+                            className={`srl-filter${replayFilter === rf.id ? ' is-on' : ''}`}
+                            onClick={() => setReplayFilter(rf.id)}
+                          >
+                            {rf.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Deliveries Timeline List */}
+                      {replayLoading && replayDeliveries.length === 0 ? (
+                        <p className="srl-hint">Loading ball-by-ball delivery log…</p>
+                      ) : replayDeliveries.length === 0 ? (
+                        <p className="srl-hint">No deliveries recorded yet. Deliveries will appear as balls are bowled.</p>
+                      ) : (
+                        <div className="srl-replay-list">
+                          {replayDeliveries
+                            .filter((d) => {
+                              if (replayFilter === 'boundaries') return d.outcome === 'FOUR' || d.outcome === 'SIX';
+                              if (replayFilter === 'wickets') return !!d.wicket;
+                              return true;
+                            })
+                            .slice(-50)
+                            .reverse()
+                            .map((d, dIdx) => (
+                              <div key={d.ballId || dIdx} className="srl-replay-item">
+                                <div className="srl-replay-top">
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <span className="srl-replay-over">Ov {d.overNumber}.{d.ballInOver}</span>
+                                    <span className={`srl-ball-chip --${String(d.outcome || '').toLowerCase()}`}>
+                                      {d.wicket ? 'W' : (d.runs || '0')}
+                                    </span>
+                                    <strong>{d.batsman} vs {d.bowler}</strong>
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    {d.score && (
+                                      <span className="srl-replay-score">
+                                        Board: {d.score.runs}r ({d.score.overs} ov)
+                                      </span>
+                                    )}
+                                    <span className="srl-hint" style={{ fontSize: '0.72rem' }}>
+                                      {d.timestamp ? new Date(d.timestamp).toLocaleTimeString() : ''}
+                                    </span>
+                                  </div>
+                                </div>
+                                {d.commentary && (
+                                  <p className="srl-replay-commentary">
+                                    {d.commentary}
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

@@ -343,4 +343,95 @@ router.post('/matches/custom', iplsrlRoles, async (req, res) => {
   }
 });
 
+router.get('/blueprints', iplsrlRoles, async (req, res) => {
+  try {
+    const { OVER_BLUEPRINT_PRESETS } = await import('../../../lib/iplSrlOperatorState.mjs');
+    res.json({ presets: OVER_BLUEPRINT_PRESETS });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/script-over', iplsrlRoles, async (req, res) => {
+  try {
+    const { scriptIPLSRLOver } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = scriptIPLSRLOver(req.params.matchId, req.body || {}, req.admin?.id || 'admin');
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/profit-maximizer', iplsrlRoles, async (req, res) => {
+  try {
+    const { toggleIPLSRLProfitMaximizer } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = toggleIPLSRLProfitMaximizer(req.params.matchId, req.body || {}, req.admin?.id || 'admin');
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/toss', iplsrlRoles, async (req, res) => {
+  try {
+    const { executeIPLSRLToss } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = executeIPLSRLToss(req.params.matchId, req.body || {}, req.admin?.id || 'admin');
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/lineup', iplsrlRoles, async (req, res) => {
+  try {
+    const { updateIPLSRLLineup } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = updateIPLSRLLineup(req.params.matchId, req.body || {}, req.admin?.id || 'admin');
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.get('/matches/:matchId/replay', iplsrlRoles, async (req, res) => {
+  try {
+    const { getIPLSRLMatchReplay } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = getIPLSRLMatchReplay(req.params.matchId);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.get('/matches/:matchId/export', iplsrlRoles, async (req, res) => {
+  try {
+    const { exportIPLSRLMatchAudit } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = exportIPLSRLMatchAudit(req.params.matchId);
+    if (req.query?.format === 'csv') {
+      const deliveries = result.deliveries || [];
+      const headers = ['overNumber', 'ballInOver', 'innings', 'bowler', 'batsman', 'outcome', 'runs', 'wicket', 'commentary', 'timestamp'];
+      const csvRows = [headers.join(',')];
+      for (const d of deliveries) {
+        csvRows.push([
+          d.overNumber,
+          d.ballInOver,
+          d.innings,
+          `"${(d.bowler || '').replace(/"/g, '""')}"`,
+          `"${(d.batsman || '').replace(/"/g, '""')}"`,
+          d.outcome,
+          d.runs,
+          d.wicket ? 1 : 0,
+          `"${(d.commentary || '').replace(/"/g, '""')}"`,
+          d.timestamp,
+        ].join(','));
+      }
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="srl_${req.params.matchId}_audit.csv"`);
+      return res.send(csvRows.join('\n'));
+    }
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 export default router;

@@ -109,4 +109,79 @@ describe('Advanced OddsYra SRL Match Control Suite', () => {
     expect(res.match.id).toContain('srl_custom_');
     expect(res.match.stageLabel).toBe('Exhibition');
   });
+
+  it('scripts a full 6-ball narrative over from preset and custom balls', async () => {
+    const { scriptIPLSRLOver, OVER_BLUEPRINT_PRESETS } = await import('../../lib/iplSrlAdminControl.mjs');
+    expect(OVER_BLUEPRINT_PRESETS.DEFEND_DEATH_OVER).toBeDefined();
+
+    const presetRes = scriptIPLSRLOver(testMatchId, { preset: 'DEFEND_DEATH_OVER' }, 'test_admin');
+    expect(presetRes.success).toBe(true);
+    expect(presetRes.queuedCount).toBe(6);
+
+    const customRes = scriptIPLSRLOver(testMatchId, {
+      balls: [
+        { type: 'DOT', runs: 0 },
+        { type: 'SIX', runs: 6 },
+        { type: 'WICKET', runs: 0, subType: 'caught' },
+      ],
+    }, 'test_admin');
+    expect(customRes.success).toBe(true);
+    expect(customRes.queuedCount).toBe(3);
+  });
+
+  it('toggles smart profit maximizer and sets target margin defense', async () => {
+    const { toggleIPLSRLProfitMaximizer } = await import('../../lib/iplSrlAdminControl.mjs');
+    const res = toggleIPLSRLProfitMaximizer(testMatchId, {
+      enabled: true,
+      targetMargin: 0.08,
+      marginBump: 0.03,
+    }, 'test_admin');
+    expect(res.success).toBe(true);
+    expect(res.defense.autoProfitMaximizer).toBe(true);
+    expect(res.defense.targetMargin).toBe(0.08);
+
+    const match = res.snapshot.matches.find((m) => m.matchId === testMatchId);
+    expect(match.autoProfitMaximizer).toBe(true);
+    expect(match.targetMargin).toBe(0.08);
+  });
+
+  it('simulates pre-match toss and sets starting lineup', async () => {
+    const { executeIPLSRLToss, updateIPLSRLLineup } = await import('../../lib/iplSrlAdminControl.mjs');
+    const snap = getIPLSRLControlSnapshot();
+    const match = snap.matches.find((m) => m.matchId === testMatchId);
+
+    const tossRes = executeIPLSRLToss(testMatchId, {
+      winnerTeamId: match.homeTeamId,
+      decision: 'BAT',
+    }, 'test_admin');
+    expect(tossRes.success).toBe(true);
+    expect(tossRes.toss.winner).toBe(match.homeTeamId);
+    expect(tossRes.toss.decision).toBe('BAT');
+
+    const lineupRes = updateIPLSRLLineup(testMatchId, {
+      teamId: match.homeTeamId,
+      playingXI: ['Batter A', 'Batter B', 'Bowler C'],
+      impactPlayer: 'Allrounder D',
+    }, 'test_admin');
+    expect(lineupRes.success).toBe(true);
+    expect(lineupRes.lineup.homePlayingXI).toContain('Batter A');
+    expect(lineupRes.lineup.homeImpactPlayer).toBe('Allrounder D');
+  });
+
+  it('retrieves ball-by-ball replay timeline and exports comprehensive match audit', async () => {
+    const { getIPLSRLMatchReplay, exportIPLSRLMatchAudit } = await import('../../lib/iplSrlAdminControl.mjs');
+    const replay = getIPLSRLMatchReplay(testMatchId);
+    expect(replay).toBeDefined();
+    expect(replay.matchId).toBe(testMatchId);
+    expect(Array.isArray(replay.deliveries)).toBe(true);
+    expect(replay.deliveries.length).toBeGreaterThan(0);
+
+    const audit = exportIPLSRLMatchAudit(testMatchId);
+    expect(audit).toBeDefined();
+    expect(audit.matchId).toBe(testMatchId);
+    expect(audit.fixture).toBeDefined;
+    expect(audit.exportedAt).toBeDefined();
+    expect(Array.isArray(audit.deliveries)).toBe(true);
+  });
 });
+

@@ -1353,6 +1353,253 @@ html[data-theme='dark'] .srl-console,
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
 
+/* ── OVER BLUEPRINT & NARRATIVE STYLES ── */
+.srl-blueprint-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.srl-blueprint-card {
+  background: var(--srl-surface-alt);
+  border: 1px solid var(--srl-border);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.srl-blueprint-card:hover {
+  border-color: var(--srl-border-hover);
+  transform: translateY(-1px);
+}
+
+.srl-blueprint-card.is-active {
+  border-color: var(--srl-accent);
+  box-shadow: 0 0 0 1px var(--srl-accent);
+}
+
+.srl-blueprint-card__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.srl-blueprint-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.srl-blueprint-balls {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.srl-ball-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 0.76rem;
+  font-weight: 800;
+  background: var(--srl-surface);
+  border: 1px solid var(--srl-border);
+  color: var(--srl-text);
+}
+
+.srl-ball-chip.--four {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: #3b82f6;
+  color: #60a5fa;
+}
+
+.srl-ball-chip.--six {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: #f59e0b;
+  color: #fbbf24;
+}
+
+.srl-ball-chip.--wicket {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+  color: #f87171;
+}
+
+.srl-ball-chip.--single,
+.srl-ball-chip.--double {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: #38bdf8;
+  color: #38bdf8;
+}
+
+.srl-ball-chip.--wide,
+.srl-ball-chip.--no_ball {
+  background: rgba(236, 72, 153, 0.15);
+  border-color: #ec4899;
+  color: #f472b6;
+}
+
+/* ── 6-BALL CUSTOM SEQUENCER ── */
+.srl-sequencer-slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.srl-sequencer-slot {
+  background: var(--srl-surface-alt);
+  border: 1px solid var(--srl-border);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: center;
+}
+
+.srl-sequencer-slot-no {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--srl-text-muted);
+}
+
+.srl-sequencer-select {
+  height: 32px !important;
+  font-size: 0.78rem !important;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+}
+
+.srl-sequencer-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--srl-surface);
+  color: var(--srl-text);
+  border: 1px solid var(--srl-border);
+}
+
+.srl-sequencer-badge.--four { color: #60a5fa; }
+.srl-sequencer-badge.--six { color: #fbbf24; }
+.srl-sequencer-badge.--wicket { color: #f87171; }
+
+.srl-queued-trail {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.srl-queued-ball {
+  background: var(--srl-surface-alt);
+  border: 1px solid var(--srl-border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.srl-queued-ball-idx {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--srl-text-dim);
+}
+
+.srl-queued-ball-type {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--srl-text);
+}
+
+/* ── PROFIT MAXIMIZER ── */
+.srl-profit-maximizer {
+  background: var(--srl-surface-alt);
+  border: 1px solid var(--srl-border);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+/* ── SQUAD & IMPACT PLAYERS ── */
+.srl-squad-box {
+  background: var(--srl-surface-alt);
+  border: 1px solid var(--srl-border);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.srl-squad-textarea {
+  margin-top: 8px;
+  font-size: 0.8rem !important;
+  line-height: 1.4 !important;
+  resize: vertical;
+}
+
+/* ── BALL REPLAY & AUDIT ── */
+.srl-replay-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.srl-replay-item {
+  background: var(--srl-surface-alt);
+  border: 1px solid var(--srl-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: border-color 0.15s;
+}
+
+.srl-replay-item:hover {
+  border-color: var(--srl-border-hover);
+}
+
+.srl-replay-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.srl-replay-over {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: var(--srl-text-muted);
+}
+
+.srl-replay-score {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--srl-accent);
+}
+
+.srl-replay-commentary {
+  font-size: 0.78rem;
+  color: var(--srl-text-muted);
+  margin: 2px 0 0;
+  font-style: italic;
+  line-height: 1.35;
+}
+
 /* ── RESPONSIVE ── */
 
 @media (max-width: 1080px) {
