@@ -1600,6 +1600,87 @@ html[data-theme='dark'] .srl-console,
   line-height: 1.35;
 }
 
+/* ── WHAT-IF MATRIX & OPTIMAL PICK ── */
+.srl-optimal-pick-card {
+  background: var(--srl-surface-alt);
+  border: 1px solid #10b981;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.1);
+}
+
+.srl-whatif-table-wrapper,
+.srl-wagers-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--srl-border);
+  border-radius: 10px;
+}
+
+.srl-whatif-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  background: var(--srl-surface-alt);
+}
+
+.srl-whatif-table th {
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--srl-text-muted);
+  background: var(--srl-surface);
+  border-bottom: 1px solid var(--srl-border);
+}
+
+.srl-whatif-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--srl-border);
+  vertical-align: middle;
+}
+
+.srl-whatif-table tr:last-child td {
+  border-bottom: none;
+}
+
+.srl-whatif-table tr.is-recommended {
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.srl-whatif-table tr.is-whale {
+  background: rgba(245, 158, 11, 0.08);
+}
+
+/* ── AUTONOMOUS AI DIRECTOR CARDS ── */
+.srl-director-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.srl-director-card {
+  background: var(--srl-surface-alt);
+  border: 1px solid var(--srl-border);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  transition: border-color 0.15s;
+}
+
+.srl-director-card:hover {
+  border-color: var(--srl-border-hover);
+}
+
+.srl-director-card.is-active {
+  border-color: var(--srl-accent);
+  box-shadow: 0 0 0 1px var(--srl-accent);
+}
+
 /* ── RESPONSIVE ── */
 
 @media (max-width: 1080px) {

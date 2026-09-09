@@ -434,4 +434,44 @@ router.get('/matches/:matchId/export', iplsrlRoles, async (req, res) => {
   }
 });
 
+router.get('/matches/:matchId/what-if', iplsrlRoles, async (req, res) => {
+  try {
+    const { simulateSrlWhatIf } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = simulateSrlWhatIf(req.params.matchId);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.get('/matches/:matchId/wagers', iplsrlRoles, async (req, res) => {
+  try {
+    const { getSrlLiveWagerTape } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = await getSrlLiveWagerTape(req.params.matchId, { limit: req.query?.limit || 20 });
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/director-mode', iplsrlRoles, async (req, res) => {
+  try {
+    const { setIPLSRLDirectorMode } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = setIPLSRLDirectorMode(req.params.matchId, req.body?.mode, req.admin?.id || 'admin');
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/player-buff', iplsrlRoles, async (req, res) => {
+  try {
+    const { setIPLSRLPlayerBuff } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = setIPLSRLPlayerBuff(req.params.matchId, req.body || {}, req.admin?.id || 'admin');
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 export default router;

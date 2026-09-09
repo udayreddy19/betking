@@ -183,5 +183,53 @@ describe('Advanced OddsYra SRL Match Control Suite', () => {
     expect(audit.exportedAt).toBeDefined();
     expect(Array.isArray(audit.deliveries)).toBe(true);
   });
+
+  it('runs What-If pre-flight simulator and highlights optimal house pick', async () => {
+    const { simulateSrlWhatIf } = await import('../../lib/iplSrlAdminControl.mjs');
+    const res = simulateSrlWhatIf(testMatchId);
+    expect(res).toBeDefined();
+    expect(res.matchId).toBe(testMatchId);
+    expect(Array.isArray(res.scenarios)).toBe(true);
+    expect(res.scenarios.length).toBe(6);
+    expect(res.bestHousePick).toBeDefined();
+    expect(res.bestHousePick.recommended).toBe(true);
+
+    const sixScenario = res.scenarios.find((s) => s.type === 'SIX');
+    expect(sixScenario).toBeDefined();
+    expect(sixScenario.runs).toBe(6);
+    expect(sixScenario.projectedOdds.home).toBeGreaterThan(0);
+  });
+
+  it('streams live match wager tape and flags VIP/Whale bets', async () => {
+    const { getSrlLiveWagerTape } = await import('../../lib/iplSrlAdminControl.mjs');
+    const tape = await getSrlLiveWagerTape(testMatchId, { limit: 10 });
+    expect(tape).toBeDefined();
+    expect(tape.matchId).toBe(testMatchId);
+    expect(Array.isArray(tape.wagers)).toBe(true);
+    expect(tape.wagers.length).toBeGreaterThan(0);
+    expect(tape.whaleCount).toBeGreaterThanOrEqual(0);
+
+    const wager = tape.wagers[0];
+    expect(wager.betId).toBeDefined();
+    expect(wager.stake).toBeGreaterThan(0);
+    expect(wager.userTier).toBeDefined();
+  });
+
+  it('sets Autonomous AI Director Mode and applies player morale buffs', async () => {
+    const { setIPLSRLDirectorMode, setIPLSRLPlayerBuff, DIRECTOR_MODES, PLAYER_BUFF_TYPES } = await import('../../lib/iplSrlAdminControl.mjs');
+    expect(DIRECTOR_MODES.THRILLER_FINISH).toBeDefined();
+    expect(PLAYER_BUFF_TYPES.GOD_MODE).toBeDefined();
+
+    const dirRes = setIPLSRLDirectorMode(testMatchId, 'THRILLER_FINISH', 'test_admin');
+    expect(dirRes.success).toBe(true);
+    expect(dirRes.directorMode).toBe('THRILLER_FINISH');
+
+    const buffRes = setIPLSRLPlayerBuff(testMatchId, {
+      role: 'striker',
+      buff: 'GOD_MODE',
+    }, 'test_admin');
+    expect(buffRes.success).toBe(true);
+    expect(buffRes.playerBuffs.striker.buff).toBe('GOD_MODE');
+  });
 });
 

@@ -41,11 +41,28 @@ const BALL_TYPE_OPTIONS = [
   { type: 'NO_BALL', label: '🚨 No Ball', runs: 1 },
 ];
 
+const DIRECTOR_MODE_OPTIONS = [
+  { id: 'REALISTIC', label: 'Realistic Normal', desc: 'Standard IPL cricket probabilities', icon: '🏏' },
+  { id: 'THRILLER_FINISH', label: 'Thriller Finish', desc: 'Guarantees intense final-over boundary requirement', icon: '🎬' },
+  { id: 'IPL_CARNAGE', label: 'IPL Carnage', desc: '215+ boundary blitz with 20+ sixes', icon: '🔥' },
+  { id: 'COLLAPSE_CLAWBACK', label: 'Collapse & Clawback', desc: 'Early top-order collapse with heroic middle-order recovery', icon: '📉' },
+  { id: 'SPIN_WEB', label: 'Spin Web Trap', desc: 'Turning pitch with heavy dot-ball pressure', icon: '🕸️' },
+];
+
+const PLAYER_BUFF_OPTIONS = [
+  { id: 'GOD_MODE', label: '🔥 God Mode (+45% Boundaries)' },
+  { id: 'COLD_SLUMP', label: '❄️ Cold Slump (+Wicket Risk)' },
+  { id: 'DEATH_YORKER', label: '🎯 Death Yorker Precision' },
+  { id: 'PINCH_HITTER', label: '⚡ Pinch Hitter Blitz' },
+];
+
 const MATCH_ZONES = [
   { id: 'control', label: '⚡ Control' },
+  { id: 'whatif', label: '🎯 What-If Matrix' },
   { id: 'blueprint', label: '📋 Over Blueprint' },
-  { id: 'godmode', label: '🎯 God Mode' },
+  { id: 'godmode', label: '🎛️ God Mode & AI' },
   { id: 'risk', label: '🛡️ Risk & Profit' },
+  { id: 'wagers', label: '🐋 Wager Tape' },
   { id: 'toss_squad', label: '🪙 Toss & Lineup' },
   { id: 'replay', label: '🎞️ Ball Replay' },
   { id: 'weather', label: '🌧️ Weather' },
@@ -191,6 +208,11 @@ function ScoreboardHero({ match }) {
             ⚡ {match.incidentQueueLength} Balls Armed
           </span>
         )}
+        {match.directorMode && match.directorMode !== 'REALISTIC' && (
+          <span className="srl-pill srl-pill-live" style={{ fontSize: '0.68rem', padding: '2px 8px', background: 'rgba(236, 72, 153, 0.15)', borderColor: '#ec4899', color: '#f472b6' }}>
+            🎬 AI Director: {match.directorMode.replace('_', ' ')}
+          </span>
+        )}
         {match.commentary && (
           <span style={{ fontStyle: 'italic', color: 'var(--srl-accent)', maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {match.commentary}
@@ -264,6 +286,15 @@ export default function IPLSRLConsoleView() {
   const [replayDeliveries, setReplayDeliveries] = useState([]);
   const [replayLoading, setReplayLoading] = useState(false);
   const [replayFilter, setReplayFilter] = useState('all');
+
+  // What-If Odds & Liability Matrix
+  const [whatIfData, setWhatIfData] = useState(null);
+  const [whatIfLoading, setWhatIfLoading] = useState(false);
+
+  // Live Wager Tape & Whale Tracker
+  const [wagerTape, setWagerTape] = useState(null);
+  const [wagerTapeLoading, setWagerTapeLoading] = useState(false);
+  const [selectedBuffPlayer, setSelectedBuffPlayer] = useState('striker');
 
   const applySnap = useCallback((data) => {
     setSnap(data);
@@ -436,11 +467,41 @@ export default function IPLSRLConsoleView() {
     }
   }, [selectedMatchId, showToast]);
 
+  const fetchWhatIf = useCallback(async () => {
+    if (!selectedMatchId) return;
+    setWhatIfLoading(true);
+    try {
+      const data = await adminApiClient.get(`/iplsrl/matches/${encodeURIComponent(selectedMatchId)}/what-if`);
+      setWhatIfData(data);
+    } catch (err) {
+      showToast(err.message || 'Failed to calculate What-If matrix', 'error');
+    } finally {
+      setWhatIfLoading(false);
+    }
+  }, [selectedMatchId, showToast]);
+
+  const fetchWagers = useCallback(async () => {
+    if (!selectedMatchId) return;
+    setWagerTapeLoading(true);
+    try {
+      const data = await adminApiClient.get(`/iplsrl/matches/${encodeURIComponent(selectedMatchId)}/wagers`);
+      setWagerTape(data);
+    } catch (err) {
+      showToast(err.message || 'Failed to stream wager tape', 'error');
+    } finally {
+      setWagerTapeLoading(false);
+    }
+  }, [selectedMatchId, showToast]);
+
   useEffect(() => {
     if (matchZone === 'replay' && selectedMatchId) {
       fetchReplay();
+    } else if (matchZone === 'whatif' && selectedMatchId) {
+      fetchWhatIf();
+    } else if (matchZone === 'wagers' && selectedMatchId) {
+      fetchWagers();
     }
-  }, [matchZone, selectedMatchId, fetchReplay]);
+  }, [matchZone, selectedMatchId, fetchReplay, fetchWhatIf, fetchWagers]);
 
   useEffect(() => {
     if (selected) {
@@ -913,6 +974,142 @@ export default function IPLSRLConsoleView() {
                   </div>
                 )}
 
+                {/* ═══ ZONE: WHAT-IF SIMULATOR ═══ */}
+                {matchZone === 'whatif' && (
+                  <div className="srl-tab-body" key="whatif">
+                    <div className="srl-zone">
+                      <div className="srl-zone-label --accent" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                        <span>🎯 "What-If" Pre-Flight Odds & Liability Radar</span>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button
+                            type="button"
+                            className="srl-btn srl-btn-slate"
+                            style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+                            disabled={busy || whatIfLoading}
+                            onClick={fetchWhatIf}
+                          >
+                            🔄 Recalculate Matrix
+                          </button>
+                        </div>
+                      </div>
+                      <p className="srl-hint" style={{ margin: '0 0 12px' }}>
+                        Simulates exact odds drift, board score, and net house profit across all potential ball outcomes before triggering delivery.
+                      </p>
+
+                      {whatIfData?.bestHousePick && (
+                        <div className="srl-optimal-pick-card" style={{ marginBottom: 14 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                            <div>
+                              <span className="srl-pill srl-pill-live" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', borderColor: '#10b981' }}>
+                                🛡️ Optimal House Pick
+                              </span>
+                              <strong style={{ marginLeft: 8, fontSize: '0.95rem' }}>
+                                {whatIfData.bestHousePick.label} → {whatIfData.bestHousePick.marginImpact} House Edge
+                              </strong>
+                              <p className="srl-hint" style={{ margin: '2px 0 0' }}>
+                                New Board: {whatIfData.bestHousePick.projectedScore} (Ov {whatIfData.bestHousePick.projectedOvers}) · {whatIfData.bestHousePick.projectedOdds.homeShort} {whatIfData.bestHousePick.projectedOdds.home} vs {whatIfData.bestHousePick.projectedOdds.awayShort} {whatIfData.bestHousePick.projectedOdds.away}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              className="srl-btn srl-btn-teal"
+                              disabled={busy || selected.controlStatus === 'COMPLETED'}
+                              onClick={() => {
+                                run(
+                                  () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/incident`, {
+                                    type: whatIfData.bestHousePick.type.includes('WICKET') ? 'WICKET' : whatIfData.bestHousePick.type,
+                                    subType: whatIfData.bestHousePick.subType || undefined,
+                                    instant: true,
+                                  }),
+                                  `⚡ Executed Optimal Pick: ${whatIfData.bestHousePick.label}!`,
+                                );
+                              }}
+                            >
+                              ⚡ Execute Optimal Pick
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {whatIfLoading && !whatIfData ? (
+                        <p className="srl-hint">Computing live liability scenarios…</p>
+                      ) : !whatIfData?.scenarios ? (
+                        <p className="srl-hint">No scenario matrix available. Click Recalculate to generate.</p>
+                      ) : (
+                        <div className="srl-whatif-table-wrapper">
+                          <table className="srl-whatif-table">
+                            <thead>
+                              <tr>
+                                <th>Delivery Outcome</th>
+                                <th>Projected Board</th>
+                                <th>Projected Odds</th>
+                                <th>House Net P&L</th>
+                                <th>Action</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {whatIfData.scenarios.map((sc) => {
+                                const isPos = sc.projectedHousePnl >= 0;
+                                return (
+                                  <tr key={sc.type} className={sc.recommended ? 'is-recommended' : ''}>
+                                    <td>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        <span className={`srl-ball-chip --${sc.type.toLowerCase().includes('wicket') ? 'wicket' : sc.type.toLowerCase()}`}>
+                                          {sc.wicket ? 'W' : sc.runs}
+                                        </span>
+                                        <strong>{sc.label}</strong>
+                                        {sc.recommended && (
+                                          <span className="srl-pill srl-pill-live" style={{ fontSize: '0.64rem', padding: '1px 6px' }}>
+                                            BEST
+                                          </span>
+                                        )}
+                                      </div>
+                                    </td>
+                                    <td>
+                                      <strong>{sc.projectedScore}</strong>
+                                      <span className="srl-hint" style={{ marginLeft: 6 }}>({sc.projectedOvers} ov)</span>
+                                    </td>
+                                    <td>
+                                      <span style={{ fontSize: '0.82rem' }}>
+                                        {sc.projectedOdds.homeShort}: <strong>{sc.projectedOdds.home}</strong> · {sc.projectedOdds.awayShort}: <strong>{sc.projectedOdds.away}</strong>
+                                      </span>
+                                    </td>
+                                    <td>
+                                      <strong style={{ color: isPos ? '#10b981' : '#f87171' }}>
+                                        {sc.marginImpact}
+                                      </strong>
+                                    </td>
+                                    <td>
+                                      <button
+                                        type="button"
+                                        className="srl-btn srl-btn-blue"
+                                        style={{ fontSize: '0.72rem', padding: '4px 10px' }}
+                                        disabled={busy || selected.controlStatus === 'COMPLETED'}
+                                        onClick={() => {
+                                          run(
+                                            () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/incident`, {
+                                              type: sc.type.includes('WICKET') ? 'WICKET' : sc.type,
+                                              subType: sc.subType || undefined,
+                                              instant: true,
+                                            }),
+                                            `⚡ Executed ${sc.label}!`,
+                                          );
+                                        }}
+                                      >
+                                        Execute
+                                      </button>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* ═══ ZONE: OVER BLUEPRINT ═══ */}
                 {matchZone === 'blueprint' && (
                   <div className="srl-tab-body" key="blueprint">
@@ -1148,6 +1345,128 @@ export default function IPLSRLConsoleView() {
                         </button>
                       </div>
                     </div>
+
+                    {/* Autonomous AI Match Director */}
+                    <div className="srl-zone" style={{ marginTop: 14 }}>
+                      <div className="srl-zone-label --accent" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                        <span>🤖 Autonomous AI Match Director</span>
+                        <span className="srl-pill srl-pill-live">
+                          Active: {selected.directorMode || 'REALISTIC'}
+                        </span>
+                      </div>
+                      <p className="srl-hint" style={{ margin: '0 0 12px' }}>
+                        Autonomous drama director that shapes in-play delivery probabilities dynamically to fulfill narrative goals without manual intervention.
+                      </p>
+                      <div className="srl-director-grid">
+                        {DIRECTOR_MODE_OPTIONS.map((dm) => {
+                          const isActive = (selected.directorMode || 'REALISTIC') === dm.id;
+                          return (
+                            <div key={dm.id} className={`srl-director-card${isActive ? ' is-active' : ''}`}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ fontSize: '1.4rem' }}>{dm.icon}</span>
+                                <div>
+                                  <strong>{dm.label}</strong>
+                                  <p className="srl-hint" style={{ margin: 0, fontSize: '0.72rem' }}>{dm.desc}</p>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                className={`srl-btn ${isActive ? 'srl-btn-teal' : 'srl-btn-blue'}`}
+                                style={{ marginTop: 8, width: '100%', fontSize: '0.75rem', padding: '4px 8px' }}
+                                disabled={busy}
+                                onClick={() => {
+                                  run(
+                                    () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/director-mode`, { mode: dm.id }),
+                                    `🎬 AI Director mode set to ${dm.label}!`,
+                                  );
+                                }}
+                              >
+                                {isActive ? '✓ Active Mode' : 'Activate Mode'}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Player Morale & Specialist Buffs */}
+                    <div className="srl-zone" style={{ marginTop: 14 }}>
+                      <div className="srl-zone-label --warn" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                        <span>🔥 Player Morale & Specialist Buffs</span>
+                        {Object.keys(selected.playerBuffs || {}).length > 0 && (
+                          <span className="srl-pill srl-pill-paused">
+                            {Object.keys(selected.playerBuffs).length} Buffs Active
+                          </span>
+                        )}
+                      </div>
+                      <p className="srl-hint" style={{ margin: '0 0 10px' }}>
+                        Overclock specific on-field players with god-mode hitting or death-over yorker precision.
+                      </p>
+
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 }}>
+                        <label className="srl-field" style={{ minWidth: 150 }}>
+                          Target Player
+                          <select
+                            className="srl-input"
+                            value={selectedBuffPlayer}
+                            onChange={(e) => setSelectedBuffPlayer(e.target.value)}
+                            style={{ height: 34 }}
+                          >
+                            <option value="striker">Active Striker</option>
+                            <option value="non_striker">Non-Striker</option>
+                            <option value="bowler">Active Bowler</option>
+                          </select>
+                        </label>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                          {PLAYER_BUFF_OPTIONS.map((pb) => (
+                            <button
+                              key={pb.id}
+                              type="button"
+                              className="srl-chip"
+                              disabled={busy}
+                              onClick={() => {
+                                run(
+                                  () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/player-buff`, {
+                                    role: selectedBuffPlayer,
+                                    buff: pb.id,
+                                  }),
+                                  `${pb.label} applied to ${selectedBuffPlayer}!`,
+                                );
+                              }}
+                            >
+                              {pb.label}
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            className="srl-chip"
+                            style={{ color: 'var(--srl-text-muted)' }}
+                            disabled={busy}
+                            onClick={() => {
+                              run(
+                                () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/player-buff`, {
+                                  role: selectedBuffPlayer,
+                                  buff: null,
+                                }),
+                                `Buff cleared for ${selectedBuffPlayer}`,
+                              );
+                            }}
+                          >
+                            ✕ Clear Buff
+                          </button>
+                        </div>
+                      </div>
+
+                      {Object.keys(selected.playerBuffs || {}).length > 0 && (
+                        <div className="srl-active-buffs-row" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          {Object.entries(selected.playerBuffs).map(([role, b]) => (
+                            <span key={role} className="srl-pill srl-pill-live" style={{ fontSize: '0.72rem', padding: '3px 8px' }}>
+                              {role.toUpperCase()}: {b.buff}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -1302,6 +1621,108 @@ export default function IPLSRLConsoleView() {
                           </div>
                         </div>
                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ═══ ZONE: WAGER TAPE & WHALE TRACKER ═══ */}
+                {matchZone === 'wagers' && (
+                  <div className="srl-tab-body" key="wagers">
+                    <div className="srl-zone">
+                      <div className="srl-zone-label --live" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                        <span>🐋 Live Match Wager Tape & Whale Tracker ({wagerTape?.totalWagers || 0} Bets)</span>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          {wagerTape?.whaleCount > 0 && (
+                            <span className="srl-pill srl-pill-live" style={{ background: 'rgba(245, 158, 11, 0.2)', borderColor: '#f59e0b', color: '#fbbf24' }}>
+                              🐋 {wagerTape.whaleCount} Whale Bets Detected
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            className="srl-btn srl-btn-slate"
+                            style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+                            disabled={busy || wagerTapeLoading}
+                            onClick={fetchWagers}
+                          >
+                            🔄 Refresh Tape
+                          </button>
+                        </div>
+                      </div>
+                      <p className="srl-hint" style={{ margin: '0 0 12px' }}>
+                        Streaming ledger of wagers placed on this match. Sharp and whale bets are flagged to enable immediate margin defense.
+                      </p>
+
+                      {wagerTapeLoading && !wagerTape ? (
+                        <p className="srl-hint">Streaming live match tape…</p>
+                      ) : !wagerTape?.wagers?.length ? (
+                        <p className="srl-hint">No wagers recorded on this match yet.</p>
+                      ) : (
+                        <div className="srl-wagers-table-wrapper">
+                          <table className="srl-whatif-table">
+                            <thead>
+                              <tr>
+                                <th>Punter / Tier</th>
+                                <th>Market & Selection</th>
+                                <th>Odds</th>
+                                <th>Stake</th>
+                                <th>Potential Payout</th>
+                                <th>Placed</th>
+                                <th>Counter</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {wagerTape.wagers.map((w) => (
+                                <tr key={w.betId} className={w.isWhale ? 'is-whale' : ''}>
+                                  <td>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                      <span className={`srl-pill ${w.isWhale ? 'srl-pill-paused' : (w.userTier === 'VIP' ? 'srl-pill-live' : 'srl-pill-muted')}`} style={{ fontSize: '0.64rem', padding: '2px 6px' }}>
+                                        {w.userTier}
+                                      </span>
+                                      <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{w.userEmail || w.userId}</span>
+                                    </div>
+                                  </td>
+                                  <td>
+                                    <strong>{w.selection}</strong>
+                                    <span className="srl-hint" style={{ display: 'block', fontSize: '0.72rem' }}>{w.marketTitle}</span>
+                                  </td>
+                                  <td>
+                                    <strong>{Number(w.odds).toFixed(2)}</strong>
+                                  </td>
+                                  <td>
+                                    <strong style={{ color: w.isWhale ? '#f59e0b' : 'inherit' }}>
+                                      {formatInr(w.stake)}
+                                    </strong>
+                                  </td>
+                                  <td>
+                                    <span style={{ color: 'var(--srl-text-muted)' }}>{formatInr(w.potentialPayout)}</span>
+                                  </td>
+                                  <td>
+                                    <span className="srl-hint" style={{ fontSize: '0.72rem' }}>
+                                      {w.placedAt ? new Date(w.placedAt).toLocaleTimeString() : 'Just now'}
+                                    </span>
+                                  </td>
+                                  <td>
+                                    <button
+                                      type="button"
+                                      className="srl-btn srl-btn-orange"
+                                      style={{ fontSize: '0.7rem', padding: '3px 8px' }}
+                                      disabled={busy}
+                                      onClick={() => {
+                                        run(
+                                          () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/margin`, { marginBump: 0.05 }),
+                                          `+5% Counter-Defense applied against ${w.selection}!`,
+                                        );
+                                      }}
+                                    >
+                                      🛡️ +5% Counter
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
