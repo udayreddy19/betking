@@ -504,12 +504,8 @@ function AdminShellInner() {
   }, [location.pathname, navigate, syncAdminLocation]);
 
   const { activeRole, setActiveRole, syncRoleFromJwt, rolePreviewEnabled } = useAdminRole();
-  const { isDark } = useTheme();
   const { revamp: uiRevamp, toggleRevamp } = useAdminUiMode();
-  const { themeId: adminThemeId, theme: adminTheme } = useAdminTheme();
-  const shellIsDark = adminTheme.mode === 'auto'
-    ? isDark
-    : adminTheme.mode === 'dark';
+  const { themeId: adminThemeId, theme: adminTheme, isDark: shellIsDark } = useAdminTheme();
   const [globalSearch, setGlobalSearch] = useState('');
   const [isAlertsOpen, setIsAlertsOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);

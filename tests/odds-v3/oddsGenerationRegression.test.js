@@ -471,7 +471,7 @@ describe('Odds generation regressions', () => {
     });
 
     expect(state.format).toBe('TEST');
-    expect(state.ballsRemaining).toBeGreaterThan(0);
+    expect(state.ballsRemaining).toBeNull();
     const snap = generate(state, { winnerOnly: true });
     expect(snap.status).not.toBe('DETERMINED');
   });

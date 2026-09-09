@@ -54,7 +54,12 @@ export default function AdminThemePicker({ variant = 'dropdown' }) {
               ))}
             </span>
             <span className="admin-theme-picker__meta">
-              <span className="admin-theme-picker__name">{t.label}</span>
+              <span className="admin-theme-picker__name">
+                {t.label}
+                <span className="admin-theme-picker__mode-tag">
+                  {t.mode}
+                </span>
+              </span>
               <span className="admin-theme-picker__desc">{t.description}</span>
             </span>
           </button>

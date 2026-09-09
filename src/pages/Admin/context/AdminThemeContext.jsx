@@ -1,6 +1,9 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { useTheme } from '../../../context/ThemeContext';
 
 const STORAGE_KEY = 'oddsyra-admin-theme';
+const LIGHT_THEME_STORAGE_KEY = 'oddsyra-admin-light-theme';
+const DARK_THEME_STORAGE_KEY = 'oddsyra-admin-dark-theme';
 
 /** Admin chrome themes — scoped to .admin-shell, independent of public site. */
 export const ADMIN_THEMES = [
@@ -81,6 +84,8 @@ const AdminThemeContext = createContext({
   theme: ADMIN_THEMES[0],
   setThemeId: () => {},
   themes: ADMIN_THEMES,
+  isDark: false,
+  toggleMode: () => {},
 });
 
 function readStoredThemeId() {
@@ -91,22 +96,87 @@ function readStoredThemeId() {
   return 'match';
 }
 
+function readStoredLightThemeId() {
+  try {
+    const raw = localStorage.getItem(LIGHT_THEME_STORAGE_KEY);
+    if (ADMIN_THEMES.some((t) => t.id === raw && t.mode === 'light')) return raw;
+  } catch { /* ignore */ }
+  return 'forest';
+}
+
+function readStoredDarkThemeId() {
+  try {
+    const raw = localStorage.getItem(DARK_THEME_STORAGE_KEY);
+    if (ADMIN_THEMES.some((t) => t.id === raw && t.mode === 'dark')) return raw;
+  } catch { /* ignore */ }
+  return 'slate';
+}
+
+function useOptionalSiteTheme() {
+  try {
+    return useTheme();
+  } catch {
+    return null;
+  }
+}
+
 export function AdminThemeProvider({ children }) {
   const [themeId, setThemeIdState] = useState(readStoredThemeId);
+  const siteThemeContext = useOptionalSiteTheme();
+  const siteIsDark = siteThemeContext ? siteThemeContext.isDark : false;
+  const setSiteTheme = siteThemeContext?.setTheme;
+
+  const theme = ADMIN_THEMES.find((t) => t.id === themeId) || ADMIN_THEMES[0];
+  const isDark = theme.mode === 'auto' ? siteIsDark : theme.mode === 'dark';
 
   const setThemeId = useCallback((nextId) => {
     const id = ADMIN_THEMES.some((t) => t.id === nextId) ? nextId : 'match';
     setThemeIdState(id);
+    const chosen = ADMIN_THEMES.find((t) => t.id === id);
     try {
       localStorage.setItem(STORAGE_KEY, id);
+      if (chosen?.mode === 'light') {
+        localStorage.setItem(LIGHT_THEME_STORAGE_KEY, id);
+      } else if (chosen?.mode === 'dark') {
+        localStorage.setItem(DARK_THEME_STORAGE_KEY, id);
+      }
     } catch { /* ignore */ }
   }, []);
 
-  const theme = ADMIN_THEMES.find((t) => t.id === themeId) || ADMIN_THEMES[0];
+  const toggleMode = useCallback(() => {
+    const currentIsDark = theme.mode === 'auto' ? siteIsDark : theme.mode === 'dark';
+
+    if (currentIsDark) {
+      // Switch to LIGHT
+      if (themeId === 'match') {
+        setSiteTheme?.('light');
+      } else {
+        const nextLight = readStoredLightThemeId();
+        setThemeId(nextLight);
+        setSiteTheme?.('light');
+      }
+    } else {
+      // Switch to DARK
+      if (themeId === 'match') {
+        setSiteTheme?.('dark');
+      } else {
+        const nextDark = readStoredDarkThemeId();
+        setThemeId(nextDark);
+        setSiteTheme?.('dark');
+      }
+    }
+  }, [theme, themeId, siteIsDark, setSiteTheme, setThemeId]);
 
   const value = useMemo(
-    () => ({ themeId, theme, setThemeId, themes: ADMIN_THEMES }),
-    [themeId, theme, setThemeId],
+    () => ({
+      themeId,
+      theme,
+      setThemeId,
+      themes: ADMIN_THEMES,
+      isDark,
+      toggleMode,
+    }),
+    [themeId, theme, setThemeId, isDark, toggleMode],
   );
 
   return (
@@ -119,3 +189,4 @@ export function AdminThemeProvider({ children }) {
 export function useAdminTheme() {
   return useContext(AdminThemeContext);
 }
+

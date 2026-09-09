@@ -4289,6 +4289,64 @@ html[data-theme="light"] .admin-badge--info,
    Admin theme picker + palette presets (scoped to .admin-shell)
    ========================================================================== */
 
+.admin-topbar__theme-cluster {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.admin-theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  outline: none;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.admin-theme-toggle-btn:hover {
+  background: var(--admin-surface-hover);
+  border-color: var(--admin-border-bright);
+  color: var(--admin-text);
+}
+
+.admin-theme-toggle-btn.is-dark:hover {
+  border-color: rgba(245, 158, 11, 0.45);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+}
+
+.admin-theme-toggle-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.admin-theme-picker__mode-tag {
+  display: inline-block;
+  font-size: 0.64rem;
+  font-weight: 600;
+  color: var(--admin-text-dim);
+  background: var(--admin-chip-bg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  padding: 1px 5px;
+  margin-left: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+}
+
 .admin-theme-picker {
   position: relative;
   flex-shrink: 0;

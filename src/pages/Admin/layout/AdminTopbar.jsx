@@ -6,11 +6,13 @@ import {
   MenuIcon,
 } from '../../../icons/animate/index';
 import AdminProfileMenu from '../components/AdminProfileMenu';
+import AdminThemeToggle from '../components/AdminThemeToggle';
+import AdminThemePicker from '../components/AdminThemePicker';
 import { ADMIN_ROLES } from '../permissions/AdminRBACGate';
 
 /**
- * Extracted Admin Topbar — search, alerts, RBAC role, profile, breadcrumbs.
- * Themes live in the admin profile menu.
+ * Extracted Admin Topbar — search, alerts, RBAC role, profile, breadcrumbs,
+ * and direct Light/Dark mode toggling and theme selection.
  */
 export default function AdminTopbar({
   globalSearch,
@@ -115,6 +117,12 @@ export default function AdminTopbar({
             <span className="admin-ui-mode-toggle__label">{uiRevamp ? 'New UI' : 'Classic'}</span>
           </button>
         )}
+
+        {/* Light / Dark Mode Toggle & Theme Picker */}
+        <div className="admin-topbar__theme-cluster">
+          <AdminThemeToggle />
+          <AdminThemePicker />
+        </div>
 
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
           <motion.button
