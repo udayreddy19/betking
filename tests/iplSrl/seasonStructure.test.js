@@ -117,6 +117,18 @@ describe('OddsYra SRL IPL season structure', () => {
     expect(listed.every((m) => m.matchState === 'pre')).toBe(true);
   });
 
+  it('exposes recent completed fixtures on the public board for user history', () => {
+    const season = getIplSrlSeasonMatches(SRL_LAUNCH_AT);
+    const midSeason = season[11].endTime + 60_000;
+    const listed = getIplSrlMatches(midSeason);
+    const completed = listed.filter((m) => m.matchState === 'post');
+    expect(completed.length).toBeGreaterThan(0);
+    expect(completed.every((m) => m.isCompleted === true || m.time === 'Completed')).toBe(true);
+    expect(completed.every((m) => m.liveDetails?.resultSummary || m.liveDetails?.commentary)).toBe(true);
+    // Still includes upcoming / live window for betting.
+    expect(listed.some((m) => m.matchState === 'pre' || m.matchState === 'in')).toBe(true);
+  });
+
   it('fills Qualifier 1 from the table once the league is over', () => {
     const atLaunch = getIplSrlSeasonMatches(SRL_LAUNCH_AT);
     const afterLeague = atLaunch[69].endTime + 5_000;

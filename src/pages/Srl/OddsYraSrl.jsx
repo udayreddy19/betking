@@ -231,9 +231,13 @@ export default function OddsYraSrl() {
 }
 
 function FixtureTable({ rows, onOpen, compact = false }) {
+  const completed = rows.filter((m) => fixtureState(m) === 'post');
   const upcoming = rows.filter((m) => fixtureState(m) !== 'post');
   const visible = compact
-    ? (upcoming.length ? upcoming.slice(0, 16) : rows.slice(-8))
+    ? [
+      ...completed.slice(-6).reverse(),
+      ...upcoming.slice(0, 12),
+    ]
     : rows;
 
   return (

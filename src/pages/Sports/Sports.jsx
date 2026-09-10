@@ -377,7 +377,13 @@ export default function Sports() {
   }, [location.state, location.key]);
 
   const isIplSrlView = isSameLeague(activeLeague, 'ipl-srl', cricketSeries);
-  const boardStateTab = isIplSrlView && activeStateTab === 'live' ? 'bettable' : activeStateTab;
+  // SRL board default (all) shows bettable + recent results. Explicit tabs still filter.
+  const boardStateTab = isIplSrlView
+    ? (activeStateTab === 'live' ? 'bettable'
+      : activeStateTab === 'completed' || activeStateTab === 'upcoming' || activeStateTab === 'all'
+        ? activeStateTab
+        : 'all')
+    : activeStateTab;
 
   const baseSportPool = useMemo(() => {
     return filterByLeague(
@@ -783,12 +789,19 @@ export default function Sports() {
 
   const handleStateTabChange = useCallback((tab) => {
     setActiveStateTab(tab);
-    setActiveLeague('all');
     setViewMode('league');
     setSelectedMatchId(null);
-    setSearchParams(prev => {
+    setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
-      next.set('league', 'all');
+      const stayOnSrl = String(prev.get('league') || '') === 'ipl-srl'
+        && (tab === 'completed' || tab === 'live' || tab === 'upcoming' || tab === 'all');
+      if (stayOnSrl) {
+        setActiveLeague('ipl-srl');
+        next.set('league', 'ipl-srl');
+      } else {
+        setActiveLeague('all');
+        next.set('league', 'all');
+      }
       if (tab && tab !== 'all') next.set('tab', tab);
       else next.delete('tab');
       next.delete('match');
@@ -980,8 +993,8 @@ export default function Sports() {
             <button
               type="button"
               role="tab"
-              aria-selected={!isIplSrlView && activeStateTab === 'live'}
-              className={`sports-league-chip ${!isIplSrlView && activeStateTab === 'live' ? 'active' : ''}`}
+              aria-selected={activeStateTab === 'live'}
+              className={`sports-league-chip ${activeStateTab === 'live' ? 'active' : ''}`}
               onClick={() => handleStateTabChange('live')}
             >
               <span className="sports-league-chip-live-dot" aria-hidden="true" />
@@ -990,8 +1003,8 @@ export default function Sports() {
             <button
               type="button"
               role="tab"
-              aria-selected={!isIplSrlView && activeStateTab === 'upcoming'}
-              className={`sports-league-chip ${!isIplSrlView && activeStateTab === 'upcoming' ? 'active' : ''}`}
+              aria-selected={activeStateTab === 'upcoming'}
+              className={`sports-league-chip ${activeStateTab === 'upcoming' ? 'active' : ''}`}
               onClick={() => handleStateTabChange('upcoming')}
             >
               Upcoming{stateCounts.upcoming > 0 ? ` (${stateCounts.upcoming})` : ''}
@@ -1000,8 +1013,8 @@ export default function Sports() {
               <button
                 type="button"
                 role="tab"
-                aria-selected={isIplSrlView}
-                className={`sports-league-chip sports-league-chip--srl ${isIplSrlView ? 'active' : ''}`}
+                aria-selected={isIplSrlView && (activeStateTab === 'all' || !['live', 'upcoming', 'completed'].includes(activeStateTab))}
+                className={`sports-league-chip sports-league-chip--srl ${isIplSrlView && (activeStateTab === 'all' || !['live', 'upcoming', 'completed'].includes(activeStateTab)) ? 'active' : ''}`}
                 onClick={selectSrlBoard}
               >
                 SRL{stateCounts.srl > 0 ? ` (${stateCounts.srl})` : ''}
@@ -1010,8 +1023,8 @@ export default function Sports() {
             <button
               type="button"
               role="tab"
-              aria-selected={!isIplSrlView && activeStateTab === 'completed'}
-              className={`sports-league-chip ${!isIplSrlView && activeStateTab === 'completed' ? 'active' : ''}`}
+              aria-selected={activeStateTab === 'completed'}
+              className={`sports-league-chip ${activeStateTab === 'completed' ? 'active' : ''}`}
               onClick={() => handleStateTabChange('completed')}
             >
               Completed{stateCounts.completed > 0 ? ` (${stateCounts.completed})` : ''}

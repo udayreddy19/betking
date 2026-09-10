@@ -625,6 +625,9 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
             {renderedBets.map((placed) => {
               const status = normalizeBetStatus(placed.status);
               const settled = SETTLED_STATUSES.has(status);
+              const legs = Array.isArray(placed.legs) ? placed.legs : [];
+              const stake = Number(placed.stake) || 0;
+              const potentialReturn = Number(placed.potentialReturn) || 0;
               const cashoutOffer = (!settled && status === 'pending')
                 ? cashoutOfferForBet(placed, liveMatches, user?.loyaltyTier, cashoutQuotes)
                 : 0;
@@ -647,11 +650,22 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
                     </span>
                   </div>
 
-                  {placed.legs.map((leg) => {
+                  {legs.length === 0 ? (
+                    <div className="my-bets-leg">
+                      <div className="my-bets-market">{placed.marketName || 'Bet'}</div>
+                      <div className="my-bets-selection-row">
+                        <span className="my-bets-selection">{placed.selectionName || placed.selection || 'Selection'}</span>
+                        <span className="my-bets-odds">{Number(placed.odds || placed.totalOdds || 0) > 1 ? Number(placed.odds || placed.totalOdds).toFixed(2) : '—'}</span>
+                      </div>
+                      <div className="my-bets-match-row">
+                        <span className="my-bets-match-name">{placed.matchName || placed.fixture || 'Match'}</span>
+                      </div>
+                    </div>
+                  ) : legs.map((leg) => {
                     const scoreText = getLegScoreText(leg, { settled });
                     return (
                       <div
-                        key={leg.id}
+                        key={leg.id || `${placed.id}-${leg.selectionId || leg.marketId}`}
                         className="my-bets-leg my-bets-leg--clickable"
                         role="button"
                         tabIndex={0}
@@ -678,7 +692,7 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
                   <div className="my-bets-summary">
                     <span className="label">Stake</span>
                     <span className="value">
-                      ₹{placed.stake.toFixed(2)}
+                      ₹{stake.toFixed(2)}
                       {placed.fundSource === 'freebet' && <span style={{ fontSize: '0.8em', color: '#10b981', marginLeft: 6 }}>🎁 Free Bet</span>}
                       {placed.fundSource === 'bonus' && <span style={{ fontSize: '0.8em', color: '#f59e0b', marginLeft: 6 }}>⭐ Bonus</span>}
                     </span>
@@ -686,12 +700,12 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
                   {placed.type === 'multi' && (
                     <div className="my-bets-summary">
                       <span className="label">Total odds</span>
-                      <span className="value">{Number(placed.totalOdds).toFixed(2)}</span>
+                      <span className="value">{Number(placed.totalOdds || 0).toFixed(2)}</span>
                     </div>
                   )}
                   <div className="my-bets-summary">
                     <span className="label">Potential return</span>
-                    <span className="value">₹{placed.potentialReturn.toFixed(2)}</span>
+                    <span className="value">₹{potentialReturn.toFixed(2)}</span>
                   </div>
                   {status === 'won' && placed.payout > 0 && (
                     <>

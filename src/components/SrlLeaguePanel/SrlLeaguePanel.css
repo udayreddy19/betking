@@ -219,6 +219,30 @@
   color: var(--color-text-muted);
 }
 
+.srl-league-panel__history {
+  margin-top: var(--space-5);
+}
+
+.srl-league-panel__history-title {
+  margin: 0 0 var(--space-3);
+  font-size: 0.95rem;
+  font-weight: 750;
+  color: var(--color-text-muted);
+}
+
+.srl-match-card--completed {
+  opacity: 0.96;
+}
+
+.srl-match-card__result {
+  grid-column: 1 / -1;
+  margin: 6px 0 0;
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: var(--color-text-muted);
+  text-align: left;
+}
+
 @media (min-width: 720px) {
   .srl-match-card__markets {
     flex-wrap: nowrap;
