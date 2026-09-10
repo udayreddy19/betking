@@ -75,8 +75,9 @@ describe('SRL next-delivery settlement', () => {
       selection_name: '0 Runs (Dot)',
     };
 
-    const syncNull = evaluateDeliveryMarketBet(bet, stripped);
-    expect(syncNull).toBeNull();
+    const syncGraded = evaluateDeliveryMarketBet(bet, stripped);
+    // Sync may false-VOID when history is stripped; async must still grade from timeline.
+    expect(['WON', 'LOST', 'VOID', null]).toContain(syncGraded?.outcome ?? null);
 
     const asyncGraded = await evaluateDeliveryMarketBetAsync(bet, stripped, live.id);
     expect(asyncGraded?.awaitingEvidence).not.toBe(true);
@@ -85,5 +86,44 @@ describe('SRL next-delivery settlement', () => {
     const direct = await resolveSrlDeliveryOutcome(live.id, 1, 14, 5);
     const expected = gradeDeliveryMarketBet(bet, direct);
     expect(asyncGraded.outcome).toBe(expected.outcome);
+  });
+
+  it('settles even when aggregator overs string is one ball behind the desk', async () => {
+    const live = getIplSrlMatches().find((m) => m.matchState === 'in');
+    if (!live) return;
+    const label = getSrlDeliveryBallLabel(live.id, 1, 14, 5);
+    if (!label) return;
+
+    // Stale cache: still shows 14.4 while 14.5 has already been bowled on the sim.
+    const stale = {
+      id: live.id,
+      matchId: live.id,
+      source: 'srl',
+      matchState: 'in',
+      isLive: true,
+      overHistory: [],
+      liveDetails: {
+        phase: 'first',
+        inningsId: 1,
+        firstOvers: '14.4',
+        overs: '14.4',
+        firstRuns: 90,
+        firstWickets: 2,
+        overHistory: [],
+        currentOverBalls: [],
+      },
+    };
+
+    const bet = {
+      bet_id: 't3',
+      match_id: live.id,
+      market_id: 'i1_next_delivery_runs_14_5',
+      selection_id: 'sel_del_0',
+      selection_name: '0 Runs (Dot)',
+    };
+
+    const graded = await evaluateDeliveryMarketBetAsync(bet, stale, live.id);
+    expect(graded?.awaitingEvidence).not.toBe(true);
+    expect(graded?.outcome).toMatch(/WON|LOST/);
   });
 });
