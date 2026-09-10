@@ -89,6 +89,22 @@ describe('Admin compose email', () => {
     expect(res.html).not.toContain('javascript:');
     expect(res.html).toContain('Limited offer.');
   });
+
+  it('resolves dedicated accounts for support, alerts, promos, and payments', async () => {
+    const {
+      getDedicatedAccountForFrom,
+      supportSmtpAccount,
+      alertsSmtpAccount,
+      paymentsSmtpAccount,
+      promosSmtpAccount,
+    } = await import('../../server/auth/emailService.js');
+
+    expect(getDedicatedAccountForFrom('OddsYra Support <support@oddsyra.com>')).toBeDefined();
+    expect(getDedicatedAccountForFrom('OddsYra Alerts <alerts@oddsyra.com>')).toBeDefined();
+    expect(getDedicatedAccountForFrom('OddsYra <promos@oddsyra.com>')).toBeDefined();
+    expect(getDedicatedAccountForFrom('OddsYra Payments <payments@oddsyra.com>')).toBeDefined();
+    expect(getDedicatedAccountForFrom('OddsYra <no-reply@oddsyra.com>')).toBeNull();
+  });
 });
 
 function boxesHas(id) {

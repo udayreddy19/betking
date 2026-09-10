@@ -159,7 +159,7 @@ function configuredAccounts() {
   return accounts;
 }
 
-function promosSmtpAccount() {
+export function promosSmtpAccount() {
   const user = process.env.SMTP_PROMOS_USER || process.env.PROMOS_SMTP_USER;
   const pass = process.env.SMTP_PROMOS_PASSWORD || process.env.PROMOS_SMTP_PASSWORD || process.env.SMTP_PROMOS_PASS || process.env.PROMOS_SMTP_PASS;
   if (!user || !pass) return null;
@@ -179,6 +179,96 @@ function promosSmtpAccount() {
     pass,
     from: String(fromRaw || '').includes('@') ? fromRaw : PROMOS_FROM,
   };
+}
+
+export function supportSmtpAccount() {
+  const primary = envAccount('SMTP_');
+  const user = process.env.SMTP_SUPPORT_USER
+    || process.env.SUPPORT_SMTP_USER
+    || (primary?.host?.includes('zoho') ? 'support@oddsyra.com' : null);
+  const pass = process.env.SMTP_SUPPORT_PASSWORD
+    || process.env.SUPPORT_SMTP_PASSWORD
+    || (primary?.host?.includes('zoho') ? primary.pass : null);
+  if (!user || !pass) return null;
+  const host = process.env.SMTP_SUPPORT_HOST || process.env.SUPPORT_SMTP_HOST || primary?.host || 'smtp.zoho.in';
+  const port = parseInt(process.env.SMTP_SUPPORT_PORT || process.env.SUPPORT_SMTP_PORT || String(primary?.port || 465), 10) || 465;
+  const secureEnv = process.env.SMTP_SUPPORT_SECURE || process.env.SUPPORT_SMTP_SECURE;
+  const secure = secureEnv === 'true' || (secureEnv !== 'false' && port === 465);
+  const fromRaw = process.env.SMTP_SUPPORT_FROM || process.env.SUPPORT_FROM || SUPPORT_FROM;
+  return {
+    name: 'support',
+    host,
+    port,
+    secure,
+    user,
+    pass,
+    from: String(fromRaw || '').includes('@') ? fromRaw : SUPPORT_FROM,
+  };
+}
+
+export function alertsSmtpAccount() {
+  const primary = envAccount('SMTP_');
+  const user = process.env.SMTP_ALERTS_USER
+    || process.env.ALERTS_SMTP_USER
+    || (primary?.host?.includes('zoho') ? 'alerts@oddsyra.com' : null);
+  const pass = process.env.SMTP_ALERTS_PASSWORD
+    || process.env.ALERTS_SMTP_PASSWORD
+    || (primary?.host?.includes('zoho') ? primary.pass : null);
+  if (!user || !pass) return null;
+  const host = process.env.SMTP_ALERTS_HOST || process.env.ALERTS_SMTP_HOST || primary?.host || 'smtp.zoho.in';
+  const port = parseInt(process.env.SMTP_ALERTS_PORT || process.env.ALERTS_SMTP_PORT || String(primary?.port || 465), 10) || 465;
+  const secureEnv = process.env.SMTP_ALERTS_SECURE || process.env.ALERTS_SMTP_SECURE;
+  const secure = secureEnv === 'true' || (secureEnv !== 'false' && port === 465);
+  const fromRaw = process.env.SMTP_ALERTS_FROM || process.env.ALERTS_FROM || ALERTS_FROM;
+  return {
+    name: 'alerts',
+    host,
+    port,
+    secure,
+    user,
+    pass,
+    from: String(fromRaw || '').includes('@') ? fromRaw : ALERTS_FROM,
+  };
+}
+
+export function paymentsSmtpAccount() {
+  const primary = envAccount('SMTP_');
+  const user = process.env.SMTP_PAYMENTS_USER
+    || process.env.PAYMENTS_SMTP_USER
+    || (primary?.host?.includes('zoho') ? 'payments@oddsyra.com' : null);
+  const pass = process.env.SMTP_PAYMENTS_PASSWORD
+    || process.env.PAYMENTS_SMTP_PASSWORD
+    || (primary?.host?.includes('zoho') ? primary.pass : null);
+  if (!user || !pass) return null;
+  const host = process.env.SMTP_PAYMENTS_HOST || process.env.PAYMENTS_SMTP_HOST || primary?.host || 'smtp.zoho.in';
+  const port = parseInt(process.env.SMTP_PAYMENTS_PORT || process.env.PAYMENTS_SMTP_PORT || String(primary?.port || 465), 10) || 465;
+  const secureEnv = process.env.SMTP_PAYMENTS_SECURE || process.env.PAYMENTS_SMTP_SECURE;
+  const secure = secureEnv === 'true' || (secureEnv !== 'false' && port === 465);
+  return {
+    name: 'payments',
+    host,
+    port,
+    secure,
+    user,
+    pass,
+    from: `OddsYra Payments <${user}>`,
+  };
+}
+
+export function extractEmailAddress(addr) {
+  if (!addr) return '';
+  const match = String(addr).match(/<([^>]+)>/);
+  return (match ? match[1] : addr).trim().toLowerCase();
+}
+
+export function getDedicatedAccountForFrom(from) {
+  const email = extractEmailAddress(from);
+  if (!email) return null;
+  if (email.includes('promos@oddsyra.com')) return promosSmtpAccount();
+  if (email.includes('support@oddsyra.com')) return supportSmtpAccount();
+  if (email.includes('alerts@oddsyra.com')) return alertsSmtpAccount();
+  if (email.includes('payments@oddsyra.com')) return paymentsSmtpAccount();
+  return null;
 }
 
 function isPromosFrom(from) {
@@ -343,10 +433,10 @@ export async function sendEmail({
   if (!to) throw new Error('Recipient email is required');
 
   const resolvedFrom = isPromosFrom(from) ? formatPromosFrom(from) : from;
-  const promosAcc = isPromosFrom(resolvedFrom) ? promosSmtpAccount() : null;
+  const dedicatedAcc = getDedicatedAccountForFrom(resolvedFrom);
   const primaryAccounts = configuredAccounts();
-  const accounts = promosAcc
-    ? [promosAcc, ...primaryAccounts.filter((a) => a.user !== promosAcc.user || a.host !== promosAcc.host)]
+  const accounts = dedicatedAcc
+    ? [dedicatedAcc, ...primaryAccounts.filter((a) => a.user?.toLowerCase() !== dedicatedAcc.user?.toLowerCase() || a.host !== dedicatedAcc.host)]
     : primaryAccounts;
   const ccList = Array.isArray(cc) ? cc.filter(Boolean).join(', ') : (cc || undefined);
 
@@ -370,7 +460,7 @@ export async function sendEmail({
   }
 
   let lastErr = null;
-  const skipPrimary = !promosAcc && shouldSkipPrimary();
+  const skipPrimary = !dedicatedAcc && shouldSkipPrimary();
 
   for (const account of accounts) {
     if (account.name === 'primary' && skipPrimary && accounts.length > 1) {
@@ -379,8 +469,24 @@ export async function sendEmail({
 
     try {
       const transport = createTransport(account);
+      const isCustomFrom = forceFrom && from && from !== SMTP_FROM;
       const accountFrom = isPromosFrom(account.from) ? formatPromosFrom(account.from) : account.from;
-      const chosenFrom = forceFrom ? resolvedFrom : (accountFrom || resolvedFrom);
+      let chosenFrom = isCustomFrom ? resolvedFrom : (accountFrom || resolvedFrom);
+
+      // Zoho / strict anti-relay protection:
+      // If the authenticated account username differs from the chosenFrom email address,
+      // Zoho rejects with "553 Sender is not allowed to relay emails".
+      // Fall back to sending From the authenticated account, preserving the intended address in replyTo.
+      let effectiveReplyTo = replyTo;
+      const accountUser = extractEmailAddress(account.user || account.from);
+      const chosenUser = extractEmailAddress(chosenFrom);
+      if (accountUser && chosenUser && accountUser !== chosenUser && (account.host?.includes('zoho') || account.strictSender)) {
+        if (!effectiveReplyTo) {
+          effectiveReplyTo = chosenFrom;
+        }
+        chosenFrom = account.from || `OddsYra <${account.user}>`;
+      }
+
       const mailOptions = {
         from: chosenFrom,
         to,
@@ -388,7 +494,7 @@ export async function sendEmail({
         subject,
         html,
         text: text || html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
-        replyTo: replyTo || (forceFrom ? resolvedFrom : (accountFrom || resolvedFrom)),
+        replyTo: effectiveReplyTo || (forceFrom ? resolvedFrom : (accountFrom || resolvedFrom)),
         headers,
       };
 
