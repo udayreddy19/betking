@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo, startTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { IoClose } from '../../icons';
@@ -129,6 +129,7 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
   const [expandedEvidence, setExpandedEvidence] = useState({});
   const [loadedEvidence, setLoadedEvidence] = useState({});
   const [expandedTimeline, setExpandedTimeline] = useState({});
+  const [settledVisibleCount, setSettledVisibleCount] = useState(20);
   const panelRef = useRef(null);
 
   const toggleEvidence = async (betId, existingEvidence) => {
@@ -319,7 +320,14 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
       return placedBets.filter((b) => normalizeBetStatus(b.status) === 'pending');
     }
     return placedBets.filter((b) => normalizeBetStatus(b.status) === filter);
-  }, [placedBets, filter, liveMatches, user?.loyaltyTier, cashoutQuotes]);
+    // liveMatches / cashoutQuotes only affect the Cash out tab — keep Won/Lost/Void cheap.
+  }, [
+    placedBets,
+    filter,
+    filter === 'cashout' ? liveMatches : null,
+    filter === 'cashout' ? user?.loyaltyTier : null,
+    filter === 'cashout' ? cashoutQuotes : null,
+  ]);
 
   const sportsAvailable = useMemo(() => {
     const set = new Set();
@@ -338,6 +346,18 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
     });
   }, [filtered, sportFilter]);
 
+  const isSettledFilter = filter === 'won' || filter === 'lost' || filter === 'void'
+    || filter === 'cashed_out' || filter === 'settled';
+
+  useEffect(() => {
+    setSettledVisibleCount(20);
+  }, [filter, sportFilter]);
+
+  const renderedBets = useMemo(() => {
+    if (!isSettledFilter) return visibleBets;
+    return visibleBets.slice(0, settledVisibleCount);
+  }, [visibleBets, isSettledFilter, settledVisibleCount]);
+
   const handleCashout = async (bet) => {
     const offer = cashoutOfferForBet(bet, liveMatches, user?.loyaltyTier, cashoutQuotes);
     if (offer <= 0) {
@@ -354,11 +374,6 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
     }
     showToast(`Cashed out for ${formatInr(cashed.cashoutAmount || offer)}`, 'success');
   };
-
-  const resolveLegMatch = (leg) => findLiveMatch(liveMatches, {
-    matchId: leg?.matchId,
-    matchName: leg?.matchName,
-  });
 
   const liveMatchById = useMemo(() => {
     const map = new Map();
@@ -378,20 +393,22 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
     });
   };
 
-  const getLegDisplayName = (leg) => {
-    const match = resolveLegMatchFast(leg);
-    if (match) {
-      const t1 = match.team1?.name || match.team1?.shortName;
-      const t2 = match.team2?.name || match.team2?.shortName;
-      if (t1 && t2) return `${t1} vs ${t2}`;
-      if (match.matchName) return match.matchName;
+  const getLegDisplayName = (leg, { settled = false } = {}) => {
+    if (!settled) {
+      const match = resolveLegMatchFast(leg);
+      if (match) {
+        const t1 = match.team1?.name || match.team1?.shortName;
+        const t2 = match.team2?.name || match.team2?.shortName;
+        if (t1 && t2) return `${t1} vs ${t2}`;
+        if (match.matchName) return match.matchName;
+      }
     }
     if (leg.team1Name && leg.team2Name) return `${leg.team1Name} vs ${leg.team2Name}`;
     const raw = String(leg.matchName || '').trim();
     if (raw && !/^live match$/i.test(raw) && !/^(oy_|10cric_|cb_|crex_|fancode_|fc_|espn_|api_|fs_|guru_|crix_|srl_)/i.test(raw)) {
       return raw;
     }
-    return 'Open bet fixture';
+    return settled ? 'Settled fixture' : 'Open bet fixture';
   };
 
   const handleLegClick = (event, leg) => {
@@ -464,29 +481,26 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
     navigate(`/sports?${params.toString()}`, { state: { deepLinkMatch: nextMatch } });
   };
 
-  const getLegSelectionLabel = (leg) => {
-    const match = resolveLegMatchFast(leg);
+  const getLegSelectionLabel = (leg, { settled = false } = {}) => {
     const id = String(leg.selection || '');
+    const stored = String(leg.selectionName || '');
+    if (stored && !/^sel[_-]/i.test(stored)) return stored;
+    if (settled) {
+      if (id === 'X') return 'Draw';
+      return stored || id || 'Selection';
+    }
+    const match = resolveLegMatchFast(leg);
     if (match) {
       if (id === '1' && match.team1?.name) return match.team1.name;
       if (id === '2' && match.team2?.name) return match.team2.name;
       if (id === 'X') return 'Draw';
-      // Prefer stored selection name — avoid scanning every market on each render.
-      const name = String(leg.selectionName || '');
-      if (name && !/^sel[_-]/i.test(name)) return name;
-      const markets = match.markets || match.odds?.markets || [];
-      for (const market of markets) {
-        const sels = market.selections || market.outcomes || [];
-        const hit = sels.find((s) => String(s.id || s.selectionId) === id);
-        if (hit?.name || hit?.label) return hit.name || hit.label;
-      }
     }
-    const name = String(leg.selectionName || '');
-    if (name && !/^sel[_-]/i.test(name)) return name;
-    return name || id || 'Selection';
+    return stored || id || 'Selection';
   };
 
-  const getLegScoreText = (leg) => {
+  const getLegScoreText = (leg, { settled = false } = {}) => {
+    // Settled tabs don't need live scoreboard work — it was the main Won/Lost lag.
+    if (settled) return null;
     const match = resolveLegMatchFast(leg);
 
     const ld = match?.liveDetails || leg.liveDetails || {};
@@ -557,9 +571,8 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
               key={f.id}
               type="button"
               className={`my-bets-filter ${filter === f.id ? 'active' : ''}`}
-              onClick={(e) => {
-                setFilter(f.id);
-                e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+              onClick={() => {
+                startTransition(() => setFilter(f.id));
               }}
             >
               {f.label}
@@ -572,7 +585,7 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
             <button
               type="button"
               className={`my-bets-filter ${sportFilter === 'all' ? 'active' : ''}`}
-              onClick={() => setSportFilter('all')}
+              onClick={() => startTransition(() => setSportFilter('all'))}
             >
               All sports
             </button>
@@ -581,7 +594,7 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
                 key={s}
                 type="button"
                 className={`my-bets-filter ${sportFilter === s ? 'active' : ''}`}
-                onClick={() => setSportFilter(s)}
+                onClick={() => startTransition(() => setSportFilter(s))}
               >
                 {s}
               </button>
@@ -608,10 +621,15 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
               }</p>
             </div>
           ) : (
-            visibleBets.map((placed) => {
-              const cashoutOffer = cashoutOfferForBet(placed, liveMatches, user?.loyaltyTier, cashoutQuotes);
+            <>
+            {renderedBets.map((placed) => {
+              const status = normalizeBetStatus(placed.status);
+              const settled = SETTLED_STATUSES.has(status);
+              const cashoutOffer = (!settled && status === 'pending')
+                ? cashoutOfferForBet(placed, liveMatches, user?.loyaltyTier, cashoutQuotes)
+                : 0;
               return (
-                <div className={`my-bets-card my-bets-card--${placed.status || 'pending'}${highlightBetId && String(placed.id) === String(highlightBetId) ? ' my-bets-card--highlight' : ''}`} key={placed.id}>
+                <div className={`my-bets-card my-bets-card--${status || 'pending'}${highlightBetId && String(placed.id) === String(highlightBetId) ? ' my-bets-card--highlight' : ''}`} key={placed.id}>
                   <div className="my-bets-card-top">
                     <div className="my-bets-card-badges">
                       <span className="my-bets-type-badge">{placed.type === 'multi' ? 'MULTI' : 'SINGLE'}</span>
@@ -620,8 +638,8 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
                           ? `${placed.fundSource === 'freebet' ? '🎁 FREE BET' : '⭐ BONUS'} · ${placed.rewardId}`
                           : (placed.fundSource || 'cash').toUpperCase()}
                       </span>
-                      <span className={`my-bets-status-badge my-bets-status-badge--${placed.status || 'pending'}`}>
-                        {(placed.status || 'pending').replace('_', ' ').toUpperCase()}
+                      <span className={`my-bets-status-badge my-bets-status-badge--${status || 'pending'}`}>
+                        {(status || 'pending').replace('_', ' ').toUpperCase()}
                       </span>
                     </div>
                     <span className="my-bets-time">
@@ -630,7 +648,7 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
                   </div>
 
                   {placed.legs.map((leg) => {
-                    const scoreText = getLegScoreText(leg);
+                    const scoreText = getLegScoreText(leg, { settled });
                     return (
                       <div
                         key={leg.id}
@@ -645,11 +663,11 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
                       >
                         <div className="my-bets-market">{leg.marketName}</div>
                         <div className="my-bets-selection-row">
-                          <span className="my-bets-selection">{getLegSelectionLabel(leg)}</span>
+                          <span className="my-bets-selection">{getLegSelectionLabel(leg, { settled })}</span>
                           <span className="my-bets-odds">{Number(leg.odds).toFixed(2)}</span>
                         </div>
                         <div className="my-bets-match-row">
-                          <span className="my-bets-match-name">{getLegDisplayName(leg)}</span>
+                          <span className="my-bets-match-name">{getLegDisplayName(leg, { settled })}</span>
                           {scoreText && <span className="my-bets-score-badge">{scoreText}</span>}
                           <span className="my-bets-match-link-icon">↗</span>
                         </div>
@@ -675,7 +693,7 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
                     <span className="label">Potential return</span>
                     <span className="value">₹{placed.potentialReturn.toFixed(2)}</span>
                   </div>
-                  {placed.status === 'won' && placed.payout > 0 && (
+                  {status === 'won' && placed.payout > 0 && (
                     <>
                       <div className="my-bets-summary my-bets-summary--won">
                         <span className="label">Payout</span>
@@ -689,19 +707,19 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
                       )}
                     </>
                   )}
-                  {placed.status === 'void' && (
+                  {status === 'void' && (
                     <div className="my-bets-summary my-bets-summary--won">
                       <span className="label">Refunded</span>
                       <span className="value">₹{(placed.payout || placed.stake || 0).toFixed(2)}</span>
                     </div>
                   )}
-                  {placed.status === 'cashed_out' && (
+                  {status === 'cashed_out' && (
                     <div className="my-bets-summary my-bets-summary--won">
                       <span className="label">Cashed out</span>
                       <span className="value">₹{(placed.cashoutAmount || placed.payout || 0).toFixed(2)}</span>
                     </div>
                   )}
-                  {placed.status === 'pending' && cashoutOffer > 0 && (
+                  {status === 'pending' && cashoutOffer > 0 && (
                     <button
                       type="button"
                       className="my-bets-cashout-btn"
@@ -716,45 +734,48 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
                     </div>
                   )}
 
-                  {SETTLED_STATUSES.has(placed.status) && (() => {
-                    const evidence = placed.settlementEvidence || loadedEvidence[placed.id] || null;
-                    return (
-                      <div className="my-bets-evidence-container">
-                        <button
-                          type="button"
-                          className="my-bets-evidence-toggle"
-                          onClick={() => toggleEvidence(placed.id, evidence)}
-                          aria-expanded={Boolean(expandedEvidence[placed.id])}
-                        >
-                          <div className="my-bets-evidence-header">
-                            <span className="my-bets-evidence-title">
-                              <span className="my-bets-evidence-icon">🏏</span> Settlement Evidence
-                            </span>
-                            <span className={`my-bets-evidence-badge my-bets-evidence-badge--${evidence?.evidenceStatus || 'VERIFIED'}`}>
-                              {evidence?.evidenceStatus === 'EVIDENCE_UNAVAILABLE'
-                                ? '⚠ EVIDENCE UNAVAILABLE'
-                                : evidence?.evidenceStatus === 'PENDING'
-                                  ? '⏳ PROCESSING'
-                                  : '✓ VERIFIED SETTLEMENT'}
-                            </span>
-                          </div>
+                  {settled && (
+                    <div className="my-bets-evidence-container">
+                      <button
+                        type="button"
+                        className="my-bets-evidence-toggle"
+                        onClick={() => toggleEvidence(placed.id, placed.settlementEvidence || loadedEvidence[placed.id] || null)}
+                        aria-expanded={Boolean(expandedEvidence[placed.id])}
+                      >
+                        <div className="my-bets-evidence-header">
+                          <span className="my-bets-evidence-title">
+                            Settlement evidence
+                          </span>
+                          <span className="my-bets-evidence-chevron">{expandedEvidence[placed.id] ? '▲' : '▼'}</span>
+                        </div>
+                        {!expandedEvidence[placed.id] && (
                           <div className="my-bets-evidence-preview">
                             <span className="my-bets-evidence-summary-text">
-                              {evidence?.summary || placed.settlementReason || `Settled ${placed.status.toUpperCase()}`}
+                              {placed.settlementReason || `Settled ${status.toUpperCase()}`}
                             </span>
-                            <span className="my-bets-evidence-chevron">{expandedEvidence[placed.id] ? '▲' : '▼'}</span>
                           </div>
-                        </button>
+                        )}
+                      </button>
 
-                        {expandedEvidence[placed.id] && (
+                      {expandedEvidence[placed.id] && (() => {
+                        const evidence = placed.settlementEvidence || loadedEvidence[placed.id] || null;
+                        return (
                           <div className="my-bets-evidence-body">
-                            {evidence?.evidenceStatus === 'EVIDENCE_UNAVAILABLE' ? (
+                            {evidence?.evidenceStatus === 'EVIDENCE_UNAVAILABLE' || !evidence ? (
                               <div className="my-bets-evidence-unavailable">
-                                <p>Settlement evidence is not available for this historical bet.</p>
-                                <span className="my-bets-evidence-subtext">The authoritative settlement result remains <strong>{placed.status.toUpperCase()}</strong>.</span>
+                                <p>{evidence ? 'Settlement evidence is not available for this historical bet.' : 'Loading evidence…'}</p>
+                                <span className="my-bets-evidence-subtext">Result: <strong>{status.toUpperCase()}</strong>.</span>
                               </div>
                             ) : (
                               <>
+                                <div className="my-bets-evidence-preview" style={{ marginBottom: 8 }}>
+                                  <span className={`my-bets-evidence-badge my-bets-evidence-badge--${evidence?.evidenceStatus || 'VERIFIED'}`}>
+                                    {evidence?.evidenceStatus === 'PENDING' ? '⏳ PROCESSING' : '✓ VERIFIED SETTLEMENT'}
+                                  </span>
+                                  <span className="my-bets-evidence-summary-text">
+                                    {evidence?.summary || placed.settlementReason || `Settled ${status.toUpperCase()}`}
+                                  </span>
+                                </div>
                                 {evidence?.timeline?.length > 0 && (
                                   <div className="my-bets-evidence-section">
                                     <div className="my-bets-evidence-section-title">
@@ -838,10 +859,10 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
                               </>
                             )}
                           </div>
-                        )}
-                      </div>
-                    );
-                  })()}
+                        );
+                      })()}
+                    </div>
+                  )}
 
                   <button
                     type="button"
@@ -878,7 +899,18 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
                   ) : null}
                 </div>
               );
-            })
+            })}
+            {isSettledFilter && visibleBets.length > renderedBets.length && (
+              <button
+                type="button"
+                className="my-bets-timeline-toggle"
+                style={{ alignSelf: 'center', padding: '10px 14px' }}
+                onClick={() => setSettledVisibleCount((n) => n + 20)}
+              >
+                Show more ({visibleBets.length - renderedBets.length} left)
+              </button>
+            )}
+            </>
           )}
         </div>
           </motion.div>
