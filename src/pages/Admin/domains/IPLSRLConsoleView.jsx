@@ -856,8 +856,14 @@ export default function IPLSRLConsoleView() {
     if (selected) {
       setTossWinnerKey(selected.toss?.winner || selected.homeTeamId || '');
       setTossDecision(selected.toss?.decision || 'BAT');
-      setHomeXIInput((selected.lineup?.homePlayingXI || []).join(', '));
-      setAwayXIInput((selected.lineup?.awayPlayingXI || []).join(', '));
+      const savedHome = selected.lineup?.homePlayingXI || [];
+      const savedAway = selected.lineup?.awayPlayingXI || [];
+      setHomeXIInput(
+        (savedHome.length ? savedHome : (selected.defaultHomeXI || [])).join(', '),
+      );
+      setAwayXIInput(
+        (savedAway.length ? savedAway : (selected.defaultAwayXI || [])).join(', '),
+      );
       setHomeImpactInput(selected.lineup?.homeImpactPlayer || '');
       setAwayImpactInput(selected.lineup?.awayImpactPlayer || '');
       if (selected.targetMargin) {
@@ -879,7 +885,7 @@ export default function IPLSRLConsoleView() {
         setCbDeathInput(String(selected.circuitBreaker.stageCaps?.death ?? 15000));
       }
     }
-  }, [selected?.matchId]);
+  }, [selected?.matchId, selected?.defaultHomeXI?.join(','), selected?.defaultAwayXI?.join(','), selected?.lineup?.homePlayingXI?.join(','), selected?.lineup?.awayPlayingXI?.join(',')]);
 
   const exportAudit = async (format = 'json') =>{
     if (!selected?.matchId) return;
@@ -3289,13 +3295,16 @@ export default function IPLSRLConsoleView() {
                       <div className="srl-zone-label --live">
                          Playing XI & Impact Players Desk
                       </div>
+                      <p className="srl-hint" style={{ margin: '0 0 10px' }}>
+                        Auto-filled for whichever teams are playing (all 10 SRL clubs). Edit if needed, then save. Impact player is optional.
+                      </p>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 14, marginTop: 10 }}>
                         {/* Home Squad */}
                         <div className="srl-squad-box">
                           <strong>{selected.homeShort} Playing XI</strong>
                           <textarea
                             className="srl-input srl-squad-textarea"
-                            placeholder="Player 1, Player 2, Player 3..."
+                            placeholder={`${selected.homeShort} squad loading…`}
                             value={homeXIInput}
                             onChange={(e) => setHomeXIInput(e.target.value)}
                             rows={4}
@@ -3303,7 +3312,7 @@ export default function IPLSRLConsoleView() {
                           <input
                             className="srl-input"
                             type="text"
-                            placeholder="Impact Player (e.g. Shivam Dube)"
+                            placeholder="Impact Player (optional)"
                             value={homeImpactInput}
                             onChange={(e) => setHomeImpactInput(e.target.value)}
                             style={{ marginTop: 6, height: 34 }}
@@ -3334,7 +3343,7 @@ export default function IPLSRLConsoleView() {
                           <strong>{selected.awayShort} Playing XI</strong>
                           <textarea
                             className="srl-input srl-squad-textarea"
-                            placeholder="Player 1, Player 2, Player 3..."
+                            placeholder={`${selected.awayShort} squad loading…`}
                             value={awayXIInput}
                             onChange={(e) => setAwayXIInput(e.target.value)}
                             rows={4}
@@ -3342,7 +3351,7 @@ export default function IPLSRLConsoleView() {
                           <input
                             className="srl-input"
                             type="text"
-                            placeholder="Impact Player (e.g. Suryakumar Yadav)"
+                            placeholder="Impact Player (optional)"
                             value={awayImpactInput}
                             onChange={(e) => setAwayImpactInput(e.target.value)}
                             style={{ marginTop: 6, height: 34 }}
