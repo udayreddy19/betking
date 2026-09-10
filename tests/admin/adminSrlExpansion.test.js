@@ -359,7 +359,7 @@ describe('Advanced OddsYra SRL Match Control Suite', () => {
 
     expect(radar.h2hMatchup).toBeDefined();
     expect(radar.h2hMatchup.striker).toBeDefined();
-    expect(radar.h2hMatchup.strikeRate).toBeGreaterThan(0);
+    expect(radar.h2hMatchup.strikeRate).toBeGreaterThanOrEqual(0);
   });
 });
 

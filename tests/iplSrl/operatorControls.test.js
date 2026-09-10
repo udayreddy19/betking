@@ -125,6 +125,42 @@ describe('OddsYra SRL operator controls', () => {
     expect(next.runs).toBe(89);
   });
 
+  it('applies mid-over SIX inject anchors before the over completes', async () => {
+    const { applySrlScoreAnchors } = await import('../../lib/iplSrlSimulator.mjs');
+    const sim = {
+      first: {
+        timeline: Array.from({ length: 120 }, (_, i) => ({
+          runs: i + 1,
+          wickets: 0,
+          overs: `${Math.floor((i + 1) / 6)}.${(i + 1) % 6}`,
+        })),
+      },
+      second: { timeline: [] },
+    };
+    // After 5 balls (0.5 ov), natural score is 5; SIX inject wants 4 (pre) + 6 = 10.
+    const live = {
+      inningsId: 1,
+      phase: 'first',
+      firstTeamName: 'Rajasthan Royals',
+      runs: 5,
+      firstRuns: 5,
+      firstWickets: 0,
+      firstOvers: '0.5',
+      overs: '0.5',
+      wickets: 0,
+    };
+    const next = applySrlScoreAnchors(live, sim, [{
+      innings: 1,
+      atOver: 0.5,
+      ballIndex: 4,
+      runs: 10,
+      naturalRunsAtAnchor: 5,
+      source: 'incident',
+    }]);
+    expect(next.firstRuns).toBe(10);
+    expect(next.runs).toBe(10);
+  });
+
   it('match markets desk exposes toss + full V4 user book for control', async () => {
     const match = getIplSrlSeasonMatches(SRL_LAUNCH_AT)[0];
     const desk = await getIPLSRLMatchMarkets(match.id);

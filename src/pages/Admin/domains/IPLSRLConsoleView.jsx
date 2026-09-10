@@ -216,7 +216,9 @@ function ScoreboardHero({ match }) {
           {isLive && <span className="srl-live-dot" style={{ marginRight: 6 }} />}
           {PHASE_LABEL[clock.phase] || match.controlStatus}
         </span>
-        {s.target >0 && <span className="srl-score-target">T {s.target}</span>}
+        {s.target > 0 && (clock.phase === 'chase' || clock.phase === 'break' || match.dlsTarget) && (
+          <span className="srl-score-target">T {s.target}</span>
+        )}
       </div>
 
       <div className="srl-score-team">
