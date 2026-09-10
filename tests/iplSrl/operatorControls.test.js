@@ -203,7 +203,8 @@ describe('OddsYra SRL operator controls', () => {
   });
 
   it('match markets desk exposes toss + full V4 user book for control', async () => {
-    const match = getIplSrlSeasonMatches(SRL_LAUNCH_AT)[0];
+    jumpIPLSRLSeason({ matchNo: 1, at: 'live' }, 'test');
+    const match = getIplSrlSeasonMatches()[0];
     const desk = await getIPLSRLMatchMarkets(match.id);
     expect(desk.engine).toBe('OddsEngineV4');
     expect(desk.marketCount).toBeGreaterThanOrEqual(20);

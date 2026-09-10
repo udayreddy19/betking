@@ -18,6 +18,7 @@ import {
   openSrlPlayerPropMarkets,
   getSrlPublicPreviewParity,
   getSrlShiftHandoffPack,
+  resetAllSrlExtras,
 } from '../../lib/iplSrlAdminExtras.mjs';
 
 async function lockToss(matchId, winnerTeamId) {
@@ -29,8 +30,14 @@ async function lockToss(matchId, winnerTeamId) {
 }
 
 describe('SRL admin extras pack', () => {
-  beforeEach(() => resetAllSrlOperatorSessions());
-  afterEach(() => resetAllSrlOperatorSessions());
+  beforeEach(() => {
+    resetAllSrlOperatorSessions();
+    resetAllSrlExtras();
+  });
+  afterEach(() => {
+    resetAllSrlOperatorSessions();
+    resetAllSrlExtras();
+  });
 
   function sampleMatch() {
     return getIplSrlMatches().find((m) => m.team1?.key && m.team1.key !== 'tbd') || getIplSrlMatches()[0];

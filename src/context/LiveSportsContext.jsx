@@ -14,6 +14,7 @@ import { LIVE_SCORES_POLL_MS, LIVE_SCORES_WS_FALLBACK_POLL_MS } from '../config/
 import { getIplSrlMatches } from '../../lib/iplSrlSimulator.mjs';
 import { cricketScoreWeight, cricketSourceRank, getCanonicalMatchPairKey, getMatchPairKeyCandidates } from '../../lib/matchPairKey.mjs';
 import { mergeCricketLiveDetails } from '../utils/cricketScoreMerge';
+import { overlaySrlFromServer } from '../utils/srlLiveBoardMerge';
 import { useFeatureFlags } from './FeatureFlagsContext';
 import { isMatchSRL, isMatchOddsYraSRL, isMatchOtherSRL, isMatchT10 } from '../utils/cricketFormat';
 import { passesMatchQualityGate } from '../utils/matchQualityGate';
@@ -97,8 +98,24 @@ function rememberPairKeys(seenPairs, match, index) {
 }
 
 function mergeSrlMatches(matches) {
-  const apiMatches = (matches || []).filter((m) => !isSrlMatch(m));
-  const srl = attachOdds(getIplSrlMatches());
+  const list = matches || [];
+  // Keep non-SRL from API/prev. Keep prior SRL rows so desk seeks survive the 2s client tick
+  // (browser getIplSrlMatches has no PG operator session).
+  const apiMatches = list.filter((m) => !isSrlMatch(m));
+  const serverSrlById = new Map(
+    list.filter(isSrlMatch).map((m) => [String(m.id), m]),
+  );
+  const clientSrl = attachOdds(getIplSrlMatches());
+  const usedServerIds = new Set();
+  const srl = clientSrl.map((client) => {
+    const server = serverSrlById.get(String(client.id));
+    if (server) usedServerIds.add(String(client.id));
+    return overlaySrlFromServer(client, server);
+  });
+  for (const [id, server] of serverSrlById) {
+    if (usedServerIds.has(id)) continue;
+    srl.push(attachOdds([server])[0]);
+  }
 
   const seenIds = new Set();
   const seenPairs = new Map();
@@ -212,6 +229,17 @@ function mergeMatchesStable(prev, next) {
       chosen = candidate;
     } else if (matchDisplayKey(previous) === matchDisplayKey(candidate)) {
       chosen = previous;
+    } else if (isSrlMatch(candidate) || isSrlMatch(previous)) {
+      // SRL desk seeks can lower wickets vs the browser natural sim — never
+      // monotonic-merge those boards or My Bets stays on stale 79/2 vs live 88/1.
+      const overlaid = overlaySrlFromServer(previous, candidate);
+      chosen = {
+        ...overlaid,
+        squads: candidate.squads?.length ? candidate.squads : previous.squads,
+        scorecardInnings: candidate.scorecardInnings?.length
+          ? candidate.scorecardInnings
+          : (overlaid.scorecardInnings || previous.scorecardInnings),
+      };
     } else {
       chosen = {
         ...candidate,
