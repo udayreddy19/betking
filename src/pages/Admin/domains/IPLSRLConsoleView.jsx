@@ -144,6 +144,16 @@ function formatInr(amount) {
   return `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 }
 
+/** Coerce scorecard player fields (string or { name, ... }) to a safe React text child. */
+function playerLabel(value, fallback = '—') {
+  if (value == null || value === '') return fallback;
+  if (typeof value === 'string' || typeof value === 'number') return String(value);
+  if (typeof value === 'object') {
+    return value.displayName || value.name || value.shortName || fallback;
+  }
+  return fallback;
+}
+
 function fixtureFilter(m, filter) {
   if (filter === 'league') return !m.playoff;
   if (filter === 'playoffs') return !!m.playoff;
@@ -977,15 +987,15 @@ export default function IPLSRLConsoleView() {
                           disabled={busy || selected.controlStatus === 'LIVE' || selected.controlStatus === 'COMPLETED'}
                           onClick={() => run(() => adminApiClient.post('/iplsrl/matches/start', { matchId: selected.matchId }), 'Match started for users')}
                         >
-                          <PlayIcon style={ICON_SM} />Start
+                          <PlayIcon style={ICON_SM} /> Start
                         </button>
                         {selected.canPause ? (
-                          <button type="button" className="srl-btn srl-btn-orange" disabled={busy} onClick={() => run(() => adminApiClient.post('/iplsrl/matches/pause', { matchId: selected.matchId }), 'Paused')}>
-                            <PauseIcon style={ICON_SM} />Pause
+                          <button type="button" className="srl-btn srl-btn-slate" disabled={busy} onClick={() => run(() => adminApiClient.post('/iplsrl/matches/pause', { matchId: selected.matchId }), 'Paused')}>
+                            <PauseIcon style={ICON_SM} /> Pause
                           </button>
                         ) : (
                           <button type="button" className="srl-btn srl-btn-teal" disabled={busy || !selected.canResume} onClick={() => run(() => adminApiClient.post('/iplsrl/matches/resume', { matchId: selected.matchId }), 'Resumed')}>
-                            <PlayIcon style={ICON_SM} />Resume
+                            <PlayIcon style={ICON_SM} /> Resume
                           </button>
                         )}
                         <select
@@ -993,13 +1003,13 @@ export default function IPLSRLConsoleView() {
                           value={selected.speed}
                           disabled={busy || selected.controlStatus === 'COMPLETED'}
                           onChange={(e) => run(() => adminApiClient.post('/iplsrl/matches/speed', { matchId: selected.matchId, speed: e.target.value }), `Speed ${e.target.value}`)}
-                          style={{ height: 38, maxWidth: 120 }}
+                          style={{ height: 36, maxWidth: 120, borderRadius: 999 }}
                         >
                           {(snap.options?.speeds || []).map((s) => <option key={s} value={s}>{s}</option>)}
                         </select>
                         <button
                           type="button"
-                          className="srl-btn srl-btn-violet"
+                          className="srl-btn srl-btn-slate"
                           disabled={busy}
                           onClick={() => run(() => adminApiClient.post('/iplsrl/matches/reset', { matchId: selected.matchId }), 'Returned to published clock')}
                         >
@@ -1028,8 +1038,7 @@ export default function IPLSRLConsoleView() {
                       <div className="srl-actions" style={{ marginBottom: 8 }}>
                         <button
                           type="button"
-                          className="srl-btn"
-                          style={actionFill(selected.forcedWinnerTeamId === selected.homeTeamId)}
+                          className={`srl-btn srl-btn-script${selected.forcedWinnerTeamId === selected.homeTeamId ? ' is-on' : ''}`}
                           disabled={busy || selected.controlStatus === 'COMPLETED'}
                           onClick={() => run(
                             () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/force-winner`, { teamId: selected.homeTeamId }),
@@ -1040,8 +1049,7 @@ export default function IPLSRLConsoleView() {
                         </button>
                         <button
                           type="button"
-                          className="srl-btn"
-                          style={actionFill(selected.forcedWinnerTeamId === selected.awayTeamId)}
+                          className={`srl-btn srl-btn-script${selected.forcedWinnerTeamId === selected.awayTeamId ? ' is-on' : ''}`}
                           disabled={busy || selected.controlStatus === 'COMPLETED'}
                           onClick={() => run(
                             () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/force-winner`, { teamId: selected.awayTeamId }),
@@ -1464,12 +1472,12 @@ export default function IPLSRLConsoleView() {
                             <div className="srl-h2h-names">
                               <div className="srl-h2h-player">
                                 <span className="srl-hint">Striker</span>
-                                <strong>{tacticalRadar?.h2hMatchup?.striker || selected.score?.liveDetails?.batsman || 'Striker'}</strong>
+                                <strong>{playerLabel(tacticalRadar?.h2hMatchup?.striker || selected.score?.liveDetails?.batsman || selected.score?.liveDetails?.batter1, 'Striker')}</strong>
                               </div>
                               <span className="srl-h2h-vs">VS</span>
                               <div className="srl-h2h-player">
                                 <span className="srl-hint">Bowler</span>
-                                <strong>{tacticalRadar?.h2hMatchup?.bowler || selected.score?.liveDetails?.bowler || 'Bowler'}</strong>
+                                <strong>{playerLabel(tacticalRadar?.h2hMatchup?.bowler || selected.score?.liveDetails?.bowler, 'Bowler')}</strong>
                               </div>
                             </div>
                             <div className="srl-h2h-metrics">
@@ -2612,7 +2620,7 @@ export default function IPLSRLConsoleView() {
                                     <span className={`srl-ball-chip --${String(d.outcome || '').toLowerCase()}`}>
                                       {d.wicket ? 'W' : (d.runs || '0')}
                                     </span>
-                                    <strong>{d.batsman} vs {d.bowler}</strong>
+                                    <strong>{playerLabel(d.batsman, 'Batter')} vs {playerLabel(d.bowler, 'Bowler')}</strong>
                                   </div>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                     {d.score && (
@@ -3294,8 +3302,4 @@ export default function IPLSRLConsoleView() {
       )}
     </div>
   );
-}
-
-function actionFill(on) {
-  return { background: on ? '#16a34a' : '#334155' };
 }

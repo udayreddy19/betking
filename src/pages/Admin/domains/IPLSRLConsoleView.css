@@ -914,10 +914,10 @@ html[data-theme='dark'] .srl-console,
 
 .srl-btn {
   padding: 9px 16px;
-  border-radius: var(--srl-radius-xs);
+  border-radius: 999px;
   border: none;
-  color: var(--srl-on-accent);
-  font-weight: 750;
+  color: var(--srl-text);
+  font-weight: 700;
   font-size: 0.8rem;
   transition: all var(--srl-transition);
   cursor: pointer;
@@ -925,12 +925,13 @@ html[data-theme='dark'] .srl-console,
   align-items: center;
   justify-content: center;
   gap: 6px;
+  min-height: 36px;
 }
 
 .srl-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  filter: brightness(1.08);
-  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.15);
+  filter: none;
+  box-shadow: none;
 }
 
 .srl-btn:active:not(:disabled) {
@@ -939,61 +940,95 @@ html[data-theme='dark'] .srl-console,
 
 .srl-btn-wide { width: 100%; }
 
-.srl-btn-blue {
+/* Primary CTA — turf green */
+.srl-btn-blue,
+.srl-btn-green {
   background: var(--srl-accent);
   color: var(--srl-on-accent);
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--srl-accent) 28%, transparent);
+  box-shadow: none;
 }
 
-.srl-btn-orange {
-  background: var(--srl-warn);
-  color: #0b0e12;
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--srl-warn) 28%, transparent);
+.srl-btn-blue:hover:not(:disabled),
+.srl-btn-green:hover:not(:disabled) {
+  background: var(--srl-accent-strong);
+  filter: none;
 }
 
+/* Soft positive — Resume / open / active secondary */
 .srl-btn-teal {
-  background: var(--srl-done);
-  color: #f4f1ea;
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--srl-done) 28%, transparent);
+  background: var(--srl-accent-dim);
+  color: var(--srl-accent-strong);
+  border: 1px solid color-mix(in srgb, var(--srl-accent) 28%, transparent);
+  box-shadow: none;
 }
 
-.srl-btn-slate {
-  background: var(--srl-surface-alt);
+.srl-btn-teal:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--srl-accent) 22%, transparent);
+  border-color: color-mix(in srgb, var(--srl-accent) 40%, transparent);
+  filter: none;
+}
+
+/* Ghost / secondary surface */
+.srl-btn-slate,
+.srl-btn-violet {
+  background: var(--srl-surface);
   color: var(--srl-text);
   border: 1px solid var(--srl-border);
+  box-shadow: none;
 }
 
-.srl-btn-slate:hover:not(:disabled) {
-  background: var(--srl-surface);
+.srl-btn-slate:hover:not(:disabled),
+.srl-btn-violet:hover:not(:disabled) {
+  background: var(--srl-surface-alt);
   border-color: var(--srl-border-strong);
   color: var(--srl-text);
+  filter: none;
 }
 
+/* Warning — gold signal (close betting / declare) */
+.srl-btn-orange,
 .srl-btn-amber {
-  background: var(--srl-gold);
+  background: color-mix(in srgb, var(--srl-gold) 88%, #fff);
   color: #0b0e12;
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--srl-gold) 28%, transparent);
+  border: 1px solid color-mix(in srgb, var(--srl-gold) 55%, transparent);
+  box-shadow: none;
 }
 
-.srl-btn-green {
-  background: var(--srl-live);
-  color: var(--srl-on-accent);
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--srl-live) 28%, transparent);
+.srl-btn-orange:hover:not(:disabled),
+.srl-btn-amber:hover:not(:disabled) {
+  background: var(--srl-gold);
+  filter: none;
 }
 
-.srl-btn-violet {
-  background: var(--srl-accent-strong);
+/* Scripted winner toggle */
+.srl-btn-script {
+  background: var(--srl-surface);
+  color: var(--srl-text);
+  border: 1px solid var(--srl-border);
+  box-shadow: none;
+}
+
+.srl-btn-script:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--srl-accent) 40%, var(--srl-border));
+  background: var(--srl-accent-dim);
+  color: var(--srl-accent-strong);
+  filter: none;
+}
+
+.srl-btn-script.is-on {
+  background: var(--srl-accent);
+  border-color: var(--srl-accent);
   color: var(--srl-on-accent);
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--srl-accent-strong) 28%, transparent);
 }
 
 /* ── WINNER CONTROL ── */
 
 .srl-winner {
   padding: 16px;
-  border-radius: var(--srl-radius-sm);
-  border: 1px solid var(--srl-warn-border);
-  background: var(--srl-warn-bg);
+  border-radius: var(--srl-radius);
+  border: 1px solid var(--srl-border);
+  background: var(--srl-surface);
+  box-shadow: var(--srl-shadow);
 }
 
 .srl-winner-label {
@@ -1001,7 +1036,7 @@ html[data-theme='dark'] .srl-console,
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--srl-warn-text);
+  color: var(--srl-text-muted);
   margin-bottom: 10px;
 }
 
