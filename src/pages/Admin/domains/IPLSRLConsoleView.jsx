@@ -488,6 +488,11 @@ export default function IPLSRLConsoleView() {
     };
   }, [refresh]);
 
+  const selected = useMemo(
+    () => snap?.matches?.find((m) => m.matchId === selectedMatchId) || null,
+    [snap, selectedMatchId],
+  );
+
   useEffect(() => {
     if (!soundAlertsOn || !selected?.deskAlerts?.length) return;
     const critical = selected.deskAlerts.filter((a) => ['AUTO_PAUSE', 'KILL', 'WHALE', 'LIABILITY', 'INTEGRITY'].includes(a.code));
@@ -576,11 +581,6 @@ export default function IPLSRLConsoleView() {
     }
     return list;
   }, [marketsDesk, marketFilter]);
-
-  const selected = useMemo(
-    () => snap?.matches?.find((m) => m.matchId === selectedMatchId) || null,
-    [snap, selectedMatchId],
-  );
 
   const counts = useMemo(() =>{
     const matches = snap?.matches || [];
