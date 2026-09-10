@@ -102,6 +102,7 @@ const MATCH_ZONES = [
   { id: 'weather', label: 'Atmosphere', Icon: UmbrellaIcon },
   { id: 'broadcast', label: 'Broadcast', Icon: MegaphoneIcon },
   { id: 'markets', label: 'Core Markets', Icon: ChartBarIcon },
+  { id: 'ops_pack', label: 'Ops Pack', Icon: ClipboardIcon },
 ];
 
 const PHASE_LABEL = {
@@ -477,6 +478,20 @@ export default function IPLSRLConsoleView() {
   // Cashout / Circuit Breaker Inputs
   const [cashoutHaircutInput, setCashoutHaircutInput] = useState('10');
   const [cbVelocityInput, setCbVelocityInput] = useState('100000');
+  const [opsChecklist, setOpsChecklist] = useState(null);
+  const [opsHandoff, setOpsHandoff] = useState(null);
+  const [opsHeat, setOpsHeat] = useState(null);
+  const [opsWhales, setOpsWhales] = useState(null);
+  const [opsParity, setOpsParity] = useState(null);
+  const [opsDryRun, setOpsDryRun] = useState(null);
+  const [opsHighlights, setOpsHighlights] = useState(null);
+  const [opsDualPending, setOpsDualPending] = useState([]);
+  const [opsRegression, setOpsRegression] = useState(null);
+  const [fixtureVenueInput, setFixtureVenueInput] = useState('');
+  const [fixtureStartInput, setFixtureStartInput] = useState('');
+  const [unlockReason, setUnlockReason] = useState('');
+  const [homeSquad15Input, setHomeSquad15Input] = useState('');
+  const [awaySquad15Input, setAwaySquad15Input] = useState('');
   const [cbPowerplayInput, setCbPowerplayInput] = useState('50000');
   const [cbMiddleInput, setCbMiddleInput] = useState('35000');
   const [cbDeathInput, setCbDeathInput] = useState('15000');
@@ -849,6 +864,18 @@ export default function IPLSRLConsoleView() {
       adminApiClient.get('/iplsrl/match-templates')
         .then((t) => setMatchTemplates(t?.templates || []))
         .catch(() => {});
+    } else if (matchZone === 'ops_pack') {
+      if (selectedMatchId) {
+        adminApiClient.get(`/iplsrl/matches/${encodeURIComponent(selectedMatchId)}/checklist`).then(setOpsChecklist).catch(() => setOpsChecklist(null));
+        adminApiClient.get(`/iplsrl/matches/${encodeURIComponent(selectedMatchId)}/book-heat`).then(setOpsHeat).catch(() => setOpsHeat(null));
+        adminApiClient.get(`/iplsrl/matches/${encodeURIComponent(selectedMatchId)}/whale-alerts`).then(setOpsWhales).catch(() => setOpsWhales(null));
+        adminApiClient.get(`/iplsrl/matches/${encodeURIComponent(selectedMatchId)}/preview-parity`).then(setOpsParity).catch(() => setOpsParity(null));
+        adminApiClient.get(`/iplsrl/matches/${encodeURIComponent(selectedMatchId)}/highlights`).then(setOpsHighlights).catch(() => setOpsHighlights(null));
+        adminApiClient.get(`/iplsrl/dual-control/pending?matchId=${encodeURIComponent(selectedMatchId)}`)
+          .then((d) => setOpsDualPending(d?.pending || []))
+          .catch(() => setOpsDualPending([]));
+      }
+      adminApiClient.get('/iplsrl/desk/handoff').then(setOpsHandoff).catch(() => setOpsHandoff(null));
     }
   }, [matchZone, selectedMatchId, fetchReplay, fetchWhatIf, fetchWagers, fetchMicroMarkets, fetchTacticalRadar, fetchCashout]);
 
@@ -864,8 +891,12 @@ export default function IPLSRLConsoleView() {
       setAwayXIInput(
         (savedAway.length ? savedAway : (selected.defaultAwayXI || [])).join(', '),
       );
-      setHomeImpactInput(selected.lineup?.homeImpactPlayer || '');
-      setAwayImpactInput(selected.lineup?.awayImpactPlayer || '');
+      setHomeImpactInput(selected.lineup?.homeImpactPlayer || selected.defaultHomeImpact || '');
+      setAwayImpactInput(selected.lineup?.awayImpactPlayer || selected.defaultAwayImpact || '');
+      setHomeSquad15Input((selected.defaultHomeSquad15 || selected.defaultHomeXI || []).join(', '));
+      setAwaySquad15Input((selected.defaultAwaySquad15 || selected.defaultAwayXI || []).join(', '));
+      setFixtureVenueInput(selected.venue || '');
+      setFixtureStartInput(selected.startTime ? new Date(selected.startTime).toISOString().slice(0, 16) : '');
       if (selected.targetMargin) {
         setProfitMaximizerTarget(String(selected.targetMargin));
       }
@@ -3288,6 +3319,28 @@ export default function IPLSRLConsoleView() {
                           Live for users — toss markets settled, scoreboard shows the result.
                         </p>
                       )}
+                      {selected.toss?.locked && (
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10, alignItems: 'center' }}>
+                          <input
+                            className="srl-input"
+                            style={{ flex: 1, minWidth: 180, height: 34 }}
+                            placeholder="Unlock reason (required)"
+                            value={unlockReason}
+                            onChange={(e) => setUnlockReason(e.target.value)}
+                          />
+                          <button
+                            type="button"
+                            className="srl-btn srl-btn-amber"
+                            disabled={busy || !unlockReason.trim()}
+                            onClick={() => run(
+                              () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/toss/unlock`, { reason: unlockReason.trim() }),
+                              'Toss unlocked',
+                            )}
+                          >
+                            Unlock toss
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     {/* Squad & Impact Player Desk */}
@@ -3377,11 +3430,67 @@ export default function IPLSRLConsoleView() {
                           </button>
                         </div>
                       </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 14, marginTop: 14 }}>
+                        <div className="srl-squad-box">
+                          <strong>{selected.homeShort} 15-man squad</strong>
+                          <textarea
+                            className="srl-input srl-squad-textarea"
+                            value={homeSquad15Input}
+                            onChange={(e) => setHomeSquad15Input(e.target.value)}
+                            rows={3}
+                          />
+                          <button
+                            type="button"
+                            className="srl-btn srl-btn-slate"
+                            style={{ marginTop: 8 }}
+                            disabled={busy}
+                            onClick={() => {
+                              const squad15 = homeSquad15Input.split(',').map((p) => p.trim()).filter(Boolean);
+                              run(
+                                () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/squad`, {
+                                  teamId: selected.homeTeamId,
+                                  squad15,
+                                  impactPlayer: homeImpactInput.trim() || squad15[11] || null,
+                                }),
+                                `${selected.homeShort} 15-man squad saved`,
+                              );
+                            }}
+                          >
+                            Save {selected.homeShort} squad (15)
+                          </button>
+                        </div>
+                        <div className="srl-squad-box">
+                          <strong>{selected.awayShort} 15-man squad</strong>
+                          <textarea
+                            className="srl-input srl-squad-textarea"
+                            value={awaySquad15Input}
+                            onChange={(e) => setAwaySquad15Input(e.target.value)}
+                            rows={3}
+                          />
+                          <button
+                            type="button"
+                            className="srl-btn srl-btn-slate"
+                            style={{ marginTop: 8 }}
+                            disabled={busy}
+                            onClick={() => {
+                              const squad15 = awaySquad15Input.split(',').map((p) => p.trim()).filter(Boolean);
+                              run(
+                                () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/squad`, {
+                                  teamId: selected.awayTeamId,
+                                  squad15,
+                                  impactPlayer: awayImpactInput.trim() || squad15[11] || null,
+                                }),
+                                `${selected.awayShort} 15-man squad saved`,
+                              );
+                            }}
+                          >
+                            Save {selected.awayShort} squad (15)
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
-
-                {/* ═══ ZONE: BALL REPLAY & AUDIT ═══ */}
                 {matchZone === 'replay' && (
                   <div className="srl-tab-body" key="replay">
                     <div className="srl-zone">
@@ -3668,6 +3777,28 @@ export default function IPLSRLConsoleView() {
                   <div className="srl-tab-body" key="broadcast">
                     <div className="srl-zone">
                       <div className="srl-zone-label --accent">Broadcast Live Commentary</div>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+                        {[
+                          { preset: 'TOSS_LIVE', label: 'Toss live' },
+                          { preset: 'INNINGS_BREAK', label: 'Innings break' },
+                          { preset: 'POWERPLAY_DONE', label: 'Powerplay done' },
+                          { preset: 'MATCH_STARTING', label: 'Match starting' },
+                        ].map((b) => (
+                          <button
+                            key={b.preset}
+                            type="button"
+                            className="srl-btn srl-btn-teal"
+                            style={{ fontSize: '0.72rem', padding: '6px 10px' }}
+                            disabled={busy}
+                            onClick={() => run(
+                              () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/banner`, { preset: b.preset }),
+                              `${b.label} banner pushed`,
+                            )}
+                          >
+                            Push: {b.label}
+                          </button>
+                        ))}
+                      </div>
                       <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                         <input
                           type="text"
@@ -3713,6 +3844,123 @@ export default function IPLSRLConsoleView() {
                         <p className="srl-commentary" style={{ margin: 0 }}>{selected.commentary}</p>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* ═══ ZONE: MARKETS ═══ */}
+                {matchZone === 'ops_pack' && (
+                  <div className="srl-tab-body" key="ops_pack">
+                    <div className="srl-zone">
+                      <div className="srl-zone-label --accent" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                        <span>Match checklist {opsChecklist ? `· ${opsChecklist.progress?.done}/${opsChecklist.progress?.total}` : ''}</span>
+                        <button type="button" className="srl-btn srl-btn-slate" style={{ fontSize: '0.72rem' }} disabled={!selectedMatchId} onClick={() => adminApiClient.get(`/iplsrl/matches/${selectedMatchId}/checklist`).then(setOpsChecklist)}>Refresh</button>
+                      </div>
+                      <div style={{ display: 'grid', gap: 6, marginTop: 8 }}>
+                        {(opsChecklist?.steps || []).map((s) => (
+                          <div key={s.id} style={{ display: 'flex', gap: 10, alignItems: 'center', fontSize: '0.85rem' }}>
+                            <span className={`srl-pill ${s.ok ? 'srl-pill-live' : 'srl-pill-paused'}`}>{s.ok ? 'OK' : 'TODO'}</span>
+                            <strong>{s.label}</strong>
+                            <span className="srl-hint" style={{ margin: 0 }}>{s.detail}</span>
+                          </div>
+                        ))}
+                        {!opsChecklist && <p className="srl-hint">Select a match to load checklist.</p>}
+                      </div>
+                    </div>
+
+                    <div className="srl-zone" style={{ marginTop: 12 }}>
+                      <div className="srl-zone-label --warn">Fixture editor</div>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+                        <input className="srl-input" style={{ height: 34, minWidth: 200 }} type="datetime-local" value={fixtureStartInput} onChange={(e) => setFixtureStartInput(e.target.value)} />
+                        <input className="srl-input" style={{ height: 34, flex: 1, minWidth: 160 }} placeholder="Venue" value={fixtureVenueInput} onChange={(e) => setFixtureVenueInput(e.target.value)} />
+                        <button type="button" className="srl-btn srl-btn-blue" disabled={busy || !selectedMatchId} onClick={() => run(() => adminApiClient.post(`/iplsrl/matches/${selectedMatchId}/fixture`, { startTime: fixtureStartInput ? Date.parse(fixtureStartInput) : undefined, venue: fixtureVenueInput }), 'Fixture updated')}>Save fixture</button>
+                      </div>
+                    </div>
+
+                    <div className="srl-zone" style={{ marginTop: 12 }}>
+                      <div className="srl-zone-label --live">Shift handoff</div>
+                      <p className="srl-hint">Coverage: {opsHandoff?.coverage?.onlineCount ?? '—'} online · senior {opsHandoff?.coverage?.seniorOnline ? 'yes' : 'no'} · desk {opsHandoff?.coverage?.deskOffline ? 'OFFLINE' : 'ok'}</p>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
+                        <div>
+                          <strong>Live</strong>
+                          <ul style={{ margin: '6px 0', paddingLeft: 18, fontSize: '0.8rem' }}>
+                            {(opsHandoff?.live || []).map((m) => <li key={m.matchId}>{m.fixture}{m.deferredToss ? ' · deferred toss' : ''}{m.kill ? ' · KILL' : ''}</li>)}
+                            {!opsHandoff?.live?.length && <li className="srl-hint">None</li>}
+                          </ul>
+                        </div>
+                        <div>
+                          <strong>Next up</strong>
+                          <ul style={{ margin: '6px 0', paddingLeft: 18, fontSize: '0.8rem' }}>
+                            {(opsHandoff?.upcoming || []).slice(0, 5).map((m) => <li key={m.matchId}>{m.fixture} · {m.scheduleLabel}</li>)}
+                          </ul>
+                        </div>
+                        <div>
+                          <strong>Deferred toss</strong>
+                          <ul style={{ margin: '6px 0', paddingLeft: 18, fontSize: '0.8rem' }}>
+                            {(opsHandoff?.deferredToss || []).map((m) => <li key={m.matchId}>{m.fixture}</li>)}
+                            {!opsHandoff?.deferredToss?.length && <li className="srl-hint">None</li>}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="srl-zone" style={{ marginTop: 12 }}>
+                      <div className="srl-zone-label --warn">Book heat · whales · dual-control</div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8, marginTop: 8 }}>
+                        {Object.entries(opsHeat?.families || {}).map(([k, v]) => (
+                          <div key={k} className="srl-squad-box" style={{ padding: 10 }}>
+                            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase' }}>{k}</div>
+                            <strong>{formatInr(v.stake)}</strong>
+                            <div className="srl-hint" style={{ margin: 0 }}>{v.bets} bets · liab {formatInr(v.liability)}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ marginTop: 10 }}>
+                        <strong>Whale / correlated</strong>
+                        <ul style={{ margin: '6px 0', paddingLeft: 18, fontSize: '0.8rem' }}>
+                          {(opsWhales?.alerts || []).slice(0, 8).map((a) => (
+                            <li key={a.userId}>{a.userEmail || a.userId} · {a.bets} bets · {formatInr(a.stakes)} · {a.marketCount} markets</li>
+                          ))}
+                          {!opsWhales?.alerts?.length && <li className="srl-hint">No whale/correlation alerts</li>}
+                        </ul>
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+                        <button type="button" className="srl-btn srl-btn-amber" disabled={busy || !selectedMatchId} onClick={() => run(() => adminApiClient.post('/iplsrl/dual-control/request', { action: 'kill_switch', matchId: selectedMatchId, note: 'Desk kill request' }), 'Kill switch awaiting 2nd admin')}>Request kill (dual)</button>
+                        <button type="button" className="srl-btn srl-btn-amber" disabled={busy || !selectedMatchId} onClick={() => run(() => adminApiClient.post('/iplsrl/dual-control/request', { action: 'force_winner', matchId: selectedMatchId, payload: { teamId: selected?.homeTeamId }, note: 'Force winner request' }), 'Force winner awaiting 2nd admin')}>Request force winner (dual)</button>
+                        {(opsDualPending || []).map((p) => (
+                          <button key={p.id} type="button" className="srl-btn srl-btn-teal" disabled={busy} onClick={() => run(() => adminApiClient.post(`/iplsrl/dual-control/${p.id}/approve`, { note: 'approved' }), `Approved ${p.action}`)}>Approve {p.action} ({p.requester})</button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="srl-zone" style={{ marginTop: 12 }}>
+                      <div className="srl-zone-label --accent">Player props · preview parity · dry-run · regression</div>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+                        <button type="button" className="srl-btn srl-btn-blue" disabled={busy || !selectedMatchId} onClick={() => run(() => adminApiClient.post(`/iplsrl/matches/${selectedMatchId}/player-props`, { propType: 'top_batter' }), 'Top batter props opened')}>Open top-batter props</button>
+                        <button type="button" className="srl-btn srl-btn-blue" disabled={busy || !selectedMatchId} onClick={() => run(() => adminApiClient.post(`/iplsrl/matches/${selectedMatchId}/player-props`, { propType: 'sixes' }), 'Sixes props opened')}>Open sixes props</button>
+                        <button type="button" className="srl-btn srl-btn-violet" disabled={busy || !selectedMatchId} onClick={() => adminApiClient.post(`/iplsrl/matches/${selectedMatchId}/settlement-dry-run`, { teamId: selected?.homeTeamId || selected?.naturalWinnerId }).then(setOpsDryRun)}>Settlement dry-run</button>
+                        <button type="button" className="srl-btn srl-btn-teal" disabled={busy} onClick={() => run(async () => { const r = await adminApiClient.post('/iplsrl/regression-pack', {}); setOpsRegression(r); return r; }, 'Regression pack finished')}>Run regression pack</button>
+                      </div>
+                      {opsParity && (
+                        <p className="srl-hint" style={{ marginTop: 8 }}>
+                          Preview parity — toss hidden from users: {opsParity.diffs?.tossHidden ? 'yes' : 'no'} · reveal {opsParity.publicRevealAt ? formatSrlIstClock(opsParity.publicRevealAt) : '—'} IST
+                        </p>
+                      )}
+                      {opsDryRun && (
+                        <p className="srl-hint">Dry-run: {opsDryRun.winnersCount} win / {opsDryRun.losersCount} lose · payout {formatInr(opsDryRun.projectedPayout)} · {opsDryRun.note}</p>
+                      )}
+                      {opsRegression && (
+                        <ul style={{ margin: '6px 0', paddingLeft: 18, fontSize: '0.8rem' }}>
+                          {(opsRegression.results || []).map((r) => <li key={r.id}>{r.ok ? '✓' : '✗'} {r.id}: {r.detail}</li>)}
+                        </ul>
+                      )}
+                      {opsHighlights?.whatsappText && (
+                        <div style={{ marginTop: 10 }}>
+                          <strong>Highlights (WhatsApp)</strong>
+                          <textarea className="srl-input srl-squad-textarea" readOnly rows={6} value={opsHighlights.whatsappText} style={{ marginTop: 6 }} />
+                          <button type="button" className="srl-btn srl-btn-slate" style={{ marginTop: 6 }} onClick={() => { navigator.clipboard?.writeText(opsHighlights.whatsappText); showToast('Highlights copied', 'success'); }}>Copy highlights</button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 

@@ -1526,6 +1526,17 @@ export const ADMIN_COMPOSE_TEMPLATES = [
     mailboxId: 'promos',
   },
   {
+    id: 'srl-launch',
+    name: 'OddsYra SRL starts today',
+    group: 'core',
+    heading: 'OddsYra SRL starts today',
+    subject: 'OddsYra SRL starts today — live simulated IPL action',
+    body: 'OddsYra SRL is live from today.\n\nBet on our in-house simulated IPL league — toss, live overs, and full match markets — right inside Sports and the OddsYra SRL board.\n\nOpen Sports, find OddsYra SRL fixtures, and place your first bets.\n\nPlay responsibly. 18+ only.',
+    ctaLabel: 'Open OddsYra SRL',
+    ctaPath: '/srl',
+    mailboxId: 'promos',
+  },
+  {
     id: 'kyc-nudge',
     name: 'KYC reminder',
     group: 'core',

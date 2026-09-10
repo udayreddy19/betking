@@ -283,6 +283,72 @@ router.post('/communications/broadcast', async (req, res) => {
   }
 });
 
+/** OddsYra SRL launch — email + in-app to all users (batched / resumable). */
+router.post('/communications/srl-launch', async (req, res) => {
+  const role = String(req.admin?.role || '').toUpperCase();
+  if (role && role !== 'SUPER_ADMIN' && role !== 'MARKETING_ADMIN') {
+    return res.status(403).json({ error: 'SRL launch broadcast requires SUPER_ADMIN or MARKETING_ADMIN' });
+  }
+  try {
+    const {
+      startSrlLaunchBroadcast,
+      runSrlLaunchBroadcast,
+      getSrlLaunchBroadcastJob,
+      resumeSrlLaunchBroadcast,
+    } = await import('../../../lib/srlLaunchBroadcast.mjs');
+    const action = String(req.body?.action || 'start').toLowerCase();
+    if (action === 'status') {
+      return res.json({ success: true, job: await getSrlLaunchBroadcastJob() });
+    }
+    if (action === 'resume') {
+      const started = await resumeSrlLaunchBroadcast(req.admin?.id || 'admin');
+      const ran = await runSrlLaunchBroadcast({
+        maxBatches: Math.min(Number(req.body?.maxBatches) || 10, 50),
+        batchSize: Math.min(Number(req.body?.batchSize) || 40, 100),
+        includeEmail: req.body?.includeEmail !== false,
+        includeInApp: req.body?.includeInApp !== false,
+      });
+      await logAdminAction({
+        actorId: req.admin?.id || 'admin',
+        targetId: 'srl_launch',
+        action: 'SRL_LAUNCH_BROADCAST_RESUME',
+        details: ran.job?.totals,
+      });
+      return res.json({ success: true, ...started, ...ran });
+    }
+    const started = await startSrlLaunchBroadcast({
+      dryRun: !!req.body?.dryRun,
+      reset: req.body?.reset !== false,
+      admin: req.admin?.id || 'admin',
+    });
+    const ran = await runSrlLaunchBroadcast({
+      maxBatches: Math.min(Number(req.body?.maxBatches) || 10, 50),
+      batchSize: Math.min(Number(req.body?.batchSize) || 40, 100),
+      includeEmail: req.body?.includeEmail !== false,
+      includeInApp: req.body?.includeInApp !== false,
+    });
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: 'srl_launch',
+      action: 'SRL_LAUNCH_BROADCAST',
+      details: { dryRun: !!req.body?.dryRun, totals: ran.job?.totals, status: ran.job?.status },
+      riskLevel: 'HIGH',
+    });
+    res.json({ success: true, ...started, ...ran });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.get('/communications/srl-launch', async (req, res) => {
+  try {
+    const { getSrlLaunchBroadcastJob } = await import('../../../lib/srlLaunchBroadcast.mjs');
+    res.json({ success: true, job: await getSrlLaunchBroadcastJob() });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 router.get('/ops/observability', async (req, res) => {
   try {
     const { query } = await import('../../../db/pg.js');

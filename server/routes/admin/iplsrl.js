@@ -873,5 +873,187 @@ router.get('/matches/:matchId/tactical-radar', iplsrlRoles, async (req, res) => 
   }
 });
 
+/* ─── Admin extras pack (checklist, dual-control, heat, banners, …) ─── */
+
+router.get('/matches/:matchId/checklist', iplsrlRoles, async (req, res) => {
+  try {
+    const { getSrlMatchChecklist } = await import('../../../lib/iplSrlAdminExtras.mjs');
+    res.json(getSrlMatchChecklist(req.params.matchId));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/toss/unlock', iplsrlRoles, async (req, res) => {
+  try {
+    const { unlockSrlToss } = await import('../../../lib/iplSrlAdminExtras.mjs');
+    const result = unlockSrlToss(req.params.matchId, {
+      reason: req.body?.reason || req.body?.note,
+      admin: req.admin?.id || 'admin',
+      role: req.admin?.role || 'SUPER_ADMIN',
+    });
+    await jsonSnap(res, { ...result, snapshot: (await import('../../../lib/iplSrlAdminControl.mjs')).getIPLSRLControlSnapshot() });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.get('/desk/handoff', iplsrlRoles, async (req, res) => {
+  try {
+    const { getSrlShiftHandoffPack } = await import('../../../lib/iplSrlAdminExtras.mjs');
+    res.json(await getSrlShiftHandoffPack());
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/dual-control/request', iplsrlRoles, async (req, res) => {
+  try {
+    const { requestSrlDualControl } = await import('../../../lib/iplSrlAdminExtras.mjs');
+    res.json(requestSrlDualControl(req.body?.action, {
+      matchId: req.body?.matchId,
+      payload: req.body?.payload || {},
+      note: req.body?.note,
+      admin: req.admin?.id || 'admin',
+      role: req.admin?.role || 'SUPER_ADMIN',
+    }));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.get('/dual-control/pending', iplsrlRoles, async (req, res) => {
+  try {
+    const { listSrlDualControlPending } = await import('../../../lib/iplSrlAdminExtras.mjs');
+    res.json({ pending: listSrlDualControlPending({ matchId: req.query.matchId }) });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/dual-control/:pendingId/approve', iplsrlRoles, async (req, res) => {
+  try {
+    const { approveSrlDualControl } = await import('../../../lib/iplSrlAdminExtras.mjs');
+    res.json(await approveSrlDualControl(req.params.pendingId, {
+      admin: req.admin?.id || 'admin',
+      role: req.admin?.role || 'SUPER_ADMIN',
+      note: req.body?.note,
+    }));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.get('/matches/:matchId/book-heat', iplsrlRoles, async (req, res) => {
+  try {
+    const { getSrlBookHeatMap } = await import('../../../lib/iplSrlAdminExtras.mjs');
+    res.json(await getSrlBookHeatMap(req.params.matchId));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.get('/matches/:matchId/whale-alerts', iplsrlRoles, async (req, res) => {
+  try {
+    const { getSrlWhaleCorrelationAlerts } = await import('../../../lib/iplSrlAdminExtras.mjs');
+    res.json(await getSrlWhaleCorrelationAlerts(req.params.matchId));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/player-props', iplsrlRoles, async (req, res) => {
+  try {
+    const { openSrlPlayerPropMarkets } = await import('../../../lib/iplSrlAdminExtras.mjs');
+    res.json(await openSrlPlayerPropMarkets(req.params.matchId, {
+      players: req.body?.players,
+      propType: req.body?.propType || 'top_batter',
+      admin: req.admin?.id || 'admin',
+    }));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/banner', iplsrlRoles, async (req, res) => {
+  try {
+    const { pushSrlMatchBanner } = await import('../../../lib/iplSrlAdminExtras.mjs');
+    res.json(pushSrlMatchBanner(req.params.matchId, {
+      preset: req.body?.preset || 'TOSS_LIVE',
+      text: req.body?.text,
+      admin: req.admin?.id || 'admin',
+    }));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.get('/matches/:matchId/preview-parity', iplsrlRoles, async (req, res) => {
+  try {
+    const { getSrlPublicPreviewParity } = await import('../../../lib/iplSrlAdminExtras.mjs');
+    res.json(await getSrlPublicPreviewParity(req.params.matchId));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/squad', iplsrlRoles, async (req, res) => {
+  try {
+    const { updateSrlMatchSquad } = await import('../../../lib/iplSrlAdminExtras.mjs');
+    const result = updateSrlMatchSquad(req.params.matchId, {
+      teamId: req.body?.teamId,
+      squad15: req.body?.squad15,
+      impactPlayer: req.body?.impactPlayer,
+      admin: req.admin?.id || 'admin',
+    });
+    await jsonSnap(res, { ...result, snapshot: (await import('../../../lib/iplSrlAdminControl.mjs')).getIPLSRLControlSnapshot() });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/fixture', iplsrlRoles, async (req, res) => {
+  try {
+    const { updateSrlFixture } = await import('../../../lib/iplSrlAdminExtras.mjs');
+    const result = updateSrlFixture(req.params.matchId, {
+      startTime: req.body?.startTime,
+      venue: req.body?.venue,
+    }, req.admin?.id || 'admin');
+    await jsonSnap(res, { ...result, snapshot: (await import('../../../lib/iplSrlAdminControl.mjs')).getIPLSRLControlSnapshot() });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.get('/matches/:matchId/highlights', iplsrlRoles, async (req, res) => {
+  try {
+    const { getSrlHighlightsReel } = await import('../../../lib/iplSrlAdminExtras.mjs');
+    res.json(getSrlHighlightsReel(req.params.matchId, { lastOvers: req.query.lastOvers }));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/settlement-dry-run', iplsrlRoles, async (req, res) => {
+  try {
+    const { dryRunSrlSettlement } = await import('../../../lib/iplSrlAdminExtras.mjs');
+    res.json(await dryRunSrlSettlement(req.params.matchId, {
+      winningTeamId: req.body?.winningTeamId || req.body?.teamId,
+      phase: req.body?.phase || 'match_winner',
+    }));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/regression-pack', iplsrlRoles, async (req, res) => {
+  try {
+    const { runSrlRegressionPack } = await import('../../../lib/iplSrlAdminExtras.mjs');
+    res.json(await runSrlRegressionPack(req.admin?.id || 'admin'));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 export default router;
 
