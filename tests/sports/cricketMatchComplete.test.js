@@ -111,6 +111,61 @@ describe('completed cricket matches leave live', () => {
     expect(getMatchState(match)).toBe('in');
   });
 
+  it('keeps County Championship stumps in-play (not completed)', () => {
+    const match = {
+      id: 'notts_hams',
+      sport: 'cricket',
+      league: 'County Championship',
+      matchFormat: 'FIRST_CLASS',
+      isLive: true,
+      matchState: 'in',
+      time: '2nd Day - Stumps',
+      team1: { name: 'Nottinghamshire', shortName: 'NOT', runs: 377, wickets: 10 },
+      team2: { name: 'Hampshire', shortName: 'HAM', runs: 267, wickets: 7 },
+      liveDetails: {
+        inningsId: 2,
+        firstRuns: 377,
+        firstWickets: 10,
+        firstOvers: '104.2',
+        firstTeamName: 'Nottinghamshire',
+        chaseRuns: 267,
+        chaseWickets: 7,
+        chaseOvers: '100.0',
+        chaseTeamName: 'Hampshire',
+        commentary: 'Hampshire need 111 runs to win',
+        period: '2nd Day - Stumps',
+      },
+    };
+    expect(isCricketMatchCompleted(match)).toBe(false);
+    expect(getMatchState(match)).toBe('in');
+    expect(getServerMatchState(match)).toBe('in');
+    expect(isDisplayableLiveMatch(match)).toBe(true);
+    const normalized = normalizeMatchLiveFlags(match);
+    expect(normalized.isLive).toBe(true);
+    expect(normalized.matchState).toBe('in');
+  });
+
+  it('does not treat provider stumps flag as post when result text is absent', () => {
+    const match = {
+      sport: 'cricket',
+      league: 'County Championship',
+      isLive: false,
+      matchState: 'post',
+      time: 'Stumps',
+      liveStatus: '2nd Day - Stumps',
+      team1: { name: 'Nottinghamshire', runs: 377, wickets: 10 },
+      team2: { name: 'Hampshire', runs: 267, wickets: 7 },
+      liveDetails: {
+        firstRuns: 377,
+        chaseRuns: 267,
+        chaseWickets: 7,
+        commentary: 'Stumps',
+      },
+    };
+    expect(getServerMatchState(match)).toBe('in');
+    expect(normalizeMatchLiveFlags(match).matchState).toBe('in');
+  });
+
   it('maps first-innings score onto team1 during a completed chase', () => {
     const scores = resolveCricketTeamScores(iomSpain({
       liveDetails: {
