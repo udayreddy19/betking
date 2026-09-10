@@ -64,7 +64,7 @@ describe('OddsYra SRL automated clock', () => {
   it('exposes auto-live matches on the admin desk', async () => {
     const snap = getIPLSRLControlSnapshot();
     expect(snap.matches.length).toBeGreaterThan(0);
-    const desk = snap.matches[0];
+    const desk = snap.matches.find((m) => m.controlStatus !== 'COMPLETED') || snap.matches[0];
     expect(['READY', 'LIVE', 'PAUSED', 'COMPLETED', 'ARMED']).toContain(desk.controlStatus);
 
     if (desk.controlStatus === 'READY' || desk.controlStatus === 'ARMED') {
@@ -79,6 +79,8 @@ describe('OddsYra SRL automated clock', () => {
       });
       const done = declared.matches.find((m) => m.matchId === desk.matchId);
       expect(done.controlStatus).toBe('COMPLETED');
+    } else if (desk.controlStatus === 'COMPLETED') {
+      expect(desk.canDeclare).toBe(false);
     } else {
       expect(desk.canPause || desk.canDeclare).toBe(true);
     }
