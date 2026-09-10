@@ -1,51 +1,54 @@
 /* ==========================================================================
-   OddsYra SRL Match Control — Cockpit Redesign
-   Apple-grade high-contrast mission control with adaptive Light/Dark themes
+   OddsYra SRL Match Control — Night Pitch / Match Day tokens
+   Cream floor + turf green accent, adaptive Light/Dark via admin shell
    ========================================================================== */
 
 .srl-console {
-  /* ── Core Theme Variables (adaptive with light defaults) ── */
-  --srl-accent: var(--admin-primary, #6366f1);
-  --srl-accent-strong: var(--admin-primary-hover, #4f46e5);
-  --srl-accent-dim: var(--admin-primary-soft, rgba(99, 102, 241, 0.12));
+  /* ── Core Theme Variables (OddsYra product palette) ── */
+  --srl-accent: var(--admin-primary, #1f8a4c);
+  --srl-accent-strong: var(--admin-primary-hover, #166b3a);
+  --srl-accent-dim: var(--admin-primary-soft, color-mix(in srgb, #1f8a4c 16%, transparent));
+  --srl-on-accent: var(--admin-on-primary, #0b0e12);
 
-  --srl-surface: var(--admin-card-bg, #ffffff);
-  --srl-surface-elevated: var(--admin-surface, #ffffff);
-  --srl-surface-alt: var(--admin-input-bg, #f8fafc);
-  --srl-border: var(--admin-border, #e2e8f0);
-  --srl-border-strong: var(--admin-border-bright, #cbd5e1);
-  --srl-border-focus: var(--admin-primary, #6366f1);
+  --srl-surface: var(--admin-card-bg, #fbf8f2);
+  --srl-surface-elevated: var(--admin-surface, #fbf8f2);
+  --srl-surface-alt: var(--admin-input-bg, #f6f2ea);
+  --srl-border: var(--admin-border, #ddd4c4);
+  --srl-border-strong: var(--admin-border-bright, #ebe4d6);
+  --srl-border-focus: var(--admin-primary, #1f8a4c);
 
-  --srl-text: var(--admin-text, #0f172a);
-  --srl-text-muted: var(--admin-text-muted, #64748b);
-  --srl-text-dim: var(--admin-text-dim, #94a3b8);
+  --srl-text: var(--admin-text, #14181f);
+  --srl-text-muted: var(--admin-text-muted, #5c6570);
+  --srl-text-dim: var(--admin-text-dim, #8a928c);
 
-  --srl-live: #10b981;
-  --srl-live-bg: #ecfdf5;
-  --srl-live-border: #a7f3d0;
-  --srl-live-text: #065f46;
+  --srl-live: var(--color-success, #1f8a4c);
+  --srl-live-bg: var(--color-status-success-bg, #ecfdf5);
+  --srl-live-border: var(--color-status-success-border, #a7f3d0);
+  --srl-live-text: var(--color-status-success-text, #047857);
 
-  --srl-warn: #d97706;
-  --srl-warn-bg: #fffbeb;
-  --srl-warn-border: #fde68a;
-  --srl-warn-text: #92400e;
+  --srl-warn: var(--color-warning, #e8a317);
+  --srl-warn-bg: var(--color-status-warning-bg, #fffbeb);
+  --srl-warn-border: var(--color-status-warning-border, #fde68a);
+  --srl-warn-text: var(--color-status-warning-text, #b45309);
 
-  --srl-done: #2563eb;
-  --srl-done-bg: #eff6ff;
-  --srl-done-border: #bfdbfe;
-  --srl-done-text: #1e40af;
+  --srl-done: var(--color-info, #2a8f9a);
+  --srl-done-bg: color-mix(in srgb, var(--color-info, #2a8f9a) 12%, transparent);
+  --srl-done-border: color-mix(in srgb, var(--color-info, #2a8f9a) 28%, transparent);
+  --srl-done-text: var(--color-info, #2a8f9a);
 
-  --srl-danger: #ef4444;
-  --srl-danger-bg: #fef2f2;
-  --srl-danger-border: #fecaca;
-  --srl-danger-text: #991b1b;
+  --srl-danger: var(--color-danger, #e24b3c);
+  --srl-danger-bg: var(--color-status-error-bg, #fef2f2);
+  --srl-danger-border: var(--color-status-error-border, #fecaca);
+  --srl-danger-text: var(--color-status-error-text, #b91c1c);
+
+  --srl-gold: var(--color-accent-gold, #e8a317);
 
   --srl-radius: 14px;
   --srl-radius-sm: 10px;
   --srl-radius-xs: 8px;
   --srl-transition: 0.18s cubic-bezier(0.32, 0.72, 0, 1);
-  --srl-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px -2px rgba(0, 0, 0, 0.03);
-  --srl-shadow-elevated: 0 4px 20px -4px rgba(0, 0, 0, 0.06);
+  --srl-shadow: 0 1px 3px rgba(20, 24, 31, 0.04), 0 4px 12px -2px rgba(20, 24, 31, 0.04);
+  --srl-shadow-elevated: 0 4px 20px -4px rgba(20, 24, 31, 0.08);
 
   display: grid;
   gap: 20px;
@@ -61,35 +64,38 @@ html[data-theme='dark'] .srl-console,
 [data-admin-theme='navy'] .srl-console,
 [data-admin-theme='graphite'] .srl-console,
 [data-admin-theme='aurora'] .srl-console,
-[data-admin-theme='ink'] .srl-console {
-  --srl-surface: var(--admin-card-bg, #161b22);
-  --srl-surface-elevated: var(--admin-surface, #1e2430);
-  --srl-surface-alt: var(--admin-input-bg, #0d1117);
-  --srl-border: var(--admin-border, rgba(255, 255, 255, 0.08));
-  --srl-border-strong: var(--admin-border-bright, rgba(255, 255, 255, 0.16));
+[data-admin-theme='ink'] .srl-console,
+[data-admin-theme='signal'] .srl-console {
+  --srl-surface: var(--admin-card-bg, #151b22);
+  --srl-surface-elevated: var(--admin-surface, #151b22);
+  --srl-surface-alt: var(--admin-input-bg, #11161c);
+  --srl-border: var(--admin-border, #2a333c);
+  --srl-border-strong: var(--admin-border-bright, #2a333c);
+  --srl-on-accent: var(--admin-on-primary, #0b0e12);
 
-  --srl-text: var(--admin-text, #f8fafc);
-  --srl-text-muted: var(--admin-text-muted, #94a3b8);
-  --srl-text-dim: var(--admin-text-dim, #64748b);
+  --srl-text: var(--admin-text, #f4f1ea);
+  --srl-text-muted: var(--admin-text-muted, #a8b0a6);
+  --srl-text-dim: var(--admin-text-dim, #6f7872);
 
-  --srl-live-bg: rgba(16, 185, 129, 0.15);
-  --srl-live-border: rgba(16, 185, 129, 0.35);
-  --srl-live-text: #34d399;
+  --srl-live: var(--color-primary, #4ade80);
+  --srl-live-bg: var(--color-status-success-bg, #052e16);
+  --srl-live-border: var(--color-status-success-border, #065f46);
+  --srl-live-text: var(--color-status-success-text, #6ee7b7);
 
-  --srl-warn-bg: rgba(245, 158, 11, 0.15);
-  --srl-warn-border: rgba(245, 158, 11, 0.35);
-  --srl-warn-text: #fbbf24;
+  --srl-warn-bg: var(--color-status-warning-bg, #422006);
+  --srl-warn-border: var(--color-status-warning-border, #78350f);
+  --srl-warn-text: var(--color-status-warning-text, #fcd34d);
 
-  --srl-done-bg: rgba(59, 130, 246, 0.15);
-  --srl-done-border: rgba(59, 130, 246, 0.35);
-  --srl-done-text: #60a5fa;
+  --srl-done-bg: color-mix(in srgb, var(--color-info, #2a8f9a) 18%, transparent);
+  --srl-done-border: color-mix(in srgb, var(--color-info, #2a8f9a) 35%, transparent);
+  --srl-done-text: #5eead4;
 
-  --srl-danger-bg: rgba(239, 68, 68, 0.15);
-  --srl-danger-border: rgba(239, 68, 68, 0.35);
-  --srl-danger-text: #f87171;
+  --srl-danger-bg: var(--color-status-error-bg, #450a0a);
+  --srl-danger-border: var(--color-status-error-border, #7f1d1d);
+  --srl-danger-text: var(--color-status-error-text, #fca5a5);
 
-  --srl-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.3);
-  --srl-shadow-elevated: 0 8px 32px -4px rgba(0, 0, 0, 0.45);
+  --srl-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.35);
+  --srl-shadow-elevated: 0 8px 32px -4px rgba(0, 0, 0, 0.5);
 }
 
 /* ── HERO ── */
@@ -100,6 +106,14 @@ html[data-theme='dark'] .srl-console,
   gap: 20px;
   align-items: flex-end;
   flex-wrap: wrap;
+  padding: 20px 22px;
+  border-radius: var(--srl-radius);
+  background:
+    radial-gradient(720px 180px at 0% 0%, color-mix(in srgb, var(--srl-accent) 14%, transparent), transparent 60%),
+    radial-gradient(520px 160px at 100% 0%, color-mix(in srgb, var(--srl-gold) 12%, transparent), transparent 55%),
+    var(--srl-surface);
+  border: 1px solid var(--srl-border);
+  box-shadow: var(--srl-shadow);
 }
 
 .srl-console-kicker {
@@ -204,6 +218,15 @@ html[data-theme='dark'] .srl-console,
   font-size: 0.8rem;
   transition: all var(--srl-transition);
   box-shadow: var(--srl-shadow);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.srl-tab svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
 .srl-tab:hover {
@@ -221,8 +244,8 @@ html[data-theme='dark'] .srl-console,
 .srl-tab.is-on {
   border-color: var(--srl-accent);
   background: var(--srl-accent);
-  color: #ffffff !important;
-  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.3);
+  color: var(--srl-on-accent) !important;
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--srl-accent) 28%, transparent);
 }
 
 /* ── PANELS ── */
@@ -368,7 +391,7 @@ html[data-theme='dark'] .srl-console,
 .srl-filter.is-on {
   border-color: var(--srl-accent);
   background: var(--srl-accent);
-  color: #ffffff !important;
+  color: var(--srl-on-accent) !important;
 }
 
 .srl-fixture {
@@ -393,11 +416,11 @@ html[data-theme='dark'] .srl-console,
 .srl-fixture.is-on {
   border-color: var(--srl-accent);
   background: var(--srl-surface);
-  box-shadow: 0 0 0 1.5px var(--srl-accent), 0 4px 16px -2px rgba(99, 102, 241, 0.15);
+  box-shadow: 0 0 0 1.5px var(--srl-accent), 0 4px 16px -2px color-mix(in srgb, var(--srl-accent) 18%, transparent);
 }
 
 .srl-fixture.is-playoff {
-  border-left: 3px solid #f97316;
+  border-left: 3px solid var(--srl-gold);
 }
 
 .srl-fixture.is-closed {
@@ -442,7 +465,7 @@ html[data-theme='dark'] .srl-console,
 .srl-progress-mini > i {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, #6366f1, var(--srl-accent));
+  background: linear-gradient(90deg, var(--srl-accent-strong), var(--srl-accent));
   border-radius: inherit;
   transition: width 0.5s ease;
 }
@@ -500,7 +523,7 @@ html[data-theme='dark'] .srl-console,
   background: var(--srl-live);
   display: inline-block;
   animation: srl-pulse 1.5s ease-in-out infinite;
-  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--srl-live) 55%, transparent);
 }
 
 /* ── SCOREBOARD HERO (always visible at top of cockpit) ── */
@@ -669,7 +692,7 @@ html[data-theme='dark'] .srl-console,
   appearance: none;
   font: inherit;
   cursor: pointer;
-  padding: 8px 14px;
+  padding: 8px 12px;
   border-radius: var(--srl-radius-xs);
   border: 1px solid transparent;
   background: transparent;
@@ -678,18 +701,33 @@ html[data-theme='dark'] .srl-console,
   font-size: 0.78rem;
   white-space: nowrap;
   transition: all var(--srl-transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.srl-match-tab svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  opacity: 0.85;
 }
 
 .srl-match-tab:hover {
   color: var(--srl-text);
-  background: rgba(0, 0, 0, 0.04);
+  background: color-mix(in srgb, var(--srl-accent) 8%, transparent);
 }
 
 .srl-match-tab.is-on {
   background: var(--srl-surface);
-  border-color: var(--srl-border);
-  color: var(--srl-text);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  border-color: var(--srl-accent);
+  color: var(--srl-accent);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--srl-accent) 12%, transparent);
+}
+
+.srl-match-tab.is-on svg {
+  opacity: 1;
+  color: var(--srl-accent);
 }
 
 .srl-match-tab:active {
@@ -862,7 +900,7 @@ html[data-theme='dark'] .srl-console,
 .srl-chip.is-on {
   background: var(--srl-accent);
   border-color: var(--srl-accent);
-  color: #ffffff !important;
+  color: var(--srl-on-accent) !important;
 }
 
 /* ── ACTION BUTTONS ── */
@@ -878,7 +916,7 @@ html[data-theme='dark'] .srl-console,
   padding: 9px 16px;
   border-radius: var(--srl-radius-xs);
   border: none;
-  color: #ffffff;
+  color: var(--srl-on-accent);
   font-weight: 750;
   font-size: 0.8rem;
   transition: all var(--srl-transition);
@@ -902,18 +940,21 @@ html[data-theme='dark'] .srl-console,
 .srl-btn-wide { width: 100%; }
 
 .srl-btn-blue {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+  background: var(--srl-accent);
+  color: var(--srl-on-accent);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--srl-accent) 28%, transparent);
 }
 
 .srl-btn-orange {
-  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
-  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.25);
+  background: var(--srl-warn);
+  color: #0b0e12;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--srl-warn) 28%, transparent);
 }
 
 .srl-btn-teal {
-  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
-  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.25);
+  background: var(--srl-done);
+  color: #f4f1ea;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--srl-done) 28%, transparent);
 }
 
 .srl-btn-slate {
@@ -929,18 +970,21 @@ html[data-theme='dark'] .srl-console,
 }
 
 .srl-btn-amber {
-  background: linear-gradient(135deg, #b45309 0%, #92400e 100%);
-  box-shadow: 0 2px 8px rgba(180, 83, 9, 0.25);
+  background: var(--srl-gold);
+  color: #0b0e12;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--srl-gold) 28%, transparent);
 }
 
 .srl-btn-green {
-  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
-  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.25);
+  background: var(--srl-live);
+  color: var(--srl-on-accent);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--srl-live) 28%, transparent);
 }
 
 .srl-btn-violet {
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
+  background: var(--srl-accent-strong);
+  color: var(--srl-on-accent);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--srl-accent-strong) 28%, transparent);
 }
 
 /* ── WINNER CONTROL ── */
@@ -1036,8 +1080,18 @@ html[data-theme='dark'] .srl-console,
 }
 
 .srl-incident-icon {
-  font-size: 1.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  color: var(--srl-accent);
   line-height: 1;
+}
+
+.srl-incident-icon svg {
+  width: 18px;
+  height: 18px;
 }
 
 .srl-incident-label {
@@ -1388,8 +1442,20 @@ html[data-theme='dark'] .srl-console,
 }
 
 .srl-blueprint-icon {
-  font-size: 1.5rem;
-  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--srl-accent-dim);
+  color: var(--srl-accent);
+  flex-shrink: 0;
+}
+
+.srl-blueprint-icon svg {
+  width: 18px;
+  height: 18px;
 }
 
 .srl-blueprint-balls {
@@ -1414,35 +1480,35 @@ html[data-theme='dark'] .srl-console,
 }
 
 .srl-ball-chip.--four {
-  background: rgba(59, 130, 246, 0.2);
-  border-color: #3b82f6;
-  color: #60a5fa;
+  background: color-mix(in srgb, var(--srl-done) 18%, transparent);
+  border-color: var(--srl-done);
+  color: var(--srl-done-text);
 }
 
 .srl-ball-chip.--six {
-  background: rgba(245, 158, 11, 0.2);
-  border-color: #f59e0b;
-  color: #fbbf24;
+  background: color-mix(in srgb, var(--srl-gold) 18%, transparent);
+  border-color: var(--srl-gold);
+  color: var(--srl-warn-text);
 }
 
 .srl-ball-chip.--wicket {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: #ef4444;
-  color: #f87171;
+  background: color-mix(in srgb, var(--srl-danger) 18%, transparent);
+  border-color: var(--srl-danger);
+  color: var(--srl-danger-text);
 }
 
 .srl-ball-chip.--single,
 .srl-ball-chip.--double {
-  background: rgba(56, 189, 248, 0.15);
-  border-color: #38bdf8;
-  color: #38bdf8;
+  background: color-mix(in srgb, var(--srl-accent) 14%, transparent);
+  border-color: var(--srl-accent);
+  color: var(--srl-accent);
 }
 
 .srl-ball-chip.--wide,
 .srl-ball-chip.--no_ball {
-  background: rgba(236, 72, 153, 0.15);
-  border-color: #ec4899;
-  color: #f472b6;
+  background: color-mix(in srgb, var(--srl-warn) 16%, transparent);
+  border-color: var(--srl-warn);
+  color: var(--srl-warn-text);
 }
 
 /* ── 6-BALL CUSTOM SEQUENCER ── */
@@ -1489,9 +1555,9 @@ html[data-theme='dark'] .srl-console,
   border: 1px solid var(--srl-border);
 }
 
-.srl-sequencer-badge.--four { color: #60a5fa; }
-.srl-sequencer-badge.--six { color: #fbbf24; }
-.srl-sequencer-badge.--wicket { color: #f87171; }
+.srl-sequencer-badge.--four { color: var(--srl-done-text); }
+.srl-sequencer-badge.--six { color: var(--srl-warn-text); }
+.srl-sequencer-badge.--wicket { color: var(--srl-danger-text); }
 
 .srl-queued-trail {
   display: flex;
@@ -1603,10 +1669,10 @@ html[data-theme='dark'] .srl-console,
 /* ── WHAT-IF MATRIX & OPTIMAL PICK ── */
 .srl-optimal-pick-card {
   background: var(--srl-surface-alt);
-  border: 1px solid #10b981;
+  border: 1px solid var(--srl-live);
   border-radius: 12px;
   padding: 14px;
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.1);
+  box-shadow: 0 0 15px color-mix(in srgb, var(--srl-live) 12%, transparent);
 }
 
 .srl-whatif-table-wrapper,
@@ -1840,7 +1906,7 @@ html[data-theme='dark'] .srl-console,
 }
 
 .srl-wagon-sector-stats strong {
-  color: #10b981;
+  color: var(--srl-live);
   font-size: 0.84rem;
 }
 
@@ -1915,7 +1981,7 @@ html[data-theme='dark'] .srl-console,
 }
 
 .srl-h2h-verdict strong {
-  color: #38bdf8;
+  color: var(--srl-done-text);
 }
 
 /* ── 3. ATMOSPHERE & ENVIRONMENTAL PHYSICS ── */

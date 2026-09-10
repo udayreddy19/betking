@@ -3,13 +3,38 @@ import { adminApiClient } from '../api/adminApiClient';
 import { useAdminToast } from '../components/AdminToastContext';
 import AdminConfirmDialog from '../components/AdminConfirmDialog';
 import { startVisibleInterval } from '../utils/visibleInterval';
+import {
+  ActivityIcon,
+  ChartBarIcon,
+  ClipboardIcon,
+  FlameIcon,
+  HandCoinsIcon,
+  LayersIcon,
+  MegaphoneIcon,
+  PauseIcon,
+  PlayIcon,
+  RadioIcon,
+  RefreshCwIcon,
+  RocketIcon,
+  ShieldCheckIcon,
+  SlidersHorizontalIcon,
+  SparklesIcon,
+  SwordsIcon,
+  TriangleAlertIcon,
+  UmbrellaIcon,
+  UsersIcon,
+  WalletIcon,
+  ZapIcon,
+} from '@animateicons/react/lucide';
 import './IPLSRLConsoleView.css';
 
+const ICON_SM = { width: 14, height: 14 };
+
 const TABS = [
-  { id: 'desk', label: 'Match Desk' },
-  { id: 'teams', label: 'Teams' },
-  { id: 'players', label: 'Players' },
-  { id: 'audit', label: 'Audit' },
+  { id: 'desk', label: 'Match Desk', Icon: ActivityIcon },
+  { id: 'teams', label: 'Teams', Icon: UsersIcon },
+  { id: 'players', label: 'Players', Icon: UsersIcon },
+  { id: 'audit', label: 'Audit', Icon: ClipboardIcon },
 ];
 
 const FILTERS = [
@@ -22,55 +47,55 @@ const FILTERS = [
 ];
 
 const BLUEPRINT_PRESETS = [
-  { id: 'DEFEND_DEATH_OVER', name: 'Defend Death Over', desc: '6 runs, 1 Wkt (0, 1, W, 0, 1, 0)', icon: '🛡️', balls: [{ type: 'DOT', runs: 0 }, { type: 'SINGLE', runs: 1 }, { type: 'WICKET', runs: 0, subType: 'Bowled' }, { type: 'DOT', runs: 0 }, { type: 'SINGLE', runs: 1 }, { type: 'DOT', runs: 0 }] },
-  { id: 'CHASE_CLIMAX', name: 'Chase Climax Thriller', desc: '17 runs, 4-finish (4, 0, 6, 2, 1, 4)', icon: '⚡', balls: [{ type: 'FOUR', runs: 4 }, { type: 'DOT', runs: 0 }, { type: 'SIX', runs: 6 }, { type: 'DOUBLE', runs: 2 }, { type: 'SINGLE', runs: 1 }, { type: 'FOUR', runs: 4 }] },
-  { id: 'HAT_TRICK_COLLAPSE', name: 'Hat-trick Collapse', desc: '3 Wickets in an Over (W, W, W, 0, 1, 0)', icon: '💥', balls: [{ type: 'WICKET', runs: 0, subType: 'Bowled' }, { type: 'WICKET', runs: 0, subType: 'Caught' }, { type: 'WICKET', runs: 0, subType: 'LBW' }, { type: 'DOT', runs: 0 }, { type: 'SINGLE', runs: 1 }, { type: 'DOT', runs: 0 }] },
-  { id: 'POWERPLAY_BLITZ', name: 'Powerplay Blitz', desc: '22 runs massacre (4, 6, 4, 2, 6, 0)', icon: '🚀', balls: [{ type: 'FOUR', runs: 4 }, { type: 'SIX', runs: 6 }, { type: 'FOUR', runs: 4 }, { type: 'DOUBLE', runs: 2 }, { type: 'SIX', runs: 6 }, { type: 'DOT', runs: 0 }] },
-  { id: 'MAIDEN_OVER', name: 'Maiden Over', desc: '6 Dot Balls (0 runs)', icon: '🎯', balls: [{ type: 'DOT', runs: 0 }, { type: 'DOT', runs: 0 }, { type: 'DOT', runs: 0 }, { type: 'DOT', runs: 0 }, { type: 'DOT', runs: 0 }, { type: 'DOT', runs: 0 }] },
-  { id: 'TIE_SUPER_OVER', name: 'Super Over Thriller', desc: '10 runs / Tie finish (1, 4, 0, 2, 1, 2)', icon: '⚔️', balls: [{ type: 'SINGLE', runs: 1 }, { type: 'FOUR', runs: 4 }, { type: 'DOT', runs: 0 }, { type: 'DOUBLE', runs: 2 }, { type: 'SINGLE', runs: 1 }, { type: 'DOUBLE', runs: 2 }] },
+  { id: 'DEFEND_DEATH_OVER', name: 'Defend Death Over', desc: '6 runs, 1 Wkt (0, 1, W, 0, 1, 0)', Icon: ShieldCheckIcon, balls: [{ type: 'DOT', runs: 0 }, { type: 'SINGLE', runs: 1 }, { type: 'WICKET', runs: 0, subType: 'Bowled' }, { type: 'DOT', runs: 0 }, { type: 'SINGLE', runs: 1 }, { type: 'DOT', runs: 0 }] },
+  { id: 'CHASE_CLIMAX', name: 'Chase Climax Thriller', desc: '17 runs, 4-finish (4, 0, 6, 2, 1, 4)', Icon: ZapIcon, balls: [{ type: 'FOUR', runs: 4 }, { type: 'DOT', runs: 0 }, { type: 'SIX', runs: 6 }, { type: 'DOUBLE', runs: 2 }, { type: 'SINGLE', runs: 1 }, { type: 'FOUR', runs: 4 }] },
+  { id: 'HAT_TRICK_COLLAPSE', name: 'Hat-trick Collapse', desc: '3 Wickets in an Over (W, W, W, 0, 1, 0)', Icon: FlameIcon, balls: [{ type: 'WICKET', runs: 0, subType: 'Bowled' }, { type: 'WICKET', runs: 0, subType: 'Caught' }, { type: 'WICKET', runs: 0, subType: 'LBW' }, { type: 'DOT', runs: 0 }, { type: 'SINGLE', runs: 1 }, { type: 'DOT', runs: 0 }] },
+  { id: 'POWERPLAY_BLITZ', name: 'Powerplay Blitz', desc: '22 runs massacre (4, 6, 4, 2, 6, 0)', Icon: RocketIcon, balls: [{ type: 'FOUR', runs: 4 }, { type: 'SIX', runs: 6 }, { type: 'FOUR', runs: 4 }, { type: 'DOUBLE', runs: 2 }, { type: 'SIX', runs: 6 }, { type: 'DOT', runs: 0 }] },
+  { id: 'MAIDEN_OVER', name: 'Maiden Over', desc: '6 Dot Balls (0 runs)', Icon: SparklesIcon, balls: [{ type: 'DOT', runs: 0 }, { type: 'DOT', runs: 0 }, { type: 'DOT', runs: 0 }, { type: 'DOT', runs: 0 }, { type: 'DOT', runs: 0 }, { type: 'DOT', runs: 0 }] },
+  { id: 'TIE_SUPER_OVER', name: 'Super Over Thriller', desc: '10 runs / Tie finish (1, 4, 0, 2, 1, 2)', Icon: SwordsIcon, balls: [{ type: 'SINGLE', runs: 1 }, { type: 'FOUR', runs: 4 }, { type: 'DOT', runs: 0 }, { type: 'DOUBLE', runs: 2 }, { type: 'SINGLE', runs: 1 }, { type: 'DOUBLE', runs: 2 }] },
 ];
 
 const BALL_TYPE_OPTIONS = [
   { type: 'DOT', label: '0 Dot', runs: 0 },
   { type: 'SINGLE', label: '1 Single', runs: 1 },
   { type: 'DOUBLE', label: '2 Double', runs: 2 },
-  { type: 'FOUR', label: '⚡ 4 Four', runs: 4 },
-  { type: 'SIX', label: '🚀 6 Six', runs: 6 },
-  { type: 'WICKET', label: '💥 Wicket', runs: 0 },
-  { type: 'WIDE', label: '⚠️ Wide (+1)', runs: 1 },
-  { type: 'NO_BALL', label: '🚨 No Ball', runs: 1 },
+  { type: 'FOUR', label: '4 Four', runs: 4 },
+  { type: 'SIX', label: '6 Six', runs: 6 },
+  { type: 'WICKET', label: 'Wicket', runs: 0 },
+  { type: 'WIDE', label: 'Wide (+1)', runs: 1 },
+  { type: 'NO_BALL', label: 'No Ball', runs: 1 },
 ];
 
 const DIRECTOR_MODE_OPTIONS = [
-  { id: 'REALISTIC', label: 'Realistic Normal', desc: 'Standard IPL cricket probabilities', icon: '🏏' },
-  { id: 'THRILLER_FINISH', label: 'Thriller Finish', desc: 'Guarantees intense final-over boundary requirement', icon: '🎬' },
-  { id: 'IPL_CARNAGE', label: 'IPL Carnage', desc: '215+ boundary blitz with 20+ sixes', icon: '🔥' },
-  { id: 'COLLAPSE_CLAWBACK', label: 'Collapse & Clawback', desc: 'Early top-order collapse with heroic middle-order recovery', icon: '📉' },
-  { id: 'SPIN_WEB', label: 'Spin Web Trap', desc: 'Turning pitch with heavy dot-ball pressure', icon: '🕸️' },
+  { id: 'REALISTIC', label: 'Realistic Normal', desc: 'Standard IPL cricket probabilities', Icon: ActivityIcon },
+  { id: 'THRILLER_FINISH', label: 'Thriller Finish', desc: 'Guarantees intense final-over boundary requirement', Icon: SparklesIcon },
+  { id: 'IPL_CARNAGE', label: 'IPL Carnage', desc: '215+ boundary blitz with 20+ sixes', Icon: FlameIcon },
+  { id: 'COLLAPSE_CLAWBACK', label: 'Collapse & Clawback', desc: 'Early top-order collapse with heroic middle-order recovery', Icon: ChartBarIcon },
+  { id: 'SPIN_WEB', label: 'Spin Web Trap', desc: 'Turning pitch with heavy dot-ball pressure', Icon: LayersIcon },
 ];
 
 const PLAYER_BUFF_OPTIONS = [
-  { id: 'GOD_MODE', label: '🔥 God Mode (+45% Boundaries)' },
-  { id: 'COLD_SLUMP', label: '❄️ Cold Slump (+Wicket Risk)' },
-  { id: 'DEATH_YORKER', label: '🎯 Death Yorker Precision' },
-  { id: 'PINCH_HITTER', label: '⚡ Pinch Hitter Blitz' },
+  { id: 'GOD_MODE', label: 'God Mode (+45% Boundaries)' },
+  { id: 'COLD_SLUMP', label: 'Cold Slump (+Wicket Risk)' },
+  { id: 'DEATH_YORKER', label: 'Death Yorker Precision' },
+  { id: 'PINCH_HITTER', label: 'Pinch Hitter Blitz' },
 ];
 
 const MATCH_ZONES = [
-  { id: 'control', label: '⚡ Control' },
-  { id: 'whatif', label: '🎯 What-If Matrix' },
-  { id: 'micromarkets', label: '⚡ Micro-Markets' },
-  { id: 'tactical', label: '🏟️ Tactical Radar' },
-  { id: 'blueprint', label: '📋 Over Blueprint' },
-  { id: 'godmode', label: '🎛️ God Mode & AI' },
-  { id: 'risk', label: '🛡️ Risk & Defense' },
-  { id: 'cashout', label: '💸 Cash-Out Desk' },
-  { id: 'wagers', label: '🐋 Wager Tape' },
-  { id: 'toss_squad', label: '🪙 Toss & Lineup' },
-  { id: 'replay', label: '🎞️ Ball Replay' },
-  { id: 'weather', label: '🌪️ Atmosphere' },
-  { id: 'broadcast', label: '📢 Broadcast' },
-  { id: 'markets', label: '📊 Core Markets' },
+  { id: 'control', label: 'Control', Icon: ZapIcon },
+  { id: 'whatif', label: 'What-If Matrix', Icon: SparklesIcon },
+  { id: 'micromarkets', label: 'Micro-Markets', Icon: ZapIcon },
+  { id: 'tactical', label: 'Tactical Radar', Icon: ActivityIcon },
+  { id: 'blueprint', label: 'Over Blueprint', Icon: ClipboardIcon },
+  { id: 'godmode', label: 'God Mode & AI', Icon: SlidersHorizontalIcon },
+  { id: 'risk', label: 'Risk & Defense', Icon: ShieldCheckIcon },
+  { id: 'cashout', label: 'Cash-Out Desk', Icon: WalletIcon },
+  { id: 'wagers', label: 'Wager Tape', Icon: HandCoinsIcon },
+  { id: 'toss_squad', label: 'Toss & Lineup', Icon: UsersIcon },
+  { id: 'replay', label: 'Ball Replay', Icon: RefreshCwIcon },
+  { id: 'weather', label: 'Atmosphere', Icon: UmbrellaIcon },
+  { id: 'broadcast', label: 'Broadcast', Icon: MegaphoneIcon },
+  { id: 'markets', label: 'Core Markets', Icon: ChartBarIcon },
 ];
 
 const PHASE_LABEL = {
@@ -110,7 +135,7 @@ function formatClock(ms) {
   const h = Math.floor(total / 3600);
   const m = Math.floor((total % 3600) / 60);
   const s = total % 60;
-  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  if (h >0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
@@ -177,11 +202,11 @@ function ScoreboardHero({ match }) {
 
       <div className="srl-score-divider">
         <span className="srl-score-vs">vs</span>
-        <span className={`srl-phase-pill ${isLive ? 'is-live' : match.controlStatus === 'COMPLETED' ? 'is-completed' : 'is-pre'}`}>
+        <span className={`srl-phase-pill ${isLive ? ' is-live' : match.controlStatus === 'COMPLETED' ? ' is-completed' : 'is-pre'}`}>
           {isLive && <span className="srl-live-dot" style={{ marginRight: 6 }} />}
           {PHASE_LABEL[clock.phase] || match.controlStatus}
         </span>
-        {s.target > 0 && <span className="srl-score-target">T {s.target}</span>}
+        {s.target >0 && <span className="srl-score-target">T {s.target}</span>}
       </div>
 
       <div className="srl-score-team">
@@ -198,36 +223,36 @@ function ScoreboardHero({ match }) {
         </span>
         {match.toss?.winner && (
           <span className="srl-pill srl-pill-live" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
-            🪙 Toss: {match.toss.winner === match.homeTeamId ? match.homeShort : match.awayShort} ({match.toss.decision})
+            Toss: {match.toss.winner === match.homeTeamId ? match.homeShort : match.awayShort} ({match.toss.decision})
           </span>
         )}
         {match.autoProfitMaximizer && (
-          <span className="srl-pill srl-pill-live" style={{ fontSize: '0.68rem', padding: '2px 8px', background: 'rgba(16, 185, 129, 0.15)', borderColor: '#10b981', color: '#10b981' }}>
-            🛡️ Profit Max: {Math.round((match.targetMargin || 0.06) * 100)}%
+          <span className="srl-pill srl-pill-live" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
+            Profit Max: {Math.round((match.targetMargin || 0.06) * 100)}%
           </span>
         )}
-        {match.incidentQueueLength > 0 && (
+        {match.incidentQueueLength >0 && (
           <span className="srl-pill srl-pill-paused" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
-            ⚡ {match.incidentQueueLength} Balls Armed
+            {match.incidentQueueLength} Balls Armed
           </span>
         )}
         {match.directorMode && match.directorMode !== 'REALISTIC' && (
-          <span className="srl-pill srl-pill-live" style={{ fontSize: '0.68rem', padding: '2px 8px', background: 'rgba(236, 72, 153, 0.15)', borderColor: '#ec4899', color: '#f472b6' }}>
-            🎬 AI Director: {match.directorMode.replace('_', ' ')}
+          <span className="srl-pill srl-pill-live" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
+            AI Director: {match.directorMode.replace('_', ' ')}
           </span>
         )}
         {match.environment && (
-          <span className="srl-pill srl-pill-live" style={{ fontSize: '0.68rem', padding: '2px 8px', background: 'rgba(14, 165, 233, 0.15)', borderColor: '#0ea5e9', color: '#38bdf8' }}>
-            🌪️ {match.environment.pitchWear?.replace('_', ' ')} · Dew {match.environment.dewFactor}%
+          <span className="srl-pill srl-pill-muted" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
+            {match.environment.pitchWear?.replace('_', ' ')} · Dew {match.environment.dewFactor}%
           </span>
         )}
         {match.circuitBreaker?.emergencyKillSwitch ? (
-          <span className="srl-pill srl-pill-completed" style={{ fontSize: '0.68rem', padding: '2px 8px', background: 'rgba(239, 68, 68, 0.25)', borderColor: '#ef4444', color: '#f87171', fontWeight: 800 }}>
-            🚨 RED PHONE KILL SWITCH ACTIVE
+          <span className="srl-pill srl-pill-completed" style={{ fontSize: '0.68rem', padding: '2px 8px', background: 'var(--srl-danger-bg)', borderColor: 'var(--srl-danger-border)', color: 'var(--srl-danger-text)', fontWeight: 800 }}>
+            Kill Switch Active
           </span>
         ) : match.circuitBreaker?.isTripped ? (
-          <span className="srl-pill srl-pill-paused" style={{ fontSize: '0.68rem', padding: '2px 8px', background: 'rgba(245, 158, 11, 0.2)', borderColor: '#f59e0b', color: '#fbbf24' }}>
-            ⚠️ CIRCUIT BREAKER TRIPPED
+          <span className="srl-pill srl-pill-paused" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
+            Circuit Breaker Tripped
           </span>
         ) : null}
         {match.commentary && (
@@ -338,89 +363,89 @@ export default function IPLSRLConsoleView() {
   const [cbMiddleInput, setCbMiddleInput] = useState('35000');
   const [cbDeathInput, setCbDeathInput] = useState('15000');
 
-  const applySnap = useCallback((data) => {
+  const applySnap = useCallback((data) =>{
     setSnap(data);
-    setSelectedMatchId((prev) => {
+    setSelectedMatchId((prev) =>{
       if (prev && data.matches?.some((m) => m.matchId === prev)) return prev;
       return pickDefaultMatchId(data.matches || []);
     });
   }, []);
 
-  const refresh = useCallback(() => {
+  const refresh = useCallback(() =>{
     return adminApiClient.get('/iplsrl/control')
-      .then((data) => {
+      .then((data) =>{
         applySnap(data);
         setError(null);
       })
       .catch((err) => setError(err.message || 'Failed to load SRL control desk'));
   }, [applySnap]);
 
-  useEffect(() => {
+  useEffect(() =>{
     let cancelled = false;
     setLoading(true);
-    refresh().finally(() => { if (!cancelled) setLoading(false); });
-    const stop = startVisibleInterval(() => { refresh().catch(() => {}); }, 2500, { runImmediately: false });
-    return () => {
+    refresh().finally(() =>{ if (!cancelled) setLoading(false); });
+    const stop = startVisibleInterval(() =>{ refresh().catch(() =>{}); }, 2500, { runImmediately: false });
+    return () =>{
       cancelled = true;
       stop();
     };
   }, [refresh]);
 
-  useEffect(() => {
+  useEffect(() =>{
     setDragMs(null);
   }, [selectedMatchId]);
 
-  useEffect(() => {
+  useEffect(() =>{
     if (!selectedMatchId) {
       setMarketsDesk(null);
       setMarketsError(null);
       return undefined;
     }
     let cancelled = false;
-    const loadMarkets = () => {
+    const loadMarkets = () =>{
       setMarketsLoading(true);
       adminApiClient.get(`/iplsrl/matches/${encodeURIComponent(selectedMatchId)}/markets`)
-        .then((data) => {
+        .then((data) =>{
           if (cancelled) return;
           setMarketsDesk(data);
           setMarketsError(null);
         })
-        .catch((err) => {
+        .catch((err) =>{
           if (cancelled) return;
           setMarketsError(err.message || 'Failed to load markets');
         })
-        .finally(() => {
+        .finally(() =>{
           if (!cancelled) setMarketsLoading(false);
         });
     };
     loadMarkets();
     const stop = startVisibleInterval(loadMarkets, 5000, { runImmediately: false });
-    return () => {
+    return () =>{
       cancelled = true;
       stop();
     };
   }, [selectedMatchId]);
 
-  const visibleMarkets = useMemo(() => {
+  const visibleMarkets = useMemo(() =>{
     const list = marketsDesk?.markets || [];
     if (marketFilter === 'open') {
-      return list.filter((m) => String(m.status || '').toUpperCase() === 'OPEN' || (m.book?.bets || 0) > 0);
+      return list.filter((m) => String(m.status || '').toUpperCase() === 'OPEN' || (m.book?.bets || 0) >0);
     }
-    if (marketFilter === 'staked') return list.filter((m) => (m.book?.bets || 0) > 0);
+    if (marketFilter === 'staked') return list.filter((m) =>(m.book?.bets || 0) >0);
     if (marketFilter === 'locked') {
       return list.filter((m) => ['SUSPENDED', 'DETERMINED', 'VOID', 'VOIDED', 'SETTLED'].includes(String(m.status || '').toUpperCase()));
     }
     if (marketFilter === 'toss') {
-      return list.filter((m) => /toss|bat_first/i.test(`${m.marketId} ${m.title || ''} ${m.name || ''}`));
+      return list.filter((m) =>/toss|bat_first/i.test(`${m.marketId} ${m.title || ''} ${m.name || ''}`));
     }
     if (marketFilter === 'winner') {
-      return list.filter((m) => /match_winner|winner|most_|top_|h2h/i.test(String(m.marketId || '')));
+      return list.filter((m) =>/match_winner|winner|most_|top_|h2h/i.test(String(m.marketId || '')));
     }
     if (marketFilter === 'totals') {
-      return list.filter((m) => /total|range|btts|fours|sixes|wickets|ladder/i.test(String(m.marketId || '')));
+      return list.filter((m) =>/total|range|btts|fours|sixes|wickets|ladder/i.test(String(m.marketId || '')));
     }
     if (marketFilter === 'innings') {
-      return list.filter((m) => /^i[12]_/i.test(String(m.marketId || '')) || /innings|team_total|over_|delivery|wicket_in|dismissal/i.test(String(m.marketId || '')));
+      return list.filter((m) =>/^i[12]_/i.test(String(m.marketId || '')) || /innings|team_total|over_|delivery|wicket_in|dismissal/i.test(String(m.marketId || '')));
     }
     return list;
   }, [marketsDesk, marketFilter]);
@@ -430,7 +455,7 @@ export default function IPLSRLConsoleView() {
     [snap, selectedMatchId],
   );
 
-  const counts = useMemo(() => {
+  const counts = useMemo(() =>{
     const matches = snap?.matches || [];
     return {
       all: matches.length,
@@ -442,9 +467,9 @@ export default function IPLSRLConsoleView() {
     };
   }, [snap]);
 
-  const fixtures = useMemo(() => {
+  const fixtures = useMemo(() =>{
     const q = query.trim().toLowerCase();
-    return (snap?.matches || []).filter((m) => {
+    return (snap?.matches || []).filter((m) =>{
       if (!fixtureFilter(m, filter)) return false;
       if (!q) return true;
       const hay = [
@@ -459,11 +484,11 @@ export default function IPLSRLConsoleView() {
   const elapsedMs = dragMs != null ? dragMs : Number(clock.elapsedMs) || 0;
   const seasonClock = snap?.seasonClock || {};
 
-  useEffect(() => {
+  useEffect(() =>{
     if (selected?.matchNo) setJumpNo(String(selected.matchNo));
   }, [selectedMatchId, selected?.matchNo]);
 
-  const run = async (fn, okMsg) => {
+  const run = async (fn, okMsg) =>{
     setBusy(true);
     try {
       const data = await fn();
@@ -496,7 +521,7 @@ export default function IPLSRLConsoleView() {
     msg,
   );
 
-  const fetchReplay = useCallback(async () => {
+  const fetchReplay = useCallback(async () =>{
     if (!selectedMatchId) return;
     setReplayLoading(true);
     try {
@@ -509,7 +534,7 @@ export default function IPLSRLConsoleView() {
     }
   }, [selectedMatchId, showToast]);
 
-  const fetchWhatIf = useCallback(async () => {
+  const fetchWhatIf = useCallback(async () =>{
     if (!selectedMatchId) return;
     setWhatIfLoading(true);
     try {
@@ -522,7 +547,7 @@ export default function IPLSRLConsoleView() {
     }
   }, [selectedMatchId, showToast]);
 
-  const fetchWagers = useCallback(async () => {
+  const fetchWagers = useCallback(async () =>{
     if (!selectedMatchId) return;
     setWagerTapeLoading(true);
     try {
@@ -535,7 +560,7 @@ export default function IPLSRLConsoleView() {
     }
   }, [selectedMatchId, showToast]);
 
-  const fetchMicroMarkets = useCallback(async () => {
+  const fetchMicroMarkets = useCallback(async () =>{
     if (!selectedMatchId) return;
     setMicroMarketsLoading(true);
     try {
@@ -548,7 +573,7 @@ export default function IPLSRLConsoleView() {
     }
   }, [selectedMatchId, showToast]);
 
-  const fetchTacticalRadar = useCallback(async () => {
+  const fetchTacticalRadar = useCallback(async () =>{
     if (!selectedMatchId) return;
     setTacticalLoading(true);
     try {
@@ -561,7 +586,7 @@ export default function IPLSRLConsoleView() {
     }
   }, [selectedMatchId, showToast]);
 
-  const fetchCashout = useCallback(async () => {
+  const fetchCashout = useCallback(async () =>{
     if (!selectedMatchId) return;
     setCashoutLoading(true);
     try {
@@ -574,7 +599,7 @@ export default function IPLSRLConsoleView() {
     }
   }, [selectedMatchId, showToast]);
 
-  useEffect(() => {
+  useEffect(() =>{
     if (matchZone === 'replay' && selectedMatchId) {
       fetchReplay();
     } else if (matchZone === 'whatif' && selectedMatchId) {
@@ -590,7 +615,7 @@ export default function IPLSRLConsoleView() {
     }
   }, [matchZone, selectedMatchId, fetchReplay, fetchWhatIf, fetchWagers, fetchMicroMarkets, fetchTacticalRadar, fetchCashout]);
 
-  useEffect(() => {
+  useEffect(() =>{
     if (selected) {
       setTossWinnerKey(selected.toss?.winner || selected.homeTeamId || '');
       setTossDecision(selected.toss?.decision || 'BAT');
@@ -619,7 +644,7 @@ export default function IPLSRLConsoleView() {
     }
   }, [selected?.matchId]);
 
-  const exportAudit = async (format = 'json') => {
+  const exportAudit = async (format = 'json') =>{
     if (!selected?.matchId) return;
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('oddsyra_admin_token') || '';
@@ -642,17 +667,17 @@ export default function IPLSRLConsoleView() {
     }
   };
 
-  const simulateCoinFlip = () => {
+  const simulateCoinFlip = () =>{
     if (!selected) return;
     setTossFlipping(true);
-    setTimeout(() => {
-      const winKey = Math.random() > 0.5 ? selected.homeTeamId : selected.awayTeamId;
-      const dec = Math.random() > 0.4 ? 'BAT' : 'BOWL';
+    setTimeout(() =>{
+      const winKey = Math.random() >0.5 ? selected.homeTeamId : selected.awayTeamId;
+      const dec = Math.random() >0.4 ? 'BAT' : 'BOWL';
       setTossWinnerKey(winKey);
       setTossDecision(dec);
       setTossFlipping(false);
       const winShort = winKey === selected.homeTeamId ? selected.homeShort : selected.awayShort;
-      showToast(`🪙 Coin landed! ${winShort} won and elected to ${dec} first.`, 'info');
+      showToast(`Coin landed! ${winShort} won and elected to ${dec} first.`, 'info');
     }, 500);
   };
 
@@ -684,16 +709,20 @@ export default function IPLSRLConsoleView() {
 
       {/* ═══ TOP TABS ═══ */}
       <div className="srl-tabs">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            className={`srl-tab${tab === t.id ? ' is-on' : ''}`}
-            onClick={() => setTab(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
+        {TABS.map((t) =>{
+          const TabIcon = t.Icon;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              className={`srl-tab${tab === t.id ? ' is-on' : ''}`}
+              onClick={() => setTab(t.id)}
+            >
+              <TabIcon style={ICON_SM} />
+              {t.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* ═══════════════ MATCH DESK ═══════════════ */}
@@ -701,7 +730,7 @@ export default function IPLSRLConsoleView() {
         <div className="srl-desk">
           {/* ─── LEFT RAIL: Season + Fixtures ─── */}
           <div className="srl-stack">
-            <Panel title="Season" hint={`${snap.season?.name || 'Season'} · Ed ${snap.season?.edition || '—'}`}>
+            <Panel title="Season"hint={`${snap.season?.name || 'Season'} · Ed ${snap.season?.edition || '—'}`}>
               <div className="srl-settings">
                 <label className="srl-field">
                   Speed
@@ -751,12 +780,12 @@ export default function IPLSRLConsoleView() {
                   disabled={busy}
                   onClick={() => setShowExhibitionModal(true)}
                 >
-                  ➕ Exhibition Match
+                   Exhibition Match
                 </button>
               </div>
             </Panel>
 
-            <Panel title="Season clock" hint={seasonClock.jumped ? 'Offset' : 'Wall clock'}>
+            <Panel title="Season clock"hint={seasonClock.jumped ? 'Offset' : 'Wall clock'}>
               <p className="srl-hint" style={{ margin: '0 0 8px' }}>
                 {seasonClock.label || 'Wall clock'}
                 {seasonClock.jumped ? ' · users see this time' : ''}
@@ -812,9 +841,9 @@ export default function IPLSRLConsoleView() {
               </div>
             </Panel>
 
-            <Panel title="Fixtures" hint={`${fixtures.length} of ${counts.all}`}>
+            <Panel title="Fixtures"hint={`${fixtures.length} of ${counts.all}`}>
               <div className="srl-filters" style={{ marginBottom: 8 }}>
-                {FILTERS.map((f) => (
+                {FILTERS.map((f) =>(
                   <button
                     key={f.id}
                     type="button"
@@ -835,7 +864,7 @@ export default function IPLSRLConsoleView() {
                 />
               </label>
               <div className="srl-fixture-list">
-                {fixtures.map((m) => (
+                {fixtures.map((m) =>(
                   <button
                     key={m.matchId}
                     type="button"
@@ -859,7 +888,7 @@ export default function IPLSRLConsoleView() {
                           ? `Scripted: ${m.forcedWinnerName}`
                           : `${m.score?.innings1?.runs || 0}/${m.score?.innings1?.wickets || 0} → ${m.score?.innings2?.runs || 0}/${m.score?.innings2?.wickets || 0}`}
                     </div>
-                    <div className="srl-progress-mini" aria-hidden="true">
+                    <div className="srl-progress-mini"aria-hidden="true">
                       <i style={{ width: `${Math.max(0, Math.min(100, m.clock?.progressPct || 0))}%` }} />
                     </div>
                   </button>
@@ -874,7 +903,7 @@ export default function IPLSRLConsoleView() {
           {/* ─── RIGHT: Match Cockpit ─── */}
           <div className="srl-stack">
             {!selected ? (
-              <Panel title="Select a match" hint="Pick a fixture from the rail">
+              <Panel title="Select a match"hint="Pick a fixture from the rail">
                 <p className="srl-hint" style={{ margin: 0 }}>Select a fixture to open the cockpit.</p>
               </Panel>
             ) : (
@@ -884,16 +913,20 @@ export default function IPLSRLConsoleView() {
 
                 {/* Match Zone Tabs */}
                 <div className="srl-match-tabs">
-                  {MATCH_ZONES.map((z) => (
-                    <button
-                      key={z.id}
-                      type="button"
-                      className={`srl-match-tab${matchZone === z.id ? ' is-on' : ''}`}
-                      onClick={() => setMatchZone(z.id)}
-                    >
-                      {z.label}
-                    </button>
-                  ))}
+                  {MATCH_ZONES.map((z) =>{
+                    const ZoneIcon = z.Icon;
+                    return (
+                      <button
+                        key={z.id}
+                        type="button"
+                        className={`srl-match-tab${matchZone === z.id ? ' is-on' : ''}`}
+                        onClick={() => setMatchZone(z.id)}
+                      >
+                        <ZoneIcon />
+                        {z.label}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* ═══ ZONE: CONTROL ═══ */}
@@ -913,12 +946,12 @@ export default function IPLSRLConsoleView() {
                         step={Math.max(1000, Number(clock.msPerBall) || 1000)}
                         value={Math.min(elapsedMs, durationMs - 1)}
                         disabled={busy || selected.controlStatus === 'COMPLETED'}
-                        onPointerDown={() => {
+                        onPointerDown={() =>{
                           draggingRef.current = true;
                           setDragMs(elapsedMs);
                         }}
                         onChange={(e) => setDragMs(Number(e.target.value))}
-                        onPointerUp={(e) => {
+                        onPointerUp={(e) =>{
                           if (!draggingRef.current) return;
                           draggingRef.current = false;
                           commitSeek(Number(e.currentTarget.value), selected.controlStatus === 'PAUSED');
@@ -944,15 +977,15 @@ export default function IPLSRLConsoleView() {
                           disabled={busy || selected.controlStatus === 'LIVE' || selected.controlStatus === 'COMPLETED'}
                           onClick={() => run(() => adminApiClient.post('/iplsrl/matches/start', { matchId: selected.matchId }), 'Match started for users')}
                         >
-                          ▶ Start
+                          <PlayIcon style={ICON_SM} />Start
                         </button>
                         {selected.canPause ? (
                           <button type="button" className="srl-btn srl-btn-orange" disabled={busy} onClick={() => run(() => adminApiClient.post('/iplsrl/matches/pause', { matchId: selected.matchId }), 'Paused')}>
-                            ⏸ Pause
+                            <PauseIcon style={ICON_SM} />Pause
                           </button>
                         ) : (
                           <button type="button" className="srl-btn srl-btn-teal" disabled={busy || !selected.canResume} onClick={() => run(() => adminApiClient.post('/iplsrl/matches/resume', { matchId: selected.matchId }), 'Resumed')}>
-                            ▶ Resume
+                            <PlayIcon style={ICON_SM} />Resume
                           </button>
                         )}
                         <select
@@ -984,7 +1017,7 @@ export default function IPLSRLConsoleView() {
                             selected.bettingClosed ? 'Betting opened' : 'Betting closed for users',
                           )}
                         >
-                          {selected.bettingClosed ? '🟢 Open betting' : '🔴 Close betting'}
+                          {selected.bettingClosed ? 'Open betting' : 'Close betting'}
                         </button>
                       </div>
                     </div>
@@ -1067,7 +1100,7 @@ export default function IPLSRLConsoleView() {
                           <em>{selected.book?.away?.bets || 0} bets · pays {formatInr(selected.book?.away?.payout)}</em>
                         </div>
                       </div>
-                      {selected.book?.other?.stake > 0 && (
+                      {selected.book?.other?.stake >0 && (
                         <p className="srl-hint" style={{ margin: '8px 0 0' }}>
                           Other markets: {formatInr(selected.book.other.stake)} across {selected.book.other.bets} bets
                         </p>
@@ -1081,7 +1114,7 @@ export default function IPLSRLConsoleView() {
                   <div className="srl-tab-body" key="whatif">
                     <div className="srl-zone">
                       <div className="srl-zone-label --accent" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                        <span>🎯 "What-If" Pre-Flight Odds & Liability Radar</span>
+                        <span>"What-If"Pre-Flight Odds & Liability Radar</span>
                         <div style={{ display: 'flex', gap: 8 }}>
                           <button
                             type="button"
@@ -1090,7 +1123,7 @@ export default function IPLSRLConsoleView() {
                             disabled={busy || whatIfLoading}
                             onClick={fetchWhatIf}
                           >
-                            🔄 Recalculate Matrix
+                             Recalculate Matrix
                           </button>
                         </div>
                       </div>
@@ -1102,8 +1135,8 @@ export default function IPLSRLConsoleView() {
                         <div className="srl-optimal-pick-card" style={{ marginBottom: 14 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                             <div>
-                              <span className="srl-pill srl-pill-live" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', borderColor: '#10b981' }}>
-                                🛡️ Optimal House Pick
+                              <span className="srl-pill srl-pill-live" style={{ background: 'var(--srl-live-bg)', color: 'var(--srl-live)', borderColor: 'var(--srl-live)' }}>
+                                 Optimal House Pick
                               </span>
                               <strong style={{ marginLeft: 8, fontSize: '0.95rem' }}>
                                 {whatIfData.bestHousePick.label} → {whatIfData.bestHousePick.marginImpact} House Edge
@@ -1116,18 +1149,18 @@ export default function IPLSRLConsoleView() {
                               type="button"
                               className="srl-btn srl-btn-teal"
                               disabled={busy || selected.controlStatus === 'COMPLETED'}
-                              onClick={() => {
+                              onClick={() =>{
                                 run(
                                   () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/incident`, {
                                     type: whatIfData.bestHousePick.type.includes('WICKET') ? 'WICKET' : whatIfData.bestHousePick.type,
                                     subType: whatIfData.bestHousePick.subType || undefined,
                                     instant: true,
                                   }),
-                                  `⚡ Executed Optimal Pick: ${whatIfData.bestHousePick.label}!`,
+                                  `Executed Optimal Pick: ${whatIfData.bestHousePick.label}!`,
                                 );
                               }}
                             >
-                              ⚡ Execute Optimal Pick
+                               Execute Optimal Pick
                             </button>
                           </div>
                         </div>
@@ -1150,10 +1183,10 @@ export default function IPLSRLConsoleView() {
                               </tr>
                             </thead>
                             <tbody>
-                              {whatIfData.scenarios.map((sc) => {
+                              {whatIfData.scenarios.map((sc) =>{
                                 const isPos = sc.projectedHousePnl >= 0;
                                 return (
-                                  <tr key={sc.type} className={sc.recommended ? 'is-recommended' : ''}>
+                                  <tr key={sc.type} className={sc.recommended ? ' is-recommended' : ''}>
                                     <td>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                         <span className={`srl-ball-chip --${sc.type.toLowerCase().includes('wicket') ? 'wicket' : sc.type.toLowerCase()}`}>
@@ -1177,7 +1210,7 @@ export default function IPLSRLConsoleView() {
                                       </span>
                                     </td>
                                     <td>
-                                      <strong style={{ color: isPos ? '#10b981' : '#f87171' }}>
+                                      <strong style={{ color: isPos ? 'var(--srl-live)' : 'var(--srl-danger-text)' }}>
                                         {sc.marginImpact}
                                       </strong>
                                     </td>
@@ -1187,14 +1220,14 @@ export default function IPLSRLConsoleView() {
                                         className="srl-btn srl-btn-blue"
                                         style={{ fontSize: '0.72rem', padding: '4px 10px' }}
                                         disabled={busy || selected.controlStatus === 'COMPLETED'}
-                                        onClick={() => {
+                                        onClick={() =>{
                                           run(
                                             () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/incident`, {
                                               type: sc.type.includes('WICKET') ? 'WICKET' : sc.type,
                                               subType: sc.subType || undefined,
                                               instant: true,
                                             }),
-                                            `⚡ Executed ${sc.label}!`,
+                                            `Executed ${sc.label}!`,
                                           );
                                         }}
                                       >
@@ -1217,7 +1250,7 @@ export default function IPLSRLConsoleView() {
                   <div className="srl-tab-body" key="micromarkets">
                     <div className="srl-zone">
                       <div className="srl-zone-label --accent" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                        <span>⚡ Dynamic Micro-Markets & Rapid Flash Desk</span>
+                        <span>Dynamic Micro-Markets & Rapid Flash Desk</span>
                         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                           <button
                             type="button"
@@ -1226,7 +1259,7 @@ export default function IPLSRLConsoleView() {
                             disabled={busy || microMarketsLoading}
                             onClick={fetchMicroMarkets}
                           >
-                            🔄 Refresh
+                             Refresh
                           </button>
                           <button
                             type="button"
@@ -1238,7 +1271,7 @@ export default function IPLSRLConsoleView() {
                               'All micro-markets SUSPENDED',
                             ).then(fetchMicroMarkets)}
                           >
-                            ⏸️ Mass Suspend All
+                             Mass Suspend All
                           </button>
                           <button
                             type="button"
@@ -1250,7 +1283,7 @@ export default function IPLSRLConsoleView() {
                               'All micro-markets OPENED',
                             ).then(fetchMicroMarkets)}
                           >
-                            ▶️ Open All
+                             Open All
                           </button>
                         </div>
                       </div>
@@ -1262,7 +1295,7 @@ export default function IPLSRLConsoleView() {
                         <p className="srl-hint">Loading micro-markets...</p>
                       ) : (
                         <div className="srl-micromarket-grid">
-                          {microMarketsData.map((mkt) => {
+                          {microMarketsData.map((mkt) =>{
                             const isSuspended = mkt.status === 'SUSPENDED';
                             return (
                               <div key={mkt.id} className={`srl-micromarket-card${isSuspended ? ' is-suspended' : ''}`}>
@@ -1282,11 +1315,11 @@ export default function IPLSRLConsoleView() {
                                 </div>
 
                                 <div className="srl-micromarket-outcomes">
-                                  {(mkt.outcomes || []).map((outc) => (
+                                  {(mkt.outcomes || []).map((outc) =>(
                                     <div key={outc.id} className="srl-micromarket-outcome-row">
                                       <span className="srl-outcome-name">{outc.label}</span>
                                       <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                                        <span className="srl-outcome-liability" title="Matched Liability">
+                                        <span className="srl-outcome-liability"title="Matched Liability">
                                           Liab: {formatInr(outc.liability || 0)}
                                         </span>
                                         <span className="srl-outcome-odds">{Number(outc.odds).toFixed(2)}</span>
@@ -1309,7 +1342,7 @@ export default function IPLSRLConsoleView() {
                                       `${mkt.title} is now ${isSuspended ? 'OPEN' : 'SUSPENDED'}`,
                                     ).then(fetchMicroMarkets)}
                                   >
-                                    {isSuspended ? '▶️ Resume Market' : '⏸️ Suspend'}
+                                    {isSuspended ? 'Resume Market' : 'Suspend'}
                                   </button>
 
                                   <select
@@ -1346,7 +1379,7 @@ export default function IPLSRLConsoleView() {
                   <div className="srl-tab-body" key="tactical">
                     <div className="srl-zone">
                       <div className="srl-zone-label --info" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                        <span>🏟️ 2D Tactical Pitch Map & Wagon Wheel Visualizer</span>
+                        <span>2D Tactical Pitch Map & Wagon Wheel Visualizer</span>
                         <button
                           type="button"
                           className="srl-btn srl-btn-slate"
@@ -1354,7 +1387,7 @@ export default function IPLSRLConsoleView() {
                           disabled={busy || tacticalLoading}
                           onClick={fetchTacticalRadar}
                         >
-                          🔄 Refresh Radar
+                           Refresh Radar
                         </button>
                       </div>
                       <p className="srl-hint" style={{ margin: '0 0 14px' }}>
@@ -1365,7 +1398,7 @@ export default function IPLSRLConsoleView() {
                         {/* 2D Pitch Map */}
                         <div className="srl-tactical-card">
                           <h4 style={{ margin: '0 0 8px', fontSize: '0.85rem', color: 'var(--srl-accent-strong)' }}>
-                            🎯 2D Pitch Length Density
+                             2D Pitch Length Density
                           </h4>
                           <div className="srl-pitch-field">
                             <div className="srl-crease --bowling">Bowling Crease</div>
@@ -1396,7 +1429,7 @@ export default function IPLSRLConsoleView() {
                         {/* Wagon Wheel Radar */}
                         <div className="srl-tactical-card">
                           <h4 style={{ margin: '0 0 8px', fontSize: '0.85rem', color: 'var(--srl-accent-strong)' }}>
-                            🏏 360° Radial Wagon Wheel
+                             360° Radial Wagon Wheel
                           </h4>
                           <div className="srl-wagon-grid">
                             {Object.entries(tacticalRadar?.wagonWheel || {
@@ -1408,7 +1441,7 @@ export default function IPLSRLConsoleView() {
                               MID_WICKET: { runs: 0, boundaries: 0 },
                               SQUARE_LEG: { runs: 0, boundaries: 0 },
                               FINE_LEG: { runs: 0, boundaries: 0 },
-                            }).map(([sector, data]) => (
+                            }).map(([sector, data]) =>(
                               <div key={sector} className="srl-wagon-sector">
                                 <span className="srl-wagon-sector-name">{sector.replace('_', ' ')}</span>
                                 <div className="srl-wagon-sector-stats">
@@ -1425,7 +1458,7 @@ export default function IPLSRLConsoleView() {
                         {/* Head-to-Head Duel Card */}
                         <div className="srl-tactical-card" style={{ gridColumn: '1 / -1' }}>
                           <h4 style={{ margin: '0 0 8px', fontSize: '0.85rem', color: 'var(--srl-accent-strong)' }}>
-                            ⚔️ Striker vs Bowler Head-to-Head Intelligence
+                             Striker vs Bowler Head-to-Head Intelligence
                           </h4>
                           <div className="srl-h2h-duel-box">
                             <div className="srl-h2h-names">
@@ -1446,7 +1479,7 @@ export default function IPLSRLConsoleView() {
                               </div>
                               <div className="srl-h2h-metric">
                                 <label>Runs Scored</label>
-                                <span style={{ color: '#10b981' }}>{tacticalRadar?.h2hMatchup?.runsScored ?? 0}</span>
+                                <span style={{ color: 'var(--srl-live)' }}>{tacticalRadar?.h2hMatchup?.runsScored ?? 0}</span>
                               </div>
                               <div className="srl-h2h-metric">
                                 <label>Strike Rate</label>
@@ -1454,7 +1487,7 @@ export default function IPLSRLConsoleView() {
                               </div>
                               <div className="srl-h2h-metric">
                                 <label>Dismissals</label>
-                                <span style={{ color: '#f87171' }}>{tacticalRadar?.h2hMatchup?.dismissals ?? 0}</span>
+                                <span style={{ color: 'var(--srl-danger-text)' }}>{tacticalRadar?.h2hMatchup?.dismissals ?? 0}</span>
                               </div>
                               <div className="srl-h2h-metric">
                                 <label>Dot Ball %</label>
@@ -1478,10 +1511,10 @@ export default function IPLSRLConsoleView() {
                     {/* Narrative Presets */}
                     <div className="srl-zone">
                       <div className="srl-zone-label --accent" style={{ justifyContent: 'space-between' }}>
-                        <span>📋 Narrative Presets (1-Click 6-Ball Scripts)</span>
-                        {selected.incidentQueueLength > 0 && (
+                        <span>Narrative Presets (1-Click 6-Ball Scripts)</span>
+                        {selected.incidentQueueLength >0 && (
                           <span className="srl-pill srl-pill-live">
-                            ⚡ {selected.incidentQueueLength} armed in queue
+                             {selected.incidentQueueLength} armed in queue
                           </span>
                         )}
                       </div>
@@ -1489,17 +1522,19 @@ export default function IPLSRLConsoleView() {
                         Queue high-drama narrative sequences for TV thriller finishes, batting collapses, or death-over defenses.
                       </p>
                       <div className="srl-blueprint-grid">
-                        {BLUEPRINT_PRESETS.map((p) => (
+                        {BLUEPRINT_PRESETS.map((p) =>{
+                          const PresetIcon = p.Icon;
+                          return (
                           <div key={p.id} className={`srl-blueprint-card${selectedBlueprintPreset === p.id ? ' is-active' : ''}`}>
                             <div className="srl-blueprint-card__head">
-                              <span className="srl-blueprint-icon">{p.icon}</span>
+                              <span className="srl-blueprint-icon"><PresetIcon /></span>
                               <div>
                                 <strong>{p.name}</strong>
                                 <p className="srl-hint" style={{ margin: 0 }}>{p.desc}</p>
                               </div>
                             </div>
                             <div className="srl-blueprint-balls">
-                              {p.balls.map((b, idx) => (
+                              {p.balls.map((b, idx) =>(
                                 <span
                                   key={idx}
                                   className={`srl-ball-chip --${b.type.toLowerCase()}`}
@@ -1513,7 +1548,7 @@ export default function IPLSRLConsoleView() {
                                 type="button"
                                 className="srl-btn srl-btn-blue srl-btn-wide"
                                 disabled={busy || selected.controlStatus === 'COMPLETED'}
-                                onClick={() => {
+                                onClick={() =>{
                                   setSelectedBlueprintPreset(p.id);
                                   setBlueprintBalls([...p.balls]);
                                   run(
@@ -1522,29 +1557,30 @@ export default function IPLSRLConsoleView() {
                                   );
                                 }}
                               >
-                                🚀 Arm {p.name}
+                                Arm {p.name}
                               </button>
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
 
                     {/* Custom 6-Ball Sequencer */}
                     <div className="srl-zone" style={{ marginTop: 14 }}>
                       <div className="srl-zone-label --warn" style={{ justifyContent: 'space-between' }}>
-                        <span>🎛️ Custom 6-Ball Sequencer</span>
+                        <span>Custom 6-Ball Sequencer</span>
                         <span className="srl-hint">Sequence ball 1 through 6 manually</span>
                       </div>
                       <div className="srl-sequencer-slots">
-                        {blueprintBalls.map((ball, i) => (
+                        {blueprintBalls.map((ball, i) =>(
                           <div key={i} className="srl-sequencer-slot">
                             <span className="srl-sequencer-slot-no">Ball {i + 1}</span>
                             <select
                               className="srl-input srl-sequencer-select"
                               value={ball.type}
                               disabled={busy}
-                              onChange={(e) => {
+                              onChange={(e) =>{
                                 const newType = e.target.value;
                                 const opt = BALL_TYPE_OPTIONS.find((o) => o.type === newType);
                                 const updated = [...blueprintBalls];
@@ -1556,12 +1592,12 @@ export default function IPLSRLConsoleView() {
                                 setBlueprintBalls(updated);
                               }}
                             >
-                              {BALL_TYPE_OPTIONS.map((opt) => (
+                              {BALL_TYPE_OPTIONS.map((opt) =>(
                                 <option key={opt.type} value={opt.type}>{opt.label}</option>
                               ))}
                             </select>
                             <span className={`srl-sequencer-badge --${ball.type.toLowerCase()}`}>
-                              {ball.type === 'WICKET' ? '💥 WICKET' : `${ball.runs} Run${ball.runs === 1 ? '' : 's'}`}
+                              {ball.type === 'WICKET' ? 'WICKET' : `${ball.runs} Run${ball.runs === 1 ? '' : 's'}`}
                             </span>
                           </div>
                         ))}
@@ -1572,20 +1608,20 @@ export default function IPLSRLConsoleView() {
                           className="srl-btn srl-btn-teal"
                           style={{ flex: 1, minWidth: 200 }}
                           disabled={busy || selected.controlStatus === 'COMPLETED'}
-                          onClick={() => {
+                          onClick={() =>{
                             run(
                               () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/script-over`, { balls: blueprintBalls }),
                               'Custom 6-Ball Narrative Queued into Match Engine!',
                             );
                           }}
                         >
-                          ⚡ Queue Custom 6-Ball Sequence
+                           Queue Custom 6-Ball Sequence
                         </button>
                         <button
                           type="button"
                           className="srl-btn srl-btn-slate"
                           disabled={busy}
-                          onClick={() => {
+                          onClick={() =>{
                             setBlueprintBalls([
                               { type: 'DOT', runs: 0 },
                               { type: 'DOT', runs: 0 },
@@ -1602,14 +1638,14 @@ export default function IPLSRLConsoleView() {
                     </div>
 
                     {/* Armed Incident Queue Viewer */}
-                    {Array.isArray(selected.incidentQueue) && selected.incidentQueue.length > 0 && (
+                    {Array.isArray(selected.incidentQueue) && selected.incidentQueue.length >0 && (
                       <div className="srl-zone" style={{ marginTop: 14 }}>
                         <div className="srl-zone-label --live" style={{ justifyContent: 'space-between' }}>
-                          <span>⏱️ Armed Deliveries in Queue ({selected.incidentQueue.length})</span>
+                          <span>Armed Deliveries in Queue ({selected.incidentQueue.length})</span>
                           <span className="srl-pill srl-pill-live">Next in line</span>
                         </div>
                         <div className="srl-queued-trail">
-                          {selected.incidentQueue.map((inc, qIdx) => (
+                          {selected.incidentQueue.map((inc, qIdx) =>(
                             <div key={inc.id || qIdx} className="srl-queued-ball">
                               <span className="srl-queued-ball-idx">#{qIdx + 1}</span>
                               <span className={`srl-ball-chip --${String(inc.type || '').toLowerCase()}`}>
@@ -1629,8 +1665,8 @@ export default function IPLSRLConsoleView() {
                   <div className="srl-tab-body" key="godmode">
                     <div className="srl-zone">
                       <div className="srl-zone-label --warn" style={{ justifyContent: 'space-between' }}>
-                        <span>⚡ Next-Ball Incident Injector</span>
-                        {selected.incidentQueueLength > 0 && (
+                        <span>Next-Ball Incident Injector</span>
+                        {selected.incidentQueueLength >0 && (
                           <span className="srl-pill srl-pill-live">
                             {selected.incidentQueueLength} armed
                           </span>
@@ -1638,14 +1674,16 @@ export default function IPLSRLConsoleView() {
                       </div>
                       <div className="srl-incident-grid">
                         {[
-                          { type: 'WICKET', subType: 'Bowled', icon: '💥', label: 'Wicket (Bowled)', msg: '💥 Bowled Wicket injected!' },
-                          { type: 'WICKET', subType: 'Caught Behind', icon: '🧤', label: 'Wicket (Caught)', msg: '🧤 Caught Wicket injected!' },
-                          { type: 'SIX', icon: '🚀', label: 'Boundary SIX', msg: '🚀 Boundary SIX injected!' },
-                          { type: 'FOUR', icon: '⚡', label: 'Boundary FOUR', msg: '⚡ Boundary FOUR injected!' },
-                          { type: 'DOT', icon: '🎯', label: 'Dot Ball (0)', msg: '🎯 Dot Ball injected!' },
-                          { type: 'WIDE', icon: '⚠️', label: 'Wide (+1)', msg: '⚠️ Wide (+1 extra) injected!' },
-                          { type: 'NO_BALL', icon: '🚨', label: 'No Ball (+1)', msg: '🚨 No Ball (+1 & Free Hit) injected!' },
-                        ].map((inc) => (
+                          { type: 'WICKET', subType: 'Bowled', Icon: FlameIcon, label: 'Wicket (Bowled)', msg: 'Bowled Wicket injected!' },
+                          { type: 'WICKET', subType: 'Caught Behind', Icon: ShieldCheckIcon, label: 'Wicket (Caught)', msg: 'Caught Wicket injected!' },
+                          { type: 'SIX', Icon: RocketIcon, label: 'Boundary SIX', msg: 'Boundary SIX injected!' },
+                          { type: 'FOUR', Icon: ZapIcon, label: 'Boundary FOUR', msg: 'Boundary FOUR injected!' },
+                          { type: 'DOT', Icon: SparklesIcon, label: 'Dot Ball (0)', msg: 'Dot Ball injected!' },
+                          { type: 'WIDE', Icon: TriangleAlertIcon, label: 'Wide (+1)', msg: 'Wide (+1 extra) injected!' },
+                          { type: 'NO_BALL', Icon: RadioIcon, label: 'No Ball (+1)', msg: 'No Ball (+1 & Free Hit) injected!' },
+                        ].map((inc) =>{
+                          const IncIcon = inc.Icon;
+                          return (
                           <button
                             key={`${inc.type}-${inc.subType || ''}`}
                             type="button"
@@ -1660,15 +1698,16 @@ export default function IPLSRLConsoleView() {
                               inc.msg,
                             )}
                           >
-                            <span className="srl-incident-icon">{inc.icon}</span>
+                            <span className="srl-incident-icon"><IncIcon /></span>
                             <span className="srl-incident-label">{inc.label}</span>
                           </button>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
 
                     <div className="srl-zone">
-                      <div className="srl-zone-label --accent">🎯 Pinpoint Chase Target & Tie Game</div>
+                      <div className="srl-zone-label --accent">Pinpoint Chase Target & Tie Game</div>
                       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
                         <label className="srl-field" style={{ flex: 1, minWidth: 140 }}>
                           Chase Target
@@ -1700,10 +1739,10 @@ export default function IPLSRLConsoleView() {
                           disabled={busy || selected.controlStatus === 'COMPLETED'}
                           onClick={() => run(
                             () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/tie-game`),
-                            '⚔️ Match Anchored for Super Over!',
+                            'Match Anchored for Super Over!',
                           )}
                         >
-                          ⚔️ Force Tie (Super Over)
+                          <SwordsIcon style={ICON_SM} />Force Tie (Super Over)
                         </button>
                       </div>
                     </div>
@@ -1711,7 +1750,7 @@ export default function IPLSRLConsoleView() {
                     {/* Autonomous AI Match Director */}
                     <div className="srl-zone" style={{ marginTop: 14 }}>
                       <div className="srl-zone-label --accent" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                        <span>🤖 Autonomous AI Match Director</span>
+                        <span>Autonomous AI Match Director</span>
                         <span className="srl-pill srl-pill-live">
                           Active: {selected.directorMode || 'REALISTIC'}
                         </span>
@@ -1720,12 +1759,13 @@ export default function IPLSRLConsoleView() {
                         Autonomous drama director that shapes in-play delivery probabilities dynamically to fulfill narrative goals without manual intervention.
                       </p>
                       <div className="srl-director-grid">
-                        {DIRECTOR_MODE_OPTIONS.map((dm) => {
+                        {DIRECTOR_MODE_OPTIONS.map((dm) =>{
                           const isActive = (selected.directorMode || 'REALISTIC') === dm.id;
+                          const DmIcon = dm.Icon;
                           return (
                             <div key={dm.id} className={`srl-director-card${isActive ? ' is-active' : ''}`}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <span style={{ fontSize: '1.4rem' }}>{dm.icon}</span>
+                                <span className="srl-blueprint-icon"><DmIcon /></span>
                                 <div>
                                   <strong>{dm.label}</strong>
                                   <p className="srl-hint" style={{ margin: 0, fontSize: '0.72rem' }}>{dm.desc}</p>
@@ -1736,14 +1776,14 @@ export default function IPLSRLConsoleView() {
                                 className={`srl-btn ${isActive ? 'srl-btn-teal' : 'srl-btn-blue'}`}
                                 style={{ marginTop: 8, width: '100%', fontSize: '0.75rem', padding: '4px 8px' }}
                                 disabled={busy}
-                                onClick={() => {
+                                onClick={() =>{
                                   run(
                                     () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/director-mode`, { mode: dm.id }),
-                                    `🎬 AI Director mode set to ${dm.label}!`,
+                                    `AI Director mode set to ${dm.label}!`,
                                   );
                                 }}
                               >
-                                {isActive ? '✓ Active Mode' : 'Activate Mode'}
+                                {isActive ? 'Active Mode' : 'Activate Mode'}
                               </button>
                             </div>
                           );
@@ -1754,8 +1794,8 @@ export default function IPLSRLConsoleView() {
                     {/* Player Morale & Specialist Buffs */}
                     <div className="srl-zone" style={{ marginTop: 14 }}>
                       <div className="srl-zone-label --warn" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                        <span>🔥 Player Morale & Specialist Buffs</span>
-                        {Object.keys(selected.playerBuffs || {}).length > 0 && (
+                        <span>Player Morale & Specialist Buffs</span>
+                        {Object.keys(selected.playerBuffs || {}).length >0 && (
                           <span className="srl-pill srl-pill-paused">
                             {Object.keys(selected.playerBuffs).length} Buffs Active
                           </span>
@@ -1780,13 +1820,13 @@ export default function IPLSRLConsoleView() {
                           </select>
                         </label>
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                          {PLAYER_BUFF_OPTIONS.map((pb) => (
+                          {PLAYER_BUFF_OPTIONS.map((pb) =>(
                             <button
                               key={pb.id}
                               type="button"
                               className="srl-chip"
                               disabled={busy}
-                              onClick={() => {
+                              onClick={() =>{
                                 run(
                                   () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/player-buff`, {
                                     role: selectedBuffPlayer,
@@ -1804,7 +1844,7 @@ export default function IPLSRLConsoleView() {
                             className="srl-chip"
                             style={{ color: 'var(--srl-text-muted)' }}
                             disabled={busy}
-                            onClick={() => {
+                            onClick={() =>{
                               run(
                                 () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/player-buff`, {
                                   role: selectedBuffPlayer,
@@ -1814,14 +1854,14 @@ export default function IPLSRLConsoleView() {
                               );
                             }}
                           >
-                            ✕ Clear Buff
+                             Clear Buff
                           </button>
                         </div>
                       </div>
 
-                      {Object.keys(selected.playerBuffs || {}).length > 0 && (
+                      {Object.keys(selected.playerBuffs || {}).length >0 && (
                         <div className="srl-active-buffs-row" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                          {Object.entries(selected.playerBuffs).map(([role, b]) => (
+                          {Object.entries(selected.playerBuffs).map(([role, b]) =>(
                             <span key={role} className="srl-pill srl-pill-live" style={{ fontSize: '0.72rem', padding: '3px 8px' }}>
                               {role.toUpperCase()}: {b.buff}
                             </span>
@@ -1838,7 +1878,7 @@ export default function IPLSRLConsoleView() {
                     <div className="srl-radar-card">
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                         <div className="srl-zone-label --live" style={{ margin: 0 }}>
-                          🛡️ Live Liability Radar
+                           Live Liability Radar
                         </div>
                         <span className={`srl-pill ${selected.book?.riskFlag === 'CRITICAL' ? 'srl-pill-completed' : (selected.book?.riskFlag === 'WARNING' ? 'srl-pill-paused' : 'srl-pill-live')}`}>
                           {selected.book?.riskFlag || 'BALANCED'}
@@ -1848,19 +1888,19 @@ export default function IPLSRLConsoleView() {
                       <div className="srl-radar-stats">
                         <div className="srl-radar-stat-box">
                           <label>Home ({selected.homeShort}) Win P&L</label>
-                          <strong style={{ color: (selected.book?.projectedPnlHome ?? 0) >= 0 ? '#10b981' : '#f87171' }}>
+                          <strong style={{ color: (selected.book?.projectedPnlHome ?? 0) >= 0 ? 'var(--srl-live)' : 'var(--srl-danger-text)' }}>
                             {(selected.book?.projectedPnlHome ?? 0) >= 0 ? '+' : ''}{formatInr(selected.book?.projectedPnlHome || 0)}
                           </strong>
                         </div>
                         <div className="srl-radar-stat-box">
                           <label>Away ({selected.awayShort}) Win P&L</label>
-                          <strong style={{ color: (selected.book?.projectedPnlAway ?? 0) >= 0 ? '#10b981' : '#f87171' }}>
+                          <strong style={{ color: (selected.book?.projectedPnlAway ?? 0) >= 0 ? 'var(--srl-live)' : 'var(--srl-danger-text)' }}>
                             {(selected.book?.projectedPnlAway ?? 0) >= 0 ? '+' : ''}{formatInr(selected.book?.projectedPnlAway || 0)}
                           </strong>
                         </div>
                         <div className="srl-radar-stat-box">
                           <label>Worst-Case Liability</label>
-                          <strong style={{ color: (selected.book?.worstCaseLiability ?? 0) > 20000 ? '#f59e0b' : 'var(--admin-text)' }}>
+                          <strong style={{ color: (selected.book?.worstCaseLiability ?? 0) >20000 ? 'var(--srl-warn)' : 'var(--admin-text)' }}>
                             {formatInr(selected.book?.worstCaseLiability || 0)}
                           </strong>
                         </div>
@@ -1917,7 +1957,7 @@ export default function IPLSRLConsoleView() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
                           <div>
                             <div className="srl-zone-label --accent" style={{ margin: 0 }}>
-                              💰 Smart Profit Maximizer & Auto-Hedge
+                               Smart Profit Maximizer & Auto-Hedge
                             </div>
                             <p className="srl-hint" style={{ margin: '4px 0 0' }}>
                               Auto-dynamically adjusts market odds towards under-staked selections to balance the house book.
@@ -1927,18 +1967,18 @@ export default function IPLSRLConsoleView() {
                             type="button"
                             className={`srl-btn ${selected.autoProfitMaximizer ? 'srl-btn-teal' : 'srl-btn-slate'}`}
                             disabled={busy}
-                            onClick={() => {
+                            onClick={() =>{
                               const nextState = !selected.autoProfitMaximizer;
                               run(
                                 () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/profit-maximizer`, {
                                   enabled: nextState,
                                   targetMargin: Number(profitMaximizerTarget),
                                 }),
-                                nextState ? '💰 Profit Maximizer ACTIVE!' : 'Profit Maximizer disabled',
+                                nextState ? 'Profit Maximizer ACTIVE!' : 'Profit Maximizer disabled',
                               );
                             }}
                           >
-                            {selected.autoProfitMaximizer ? '🟢 Maximizer ACTIVE' : '⚪ Maximizer OFF'}
+                            {selected.autoProfitMaximizer ? 'Maximizer ACTIVE' : 'Maximizer OFF'}
                           </button>
                         </div>
 
@@ -1964,13 +2004,13 @@ export default function IPLSRLConsoleView() {
                               { label: '+3% Def', bump: 0.03 },
                               { label: '+5% Vol', bump: 0.05 },
                               { label: '+8% Death', bump: 0.08 },
-                            ].map((s) => (
+                            ].map((s) =>(
                               <button
                                 key={s.label}
                                 type="button"
                                 className="srl-chip"
                                 disabled={busy}
-                                onClick={() => {
+                                onClick={() =>{
                                   run(
                                     () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/margin`, { marginBump: s.bump }),
                                     `Quick Spike ${s.label} applied!`,
@@ -1989,7 +2029,7 @@ export default function IPLSRLConsoleView() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
                           <div>
                             <div className="srl-zone-label --warn" style={{ margin: 0 }}>
-                              🚨 Automated Circuit Breakers & Red Phone Kill-Switch
+                               Automated Circuit Breakers & Red Phone Kill-Switch
                             </div>
                             <p className="srl-hint" style={{ margin: '4px 0 0' }}>
                               Auto-trips when unhedged liability spike velocity exceeds threshold. Master Kill-Switch freezes entire fixture instantly.
@@ -1998,16 +2038,23 @@ export default function IPLSRLConsoleView() {
                           <button
                             type="button"
                             className={`srl-btn ${selected.circuitBreaker?.emergencyKillSwitch ? 'srl-btn-teal' : 'srl-btn-orange'}`}
-                            style={{ fontWeight: 800, padding: '8px 16px', letterSpacing: '0.04em', background: selected.circuitBreaker?.emergencyKillSwitch ? '#10b981' : '#dc2626', color: '#fff', borderColor: '#ef4444' }}
+                            style={{
+                              fontWeight: 800,
+                              padding: '8px 16px',
+                              letterSpacing: '0.04em',
+                              background: selected.circuitBreaker?.emergencyKillSwitch ? 'var(--srl-live)' : 'var(--srl-danger)',
+                              color: selected.circuitBreaker?.emergencyKillSwitch ? 'var(--srl-on-accent)' : '#f4f1ea',
+                              borderColor: 'var(--srl-danger)',
+                            }}
                             disabled={busy}
                             onClick={() => run(
                               () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/circuit-breaker/kill-switch`, {
                                 active: !selected.circuitBreaker?.emergencyKillSwitch,
                               }),
-                              selected.circuitBreaker?.emergencyKillSwitch ? 'Emergency Kill-Switch DISENGAGED · Betting Resumed' : '🚨 EMERGENCY KILL-SWITCH ENGAGED · ALL BETTING FROZEN',
+                              selected.circuitBreaker?.emergencyKillSwitch ? 'Emergency Kill-Switch DISENGAGED · Betting Resumed' : 'EMERGENCY KILL-SWITCH ENGAGED · ALL BETTING FROZEN',
                             )}
                           >
-                            {selected.circuitBreaker?.emergencyKillSwitch ? '🟢 Disengage Kill-Switch' : '🚨 RED PHONE KILL-SWITCH'}
+                            {selected.circuitBreaker?.emergencyKillSwitch ? 'Disengage Kill-Switch' : 'RED PHONE KILL-SWITCH'}
                           </button>
                         </div>
 
@@ -2085,7 +2132,7 @@ export default function IPLSRLConsoleView() {
                   <div className="srl-tab-body" key="cashout">
                     <div className="srl-zone">
                       <div className="srl-zone-label --accent" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                        <span>💸 Live Cash-Out Haircut & Strategic Buyback Desk</span>
+                        <span>Live Cash-Out Haircut & Strategic Buyback Desk</span>
                         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                           <button
                             type="button"
@@ -2094,7 +2141,7 @@ export default function IPLSRLConsoleView() {
                             disabled={busy || cashoutLoading}
                             onClick={fetchCashout}
                           >
-                            🔄 Refresh Cashouts
+                             Refresh Cashouts
                           </button>
                           <button
                             type="button"
@@ -2105,10 +2152,10 @@ export default function IPLSRLConsoleView() {
                               () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/cashout/config`, {
                                 cashoutHalted: !selected.cashoutControl?.cashoutHalted,
                               }),
-                              selected.cashoutControl?.cashoutHalted ? 'Cash-Out UNFROZEN' : '⚠️ Cash-Out HALTED for users',
+                              selected.cashoutControl?.cashoutHalted ? 'Cash-Out UNFROZEN' : 'Cash-Out HALTED for users',
                             ).then(fetchCashout)}
                           >
-                            {selected.cashoutControl?.cashoutHalted ? '▶️ Unfreeze Cash-Out' : '⏸️ Emergency Cash-Out Halt'}
+                            {selected.cashoutControl?.cashoutHalted ? 'Unfreeze Cash-Out' : 'Emergency Cash-Out Halt'}
                           </button>
                         </div>
                       </div>
@@ -2167,7 +2214,7 @@ export default function IPLSRLConsoleView() {
                             </tr>
                           </thead>
                           <tbody>
-                            {(cashoutData?.positions || []).map((pos) => (
+                            {(cashoutData?.positions || []).map((pos) =>(
                               <tr key={pos.betId}>
                                 <td style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{pos.betId}</td>
                                 <td>
@@ -2178,9 +2225,9 @@ export default function IPLSRLConsoleView() {
                                 <td><strong>{pos.selection}</strong> @ {pos.odds}</td>
                                 <td>{formatInr(pos.stake)}</td>
                                 <td style={{ color: 'var(--admin-text)' }}>{formatInr(pos.fairValue)}</td>
-                                <td style={{ color: '#f87171' }}>-{formatInr(pos.haircutFee)}</td>
+                                <td style={{ color: 'var(--srl-danger-text)' }}>-{formatInr(pos.haircutFee)}</td>
                                 <td>
-                                  <strong style={{ color: '#10b981', fontSize: '0.9rem' }}>
+                                  <strong style={{ color: 'var(--srl-live)', fontSize: '0.9rem' }}>
                                     {formatInr(pos.cashoutOffer)}
                                   </strong>
                                   {pos.hasSweetener && (
@@ -2200,10 +2247,10 @@ export default function IPLSRLConsoleView() {
                                         betId: pos.betId,
                                         bonusPercent: 5,
                                       }),
-                                      `🎁 +5% Sweetener Buyback pushed for ${pos.betId}!`,
+                                      ` +5% Sweetener Buyback pushed for ${pos.betId}!`,
                                     ).then(fetchCashout)}
                                   >
-                                    {pos.hasSweetener ? '✓ Sweetener Pushed' : '🎁 Push +5% Buyback'}
+                                    {pos.hasSweetener ? 'Sweetener Pushed' : 'Push +5% Buyback'}
                                   </button>
                                 </td>
                               </tr>
@@ -2227,11 +2274,11 @@ export default function IPLSRLConsoleView() {
                   <div className="srl-tab-body" key="wagers">
                     <div className="srl-zone">
                       <div className="srl-zone-label --live" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                        <span>🐋 Live Match Wager Tape & Whale Tracker ({wagerTape?.totalWagers || 0} Bets)</span>
+                        <span>Live Match Wager Tape & Whale Tracker ({wagerTape?.totalWagers || 0} Bets)</span>
                         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                          {wagerTape?.whaleCount > 0 && (
-                            <span className="srl-pill srl-pill-live" style={{ background: 'rgba(245, 158, 11, 0.2)', borderColor: '#f59e0b', color: '#fbbf24' }}>
-                              🐋 {wagerTape.whaleCount} Whale Bets Detected
+                          {wagerTape?.whaleCount >0 && (
+                            <span className="srl-pill srl-pill-live" style={{ background: 'var(--srl-warn-bg)', borderColor: 'var(--srl-warn)', color: 'var(--srl-warn-text)' }}>
+                               {wagerTape.whaleCount} Whale Bets Detected
                             </span>
                           )}
                           <button
@@ -2241,7 +2288,7 @@ export default function IPLSRLConsoleView() {
                             disabled={busy || wagerTapeLoading}
                             onClick={fetchWagers}
                           >
-                            🔄 Refresh Tape
+                             Refresh Tape
                           </button>
                         </div>
                       </div>
@@ -2268,8 +2315,8 @@ export default function IPLSRLConsoleView() {
                               </tr>
                             </thead>
                             <tbody>
-                              {wagerTape.wagers.map((w) => (
-                                <tr key={w.betId} className={w.isWhale ? 'is-whale' : ''}>
+                              {wagerTape.wagers.map((w) =>(
+                                <tr key={w.betId} className={w.isWhale ? ' is-whale' : ''}>
                                   <td>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                       <span className={`srl-pill ${w.isWhale ? 'srl-pill-paused' : (w.userTier === 'VIP' ? 'srl-pill-live' : 'srl-pill-muted')}`} style={{ fontSize: '0.64rem', padding: '2px 6px' }}>
@@ -2286,7 +2333,7 @@ export default function IPLSRLConsoleView() {
                                     <strong>{Number(w.odds).toFixed(2)}</strong>
                                   </td>
                                   <td>
-                                    <strong style={{ color: w.isWhale ? '#f59e0b' : 'inherit' }}>
+                                    <strong style={{ color: w.isWhale ? 'var(--srl-warn)' : 'inherit' }}>
                                       {formatInr(w.stake)}
                                     </strong>
                                   </td>
@@ -2304,14 +2351,14 @@ export default function IPLSRLConsoleView() {
                                       className="srl-btn srl-btn-orange"
                                       style={{ fontSize: '0.7rem', padding: '3px 8px' }}
                                       disabled={busy}
-                                      onClick={() => {
+                                      onClick={() =>{
                                         run(
                                           () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/margin`, { marginBump: 0.05 }),
                                           `+5% Counter-Defense applied against ${w.selection}!`,
                                         );
                                       }}
                                     >
-                                      🛡️ +5% Counter
+                                       +5% Counter
                                     </button>
                                   </td>
                                 </tr>
@@ -2330,7 +2377,7 @@ export default function IPLSRLConsoleView() {
                     {/* Pre-Match Toss Simulator */}
                     <div className="srl-zone">
                       <div className="srl-zone-label --accent" style={{ justifyContent: 'space-between' }}>
-                        <span>🪙 Official Toss Simulator & Election</span>
+                        <span>Official Toss Simulator & Election</span>
                         {selected.toss?.winner && (
                           <span className="srl-pill srl-pill-live">
                             Toss: {selected.toss.winner === selected.homeTeamId ? selected.homeShort : selected.awayShort} ({selected.toss.decision})
@@ -2348,7 +2395,7 @@ export default function IPLSRLConsoleView() {
                           onClick={simulateCoinFlip}
                           style={{ height: 38, fontWeight: 800 }}
                         >
-                          {tossFlipping ? '🪙 Spinning coin…' : '🪙 Simulate Coin Flip'}
+                          {tossFlipping ? 'Spinning coin…' : 'Simulate Coin Flip'}
                         </button>
                         <div style={{ display: 'flex', gap: 6 }}>
                           <button
@@ -2372,21 +2419,21 @@ export default function IPLSRLConsoleView() {
                             className={`srl-chip${tossDecision === 'BAT' ? ' is-on' : ''}`}
                             onClick={() => setTossDecision('BAT')}
                           >
-                            🏏 Elect to BAT
+                             Elect to BAT
                           </button>
                           <button
                             type="button"
                             className={`srl-chip${tossDecision === 'BOWL' ? ' is-on' : ''}`}
                             onClick={() => setTossDecision('BOWL')}
                           >
-                            ⚾ Elect to BOWL
+                             Elect to BOWL
                           </button>
                         </div>
                         <button
                           type="button"
                           className="srl-btn srl-btn-teal"
                           disabled={busy || !tossWinnerKey}
-                          onClick={() => {
+                          onClick={() =>{
                             run(
                               () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/toss`, {
                                 winnerTeamId: tossWinnerKey,
@@ -2404,7 +2451,7 @@ export default function IPLSRLConsoleView() {
                     {/* Squad & Impact Player Desk */}
                     <div className="srl-zone" style={{ marginTop: 14 }}>
                       <div className="srl-zone-label --live">
-                        👥 Playing XI & Impact Players Desk
+                         Playing XI & Impact Players Desk
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 14, marginTop: 10 }}>
                         {/* Home Squad */}
@@ -2430,7 +2477,7 @@ export default function IPLSRLConsoleView() {
                             className="srl-btn srl-btn-blue"
                             style={{ marginTop: 8 }}
                             disabled={busy}
-                            onClick={() => {
+                            onClick={() =>{
                               const players = homeXIInput.split(',').map((p) => p.trim()).filter(Boolean);
                               run(
                                 () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/lineup`, {
@@ -2469,7 +2516,7 @@ export default function IPLSRLConsoleView() {
                             className="srl-btn srl-btn-blue"
                             style={{ marginTop: 8 }}
                             disabled={busy}
-                            onClick={() => {
+                            onClick={() =>{
                               const players = awayXIInput.split(',').map((p) => p.trim()).filter(Boolean);
                               run(
                                 () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/lineup`, {
@@ -2494,7 +2541,7 @@ export default function IPLSRLConsoleView() {
                   <div className="srl-tab-body" key="replay">
                     <div className="srl-zone">
                       <div className="srl-zone-label --accent" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                        <span>🎞️ Ball-by-Ball Timeline Replay ({replayDeliveries.length} Deliveries)</span>
+                        <span>Ball-by-Ball Timeline Replay ({replayDeliveries.length} Deliveries)</span>
                         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                           <button
                             type="button"
@@ -2503,7 +2550,7 @@ export default function IPLSRLConsoleView() {
                             disabled={busy || replayLoading}
                             onClick={fetchReplay}
                           >
-                            🔄 Refresh Replay
+                             Refresh Replay
                           </button>
                           <button
                             type="button"
@@ -2511,7 +2558,7 @@ export default function IPLSRLConsoleView() {
                             style={{ fontSize: '0.75rem', padding: '4px 10px' }}
                             onClick={() => exportAudit('json')}
                           >
-                            ⬇️ Export JSON
+                            Export JSON
                           </button>
                           <button
                             type="button"
@@ -2519,7 +2566,7 @@ export default function IPLSRLConsoleView() {
                             style={{ fontSize: '0.75rem', padding: '4px 10px' }}
                             onClick={() => exportAudit('csv')}
                           >
-                            ⬇️ Export CSV
+                            Export CSV
                           </button>
                         </div>
                       </div>
@@ -2530,7 +2577,7 @@ export default function IPLSRLConsoleView() {
                           { id: 'all', label: 'All Balls' },
                           { id: 'boundaries', label: 'Boundaries (4/6)' },
                           { id: 'wickets', label: 'Wickets Only' },
-                        ].map((rf) => (
+                        ].map((rf) =>(
                           <button
                             key={rf.id}
                             type="button"
@@ -2550,14 +2597,14 @@ export default function IPLSRLConsoleView() {
                       ) : (
                         <div className="srl-replay-list">
                           {replayDeliveries
-                            .filter((d) => {
+                            .filter((d) =>{
                               if (replayFilter === 'boundaries') return d.outcome === 'FOUR' || d.outcome === 'SIX';
                               if (replayFilter === 'wickets') return !!d.wicket;
                               return true;
                             })
                             .slice(-50)
                             .reverse()
-                            .map((d, dIdx) => (
+                            .map((d, dIdx) =>(
                               <div key={d.ballId || dIdx} className="srl-replay-item">
                                 <div className="srl-replay-top">
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -2596,7 +2643,7 @@ export default function IPLSRLConsoleView() {
                   <div className="srl-tab-body" key="weather">
                     <div className="srl-zone">
                       <div className="srl-zone-label --info" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                        <span>🌪️ Environmental Physics Engine (Dew, Pitch & Swing)</span>
+                        <span>Environmental Physics Engine (Dew, Pitch & Swing)</span>
                         <span className="srl-pill srl-pill-live">
                           Active: {selected.environment?.pitchWear?.replace('_', ' ')}
                         </span>
@@ -2609,7 +2656,7 @@ export default function IPLSRLConsoleView() {
                         {/* Dew Factor Slider */}
                         <div className="srl-env-card">
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <strong style={{ fontSize: '0.85rem' }}>💧 Dew Factor (Night Chases)</strong>
+                            <strong style={{ fontSize: '0.85rem' }}>Dew Factor (Night Chases)</strong>
                             <span style={{ fontWeight: 800, color: '#38bdf8' }}>{dewFactorInput}%</span>
                           </div>
                           <input
@@ -2637,10 +2684,10 @@ export default function IPLSRLConsoleView() {
                               className="srl-input"
                               style={{ height: 36, marginTop: 6 }}
                             >
-                              <option value="FRESH_BELTER">⚡ Fresh Belter (True bounce, 200+ par)</option>
-                              <option value="DRY_DUSTBOWL">🏜️ Dry Dustbowl (Sharp spin, LBW/Bowled x1.4)</option>
-                              <option value="GREEN_SEAMER">🌿 Green Seamer (Late swing, slips edges x1.5)</option>
-                              <option value="CRACKED_MINEFIELD">💥 Cracked Minefield (Variable bounce chaos)</option>
+                              <option value="FRESH_BELTER">Fresh Belter (True bounce, 200+ par)</option>
+                              <option value="DRY_DUSTBOWL">Dry Dustbowl (Sharp spin, LBW/Bowled x1.4)</option>
+                              <option value="GREEN_SEAMER">Green Seamer (Late swing, slips edges x1.5)</option>
+                              <option value="CRACKED_MINEFIELD">Cracked Minefield (Variable bounce chaos)</option>
                             </select>
                           </label>
                           <p className="srl-hint" style={{ margin: '6px 0 0', fontSize: '0.72rem' }}>
@@ -2651,8 +2698,8 @@ export default function IPLSRLConsoleView() {
                         {/* Swing Index Slider */}
                         <div className="srl-env-card">
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <strong style={{ fontSize: '0.85rem' }}>🍃 Swing & Seam Movement</strong>
-                            <span style={{ fontWeight: 800, color: '#10b981' }}>{swingIndexInput}%</span>
+                            <strong style={{ fontSize: '0.85rem' }}>Swing & Seam Movement</strong>
+                            <span style={{ fontWeight: 800, color: 'var(--srl-live)' }}>{swingIndexInput}%</span>
                           </div>
                           <input
                             type="range"
@@ -2671,7 +2718,7 @@ export default function IPLSRLConsoleView() {
                                 checked={overcastInput}
                                 onChange={(e) => setOvercastInput(e.target.checked)}
                               />
-                              ☁️ Overcast Skies
+                               Overcast Skies
                             </label>
                             <span className="srl-hint" style={{ fontSize: '0.7rem' }}>
                               {overcastInput ? 'Enhanced Powerplay Seam' : 'Clear Sun'}
@@ -2703,7 +2750,7 @@ export default function IPLSRLConsoleView() {
 
                     {/* DLS Engine & Rain Delays */}
                     <div className="srl-zone" style={{ marginTop: 14 }}>
-                      <div className="srl-zone-label --warn">🌧️ DLS Engine & Rain Delays</div>
+                      <div className="srl-zone-label --warn">DLS Engine & Rain Delays</div>
                       <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                         <button
                           type="button"
@@ -2714,7 +2761,7 @@ export default function IPLSRLConsoleView() {
                             selected.rainDelay ? 'Rain cleared · Match resumed' : 'Rain delay started · Betting held',
                           )}
                         >
-                          {selected.rainDelay ? '☀️ Clear Rain Delay' : '🌧️ Start Rain Delay'}
+                          {selected.rainDelay ? 'Clear Rain Delay' : 'Start Rain Delay'}
                         </button>
                         <label className="srl-field" style={{ width: 130 }}>
                           Shorten Overs
@@ -2757,7 +2804,7 @@ export default function IPLSRLConsoleView() {
                 {matchZone === 'broadcast' && (
                   <div className="srl-tab-body" key="broadcast">
                     <div className="srl-zone">
-                      <div className="srl-zone-label --accent">📢 Broadcast Live Commentary</div>
+                      <div className="srl-zone-label --accent">Broadcast Live Commentary</div>
                       <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                         <input
                           type="text"
@@ -2772,7 +2819,7 @@ export default function IPLSRLConsoleView() {
                           className="srl-btn srl-btn-blue"
                           style={{ height: 36 }}
                           disabled={busy || !commentaryText.trim()}
-                          onClick={() => {
+                          onClick={() =>{
                             run(
                               () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/commentary`, { text: commentaryText, eventTag: commentaryTag }),
                               'Commentary broadcasted!',
@@ -2784,7 +2831,7 @@ export default function IPLSRLConsoleView() {
                         </button>
                       </div>
                       <div className="srl-tag-chips">
-                        {['DRS_REVIEW', 'STRATEGIC_TIMEOUT', 'FREE_HIT', 'INJURY_STOPPAGE', 'GENERAL'].map((tag) => (
+                        {['DRS_REVIEW', 'STRATEGIC_TIMEOUT', 'FREE_HIT', 'INJURY_STOPPAGE', 'GENERAL'].map((tag) =>(
                           <button
                             key={tag}
                             type="button"
@@ -2830,7 +2877,7 @@ export default function IPLSRLConsoleView() {
                             'Toss markets settled in bulk!',
                           )}
                         >
-                          ⚡ Settle Toss
+                           Settle Toss
                         </button>
                         <button
                           type="button"
@@ -2842,7 +2889,7 @@ export default function IPLSRLConsoleView() {
                             '1st Innings markets settled in bulk!',
                           )}
                         >
-                          ⚡ Settle 1st Innings
+                           Settle 1st Innings
                         </button>
                       </div>
 
@@ -2856,7 +2903,7 @@ export default function IPLSRLConsoleView() {
                           { id: 'open', label: 'Open + staked' },
                           { id: 'staked', label: 'With stakes' },
                           { id: 'locked', label: 'Locked / settled' },
-                        ].map((f) => (
+                        ].map((f) =>(
                           <button
                             key={f.id}
                             type="button"
@@ -2875,7 +2922,7 @@ export default function IPLSRLConsoleView() {
                       )}
                       {marketsError && <p className="srl-console-error">{marketsError}</p>}
                       <div className="srl-market-list">
-                        {visibleMarkets.map((market) => {
+                        {visibleMarkets.map((market) =>{
                           const status = String(market.status || 'OPEN').toUpperCase();
                           const settled = ['DETERMINED', 'VOID', 'VOIDED'].includes(status);
                           const mid = encodeURIComponent(market.marketId);
@@ -2887,7 +2934,7 @@ export default function IPLSRLConsoleView() {
                                   <span className="srl-hint">
                                     {market.marketId}
                                     {market.line != null ? ` · line ${market.line}` : ''}
-                                    {(market.book?.bets || 0) > 0
+                                    {(market.book?.bets || 0) >0
                                       ? ` · ${market.book.bets} bets · ${formatInr(market.book.stake)}`
                                       : ''}
                                   </span>
@@ -2925,7 +2972,7 @@ export default function IPLSRLConsoleView() {
                                 </div>
                               </div>
                               <div className="srl-market-sels">
-                                {(market.selections || []).map((sel) => (
+                                {(market.selections || []).map((sel) =>(
                                     <button
                                       key={sel.selectionId}
                                       type="button"
@@ -2947,7 +2994,7 @@ export default function IPLSRLConsoleView() {
                                       <span>{sel.name}</span>
                                       <strong>{sel.odds != null ? Number(sel.odds).toFixed(2) : '—'}</strong>
                                       <em>
-                                        {(sel.book?.bets || 0) > 0
+                                        {(sel.book?.bets || 0) >0
                                           ? `${sel.book.bets} · ${formatInr(sel.book.stake)}`
                                           : 'No open bets'}
                                       </em>
@@ -2968,9 +3015,9 @@ export default function IPLSRLConsoleView() {
             )}
 
             {/* Standings — always visible below cockpit */}
-            <Panel title="Standings" hint="10 teams · W=2 pts">
+            <Panel title="Standings"hint="10 teams · W=2 pts">
               <div className="srl-standings">
-                {(snap.standings || []).map((row) => (
+                {(snap.standings || []).map((row) =>(
                   <div key={row.teamId} className="srl-stand-row">
                     <span className="srl-hint">{row.rank}</span>
                     <strong>{row.shortName}</strong>
@@ -2985,7 +3032,7 @@ export default function IPLSRLConsoleView() {
 
       {/* ═══ TEAMS TAB ═══ */}
       {tab === 'teams' && snap && (
-        <Panel title="Teams & strength ratings" hint={`${snap.teams?.length || 0} teams`}>
+        <Panel title="Teams & strength ratings"hint={`${snap.teams?.length || 0} teams`}>
           <div className="srl-table-wrap">
             <table>
               <thead>
@@ -2998,7 +3045,7 @@ export default function IPLSRLConsoleView() {
                 </tr>
               </thead>
               <tbody>
-                {(snap.teams || []).map((t) => (
+                {(snap.teams || []).map((t) =>(
                   <tr key={t.teamId}>
                     <td><strong>{t.teamName}</strong></td>
                     <td>{t.shortName}</td>
@@ -3009,7 +3056,7 @@ export default function IPLSRLConsoleView() {
                         className="srl-input"
                         defaultValue={t.strengthRating}
                         style={{ width: 72, padding: '6px 8px' }}
-                        onBlur={(e) => {
+                        onBlur={(e) =>{
                           const val = Number(e.target.value);
                           if (val === t.strengthRating) return;
                           run(() => adminApiClient.post(`/iplsrl/teams/${t.teamId}/rating`, { strengthRating: val }), 'Rating updated');
@@ -3027,7 +3074,7 @@ export default function IPLSRLConsoleView() {
 
       {/* ═══ PLAYERS TAB ═══ */}
       {tab === 'players' && snap && (
-        <Panel title="Player roster" hint={`${snap.players?.length || 0} players`}>
+        <Panel title="Player roster"hint={`${snap.players?.length || 0} players`}>
           <div className="srl-table-wrap">
             <table>
               <thead>
@@ -3041,7 +3088,7 @@ export default function IPLSRLConsoleView() {
                 </tr>
               </thead>
               <tbody>
-                {(snap.players || []).slice(0, 80).map((p) => (
+                {(snap.players || []).slice(0, 80).map((p) =>(
                   <tr key={p.playerId}>
                     <td><strong>{p.name}</strong></td>
                     <td>{p.teamId}</td>
@@ -3059,9 +3106,9 @@ export default function IPLSRLConsoleView() {
 
       {/* ═══ AUDIT TAB ═══ */}
       {tab === 'audit' && snap && (
-        <Panel title="Operator audit log" hint={`${snap.audit?.length || 0} recent`}>
+        <Panel title="Operator audit log"hint={`${snap.audit?.length || 0} recent`}>
           <div className="srl-audit">
-            {(snap.audit || []).map((a) => (
+            {(snap.audit || []).map((a) =>(
               <div key={a.id} className="srl-audit-row">
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
                   <strong style={{ fontSize: '0.82rem' }}>{a.action}</strong>
@@ -3078,7 +3125,7 @@ export default function IPLSRLConsoleView() {
       <AdminConfirmDialog
         isOpen={!!declareAsk}
         variant="warning"
-        icon="🏏"
+        icon=""
         title={`Declare ${declareAsk?.short} winner?`}
         description="This settles the match for users and pays match-winner bets. Betting on this fixture closes."
         details={declareAsk ? [
@@ -3092,7 +3139,7 @@ export default function IPLSRLConsoleView() {
         cancelLabel="Cancel"
         loading={busy}
         onCancel={() => setDeclareAsk(null)}
-        onConfirm={() => {
+        onConfirm={() =>{
           const ask = declareAsk;
           setDeclareAsk(null);
           if (!ask || !selected) return;
@@ -3106,7 +3153,7 @@ export default function IPLSRLConsoleView() {
       <AdminConfirmDialog
         isOpen={!!marketAsk}
         variant={marketAsk?.voidMarket ? 'danger' : 'warning'}
-        icon={marketAsk?.voidMarket ? '⊘' : '✓'}
+        icon={marketAsk?.voidMarket ? 'void' : ''}
         title={marketAsk?.voidMarket
           ? `Void ${marketAsk?.title}?`
           : `Declare ${marketAsk?.selectionName}?`}
@@ -3130,7 +3177,7 @@ export default function IPLSRLConsoleView() {
         cancelLabel="Cancel"
         loading={busy}
         onCancel={() => setMarketAsk(null)}
-        onConfirm={() => {
+        onConfirm={() =>{
           const ask = marketAsk;
           setMarketAsk(null);
           if (!ask || !selected) return;
@@ -3152,13 +3199,13 @@ export default function IPLSRLConsoleView() {
         <div className="srl-modal-overlay" onClick={() => setShowExhibitionModal(false)}>
           <div className="srl-modal-card" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800 }}>➕ Exhibition Match</h3>
+              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800 }}>Exhibition Match</h3>
               <button
                 type="button"
                 className="srl-chip"
                 onClick={() => setShowExhibitionModal(false)}
               >
-                ✕
+                
               </button>
             </div>
             <p className="srl-hint" style={{ margin: 0 }}>
@@ -3172,7 +3219,7 @@ export default function IPLSRLConsoleView() {
                   onChange={(e) => setExhibitionHome(e.target.value)}
                   className="srl-input"
                 >
-                  {(snap?.teams || []).map((t) => (
+                  {(snap?.teams || []).map((t) =>(
                     <option key={t.teamId} value={t.teamId}>{t.shortName} · {t.name}</option>
                   ))}
                 </select>
@@ -3184,7 +3231,7 @@ export default function IPLSRLConsoleView() {
                   onChange={(e) => setExhibitionAway(e.target.value)}
                   className="srl-input"
                 >
-                  {(snap?.teams || []).map((t) => (
+                  {(snap?.teams || []).map((t) =>(
                     <option key={t.teamId} value={t.teamId}>{t.shortName} · {t.name}</option>
                   ))}
                 </select>
@@ -3226,7 +3273,7 @@ export default function IPLSRLConsoleView() {
                 type="button"
                 className="srl-btn srl-btn-blue"
                 disabled={busy || exhibitionHome === exhibitionAway}
-                onClick={() => {
+                onClick={() =>{
                   run(
                     () => adminApiClient.post('/iplsrl/matches/custom', {
                       homeTeamId: exhibitionHome,
