@@ -264,7 +264,7 @@ describe('OddsYra SRL operator controls', () => {
     expect(undone.success).toBe(true);
     injectIPLSRLIncident(match.matchId, { type: 'FOUR', instant: true }, 'test');
     injectIPLSRLIncident(match.matchId, { type: 'DOT', instant: true }, 'test');
-    const cleared = clearIPLSRLScoreAnchors(match.matchId, 'test');
+    const cleared = clearIPLSRLScoreAnchors(match.matchId, 'test', 'SUPER_ADMIN', { note: 'test clear' });
     expect(cleared.cleared).toBeGreaterThan(0);
     expect(getSrlScoreAnchors(match.matchId)).toHaveLength(0);
   });

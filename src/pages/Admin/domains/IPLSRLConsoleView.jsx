@@ -374,6 +374,8 @@ export default function IPLSRLConsoleView() {
   const [postMatchReport, setPostMatchReport] = useState(null);
   const [integrityAsk, setIntegrityAsk] = useState(false);
   const [integrityNote, setIntegrityNote] = useState('');
+  const [settleNote, setSettleNote] = useState('');
+  const [shiftNoteDraft, setShiftNoteDraft] = useState('');
   const [soundAlertsOn, setSoundAlertsOn] = useState(true);
   const lastAlertSigRef = useRef('');
   const [marketsDesk, setMarketsDesk] = useState(null);
@@ -487,6 +489,18 @@ export default function IPLSRLConsoleView() {
       stop();
     };
   }, [refresh]);
+
+  // Desk presence heartbeat so offline pager knows someone is watching.
+  useEffect(() => {
+    const beat = () => {
+      adminApiClient.post('/iplsrl/desk/heartbeat', {
+        matchId: selectedMatchId || null,
+      }).catch(() => {});
+    };
+    beat();
+    const stop = startVisibleInterval(beat, 30000, { runImmediately: false });
+    return () => stop();
+  }, [selectedMatchId]);
 
   const selected = useMemo(
     () => snap?.matches?.find((m) => m.matchId === selectedMatchId) || null,
@@ -1050,6 +1064,59 @@ export default function IPLSRLConsoleView() {
               </div>
             </Panel>
 
+            <Panel
+              title="Desk coverage"
+              hint={snap.deskCoverage?.seniorOnline ? 'Senior online' : (snap.deskCoverage?.onlineCount ? 'No senior' : 'Offline')}
+            >
+              <p className="srl-hint" style={{ margin: '0 0 8px' }}>
+                {snap.deskCoverage?.onlineCount || 0} online
+                {snap.deskCoverage?.seniorOnline ? ' · senior present' : ' · no senior'}
+                {snap.deskCoverage?.deskOffline ? ' · pager will fire if LIVE' : ''}
+              </p>
+              <div className="srl-fixture-list" style={{ maxHeight: 120 }}>
+                {(snap.deskCoverage?.online || []).slice(0, 6).map((p) => (
+                  <div key={p.adminId} className="srl-hint" style={{ margin: '0 0 4px' }}>
+                    <strong>{p.adminId}</strong> · {p.role}{p.matchId ? ` · ${p.matchId}` : ''}
+                  </div>
+                ))}
+                {!snap.deskCoverage?.onlineCount && (
+                  <p className="srl-hint" style={{ margin: 0 }}>Heartbeat starts when this console is open.</p>
+                )}
+              </div>
+              <label className="srl-field" style={{ marginTop: 8 }}>
+                Shift note
+                <textarea
+                  className="srl-input"
+                  rows={2}
+                  value={shiftNoteDraft}
+                  placeholder="Hand-off notes for the next operator…"
+                  onChange={(e) => setShiftNoteDraft(e.target.value)}
+                />
+              </label>
+              <button
+                type="button"
+                className="srl-btn srl-btn-slate"
+                style={{ marginTop: 6 }}
+                disabled={busy || !String(shiftNoteDraft || '').trim()}
+                onClick={() => {
+                  const text = String(shiftNoteDraft || '').trim();
+                  run(
+                    () => adminApiClient.post('/iplsrl/desk/shift-notes', { text }),
+                    'Shift note saved',
+                  ).then(() => setShiftNoteDraft(''));
+                }}
+              >
+                Post shift note
+              </button>
+              <div style={{ marginTop: 8 }}>
+                {(snap.shiftNotes || []).slice(0, 4).map((n) => (
+                  <div key={n.id} className="srl-hint" style={{ marginBottom: 4 }}>
+                    <strong>{n.admin}</strong>: {n.text}
+                  </div>
+                ))}
+              </div>
+            </Panel>
+
             <Panel title="Fixtures"hint={`${fixtures.length} of ${counts.all}`}>
               <div className="srl-filters" style={{ marginBottom: 8 }}>
                 {FILTERS.map((f) =>(
@@ -1091,11 +1158,22 @@ export default function IPLSRLConsoleView() {
                       {m.stageLabel || 'League'} · {m.date} · {m.timeDisplay || '—'}
                     </div>
                     <div className="srl-fixture-note" style={{ color: m.forcedWinnerName ? '#34d399' : undefined }}>
-                      {m.controlStatus === 'COMPLETED'
-                        ? (m.score?.result || 'Completed')
-                        : m.forcedWinnerName
-                          ? `Scripted: ${m.forcedWinnerName}`
-                          : `${m.score?.innings1?.runs || 0}/${m.score?.innings1?.wickets || 0} → ${m.score?.innings2?.runs || 0}/${m.score?.innings2?.wickets || 0}`}
+                      {m.needsSettlement
+                        ? 'Needs settle / pay'
+                        : m.controlStatus === 'COMPLETED'
+                          ? (m.score?.result || 'Completed')
+                          : m.forcedWinnerName
+                            ? `Scripted: ${m.forcedWinnerName}`
+                            : `${m.score?.innings1?.runs || 0}/${m.score?.innings1?.wickets || 0} → ${m.score?.innings2?.runs || 0}/${m.score?.innings2?.wickets || 0}`}
+                    </div>
+                    <div className="srl-fixture-meta" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+                      {m.clockDriven && <span className="srl-pill" style={{ fontSize: '0.62rem' }}>Clock</span>}
+                      {Number(m.msToStart) > 0 && Number(m.msToStart) <= 15 * 60_000 && (
+                        <span className="srl-pill srl-pill-paused" style={{ fontSize: '0.62rem' }}>Soon</span>
+                      )}
+                      {m.needsSettlement && (
+                        <span className="srl-pill srl-pill-live" style={{ fontSize: '0.62rem' }}>Settle</span>
+                      )}
                     </div>
                     <div className="srl-progress-mini"aria-hidden="true">
                       <i style={{ width: `${Math.max(0, Math.min(100, m.clock?.progressPct || 0))}%` }} />
@@ -2028,11 +2106,21 @@ export default function IPLSRLConsoleView() {
                             <option value={selected.awayTeamId}>{selected.awayShort}</option>
                           </select>
                         </label>
+                        <label className="srl-field" style={{ flex: 1, minWidth: 220 }}>
+                          Mandatory note
+                          <input
+                            className="srl-input"
+                            style={{ height: 36 }}
+                            value={settleNote}
+                            placeholder="Why settle now?"
+                            onChange={(e) => setSettleNote(e.target.value)}
+                          />
+                        </label>
                         <button
                           type="button"
                           className="srl-btn srl-btn-teal"
                           style={{ height: 36 }}
-                          disabled={busy || deskCaps?.canRunSettlementWizard === false || selected.controlStatus === 'COMPLETED'}
+                          disabled={busy || deskCaps?.canRunSettlementWizard === false || selected.controlStatus === 'COMPLETED' || !String(settleNote || '').trim()}
                           onClick={() => run(
                             () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/settlement-wizard`, {
                               declareTeamId: settleTeamId || selected.homeTeamId,
@@ -2040,6 +2128,7 @@ export default function IPLSRLConsoleView() {
                               settleMatchMarkets: true,
                               closeBetting: true,
                               exportAudit: true,
+                              note: String(settleNote || '').trim(),
                             }),
                             'Settlement wizard completed',
                           )}
@@ -3833,7 +3922,9 @@ export default function IPLSRLConsoleView() {
         variant="warning"
         icon=""
         title={`Declare ${declareAsk?.short} winner?`}
-        description="This settles the match for users and pays match-winner bets. Betting on this fixture closes."
+        description="This settles the match for users and pays match-winner bets. Betting on this fixture closes. Mandatory note required."
+        requireReason
+        reasonPlaceholder="Settlement / declare note…"
         details={declareAsk ? [
           { label: 'Winner', value: declareAsk.short },
           { label: 'Open stake on this side', value: `${declareAsk.bets} bets` },
@@ -3845,12 +3936,17 @@ export default function IPLSRLConsoleView() {
         cancelLabel="Cancel"
         loading={busy}
         onCancel={() => setDeclareAsk(null)}
-        onConfirm={() =>{
+        onConfirm={(reason) =>{
           const ask = declareAsk;
           setDeclareAsk(null);
           if (!ask || !selected) return;
+          const note = String(reason || '').trim();
+          if (!note) {
+            showToast('Mandatory note required', 'error');
+            return;
+          }
           run(
-            () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/declare`, { teamId: ask.teamId }),
+            () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/declare`, { teamId: ask.teamId, note }),
             `${ask.short} declared winner`,
           );
         }}
@@ -3861,15 +3957,22 @@ export default function IPLSRLConsoleView() {
         variant="danger"
         title="Clear all score anchors?"
         description="Removes every scripted board override and returns to natural sim scoring. Rate-limited; senior desk only."
+        requireReason
+        reasonPlaceholder="Why clear anchors?"
         confirmLabel="Clear anchors"
         cancelLabel="Cancel"
         loading={busy}
         onCancel={() => setClearAnchorsAsk(false)}
-        onConfirm={() => {
+        onConfirm={(reason) => {
           setClearAnchorsAsk(false);
           if (!selected) return;
+          const note = String(reason || '').trim();
+          if (!note) {
+            showToast('Mandatory note required', 'error');
+            return;
+          }
           run(
-            () => adminApiClient.delete(`/iplsrl/matches/${selected.matchId}/anchors`),
+            () => adminApiClient.delete(`/iplsrl/matches/${selected.matchId}/anchors?note=${encodeURIComponent(note)}`),
             'Cleared all score anchors',
           );
         }}
@@ -3880,15 +3983,22 @@ export default function IPLSRLConsoleView() {
         variant="danger"
         title="Engage emergency kill switch?"
         description="Freezes betting and locks the desk. Senior role required. Cooldown applies after engage."
+        requireReason
+        reasonPlaceholder="Why engage kill switch?"
         confirmLabel="Engage kill switch"
         cancelLabel="Cancel"
         loading={busy}
         onCancel={() => setKillAsk(false)}
-        onConfirm={() => {
+        onConfirm={(reason) => {
           setKillAsk(false);
           if (!selected) return;
+          const note = String(reason || '').trim();
+          if (!note) {
+            showToast('Mandatory note required', 'error');
+            return;
+          }
           run(
-            () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/circuit-breaker/kill-switch`, { active: true }),
+            () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/circuit-breaker/kill-switch`, { active: true, note }),
             'EMERGENCY KILL-SWITCH ENGAGED · ALL BETTING FROZEN',
           );
         }}
@@ -3966,16 +4076,24 @@ export default function IPLSRLConsoleView() {
         confirmLabel={marketAsk?.voidMarket ? 'Void market' : 'Declare & play'}
         cancelLabel="Cancel"
         loading={busy}
+        requireReason={!!marketAsk?.voidMarket}
+        reasonPlaceholder="Why void this market?"
         onCancel={() => setMarketAsk(null)}
-        onConfirm={() =>{
+        onConfirm={(reason) =>{
           const ask = marketAsk;
           setMarketAsk(null);
           if (!ask || !selected) return;
           const mid = encodeURIComponent(ask.marketId);
+          const note = ask.voidMarket ? String(reason || '').trim() : null;
+          if (ask.voidMarket && !note) {
+            showToast('Mandatory note required to void', 'error');
+            return;
+          }
           run(
             () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/markets/${mid}/declare`, {
               winningSelectionId: ask.voidMarket ? null : ask.selectionId,
               voidMarket: !!ask.voidMarket,
+              note,
             }),
             ask.voidMarket
               ? `${ask.title} voided`

@@ -36,11 +36,12 @@ router.post('/matches/:matchId/declare', iplsrlRoles, async (req, res) => {
   try {
     const { declareIPLSRLWinner } = await import('../../../lib/iplSrlAdminControl.mjs');
     if (!req.body?.teamId) return res.status(400).json({ error: 'teamId required' });
-    await jsonSnap(res, declareIPLSRLWinner(
+    await jsonSnap(res, await declareIPLSRLWinner(
       req.params.matchId,
       req.body.teamId,
       req.admin?.id || 'admin',
       req.admin?.role || 'SUPER_ADMIN',
+      { note: req.body?.note || null },
     ));
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -82,6 +83,7 @@ router.post('/matches/:matchId/markets/:marketId/declare', iplsrlRoles, async (r
       voidMarket: !!req.body?.voidMarket,
       admin: req.admin?.id || 'admin',
       role: req.admin?.role || 'SUPER_ADMIN',
+      note: req.body?.note || null,
     });
     const { enrichSnapshotWithStakes } = await import('../../../lib/iplSrlAdminControl.mjs');
     if (data.snapshot) {
@@ -500,6 +502,7 @@ router.delete('/matches/:matchId/anchors', iplsrlRoles, async (req, res) => {
       req.params.matchId,
       req.admin?.id || 'admin',
       req.admin?.role || 'SUPER_ADMIN',
+      { note: req.body?.note || req.query?.note || null },
     );
     await jsonSnap(res, result);
   } catch (err) {
@@ -535,6 +538,43 @@ router.post('/matches/:matchId/settlement-wizard', iplsrlRoles, async (req, res)
       req.admin?.role || 'SUPER_ADMIN',
     );
     await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/desk/heartbeat', iplsrlRoles, async (req, res) => {
+  try {
+    const { heartbeatIPLSRLDeskPresence } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const presence = heartbeatIPLSRLDeskPresence({
+      adminId: req.admin?.id || 'admin',
+      role: req.admin?.role || 'SUPER_ADMIN',
+      matchId: req.body?.matchId || null,
+      note: req.body?.note || null,
+    });
+    res.json({ success: true, presence });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.get('/desk/shift-notes', iplsrlRoles, async (req, res) => {
+  try {
+    const { listIPLSRLShiftNotes } = await import('../../../lib/iplSrlAdminControl.mjs');
+    res.json({ notes: listIPLSRLShiftNotes() });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/desk/shift-notes', iplsrlRoles, async (req, res) => {
+  try {
+    const { addIPLSRLShiftNote } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const note = addIPLSRLShiftNote({
+      admin: req.admin?.id || 'admin',
+      text: req.body?.text || req.body?.note,
+    });
+    res.json({ success: true, note });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -810,6 +850,7 @@ router.post('/matches/:matchId/circuit-breaker/kill-switch', iplsrlRoles, async 
       req.body?.active,
       req.admin?.id || 'admin',
       req.admin?.role || 'SUPER_ADMIN',
+      { note: req.body?.note || null },
     );
     await jsonSnap(res, result);
   } catch (err) {

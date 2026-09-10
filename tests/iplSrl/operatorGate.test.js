@@ -61,7 +61,7 @@ describe('OddsYra SRL automated clock', () => {
     expect(String(done.liveDetails.commentary)).toMatch(/won/i);
   });
 
-  it('exposes auto-live matches on the admin desk', () => {
+  it('exposes auto-live matches on the admin desk', async () => {
     const snap = getIPLSRLControlSnapshot();
     expect(snap.matches.length).toBeGreaterThan(0);
     const desk = snap.matches[0];
@@ -74,7 +74,9 @@ describe('OddsYra SRL automated clock', () => {
       const withWinner = setIPLSRLForcedWinner(desk.matchId, live.awayTeamId, 'test');
       const armedLive = withWinner.matches.find((m) => m.matchId === desk.matchId);
       expect(armedLive.forcedWinnerTeamId).toBe(live.awayTeamId);
-      const declared = declareIPLSRLWinner(desk.matchId, live.awayTeamId, 'test');
+      const declared = await declareIPLSRLWinner(desk.matchId, live.awayTeamId, 'test', 'SUPER_ADMIN', {
+        note: 'test declare',
+      });
       const done = declared.matches.find((m) => m.matchId === desk.matchId);
       expect(done.controlStatus).toBe('COMPLETED');
     } else {

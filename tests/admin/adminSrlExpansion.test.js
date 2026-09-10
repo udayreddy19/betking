@@ -334,7 +334,9 @@ describe('Advanced OddsYra SRL Match Control Suite', () => {
     expect(setRes.circuitBreaker.velocityLimit).toBe(150000);
 
     // Master kill-switch activation
-    const killRes = toggleIPLSRLEmergencyKillSwitch(testMatchId, true, 'test_admin');
+    const killRes = toggleIPLSRLEmergencyKillSwitch(testMatchId, true, 'test_admin', 'SUPER_ADMIN', {
+      note: 'test kill switch',
+    });
     expect(killRes.success).toBe(true);
     expect(killRes.emergencyKillSwitch).toBe(true);
     expect(killRes.bettingClosed).toBe(true);
@@ -441,6 +443,10 @@ describe('Advanced OddsYra SRL Match Control Suite', () => {
 
     expect(() => clearIPLSRLScoreAnchors(testMatchId, 'ops_junior', 'OPERATIONS_ADMIN')).toThrow(/Senior desk|cannot perform/i);
 
+    expect(() => clearIPLSRLScoreAnchors(testMatchId, 'test_admin', 'SUPER_ADMIN')).toThrow(/Mandatory note/i);
+    const cleared = clearIPLSRLScoreAnchors(testMatchId, 'test_admin', 'SUPER_ADMIN', { note: 'reset board' });
+    expect(cleared.success).toBe(true);
+
     queueInc(testMatchId, { type: 'SIX' });
     queueInc(testMatchId, { type: 'DOT' });
     const rehearsal = rehearseIPLSRLQueue(testMatchId);
@@ -463,6 +469,36 @@ describe('Advanced OddsYra SRL Match Control Suite', () => {
     expect(() => engageIPLSRLIntegrityHold(testMatchId, { note: 'test' }, 'ops', 'OPERATIONS_ADMIN')).toThrow(/Senior|cannot perform/i);
     const hold = engageIPLSRLIntegrityHold(testMatchId, { note: 'Suspicious pattern' }, 'test_admin', 'SUPER_ADMIN');
     expect(hold.integrityHold?.active).toBe(true);
+  });
+
+  it('tracks desk presence, shift notes, and desk-ops sweep coverage', async () => {
+    const {
+      heartbeatIPLSRLDeskPresence,
+      addIPLSRLShiftNote,
+      getIPLSRLControlSnapshot,
+      runSrlDeskOpsSweep,
+    } = await import('../../lib/iplSrlAdminControl.mjs');
+    const { resetSrlDeskOpsForTests } = await import('../../lib/iplSrlDeskOps.mjs');
+    resetSrlDeskOpsForTests();
+
+    const presence = heartbeatIPLSRLDeskPresence({
+      adminId: 'desk_lead',
+      role: 'TRADING_ADMIN',
+      matchId: testMatchId,
+    });
+    expect(presence.senior).toBe(true);
+
+    const note = addIPLSRLShiftNote({ admin: 'desk_lead', text: 'Watch liability on powerplay' });
+    expect(note.text).toMatch(/liability/i);
+
+    const snap = getIPLSRLControlSnapshot();
+    expect(snap.deskCoverage.onlineCount).toBeGreaterThanOrEqual(1);
+    expect(snap.deskCoverage.seniorOnline).toBe(true);
+    expect(snap.shiftNotes.some((n) => n.id === note.id)).toBe(true);
+
+    const sweep = await runSrlDeskOpsSweep();
+    expect(sweep.ok).toBe(true);
+    expect(sweep.coverage.onlineCount).toBeGreaterThanOrEqual(1);
   });
 });
 

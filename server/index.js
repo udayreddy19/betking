@@ -191,6 +191,7 @@ httpServer.listen(PORT, async () => {
     ['webpush_startup', () => import('../lib/webPushEngine.mjs').then((m) => m.logWebPushStartupStatus())],
     ['scheduler', () => process.env.RUN_BACKGROUND_WORKERS !== 'false' && import('../lib/schedulerWorker.mjs').then((m) => m.startBackgroundWorkers())],
     ['srl_operator', () => import('../lib/iplSrlOperatorState.mjs').then((m) => m.hydrateSrlOperatorSessions())],
+    ['srl_desk_ops', () => import('../lib/iplSrlDeskOps.mjs').then((m) => m.hydrateSrlDeskOps())],
     ['market_liability', () => import('../lib/marketLiabilityStore.mjs').then((m) => m.hydrateMarketLiabilityStore())],
   ];
   for (const [name, fn] of startupTasks) {
