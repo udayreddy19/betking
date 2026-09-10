@@ -27,10 +27,53 @@ export { matchOddsStateKey };
 
 /**
  * Instant UI seed from list-card odds already on the match object.
+ * Prefer engineCardMarkets (SRL card book) so Totals/Toss appear before the full snapshot.
  * Only used when a full snapshot is not cached yet — never invents prices.
  */
+function adaptProvisionalMarket(market) {
+  if (!market?.marketId) return null;
+  const selections = (market.selections || market.options || [])
+    .filter((s) => Number(s?.odds) >= 1.01)
+    .map((s) => ({
+      ...s,
+      selectionId: s.selectionId || s.selection,
+      selection: s.selection || s.selectionId,
+      status: s.status || 'ACTIVE',
+      bettable: s.bettable !== false,
+    }));
+  if (selections.length < 2) return null;
+  const rawCat = String(market.category || '').toLowerCase();
+  const category = rawCat === 'match' || rawCat === 'main' || market.marketId === 'match_winner'
+    ? 'main'
+    : (rawCat === 'overs' ? 'over'
+      : (rawCat === 'deliveries' ? 'delivery'
+        : (rawCat === 'player_props' || rawCat === 'h2h' ? 'props'
+          : (rawCat || (market.marketId === 'match_total' || market.marketId === 'team_total' ? 'totals' : 'main')))));
+  return {
+    marketId: market.marketId,
+    key: market.marketId === 'match_winner' ? 'winner' : market.marketId,
+    marketType: market.marketType,
+    name: market.name || market.title || market.marketId,
+    title: market.title || market.name || market.marketId,
+    category,
+    categoryGroup: category,
+    status: market.status || 'OPEN',
+    line: market.line,
+    selections,
+    options: selections,
+    provisional: true,
+  };
+}
+
 export function provisionalWinnerMarketsFromMatch(match) {
   if (!match) return [];
+
+  const cardOpen = (Array.isArray(match.engineCardMarkets) ? match.engineCardMarkets : [])
+    .filter((m) => String(m?.status || 'OPEN').toUpperCase() === 'OPEN')
+    .map(adaptProvisionalMarket)
+    .filter(Boolean);
+  if (cardOpen.length > 0) return cardOpen;
+
   const t1Odds = Number(match.odds?.team1 ?? match.odds?.home);
   const t2Odds = Number(match.odds?.team2 ?? match.odds?.away);
   if (!(t1Odds > 1 && t2Odds > 1)) return [];
@@ -76,8 +119,12 @@ export function provisionalWinnerMarketsFromMatch(match) {
     status: 'OPEN',
     selections,
     options: selections,
+    provisional: true,
   }];
 }
+
+/** @deprecated alias — use provisionalWinnerMarketsFromMatch (now may include card totals/toss). */
+export const provisionalMarketsFromMatch = provisionalWinnerMarketsFromMatch;
 
 export async function fetchAuthoritativeMatchOdds(matchId, team1Name, team2Name, options = {}) {
   if (!matchId) return null;
@@ -119,12 +166,24 @@ export async function fetchAuthoritativeMatchOdds(matchId, team1Name, team2Name,
           Accept: 'application/json',
         },
       });
+      if (res.status === 429) {
+        // Don't poison cache with rate-limit failures — keep provisional / prior book.
+        throw new Error('HTTP 429');
+      }
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
       const data = await res.json();
       if (data && (data.success || data.status === 'OK' || Array.isArray(data.markets))) {
-        oddsCacheMap.set(matchId, { data, timestamp: Date.now(), stateKey });
+        // Never cache empty closed books under a live stateKey — causes sticky Match Winner.
+        const markets = Array.isArray(data.markets) ? data.markets : [];
+        const status = String(data.status || '').toUpperCase();
+        const emptyClosed = markets.length === 0 && (
+          status === 'NO_LONGER_LIVE' || status === 'SUSPENDED' || status === 'NOT_AVAILABLE'
+        );
+        if (!emptyClosed) {
+          oddsCacheMap.set(matchId, { data, timestamp: Date.now(), stateKey });
+        }
         return data;
       }
       return null;

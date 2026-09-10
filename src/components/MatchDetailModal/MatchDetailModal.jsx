@@ -59,9 +59,12 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
     let isCancelled = false;
 
     const loadOdds = () => {
-      fetchAuthoritativeMatchOdds(matchId, team1Name, team2Name, { match }).then((snapshot) => {
+      fetchAuthoritativeMatchOdds(matchId, team1Name, team2Name, { match, force: true }).then((snapshot) => {
         if (isCancelled) return;
-        if (snapshot?.markets?.length) setMatchMarkets(snapshot.markets);
+        if (!snapshot) return;
+        if (Array.isArray(snapshot.markets) && snapshot.markets.length > 0) {
+          setMatchMarkets(snapshot.markets);
+        }
       });
     };
 

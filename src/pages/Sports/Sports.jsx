@@ -584,12 +584,28 @@ export default function Sports() {
         m.id || m.matchId,
         m.team1?.name || m.team1,
         m.team2?.name || m.team2,
-        { match: m },
+        { match: m, force: true },
       ).then((snapshot) => {
         if (isCancelled) return;
         if ((m.id || m.matchId) !== matchId) return;
         if (snapshot?.matchId && snapshot.matchId !== matchId) return;
-        if (snapshot?.markets?.length) setMatchMarkets(snapshot.markets);
+        if (!snapshot) return;
+        if (Array.isArray(snapshot.markets) && snapshot.markets.length > 0) {
+          setMatchMarkets(snapshot.markets);
+          return;
+        }
+        // Empty authoritative book: drop sticky provisional MW when trading is closed/halted.
+        const status = String(snapshot.status || '').toUpperCase();
+        if (
+          status === 'NO_LONGER_LIVE'
+          || status === 'SUSPENDED'
+          || status === 'NOT_AVAILABLE'
+          || snapshot.success === false
+        ) {
+          if (!isMatchBettable(m) || isMatchFinished(m)) {
+            setMatchMarkets([]);
+          }
+        }
       });
     };
 
@@ -634,11 +650,26 @@ export default function Sports() {
       matchId,
       m.team1?.name || m.team1,
       m.team2?.name || m.team2,
-      { match: m },
+      { match: m, force: true },
     ).then((snapshot) => {
       if (isCancelled) return;
       if (snapshot?.matchId && snapshot.matchId !== matchId) return;
-      if (snapshot?.markets?.length) setMatchMarkets(snapshot.markets);
+      if (!snapshot) return;
+      if (Array.isArray(snapshot.markets) && snapshot.markets.length > 0) {
+        setMatchMarkets(snapshot.markets);
+        return;
+      }
+      const status = String(snapshot.status || '').toUpperCase();
+      if (
+        status === 'NO_LONGER_LIVE'
+        || status === 'SUSPENDED'
+        || status === 'NOT_AVAILABLE'
+        || snapshot.success === false
+      ) {
+        if (!isMatchBettable(m) || isMatchFinished(m)) {
+          setMatchMarkets([]);
+        }
+      }
     });
     return () => { isCancelled = true; };
   }, [activeMatch?.id, activeMatch?.matchId, oddsStateKey]);
