@@ -319,6 +319,8 @@ export function resolveCricketTossText(match, extraState) {
   }
 
   const comm = extraState?.commentary || match.liveDetails?.commentary || '';
-  if (/won the toss|opt(?:ed)? to (?:bat|bowl)|elected to/i.test(comm)) return comm;
+  if (/won the toss|opt(?:ed)? to (?:bat|bowl)|elected to/i.test(comm)) {
+    return String(comm).replace(/^🪙\s*/u, '').replace(/^TOSS:\s*/i, '').trim() || null;
+  }
   return null;
 }

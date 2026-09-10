@@ -468,7 +468,13 @@ function SportLivePanel({ match, team1, team2, team1Display, team2Display, match
 }
 
 function PreMatchCricketPanel({ match, team1Display, team2Display, matchState }) {
-  const status = match?.liveDetails?.commentary || match?.time || 'Match has not started yet';
+  const commentary = String(match?.liveDetails?.commentary || '').trim();
+  const tossText = resolveCricketTossText(match);
+  const commentaryIsToss = /toss|elected to|opt(?:ed)? to (?:bat|bowl)/i.test(commentary);
+  // Avoid double toss: commentary often already says "🪙 TOSS: …" while tossText repeats it.
+  const status = commentary && !commentaryIsToss
+    ? commentary
+    : (match?.time || 'Match has not started yet');
   const formatBanner = getCricketFormatBanner(match);
   const isCompleted = matchState === 'post' || match?.isCompleted || match?.status === 'COMPLETED';
 
@@ -492,16 +498,19 @@ function PreMatchCricketPanel({ match, team1Display, team2Display, matchState })
           <span className="live-widget-team">{team2Display}</span>
         </div>
 
-        <p className="live-widget-prematch-status">{status}</p>
-        {(() => {
-          const tossText = resolveCricketTossText(match);
-          if (!tossText) return null;
-          return (
-            <p className="live-widget-chase-text" style={{ marginTop: '6px' }}>
-              🪙 {tossText}
-            </p>
-          );
-        })()}
+        {status && !commentaryIsToss && (
+          <p className="live-widget-prematch-status">{status}</p>
+        )}
+        {tossText && (
+          <p className="live-widget-chase-text" style={{ marginTop: '6px' }}>
+            🪙 {String(tossText).replace(/^🪙\s*/u, '').replace(/^TOSS:\s*/i, '')}
+          </p>
+        )}
+        {!tossText && commentaryIsToss && commentary && (
+          <p className="live-widget-chase-text" style={{ marginTop: '6px' }}>
+            {commentary.startsWith('🪙') ? commentary : `🪙 ${commentary.replace(/^TOSS:\s*/i, '')}`}
+          </p>
+        )}
         <p className="live-widget-prematch-hint">
           {isCompleted
             ? 'Final scorecard will appear here when available.'
