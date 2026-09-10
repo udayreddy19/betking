@@ -367,3 +367,153 @@ export function getWicketOvers(match) {
   });
   return overs;
 }
+
+function sumOverRunsFromBalls(balls = []) {
+  let runs = 0;
+  let wickets = 0;
+  for (const raw of balls) {
+    const label = String(raw || '').trim();
+    if (!label || label === '…') continue;
+    if (/^w$/i.test(label)) {
+      wickets += 1;
+      continue;
+    }
+    if (label === '•' || label === '.' || label === '0') continue;
+    const wd = label.match(/^(\d*)wd$/i);
+    if (wd) {
+      runs += Number(wd[1] || 1) || 1;
+      continue;
+    }
+    const nb = label.match(/^(\d*)nb$/i);
+    if (nb) {
+      runs += Number(nb[1] || 1) || 1;
+      continue;
+    }
+    const lb = label.match(/^(\d+)l(?:b)?$/i) || label.match(/^l(\d+)$/i);
+    if (lb) {
+      runs += Number(lb[1]) || 0;
+      continue;
+    }
+    const n = parseInt(label, 10);
+    if (Number.isFinite(n)) runs += n;
+  }
+  return { overRuns: runs, overWickets: wickets };
+}
+
+function normalizeOversBoardBall(raw) {
+  const label = formatBallOutcome(raw);
+  if (label === '•' || label === '0') return '.';
+  return label;
+}
+
+function allOverHistoryRows(match) {
+  const fromMatch = Array.isArray(match?.overHistory) ? match.overHistory : [];
+  const fromLd = Array.isArray(match?.liveDetails?.overHistory) ? match.liveDetails.overHistory : [];
+  const rows = fromMatch.length ? fromMatch : fromLd;
+  return rows.map((row, idx) => ({
+    overNum: Number(row.overNum || row.over || idx + 1) || (idx + 1),
+    inningsId: Number(row.inningsId || row.innings || 0) || null,
+    balls: (row.balls || []).map((b) => normalizeOversBoardBall(b)),
+    isCurrent: !!row.isCurrent,
+    scoreAtEnd: row.scoreAtEnd
+      || (row.runs != null && row.wickets != null ? `${row.runs}-${row.wickets}` : null),
+    runs: row.runs != null ? Number(row.runs) : null,
+    wickets: row.wickets != null ? Number(row.wickets) : null,
+    bowler: row.bowler || row.bowlerName || null,
+    batters: Array.isArray(row.batters) ? row.batters : [],
+    commentary: row.commentary || row.summary || null,
+  })).filter((row) => (row.balls || []).some((b) => b && b !== '…'));
+}
+
+/**
+ * Full Overs board rows for the Over | Balls | Runs UI (newest over first).
+ * @param {object} match
+ * @param {{ inningsId?: number|null }} [opts]
+ */
+export function buildOversBoardRows(match, opts = {}) {
+  const wantInn = opts.inningsId != null ? Number(opts.inningsId) : null;
+  const raw = allOverHistoryRows(match);
+  if (!raw.length) {
+    // Fallback to current-over-only when full history is not yet available.
+    const fromApi = apiOverHistoryRows(match).map((row) => ({
+      ...row,
+      balls: (row.balls || []).map((b) => normalizeOversBoardBall(b)),
+      scoreAtEnd: null,
+      bowler: null,
+      batters: [],
+      commentary: null,
+    }));
+    if (!fromApi.length) return [];
+    return finalizeOversBoardRows(fromApi, wantInn);
+  }
+  return finalizeOversBoardRows(raw, wantInn);
+}
+
+function finalizeOversBoardRows(rows, wantInn) {
+  const scoped = wantInn
+    ? rows.filter((r) => !r.inningsId || Number(r.inningsId) === wantInn)
+    : rows;
+
+  // Walk chronologically to fill missing end-of-over scores from cumulative ball sums when possible.
+  const byInn = new Map();
+  for (const row of scoped) {
+    const innKey = Number(row.inningsId) || 0;
+    if (!byInn.has(innKey)) byInn.set(innKey, []);
+    byInn.get(innKey).push(row);
+  }
+
+  const enriched = [];
+  for (const [, innRows] of byInn) {
+    const ordered = [...innRows].sort((a, b) => Number(a.overNum) - Number(b.overNum));
+    let cumRuns = 0;
+    let cumWkts = 0;
+    for (const row of ordered) {
+      const { overRuns, overWickets } = sumOverRunsFromBalls(row.balls);
+      if (row.runs != null && Number.isFinite(Number(row.runs))) {
+        cumRuns = Number(row.runs);
+        cumWkts = Number(row.wickets) || cumWkts;
+      } else {
+        cumRuns += overRuns;
+        cumWkts += overWickets;
+      }
+      const scoreAtEnd = row.scoreAtEnd
+        || (row.runs != null ? `${row.runs}-${row.wickets ?? cumWkts}` : `${cumRuns}-${cumWkts}`);
+      const bowler = typeof row.bowler === 'string' ? row.bowler : (row.bowler?.name || null);
+      const batters = (row.batters || [])
+        .map((b) => (typeof b === 'string' ? b : b?.name))
+        .filter(Boolean);
+      const commentary = row.commentary
+        || (bowler ? `${bowler}${batters.length ? ` to ${batters.join(' & ')}` : ''}` : null);
+      enriched.push({
+        overNum: row.overNum,
+        inningsId: row.inningsId || null,
+        balls: row.balls || [],
+        isCurrent: !!row.isCurrent,
+        overRuns,
+        overWickets,
+        scoreAtEnd,
+        bowler,
+        batters,
+        commentary,
+      });
+    }
+  }
+
+  // Newest first (screenshot order).
+  return enriched.sort((a, b) => {
+    const innA = Number(a.inningsId) || 0;
+    const innB = Number(b.inningsId) || 0;
+    if (innA !== innB) return innB - innA;
+    return Number(b.overNum) - Number(a.overNum);
+  });
+}
+
+/** Distinct innings ids present in over history (for overs-board tabs). */
+export function listOversBoardInnings(match) {
+  const rows = allOverHistoryRows(match);
+  const ids = [...new Set(rows.map((r) => Number(r.inningsId) || 0).filter((n) => n > 0))];
+  if (ids.length) return ids.sort((a, b) => a - b);
+  const ld = match?.liveDetails || {};
+  if (isCricketSecondInnings(match, ld) || Number(ld.inningsId) === 2) return [1, 2];
+  return [1];
+}

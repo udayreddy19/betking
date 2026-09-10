@@ -28,6 +28,7 @@ import {
   ZapIcon,
 } from '@animateicons/react/lucide';
 import './IPLSRLConsoleView.css';
+import CricketOversBoard from '../../../components/CricketOversBoard/CricketOversBoard';
 
 const ICON_SM = { width: 14, height: 14 };
 
@@ -99,6 +100,7 @@ const MATCH_ZONES = [
   { id: 'wagers', label: 'Wager Tape', Icon: HandCoinsIcon },
   { id: 'toss_squad', label: 'Toss & Lineup', Icon: UsersIcon },
   { id: 'replay', label: 'Ball Replay', Icon: RefreshCwIcon },
+  { id: 'overs', label: 'Overs Board', Icon: ChartBarIcon },
   { id: 'weather', label: 'Atmosphere', Icon: UmbrellaIcon },
   { id: 'broadcast', label: 'Broadcast', Icon: MegaphoneIcon },
   { id: 'markets', label: 'Core Markets', Icon: ChartBarIcon },
@@ -3606,6 +3608,26 @@ export default function IPLSRLConsoleView() {
                             ))}
                         </div>
                       )}
+                    </div>
+                  </div>
+                )}
+
+                {matchZone === 'overs' && (
+                  <div className="srl-tab-body" key="overs">
+                    <div className="srl-zone">
+                      <div className="srl-zone-label --accent">
+                        <span>Overs Board — ball-by-ball (Ov · Balls · Runs)</span>
+                      </div>
+                      <p className="srl-hint" style={{ margin: '0 0 12px' }}>
+                        Same over-by-over view as users see on Sports. Use this to verify Next Delivery / over markets against the board.
+                      </p>
+                      <div className="srl-overs-panel">
+                        {selected ? (
+                          <CricketOversBoard match={selected} />
+                        ) : (
+                          <p className="srl-hint">Select a match to view overs.</p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}

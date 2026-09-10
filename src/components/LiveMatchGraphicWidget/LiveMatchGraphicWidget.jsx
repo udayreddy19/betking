@@ -10,6 +10,7 @@ import {
 import TeamJersey from '../TeamJersey/TeamJersey';
 import MatchCountdownTimer from '../MatchCountdownTimer/MatchCountdownTimer';
 import LiveChartsWidget from '../LiveChartsWidget/LiveChartsWidget';
+import CricketOversBoard from '../CricketOversBoard/CricketOversBoard';
 import { useLiveFieldState } from '../../hooks/useLiveFieldState';
 import { useMatchDetail } from '../../hooks/useMatchDetail';
 import { useCentralizedMatchState } from '../../hooks/useCentralizedMatchState';
@@ -1333,6 +1334,16 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
             <button
               type="button"
               role="tab"
+              aria-selected={activeWidgetTab === 'overs'}
+              onClick={() => setActiveWidgetTab('overs')}
+              className={`live-widget-tab ${activeWidgetTab === 'overs' ? 'active' : ''}`}
+            >
+              <LiveWidgetTabIcon Icon={HiOutlineChartBar} active={activeWidgetTab === 'overs'} />
+              Overs
+            </button>
+            <button
+              type="button"
+              role="tab"
               aria-selected={activeWidgetTab === 'lineups'}
               onClick={() => setActiveWidgetTab('lineups')}
               className={`live-widget-tab ${activeWidgetTab === 'lineups' ? 'active' : ''}`}
@@ -1549,6 +1560,13 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {activeWidgetTab === 'overs' && (
+          <div className="cric-panel cric-panel--light">
+            <h4 className="cric-panel__title">OVERS</h4>
+            <CricketOversBoard match={match} />
           </div>
         )}
 
