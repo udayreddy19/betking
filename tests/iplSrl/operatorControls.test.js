@@ -156,9 +156,48 @@ describe('OddsYra SRL operator controls', () => {
       runs: 10,
       naturalRunsAtAnchor: 5,
       source: 'incident',
+      applyNow: true,
     }]);
     expect(next.firstRuns).toBe(10);
     expect(next.runs).toBe(10);
+  });
+
+  it('forces wicket count on incident anchors', async () => {
+    const { applySrlScoreAnchors } = await import('../../lib/iplSrlSimulator.mjs');
+    const sim = {
+      first: {
+        timeline: Array.from({ length: 30 }, (_, i) => ({
+          runs: i,
+          wickets: 0,
+          overs: `${Math.floor((i + 1) / 6)}.${(i + 1) % 6}`,
+        })),
+      },
+      second: { timeline: [] },
+    };
+    const live = {
+      inningsId: 1,
+      phase: 'first',
+      runs: 12,
+      firstRuns: 12,
+      firstWickets: 0,
+      wickets: 0,
+      firstOvers: '2.0',
+      overs: '2.0',
+    };
+    const next = applySrlScoreAnchors(live, sim, [{
+      innings: 1,
+      atOver: 2.0,
+      ballIndex: 11,
+      runs: 12,
+      wickets: 1,
+      naturalRunsAtAnchor: 12,
+      naturalWicketsAtAnchor: 0,
+      applyNow: true,
+      source: 'incident',
+    }]);
+    expect(next.firstRuns).toBe(12);
+    expect(next.firstWickets).toBe(1);
+    expect(next.wickets).toBe(1);
   });
 
   it('match markets desk exposes toss + full V4 user book for control', async () => {
@@ -180,5 +219,53 @@ describe('OddsYra SRL operator controls', () => {
       'toss_and_bowl',
       'team_bat_first',
     ]);
+  });
+
+  it('operator toss remaps which side bats first on the live board', async () => {
+    const { executeIPLSRLToss, startIPLSRLControlledMatch } = await import('../../lib/iplSrlAdminControl.mjs');
+    const { setSrlTossAndLineup } = await import('../../lib/iplSrlOperatorState.mjs');
+    const { resolveSrlBatFirstTeams } = await import('../../lib/iplSrlSimulator.mjs');
+
+    jumpIPLSRLSeason({ matchNo: 1, at: 'live' }, 'test');
+    const snap = getIPLSRLControlSnapshot();
+    const match = snap.matches.find((m) => m.matchNo === 1) || snap.matches[0];
+    const awayKey = match.awayTeamId;
+    executeIPLSRLToss(match.matchId, { winnerTeamId: awayKey, decision: 'BAT' }, 'test');
+    startIPLSRLControlledMatch(match.matchId, { admin: 'test' });
+
+    const live = getIplSrlMatchById(match.matchId);
+    expect(live.liveDetails?.firstTeamName).toBe(match.awayTeam);
+    expect(live.toss?.tossWinnerKey || live.liveDetails?.toss?.tossWinnerKey).toBe(awayKey);
+
+    const team1 = { key: 'csk', name: 'Chennai Super Kings', shortName: 'CSK' };
+    const team2 = { key: 'mi', name: 'Mumbai Indians', shortName: 'MI' };
+    const resolved = resolveSrlBatFirstTeams(team1, team2, null, { winner: 'mi', decision: 'BOWL' });
+    expect(resolved.batFirst.key).toBe('csk');
+    expect(resolved.chase.key).toBe('mi');
+    setSrlTossAndLineup(match.matchId, { tossWinnerKey: awayKey, tossDecision: 'BAT' });
+  });
+
+  it('undo last inject and clear anchors restore natural board control', async () => {
+    const {
+      injectIPLSRLIncident,
+      undoIPLSRLLastInject,
+      clearIPLSRLScoreAnchors,
+      startIPLSRLControlledMatch,
+    } = await import('../../lib/iplSrlAdminControl.mjs');
+    const { getSrlScoreAnchors } = await import('../../lib/iplSrlOperatorState.mjs');
+
+    jumpIPLSRLSeason({ matchNo: 2, at: 'live' }, 'test');
+    const snap = getIPLSRLControlSnapshot();
+    const match = snap.matches.find((m) => m.matchNo === 2) || snap.matches[0];
+    startIPLSRLControlledMatch(match.matchId, { admin: 'test' });
+    injectIPLSRLIncident(match.matchId, { type: 'SIX', instant: true }, 'test');
+    expect(getSrlScoreAnchors(match.matchId).length).toBeGreaterThan(0);
+    const undone = undoIPLSRLLastInject(match.matchId, 'test');
+    expect(undone.success).toBe(true);
+    injectIPLSRLIncident(match.matchId, { type: 'FOUR', instant: true }, 'test');
+    injectIPLSRLIncident(match.matchId, { type: 'DOT', instant: true }, 'test');
+    const cleared = clearIPLSRLScoreAnchors(match.matchId, 'test');
+    expect(cleared.cleared).toBeGreaterThan(0);
+    expect(getSrlScoreAnchors(match.matchId)).toHaveLength(0);
   });
 });

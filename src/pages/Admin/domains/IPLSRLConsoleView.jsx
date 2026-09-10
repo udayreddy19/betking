@@ -194,20 +194,43 @@ function pickDefaultMatchId(matches) {
 /* ═══════════════════════════════════════════════════════════════════════════
    SCOREBOARD HERO — always visible at top of cockpit
    ═══════════════════════════════════════════════════════════════════════════ */
-function ScoreboardHero({ match }) {
-  if (!match) return null;
+function teamScoreForSide(match, side) {
   const s = match.score || {};
   const i1 = s.innings1 || {};
   const i2 = s.innings2 || {};
+  const firstName = String(match.score?.firstTeamName || match.liveDetails?.firstTeamName || '').toLowerCase();
+  const chaseName = String(match.score?.chaseTeamName || match.liveDetails?.chaseTeamName || '').toLowerCase();
+  const short = String(side === 'home' ? match.homeShort : match.awayShort || '').toLowerCase();
+  const full = String(side === 'home' ? match.homeTeam : match.awayTeam || '').toLowerCase();
+  const matchesName = (n) => n && (n === short || n === full || n.includes(short) || full.includes(n));
+
+  // Prefer name mapping from live board; fall back to home=1st / away=2nd (sim default).
+  if (matchesName(firstName)) return { ...i1, innings: 1 };
+  if (matchesName(chaseName)) return { ...i2, innings: 2 };
+  return side === 'home' ? { ...i1, innings: 1 } : { ...i2, innings: 2 };
+}
+
+function ScoreboardHero({ match }) {
+  if (!match) return null;
+  const s = match.score || {};
   const clock = match.clock || {};
   const isLive = match.controlStatus === 'LIVE';
+  const homeBoard = teamScoreForSide(match, 'home');
+  const awayBoard = teamScoreForSide(match, 'away');
+  const battingInnings = clock.phase === 'chase' || clock.phase === 'chase-complete' ? 2
+    : (clock.phase === 'first' || clock.phase === 'first-complete' ? 1 : null);
+  const homeBatting = battingInnings != null && homeBoard.innings === battingInnings;
+  const awayBatting = battingInnings != null && awayBoard.innings === battingInnings;
 
   return (
     <div className="srl-scoreboard-hero">
-      <div className="srl-score-team">
-        <span className="srl-score-team-name">{match.homeShort}</span>
-        <span className="srl-score-runs">{i1.runs || 0}/{i1.wickets || 0}</span>
-        <span className="srl-score-overs">{i1.overs || '0.0'} ov</span>
+      <div className={`srl-score-team${homeBatting ? ' is-batting' : ''}`}>
+        <span className="srl-score-team-name">
+          {match.homeShort}
+          {homeBatting && <span className="srl-batting-tag">bat</span>}
+        </span>
+        <span className="srl-score-runs">{homeBoard.runs || 0}/{homeBoard.wickets || 0}</span>
+        <span className="srl-score-overs">{homeBoard.overs || '0.0'} ov</span>
       </div>
 
       <div className="srl-score-divider">
@@ -221,10 +244,13 @@ function ScoreboardHero({ match }) {
         )}
       </div>
 
-      <div className="srl-score-team">
-        <span className="srl-score-team-name">{match.awayShort}</span>
-        <span className="srl-score-runs">{i2.runs || 0}/{i2.wickets || 0}</span>
-        <span className="srl-score-overs">{i2.overs || '0.0'} ov</span>
+      <div className={`srl-score-team${awayBatting ? ' is-batting' : ''}`}>
+        <span className="srl-score-team-name">
+          {match.awayShort}
+          {awayBatting && <span className="srl-batting-tag">bat</span>}
+        </span>
+        <span className="srl-score-runs">{awayBoard.runs || 0}/{awayBoard.wickets || 0}</span>
+        <span className="srl-score-overs">{awayBoard.overs || '0.0'} ov</span>
       </div>
 
       <div className="srl-score-meta-row" style={{ gridColumn: '1 / -1', flexWrap: 'wrap' }}>
@@ -243,9 +269,15 @@ function ScoreboardHero({ match }) {
             Profit Max: {Math.round((match.targetMargin || 0.06) * 100)}%
           </span>
         )}
-        {match.incidentQueueLength >0 && (
+        {match.incidentQueueLength > 0 && (
           <span className="srl-pill srl-pill-paused" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
-            {match.incidentQueueLength} Balls Armed
+            {match.incidentQueueLength} queued
+            {match.nextQueuedIncident?.type ? ` · next ${match.nextQueuedIncident.type}` : ''}
+          </span>
+        )}
+        {match.scoreAnchorsCount > 0 && (
+          <span className="srl-pill srl-pill-live" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
+            {match.scoreAnchorsCount} anchors active
           </span>
         )}
         {match.directorMode && match.directorMode !== 'REALISTIC' && (
@@ -338,6 +370,7 @@ export default function IPLSRLConsoleView() {
 
   // Ball-by-ball Timeline Replay
   const [replayDeliveries, setReplayDeliveries] = useState([]);
+  const [replayFallOfWickets, setReplayFallOfWickets] = useState([]);
   const [replayLoading, setReplayLoading] = useState(false);
   const [replayFilter, setReplayFilter] = useState('all');
 
@@ -528,6 +561,35 @@ export default function IPLSRLConsoleView() {
     }
   };
 
+  useEffect(() =>{
+    const onKey = (e) =>{
+      if (!selected?.matchId || busy || selected.controlStatus === 'COMPLETED') return;
+      const tag = String(e.target?.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target?.isContentEditable) return;
+      const map = {
+        '0': { type: 'DOT', msg: 'Hotkey: Dot' },
+        '1': { type: 'SINGLE', msg: 'Hotkey: Single' },
+        '4': { type: 'FOUR', msg: 'Hotkey: Four' },
+        '6': { type: 'SIX', msg: 'Hotkey: Six' },
+        w: { type: 'WICKET', subType: 'Bowled', msg: 'Hotkey: Wicket' },
+        W: { type: 'WICKET', subType: 'Bowled', msg: 'Hotkey: Wicket' },
+      };
+      const hit = map[e.key];
+      if (!hit) return;
+      e.preventDefault();
+      run(
+        () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/incident`, {
+          type: hit.type,
+          ...(hit.subType ? { subType: hit.subType } : {}),
+          instant: true,
+        }),
+        hit.msg,
+      );
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selected?.matchId, selected?.controlStatus, busy]);
+
   const seek = (body, msg) => run(
     () => adminApiClient.post('/iplsrl/matches/seek', { matchId: selected.matchId, ...body }),
     msg,
@@ -539,6 +601,7 @@ export default function IPLSRLConsoleView() {
     try {
       const data = await adminApiClient.get(`/iplsrl/matches/${encodeURIComponent(selectedMatchId)}/replay`);
       setReplayDeliveries(data?.deliveries || []);
+      setReplayFallOfWickets(data?.fallOfWickets || []);
     } catch (err) {
       showToast(err.message || 'Failed to load replay', 'error');
     } finally {
@@ -1161,13 +1224,13 @@ export default function IPLSRLConsoleView() {
                               disabled={busy || selected.controlStatus === 'COMPLETED'}
                               onClick={() =>{
                                 run(
-                                  () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/incident`, {
-                                    type: whatIfData.bestHousePick.type.includes('WICKET') ? 'WICKET' : whatIfData.bestHousePick.type,
+                                  () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/what-if/execute`, {
+                                    type: whatIfData.bestHousePick.type,
                                     subType: whatIfData.bestHousePick.subType || undefined,
-                                    instant: true,
+                                    nudgeMarkets: true,
                                   }),
                                   `Executed Optimal Pick: ${whatIfData.bestHousePick.label}!`,
-                                );
+                                ).then(fetchWhatIf);
                               }}
                             >
                                Execute Optimal Pick
@@ -1232,13 +1295,13 @@ export default function IPLSRLConsoleView() {
                                         disabled={busy || selected.controlStatus === 'COMPLETED'}
                                         onClick={() =>{
                                           run(
-                                            () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/incident`, {
-                                              type: sc.type.includes('WICKET') ? 'WICKET' : sc.type,
+                                            () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/what-if/execute`, {
+                                              type: sc.type,
                                               subType: sc.subType || undefined,
-                                              instant: true,
+                                              nudgeMarkets: true,
                                             }),
                                             `Executed ${sc.label}!`,
-                                          );
+                                          ).then(fetchWhatIf);
                                         }}
                                       >
                                         Execute
@@ -1522,9 +1585,9 @@ export default function IPLSRLConsoleView() {
                     <div className="srl-zone">
                       <div className="srl-zone-label --accent" style={{ justifyContent: 'space-between' }}>
                         <span>Narrative Presets (1-Click 6-Ball Scripts)</span>
-                        {selected.incidentQueueLength >0 && (
-                          <span className="srl-pill srl-pill-live">
-                             {selected.incidentQueueLength} armed in queue
+                        {selected.incidentQueueLength > 0 && (
+                          <span className="srl-pill srl-pill-paused">
+                            {selected.incidentQueueLength} queued for later balls
                           </span>
                         )}
                       </div>
@@ -1674,13 +1737,49 @@ export default function IPLSRLConsoleView() {
                 {matchZone === 'godmode' && (
                   <div className="srl-tab-body" key="godmode">
                     <div className="srl-zone">
-                      <div className="srl-zone-label --warn" style={{ justifyContent: 'space-between' }}>
-                        <span>Next-Ball Incident Injector</span>
-                        {selected.incidentQueueLength >0 && (
-                          <span className="srl-pill srl-pill-live">
-                            {selected.incidentQueueLength} armed
-                          </span>
-                        )}
+                      <div className="srl-zone-label --warn" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                        <span>Instant Ball Inject</span>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                          {selected.incidentQueueLength > 0 && (
+                            <span className="srl-pill srl-pill-paused">
+                              Next: {selected.nextQueuedIncident?.type || 'queued'} ({selected.incidentQueueLength})
+                            </span>
+                          )}
+                          {selected.scoreAnchorsCount > 0 && (
+                            <span className="srl-pill srl-pill-live">
+                              {selected.scoreAnchorsCount} anchors active
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <p className="srl-hint" style={{ margin: '0 0 10px' }}>
+                        Applies immediately to the live board. Hotkeys: 0 / 1 / 4 / 6 / W. Blueprint presets queue for later deliveries.
+                      </p>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+                        <button
+                          type="button"
+                          className="srl-btn srl-btn-orange"
+                          style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+                          disabled={busy || !(selected.scoreAnchorsCount > 0)}
+                          onClick={() => run(
+                            () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/undo-inject`),
+                            'Undid last inject',
+                          )}
+                        >
+                          Undo last inject
+                        </button>
+                        <button
+                          type="button"
+                          className="srl-btn srl-btn-slate"
+                          style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+                          disabled={busy || !(selected.scoreAnchorsCount > 0)}
+                          onClick={() => run(
+                            () => adminApiClient.delete(`/iplsrl/matches/${selected.matchId}/anchors`),
+                            'Cleared all score anchors',
+                          )}
+                        >
+                          Clear all anchors
+                        </button>
                       </div>
                       <div className="srl-incident-grid">
                         {[
@@ -1688,9 +1787,11 @@ export default function IPLSRLConsoleView() {
                           { type: 'WICKET', subType: 'Caught Behind', Icon: ShieldCheckIcon, label: 'Wicket (Caught)', msg: 'Caught Wicket injected!' },
                           { type: 'SIX', Icon: RocketIcon, label: 'Boundary SIX', msg: 'Boundary SIX injected!' },
                           { type: 'FOUR', Icon: ZapIcon, label: 'Boundary FOUR', msg: 'Boundary FOUR injected!' },
+                          { type: 'SINGLE', Icon: ActivityIcon, label: 'Single (1)', msg: 'Single injected!' },
+                          { type: 'DOUBLE', Icon: LayersIcon, label: 'Double (2)', msg: 'Double injected!' },
                           { type: 'DOT', Icon: SparklesIcon, label: 'Dot Ball (0)', msg: 'Dot Ball injected!' },
-                          { type: 'WIDE', Icon: TriangleAlertIcon, label: 'Wide (+1)', msg: 'Wide (+1 extra) injected!' },
-                          { type: 'NO_BALL', Icon: RadioIcon, label: 'No Ball (+1)', msg: 'No Ball (+1 & Free Hit) injected!' },
+                          { type: 'WIDE', Icon: TriangleAlertIcon, label: 'Wide (+1 extra)', msg: 'Wide (+1 extra) injected — over not advanced!' },
+                          { type: 'NO_BALL', Icon: RadioIcon, label: 'No Ball (+1)', msg: 'No Ball (+1) injected — over not advanced!' },
                         ].map((inc) =>{
                           const IncIcon = inc.Icon;
                           return (
@@ -2599,6 +2700,19 @@ export default function IPLSRLConsoleView() {
                         ))}
                       </div>
 
+                      {replayFallOfWickets.length > 0 && (
+                        <div style={{ marginBottom: 12, padding: '10px 12px', background: 'var(--srl-surface-2, rgba(0,0,0,0.04))', borderRadius: 8 }}>
+                          <strong style={{ fontSize: '0.82rem' }}>Fall of Wickets</strong>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+                            {replayFallOfWickets.map((fw, i) => (
+                              <span key={`${fw.over}-${i}`} className="srl-pill srl-pill-paused" style={{ fontSize: '0.72rem' }}>
+                                {fw.score?.runs ?? '?'}/{i + 1} · Ov {fw.over} · {fw.wicketType} · {playerLabel(fw.batsman, 'Batter')}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Deliveries Timeline List */}
                       {replayLoading && replayDeliveries.length === 0 ? (
                         <p className="srl-hint">Loading ball-by-ball delivery log…</p>
@@ -2623,11 +2737,16 @@ export default function IPLSRLConsoleView() {
                                       {d.wicket ? 'W' : (d.runs || '0')}
                                     </span>
                                     <strong>{playerLabel(d.batsman, 'Batter')} vs {playerLabel(d.bowler, 'Bowler')}</strong>
+                                    {d.wicket && d.wicketType && (
+                                      <span className="srl-pill srl-pill-paused" style={{ fontSize: '0.64rem', padding: '1px 6px' }}>
+                                        {d.wicketType}
+                                      </span>
+                                    )}
                                   </div>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                     {d.score && (
                                       <span className="srl-replay-score">
-                                        Board: {d.score.runs}r ({d.score.overs} ov)
+                                        Board: {d.score.runs}/{d.score.wickets ?? '?'} ({d.score.overs} ov)
                                       </span>
                                     )}
                                     <span className="srl-hint" style={{ fontSize: '0.72rem' }}>

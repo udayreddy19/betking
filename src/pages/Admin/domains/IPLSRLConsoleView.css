@@ -559,6 +559,29 @@ html[data-theme='dark'] .srl-console,
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--srl-text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.srl-score-team.is-batting .srl-score-team-name {
+  color: var(--srl-accent);
+}
+
+.srl-score-team.is-batting .srl-score-runs {
+  color: var(--srl-accent-strong);
+}
+
+.srl-batting-tag {
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--srl-accent-dim);
+  color: var(--srl-accent-strong);
+  border: 1px solid color-mix(in srgb, var(--srl-accent) 28%, transparent);
 }
 
 .srl-score-runs {

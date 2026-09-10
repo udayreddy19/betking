@@ -190,7 +190,7 @@ describe('Advanced OddsYra SRL Match Control Suite', () => {
     expect(res).toBeDefined();
     expect(res.matchId).toBe(testMatchId);
     expect(Array.isArray(res.scenarios)).toBe(true);
-    expect(res.scenarios.length).toBe(6);
+    expect(res.scenarios.length).toBe(7);
     expect(res.bestHousePick).toBeDefined();
     expect(res.bestHousePick.recommended).toBe(true);
 
@@ -360,6 +360,39 @@ describe('Advanced OddsYra SRL Match Control Suite', () => {
     expect(radar.h2hMatchup).toBeDefined();
     expect(radar.h2hMatchup.striker).toBeDefined();
     expect(radar.h2hMatchup.strikeRate).toBeGreaterThanOrEqual(0);
+  });
+
+  it('executes What-If with market/cashout nudge and richer audit export', async () => {
+    const {
+      executeSrlWhatIf,
+      exportIPLSRLMatchAudit,
+      getIPLSRLMatchReplay,
+      injectIPLSRLIncident,
+    } = await import('../../lib/iplSrlAdminControl.mjs');
+
+    injectIPLSRLIncident(testMatchId, {
+      type: 'WICKET',
+      subType: 'Caught Behind',
+      instant: true,
+    }, 'test_admin');
+
+    const executed = executeSrlWhatIf(testMatchId, { type: 'DOT', nudgeMarkets: true }, 'test_admin');
+    expect(executed.success).toBe(true);
+    expect(executed.scenario).toBeDefined();
+    expect(executed.snapshot).toBeDefined();
+
+    const replay = getIPLSRLMatchReplay(testMatchId);
+    expect(Array.isArray(replay.fallOfWickets)).toBe(true);
+    const wicketBall = replay.deliveries.find((d) => d.wicket);
+    if (wicketBall) {
+      expect(wicketBall.wicketType).toBeTruthy();
+    }
+
+    const audit = exportIPLSRLMatchAudit(testMatchId);
+    expect(audit.fixture).toBeDefined();
+    expect(Array.isArray(audit.anchors)).toBe(true);
+    expect(Array.isArray(audit.fallOfWickets)).toBe(true);
+    expect(Array.isArray(audit.deliveries)).toBe(true);
   });
 });
 

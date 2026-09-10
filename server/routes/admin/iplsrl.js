@@ -408,7 +408,11 @@ router.get('/matches/:matchId/export', iplsrlRoles, async (req, res) => {
     const result = exportIPLSRLMatchAudit(req.params.matchId);
     if (req.query?.format === 'csv') {
       const deliveries = result.deliveries || [];
-      const headers = ['overNumber', 'ballInOver', 'innings', 'bowler', 'batsman', 'outcome', 'runs', 'wicket', 'commentary', 'timestamp'];
+      const headers = [
+        'overNumber', 'ballInOver', 'innings', 'bowler', 'batsman', 'outcome', 'runs',
+        'wicket', 'wicketType', 'boardBeforeRuns', 'boardAfterRuns', 'boardAfterWickets',
+        'commentary', 'admin', 'timestamp',
+      ];
       const csvRows = [headers.join(',')];
       for (const d of deliveries) {
         csvRows.push([
@@ -420,7 +424,12 @@ router.get('/matches/:matchId/export', iplsrlRoles, async (req, res) => {
           d.outcome,
           d.runs,
           d.wicket ? 1 : 0,
+          `"${(d.wicketType || '').replace(/"/g, '""')}"`,
+          d.boardBefore?.runs ?? '',
+          d.boardAfter?.runs ?? d.score?.runs ?? '',
+          d.boardAfter?.wickets ?? d.score?.wickets ?? '',
           `"${(d.commentary || '').replace(/"/g, '""')}"`,
+          `"${(d.admin || '').replace(/"/g, '""')}"`,
           d.timestamp,
         ].join(','));
       }
@@ -439,6 +448,36 @@ router.get('/matches/:matchId/what-if', iplsrlRoles, async (req, res) => {
     const { simulateSrlWhatIf } = await import('../../../lib/iplSrlAdminControl.mjs');
     const result = simulateSrlWhatIf(req.params.matchId);
     res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/what-if/execute', iplsrlRoles, async (req, res) => {
+  try {
+    const { executeSrlWhatIf } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = executeSrlWhatIf(req.params.matchId, req.body || {}, req.admin?.id || 'admin');
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/undo-inject', iplsrlRoles, async (req, res) => {
+  try {
+    const { undoIPLSRLLastInject } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = undoIPLSRLLastInject(req.params.matchId, req.admin?.id || 'admin');
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.delete('/matches/:matchId/anchors', iplsrlRoles, async (req, res) => {
+  try {
+    const { clearIPLSRLScoreAnchors } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = clearIPLSRLScoreAnchors(req.params.matchId, req.admin?.id || 'admin');
+    await jsonSnap(res, result);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
