@@ -21,6 +21,27 @@ router.get('/api/bet/cashout/quote', requireAuth, async (req, res) => {
   }
 });
 
+router.post('/api/bet/cashout/quotes', requireAuth, async (req, res) => {
+  try {
+    const betIds = Array.isArray(req.body?.betIds) ? req.body.betIds : [];
+    if (betIds.length === 0) {
+      return res.status(400).json({ success: false, error: 'betIds required', quotes: {} });
+    }
+    const { quoteBetCashoutsBatch } = await import('../../lib/cashoutEngine.mjs');
+    const result = await quoteBetCashoutsBatch({
+      betIds,
+      userId: req.user.userId || req.user.id,
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({
+      success: false,
+      error: userFacingBetError(err),
+      quotes: {},
+    });
+  }
+});
+
 router.post('/api/bet/cashout', requireAuth, async (req, res) => {
   const { betId, requestedCashoutValue } = req.body;
   const idempotencyKey = req.headers['x-idempotency-key'] || req.body.idempotencyKey;
@@ -41,6 +62,30 @@ router.post('/api/bet/cashout', requireAuth, async (req, res) => {
 router.get('/api/bets/mine', requireAuth, async (req, res) => {
   try {
     const { queryRead } = await import('../../db/pg.js');
+    const rawLimit = Number(req.query.limit);
+    const limit = Number.isFinite(rawLimit)
+      ? Math.min(100, Math.max(1, Math.floor(rawLimit)))
+      : 50;
+    const statusParam = String(req.query.status || '').trim().toLowerCase();
+    const statusGroups = {
+      pending: ['PENDING', 'ACCEPTED', 'OPEN'],
+      open: ['PENDING', 'ACCEPTED', 'OPEN'],
+      won: ['WON', 'WIN'],
+      lost: ['LOST', 'LOSS'],
+      void: ['VOID', 'PUSH', 'REFUNDED'],
+      cashed_out: ['CASHED_OUT', 'CASHOUT'],
+      settled: ['WON', 'WIN', 'LOST', 'LOSS', 'VOID', 'PUSH', 'REFUNDED', 'CASHED_OUT', 'CASHOUT', 'SETTLED'],
+    };
+    const statusFilter = statusGroups[statusParam] || null;
+    const params = [req.user.userId];
+    let statusSql = '';
+    if (statusFilter) {
+      params.push(statusFilter);
+      statusSql = ` AND UPPER(b.status::text) = ANY($${params.length}::text[])`;
+    }
+    params.push(limit);
+    const limitParam = `$${params.length}`;
+
     const result = await queryRead(
       `SELECT b.bet_id, b.user_id, b.match_id, b.market_id, b.selection_id, b.stake, b.odds, b.accepted_odds,
               b.potential_payout, b.bet_type, b.status, b.created_at, COALESCE(b.fund_source, 'cash') AS fund_source,
@@ -59,12 +104,12 @@ router.get('/api/bets/mine', requireAuth, async (req, res) => {
               ) AS selections
        FROM bets b
        LEFT JOIN bet_selections bs ON bs.bet_id = b.bet_id
-       WHERE b.user_id = $1
+       WHERE b.user_id = $1${statusSql}
        GROUP BY b.bet_id, b.user_id, b.match_id, b.market_id, b.selection_id, b.stake, b.odds, b.accepted_odds,
                 b.potential_payout, b.bet_type, b.status, b.created_at, b.fund_source, b.placement_snapshot
        ORDER BY b.created_at DESC
-       LIMIT 100`,
-      [req.user.userId],
+       LIMIT ${limitParam}`,
+      params,
     );
 
     // Best-effort match titles from live feed (so UI never shows raw provider IDs like 10cric_…).
@@ -100,12 +145,27 @@ router.get('/api/bets/mine', requireAuth, async (req, res) => {
       matchTitles = { resolve: () => null };
     }
 
-    const titleFromSnapshot = (row) => {
-      let snap = row.placement_snapshot;
-      if (!snap) return null;
-      if (typeof snap === 'string') {
-        try { snap = JSON.parse(snap); } catch { return null; }
-      }
+    const slimSnapshot = (snap) => {
+      if (!snap || typeof snap !== 'object') return null;
+      const legs = Array.isArray(snap.legs)
+        ? snap.legs.map((leg) => ({
+          matchId: leg?.matchId,
+          matchName: leg?.matchName,
+          team1Name: leg?.team1Name,
+          team2Name: leg?.team2Name,
+          league: leg?.league,
+          sport: leg?.sport,
+          marketId: leg?.marketId,
+          marketName: leg?.marketName,
+          selection: leg?.selection,
+          selectionName: leg?.selectionName,
+          odds: leg?.odds,
+        }))
+        : [];
+      return { legs };
+    };
+
+    const titleFromSnapshot = (row, snap) => {
       const leg = Array.isArray(snap?.legs) ? snap.legs[0] : null;
       if (!leg) return null;
       if (leg.matchName && !/^live match$/i.test(leg.matchName)) return String(leg.matchName);
@@ -124,13 +184,26 @@ router.get('/api/bets/mine', requireAuth, async (req, res) => {
       if (typeof snap === 'string') {
         try { snap = JSON.parse(snap); } catch { snap = null; }
       }
+      snap = slimSnapshot(snap);
       const snapLeg = Array.isArray(snap?.legs) ? snap.legs[0] : null;
 
       return {
-        ...row,
+        bet_id: row.bet_id,
+        user_id: row.user_id,
+        match_id: row.match_id,
+        market_id: row.market_id,
+        selection_id: row.selection_id,
+        stake: row.stake,
+        odds: row.odds,
+        accepted_odds: row.accepted_odds,
+        potential_payout: row.potential_payout,
+        bet_type: row.bet_type,
+        status: row.status,
+        created_at: row.created_at,
+        fund_source: row.fund_source,
         selections,
         placement_snapshot: snap,
-        match_name: matchTitles.resolve?.(row.match_id) || titleFromSnapshot(row) || null,
+        match_name: matchTitles.resolve?.(row.match_id) || titleFromSnapshot(row, snap) || null,
         team1_name: snapLeg?.team1Name || null,
         team2_name: snapLeg?.team2Name || null,
         league: snapLeg?.league || null,

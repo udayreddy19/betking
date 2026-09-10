@@ -115,7 +115,6 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
     closeMyBets,
     cashOutBet,
     adminSettleBet,
-    refreshMyBets,
     myBetsLoading,
   } = useBetSlip();
   const { creditCashout, showToast, user } = useAuth();
@@ -129,6 +128,7 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
   const [highlightBetId, setHighlightBetId] = useState(null);
   const [expandedEvidence, setExpandedEvidence] = useState({});
   const [loadedEvidence, setLoadedEvidence] = useState({});
+  const [expandedTimeline, setExpandedTimeline] = useState({});
   const panelRef = useRef(null);
 
   const toggleEvidence = async (betId, existingEvidence) => {
@@ -141,10 +141,12 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
     if (isOpening && !existingEvidence && !loadedEvidence[betId]) {
       try {
         const res = await apiFetch(`/api/bets/${encodeURIComponent(betId)}/evidence`);
-        if (res?.evidence) {
+        const data = await res.json().catch(() => ({}));
+        const evidence = data?.settlementEvidence || data?.evidence || null;
+        if (evidence) {
           setLoadedEvidence((prev) => ({
             ...prev,
-            [betId]: res.evidence,
+            [betId]: evidence,
           }));
         }
       } catch {
@@ -168,7 +170,8 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
     if (!panelOpen) return undefined;
 
     if (!isPage && !highlightBetId) setFilter('pending');
-    void refreshMyBets();
+    // Sheet: openMyBets/toggleMyBets already refresh. Page: MyBetsPage refreshes on mount.
+    // Avoid a second /api/bets/mine round-trip on every open.
 
     if (isPage) return undefined;
 
@@ -189,51 +192,69 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
       document.removeEventListener('keydown', handleEscape);
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [panelOpen, isPage, closeMyBets, refreshMyBets, highlightBetId]);
+  }, [panelOpen, isPage, closeMyBets, highlightBetId]);
 
   useEffect(() => {
     if (!panelOpen) setHighlightBetId(null);
   }, [panelOpen]);
 
+  const pendingCashBetIds = useMemo(() => {
+    return placedBets
+      .filter((bet) => {
+        const status = String(bet.status || '').toLowerCase();
+        if (status !== 'pending' && status !== 'accepted' && status !== 'open') return false;
+        if (bet.fundSource === 'bonus' || bet.fundSource === 'freebet') return false;
+        return Boolean(bet.id);
+      })
+      .map((bet) => String(bet.id))
+      .sort()
+      .join(',');
+  }, [placedBets]);
+
+  const needsCashoutQuotes = panelOpen
+    && !DEMO_MODE
+    && (filter === 'pending' || filter === 'cashout' || filter === 'all');
+
   // Live cashout quotes from server (accepted/current odds) — not VIP% of potential.
   useEffect(() => {
-    if (!panelOpen || DEMO_MODE) return undefined;
-
-    const pendingCash = placedBets.filter((bet) => {
-      const status = String(bet.status || '').toLowerCase();
-      if (status !== 'pending' && status !== 'accepted' && status !== 'open') return false;
-      if (bet.fundSource === 'bonus' || bet.fundSource === 'freebet') return false;
-      return Boolean(bet.id);
-    });
-
-    if (pendingCash.length === 0) {
+    if (!needsCashoutQuotes) return undefined;
+    if (!pendingCashBetIds) {
       setCashoutQuotes({});
       return undefined;
     }
 
+    const betIds = pendingCashBetIds.split(',').filter(Boolean);
     let cancelled = false;
 
     const refreshQuotes = async () => {
-      const entries = await Promise.all(pendingCash.map(async (bet) => {
-        try {
-          const res = await apiFetch(`/api/bet/cashout/quote?betId=${encodeURIComponent(bet.id)}`);
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok || data.available === false) return [bet.id, 0];
-          return [bet.id, Number(data.cashoutValue) || 0];
-        } catch {
-          return [bet.id, 0];
+      try {
+        const res = await apiFetch('/api/bet/cashout/quotes', {
+          method: 'POST',
+          body: JSON.stringify({ betIds }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        const quotes = data?.quotes && typeof data.quotes === 'object' ? data.quotes : {};
+        const next = {};
+        for (const id of betIds) {
+          const q = quotes[id];
+          next[id] = q && q.available !== false ? (Number(q.cashoutValue) || 0) : 0;
         }
-      }));
-      if (!cancelled) setCashoutQuotes(Object.fromEntries(entries));
+        setCashoutQuotes(next);
+      } catch {
+        if (!cancelled) {
+          // Keep prior quotes on transient failure
+        }
+      }
     };
 
     void refreshQuotes();
-    const timer = setInterval(refreshQuotes, 8_000);
+    const timer = setInterval(refreshQuotes, 12_000);
     return () => {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [panelOpen, placedBets]);
+  }, [needsCashoutQuotes, pendingCashBetIds]);
 
   // Auto-settle pending bets when matches complete
   useEffect(() => {
@@ -339,8 +360,26 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
     matchName: leg?.matchName,
   });
 
+  const liveMatchById = useMemo(() => {
+    const map = new Map();
+    for (const m of liveMatches || []) {
+      const id = String(m.id || m.matchId || '');
+      if (id) map.set(id, m);
+    }
+    return map;
+  }, [liveMatches]);
+
+  const resolveLegMatchFast = (leg) => {
+    const id = String(leg?.matchId || '');
+    if (id && liveMatchById.has(id)) return liveMatchById.get(id);
+    return findLiveMatch(liveMatches, {
+      matchId: leg?.matchId,
+      matchName: leg?.matchName,
+    });
+  };
+
   const getLegDisplayName = (leg) => {
-    const match = resolveLegMatch(leg);
+    const match = resolveLegMatchFast(leg);
     if (match) {
       const t1 = match.team1?.name || match.team1?.shortName;
       const t2 = match.team2?.name || match.team2?.shortName;
@@ -362,7 +401,7 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
     const nameHint = leg.team1Name && leg.team2Name
       ? `${leg.team1Name} vs ${leg.team2Name}`
       : leg.matchName;
-    const live = resolveLegMatch(leg)
+    const live = resolveLegMatchFast(leg)
       || findLiveMatch(liveMatches, {
         matchId: leg.matchId,
         matchName: nameHint,
@@ -426,12 +465,15 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
   };
 
   const getLegSelectionLabel = (leg) => {
-    const match = resolveLegMatch(leg);
+    const match = resolveLegMatchFast(leg);
     const id = String(leg.selection || '');
     if (match) {
       if (id === '1' && match.team1?.name) return match.team1.name;
       if (id === '2' && match.team2?.name) return match.team2.name;
       if (id === 'X') return 'Draw';
+      // Prefer stored selection name — avoid scanning every market on each render.
+      const name = String(leg.selectionName || '');
+      if (name && !/^sel[_-]/i.test(name)) return name;
       const markets = match.markets || match.odds?.markets || [];
       for (const market of markets) {
         const sels = market.selections || market.outcomes || [];
@@ -445,9 +487,7 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
   };
 
   const getLegScoreText = (leg) => {
-    const match = resolveLegMatch(leg) || liveMatches.find((m) =>
-      m.matchName?.toLowerCase().includes(String(leg.matchName || '').toLowerCase())
-    );
+    const match = resolveLegMatchFast(leg);
 
     const ld = match?.liveDetails || leg.liveDetails || {};
 
@@ -803,26 +843,39 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
                     );
                   })()}
 
-                  <ol className="my-bets-timeline" aria-label="Settlement timeline">
-                    {buildSettlementTimeline(placed).map((step) => (
-                      <li
-                        key={step.id}
-                        className={`my-bets-timeline__step${step.done ? ' my-bets-timeline__step--done' : ''}`}
-                      >
-                        <span className="my-bets-timeline__label">{step.label}</span>
-                        {step.at ? (
-                          <span className="my-bets-timeline__at">
-                            {formatIst(step.at, {
-                              day: '2-digit',
-                              month: 'short',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </span>
-                        ) : null}
-                      </li>
-                    ))}
-                  </ol>
+                  <button
+                    type="button"
+                    className="my-bets-timeline-toggle"
+                    onClick={() => setExpandedTimeline((prev) => ({
+                      ...prev,
+                      [placed.id]: !prev[placed.id],
+                    }))}
+                    aria-expanded={Boolean(expandedTimeline[placed.id])}
+                  >
+                    {expandedTimeline[placed.id] ? 'Hide timeline' : 'Show timeline'}
+                  </button>
+                  {expandedTimeline[placed.id] ? (
+                    <ol className="my-bets-timeline" aria-label="Settlement timeline">
+                      {buildSettlementTimeline(placed).map((step) => (
+                        <li
+                          key={step.id}
+                          className={`my-bets-timeline__step${step.done ? ' my-bets-timeline__step--done' : ''}`}
+                        >
+                          <span className="my-bets-timeline__label">{step.label}</span>
+                          {step.at ? (
+                            <span className="my-bets-timeline__at">
+                              {formatIst(step.at, {
+                                day: '2-digit',
+                                month: 'short',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ol>
+                  ) : null}
                 </div>
               );
             })

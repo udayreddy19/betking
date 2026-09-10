@@ -61,6 +61,16 @@ function writePlacedBetsCache(userKey, bets) {
   }
 }
 
+let placedBetsCacheTimer = null;
+function schedulePlacedBetsCacheWrite(userKey, bets) {
+  if (!userKey) return;
+  if (placedBetsCacheTimer) clearTimeout(placedBetsCacheTimer);
+  placedBetsCacheTimer = setTimeout(() => {
+    placedBetsCacheTimer = null;
+    writePlacedBetsCache(userKey, bets);
+  }, 400);
+}
+
 function clearPlacedBetsCache() {
   if (typeof sessionStorage === 'undefined') return;
   try {
@@ -196,8 +206,9 @@ function formatOddsUpdatesToast(updates, placed = false) {
   return `${prefix} on ${updates.length} selections`;
 }
 
-async function fetchMyBetsFromServer() {
-  const res = await apiFetch('/api/bets/mine');
+async function fetchMyBetsFromServer({ limit = 50 } = {}) {
+  const qs = new URLSearchParams({ limit: String(limit) });
+  const res = await apiFetch(`/api/bets/mine?${qs.toString()}`);
   if (res.status === 401) throw new Error('unauthorized');
   if (!res.ok) throw new Error(`fetch_failed_${res.status}`);
   const data = await res.json();
@@ -362,6 +373,7 @@ export function BetSlipProvider({ children }) {
   const [isMyBetsOpen, setIsMyBetsOpen] = useState(false);
   const [myBetsLoading, setMyBetsLoading] = useState(false);
   const myBetsFetchSeq = useRef(0);
+  const lastMyBetsFetchAt = useRef(0);
   const placedBetsRef = useRef(placedBets);
   const betsRef = useRef(bets);
   const lastOddsSyncAt = useRef(0);
@@ -520,7 +532,7 @@ export function BetSlipProvider({ children }) {
 
   useEffect(() => {
     if (DEMO_MODE || !userCacheKey) return;
-    writePlacedBetsCache(userCacheKey, placedBets);
+    schedulePlacedBetsCacheWrite(userCacheKey, placedBets);
   }, [placedBets, userCacheKey]);
 
   useEffect(() => {
@@ -552,10 +564,11 @@ export function BetSlipProvider({ children }) {
       const showLoading = !silent && placedBetsRef.current.length === 0;
       if (showLoading) setMyBetsLoading(true);
       try {
-        const rows = await fetchMyBetsFromServer();
+        const rows = await fetchMyBetsFromServer({ limit: 50 });
         if (!cancelled && seq === myBetsFetchSeq.current) {
           const next = rows.map(mapServerBetToPlaced);
           setPlacedBets(next);
+          lastMyBetsFetchAt.current = Date.now();
           writePlacedBetsCache(userCacheKey, next);
         }
       } catch {
@@ -568,23 +581,26 @@ export function BetSlipProvider({ children }) {
     };
     // First load after login may show spinner only if cache was empty.
     void load({ silent: cached.length > 0 });
-    const timer = setInterval(() => load({ silent: true }), 15000);
+    const timer = setInterval(() => load({ silent: true }), 30000);
     return () => {
       cancelled = true;
       clearInterval(timer);
     };
   }, [userCacheKey]);
 
-  const refreshMyBets = useCallback(async () => {
+  const refreshMyBets = useCallback(async ({ force = false } = {}) => {
     if (DEMO_MODE) return;
+    const recentlyFetched = Date.now() - lastMyBetsFetchAt.current < 8_000;
+    if (!force && recentlyFetched && placedBetsRef.current.length > 0) return;
     const seq = ++myBetsFetchSeq.current;
     const silent = placedBetsRef.current.length > 0;
     if (!silent) setMyBetsLoading(true);
     try {
-      const rows = await fetchMyBetsFromServer();
+      const rows = await fetchMyBetsFromServer({ limit: 50 });
       if (seq === myBetsFetchSeq.current) {
         const next = rows.map(mapServerBetToPlaced);
         setPlacedBets(next);
+        lastMyBetsFetchAt.current = Date.now();
         const key = userCacheKey;
         if (key) writePlacedBetsCache(key, next);
       }
@@ -605,7 +621,7 @@ export function BetSlipProvider({ children }) {
     const unsub = subscribeLiveChannel(channel, (msg) => {
       const eventType = msg?.eventType;
       if (eventType === 'WS_RECONNECTED') {
-        refreshMyBets();
+        void refreshMyBets({ force: true });
         void refreshWallet?.();
         return;
       }
@@ -613,7 +629,7 @@ export function BetSlipProvider({ children }) {
       if (!isFinancialEventForUser(msg, user.userId)) return;
       const decision = shouldApplyFinancialWsEvent(msg, seenEvents, lastTsRef);
       if (!decision.apply) return;
-      refreshMyBets();
+      void refreshMyBets({ force: true });
       void refreshWallet?.();
       if (eventType === 'BET_SETTLED' && msg?.payload?.status === 'WON') playWinSound();
     });
@@ -1155,8 +1171,11 @@ export function BetSlipProvider({ children }) {
         setIsMobileOpen(false);
         playBetSound();
         void refreshWallet?.();
-        void fetchMyBetsFromServer()
-          .then((rows) => setPlacedBets(rows.map(mapServerBetToPlaced)))
+        void fetchMyBetsFromServer({ limit: 50 })
+          .then((rows) => {
+            setPlacedBets(rows.map(mapServerBetToPlaced));
+            lastMyBetsFetchAt.current = Date.now();
+          })
           .catch(() => {});
         return {
           success: true,
@@ -1265,8 +1284,9 @@ export function BetSlipProvider({ children }) {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || data.success === false) return null;
-        const rows = await fetchMyBetsFromServer();
+        const rows = await fetchMyBetsFromServer({ limit: 50 });
         setPlacedBets(rows.map(mapServerBetToPlaced));
+        lastMyBetsFetchAt.current = Date.now();
         playWinSound();
         await refreshWallet?.();
         return {

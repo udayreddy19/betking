@@ -35,7 +35,7 @@ export default function BetSettlementRunner() {
       try {
         await apiFetch('/api/bets/sync-settlement', { method: 'POST', body: '{}' });
         if (!cancelled && typeof refreshMyBets === 'function') {
-          await refreshMyBets();
+          await refreshMyBets({ force: true });
         }
         if (!cancelled && typeof refreshWallet === 'function') {
           await refreshWallet();
@@ -48,7 +48,7 @@ export default function BetSettlementRunner() {
     };
 
     sync();
-    const timer = setInterval(sync, 20000);
+    const timer = setInterval(sync, 30000);
     return () => {
       cancelled = true;
       clearInterval(timer);
