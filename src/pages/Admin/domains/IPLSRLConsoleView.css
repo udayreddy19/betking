@@ -2117,3 +2117,35 @@ html[data-theme='dark'] .srl-console,
     grid-template-columns: 1fr;
   }
 }
+
+/* Mobile ops sticky inject / pause row */
+.srl-mobile-ops {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .srl-mobile-ops {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    padding: 10px;
+    margin: 0 0 12px;
+    background: color-mix(in srgb, var(--srl-surface) 92%, transparent);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--srl-border);
+    border-radius: var(--srl-radius-sm);
+  }
+  .srl-mobile-ops .srl-btn {
+    min-height: 44px;
+    min-width: 48px;
+    flex: 1 1 auto;
+    font-size: 0.85rem;
+  }
+  .srl-mobile-ops__inject {
+    flex: 0 0 48px;
+    font-weight: 800;
+  }
+}

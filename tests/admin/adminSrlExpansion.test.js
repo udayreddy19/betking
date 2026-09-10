@@ -394,6 +394,76 @@ describe('Advanced OddsYra SRL Match Control Suite', () => {
     expect(Array.isArray(audit.fallOfWickets)).toBe(true);
     expect(Array.isArray(audit.deliveries)).toBe(true);
   });
+
+  it('supports multi-undo, script presets, desk capabilities, and settlement wizard gates', async () => {
+    const {
+      injectIPLSRLIncident,
+      undoIPLSRLLastInject,
+      saveIPLSRLScriptPreset,
+      listIPLSRLScriptPresets,
+      getIPLSRLDeskCapabilitiesForRole,
+      getIPLSRLPublicPreview,
+      clearIPLSRLScoreAnchors,
+      rehearseIPLSRLQueue,
+      getIPLSRLScoreDrift,
+      captureIPLSRLMatchTemplateFromMatch,
+      applyIPLSRLMatchTemplate,
+      getIPLSRLPostMatchReport,
+      engageIPLSRLIntegrityHold,
+    } = await import('../../lib/iplSrlAdminControl.mjs');
+    const { resetSrlDeskOpsForTests } = await import('../../lib/iplSrlDeskOps.mjs');
+    const { queueSrlIncident: queueInc } = await import('../../lib/iplSrlOperatorState.mjs');
+    resetSrlDeskOpsForTests();
+
+    const junior = getIPLSRLDeskCapabilitiesForRole('OPERATIONS_ADMIN');
+    expect(junior.canDeclare).toBe(false);
+    expect(junior.canInject).toBe(true);
+    expect(junior.canIntegrityHold).toBe(false);
+    const senior = getIPLSRLDeskCapabilitiesForRole('TRADING_ADMIN');
+    expect(senior.canDeclare).toBe(true);
+    expect(senior.canIntegrityHold).toBe(true);
+
+    injectIPLSRLIncident(testMatchId, { type: 'SIX', reasonCode: 'fix', instant: true }, 'test_admin');
+    injectIPLSRLIncident(testMatchId, { type: 'FOUR', reasonCode: 'script', instant: true }, 'test_admin');
+    const undone = undoIPLSRLLastInject(testMatchId, 'test_admin', { count: 2 });
+    expect(undone.undone).toBeGreaterThanOrEqual(1);
+
+    const saved = saveIPLSRLScriptPreset({
+      name: 'Test Death',
+      balls: [{ type: 'DOT', runs: 0 }, { type: 'WICKET', runs: 0, subType: 'Bowled' }],
+    }, 'test_admin');
+    expect(saved.preset.name).toBe('Test Death');
+    expect(listIPLSRLScriptPresets().custom.length).toBeGreaterThan(0);
+
+    const preview = getIPLSRLPublicPreview(testMatchId);
+    expect(preview.matchId).toBe(testMatchId);
+    expect(preview.score).toBeDefined();
+
+    expect(() => clearIPLSRLScoreAnchors(testMatchId, 'ops_junior', 'OPERATIONS_ADMIN')).toThrow(/Senior desk|cannot perform/i);
+
+    queueInc(testMatchId, { type: 'SIX' });
+    queueInc(testMatchId, { type: 'DOT' });
+    const rehearsal = rehearseIPLSRLQueue(testMatchId);
+    expect(rehearsal.dryRun).toBe(true);
+    expect(rehearsal.steps.length).toBeGreaterThanOrEqual(2);
+    expect(rehearsal.projected.runs).toBeGreaterThanOrEqual(rehearsal.current.runs);
+
+    const drift = getIPLSRLScoreDrift(testMatchId);
+    expect(drift).toHaveProperty('runsDelta');
+
+    const tmpl = captureIPLSRLMatchTemplateFromMatch(testMatchId, { name: 'Night Desk' }, 'test_admin');
+    expect(tmpl.template.name).toBe('Night Desk');
+    const applied = applyIPLSRLMatchTemplate(testMatchId, tmpl.template.id, 'test_admin');
+    expect(applied.success).toBe(true);
+
+    const report = getIPLSRLPostMatchReport(testMatchId);
+    expect(report.matchId).toBe(testMatchId);
+    expect(report.injectsByReason).toBeDefined();
+
+    expect(() => engageIPLSRLIntegrityHold(testMatchId, { note: 'test' }, 'ops', 'OPERATIONS_ADMIN')).toThrow(/Senior|cannot perform/i);
+    const hold = engageIPLSRLIntegrityHold(testMatchId, { note: 'Suspicious pattern' }, 'test_admin', 'SUPER_ADMIN');
+    expect(hold.integrityHold?.active).toBe(true);
+  });
 });
 
 

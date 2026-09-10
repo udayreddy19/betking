@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { adminApiClient } from '../api/adminApiClient';
 import { useAdminToast } from '../components/AdminToastContext';
 import AdminConfirmDialog from '../components/AdminConfirmDialog';
+import { useAdminRole } from '../permissions/AdminRBACGate';
 import { startVisibleInterval } from '../utils/visibleInterval';
 import {
   ActivityIcon,
@@ -87,6 +88,11 @@ const MATCH_ZONES = [
   { id: 'micromarkets', label: 'Micro-Markets', Icon: ZapIcon },
   { id: 'tactical', label: 'Tactical Radar', Icon: ActivityIcon },
   { id: 'blueprint', label: 'Over Blueprint', Icon: ClipboardIcon },
+  { id: 'settle', label: 'Settlement', Icon: ShieldCheckIcon },
+  { id: 'preview', label: 'Public Preview', Icon: ActivityIcon },
+  { id: 'drift', label: 'Drift Monitor', Icon: TriangleAlertIcon },
+  { id: 'report', label: 'Post-Match', Icon: ClipboardIcon },
+  { id: 'templates', label: 'Templates', Icon: LayersIcon },
   { id: 'godmode', label: 'God Mode & AI', Icon: SlidersHorizontalIcon },
   { id: 'risk', label: 'Risk & Defense', Icon: ShieldCheckIcon },
   { id: 'cashout', label: 'Cash-Out Desk', Icon: WalletIcon },
@@ -280,6 +286,16 @@ function ScoreboardHero({ match }) {
             {match.scoreAnchorsCount} anchors active
           </span>
         )}
+        {match.scoreDrift?.warning && (
+          <span className="srl-pill srl-pill-paused" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
+            Drift {match.scoreDrift.runsDelta > 0 ? '+' : ''}{match.scoreDrift.runsDelta}r
+          </span>
+        )}
+        {match.integrityHold?.active && (
+          <span className="srl-pill srl-pill-completed" style={{ fontSize: '0.68rem', padding: '2px 8px', background: 'var(--srl-danger-bg)', borderColor: 'var(--srl-danger-border)', color: 'var(--srl-danger-text)', fontWeight: 800 }}>
+            Integrity hold
+          </span>
+        )}
         {match.directorMode && match.directorMode !== 'REALISTIC' && (
           <span className="srl-pill srl-pill-live" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
             AI Director: {match.directorMode.replace('_', ' ')}
@@ -305,6 +321,20 @@ function ScoreboardHero({ match }) {
           </span>
         )}
       </div>
+      {Array.isArray(match.deskAlerts) && match.deskAlerts.length > 0 && (
+        <div className="srl-alert-strip" style={{ gridColumn: '1 / -1', display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+          {match.deskAlerts.map((a, i) => (
+            <span
+              key={`${a.code}-${i}`}
+              className={`srl-pill ${a.level === 'danger' ? 'srl-pill-completed' : a.level === 'warn' ? 'srl-pill-paused' : 'srl-pill-live'}`}
+              style={{ fontSize: '0.68rem', padding: '2px 8px' }}
+              title={a.message}
+            >
+              {a.code}: {a.message}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -314,6 +344,7 @@ function ScoreboardHero({ match }) {
    ═══════════════════════════════════════════════════════════════════════════ */
 export default function IPLSRLConsoleView() {
   const { showToast } = useAdminToast();
+  const { activeRole: adminRole } = useAdminRole();
   const [tab, setTab] = useState('desk');
   const [filter, setFilter] = useState('all');
   const [query, setQuery] = useState('');
@@ -327,6 +358,24 @@ export default function IPLSRLConsoleView() {
   const [jumpAt, setJumpAt] = useState('live');
   const [declareAsk, setDeclareAsk] = useState(null);
   const [marketAsk, setMarketAsk] = useState(null);
+  const [clearAnchorsAsk, setClearAnchorsAsk] = useState(false);
+  const [killAsk, setKillAsk] = useState(false);
+  const [hotkeyHelp, setHotkeyHelp] = useState(false);
+  const [injectReason, setInjectReason] = useState('script');
+  const [undoCount, setUndoCount] = useState(1);
+  const [customPresetName, setCustomPresetName] = useState('');
+  const [customPresets, setCustomPresets] = useState([]);
+  const [publicPreview, setPublicPreview] = useState(null);
+  const [deskCaps, setDeskCaps] = useState(null);
+  const [settleTeamId, setSettleTeamId] = useState('');
+  const [matchTemplates, setMatchTemplates] = useState([]);
+  const [templateName, setTemplateName] = useState('');
+  const [queueRehearsal, setQueueRehearsal] = useState(null);
+  const [postMatchReport, setPostMatchReport] = useState(null);
+  const [integrityAsk, setIntegrityAsk] = useState(false);
+  const [integrityNote, setIntegrityNote] = useState('');
+  const [soundAlertsOn, setSoundAlertsOn] = useState(true);
+  const lastAlertSigRef = useRef('');
   const [marketsDesk, setMarketsDesk] = useState(null);
   const [marketsLoading, setMarketsLoading] = useState(false);
   const [marketsError, setMarketsError] = useState(null);
@@ -430,11 +479,44 @@ export default function IPLSRLConsoleView() {
     setLoading(true);
     refresh().finally(() =>{ if (!cancelled) setLoading(false); });
     const stop = startVisibleInterval(() =>{ refresh().catch(() =>{}); }, 2500, { runImmediately: false });
+    adminApiClient.get('/iplsrl/desk-capabilities').then((c) => { if (!cancelled) setDeskCaps(c); }).catch(() => {});
+    adminApiClient.get('/iplsrl/script-presets').then((p) => { if (!cancelled) setCustomPresets(p?.custom || []); }).catch(() => {});
+    adminApiClient.get('/iplsrl/match-templates').then((t) => { if (!cancelled) setMatchTemplates(t?.templates || []); }).catch(() => {});
     return () =>{
       cancelled = true;
       stop();
     };
   }, [refresh]);
+
+  useEffect(() => {
+    if (!soundAlertsOn || !selected?.deskAlerts?.length) return;
+    const critical = selected.deskAlerts.filter((a) => ['AUTO_PAUSE', 'KILL', 'WHALE', 'LIABILITY', 'INTEGRITY'].includes(a.code));
+    if (!critical.length) return;
+    const sig = critical.map((a) => `${a.code}:${a.message}`).join('|');
+    if (sig === lastAlertSigRef.current) return;
+    lastAlertSigRef.current = sig;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = critical.some((a) => a.code === 'KILL' || a.code === 'INTEGRITY') ? 880 : 620;
+      gain.gain.value = 0.04;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      setTimeout(() => { try { osc.stop(); ctx.close(); } catch { /* ignore */ } }, 180);
+    } catch { /* ignore audio failures */ }
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      const top = critical[0];
+      try {
+        new Notification(`SRL ${top.code}`, { body: top.message, tag: `srl-${selected.matchId}-${top.code}` });
+      } catch { /* ignore */ }
+    } else if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
+    showToast(`${critical[0].code}: ${critical[0].message}`, 'error');
+  }, [selected?.deskAlerts, selected?.matchId, soundAlertsOn, showToast]);
 
   useEffect(() =>{
     setDragMs(null);
@@ -566,6 +648,37 @@ export default function IPLSRLConsoleView() {
       if (!selected?.matchId || busy || selected.controlStatus === 'COMPLETED') return;
       const tag = String(e.target?.tagName || '').toLowerCase();
       if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target?.isContentEditable) return;
+      if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+        e.preventDefault();
+        setHotkeyHelp((v) => !v);
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        run(() => adminApiClient.post('/iplsrl/matches/pause', { matchId: selected.matchId }), 'Paused');
+        return;
+      }
+      if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+        run(() => adminApiClient.post('/iplsrl/matches/delivery', { matchId: selected.matchId }), 'Next ball');
+        return;
+      }
+      if (e.key === 'u' || e.key === 'U') {
+        e.preventDefault();
+        run(
+          () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/undo-inject`, { count: 1 }),
+          'Undid last inject',
+        );
+        return;
+      }
+      if (e.key === 'c' || e.key === 'C') {
+        e.preventDefault();
+        run(
+          () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/clear-queue`),
+          'Queue cleared',
+        );
+        return;
+      }
       const map = {
         '0': { type: 'DOT', msg: 'Hotkey: Dot' },
         '1': { type: 'SINGLE', msg: 'Hotkey: Single' },
@@ -581,6 +694,7 @@ export default function IPLSRLConsoleView() {
         () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/incident`, {
           type: hit.type,
           ...(hit.subType ? { subType: hit.subType } : {}),
+          reasonCode: injectReason,
           instant: true,
         }),
         hit.msg,
@@ -588,7 +702,7 @@ export default function IPLSRLConsoleView() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [selected?.matchId, selected?.controlStatus, busy]);
+  }, [selected?.matchId, selected?.controlStatus, busy, injectReason]);
 
   const seek = (body, msg) => run(
     () => adminApiClient.post('/iplsrl/matches/seek', { matchId: selected.matchId, ...body }),
@@ -687,6 +801,18 @@ export default function IPLSRLConsoleView() {
       fetchTacticalRadar();
     } else if (matchZone === 'cashout' && selectedMatchId) {
       fetchCashout();
+    } else if (matchZone === 'preview' && selectedMatchId) {
+      adminApiClient.get(`/iplsrl/matches/${encodeURIComponent(selectedMatchId)}/public-preview`)
+        .then(setPublicPreview)
+        .catch(() => setPublicPreview(null));
+    } else if (matchZone === 'report' && selectedMatchId) {
+      adminApiClient.get(`/iplsrl/matches/${encodeURIComponent(selectedMatchId)}/post-match-report`)
+        .then(setPostMatchReport)
+        .catch(() => setPostMatchReport(null));
+    } else if (matchZone === 'templates') {
+      adminApiClient.get('/iplsrl/match-templates')
+        .then((t) => setMatchTemplates(t?.templates || []))
+        .catch(() => {});
     }
   }, [matchZone, selectedMatchId, fetchReplay, fetchWhatIf, fetchWagers, fetchMicroMarkets, fetchTacticalRadar, fetchCashout]);
 
@@ -847,6 +973,14 @@ export default function IPLSRLConsoleView() {
                 />
                 Auto-play after manual start
               </label>
+              <label className="srl-check" style={{ marginTop: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={soundAlertsOn}
+                  onChange={(e) => setSoundAlertsOn(e.target.checked)}
+                />
+                Sound + desktop alerts (pause / kill / whale)
+              </label>
               <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
                 <button
                   type="button"
@@ -985,6 +1119,39 @@ export default function IPLSRLConsoleView() {
               <>
                 {/* Scoreboard Hero — always visible */}
                 <ScoreboardHero match={selected} />
+
+                <div className="srl-mobile-ops" aria-label="Mobile ops controls">
+                  <button type="button" className="srl-btn srl-btn-orange" disabled={busy || selected.controlStatus !== 'LIVE'} onClick={() => run(() => adminApiClient.post('/iplsrl/matches/pause', { matchId: selected.matchId }), 'Paused')}>Pause</button>
+                  <button type="button" className="srl-btn srl-btn-teal" disabled={busy || selected.controlStatus !== 'PAUSED'} onClick={() => run(() => adminApiClient.post('/iplsrl/matches/resume', { matchId: selected.matchId }), 'Resumed')}>Resume</button>
+                  <button type="button" className="srl-btn srl-btn-blue" disabled={busy || selected.controlStatus === 'COMPLETED'} onClick={() => run(() => adminApiClient.post('/iplsrl/matches/delivery', { matchId: selected.matchId }), 'Next ball')}>Next</button>
+                  {['0', '1', '4', '6', 'W'].map((k) => (
+                    <button
+                      key={k}
+                      type="button"
+                      className="srl-btn srl-btn-slate srl-mobile-ops__inject"
+                      disabled={busy || selected.controlStatus === 'COMPLETED'}
+                      onClick={() => run(
+                        () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/incident`, {
+                          type: k === 'W' ? 'WICKET' : (k === '0' ? 'DOT' : (k === '1' ? 'SINGLE' : (k === '4' ? 'FOUR' : 'SIX'))),
+                          ...(k === 'W' ? { subType: 'Bowled' } : {}),
+                          reasonCode: injectReason,
+                          instant: true,
+                        }),
+                        `Inject ${k}`,
+                      )}
+                    >
+                      {k}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className="srl-btn srl-btn-amber"
+                    disabled={busy || selected.controlStatus === 'COMPLETED' || deskCaps?.canDeclare === false}
+                    onClick={() => setDeclareAsk(declarePreview(selected, selected.homeTeamId))}
+                  >
+                    Dec {selected.homeShort}
+                  </button>
+                </div>
 
                 {/* Match Zone Tabs */}
                 <div className="srl-match-tabs">
@@ -1143,15 +1310,27 @@ export default function IPLSRLConsoleView() {
                           type="button"
                           className="srl-btn srl-btn-amber"
                           disabled={busy || selected.controlStatus === 'COMPLETED'}
-                          onClick={() => setDeclareAsk(declarePreview(selected, selected.homeTeamId))}
+                          onClick={() => {
+                            if (deskCaps?.canDeclare === false) {
+                              showToast('Senior desk required to declare', 'error');
+                              return;
+                            }
+                            setDeclareAsk(declarePreview(selected, selected.homeTeamId));
+                          }}
                         >
                           Declare {selected.homeShort} now
                         </button>
                         <button
                           type="button"
                           className="srl-btn srl-btn-amber"
-                          disabled={busy || selected.controlStatus === 'COMPLETED'}
-                          onClick={() => setDeclareAsk(declarePreview(selected, selected.awayTeamId))}
+                          disabled={busy || selected.controlStatus === 'COMPLETED' || deskCaps?.canDeclare === false}
+                          onClick={() => {
+                            if (deskCaps?.canDeclare === false) {
+                              showToast('Senior desk required to declare', 'error');
+                              return;
+                            }
+                            setDeclareAsk(declarePreview(selected, selected.awayTeamId));
+                          }}
                         >
                           Declare {selected.awayShort} now
                         </button>
@@ -1692,6 +1871,22 @@ export default function IPLSRLConsoleView() {
                         </button>
                         <button
                           type="button"
+                          className="srl-btn srl-btn-blue"
+                          disabled={busy}
+                          onClick={async () => {
+                            try {
+                              const data = await adminApiClient.get(`/iplsrl/matches/${encodeURIComponent(selected.matchId)}/queue-rehearsal`);
+                              setQueueRehearsal(data);
+                              showToast(`Rehearsal → ${data.projected?.display || '?'} (dry-run)`, 'success');
+                            } catch (err) {
+                              showToast(err.message || 'Rehearsal failed', 'error');
+                            }
+                          }}
+                        >
+                          Rehearse queue
+                        </button>
+                        <button
+                          type="button"
                           className="srl-btn srl-btn-slate"
                           disabled={busy}
                           onClick={() =>{
@@ -1708,6 +1903,80 @@ export default function IPLSRLConsoleView() {
                           Reset to 6 Dots
                         </button>
                       </div>
+                      {queueRehearsal && (
+                        <div style={{ marginTop: 12, padding: '10px 12px', background: 'var(--srl-surface-alt)', borderRadius: 8 }}>
+                          <strong style={{ fontSize: '0.82rem' }}>Queue rehearsal (not committed)</strong>
+                          <div className="srl-hint" style={{ marginTop: 4 }}>
+                            Now {queueRehearsal.current?.runs}/{queueRehearsal.current?.wickets} → Projected {queueRehearsal.projected?.display} · {queueRehearsal.queueLength} balls
+                          </div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                            {(queueRehearsal.steps || []).map((s, i) => (
+                              <span key={s.id || i} className="srl-pill srl-pill-muted" style={{ fontSize: '0.68rem' }}>
+                                {s.type} → {s.after.runs}/{s.after.wickets}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                        <label className="srl-field" style={{ flex: 1, minWidth: 160 }}>
+                          Save as named preset
+                          <input className="srl-input" style={{ height: 34 }} value={customPresetName} onChange={(e) => setCustomPresetName(e.target.value)} placeholder="e.g. Death defend v2" />
+                        </label>
+                        <button
+                          type="button"
+                          className="srl-btn srl-btn-blue"
+                          style={{ height: 34 }}
+                          disabled={busy || !customPresetName.trim()}
+                          onClick={() => run(
+                            async () => {
+                              const res = await adminApiClient.post('/iplsrl/script-presets', { name: customPresetName, balls: blueprintBalls });
+                              setCustomPresets(res?.presets?.custom || []);
+                              return res;
+                            },
+                            `Saved preset ${customPresetName}`,
+                          )}
+                        >
+                          Save preset
+                        </button>
+                      </div>
+                      {customPresets.length > 0 && (
+                        <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                          {customPresets.map((p) => (
+                            <div key={p.id} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                              <button
+                                type="button"
+                                className="srl-chip"
+                                disabled={busy}
+                                onClick={() => {
+                                  setBlueprintBalls(p.balls.map((b) => ({ ...b })));
+                                  run(
+                                    () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/script-over`, { balls: p.balls }),
+                                    `Queued ${p.name}`,
+                                  );
+                                }}
+                              >
+                                Load {p.name}
+                              </button>
+                              <button
+                                type="button"
+                                className="srl-btn srl-btn-slate"
+                                style={{ fontSize: '0.68rem', padding: '2px 6px' }}
+                                onClick={() => run(
+                                  async () => {
+                                    const res = await adminApiClient.delete(`/iplsrl/script-presets/${encodeURIComponent(p.id)}`);
+                                    setCustomPresets(res?.presets?.custom || []);
+                                    return res;
+                                  },
+                                  'Preset deleted',
+                                )}
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {/* Armed Incident Queue Viewer */}
@@ -1733,6 +2002,262 @@ export default function IPLSRLConsoleView() {
                   </div>
                 )}
 
+                {/* ═══ ZONE: SETTLEMENT WIZARD ═══ */}
+                {matchZone === 'settle' && (
+                  <div className="srl-tab-body" key="settle">
+                    <div className="srl-zone">
+                      <div className="srl-zone-label --warn">Settlement wizard</div>
+                      <p className="srl-hint" style={{ margin: '0 0 12px' }}>
+                        One flow: close betting → settle toss → declare winner → settle innings markets → export audit. Senior desk only.
+                      </p>
+                      {(deskCaps?.canRunSettlementWizard === false) && (
+                        <p className="srl-hint" style={{ color: 'var(--srl-danger-text)' }}>
+                          Your role ({adminRole}) cannot run settlement. Need SUPER_ADMIN or TRADING_ADMIN.
+                        </p>
+                      )}
+                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                        <label className="srl-field" style={{ minWidth: 180 }}>
+                          Declare winner
+                          <select
+                            className="srl-input"
+                            style={{ height: 36 }}
+                            value={settleTeamId || selected.homeTeamId || ''}
+                            onChange={(e) => setSettleTeamId(e.target.value)}
+                          >
+                            <option value={selected.homeTeamId}>{selected.homeShort}</option>
+                            <option value={selected.awayTeamId}>{selected.awayShort}</option>
+                          </select>
+                        </label>
+                        <button
+                          type="button"
+                          className="srl-btn srl-btn-teal"
+                          style={{ height: 36 }}
+                          disabled={busy || deskCaps?.canRunSettlementWizard === false || selected.controlStatus === 'COMPLETED'}
+                          onClick={() => run(
+                            () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/settlement-wizard`, {
+                              declareTeamId: settleTeamId || selected.homeTeamId,
+                              settleToss: true,
+                              settleMatchMarkets: true,
+                              closeBetting: true,
+                              exportAudit: true,
+                            }),
+                            'Settlement wizard completed',
+                          )}
+                        >
+                          Run settlement checklist
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ═══ ZONE: PUBLIC PREVIEW ═══ */}
+                {matchZone === 'preview' && (
+                  <div className="srl-tab-body" key="preview">
+                    <div className="srl-zone">
+                      <div className="srl-zone-label --accent" style={{ justifyContent: 'space-between' }}>
+                        <span>What users see</span>
+                        <button
+                          type="button"
+                          className="srl-btn srl-btn-slate"
+                          style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+                          disabled={busy}
+                          onClick={async () => {
+                            try {
+                              const data = await adminApiClient.get(`/iplsrl/matches/${encodeURIComponent(selected.matchId)}/public-preview`);
+                              setPublicPreview(data);
+                            } catch (err) {
+                              showToast(err.message || 'Preview failed', 'error');
+                            }
+                          }}
+                        >
+                          Refresh preview
+                        </button>
+                      </div>
+                      <p className="srl-hint" style={{ margin: '0 0 12px' }}>
+                        Side-by-side check of public score, toss, batting side, and commentary without leaving Match Control.
+                      </p>
+                      {publicPreview ? (
+                        <div style={{ display: 'grid', gap: 10 }}>
+                          <strong>{publicPreview.fixture}</strong>
+                          <div className="srl-hint">Status: {publicPreview.status} · {publicPreview.time} · Live: {String(publicPreview.isLive)}</div>
+                          <div>1st: <strong>{publicPreview.score?.first}</strong> · 2nd: <strong>{publicPreview.score?.chase}</strong></div>
+                          <div>Batting now: <strong>{publicPreview.battingNow || '—'}</strong></div>
+                          {publicPreview.toss && (
+                            <div>Toss: {publicPreview.toss.wonToss || publicPreview.toss.winner} ({publicPreview.toss.decision})</div>
+                          )}
+                          <p style={{ fontStyle: 'italic', margin: 0 }}>{publicPreview.commentary}</p>
+                        </div>
+                      ) : (
+                        <p className="srl-hint">Click Refresh preview to load the public board snapshot.</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {matchZone === 'drift' && (
+                  <div className="srl-tab-body" key="drift">
+                    <div className="srl-zone">
+                      <div className="srl-zone-label --warn">Natural sim vs anchored board</div>
+                      <p className="srl-hint" style={{ margin: '0 0 12px' }}>
+                        Shows how far injects have pulled the live board away from the natural simulation.
+                      </p>
+                      {selected.scoreDrift ? (
+                        <div style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+                          <div className="srl-radar-stat-box">
+                            <label>Natural sim</label>
+                            <strong>{selected.scoreDrift.natural?.display || '—'}</strong>
+                          </div>
+                          <div className="srl-radar-stat-box">
+                            <label>Anchored / live</label>
+                            <strong>{selected.scoreDrift.anchored?.display || '—'}</strong>
+                          </div>
+                          <div className="srl-radar-stat-box">
+                            <label>Runs drift</label>
+                            <strong style={{ color: selected.scoreDrift.warning ? 'var(--srl-danger-text)' : 'var(--srl-live)' }}>
+                              {selected.scoreDrift.runsDelta > 0 ? '+' : ''}{selected.scoreDrift.runsDelta}r
+                              {' · '}
+                              {selected.scoreDrift.wicketsDelta > 0 ? '+' : ''}{selected.scoreDrift.wicketsDelta}w
+                            </strong>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="srl-hint">No drift data yet.</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {matchZone === 'report' && (
+                  <div className="srl-tab-body" key="report">
+                    <div className="srl-zone">
+                      <div className="srl-zone-label --accent" style={{ justifyContent: 'space-between' }}>
+                        <span>Post-match report card</span>
+                        <button
+                          type="button"
+                          className="srl-btn srl-btn-slate"
+                          style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+                          onClick={() => adminApiClient.get(`/iplsrl/matches/${encodeURIComponent(selected.matchId)}/post-match-report`).then(setPostMatchReport)}
+                        >
+                          Refresh
+                        </button>
+                      </div>
+                      {!postMatchReport ? (
+                        <p className="srl-hint">Open this tab to load the report, or click Refresh.</p>
+                      ) : (
+                        <div style={{ display: 'grid', gap: 10 }}>
+                          <strong>{postMatchReport.fixture}</strong>
+                          <div className="srl-hint">{postMatchReport.status} · {postMatchReport.controlStatus}</div>
+                          <div>Result: {postMatchReport.result || '—'}</div>
+                          <div>Worst-case liability: <strong>{formatInr(postMatchReport.worstCaseLiability)}</strong></div>
+                          <div>Home PnL if win: {formatInr(postMatchReport.projectedPnlHome)} · Away: {formatInr(postMatchReport.projectedPnlAway)}</div>
+                          <div>
+                            Injects: {postMatchReport.injectCount}
+                            {postMatchReport.injectsByReason && Object.keys(postMatchReport.injectsByReason).length > 0 && (
+                              <span className="srl-hint"> · {Object.entries(postMatchReport.injectsByReason).map(([k, v]) => `${k}:${v}`).join(', ')}</span>
+                            )}
+                          </div>
+                          <div>Anchors: {postMatchReport.scoreAnchorsCount} · Drift: {postMatchReport.scoreDrift?.runsDelta ?? 0}r</div>
+                          {Array.isArray(postMatchReport.settlementSteps) && postMatchReport.settlementSteps.length > 0 && (
+                            <div>
+                              <strong style={{ fontSize: '0.82rem' }}>Settlement trail</strong>
+                              <div style={{ marginTop: 6, display: 'grid', gap: 4 }}>
+                                {postMatchReport.settlementSteps.slice(0, 12).map((s, i) => (
+                                  <div key={i} className="srl-hint" style={{ fontSize: '0.72rem' }}>{s.action} — {s.detail}</div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          <button type="button" className="srl-btn srl-btn-teal" style={{ width: 'fit-content' }} onClick={() => exportAudit('json')}>
+                            Export full audit JSON
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {matchZone === 'templates' && (
+                  <div className="srl-tab-body" key="templates">
+                    <div className="srl-zone">
+                      <div className="srl-zone-label --accent">Desk setup templates</div>
+                      <p className="srl-hint" style={{ margin: '0 0 12px' }}>
+                        Capture director mode, margins, cashout haircut, freeze threshold, and circuit velocity — then apply to another fixture.
+                      </p>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 12 }}>
+                        <label className="srl-field" style={{ flex: 1, minWidth: 160 }}>
+                          Template name
+                          <input className="srl-input" style={{ height: 34 }} value={templateName} onChange={(e) => setTemplateName(e.target.value)} placeholder="e.g. Night death overs" />
+                        </label>
+                        <button
+                          type="button"
+                          className="srl-btn srl-btn-teal"
+                          style={{ height: 34 }}
+                          disabled={busy || !templateName.trim()}
+                          onClick={() => run(
+                            async () => {
+                              const res = await adminApiClient.post('/iplsrl/match-templates', {
+                                fromMatchId: selected.matchId,
+                                name: templateName,
+                              });
+                              setMatchTemplates(res?.templates || []);
+                              return res;
+                            },
+                            `Saved template ${templateName}`,
+                          )}
+                        >
+                          Capture from this match
+                        </button>
+                      </div>
+                      {matchTemplates.length === 0 ? (
+                        <p className="srl-hint">No templates yet.</p>
+                      ) : (
+                        <div style={{ display: 'grid', gap: 8 }}>
+                          {matchTemplates.map((t) => (
+                            <div key={t.id} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <div>
+                                <strong>{t.name}</strong>
+                                <div className="srl-hint" style={{ fontSize: '0.72rem' }}>
+                                  {t.config?.directorMode} · freeze ₹{(t.config?.marginDefense?.autoFreezeThreshold || 0).toLocaleString('en-IN')} · haircut {Math.round((t.config?.cashoutControl?.globalHaircut || 0) * 100)}%
+                                </div>
+                              </div>
+                              <div style={{ display: 'flex', gap: 6 }}>
+                                <button
+                                  type="button"
+                                  className="srl-btn srl-btn-blue"
+                                  style={{ fontSize: '0.72rem', padding: '4px 8px' }}
+                                  disabled={busy}
+                                  onClick={() => run(
+                                    () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/apply-template`, { templateId: t.id }),
+                                    `Applied ${t.name}`,
+                                  )}
+                                >
+                                  Apply here
+                                </button>
+                                <button
+                                  type="button"
+                                  className="srl-btn srl-btn-slate"
+                                  style={{ fontSize: '0.72rem', padding: '4px 8px' }}
+                                  onClick={() => run(
+                                    async () => {
+                                      const res = await adminApiClient.delete(`/iplsrl/match-templates/${encodeURIComponent(t.id)}`);
+                                      setMatchTemplates(res?.templates || []);
+                                      return res;
+                                    },
+                                    'Template deleted',
+                                  )}
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* ═══ ZONE: GOD MODE ═══ */}
                 {matchZone === 'godmode' && (
                   <div className="srl-tab-body" key="godmode">
@@ -1753,34 +2278,81 @@ export default function IPLSRLConsoleView() {
                         </div>
                       </div>
                       <p className="srl-hint" style={{ margin: '0 0 10px' }}>
-                        Applies immediately to the live board. Hotkeys: 0 / 1 / 4 / 6 / W. Blueprint presets queue for later deliveries.
+                        Applies immediately. Hotkeys: 0/1/4/6/W · U undo · C clear queue · Space next · Esc pause · ? help
                       </p>
-                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10, alignItems: 'center' }}>
+                        <label className="srl-field" style={{ minWidth: 140 }}>
+                          Reason code
+                          <select className="srl-input" value={injectReason} onChange={(e) => setInjectReason(e.target.value)} style={{ height: 34 }}>
+                            {(snap?.reasonCodes || ['script', 'fix', 'integrity', 'broadcast', 'other']).map((c) => (
+                              <option key={c} value={c}>{c}</option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="srl-field" style={{ minWidth: 90 }}>
+                          Undo ×
+                          <input type="number" min={1} max={20} className="srl-input" value={undoCount} onChange={(e) => setUndoCount(Number(e.target.value) || 1)} style={{ height: 34, width: 72 }} />
+                        </label>
                         <button
                           type="button"
                           className="srl-btn srl-btn-orange"
-                          style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+                          style={{ fontSize: '0.75rem', padding: '4px 10px', height: 34, alignSelf: 'flex-end' }}
                           disabled={busy || !(selected.scoreAnchorsCount > 0)}
                           onClick={() => run(
-                            () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/undo-inject`),
-                            'Undid last inject',
+                            () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/undo-inject`, { count: undoCount }),
+                            `Undid ×${undoCount}`,
                           )}
                         >
-                          Undo last inject
+                          Undo injects
                         </button>
                         <button
                           type="button"
                           className="srl-btn srl-btn-slate"
-                          style={{ fontSize: '0.75rem', padding: '4px 10px' }}
-                          disabled={busy || !(selected.scoreAnchorsCount > 0)}
-                          onClick={() => run(
-                            () => adminApiClient.delete(`/iplsrl/matches/${selected.matchId}/anchors`),
-                            'Cleared all score anchors',
-                          )}
+                          style={{ fontSize: '0.75rem', padding: '4px 10px', height: 34, alignSelf: 'flex-end' }}
+                          disabled={busy || !(selected.scoreAnchorsCount > 0) || deskCaps?.canClearAnchors === false}
+                          onClick={() => setClearAnchorsAsk(true)}
                         >
                           Clear all anchors
                         </button>
+                        <button
+                          type="button"
+                          className="srl-btn srl-btn-blue"
+                          style={{ fontSize: '0.75rem', padding: '4px 10px', height: 34, alignSelf: 'flex-end' }}
+                          onClick={() => setHotkeyHelp(true)}
+                        >
+                          Hotkeys (?)
+                        </button>
+                        <button
+                          type="button"
+                          className="srl-btn srl-btn-orange"
+                          style={{ fontSize: '0.75rem', padding: '4px 10px', height: 34, alignSelf: 'flex-end' }}
+                          disabled={busy || deskCaps?.canIntegrityHold === false}
+                          onClick={() => {
+                            if (selected.integrityHold?.active) {
+                              run(
+                                () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/integrity-hold`, { release: true }),
+                                'Integrity hold released',
+                              );
+                            } else {
+                              setIntegrityAsk(true);
+                            }
+                          }}
+                        >
+                          {selected.integrityHold?.active ? 'Release integrity hold' : 'Integrity hold'}
+                        </button>
                       </div>
+                      {Array.isArray(selected.injectHistory) && selected.injectHistory.length > 0 && (
+                        <div style={{ marginBottom: 12 }}>
+                          <strong style={{ fontSize: '0.78rem' }}>Inject history</strong>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6, maxHeight: 140, overflow: 'auto' }}>
+                            {selected.injectHistory.slice(0, 8).map((h) => (
+                              <div key={h.id} className="srl-hint" style={{ fontSize: '0.72rem' }}>
+                                {h.type}{h.subType ? `/${h.subType}` : ''} · {h.reasonCode} · {h.boardBefore ? `${h.boardBefore.runs}/${h.boardBefore.wickets}` : '?'} → {h.boardAfter ? `${h.boardAfter.runs}/${h.boardAfter.wickets}` : '?'} · {h.admin || 'ops'}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       <div className="srl-incident-grid">
                         {[
                           { type: 'WICKET', subType: 'Bowled', Icon: FlameIcon, label: 'Wicket (Bowled)', msg: 'Bowled Wicket injected!' },
@@ -1804,6 +2376,7 @@ export default function IPLSRLConsoleView() {
                               () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/incident`, {
                                 type: inc.type,
                                 ...(inc.subType ? { subType: inc.subType } : {}),
+                                reasonCode: injectReason,
                                 instant: true,
                               }),
                               inc.msg,
@@ -2157,13 +2730,17 @@ export default function IPLSRLConsoleView() {
                               color: selected.circuitBreaker?.emergencyKillSwitch ? 'var(--srl-on-accent)' : '#f4f1ea',
                               borderColor: 'var(--srl-danger)',
                             }}
-                            disabled={busy}
-                            onClick={() => run(
-                              () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/circuit-breaker/kill-switch`, {
-                                active: !selected.circuitBreaker?.emergencyKillSwitch,
-                              }),
-                              selected.circuitBreaker?.emergencyKillSwitch ? 'Emergency Kill-Switch DISENGAGED · Betting Resumed' : 'EMERGENCY KILL-SWITCH ENGAGED · ALL BETTING FROZEN',
-                            )}
+                            disabled={busy || deskCaps?.canKillSwitch === false}
+                            onClick={() => {
+                              if (selected.circuitBreaker?.emergencyKillSwitch) {
+                                run(
+                                  () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/circuit-breaker/kill-switch`, { active: false }),
+                                  'Emergency Kill-Switch DISENGAGED · Betting Resumed',
+                                );
+                              } else {
+                                setKillAsk(true);
+                              }
+                            }}
                           >
                             {selected.circuitBreaker?.emergencyKillSwitch ? 'Disengage Kill-Switch' : 'RED PHONE KILL-SWITCH'}
                           </button>
@@ -3275,6 +3852,90 @@ export default function IPLSRLConsoleView() {
           run(
             () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/declare`, { teamId: ask.teamId }),
             `${ask.short} declared winner`,
+          );
+        }}
+      />
+
+      <AdminConfirmDialog
+        isOpen={!!clearAnchorsAsk}
+        variant="danger"
+        title="Clear all score anchors?"
+        description="Removes every scripted board override and returns to natural sim scoring. Rate-limited; senior desk only."
+        confirmLabel="Clear anchors"
+        cancelLabel="Cancel"
+        loading={busy}
+        onCancel={() => setClearAnchorsAsk(false)}
+        onConfirm={() => {
+          setClearAnchorsAsk(false);
+          if (!selected) return;
+          run(
+            () => adminApiClient.delete(`/iplsrl/matches/${selected.matchId}/anchors`),
+            'Cleared all score anchors',
+          );
+        }}
+      />
+
+      <AdminConfirmDialog
+        isOpen={!!killAsk}
+        variant="danger"
+        title="Engage emergency kill switch?"
+        description="Freezes betting and locks the desk. Senior role required. Cooldown applies after engage."
+        confirmLabel="Engage kill switch"
+        cancelLabel="Cancel"
+        loading={busy}
+        onCancel={() => setKillAsk(false)}
+        onConfirm={() => {
+          setKillAsk(false);
+          if (!selected) return;
+          run(
+            () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/circuit-breaker/kill-switch`, { active: true }),
+            'EMERGENCY KILL-SWITCH ENGAGED · ALL BETTING FROZEN',
+          );
+        }}
+      />
+
+      <AdminConfirmDialog
+        isOpen={!!hotkeyHelp}
+        variant="warning"
+        title="Match Control hotkeys"
+        description="Ignored while typing in inputs."
+        details={[
+          { label: '0 / 1 / 4 / 6 / W', value: 'Instant inject' },
+          { label: 'U', value: 'Undo last inject' },
+          { label: 'C', value: 'Clear armed queue' },
+          { label: 'Space', value: 'Next delivery (drain queue)' },
+          { label: 'Esc', value: 'Pause match' },
+          { label: '?', value: 'Toggle this help' },
+        ]}
+        confirmLabel="Got it"
+        cancelLabel="Close"
+        onCancel={() => setHotkeyHelp(false)}
+        onConfirm={() => setHotkeyHelp(false)}
+      />
+
+      <AdminConfirmDialog
+        isOpen={!!integrityAsk}
+        variant="danger"
+        title="Engage integrity hold?"
+        description="Pauses the match, closes betting, mass-suspends micro-markets, and tags the desk. Mandatory note required."
+        requireReason
+        reasonPlaceholder="Why is this hold needed?"
+        reasonDefault={integrityNote}
+        confirmLabel="Engage integrity hold"
+        cancelLabel="Cancel"
+        loading={busy}
+        onCancel={() => setIntegrityAsk(false)}
+        onConfirm={(reason) => {
+          setIntegrityAsk(false);
+          const note = String(reason || integrityNote || '').trim();
+          if (!note) {
+            showToast('Integrity hold requires a note', 'error');
+            return;
+          }
+          setIntegrityNote(note);
+          run(
+            () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/integrity-hold`, { note }),
+            'Integrity hold engaged',
           );
         }}
       />

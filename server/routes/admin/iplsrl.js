@@ -36,7 +36,12 @@ router.post('/matches/:matchId/declare', iplsrlRoles, async (req, res) => {
   try {
     const { declareIPLSRLWinner } = await import('../../../lib/iplSrlAdminControl.mjs');
     if (!req.body?.teamId) return res.status(400).json({ error: 'teamId required' });
-    await jsonSnap(res, declareIPLSRLWinner(req.params.matchId, req.body.teamId, req.admin?.id || 'admin'));
+    await jsonSnap(res, declareIPLSRLWinner(
+      req.params.matchId,
+      req.body.teamId,
+      req.admin?.id || 'admin',
+      req.admin?.role || 'SUPER_ADMIN',
+    ));
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -76,6 +81,7 @@ router.post('/matches/:matchId/markets/:marketId/declare', iplsrlRoles, async (r
       winningSelectionId: req.body?.winningSelectionId || req.body?.selectionId || null,
       voidMarket: !!req.body?.voidMarket,
       admin: req.admin?.id || 'admin',
+      role: req.admin?.role || 'SUPER_ADMIN',
     });
     const { enrichSnapshotWithStakes } = await import('../../../lib/iplSrlAdminControl.mjs');
     if (data.snapshot) {
@@ -463,10 +469,24 @@ router.post('/matches/:matchId/what-if/execute', iplsrlRoles, async (req, res) =
   }
 });
 
+router.post('/matches/:matchId/clear-queue', iplsrlRoles, async (req, res) => {
+  try {
+    const { clearIPLSRLIncidentQueue } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = clearIPLSRLIncidentQueue(req.params.matchId, req.admin?.id || 'admin');
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 router.post('/matches/:matchId/undo-inject', iplsrlRoles, async (req, res) => {
   try {
     const { undoIPLSRLLastInject } = await import('../../../lib/iplSrlAdminControl.mjs');
-    const result = undoIPLSRLLastInject(req.params.matchId, req.admin?.id || 'admin');
+    const result = undoIPLSRLLastInject(
+      req.params.matchId,
+      req.admin?.id || 'admin',
+      { count: req.body?.count || 1 },
+    );
     await jsonSnap(res, result);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -476,7 +496,171 @@ router.post('/matches/:matchId/undo-inject', iplsrlRoles, async (req, res) => {
 router.delete('/matches/:matchId/anchors', iplsrlRoles, async (req, res) => {
   try {
     const { clearIPLSRLScoreAnchors } = await import('../../../lib/iplSrlAdminControl.mjs');
-    const result = clearIPLSRLScoreAnchors(req.params.matchId, req.admin?.id || 'admin');
+    const result = clearIPLSRLScoreAnchors(
+      req.params.matchId,
+      req.admin?.id || 'admin',
+      req.admin?.role || 'SUPER_ADMIN',
+    );
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.get('/matches/:matchId/inject-history', iplsrlRoles, async (req, res) => {
+  try {
+    const { getIPLSRLInjectHistory } = await import('../../../lib/iplSrlAdminControl.mjs');
+    res.json(getIPLSRLInjectHistory(req.params.matchId, { limit: req.query?.limit || 40 }));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.get('/matches/:matchId/public-preview', iplsrlRoles, async (req, res) => {
+  try {
+    const { getIPLSRLPublicPreview } = await import('../../../lib/iplSrlAdminControl.mjs');
+    res.json(getIPLSRLPublicPreview(req.params.matchId));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/settlement-wizard', iplsrlRoles, async (req, res) => {
+  try {
+    const { runIPLSRLSettlementWizard } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = await runIPLSRLSettlementWizard(
+      req.params.matchId,
+      req.body || {},
+      req.admin?.id || 'admin',
+      req.admin?.role || 'SUPER_ADMIN',
+    );
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.get('/script-presets', iplsrlRoles, async (req, res) => {
+  try {
+    const { listIPLSRLScriptPresets } = await import('../../../lib/iplSrlAdminControl.mjs');
+    res.json(listIPLSRLScriptPresets());
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/script-presets', iplsrlRoles, async (req, res) => {
+  try {
+    const { saveIPLSRLScriptPreset } = await import('../../../lib/iplSrlAdminControl.mjs');
+    res.json(saveIPLSRLScriptPreset(req.body || {}, req.admin?.id || 'admin'));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.delete('/script-presets/:presetId', iplsrlRoles, async (req, res) => {
+  try {
+    const { deleteIPLSRLScriptPreset } = await import('../../../lib/iplSrlAdminControl.mjs');
+    res.json(deleteIPLSRLScriptPreset(req.params.presetId, req.admin?.id || 'admin'));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.get('/desk-capabilities', iplsrlRoles, async (req, res) => {
+  try {
+    const { getIPLSRLDeskCapabilitiesForRole } = await import('../../../lib/iplSrlAdminControl.mjs');
+    res.json(getIPLSRLDeskCapabilitiesForRole(req.admin?.role || 'SUPER_ADMIN'));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.get('/matches/:matchId/drift', iplsrlRoles, async (req, res) => {
+  try {
+    const { getIPLSRLScoreDrift } = await import('../../../lib/iplSrlAdminControl.mjs');
+    res.json(getIPLSRLScoreDrift(req.params.matchId));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.get('/matches/:matchId/queue-rehearsal', iplsrlRoles, async (req, res) => {
+  try {
+    const { rehearseIPLSRLQueue } = await import('../../../lib/iplSrlAdminControl.mjs');
+    res.json(rehearseIPLSRLQueue(req.params.matchId));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/integrity-hold', iplsrlRoles, async (req, res) => {
+  try {
+    const { engageIPLSRLIntegrityHold } = await import('../../../lib/iplSrlAdminControl.mjs');
+    const result = engageIPLSRLIntegrityHold(
+      req.params.matchId,
+      req.body || {},
+      req.admin?.id || 'admin',
+      req.admin?.role || 'SUPER_ADMIN',
+    );
+    await jsonSnap(res, result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.get('/matches/:matchId/post-match-report', iplsrlRoles, async (req, res) => {
+  try {
+    const { getIPLSRLPostMatchReport } = await import('../../../lib/iplSrlAdminControl.mjs');
+    res.json(getIPLSRLPostMatchReport(req.params.matchId));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.get('/match-templates', iplsrlRoles, async (req, res) => {
+  try {
+    const { listIPLSRLMatchTemplates } = await import('../../../lib/iplSrlAdminControl.mjs');
+    res.json(listIPLSRLMatchTemplates());
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/match-templates', iplsrlRoles, async (req, res) => {
+  try {
+    const { saveIPLSRLMatchTemplate, captureIPLSRLMatchTemplateFromMatch } = await import('../../../lib/iplSrlAdminControl.mjs');
+    if (req.body?.fromMatchId) {
+      return res.json(captureIPLSRLMatchTemplateFromMatch(
+        req.body.fromMatchId,
+        { name: req.body?.name },
+        req.admin?.id || 'admin',
+      ));
+    }
+    res.json(saveIPLSRLMatchTemplate(req.body || {}, req.admin?.id || 'admin'));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.delete('/match-templates/:templateId', iplsrlRoles, async (req, res) => {
+  try {
+    const { deleteIPLSRLMatchTemplate } = await import('../../../lib/iplSrlAdminControl.mjs');
+    res.json(deleteIPLSRLMatchTemplate(req.params.templateId, req.admin?.id || 'admin'));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/matches/:matchId/apply-template', iplsrlRoles, async (req, res) => {
+  try {
+    const { applyIPLSRLMatchTemplate } = await import('../../../lib/iplSrlAdminControl.mjs');
+    if (!req.body?.templateId) return res.status(400).json({ error: 'templateId required' });
+    const result = applyIPLSRLMatchTemplate(
+      req.params.matchId,
+      req.body.templateId,
+      req.admin?.id || 'admin',
+    );
     await jsonSnap(res, result);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -556,7 +740,12 @@ router.post('/matches/:matchId/micro-markets/margin', iplsrlRoles, async (req, r
 router.post('/matches/:matchId/micro-markets/mass-suspend', iplsrlRoles, async (req, res) => {
   try {
     const { setIPLSRLMicroMarketsMassSuspend } = await import('../../../lib/iplSrlAdminControl.mjs');
-    const result = setIPLSRLMicroMarketsMassSuspend(req.params.matchId, !!req.body?.suspend, req.admin?.id || 'admin');
+    const result = setIPLSRLMicroMarketsMassSuspend(
+      req.params.matchId,
+      !!req.body?.suspend,
+      req.admin?.id || 'admin',
+      req.admin?.role || 'SUPER_ADMIN',
+    );
     await jsonSnap(res, result);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -616,7 +805,12 @@ router.post('/matches/:matchId/circuit-breaker/config', iplsrlRoles, async (req,
 router.post('/matches/:matchId/circuit-breaker/kill-switch', iplsrlRoles, async (req, res) => {
   try {
     const { toggleIPLSRLEmergencyKillSwitch } = await import('../../../lib/iplSrlAdminControl.mjs');
-    const result = toggleIPLSRLEmergencyKillSwitch(req.params.matchId, req.body?.active, req.admin?.id || 'admin');
+    const result = toggleIPLSRLEmergencyKillSwitch(
+      req.params.matchId,
+      req.body?.active,
+      req.admin?.id || 'admin',
+      req.admin?.role || 'SUPER_ADMIN',
+    );
     await jsonSnap(res, result);
   } catch (err) {
     res.status(400).json({ error: err.message });
