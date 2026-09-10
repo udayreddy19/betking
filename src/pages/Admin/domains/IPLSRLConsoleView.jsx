@@ -145,6 +145,19 @@ function formatClock(ms) {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+/** Match SRL schedule timezone so desk alerts match the toss hint. */
+function formatSrlIstClock(ms) {
+  const n = Number(ms);
+  if (!Number.isFinite(n) || n <= 0) return '';
+  return new Date(n).toLocaleString('en-IN', {
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+    timeZone: 'Asia/Kolkata',
+  });
+}
+
 function formatInr(amount) {
   const n = Number(amount) || 0;
   return `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
@@ -323,16 +336,25 @@ function ScoreboardHero({ match }) {
       </div>
       {Array.isArray(match.deskAlerts) && match.deskAlerts.length > 0 && (
         <div className="srl-alert-strip" style={{ gridColumn: '1 / -1', display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-          {match.deskAlerts.map((a, i) => (
-            <span
-              key={`${a.code}-${i}`}
-              className={`srl-pill ${a.level === 'danger' ? 'srl-pill-completed' : a.level === 'warn' ? 'srl-pill-paused' : 'srl-pill-live'}`}
-              style={{ fontSize: '0.68rem', padding: '2px 8px' }}
-              title={a.message}
-            >
-              {a.code}: {a.message}
-            </span>
-          ))}
+          {match.deskAlerts.map((a, i) => {
+            let message = a.message;
+            if (
+              a.code === 'TOSS_LOCKED_DEFERRED'
+              && match.toss?.publicRevealAt
+            ) {
+              message = `Toss locked (desk). Users see it from ${formatSrlIstClock(match.toss.publicRevealAt)} IST — markets suspended until then.`;
+            }
+            return (
+              <span
+                key={`${a.code}-${i}`}
+                className={`srl-pill ${a.level === 'danger' ? 'srl-pill-completed' : a.level === 'warn' ? 'srl-pill-paused' : 'srl-pill-live'}`}
+                style={{ fontSize: '0.68rem', padding: '2px 8px' }}
+                title={message}
+              >
+                {a.code}: {message}
+              </span>
+            );
+          })}
         </div>
       )}
     </div>
@@ -3250,7 +3272,7 @@ export default function IPLSRLConsoleView() {
                         <p className="srl-hint" style={{ margin: '10px 0 0', color: 'var(--srl-warn-text, #b45309)' }}>
                           Locked for desk. Users see the toss only from 25 minutes before start
                           {selected.toss?.publicRevealAt
-                            ? ` (${new Date(selected.toss.publicRevealAt).toLocaleTimeString()})`
+                            ? ` (${formatSrlIstClock(selected.toss.publicRevealAt)} IST)`
                             : ''}
                           . Markets stay suspended until then.
                         </p>
