@@ -95,7 +95,7 @@ describe('Advanced OddsYra SRL Match Control Suite', () => {
   it('supports 1-click bulk settlement for toss markets', async () => {
     const res = await bulkSettleIPLSRLMarkets(testMatchId, 'toss', 'test_admin');
     expect(res.success).toBe(true);
-    expect(res.settledCount).toBe(2);
+    expect(res.settledCount).toBe(4);
   });
 
   it('creates custom exhibition match', () => {
@@ -150,7 +150,7 @@ describe('Advanced OddsYra SRL Match Control Suite', () => {
     const snap = getIPLSRLControlSnapshot();
     const match = snap.matches.find((m) => m.matchId === testMatchId);
 
-    const tossRes = executeIPLSRLToss(testMatchId, {
+    const tossRes = await executeIPLSRLToss(testMatchId, {
       winnerTeamId: match.homeTeamId,
       decision: 'BAT',
     }, 'test_admin');

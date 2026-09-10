@@ -383,7 +383,12 @@ router.post('/matches/:matchId/profit-maximizer', iplsrlRoles, async (req, res) 
 router.post('/matches/:matchId/toss', iplsrlRoles, async (req, res) => {
   try {
     const { executeIPLSRLToss } = await import('../../../lib/iplSrlAdminControl.mjs');
-    const result = executeIPLSRLToss(req.params.matchId, req.body || {}, req.admin?.id || 'admin');
+    const result = await executeIPLSRLToss(
+      req.params.matchId,
+      req.body || {},
+      req.admin?.id || 'admin',
+      req.admin?.role || 'SUPER_ADMIN',
+    );
     await jsonSnap(res, result);
   } catch (err) {
     res.status(400).json({ error: err.message });

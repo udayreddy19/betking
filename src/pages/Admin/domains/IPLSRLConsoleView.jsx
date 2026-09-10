@@ -3156,19 +3156,20 @@ export default function IPLSRLConsoleView() {
                       <div className="srl-zone-label --accent" style={{ justifyContent: 'space-between' }}>
                         <span>Official Toss Simulator & Election</span>
                         {selected.toss?.winner && (
-                          <span className="srl-pill srl-pill-live">
-                            Toss: {selected.toss.winner === selected.homeTeamId ? selected.homeShort : selected.awayShort} ({selected.toss.decision})
+                          <span className={`srl-pill ${selected.toss?.locked ? 'srl-pill-live' : 'srl-pill-paused'}`}>
+                            {selected.toss?.locked ? 'Locked · ' : ''}
+                            Toss: {(selected.toss.winnerName || selected.toss.wonToss || (selected.toss.winner === selected.homeTeamId ? selected.homeShort : selected.awayShort))} ({selected.toss.decision})
                           </span>
                         )}
                       </div>
                       <p className="srl-hint" style={{ margin: '0 0 12px' }}>
-                        Simulate the coin flip or manually designate the toss winner and their election to bat or bowl first.
+                        Lock anytime on the desk. Users only see the toss from <strong>25 minutes before start</strong> — markets stay suspended until then, then auto-publish and settle.
                       </p>
                       <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
                         <button
                           type="button"
                           className="srl-btn srl-btn-amber"
-                          disabled={busy || tossFlipping}
+                          disabled={busy || tossFlipping || selected.toss?.locked}
                           onClick={simulateCoinFlip}
                           style={{ height: 38, fontWeight: 800 }}
                         >
@@ -3178,6 +3179,7 @@ export default function IPLSRLConsoleView() {
                           <button
                             type="button"
                             className={`srl-chip${tossWinnerKey === selected.homeTeamId ? ' is-on' : ''}`}
+                            disabled={busy || selected.toss?.locked}
                             onClick={() => setTossWinnerKey(selected.homeTeamId)}
                           >
                             {selected.homeShort} ({selected.homeTeam})
@@ -3185,6 +3187,7 @@ export default function IPLSRLConsoleView() {
                           <button
                             type="button"
                             className={`srl-chip${tossWinnerKey === selected.awayTeamId ? ' is-on' : ''}`}
+                            disabled={busy || selected.toss?.locked}
                             onClick={() => setTossWinnerKey(selected.awayTeamId)}
                           >
                             {selected.awayShort} ({selected.awayTeam})
@@ -3194,6 +3197,7 @@ export default function IPLSRLConsoleView() {
                           <button
                             type="button"
                             className={`srl-chip${tossDecision === 'BAT' ? ' is-on' : ''}`}
+                            disabled={busy || selected.toss?.locked}
                             onClick={() => setTossDecision('BAT')}
                           >
                              Elect to BAT
@@ -3201,6 +3205,7 @@ export default function IPLSRLConsoleView() {
                           <button
                             type="button"
                             className={`srl-chip${tossDecision === 'BOWL' ? ' is-on' : ''}`}
+                            disabled={busy || selected.toss?.locked}
                             onClick={() => setTossDecision('BOWL')}
                           >
                              Elect to BOWL
@@ -3209,20 +3214,52 @@ export default function IPLSRLConsoleView() {
                         <button
                           type="button"
                           className="srl-btn srl-btn-teal"
-                          disabled={busy || !tossWinnerKey}
-                          onClick={() =>{
+                          disabled={busy || !tossWinnerKey || selected.toss?.locked}
+                          onClick={() => {
                             run(
                               () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/toss`, {
                                 winnerTeamId: tossWinnerKey,
                                 decision: tossDecision,
+                                lockAndDeclare: true,
                               }),
-                              `Toss declared: ${tossWinnerKey === selected.homeTeamId ? selected.homeShort : selected.awayShort} to ${tossDecision}`,
+                              `Toss locked: ${tossWinnerKey === selected.homeTeamId ? selected.homeShort : selected.awayShort} to ${tossDecision}`,
                             );
                           }}
                         >
-                          Confirm & Broadcast Toss
+                          Lock Toss
+                        </button>
+                        <button
+                          type="button"
+                          className="srl-btn srl-btn-slate"
+                          disabled={busy || !tossWinnerKey || selected.toss?.locked}
+                          onClick={() => {
+                            run(
+                              () => adminApiClient.post(`/iplsrl/matches/${selected.matchId}/toss`, {
+                                winnerTeamId: tossWinnerKey,
+                                decision: tossDecision,
+                                lockAndDeclare: false,
+                              }),
+                              `Toss saved (desk only): ${tossWinnerKey === selected.homeTeamId ? selected.homeShort : selected.awayShort} to ${tossDecision}`,
+                            );
+                          }}
+                        >
+                          Save without lock
                         </button>
                       </div>
+                      {selected.toss?.locked && !selected.toss?.userPublished && (
+                        <p className="srl-hint" style={{ margin: '10px 0 0', color: 'var(--srl-warn-text, #b45309)' }}>
+                          Locked for desk. Users see the toss only from 25 minutes before start
+                          {selected.toss?.publicRevealAt
+                            ? ` (${new Date(selected.toss.publicRevealAt).toLocaleTimeString()})`
+                            : ''}
+                          . Markets stay suspended until then.
+                        </p>
+                      )}
+                      {selected.toss?.locked && selected.toss?.userPublished && (
+                        <p className="srl-hint" style={{ margin: '10px 0 0', color: 'var(--srl-ok-text, #059669)' }}>
+                          Live for users — toss markets settled, scoreboard shows the result.
+                        </p>
+                      )}
                     </div>
 
                     {/* Squad & Impact Player Desk */}
