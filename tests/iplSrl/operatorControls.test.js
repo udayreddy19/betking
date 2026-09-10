@@ -21,10 +21,12 @@ import { SRL_LAUNCH_AT } from '../../lib/oddsyraSrlSeason.mjs';
 describe('OddsYra SRL operator controls', () => {
   beforeEach(() => {
     resetAllSrlOperatorSessions();
+    resetIPLSRLSeasonClock();
   });
 
   afterEach(() => {
     resetAllSrlOperatorSessions();
+    resetIPLSRLSeasonClock();
   });
 
   it('closes betting on a match for users and placement', () => {
