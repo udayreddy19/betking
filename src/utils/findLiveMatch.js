@@ -74,20 +74,17 @@ function liveFeedRank(match) {
  * Resolve a live-feed match for a bet leg / deep-link.
  * Prefer exact/aliased ids, then "Team A vs Team B" name hints.
  * When both exist, keep the live scored listing — not a stale upcoming twin.
+ *
+ * Important: if an id matches anything, never fall through to a name hint —
+ * a leftover `?teams=` from a previous fixture used to open the wrong match.
  */
 export function findLiveMatch(matches, { matchId, matchName } = {}) {
   const list = matches || [];
   const byId = matchId ? list.filter((m) => matchIdsReferToSame(m, matchId)) : [];
-  const byName = matchName ? list.filter((m) => matchMatchesNameHint(m, matchName)) : [];
-  const seen = new Set();
-  const candidates = [];
-  for (const m of [...byId, ...byName]) {
-    const id = m?.id || m?.matchId;
-    const key = id || JSON.stringify([m?.team1?.name, m?.team2?.name]);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    candidates.push(m);
+  if (byId.length) {
+    return byId.sort((a, b) => liveFeedRank(b) - liveFeedRank(a))[0];
   }
-  if (!candidates.length) return null;
-  return candidates.sort((a, b) => liveFeedRank(b) - liveFeedRank(a))[0];
+  const byName = matchName ? list.filter((m) => matchMatchesNameHint(m, matchName)) : [];
+  if (!byName.length) return null;
+  return byName.sort((a, b) => liveFeedRank(b) - liveFeedRank(a))[0];
 }

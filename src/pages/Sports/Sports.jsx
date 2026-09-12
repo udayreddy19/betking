@@ -93,9 +93,12 @@ function filterByLeague(matchList, activeLeague, cricketSeries = []) {
 }
 
 function getMatchScores(match) {
+  // Board live/finished badges must follow the feed row, not a stale poller detail
+  // that can resurrect a completed SRL fixture as LIVE.
+  const boardState = getMatchState(match);
   const enriched = enrichFromPoller(match) || match;
-  const isLive = isTrulyLiveMatch(enriched);
-  const isFinished = getMatchState(enriched) === 'post';
+  const isLive = boardState === 'in';
+  const isFinished = boardState === 'post';
   const state = centralizedMatchEngine.getSnapshot(enriched?.id, enriched);
 
   if (!isLive && !isFinished) {
@@ -457,6 +460,14 @@ export default function Sports() {
   const baseActiveMatch = useMemo(() => {
     const targetId = selectedMatchId || matchDeepLinkId;
     if (targetId) {
+      // Exact id from the visible board first — avoids wrong fixture via fuzzy/alias lookup.
+      const exact = sportMatches.find((m) => String(m?.id || m?.matchId) === String(targetId))
+        || matches.find((m) => String(m?.id || m?.matchId) === String(targetId));
+      if (exact) {
+        lastActiveMatchRef.current = exact;
+        return exact;
+      }
+
       const selected = findLiveMatch(matches, {
         matchId: targetId,
         matchName: matchTeamsHint,
@@ -701,6 +712,7 @@ export default function Sports() {
 
   const selectMatch = useCallback((matchId) => {
     setPendingDeepLinkMatch(null);
+    setPersistedMatchFallback(null);
     setSelectedMatchId(matchId);
     setViewMode('match');
     setSearchParams(prev => {
@@ -708,6 +720,8 @@ export default function Sports() {
       next.set('sport', activeSport);
       if (activeLeague) next.set('league', resolveLeagueId(activeLeague));
       next.set('match', matchId);
+      // Drop prior deep-link team hints so findLiveMatch cannot open another fixture.
+      next.delete('teams');
       return next;
     });
     const found = sportMatches.find((m) => m.id === matchId || matchIdsEqual(m.id || m.matchId, matchId));
@@ -1093,7 +1107,7 @@ export default function Sports() {
                 <button
                   key={m.id}
                   type="button"
-                  className={`sports-ticker-card ${viewMode === 'match' && activeMatch?.id === m.id ? 'selected' : ''}`}
+                  className={`sports-ticker-card ${viewMode === 'match' && (String(selectedMatchId) === String(m.id) || activeMatch?.id === m.id) ? 'selected' : ''}`}
                   onClick={() => selectMatch(m.id)}
                 >
                   <div className="sports-card-badge-group">

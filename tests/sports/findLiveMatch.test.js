@@ -46,7 +46,7 @@ describe('findLiveMatch', () => {
     expect(matchMatchesNameHint(matches[0], 'Bangladesh vs Australia')).toBe(true);
   });
 
-  it('prefers the live scored listing when Thunderers/Thunders aliases collide', () => {
+  it('keeps the explicit id match even when a live name-hint twin exists', () => {
     const twins = [
       {
         id: 'oy_upcoming',
@@ -69,6 +69,63 @@ describe('findLiveMatch', () => {
     expect(findLiveMatch(twins, {
       matchId: 'oy_upcoming',
       matchName: 'Muscat Thunders vs IAS Invincibles',
+    })?.id).toBe('oy_upcoming');
+  });
+
+  it('prefers the live scored listing when only a name hint is available', () => {
+    const twins = [
+      {
+        id: 'oy_upcoming',
+        team1: { name: 'Muscat Thunders' },
+        team2: { name: 'IAS Invincibles' },
+        league: 'SRL T20',
+        isLive: false,
+        matchState: 'pre',
+      },
+      {
+        id: 'oy_live',
+        team1: { name: 'Muscat Thunderers' },
+        team2: { name: 'IAS Invincibles' },
+        league: 'SRL T20',
+        isLive: true,
+        matchState: 'in',
+        liveDetails: { runs: 94, wickets: 3 },
+      },
+    ];
+    expect(findLiveMatch(twins, {
+      matchId: 'missing_id',
+      matchName: 'Muscat Thunders vs IAS Invincibles',
     })?.id).toBe('oy_live');
+  });
+
+  it('does not open a completed fixture via leftover teams hint when live id matches', () => {
+    const board = [
+      {
+        id: 'srl_ipl_10',
+        team1: { name: 'Delhi Capitals OddsYra SRL', shortName: 'DC' },
+        team2: { name: 'Royal Challengers Bengaluru OddsYra SRL', shortName: 'RCB' },
+        matchState: 'in',
+        isLive: true,
+        source: 'srl',
+      },
+      {
+        id: 'srl_ipl_9',
+        team1: { name: 'Punjab Kings OddsYra SRL', shortName: 'PBKS' },
+        team2: { name: 'Rajasthan Royals OddsYra SRL', shortName: 'RR' },
+        matchState: 'post',
+        isLive: false,
+        source: 'srl',
+      },
+    ];
+    expect(findLiveMatch(board, {
+      matchId: 'srl_ipl_10',
+      matchName: 'Punjab Kings OddsYra SRL vs Rajasthan Royals OddsYra SRL',
+    })?.id).toBe('srl_ipl_10');
+  });
+
+  it('does not treat SRL ids as equal to oy_/bare aliases', () => {
+    expect(matchIdsEqual('srl_ipl_5', 'oy_ipl_5')).toBe(false);
+    expect(matchIdsEqual('srl_ipl_5', 'ipl_5')).toBe(false);
+    expect(matchIdsEqual('srl_ipl_5', 'srl_ipl_5')).toBe(true);
   });
 });

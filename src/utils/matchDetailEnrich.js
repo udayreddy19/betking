@@ -112,12 +112,19 @@ export function enrichMatchWithDetail(match, detail) {
     liveDetails = enrichLivePlayersFromScorecard(baseLd, scorecardInnings || []);
   }
 
+  const baseFinished = match.matchState === 'post'
+    || match.isCompleted === true
+    || String(match.status || '').toUpperCase() === 'COMPLETED'
+    || String(match.liveStatus || '').toUpperCase() === 'COMPLETED';
+
   return {
     ...match,
-    isLive: match.isLive === true || detail.isLive === true,
-    matchState: (match.matchState === 'in' || match.isLive || detail.matchState === 'in' || detail.isLive)
-      ? 'in'
-      : (detail.matchState || match.matchState),
+    isLive: baseFinished ? false : (match.isLive === true || detail.isLive === true),
+    matchState: baseFinished
+      ? 'post'
+      : ((match.matchState === 'in' || match.isLive || detail.matchState === 'in' || detail.isLive)
+        ? 'in'
+        : (detail.matchState || match.matchState)),
     time: detail.time ?? match.time,
     seriesName: matchForScores.seriesName,
     matchFormat: detail.matchHeader?.matchFormat || match.matchFormat,
