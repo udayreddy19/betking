@@ -105,7 +105,7 @@ function mergeSrlMatches(matches) {
   const serverSrlById = new Map(
     list.filter(isSrlMatch).map((m) => [String(m.id), m]),
   );
-  const clientSrl = attachOdds(getIplSrlMatches());
+  const clientSrl = attachOdds(getIplSrlMatches(Date.now(), { publicBoard: true }));
   const usedServerIds = new Set();
   const srl = clientSrl.map((client) => {
     const server = serverSrlById.get(String(client.id));

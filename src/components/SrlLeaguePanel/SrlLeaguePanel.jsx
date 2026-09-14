@@ -59,8 +59,17 @@ export default function SrlLeaguePanel({
     );
   }
 
-  const liveUpcoming = matches.filter((m) => getMatchState(m) !== 'post');
-  const completed = matches.filter((m) => getMatchState(m) === 'post');
+  const liveUpcoming = matches
+    .filter((m) => getMatchState(m) !== 'post')
+    .sort((a, b) => {
+      const liveA = getMatchState(a) === 'in' ? 0 : 1;
+      const liveB = getMatchState(b) === 'in' ? 0 : 1;
+      if (liveA !== liveB) return liveA - liveB;
+      return (Number(a.startTime) || 0) - (Number(b.startTime) || 0);
+    });
+  const completed = matches
+    .filter((m) => getMatchState(m) === 'post')
+    .sort((a, b) => (Number(b.startTime) || 0) - (Number(a.startTime) || 0));
 
   const renderCard = (match) => {
     const state = getMatchState(match);

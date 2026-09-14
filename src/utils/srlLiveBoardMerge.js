@@ -47,6 +47,24 @@ export function overlaySrlFromServer(client, server) {
     };
   }
 
+  // Admin season-jump can mark wall-clock-upcoming fixtures as completed on the
+  // server. Keep them bettable on the public board until they actually start,
+  // unless the desk has explicitly declared a winner.
+  const wallStart = Number(client.startTime || server.startTime || 0);
+  const declared = !!(server.operator?.declaredWinnerKey || client.operator?.declaredWinnerKey);
+  if (
+    !declared
+    && wallStart > Date.now()
+    && (client.matchState === 'pre' || !client.isLive)
+    && (server.matchState === 'post' || server.isCompleted)
+  ) {
+    return {
+      ...client,
+      operator: server.operator || client.operator,
+      bettingClosed: server.bettingClosed ?? client.bettingClosed,
+    };
+  }
+
   const cLd = client.liveDetails || {};
   const desk = isSrlDeskDriven(server);
   const ballsDelta = Math.abs(srlInningsBalls(sLd) - srlInningsBalls(cLd));
