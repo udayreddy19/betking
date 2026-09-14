@@ -47,17 +47,23 @@ export function overlaySrlFromServer(client, server) {
     };
   }
 
-  // Admin season-jump can mark wall-clock-upcoming fixtures as completed on the
-  // server. Keep them bettable on the public board until they actually start,
-  // unless the desk has explicitly declared a winner.
+  // Admin season-jump can mark wall-calendar fixtures as completed on the server.
+  // Keep the public board on wall clock until the desk declares a winner or the
+  // natural wall-clock window has actually ended.
   const wallStart = Number(client.startTime || server.startTime || 0);
+  const wallNow = Date.now();
   const declared = !!(server.operator?.declaredWinnerKey || client.operator?.declaredWinnerKey);
-  if (
-    !declared
-    && wallStart > Date.now()
-    && (client.matchState === 'pre' || !client.isLive)
-    && (server.matchState === 'post' || server.isCompleted)
-  ) {
+  const desk = isSrlDeskDriven(server);
+  const windowMs = Number(client.expectedDurationMs)
+    || Number(server.expectedDurationMs)
+    || (3.5 * 60 * 60 * 1000);
+  const withinWallWindow = wallStart > 0 && wallNow < (wallStart + windowMs);
+  const serverForcedPost = server.matchState === 'post' || server.isCompleted;
+  const clientStillOpen = client.matchState === 'pre'
+    || client.matchState === 'in'
+    || !!client.isLive;
+
+  if (!declared && !desk && serverForcedPost && clientStillOpen && withinWallWindow) {
     return {
       ...client,
       operator: server.operator || client.operator,
@@ -66,7 +72,6 @@ export function overlaySrlFromServer(client, server) {
   }
 
   const cLd = client.liveDetails || {};
-  const desk = isSrlDeskDriven(server);
   const ballsDelta = Math.abs(srlInningsBalls(sLd) - srlInningsBalls(cLd));
   const runsDelta = Math.abs(srlInningsRuns(sLd) - srlInningsRuns(cLd));
 

@@ -54,12 +54,40 @@ function isCricketSport(match) {
   return !sport || sport === 'cricket' || sport === 'virtual-cricket';
 }
 
+function chaseOversEmpty(ld = {}) {
+  return ld.chaseOvers == null || String(ld.chaseOvers).trim() === ''
+    || ld.chaseOvers === '0' || ld.chaseOvers === '0.0';
+}
+
 function isSecondInningsStarted(match, ld) {
   const inningsId = Number(ld.inningsId) || 0;
-  if (inningsId >= 2) return true;
+  if (inningsId >= 2) {
+    // Bare inningsId=2 with mirrored / zero chase is not a real chase.
+    const t1 = parseRuns(match?.team1?.runs ?? match?.score1 ?? ld.score1);
+    const t2 = parseRuns(match?.team2?.runs ?? match?.score2);
+    const teamChaseRuns = (t2 > 0 && t2 !== t1) ? t2 : 0;
+    const chaseRuns = parseRuns(ld.chaseRuns) || teamChaseRuns;
+    const chaseWkts = parseWickets(ld.chaseWickets, parseWickets(match?.team2?.wickets, 0));
+    if (chaseRuns === 0 && chaseWkts === 0 && chaseOversEmpty(ld) && !ld.chaseTeamName) {
+      return false;
+    }
+    return true;
+  }
   const chaseProgress = Number(ld.chaseRuns) > 0 || Number(ld.chaseWickets) > 0;
   const bothTeamsScored = parseRuns(match?.team1?.runs ?? match?.score1 ?? ld.score1) > 0
     && parseRuns(match?.team2?.runs ?? match?.score2) > 0;
+
+  // Identical team cards during first inns are feed corruption, not a chase.
+  if (bothTeamsScored) {
+    const t1 = parseRuns(match?.team1?.runs ?? match?.score1 ?? ld.score1);
+    const t2 = parseRuns(match?.team2?.runs ?? match?.score2);
+    const w1 = parseWickets(match?.team1?.wickets ?? ld.wickets1, parseWickets(ld.wickets, 0));
+    const w2 = parseWickets(match?.team2?.wickets ?? ld.wickets2, parseWickets(ld.chaseWickets, 0));
+    const firstLabel = /first\s+innings/i.test(String(ld.commentary || ''));
+    if (t1 > 0 && t1 === t2 && w1 === w2 && (firstLabel || chaseOversEmpty(ld) || Number(ld.inningsId) === 1)) {
+      return false;
+    }
+  }
 
   if (inningsId === 1) {
     if (chaseProgress) return true;

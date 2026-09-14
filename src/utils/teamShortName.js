@@ -36,6 +36,8 @@ function stripGenderAndParens(name = '') {
   return String(name)
     .replace(/\([^)]*\)/g, ' ')
     .replace(/\b(women'?s?|men'?s?|wmn|w)\b/gi, ' ')
+    // SRL brands suffix — otherwise "Lucknow Super Giants OddsYra SRL" → LSGOS
+    .replace(/\b(oddsyra|betking)\s*srl\b/gi, ' ')
     .replace(/[^A-Za-z0-9.\s-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();

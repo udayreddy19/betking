@@ -16,8 +16,8 @@ describe('SRL public board calendar', () => {
     // Jump sim clock ~4 days ahead (toward 18 Sep).
     setSrlSeasonOffsetMs(4 * 24 * 60 * 60 * 1000);
 
-    const jumped = getIplSrlMatches(wall);
-    const publicBoard = getIplSrlMatches(wall, { publicBoard: true });
+    const jumped = getIplSrlMatches(wall, { simClock: true });
+    const publicBoard = getIplSrlMatches(wall);
 
     const firstJumped = jumped.find((m) => m.matchState !== 'post');
     const firstPublic = publicBoard.find((m) => m.matchState !== 'post');
@@ -30,11 +30,26 @@ describe('SRL public board calendar', () => {
 
   it('lists upcoming SRL cards in start-time order on the public board', () => {
     const wall = Date.parse('2026-09-14T13:49:00.000Z');
-    const upcoming = getIplSrlMatches(wall, { publicBoard: true })
+    const upcoming = getIplSrlMatches(wall)
       .filter((m) => m.matchState === 'pre' || m.matchState === 'in');
     expect(upcoming.length).toBeGreaterThan(2);
     for (let i = 1; i < upcoming.length; i += 1) {
       expect(Number(upcoming[i].startTime)).toBeGreaterThanOrEqual(Number(upcoming[i - 1].startTime));
     }
+  });
+
+  it('keeps today live on the public board even when season-jump completed it', () => {
+    const wall = Date.parse('2026-09-14T19:40:00+05:30');
+    setSrlSeasonOffsetMs(4 * 24 * 60 * 60 * 1000);
+
+    const publicBoard = getIplSrlMatches(wall);
+    const today = publicBoard.find((m) => m.id === 'srl_ipl_6');
+    expect(today).toBeTruthy();
+    expect(today.matchState).toBe('in');
+
+    const jumped = getIplSrlMatches(wall, { simClock: true });
+    const jumpedToday = jumped.find((m) => m.id === 'srl_ipl_6');
+    // On the jumped clock this fixture is already history (or absent from bettable).
+    expect(!jumpedToday || jumpedToday.matchState === 'post').toBe(true);
   });
 });

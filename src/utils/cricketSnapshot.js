@@ -172,9 +172,25 @@ export function buildCanonicalMatchSnapshot(match) {
       const isTeam1Batting = teamNameMatches(team1Name, normalizedBatTeam);
       const normalizedBowlTeam = isTeam1Batting ? team2Name : team1Name;
 
-      const runs = Number(innRaw.scoreDetails?.runs ?? innRaw.runs ?? (isTeam1Batting ? ld.firstRuns ?? ld.score1 ?? ld.runs : ld.chaseRuns ?? ld.score2 ?? ld.runs) ?? 0);
-      const wickets = Number(innRaw.scoreDetails?.wickets ?? innRaw.wickets ?? (isTeam1Batting ? ld.firstWickets ?? ld.wickets1 ?? ld.wickets : ld.chaseWickets ?? ld.wickets2 ?? ld.wickets) ?? 0);
-      const overs = pickScorecardOvers(innRaw, ld, isTeam1Batting, runs);
+      const runs = Number(
+        innRaw.scoreDetails?.runs
+        ?? innRaw.runs
+        ?? innRaw.score
+        // Prefer innings ordinal over home/away — away batting first must use firstRuns, not chase stubs.
+        ?? (inningsNumber >= 2
+          ? (ld.chaseRuns ?? ld.score2)
+          : (ld.firstRuns ?? ld.score1 ?? ld.runs))
+        ?? 0,
+      );
+      const wickets = Number(
+        innRaw.scoreDetails?.wickets
+        ?? innRaw.wickets
+        ?? (inningsNumber >= 2
+          ? (ld.chaseWickets ?? ld.wickets2)
+          : (ld.firstWickets ?? ld.wickets1 ?? ld.wickets))
+        ?? 0,
+      );
+      const overs = pickScorecardOvers(innRaw, ld, inningsNumber < 2, runs);
 
       const batters = (innRaw.batters || []).map((b) => ({
         id: b.id || b.batId || null,
@@ -276,9 +292,15 @@ export function buildCanonicalMatchSnapshot(match) {
         inningsLabel: `${teamDisplayName(normalizedBatTeam)} — ${inningsOrdinal}`,
         inningsName: `${teamDisplayName(normalizedBatTeam)} ${inningsOrdinal}`,
         battingTeamName: normalizedBatTeam,
-        battingTeamShort: formatTeamShortName(normalizedBatTeam),
+        battingTeamShort: formatTeamShortName(
+          normalizedBatTeam,
+          isTeam1Batting ? match.team1?.shortName : match.team2?.shortName,
+        ),
         bowlingTeamName: normalizedBowlTeam,
-        bowlingTeamShort: formatTeamShortName(normalizedBowlTeam),
+        bowlingTeamShort: formatTeamShortName(
+          normalizedBowlTeam,
+          isTeam1Batting ? match.team2?.shortName : match.team1?.shortName,
+        ),
         score: runs,
         runs,
         wickets,
@@ -565,7 +587,16 @@ export function buildCanonicalMatchSnapshot(match) {
   const isT2Active = (t2Runs > 0 || (t2Ovs && t2Ovs !== '0.0' && t2Ovs !== '0') || t2Wkts > 0)
     && !(mirroredCards && firstSideForCards === 'home' && hasTeam1Innings);
 
-  if (!hasTeam1Innings && isT1Active && !(mirroredCards && firstSideForCards === 'away')) {
+  // First innings only: never invent the other team's card from the same live total.
+  const chaseOversEmpty = ld.chaseOvers == null || ld.chaseOvers === ''
+    || ld.chaseOvers === '0' || ld.chaseOvers === '0.0';
+  const blockInventedSecond = inningsList.length === 1
+    && (ld.phase === 'first' || ld.phase === 'first-complete' || ld.phase === 'break' || Number(ld.inningsId) === 1)
+    && Number(ld.chaseRuns || 0) === 0
+    && chaseOversEmpty;
+
+  if (!hasTeam1Innings && isT1Active && !(mirroredCards && firstSideForCards === 'away')
+    && !(blockInventedSecond && hasTeam2Innings)) {
     const nextInnNumber = inningsList.length + 1;
     const inningsOrdinal = isTest ? (nextInnNumber > 2 ? '2nd INNS' : '1st INNS') : (nextInnNumber > 1 ? `${nextInnNumber}nd INNS` : '1st INNS');
     const liveBatters = [];
@@ -600,7 +631,7 @@ export function buildCanonicalMatchSnapshot(match) {
     });
   }
 
-  if (!hasTeam2Innings && isT2Active) {
+  if (!hasTeam2Innings && isT2Active && !(blockInventedSecond && hasTeam1Innings)) {
     const nextInnNumber = inningsList.length + 1;
     const inningsOrdinal = isTest ? (nextInnNumber > 2 ? '2nd INNS' : '1st INNS') : (nextInnNumber > 1 ? `${nextInnNumber}nd INNS` : '1st INNS');
     const liveBatters = [];

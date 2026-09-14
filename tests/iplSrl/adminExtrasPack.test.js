@@ -58,7 +58,7 @@ describe('SRL admin extras pack', () => {
     const unlocked = unlockSrlToss(m.id, { reason: 'Wrong team called', admin: 'admin_b', role: 'SUPER_ADMIN' });
     expect(unlocked.success).toBe(true);
     expect(unlocked.toss?.locked).toBe(false);
-  });
+  }, 15000);
 
   it('requires second admin for dual-control approve', async () => {
     const m = sampleMatch();

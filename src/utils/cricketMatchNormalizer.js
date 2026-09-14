@@ -556,15 +556,75 @@ export function normalizeMatch(raw = {}, previous = {}, options = {}) {
     if (incompleteScorecardForChase) {
       rawInnings = [];
     } else {
-    const t1r = Number(raw.team1?.runs ?? rawLd.firstRuns ?? rawLd.score1 ?? (rawLd.firstTeamName && matchesTeamIdentifier(homeTeam, rawLd.firstTeamName) ? rawLd.runs : null) ?? 0);
-    const t1w = Number(raw.team1?.wickets ?? rawLd.firstWickets ?? rawLd.wickets1 ?? 0);
-    const t1o = normalizeCricbuzzOvers(raw.team1?.overs || rawLd.firstOvers || rawLd.overs || '0.0');
+    const firstSideHint = resolveLabeledTeamSide(rawLd.firstTeamName, homeTeam, awayTeam, {
+      homeRuns: Number(raw.team1?.runs ?? rawLd.score1 ?? 0),
+      awayRuns: Number(raw.team2?.runs ?? rawLd.score2 ?? 0),
+      homeWickets: Number(raw.team1?.wickets ?? rawLd.wickets1 ?? 0),
+      awayWickets: Number(raw.team2?.wickets ?? rawLd.wickets2 ?? 0),
+    });
+    const chaseSideHint = resolveLabeledTeamSide(rawLd.chaseTeamName, homeTeam, awayTeam, {
+      homeRuns: Number(raw.team1?.runs ?? rawLd.score1 ?? 0),
+      awayRuns: Number(raw.team2?.runs ?? rawLd.score2 ?? 0),
+      homeWickets: Number(raw.team1?.wickets ?? rawLd.wickets1 ?? 0),
+      awayWickets: Number(raw.team2?.wickets ?? rawLd.wickets2 ?? 0),
+    });
 
-    const t2r = Number(raw.team2?.runs ?? rawLd.chaseRuns ?? rawLd.score2 ?? (rawLd.chaseTeamName && matchesTeamIdentifier(awayTeam, rawLd.chaseTeamName) ? rawLd.runs : null) ?? 0);
-    const t2w = Number(raw.team2?.wickets ?? rawLd.chaseWickets ?? rawLd.wickets2 ?? 0);
-    const t2o = normalizeCricbuzzOvers(raw.team2?.overs || rawLd.chaseOvers || rawLd.overs2 || '0.0');
+    // firstRuns/chaseRuns are batting-order slots — NOT home/away. Mapping them onto
+    // team1/team2 without labels invents 4/1 : 4/1 when the away side bats first.
+    const t1r = Number(
+      raw.team1?.runs
+      ?? (firstSideHint === 'home' ? rawLd.firstRuns : null)
+      ?? (chaseSideHint === 'home' ? rawLd.chaseRuns : null)
+      ?? rawLd.score1
+      ?? (rawLd.firstTeamName && matchesTeamIdentifier(homeTeam, rawLd.firstTeamName) ? rawLd.runs : null)
+      ?? (rawLd.chaseTeamName && matchesTeamIdentifier(homeTeam, rawLd.chaseTeamName) ? rawLd.runs : null)
+      ?? 0,
+    );
+    const t1w = Number(
+      raw.team1?.wickets
+      ?? (firstSideHint === 'home' ? rawLd.firstWickets : null)
+      ?? (chaseSideHint === 'home' ? rawLd.chaseWickets : null)
+      ?? rawLd.wickets1
+      ?? 0,
+    );
+    const t1o = normalizeCricbuzzOvers(
+      raw.team1?.overs
+      || (firstSideHint === 'home' ? rawLd.firstOvers : null)
+      || (chaseSideHint === 'home' ? rawLd.chaseOvers : null)
+      || rawLd.overs1
+      || '0.0',
+    );
 
-    if (!hasHome && (t1r > 0 || (t1o && t1o !== '0.0' && t1o !== '0') || t1w > 0)) {
+    const t2r = Number(
+      raw.team2?.runs
+      ?? (firstSideHint === 'away' ? rawLd.firstRuns : null)
+      ?? (chaseSideHint === 'away' ? rawLd.chaseRuns : null)
+      ?? rawLd.score2
+      ?? (rawLd.firstTeamName && matchesTeamIdentifier(awayTeam, rawLd.firstTeamName) ? rawLd.runs : null)
+      ?? (rawLd.chaseTeamName && matchesTeamIdentifier(awayTeam, rawLd.chaseTeamName) ? rawLd.runs : null)
+      ?? 0,
+    );
+    const t2w = Number(
+      raw.team2?.wickets
+      ?? (firstSideHint === 'away' ? rawLd.firstWickets : null)
+      ?? (chaseSideHint === 'away' ? rawLd.chaseWickets : null)
+      ?? rawLd.wickets2
+      ?? 0,
+    );
+    const t2o = normalizeCricbuzzOvers(
+      raw.team2?.overs
+      || (firstSideHint === 'away' ? rawLd.firstOvers : null)
+      || (chaseSideHint === 'away' ? rawLd.chaseOvers : null)
+      || rawLd.overs2
+      || '0.0',
+    );
+
+    const firstInnsOnlyBoard = rawLd.phase === 'first'
+      || rawLd.phase === 'first-complete'
+      || rawLd.phase === 'break'
+      || (Number(rawLd.inningsId) === 1 && !ldSaysSecond);
+
+    if (!hasHome && !firstInnsOnlyBoard && (t1r > 0 || (t1o && t1o !== '0.0' && t1o !== '0') || t1w > 0)) {
       rawInnings.push({
         inningsId: rawInnings.length + 1,
         batTeamId: t1Id,
@@ -582,8 +642,8 @@ export function normalizeMatch(raw = {}, previous = {}, options = {}) {
       && t2r > 0
       && t2r === t1r
       && t2w === t1w
-      && (t1w >= 10 || t2w >= 10);
-    if (!hasAway && !mirroredAwayCard && (t2r > 0 || (t2o && t2o !== '0.0' && t2o !== '0') || t2w > 0)) {
+      && (t1w >= 10 || t2w >= 10 || firstInnsOnlyBoard);
+    if (!hasAway && !mirroredAwayCard && !firstInnsOnlyBoard && (t2r > 0 || (t2o && t2o !== '0.0' && t2o !== '0') || t2w > 0)) {
       rawInnings.push({
         inningsId: rawInnings.length + 1,
         batTeamId: t2Id,

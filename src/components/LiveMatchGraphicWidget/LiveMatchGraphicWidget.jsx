@@ -880,6 +880,17 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
 
   const chaseText = (() => {
     const ldChase = match?.liveDetails || {};
+    const finished = matchState === 'post'
+      || match?.isCompleted
+      || match?.liveStatus === 'COMPLETED'
+      || isCricketMatchCompleted(match);
+    if (finished) {
+      return ldChase.resultSummary || match?.result || null;
+    }
+    // First innings / break: never show "need N runs" from mirrored totals.
+    if (!isCricketSecondInnings(match, ldChase)) {
+      return innings ? getChaseText(match, innings, team1, team2) : null;
+    }
     const t1Runs = Number(resolvedScores.team1?.runs) || 0;
     const t2Runs = Number(resolvedScores.team2?.runs) || 0;
     // Never trust engine batTeam alone — partial scorecards can mark the bowling side current.
@@ -894,7 +905,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
       if (chaseSide === 'home') batTeam = team1;
       else if (chaseSide === 'away') batTeam = team2;
       else batTeam = ldChase.chaseTeamName;
-    } else if (ldChase.firstTeamName && isCricketSecondInnings(match, ldChase)) {
+    } else if (ldChase.firstTeamName) {
       const firstSide = resolveLabeledTeamSide(ldChase.firstTeamName, team1, team2, {
         homeRuns: t1Runs,
         awayRuns: t2Runs,
@@ -954,6 +965,7 @@ export default function LiveMatchGraphicWidget({ match: rawMatch }) {
 
   const activeScorecardTab = scorecardInnings
     || selectedInningsView?.selectedInningsName
+    || (innings?.battingShort ? `${innings.battingShort} 1ST` : null)
     || (innings?.inningsNum === 2 ? `${team2Short} 1ST` : `${team1Short} 1ST`);
 
   const scorecardPlayers = useMemo(() => {

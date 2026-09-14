@@ -1,76 +1,60 @@
-import { describe, it, expect } from 'vitest';
-import {
-  overlaySrlFromServer,
-  isSrlDeskDriven,
-  srlInningsRuns,
-} from '../../src/utils/srlLiveBoardMerge.js';
+import { describe, expect, it } from 'vitest';
+import { overlaySrlFromServer } from '../../src/utils/srlLiveBoardMerge.js';
 
-const client = {
-  id: 'srl_ipl_1',
-  source: 'srl',
-  liveDetails: {
-    phase: 'first',
-    inningsId: 1,
-    firstRuns: 79,
-    firstWickets: 2,
-    firstOvers: '12.3',
-    runs: 79,
-    wickets: 2,
-    overs: '12.3',
-  },
-};
-
-describe('srlLiveBoardMerge', () => {
-  it('detects desk-driven boards and prefers server score over client natural sim', () => {
-    const serverDesk = {
-      id: 'srl_ipl_1',
-      source: 'srl',
-      operator: { started: true, scoreAnchors: [{ innings: 1, runs: 88 }] },
-      liveDetails: {
-        phase: 'first',
-        inningsId: 1,
-        firstRuns: 88,
-        firstWickets: 1,
-        firstOvers: '13.5',
-        runs: 88,
-        wickets: 1,
-        overs: '13.5',
-        currentOverBalls: ['.', '6', '.', '.', '1'],
-      },
+describe('overlaySrlFromServer season-jump protection', () => {
+  it('does not demote a wall-clock live match to post from a jumped server board', () => {
+    const start = Date.now() - (25 * 60 * 1000);
+    const client = {
+      id: 'srl_ipl_6',
+      startTime: start,
+      expectedDurationMs: 3.5 * 3600 * 1000,
+      matchState: 'in',
+      isLive: true,
+      liveDetails: { phase: 'first', firstRuns: 24, firstWickets: 1, overs: '3.2' },
     };
-
-    expect(isSrlDeskDriven(serverDesk)).toBe(true);
-    expect(srlInningsRuns(serverDesk.liveDetails)).toBe(88);
-
-    const merged = overlaySrlFromServer(client, serverDesk);
-    expect(merged.liveDetails.firstRuns).toBe(88);
-    expect(merged.liveDetails.firstWickets).toBe(1);
-    expect(merged.liveDetails.firstOvers).toBe('13.5');
-  });
-
-  it('keeps client board when natural boards are in sync', () => {
-    const serverNatural = {
-      ...client,
-      operator: { started: false, scoreAnchors: [] },
-      liveDetails: { ...client.liveDetails },
-    };
-    const merged = overlaySrlFromServer(client, serverNatural);
-    expect(merged.liveDetails.firstRuns).toBe(79);
-  });
-
-  it('prefers server when boards diverge even without desk flags', () => {
-    const serverAhead = {
-      id: 'srl_ipl_1',
+    const server = {
+      id: 'srl_ipl_6',
+      startTime: start,
+      matchState: 'post',
+      isCompleted: true,
+      isLive: false,
       operator: {},
       liveDetails: {
-        ...client.liveDetails,
-        firstRuns: 88,
-        firstOvers: '13.5',
-        runs: 88,
-        overs: '13.5',
+        phase: 'chase-complete',
+        firstRuns: 80,
+        chaseRuns: 81,
+        commentary: 'Season jump completed board',
       },
     };
-    const merged = overlaySrlFromServer(client, serverAhead);
-    expect(merged.liveDetails.firstRuns).toBe(88);
+
+    const out = overlaySrlFromServer(client, server);
+    expect(out.matchState).toBe('in');
+    expect(out.isLive).toBe(true);
+    expect(out.liveDetails.phase).toBe('first');
+    expect(out.liveDetails.firstRuns).toBe(24);
+  });
+
+  it('still accepts a declared server completion', () => {
+    const start = Date.now() - (25 * 60 * 1000);
+    const client = {
+      id: 'srl_ipl_6',
+      startTime: start,
+      expectedDurationMs: 3.5 * 3600 * 1000,
+      matchState: 'in',
+      isLive: true,
+      liveDetails: { phase: 'first', firstRuns: 24 },
+    };
+    const server = {
+      id: 'srl_ipl_6',
+      startTime: start,
+      matchState: 'post',
+      isCompleted: true,
+      operator: { declaredWinnerKey: 'srh', started: true },
+      liveDetails: { phase: 'chase-complete', firstRuns: 80, chaseRuns: 81 },
+    };
+
+    const out = overlaySrlFromServer(client, server);
+    expect(out.matchState).toBe('post');
+    expect(out.liveDetails.phase).toBe('chase-complete');
   });
 });
