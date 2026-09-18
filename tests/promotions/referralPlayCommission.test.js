@@ -4,6 +4,7 @@ import {
   creditReferrerPlayCommission,
   computePlayCommissionAmount,
   __resetReferralConfigCacheForTests,
+  __setReferralConfigForTests,
 } from '../../lib/referralLoyaltyEngine.mjs';
 import { query } from '../../db/pg.js';
 
@@ -13,6 +14,13 @@ describe('Referral play commission (5% of stake)', () => {
 
   beforeEach(async () => {
     __resetReferralConfigCacheForTests();
+    __setReferralConfigForTests({
+      requireKyc: false,
+      minDeposit: 0,
+      requireFirstBet: false,
+      playCommissionEnabled: true,
+      playCommissionRate: 0.05,
+    });
     await query(`INSERT INTO users (user_id, email, password_hash, first_name) VALUES ($1, $2, 'hash', 'Inviter') ON CONFLICT (user_id) DO NOTHING;`, [referrer, `${referrer}@example.com`]);
     await query(`INSERT INTO users (user_id, email, password_hash, first_name) VALUES ($1, $2, 'hash', 'Friend') ON CONFLICT (user_id) DO NOTHING;`, [referred, `${referred}@example.com`]);
     await query(`INSERT INTO wallets (wallet_id, user_id, balance, bonus_balance, freebet_balance, currency)

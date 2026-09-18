@@ -165,7 +165,6 @@ const DOMAIN_GROUPS = [
         Icon: BellRingIcon,
         role: ADMIN_ROLES.MARKETING_ADMIN,
         subModules: [
-          { id: 'whatsapp', label: '💬 WhatsApp' },
           { id: 'compose', label: 'Compose Mail' },
           { id: 'mail-inbox', label: 'Mail Delivery' },
           { id: 'templates', label: 'Mail Templates' },

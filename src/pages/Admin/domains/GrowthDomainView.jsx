@@ -9,7 +9,6 @@ import AdminKPI from '../components/AdminKPI';
 import { AdminKpiDrillDrawer, useAdminKpiDrilldown } from '../hooks/useAdminKpiDrilldown';
 import { formatIst, formatIstDateTime, formatIstDate } from '../../../utils/istTime';
 import AdminConfirmDialog from '../components/AdminConfirmDialog';
-import AdminWhatsAppPanel from './AdminWhatsAppPanel';
 
 function money(n) {
   if (n == null || Number.isNaN(Number(n))) return '—';
@@ -2442,10 +2441,9 @@ function AudienceHub({ initialTab = 'segments' }) {
         tabs={[
           { id: 'segments', label: 'Segments' },
           { id: 'composer', label: 'Email composer' },
-          { id: 'whatsapp', label: '💬 WhatsApp' },
         ]}
       />
-      {tab === 'composer' ? <CrmComposerPanel /> : tab === 'whatsapp' ? <AdminWhatsAppPanel /> : <CrmSegmentsPanel />}
+      {tab === 'composer' ? <CrmComposerPanel /> : <CrmSegmentsPanel />}
     </div>
   );
 }
@@ -2728,7 +2726,7 @@ function MasterAgentAffiliatesPanel() {
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, marginBottom: 4 }}>Contact / Channel</label>
-              <input className="admin-input" value={contact} onChange={(e) => setContact(e.target.value)} placeholder="WhatsApp or Telegram" style={{ width: '100%' }} />
+              <input className="admin-input" value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Telegram or email" style={{ width: '100%' }} />
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, marginBottom: 4 }}>Commission Model</label>
@@ -3480,9 +3478,16 @@ function ReferralsAdminPanel() {
       referredReward: Number(editSettings.referredReward),
       referrerReward: Number(editSettings.referrerReward),
       enabled: editSettings.enabled !== false,
+      minDeposit: Number(editSettings.minDeposit) || 0,
+      requireKyc: editSettings.requireKyc !== false,
+      requireFirstBet: !!editSettings.requireFirstBet,
       playCommissionEnabled: editSettings.playCommissionEnabled !== false,
       playCommissionRate: Number.isFinite(rate) ? rate : 0.05,
       playCommissionDailyCap: Number(editSettings.playCommissionDailyCap) || 0,
+      campaignMultiplier: Number(editSettings.campaignMultiplier) || 1,
+      campaignLabel: editSettings.campaignLabel || null,
+      campaignEndsAt: editSettings.campaignEndsAt || null,
+      attributionExpireDays: Number(editSettings.attributionExpireDays) || 30,
     })
       .then((res) => {
         const next = res.config || editSettings;
@@ -3509,6 +3514,37 @@ function ReferralsAdminPanel() {
         loadAnalytics();
       })
       .catch((err) => showToast(err.message || 'Retry failed', 'error'));
+  };
+
+  const approve = (id) => {
+    adminApiClient.post(`/growth/referrals/${encodeURIComponent(id)}/approve`, { reason: 'Admin approve' })
+      .then((res) => {
+        showToast(res.success ? 'Referral approved' : (res.reason || 'Not approved'), res.success ? 'success' : 'warning');
+        load();
+        loadAnalytics();
+      })
+      .catch((err) => showToast(err.message || 'Approve failed', 'error'));
+  };
+
+  const reject = (id) => {
+    const reason = window.prompt('Reject reason?', 'Fraud / policy') || 'Admin reject';
+    adminApiClient.post(`/growth/referrals/${encodeURIComponent(id)}/reject`, { reason })
+      .then((res) => {
+        showToast(res.success ? 'Referral rejected' : (res.reason || 'Reject failed'), res.success ? 'success' : 'warning');
+        load();
+        loadAnalytics();
+      })
+      .catch((err) => showToast(err.message || 'Reject failed', 'error'));
+  };
+
+  const clawback = (id) => {
+    if (!window.confirm('Claw back all granted referral rewards for this invite?')) return;
+    adminApiClient.post(`/growth/referrals/${encodeURIComponent(id)}/clawback`, { reason: 'Admin clawback' })
+      .then((res) => {
+        showToast(`Clawed back ${res.count || 0} grant(s)`, 'success');
+        load();
+      })
+      .catch((err) => showToast(err.message || 'Clawback failed', 'error'));
   };
 
   const disableCode = (code) => {
@@ -3620,6 +3656,49 @@ function ReferralsAdminPanel() {
                 playCommissionRatePct: e.target.value,
                 playCommissionEnabled: true,
               })}
+              style={{ padding: '8px 10px', borderRadius: 'var(--admin-radius)' }}
+            />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.78rem', color: 'var(--admin-text-muted)' }}>
+            Min deposit (₹)
+            <input
+              type="number"
+              min="0"
+              step="1"
+              value={editSettings.minDeposit ?? 1}
+              onChange={(e) => setSettingsDraft({ ...editSettings, minDeposit: e.target.value })}
+              style={{ padding: '8px 10px', borderRadius: 'var(--admin-radius)' }}
+            />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.78rem', color: 'var(--admin-text-muted)' }}>
+            Require KYC
+            <select
+              value={editSettings.requireKyc === false ? 'false' : 'true'}
+              onChange={(e) => setSettingsDraft({ ...editSettings, requireKyc: e.target.value === 'true' })}
+              style={{ padding: '8px 10px', borderRadius: 'var(--admin-radius)' }}
+            >
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.78rem', color: 'var(--admin-text-muted)' }}>
+            Campaign ×
+            <input
+              type="number"
+              min="1"
+              step="0.1"
+              value={editSettings.campaignMultiplier ?? 1}
+              onChange={(e) => setSettingsDraft({ ...editSettings, campaignMultiplier: e.target.value })}
+              style={{ padding: '8px 10px', borderRadius: 'var(--admin-radius)' }}
+            />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.78rem', color: 'var(--admin-text-muted)' }}>
+            Campaign label
+            <input
+              type="text"
+              value={editSettings.campaignLabel || ''}
+              onChange={(e) => setSettingsDraft({ ...editSettings, campaignLabel: e.target.value })}
+              placeholder="2× week"
               style={{ padding: '8px 10px', borderRadius: 'var(--admin-radius)' }}
             />
           </label>
@@ -3764,9 +3843,20 @@ function ReferralsAdminPanel() {
             key: 'actions',
             sortable: false,
             render: (row) => (
-              <button type="button" onClick={() => retry(row.id)} style={{ fontSize: '0.75rem', fontWeight: 700 }}>
-                Retry reward
-              </button>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {String(row.status).toUpperCase() === 'FRAUD_REVIEW' && (
+                  <button type="button" className="admin-btn admin-btn--sm admin-btn--success" onClick={() => approve(row.id)}>Approve</button>
+                )}
+                {!['REJECTED', 'REWARDED'].includes(String(row.status).toUpperCase()) && (
+                  <button type="button" className="admin-btn admin-btn--sm admin-btn--danger" onClick={() => reject(row.id)}>Reject</button>
+                )}
+                {String(row.status).toUpperCase() === 'REWARDED' && (
+                  <button type="button" className="admin-btn admin-btn--sm admin-btn--danger" onClick={() => clawback(row.id)}>Clawback</button>
+                )}
+                <button type="button" onClick={() => retry(row.id)} style={{ fontSize: '0.75rem', fontWeight: 700 }}>
+                  Retry
+                </button>
+              </div>
             ),
           },
         ]}

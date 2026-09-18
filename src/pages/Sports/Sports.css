@@ -967,6 +967,43 @@
   margin-bottom: var(--space-2);
 }
 
+.sports-empty--error {
+  border-color: color-mix(in srgb, var(--color-danger, #c0392b) 45%, var(--color-border));
+  background: color-mix(in srgb, var(--color-danger, #c0392b) 6%, var(--color-surface));
+}
+
+.sports-empty-action--secondary {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.sports-empty-skeleton {
+  width: min(220px, 70%);
+  height: 10px;
+  margin: 0 auto 14px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--color-border) 0%,
+    color-mix(in srgb, var(--color-surface) 40%, var(--color-border)) 50%,
+    var(--color-border) 100%
+  );
+  background-size: 200% 100%;
+  animation: sportsEmptyShimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes sportsEmptyShimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sports-empty-skeleton {
+    animation: none;
+  }
+}
+
 /* 10CRIC-style grouped cricket list */
 .sports-cricket-groups {
   display: flex;

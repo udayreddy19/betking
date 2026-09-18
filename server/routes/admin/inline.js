@@ -2952,11 +2952,19 @@ router.put('/api/admin/growth/referrals/settings', async (req, res) => {
       enabled: body.enabled,
       minDeposit: body.minDeposit,
       requireKyc: body.requireKyc,
+      requireFirstBet: body.requireFirstBet,
       requireRiskClearance: body.requireRiskClearance,
       maxReferralsPerUser: body.maxReferralsPerUser,
+      attributionExpireDays: body.attributionExpireDays,
       playCommissionEnabled: body.playCommissionEnabled,
       playCommissionRate: body.playCommissionRate,
       playCommissionDailyCap: body.playCommissionDailyCap,
+      referrerDailyCap: body.referrerDailyCap,
+      referrerWeeklyCap: body.referrerWeeklyCap,
+      campaignMultiplier: body.campaignMultiplier,
+      campaignLabel: body.campaignLabel,
+      campaignEndsAt: body.campaignEndsAt,
+      milestones: body.milestones,
     }, {
       adminId: req.admin?.id || 'admin',
       reason: body.reason || 'Admin referral settings update',
@@ -3004,6 +3012,72 @@ router.post('/api/admin/growth/referrals/:id/retry-reward', async (req, res) => 
     res.json({ success: true, ...result });
   } catch (err) {
     res.status(err.status || 500).json({ success: false, error: err.message, code: err.code });
+  }
+});
+
+router.post('/api/admin/growth/referrals/:id/approve', async (req, res) => {
+  try {
+    const { adminApproveReferral } = await import('../../../lib/referralLoyaltyEngine.mjs');
+    const result = await adminApproveReferral({
+      referralId: req.params.id,
+      adminId: req.admin?.id || 'admin',
+      reason: req.body?.reason || '',
+    });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message, code: err.code });
+  }
+});
+
+router.post('/api/admin/growth/referrals/:id/reject', async (req, res) => {
+  try {
+    const { adminRejectReferral } = await import('../../../lib/referralLoyaltyEngine.mjs');
+    const result = await adminRejectReferral({
+      referralId: req.params.id,
+      adminId: req.admin?.id || 'admin',
+      reason: req.body?.reason || '',
+    });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message, code: err.code });
+  }
+});
+
+router.post('/api/admin/growth/referrals/:id/clawback', async (req, res) => {
+  try {
+    const { clawbackReferralRewards } = await import('../../../lib/referralLoyaltyEngine.mjs');
+    const result = await clawbackReferralRewards({
+      referralId: req.params.id,
+      adminId: req.admin?.id || 'admin',
+      reason: req.body?.reason || 'Admin clawback',
+    });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message, code: err.code });
+  }
+});
+
+router.get('/api/admin/growth/referrals/funnel', async (req, res) => {
+  try {
+    const { getReferralFunnelAnalytics } = await import('../../../lib/referralGrowthEngine.mjs');
+    res.json({
+      success: true,
+      ...(await getReferralFunnelAnalytics({
+        from: req.query.from || null,
+        to: req.query.to || null,
+      })),
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.get('/api/admin/growth/referrals/leaderboard', async (req, res) => {
+  try {
+    const { getReferralLeaderboard } = await import('../../../lib/referralGrowthEngine.mjs');
+    res.json({ success: true, ...(await getReferralLeaderboard({ limit: Number(req.query.limit) || 25 })) });
+  } catch (err) {
+    res.status(500).json({ success: false, leaders: [], error: err.message });
   }
 });
 

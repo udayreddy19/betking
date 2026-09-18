@@ -83,6 +83,30 @@ router.get('/referrals/me', requireAuth, async (req, res) => {
   }
 });
 
+router.get('/referrals/leaderboard', requireAuth, async (req, res) => {
+  try {
+    const { getReferralLeaderboard } = await import('../../lib/referralGrowthEngine.mjs');
+    res.json({ success: true, ...(await getReferralLeaderboard({ limit: Number(req.query.limit) || 20 })) });
+  } catch (err) {
+    res.status(500).json({ success: false, leaders: [], error: err.message });
+  }
+});
+
+router.post('/referrals/click', async (req, res) => {
+  try {
+    const { recordReferralClick } = await import('../../lib/referralGrowthEngine.mjs');
+    const result = await recordReferralClick({
+      referralCode: req.body?.code || req.body?.ref || req.query?.ref,
+      ipAddress: req.ip || req.headers['x-forwarded-for'],
+      userAgent: req.headers['user-agent'],
+      landingPath: req.body?.path || '/register',
+    });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 router.get('/deposit-freebet/me', requireAuth, async (req, res) => {
   try {
     const {

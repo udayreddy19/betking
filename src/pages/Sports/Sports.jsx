@@ -28,6 +28,7 @@ import { centralizedMatchEngine } from '../../services/centralizedMatchStateEngi
 import { filterMatches, compareMatchesForSportsBoard } from '../../utils/matchFilters';
 import { resolveLeagueId, getLeagueMeta, isSameLeague, groupMatchesByLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
 import { matchIdsEqual } from '../../../lib/matchIdPublic.mjs';
+import MatchStructuredData from '../../components/SEO/MatchStructuredData';
 import { findLiveMatch, matchIdsReferToSame } from '../../utils/findLiveMatch';
 import { formatTeamShortName, teamDisplayName, asDisplayText } from '../../utils/teamShortName';
 import SrlLeaguePanel from '../../components/SrlLeaguePanel/SrlLeaguePanel';
@@ -1058,6 +1059,18 @@ export default function Sports() {
             retrying={isScoresLoading}
           />
 
+          {activeMatch && <MatchStructuredData match={activeMatch} />}
+
+          {scoresError && !isScoresLoading && sportMatches.length === 0 && (
+            <div className="sports-empty sports-empty--error" role="alert">
+              <h3>Couldn’t load live scores</h3>
+              <p>{String(scoresError).slice(0, 160)}</p>
+              <button type="button" className="sports-empty-action" onClick={() => refreshScores({ force: true })}>
+                Retry
+              </button>
+            </div>
+          )}
+
           <div className="sports-state-panel">
           <div className="sports-search sports-search--mobile">
             <div className="sports-search-wrapper">
@@ -1408,15 +1421,24 @@ export default function Sports() {
             <div className="sports-empty">
               {isScoresLoading ? (
                 <>
+                  <div className="sports-empty-skeleton" aria-hidden />
                   <h3>Loading match…</h3>
-                  <p>Fetching the live board</p>
+                  <p>Fetching the live board — this usually takes a second</p>
                 </>
               ) : (
                 <>
                   <h3>Match not found</h3>
-                  <p>This match is no longer available</p>
+                  <p>This match may have finished or the link is outdated</p>
                   <button type="button" className="sports-empty-action" onClick={() => showLeagueOverview('all')}>
-                    Back to All Leagues
+                    Browse live matches
+                  </button>
+                  <button
+                    type="button"
+                    className="sports-empty-action sports-empty-action--secondary"
+                    style={{ marginLeft: 8 }}
+                    onClick={() => refreshScores({ force: true })}
+                  >
+                    Refresh scores
                   </button>
                 </>
               )}

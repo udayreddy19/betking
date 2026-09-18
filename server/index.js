@@ -140,7 +140,14 @@ app.get('/sitemap.xml', async (_req, res) => {
     return res.status(404).send('Not Found');
   }
   res.setHeader('Content-Type', 'application/xml');
-  return res.sendFile(new URL('../public/sitemap.xml', import.meta.url).pathname);
+  try {
+    const { buildOddsYraSitemapXml } = await import('../lib/sitemapBuilder.mjs');
+    const base = process.env.FRONTEND_URL || process.env.APP_URL || 'https://oddsyra.com';
+    const xml = await buildOddsYraSitemapXml({ baseUrl: base });
+    return res.send(xml);
+  } catch {
+    return res.sendFile(new URL('../public/sitemap.xml', import.meta.url).pathname);
+  }
 });
 app.use(walletRouter);
 app.use(betsRouter);

@@ -100,11 +100,16 @@ export default function ProfileReferralCard({ onLoaded } = {}) {
       </div>
 
       <p className="profile-loyalty-meta" style={{ margin: '4px 0 12px', lineHeight: 1.45 }}>
-        Invite friends with your link. They get a <strong>₹{referredReward} {rewardLabel}</strong> on signup —
-        you get <strong>₹{referrerReward} {rewardLabel}</strong>
+        Invite friends with your link. They get <strong>₹{referredReward} {rewardLabel}</strong>
+        {data.minDeposit > 0 ? <> after depositing ₹{data.minDeposit}+</> : ' on signup'}
+        {data.requireKyc ? <> and KYC</> : null}
+        {' — '}you get <strong>₹{referrerReward} {rewardLabel}</strong>
         {data.playCommissionEnabled !== false && (
-          <> plus <strong>{data.playCommissionRatePct ?? 5}% of their cash stakes</strong> whenever they play</>
+          <> plus <strong>{data.playCommissionRatePct ?? 5}% of their cash stakes</strong> when they play</>
         )}
+        {Number(data.campaignMultiplier) > 1 && data.campaignLabel ? (
+          <> · <strong>{data.campaignLabel}</strong> ({data.campaignMultiplier}×)</>
+        ) : null}
         .
       </p>
 

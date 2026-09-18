@@ -48,6 +48,11 @@ export default function Register() {
       } catch {
         /* ignore */
       }
+      fetch('/api/v1/rewards/referrals/click', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: ref, path: '/register' }),
+      }).catch(() => null);
     }
   }, [searchParams]);
 
