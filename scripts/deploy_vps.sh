@@ -86,9 +86,10 @@ fi
 echo "🔄 Rolling out production services..."
 docker compose -f docker-compose.prod.yml up -d
 
-# 4b. Refresh nginx upstream after backend recreate (Docker DNS cache)
+# 4b. Refresh nginx after backend recreate (new conf + Docker DNS)
 if docker ps --format '{{.Names}}' | grep -q oddsyra_prod_nginx; then
-  docker exec oddsyra_prod_nginx nginx -s reload 2>/dev/null || true
+  docker compose -f docker-compose.prod.yml up -d nginx --force-recreate || \
+    docker exec oddsyra_prod_nginx nginx -s reload 2>/dev/null || true
 fi
 
 # 5. Perform Post-Deployment Readiness Smoke Test
