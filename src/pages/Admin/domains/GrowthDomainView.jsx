@@ -3414,6 +3414,9 @@ function ReferralsAdminPanel() {
     referredReward: 500,
     referrerReward: 500,
     enabled: true,
+    playCommissionEnabled: true,
+    playCommissionRate: 0.05,
+    playCommissionDailyCap: 0,
   });
   const [settingsDraft, setSettingsDraft] = useState(null);
   const [savingSettings, setSavingSettings] = useState(false);
@@ -3468,19 +3471,29 @@ function ReferralsAdminPanel() {
 
   const saveSettings = () => {
     setSavingSettings(true);
+    const ratePct = Number(editSettings.playCommissionRatePct);
+    const rate = Number.isFinite(ratePct) && editSettings.playCommissionRatePct != null
+      ? ratePct / 100
+      : Number(editSettings.playCommissionRate);
     adminApiClient.put('/growth/referrals/settings', {
       rewardKind: editSettings.rewardKind,
       referredReward: Number(editSettings.referredReward),
       referrerReward: Number(editSettings.referrerReward),
       enabled: editSettings.enabled !== false,
+      playCommissionEnabled: editSettings.playCommissionEnabled !== false,
+      playCommissionRate: Number.isFinite(rate) ? rate : 0.05,
+      playCommissionDailyCap: Number(editSettings.playCommissionDailyCap) || 0,
     })
       .then((res) => {
         const next = res.config || editSettings;
         setSettings(next);
         setSettingsDraft(null);
+        const pct = Math.round((Number(next.playCommissionRate) || 0) * 1000) / 10;
         showToast(
           `Referral reward → ${next.rewardKind === 'bonus' ? 'Bonus' : 'Free Bet'} `
-          + `(friend ₹${next.referredReward}, you ₹${next.referrerReward})`,
+          + `(friend ₹${next.referredReward}, you ₹${next.referrerReward}`
+          + (next.playCommissionEnabled !== false ? `, play ${pct}%` : '')
+          + ')',
           'success',
         );
       })
@@ -3548,8 +3561,11 @@ function ReferralsAdminPanel() {
     <div>
       <h2 className="admin-page-header__title">Referral program</h2>
       <p style={{ margin: '0 0 16px', color: 'var(--admin-text-muted)', fontSize: '0.85rem' }}>
-        User-to-user referrals. Rewards grant on signup attribution (not deposit-locked).
-        Signup promos cannot combine with referral. Current payout: <strong>{rewardLabel}</strong>.
+        User-to-user referrals. Signup rewards grant on attribution; play share credits the referrer
+        when referred friends settle cash bets. Current payout: <strong>{rewardLabel}</strong>
+        {editSettings.playCommissionEnabled !== false && (
+          <> · play <strong>{Math.round((Number(editSettings.playCommissionRate) || 0) * 1000) / 10}%</strong> of stake</>
+        )}.
       </p>
 
       <AdminCard title="Reward settings" accent="#8b5cf6" style={{ marginBottom: 16 }}>
@@ -3577,13 +3593,44 @@ function ReferralsAdminPanel() {
             />
           </label>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.78rem', color: 'var(--admin-text-muted)' }}>
-            Referrer gets (₹)
+            Referrer signup (₹)
             <input
               type="number"
               min="0"
               step="1"
               value={editSettings.referrerReward ?? 500}
               onChange={(e) => setSettingsDraft({ ...editSettings, referrerReward: e.target.value })}
+              style={{ padding: '8px 10px', borderRadius: 'var(--admin-radius)' }}
+            />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.78rem', color: 'var(--admin-text-muted)' }}>
+            Play share (%)
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="0.1"
+              value={
+                editSettings.playCommissionRatePct != null
+                  ? editSettings.playCommissionRatePct
+                  : Math.round((Number(editSettings.playCommissionRate) || 0) * 1000) / 10
+              }
+              onChange={(e) => setSettingsDraft({
+                ...editSettings,
+                playCommissionRatePct: e.target.value,
+                playCommissionEnabled: true,
+              })}
+              style={{ padding: '8px 10px', borderRadius: 'var(--admin-radius)' }}
+            />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.78rem', color: 'var(--admin-text-muted)' }}>
+            Daily play cap (₹, 0=∞)
+            <input
+              type="number"
+              min="0"
+              step="1"
+              value={editSettings.playCommissionDailyCap ?? 0}
+              onChange={(e) => setSettingsDraft({ ...editSettings, playCommissionDailyCap: e.target.value })}
               style={{ padding: '8px 10px', borderRadius: 'var(--admin-radius)' }}
             />
           </label>
@@ -3610,7 +3657,7 @@ function ReferralsAdminPanel() {
         </div>
         <p style={{ margin: '10px 0 0', fontSize: '0.75rem', color: 'var(--admin-text-dim)' }}>
           Free bet credits <code>freebet_balance</code>. Bonus credits <code>bonus_balance</code> (wagering applies).
-          Changes apply to new grants only — already rewarded referrals are unchanged.
+          Play share = % of referred user&apos;s settled cash stake (WON/LOST). Signup changes apply to new grants only.
         </p>
       </AdminCard>
 

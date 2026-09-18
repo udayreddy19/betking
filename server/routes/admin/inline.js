@@ -2954,6 +2954,9 @@ router.put('/api/admin/growth/referrals/settings', async (req, res) => {
       requireKyc: body.requireKyc,
       requireRiskClearance: body.requireRiskClearance,
       maxReferralsPerUser: body.maxReferralsPerUser,
+      playCommissionEnabled: body.playCommissionEnabled,
+      playCommissionRate: body.playCommissionRate,
+      playCommissionDailyCap: body.playCommissionDailyCap,
     }, {
       adminId: req.admin?.id || 'admin',
       reason: body.reason || 'Admin referral settings update',

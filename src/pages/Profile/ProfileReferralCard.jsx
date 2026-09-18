@@ -100,7 +100,12 @@ export default function ProfileReferralCard({ onLoaded } = {}) {
       </div>
 
       <p className="profile-loyalty-meta" style={{ margin: '4px 0 12px', lineHeight: 1.45 }}>
-        Invite friends with your referral link. They get a <strong>₹{referredReward} {rewardLabel}</strong> upon first deposit — and you earn <strong>₹{referrerReward} {rewardLabel}</strong>.
+        Invite friends with your link. They get a <strong>₹{referredReward} {rewardLabel}</strong> on signup —
+        you get <strong>₹{referrerReward} {rewardLabel}</strong>
+        {data.playCommissionEnabled !== false && (
+          <> plus <strong>{data.playCommissionRatePct ?? 5}% of their cash stakes</strong> whenever they play</>
+        )}
+        .
       </p>
 
       {/* Referral Link / Code Box */}
@@ -133,7 +138,14 @@ export default function ProfileReferralCard({ onLoaded } = {}) {
       </div>
 
       <div className="profile-loyalty-meta" style={{ margin: '8px 0 10px', fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>
-        Rewards earned: <strong style={{ color: 'var(--color-text)' }}>{formatInr(totalEarned)}</strong> · Reward per friend: <strong>₹{referrerReward} {rewardLabel}</strong>
+        Total earned: <strong style={{ color: 'var(--color-text)' }}>{formatInr(totalEarned)}</strong>
+        {Number(data.stats?.playEarnings || 0) > 0 && (
+          <> · From play: <strong>{formatInr(data.stats.playEarnings)}</strong></>
+        )}
+        {' · '}Signup bonus: <strong>₹{referrerReward} {rewardLabel}</strong>
+        {data.playCommissionEnabled !== false && (
+          <> · Play share: <strong>{data.playCommissionRatePct ?? 5}%</strong></>
+        )}
       </div>
 
       {/* Referred Friends History (Fixed-Height Scrollable Container) */}
@@ -165,7 +177,9 @@ export default function ProfileReferralCard({ onLoaded } = {}) {
                   <div>
                     <div style={{ fontWeight: 700, color: 'var(--color-text)' }}>{row.referred_mask || 'Friend'}</div>
                     <div style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)' }}>
-                      {row.rewarded_at ? `₹${referrerReward} ${rewardLabel} credited` : (row.status === 'QUALIFIED' ? 'Pending settlement credit' : 'Awaiting qualifying deposit')}
+                      {row.rewarded_at
+                        ? `₹${referrerReward} signup · ${formatInr(Number(row.play_commission_total || 0))} from play`
+                        : (row.status === 'QUALIFIED' ? 'Pending reward credit' : 'Awaiting signup reward')}
                     </div>
                   </div>
                 </div>

@@ -32,7 +32,7 @@ export default function InvitePage() {
   return (
     <div className="invite-page">
       <h1>Invite friends</h1>
-      <p>Share your code. Rewards only credit after the referred user qualifies — the same abuse rules as Profile apply.</p>
+      <p>Share your code. Friends get a signup reward — you earn when they join and 5% of their cash stakes when they play.</p>
       <ProfileReferralCard />
       {shareError && <p className="invite-error">{shareError}</p>}
       <button
