@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/generateSeoPages.mjs",
     "start": "node server/index.js",
     "preview": "vite preview",
     "validate:production": "node scripts/preflight-production.mjs --validate-only",
