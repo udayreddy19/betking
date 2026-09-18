@@ -17,7 +17,12 @@ const isProduction = process.env.NODE_ENV === 'production';
 app.set('trust proxy', 1);
 
 const attachmentJson = express.json({ limit: '15mb', verify: (req, res, buf) => { req.rawBody = buf; } });
-app.use(['/api/support/attachments', '/api/v1/support/attachments', '/api/admin/support/attachments'], attachmentJson);
+app.use([
+  '/api/support/attachments',
+  '/api/v1/support/attachments',
+  '/api/admin/support/attachments',
+  '/api/admin/social',
+], attachmentJson);
 
 // IMPORTANT: Razorpay Webhooks MUST receive the RAW request body to verify HMAC signatures accurately.
 app.use(express.json({
@@ -121,6 +126,9 @@ app.use(matchFollowRouter);
 app.use(liveRouter);
 app.use('/api', liveScoresPublicRouter);
 app.use('/api/public/sports', publicOddsRouter);
+
+import publicSocialMediaRouter from './routes/public/socialMedia.js';
+app.use('/api/public/social-media', publicSocialMediaRouter);
 
 // Dynamic SEO / Private Access Handlers (Priority 30 & 31)
 app.get('/robots.txt', async (_req, res) => {

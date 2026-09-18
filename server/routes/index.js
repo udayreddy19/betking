@@ -118,6 +118,9 @@ adminRouter.use('/financial', financialRouter);
 import customerDossierRouter from './admin/customerDossier.js';
 adminRouter.use(customerDossierRouter);
 
+import socialRouter from './admin/social.js';
+adminRouter.use('/social', socialRouter);
+
 import kycRouter from './admin/kyc.js';
 adminRouter.use('/kyc', kycRouter);
 

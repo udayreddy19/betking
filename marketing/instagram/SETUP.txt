@@ -29,7 +29,7 @@ Bio (copy-paste):
   👇 Join now
 
 Website / link in bio:
-  https://oddsyra.com/invite?ref=UDAY3D2759
+  https://oddsyra.com/invite?ref=PRAV6F255A
 
 Optional Linktree later; for now one invite link is enough.
 
@@ -57,13 +57,13 @@ B) Feed — Invite / ₹1000
    Double Invite Week 🎉
    Friends can unlock up to ₹1000 Free Bet when they join with your link.
    You earn when they play.
-   Link in bio → https://oddsyra.com/invite?ref=UDAY3D2759
+   Link in bio → https://oddsyra.com/invite?ref=PRAV6F255A
    18+ · Terms apply · Play responsibly
    #InviteAndEarn #OddsYra #FreeBet
 
 C) Story — Link in bio
    File: ig-story-link-in-bio.png
-   Add Link sticker → https://oddsyra.com/invite?ref=UDAY3D2759
+   Add Link sticker → https://oddsyra.com/invite?ref=PRAV6F255A
    Share to Close Friends + main story.
 
 
@@ -84,7 +84,7 @@ Every caption must include: 18+ · Play responsibly
 ---------------------------------------------------
 WhatsApp status + 3–5 cricket groups (with permission):
   “Live cricket on OddsYra — invite link (18+):
-   https://oddsyra.com/invite?ref=UDAY3D2759”
+   https://oddsyra.com/invite?ref=PRAV6F255A”
 
 Telegram / college / friends broadcast same link.
 Instagram alone rarely gets first users without existing followers.
@@ -98,9 +98,30 @@ URL: https://www.instagram.com/oddsyra/
 
 Profile checklist:
   [ ] Logo as profile photo
-  [ ] Bio + link in bio → https://oddsyra.com/invite?ref=UDAY3D2759
+  [ ] Bio + link in bio → https://oddsyra.com/invite?ref=PRAV6F255A
   [ ] Professional / Business account
   [ ] Post ig-feed-live-cricket.png + ig-feed-invite-1000.png today
   [ ] Story with link sticker (ig-story-link-in-bio.png)
 
 Site wiring: footer + Organization sameAs point to @oddsyra.
+
+
+7) ADMIN AUTO-PUBLISH (optional)
+--------------------------------
+Admin → Comms → Instagram lets you compose caption + image and publish
+via Meta Graph API (no password login).
+
+Server env (restart after setting):
+  INSTAGRAM_BUSINESS_ACCOUNT_ID=<IG professional account id>
+  INSTAGRAM_ACCESS_TOKEN=<long-lived Page token with instagram_content_publish>
+  SOCIAL_MEDIA_PUBLIC_BASE_URL=https://oddsyra.com
+
+Setup path:
+  1. Professional IG account linked to a Facebook Page
+  2. Meta app with Instagram Graph API
+  3. Long-lived Page token (instagram_basic, instagram_content_publish,
+     pages_show_list, pages_read_engagement)
+  4. Put ids/token in .env on the VPS and restart the API
+
+Until tokens are set, Admin still saves drafts; Publish will show setup hints.
+Docs: https://developers.facebook.com/docs/instagram-platform/content-publishing

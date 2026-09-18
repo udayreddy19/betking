@@ -166,6 +166,7 @@ const DOMAIN_GROUPS = [
         role: ADMIN_ROLES.MARKETING_ADMIN,
         subModules: [
           { id: 'compose', label: 'Compose Mail' },
+          { id: 'social', label: 'Instagram' },
           { id: 'mail-inbox', label: 'Mail Delivery' },
           { id: 'templates', label: 'Mail Templates' },
           { id: 'broadcast', label: 'Broadcast' },
