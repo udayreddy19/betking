@@ -31,7 +31,6 @@ export default function Footer() {
             <h4>More</h4>
             <Link to="/live-betting">Live Betting</Link>
             <Link to="/bets">My Bets</Link>
-            <Link to="/live-betting">Live Betting</Link>
             <Link to="/live-cricket-betting">Live Cricket Betting</Link>
             {isEnabled('referral_system_ui', true) && <Link to="/invite">Invite</Link>}
             {isEnabled('promotion_engine_ui', true) && <Link to="/promotions">Promotions</Link>}
@@ -57,6 +56,13 @@ export default function Footer() {
             {isEnabled('responsible_gaming_ui', true) && (
               <Link to="/responsible-gaming">Responsible Gaming</Link>
             )}
+            <a
+              href="https://www.instagram.com/oddsyra/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Instagram @oddsyra
+            </a>
           </div>
         </div>
 

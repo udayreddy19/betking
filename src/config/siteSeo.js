@@ -1,6 +1,8 @@
 export const SITE_NAME = 'OddsYra';
 export const SITE_URL = import.meta.env.VITE_SITE_URL || 'https://oddsyra.com';
 export const DEFAULT_OG_IMAGE = `${SITE_URL}/oddsyra-logo.png`;
+export const INSTAGRAM_URL = 'https://www.instagram.com/oddsyra/';
+export const INSTAGRAM_HANDLE = '@oddsyra';
 
 export const DEFAULT_META = {
   title: 'OddsYra — Live Sportsbook & Betting',

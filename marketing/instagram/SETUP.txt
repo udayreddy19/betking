@@ -1,0 +1,106 @@
+OddsYra Instagram — setup + 7-day promo kit
+============================================
+
+I cannot create the Instagram account for you (needs your phone OTP / Meta login).
+Do this once on your phone, then post the assets in marketing/instagram/.
+
+
+1) CREATE THE ACCOUNT (2 minutes)
+---------------------------------
+App: Instagram → Sign up
+Suggested handle (pick first available):
+  @oddsyra
+  @oddsyra.official
+  @oddsyra.cricket
+  @playoddsyra
+
+Account type: Professional → Business (or Creator)
+Category: Sports or App / Website
+Email: use wevexqora@gmail.com or a brand inbox you control
+Switch to Professional so you get insights + link sticker
+
+Profile photo: marketing/instagram/profile-photo.png (OddsYra logo)
+
+Name: OddsYra
+Bio (copy-paste):
+  Live cricket betting · UPI deposits
+  Invite friends · earn when they play
+  18+ only · Play responsibly
+  👇 Join now
+
+Website / link in bio:
+  https://oddsyra.com/invite?ref=UDAY3D2759
+
+Optional Linktree later; for now one invite link is enough.
+
+
+2) META ADS REALITY CHECK
+-------------------------
+Paid Instagram ads for real-money betting are usually restricted in India.
+Start with ORGANIC only (posts, stories, Reels, WhatsApp forwards).
+Do not run Meta Ads for betting until you confirm policy eligibility.
+
+
+3) FIRST 3 POSTS (assets ready)
+-------------------------------
+A) Feed — Live cricket
+   File: ig-feed-live-cricket.png
+   Caption:
+   Live cricket. Real-time odds. UPI in seconds.
+   OddsYra is live — join with the link in bio.
+   18+ only. Play responsibly.
+   #OddsYra #LiveCricket #CricketBetting #UPI
+
+B) Feed — Invite / ₹1000
+   File: ig-feed-invite-1000.png
+   Caption:
+   Double Invite Week 🎉
+   Friends can unlock up to ₹1000 Free Bet when they join with your link.
+   You earn when they play.
+   Link in bio → https://oddsyra.com/invite?ref=UDAY3D2759
+   18+ · Terms apply · Play responsibly
+   #InviteAndEarn #OddsYra #FreeBet
+
+C) Story — Link in bio
+   File: ig-story-link-in-bio.png
+   Add Link sticker → https://oddsyra.com/invite?ref=UDAY3D2759
+   Share to Close Friends + main story.
+
+
+4) 7-DAY ORGANIC PLAN
+---------------------
+Day 1: Post A + Story C
+Day 2: Story — “Match tonight? Odds open on Sports” + link
+Day 3: Post B (invite)
+Day 4: Reel idea (phone screen record): open oddsyra.com/sports → live board (15s) + text “Live board · OddsYra”
+Day 5: Story poll “Bat or bowl first?” → swipe-up/link to /srl or /sports
+Day 6: Carousel text (Canva): How to join in 3 steps (Register → UPI → Bet)
+Day 7: Repost invite + DM 20 cricket friends the invite link
+
+Every caption must include: 18+ · Play responsibly
+
+
+5) PROMOTE OUTSIDE INSTAGRAM (higher ROI this week)
+---------------------------------------------------
+WhatsApp status + 3–5 cricket groups (with permission):
+  “Live cricket on OddsYra — invite link (18+):
+   https://oddsyra.com/invite?ref=UDAY3D2759”
+
+Telegram / college / friends broadcast same link.
+Instagram alone rarely gets first users without existing followers.
+
+
+6) LIVE PROFILE
+---------------
+Handle: @oddsyra
+URL: https://www.instagram.com/oddsyra/
+(Use the clean URL only — never share stkn= session tokens.)
+
+Profile checklist:
+  [ ] Logo as profile photo
+  [ ] Bio + link in bio → https://oddsyra.com/invite?ref=UDAY3D2759
+  [ ] Professional / Business account
+  [ ] Post ig-feed-live-cricket.png + ig-feed-invite-1000.png today
+  [ ] Story with link sticker (ig-story-link-in-bio.png)
+
+Site wiring: footer + Organization sameAs point to @oddsyra.

@@ -36,10 +36,10 @@ function buildBodyHtml(page, pathKey) {
 <main class="seo-main">
   <h1>${escapeHtml(page.h1)}</h1>
   ${paras}
-  <p><a href="/register">Create account</a> · <a href="/sports">Browse sports</a> · <a href="/invite">Invite friends</a></p>
+  <p><a href="/register">Create account</a> · <a href="/sports">Browse sports</a> · <a href="/invite">Invite friends</a> · <a href="https://www.instagram.com/oddsyra/" rel="noopener noreferrer">Instagram @oddsyra</a></p>
 </main>
 <footer class="seo-footer">
-  <p>OddsYra · 18+ only · <a href="/responsible-gaming">Responsible Gaming</a> · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+  <p>OddsYra · 18+ only · <a href="/responsible-gaming">Responsible Gaming</a> · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="https://www.instagram.com/oddsyra/" rel="noopener noreferrer">Instagram</a></p>
 </footer>`.trim();
 }
 
