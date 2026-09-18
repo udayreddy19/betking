@@ -18,6 +18,7 @@ import { useMatchWatchlist } from '../../hooks/useMatchWatchlist';
 import BoostedOddsWidget from '../../components/BoostedOddsWidget/BoostedOddsWidget';
 import AnimatedMotionGiftIcon from '../../components/AnimatedMotionGiftIcon/AnimatedMotionGiftIcon';
 import ErrorBoundary from '../../components/ErrorBoundary/ErrorBoundary';
+import { useAuth } from '../../context/AuthContext';
 import './Home.css';
 
 const HOME_MATCH_LIMIT = 12;
@@ -56,6 +57,7 @@ export default function Home() {
   const { isSportEnabled, isEnabled } = useFeatureFlags();
   const srlEnabled = isEnabled('oddsyra_srl_ui', true);
   const navigate = useNavigate();
+  const { isLoggedIn } = useAuth();
   const [activeSport, setActiveSport] = useState('cricket');
   const [activeLeague, setActiveLeague] = useState(null);
   const [promoIndex, setPromoIndex] = useState(0);
@@ -170,6 +172,7 @@ export default function Home() {
 
   const promoSlidePath = (id) => {
     if (id === 'srl') return SRL_PAGE_PATH;
+    if (id === 'invite') return isLoggedIn ? '/invite' : '/register';
     if (id === 'sports') return '/live-betting';
     if (id === 'monsoon') return '/promotions#promo-MONSOON30';
     return '/promotions';
@@ -255,6 +258,16 @@ export default function Home() {
         onRetry={() => refreshScores({ force: true })}
         retrying={isScoresLoading}
       />
+
+      {!isLoggedIn && (
+        <div className="home-join-banner">
+          <div className="home-join-banner__copy">
+            <strong>Live cricket betting on OddsYra</strong>
+            <span>Create a free account — UPI deposits, welcome offers, 18+ only.</span>
+          </div>
+          <Link className="home-join-banner__cta" to="/register">Join now</Link>
+        </div>
+      )}
 
       <div
         className="home-promo-carousel"

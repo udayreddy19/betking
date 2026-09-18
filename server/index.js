@@ -149,6 +149,23 @@ app.get('/sitemap.xml', async (_req, res) => {
     return res.sendFile(new URL('../public/sitemap.xml', import.meta.url).pathname);
   }
 });
+
+/** Social crawler OG HTML for /register and /invite referral links (proxied by nginx). */
+app.get('/seo/share-preview', async (req, res) => {
+  try {
+    const { buildSharePreviewHtml } = await import('../lib/sharePreviewHtml.mjs');
+    const code = String(req.query.ref || req.query.code || '').trim().toUpperCase() || null;
+    const path = String(req.query.path || '/invite').startsWith('/')
+      ? String(req.query.path || '/invite')
+      : '/invite';
+    const base = process.env.FRONTEND_URL || process.env.APP_URL || 'https://oddsyra.com';
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    return res.send(buildSharePreviewHtml({ code, path, baseUrl: base }));
+  } catch (err) {
+    return res.status(500).type('text').send('Share preview unavailable');
+  }
+});
 app.use(walletRouter);
 app.use(betsRouter);
 app.use(supportRouter);

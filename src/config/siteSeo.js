@@ -21,6 +21,14 @@ export const ROUTE_META = {
     title: 'Live Betting — In-Play Odds | OddsYra',
     description: 'In-play betting with live scores and fast odds updates across top sports leagues.',
   },
+  '/invite': {
+    title: 'Invite Friends & Earn | OddsYra',
+    description: 'Share your OddsYra invite link. Friends get a Free Bet; you earn when they play. Live cricket betting with UPI. 18+ only.',
+  },
+  '/live-cricket-betting': {
+    title: 'Live Cricket Betting India | OddsYra',
+    description: 'Bet on live cricket with real-time odds, UPI deposits, welcome offers, and responsible gaming tools on OddsYra. 18+ only.',
+  },
   '/register': {
     title: 'Create Account | OddsYra',
     description: 'Sign up for OddsYra in minutes. Bet on live sports with secure payments and welcome offers. 18+ only.',

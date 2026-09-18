@@ -57,6 +57,7 @@ const IPLSRLAdmin = lazyWithRetry(() => import('./pages/Admin/IPLSRL/IPLSRLAdmin
 const NotificationCenter = lazyWithRetry(() => import('./pages/Notifications/NotificationCenter'));
 const MyBetsPage = lazyWithRetry(() => import('./pages/MyBets/MyBetsPage'));
 const InvitePage = lazyWithRetry(() => import('./pages/Invite/InvitePage'));
+const LiveCricketBetting = lazyWithRetry(() => import('./pages/Seo/LiveCricketBetting'));
 const WalletDashboard = lazyWithRetry(() => import('./pages/Wallet/WalletDashboard'));
 const SupportHome = lazyWithRetry(() => import('./pages/Support/SupportHome'));
 const TicketsListPage = lazyWithRetry(() => import('./pages/Support/TicketsListPage'));
@@ -144,6 +145,7 @@ function AppLayout() {
               <Route path="/fantasy" element={FANTASY_JOIN_ENABLED ? <Fantasy /> : <CasinoComingSoon />} />
               <Route path="/bets" element={<MyBetsPage />} />
               <Route path="/invite" element={<FlaggedRoute flagKey="referral_system_ui"><InvitePage /></FlaggedRoute>} />
+              <Route path="/live-cricket-betting" element={<LiveCricketBetting />} />
               <Route path="/exchange" element={<CasinoComingSoon />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/wallet" element={<WalletDashboard />} />

@@ -2,6 +2,14 @@
 
 export const homePromoSlides = [
   {
+    id: 'invite',
+    title: 'INVITE & EARN',
+    subtitle: 'FRIENDS GET A FREE BET — YOU EARN 5% WHEN THEY PLAY',
+    gradient: 'linear-gradient(135deg, #1a1024 0%, #5b21b6 55%, #c084fc 140%)',
+    accent: '#e9d5ff',
+    emoji: '🤝',
+  },
+  {
     id: 'srl',
     title: 'ODDSYRA SRL',
     subtitle: 'BEGINS 10 SEPTEMBER — 70 LEAGUE + 4 PLAYOFFS',

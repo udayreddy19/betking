@@ -1,0 +1,94 @@
+.lcb-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 28px 16px 96px;
+}
+
+.lcb-hero {
+  margin-bottom: 36px;
+}
+
+.lcb-eyebrow {
+  margin: 0 0 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-primary, #1f8a4c);
+}
+
+.lcb-hero h1 {
+  margin: 0 0 12px;
+  font-size: clamp(1.75rem, 5vw, 2.4rem);
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.lcb-lead {
+  margin: 0 0 20px;
+  color: var(--color-text-muted);
+  font-size: 1.05rem;
+  line-height: 1.5;
+  max-width: 42ch;
+}
+
+.lcb-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.lcb-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  background: var(--color-primary, #1f8a4c);
+  color: var(--color-on-primary, #fff);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.lcb-cta--ghost {
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.lcb-section {
+  margin-bottom: 28px;
+}
+
+.lcb-section h2 {
+  margin: 0 0 10px;
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+}
+
+.lcb-section ul,
+.lcb-section ol {
+  margin: 0 0 12px;
+  padding-left: 1.2rem;
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+}
+
+.lcb-section li {
+  margin-bottom: 6px;
+}
+
+.lcb-section p {
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.lcb-foot {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}

@@ -5,6 +5,46 @@
   background: var(--color-bg);
 }
 
+.home-join-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin: 8px 0 16px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #163028 0%, #1f8a4c 70%, #7dff6b 160%);
+  color: #f4fff6;
+}
+
+.home-join-banner__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.home-join-banner__copy strong {
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+}
+
+.home-join-banner__copy span {
+  font-size: 0.85rem;
+  opacity: 0.92;
+}
+
+.home-join-banner__cta {
+  flex-shrink: 0;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: #0b0e12;
+  color: #f4fff6;
+  font-weight: 700;
+  text-decoration: none;
+}
+
 /* ── Hero promo ── */
 .home-promo-carousel {
   position: relative;

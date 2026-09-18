@@ -40,7 +40,12 @@ export default function Register() {
   }, [closeLoginModal]);
 
   useEffect(() => {
-    const ref = String(searchParams.get('ref') || '').trim().toUpperCase();
+    const fromUrl = String(searchParams.get('ref') || '').trim().toUpperCase();
+    let fromSession = '';
+    try {
+      fromSession = String(sessionStorage.getItem('bk_pending_referral') || '').trim().toUpperCase();
+    } catch { /* ignore */ }
+    const ref = fromUrl || fromSession;
     if (ref) {
       setReferralCode(ref);
       try {
@@ -48,11 +53,13 @@ export default function Register() {
       } catch {
         /* ignore */
       }
-      fetch('/api/v1/rewards/referrals/click', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: ref, path: '/register' }),
-      }).catch(() => null);
+      if (fromUrl) {
+        fetch('/api/v1/rewards/referrals/click', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: ref, path: '/register' }),
+        }).catch(() => null);
+      }
     }
   }, [searchParams]);
 
@@ -160,11 +167,21 @@ export default function Register() {
             <BrandWordmark />
           </div>
           <h1>Create your account</h1>
-          <p className="register-lead">
-            {DEMO_MODE
-              ? 'Join in one step and start placing demo bets.'
-              : 'Join OddsYra to bet on live cricket, football, and more. 18+ only.'}
-          </p>
+          {referralActive ? (
+            <div className="register-referral-banner" role="status">
+              <strong>Friend invite unlocked</strong>
+              <span>
+                Code <em>{referralCode}</em> — your Free Bet / bonus credits after you join
+                (deposit + KYC may apply). Welcome promos can&apos;t be combined with referrals.
+              </span>
+            </div>
+          ) : (
+            <p className="register-lead">
+              {DEMO_MODE
+                ? 'Join in one step and start placing demo bets.'
+                : 'Join OddsYra to bet on live cricket, football, and more. 18+ only.'}
+            </p>
+          )}
 
           {error && <div className="register-error" role="alert" ref={errorRef}>{error}</div>}
 
