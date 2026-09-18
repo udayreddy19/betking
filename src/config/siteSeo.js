@@ -19,7 +19,7 @@ export const ROUTE_META = {
   },
   '/live-betting': {
     title: 'Live Betting — In-Play Odds | OddsYra',
-    description: 'In-play betting with live scores and fast odds updates across top sports leagues.',
+    description: 'In-play betting with live scores and fast odds updates across top sports leagues on OddsYra. 18+ only.',
   },
   '/invite': {
     title: 'Invite Friends & Earn | OddsYra',
@@ -35,11 +35,11 @@ export const ROUTE_META = {
   },
   '/promotions': {
     title: 'Promotions & Bonuses | OddsYra',
-    description: 'Welcome bonuses, free bets, and weekly promotions for sports betting on OddsYra.',
+    description: 'Welcome bonuses, free bets, and weekly promotions for sports betting on OddsYra. Terms apply. 18+ only.',
   },
   '/srl': {
     title: 'OddsYra SRL — Simulated Cricket | OddsYra',
-    description: 'OddsYra SRL begins 10 September. 70 league matches and 4 playoffs, points table, live scores, and in-play betting — no external score feed.',
+    description: 'OddsYra SRL — league matches and playoffs, points table, live scores, and in-play betting with no external score feed.',
   },
   '/fantasy': {
     title: 'Fantasy Sports | OddsYra',
@@ -47,23 +47,23 @@ export const ROUTE_META = {
   },
   '/vip': {
     title: 'VIP Club | OddsYra',
-    description: 'OddsYra VIP rewards — cashback, exclusive perks, and priority support for loyal players.',
+    description: 'OddsYra VIP rewards — cashback, exclusive perks, and priority support for loyal sportsbook players. 18+ only.',
   },
   '/terms': {
     title: 'Terms & Conditions | OddsYra',
-    description: 'OddsYra terms and conditions for sports betting, bonuses, and account use.',
+    description: 'OddsYra terms and conditions for sports betting, bonuses, withdrawals, and account use. 18+ only.',
   },
   '/privacy': {
     title: 'Privacy Policy | OddsYra',
-    description: 'How OddsYra collects, uses, and protects your personal data.',
+    description: 'How OddsYra collects, uses, and protects your personal data for accounts, payments, KYC, and fraud prevention. 18+ only.',
   },
   '/responsible-gaming': {
     title: 'Responsible Gaming | OddsYra',
-    description: 'Deposit limits, reality checks, self-exclusion, and support resources for safer betting.',
+    description: 'Deposit limits, reality checks, self-exclusion, and support resources for safer betting on OddsYra. 18+ only.',
   },
   '/help': {
     title: 'Help & Support | OddsYra',
-    description: 'Get help with deposits, withdrawals, KYC, betting, and account issues on OddsYra.',
+    description: 'Get help with deposits, withdrawals, KYC, betting markets, and account issues on OddsYra. 18+ only.',
   },
 };
 
