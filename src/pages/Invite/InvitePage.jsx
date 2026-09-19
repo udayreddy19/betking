@@ -24,8 +24,13 @@ function GuestInviteLander({ referralCode }) {
       <h1>Claim your welcome Free Bet</h1>
       <p className="invite-guest-lead">
         Your friend invited you to OddsYra — live cricket betting with UPI deposits.
-        Sign up with their code and unlock your reward after you join.
+        Sign up with their code; your reward unlocks after you deposit.
       </p>
+      <ul className="invite-guest-trust" aria-label="Why OddsYra">
+        <li>Instant UPI deposits</li>
+        <li>Live cricket markets</li>
+        <li>18+ · Responsible gaming tools</li>
+      </ul>
       <div className="invite-guest-code" aria-label="Referral code">
         Code <strong>{referralCode}</strong>
       </div>
@@ -35,6 +40,8 @@ function GuestInviteLander({ referralCode }) {
       <p className="invite-guest-fine">
         18+ only. Terms apply. Already have an account?{' '}
         <Link to="/sports">Browse sports</Link>
+        {' · '}
+        <Link to="/responsible-gaming">Responsible gaming</Link>
       </p>
     </div>
   );
@@ -108,7 +115,8 @@ export default function InvitePage() {
     <div className="invite-page">
       <h1>Invite friends</h1>
       <p>
-        Friends get a signup reward after deposit{dash?.requireKyc ? ' + KYC' : ''}.
+        Friends get a signup reward after deposit{dash?.requireFirstBet ? ' + first bet' : ''}
+        {dash?.requireKyc ? ' + KYC' : ''}.
         You earn when they join — and {dash?.playCommissionRatePct ?? 5}% of their cash stakes when they play.
       </p>
       {dash?.campaignMultiplier > 1 && (

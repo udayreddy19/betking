@@ -102,6 +102,7 @@ export default function ProfileReferralCard({ onLoaded } = {}) {
       <p className="profile-loyalty-meta" style={{ margin: '4px 0 12px', lineHeight: 1.45 }}>
         Invite friends with your link. They get <strong>₹{referredReward} {rewardLabel}</strong>
         {data.minDeposit > 0 ? <> after depositing ₹{data.minDeposit}+</> : ' on signup'}
+        {data.requireFirstBet ? <> and a first bet</> : null}
         {data.requireKyc ? <> and KYC</> : null}
         {' — '}you get <strong>₹{referrerReward} {rewardLabel}</strong>
         {data.playCommissionEnabled !== false && (

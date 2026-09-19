@@ -42,7 +42,7 @@ const MIN_PASSWORD_LENGTH = 8;
  * @returns {Promise<object>} — { success, userId, token, refreshToken } or { error, code }
  */
 export async function signup(queryFn, withTransaction, data) {
-  const { email, password, firstName, lastName, phone, country, currency, promoCode, referralCode } = data;
+  const { email, password, firstName, lastName, phone, country, currency, promoCode, referralCode, dateOfBirth } = data;
 
   // ── Validation ──
   const normalizedEmail = String(email || '').trim().toLowerCase();
@@ -58,6 +58,24 @@ export async function signup(queryFn, withTransaction, data) {
   const trimmedLastName = String(lastName || '').trim();
   if (!trimmedFirstName) {
     return { error: 'First name is required.', code: 'MISSING_NAME', status: 400 };
+  }
+
+  const dobRaw = String(dateOfBirth || '').trim().slice(0, 10);
+  if (!dobRaw || !/^\d{4}-\d{2}-\d{2}$/.test(dobRaw)) {
+    return { error: 'Date of birth is required (YYYY-MM-DD).', code: 'MISSING_DOB', status: 400 };
+  }
+  {
+    const born = new Date(`${dobRaw}T00:00:00Z`);
+    if (Number.isNaN(born.getTime())) {
+      return { error: 'Enter a valid date of birth.', code: 'INVALID_DOB', status: 400 };
+    }
+    const now = new Date();
+    let age = now.getUTCFullYear() - born.getUTCFullYear();
+    const m = now.getUTCMonth() - born.getUTCMonth();
+    if (m < 0 || (m === 0 && now.getUTCDate() < born.getUTCDate())) age -= 1;
+    if (age < 18) {
+      return { error: 'You must be 18 or older to join OddsYra.', code: 'UNDERAGE', status: 403 };
+    }
   }
 
   const { normalizeIndianPhone, assertEmailAvailable, assertPhoneAvailable } = await import('../../lib/userIdentity.mjs');
@@ -110,10 +128,12 @@ export async function signup(queryFn, withTransaction, data) {
       );
 
       await client.query(
-        `INSERT INTO user_profiles (user_id, display_name, account_status)
-         VALUES ($1, $2, 'ACTIVE')
-         ON CONFLICT (user_id) DO NOTHING`,
-        [userId, `${trimmedFirstName}${trimmedLastName ? ' ' + trimmedLastName : ''}`]
+        `INSERT INTO user_profiles (user_id, display_name, account_status, date_of_birth)
+         VALUES ($1, $2, 'ACTIVE', $3)
+         ON CONFLICT (user_id) DO UPDATE SET
+           display_name = COALESCE(EXCLUDED.display_name, user_profiles.display_name),
+           date_of_birth = COALESCE(EXCLUDED.date_of_birth, user_profiles.date_of_birth)`,
+        [userId, `${trimmedFirstName}${trimmedLastName ? ' ' + trimmedLastName : ''}`, dobRaw]
       );
 
       await client.query(

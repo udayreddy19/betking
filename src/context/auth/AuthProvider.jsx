@@ -237,7 +237,7 @@ export function AuthProvider({ children }) {
     });
   }, [user?.userId, refreshWallet]);
 
-  const register = useCallback(async ({ email, password, displayName, phone, promoCode, referralCode }) => {
+  const register = useCallback(async ({ email, password, displayName, phone, promoCode, referralCode, dateOfBirth }) => {
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail || !password || !displayName?.trim()) {
       return { ok: false, error: 'Please fill in all required fields.' };
@@ -256,6 +256,7 @@ export function AuthProvider({ children }) {
           promoCode: promoCode?.trim() || undefined,
           referralCode: referralCode?.trim() || undefined,
           ref: referralCode?.trim() || undefined,
+          dateOfBirth: dateOfBirth || undefined,
         }),
       });
 
@@ -1322,11 +1323,27 @@ export function AuthProvider({ children }) {
   const openLoginModal = useCallback(() => setIsLoginModalOpen(true), []);
 
   const closeLoginModal = useCallback(() => setIsLoginModalOpen(false), []);
-  const openDepositModal = useCallback(() => setIsDepositModalOpen(true), []);
+  const openDepositModal = useCallback(() => {
+    const phoneDigits = String(user?.phone || '').replace(/\D/g, '');
+    if (user && phoneDigits.length < 10) {
+      showToast('Add your mobile number to deposit.', 'info');
+      window.location.assign('/complete-profile?next=deposit');
+      return;
+    }
+    setIsDepositModalOpen(true);
+  }, [user, showToast]);
   const closeDepositModal = useCallback(() => setIsDepositModalOpen(false), []);
   const toggleSidebar = useCallback(() => setIsSidebarOpen(prev => !prev), []);
   const closeSidebar = useCallback(() => setIsSidebarOpen(false), []);
-  const openFinModal = useCallback((type) => setFinModalType(type), []);
+  const openFinModal = useCallback((type) => {
+    const phoneDigits = String(user?.phone || '').replace(/\D/g, '');
+    if (type === 'withdraw' && user && phoneDigits.length < 10) {
+      showToast('Add your mobile number to withdraw.', 'info');
+      window.location.assign('/complete-profile?next=withdraw');
+      return;
+    }
+    setFinModalType(type);
+  }, [user, showToast]);
   const closeFinModal = useCallback(() => setFinModalType(null), []);
 
   const value = useMemo(() => ({

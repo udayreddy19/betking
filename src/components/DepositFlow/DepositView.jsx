@@ -572,7 +572,17 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
                   className="deposit-primary-cta"
                   onClick={handleContinueAfterSuccess}
                 >
-                  Continue
+                  Place a bet
+                </button>
+                <button
+                  type="button"
+                  className="deposit-secondary-cta"
+                  onClick={() => {
+                    navigate('/invite');
+                    onClose?.();
+                  }}
+                >
+                  Invite friends on WhatsApp
                 </button>
                 <button
                   type="button"

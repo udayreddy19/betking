@@ -34,19 +34,19 @@ export default function RouteSeo() {
     document.title = meta.title;
 
     upsertMeta('meta', 'name', 'description', meta.description);
-    upsertMeta('meta', 'name', 'robots', 'index,follow');
+    upsertMeta('meta', 'name', 'robots', meta.robots || 'index,follow');
 
     upsertMeta('meta', 'property', 'og:title', meta.title);
     upsertMeta('meta', 'property', 'og:description', meta.description);
     upsertMeta('meta', 'property', 'og:type', 'website');
     upsertMeta('meta', 'property', 'og:url', url);
     upsertMeta('meta', 'property', 'og:site_name', SITE_NAME);
-    upsertMeta('meta', 'property', 'og:image', DEFAULT_OG_IMAGE);
+    upsertMeta('meta', 'property', 'og:image', meta.ogImage || DEFAULT_OG_IMAGE);
 
     upsertMeta('meta', 'name', 'twitter:card', 'summary_large_image');
     upsertMeta('meta', 'name', 'twitter:title', meta.title);
     upsertMeta('meta', 'name', 'twitter:description', meta.description);
-    upsertMeta('meta', 'name', 'twitter:image', DEFAULT_OG_IMAGE);
+    upsertMeta('meta', 'name', 'twitter:image', meta.ogImage || DEFAULT_OG_IMAGE);
 
     upsertLink('canonical', url);
   }, [pathname]);

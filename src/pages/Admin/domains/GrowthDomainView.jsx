@@ -430,7 +430,7 @@ function TargetedDepositFreeBetPanel() {
   const dispatch = async () => {
     if (!selectedId) return;
     const n = detail?.users?.length || 0;
-    if (!window.confirm(`Send this promotion to ${n} users from promos@oddsyra.com and activate the campaign?`)) {
+    if (!window.confirm(`Send this promotion to ${n} users from no-reply@oddsyra.com and activate the campaign?`)) {
       return;
     }
     setDispatching(true);
@@ -441,7 +441,7 @@ function TargetedDepositFreeBetPanel() {
       );
       showToast(
         `Emails sent: ${data.sent || 0} · failed: ${data.failed || 0} · skipped: ${data.skipped || 0}`
-          + (data.sent ? ' — check inbox/spam for promos@oddsyra.com' : ''),
+          + (data.sent ? ' — check inbox/spam for no-reply@oddsyra.com' : ''),
         data.sent ? 'success' : (data.failed ? 'error' : 'success'),
       );
       await loadCampaigns();
@@ -499,7 +499,7 @@ function TargetedDepositFreeBetPanel() {
           <p className="tdfb-kicker">Private offers</p>
           <h2 className="tdfb-title">Targeted campaigns</h2>
           <p className="tdfb-lede">
-            Select players, send from <code>promos@oddsyra.com</code>, credit free bet only after a CAPTURED qualifying deposit.
+            Select players, send from <code>no-reply@oddsyra.com</code>, credit free bet only after a CAPTURED qualifying deposit.
           </p>
         </div>
         <ol className="tdfb-steps" aria-label="Campaign workflow">
@@ -605,7 +605,7 @@ function TargetedDepositFreeBetPanel() {
             <section className="tdfb-block">
               <div className="tdfb-block__head">
                 <h4>Email copy</h4>
-                <p>Sent from promos@oddsyra.com when you press Send promotion</p>
+                <p>Sent from no-reply@oddsyra.com when you press Send promotion</p>
               </div>
               <div className="admin-form-group">
                 <label className="admin-form-label">Subject line</label>
@@ -813,7 +813,7 @@ function TargetedDepositFreeBetPanel() {
               </p>
             )}
             <p className="tdfb-preview__from">
-              From <code>promos@oddsyra.com</code> · credit on CAPTURED deposit
+              From <code>no-reply@oddsyra.com</code> · credit on CAPTURED deposit
             </p>
           </div>
         </aside>
@@ -1684,7 +1684,7 @@ function SignupPromoCodesPanel() {
         `/growth/signup-codes/${encodeURIComponent(inviteCodeId)}/send-invites`,
         { emails: inviteEmails },
       );
-      showToast(`Invites sent: ${data.sent || 0} · failed: ${data.failed || 0} (from promos@oddsyra.com)`, 'success');
+      showToast(`Invites sent: ${data.sent || 0} · failed: ${data.failed || 0} (from no-reply@oddsyra.com)`, 'success');
       setInviteEmails('');
       await loadCodes();
     } catch (err) {
@@ -1700,7 +1700,7 @@ function SignupPromoCodesPanel() {
         <h2 className="admin-page-header__title">Signup Promo Codes</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           Create freebet/bonus codes. Mark <strong>Invite only</strong> so the code stays off the public Promotions page —
-          only emails you send from <code>promos@oddsyra.com</code> can redeem it.
+          only emails you send from <code>no-reply@oddsyra.com</code> can redeem it.
         </p>
         {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
       </div>
@@ -1828,7 +1828,7 @@ function SignupPromoCodesPanel() {
       <AdminCard title="Send promo code email" accent="#0ea5e9" style={{ marginBottom: '20px' }}>
         <form onSubmit={sendInvites} className="admin-form-stack">
           <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--admin-text-muted)' }}>
-            Emails are sent from <strong>promos@oddsyra.com</strong>. For invite-only codes, only these recipients can claim.
+            Emails are sent from <strong>no-reply@oddsyra.com</strong>. For invite-only codes, only these recipients can claim.
           </p>
           <div className="admin-form-group">
             <label className="admin-form-label">Promo code</label>
@@ -1861,7 +1861,7 @@ function SignupPromoCodesPanel() {
           </div>
           <div>
             <button type="submit" className="admin-btn admin-btn--primary" disabled={sendingInvites}>
-              {sendingInvites ? 'Sending…' : 'Send from promos@oddsyra.com'}
+              {sendingInvites ? 'Sending…' : 'Send from no-reply@oddsyra.com'}
             </button>
           </div>
         </form>

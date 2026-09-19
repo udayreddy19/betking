@@ -344,6 +344,17 @@ export default function Home() {
 
       <HomeCategoryGrid liveCount={liveCount} />
 
+      {isLoggedIn && (
+        <div className="home-invite-strip" role="region" aria-label="Invite friends">
+          <p>
+            <strong>Invite friends</strong> — they unlock a Free Bet after deposit; you earn when they play.
+          </p>
+          <Link className="home-invite-strip__cta" to="/invite">
+            Share on WhatsApp
+          </Link>
+        </div>
+      )}
+
       {watchlistCount > 0 && (
         <section className="home-section home-watchlist" id="watchlist-section">
           <div className="section-header">

@@ -2,31 +2,20 @@ import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
-const EXEMPT_PREFIXES = [
-  '/complete-profile',
-  '/_oauth/google',
-  '/admin',
-  '/verify-email',
-  '/reset-password',
-  '/terms',
-  '/privacy',
-  '/responsible-gaming',
-  '/help',
-  '/api-docs',
-  '/developer',
-];
+/**
+ * Phone is only required for money movement (deposit / withdraw),
+ * not for browsing sports after Google signup.
+ */
+const MONEY_PATH_PREFIXES = ['/wallet'];
 
-function isExemptPath(pathname) {
-  return EXEMPT_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+function isMoneyPath(pathname) {
+  return MONEY_PATH_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
-function userNeedsPhone(user) {
+export function userNeedsPhone(user) {
   return Boolean(user) && String(user?.phone || '').replace(/\D/g, '').length < 10;
 }
 
-/**
- * After Google (or any) login without a phone number, force the complete-profile step.
- */
 export default function PhoneRequiredGate() {
   const { user, isLoggedIn } = useAuth();
   const location = useLocation();
@@ -34,9 +23,10 @@ export default function PhoneRequiredGate() {
 
   useEffect(() => {
     if (!isLoggedIn || !userNeedsPhone(user)) return;
-    if (isExemptPath(location.pathname)) return;
-    navigate('/complete-profile', { replace: true });
-  }, [isLoggedIn, user, location.pathname, navigate]);
+    if (!isMoneyPath(location.pathname)) return;
+    const next = encodeURIComponent(`${location.pathname}${location.search || ''}`);
+    navigate(`/complete-profile?next=${next}`, { replace: true });
+  }, [isLoggedIn, user, location.pathname, location.search, navigate]);
 
   return null;
 }

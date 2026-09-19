@@ -13,9 +13,9 @@ describe('Admin compose email', () => {
     resetEmailDeliveryMetricsForTests();
   });
 
-  it('sends promo mail as OddsYra, not OddsYra Promotions', () => {
+  it('sends promo mail as OddsYra via no-reply (not Promotions folder)', () => {
     expect(formatPromosFrom('OddsYra Promotions <promos@oddsyra.com>')).toBe('OddsYra <promos@oddsyra.com>');
-    expect(PROMOS_FROM).toBe('OddsYra <promos@oddsyra.com>');
+    expect(PROMOS_FROM).toMatch(/no-reply@oddsyra\.com/);
     expect(PROMOS_FROM).not.toMatch(/promotion/i);
   });
 

@@ -1,8 +1,16 @@
 export const SITE_NAME = 'OddsYra';
 export const SITE_URL = import.meta.env.VITE_SITE_URL || 'https://oddsyra.com';
-export const DEFAULT_OG_IMAGE = `${SITE_URL}/oddsyra-logo.png`;
+export const DEFAULT_OG_IMAGE = `${SITE_URL}/og-invite-share.png`;
+export const INVITE_OG_IMAGE = `${SITE_URL}/og-invite-share.png`;
 export const INSTAGRAM_URL = 'https://www.instagram.com/oddsyra/';
 export const INSTAGRAM_HANDLE = '@oddsyra';
+
+export const NOINDEX_PATHS = new Set([
+  '/fantasy',
+  '/casino',
+  '/live-casino',
+  '/exchange',
+]);
 
 export const DEFAULT_META = {
   title: 'OddsYra — Live Sportsbook & Betting',
@@ -31,6 +39,22 @@ export const ROUTE_META = {
     title: 'Live Cricket Betting India | OddsYra',
     description: 'Bet on live cricket with real-time odds, UPI deposits, welcome offers, and responsible gaming tools on OddsYra. 18+ only.',
   },
+  '/how-to-bet-live-cricket': {
+    title: 'How to Bet Live Cricket | OddsYra',
+    description: 'Step-by-step guide to live cricket betting on OddsYra — register, UPI deposit, pick a market, place your first stake. 18+ only.',
+  },
+  '/upi-deposits': {
+    title: 'UPI Deposits | OddsYra',
+    description: 'Fund OddsYra with Instant UPI — Google Pay, PhonePe, Paytm, BHIM. Fast credits for live cricket. 18+ only.',
+  },
+  '/what-is-oddsyra-srl': {
+    title: 'What is OddsYra SRL? | OddsYra',
+    description: 'OddsYra SRL is an on-platform simulated cricket league with fixtures, points, live boards, and in-play betting. 18+ only.',
+  },
+  '/cricket-betting-guide': {
+    title: 'Cricket Betting Guide India | OddsYra',
+    description: 'OddsYra cricket betting basics — markets, UPI, invites, and responsible gaming for India. 18+ only.',
+  },
   '/register': {
     title: 'Create Account | OddsYra',
     description: 'Sign up for OddsYra in minutes. Bet on live sports with secure payments and welcome offers. 18+ only.',
@@ -45,7 +69,23 @@ export const ROUTE_META = {
   },
   '/fantasy': {
     title: 'Fantasy Sports | OddsYra',
-    description: 'Build fantasy teams and compete across cricket and football on OddsYra.',
+    description: 'Fantasy contests coming soon on OddsYra. Bet live cricket on Sports in the meantime.',
+    robots: 'noindex,follow',
+  },
+  '/casino': {
+    title: 'Casino | OddsYra',
+    description: 'Casino coming soon on OddsYra.',
+    robots: 'noindex,follow',
+  },
+  '/live-casino': {
+    title: 'Live Casino | OddsYra',
+    description: 'Live casino coming soon on OddsYra.',
+    robots: 'noindex,follow',
+  },
+  '/exchange': {
+    title: 'Exchange | OddsYra',
+    description: 'Exchange is not available on OddsYra.',
+    robots: 'noindex,follow',
   },
   '/vip': {
     title: 'VIP Club | OddsYra',
@@ -71,9 +111,13 @@ export const ROUTE_META = {
 
 export function metaForPath(pathname) {
   const base = ROUTE_META[pathname] || DEFAULT_META;
+  const robots = base.robots
+    || (NOINDEX_PATHS.has(pathname) ? 'noindex,follow' : 'index,follow');
   return {
     title: base.title || DEFAULT_META.title,
     description: base.description || DEFAULT_META.description,
     path: pathname || '/',
+    robots,
+    ogImage: pathname === '/invite' ? INVITE_OG_IMAGE : DEFAULT_OG_IMAGE,
   };
 }

@@ -30,6 +30,7 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [phone, setPhone] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
   const [promoCode, setPromoCode] = useState('');
   const [referralCode, setReferralCode] = useState(() => String(searchParams.get('ref') || '').trim().toUpperCase());
   const [loading, setLoading] = useState(false);
@@ -103,6 +104,25 @@ export default function Register() {
       setError('Enter a valid 10-digit Indian mobile number.');
       return;
     }
+    if (!dateOfBirth) {
+      setError('Enter your date of birth.');
+      return;
+    }
+    {
+      const born = new Date(`${dateOfBirth}T00:00:00`);
+      if (Number.isNaN(born.getTime())) {
+        setError('Enter a valid date of birth.');
+        return;
+      }
+      const today = new Date();
+      let age = today.getFullYear() - born.getFullYear();
+      const m = today.getMonth() - born.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < born.getDate())) age -= 1;
+      if (age < 18) {
+        setError('You must be 18 or older to join OddsYra.');
+        return;
+      }
+    }
     if (!agreed) {
       setError('Please confirm you are 18+ and accept the terms.');
       return;
@@ -119,6 +139,7 @@ export default function Register() {
         password,
         displayName,
         phone: digitsOnly(phone),
+        dateOfBirth,
         promoCode: referralActive ? '' : promoCode,
         referralCode: referralCode.trim() || undefined,
       });
@@ -171,8 +192,8 @@ export default function Register() {
             <div className="register-referral-banner" role="status">
               <strong>Friend invite unlocked</strong>
               <span>
-                Code <em>{referralCode}</em> — your Free Bet / bonus credits after you join
-                (deposit + KYC may apply). Welcome promos can&apos;t be combined with referrals.
+                Code <em>{referralCode}</em> — your Free Bet / bonus credits after you
+                deposit (and place a first bet if the program requires it). Welcome promos can&apos;t be combined with referrals.
               </span>
             </div>
           ) : (
@@ -262,6 +283,21 @@ export default function Register() {
                   required
                 />
               </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="reg-dob">Date of birth</label>
+              <input
+                className="form-input"
+                id="reg-dob"
+                type="date"
+                autoComplete="bday"
+                max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().slice(0, 10)}
+                value={dateOfBirth}
+                onChange={(e) => setDateOfBirth(e.target.value)}
+                required
+              />
+              <p className="form-hint">You must be 18 or older. Used for age verification only.</p>
             </div>
 
             <div className="form-group">

@@ -50,8 +50,9 @@ export function formatPromosFrom(raw) {
   const mailbox = addr.includes('@') ? addr : PROMOS_MAILBOX;
   return `OddsYra <${mailbox}>`;
 }
-export const PROMOS_FROM = formatPromosFrom(process.env.PROMOS_FROM || `OddsYra <${PROMOS_MAILBOX}>`);
-export const PROMOS_REPLY_TO = process.env.PROMOS_REPLY_TO || 'promos@oddsyra.com';
+// Share / campaign mail uses no-reply by default — Gmail files promos@ into Promotions (no lock-screen alert).
+export const PROMOS_FROM = formatPromosFrom(process.env.PROMOS_FROM || SMTP_FROM);
+export const PROMOS_REPLY_TO = process.env.PROMOS_REPLY_TO || 'no-reply@oddsyra.com';
 export const SUPPORT_FROM = process.env.SUPPORT_FROM || 'OddsYra Support <support@oddsyra.com>';
 export const SUPPORT_REPLY_TO = process.env.SUPPORT_REPLY_TO || 'support@oddsyra.com';
 export const SUPPORT_INBOX_EMAIL = process.env.SUPPORT_INBOX_EMAIL || 'support@oddsyra.com';
@@ -1552,7 +1553,7 @@ export const ADMIN_COMPOSE_MAILBOXES = [
     id: 'no-reply',
     email: 'no-reply@oddsyra.com',
     label: 'No-reply',
-    description: 'Transactional / security notices',
+    description: 'Transactional, security, invites, and campaign mail (inbox)',
     from: SMTP_FROM,
     replyTo: SUPPORT_REPLY_TO,
     isMarketing: false,
@@ -1561,7 +1562,7 @@ export const ADMIN_COMPOSE_MAILBOXES = [
     id: 'promos',
     email: 'promos@oddsyra.com',
     label: 'Promotions',
-    description: 'Marketing and campaign emails',
+    description: 'Legacy mailbox — prefer no-reply for inbox delivery',
     from: PROMOS_FROM,
     replyTo: PROMOS_REPLY_TO,
     isMarketing: true,
@@ -1629,7 +1630,7 @@ export const ADMIN_COMPOSE_TEMPLATES = [
     body: 'We have a limited-time offer waiting for you on OddsYra.\n\nClaim it before it expires — terms apply.',
     ctaLabel: 'View promotions',
     ctaPath: '/promotions',
-    mailboxId: 'promos',
+    mailboxId: 'no-reply',
   },
   {
     id: 'srl-launch',
@@ -1640,7 +1641,7 @@ export const ADMIN_COMPOSE_TEMPLATES = [
     body: 'OddsYra SRL is live from today.\n\nBet on our in-house simulated IPL league — toss, live overs, and full match markets — right inside Sports and the OddsYra SRL board.\n\nOpen Sports, find OddsYra SRL fixtures, and place your first bets.\n\nPlay responsibly. 18+ only.',
     ctaLabel: 'Open OddsYra SRL',
     ctaPath: '/srl',
-    mailboxId: 'promos',
+    mailboxId: 'no-reply',
   },
   {
     id: 'kyc-nudge',
@@ -1662,7 +1663,7 @@ export const ADMIN_COMPOSE_TEMPLATES = [
     body: 'It has been a while — markets are live and fresh offers are waiting.\n\nLog in to pick up where you left off.',
     ctaLabel: 'Open OddsYra',
     ctaPath: '/sports',
-    mailboxId: 'promos',
+    mailboxId: 'no-reply',
   },
   {
     id: 'ticket-closed',
@@ -1728,7 +1729,7 @@ export const ADMIN_COMPOSE_TEMPLATES = [
     body: 'A free bet is ready on your OddsYra account.\n\nOpen Sports, pick a market, and use the free bet before it expires. Stake is not returned.',
     ctaLabel: 'Use free bet',
     ctaPath: '/sports',
-    mailboxId: 'promos',
+    mailboxId: 'no-reply',
   },
   {
     id: 'bonus-expiry',
@@ -1739,7 +1740,7 @@ export const ADMIN_COMPOSE_TEMPLATES = [
     body: 'A bonus or free bet on your account is close to expiry.\n\nLog in and use it before it lapses. Unused rewards cannot be restored after expiry.',
     ctaLabel: 'View rewards',
     ctaPath: '/rewards',
-    mailboxId: 'promos',
+    mailboxId: 'no-reply',
   },
   {
     id: 'vip-perk',
@@ -1750,7 +1751,7 @@ export const ADMIN_COMPOSE_TEMPLATES = [
     body: 'Thanks for playing with OddsYra — a VIP perk is waiting on your account.\n\nOpen Rewards to review the details and claim it.',
     ctaLabel: 'View VIP',
     ctaPath: '/rewards',
-    mailboxId: 'promos',
+    mailboxId: 'no-reply',
   },
   {
     id: 'referral',
@@ -1761,7 +1762,7 @@ export const ADMIN_COMPOSE_TEMPLATES = [
     body: 'Invite friends to OddsYra with your referral link.\n\nWhen they verify, you both can earn a free bet. Open your profile to copy your code.',
     ctaLabel: 'Get referral link',
     ctaPath: '/profile',
-    mailboxId: 'promos',
+    mailboxId: 'no-reply',
   },
   {
     id: 'responsible-gaming',
@@ -1926,7 +1927,7 @@ export const ADMIN_COMPOSE_TEMPLATES = [
     body: 'Here is an exclusive OddsYra promo code for you.\n\nOpen Promotions, enter the code, and follow the terms on screen. Codes are one-time and may expire.',
     ctaLabel: 'Apply code',
     ctaPath: '/promotions',
-    mailboxId: 'promos',
+    mailboxId: 'no-reply',
   },
   {
     id: 'deposit-offer',
@@ -1937,7 +1938,7 @@ export const ADMIN_COMPOSE_TEMPLATES = [
     body: 'A deposit offer is waiting on your OddsYra account.\n\nMake a qualifying deposit and the free bet / bonus will credit after the payment is captured. Terms apply.',
     ctaLabel: 'View offer',
     ctaPath: '/promotions',
-    mailboxId: 'promos',
+    mailboxId: 'no-reply',
   },
   {
     id: 'cashback',
@@ -1948,7 +1949,7 @@ export const ADMIN_COMPOSE_TEMPLATES = [
     body: 'Cashback from your recent play has been credited to your OddsYra account.\n\nOpen Rewards to see the amount and when it expires.',
     ctaLabel: 'View rewards',
     ctaPath: '/rewards',
-    mailboxId: 'promos',
+    mailboxId: 'no-reply',
   },
   {
     id: 'daily-spin',
@@ -1959,7 +1960,7 @@ export const ADMIN_COMPOSE_TEMPLATES = [
     body: 'Your OddsYra daily spin is ready.\n\nOpen Rewards, spin once, and claim a ₹100–₹750 bonus or loyalty XP from the wheel.',
     ctaLabel: 'Spin now',
     ctaPath: '/rewards',
-    mailboxId: 'promos',
+    mailboxId: 'no-reply',
   },
   {
     id: 'cricket-offer',
@@ -1970,7 +1971,7 @@ export const ADMIN_COMPOSE_TEMPLATES = [
     body: 'Live cricket markets are up on OddsYra.\n\nOpen Sports, pick a match, and use any free bet waiting on your account. Odds move fast — bet in play while the over is live.',
     ctaLabel: 'Open cricket',
     ctaPath: '/sports',
-    mailboxId: 'promos',
+    mailboxId: 'no-reply',
   },
 ];
 
