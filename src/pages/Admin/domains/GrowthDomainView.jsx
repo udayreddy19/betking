@@ -2612,8 +2612,7 @@ function MasterAgentAffiliatesPanel() {
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [contact, setContact] = useState('');
-  const [commType, setCommType] = useState('REV_SHARE');
-  const [commPct, setCommPct] = useState('25');
+  const [commPct, setCommPct] = useState('5');
   const [saving, setSaving] = useState(false);
   const { showToast } = useAdminToast();
 
@@ -2639,7 +2638,6 @@ function MasterAgentAffiliatesPanel() {
         name: name.trim(),
         code: code.trim(),
         contact: contact.trim(),
-        commissionType: commType,
         commissionPct: parseFloat(commPct),
       });
       showToast(res.message || 'Affiliate registered', 'success');
@@ -2647,6 +2645,7 @@ function MasterAgentAffiliatesPanel() {
       setName('');
       setCode('');
       setContact('');
+      setCommPct('5');
       loadAffiliates();
     } catch (err) {
       showToast(err.message || 'Failed to register affiliate', 'error');
@@ -2656,7 +2655,7 @@ function MasterAgentAffiliatesPanel() {
   };
 
   const handleSettle = async (id, affName) => {
-    if (!window.confirm(`Execute commission settlement batch for ${affName}?`)) return;
+    if (!window.confirm(`Settle pending commission for ${affName}?`)) return;
     try {
       const res = await adminApiClient.post(`/growth/affiliates/${id}/settle`);
       showToast(res.message || 'Settlement completed', 'success');
@@ -2667,15 +2666,16 @@ function MasterAgentAffiliatesPanel() {
   };
 
   const totalAccrued = affiliates.reduce((sum, a) => sum + (a.accruedCommission || 0), 0);
-  const totalTurnover = affiliates.reduce((sum, a) => sum + (a.turnover || 0), 0);
+  const totalEarned = affiliates.reduce((sum, a) => sum + (a.earned || 0), 0);
+  const activeCount = affiliates.filter((a) => a.status === 'ACTIVE').length;
 
   return (
     <div>
       <div className="admin-flex-between" style={{ marginBottom: 16 }}>
         <div>
-          <h2 className="admin-page-header__title">🤝 Master Agent & Affiliate Commission Portal</h2>
+          <h2 className="admin-page-header__title">Master Agent & Affiliate Commission Portal</h2>
           <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
-            Multi-tier agent network management, revenue share vs turnover commission tracking, and 1-click ledger settlements.
+            Live partners from affiliate_accounts — register, track conversions, and settle pending commission.
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -2684,7 +2684,7 @@ function MasterAgentAffiliatesPanel() {
             className="admin-btn admin-btn--primary"
             onClick={() => setShowAddDrawer(!showAddDrawer)}
           >
-            {showAddDrawer ? '✕ Close Form' : '＋ Register New Partner'}
+            {showAddDrawer ? 'Close Form' : 'Register New Partner'}
           </button>
           <button
             type="button"
@@ -2692,16 +2692,16 @@ function MasterAgentAffiliatesPanel() {
             onClick={loadAffiliates}
             disabled={loading}
           >
-            ↻ Refresh
+            Refresh
           </button>
         </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 20 }}>
-        <AdminCard title="Active Affiliates" value={affiliates.length} accent="#38bdf8" />
-        <AdminCard title="Total Referred Volume" value={money(totalTurnover)} accent="#818cf8" />
+        <AdminCard title="Active Affiliates" value={activeCount} accent="#38bdf8" />
+        <AdminCard title="Total Earned" value={money(totalEarned)} accent="#818cf8" />
         <AdminCard title="Accrued Commission Due" value={money(totalAccrued)} accent="#f59e0b" />
-        <AdminCard title="Settlement Status" value="Healthy" accent="#10b981" />
+        <AdminCard title="Partners" value={affiliates.length} accent="#10b981" />
       </div>
 
       {showAddDrawer && (
@@ -2719,22 +2719,15 @@ function MasterAgentAffiliatesPanel() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 14 }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, marginBottom: 4 }}>Partner / Agency Name *</label>
-              <input className="admin-input" required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. CricketPulse Media" style={{ width: '100%' }} />
+              <input className="admin-input" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Partner name" style={{ width: '100%' }} />
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, marginBottom: 4 }}>Affiliate Promo Code *</label>
               <input className="admin-input" required value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g. CPULSE" style={{ width: '100%' }} />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, marginBottom: 4 }}>Contact / Channel</label>
-              <input className="admin-input" value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Telegram or email" style={{ width: '100%' }} />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, marginBottom: 4 }}>Commission Model</label>
-              <select className="admin-input" value={commType} onChange={(e) => setCommType(e.target.value)} style={{ width: '100%' }}>
-                <option value="REV_SHARE">Revenue Share % (Net GGR)</option>
-                <option value="TURNOVER">Turnover % (Gross Volume)</option>
-              </select>
+              <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, marginBottom: 4 }}>Contact Email *</label>
+              <input type="email" className="admin-input" required value={contact} onChange={(e) => setContact(e.target.value)} placeholder="partner@email.com" style={{ width: '100%' }} />
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, marginBottom: 4 }}>Commission % *</label>
@@ -2743,7 +2736,7 @@ function MasterAgentAffiliatesPanel() {
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
             <button type="button" className="admin-btn admin-btn--secondary" onClick={() => setShowAddDrawer(false)}>Cancel</button>
-            <button type="submit" className="admin-btn admin-btn--primary" disabled={saving}>{saving ? 'Saving…' : '✓ Create Affiliate'}</button>
+            <button type="submit" className="admin-btn admin-btn--primary" disabled={saving}>{saving ? 'Saving…' : 'Create Affiliate'}</button>
           </div>
         </form>
       )}
@@ -2759,28 +2752,43 @@ function MasterAgentAffiliatesPanel() {
             render: (r) => (
               <div>
                 <div style={{ fontWeight: 700, color: 'var(--admin-text)' }}>{r.name}</div>
-                <div style={{ fontSize: '0.74rem', color: 'var(--admin-text-muted)' }}>Code: <span className="admin-text-mono" style={{ color: 'var(--admin-accent)' }}>{r.code}</span> · {r.contact}</div>
+                <div style={{ fontSize: '0.74rem', color: 'var(--admin-text-muted)' }}>
+                  Code: <span className="admin-text-mono" style={{ color: 'var(--admin-accent)' }}>{r.code}</span>
+                  {' · '}{r.contact}
+                </div>
               </div>
             ),
           },
           {
-            header: 'Model',
-            key: 'commissionType',
+            header: 'Rate',
+            key: 'commissionPct',
             render: (r) => (
               <span style={{ fontSize: '0.74rem', padding: '2px 8px', borderRadius: 4, background: 'rgba(255,255,255,0.05)', fontWeight: 700 }}>
-                {r.commissionType === 'REV_SHARE' ? `RevShare ${r.commissionPct}%` : `Turnover ${r.commissionPct}%`}
+                {r.commissionPct}%
               </span>
             ),
           },
-          { header: 'Referred', key: 'referredUsers', render: (r) => `${r.referredUsers} users` },
-          { header: 'Volume', key: 'turnover', render: (r) => money(r.turnover) },
-          { header: 'House GGR', key: 'ggr', render: (r) => money(r.ggr) },
           {
-            header: 'Accrued Commission',
+            header: 'Referred',
+            key: 'referredUsers',
+            render: (r) => `${r.referredUsers || 0} · ${r.clicks || 0} clicks`,
+          },
+          {
+            header: 'Earned',
+            key: 'earned',
+            render: (r) => money(r.earned || 0),
+          },
+          {
+            header: 'Paid',
+            key: 'paid',
+            render: (r) => money(r.paid || 0),
+          },
+          {
+            header: 'Accrued Due',
             key: 'accruedCommission',
             render: (r) => (
-              <span style={{ fontWeight: 800, color: '#f59e0b' }}>
-                {money(r.accruedCommission)}
+              <span style={{ fontWeight: 800, color: (r.accruedCommission || 0) > 0 ? '#f59e0b' : 'var(--admin-text-muted)' }}>
+                {money(r.accruedCommission || 0)}
               </span>
             ),
           },
@@ -2792,9 +2800,10 @@ function MasterAgentAffiliatesPanel() {
                 type="button"
                 className="admin-btn admin-btn--primary"
                 style={{ padding: '3px 8px', fontSize: '0.72rem' }}
+                disabled={!r.accruedCommission}
                 onClick={() => handleSettle(r.id, r.name)}
               >
-                💰 Settle Payout
+                Settle Payout
               </button>
             ),
           },

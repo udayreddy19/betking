@@ -2310,79 +2310,69 @@ router.post(['/api/admin/growth/retention/trigger-action', '/growth/retention/tr
   }
 });
 
-// ── FEATURE 5: MASTER AGENT & AFFILIATE COMMISSION PORTAL ──
-let affiliatePartners = [
-  { id: 'aff_1', name: 'CricketKing Media', code: 'CKING', contact: '+91 98765 43210', commissionType: 'REV_SHARE', commissionPct: 25.0, status: 'ACTIVE', createdAt: '2026-08-01T00:00:00.000Z' },
-  { id: 'aff_2', name: 'BettingTips India', code: 'BTIPS', contact: '+91 91234 56789', commissionType: 'TURNOVER', commissionPct: 1.5, status: 'ACTIVE', createdAt: '2026-08-15T00:00:00.000Z' },
-  { id: 'aff_3', name: 'IPL Daily Predictor', code: 'IPLDAY', contact: 'ipl@telegram.org', commissionType: 'REV_SHARE', commissionPct: 30.0, status: 'ACTIVE', createdAt: '2026-09-01T00:00:00.000Z' },
-];
-
+// ── FEATURE 5: MASTER AGENT & AFFILIATE COMMISSION PORTAL (PG-backed) ──
 router.get(['/api/admin/growth/affiliates', '/growth/affiliates'], adminAuth, async (req, res) => {
   try {
-    const { query } = await import('../../../db/pg.js');
-    const pnlRes = await query(`
-      SELECT
-        COALESCE(SUM(stake), 0) AS total_stake,
-        COALESCE(SUM(CASE WHEN status = 'LOST' THEN stake WHEN status = 'WON' THEN stake - potential_payout ELSE 0 END), 0) AS total_ggr
-      FROM bets
-      WHERE created_at >= NOW() - INTERVAL '30 days';
-    `);
-
-    const ggrTotal = parseFloat(pnlRes.rows[0]?.total_ggr || 0);
-    const turnoverTotal = parseFloat(pnlRes.rows[0]?.total_stake || 0);
-
-    const partners = affiliatePartners.map((a, idx) => {
-      const share = 0.3 - idx * 0.08;
-      const refVolume = parseFloat((turnoverTotal * share).toFixed(2));
-      const refGgr = parseFloat((ggrTotal * share).toFixed(2));
-      const accrued = a.commissionType === 'REV_SHARE'
-        ? Math.max(0, parseFloat((refGgr * (a.commissionPct / 100)).toFixed(2)))
-        : parseFloat((refVolume * (a.commissionPct / 100)).toFixed(2));
-      return {
-        ...a,
-        referredUsers: 14 + idx * 9,
-        activeBettors: 8 + idx * 5,
-        turnover: refVolume,
-        ggr: refGgr,
-        accruedCommission: accrued,
-      };
-    });
-
-    res.json({ success: true, count: partners.length, affiliates: partners });
+    const { listAffiliatesForAdmin } = await import('../../../lib/affiliateEngine.mjs');
+    const result = await listAffiliatesForAdmin();
+    res.json(result);
   } catch (err) {
-    res.json({ success: true, count: affiliatePartners.length, affiliates: affiliatePartners });
+    res.status(500).json({ success: false, error: err.message || 'Failed to load affiliates' });
   }
 });
 
 router.post(['/api/admin/growth/affiliates', '/growth/affiliates'], adminAuth, requireRole('SUPER_ADMIN', 'MARKETING_ADMIN'), async (req, res) => {
-  const { name, code, contact, commissionType = 'REV_SHARE', commissionPct = 25 } = req.body || {};
-  if (!name || !code) return res.status(400).json({ success: false, error: 'Name and affiliate promo code required' });
-  const newAff = {
-    id: `aff_${Date.now()}`,
-    name,
-    code: String(code).toUpperCase().trim(),
-    contact: contact || '—',
-    commissionType: commissionType === 'TURNOVER' ? 'TURNOVER' : 'REV_SHARE',
-    commissionPct: parseFloat(commissionPct) || 25,
-    status: 'ACTIVE',
-    createdAt: new Date().toISOString(),
-  };
-  affiliatePartners.unshift(newAff);
-  res.json({ success: true, affiliate: newAff, message: `Affiliate ${name} registered successfully` });
+  try {
+    const { name, code, contact, email, commissionPct = 5 } = req.body || {};
+    if (!name || !code) {
+      return res.status(400).json({ success: false, error: 'Name and affiliate promo code required' });
+    }
+    const contactEmail = String(email || contact || '').trim();
+    if (!contactEmail || !contactEmail.includes('@')) {
+      return res.status(400).json({ success: false, error: 'Valid contact email required' });
+    }
+    const { createAffiliateAccount } = await import('../../../lib/affiliateEngine.mjs');
+    const result = await createAffiliateAccount({
+      name: String(name).trim(),
+      email: contactEmail.toLowerCase(),
+      referralCode: String(code).toUpperCase().trim(),
+      commissionRate: parseFloat(commissionPct) || 5,
+    });
+    res.json({
+      success: true,
+      affiliate: result,
+      message: `Affiliate ${name} registered successfully`,
+    });
+  } catch (err) {
+    const msg = err.message || 'Failed to register affiliate';
+    const conflict = /unique|duplicate/i.test(msg);
+    res.status(conflict ? 409 : 400).json({ success: false, error: msg });
+  }
 });
 
 router.post(['/api/admin/growth/affiliates/:id/settle', '/growth/affiliates/:id/settle'], adminAuth, requireRole('SUPER_ADMIN', 'FINANCE_ADMIN'), async (req, res) => {
-  const { id } = req.params;
-  const aff = affiliatePartners.find((a) => a.id === id);
-  if (!aff) return res.status(404).json({ success: false, error: 'Affiliate not found' });
-  const { logAdminAction } = await import('../../middleware/auditLogger.js');
-  await logAdminAction({
-    actorId: req.admin?.id || 'finance_officer',
-    targetId: id,
-    action: 'AFFILIATE_COMMISSION_SETTLED',
-    details: { affiliateId: id, name: aff.name, code: aff.code },
-  });
-  res.json({ success: true, id, message: `Commission settlement batch executed for ${aff.name} (${aff.code})` });
+  try {
+    const { id } = req.params;
+    const { settleAffiliateCommissions } = await import('../../../lib/affiliateEngine.mjs');
+    const result = await settleAffiliateCommissions(id);
+    if (!result.success) {
+      return res.status(404).json(result);
+    }
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    await logAdminAction({
+      actorId: req.admin?.id || 'finance_officer',
+      targetId: id,
+      action: 'AFFILIATE_COMMISSION_SETTLED',
+      details: {
+        affiliateId: id,
+        settledAmount: result.settledAmount,
+        settlements: result.settlements,
+      },
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message || 'Settlement failed' });
+  }
 });
 
 // ── FEATURE 6: REGULATORY AML & HIGH-VELOCITY THRESHOLDS ──
