@@ -17,6 +17,7 @@ test.describe('Odds changed placement contract', () => {
           email,
           password,
           firstName: 'Odds E2E',
+          dateOfBirth: '1990-01-15',
           phone: `97${String(stamp).slice(-8)}`,
         },
       });

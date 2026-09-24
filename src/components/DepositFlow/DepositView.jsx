@@ -79,6 +79,20 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
   const navigate = useNavigate();
   const location = useLocation();
 
+  const openInviteWhatsApp = async () => {
+    try {
+      const res = await apiFetch('/api/v1/rewards/referrals/me');
+      const data = await res.json().catch(() => ({}));
+      if (data?.share?.whatsapp) {
+        window.open(data.share.whatsapp, '_blank', 'noopener,noreferrer');
+        onClose?.();
+        return;
+      }
+    } catch { /* fall through */ }
+    navigate('/invite');
+    onClose?.();
+  };
+
   const [amountStr, setAmountStr] = useState('');
   const [minDepositInr, setMinDepositInr] = useState(MIN_DEPOSIT_INR);
   const [selectedMethod, setSelectedMethod] = useState('upi');
@@ -577,10 +591,7 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
                 <button
                   type="button"
                   className="deposit-secondary-cta"
-                  onClick={() => {
-                    navigate('/invite');
-                    onClose?.();
-                  }}
+                  onClick={openInviteWhatsApp}
                 >
                   Invite friends on WhatsApp
                 </button>

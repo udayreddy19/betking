@@ -1904,7 +1904,7 @@ export const ADMIN_COMPOSE_TEMPLATES = [
     subject: 'Update on your OddsYra bet',
     body: 'One of your bets was voided and the stake has been returned to your wallet.\n\nThis usually happens when the market is cancelled or the selection did not get a fair chance. Open Bets for the details.',
     ctaLabel: 'View bets',
-    ctaPath: '/my-bets',
+    ctaPath: '/bets',
     mailboxId: 'support',
   },
   {
@@ -1915,7 +1915,7 @@ export const ADMIN_COMPOSE_TEMPLATES = [
     subject: 'OddsYra is settling your bet',
     body: 'Your bet is still being settled. Official result confirmation can take a little time after the match.\n\nWinnings, if any, will be credited automatically. No action is needed from you.',
     ctaLabel: 'View bets',
-    ctaPath: '/my-bets',
+    ctaPath: '/bets',
     mailboxId: 'support',
   },
   {

@@ -10,5 +10,9 @@ Disallow: /profile
 Disallow: /complete-profile
 Disallow: /verify-email
 Disallow: /reset-password
+Disallow: /fantasy
+Disallow: /casino
+Disallow: /live-casino
+Disallow: /exchange
 
 Sitemap: https://oddsyra.com/sitemap.xml

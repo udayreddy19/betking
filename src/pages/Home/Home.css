@@ -588,10 +588,13 @@
   display: inline-flex;
   align-items: center;
   padding: 8px 14px;
+  border: none;
   border-radius: 999px;
   background: var(--color-primary, #1f8a4c);
   color: #fff;
   font-weight: 700;
   font-size: 0.82rem;
   text-decoration: none;
+  cursor: pointer;
+  font-family: inherit;
 }

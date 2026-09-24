@@ -12,6 +12,7 @@ const PROMO_CHIPS = [
 ];
 
 const PENDING_REF_KEY = 'bk_pending_referral';
+const PENDING_MODAL_KEY = 'bk_open_modal';
 
 function digitsOnly(value) {
   return String(value || '').replace(/\D/g, '').slice(0, 10);
@@ -19,6 +20,10 @@ function digitsOnly(value) {
 
 function hasPhone(user) {
   return Boolean(String(user?.phone || '').replace(/\D/g, '').length >= 10);
+}
+
+function hasDob(user) {
+  return Boolean(String(user?.dateOfBirth || '').slice(0, 10).match(/^\d{4}-\d{2}-\d{2}$/));
 }
 
 function readPendingReferral(searchParams) {
@@ -31,23 +36,50 @@ function readPendingReferral(searchParams) {
   }
 }
 
+function resolveAfterComplete(nextRaw) {
+  const next = String(nextRaw || '').trim();
+  if (next === 'deposit' || next === 'withdraw') {
+    try {
+      sessionStorage.setItem(PENDING_MODAL_KEY, next);
+    } catch { /* ignore */ }
+    return '/sports';
+  }
+  if (next.startsWith('/')) {
+    try {
+      return decodeURIComponent(next);
+    } catch {
+      return next;
+    }
+  }
+  return '/sports';
+}
+
 export default function CompleteProfile() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, isLoggedIn, completeAccountProfile, showToast } = useAuth();
   const [phone, setPhone] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
   const [promoCode, setPromoCode] = useState('');
   const [referralCode, setReferralCode] = useState(() => readPendingReferral(searchParams));
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const isWelcome = searchParams.get('welcome') === '1';
   const referralActive = Boolean(referralCode.trim());
+  const needPhone = !hasPhone(user);
+  const needDob = !hasDob(user);
 
   useEffect(() => {
     if (user?.phone) {
       setPhone(digitsOnly(user.phone));
     }
   }, [user?.phone]);
+
+  useEffect(() => {
+    if (user?.dateOfBirth) {
+      setDateOfBirth(String(user.dateOfBirth).slice(0, 10));
+    }
+  }, [user?.dateOfBirth]);
 
   useEffect(() => {
     const ref = readPendingReferral(searchParams);
@@ -58,17 +90,37 @@ export default function CompleteProfile() {
     return <Navigate to="/register" replace />;
   }
 
-  if (hasPhone(user)) {
-    return <Navigate to="/sports" replace />;
+  if (!needPhone && !needDob) {
+    return <Navigate to={resolveAfterComplete(searchParams.get('next'))} replace />;
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    if (digitsOnly(phone).length !== 10) {
+    if (needPhone && digitsOnly(phone).length !== 10) {
       setError('Enter a valid 10-digit Indian mobile number.');
       return;
+    }
+
+    if (needDob) {
+      if (!dateOfBirth) {
+        setError('Enter your date of birth.');
+        return;
+      }
+      const born = new Date(`${dateOfBirth}T00:00:00`);
+      if (Number.isNaN(born.getTime())) {
+        setError('Enter a valid date of birth.');
+        return;
+      }
+      const now = new Date();
+      let age = now.getFullYear() - born.getFullYear();
+      const m = now.getMonth() - born.getMonth();
+      if (m < 0 || (m === 0 && now.getDate() < born.getDate())) age -= 1;
+      if (age < 18) {
+        setError('You must be 18 or older to join OddsYra.');
+        return;
+      }
     }
 
     if (referralActive && promoCode.trim()) {
@@ -79,7 +131,8 @@ export default function CompleteProfile() {
     setLoading(true);
     try {
       const result = await completeAccountProfile({
-        phone: digitsOnly(phone),
+        phone: needPhone ? digitsOnly(phone) : undefined,
+        dateOfBirth: needDob ? dateOfBirth : undefined,
         promoCode: referralActive ? undefined : (promoCode.trim() || undefined),
         referralCode: referralCode.trim() || undefined,
       });
@@ -94,8 +147,10 @@ export default function CompleteProfile() {
         /* ignore */
       }
 
-      if (result.referral?.success) {
+      if (result.referral?.reward?.success || result.referral?.reward?.qualified || result.referral?.status === 'REWARDED') {
         showToast('Joined via referral. Your referral reward has been credited.', 'success');
+      } else if (result.referral?.success || result.referral?.referralId) {
+        showToast('Joined via referral. Your Free Bet unlocks after your first qualifying deposit.', 'success');
       } else if (result.promoReward) {
         const typeLabel = {
           bonus: 'bonus',
@@ -107,9 +162,9 @@ export default function CompleteProfile() {
           'success',
         );
       } else {
-        showToast('Mobile number saved. You are all set!', 'success');
+        showToast('Profile saved. You are all set!', 'success');
       }
-      navigate('/sports', { replace: true });
+      navigate(resolveAfterComplete(searchParams.get('next')), { replace: true });
     } finally {
       setLoading(false);
     }
@@ -125,34 +180,58 @@ export default function CompleteProfile() {
           </div>
           <h1>{isWelcome ? 'Welcome to OddsYra' : 'Complete your account'}</h1>
           <p className="register-lead">
-            Google sign-in does not share your mobile number. Add it to secure your account
-            {isWelcome && !referralActive ? ' and optionally claim a signup promo' : ''}.
+            {needPhone
+              ? 'Google sign-in does not share your mobile number. Add it to secure your account'
+              : 'Confirm your date of birth to continue'}
+            {isWelcome && !referralActive && needPhone ? ' and optionally claim a signup promo' : ''}.
           </p>
 
           {error && <div className="register-error" role="alert">{error}</div>}
 
           <form className="register-form" onSubmit={handleSubmit} noValidate>
-            <div className="form-group">
-              <label className="form-label" htmlFor="cp-phone">Mobile number</label>
-              <div className="phone-input-group">
-                <div className="phone-country" aria-hidden="true">
-                  <span className="flag">🇮🇳</span>
-                  <span>+91</span>
+            {needPhone && (
+              <div className="form-group">
+                <label className="form-label" htmlFor="cp-phone">Mobile number</label>
+                <div className="phone-input-group">
+                  <div className="phone-country" aria-hidden="true">
+                    <span className="flag">🇮🇳</span>
+                    <span>+91</span>
+                  </div>
+                  <input
+                    className="form-input"
+                    id="cp-phone"
+                    type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel-national"
+                    placeholder="10-digit number"
+                    value={phone}
+                    onChange={(e) => setPhone(digitsOnly(e.target.value))}
+                    required
+                    autoFocus
+                  />
                 </div>
+              </div>
+            )}
+
+            {needDob && (
+              <div className="form-group">
+                <label className="form-label" htmlFor="cp-dob">Date of birth</label>
                 <input
                   className="form-input"
-                  id="cp-phone"
-                  type="tel"
-                  inputMode="numeric"
-                  autoComplete="tel-national"
-                  placeholder="10-digit number"
-                  value={phone}
-                  onChange={(e) => setPhone(digitsOnly(e.target.value))}
+                  id="cp-dob"
+                  type="date"
+                  autoComplete="bday"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
                   required
-                  autoFocus
+                  max={new Date().toISOString().slice(0, 10)}
+                  autoFocus={!needPhone}
                 />
+                <p className="register-lead" style={{ marginTop: 8, fontSize: '0.82rem' }}>
+                  You must be 18 or older. Used for responsible gaming checks.
+                </p>
               </div>
-            </div>
+            )}
 
             <div className="form-group">
               <label className="form-label" htmlFor="cp-referral">Referral code (optional)</label>
@@ -169,7 +248,7 @@ export default function CompleteProfile() {
               {referralActive && (
                 <p className="register-lead" style={{ marginTop: 8, fontSize: '0.82rem' }}>
                   You&apos;re joining through referral code <strong>{referralCode}</strong>.
-                  Your referral reward is credited on signup.
+                  Your Free Bet unlocks after your first qualifying deposit.
                   Initial signup promotions cannot be combined with this referral.
                 </p>
               )}

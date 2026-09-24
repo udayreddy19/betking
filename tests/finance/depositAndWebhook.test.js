@@ -21,7 +21,18 @@ describe('Phase 6 Deposit & Webhook Security Tests', () => {
   beforeEach(async () => {
     process.env.RAZORPAY_WEBHOOK_SECRET = webhookSecret;
     process.env.NODE_ENV = 'test';
-    await query(`INSERT INTO users (user_id, email, password_hash) VALUES ($1, $2, 'hash') ON CONFLICT (user_id) DO NOTHING;`, [userId, `${userId}@example.com`]);
+    await query(
+      `INSERT INTO users (user_id, email, password_hash, phone)
+       VALUES ($1, $2, 'hash', $3)
+       ON CONFLICT (user_id) DO UPDATE SET phone = EXCLUDED.phone`,
+      [userId, `${userId}@example.com`, '9810101101'],
+    );
+    await query(
+      `INSERT INTO user_profiles (user_id, date_of_birth, account_status)
+       VALUES ($1, '1990-01-01', 'ACTIVE')
+       ON CONFLICT (user_id) DO UPDATE SET date_of_birth = COALESCE(user_profiles.date_of_birth, EXCLUDED.date_of_birth)`,
+      [userId],
+    );
     await query(`DELETE FROM ledger_entries WHERE wallet_id IN (SELECT wallet_id FROM wallets WHERE user_id = $1);`, [userId]);
     await query(`DELETE FROM deposits WHERE user_id = $1;`, [userId]);
     await query(`DELETE FROM transactions WHERE user_id = $1;`, [userId]);

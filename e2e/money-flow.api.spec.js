@@ -17,6 +17,7 @@ test.describe('Staging money flow (register → deposit sandbox → bet → with
           email,
           password,
           firstName: 'E2E Player',
+          dateOfBirth: '1990-01-15',
           phone: `98${String(stamp).slice(-8)}`,
         },
       });

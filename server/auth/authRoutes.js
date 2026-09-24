@@ -422,6 +422,7 @@ router.post('/complete-profile', requireAuth, requireCsrfWhenCookies, authGenera
       promoCode: req.body?.promoCode,
       referralCode: req.body?.referralCode || req.body?.ref,
       ref: req.body?.ref,
+      dateOfBirth: req.body?.dateOfBirth || req.body?.dob,
     });
 
     if (result.error) {

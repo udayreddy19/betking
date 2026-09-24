@@ -28,6 +28,7 @@ test.describe('Settlement WebSocket lifecycle (no Razorpay)', () => {
         email,
         password,
         firstName: 'Settle WS',
+          dateOfBirth: '1990-01-15',
         phone: `91${String(stamp).slice(-8)}`,
       },
     });

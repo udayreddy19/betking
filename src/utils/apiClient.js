@@ -147,6 +147,9 @@ export function mapServerUserToSession(serverUser, previous = null) {
     role: serverUser.role || previous?.role || 'USER',
     isAdmin: serverUser.isAdmin === true || previous?.isAdmin === true,
     kycStatus: serverUser.kycStatus,
+    dateOfBirth: serverUser.dateOfBirth || previous?.dateOfBirth || null,
+    referralCode: serverUser.referralCode || previous?.referralCode || null,
+    referralLink: serverUser.referralLink || previous?.referralLink || null,
     status: serverUser.status,
     walletReady: true,
   };

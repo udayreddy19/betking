@@ -663,6 +663,7 @@ export async function getMe(queryFn, userId) {
             u.role, u.status, u.email_verified_at, u.phone_verified_at,
             u.country, u.currency, u.created_at, u.last_login_at,
             p.display_name, p.kyc_status, p.risk_tier, p.account_status,
+            p.date_of_birth,
             w.balance, w.bonus_balance, COALESCE(w.freebet_balance, 0) AS freebet_balance,
             COALESCE(w.reserved_balance, 0) AS reserved_balance,
             COALESCE(w.winnings_balance, 0) AS winnings_balance,
@@ -721,6 +722,7 @@ export async function getMe(queryFn, userId) {
       country: u.country,
       currency: u.currency,
       kycStatus: u.kyc_status,
+      dateOfBirth: u.date_of_birth ? String(u.date_of_birth).slice(0, 10) : null,
       balance: parseFloat(u.balance || 0),
       cashBalance: parseFloat(u.balance || 0),
       bonusBalance: parseFloat(u.bonus_balance || 0),
@@ -1060,15 +1062,18 @@ export async function changePassword(queryFn, userId, currentPassword, newPasswo
 }
 
 /**
- * Complete missing profile fields after Google sign-in (phone required, promo/referral optional).
+ * Complete missing profile fields after Google sign-in (phone + DOB required, promo/referral optional).
  */
-export async function completeProfile(queryFn, userId, { phone, promoCode, referralCode, ref } = {}) {
+export async function completeProfile(queryFn, userId, { phone, promoCode, referralCode, ref, dateOfBirth } = {}) {
   if (!userId) {
     return { error: 'Authentication required.', code: 'AUTH_REQUIRED', status: 401 };
   }
 
   const existing = await queryFn(
-    `SELECT user_id, phone, first_name FROM users WHERE user_id = $1`,
+    `SELECT u.user_id, u.phone, u.first_name, p.date_of_birth
+     FROM users u
+     LEFT JOIN user_profiles p ON p.user_id = u.user_id
+     WHERE u.user_id = $1`,
     [userId],
   );
   if (!existing.rows.length) {
@@ -1076,6 +1081,9 @@ export async function completeProfile(queryFn, userId, { phone, promoCode, refer
   }
 
   const currentPhone = existing.rows[0].phone;
+  const currentDob = existing.rows[0].date_of_birth
+    ? String(existing.rows[0].date_of_birth).slice(0, 10)
+    : null;
   let promoReward = null;
   let referralResult = null;
   const rawReferral = String(referralCode || ref || '').trim();
@@ -1109,6 +1117,27 @@ export async function completeProfile(queryFn, userId, { phone, promoCode, refer
       await safeAuditLog(queryFn, userId, userId, 'PROFILE_PHONE_SET', {
         phoneLast4: normalizedPhone.slice(-4),
       });
+    }
+
+    if (!currentDob) {
+      const dobRaw = String(dateOfBirth || '').trim().slice(0, 10);
+      if (!dobRaw || !/^\d{4}-\d{2}-\d{2}$/.test(dobRaw)) {
+        return {
+          error: 'Date of birth is required (YYYY-MM-DD).',
+          code: 'MISSING_DOB',
+          status: 400,
+        };
+      }
+      const { kycEngine } = await import('../../lib/kycEngine.mjs');
+      try {
+        await kycEngine.saveDateOfBirth(userId, dobRaw);
+      } catch (dobErr) {
+        return {
+          error: dobErr.message?.replace(/^KYC_AGE_REQUIRED:\s*/i, '') || 'Enter a valid date of birth.',
+          code: dobErr.code || 'INVALID_DOB',
+          status: dobErr.status || 400,
+        };
+      }
     }
 
     try {

@@ -493,16 +493,17 @@ export function AuthProvider({ children }) {
     return true;
   }, [setUser, syncTransactions]);
 
-  const completeAccountProfile = useCallback(async ({ phone, promoCode, referralCode } = {}) => {
-    const normalizedPhone = String(phone || '').replace(/\D/g, '');
-    if (normalizedPhone.length !== 10) {
+  const completeAccountProfile = useCallback(async ({ phone, promoCode, referralCode, dateOfBirth } = {}) => {
+    const normalizedPhone = phone != null ? String(phone || '').replace(/\D/g, '') : '';
+    if (phone != null && normalizedPhone.length !== 10) {
       return { ok: false, error: 'Enter a valid 10-digit Indian mobile number.' };
     }
     try {
       const res = await apiFetch('/api/auth/complete-profile', {
         method: 'POST',
         body: JSON.stringify({
-          phone: normalizedPhone,
+          phone: normalizedPhone || undefined,
+          dateOfBirth: dateOfBirth || undefined,
           promoCode: String(promoCode || '').trim() || undefined,
           referralCode: String(referralCode || '').trim() || undefined,
           ref: String(referralCode || '').trim() || undefined,
@@ -1325,8 +1326,14 @@ export function AuthProvider({ children }) {
   const closeLoginModal = useCallback(() => setIsLoginModalOpen(false), []);
   const openDepositModal = useCallback(() => {
     const phoneDigits = String(user?.phone || '').replace(/\D/g, '');
-    if (user && phoneDigits.length < 10) {
-      showToast('Add your mobile number to deposit.', 'info');
+    const hasDob = Boolean(String(user?.dateOfBirth || '').slice(0, 10).match(/^\d{4}-\d{2}-\d{2}$/));
+    if (user && (phoneDigits.length < 10 || !hasDob)) {
+      showToast(
+        phoneDigits.length < 10
+          ? 'Add your mobile number to deposit.'
+          : 'Add your date of birth to deposit.',
+        'info',
+      );
       window.location.assign('/complete-profile?next=deposit');
       return;
     }
@@ -1337,14 +1344,41 @@ export function AuthProvider({ children }) {
   const closeSidebar = useCallback(() => setIsSidebarOpen(false), []);
   const openFinModal = useCallback((type) => {
     const phoneDigits = String(user?.phone || '').replace(/\D/g, '');
-    if (type === 'withdraw' && user && phoneDigits.length < 10) {
-      showToast('Add your mobile number to withdraw.', 'info');
+    const hasDob = Boolean(String(user?.dateOfBirth || '').slice(0, 10).match(/^\d{4}-\d{2}-\d{2}$/));
+    if (type === 'withdraw' && user && (phoneDigits.length < 10 || !hasDob)) {
+      showToast(
+        phoneDigits.length < 10
+          ? 'Add your mobile number to withdraw.'
+          : 'Add your date of birth to withdraw.',
+        'info',
+      );
       window.location.assign('/complete-profile?next=withdraw');
       return;
     }
     setFinModalType(type);
   }, [user, showToast]);
   const closeFinModal = useCallback(() => setFinModalType(null), []);
+
+  // Resume deposit/withdraw after complete-profile (?next=deposit|withdraw)
+  useEffect(() => {
+    if (!user) return undefined;
+    let pending = null;
+    try {
+      pending = sessionStorage.getItem('bk_open_modal');
+      if (pending) sessionStorage.removeItem('bk_open_modal');
+    } catch {
+      return undefined;
+    }
+    if (pending !== 'deposit' && pending !== 'withdraw') return undefined;
+    const phoneDigits = String(user.phone || '').replace(/\D/g, '');
+    const hasDob = Boolean(String(user.dateOfBirth || '').slice(0, 10).match(/^\d{4}-\d{2}-\d{2}$/));
+    if (phoneDigits.length < 10 || !hasDob) return undefined;
+    const t = window.setTimeout(() => {
+      if (pending === 'deposit') setIsDepositModalOpen(true);
+      else setFinModalType('withdraw');
+    }, 200);
+    return () => window.clearTimeout(t);
+  }, [user]);
 
   const value = useMemo(() => ({
     user,

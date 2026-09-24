@@ -138,7 +138,7 @@ app.get('/robots.txt', async (_req, res) => {
     return res.send("User-agent: *\nDisallow: /\n");
   }
   return res.send(
-    `User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /admin/\nDisallow: /trader\nDisallow: /developer\nDisallow: /api-docs\nDisallow: /_oauth/\nDisallow: /profile\nDisallow: /complete-profile\nDisallow: /verify-email\nDisallow: /reset-password\n\nSitemap: https://oddsyra.com/sitemap.xml\n`
+    `User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /admin/\nDisallow: /trader\nDisallow: /developer\nDisallow: /api-docs\nDisallow: /_oauth/\nDisallow: /profile\nDisallow: /complete-profile\nDisallow: /verify-email\nDisallow: /reset-password\nDisallow: /fantasy\nDisallow: /casino\nDisallow: /live-casino\nDisallow: /exchange\n\nSitemap: https://oddsyra.com/sitemap.xml\n`
   );
 });
 

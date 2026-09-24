@@ -298,11 +298,18 @@ router.post('/posts/:id/publish', async (req, res) => {
       });
     }
 
-    await q(
+    const claim = await q(
       `UPDATE admin_social_posts SET status = 'PUBLISHING', error_message = NULL, updated_at = NOW()
-       WHERE post_id = $1`,
+       WHERE post_id = $1 AND status IN ('DRAFT', 'FAILED', 'QUEUED')
+       RETURNING *`,
       [row.post_id],
     );
+    if (!claim.rows[0]) {
+      return res.status(409).json({
+        error: 'Post is already publishing or published',
+        code: 'SOCIAL_PUBLISH_RACE',
+      });
+    }
 
     try {
       const published = await publishInstagramImage({

@@ -91,6 +91,7 @@ services:
       - oddsyra-prod-net
     volumes:
       - support_attachments_data:/app/data/support_attachments
+      - social_media_data:/app/data/social_media
       - backups_data:/app/data/backups
     healthcheck:
       # /health hits Postgres (and can 503 when the pool is busy). That used to
@@ -175,4 +176,5 @@ volumes:
   redis_data:
   nginx_logs:
   support_attachments_data:
+  social_media_data:
   backups_data:

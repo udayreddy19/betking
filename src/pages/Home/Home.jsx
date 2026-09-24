@@ -58,6 +58,19 @@ export default function Home() {
   const srlEnabled = isEnabled('oddsyra_srl_ui', true);
   const navigate = useNavigate();
   const { isLoggedIn } = useAuth();
+
+  const openInviteWhatsApp = async () => {
+    try {
+      const { apiFetch } = await import('../../utils/apiClient');
+      const res = await apiFetch('/api/v1/rewards/referrals/me');
+      const data = await res.json().catch(() => ({}));
+      if (data?.share?.whatsapp) {
+        window.open(data.share.whatsapp, '_blank', 'noopener,noreferrer');
+        return;
+      }
+    } catch { /* fall through */ }
+    navigate('/invite');
+  };
   const [activeSport, setActiveSport] = useState('cricket');
   const [activeLeague, setActiveLeague] = useState(null);
   const [promoIndex, setPromoIndex] = useState(0);
@@ -349,9 +362,9 @@ export default function Home() {
           <p>
             <strong>Invite friends</strong> — they unlock a Free Bet after deposit; you earn when they play.
           </p>
-          <Link className="home-invite-strip__cta" to="/invite">
+          <button type="button" className="home-invite-strip__cta" onClick={openInviteWhatsApp}>
             Share on WhatsApp
-          </Link>
+          </button>
         </div>
       )}
 

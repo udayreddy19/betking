@@ -318,6 +318,7 @@ describe('Auth Service & Endpoints Test Suite', () => {
         email: 'virat.kohli@oddsyra.com',
         password: 'SuperSecurePassword2026!',
         firstName: 'Virat',
+        dateOfBirth: '1990-01-15',
         lastName: 'Kohli',
         phone: '+919876543210',
       });
@@ -342,6 +343,7 @@ describe('Auth Service & Endpoints Test Suite', () => {
         email: 'invalid_email_format',
         password: 'SuperSecurePassword2026!',
         firstName: 'Test',
+        dateOfBirth: '1990-01-15',
       });
 
       expect(result.error).toBeDefined();
@@ -354,6 +356,7 @@ describe('Auth Service & Endpoints Test Suite', () => {
         email: 'test@oddsyra.com',
         password: 'short',
         firstName: 'Test',
+        dateOfBirth: '1990-01-15',
       });
 
       expect(result.error).toBeDefined();
@@ -365,12 +368,14 @@ describe('Auth Service & Endpoints Test Suite', () => {
         email: 'duplicate@oddsyra.com',
         password: 'Password123!',
         firstName: 'Original',
+        dateOfBirth: '1990-01-15',
       });
 
       const dupResult = await signup(mockQuery, mockWithTransaction, {
         email: 'duplicate@oddsyra.com',
         password: 'AnotherPassword123!',
         firstName: 'Duplicate',
+        dateOfBirth: '1990-01-15',
       });
 
       expect(dupResult.error).toMatch(/already linked to another account/i);
@@ -383,6 +388,7 @@ describe('Auth Service & Endpoints Test Suite', () => {
         email: 'first@oddsyra.com',
         password: 'Password123!',
         firstName: 'First',
+        dateOfBirth: '1990-01-15',
         phone: '9876543210',
       });
 
@@ -390,6 +396,7 @@ describe('Auth Service & Endpoints Test Suite', () => {
         email: 'second@oddsyra.com',
         password: 'Password123!',
         firstName: 'Second',
+        dateOfBirth: '1990-01-15',
         phone: '+91 98765 43210',
       });
 
@@ -405,6 +412,7 @@ describe('Auth Service & Endpoints Test Suite', () => {
         email: 'player@oddsyra.com',
         password: 'ValidPassword123!',
         firstName: 'Rohit',
+        dateOfBirth: '1990-01-15',
         lastName: 'Sharma',
       });
     });
@@ -478,6 +486,7 @@ describe('Auth Service & Endpoints Test Suite', () => {
         email: 'reset.user@oddsyra.com',
         password: 'InitialPassword123!',
         firstName: 'Hardik',
+        dateOfBirth: '1990-01-15',
         lastName: 'Pandya',
       });
       userId = res.userId;
@@ -511,6 +520,7 @@ describe('Auth Service & Endpoints Test Suite', () => {
         email: 'verify.me@oddsyra.com',
         password: 'Password123!',
         firstName: 'Jasprit',
+        dateOfBirth: '1990-01-15',
       });
 
       const token = signupRes.emailVerificationToken;
