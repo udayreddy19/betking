@@ -12,7 +12,6 @@ import {
   BellRingIcon,
   SettingsIcon,
   ShieldCheckIcon,
-  SearchIcon,
   LayersIcon,
   KeyIcon,
   ChevronRightIcon,
@@ -165,10 +164,10 @@ const DOMAIN_GROUPS = [
         Icon: BellRingIcon,
         role: ADMIN_ROLES.MARKETING_ADMIN,
         subModules: [
-          { id: 'compose', label: 'Compose Mail' },
+          { id: 'compose', label: 'Compose' },
           { id: 'social', label: 'Instagram' },
-          { id: 'mail-inbox', label: 'Mail Delivery' },
-          { id: 'templates', label: 'Mail Templates' },
+          { id: 'mail-inbox', label: 'Delivery' },
+          { id: 'templates', label: 'Templates' },
           { id: 'broadcast', label: 'Broadcast' },
         ],
       },
@@ -178,24 +177,17 @@ const DOMAIN_GROUPS = [
     title: 'System',
     items: [
       {
-        id: 'admin-profile',
-        label: 'Profile',
-        Icon: UsersIcon,
-        role: ADMIN_ROLES.SUPPORT_AGENT,
-        subModules: [
-          { id: 'account', label: 'Account' },
-          { id: 'appearance', label: 'Appearance' },
-          { id: 'security', label: 'Security' },
-          { id: 'session', label: 'Session' },
-        ],
-      },
-      {
-        id: 'analytics',
-        label: 'Reports',
-        Icon: ChartBarIcon,
+        id: 'operations',
+        label: 'Ops',
+        Icon: KeyIcon,
         role: ADMIN_ROLES.OPERATIONS_ADMIN,
         subModules: [
-          { id: 'turnover-ggr', label: 'Performance' },
+          { id: 'ops-status', label: 'Status' },
+          { id: 'ops-health', label: 'Health' },
+          { id: 'ops-switches', label: 'Switches' },
+          { id: 'ops-queues', label: 'Queues' },
+          { id: 'backups-dr', label: 'Backups' },
+          { id: 'turnover-ggr', label: 'Reports' },
           { id: 'bi-exporter', label: 'Export' },
         ],
       },
@@ -208,28 +200,7 @@ const DOMAIN_GROUPS = [
           { id: 'feature-flags', label: 'Viewer flags' },
           { id: 'api-keys', label: 'API keys' },
           { id: 'database-tables', label: 'Database' },
-        ],
-      },
-      {
-        id: 'operations',
-        label: 'Ops',
-        Icon: KeyIcon,
-        role: ADMIN_ROLES.OPERATIONS_ADMIN,
-        subModules: [
-          { id: 'ops-status', label: 'Status' },
-          { id: 'ops-health', label: 'Health' },
-          { id: 'ops-switches', label: 'Switches' },
-          { id: 'ops-queues', label: 'Queues' },
-          { id: 'backups-dr', label: 'Backups' },
-        ],
-      },
-      {
-        id: 'api-explorer',
-        label: 'APIs',
-        Icon: SearchIcon,
-        role: ADMIN_ROLES.OPERATIONS_ADMIN,
-        subModules: [
-          { id: 'overview', label: 'Catalog' },
+          { id: 'api-catalog', label: 'APIs' },
           { id: 'odds-engine', label: 'Odds engine' },
         ],
       },
@@ -244,6 +215,18 @@ const DOMAIN_GROUPS = [
           { id: 'sessions', label: 'Sessions' },
           { id: 'rbac-matrix', label: 'Roles' },
           { id: 'config-health', label: 'Config' },
+        ],
+      },
+      {
+        id: 'admin-profile',
+        label: 'Profile',
+        Icon: UsersIcon,
+        role: ADMIN_ROLES.SUPPORT_AGENT,
+        subModules: [
+          { id: 'account', label: 'Account' },
+          { id: 'appearance', label: 'Appearance' },
+          { id: 'security', label: 'Security' },
+          { id: 'session', label: 'Session' },
         ],
       },
     ],
@@ -378,12 +361,24 @@ const HUB_FOR = {
 };
 
 function resolveAdminNav(domainId, subModuleId) {
-  const domain = ALL_DOMAINS.find((d) => d.id === domainId) || ALL_DOMAINS.find((d) => d.id === DEFAULT_ADMIN_DOMAIN);
+  // Legacy domains folded into Ops / Settings
+  let resolvedDomainId = domainId;
+  let normalizedSub = subModuleId === 'targeted-deposit-freebet' ? 'deposit-freebet' : subModuleId;
+  if (resolvedDomainId === 'analytics') {
+    resolvedDomainId = 'operations';
+    if (!normalizedSub || normalizedSub === 'overview') normalizedSub = 'turnover-ggr';
+  }
+  if (resolvedDomainId === 'api-explorer') {
+    resolvedDomainId = 'platform';
+    if (!normalizedSub || normalizedSub === 'overview') normalizedSub = 'api-catalog';
+  }
+
+  const domain = ALL_DOMAINS.find((d) => d.id === resolvedDomainId) || ALL_DOMAINS.find((d) => d.id === DEFAULT_ADMIN_DOMAIN);
   const resolvedDomain = domain?.id || DEFAULT_ADMIN_DOMAIN;
   const subs = domain?.subModules || [];
-  let normalizedSub = subModuleId === 'targeted-deposit-freebet' ? 'deposit-freebet' : subModuleId;
   // All bets was removed — Settlement covers the same desk.
   if (normalizedSub === 'bets-registry') normalizedSub = 'settlement-engine';
+  if (normalizedSub === 'overview' && resolvedDomain === 'platform') normalizedSub = 'api-catalog';
   const hidden = HIDDEN_SUBS[resolvedDomain] || [];
   const allowed = subs.some((s) => s.id === normalizedSub) || hidden.includes(normalizedSub);
   const resolvedSub = allowed
@@ -504,7 +499,7 @@ function AdminShellInner() {
   }, [location.pathname, navigate, syncAdminLocation]);
 
   const { activeRole, setActiveRole, syncRoleFromJwt, rolePreviewEnabled } = useAdminRole();
-  const { revamp: uiRevamp, toggleRevamp } = useAdminUiMode();
+  const { revamp: uiRevamp } = useAdminUiMode();
   const { themeId: adminThemeId, theme: adminTheme, isDark: shellIsDark } = useAdminTheme();
   const [isAlertsOpen, setIsAlertsOpen] = useState(false);
   const [sessionReady, setSessionReady] = useState(!!localStorage.getItem('adminToken'));
@@ -1092,15 +1087,29 @@ function AdminShellInner() {
           onSubModuleChange={(id) => handleSubModuleSelect('communications', id)}
         />
       );
+      case 'platform': {
+        if (activeSubModule === 'api-catalog' || activeSubModule === 'odds-engine' || activeSubModule === 'overview') {
+          return (
+            <ApiExplorerDomainView
+              subModule={activeSubModule === 'api-catalog' ? 'overview' : activeSubModule}
+            />
+          );
+        }
+        return <PlatformDomainView subModule={activeSubModule} />;
+      }
+      case 'operations': {
+        if (activeSubModule === 'turnover-ggr' || activeSubModule === 'bi-exporter') {
+          return <AnalyticsDomainView subModule={activeSubModule} />;
+        }
+        return (
+          <OperationsDomainView
+            subModule={activeSubModule}
+            onNavigate={handleCommandNavigate}
+            onSubModuleChange={(id) => handleSubModuleSelect('operations', id)}
+          />
+        );
+      }
       case 'analytics': return <AnalyticsDomainView subModule={activeSubModule} />;
-      case 'platform': return <PlatformDomainView subModule={activeSubModule} />;
-      case 'operations': return (
-        <OperationsDomainView
-          subModule={activeSubModule}
-          onNavigate={handleCommandNavigate}
-          onSubModuleChange={(id) => handleSubModuleSelect('operations', id)}
-        />
-      );
       case 'api-explorer': return <ApiExplorerDomainView subModule={activeSubModule} />;
       case 'security-governance': return <SecurityGovernanceDomainView subModule={activeSubModule} />;
       case 'admin-profile': return (
@@ -1184,7 +1193,6 @@ function AdminShellInner() {
             if (currentDomainObj) handleDomainSelect(currentDomainObj);
           }}
           uiRevamp={uiRevamp}
-          onToggleUiRevamp={toggleRevamp}
           onOpenProfile={(sub) => handleSubModuleSelect('admin-profile', sub || 'account')}
         />
 

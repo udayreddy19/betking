@@ -4,6 +4,7 @@ import AdminDataTable from '../components/AdminDataTable';
 import { useAdminToast } from '../components/AdminToastContext';
 import { StatusBadge } from '../components/AdminBadge';
 import { AdminHub } from '../components/AdminTabs';
+import AdminPageHeader from '../components/AdminPageHeader';
 import { useNavAttentionCount } from '../context/AdminNavAttentionContext';
 import AdminConfirmDialog from '../components/AdminConfirmDialog';
 import SocialMediaPanel from './SocialMediaPanel';
@@ -266,12 +267,10 @@ function ComposeMailPanel() {
 
   return (
     <div className="admin-compose-mail">
-      <div style={{ marginBottom: 16 }}>
-        <h2 className="admin-page-header__title">Compose email</h2>
-        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
-          Search a player by name, email, or mobile, then pick a shortcut to fill subject and body.
-        </p>
-      </div>
+      <AdminPageHeader
+        title="Compose email"
+        subtitle="Search a player by name, email, or mobile, then pick a shortcut to fill subject and body."
+      />
 
       {renderTemplateRow(coreTemplates)}
       {opsTemplates.length > 0 && (

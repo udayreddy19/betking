@@ -20,12 +20,12 @@ export const ADMIN_ROLES = {
 const ROLE_ALLOWED_DOMAINS = {
   [ADMIN_ROLES.SUPER_ADMIN]: null, // null = all
   // control-tower: server READ_OPS allows FINANCE / RISK / OPERATIONS landing
-  [ADMIN_ROLES.FINANCE_ADMIN]: ['finance', 'betting', 'analytics', 'control-tower'],
-  [ADMIN_ROLES.TRADING_ADMIN]: ['trading-risk', 'betting', 'sports', 'analytics'],
-  [ADMIN_ROLES.SUPPORT_AGENT]: ['support', 'customers', 'communications'],
-  [ADMIN_ROLES.RISK_ANALYST]: ['trading-risk', 'analytics', 'security-governance', 'control-tower'],
-  [ADMIN_ROLES.MARKETING_ADMIN]: ['growth', 'communications', 'analytics'],
-  [ADMIN_ROLES.OPERATIONS_ADMIN]: ['operations', 'platform', 'analytics', 'betting', 'support', 'api-explorer', 'communications', 'customers', 'control-tower'],
+  [ADMIN_ROLES.FINANCE_ADMIN]: ['finance', 'betting', 'operations', 'control-tower', 'admin-profile'],
+  [ADMIN_ROLES.TRADING_ADMIN]: ['trading-risk', 'betting', 'sports', 'operations', 'admin-profile'],
+  [ADMIN_ROLES.SUPPORT_AGENT]: ['support', 'customers', 'communications', 'admin-profile'],
+  [ADMIN_ROLES.RISK_ANALYST]: ['trading-risk', 'operations', 'security-governance', 'control-tower', 'admin-profile'],
+  [ADMIN_ROLES.MARKETING_ADMIN]: ['growth', 'communications', 'operations', 'admin-profile'],
+  [ADMIN_ROLES.OPERATIONS_ADMIN]: ['operations', 'platform', 'betting', 'support', 'communications', 'customers', 'control-tower', 'admin-profile'],
 };
 
 export { ROLE_ALLOWED_DOMAINS };

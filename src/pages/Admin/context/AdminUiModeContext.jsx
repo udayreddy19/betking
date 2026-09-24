@@ -1,6 +1,4 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
-
-const STORAGE_KEY = 'oddsyra-admin-ui-revamp';
+import React, { createContext, useContext, useEffect, useMemo } from 'react';
 
 const AdminUiModeContext = createContext({
   revamp: true,
@@ -8,35 +6,24 @@ const AdminUiModeContext = createContext({
   toggleRevamp: () => {},
 });
 
-/** First visit → New UI. Explicit Classic (`0`) or New (`1`) is respected. */
-function readStoredRevamp() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw === null) return true;
-    return raw === '1';
-  } catch {
-    return true;
-  }
-}
-
+/**
+ * Admin is New UI only. Classic chrome is retired; the API stays so
+ * existing callers (`useAdminUiMode().revamp`) keep working.
+ */
 export function AdminUiModeProvider({ children }) {
-  const [revamp, setRevampState] = useState(readStoredRevamp);
-
-  const setRevamp = useCallback((next) => {
-    const value = Boolean(next);
-    setRevampState(value);
+  useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, value ? '1' : '0');
+      localStorage.setItem('oddsyra-admin-ui-revamp', '1');
     } catch { /* ignore */ }
   }, []);
 
-  const toggleRevamp = useCallback(() => {
-    setRevamp(!revamp);
-  }, [revamp, setRevamp]);
-
   const value = useMemo(
-    () => ({ revamp, setRevamp, toggleRevamp }),
-    [revamp, setRevamp, toggleRevamp],
+    () => ({
+      revamp: true,
+      setRevamp: () => {},
+      toggleRevamp: () => {},
+    }),
+    [],
   );
 
   return (

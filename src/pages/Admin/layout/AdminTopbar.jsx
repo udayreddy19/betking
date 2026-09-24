@@ -10,8 +10,8 @@ import AdminThemePicker from '../components/AdminThemePicker';
 import { ADMIN_ROLES } from '../permissions/AdminRBACGate';
 
 /**
- * Extracted Admin Topbar — alerts, RBAC role, profile, breadcrumbs,
- * and direct Light/Dark mode toggling and theme selection.
+ * Admin topbar — alerts, role, profile, breadcrumbs, theme.
+ * New UI is permanent; Classic toggle removed.
  */
 export default function AdminTopbar({
   activeRole,
@@ -27,8 +27,6 @@ export default function AdminTopbar({
   currentSubLabel,
   onBreadcrumbHome,
   onBreadcrumbDomain,
-  uiRevamp = false,
-  onToggleUiRevamp,
   onOpenProfile,
 }) {
   const showSub = Boolean(
@@ -41,29 +39,27 @@ export default function AdminTopbar({
       <div className="admin-topbar__cluster">
         <button
           type="button"
-          className="admin-btn admin-btn--ghost admin-btn--icon"
+          className="admin-btn admin-btn--ghost admin-btn--icon admin-topbar__menu-btn"
           onClick={onOpenMobileSidebar}
           aria-label="Open navigation"
-          style={{ display: 'none' }}
-          data-mobile-menu
         >
           <MenuIcon size={20} />
         </button>
 
         {currentDomainLabel && (
-          <div className="admin-breadcrumbs" style={{ display: 'none' }} data-desktop-breadcrumbs>
+          <div className="admin-breadcrumbs admin-topbar__breadcrumbs" aria-label="Breadcrumb">
             {onBreadcrumbHome ? (
               <button type="button" className="admin-breadcrumbs__link" onClick={onBreadcrumbHome}>
                 Admin
               </button>
             ) : (
-              <span style={{ color: 'var(--admin-text-dim)' }}>Admin</span>
+              <span className="admin-breadcrumbs__muted">Admin</span>
             )}
             <span className="admin-breadcrumbs__sep">/</span>
             {onBreadcrumbDomain ? (
               <button
                 type="button"
-                className={currentSubLabel ? 'admin-breadcrumbs__link' : 'admin-breadcrumbs__current admin-breadcrumbs__link'}
+                className={showSub ? 'admin-breadcrumbs__link' : 'admin-breadcrumbs__current admin-breadcrumbs__link'}
                 onClick={onBreadcrumbDomain}
               >
                 {currentDomainLabel}
@@ -74,36 +70,27 @@ export default function AdminTopbar({
             {showSub && (
               <>
                 <span className="admin-breadcrumbs__sep">/</span>
-                <span className="admin-breadcrumbs__current" style={{ color: 'var(--admin-text-secondary)' }}>{currentSubLabel}</span>
+                <span className="admin-breadcrumbs__current admin-breadcrumbs__sub">{currentSubLabel}</span>
               </>
             )}
+          </div>
+        )}
+
+        {currentDomainLabel && (
+          <div className="admin-topbar__mobile-title" aria-hidden="true">
+            <span className="admin-topbar__mobile-domain">{currentDomainLabel}</span>
+            {showSub && <span className="admin-topbar__mobile-sub">{currentSubLabel}</span>}
           </div>
         )}
       </div>
 
       <div className="admin-topbar__actions">
-        {typeof onToggleUiRevamp === 'function' && (
-          <button
-            type="button"
-            className={`admin-ui-mode-toggle${uiRevamp ? ' is-on' : ''}`}
-            onClick={onToggleUiRevamp}
-            aria-pressed={uiRevamp}
-            title={uiRevamp ? 'Switch to classic Admin UI' : 'Switch to new Admin UI'}
-          >
-            <span className="admin-ui-mode-toggle__track" aria-hidden="true">
-              <span className={`admin-ui-mode-toggle__thumb${uiRevamp ? ' is-on' : ''}`} />
-            </span>
-            <span className="admin-ui-mode-toggle__label">{uiRevamp ? 'New UI' : 'Classic'}</span>
-          </button>
-        )}
-
-        {/* Light / Dark Mode Toggle & Theme Picker */}
         <div className="admin-topbar__theme-cluster">
           <AdminThemeToggle />
           <AdminThemePicker />
         </div>
 
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+        <div className="admin-topbar__alerts-wrap">
           <motion.button
             ref={alertsBellRef}
             type="button"
@@ -112,13 +99,7 @@ export default function AdminTopbar({
             title={liveAlerts.length ? `Alerts (${liveAlerts.length})` : 'No alerts'}
             aria-expanded={isAlertsOpen}
             aria-haspopup="dialog"
-            className="admin-btn admin-btn--icon"
-            style={{
-              background: 'transparent',
-              color: 'var(--admin-text-muted)',
-              border: '1px solid var(--admin-border)',
-              borderRadius: '50%',
-            }}
+            className="admin-btn admin-btn--icon admin-topbar__alert-btn"
           >
             <BellRingIcon size={17} style={{ display: 'block' }} />
             {liveAlerts.length > 0 && (
@@ -130,45 +111,22 @@ export default function AdminTopbar({
         </div>
 
         <div className="admin-topbar__role">
-          <span style={{ fontSize: '0.7rem', color: 'var(--admin-text-muted)' }}>
+          <span className="admin-topbar__role-label">
             {rolePreviewEnabled ? 'Role (preview)' : 'Role'}
           </span>
           {rolePreviewEnabled ? (
             <select
               value={activeRole}
               onChange={(e) => onRoleChange(e.target.value)}
-              className="admin-select"
+              className="admin-select admin-topbar__role-select"
               title="DEV only — UI preview; JWT role is unchanged"
-              style={{
-                padding: '2px 6px',
-                borderRadius: 'var(--admin-radius-sm)',
-                fontSize: '0.74rem',
-                fontWeight: 600,
-                minWidth: 'auto',
-                backgroundPosition: 'right 4px center',
-                paddingRight: '18px',
-              }}
             >
               {Object.values(ADMIN_ROLES).map((role) => (
                 <option key={role} value={role}>{role}</option>
               ))}
             </select>
           ) : (
-            <span
-              className="admin-select"
-              style={{
-                display: 'inline-block',
-                padding: '2px 8px',
-                borderRadius: 'var(--admin-radius-sm)',
-                fontSize: '0.74rem',
-                fontWeight: 600,
-                lineHeight: '1.6',
-                border: '1px solid var(--admin-border)',
-                color: 'var(--admin-text)',
-              }}
-            >
-              {activeRole}
-            </span>
+            <span className="admin-topbar__role-value">{activeRole}</span>
           )}
         </div>
 
@@ -178,15 +136,6 @@ export default function AdminTopbar({
           onOpenProfile={onOpenProfile}
         />
       </div>
-
-      <style>{`
-        @media (max-width: 1023px) {
-          [data-mobile-menu] { display: inline-flex !important; }
-        }
-        @media (min-width: 1024px) {
-          [data-desktop-breadcrumbs] { display: flex !important; }
-        }
-      `}</style>
     </header>
   );
 }

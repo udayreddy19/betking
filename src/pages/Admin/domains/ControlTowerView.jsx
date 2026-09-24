@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminApiClient } from '../api/adminApiClient';
 import AdminTabs from '../components/AdminTabs';
+import AdminPageHeader from '../components/AdminPageHeader';
 import { useAdminUiMode } from '../context/AdminUiModeContext';
 import { AdminKpiDrillDrawer, useAdminKpiDrilldown } from '../hooks/useAdminKpiDrilldown';
 import { startVisibleInterval } from '../utils/visibleInterval';
@@ -161,49 +162,47 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
   const recentActivity = data?.recentActivity || [];
 
   return (
-    <div className="admin-control-tower-page" style={{ padding: '0 0 40px 0' }}>
-      <div className="admin-tower-hero">
-        <div className="admin-tower-hero__titles">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <h2>Home</h2>
+    <div className="admin-control-tower-page">
+      <AdminPageHeader
+        title="Home"
+        subtitle="Queues, ledger, and live betting in one place."
+        actions={(
+          <div className="admin-tower-toolbar">
             <span className={`admin-badge ${data?.overallHealth === 'HEALTHY' ? 'admin-badge--success' : 'admin-badge--warning'}`}>
               {data?.overallHealth === 'HEALTHY' ? 'Healthy' : 'Needs attention'}
             </span>
+            <select
+              value={timeRange}
+              onChange={(e) => setTimeRange(e.target.value)}
+              className="admin-input"
+              aria-label="Time range"
+            >
+              <option value="today">Today (IST)</option>
+              <option value="24h">Last 24 hours</option>
+              <option value="7d">Last 7 days</option>
+              <option value="30d">Last 30 days</option>
+            </select>
+
+            <button
+              type="button"
+              onClick={() => setIsAutoRefresh(!isAutoRefresh)}
+              title={isAutoRefresh ? 'Pause auto-refresh' : 'Resume auto-refresh'}
+              className="admin-btn admin-btn--sm"
+            >
+              {isAutoRefresh ? 'Live · 15s' : 'Paused'}
+            </button>
+
+            <button
+              type="button"
+              onClick={fetchData}
+              disabled={loading}
+              className="admin-btn admin-btn--sm admin-btn--primary"
+            >
+              Refresh
+            </button>
           </div>
-          <p>Queues, ledger, and live betting in one place. Search from the bar above.</p>
-        </div>
-
-        <div className="admin-tower-toolbar">
-          <select
-            value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value)}
-            className="admin-input"
-          >
-            <option value="today">Today (IST)</option>
-            <option value="24h">Last 24 hours</option>
-            <option value="7d">Last 7 days</option>
-            <option value="30d">Last 30 days</option>
-          </select>
-
-          <button
-            type="button"
-            onClick={() => setIsAutoRefresh(!isAutoRefresh)}
-            title={isAutoRefresh ? 'Pause auto-refresh' : 'Resume auto-refresh'}
-            className="admin-btn admin-btn--sm"
-          >
-            {isAutoRefresh ? 'Live · 15s' : 'Paused'}
-          </button>
-
-          <button
-            type="button"
-            onClick={fetchData}
-            disabled={loading}
-            className="admin-btn admin-btn--sm admin-btn--primary"
-          >
-            Refresh
-          </button>
-        </div>
-      </div>
+        )}
+      />
 
       {error && (
         <div className="admin-login__error" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>

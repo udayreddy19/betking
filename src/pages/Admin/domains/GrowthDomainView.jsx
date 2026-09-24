@@ -9,6 +9,7 @@ import AdminKPI from '../components/AdminKPI';
 import { AdminKpiDrillDrawer, useAdminKpiDrilldown } from '../hooks/useAdminKpiDrilldown';
 import { formatIst, formatIstDateTime, formatIstDate } from '../../../utils/istTime';
 import AdminConfirmDialog from '../components/AdminConfirmDialog';
+import AdminPageHeader from '../components/AdminPageHeader';
 
 function money(n) {
   if (n == null || Number.isNaN(Number(n))) return '—';
@@ -3002,14 +3003,14 @@ function GrowthOverviewPanel({ initialTab = 'dashboard' }) {
   ];
 
   return (
-    <div>
-      <div style={{ marginBottom: 16 }}>
-        <h2 className="admin-page-header__title">Overview</h2>
-        <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
-          Campaign health and promo ROI in one place.
-        </p>
-        {error && <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: '0.78rem' }}>{error}</p>}
-      </div>
+    <div className="admin-growth-overview">
+      <AdminPageHeader
+        title="Overview"
+        subtitle="Campaign health and promo ROI in one place."
+        banner={error ? (
+          <p className="admin-page-header__error">{error}</p>
+        ) : null}
+      />
       <AdminTabs
         active={tab}
         onChange={setTab}
@@ -3029,7 +3030,7 @@ function GrowthOverviewPanel({ initialTab = 'dashboard' }) {
         <MasterAgentAffiliatesPanel />
       ) : (
         <>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 16 }}>
+      <div className="admin-kpi-grid">
         {cards.map((c) => (
           <AdminKPI
             key={c.label}

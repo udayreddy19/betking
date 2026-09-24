@@ -3,7 +3,6 @@ import { adminApiClient } from '../api/adminApiClient';
 import AdminThemePicker from '../components/AdminThemePicker';
 import ThemeToggle from '../../../components/ThemeToggle/ThemeToggle';
 import { useAdminTheme } from '../context/AdminThemeContext';
-import { useAdminUiMode } from '../context/AdminUiModeContext';
 import { useAdminRole } from '../permissions/AdminRBACGate';
 import { useAdminToast } from '../components/AdminToastContext';
 import { StatusBadge } from '../components/AdminBadge';
@@ -164,7 +163,6 @@ function AccountPanel({ profile, onReload }) {
 
 function AppearancePanel() {
   const { theme, themeId } = useAdminTheme();
-  const { revamp, setRevamp } = useAdminUiMode();
 
   return (
     <div className="admin-profile-page__stack">
@@ -180,26 +178,16 @@ function AppearancePanel() {
 
       <SectionCard
         title="Interface"
-        description="Layout density and site light/dark when matching the sportsbook."
+        description="Admin uses the New UI chrome (segmented domain tabs and softer controls)."
       >
         <div className="admin-profile-page__pref-row">
           <div>
-            <div className="admin-profile-page__pref-title">New Admin UI</div>
+            <div className="admin-profile-page__pref-title">Layout</div>
             <div className="admin-profile-page__pref-desc">
-              Softer controls and segmented domain tabs. Classic keeps the previous chrome.
+              New UI is always on. Domain pills sit under the top bar; Classic chrome is retired.
             </div>
           </div>
-          <button
-            type="button"
-            className={`admin-ui-mode-toggle${revamp ? ' is-on' : ''}`}
-            onClick={() => setRevamp(!revamp)}
-            aria-pressed={revamp}
-          >
-            <span className="admin-ui-mode-toggle__track" aria-hidden="true">
-              <span className={`admin-ui-mode-toggle__thumb${revamp ? ' is-on' : ''}`} />
-            </span>
-            <span className="admin-ui-mode-toggle__label">{revamp ? 'New UI' : 'Classic'}</span>
-          </button>
+          <span className="admin-badge admin-badge--success">New UI</span>
         </div>
 
         {themeId === 'match' ? (
@@ -329,7 +317,6 @@ function SecurityPanel({ profile, onReload }) {
 function PreferencesPanel({ onLogout }) {
   const { activeRole } = useAdminRole();
   const { theme } = useAdminTheme();
-  const { revamp } = useAdminUiMode();
 
   return (
     <div className="admin-profile-page__stack">
@@ -348,7 +335,7 @@ function PreferencesPanel({ onLogout }) {
           </div>
           <div>
             <div className="admin-profile-page__meta-label">UI mode</div>
-            <div className="admin-profile-page__meta-value">{revamp ? 'New UI' : 'Classic'}</div>
+            <div className="admin-profile-page__meta-value">New UI</div>
           </div>
         </div>
         <div className="admin-profile-page__form-actions" style={{ marginTop: 16 }}>
