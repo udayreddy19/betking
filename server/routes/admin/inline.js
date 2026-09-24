@@ -2988,6 +2988,75 @@ router.put('/api/admin/growth/referrals/settings', async (req, res) => {
   }
 });
 
+router.get('/api/admin/growth/automation', async (req, res) => {
+  try {
+    const { getGrowthAutomationConfig } = await import('../../../lib/growthAutomationConfig.mjs');
+    const config = await getGrowthAutomationConfig();
+    res.json({ success: true, config });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.put('/api/admin/growth/automation', async (req, res) => {
+  try {
+    const { updateGrowthAutomationConfig } = await import('../../../lib/growthAutomationConfig.mjs');
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    const body = req.body || {};
+    const config = await updateGrowthAutomationConfig({
+      activation: body.activation,
+      kycReminder: body.kycReminder,
+    }, {
+      adminId: req.admin?.id || 'admin',
+      reason: body.reason || 'Admin growth automation update',
+    });
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: 'growth_automation',
+      action: 'GROWTH_AUTOMATION_UPDATED',
+      details: {
+        activationEnabled: config.activation.enabled,
+        kycEnabled: config.kycReminder.enabled,
+      },
+    });
+    res.json({ success: true, config });
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/api/admin/growth/automation/run', async (req, res) => {
+  try {
+    const kind = String(req.body?.kind || '').trim();
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    let result = null;
+    if (kind === 'activation') {
+      const { processUnconvertedDepositorNudges } = await import('../../../lib/activationNudgeWorker.mjs');
+      result = await processUnconvertedDepositorNudges({
+        limit: req.body?.limit != null ? Number(req.body.limit) : undefined,
+      });
+    } else if (kind === 'kycReminder') {
+      const { enqueueAutoKycReminders } = await import('../../../lib/kycAutoReminderWorker.mjs');
+      result = await enqueueAutoKycReminders({
+        limit: req.body?.limit != null ? Number(req.body.limit) : undefined,
+      });
+    } else {
+      return res.status(400).json({ success: false, error: 'kind must be activation or kycReminder' });
+    }
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: 'growth_automation',
+      action: 'GROWTH_AUTOMATION_RUN',
+      details: { kind, result },
+    });
+    const { getGrowthAutomationConfig } = await import('../../../lib/growthAutomationConfig.mjs');
+    const config = await getGrowthAutomationConfig();
+    res.json({ success: true, kind, result, config });
+  } catch (err) {
+    res.status(err.status || 500).json({ success: false, error: err.message });
+  }
+});
+
 router.get('/api/admin/growth/referrals/analytics', async (req, res) => {
   try {
     const { getReferralAnalytics } = await import('../../../lib/referralLoyaltyEngine.mjs');

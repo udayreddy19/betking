@@ -3608,6 +3608,17 @@ function ReferralsAdminPanel() {
       <AdminCard title="Reward settings" accent="#8b5cf6" style={{ marginBottom: 16 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, alignItems: 'end' }}>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.78rem', color: 'var(--admin-text-muted)' }}>
+            Program
+            <select
+              value={editSettings.enabled === false ? 'false' : 'true'}
+              onChange={(e) => setSettingsDraft({ ...editSettings, enabled: e.target.value === 'true' })}
+              style={{ padding: '8px 10px', borderRadius: 'var(--admin-radius)' }}
+            >
+              <option value="true">Enabled</option>
+              <option value="false">Paused</option>
+            </select>
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.78rem', color: 'var(--admin-text-muted)' }}>
             Reward type
             <select
               value={editSettings.rewardKind || 'freebet'}
@@ -3680,6 +3691,17 @@ function ReferralsAdminPanel() {
             >
               <option value="true">Yes</option>
               <option value="false">No</option>
+            </select>
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.78rem', color: 'var(--admin-text-muted)' }}>
+            Require first bet
+            <select
+              value={editSettings.requireFirstBet ? 'true' : 'false'}
+              onChange={(e) => setSettingsDraft({ ...editSettings, requireFirstBet: e.target.value === 'true' })}
+              style={{ padding: '8px 10px', borderRadius: 'var(--admin-radius)' }}
+            >
+              <option value="false">No</option>
+              <option value="true">Yes</option>
             </select>
           </label>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.78rem', color: 'var(--admin-text-muted)' }}>

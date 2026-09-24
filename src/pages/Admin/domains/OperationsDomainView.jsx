@@ -7,6 +7,7 @@ import { useAdminToast } from '../components/AdminToastContext';
 import { AdminKpiDrillDrawer, useAdminKpiDrilldown } from '../hooks/useAdminKpiDrilldown';
 import { startVisibleInterval } from '../utils/visibleInterval';
 import EmergencyControlsPanel from '../components/EmergencyControlsPanel';
+import GrowthAutomationPanel from '../components/GrowthAutomationPanel';
 import AdminTabs, { AdminHub } from '../components/AdminTabs';
 import { formatIst, formatIstDateTime } from '../../../utils/istTime';
 
@@ -1797,6 +1798,9 @@ function OperationsPanels({ subModule = 'health-matrix', onNavigate }) {
           </p>
         </div>
         <EmergencyControlsPanel showHistory />
+        <div style={{ marginTop: 28 }}>
+          <GrowthAutomationPanel />
+        </div>
       </div>
     );
   }
