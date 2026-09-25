@@ -1,0 +1,27 @@
+OddsYra production certification
+
+◇ injected env (39) from .env // tip: ⌘ enable debugging { debug: true }
+✓ [PASS] Cricket engine default — resolved=v4
+✓ [PASS] Other-sports engine default — resolved=v4
+✓ [PASS] Cricket V3 override — none active (or expired)
+✓ [PASS] Other-sports override source — source=env active=v4
+✓ [PASS] Active cricket engine (runtime) — active=v4 source=env expires=n/a
+✓ [PASS] Active other-sports engine (runtime) — active=v4 source=env
+✓ [PASS] Auto-promotion flag — AUTO_PROMOTION=false
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+✓ [PASS] Authoritative exposure source — open_bets_postgres
+✓ [PASS] Risk hierarchy — maxStake=25000
+✓ [PASS] Calibration auto-promotion — status=INSUFFICIENT_SAMPLE N=1
+! [WARN] Production validation N — N=1 below gate 1000 (INSUFFICIENT_SAMPLE)
+✓ [PASS] Casino is aggregator (not house) — CASINO_AGGREGATOR
+✓ [PASS] package.json readable — name=oddsyra
+⊗ [BLOCKED] Security suite gate — security:certification FAIL; smoke NOT VERIFIED (no live server); vitest security/auth 62 passed UNIT; npm audit after fix: 3 moderate (vitest/mocker devDep) — nodemailer HIGH and qs fixed
+⊗ [BLOCKED] E2E suite gate — playwright: 6 passed, 14 skipped (staging/API gates not provisioned); not full P0 coverage
+✓ [PASS] Concurrency suite gate — pass4Concurrency + betConcurrencyAndLocks + idempotencyConcurrency: 21 passed INTEGRATION
+! [WARN] Payment E2E gate — UNIT/INTEGRATION payments+finance webhooks 52 passed 1 skipped; LIVE/SANDBOX gateway E2E not re-certified this pass
+✓ [PASS] Financial invariants gate — pass4FinancialInvariants + exposure SoT + payment SM + hierarchy UNIT passed
+✓ [PASS] WebSocket suite gate — pass4WebSocketResync UNIT + sprint4LiveWs + financialWsOutbox passed; not LIVE socket to production
+
+---
+PASS=15 WARN=2 BLOCKED=2 FAIL=0
+CERTIFICATION: BLOCKED

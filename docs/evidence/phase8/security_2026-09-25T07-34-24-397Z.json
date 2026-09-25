@@ -1,0 +1,72 @@
+{
+  "phase": 8,
+  "timestamp": "2026-09-25T07:34:24.397Z",
+  "gitCommit": "9517ef0",
+  "autoRepair": false,
+  "secretsPrinted": false,
+  "environment": "local",
+  "baseUrl": "http://127.0.0.1:5001",
+  "result": "NOT_VERIFIED",
+  "gates": {
+    "AUTHENTICATION": {
+      "status": "PASS",
+      "notes": "Unauth + invalid bearer probes only"
+    },
+    "MFA": {
+      "status": "NOT_VERIFIED",
+      "notes": "Set SMOKE_ADMIN_TOKEN / MFA test procedure for live MFA PASS"
+    },
+    "RBAC": {
+      "status": "NOT_VERIFIED",
+      "notes": "Role matrix requires provisioned admin roles — not auto PASS"
+    },
+    "CSRF": {
+      "status": "NOT_VERIFIED",
+      "notes": "Cookie CSRF matrix requires browser session — not auto PASS"
+    },
+    "SECURITY": {
+      "status": "NOT_VERIFIED",
+      "notes": "Partial automated surface only; full SECURITY PASS needs MFA+RBAC+CSRF evidence"
+    },
+    "AUDIT_LOGGING": {
+      "status": "NOT_VERIFIED",
+      "notes": "Requires credentialed privileged action + audit row inspect"
+    }
+  },
+  "cases": [
+    {
+      "name": "unauthenticated_admin",
+      "ok": true,
+      "status": 401,
+      "bodySnippet": "{\"error\":\"Authentication required\",\"code\":\"AUTH_REQUIRED\"}"
+    },
+    {
+      "name": "unauthenticated_certification",
+      "ok": true,
+      "status": 401,
+      "bodySnippet": "{\"error\":\"Authentication required\",\"code\":\"AUTH_REQUIRED\"}"
+    },
+    {
+      "name": "invalid_bearer",
+      "ok": true,
+      "status": 401,
+      "bodySnippet": "{\"error\":\"Invalid token\",\"code\":\"INVALID_TOKEN\"}"
+    },
+    {
+      "name": "public_readiness",
+      "ok": true,
+      "status": 200,
+      "bodySnippet": "{\"ready\":true,\"status\":\"HEALTHY\",\"timestamp\":\"2026-09-25T07:34:24.393Z\"}"
+    },
+    {
+      "name": "public_liveness",
+      "ok": true,
+      "status": 200,
+      "bodySnippet": "{\"alive\":true,\"timestamp\":\"2026-09-25T07:34:24.394Z\"}"
+    }
+  ],
+  "credentialedMatrixExecuted": false,
+  "configOverall": "WARNING",
+  "secretsLeakDetected": false,
+  "notes": "Automated partial certification. MFA/RBAC/CSRF remain NOT_VERIFIED until credentialed evidence."
+}

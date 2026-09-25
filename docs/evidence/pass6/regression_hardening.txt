@@ -1,0 +1,10 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+ RUN  v4.1.10 /Users/udayreddy/Desktop/betking
+
+
+ Test Files  7 passed (7)
+      Tests  44 passed (44)
+   Start at  13:40:23
+   Duration  3.06s (transform 4.51s, setup 0ms, import 4.77s, tests 4.11s, environment 0ms)
+

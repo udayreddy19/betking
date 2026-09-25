@@ -159,7 +159,8 @@ function isOddsRefreshError(error) {
 }
 
 function clearOddsChangedFlagsOnBets(bets) {
-  return bets.map(({ oddsChanged, previousOdds, ...rest }) => rest);
+  // Keep previousOdds for strike-through / accept UX; only drop the boolean alias.
+  return bets.map(({ oddsChanged, ...rest }) => rest);
 }
 
 async function fetchSyncedBetsFromServer(currentBets) {
@@ -857,10 +858,15 @@ export function BetSlipProvider({ children }) {
         matchId: bet.matchId,
         matchName: bet.matchName,
         selection: bet.selection,
+        selectionId: bet.selectionId,
         selectionName: bet.selectionName,
         marketId: bet.marketId,
         marketName: bet.marketName,
         odds: bet.odds,
+        previousOdds: bet.previousOdds ?? bet.oldOdds,
+        oldOdds: bet.oldOdds ?? bet.previousOdds,
+        oddsChanged: bet.oddsChanged,
+        oddsStatus: bet.oddsStatus,
       },
       defaultStake: isPromoLocked ? String(promoAmount) : (singlesStakes[bet.id] || stake || '100'),
     });

@@ -95,7 +95,9 @@ function QuickBetPanel({
   const oddsChanged = bet.oddsStatus === ODDS_STATUS.CHANGED;
   const showStrike = oddsChanged && Number.isFinite(oldOdds);
   const noticeText = oddsChanged
-    ? 'Odds have changed.'
+    ? (Number.isFinite(oldOdds) && Number.isFinite(newOdds)
+      ? `Odds changed from ${oldOdds.toFixed(2)} to ${newOdds.toFixed(2)}`
+      : 'Odds have changed.')
     : placementNotice;
 
   return (
@@ -273,7 +275,7 @@ function QuickBetPanel({
               className="mobile-betslip-accept-odds"
               onClick={onAcceptOdds}
             >
-              Accept New Odds
+              {Number.isFinite(newOdds) ? `Accept ${newOdds.toFixed(2)}` : 'Accept New Odds'}
             </button>
             <button
               type="button"

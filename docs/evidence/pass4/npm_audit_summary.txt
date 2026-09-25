@@ -1,0 +1,2 @@
+npm_audit {"info":0,"low":0,"moderate":4,"high":1,"critical":0,"total":5}
+audit_info { info: 0, low: 0, moderate: 4, high: 1, critical: 0, total: 5 }

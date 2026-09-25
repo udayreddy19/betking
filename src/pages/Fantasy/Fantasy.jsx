@@ -63,7 +63,10 @@ export default function Fantasy() {
       <div className="fantasy-hero">
         <span className="fantasy-icon">🏆</span>
         <h1>Fantasy Cricket</h1>
-        <p>Fantasy contests are not live yet. Live sports betting stays on the Sports page.</p>
+        <p data-testid="fantasy-gated-copy">
+          Fantasy contests are not live yet. Join opens when licensed contests go live.
+          Live sports betting stays on the Sports page.
+        </p>
         <div className="fantasy-actions">
           <Link to="/sports" className="fantasy-btn primary">Browse live matches</Link>
           <Link to="/promotions" className="fantasy-btn outline">View promotions</Link>

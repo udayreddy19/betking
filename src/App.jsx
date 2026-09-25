@@ -27,7 +27,7 @@ import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import RouteSeo from './components/RouteSeo/RouteSeo';
 import PhoneRequiredGate from './components/PhoneRequiredGate/PhoneRequiredGate';
 import { getAdminSessionState } from './utils/adminSession';
-import { CASINO_ENABLED, FANTASY_JOIN_ENABLED } from './utils/featureFlags';
+import { CASINO_ENABLED } from './utils/featureFlags';
 import { FeatureFlagsProvider, useFeatureFlags } from './context/FeatureFlagsContext';
 
 import Home from './pages/Home/Home';
@@ -146,7 +146,7 @@ function AppLayout() {
               <Route path="/deposit" element={<Navigate to="/wallet/deposit" replace />} />
               <Route path="/casino" element={CASINO_ENABLED ? <Casino /> : <CasinoComingSoon />} />
               <Route path="/live-casino" element={CASINO_ENABLED ? <LiveCasino /> : <CasinoComingSoon />} />
-              <Route path="/fantasy" element={FANTASY_JOIN_ENABLED ? <Fantasy /> : <CasinoComingSoon />} />
+              <Route path="/fantasy" element={<Fantasy />} />
               <Route path="/bets" element={<MyBetsPage />} />
               <Route path="/invite" element={<FlaggedRoute flagKey="referral_system_ui"><InvitePage /></FlaggedRoute>} />
               <Route path="/live-cricket-betting" element={<LiveCricketBetting />} />

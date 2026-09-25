@@ -1,0 +1,74 @@
+timestamp=2026-09-25T07:34:22Z
+environment=STAGING(local-staging)
+git=9517ef0
+category=STAGING
+
+command=curl health + security:smoke
+
+health_http=200
+{"status":"UP","timestamp":"2026-09-25T07:34:22.916Z","services":{"postgresql":"ok","redis":"ok"}}
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> oddsyra@0.0.0 security:smoke
+> node scripts/security-smoke.mjs --environment=local --base-url=http://127.0.0.1:5001
+
+◇ injected env (39) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+{
+  "event": "SECURITY_SMOKE",
+  "environment": "local",
+  "baseUrl": "http://127.0.0.1:5001",
+  "destructive": false,
+  "financialMutation": false,
+  "secretsPrinted": false,
+  "cases": [
+    {
+      "name": "unauthenticated_admin_ops",
+      "ok": true,
+      "status": 401,
+      "bodySnippet": "{\"error\":\"Authentication required\",\"code\":\"AUTH_REQUIRED\"}",
+      "verdict": "GREEN"
+    },
+    {
+      "name": "unauthenticated_finance",
+      "ok": true,
+      "status": 401,
+      "bodySnippet": "{\"error\":\"Authentication required\",\"code\":\"AUTH_REQUIRED\"}",
+      "verdict": "GREEN"
+    },
+    {
+      "name": "readiness_public",
+      "ok": true,
+      "status": 200,
+      "bodySnippet": "{\"ready\":true,\"status\":\"HEALTHY\",\"timestamp\":\"2026-09-25T07:34:23.328Z\"}",
+      "verdict": "GREEN"
+    },
+    {
+      "name": "invalid_bearer_admin",
+      "ok": true,
+      "status": 401,
+      "bodySnippet": "{\"error\":\"Invalid token\",\"code\":\"INVALID_TOKEN\"}",
+      "verdict": "GREEN"
+    },
+    {
+      "name": "csrf_missing_cookie_mutation_shape",
+      "ok": true,
+      "status": 200,
+      "bodySnippet": "{\"success\":true,\"message\":\"Logged out successfully.\"}",
+      "verdict": "YELLOW"
+    }
+  ],
+  "matrixNote": "Maker/checker dual-admin and role matrix require provisioned credentials — NOT VERIFIED here",
+  "rolesNotExecuted": [
+    "authenticated_non_admin",
+    "read_only_admin",
+    "finance_maker",
+    "finance_checker",
+    "super_admin",
+    "mfa_required_admin",
+    "maker_approve_own",
+    "privilege_escalation"
+  ],
+  "overall": "NOT VERIFIED",
+  "evidenceRule": "Partial smoke only. Full MFA/RBAC/CSRF GREEN requires credentialed live matrix.",
+  "generatedAt": "2026-09-25T07:34:23.335Z"
+}

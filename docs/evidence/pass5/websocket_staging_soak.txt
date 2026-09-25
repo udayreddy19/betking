@@ -1,0 +1,19 @@
+{
+  "timestamp": "2026-09-25T07:38:19.045Z",
+  "environment": "STAGING(local-staging)",
+  "git": "9517ef0",
+  "category": "STAGING",
+  "command": "WebSocket soak ws://127.0.0.1:5001/ws/support ~12s connect/drop/reconnect",
+  "durationMs": 12000,
+  "result": "PASS",
+  "stats": {
+    "connectAttempts": 2,
+    "connected": 2,
+    "disconnects": 1,
+    "messages": 6,
+    "errors": 0,
+    "reconnects": 1,
+    "pongs": 2
+  },
+  "note": "Path corrected to /ws/support (live feed multiplex). Duplicate/out-of-order not asserted at wire."
+}

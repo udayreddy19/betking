@@ -1,0 +1,99 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+ RUN  v4.1.10 /Users/udayreddy/Desktop/betking
+
+stderr | tests/betting/betConcurrencyAndLocks.test.js > Phase 5 Financial Concurrency & Wallet Locking Tests > CRITICAL CONCURRENCY: ₹500 balance with 2 concurrent ₹400 bets -> ONE succeeds, ONE fails, balance = ₹100
+{"ts":"2026-09-25T06:31:24.928Z","level":"error","message":"sql_transaction_rollback","error":"invalid input syntax for type numeric: \"{\"stake\":400,\"authoritativeExposureSource\":\"open_bets_postgres\"}\""}
+
+stderr | tests/betting/betConcurrencyAndLocks.test.js > Phase 5 Financial Concurrency & Wallet Locking Tests > CRITICAL CONCURRENCY: ₹500 balance with 2 concurrent ₹400 bets -> ONE succeeds, ONE fails, balance = ₹100
+{"ts":"2026-09-25T06:31:24.933Z","level":"error","message":"sql_transaction_rollback","error":"invalid input syntax for type numeric: \"{\"stake\":400,\"authoritativeExposureSource\":\"open_bets_postgres\"}\""}
+
+stderr | tests/betting/betConcurrencyAndLocks.test.js > Phase 5 Financial Concurrency & Wallet Locking Tests > CONCURRENCY: ₹800 balance with 2 concurrent ₹400 bets -> BOTH succeed, balance = ₹0
+{"ts":"2026-09-25T06:31:25.153Z","level":"error","message":"sql_transaction_rollback","error":"invalid input syntax for type numeric: \"{\"stake\":400,\"authoritativeExposureSource\":\"open_bets_postgres\"}\""}
+
+stderr | tests/betting/betConcurrencyAndLocks.test.js > Phase 5 Financial Concurrency & Wallet Locking Tests > CONCURRENCY: ₹800 balance with 2 concurrent ₹400 bets -> BOTH succeed, balance = ₹0
+{"ts":"2026-09-25T06:31:25.155Z","level":"error","message":"sql_transaction_rollback","error":"invalid input syntax for type numeric: \"{\"stake\":400,\"authoritativeExposureSource\":\"open_bets_postgres\"}\""}
+
+stdout | tests/betting/betConcurrencyAndLocks.test.js
+◇ injected env (37) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+
+stdout | tests/betting/betConcurrencyAndLocks.test.js
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+
+ ❯ tests/betting/betConcurrencyAndLocks.test.js (2 tests | 2 failed) 425ms
+     × CRITICAL CONCURRENCY: ₹500 balance with 2 concurrent ₹400 bets -> ONE succeeds, ONE fails, balance = ₹100 207ms
+     × CONCURRENCY: ₹800 balance with 2 concurrent ₹400 bets -> BOTH succeed, balance = ₹0 215ms
+stderr | tests/betting/idempotencyConcurrency.test.js > Phase 5 Idempotency & Duplicate Request Tests > CRITICAL: simultaneous requests with same Idempotency-Key must produce ONE bet and ONE wallet debit
+{"ts":"2026-09-25T06:31:25.318Z","level":"error","message":"sql_transaction_rollback","error":"invalid input syntax for type numeric: \"{\"stake\":300,\"authoritativeExposureSource\":\"open_bets_postgres\"}\""}
+
+stdout | tests/betting/idempotencyConcurrency.test.js
+◇ injected env (37) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+
+stdout | tests/betting/idempotencyConcurrency.test.js
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+
+ ❯ tests/betting/idempotencyConcurrency.test.js (1 test | 1 failed) 141ms
+     × CRITICAL: simultaneous requests with same Idempotency-Key must produce ONE bet and ONE wallet debit 139ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/betting/betConcurrencyAndLocks.test.js > Phase 5 Financial Concurrency & Wallet Locking Tests > CRITICAL CONCURRENCY: ₹500 balance with 2 concurrent ₹400 bets -> ONE succeeds, ONE fails, balance = ₹100
+AssertionError: expected +0 to be 1 // Object.is equality
+
+- Expected
++ Received
+
+- 1
++ 0
+
+ ❯ tests/betting/betConcurrencyAndLocks.test.js:39:30
+     37|     const rejected = results.filter(r => r.status === 'rejected');
+     38|
+     39|     expect(fulfilled.length).toBe(1);
+       |                              ^
+     40|     expect(rejected.length).toBe(1);
+     41|     expect(rejected[0].reason.message).toContain('INSUFFICIENT_BALANCE…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  tests/betting/betConcurrencyAndLocks.test.js > Phase 5 Financial Concurrency & Wallet Locking Tests > CONCURRENCY: ₹800 balance with 2 concurrent ₹400 bets -> BOTH succeed, balance = ₹0
+AssertionError: expected +0 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 0
+
+ ❯ tests/betting/betConcurrencyAndLocks.test.js:61:30
+     59|
+     60|     const fulfilled = results.filter(r => r.status === 'fulfilled');
+     61|     expect(fulfilled.length).toBe(2);
+       |                              ^
+     62|
+     63|     const wRes = await query('SELECT balance FROM wallets WHERE wallet…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  tests/betting/idempotencyConcurrency.test.js > Phase 5 Idempotency & Duplicate Request Tests > CRITICAL: simultaneous requests with same Idempotency-Key must produce ONE bet and ONE wallet debit
+error: invalid input syntax for type numeric: "{"stake":300,"authoritativeExposureSource":"open_bets_postgres"}"
+ ❯ node_modules/pg/lib/client.js:694:17
+ ❯ lib/betPlacementEngine.mjs:474:9
+    472|         });
+    473|
+    474|         await client.query(
+       |         ^
+    475|           `INSERT INTO bets (
+    476|              bet_id, user_id, match_id, market_id, selection_id, stake…
+ ❯ withTransaction db/pg.js:141:20
+ ❯ BetPlacementEngine.placeBet lib/betPlacementEngine.mjs:288:22
+ ❯ tests/betting/idempotencyConcurrency.test.js:36:21
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  2 failed | 24 passed (26)
+      Tests  3 failed | 117 passed (120)
+   Start at  12:01:23
+   Duration  4.72s (transform 4.33s, setup 0ms, import 4.88s, tests 8.25s, environment 2ms)
+

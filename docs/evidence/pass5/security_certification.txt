@@ -1,0 +1,45 @@
+timestamp=2026-09-25T07:34:24Z
+environment=STAGING(local-staging)
+git=9517ef0
+category=STAGING
+command=npm run security:certification -- --environment=local --base-url=http://127.0.0.1:5001
+
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> oddsyra@0.0.0 security:certification
+> node scripts/security-certification.mjs --environment=local --base-url=http://127.0.0.1:5001
+
+◇ injected env (39) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+{
+  "event": "SECURITY_CERTIFICATION",
+  "environment": "local",
+  "result": "NOT_VERIFIED",
+  "gates": {
+    "AUTHENTICATION": {
+      "status": "PASS",
+      "notes": "Unauth + invalid bearer probes only"
+    },
+    "MFA": {
+      "status": "NOT_VERIFIED",
+      "notes": "Set SMOKE_ADMIN_TOKEN / MFA test procedure for live MFA PASS"
+    },
+    "RBAC": {
+      "status": "NOT_VERIFIED",
+      "notes": "Role matrix requires provisioned admin roles — not auto PASS"
+    },
+    "CSRF": {
+      "status": "NOT_VERIFIED",
+      "notes": "Cookie CSRF matrix requires browser session — not auto PASS"
+    },
+    "SECURITY": {
+      "status": "NOT_VERIFIED",
+      "notes": "Partial automated surface only; full SECURITY PASS needs MFA+RBAC+CSRF evidence"
+    },
+    "AUDIT_LOGGING": {
+      "status": "NOT_VERIFIED",
+      "notes": "Requires credentialed privileged action + audit row inspect"
+    }
+  },
+  "path": "docs/evidence/phase8/security_2026-09-25T07-34-24-397Z.json",
+  "secretsPrinted": false
+}

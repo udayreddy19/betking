@@ -1,0 +1,17 @@
+timestamp=2026-09-25T07:34:59Z
+environment=STAGING(local-staging)
+git=9517ef0
+category=E2E_API
+command=playwright test --project=api
+
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+Running 2 tests using 1 worker
+
+(node:54419) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/2] [api] › e2e/money-flow.api.spec.js:8:3 › Staging money flow (register → deposit sandbox → bet → withdraw) › register, create sandbox deposit, place bet, request withdraw
+[2/2] [api] › e2e/odds-changed.api.spec.js:8:3 › Odds changed placement contract › returns 409 ODDS_CHANGED with old/new odds and no financial side effects
+  2 passed (740ms)

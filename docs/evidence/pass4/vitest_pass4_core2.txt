@@ -1,0 +1,38 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+ RUN  v4.1.10 /Users/udayreddy/Desktop/betking
+
+stderr | tests/hardening/pass4Concurrency.test.js > Pass-4 concurrency certification (100 bets) > 100 concurrent bets — same user — wallet never goes negative; accepted count matches debit
+{"ts":"2026-09-25T06:34:23.168Z","level":"error","message":"sql_error","error":"update or delete on table \"transactions\" violates foreign key constraint \"ledger_entries_transaction_id_fkey\" on table \"ledger_entries\""}
+
+stdout | tests/hardening/pass4Concurrency.test.js
+◇ injected env (37) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+
+stdout | tests/hardening/pass4Concurrency.test.js
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+
+ ❯ tests/hardening/pass4Concurrency.test.js (4 tests | 1 failed) 603ms
+     × 100 concurrent bets — same user — wallet never goes negative; accepted count matches debit 25ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/hardening/pass4Concurrency.test.js > Pass-4 concurrency certification (100 bets) > 100 concurrent bets — same user — wallet never goes negative; accepted count matches debit
+error: update or delete on table "transactions" violates foreign key constraint "ledger_entries_transaction_id_fkey" on table "ledger_entries"
+ ❯ node_modules/pg-pool/index.js:45:11
+ ❯ runQuery db/pg.js:88:17
+     86|   const start = Date.now();
+     87|   try {
+     88|     const res = await targetPool.query(text, params);
+       |                 ^
+     89|     if (process.env.DEBUG_SQL) {
+     90|       logger.info('sql_query', { duration: Date.now() - start, rows: r…
+ ❯ tests/hardening/pass4Concurrency.test.js:136:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 2 passed (3)
+      Tests  1 failed | 17 passed (18)
+   Start at  12:04:22
+   Duration  1.18s (transform 944ms, setup 0ms, import 534ms, tests 1.46s, environment 0ms)
+

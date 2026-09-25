@@ -1,0 +1,649 @@
+{
+  "event": "PASS6_SECURITY_MATRIX",
+  "environment": "local",
+  "baseUrl": "http://127.0.0.1:5001",
+  "startedAt": "2026-09-25T08:09:42.312Z",
+  "finishedAt": "2026-09-25T08:09:44.950Z",
+  "secretsPrinted": false,
+  "credentialedMatrixExecuted": true,
+  "identitiesProvisioned": true,
+  "gates": {
+    "AUTHENTICATION": "PASS",
+    "MFA": "PASS",
+    "RBAC": "PASS",
+    "IDOR": "PASS",
+    "JWT": "PASS",
+    "CSRF": "PASS",
+    "RATE_LIMIT": "PASS",
+    "WEBSOCKET": "PASS",
+    "PROVISION": "PASS",
+    "SECURITY": "PASS"
+  },
+  "overall": "PASS",
+  "matrixRows": [
+    {
+      "test": "Admin production-readiness",
+      "Anonymous": "DENY",
+      "User": "DENY",
+      "Operator": "ALLOW",
+      "Admin": "ALLOW",
+      "MFA Admin": "ALLOW",
+      "Result": "PASS"
+    },
+    {
+      "test": "Risk desk hierarchy",
+      "Anonymous": "DENY",
+      "User": "DENY",
+      "Operator": "DENY",
+      "Admin": "ALLOW",
+      "MFA Admin": "ALLOW",
+      "Result": "PASS"
+    },
+    {
+      "test": "Exposure reconcile",
+      "Anonymous": "DENY",
+      "User": "DENY",
+      "Operator": "DENY",
+      "Admin": "ALLOW",
+      "MFA Admin": "ALLOW",
+      "Result": "PASS"
+    },
+    {
+      "test": "Exposure rebuild dry-run",
+      "Anonymous": "DENY",
+      "User": "DENY",
+      "Operator": "DENY",
+      "Admin": "ALLOW",
+      "MFA Admin": "ALLOW",
+      "Result": "PASS"
+    },
+    {
+      "test": "Exposure rebuild without confirm",
+      "Anonymous": "DENY",
+      "User": "DENY",
+      "Operator": "DENY",
+      "Admin": "CONFIRM_REQUIRED",
+      "MFA Admin": "CONFIRM_REQUIRED",
+      "Result": "PASS"
+    },
+    {
+      "test": "Trading desk metrics",
+      "Anonymous": "DENY",
+      "User": "DENY",
+      "Operator": "DENY",
+      "Admin": "ALLOW",
+      "MFA Admin": "ALLOW",
+      "Result": "PASS"
+    },
+    {
+      "test": "Hardening status",
+      "Anonymous": "DENY",
+      "User": "DENY",
+      "Operator": "ALLOW",
+      "Admin": "ALLOW",
+      "MFA Admin": "ALLOW",
+      "Result": "PASS"
+    },
+    {
+      "test": "User bets mine",
+      "Anonymous": "DENY",
+      "User": "ALLOW",
+      "Operator": "ALLOW",
+      "Admin": "ALLOW",
+      "MFA Admin": "ALLOW",
+      "Result": "PASS"
+    }
+  ],
+  "results": [
+    {
+      "family": "provision",
+      "name": "staging_identities",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "auth",
+      "name": "anonymous_admin_ops",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "auth",
+      "name": "anonymous_trading_reconcile",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "auth",
+      "name": "anonymous_trading_hierarchy",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "auth",
+      "name": "anonymous_trading_rebuild",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "auth",
+      "name": "anonymous_bets_mine",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "auth",
+      "name": "anonymous_auth_me",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "auth",
+      "name": "anonymous_withdrawals",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "auth",
+      "name": "anonymous_transactions",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "auth",
+      "name": "user_a_login",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "auth",
+      "name": "user_b_login",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "mfa",
+      "name": "admin_enroll_via_login",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "auth",
+      "name": "admin_login",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "auth",
+      "name": "operator_login",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "mfa",
+      "name": "challenge_required",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "mfa",
+      "name": "missing_code_denied",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "mfa",
+      "name": "invalid_code_denied",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "mfa",
+      "name": "valid_code_allow",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "mfa",
+      "name": "replay_denied",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "mfa",
+      "name": "enrollment_invalid_denied",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "mfa",
+      "name": "enrollment_valid_allow",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "rate_limit",
+      "name": "admin_mfa_invalid_attempts",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": "429 observed"
+    },
+    {
+      "family": "jwt",
+      "name": "invalid_token",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "jwt",
+      "name": "malformed_token",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "jwt",
+      "name": "expired_token",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "jwt",
+      "name": "wrong_signing_secret",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "jwt",
+      "name": "role_escalation_via_access_token",
+      "status": "PASS",
+      "httpStatus": 403,
+      "note": null
+    },
+    {
+      "family": "jwt",
+      "name": "tampered_payload_rejected",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "jwt",
+      "name": "invalid_refresh_token",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Admin production-readiness:anon",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Admin production-readiness:user",
+      "status": "PASS",
+      "httpStatus": 403,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Admin production-readiness:operator",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Admin production-readiness:admin",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Admin production-readiness:mfaAdmin",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Risk desk hierarchy:anon",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Risk desk hierarchy:user",
+      "status": "PASS",
+      "httpStatus": 403,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Risk desk hierarchy:operator",
+      "status": "PASS",
+      "httpStatus": 403,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Risk desk hierarchy:admin",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Risk desk hierarchy:mfaAdmin",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Exposure reconcile:anon",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Exposure reconcile:user",
+      "status": "PASS",
+      "httpStatus": 403,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Exposure reconcile:operator",
+      "status": "PASS",
+      "httpStatus": 403,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Exposure reconcile:admin",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Exposure reconcile:mfaAdmin",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Exposure rebuild dry-run:anon",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Exposure rebuild dry-run:user",
+      "status": "PASS",
+      "httpStatus": 403,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Exposure rebuild dry-run:operator",
+      "status": "PASS",
+      "httpStatus": 403,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Exposure rebuild dry-run:admin",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Exposure rebuild dry-run:mfaAdmin",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Exposure rebuild without confirm:anon",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Exposure rebuild without confirm:user",
+      "status": "PASS",
+      "httpStatus": 403,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Exposure rebuild without confirm:operator",
+      "status": "PASS",
+      "httpStatus": 403,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Exposure rebuild without confirm:admin",
+      "status": "PASS",
+      "httpStatus": 400,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Exposure rebuild without confirm:mfaAdmin",
+      "status": "PASS",
+      "httpStatus": 400,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Trading desk metrics:anon",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Trading desk metrics:user",
+      "status": "PASS",
+      "httpStatus": 403,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Trading desk metrics:operator",
+      "status": "PASS",
+      "httpStatus": 403,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Trading desk metrics:admin",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Trading desk metrics:mfaAdmin",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Hardening status:anon",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Hardening status:user",
+      "status": "PASS",
+      "httpStatus": 403,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Hardening status:operator",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Hardening status:admin",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "Hardening status:mfaAdmin",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "User bets mine:anon",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "User bets mine:user",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "User bets mine:operator",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "User bets mine:admin",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "rbac",
+      "name": "User bets mine:mfaAdmin",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "idor",
+      "name": "owner_access_own_bet",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "idor",
+      "name": "user_b_access_user_a_bet",
+      "status": "PASS",
+      "httpStatus": 404,
+      "note": null
+    },
+    {
+      "family": "idor",
+      "name": "transactions_scoped_to_caller",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "idor",
+      "name": "user_denied_admin_trading",
+      "status": "PASS",
+      "httpStatus": 403,
+      "note": null
+    },
+    {
+      "family": "csrf",
+      "name": "logout_without_csrf_header",
+      "status": "PASS",
+      "httpStatus": 403,
+      "note": null
+    },
+    {
+      "family": "rate_limit",
+      "name": "login_invalid_attempts",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": "429 observed"
+    },
+    {
+      "family": "websocket",
+      "name": "user_channel_own_allow",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "websocket",
+      "name": "user_channel_cross_deny",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "websocket",
+      "name": "user_channel_anon_deny",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    }
+  ],
+  "notes": [
+    "Ephemeral staging identities provisioned in DB; passwords/TOTP secrets never written to evidence.",
+    "Exposure rebuild confirm=REBUILD_EXPOSURE requirement verified (dryRun=false without confirm → 400)."
+  ]
+}

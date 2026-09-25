@@ -1,0 +1,30 @@
+{
+  "generatedAt": "2026-09-25T07:45:00.000Z",
+  "environment": "STAGING(local-staging)",
+  "git": "9517ef0",
+  "note": "Honest Pass-5 gates. Remote STAGING_BASE_URL was MISSING; local-staging used.",
+  "security": {
+    "status": "BLOCKED",
+    "detail": "Staging smoke AUTH probes GREEN (401/invalid bearer/readiness). security:certification overall NOT_VERIFIED — MFA/RBAC/CSRF matrix blocked without SMOKE_ADMIN_TOKEN"
+  },
+  "e2e": {
+    "status": "PASS",
+    "detail": "playwright: 19 passed, 1 skipped (E2E_AUTH_TOKEN optional profile wallet), 0 failed against local-staging"
+  },
+  "concurrency": {
+    "status": "PASS",
+    "detail": "pass4 concurrency + locks + idempotency + financial invariants: 28 passed"
+  },
+  "payments": {
+    "status": "WARN",
+    "detail": "SANDBOX Razorpay keys present; UNIT/INTEGRATION 26 passed; API money-flow E2E passed; hosted Razorpay checkout + Cashfree MISSING; LIVE NOT RUN"
+  },
+  "financialInvariants": {
+    "status": "PASS",
+    "detail": "pass4FinancialInvariants + exposure SoT retained"
+  },
+  "websocket": {
+    "status": "PASS",
+    "detail": "STAGING soak /ws/support connect/drop/reconnect PASS; settlement-ws UI E2E PASS after harness push fix"
+  }
+}

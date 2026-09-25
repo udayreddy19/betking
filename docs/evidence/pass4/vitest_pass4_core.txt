@@ -1,0 +1,61 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+ RUN  v4.1.10 /Users/udayreddy/Desktop/betking
+
+stdout | tests/hardening/pass4Concurrency.test.js
+◇ injected env (37) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+
+stdout | tests/hardening/pass4Concurrency.test.js
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+
+ ❯ tests/hardening/pass4Concurrency.test.js (4 tests | 1 failed) 1442ms
+     × same key + different payload → IDEMPOTENCY_KEY_REUSE 11ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/hardening/pass4Concurrency.test.js > Pass-4 concurrency certification (100 bets) > same key + different payload → IDEMPOTENCY_KEY_REUSE
+AssertionError: promise resolved "{ status: 'IDEMPOTENT_DUPLICATE', …(2) }" instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   "message": "rejected promise",
++ {
++   "isDuplicate": true,
++   "result": {
++     "acceptedOdds": 2,
++     "betId": "bet_1790318047073_13ri64",
++     "fundSource": "cash",
++     "odds": 2,
++     "placedAt": "2026-09-25T06:34:07.074Z",
++     "potentialPayout": 20,
++     "potentialProfit": 10,
++     "remainingBalance": 990,
++     "remainingBonus": 0,
++     "remainingFreebet": 0,
++     "stake": 10,
++     "status": "ACCEPTED",
++     "success": true,
++     "transactionId": "tx_bet_bet_1790318047073_13ri64",
++     "vipBoostPct": 0,
++   },
++   "status": "IDEMPOTENT_DUPLICATE",
+  }
+
+ ❯ tests/hardening/pass4Concurrency.test.js:206:6
+    204|         stake: STAKE + 5, clientOdds: ODDS, idempotencyKey: key,
+    205|       }),
+    206|     ).rejects.toThrow(/IDEMPOTENCY_KEY_REUSE/);
+       |      ^
+    207|   });
+    208| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 3 passed (4)
+      Tests  1 failed | 30 passed (31)
+   Start at  12:04:04
+   Duration  3.07s (transform 3.14s, setup 0ms, import 2.18s, tests 4.30s, environment 0ms)
+

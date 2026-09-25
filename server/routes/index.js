@@ -148,4 +148,8 @@ adminRouter.use('/odds-intelligence', oddsIntelligenceRouter);
 import apiExplorerRouter from './admin/apiExplorer.js';
 adminRouter.use('/api-explorer', apiExplorerRouter);
 
+// Trading desk — exposure reconcile/rebuild, risk hierarchy, heatmap, hardening
+import tradingDeskRouter from './admin/tradingDesk.js';
+adminRouter.use('/trading', tradingDeskRouter);
+
 export default adminRouter;

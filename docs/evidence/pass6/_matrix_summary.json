@@ -1,0 +1,89 @@
+{
+  "gates": {
+    "AUTHENTICATION": "PASS",
+    "MFA": "PASS",
+    "RBAC": "PASS",
+    "IDOR": "PASS",
+    "JWT": "PASS",
+    "CSRF": "PASS",
+    "RATE_LIMIT": "PASS",
+    "WEBSOCKET": "PASS",
+    "PROVISION": "PASS",
+    "SECURITY": "PASS"
+  },
+  "overall": "PASS",
+  "matrixRows": [
+    {
+      "test": "Admin production-readiness",
+      "Anonymous": "DENY",
+      "User": "DENY",
+      "Operator": "ALLOW",
+      "Admin": "ALLOW",
+      "MFA Admin": "ALLOW",
+      "Result": "PASS"
+    },
+    {
+      "test": "Risk desk hierarchy",
+      "Anonymous": "DENY",
+      "User": "DENY",
+      "Operator": "DENY",
+      "Admin": "ALLOW",
+      "MFA Admin": "ALLOW",
+      "Result": "PASS"
+    },
+    {
+      "test": "Exposure reconcile",
+      "Anonymous": "DENY",
+      "User": "DENY",
+      "Operator": "DENY",
+      "Admin": "ALLOW",
+      "MFA Admin": "ALLOW",
+      "Result": "PASS"
+    },
+    {
+      "test": "Exposure rebuild dry-run",
+      "Anonymous": "DENY",
+      "User": "DENY",
+      "Operator": "DENY",
+      "Admin": "ALLOW",
+      "MFA Admin": "ALLOW",
+      "Result": "PASS"
+    },
+    {
+      "test": "Exposure rebuild without confirm",
+      "Anonymous": "DENY",
+      "User": "DENY",
+      "Operator": "DENY",
+      "Admin": "CONFIRM_REQUIRED",
+      "MFA Admin": "CONFIRM_REQUIRED",
+      "Result": "PASS"
+    },
+    {
+      "test": "Trading desk metrics",
+      "Anonymous": "DENY",
+      "User": "DENY",
+      "Operator": "DENY",
+      "Admin": "ALLOW",
+      "MFA Admin": "ALLOW",
+      "Result": "PASS"
+    },
+    {
+      "test": "Hardening status",
+      "Anonymous": "DENY",
+      "User": "DENY",
+      "Operator": "ALLOW",
+      "Admin": "ALLOW",
+      "MFA Admin": "ALLOW",
+      "Result": "PASS"
+    },
+    {
+      "test": "User bets mine",
+      "Anonymous": "DENY",
+      "User": "ALLOW",
+      "Operator": "ALLOW",
+      "Admin": "ALLOW",
+      "MFA Admin": "ALLOW",
+      "Result": "PASS"
+    }
+  ]
+}

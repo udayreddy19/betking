@@ -1,0 +1,30 @@
+{
+  "generatedAt": "2026-09-25T08:15:00.000Z",
+  "environment": "STAGING(local-staging)",
+  "git": "9517ef0",
+  "note": "Pass-6 credentialed security unblock. Trading desk router mounted. MFA pending one-time use fixed. Production N unchanged (honest).",
+  "security": {
+    "status": "PASS",
+    "detail": "Credentialed Pass-6 MFA/RBAC/IDOR/JWT/CSRF matrix PASS against local-staging with ADMIN_MFA_REQUIRED=1; security:smoke AUTH probes GREEN; security:certification result=PASS"
+  },
+  "e2e": {
+    "status": "PASS",
+    "detail": "playwright: 19 passed, 1 skipped (E2E_AUTH_TOKEN optional profile wallet), 0 failed against local-staging"
+  },
+  "concurrency": {
+    "status": "PASS",
+    "detail": "Retained Pass-5 concurrency PASS; Pass-6 hardening regression 44 passed (incl. MFA replay unit)"
+  },
+  "payments": {
+    "status": "WARN",
+    "detail": "SANDBOX Razorpay path retained from Pass-5; Cashfree MISSING; hosted checkout NOT RUN; LIVE NOT RUN"
+  },
+  "financialInvariants": {
+    "status": "PASS",
+    "detail": "Pass-5 financial invariants retained; open_bets_postgres SoT unchanged"
+  },
+  "websocket": {
+    "status": "PASS",
+    "detail": "Channel auth matrix PASS; settlement-ws UI E2E PASS retained"
+  }
+}

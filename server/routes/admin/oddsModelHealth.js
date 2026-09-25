@@ -91,6 +91,37 @@ router.get('/providers', async (req, res) => {
 });
 
 /**
+ * POST /api/admin/odds-model/providers/resolve-conflict
+ * Body: { observations: [{ providerId, state, timestamp, confidence, sequence }] }
+ */
+router.post('/providers/resolve-conflict', async (req, res) => {
+  try {
+    const { resolveProviderConflict } = await import('../../../lib/providers/providerConflictResolver.mjs');
+    const result = resolveProviderConflict(req.body?.observations || [], {
+      staleMs: Number(req.body?.staleMs) || 30_000,
+    });
+    return res.json({ success: true, data: result });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/admin/odds-model/providers/conflict-audits
+ */
+router.get('/providers/conflict-audits', async (req, res) => {
+  try {
+    const { getRecentProviderConflictAudits } = await import('../../../lib/providers/providerConflictResolver.mjs');
+    return res.json({
+      success: true,
+      data: getRecentProviderConflictAudits(Number(req.query.limit) || 50),
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
  * POST /api/admin/odds-model/canary/evaluate
  * Evaluates candidate shadow pricing against authoritative baseline
  */
@@ -663,6 +694,8 @@ router.post('/v4/engine', async (req, res) => {
       status = await setRuntimeEngineMode(req.body?.mode, {
         updatedBy,
         reason: req.body?.reason,
+        expiresAt: req.body?.expiresAt || null,
+        ttlHours: req.body?.ttlHours,
       });
     }
     return res.json({
@@ -692,6 +725,8 @@ router.post('/other-sports/engine', async (req, res) => {
       status = await setRuntimeOtherSportsEngineMode(req.body?.mode, {
         updatedBy,
         reason: req.body?.reason,
+        expiresAt: req.body?.expiresAt || null,
+        ttlHours: req.body?.ttlHours,
       });
     }
     return res.json({

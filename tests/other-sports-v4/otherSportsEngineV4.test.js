@@ -127,8 +127,16 @@ describe('OtherSportsEngineV4 house protect', () => {
     expect(snap.markets.find((m) => m.marketId === 'match_winner')?.status).toBe('OPEN');
   });
 
-  it('defaults OTHER_SPORTS_ENGINE to v3', () => {
-    expect(resolveOtherSportsEngineMode({ OTHER_SPORTS_ENGINE: undefined })).toBe('v3');
+  it('defaults OTHER_SPORTS_ENGINE to v4', () => {
+    expect(resolveOtherSportsEngineMode({ OTHER_SPORTS_ENGINE: undefined })).toBe('v4');
+  });
+
+  it('dispatch serves OtherSportsEngineV4 by default for soccer', () => {
+    const { rawSnapshot, publicSnapshot } = generatePublicMatchOddsSnapshot(soccerMatch(), {
+      allowModelOnly: true,
+    });
+    expect(rawSnapshot.engine).toBe('OtherSportsEngineV4');
+    expect(publicSnapshot?.engine).toBe('OtherSportsEngineV4');
   });
 
   it('dispatch serves OtherSportsEngineV4 when OTHER_SPORTS_ENGINE=v4', async () => {

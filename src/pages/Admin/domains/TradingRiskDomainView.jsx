@@ -60,6 +60,13 @@ export default function TradingRiskDomainView({ subModule }) {
   const [otherSportsEngineStatus, setOtherSportsEngineStatus] = useState(null);
   const [otherSportsEngineSaving, setOtherSportsEngineSaving] = useState(false);
   const [platformReady, setPlatformReady] = useState(null);
+  const [riskHierarchy, setRiskHierarchy] = useState(null);
+  const [deskTree, setDeskTree] = useState(null);
+  const [deskSport, setDeskSport] = useState('cricket');
+  const [deskMatchId, setDeskMatchId] = useState('');
+  const [deskMarketId, setDeskMarketId] = useState('match_winner');
+  const [exposureRecon, setExposureRecon] = useState(null);
+  const [exposureReconLoading, setExposureReconLoading] = useState(false);
 
   // Dynamic Margin & Trading Control State
   const [marginConfig, setMarginConfig] = useState({
@@ -231,17 +238,65 @@ export default function TradingRiskDomainView({ subModule }) {
       .catch(() => setPlatformReady(null));
   }, []);
 
+  const loadRiskHierarchy = useCallback(() => {
+    adminApiClient.get(`/trading/risk/hierarchy?sport=${encodeURIComponent(deskSport)}&marketId=${encodeURIComponent(deskMarketId || 'match_winner')}`)
+      .then((data) => setRiskHierarchy(data.effective || data))
+      .catch(() => setRiskHierarchy(null));
+  }, [deskSport, deskMarketId]);
+
+  const loadDeskTree = useCallback(() => {
+    const q = new URLSearchParams({
+      sport: deskSport || 'cricket',
+      marketId: deskMarketId || '',
+      matchId: deskMatchId || '',
+    });
+    adminApiClient.get(`/trading/risk/desk-tree?${q}`)
+      .then((data) => setDeskTree(data))
+      .catch(() => setDeskTree(null));
+  }, [deskSport, deskMatchId, deskMarketId]);
+
+  const runExposureReconcile = useCallback(async (dryRun = true) => {
+    setExposureReconLoading(true);
+    try {
+      if (dryRun) {
+        const data = await adminApiClient.get('/trading/exposure/reconcile');
+        setExposureRecon(data);
+        showToast(data.code === 'EXPOSURE_MATCH' ? 'Exposure matched' : `Mismatches: ${data.mismatches}`, data.mismatches ? 'error' : 'success');
+      } else {
+        const data = await adminApiClient.post('/trading/exposure/rebuild', {
+          dryRun: false,
+          confirm: 'REBUILD_EXPOSURE',
+        });
+        setExposureRecon(data);
+        showToast(data.code || 'Rebuild complete', data.code === 'EXPOSURE_REBUILT' ? 'success' : 'error');
+      }
+    } catch (err) {
+      showToast(err.message || 'Exposure reconcile failed', 'error');
+    } finally {
+      setExposureReconLoading(false);
+    }
+  }, [showToast]);
+
   const setEngineMode = async (mode) => {
     setEngineSaving(true);
     try {
-      const data = await adminApiClient.post('/odds-model/v4/engine', { mode });
+      const body = { mode };
+      if (mode === 'v3' || mode === 'shadow') {
+        body.reason = window.prompt('Reason required for temporary V3/shadow override:') || '';
+        if (!body.reason.trim()) {
+          showToast('Reason required for non-V4 override', 'error');
+          return;
+        }
+        body.ttlHours = 24;
+      }
+      const data = await adminApiClient.post('/odds-model/v4/engine', body);
       setEngineStatus(data.data || data);
       showToast(
         mode === 'v4'
           ? 'Cricket V4 live — resource MW + V3 market catalog'
           : mode === 'shadow'
-            ? 'Cricket shadow — V3 live, V4 compare only'
-            : 'Cricket V3 live',
+            ? 'Cricket shadow — V3 live, V4 compare only (expires)'
+            : 'Cricket V3 live (temporary — auto-expires)',
         'success',
       );
     } catch (err) {
@@ -254,14 +309,23 @@ export default function TradingRiskDomainView({ subModule }) {
   const setOtherSportsEngineMode = async (mode) => {
     setOtherSportsEngineSaving(true);
     try {
-      const data = await adminApiClient.post('/odds-model/other-sports/engine', { mode });
+      const body = { mode };
+      if (mode === 'v3' || mode === 'shadow') {
+        body.reason = window.prompt('Reason required for temporary other-sports override:') || '';
+        if (!body.reason.trim()) {
+          showToast('Reason required for non-V4 override', 'error');
+          return;
+        }
+        body.ttlHours = 24;
+      }
+      const data = await adminApiClient.post('/odds-model/other-sports/engine', body);
       setOtherSportsEngineStatus(data.data || data);
       showToast(
         mode === 'v4'
           ? 'Other sports V4 live — house-hardened book'
           : mode === 'shadow'
-            ? 'Other sports shadow — V3 live, V4 compare only'
-            : 'Other sports V3 live',
+            ? 'Other sports shadow — V3 live, V4 compare only (expires)'
+            : 'Other sports V3 live (temporary — auto-expires)',
         'success',
       );
     } catch (err) {
@@ -276,11 +340,13 @@ export default function TradingRiskDomainView({ subModule }) {
     loadEngineStatus();
     loadOtherSportsEngineStatus();
     loadPlatformReady();
+    loadRiskHierarchy();
+    loadDeskTree();
     loadMarginConfig();
     loadFastFreezes();
     handleSimulateShading();
     return undefined;
-  }, [showOddsHealth, showOddsDesk, loadEngineStatus, loadOtherSportsEngineStatus, loadPlatformReady, loadMarginConfig, loadFastFreezes]);
+  }, [showOddsHealth, showOddsDesk, loadEngineStatus, loadOtherSportsEngineStatus, loadPlatformReady, loadRiskHierarchy, loadDeskTree, loadMarginConfig, loadFastFreezes]);
 
   useEffect(() => {
     if (!showOddsHealth) return undefined;
@@ -505,6 +571,10 @@ export default function TradingRiskDomainView({ subModule }) {
                 Exclusive — V4 uses resource Match Winner + the same V3 compact market catalog.
                 {' '}Active: <strong>{engineStatus?.resolved || engineStatus?.active || '…'}</strong>
                 {engineStatus?.source ? ` (${engineStatus.source})` : ''}
+                {engineStatus?.overrideExpiresAt
+                  ? ` · expires ${new Date(engineStatus.overrideExpiresAt).toLocaleString()}`
+                  : ''}
+                {engineStatus?.overrideReason ? ` · ${engineStatus.overrideReason}` : ''}
               </p>
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -541,6 +611,9 @@ export default function TradingRiskDomainView({ subModule }) {
                 {' '}Active: <strong>{otherSportsEngineStatus?.resolved || otherSportsEngineStatus?.active || '…'}</strong>
                 {otherSportsEngineStatus?.source ? ` (${otherSportsEngineStatus.source})` : ''}
                 {otherSportsEngineStatus?.envDefault ? ` · env ${otherSportsEngineStatus.envDefault}` : ''}
+                {otherSportsEngineStatus?.overrideExpiresAt
+                  ? ` · expires ${new Date(otherSportsEngineStatus.overrideExpiresAt).toLocaleString()}`
+                  : ''}
               </p>
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -564,6 +637,108 @@ export default function TradingRiskDomainView({ subModule }) {
               })}
             </div>
           </div>
+        </AdminCard>
+      )}
+
+      {(showOddsDesk || showOddsHealth) && (
+        <AdminCard>
+          <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 8 }}>Risk hierarchy & exposure SoT</div>
+          <p style={{ margin: '0 0 12px', color: 'var(--admin-text-muted)', fontSize: '0.78rem' }}>
+            Authoritative exposure = open bets in Postgres. Cache/memory is derived only.
+            Hierarchy: GLOBAL → SPORT → COMPETITION → EVENT → MARKET → USER (tightest max wins).
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+            <select
+              value={deskSport}
+              onChange={(e) => setDeskSport(e.target.value)}
+              className="admin-input"
+              style={{ minWidth: 120 }}
+            >
+              {['cricket', 'soccer', 'basketball', 'tennis'].map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+            <input
+              className="admin-input"
+              placeholder="Event / matchId"
+              value={deskMatchId}
+              onChange={(e) => setDeskMatchId(e.target.value)}
+              style={{ minWidth: 160 }}
+            />
+            <input
+              className="admin-input"
+              placeholder="Market id"
+              value={deskMarketId}
+              onChange={(e) => setDeskMarketId(e.target.value)}
+              style={{ minWidth: 140 }}
+            />
+            <button type="button" className="admin-btn admin-btn--sm" onClick={() => { loadRiskHierarchy(); loadDeskTree(); }}>
+              Refresh desk
+            </button>
+          </div>
+          {deskTree?.layers && (
+            <div style={{ display: 'grid', gap: 6, marginBottom: 12, fontSize: '0.78rem' }}>
+              {deskTree.layers.map((layer) => (
+                <div
+                  key={layer.level}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '90px 1fr 1fr 1fr 80px',
+                    gap: 8,
+                    padding: '6px 8px',
+                    background: 'var(--admin-bg)',
+                    borderRadius: 4,
+                    border: '1px solid var(--admin-border)',
+                  }}
+                >
+                  <strong>{layer.level}</strong>
+                  <span>{layer.key || '—'}</span>
+                  <span>exp {moneyOrDash(layer.currentExposure)}</span>
+                  <span>rem {moneyOrDash(layer.remainingCapacity ?? layer.maxLiability ?? layer.maxStake)}</span>
+                  <span>{layer.status || '—'}</span>
+                </div>
+              ))}
+              <div style={{ color: 'var(--admin-text-muted)' }}>
+                SoT: {deskTree.authoritativeExposureSource || '—'}
+              </div>
+            </div>
+          )}
+          {riskHierarchy && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8, marginBottom: 12, fontSize: '0.78rem' }}>
+              <div>maxStake <strong>{moneyOrDash(riskHierarchy.maxStake)}</strong></div>
+              <div>minStake <strong>{moneyOrDash(riskHierarchy.minStake)}</strong></div>
+              <div>maxPayout <strong>{moneyOrDash(riskHierarchy.maxPayout)}</strong></div>
+              <div>maxLiability <strong>{moneyOrDash(riskHierarchy.maxLiability)}</strong></div>
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+            <button type="button" className="admin-btn admin-btn--sm admin-btn--ghost" disabled={exposureReconLoading} onClick={() => runExposureReconcile(true)}>
+              Reconcile exposure (dry)
+            </button>
+            <button
+              type="button"
+              className="admin-btn admin-btn--sm"
+              disabled={exposureReconLoading}
+              onClick={() => {
+                if (window.confirm('Rebuild derived exposure store from open bets? Requires confirmation.')) {
+                  runExposureReconcile(false);
+                }
+              }}
+            >
+              Rebuild exposure
+            </button>
+          </div>
+          {exposureRecon && (
+            <pre style={{ fontSize: '0.72rem', maxHeight: 160, overflow: 'auto', margin: 0 }}>
+              {JSON.stringify({
+                code: exposureRecon.code,
+                matches: exposureRecon.matches,
+                mismatches: exposureRecon.mismatches,
+                source: exposureRecon.authoritativeExposureSource,
+                differences: exposureRecon.differences?.slice?.(0, 5),
+              }, null, 2)}
+            </pre>
+          )}
         </AdminCard>
       )}
 

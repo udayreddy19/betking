@@ -1,0 +1,65 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> oddsyra@0.0.0 security:smoke
+> node scripts/security-smoke.mjs
+
+◇ injected env (39) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+{
+  "event": "SECURITY_SMOKE",
+  "environment": "local",
+  "baseUrl": "http://127.0.0.1:5001",
+  "destructive": false,
+  "financialMutation": false,
+  "secretsPrinted": false,
+  "cases": [
+    {
+      "name": "unauthenticated_admin_ops",
+      "ok": false,
+      "status": null,
+      "error": "fetch failed",
+      "verdict": "YELLOW"
+    },
+    {
+      "name": "unauthenticated_finance",
+      "ok": false,
+      "status": null,
+      "error": "fetch failed",
+      "verdict": "YELLOW"
+    },
+    {
+      "name": "readiness_public",
+      "ok": false,
+      "status": null,
+      "error": "fetch failed",
+      "verdict": "YELLOW"
+    },
+    {
+      "name": "invalid_bearer_admin",
+      "ok": false,
+      "status": null,
+      "error": "fetch failed",
+      "verdict": "YELLOW"
+    },
+    {
+      "name": "csrf_missing_cookie_mutation_shape",
+      "ok": false,
+      "status": null,
+      "error": "fetch failed",
+      "verdict": "YELLOW"
+    }
+  ],
+  "matrixNote": "Maker/checker dual-admin and role matrix require provisioned credentials — NOT VERIFIED here",
+  "rolesNotExecuted": [
+    "authenticated_non_admin",
+    "read_only_admin",
+    "finance_maker",
+    "finance_checker",
+    "super_admin",
+    "mfa_required_admin",
+    "maker_approve_own",
+    "privilege_escalation"
+  ],
+  "overall": "NOT VERIFIED",
+  "evidenceRule": "Partial smoke only. Full MFA/RBAC/CSRF GREEN requires credentialed live matrix.",
+  "generatedAt": "2026-09-25T06:34:23.395Z"
+}

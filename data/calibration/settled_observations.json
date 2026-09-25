@@ -1,0 +1,21 @@
+[
+  {
+    "observationId": "obs_soccer_m_cal_1_match_winner_1_1790323826559",
+    "eventId": "m_cal_1",
+    "marketId": "match_winner",
+    "selectionId": "1",
+    "modelVersion": "4.9.0",
+    "rawProbability": 0.5,
+    "calibratedProbability": 0.5,
+    "outcome": "WON",
+    "settledAt": "2026-09-25T08:11:26.559Z",
+    "sport": "soccer",
+    "format": null,
+    "competition": null,
+    "matchStateFeatures": {},
+    "providerReference": {
+      "betId": "bet_cal_1",
+      "linked": true
+    }
+  }
+]

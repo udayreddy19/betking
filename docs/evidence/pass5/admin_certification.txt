@@ -1,0 +1,44 @@
+timestamp=2026-09-25T07:40:17Z
+environment=STAGING(local-staging)
+git=9517ef0
+category=STAGING
+command=admin engine status probe
+
+{"error":"Authentication required","code":"AUTH_REQUIRED"}
+admin_engine_http=401
+{"status":"UP","timestamp":"2026-09-25T07:40:17.342Z","services":{"postgresql":"ok","redis":"ok"}}
+◇ injected env (39) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+{
+  "cricket": "v4",
+  "other": "v4",
+  "cricketStatus": {
+    "active": "v4",
+    "runtimeOverride": null,
+    "envDefault": "v4",
+    "source": "env",
+    "updatedAt": null,
+    "updatedBy": null,
+    "overrideExpiresAt": null,
+    "overrideReason": null,
+    "overrideExpired": false,
+    "resolved": "v4",
+    "modes": {
+      "v3": {
+        "label": "V3 fallback (temporary)",
+        "publish": "OddsEngineV3"
+      },
+      "v4": {
+        "label": "V4 live (default)",
+        "publish": "OddsEngineV4"
+      },
+      "shadow": {
+        "label": "Shadow",
+        "publish": "OddsEngineV3",
+        "note": "V3 customers; V4 dual-run metrics only"
+      }
+    }
+  },
+  "exposure": "open_bets_postgres",
+  "autoPromotion": "false"
+}

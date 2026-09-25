@@ -1,0 +1,16 @@
+timestamp=2026-09-25T07:40:16Z
+environment=STAGING(local-staging)
+git=9517ef0
+category=UNIT
+command=provider failover unit
+
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+ RUN  v4.1.10 /Users/udayreddy/Desktop/betking
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed | 11 skipped (13)
+   Start at  13:10:16
+   Duration  314ms (transform 78ms, setup 0ms, import 160ms, tests 3ms, environment 0ms)
+

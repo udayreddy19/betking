@@ -1,0 +1,134 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+Running 8 tests using 1 worker
+
+(node:62483) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/8] [chromium] › e2e/odds-changed.ui.spec.js:9:3 › Odds-changed betslip UX helpers › flags ODDS_CHANGED API responses
+[2/8] [chromium] › e2e/odds-changed.ui.spec.js:15:3 › Odds-changed betslip UX helpers › updates betslip rows without removing selections
+[3/8] [chromium] › e2e/odds-changed.ui.spec.js:37:3 › Odds-changed UI surfaces › help documents odds acceptance policy
+  1) [chromium] › e2e/odds-changed.ui.spec.js:37:3 › Odds-changed UI surfaces › help documents odds acceptance policy 
+
+    Error: browserType.launch: Executable doesn't exist at /var/folders/s4/yyl1xx1j3874wvd5983cfvjm0000gn/T/cursor-sandbox-cache/5c7cb9922ec025f49cda275b07e815e6/playwright/chromium_headless_shell-1234/chrome-headless-shell-mac-x64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/odds-changed.ui-Odds-chang-e0ff6-ents-odds-acceptance-policy-chromium/error-context.md
+
+
+(node:62485) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[4/8] [chromium] › e2e/odds-changed.ui.spec.js:42:3 › Odds-changed UI surfaces › betslip shows struck-through old odds and Accept new odds CTA
+  2) [chromium] › e2e/odds-changed.ui.spec.js:42:3 › Odds-changed UI surfaces › betslip shows struck-through old odds and Accept new odds CTA 
+
+    Error: browserType.launch: Executable doesn't exist at /var/folders/s4/yyl1xx1j3874wvd5983cfvjm0000gn/T/cursor-sandbox-cache/5c7cb9922ec025f49cda275b07e815e6/playwright/chromium_headless_shell-1234/chrome-headless-shell-mac-x64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/odds-changed.ui-Odds-chang-860d5-dds-and-Accept-new-odds-CTA-chromium/error-context.md
+
+
+(node:62493) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[5/8] [chromium] › e2e/product-gates.ui.spec.js:8:3 › Casino and fantasy stay gated › casino routes away from a real-money lobby
+  3) [chromium] › e2e/product-gates.ui.spec.js:8:3 › Casino and fantasy stay gated › casino routes away from a real-money lobby 
+
+    Error: browserType.launch: Executable doesn't exist at /var/folders/s4/yyl1xx1j3874wvd5983cfvjm0000gn/T/cursor-sandbox-cache/5c7cb9922ec025f49cda275b07e815e6/playwright/chromium_headless_shell-1234/chrome-headless-shell-mac-x64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/product-gates.ui-Casino-an-da507-way-from-a-real-money-lobby-chromium/error-context.md
+
+
+(node:62494) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[6/8] [chromium] › e2e/product-gates.ui.spec.js:13:3 › Casino and fantasy stay gated › fantasy does not show a Join contest control
+  4) [chromium] › e2e/product-gates.ui.spec.js:13:3 › Casino and fantasy stay gated › fantasy does not show a Join contest control 
+
+    Error: browserType.launch: Executable doesn't exist at /var/folders/s4/yyl1xx1j3874wvd5983cfvjm0000gn/T/cursor-sandbox-cache/5c7cb9922ec025f49cda275b07e815e6/playwright/chromium_headless_shell-1234/chrome-headless-shell-mac-x64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/product-gates.ui-Casino-an-1a317-show-a-Join-contest-control-chromium/error-context.md
+
+
+(node:62502) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[7/8] [chromium] › e2e/product-gates.ui.spec.js:19:3 › Casino and fantasy stay gated › register still requires 18+ acknowledgement
+  5) [chromium] › e2e/product-gates.ui.spec.js:19:3 › Casino and fantasy stay gated › register still requires 18+ acknowledgement 
+
+    Error: browserType.launch: Executable doesn't exist at /var/folders/s4/yyl1xx1j3874wvd5983cfvjm0000gn/T/cursor-sandbox-cache/5c7cb9922ec025f49cda275b07e815e6/playwright/chromium_headless_shell-1234/chrome-headless-shell-mac-x64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/product-gates.ui-Casino-an-35933-requires-18-acknowledgement-chromium/error-context.md
+
+
+(node:62525) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[8/8] [chromium] › e2e/settlement-ws.ui.spec.js:13:3 › Settlement WebSocket lifecycle (no Razorpay) › fund → place-settle WIN → wallet Available changes without manual refresh
+  6) [chromium] › e2e/settlement-ws.ui.spec.js:13:3 › Settlement WebSocket lifecycle (no Razorpay) › fund → place-settle WIN → wallet Available changes without manual refresh 
+
+    Error: browserType.launch: Executable doesn't exist at /var/folders/s4/yyl1xx1j3874wvd5983cfvjm0000gn/T/cursor-sandbox-cache/5c7cb9922ec025f49cda275b07e815e6/playwright/chromium_headless_shell-1234/chrome-headless-shell-mac-x64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/settlement-ws.ui-Settlemen-f8c0d-nges-without-manual-refresh-chromium/error-context.md
+
+
+  6 failed
+    [chromium] › e2e/odds-changed.ui.spec.js:37:3 › Odds-changed UI surfaces › help documents odds acceptance policy 
+    [chromium] › e2e/odds-changed.ui.spec.js:42:3 › Odds-changed UI surfaces › betslip shows struck-through old odds and Accept new odds CTA 
+    [chromium] › e2e/product-gates.ui.spec.js:8:3 › Casino and fantasy stay gated › casino routes away from a real-money lobby 
+    [chromium] › e2e/product-gates.ui.spec.js:13:3 › Casino and fantasy stay gated › fantasy does not show a Join contest control 
+    [chromium] › e2e/product-gates.ui.spec.js:19:3 › Casino and fantasy stay gated › register still requires 18+ acknowledgement 
+    [chromium] › e2e/settlement-ws.ui.spec.js:13:3 › Settlement WebSocket lifecycle (no Razorpay) › fund → place-settle WIN → wallet Available changes without manual refresh 
+  2 passed (2.3s)

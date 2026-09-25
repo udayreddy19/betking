@@ -1,0 +1,50 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+Running 20 tests using 4 workers
+
+(node:13048) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+(node:13046) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+(node:13045) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+(node:13047) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/20] [api] › e2e/odds-changed.api.spec.js:8:3 › Odds changed placement contract › returns 409 ODDS_CHANGED with old/new odds and no financial side effects
+[2/20] [chromium] › e2e/money-lifecycle.ui.spec.js:16:3 › Money lifecycle browser smoke › logged-in profile shows wallet grid when token provided
+[3/20] [api] › e2e/money-flow.api.spec.js:8:3 › Staging money flow (register → deposit sandbox → bet → withdraw) › register, create sandbox deposit, place bet, request withdraw
+[4/20] [chromium] › e2e/money-lifecycle.ui.spec.js:9:3 › Money lifecycle browser smoke › home and sports shell load
+(node:13060) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+(node:13061) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[5/20] [chromium] › e2e/odds-changed.ui.spec.js:9:3 › Odds-changed betslip UX helpers › flags ODDS_CHANGED API responses
+[6/20] [chromium] › e2e/odds-changed.ui.spec.js:15:3 › Odds-changed betslip UX helpers › updates betslip rows without removing selections
+[7/20] [chromium] › e2e/odds-changed.ui.spec.js:37:3 › Odds-changed UI surfaces › help documents odds acceptance policy
+[8/20] [chromium] › e2e/odds-changed.ui.spec.js:42:3 › Odds-changed UI surfaces › betslip shows struck-through old odds and Accept new odds CTA
+[9/20] [chromium] › e2e/product-gates.ui.spec.js:8:3 › Casino and fantasy stay gated › casino routes away from a real-money lobby
+[10/20] [chromium] › e2e/product-gates.ui.spec.js:13:3 › Casino and fantasy stay gated › fantasy does not show a Join contest control
+[11/20] [chromium] › e2e/product-gates.ui.spec.js:19:3 › Casino and fantasy stay gated › register still requires 18+ acknowledgement
+[12/20] [chromium] › e2e/settlement-ws.ui.spec.js:13:3 › Settlement WebSocket lifecycle (no Razorpay) › fund → place-settle WIN → wallet Available changes without manual refresh
+[13/20] [chromium] › e2e/spin-expiry.ui.spec.js:5:3 › Spin prize 24h expiry UX › builds wallet notice for active spin grants
+[14/20] [chromium] › e2e/spin-expiry.ui.spec.js:15:3 › Spin prize 24h expiry UX › formats remaining time
+[15/20] [chromium] › e2e/spin-expiry.ui.spec.js:24:3 › Spin expiry UI copy › help mentions daily spin rewards
+[16/20] [chromium] › e2e/vip-points.ui.spec.js:8:3 › VIP vs loyalty points display › VIP page explains tier thresholds
+[17/20] [chromium] › e2e/vip-points.ui.spec.js:13:3 › VIP vs loyalty points display › help documents separate VIP progression
+[18/20] [chromium] › e2e/wallet-ws.ui.spec.js:8:3 › Wallet WS financial event guards › dedupes duplicate settlement events
+[19/20] [chromium] › e2e/wallet-ws.ui.spec.js:16:3 › Wallet WS financial event guards › recognizes wallet refresh event types
+[20/20] [chromium] › e2e/wallet-ws.ui.spec.js:25:3 › Wallet WS browser resync › sports page loads without auth errors after refresh token path
+  1 skipped
+  19 passed (13.6s)

@@ -1,0 +1,7 @@
+timestamp=2026-09-25T07:34:52Z
+environment=STAGING(local-staging)
+git=9517ef0
+category=SANDBOX
+command=Cashfree MISSING — record BLOCKED_EXTERNAL_DEPENDENCY
+result=BLOCKED_EXTERNAL_DEPENDENCY
+

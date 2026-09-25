@@ -1,0 +1,27 @@
+OddsYra production certification
+
+◇ injected env (39) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+✓ [PASS] Cricket engine default — resolved=v4
+✓ [PASS] Other-sports engine default — resolved=v4
+✓ [PASS] Cricket V3 override — none active (or expired)
+✓ [PASS] Other-sports override source — source=env active=v4
+✓ [PASS] Active cricket engine (runtime) — active=v4 source=env expires=n/a
+✓ [PASS] Active other-sports engine (runtime) — active=v4 source=env
+✓ [PASS] Auto-promotion flag — AUTO_PROMOTION=false
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+✓ [PASS] Authoritative exposure source — open_bets_postgres
+✓ [PASS] Risk hierarchy — maxStake=25000
+✓ [PASS] Calibration auto-promotion — status=INSUFFICIENT_SAMPLE N=1
+! [WARN] Production validation N — N=1 below gate 1000 (INSUFFICIENT_SAMPLE)
+✓ [PASS] Casino is aggregator (not house) — CASINO_AGGREGATOR
+✓ [PASS] package.json readable — name=oddsyra
+⊗ [BLOCKED] Security suite gate — Staging smoke AUTH probes GREEN (401/invalid bearer/readiness). security:certification overall NOT_VERIFIED — MFA/RBAC/CSRF matrix blocked without SMOKE_ADMIN_TOKEN
+✓ [PASS] E2E suite gate — playwright: 19 passed, 1 skipped (E2E_AUTH_TOKEN optional profile wallet), 0 failed against local-staging
+✓ [PASS] Concurrency suite gate — pass4 concurrency + locks + idempotency + financial invariants: 28 passed
+! [WARN] Payment E2E gate — SANDBOX Razorpay keys present; UNIT/INTEGRATION 26 passed; API money-flow E2E passed; hosted Razorpay checkout + Cashfree MISSING; LIVE NOT RUN
+✓ [PASS] Financial invariants gate — pass4FinancialInvariants + exposure SoT retained
+✓ [PASS] WebSocket suite gate — STAGING soak /ws/support connect/drop/reconnect PASS; settlement-ws UI E2E PASS after harness push fix
+
+---
+PASS=16 WARN=2 BLOCKED=1 FAIL=0
+CERTIFICATION: BLOCKED

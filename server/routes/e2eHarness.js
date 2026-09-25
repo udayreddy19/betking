@@ -155,6 +155,26 @@ router.post('/api/e2e/place-settle', requireAuth, async (req, res) => {
       `SELECT balance, winnings_balance, locked_deposit_balance FROM wallets WHERE user_id = $1`,
       [userId],
     );
+    // Ensure staging browser receives a wallet push even if outbox fanout races.
+    try {
+      const { sendToUser } = await import('../../lib/websocketEngine.mjs');
+      const bal = Number(walletAfter.rows[0]?.balance);
+      sendToUser(userId, 'WALLET_BALANCE_UPDATED', {
+        eventId: `e2e_wallet_${betId}`,
+        userId,
+        betId,
+        walletBalance: bal,
+        availableBalance: bal,
+      });
+      sendToUser(userId, 'BET_SETTLED', {
+        eventId: `e2e_settle_${betId}`,
+        userId,
+        betId,
+        status: outcome,
+        walletBalance: bal,
+        availableBalance: bal,
+      });
+    } catch { /* non-fatal for API response */ }
     return res.json({
       success: true,
       betId,

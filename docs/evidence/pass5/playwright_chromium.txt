@@ -1,0 +1,124 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+Running 18 tests using 4 workers
+
+(node:57419) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+(node:57421) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+(node:57422) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+(node:57420) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/18] [chromium] › e2e/odds-changed.ui.spec.js:15:3 › Odds-changed betslip UX helpers › updates betslip rows without removing selections
+[2/18] [chromium] › e2e/money-lifecycle.ui.spec.js:16:3 › Money lifecycle browser smoke › logged-in profile shows wallet grid when token provided
+[3/18] [chromium] › e2e/money-lifecycle.ui.spec.js:9:3 › Money lifecycle browser smoke › home and sports shell load
+[4/18] [chromium] › e2e/odds-changed.ui.spec.js:9:3 › Odds-changed betslip UX helpers › flags ODDS_CHANGED API responses
+[5/18] [chromium] › e2e/odds-changed.ui.spec.js:37:3 › Odds-changed UI surfaces › help documents odds acceptance policy
+[6/18] [chromium] › e2e/odds-changed.ui.spec.js:42:3 › Odds-changed UI surfaces › betslip shows struck-through old odds and Accept new odds CTA
+[7/18] [chromium] › e2e/product-gates.ui.spec.js:8:3 › Casino and fantasy stay gated › casino routes away from a real-money lobby
+[8/18] [chromium] › e2e/product-gates.ui.spec.js:13:3 › Casino and fantasy stay gated › fantasy does not show a Join contest control
+[9/18] [chromium] › e2e/product-gates.ui.spec.js:19:3 › Casino and fantasy stay gated › register still requires 18+ acknowledgement
+[10/18] [chromium] › e2e/settlement-ws.ui.spec.js:13:3 › Settlement WebSocket lifecycle (no Razorpay) › fund → place-settle WIN → wallet Available changes without manual refresh
+[11/18] [chromium] › e2e/spin-expiry.ui.spec.js:5:3 › Spin prize 24h expiry UX › builds wallet notice for active spin grants
+[12/18] [chromium] › e2e/spin-expiry.ui.spec.js:15:3 › Spin prize 24h expiry UX › formats remaining time
+[13/18] [chromium] › e2e/spin-expiry.ui.spec.js:24:3 › Spin expiry UI copy › help mentions daily spin rewards
+[14/18] [chromium] › e2e/vip-points.ui.spec.js:8:3 › VIP vs loyalty points display › VIP page explains tier thresholds
+  1) [chromium] › e2e/odds-changed.ui.spec.js:42:3 › Odds-changed UI surfaces › betslip shows struck-through old odds and Accept new odds CTA 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: getByRole('dialog', { name: /quick bet/i }).getByRole('status')
+    Expected pattern: /odds changed from 1\.85 to 1\.95/i
+    Received string:  "Odds have changed."
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toContainText" with timeout 5000ms
+      - waiting for getByRole('dialog', { name: /quick bet/i }).getByRole('status')
+        14 × locator resolved to <p role="status" class="mobile-betslip-notice">Odds have changed.</p>
+           - unexpected value "Odds have changed."
+
+
+      80 |     const dialog = page.getByRole('dialog', { name: /quick bet/i });
+      81 |     await expect(dialog).toBeVisible({ timeout: 15000 });
+    > 82 |     await expect(dialog.getByRole('status')).toContainText(/odds changed from 1\.85 to 1\.95/i);
+         |                                              ^
+      83 |     const oldOdds = dialog.locator('.mobile-betslip-quick-odds-old');
+      84 |     await expect(oldOdds).toBeVisible();
+      85 |     await expect(oldOdds).toHaveCSS('text-decoration-line', /line-through/);
+        at /Users/udayreddy/Desktop/betking/e2e/odds-changed.ui.spec.js:82:46
+
+    Error Context: test-results/odds-changed.ui-Odds-chang-860d5-dds-and-Accept-new-odds-CTA-chromium/error-context.md
+
+
+[15/18] [chromium] › e2e/wallet-ws.ui.spec.js:8:3 › Wallet WS financial event guards › dedupes duplicate settlement events
+[16/18] [chromium] › e2e/wallet-ws.ui.spec.js:16:3 › Wallet WS financial event guards › recognizes wallet refresh event types
+[17/18] [chromium] › e2e/wallet-ws.ui.spec.js:25:3 › Wallet WS browser resync › sports page loads without auth errors after refresh token path
+(node:57843) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[18/18] [chromium] › e2e/vip-points.ui.spec.js:13:3 › VIP vs loyalty points display › help documents separate VIP progression
+  2) [chromium] › e2e/product-gates.ui.spec.js:13:3 › Casino and fantasy stay gated › fantasy does not show a Join contest control 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText(/licensed contests|not live yet/i).first()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByText(/licensed contests|not live yet/i).first()
+
+
+      14 |     await page.goto('/fantasy');
+      15 |     await expect(page.getByRole('button', { name: /join contest/i })).toHaveCount(0);
+    > 16 |     await expect(page.getByText(/licensed contests|not live yet/i).first()).toBeVisible();
+         |                                                                             ^
+      17 |   });
+      18 |
+      19 |   test('register still requires 18+ acknowledgement', async ({ page }) => {
+        at /Users/udayreddy/Desktop/betking/e2e/product-gates.ui.spec.js:16:77
+
+    Error Context: test-results/product-gates.ui-Casino-an-1a317-show-a-Join-contest-control-chromium/error-context.md
+
+
+  3) [chromium] › e2e/settlement-ws.ui.spec.js:13:3 › Settlement WebSocket lifecycle (no Razorpay) › fund → place-settle WIN → wallet Available changes without manual refresh 
+
+    Error: expect(received).toMatch(expected)
+
+    Expected pattern: /1,?050/
+    Received string:  "₹1,000"
+
+    Call Log:
+    - Timeout 30000ms exceeded while waiting on the predicate
+
+      84 |     await expect.poll(async () => {
+      85 |       return page.locator('.profile-wallet-grid .value').first().innerText();
+    > 86 |     }, { timeout: 30000 }).toMatch(/1,?050/);
+         |                            ^
+      87 |
+      88 |     expect(availableBefore).not.toMatch(/1,?050/);
+      89 |     if (wsFrames.length) {
+        at /Users/udayreddy/Desktop/betking/e2e/settlement-ws.ui.spec.js:86:28
+
+    Error Context: test-results/settlement-ws.ui-Settlemen-f8c0d-nges-without-manual-refresh-chromium/error-context.md
+
+
+  3 failed
+    [chromium] › e2e/odds-changed.ui.spec.js:42:3 › Odds-changed UI surfaces › betslip shows struck-through old odds and Accept new odds CTA 
+    [chromium] › e2e/product-gates.ui.spec.js:13:3 › Casino and fantasy stay gated › fantasy does not show a Join contest control 
+    [chromium] › e2e/settlement-ws.ui.spec.js:13:3 › Settlement WebSocket lifecycle (no Razorpay) › fund → place-settle WIN → wallet Available changes without manual refresh 
+  1 skipped
+  14 passed (48.7s)
