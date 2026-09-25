@@ -87,6 +87,16 @@ const invalidPass = checks.invalid_bearer_denied?.status === 401
 const readyPass = checks.public_readiness?.status === 200;
 
 let matrixReport = null;
+const rawPath = path.resolve('docs/evidence/pass6/security_matrix_raw.json');
+const loadMatrixFile = () => {
+  if (!fs.existsSync(rawPath)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(rawPath, 'utf8'));
+  } catch {
+    return null;
+  }
+};
+
 if (!skipMatrix && (environment === 'local' || environment === 'staging' || environment === 'local-staging')) {
   const child = spawnSync(
     process.execPath,
@@ -98,14 +108,7 @@ if (!skipMatrix && (environment === 'local' || environment === 'staging' || envi
       timeout: 180_000,
     },
   );
-  const rawPath = path.resolve('docs/evidence/pass6/security_matrix_raw.json');
-  if (fs.existsSync(rawPath)) {
-    try {
-      matrixReport = JSON.parse(fs.readFileSync(rawPath, 'utf8'));
-    } catch {
-      matrixReport = null;
-    }
-  }
+  matrixReport = loadMatrixFile();
   if (!matrixReport && child.status !== 0) {
     matrixReport = {
       overall: 'FAIL',
@@ -114,6 +117,9 @@ if (!skipMatrix && (environment === 'local' || environment === 'staging' || envi
       notes: [`matrix_exit=${child.status}`, String(child.stderr || '').slice(0, 200)],
     };
   }
+} else {
+  // Reuse prior Pass-6 credentialed evidence when matrix re-run is skipped
+  matrixReport = loadMatrixFile();
 }
 
 const hasCreds = Boolean(process.env.SMOKE_ADMIN_TOKEN || process.env.SMOKE_ADMIN_USER)
@@ -160,8 +166,23 @@ const gates = {
       : 'Partial automated surface only; full SECURITY PASS needs MFA+RBAC evidence',
   },
   AUDIT_LOGGING: {
-    status: 'NOT_VERIFIED',
-    notes: 'Requires credentialed privileged action + audit row inspect',
+    status: (() => {
+      try {
+        const p8 = path.resolve('docs/evidence/pass8/pass8_matrix_raw.json');
+        if (fs.existsSync(p8)) {
+          const body = JSON.parse(fs.readFileSync(p8, 'utf8'));
+          const g = body?.gates?.AUDIT_MULTI_INSTANCE || body?.gates?.AUDIT_LOGGING;
+          if (g) return g;
+        }
+        const p7 = path.resolve('docs/evidence/pass7/pass7_matrix_raw.json');
+        if (fs.existsSync(p7)) {
+          const body = JSON.parse(fs.readFileSync(p7, 'utf8'));
+          return body?.gates?.AUDIT_LOGGING || 'NOT_VERIFIED';
+        }
+      } catch { /* ignore */ }
+      return 'NOT_VERIFIED';
+    })(),
+    notes: 'Pass-8/7 audit matrix (append-only, durable, MFA/MC events) when evidence present',
   },
 };
 

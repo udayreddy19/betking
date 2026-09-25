@@ -1,0 +1,19 @@
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+{"ts":"2026-09-25T10:36:00.443Z","level":"error","message":"sql_error","error":"audit_events is append-only"}
+{"ts":"2026-09-25T10:36:00.455Z","level":"error","message":"sql_error","error":"audit_events is append-only"}
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+[Redis] Connected to 127.0.0.1:6379
+{"ts":"2026-09-25T10:36:01.624Z","level":"error","message":"sql_transaction_rollback","error":"MAKER_CHECKER_SELF_APPROVAL_PROHIBITED: The maker of a request cannot approve their own request."}
+{"ts":"2026-09-25T10:36:01.626Z","level":"error","message":"sql_transaction_rollback","error":"Request #mc_req_1790332561621_xwfv is already in status 'APPROVED'"}
+{
+  "event": "PASS7_CERTIFICATION_MATRIX",
+  "gates": {
+    "AUDIT_LOGGING": "PASS",
+    "MULTI_INSTANCE_MFA": "PASS",
+    "RBAC_MULTI_INSTANCE": "PASS",
+    "MAKER_CHECKER": "PASS",
+    "PAYMENTS": "WARN"
+  },
+  "path": "docs/evidence/pass7/pass7_matrix_raw.json",
+  "secretsPrinted": false
+}

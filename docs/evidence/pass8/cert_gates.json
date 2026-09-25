@@ -2,7 +2,7 @@
   "generatedAt": "2026-09-25T11:28:00.000Z",
   "environment": "LOCAL_STAGING (production-like dual-API)",
   "git": "f5ff843",
-  "note": "Pass-8 updates production:certify gates — dual-API multi-instance MFA/RBAC/audit + Redis fail-safe. Production N unchanged.",
+  "note": "Pass-8: dual-API multi-instance MFA/RBAC/audit, Redis fail-safe (no silent MFA memory fallback), deployment Redis-required policy. Production N unchanged. Remote staging NOT_VERIFIED.",
   "security": {
     "status": "PASS",
     "detail": "Pass-6 credentialed matrix retained; Pass-8 AUDIT_MULTI_INSTANCE PASS; security:certification PASS"

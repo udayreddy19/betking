@@ -28,6 +28,8 @@
     "db:verify": "node scripts/db-verify.mjs",
     "security:certification": "node scripts/security-certification.mjs",
     "security:pass6-matrix": "node scripts/pass6-security-matrix.mjs",
+    "security:pass7-matrix": "node scripts/pass7-certification-matrix.mjs",
+    "security:pass8-matrix": "node scripts/pass8-certification-matrix.mjs",
     "production:smoke": "node scripts/production-smoke.mjs",
     "production:preflight": "node scripts/production-preflight.mjs",
     "production:certification": "node scripts/production-certification.mjs",

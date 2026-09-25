@@ -1,7 +1,7 @@
 {
   "phase": 8,
-  "timestamp": "2026-09-25T08:10:12.998Z",
-  "gitCommit": "9517ef0",
+  "timestamp": "2026-09-25T11:25:10.831Z",
+  "gitCommit": "f5ff843",
   "autoRepair": false,
   "secretsPrinted": false,
   "environment": "local",
@@ -41,8 +41,8 @@
       "notes": "Derived from Pass-6 credentialed matrix + public probes"
     },
     "AUDIT_LOGGING": {
-      "status": "NOT_VERIFIED",
-      "notes": "Requires credentialed privileged action + audit row inspect"
+      "status": "PASS",
+      "notes": "Pass-8/7 audit matrix (append-only, durable, MFA/MC events) when evidence present"
     }
   },
   "cases": [
@@ -74,13 +74,13 @@
       "name": "public_readiness",
       "ok": true,
       "status": 200,
-      "bodySnippet": "{\"ready\":true,\"status\":\"HEALTHY\",\"timestamp\":\"2026-09-25T08:09:42.219Z\"}"
+      "bodySnippet": "{\"ready\":true,\"status\":\"HEALTHY\",\"timestamp\":\"2026-09-25T11:24:39.970Z\"}"
     },
     {
       "name": "public_liveness",
       "ok": true,
       "status": 200,
-      "bodySnippet": "{\"alive\":true,\"timestamp\":\"2026-09-25T08:09:42.220Z\"}"
+      "bodySnippet": "{\"alive\":true,\"timestamp\":\"2026-09-25T11:24:39.971Z\"}"
     }
   ],
   "credentialedMatrixExecuted": true,

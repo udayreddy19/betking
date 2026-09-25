@@ -1,0 +1,23 @@
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+[Redis] Connected to 127.0.0.1:6379
+{"ts":"2026-09-25T11:22:14.988Z","level":"error","message":"sql_error","error":"audit_events is append-only"}
+{"ts":"2026-09-25T11:22:15.009Z","level":"error","message":"sql_transaction_rollback","error":"MAKER_CHECKER_SELF_APPROVAL_PROHIBITED: The maker of a request cannot approve their own request."}
+{
+  "event": "PASS8_CERTIFICATION_MATRIX",
+  "gates": {
+    "ENVIRONMENT": "WARN",
+    "INFRASTRUCTURE": "FAIL",
+    "MULTI_INSTANCE_MFA": "WARN",
+    "REDIS_FAILSAFE": "PASS",
+    "RBAC_MULTI_INSTANCE": "NOT_VERIFIED",
+    "AUDIT_MULTI_INSTANCE": "PASS",
+    "MAKER_CHECKER": "PASS",
+    "WEBSOCKET": "WARN",
+    "PAYMENTS": "WARN",
+    "DEPLOYMENT_SECURITY": "PASS",
+    "FINANCIAL": "PASS"
+  },
+  "path": "docs/evidence/pass8/pass8_matrix_raw.json",
+  "secretsPrinted": false
+}

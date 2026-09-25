@@ -18,7 +18,24 @@ class MockRedis {
   }
   on() {}
   async get(key) { return this.store.get(key) || null; }
-  async set(key, val) { this.store.set(key, val); return 'OK'; }
+  async set(key, val, ...args) {
+    let nx = false;
+    let ex = null;
+    for (let i = 0; i < args.length; i += 1) {
+      const a = String(args[i] || '').toUpperCase();
+      if (a === 'NX') nx = true;
+      if (a === 'EX') {
+        ex = Number(args[i + 1]);
+        i += 1;
+      }
+    }
+    if (nx && this.store.has(key)) return null;
+    this.store.set(key, val);
+    if (Number.isFinite(ex) && ex > 0) {
+      setTimeout(() => this.store.delete(key), ex * 1000).unref?.();
+    }
+    return 'OK';
+  }
   async del(key) { this.store.delete(key); return 1; }
 }
 

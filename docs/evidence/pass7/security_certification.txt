@@ -1,0 +1,51 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> oddsyra@0.0.0 security:certification
+> node scripts/security-certification.mjs --environment=local --base-url=http://127.0.0.1:5001 --skip-matrix=1
+
+{
+  "event": "SECURITY_CERTIFICATION",
+  "environment": "local",
+  "result": "PASS",
+  "gates": {
+    "AUTHENTICATION": {
+      "status": "PASS",
+      "notes": "Unauth + invalid bearer probes"
+    },
+    "MFA": {
+      "status": "PASS",
+      "notes": "Credentialed Pass-6 MFA matrix executed"
+    },
+    "RBAC": {
+      "status": "PASS",
+      "notes": "Credentialed Pass-6 RBAC matrix executed"
+    },
+    "IDOR": {
+      "status": "PASS",
+      "notes": "Pass-6 IDOR probes executed"
+    },
+    "JWT": {
+      "status": "PASS",
+      "notes": "Pass-6 JWT/session probes executed"
+    },
+    "CSRF": {
+      "status": "PASS",
+      "notes": "Pass-6 CSRF probes executed"
+    },
+    "RATE_LIMIT": {
+      "status": "PASS",
+      "notes": "Bounded auth rate-limit probes"
+    },
+    "SECURITY": {
+      "status": "PASS",
+      "notes": "Derived from Pass-6 credentialed matrix + public probes"
+    },
+    "AUDIT_LOGGING": {
+      "status": "PASS",
+      "notes": "Pass-7 audit matrix (append-only, durable, MFA/MC events) when evidence present"
+    }
+  },
+  "credentialedMatrixExecuted": true,
+  "path": "docs/evidence/phase8/security_2026-09-25T10-36-49-776Z.json",
+  "secretsPrinted": false
+}

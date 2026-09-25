@@ -1,0 +1,260 @@
+{
+  "event": "PASS7_CERTIFICATION_MATRIX",
+  "environment": "local",
+  "baseUrl": "http://127.0.0.1:5001",
+  "classification": "LOCAL_STAGING",
+  "generatedAt": "2026-09-25T10:36:01.637Z",
+  "secretsPrinted": false,
+  "gates": {
+    "AUDIT_LOGGING": "PASS",
+    "MULTI_INSTANCE_MFA": "PASS",
+    "RBAC_MULTI_INSTANCE": "PASS",
+    "MAKER_CHECKER": "PASS",
+    "PAYMENTS": "WARN"
+  },
+  "fieldQuality": {
+    "timestamp": "PRESENT",
+    "eventType": "PRESENT",
+    "actorId": "PRESENT",
+    "targetId": "PRESENT",
+    "action": "PRESENT",
+    "details": "PRESENT",
+    "ip": "PRESENT",
+    "userAgent": "PRESENT",
+    "requestId": "PRESENT",
+    "riskLevel": "PRESENT",
+    "actorRole": "NOT_APPLICABLE"
+  },
+  "results": [
+    {
+      "family": "audit",
+      "name": "programmatic_write",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "audit",
+      "name": "field_quality",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null,
+      "fields": {
+        "timestamp": "PRESENT",
+        "eventType": "PRESENT",
+        "actorId": "PRESENT",
+        "targetId": "PRESENT",
+        "action": "PRESENT",
+        "details": "PRESENT",
+        "ip": "PRESENT",
+        "userAgent": "PRESENT",
+        "requestId": "PRESENT",
+        "riskLevel": "PRESENT",
+        "actorRole": "NOT_APPLICABLE"
+      }
+    },
+    {
+      "family": "audit",
+      "name": "tamper_update_denied",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "audit",
+      "name": "tamper_delete_denied",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "audit",
+      "name": "user_denied_admin_audit_access",
+      "status": "PASS",
+      "httpStatus": 403,
+      "note": null
+    },
+    {
+      "family": "audit",
+      "name": "durability_postgres",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": "audit_events is durable Postgres; survives API process restart"
+    },
+    {
+      "family": "audit",
+      "name": "concurrent_writes",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "mfa_multi",
+      "name": "instance_a_consume",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "mfa_multi",
+      "name": "instance_b_replay_deny",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "mfa_multi",
+      "name": "concurrent_exactly_one",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "mfa_multi",
+      "name": "http_valid_mfa",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "mfa_multi",
+      "name": "http_replay_deny",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "audit",
+      "name": "mfa_events_logged",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null,
+      "actions": [
+        "ADMIN_MFA_REPLAY_DENIED",
+        "ADMIN_MFA_VERIFIED"
+      ]
+    },
+    {
+      "family": "rbac_multi",
+      "name": "operator_denied_risk_hierarchy",
+      "status": "PASS",
+      "httpStatus": 403,
+      "note": null
+    },
+    {
+      "family": "rbac_multi",
+      "name": "admin_allow_risk_hierarchy",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "rbac_multi",
+      "name": "no_process_local_role_cache",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": "requireRole reads role from verified JWT each request; shared JWT secret across instances"
+    },
+    {
+      "family": "maker_checker",
+      "name": "maker_submit",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "maker_checker",
+      "name": "maker_self_approve_deny",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "maker_checker",
+      "name": "checker_approve",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "maker_checker",
+      "name": "duplicate_approve_deny",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "maker_checker",
+      "name": "user_denied_pending",
+      "status": "PASS",
+      "httpStatus": 403,
+      "note": null
+    },
+    {
+      "family": "maker_checker",
+      "name": "http_submit",
+      "status": "PASS",
+      "httpStatus": 201,
+      "note": null
+    },
+    {
+      "family": "maker_checker",
+      "name": "http_self_approve_deny",
+      "status": "PASS",
+      "httpStatus": 403,
+      "note": null
+    },
+    {
+      "family": "maker_checker",
+      "name": "http_checker_approve",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "audit",
+      "name": "maker_checker_events_logged",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null,
+      "actions": [
+        "MAKER_CHECKER_APPROVED",
+        "MAKER_CHECKER_SUBMITTED",
+        "MAKER_CHECKER_APPROVED",
+        "MAKER_CHECKER_SUBMITTED",
+        "MAKER_CHECKER_APPROVED",
+        "MAKER_CHECKER_SUBMITTED",
+        "MAKER_CHECKER_APPROVED",
+        "MAKER_CHECKER_SUBMITTED"
+      ]
+    },
+    {
+      "family": "payments",
+      "name": "razorpay_sandbox_keys",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "payments",
+      "name": "cashfree_sandbox_keys",
+      "status": "NOT_VERIFIED",
+      "httpStatus": null,
+      "note": "Cashfree credentials MISSING"
+    },
+    {
+      "family": "payments",
+      "name": "live_payments",
+      "status": "NOT_RUN",
+      "httpStatus": null,
+      "note": "Pass 7 forbids LIVE money"
+    },
+    {
+      "family": "payments",
+      "name": "hosted_checkout",
+      "status": "NOT_RUN",
+      "httpStatus": null,
+      "note": "Hosted Razorpay browser checkout not exercised in Pass 7 automation"
+    }
+  ]
+}

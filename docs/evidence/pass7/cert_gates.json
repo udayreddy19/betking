@@ -1,0 +1,42 @@
+{
+  "generatedAt": "2026-09-25T10:40:00.000Z",
+  "environment": "STAGING(local-staging)",
+  "git": "f5ff843",
+  "note": "Pass-7 closes audit logging, multi-instance MFA (Redis SET NX), maker/checker governance. Production N unchanged.",
+  "security": {
+    "status": "PASS",
+    "detail": "Pass-6 credentialed MFA/RBAC/IDOR/JWT/CSRF retained + Pass-7 AUDIT_LOGGING PASS; security:certification PASS"
+  },
+  "auditLogging": {
+    "status": "PASS",
+    "detail": "append-only audit_events; durable Postgres; MFA + maker-checker events; user cannot UPDATE/DELETE"
+  },
+  "multiInstanceMfa": {
+    "status": "PASS",
+    "detail": "Redis SET NX EX atomic consume; concurrent exactly-one; HTTP replay DENY"
+  },
+  "makerChecker": {
+    "status": "PASS",
+    "detail": "self-approve DENY; checker APPROVE; duplicate DENY; HTTP matrix PASS"
+  },
+  "e2e": {
+    "status": "PASS",
+    "detail": "playwright 19 passed / 1 skipped / 0 failed"
+  },
+  "concurrency": {
+    "status": "PASS",
+    "detail": "hardening 39 passed (Pass-7 MFA multi-instance unit included)"
+  },
+  "payments": {
+    "status": "WARN",
+    "detail": "Razorpay sandbox keys present; Cashfree MISSING; hosted checkout NOT RUN; LIVE NOT RUN"
+  },
+  "financialInvariants": {
+    "status": "PASS",
+    "detail": "open_bets_postgres SoT retained"
+  },
+  "websocket": {
+    "status": "PASS",
+    "detail": "settlement-ws UI E2E PASS retained"
+  }
+}

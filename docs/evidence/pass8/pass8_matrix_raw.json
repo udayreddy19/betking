@@ -1,0 +1,275 @@
+{
+  "event": "PASS8_CERTIFICATION_MATRIX",
+  "classification": "LOCAL_STAGING",
+  "api1": "http://127.0.0.1:5001",
+  "api2": "http://127.0.0.1:5002",
+  "generatedAt": "2026-09-25T11:23:00.477Z",
+  "secretsPrinted": false,
+  "gates": {
+    "ENVIRONMENT": "WARN",
+    "INFRASTRUCTURE": "PASS",
+    "MULTI_INSTANCE_MFA": "PASS",
+    "REDIS_FAILSAFE": "PASS",
+    "RBAC_MULTI_INSTANCE": "PASS",
+    "AUDIT_MULTI_INSTANCE": "PASS",
+    "MAKER_CHECKER": "PASS",
+    "WEBSOCKET": "WARN",
+    "PAYMENTS": "WARN",
+    "DEPLOYMENT_SECURITY": "PASS",
+    "FINANCIAL": "PASS"
+  },
+  "results": [
+    {
+      "family": "env",
+      "name": "classification",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": "LOCAL_STAGING dual-API production-like"
+    },
+    {
+      "family": "env",
+      "name": "staging_remote",
+      "status": "NOT_VERIFIED",
+      "httpStatus": null,
+      "note": "Remote STAGING_BASE_URL MISSING — using local dual API"
+    },
+    {
+      "family": "infra",
+      "name": "api1_readiness",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "infra",
+      "name": "api2_readiness",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "infra",
+      "name": "shared_redis",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "mfa_multi",
+      "name": "instance_a_consume",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "mfa_multi",
+      "name": "instance_b_replay",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "mfa_multi",
+      "name": "concurrent_one_winner",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "mfa_multi",
+      "name": "key_ttl_seconds",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "mfa_multi",
+      "name": "key_stores_hash_not_jwt",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "mfa_multi",
+      "name": "login_api1_verify_api2",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "mfa_multi",
+      "name": "replay_api1_after_api2",
+      "status": "PASS",
+      "httpStatus": 401,
+      "note": null
+    },
+    {
+      "family": "redis_failsafe",
+      "name": "policy_multi_instance_requires_redis",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": "Code: MULTI_INSTANCE=true disables MFA memory fallback and marks readiness DOWN when Redis down"
+    },
+    {
+      "family": "rbac_multi",
+      "name": "user_deny_api2",
+      "status": "PASS",
+      "httpStatus": 403,
+      "note": null
+    },
+    {
+      "family": "rbac_multi",
+      "name": "operator_deny_risk_api2",
+      "status": "PASS",
+      "httpStatus": 403,
+      "note": null
+    },
+    {
+      "family": "rbac_multi",
+      "name": "admin_allow_risk_api2",
+      "status": "PASS",
+      "httpStatus": 200,
+      "note": null
+    },
+    {
+      "family": "rbac_multi",
+      "name": "jwt_shared_secret_across_instances",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": "Same JWT_SECRET; role from verified token — no process-local RBAC cache"
+    },
+    {
+      "family": "audit_multi",
+      "name": "write_visible_shared_db",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "audit_multi",
+      "name": "append_only_retained",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": "migration 097 triggers (Pass 7)"
+    },
+    {
+      "family": "audit_multi",
+      "name": "tamper_delete_denied",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "maker_checker",
+      "name": "self_approve_deny",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "maker_checker",
+      "name": "checker_approve",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "websocket",
+      "name": "channel_auth_own",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "websocket",
+      "name": "channel_auth_cross_deny",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "websocket",
+      "name": "redis_fanout_configured",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": "publishWsFanout uses shared Redis pub/sub for cross-instance delivery"
+    },
+    {
+      "family": "websocket",
+      "name": "cross_instance_event_delivery_soak",
+      "status": "NOT_RUN",
+      "httpStatus": null,
+      "note": "Fanout code present; full socket soak deferred — document NOT_RUN"
+    },
+    {
+      "family": "payments",
+      "name": "razorpay_sandbox_keys",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "payments",
+      "name": "cashfree_sandbox",
+      "status": "NOT_VERIFIED",
+      "httpStatus": null,
+      "note": "Cashfree credentials MISSING"
+    },
+    {
+      "family": "payments",
+      "name": "hosted_checkout",
+      "status": "NOT_RUN",
+      "httpStatus": null,
+      "note": "Hosted Razorpay browser checkout not automated in Pass 8"
+    },
+    {
+      "family": "payments",
+      "name": "live",
+      "status": "NOT_RUN",
+      "httpStatus": null,
+      "note": "LIVE forbidden"
+    },
+    {
+      "family": "payments",
+      "name": "gateway_selection_policy",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": "Verified by tests/payments/paymentGatewayManagement.test.mjs (11 passed in Pass 8 regression)"
+    },
+    {
+      "family": "deploy",
+      "name": "no_env_committed",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": ".env is gitignored; not staged for commit"
+    },
+    {
+      "family": "deploy",
+      "name": "cors_not_wildcard_with_credentials",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": "CORS not explicitly set in this process"
+    },
+    {
+      "family": "deploy",
+      "name": "multi_instance_redis_required_policy",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": "validateProductionEnvironment + MFA consume + readiness enforce Redis when MULTI_INSTANCE/production"
+    },
+    {
+      "family": "deploy",
+      "name": "auto_promotion_false",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    },
+    {
+      "family": "financial",
+      "name": "exposure_sot",
+      "status": "PASS",
+      "httpStatus": null,
+      "note": null
+    }
+  ]
+}

@@ -86,11 +86,12 @@ function sanitizeBody(body) {
   if (!body || typeof body !== 'object') return null;
   const sanitized = { ...body };
   // Remove sensitive fields
-  delete sanitized.password;
-  delete sanitized.token;
-  delete sanitized.secret;
-  delete sanitized.credentials;
-  delete sanitized.rawBody;
+  const deny = [
+    'password', 'token', 'secret', 'credentials', 'rawBody',
+    'mfaToken', 'accessToken', 'refreshToken', 'csrfToken',
+    'otpauthUrl', 'authorization', 'apiKey', 'api_key',
+  ];
+  for (const k of deny) delete sanitized[k];
   return sanitized;
 }
 
