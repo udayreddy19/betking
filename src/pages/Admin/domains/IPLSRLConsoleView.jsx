@@ -269,7 +269,9 @@ function teamScoreForSide(match, side) {
   return side === 'home' ? { ...i1, innings: 1 } : { ...i2, innings: 2 };
 }
 
-function ScoreboardHero({ match }) {
+const SRL_BOARD_COLLAPSE_KEY = 'oddsyra.srl.boardCollapsed';
+
+function ScoreboardHero({ match, collapsed = false, onToggleCollapse }) {
   if (!match) return null;
   const s = match.score || {};
   const clock = match.clock || {};
@@ -281,24 +283,56 @@ function ScoreboardHero({ match }) {
   const homeBatting = battingInnings != null && homeBoard.innings === battingInnings;
   const awayBatting = battingInnings != null && awayBoard.innings === battingInnings;
   const progressPct = Math.max(0, Math.min(100, Number(clock.progressPct) || 0));
+  const phaseLabel = PHASE_LABEL[clock.phase] || match.controlStatus;
+  const phaseClass = isLive ? 'is-live' : match.controlStatus === 'COMPLETED' ? 'is-done' : 'is-pre';
 
   return (
-    <div className={`srl-board${isLive ? ' is-live' : ''}`}>
+    <div className={`srl-board${isLive ? ' is-live' : ''}${collapsed ? ' is-collapsed' : ''}`}>
       <div className="srl-board__top">
         <div className="srl-board__match">
           <span className="srl-board__no">{match.matchNo ? `Match ${match.matchNo}` : 'Fixture'}</span>
-          <span className="srl-board__venue">{match.venue}</span>
+          {!collapsed && <span className="srl-board__venue">{match.venue}</span>}
         </div>
-        <div className={`srl-board__phase ${isLive ? 'is-live' : match.controlStatus === 'COMPLETED' ? 'is-done' : 'is-pre'}`}>
-          {isLive && <span className="srl-live-dot" />}
-          {PHASE_LABEL[clock.phase] || match.controlStatus}
-        </div>
-        <div className="srl-board__book">
-          <span>Open stake</span>
-          <strong>{formatInr(match.book?.totalStake)}</strong>
-        </div>
+        {collapsed ? (
+          <div className="srl-board__compact" aria-label="Collapsed scoreline">
+            <strong>{match.homeShort}</strong>
+            <span className="srl-board__compact-score">{homeBoard.runs || 0}/{homeBoard.wickets || 0}</span>
+            <span className="srl-board__compact-vs">vs</span>
+            <strong>{match.awayShort}</strong>
+            <span className="srl-board__compact-score">{awayBoard.runs || 0}/{awayBoard.wickets || 0}</span>
+            <span className={`srl-board__phase ${phaseClass}`}>
+              {isLive && <span className="srl-live-dot" />}
+              {phaseLabel}
+            </span>
+            <span className="srl-board__compact-stake">{formatInr(match.book?.totalStake)}</span>
+          </div>
+        ) : (
+          <>
+            <div className={`srl-board__phase ${phaseClass}`}>
+              {isLive && <span className="srl-live-dot" />}
+              {phaseLabel}
+            </div>
+            <div className="srl-board__book">
+              <span>Open stake</span>
+              <strong>{formatInr(match.book?.totalStake)}</strong>
+            </div>
+          </>
+        )}
+        <button
+          type="button"
+          className="srl-board__collapse"
+          onClick={onToggleCollapse}
+          aria-expanded={!collapsed}
+          aria-label={collapsed ? 'Expand scoreboard' : 'Collapse scoreboard'}
+          title={collapsed ? 'Expand scoreboard' : 'Collapse scoreboard'}
+        >
+          <span className={`srl-board__collapse-chevron${collapsed ? ' is-collapsed' : ''}`} aria-hidden="true" />
+          <span className="srl-board__collapse-label">{collapsed ? 'Expand' : 'Collapse'}</span>
+        </button>
       </div>
 
+      {!collapsed && (
+        <>
       <div className="srl-board__scoreline">
         <div className={`srl-board__side${homeBatting ? ' is-batting' : ''}`}>
           <div className="srl-board__side-name">
@@ -404,6 +438,8 @@ function ScoreboardHero({ match }) {
           })}
         </div>
       )}
+        </>
+      )}
     </div>
   );
 }
@@ -417,6 +453,24 @@ export default function IPLSRLConsoleView() {
   const [tab, setTab] = useState('desk');
   const [filter, setFilter] = useState('live');
   const filterTouchedRef = useRef(false);
+  const [boardCollapsed, setBoardCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(SRL_BOARD_COLLAPSE_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const toggleBoardCollapsed = useCallback(() => {
+    setBoardCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(SRL_BOARD_COLLAPSE_KEY, next ? '1' : '0');
+      } catch {
+        /* ignore quota / private mode */
+      }
+      return next;
+    });
+  }, []);
   const [query, setQuery] = useState('');
   const [snap, setSnap] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1360,7 +1414,11 @@ export default function IPLSRLConsoleView() {
               <>
                 {/* Scoreboard — sticky while scrolling controls */}
                 <div className="srl-scoreboard-sticky">
-                  <ScoreboardHero match={selected} />
+                  <ScoreboardHero
+                    match={selected}
+                    collapsed={boardCollapsed}
+                    onToggleCollapse={toggleBoardCollapsed}
+                  />
                 </div>
 
                 <div className="srl-mobile-ops" aria-label="Mobile ops controls">
