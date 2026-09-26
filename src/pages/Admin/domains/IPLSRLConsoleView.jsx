@@ -258,7 +258,7 @@ function ScoreboardHero({ match }) {
       <div className="srl-score-divider">
         <span className="srl-score-vs">vs</span>
         <span className={`srl-phase-pill ${isLive ? ' is-live' : match.controlStatus === 'COMPLETED' ? ' is-completed' : 'is-pre'}`}>
-          {isLive && <span className="srl-live-dot" style={{ marginRight: 6 }} />}
+          {isLive && <span className="srl-live-dot" />}
           {PHASE_LABEL[clock.phase] || match.controlStatus}
         </span>
         {s.target > 0 && (clock.phase === 'chase' || clock.phase === 'break' || match.dlsTarget) && (
@@ -275,70 +275,70 @@ function ScoreboardHero({ match }) {
         <span className="srl-score-overs">{awayBoard.overs || '0.0'} ov</span>
       </div>
 
-      <div className="srl-score-meta-row" style={{ gridColumn: '1 / -1', flexWrap: 'wrap' }}>
+      <div className="srl-score-meta-row">
         <span>{match.venue} · {match.speed}</span>
         <span>
           Open: <strong>{formatInr(match.book?.totalStake)}</strong>
           {' · '}{(match.book?.home?.bets || 0) + (match.book?.away?.bets || 0) + (match.book?.other?.bets || 0)} bets
         </span>
         {match.toss?.winner && (
-          <span className="srl-pill srl-pill-live" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
+          <span className="srl-meta-pill srl-meta-pill--live">
             Toss: {match.toss.winner === match.homeTeamId ? match.homeShort : match.awayShort} ({match.toss.decision})
           </span>
         )}
         {match.autoProfitMaximizer && (
-          <span className="srl-pill srl-pill-live" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
+          <span className="srl-meta-pill srl-meta-pill--live">
             Profit Max: {Math.round((match.targetMargin || 0.06) * 100)}%
           </span>
         )}
         {match.incidentQueueLength > 0 && (
-          <span className="srl-pill srl-pill-paused" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
+          <span className="srl-meta-pill srl-meta-pill--warn">
             {match.incidentQueueLength} queued
             {match.nextQueuedIncident?.type ? ` · next ${match.nextQueuedIncident.type}` : ''}
           </span>
         )}
         {match.scoreAnchorsCount > 0 && (
-          <span className="srl-pill srl-pill-live" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
+          <span className="srl-meta-pill srl-meta-pill--live">
             {match.scoreAnchorsCount} anchors active
           </span>
         )}
         {match.scoreDrift?.warning && (
-          <span className="srl-pill srl-pill-paused" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
+          <span className="srl-meta-pill srl-meta-pill--warn">
             Drift {match.scoreDrift.runsDelta > 0 ? '+' : ''}{match.scoreDrift.runsDelta}r
           </span>
         )}
         {match.integrityHold?.active && (
-          <span className="srl-pill srl-pill-completed" style={{ fontSize: '0.68rem', padding: '2px 8px', background: 'var(--srl-danger-bg)', borderColor: 'var(--srl-danger-border)', color: 'var(--srl-danger-text)', fontWeight: 800 }}>
+          <span className="srl-meta-pill srl-meta-pill--danger">
             Integrity hold
           </span>
         )}
         {match.directorMode && match.directorMode !== 'REALISTIC' && (
-          <span className="srl-pill srl-pill-live" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
+          <span className="srl-meta-pill srl-meta-pill--live">
             AI Director: {match.directorMode.replace('_', ' ')}
           </span>
         )}
         {match.environment && (
-          <span className="srl-pill srl-pill-muted" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
+          <span className="srl-meta-pill">
             {match.environment.pitchWear?.replace('_', ' ')} · Dew {match.environment.dewFactor}%
           </span>
         )}
         {match.circuitBreaker?.emergencyKillSwitch ? (
-          <span className="srl-pill srl-pill-completed" style={{ fontSize: '0.68rem', padding: '2px 8px', background: 'var(--srl-danger-bg)', borderColor: 'var(--srl-danger-border)', color: 'var(--srl-danger-text)', fontWeight: 800 }}>
+          <span className="srl-meta-pill srl-meta-pill--danger">
             Kill Switch Active
           </span>
         ) : match.circuitBreaker?.isTripped ? (
-          <span className="srl-pill srl-pill-paused" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
+          <span className="srl-meta-pill srl-meta-pill--warn">
             Circuit Breaker Tripped
           </span>
         ) : null}
         {match.commentary && (
-          <span style={{ fontStyle: 'italic', color: 'var(--srl-accent)', maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span className="srl-score-commentary">
             {match.commentary}
           </span>
         )}
       </div>
       {Array.isArray(match.deskAlerts) && match.deskAlerts.length > 0 && (
-        <div className="srl-alert-strip" style={{ gridColumn: '1 / -1', display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+        <div className="srl-alert-strip">
           {match.deskAlerts.map((a, i) => {
             let message = a.message;
             if (
@@ -350,8 +350,7 @@ function ScoreboardHero({ match }) {
             return (
               <span
                 key={`${a.code}-${i}`}
-                className={`srl-pill ${a.level === 'danger' ? 'srl-pill-completed' : a.level === 'warn' ? 'srl-pill-paused' : 'srl-pill-live'}`}
-                style={{ fontSize: '0.68rem', padding: '2px 8px' }}
+                className={`srl-meta-pill ${a.level === 'danger' ? 'srl-meta-pill--danger' : a.level === 'warn' ? 'srl-meta-pill--warn' : 'srl-meta-pill--live'}`}
                 title={message}
               >
                 {a.code}: {message}
@@ -962,35 +961,38 @@ export default function IPLSRLConsoleView() {
   }
 
   /* ─── RENDER ─── */
+  const contextLine = selected
+    ? `${selected.matchNo ? `#${selected.matchNo} · ` : ''}${selected.homeShort} vs ${selected.awayShort} · ${selected.controlStatus}${selected.bettingClosed ? ' · BET OFF' : ''}`
+    : 'Select a fixture to open the cockpit';
+
   return (
     <div className="srl-console">
-      {/* ═══ HERO ═══ */}
-      <div className="srl-console-hero">
-        <div>
-          <p className="srl-console-kicker">Sports · OddsYra SRL</p>
+      {/* ═══ COMMAND BAR ═══ */}
+      <header className="srl-console-hero srl-command-bar">
+        <div className="srl-command-bar__identity">
+          <p className="srl-console-brand">OddsYra SRL</p>
           <h2>Match Control</h2>
-          <p>
-            Institutional-grade match control cockpit. Select a fixture, manage live play, inject incidents,
-            defend margins, and settle markets — all from one screen.
-          </p>
+          <p className="srl-command-bar__context">{contextLine}</p>
           {error && <p className="srl-console-error">{error}</p>}
         </div>
-        <div className="srl-console-stats">
+        <div className="srl-console-stats" aria-label="Match counts">
           <div className="srl-stat"><strong>{counts.all}</strong><span>Matches</span></div>
-          <div className="srl-stat"><strong>{counts.live}</strong><span>Live</span></div>
+          <div className={`srl-stat${counts.live ? ' srl-stat--live' : ''}`}><strong>{counts.live}</strong><span>Live</span></div>
           <div className="srl-stat"><strong>{counts.upcoming}</strong><span>Upcoming</span></div>
           <div className="srl-stat"><strong>{counts.done}</strong><span>Done</span></div>
         </div>
-      </div>
+      </header>
 
       {/* ═══ TOP TABS ═══ */}
-      <div className="srl-tabs">
+      <div className="srl-tabs" role="tablist" aria-label="SRL console sections">
         {TABS.map((t) =>{
           const TabIcon = t.Icon;
           return (
             <button
               key={t.id}
               type="button"
+              role="tab"
+              aria-selected={tab === t.id}
               className={`srl-tab${tab === t.id ? ' is-on' : ''}`}
               onClick={() => setTab(t.id)}
             >
@@ -1256,8 +1258,10 @@ export default function IPLSRLConsoleView() {
               </Panel>
             ) : (
               <>
-                {/* Scoreboard Hero — always visible */}
-                <ScoreboardHero match={selected} />
+                {/* Scoreboard — sticky while scrolling controls */}
+                <div className="srl-scoreboard-sticky">
+                  <ScoreboardHero match={selected} />
+                </div>
 
                 <div className="srl-mobile-ops" aria-label="Mobile ops controls">
                   <button type="button" className="srl-btn srl-btn-orange" disabled={busy || selected.controlStatus !== 'LIVE'} onClick={() => run(() => adminApiClient.post('/iplsrl/matches/pause', { matchId: selected.matchId }), 'Paused')}>Pause</button>
@@ -1313,6 +1317,7 @@ export default function IPLSRLConsoleView() {
                 {/* ═══ ZONE: CONTROL ═══ */}
                 {matchZone === 'control' && (
                   <div className="srl-tab-body" key="control">
+                    <div className="srl-ops-band srl-ops-band--primary">
                     {/* Timeline */}
                     <div className="srl-timeline">
                       <div className="srl-timeline-top">
@@ -1349,7 +1354,7 @@ export default function IPLSRLConsoleView() {
                     </div>
 
                     {/* Play controls */}
-                    <div className="srl-zone" style={{ marginTop: 12 }}>
+                    <div className="srl-zone srl-zone--primary">
                       <div className="srl-zone-label --accent">Match Controls</div>
                       <div className="srl-actions">
                         <button
@@ -1497,13 +1502,14 @@ export default function IPLSRLConsoleView() {
                         </p>
                       )}
                     </div>
+                    </div>
                   </div>
                 )}
 
                 {/* ═══ ZONE: WHAT-IF SIMULATOR ═══ */}
                 {matchZone === 'whatif' && (
-                  <div className="srl-tab-body" key="whatif">
-                    <div className="srl-zone">
+                  <div className="srl-tab-body srl-tab-body--secondary" key="whatif">
+                    <div className="srl-zone srl-zone--secondary">
                       <div className="srl-zone-label --accent" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                         <span>"What-If"Pre-Flight Odds & Liability Radar</span>
                         <div style={{ display: 'flex', gap: 8 }}>
