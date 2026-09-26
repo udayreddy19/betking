@@ -84,27 +84,34 @@ const PLAYER_BUFF_OPTIONS = [
 ];
 
 const MATCH_ZONES = [
-  { id: 'control', label: 'Control', Icon: ZapIcon },
-  { id: 'whatif', label: 'What-If Matrix', Icon: SparklesIcon },
-  { id: 'micromarkets', label: 'Micro-Markets', Icon: ZapIcon },
-  { id: 'tactical', label: 'Tactical Radar', Icon: ActivityIcon },
-  { id: 'blueprint', label: 'Over Blueprint', Icon: ClipboardIcon },
-  { id: 'settle', label: 'Settlement', Icon: ShieldCheckIcon },
-  { id: 'preview', label: 'Public Preview', Icon: ActivityIcon },
-  { id: 'drift', label: 'Drift Monitor', Icon: TriangleAlertIcon },
-  { id: 'report', label: 'Post-Match', Icon: ClipboardIcon },
-  { id: 'templates', label: 'Templates', Icon: LayersIcon },
-  { id: 'godmode', label: 'God Mode & AI', Icon: SlidersHorizontalIcon },
-  { id: 'risk', label: 'Risk & Defense', Icon: ShieldCheckIcon },
-  { id: 'cashout', label: 'Cash-Out Desk', Icon: WalletIcon },
-  { id: 'wagers', label: 'Wager Tape', Icon: HandCoinsIcon },
-  { id: 'toss_squad', label: 'Toss & Lineup', Icon: UsersIcon },
-  { id: 'replay', label: 'Ball Replay', Icon: RefreshCwIcon },
-  { id: 'overs', label: 'Overs Board', Icon: ChartBarIcon },
-  { id: 'weather', label: 'Atmosphere', Icon: UmbrellaIcon },
-  { id: 'broadcast', label: 'Broadcast', Icon: MegaphoneIcon },
-  { id: 'markets', label: 'Core Markets', Icon: ChartBarIcon },
-  { id: 'ops_pack', label: 'Ops Pack', Icon: ClipboardIcon },
+  { id: 'control', label: 'Control', Icon: ZapIcon, group: 'play' },
+  { id: 'whatif', label: 'What-If Matrix', Icon: SparklesIcon, group: 'book' },
+  { id: 'micromarkets', label: 'Micro-Markets', Icon: ZapIcon, group: 'book' },
+  { id: 'tactical', label: 'Tactical Radar', Icon: ActivityIcon, group: 'ops' },
+  { id: 'blueprint', label: 'Over Blueprint', Icon: ClipboardIcon, group: 'play' },
+  { id: 'settle', label: 'Settlement', Icon: ShieldCheckIcon, group: 'risk' },
+  { id: 'preview', label: 'Public Preview', Icon: ActivityIcon, group: 'ops' },
+  { id: 'drift', label: 'Drift Monitor', Icon: TriangleAlertIcon, group: 'risk' },
+  { id: 'report', label: 'Post-Match', Icon: ClipboardIcon, group: 'ops' },
+  { id: 'templates', label: 'Templates', Icon: LayersIcon, group: 'ops' },
+  { id: 'godmode', label: 'God Mode & AI', Icon: SlidersHorizontalIcon, group: 'risk' },
+  { id: 'risk', label: 'Risk & Defense', Icon: ShieldCheckIcon, group: 'risk' },
+  { id: 'cashout', label: 'Cash-Out Desk', Icon: WalletIcon, group: 'book' },
+  { id: 'wagers', label: 'Wager Tape', Icon: HandCoinsIcon, group: 'book' },
+  { id: 'toss_squad', label: 'Toss & Lineup', Icon: UsersIcon, group: 'play' },
+  { id: 'replay', label: 'Ball Replay', Icon: RefreshCwIcon, group: 'play' },
+  { id: 'overs', label: 'Overs Board', Icon: ChartBarIcon, group: 'play' },
+  { id: 'weather', label: 'Atmosphere', Icon: UmbrellaIcon, group: 'ops' },
+  { id: 'broadcast', label: 'Broadcast', Icon: MegaphoneIcon, group: 'play' },
+  { id: 'markets', label: 'Core Markets', Icon: ChartBarIcon, group: 'book' },
+  { id: 'ops_pack', label: 'Ops Pack', Icon: ClipboardIcon, group: 'ops' },
+];
+
+const ZONE_GROUPS = [
+  { id: 'play', label: 'Play' },
+  { id: 'book', label: 'Book' },
+  { id: 'risk', label: 'Risk' },
+  { id: 'ops', label: 'Ops' },
 ];
 
 const PHASE_LABEL = {
@@ -243,44 +250,57 @@ function ScoreboardHero({ match }) {
     : (clock.phase === 'first' || clock.phase === 'first-complete' ? 1 : null);
   const homeBatting = battingInnings != null && homeBoard.innings === battingInnings;
   const awayBatting = battingInnings != null && awayBoard.innings === battingInnings;
+  const progressPct = Math.max(0, Math.min(100, Number(clock.progressPct) || 0));
 
   return (
-    <div className="srl-scoreboard-hero">
-      <div className={`srl-score-team${homeBatting ? ' is-batting' : ''}`}>
-        <span className="srl-score-team-name">
-          {match.homeShort}
-          {homeBatting && <span className="srl-batting-tag">bat</span>}
-        </span>
-        <span className="srl-score-runs">{homeBoard.runs || 0}/{homeBoard.wickets || 0}</span>
-        <span className="srl-score-overs">{homeBoard.overs || '0.0'} ov</span>
-      </div>
-
-      <div className="srl-score-divider">
-        <span className="srl-score-vs">vs</span>
-        <span className={`srl-phase-pill ${isLive ? ' is-live' : match.controlStatus === 'COMPLETED' ? ' is-completed' : 'is-pre'}`}>
+    <div className={`srl-board${isLive ? ' is-live' : ''}`}>
+      <div className="srl-board__top">
+        <div className="srl-board__match">
+          <span className="srl-board__no">{match.matchNo ? `Match ${match.matchNo}` : 'Fixture'}</span>
+          <span className="srl-board__venue">{match.venue}</span>
+        </div>
+        <div className={`srl-board__phase ${isLive ? 'is-live' : match.controlStatus === 'COMPLETED' ? 'is-done' : 'is-pre'}`}>
           {isLive && <span className="srl-live-dot" />}
           {PHASE_LABEL[clock.phase] || match.controlStatus}
-        </span>
-        {s.target > 0 && (clock.phase === 'chase' || clock.phase === 'break' || match.dlsTarget) && (
-          <span className="srl-score-target">T {s.target}</span>
-        )}
+        </div>
+        <div className="srl-board__book">
+          <span>Open stake</span>
+          <strong>{formatInr(match.book?.totalStake)}</strong>
+        </div>
       </div>
 
-      <div className={`srl-score-team${awayBatting ? ' is-batting' : ''}`}>
-        <span className="srl-score-team-name">
-          {match.awayShort}
-          {awayBatting && <span className="srl-batting-tag">bat</span>}
-        </span>
-        <span className="srl-score-runs">{awayBoard.runs || 0}/{awayBoard.wickets || 0}</span>
-        <span className="srl-score-overs">{awayBoard.overs || '0.0'} ov</span>
+      <div className="srl-board__scoreline">
+        <div className={`srl-board__side${homeBatting ? ' is-batting' : ''}`}>
+          <div className="srl-board__side-name">
+            {match.homeShort}
+            {homeBatting && <span className="srl-batting-tag">batting</span>}
+          </div>
+          <div className="srl-board__digits">{homeBoard.runs || 0}<span>/{homeBoard.wickets || 0}</span></div>
+          <div className="srl-board__overs">{homeBoard.overs || '0.0'} ov · {match.speed}</div>
+        </div>
+
+        <div className="srl-board__vs">
+          <span>VS</span>
+          {s.target > 0 && (clock.phase === 'chase' || clock.phase === 'break' || match.dlsTarget) && (
+            <em>Target {s.target}</em>
+          )}
+        </div>
+
+        <div className={`srl-board__side srl-board__side--away${awayBatting ? ' is-batting' : ''}`}>
+          <div className="srl-board__side-name">
+            {match.awayShort}
+            {awayBatting && <span className="srl-batting-tag">batting</span>}
+          </div>
+          <div className="srl-board__digits">{awayBoard.runs || 0}<span>/{awayBoard.wickets || 0}</span></div>
+          <div className="srl-board__overs">{awayBoard.overs || '0.0'} ov</div>
+        </div>
+      </div>
+
+      <div className="srl-board__progress" aria-hidden="true">
+        <i style={{ width: `${progressPct}%` }} />
       </div>
 
       <div className="srl-score-meta-row">
-        <span>{match.venue} · {match.speed}</span>
-        <span>
-          Open: <strong>{formatInr(match.book?.totalStake)}</strong>
-          {' · '}{(match.book?.home?.bets || 0) + (match.book?.away?.bets || 0) + (match.book?.other?.bets || 0)} bets
-        </span>
         {match.toss?.winner && (
           <span className="srl-meta-pill srl-meta-pill--live">
             Toss: {match.toss.winner === match.homeTeamId ? match.homeShort : match.awayShort} ({match.toss.decision})
@@ -308,9 +328,7 @@ function ScoreboardHero({ match }) {
           </span>
         )}
         {match.integrityHold?.active && (
-          <span className="srl-meta-pill srl-meta-pill--danger">
-            Integrity hold
-          </span>
+          <span className="srl-meta-pill srl-meta-pill--danger">Integrity hold</span>
         )}
         {match.directorMode && match.directorMode !== 'REALISTIC' && (
           <span className="srl-meta-pill srl-meta-pill--live">
@@ -323,18 +341,15 @@ function ScoreboardHero({ match }) {
           </span>
         )}
         {match.circuitBreaker?.emergencyKillSwitch ? (
-          <span className="srl-meta-pill srl-meta-pill--danger">
-            Kill Switch Active
-          </span>
+          <span className="srl-meta-pill srl-meta-pill--danger">Kill Switch Active</span>
         ) : match.circuitBreaker?.isTripped ? (
-          <span className="srl-meta-pill srl-meta-pill--warn">
-            Circuit Breaker Tripped
-          </span>
+          <span className="srl-meta-pill srl-meta-pill--warn">Circuit Breaker Tripped</span>
         ) : null}
         {match.commentary && (
-          <span className="srl-score-commentary">
-            {match.commentary}
-          </span>
+          <span className="srl-score-commentary">{match.commentary}</span>
+        )}
+        {match.bettingClosed && (
+          <span className="srl-meta-pill srl-meta-pill--warn">Betting closed</span>
         )}
       </div>
       {Array.isArray(match.deskAlerts) && match.deskAlerts.length > 0 && (
@@ -966,9 +981,9 @@ export default function IPLSRLConsoleView() {
     : 'Select a fixture to open the cockpit';
 
   return (
-    <div className="srl-console">
-      {/* ═══ COMMAND BAR ═══ */}
-      <header className="srl-console-hero srl-command-bar">
+    <div className="srl-console srl-console--v3">
+      {/* ═══ MASTHEAD — night-pitch broadcast desk ═══ */}
+      <header className="srl-console-hero srl-command-bar srl-masthead">
         <div className="srl-command-bar__identity">
           <p className="srl-console-brand">OddsYra SRL</p>
           <h2>Match Control</h2>
@@ -1296,23 +1311,30 @@ export default function IPLSRLConsoleView() {
                   </button>
                 </div>
 
-                {/* Match Zone Tabs */}
-                <div className="srl-match-tabs">
-                  {MATCH_ZONES.map((z) =>{
-                    const ZoneIcon = z.Icon;
-                    return (
-                      <button
-                        key={z.id}
-                        type="button"
-                        className={`srl-match-tab${matchZone === z.id ? ' is-on' : ''}`}
-                        onClick={() => setMatchZone(z.id)}
-                      >
-                        <ZoneIcon />
-                        {z.label}
-                      </button>
-                    );
-                  })}
-                </div>
+                {/* Match Zone Nav — grouped Play / Book / Risk / Ops */}
+                <nav className="srl-zone-nav" aria-label="Match control zones">
+                  {ZONE_GROUPS.map((g) => (
+                    <div className="srl-zone-nav__group" key={g.id}>
+                      <div className="srl-zone-nav__label">{g.label}</div>
+                      <div className="srl-zone-nav__row">
+                        {MATCH_ZONES.filter((z) => z.group === g.id).map((z) => {
+                          const ZoneIcon = z.Icon;
+                          return (
+                            <button
+                              key={z.id}
+                              type="button"
+                              className={`srl-match-tab${matchZone === z.id ? ' is-on' : ''}`}
+                              onClick={() => setMatchZone(z.id)}
+                            >
+                              <ZoneIcon />
+                              {z.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </nav>
 
                 {/* ═══ ZONE: CONTROL ═══ */}
                 {matchZone === 'control' && (
