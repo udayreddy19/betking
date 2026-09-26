@@ -40,12 +40,12 @@ const TABS = [
 ];
 
 const FILTERS = [
-  { id: 'all', label: 'All' },
-  { id: 'league', label: 'League' },
-  { id: 'playoffs', label: 'Playoffs' },
   { id: 'live', label: 'Live' },
   { id: 'upcoming', label: 'Upcoming' },
   { id: 'done', label: 'Completed' },
+  { id: 'all', label: 'All' },
+  { id: 'league', label: 'League' },
+  { id: 'playoffs', label: 'Playoffs' },
 ];
 
 const BLUEPRINT_PRESETS = [
@@ -190,6 +190,36 @@ function fixtureFilter(m, filter) {
   if (filter === 'upcoming') return m.controlStatus === 'READY' || m.controlStatus === 'ARMED';
   if (filter === 'done') return m.controlStatus === 'COMPLETED';
   return true;
+}
+
+function fixturePriority(m) {
+  const s = String(m?.controlStatus || '').toUpperCase();
+  if (s === 'LIVE') return 0;
+  if (s === 'PAUSED') return 1;
+  if (s === 'ARMED') return 2;
+  if (s === 'READY') return 3;
+  if (s === 'COMPLETED') return 9;
+  return 5;
+}
+
+function fixtureBucket(m) {
+  const s = String(m?.controlStatus || '').toUpperCase();
+  if (s === 'LIVE' || s === 'PAUSED') return 'live';
+  if (s === 'READY' || s === 'ARMED') return 'upcoming';
+  if (s === 'COMPLETED') return 'done';
+  return 'other';
+}
+
+function sortFixtures(list) {
+  return [...list].sort((a, b) => {
+    const p = fixturePriority(a) - fixturePriority(b);
+    if (p !== 0) return p;
+    return (Number(a.matchNo) || 0) - (Number(b.matchNo) || 0);
+  });
+}
+
+function BtnIcon({ children }) {
+  return <span className="srl-btn__ico" aria-hidden="true">{children}</span>;
 }
 
 function declarePreview(match, teamId) {
@@ -385,7 +415,8 @@ export default function IPLSRLConsoleView() {
   const { showToast } = useAdminToast();
   const { activeRole: adminRole } = useAdminRole();
   const [tab, setTab] = useState('desk');
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState('live');
+  const filterTouchedRef = useRef(false);
   const [query, setQuery] = useState('');
   const [snap, setSnap] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -661,9 +692,9 @@ export default function IPLSRLConsoleView() {
     };
   }, [snap]);
 
-  const fixtures = useMemo(() =>{
+  const fixtures = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return (snap?.matches || []).filter((m) =>{
+    const filtered = (snap?.matches || []).filter((m) => {
       if (!fixtureFilter(m, filter)) return false;
       if (!q) return true;
       const hay = [
@@ -671,7 +702,41 @@ export default function IPLSRLConsoleView() {
       ].join(' ').toLowerCase();
       return hay.includes(q);
     });
+    return sortFixtures(filtered);
   }, [snap, filter, query]);
+
+  const fixtureSections = useMemo(() => {
+    if (filter !== 'all') return null;
+    const live = fixtures.filter((m) => fixtureBucket(m) === 'live');
+    const upcoming = fixtures.filter((m) => fixtureBucket(m) === 'upcoming');
+    const done = fixtures.filter((m) => fixtureBucket(m) === 'done');
+    const other = fixtures.filter((m) => fixtureBucket(m) === 'other');
+    return [
+      { id: 'live', label: 'Live / Paused', items: live },
+      { id: 'upcoming', label: 'Upcoming', items: upcoming },
+      { id: 'done', label: 'Completed', items: done },
+      { id: 'other', label: 'Other', items: other },
+    ].filter((s) => s.items.length > 0);
+  }, [fixtures, filter]);
+
+  useEffect(() => {
+    if (filterTouchedRef.current || !snap?.matches?.length) return;
+    const matches = snap.matches;
+    const hasLive = matches.some((m) => fixtureFilter(m, 'live'));
+    const hasUpcoming = matches.some((m) => fixtureFilter(m, 'upcoming'));
+    if (hasLive) setFilter('live');
+    else if (hasUpcoming) setFilter('upcoming');
+    else setFilter('done');
+  }, [snap?.matches]);
+
+  useEffect(() => {
+    if (!selectedMatchId) return;
+    const id = String(selectedMatchId);
+    const el = document.querySelector(`.srl-fixture[data-match-id="${id.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"]`);
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [selectedMatchId, filter, fixtures.length]);
 
   const clock = selected?.clock || {};
   const durationMs = Math.max(1, Number(clock.durationMs) || 1);
@@ -1030,6 +1095,7 @@ export default function IPLSRLConsoleView() {
                   <select
                     value={snap.settings.speed}
                     disabled={busy}
+                    title={snap.settings.speed}
                     onChange={(e) => run(() => adminApiClient.post('/iplsrl/settings', { speed: e.target.value }), `Speed → ${e.target.value}`)}
                   >
                     {(snap.options?.speeds || []).map((s) => <option key={s} value={s}>{s}</option>)}
@@ -1040,6 +1106,7 @@ export default function IPLSRLConsoleView() {
                   <select
                     value={snap.settings.pitch}
                     disabled={busy}
+                    title={String(snap.settings.pitch || '').replaceAll('_', ' ')}
                     onChange={(e) => run(() => adminApiClient.post('/iplsrl/settings', { pitch: e.target.value }), 'Pitch updated')}
                   >
                     {(snap.options?.pitches || []).map((s) => <option key={s} value={s}>{s.replaceAll('_', ' ')}</option>)}
@@ -1050,6 +1117,7 @@ export default function IPLSRLConsoleView() {
                   <select
                     value={snap.settings.weather}
                     disabled={busy}
+                    title={snap.settings.weather}
                     onChange={(e) => run(() => adminApiClient.post('/iplsrl/settings', { weather: e.target.value }), 'Weather updated')}
                   >
                     {(snap.options?.weather || []).map((s) => <option key={s} value={s}>{s}</option>)}
@@ -1195,14 +1263,17 @@ export default function IPLSRLConsoleView() {
               </div>
             </Panel>
 
-            <Panel title="Fixtures"hint={`${fixtures.length} of ${counts.all}`}>
+            <Panel title="Fixtures" hint={`${fixtures.length} of ${counts.all}`}>
               <div className="srl-filters" style={{ marginBottom: 8 }}>
-                {FILTERS.map((f) =>(
+                {FILTERS.map((f) => (
                   <button
                     key={f.id}
                     type="button"
                     className={`srl-filter${filter === f.id ? ' is-on' : ''}`}
-                    onClick={() => setFilter(f.id)}
+                    onClick={() => {
+                      filterTouchedRef.current = true;
+                      setFilter(f.id);
+                    }}
                   >
                     {f.label} · {counts[f.id]}
                   </button>
@@ -1218,10 +1289,25 @@ export default function IPLSRLConsoleView() {
                 />
               </label>
               <div className="srl-fixture-list">
-                {fixtures.map((m) =>(
+                {fixtures.length === 0 && (
+                  <p className="srl-hint" style={{ margin: '8px 0' }}>
+                    {filter === 'live'
+                      ? 'No live matches — try Upcoming or Completed.'
+                      : filter === 'upcoming'
+                        ? 'No upcoming matches — try Live or Completed.'
+                        : 'No fixtures in this filter.'}
+                  </p>
+                )}
+                {(fixtureSections || [{ id: 'flat', label: null, items: fixtures }]).map((section) => (
+                  <div key={section.id} className="srl-fixture-section">
+                    {section.label && (
+                      <div className="srl-fixture-section__label">{section.label}</div>
+                    )}
+                    {section.items.map((m) => (
                   <button
                     key={m.matchId}
                     type="button"
+                    data-match-id={m.matchId}
                     className={`srl-fixture${selectedMatchId === m.matchId ? ' is-on' : ''}${m.playoff ? ' is-playoff' : ''}${m.bettingClosed ? ' is-closed' : ''}`}
                     onClick={() => setSelectedMatchId(m.matchId)}
                   >
@@ -1253,14 +1339,13 @@ export default function IPLSRLConsoleView() {
                         <span className="srl-pill srl-pill-live" style={{ fontSize: '0.62rem' }}>Settle</span>
                       )}
                     </div>
-                    <div className="srl-progress-mini"aria-hidden="true">
+                    <div className="srl-progress-mini" aria-hidden="true">
                       <i style={{ width: `${Math.max(0, Math.min(100, m.clock?.progressPct || 0))}%` }} />
                     </div>
                   </button>
+                    ))}
+                  </div>
                 ))}
-                {!fixtures.length && (
-                  <p className="srl-hint" style={{ margin: 0 }}>No fixtures in this filter.</p>
-                )}
               </div>
             </Panel>
           </div>
@@ -1385,15 +1470,15 @@ export default function IPLSRLConsoleView() {
                           disabled={busy || selected.controlStatus === 'LIVE' || selected.controlStatus === 'COMPLETED'}
                           onClick={() => run(() => adminApiClient.post('/iplsrl/matches/start', { matchId: selected.matchId }), 'Match started for users')}
                         >
-                          <PlayIcon style={ICON_SM} /> Start
+                          <BtnIcon><PlayIcon style={ICON_SM} /></BtnIcon> Start
                         </button>
                         {selected.canPause ? (
                           <button type="button" className="srl-btn srl-btn-slate" disabled={busy} onClick={() => run(() => adminApiClient.post('/iplsrl/matches/pause', { matchId: selected.matchId }), 'Paused')}>
-                            <PauseIcon style={ICON_SM} /> Pause
+                            <BtnIcon><PauseIcon style={ICON_SM} /></BtnIcon> Pause
                           </button>
                         ) : (
                           <button type="button" className="srl-btn srl-btn-teal" disabled={busy || !selected.canResume} onClick={() => run(() => adminApiClient.post('/iplsrl/matches/resume', { matchId: selected.matchId }), 'Resumed')}>
-                            <PlayIcon style={ICON_SM} /> Resume
+                            <BtnIcon><PlayIcon style={ICON_SM} /></BtnIcon> Resume
                           </button>
                         )}
                         <select
@@ -1401,7 +1486,7 @@ export default function IPLSRLConsoleView() {
                           value={selected.speed}
                           disabled={busy || selected.controlStatus === 'COMPLETED'}
                           onChange={(e) => run(() => adminApiClient.post('/iplsrl/matches/speed', { matchId: selected.matchId, speed: e.target.value }), `Speed ${e.target.value}`)}
-                          style={{ height: 36, maxWidth: 120, borderRadius: 999 }}
+                          aria-label="Match speed"
                         >
                           {(snap.options?.speeds || []).map((s) => <option key={s} value={s}>{s}</option>)}
                         </select>
@@ -2604,7 +2689,7 @@ export default function IPLSRLConsoleView() {
                             'Match Anchored for Super Over!',
                           )}
                         >
-                          <SwordsIcon style={ICON_SM} />Force Tie (Super Over)
+                          <BtnIcon><SwordsIcon style={ICON_SM} /></BtnIcon> Force Tie (Super Over)
                         </button>
                       </div>
                     </div>

@@ -1,119 +1,67 @@
 /* ==========================================================================
-   OddsYra SRL Match Control — V3 Night-Pitch Broadcast Desk
-   Hard-forced dark green-black field; ignores admin light theme.
+   OddsYra SRL Match Control — follows Admin light/dark theme
    ========================================================================== */
 
 .srl-console {
-  --srl-accent: #3ecf7a;
-  --srl-accent-strong: #2bb86a;
-  --srl-accent-dim: color-mix(in srgb, #3ecf7a 18%, transparent);
-  --srl-on-accent: #0a100c;
-  --srl-cream: #e8f0e4;
-  --srl-lime: #b8f06e;
+  --srl-accent: var(--admin-primary, #1f8a4c);
+  --srl-accent-strong: var(--admin-primary-hover, #166b3a);
+  --srl-accent-dim: var(--admin-primary-soft, color-mix(in srgb, #1f8a4c 16%, transparent));
+  --srl-on-accent: var(--admin-on-primary, #ffffff);
+  --srl-cream: var(--admin-text, #14181f);
+  --srl-lime: var(--admin-primary, #1f8a4c);
 
-  --srl-surface: #0f1612;
-  --srl-surface-elevated: #1a2620;
-  --srl-surface-alt: #15201a;
-  --srl-surface-hover: #1e2c24;
-  --srl-border: #2a3a32;
-  --srl-border-strong: #3a4e42;
-  --srl-border-focus: #3ecf7a;
+  --srl-surface: var(--admin-card-bg, #fbf8f2);
+  --srl-surface-elevated: var(--admin-surface, #ffffff);
+  --srl-surface-alt: var(--admin-input-bg, #f6f2ea);
+  --srl-surface-hover: color-mix(in srgb, var(--srl-accent) 8%, var(--srl-surface-alt));
+  --srl-border: var(--admin-border, #ddd4c4);
+  --srl-border-strong: var(--admin-border-bright, #ebe4d6);
+  --srl-border-focus: var(--admin-primary, #1f8a4c);
 
-  --srl-text: #f2f5f0;
-  --srl-text-muted: #9aaca0;
-  --srl-text-dim: #6b7d72;
+  --srl-text: var(--admin-text, #14181f);
+  --srl-text-muted: var(--admin-text-muted, #5c6570);
+  --srl-text-dim: var(--admin-text-dim, #8a928c);
 
-  --srl-live: #3ecf7a;
-  --srl-live-bg: color-mix(in srgb, #3ecf7a 14%, #0f1612);
-  --srl-live-border: color-mix(in srgb, #3ecf7a 40%, #2a3a32);
-  --srl-live-text: #7dffb0;
+  --srl-live: var(--color-success, #1f8a4c);
+  --srl-live-bg: var(--color-status-success-bg, #ecfdf5);
+  --srl-live-border: var(--color-status-success-border, #a7f3d0);
+  --srl-live-text: var(--color-status-success-text, #047857);
 
-  --srl-warn: #e8b84a;
-  --srl-warn-bg: color-mix(in srgb, #e8b84a 12%, #0f1612);
-  --srl-warn-border: color-mix(in srgb, #e8b84a 35%, #2a3a32);
-  --srl-warn-text: #f5d78a;
+  --srl-warn: var(--color-warning, #e8a317);
+  --srl-warn-bg: var(--color-status-warning-bg, #fffbeb);
+  --srl-warn-border: var(--color-status-warning-border, #fde68a);
+  --srl-warn-text: var(--color-status-warning-text, #b45309);
 
-  --srl-done: #5ec4c8;
-  --srl-done-bg: color-mix(in srgb, #5ec4c8 12%, #0f1612);
-  --srl-done-border: color-mix(in srgb, #5ec4c8 32%, #2a3a32);
-  --srl-done-text: #8ee0e4;
+  --srl-done: var(--color-info, #2a8f9a);
+  --srl-done-bg: color-mix(in srgb, var(--color-info, #2a8f9a) 12%, transparent);
+  --srl-done-border: color-mix(in srgb, var(--color-info, #2a8f9a) 28%, transparent);
+  --srl-done-text: var(--color-info, #2a8f9a);
 
-  --srl-danger: #f07167;
-  --srl-danger-bg: color-mix(in srgb, #f07167 12%, #0f1612);
-  --srl-danger-border: color-mix(in srgb, #f07167 35%, #2a3a32);
-  --srl-danger-text: #ffb4ae;
+  --srl-danger: var(--color-danger, #e24b3c);
+  --srl-danger-bg: var(--color-status-error-bg, #fef2f2);
+  --srl-danger-border: var(--color-status-error-border, #fecaca);
+  --srl-danger-text: var(--color-status-error-text, #b91c1c);
 
-  --srl-gold: #e8b84a;
-
+  --srl-gold: var(--color-accent-gold, #e8a317);
   --srl-radius: 14px;
   --srl-radius-sm: 10px;
   --srl-radius-xs: 8px;
   --srl-transition: 0.18s cubic-bezier(0.32, 0.72, 0, 1);
-  --srl-shadow: 0 4px 20px -6px rgba(0, 0, 0, 0.55);
-  --srl-shadow-elevated: 0 12px 40px -10px rgba(0, 0, 0, 0.65);
+  --srl-shadow: 0 1px 2px rgba(20, 24, 31, 0.05);
+  --srl-shadow-elevated: 0 4px 16px -4px rgba(20, 24, 31, 0.1);
   --srl-sticky-top: 0px;
-  --srl-rail: 280px;
+  --srl-rail: 300px;
 
   display: grid;
   gap: 16px;
   padding: 4px 2px 24px;
   color: var(--srl-text);
-  background:
-    radial-gradient(120% 80% at 50% -10%, color-mix(in srgb, #1a3d28 55%, transparent) 0%, transparent 55%),
-    linear-gradient(180deg, #0c1210 0%, #0f1612 40%, #0a0f0c 100%);
+  background: transparent;
   min-height: 100%;
   border-radius: var(--srl-radius);
 }
 
-/* V3 forces night-pitch regardless of admin light/dark shell */
-.srl-console--v3,
-.srl-console.srl-console--v3 {
-  --srl-accent: #3ecf7a;
-  --srl-accent-strong: #2bb86a;
-  --srl-accent-dim: color-mix(in srgb, #3ecf7a 18%, transparent);
-  --srl-on-accent: #0a100c;
-  --srl-cream: #e8f0e4;
-  --srl-lime: #b8f06e;
-
-  --srl-surface: #0f1612;
-  --srl-surface-elevated: #1a2620;
-  --srl-surface-alt: #15201a;
-  --srl-surface-hover: #1e2c24;
-  --srl-border: #2a3a32;
-  --srl-border-strong: #3a4e42;
-  --srl-border-focus: #3ecf7a;
-
-  --srl-text: #f2f5f0;
-  --srl-text-muted: #9aaca0;
-  --srl-text-dim: #6b7d72;
-
-  --srl-live: #3ecf7a;
-  --srl-live-bg: color-mix(in srgb, #3ecf7a 14%, #0f1612);
-  --srl-live-border: color-mix(in srgb, #3ecf7a 40%, #2a3a32);
-  --srl-live-text: #7dffb0;
-
-  --srl-warn: #e8b84a;
-  --srl-warn-bg: color-mix(in srgb, #e8b84a 12%, #0f1612);
-  --srl-warn-border: color-mix(in srgb, #e8b84a 35%, #2a3a32);
-  --srl-warn-text: #f5d78a;
-
-  --srl-done: #5ec4c8;
-  --srl-done-bg: color-mix(in srgb, #5ec4c8 12%, #0f1612);
-  --srl-done-border: color-mix(in srgb, #5ec4c8 32%, #2a3a32);
-  --srl-done-text: #8ee0e4;
-
-  --srl-danger: #f07167;
-  --srl-danger-bg: color-mix(in srgb, #f07167 12%, #0f1612);
-  --srl-danger-border: color-mix(in srgb, #f07167 35%, #2a3a32);
-  --srl-danger-text: #ffb4ae;
-
-  --srl-gold: #e8b84a;
-  --srl-shadow: 0 4px 20px -6px rgba(0, 0, 0, 0.55);
-  --srl-shadow-elevated: 0 12px 40px -10px rgba(0, 0, 0, 0.65);
-  color: var(--srl-text);
-}
-
-/* Dark admin shells: keep night-pitch tokens (do not flip back to cream) */
+/* Dark admin shells only — night-pitch accents */
 html[data-theme='dark'] .srl-console,
 .admin-shell[data-theme='dark'] .srl-console,
 .admin-shell.theme-dark .srl-console,
@@ -124,39 +72,45 @@ html[data-theme='dark'] .srl-console,
 [data-admin-theme='graphite'] .srl-console,
 [data-admin-theme='aurora'] .srl-console,
 [data-admin-theme='ink'] .srl-console,
-[data-admin-theme='signal'] .srl-console,
-html[data-theme='light'] .srl-console--v3,
-.admin-shell[data-theme='light'] .srl-console--v3,
-.theme-light .srl-console--v3,
-[data-admin-theme='light'] .srl-console--v3,
-[data-admin-theme='cream'] .srl-console--v3,
-[data-admin-theme='day'] .srl-console--v3 {
+[data-admin-theme='signal'] .srl-console {
+  --srl-accent: #3ecf7a;
+  --srl-accent-strong: #2bb86a;
+  --srl-accent-dim: color-mix(in srgb, #3ecf7a 18%, transparent);
+  --srl-on-accent: #0a100c;
+  --srl-cream: #e8f0e4;
+  --srl-lime: #b8f06e;
   --srl-surface: #0f1612;
   --srl-surface-elevated: #1a2620;
   --srl-surface-alt: #15201a;
+  --srl-surface-hover: #1e2c24;
   --srl-border: #2a3a32;
   --srl-border-strong: #3a4e42;
-  --srl-on-accent: #0a100c;
+  --srl-border-focus: #3ecf7a;
   --srl-text: #f2f5f0;
   --srl-text-muted: #9aaca0;
   --srl-text-dim: #6b7d72;
-  --srl-accent: #3ecf7a;
-  --srl-accent-strong: #2bb86a;
   --srl-live: #3ecf7a;
   --srl-live-bg: color-mix(in srgb, #3ecf7a 14%, #0f1612);
   --srl-live-border: color-mix(in srgb, #3ecf7a 40%, #2a3a32);
   --srl-live-text: #7dffb0;
+  --srl-warn: #e8b84a;
   --srl-warn-bg: color-mix(in srgb, #e8b84a 12%, #0f1612);
   --srl-warn-border: color-mix(in srgb, #e8b84a 35%, #2a3a32);
   --srl-warn-text: #f5d78a;
+  --srl-done: #5ec4c8;
   --srl-done-bg: color-mix(in srgb, #5ec4c8 12%, #0f1612);
   --srl-done-border: color-mix(in srgb, #5ec4c8 32%, #2a3a32);
   --srl-done-text: #8ee0e4;
+  --srl-danger: #f07167;
   --srl-danger-bg: color-mix(in srgb, #f07167 12%, #0f1612);
   --srl-danger-border: color-mix(in srgb, #f07167 35%, #2a3a32);
   --srl-danger-text: #ffb4ae;
+  --srl-gold: #e8b84a;
   --srl-shadow: 0 4px 20px -6px rgba(0, 0, 0, 0.55);
   --srl-shadow-elevated: 0 12px 40px -10px rgba(0, 0, 0, 0.65);
+  background:
+    radial-gradient(120% 80% at 50% -10%, color-mix(in srgb, #1a3d28 55%, transparent) 0%, transparent 55%),
+    linear-gradient(180deg, #0c1210 0%, #0f1612 40%, #0a0f0c 100%);
 }
 
 /* ── MASTHEAD (bold broadcast identity) ── */
@@ -172,8 +126,8 @@ html[data-theme='light'] .srl-console--v3,
   padding: 22px 24px;
   border-radius: var(--srl-radius);
   background:
-    linear-gradient(115deg, color-mix(in srgb, var(--srl-accent) 22%, transparent) 0%, transparent 48%),
-    linear-gradient(180deg, #1a2a22 0%, var(--srl-surface-elevated) 100%);
+    linear-gradient(115deg, color-mix(in srgb, var(--srl-accent) 14%, transparent) 0%, transparent 48%),
+    linear-gradient(180deg, var(--srl-surface-elevated) 0%, var(--srl-surface) 100%);
   border: 1px solid var(--srl-border-strong);
   box-shadow: var(--srl-shadow-elevated);
   position: relative;
@@ -200,8 +154,7 @@ html[data-theme='light'] .srl-console--v3,
   font-weight: 900;
   letter-spacing: -0.045em;
   line-height: 1.05;
-  color: var(--srl-cream);
-  text-shadow: 0 0 40px color-mix(in srgb, var(--srl-accent) 35%, transparent);
+  color: var(--srl-text);
 }
 
 .srl-console-kicker {
@@ -425,8 +378,14 @@ html[data-theme='light'] .srl-console--v3,
 
 .srl-settings {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 10px;
+}
+
+@media (min-width: 360px) {
+  .srl-settings {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .srl-field {
@@ -435,20 +394,24 @@ html[data-theme='light'] .srl-console--v3,
   font-size: 0.74rem;
   color: var(--srl-text-muted);
   font-weight: 700;
+  min-width: 0;
 }
 
 .srl-input,
 .srl-field select {
   width: 100%;
-  padding: 8px 12px;
+  min-width: 0;
+  padding: 8px 28px 8px 10px;
   border-radius: var(--srl-radius-xs);
   border: 1px solid var(--srl-border);
   background: var(--srl-surface-alt);
   color: var(--srl-text);
   font: inherit;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 600;
+  line-height: 1.2;
   transition: border-color var(--srl-transition), box-shadow var(--srl-transition);
+  text-overflow: ellipsis;
 }
 
 .srl-input:focus,
@@ -492,6 +455,27 @@ html[data-theme='light'] .srl-console--v3,
   max-height: min(68vh, 720px);
   overflow-y: auto;
   padding-right: 2px;
+}
+
+.srl-fixture-section {
+  display: grid;
+  gap: 8px;
+}
+
+.srl-fixture-section__label {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 2px 0 0;
+  padding: 4px 8px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--srl-text-muted);
+  background: color-mix(in srgb, var(--srl-surface) 92%, transparent);
+  backdrop-filter: blur(6px);
+  border-radius: 6px;
 }
 
 .srl-fixture-search {
@@ -672,8 +656,8 @@ html[data-theme='light'] .srl-console--v3,
   padding: 18px 20px 16px;
   border-radius: var(--srl-radius);
   background:
-    radial-gradient(90% 120% at 50% -20%, color-mix(in srgb, #1f4a32 50%, transparent), transparent 60%),
-    linear-gradient(180deg, #15241c 0%, #0f1612 100%);
+    radial-gradient(90% 120% at 50% -20%, color-mix(in srgb, var(--srl-accent) 18%, transparent), transparent 60%),
+    linear-gradient(180deg, var(--srl-surface-elevated) 0%, var(--srl-surface) 100%);
   border: 1px solid var(--srl-border-strong);
   box-shadow: var(--srl-shadow-elevated);
   position: relative;
@@ -692,8 +676,8 @@ html[data-theme='light'] .srl-console--v3,
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   background:
-    radial-gradient(90% 120% at 50% -20%, color-mix(in srgb, #1f4a32 45%, transparent), transparent 60%),
-    color-mix(in srgb, #0f1612 92%, transparent);
+    radial-gradient(90% 120% at 50% -20%, color-mix(in srgb, var(--srl-accent) 14%, transparent), transparent 60%),
+    color-mix(in srgb, var(--srl-surface-elevated) 92%, transparent);
 }
 
 .srl-board__top {
@@ -1390,7 +1374,7 @@ html[data-theme='light'] .srl-console--v3,
 }
 
 .srl-btn {
-  padding: 9px 16px;
+  padding: 9px 14px;
   border-radius: 999px;
   border: none;
   color: var(--srl-text);
@@ -1403,6 +1387,55 @@ html[data-theme='light'] .srl-console--v3,
   justify-content: center;
   gap: 6px;
   min-height: 36px;
+  white-space: nowrap;
+  line-height: 1;
+  position: relative;
+  overflow: visible;
+}
+
+/* AnimateIcons wrappers often use absolute/large boxes — pin them */
+.srl-btn__ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  line-height: 0;
+}
+
+.srl-btn__ico > *,
+.srl-btn > svg,
+.srl-btn [class*='animate'],
+.srl-tab > svg,
+.srl-tab [class*='animate'] {
+  width: 14px !important;
+  height: 14px !important;
+  max-width: 14px !important;
+  max-height: 14px !important;
+  flex-shrink: 0;
+  position: static !important;
+  inset: auto !important;
+  display: block !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+
+.srl-btn__ico svg,
+.srl-btn svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.srl-actions .srl-input {
+  width: auto;
+  min-width: 7.5rem;
+  max-width: none;
+  height: 36px;
+  border-radius: 999px;
+  padding-inline: 12px 28px;
 }
 
 .srl-btn:hover:not(:disabled) {
