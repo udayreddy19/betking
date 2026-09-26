@@ -48,7 +48,7 @@ export default function AdminMfaQr({ otpauthUrl, size = 192 }) {
   return (
     <img
       src={dataUrl}
-      alt="Scan this QR code with Google Authenticator or 1Password"
+      alt="Scan this QR code with your authenticator app"
       width={size}
       height={size}
       className="admin-login__qr-img"

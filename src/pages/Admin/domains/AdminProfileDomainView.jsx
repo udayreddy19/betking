@@ -249,18 +249,16 @@ function SecurityPanel({ profile, onReload }) {
     <div className="admin-profile-page__stack">
       <SectionCard
         title="Authenticator (MFA)"
-        description="TOTP protects admin sign-in. Enrollment runs at login when MFA is required for your account."
+        description="Optional TOTP is currently disabled for admin sign-in. Email and password are enough."
       >
         <div className="admin-profile-page__pref-row">
           <div>
             <div className="admin-profile-page__pref-title">MFA status</div>
             <div className="admin-profile-page__pref-desc">
-              {profile?.mfa_enabled
-                ? 'Authenticator is enabled for this admin account.'
-                : 'Authenticator is not enabled yet. You will be prompted at the next login if MFA is enforced.'}
+              Google Authenticator / TOTP is not required. Set ADMIN_MFA_REQUIRED=1 on the server only if you want to turn it back on.
             </div>
           </div>
-          <StatusBadge status={profile?.mfa_enabled ? 'ENABLED' : 'OFF'} />
+          <StatusBadge status="OFF" />
         </div>
       </SectionCard>
 

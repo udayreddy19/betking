@@ -154,7 +154,7 @@ export default function AdminLogin({
                       {mfaOtpauth && (
                         <div className="admin-login__qr">
                           <AdminMfaQr otpauthUrl={mfaOtpauth} size={188} />
-                          <p>Google Authenticator, 1Password, or Authy</p>
+                          <p>Scan with your authenticator app</p>
                         </div>
                       )}
                       <div className="admin-login__secret">
@@ -214,7 +214,7 @@ export default function AdminLogin({
           </form>
 
           <div className="admin-login__foot">
-            Access is logged. An authenticator is required.
+            Access is logged. Authorized administrator accounts only.
           </div>
         </motion.div>
       </div>
