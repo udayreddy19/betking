@@ -65,6 +65,7 @@ const UpiDeposits = lazyWithRetry(() => import('./pages/Seo/UpiDeposits'));
 const WhatIsOddsYraSrl = lazyWithRetry(() => import('./pages/Seo/WhatIsOddsYraSrl'));
 const CricketBettingGuide = lazyWithRetry(() => import('./pages/Seo/CricketBettingGuide'));
 const WalletDashboard = lazyWithRetry(() => import('./pages/Wallet/WalletDashboard'));
+const BankAccountsPage = lazyWithRetry(() => import('./pages/Wallet/BankAccountsPage'));
 const SupportHome = lazyWithRetry(() => import('./pages/Support/SupportHome'));
 const TicketsListPage = lazyWithRetry(() => import('./pages/Support/TicketsListPage'));
 const CreateTicketPage = lazyWithRetry(() => import('./pages/Support/CreateTicketPage'));
@@ -116,7 +117,7 @@ function PlatformGate({ children }) {
     || path.startsWith('/help')
     || path.startsWith('/support')
     || path.startsWith('/responsible-gaming');
-  if (!ready) return children;
+  if (!ready) return <PageLoader />;
   if (!walletEnabled && !bettingEnabled && !isExempt) {
     return <ProductUnavailable />;
   }
@@ -198,6 +199,8 @@ function AppLayout() {
               <Route path="/exchange" element={<CasinoComingSoon />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/wallet" element={<ProductRoute product="wallet"><WalletDashboard /></ProductRoute>} />
+              <Route path="/wallet/bank-accounts" element={<ProductRoute product="wallet"><BankAccountsPage /></ProductRoute>} />
+              <Route path="/wallet/transactions" element={<ProductRoute product="wallet"><Navigate to="/wallet?tab=history" replace /></ProductRoute>} />
               <Route path="/register" element={<Register />} />
               <Route path="/complete-profile" element={<CompleteProfile />} />
               <Route path="/_oauth/google" element={<OAuthGoogleCallback />} />

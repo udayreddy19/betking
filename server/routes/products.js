@@ -11,25 +11,24 @@ const router = Router();
 router.get('/products', async (_req, res) => {
   try {
     const config = await getProductConfiguration();
-    res.set('Cache-Control', 'private, max-age=5');
+    res.set('Cache-Control', 'no-store');
     res.json({
-      wallet: config.walletEnabled !== false,
-      betting: config.bettingEnabled !== false,
-      walletEnabled: config.walletEnabled !== false,
-      bettingEnabled: config.bettingEnabled !== false,
+      wallet: config.walletEnabled === true,
+      betting: config.bettingEnabled === true,
+      walletEnabled: config.walletEnabled === true,
+      bettingEnabled: config.bettingEnabled === true,
       updatedAt: config.updatedAt,
     });
   } catch {
-    // Fail open to both-on defaults so a transient DB blip does not blank the app;
-    // admin toggles remain authoritative once DB recovers.
+    // Fail closed on transient errors — never flash Betting UI when Betting is OFF.
     res.set('Cache-Control', 'no-store');
     res.json({
-      wallet: true,
-      betting: true,
-      walletEnabled: true,
-      bettingEnabled: true,
+      wallet: false,
+      betting: false,
+      walletEnabled: false,
+      bettingEnabled: false,
       updatedAt: null,
-      note: 'defaults',
+      note: 'unavailable',
     });
   }
 });

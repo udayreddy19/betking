@@ -1,0 +1,383 @@
+/* PaySwitch-inspired wallet platform surfaces */
+
+.wp-page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 24px 16px 96px;
+  color: #0f172a;
+}
+
+.wp-page-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.wp-page-header h1 {
+  margin: 0 0 4px;
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.wp-page-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.wp-page-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.wp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-weight: 600;
+  font-size: 0.92rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  background: #e8eefc;
+  color: #1d4ed8;
+}
+
+.wp-btn--primary {
+  background: #1d4ed8;
+  color: #fff;
+}
+
+.wp-btn--primary:hover { background: #1e40af; }
+
+.wp-btn--outline {
+  background: #eff4ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.wp-btn--ghost {
+  background: transparent;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.wp-btn--danger {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.wp-balance-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 22px 24px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 55%, #3b82f6 120%);
+  color: #fff;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 30px rgba(29, 78, 216, 0.25);
+}
+
+.wp-balance-banner__label {
+  display: block;
+  font-size: 0.9rem;
+  opacity: 0.9;
+  margin-bottom: 4px;
+}
+
+.wp-balance-banner__amount {
+  display: block;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.wp-balance-banner__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 10px;
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+.wp-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  cursor: pointer;
+  font-size: 1.1rem;
+}
+
+.wp-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.wp-summary-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 18px 18px 14px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.wp-summary-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.wp-summary-card__head h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.wp-summary-card__head a {
+  color: #2563eb;
+  font-size: 0.85rem;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.wp-summary-card__total {
+  font-size: 1.7rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.wp-summary-card__count {
+  color: #64748b;
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+}
+
+.wp-summary-card__rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid #f1f5f9;
+}
+
+.wp-summary-card__rows li {
+  display: grid;
+  grid-template-columns: 14px 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 0;
+  font-size: 0.88rem;
+  color: #334155;
+}
+
+.wp-summary-card__rows em {
+  font-style: normal;
+  color: #94a3b8;
+  min-width: 1.5rem;
+  text-align: right;
+}
+
+.wp-summary-card__rows strong {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  display: inline-block;
+}
+.dot.success { background: #16a34a; }
+.dot.danger { background: #dc2626; }
+.dot.warn { background: #f59e0b; }
+.dot.info { background: #2563eb; }
+
+.wp-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.wp-quick-tile {
+  text-align: left;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  border-radius: 14px;
+  padding: 18px;
+  cursor: pointer;
+}
+
+.wp-quick-tile strong {
+  display: block;
+  font-size: 1.05rem;
+  margin-bottom: 4px;
+}
+
+.wp-quick-tile span {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.wp-hero-card {
+  max-width: 420px;
+  margin: 48px auto;
+  padding: 28px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  text-align: center;
+}
+
+.wp-hero-card h1 { margin: 0 0 8px; }
+.wp-hero-card p { color: #64748b; }
+.wp-actions { display: flex; gap: 10px; justify-content: center; margin-top: 16px; }
+
+.wp-tabs {
+  display: inline-flex;
+  gap: 8px;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 12px;
+  margin-bottom: 18px;
+}
+
+.wp-tab {
+  border: 0;
+  background: transparent;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.wp-tab.is-active {
+  background: #1d4ed8;
+  color: #fff;
+}
+
+.wp-panel {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.wp-panel h3 {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+}
+
+.wp-panel p.lead {
+  margin: 0 0 16px;
+  color: #64748b;
+  font-size: 0.92rem;
+}
+
+.wp-form-row {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.wp-form-row label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.wp-form-row input,
+.wp-form-row select {
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 11px 12px;
+  font-size: 0.95rem;
+}
+
+.wp-bank-list {
+  display: grid;
+  gap: 10px;
+}
+
+.wp-bank-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px;
+  background: #f8fafc;
+}
+
+.wp-bank-item__meta strong { display: block; }
+.wp-bank-item__meta span { color: #64748b; font-size: 0.88rem; }
+
+.wp-table-wrap { overflow-x: auto; }
+.wp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.wp-table th,
+.wp-table td {
+  text-align: left;
+  padding: 12px 10px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.wp-table th { color: #64748b; font-weight: 600; font-size: 0.8rem; }
+.wp-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.wp-badge--ok { background: #dcfce7; color: #166534; }
+.wp-badge--pending { background: #fef3c7; color: #92400e; }
+.wp-badge--fail { background: #fee2e2; color: #991b1b; }
+
+@media (max-width: 900px) {
+  .wp-summary-grid,
+  .wp-quick-grid { grid-template-columns: 1fr; }
+  .wp-balance-banner__amount { font-size: 1.6rem; }
+}
+
+/* Dark theme compatibility */
+[data-theme='dark'] .wp-page,
+.theme-dark .wp-page { color: #e2e8f0; }
+[data-theme='dark'] .wp-summary-card,
+[data-theme='dark'] .wp-quick-tile,
+[data-theme='dark'] .wp-panel,
+[data-theme='dark'] .wp-hero-card,
+.theme-dark .wp-summary-card,
+.theme-dark .wp-quick-tile,
+.theme-dark .wp-panel,
+.theme-dark .wp-hero-card {
+  background: #111827;
+  border-color: #1f2937;
+}
+[data-theme='dark'] .wp-page-header p,
+[data-theme='dark'] .wp-summary-card__count,
+[data-theme='dark'] .wp-quick-tile span,
+.theme-dark .wp-page-header p,
+.theme-dark .wp-summary-card__count,
+.theme-dark .wp-quick-tile span { color: #94a3b8; }

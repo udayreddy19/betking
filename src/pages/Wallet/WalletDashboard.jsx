@@ -1,546 +1,199 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'motion/react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getWalletBreakdown, formatInr, getWithdrawableHint } from '../../utils/walletBalance';
-import {
-  BiWallet,
-  BiMoneyWithdraw,
-  BiHistory,
-  BiTransfer,
-  BiGift,
-  FiCheckCircle,
-  FiClock,
-  FiHelpCircle,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  SearchIcon,
-  ShieldCheckIcon,
-} from '../../icons';
-import { apiFetch } from '../../utils/apiClient';
-import './WalletDashboard.css';
-import { formatIst, formatIstDateTime } from '../../utils/istTime';
+import { formatIstDateTime } from '../../utils/istTime';
+import './WalletPlatform.css';
+
+function badgeFor(status) {
+  const s = String(status || 'COMPLETED').toUpperCase();
+  if (['COMPLETED', 'SUCCESS'].includes(s)) return <span className="wp-badge wp-badge--ok">Success</span>;
+  if (['PENDING', 'PROCESSING', 'UNDER_REVIEW', 'RESERVED'].includes(s)) return <span className="wp-badge wp-badge--pending">Pending</span>;
+  if (['FAILED', 'REJECTED', 'CANCELLED'].includes(s)) return <span className="wp-badge wp-badge--fail">{s === 'CANCELLED' ? 'Cancelled' : 'Failed'}</span>;
+  return <span className="wp-badge wp-badge--pending">{s}</span>;
+}
 
 export default function WalletDashboard() {
   const navigate = useNavigate();
-  const { user, openDepositModal, openFinModal, transactions, refreshWallet } = useAuth();
-
-  const [expandedBreakdown, setExpandedBreakdown] = useState(false);
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'history' | 'rewards'
-  const [txFilter, setTxFilter] = useState('all');
-  const [txStatusFilter, setTxStatusFilter] = useState('all');
-  const [txSearch, setTxSearch] = useState('');
-  const [selectedTx, setSelectedTx] = useState(null);
-  const [bonuses, setBonuses] = useState([]);
-  const [bonusesLoading, setBonusesLoading] = useState(false);
-
+  const [params, setParams] = useSearchParams();
+  const { user, openDepositModal, openFinModal, transactions, refreshWallet, isLoggedIn, openLoginModal } = useAuth();
   const wallet = useMemo(() => getWalletBreakdown(user), [user]);
   const withdrawableHint = getWithdrawableHint(wallet);
 
+  const initialTab = params.get('tab') === 'withdraw' ? 'withdraw' : (params.get('tab') === 'history' ? 'history' : 'add');
+  const [tab, setTab] = useState(initialTab);
+  const [txFilter, setTxFilter] = useState(params.get('type') || 'all');
+  const [search, setSearch] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+
   useEffect(() => {
-    if (activeTab === 'rewards' && user) {
-      setBonusesLoading(true);
-      apiFetch('/api/v1/user/bonuses')
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success && Array.isArray(data.bonuses)) {
-            setBonuses(data.bonuses);
-          }
-        })
-        .catch(() => {})
-        .finally(() => setBonusesLoading(false));
-    }
-  }, [activeTab, user]);
+    const t = params.get('tab');
+    if (t === 'withdraw' || t === 'history' || t === 'add') setTab(t);
+    const type = params.get('type');
+    if (type) setTxFilter(type);
+  }, [params]);
 
-  const filteredTransactions = useMemo(() => {
+  const setTabAndUrl = (next) => {
+    setTab(next);
+    const nextParams = new URLSearchParams(params);
+    nextParams.set('tab', next);
+    setParams(nextParams, { replace: true });
+  };
+
+  const filtered = useMemo(() => {
     return (transactions || []).filter((tx) => {
-      // Category filter
-      if (txFilter === 'deposits' && tx.type !== 'deposit') return false;
-      if (txFilter === 'withdrawals' && !['withdraw', 'withdraw_cancel'].includes(tx.type)) return false;
-      if (txFilter === 'betting' && !['bet_stake', 'bet_win', 'cashout', 'refund'].includes(tx.type)) return false;
-      if (txFilter === 'rewards' && !['bonus', 'bonus_claim', 'freebet', 'loyalty_redeem', 'vip_cashback', 'vip_perk'].includes(String(tx.type || '').toLowerCase())) return false;
-
-      // Status filter
-      if (txStatusFilter !== 'all') {
-        const s = String(tx.status || 'COMPLETED').toUpperCase();
-        if (txStatusFilter === 'completed' && s !== 'COMPLETED' && s !== 'SUCCESS') return false;
-        if (txStatusFilter === 'pending' && !['PENDING', 'PROCESSING', 'UNDER_REVIEW'].includes(s)) return false;
-        if (txStatusFilter === 'failed' && !['FAILED', 'REJECTED', 'CANCELLED'].includes(s)) return false;
+      const type = String(tx.type || '').toLowerCase();
+      if (txFilter === 'deposits' && type !== 'deposit') return false;
+      if (txFilter === 'withdrawals' && !['withdraw', 'withdraw_cancel'].includes(type)) return false;
+      if (search.trim()) {
+        const q = search.toLowerCase();
+        return [tx.label, tx.id, tx.method, tx.utr, String(tx.amount)].join(' ').toLowerCase().includes(q);
       }
-
-      // Search query
-      if (txSearch.trim()) {
-        const q = txSearch.toLowerCase();
-        const label = (tx.label || '').toLowerCase();
-        const id = (tx.id || '').toLowerCase();
-        const method = (tx.method || '').toLowerCase();
-        const utr = (tx.utr || '').toLowerCase();
-        return label.includes(q) || id.includes(q) || method.includes(q) || utr.includes(q) || String(tx.amount).includes(q);
-      }
-
       return true;
     });
-  }, [transactions, txFilter, txStatusFilter, txSearch]);
+  }, [transactions, txFilter, search]);
 
-  const getStatusBadge = (status) => {
-    const s = String(status || 'COMPLETED').toUpperCase();
-    if (s === 'COMPLETED' || s === 'SUCCESS') {
-      return <span className="wallet-badge wallet-badge--success"><FiCheckCircle /> Completed</span>;
-    }
-    if (s === 'PROCESSING' || s === 'PENDING' || s === 'UNDER_REVIEW' || s === 'PENDING_REVIEW') {
-      return <span className="wallet-badge wallet-badge--pending"><FiClock /> Processing</span>;
-    }
-    if (s === 'FAILED' || s === 'REJECTED') {
-      return <span className="wallet-badge wallet-badge--failed">Failed</span>;
-    }
-    if (s === 'CANCELLED') {
-      return <span className="wallet-badge wallet-badge--neutral">Cancelled</span>;
-    }
-    return <span className="wallet-badge wallet-badge--neutral">{status}</span>;
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try { await refreshWallet?.(); } finally { setRefreshing(false); }
   };
 
-  const getFriendlyExplanation = (tx) => {
-    const type = String(tx.type || '').toLowerCase();
-    switch (type) {
-      case 'deposit':
-        return 'Deposit credited to your wallet balance.';
-      case 'withdraw':
-        return 'Withdrawal requested from your cash balance to your payout account.';
-      case 'withdraw_cancel':
-        return 'Cancelled withdrawal released back to your available cash balance.';
-      case 'bet_stake':
-        return 'Stake deducted for your placed bet slip.';
-      case 'bet_win':
-        return 'Winnings payout credited to your cash balance.';
-      case 'cashout':
-        return 'Early cashout credited to your wallet.';
-      case 'refund':
-        return 'Stake refunded due to match cancellation or void selection.';
-      case 'bonus':
-      case 'bonus_claim':
-        return tx.method === 'DAILY_SPIN'
-          ? 'Daily Spin promotional bonus credit added to your account.'
-          : 'Promotional bonus credit added to your account.';
-      case 'freebet':
-        return 'Free bet voucher credit granted for promotional play.';
-      case 'loyalty_redeem':
-        return 'VIP Loyalty points redeemed directly for playable cash.';
-      default:
-        return tx.description || `${tx.label || 'Wallet transaction'}`;
-    }
-  };
-
-  if (!user) {
+  if (!isLoggedIn || !user) {
     return (
-      <div className="wallet-dashboard-container wallet-dashboard-container--loading">
-        <p>Loading your wallet information…</p>
+      <div className="wp-page">
+        <div className="wp-hero-card">
+          <h1>Wallet</h1>
+          <p>Log in to add funds, withdraw, and view transactions.</p>
+          <button type="button" className="wp-btn wp-btn--primary" onClick={openLoginModal}>Log in</button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="wallet-dashboard-container">
-      {/* HEADER & QUICK ACTIONS */}
-      <div className="wallet-header">
-        <div className="wallet-header__title-group">
-          <h1>My Wallet</h1>
-          <p className="wallet-header__subtitle">Transparent balance oversight, instant deposits & seamless payouts</p>
+    <div className="wp-page" id="wallet-dashboard">
+      <header className="wp-page-header">
+        <div>
+          <h1>Wallet</h1>
+          <p>Add funds, withdraw and track your money.</p>
         </div>
-        <div className="wallet-header__actions">
-          <button type="button" className="wallet-btn wallet-btn--primary" onClick={openDepositModal}>
-            <BiWallet /> Deposit
-          </button>
-          <button type="button" className="wallet-btn wallet-btn--secondary" onClick={() => openFinModal('withdraw')}>
-            <BiMoneyWithdraw /> Withdraw
-          </button>
-          <button type="button" className="wallet-btn wallet-btn--ghost" onClick={() => refreshWallet && refreshWallet()}>
-            Refresh
-          </button>
+        <div className="wp-page-header__actions">
+          <Link className="wp-btn wp-btn--outline" to="/wallet/bank-accounts">Bank accounts</Link>
+          <Link className="wp-btn wp-btn--outline" to="/profile">Profile</Link>
         </div>
-      </div>
+      </header>
 
-      {/* HERO BALANCE CARD */}
-      <div className="wallet-hero-card">
-        <div className="wallet-hero-card__main">
-          <div className="wallet-hero-card__balance-item">
-            <span className="wallet-hero-card__label">Total Wallet Balance</span>
-            <span className="wallet-hero-card__amount">{formatInr(wallet.total)}</span>
-            <span className="wallet-hero-card__subtext">Includes Cash + Bonus + Free Bet credits</span>
-          </div>
-
-          <div className="wallet-hero-card__divider" />
-
-          <div className="wallet-hero-card__balance-item">
-            <span className="wallet-hero-card__label">Available to Play</span>
-            <span className="wallet-hero-card__amount wallet-hero-card__amount--highlight">{formatInr(wallet.availableBalance)}</span>
-            <span className="wallet-hero-card__subtext">Funds currently available for eligible activity</span>
-          </div>
-
-          <div className="wallet-hero-card__divider" />
-
-          <div className="wallet-hero-card__balance-item">
-            <span className="wallet-hero-card__label">Withdrawable Cash</span>
-            <span className="wallet-hero-card__amount wallet-hero-card__amount--withdrawable">{formatInr(wallet.withdrawable)}</span>
-            <span className="wallet-hero-card__subtext">Unrestricted funds eligible for instant withdrawal</span>
+      <section className="wp-balance-banner">
+        <div>
+          <span className="wp-balance-banner__label">Funds wallet</span>
+          <strong className="wp-balance-banner__amount">{formatInr(wallet.availableBalance ?? wallet.total)}</strong>
+          <div className="wp-balance-banner__meta">
+            <span>Cash {formatInr(wallet.cashBalance)}</span>
+            <span>Withdrawable {formatInr(wallet.withdrawable)}</span>
           </div>
         </div>
-
-        {/* EXPANDABLE BALANCE BREAKDOWN */}
-        <div className="wallet-breakdown-toggle" onClick={() => setExpandedBreakdown(!expandedBreakdown)}>
-          <span>{expandedBreakdown ? 'Hide Balance Details' : 'View Expandable Balance Details'}</span>
-          {expandedBreakdown ? <ChevronUpIcon size={20} /> : <ChevronDownIcon size={20} />}
-        </div>
-
-        <AnimatePresence>
-          {expandedBreakdown && (
-            <motion.div
-              className="wallet-breakdown-panel"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <div className="wallet-breakdown-grid">
-                <div className="wallet-breakdown-cell">
-                  <span className="wallet-breakdown-cell__title">Cash Balance</span>
-                  <span className="wallet-breakdown-cell__value">{formatInr(wallet.cashBalance)}</span>
-                  <span className="wallet-breakdown-cell__desc">Authoritative playable cash balance.</span>
-                </div>
-
-                <div className="wallet-breakdown-cell">
-                  <span className="wallet-breakdown-cell__title">Locked Deposit Amount</span>
-                  <span className="wallet-breakdown-cell__value wallet-breakdown-cell__value--warning">{formatInr(wallet.lockedDeposit)}</span>
-                  <span className="wallet-breakdown-cell__desc">Deposits undergoing standard 1x AML turnover before withdrawal.</span>
-                </div>
-
-                <div className="wallet-breakdown-cell">
-                  <span className="wallet-breakdown-cell__title">Reserved Withdrawal Amount</span>
-                  <span className="wallet-breakdown-cell__value wallet-breakdown-cell__value--pending">{formatInr(wallet.pendingWithdrawal)}</span>
-                  <span className="wallet-breakdown-cell__desc">Funds held for active pending withdrawal requests.</span>
-                </div>
-
-                <div className="wallet-breakdown-cell">
-                  <span className="wallet-breakdown-cell__title">Bonus Balance</span>
-                  <span className="wallet-breakdown-cell__value wallet-breakdown-cell__value--bonus">{formatInr(wallet.bonus)}</span>
-                  <span className="wallet-breakdown-cell__desc">Promotional bonus credit. Subject to 5x turnover requirement at min odds 1.75.</span>
-                </div>
-
-                {wallet.lockedBonusWinnings > 0 && (
-                  <div className="wallet-breakdown-cell">
-                    <span className="wallet-breakdown-cell__title">Locked Bonus Winnings</span>
-                    <span className="wallet-breakdown-cell__value" style={{ color: '#a855f7' }}>{formatInr(wallet.lockedBonusWinnings)}</span>
-                    <span className="wallet-breakdown-cell__desc">Bonus profits held in escrow until 5x turnover at min odds 1.75 is completed.</span>
-                  </div>
-                )}
-
-                <div className="wallet-breakdown-cell">
-                  <span className="wallet-breakdown-cell__title">Free Bet Value</span>
-                  <span className="wallet-breakdown-cell__value wallet-breakdown-cell__value--freebet">{formatInr(wallet.freebets)}</span>
-                  <span className="wallet-breakdown-cell__desc">Promotional free bet voucher. <strong>Must be used in full in one eligible bet.</strong></span>
-                </div>
-              </div>
-
-              {withdrawableHint && (
-                <div className="wallet-breakdown-hint">
-                  <FiHelpCircle /> {withdrawableHint}
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* NAVIGATION TABS */}
-      <div className="wallet-tabs">
-        <button
-          type="button"
-          className={`wallet-tab ${activeTab === 'overview' ? 'wallet-tab--active' : ''}`}
-          onClick={() => setActiveTab('overview')}
-        >
-          <BiTransfer /> Recent Activity
+        <button type="button" className="wp-icon-btn" onClick={onRefresh} aria-label="Refresh" disabled={refreshing}>
+          {refreshing ? '…' : '↻'}
         </button>
-        <button
-          type="button"
-          className={`wallet-tab ${activeTab === 'history' ? 'wallet-tab--active' : ''}`}
-          onClick={() => setActiveTab('history')}
-        >
-          <BiHistory /> Transaction History
+      </section>
+
+      <div className="wp-tabs" role="tablist" aria-label="Wallet actions">
+        <button type="button" role="tab" aria-selected={tab === 'add'} className={`wp-tab ${tab === 'add' ? 'is-active' : ''}`} onClick={() => setTabAndUrl('add')}>
+          Add funds
         </button>
-        <button
-          type="button"
-          className={`wallet-tab ${activeTab === 'rewards' ? 'wallet-tab--active' : ''}`}
-          onClick={() => setActiveTab('rewards')}
-        >
-          <BiGift /> Rewards & Bonuses
+        <button type="button" role="tab" aria-selected={tab === 'withdraw'} className={`wp-tab ${tab === 'withdraw' ? 'is-active' : ''}`} onClick={() => setTabAndUrl('withdraw')}>
+          Withdraw funds
+        </button>
+        <button type="button" role="tab" aria-selected={tab === 'history'} className={`wp-tab ${tab === 'history' ? 'is-active' : ''}`} onClick={() => setTabAndUrl('history')}>
+          Transactions
         </button>
       </div>
 
-      {/* TAB CONTENT 1: RECENT ACTIVITY */}
-      {activeTab === 'overview' && (
-        <div className="wallet-section">
-          <div className="wallet-section__header">
-            <h3>Recent Financial Activity</h3>
-            <button type="button" className="wallet-link-btn" onClick={() => setActiveTab('history')}>
-              View All Transactions →
-            </button>
-          </div>
-
-          {(transactions || []).length === 0 ? (
-            <div className="wallet-empty-state">
-              <p>No financial activity recorded yet.</p>
-            </div>
-          ) : (
-            <div className="wallet-tx-list">
-              {(transactions || []).slice(0, 5).map((tx) => {
-                const isPositive = ['deposit', 'bet_win', 'bonus', 'loyalty_redeem', 'cashout'].includes(tx.type);
-                return (
-                  <div key={tx.id} className="wallet-tx-row" onClick={() => setSelectedTx(tx)}>
-                    <div className="wallet-tx-row__left">
-                      <div className={`wallet-tx-icon wallet-tx-icon--${tx.type}`}>
-                        {tx.type === 'deposit' && <BiWallet />}
-                        {tx.type === 'withdraw' && <BiMoneyWithdraw />}
-                        {tx.type === 'bet_win' && <BiGift />}
-                        {!['deposit', 'withdraw', 'bet_win'].includes(tx.type) && <BiTransfer />}
-                      </div>
-                      <div className="wallet-tx-info">
-                        <span className="wallet-tx-info__label">{tx.label}</span>
-                        <span className="wallet-tx-info__time">
-                          {tx.createdAt ? formatIst(tx.createdAt, { dateStyle: 'medium', timeStyle: 'short' }) : '—'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="wallet-tx-row__right">
-                      <span className={`wallet-tx-amount ${isPositive ? 'wallet-tx-amount--positive' : 'wallet-tx-amount--negative'}`}>
-                        {isPositive ? '+' : ''}{formatInr(tx.amount)}
-                      </span>
-                      {getStatusBadge(tx.status)}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+      {tab === 'add' && (
+        <div className="wp-panel">
+          <h3>Add money to your wallet</h3>
+          <p className="lead">Pay via UPI / cards through our hosted payment checkout. Card numbers and CVV are never stored on OddsYra.</p>
+          <ul className="wp-summary-card__rows" style={{ borderTop: 'none', marginBottom: 16 }}>
+            <li><span className="dot info" /> Minimum deposit follows admin wallet rules</li>
+            <li><span className="dot success" /> Instant credit after verified payment webhook</li>
+            <li><span className="dot warn" /> Amount range typically ₹100 – ₹2,00,000</li>
+          </ul>
+          <button type="button" className="wp-btn wp-btn--primary" onClick={() => openDepositModal()}>
+            Continue to add funds
+          </button>
+          <button type="button" className="wp-btn wp-btn--outline" style={{ marginLeft: 8 }} onClick={() => navigate('/wallet/deposit')}>
+            Open deposit page
+          </button>
         </div>
       )}
 
-      {/* TAB CONTENT 2: FULL TRANSACTION HISTORY */}
-      {activeTab === 'history' && (
-        <div className="wallet-section">
-          <div className="wallet-filters-bar">
-            <div className="wallet-filter-chips">
-              {[
-                { id: 'all', label: 'All' },
-                { id: 'deposits', label: 'Deposits' },
-                { id: 'withdrawals', label: 'Withdrawals' },
-                { id: 'betting', label: 'Betting' },
-                { id: 'rewards', label: 'Rewards' },
-              ].map((chip) => (
-                <button
-                  key={chip.id}
-                  type="button"
-                  className={`wallet-filter-chip ${txFilter === chip.id ? 'wallet-filter-chip--active' : ''}`}
-                  onClick={() => setTxFilter(chip.id)}
-                >
-                  {chip.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="wallet-search-group">
-              <div className="wallet-search-input-wrapper">
-                <SearchIcon className="wallet-search-icon" />
-                <input
-                  type="search"
-                  placeholder="Search by ID, amount or description…"
-                  value={txSearch}
-                  onChange={(e) => setTxSearch(e.target.value)}
-                  className="wallet-search-input"
-                />
-              </div>
-
-              <select
-                value={txStatusFilter}
-                onChange={(e) => setTxStatusFilter(e.target.value)}
-                className="wallet-select"
-              >
-                <option value="all">All Statuses</option>
-                <option value="completed">Completed</option>
-                <option value="pending">Processing / Pending</option>
-                <option value="failed">Failed / Cancelled</option>
-              </select>
-            </div>
+      {tab === 'withdraw' && (
+        <div className="wp-panel">
+          <h3>Withdraw to bank / UPI</h3>
+          <p className="lead">{withdrawableHint || 'Withdrawals use your verified payout details and KYC checks.'}</p>
+          <div style={{ marginBottom: 14, fontSize: '0.95rem' }}>
+            Available to withdraw: <strong>{formatInr(wallet.withdrawable)}</strong>
           </div>
+          <button type="button" className="wp-btn wp-btn--primary" onClick={() => openFinModal('withdraw')}>
+            Start withdrawal
+          </button>
+          <button type="button" className="wp-btn wp-btn--outline" style={{ marginLeft: 8 }} onClick={() => navigate('/wallet/bank-accounts')}>
+            Manage bank accounts
+          </button>
+          <button type="button" className="wp-btn wp-btn--ghost" style={{ marginLeft: 8 }} onClick={() => openFinModal('cancel-wd')}>
+            Cancel pending withdrawal
+          </button>
+        </div>
+      )}
 
-          {filteredTransactions.length === 0 ? (
-            <div className="wallet-empty-state">
-              <p>No transactions found matching your filter criteria.</p>
-            </div>
-          ) : (
-            <div className="wallet-table-wrapper">
-              <table className="wallet-table">
-                <thead>
-                  <tr>
-                    <th>Type & Description</th>
-                    <th>Reference</th>
-                    <th>Date & Time</th>
-                    <th>Status</th>
-                    <th style={{ textAlign: 'right' }}>Amount</th>
+      {tab === 'history' && (
+        <div className="wp-panel">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
+            <input
+              placeholder="Search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ flex: '1 1 180px', border: '1px solid #cbd5e1', borderRadius: 10, padding: '10px 12px' }}
+            />
+            <select value={txFilter} onChange={(e) => setTxFilter(e.target.value)} style={{ border: '1px solid #cbd5e1', borderRadius: 10, padding: '10px 12px' }}>
+              <option value="all">All</option>
+              <option value="deposits">Deposits</option>
+              <option value="withdrawals">Withdrawals</option>
+            </select>
+          </div>
+          <div className="wp-table-wrap">
+            <table className="wp-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Type</th>
+                  <th>Date / Status</th>
+                  <th>Amount</th>
+                  <th>Ref</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.length === 0 ? (
+                  <tr><td colSpan={5} style={{ color: '#64748b' }}>No transactions yet.</td></tr>
+                ) : filtered.slice(0, 100).map((tx, idx) => (
+                  <tr key={tx.id || `${tx.type}-${idx}`}>
+                    <td>{String(idx + 1).padStart(2, '0')}</td>
+                    <td>{tx.label || tx.type}</td>
+                    <td>
+                      <div>{badgeFor(tx.status)}</div>
+                      <div style={{ color: '#64748b', fontSize: '0.8rem', marginTop: 4 }}>
+                        {formatIstDateTime(tx.createdAt || tx.created_at || tx.date)}
+                      </div>
+                    </td>
+                    <td><strong>{formatInr(Math.abs(Number(tx.amount) || 0))}</strong></td>
+                    <td style={{ fontSize: '0.8rem', color: '#64748b' }}>{tx.utr || tx.id || '—'}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {filteredTransactions.map((tx) => {
-                    const isPositive = ['deposit', 'bet_win', 'bonus', 'loyalty_redeem', 'cashout'].includes(tx.type);
-                    return (
-                      <tr key={tx.id} onClick={() => setSelectedTx(tx)} className="wallet-table__row-clickable">
-                        <td>
-                          <strong>{tx.label}</strong>
-                          {tx.method ? <span className="wallet-table__subtext"> · {tx.method}</span> : null}
-                        </td>
-                        <td>
-                          <span className="wallet-table__mono">{tx.id}</span>
-                          {tx.utr ? <span className="wallet-table__subtext"> · UTR {tx.utr}</span> : null}
-                        </td>
-                        <td>
-                          {tx.createdAt ? formatIst(tx.createdAt, { dateStyle: 'medium', timeStyle: 'short' }) : '—'}
-                        </td>
-                        <td>{getStatusBadge(tx.status)}</td>
-                        <td style={{ textAlign: 'right' }}>
-                          <span className={`wallet-tx-amount ${isPositive ? 'wallet-tx-amount--positive' : 'wallet-tx-amount--negative'}`}>
-                            {isPositive ? '+' : ''}{formatInr(tx.amount)}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* TAB CONTENT 3: REWARDS & BONUSES */}
-      {activeTab === 'rewards' && (
-        <div className="wallet-section">
-          <h3>Active Promotional Funds & Free Bets</h3>
-          <div className="wallet-rewards-grid">
-            <div className="wallet-reward-card">
-              <div className="wallet-reward-card__header">
-                <BiGift size={24} />
-                <span className="wallet-reward-card__tag">FREE BET VOUCHER</span>
-              </div>
-              <div className="wallet-reward-card__amount">{formatInr(wallet.freebets)}</div>
-              <p className="wallet-reward-card__desc">
-                Usable for single or combo sports bets. Returns net profit upon winning.
-              </p>
-              <div className="wallet-reward-card__status">
-                {wallet.freebets > 0 ? (
-                  <span className="wallet-badge wallet-badge--success">Ready to Use</span>
-                ) : (
-                  <span className="wallet-badge wallet-badge--neutral">No Active Free Bets</span>
-                )}
-              </div>
-            </div>
-
-            <div className="wallet-reward-card">
-              <div className="wallet-reward-card__header">
-                <ShieldCheckIcon size={24} />
-                <span className="wallet-reward-card__tag">PROMOTIONAL BONUS</span>
-              </div>
-              <div className="wallet-reward-card__amount">{formatInr(wallet.bonus)}</div>
-              <p className="wallet-reward-card__desc">
-                Casino & sportsbook bonus subject to wagering requirements before withdrawal.
-              </p>
-              <div className="wallet-reward-card__status">
-                {wallet.bonus > 0 ? (
-                  <span className="wallet-badge wallet-badge--bonus">Active Bonus</span>
-                ) : (
-                  <span className="wallet-badge wallet-badge--neutral">No Active Bonus</span>
-                )}
-              </div>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
-
-      {/* TRANSACTION DETAILS MODAL */}
-      <AnimatePresence>
-        {selectedTx && (
-          <div className="wallet-modal-backdrop" onClick={() => setSelectedTx(null)}>
-            <motion.div
-              className="wallet-modal-card"
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="wallet-modal-card__header">
-                <h3>Transaction Details</h3>
-                <button type="button" className="wallet-modal-card__close" onClick={() => setSelectedTx(null)}>
-                  ✕
-                </button>
-              </div>
-
-              <div className="wallet-modal-card__body">
-                <div className="wallet-detail-hero">
-                  <span className="wallet-detail-hero__label">{selectedTx.label}</span>
-                  <span className={`wallet-detail-hero__amount ${['deposit', 'bet_win', 'bonus', 'loyalty_redeem', 'cashout'].includes(selectedTx.type) ? 'positive' : 'negative'}`}>
-                    {['deposit', 'bet_win', 'bonus', 'loyalty_redeem', 'cashout'].includes(selectedTx.type) ? '+' : ''}{formatInr(selectedTx.amount)}
-                  </span>
-                  <div className="wallet-detail-hero__status">{getStatusBadge(selectedTx.status)}</div>
-                </div>
-
-                <div className="wallet-detail-rows">
-                  <div className="wallet-detail-row">
-                    <span className="wallet-detail-row__key">Transaction ID</span>
-                    <span className="wallet-detail-row__val mono">{selectedTx.id}</span>
-                  </div>
-
-                  <div className="wallet-detail-row">
-                    <span className="wallet-detail-row__key">Date & Time</span>
-                    <span className="wallet-detail-row__val">
-                      {selectedTx.createdAt ? formatIst(selectedTx.createdAt, { dateStyle: 'full', timeStyle: 'medium' }) : '—'}
-                    </span>
-                  </div>
-
-                  {selectedTx.method ? (
-                    <div className="wallet-detail-row">
-                      <span className="wallet-detail-row__key">Payment Method</span>
-                      <span className="wallet-detail-row__val">{selectedTx.method}</span>
-                    </div>
-                  ) : null}
-
-                  {selectedTx.utr ? (
-                    <div className="wallet-detail-row">
-                      <span className="wallet-detail-row__key">UTR Reference</span>
-                      <span className="wallet-detail-row__val mono">{selectedTx.utr}</span>
-                    </div>
-                  ) : null}
-
-                  {selectedTx.relatedBetId ? (
-                    <div className="wallet-detail-row">
-                      <span className="wallet-detail-row__key">Related Bet Slip</span>
-                      <span className="wallet-detail-row__val mono">{selectedTx.relatedBetId}</span>
-                    </div>
-                  ) : null}
-
-                  <div className="wallet-detail-row">
-                    <span className="wallet-detail-row__key">Explanation</span>
-                    <span className="wallet-detail-row__val">{getFriendlyExplanation(selectedTx)}</span>
-                  </div>
-                </div>
-
-                <div className="wallet-modal-card__footer">
-                  <button type="button" className="wallet-btn wallet-btn--primary" onClick={() => setSelectedTx(null)}>
-                    Close Details
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

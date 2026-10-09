@@ -8,55 +8,86 @@ import {
 } from 'react';
 
 const ProductContext = createContext({
-  walletEnabled: true,
-  bettingEnabled: true,
+  walletEnabled: false,
+  bettingEnabled: false,
   ready: false,
-  isWalletEnabled: () => true,
-  isBettingEnabled: () => true,
+  isWalletEnabled: () => false,
+  isBettingEnabled: () => false,
   refresh: async () => {},
 });
+
+const CACHE_KEY = 'oddsyra_product_config_v1';
 
 function normalize(data) {
   const wallet = data?.walletEnabled ?? data?.wallet;
   const betting = data?.bettingEnabled ?? data?.betting;
   return {
-    walletEnabled: wallet !== false,
-    bettingEnabled: betting !== false,
+    walletEnabled: wallet === true || wallet === 'true' || wallet === 1,
+    bettingEnabled: betting === true || betting === 'true' || betting === 1,
     updatedAt: data?.updatedAt || null,
   };
 }
 
+function readCachedConfig() {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    return normalize(JSON.parse(raw));
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedConfig(config) {
+  try {
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify(config));
+  } catch {
+    /* ignore */
+  }
+}
+
 export function ProductProvider({ children }) {
-  const [config, setConfig] = useState({
-    walletEnabled: true,
-    bettingEnabled: true,
-    updatedAt: null,
-  });
-  const [ready, setReady] = useState(false);
+  const cached = typeof window !== 'undefined' ? readCachedConfig() : null;
+  // Fail-closed until the server answers: never flash Betting UI when Betting is OFF.
+  const [config, setConfig] = useState(
+    cached || { walletEnabled: false, bettingEnabled: false, updatedAt: null },
+  );
+  const [ready, setReady] = useState(Boolean(cached));
+
+  const applyConfig = useCallback((next) => {
+    const normalized = normalize(next);
+    setConfig(normalized);
+    writeCachedConfig(normalized);
+  }, []);
 
   const refresh = useCallback(async () => {
     try {
-      const res = await fetch('/api/config/products', { credentials: 'include' });
+      const res = await fetch(`/api/config/products?_=${Date.now()}`, {
+        credentials: 'include',
+        cache: 'no-store',
+        headers: { Accept: 'application/json' },
+      });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        setConfig(normalize(data));
+        applyConfig(data);
       }
     } catch {
-      // Keep last known; fail-open to both-on until first successful load after boot.
+      // Keep last known / fail-closed until a successful load.
     } finally {
       setReady(true);
     }
-  }, []);
+  }, [applyConfig]);
 
   useEffect(() => {
     refresh();
-    const timer = setInterval(refresh, 15000);
+    const timer = setInterval(refresh, 10000);
     const onFocus = () => refresh();
     window.addEventListener('focus', onFocus);
     const onWs = (ev) => {
       const detail = ev?.detail;
       if (detail && typeof detail === 'object') {
-        setConfig(normalize(detail));
+        applyConfig(detail);
+        setReady(true);
       } else {
         refresh();
       }
@@ -69,7 +100,8 @@ export function ProductProvider({ children }) {
         unsub = subscribeLiveChannel('config:products', (msg) => {
           const payload = msg?.payload || msg;
           if (payload && typeof payload === 'object') {
-            setConfig(normalize(payload));
+            applyConfig(payload);
+            setReady(true);
           } else {
             refresh();
           }
@@ -83,14 +115,14 @@ export function ProductProvider({ children }) {
       window.removeEventListener('oddsyra:product-config', onWs);
       unsub();
     };
-  }, [refresh]);
+  }, [refresh, applyConfig]);
 
-  const isWalletEnabled = useCallback(() => config.walletEnabled !== false, [config.walletEnabled]);
-  const isBettingEnabled = useCallback(() => config.bettingEnabled !== false, [config.bettingEnabled]);
+  const isWalletEnabled = useCallback(() => config.walletEnabled === true, [config.walletEnabled]);
+  const isBettingEnabled = useCallback(() => config.bettingEnabled === true, [config.bettingEnabled]);
 
   const value = useMemo(() => ({
-    walletEnabled: config.walletEnabled !== false,
-    bettingEnabled: config.bettingEnabled !== false,
+    walletEnabled: config.walletEnabled === true,
+    bettingEnabled: config.bettingEnabled === true,
     updatedAt: config.updatedAt,
     ready,
     isWalletEnabled,

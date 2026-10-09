@@ -35,19 +35,24 @@ const BASE_NAV_LINKS = [
   { to: '/live-casino', label: 'Live Casino', product: 'betting' },
   { to: '/fantasy', label: 'Fantasy', product: 'betting' },
   { to: '/bets', label: 'My Bets', product: 'betting' },
+  { to: '/', label: 'Home', product: 'wallet', walletOnly: true },
   { to: '/wallet', label: 'Wallet', product: 'wallet' },
-  { to: '/promotions', label: 'Win Free', flagKey: 'promotion_engine_ui' },
+  { to: '/wallet?tab=add', label: 'Add Money', product: 'wallet', walletOnly: true },
+  { to: '/wallet?tab=withdraw', label: 'Withdraw', product: 'wallet', walletOnly: true },
+  { to: '/wallet/bank-accounts', label: 'Bank Accounts', product: 'wallet', walletOnly: true },
+  { to: '/wallet?tab=history', label: 'Transactions', product: 'wallet', walletOnly: true },
+  { to: '/promotions', label: 'Win Free', flagKey: 'promotion_engine_ui', product: 'betting' },
 ];
 
 const BASE_MORE_LINKS = [
   { to: '/profile', label: 'My Profile' },
-  { to: '/invite', label: 'Invite friends', flagKey: 'referral_system_ui' },
+  { to: '/invite', label: 'Invite friends', flagKey: 'referral_system_ui', product: 'betting' },
   { to: '/profile?tab=support', label: 'Support tickets' },
   { to: '/admin', label: '🛡️ Admin Portal' },
-  { to: '/sports?league=ipl-srl', label: 'SRL', flagKey: 'oddsyra_srl_ui' },
+  { to: '/sports?league=ipl-srl', label: 'SRL', flagKey: 'oddsyra_srl_ui', product: 'betting' },
   { to: '/help', label: 'Help Center' },
-  { to: '/promotions', label: 'Promotions', flagKey: 'promotion_engine_ui' },
-  { to: '/casino', label: 'Casino' },
+  { to: '/promotions', label: 'Promotions', flagKey: 'promotion_engine_ui', product: 'betting' },
+  { to: '/casino', label: 'Casino', product: 'betting' },
   { to: '/responsible-gaming', label: 'Responsible Gaming', flagKey: 'responsible_gaming_ui' },
 ];
 
@@ -55,8 +60,10 @@ function Header() {
   const { user, isLoggedIn, openLoginModal, openDepositModal, toggleSidebar, redeemLoyaltyPoints, openFinModal } = useAuth();
   const { myBetsCount, isMyBetsOpen, toggleMyBets, closeMyBets } = useBetSlip();
   const { isEnabled } = useFeatureFlags();
-  const { walletEnabled, bettingEnabled } = useProducts();
+  const { walletEnabled, bettingEnabled, ready: productsReady } = useProducts();
   const productAllows = (l) => {
+    if (!productsReady) return false;
+    if (l.walletOnly && bettingEnabled) return false;
     if (l.product === 'wallet') return walletEnabled;
     if (l.product === 'betting') return bettingEnabled;
     return true;
@@ -67,7 +74,7 @@ function Header() {
   const moreLinks = withoutStubProductLinks(BASE_MORE_LINKS)
     .filter(productAllows)
     .filter((l) => !l.flagKey || isEnabled(l.flagKey, true));
-  const promotionsEnabled = isEnabled('promotion_engine_ui', true);
+  const promotionsEnabled = bettingEnabled && isEnabled('promotion_engine_ui', true);
   const notificationsEnabled = isEnabled('notification_center', true);
   const [isPromosOpen, setIsPromosOpen] = useState(false);
   const [isSpinOpen, setIsSpinOpen] = useState(false);
@@ -430,7 +437,7 @@ function Header() {
                 </AnimatePresence>
               </div>
               )}
-              {isLoggedIn && (
+              {isLoggedIn && bettingEnabled && (
               <motion.button
                 type="button"
                 className="header-action-icon-btn header-spin-icon-btn"
@@ -452,7 +459,7 @@ function Header() {
                 </motion.div>
               </motion.button>
               )}
-              {promotionsEnabled && (
+              {promotionsEnabled && bettingEnabled && (
               <motion.button
                 type="button"
                 className={`header-action-icon-btn ${isPromosOpen ? 'active' : ''}`}

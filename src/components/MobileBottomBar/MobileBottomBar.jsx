@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useAuth } from '../../context/AuthContext';
 import { useBetSlip } from '../../context/BetSlipContext';
+import { useProducts } from '../../context/ProductContext';
 import { CASINO_ENABLED } from '../../utils/featureFlags';
 import { pressScale, springTab } from '../../utils/motionPresets';
 import { useUserNotifications } from '../../hooks/useUserNotifications';
@@ -13,7 +14,7 @@ import {
   NavVipIcon,
   NavMenuIcon,
 } from './MobileNavIcons';
-import { HiOutlineUser } from '../../icons';
+import { HiOutlineUser, BiWallet } from '../../icons';
 import './MobileBottomBar.css';
 
 export default function MobileBottomBar() {
@@ -21,17 +22,29 @@ export default function MobileBottomBar() {
   const navigate = useNavigate();
   const { isLoggedIn, user, toggleSidebar, closeSidebar } = useAuth();
   const { closeMyBets, closeQuickBet, setIsMobileOpen } = useBetSlip();
+  const { walletEnabled, bettingEnabled } = useProducts();
   const { unreadCount } = useUserNotifications(isLoggedIn, user?.userId);
 
-  const navItems = useMemo(() => ([
-    { label: 'Home', path: '/', icon: NavHomeIcon },
-    CASINO_ENABLED
-      ? { label: 'Casino', path: '/casino', icon: NavCasinoIcon }
-      : { label: 'Promos', path: '/promotions', icon: NavPromotionsIcon },
-    isLoggedIn
-      ? { label: 'Profile', path: '/profile', icon: HiOutlineUser, isProfile: true }
-      : { label: 'VIP', path: '/vip', icon: NavVipIcon, isVip: true },
-  ]), [isLoggedIn]);
+  const navItems = useMemo(() => {
+    if (walletEnabled && !bettingEnabled) {
+      return [
+        { label: 'Home', path: '/', icon: NavHomeIcon },
+        { label: 'Wallet', path: '/wallet', icon: BiWallet },
+        { label: 'Profile', path: '/profile', icon: HiOutlineUser, isProfile: true },
+      ];
+    }
+    return [
+      { label: 'Home', path: '/', icon: NavHomeIcon },
+      bettingEnabled && CASINO_ENABLED
+        ? { label: 'Casino', path: '/casino', icon: NavCasinoIcon }
+        : bettingEnabled
+          ? { label: 'Promos', path: '/promotions', icon: NavPromotionsIcon }
+          : { label: 'Wallet', path: '/wallet', icon: BiWallet },
+      isLoggedIn
+        ? { label: 'Profile', path: '/profile', icon: HiOutlineUser, isProfile: true }
+        : { label: 'VIP', path: '/vip', icon: NavVipIcon, isVip: true },
+    ].filter(Boolean);
+  }, [isLoggedIn, walletEnabled, bettingEnabled]);
 
   const go = (path) => {
     closeSidebar();

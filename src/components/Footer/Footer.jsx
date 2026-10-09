@@ -2,11 +2,13 @@ import { Link, useLocation } from 'react-router-dom';
 import { UpiLogo, GPayLogo, PhonePeLogo, PaytmLogo } from '../PaymentLogos/PaymentLogos';
 import BrandLogo from '../BrandLogo/BrandLogo';
 import { useFeatureFlags } from '../../context/FeatureFlagsContext';
+import { useProducts } from '../../context/ProductContext';
 import './Footer.css';
 
 export default function Footer() {
   const location = useLocation();
   const { isEnabled, isSportEnabled } = useFeatureFlags();
+  const { walletEnabled, bettingEnabled } = useProducts();
   if (location.pathname.startsWith('/admin')) return null;
 
   const sportLinks = [
@@ -21,19 +23,31 @@ export default function Footer() {
     <footer className="footer" id="main-footer">
       <div className="footer-inner">
         <div className="footer-grid">
+          {bettingEnabled && (
           <div className="footer-section">
             <h4>Sports</h4>
             {sportLinks.map((s) => (
               <Link key={s.id} to={s.to}>{s.label}</Link>
             ))}
           </div>
+          )}
+          {walletEnabled && (
+          <div className="footer-section">
+            <h4>Wallet</h4>
+            <Link to="/wallet">Wallet</Link>
+            <Link to="/wallet?tab=add">Add Money</Link>
+            <Link to="/wallet?tab=withdraw">Withdraw</Link>
+            <Link to="/wallet/bank-accounts">Bank Accounts</Link>
+            <Link to="/wallet?tab=history">Transactions</Link>
+          </div>
+          )}
           <div className="footer-section">
             <h4>More</h4>
-            <Link to="/live-betting">Live Betting</Link>
-            <Link to="/bets">My Bets</Link>
-            <Link to="/live-cricket-betting">Live Cricket Betting</Link>
-            {isEnabled('referral_system_ui', true) && <Link to="/invite">Invite</Link>}
-            {isEnabled('promotion_engine_ui', true) && <Link to="/promotions">Promotions</Link>}
+            {bettingEnabled && <Link to="/live-betting">Live Betting</Link>}
+            {bettingEnabled && <Link to="/bets">My Bets</Link>}
+            {bettingEnabled && <Link to="/live-cricket-betting">Live Cricket Betting</Link>}
+            {bettingEnabled && isEnabled('referral_system_ui', true) && <Link to="/invite">Invite</Link>}
+            {bettingEnabled && isEnabled('promotion_engine_ui', true) && <Link to="/promotions">Promotions</Link>}
             <Link to="/profile">My Profile</Link>
           </div>
           <div className="footer-section">

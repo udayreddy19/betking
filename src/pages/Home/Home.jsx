@@ -20,6 +20,7 @@ import AnimatedMotionGiftIcon from '../../components/AnimatedMotionGiftIcon/Anim
 import ErrorBoundary from '../../components/ErrorBoundary/ErrorBoundary';
 import { useAuth } from '../../context/AuthContext';
 import { useProducts } from '../../context/ProductContext';
+import WalletHome from '../Wallet/WalletHome';
 import './Home.css';
 
 const HOME_MATCH_LIMIT = 12;
@@ -56,7 +57,7 @@ export default function Home() {
   const matches = useLiveMatches();
   const { isScoresLoading, scoresError, refreshScores } = useLiveSportsMeta();
   const { isSportEnabled, isEnabled } = useFeatureFlags();
-  const { walletEnabled, bettingEnabled } = useProducts();
+  const { walletEnabled, bettingEnabled, ready: productsReady } = useProducts();
   const srlEnabled = isEnabled('oddsyra_srl_ui', true) && bettingEnabled;
   const navigate = useNavigate();
   const { isLoggedIn, openDepositModal, openFinModal, user } = useAuth();
@@ -266,50 +267,16 @@ export default function Home() {
     return (matches || []).filter((m) => idSet.has(String(m.id)));
   }, [matches, watchlistIds]);
 
+  if (!productsReady) {
+    return <div className="home-page container" id="home-page"><p style={{ padding: '2rem 0', color: '#64748b' }}>Loading…</p></div>;
+  }
+
   if (walletEnabled && !bettingEnabled) {
-    const balance = user?.wallet?.available ?? user?.balance ?? user?.walletBalance;
-    return (
-      <div className="home-page container" id="home-page">
-        <section className="home-wallet-only" style={{ padding: '1.5rem 0', maxWidth: 640 }}>
-          <h1 style={{ margin: '0 0 0.5rem', fontSize: '1.75rem' }}>Wallet</h1>
-          <p style={{ margin: '0 0 1.25rem', color: 'var(--text-secondary, #555)' }}>
-            Add money, withdraw, and manage your balance.
-          </p>
-          <div
-            style={{
-              padding: '1.25rem 1.5rem',
-              borderRadius: 16,
-              background: 'var(--surface-elevated, #0b3d91)',
-              color: '#fff',
-              marginBottom: '1rem',
-            }}
-          >
-            <div style={{ fontSize: '0.85rem', opacity: 0.85 }}>Available balance</div>
-            <div style={{ fontSize: '1.75rem', fontWeight: 700 }}>
-              ₹{Number(balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-            </div>
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-            <button type="button" className="header-deposit-btn" onClick={() => (isLoggedIn ? openDepositModal() : navigate('/register'))}>
-              Add Money
-            </button>
-            {isLoggedIn && (
-              <>
-                <button type="button" className="header-login-btn" onClick={() => openFinModal('withdraw')}>
-                  Withdraw
-                </button>
-                <Link className="header-login-btn" to="/wallet" style={{ display: 'inline-flex', alignItems: 'center' }}>
-                  Transactions
-                </Link>
-              </>
-            )}
-            {!isLoggedIn && (
-              <Link className="header-join-btn" to="/register">Join now</Link>
-            )}
-          </div>
-        </section>
-      </div>
-    );
+    return <WalletHome />;
+  }
+
+  if (!bettingEnabled && !walletEnabled) {
+    return null; // PlatformGate shows unavailable
   }
 
   return (
