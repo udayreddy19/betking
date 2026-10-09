@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useProducts } from '../../context/ProductContext';
 import BrandLogo, { BrandWordmark } from '../../components/BrandLogo/BrandLogo';
 import '../Register/Register.css';
 import './AuthPages.css';
@@ -36,28 +37,36 @@ function readPendingReferral(searchParams) {
   }
 }
 
-function resolveAfterComplete(nextRaw) {
+function resolveAfterComplete(nextRaw, { bettingEnabled = true } = {}) {
+  const fallback = bettingEnabled ? '/sports' : '/wallet';
   const next = String(nextRaw || '').trim();
   if (next === 'deposit' || next === 'withdraw') {
     try {
       sessionStorage.setItem(PENDING_MODAL_KEY, next);
     } catch { /* ignore */ }
-    return '/sports';
+    return bettingEnabled ? '/sports' : '/wallet';
   }
   if (next.startsWith('/')) {
     try {
-      return decodeURIComponent(next);
+      const decoded = decodeURIComponent(next);
+      // Never bounce wallet-only users onto betting routes.
+      if (!bettingEnabled && (decoded.startsWith('/sports') || decoded.startsWith('/live-betting') || decoded.startsWith('/bets'))) {
+        return '/wallet';
+      }
+      return decoded;
     } catch {
-      return next;
+      return next.startsWith('/') ? next : fallback;
     }
   }
-  return '/sports';
+  return fallback;
 }
 
 export default function CompleteProfile() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, isLoggedIn, completeAccountProfile, showToast } = useAuth();
+  const { bettingEnabled, walletEnabled, ready: productsReady } = useProducts();
+  const showBettingPromos = bettingEnabled;
   const [phone, setPhone] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [promoCode, setPromoCode] = useState('');
@@ -91,7 +100,7 @@ export default function CompleteProfile() {
   }
 
   if (!needPhone && !needDob) {
-    return <Navigate to={resolveAfterComplete(searchParams.get('next'))} replace />;
+    return <Navigate to={resolveAfterComplete(searchParams.get('next'), { bettingEnabled })} replace />;
   }
 
   const handleSubmit = async (e) => {
@@ -123,7 +132,7 @@ export default function CompleteProfile() {
       }
     }
 
-    if (referralActive && promoCode.trim()) {
+    if (showBettingPromos && referralActive && promoCode.trim()) {
       setError('Referral and initial signup promotions cannot be combined. Clear the promo code or remove the referral.');
       return;
     }
@@ -133,8 +142,8 @@ export default function CompleteProfile() {
       const result = await completeAccountProfile({
         phone: needPhone ? digitsOnly(phone) : undefined,
         dateOfBirth: needDob ? dateOfBirth : undefined,
-        promoCode: referralActive ? undefined : (promoCode.trim() || undefined),
-        referralCode: referralCode.trim() || undefined,
+        promoCode: showBettingPromos && !referralActive ? (promoCode.trim() || undefined) : undefined,
+        referralCode: showBettingPromos ? (referralCode.trim() || undefined) : undefined,
       });
       if (!result.ok) {
         setError(result.error || 'Could not save your details.');
@@ -147,11 +156,11 @@ export default function CompleteProfile() {
         /* ignore */
       }
 
-      if (result.referral?.reward?.success || result.referral?.reward?.qualified || result.referral?.status === 'REWARDED') {
+      if (showBettingPromos && (result.referral?.reward?.success || result.referral?.reward?.qualified || result.referral?.status === 'REWARDED')) {
         showToast('Joined via referral. Your referral reward has been credited.', 'success');
-      } else if (result.referral?.success || result.referral?.referralId) {
+      } else if (showBettingPromos && (result.referral?.success || result.referral?.referralId)) {
         showToast('Joined via referral. Your Free Bet unlocks after your first qualifying deposit.', 'success');
-      } else if (result.promoReward) {
+      } else if (showBettingPromos && result.promoReward) {
         const typeLabel = {
           bonus: 'bonus',
           freebet: 'free bet',
@@ -164,11 +173,15 @@ export default function CompleteProfile() {
       } else {
         showToast('Profile saved. You are all set!', 'success');
       }
-      navigate(resolveAfterComplete(searchParams.get('next')), { replace: true });
+      navigate(resolveAfterComplete(searchParams.get('next'), { bettingEnabled }), { replace: true });
     } finally {
       setLoading(false);
     }
   };
+
+  if (productsReady && !walletEnabled && !bettingEnabled) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <div className="register-page" id="complete-profile-page">
@@ -183,7 +196,7 @@ export default function CompleteProfile() {
             {needPhone
               ? 'Google sign-in does not share your mobile number. Add it to secure your account'
               : 'Confirm your date of birth to continue'}
-            {isWelcome && !referralActive && needPhone ? ' and optionally claim a signup promo' : ''}.
+            {showBettingPromos && isWelcome && !referralActive && needPhone ? ' and optionally claim a signup promo' : ''}.
           </p>
 
           {error && <div className="register-error" role="alert">{error}</div>}
@@ -228,11 +241,14 @@ export default function CompleteProfile() {
                   autoFocus={!needPhone}
                 />
                 <p className="register-lead" style={{ marginTop: 8, fontSize: '0.82rem' }}>
-                  You must be 18 or older. Used for responsible gaming checks.
+                  {showBettingPromos
+                    ? 'You must be 18 or older. Used for responsible gaming checks.'
+                    : 'You must be 18 or older to use wallet services.'}
                 </p>
               </div>
             )}
 
+            {showBettingPromos && (
             <div className="form-group">
               <label className="form-label" htmlFor="cp-referral">Referral code (optional)</label>
               <input
@@ -253,7 +269,9 @@ export default function CompleteProfile() {
                 </p>
               )}
             </div>
+            )}
 
+            {showBettingPromos && (
             <div className="form-group">
               <label className="form-label" htmlFor="cp-promo">
                 {referralActive ? 'Promo code (unavailable with referral)' : 'Promo code (optional)'}
@@ -295,6 +313,7 @@ export default function CompleteProfile() {
                 </p>
               )}
             </div>
+            )}
 
             <button type="submit" className="register-submit-btn" disabled={loading}>
               {loading ? 'Saving…' : 'Continue'}

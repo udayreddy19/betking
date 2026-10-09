@@ -3,13 +3,16 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 /**
- * Phone is only required for money movement (deposit / withdraw),
- * not for browsing sports after Google signup.
+ * DOB/phone are required for deposit checkout only.
+ * Wallet overview, transactions, and bank accounts stay browsable;
+ * withdraw/deposit modals enforce the same checks in AuthProvider.
  */
-const MONEY_PATH_PREFIXES = ['/wallet'];
+const STRICT_MONEY_PATHS = ['/wallet/deposit', '/deposit'];
 
-function isMoneyPath(pathname) {
-  return MONEY_PATH_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+function isStrictMoneyPath(pathname) {
+  return STRICT_MONEY_PATHS.some((prefix) => (
+    pathname === prefix || pathname.startsWith(`${prefix}/`)
+  ));
 }
 
 export function userNeedsPhone(user) {
@@ -31,7 +34,7 @@ export default function PhoneRequiredGate() {
 
   useEffect(() => {
     if (!isLoggedIn || !userNeedsCompleteProfile(user)) return;
-    if (!isMoneyPath(location.pathname)) return;
+    if (!isStrictMoneyPath(location.pathname)) return;
     const next = encodeURIComponent(`${location.pathname}${location.search || ''}`);
     navigate(`/complete-profile?next=${next}`, { replace: true });
   }, [isLoggedIn, user, location.pathname, location.search, navigate]);
