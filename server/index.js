@@ -174,7 +174,11 @@ app.get('/seo/share-preview', async (req, res) => {
     return res.status(500).type('text').send('Share preview unavailable');
   }
 });
+import productsPublicRouter from './routes/products.js';
+import bankAccountsRouter from './routes/bankAccounts.js';
+app.use('/api/config', productsPublicRouter);
 app.use(walletRouter);
+app.use(bankAccountsRouter);
 app.use(betsRouter);
 app.use(supportRouter);
 app.use(growthRouter);

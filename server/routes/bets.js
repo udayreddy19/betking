@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import { requireAuth, requireVerified } from '../middleware/userAuth.js';
+import { requireProduct } from '../middleware/requireProduct.js';
 import { userFacingBetError } from '../../lib/userFacingErrors.mjs';
 
 const router = Router();
+const bettingOn = requireProduct('betting');
 
-router.get('/api/bet/cashout/quote', requireAuth, async (req, res) => {
+router.get('/api/bet/cashout/quote', requireAuth, bettingOn, async (req, res) => {
   try {
     const betId = req.query.betId || req.query.bet_id;
     if (!betId) return res.status(400).json({ success: false, error: 'betId required' });
@@ -21,7 +23,7 @@ router.get('/api/bet/cashout/quote', requireAuth, async (req, res) => {
   }
 });
 
-router.post('/api/bet/cashout/quotes', requireAuth, async (req, res) => {
+router.post('/api/bet/cashout/quotes', requireAuth, bettingOn, async (req, res) => {
   try {
     const betIds = Array.isArray(req.body?.betIds) ? req.body.betIds : [];
     if (betIds.length === 0) {
@@ -42,7 +44,7 @@ router.post('/api/bet/cashout/quotes', requireAuth, async (req, res) => {
   }
 });
 
-router.post('/api/bet/cashout', requireAuth, async (req, res) => {
+router.post('/api/bet/cashout', requireAuth, bettingOn, async (req, res) => {
   const { betId, requestedCashoutValue } = req.body;
   const idempotencyKey = req.headers['x-idempotency-key'] || req.body.idempotencyKey;
   try {
@@ -59,7 +61,7 @@ router.post('/api/bet/cashout', requireAuth, async (req, res) => {
   }
 });
 
-router.get('/api/bets/mine', requireAuth, async (req, res) => {
+router.get('/api/bets/mine', requireAuth, bettingOn, async (req, res) => {
   try {
     const { queryRead } = await import('../../db/pg.js');
     const rawLimit = Number(req.query.limit);
@@ -222,7 +224,7 @@ router.get('/api/bets/mine', requireAuth, async (req, res) => {
   }
 });
 
-router.get('/api/bets/:betId/evidence', requireAuth, async (req, res) => {
+router.get('/api/bets/:betId/evidence', requireAuth, bettingOn, async (req, res) => {
   try {
     const { betId } = req.params;
     const { queryRead } = await import('../../db/pg.js');
@@ -251,7 +253,7 @@ router.get('/api/bets/:betId/evidence', requireAuth, async (req, res) => {
   }
 });
 
-router.post(['/api/bets/quote-selections', '/api/v1/bets/quote-selections'], requireAuth, async (req, res) => {
+router.post(['/api/bets/quote-selections', '/api/v1/bets/quote-selections'], requireAuth, bettingOn, async (req, res) => {
   try {
     const { quoteBetslipSelections } = await import('../../lib/betslipQuoteService.mjs');
     const selections = Array.isArray(req.body?.selections) ? req.body.selections : [];
@@ -265,7 +267,7 @@ router.post(['/api/bets/quote-selections', '/api/v1/bets/quote-selections'], req
   }
 });
 
-router.post(['/api/bets/place', '/api/v1/bet/place'], requireAuth, requireVerified, async (req, res) => {
+router.post(['/api/bets/place', '/api/v1/bet/place'], requireAuth, requireVerified, bettingOn, async (req, res) => {
   const idempotencyKey = req.headers['x-idempotency-key'] || req.body.idempotencyKey;
   try {
     const { betPlacementEngine } = await import('../../lib/betPlacementEngine.mjs');
@@ -277,8 +279,16 @@ router.post(['/api/bets/place', '/api/v1/bet/place'], requireAuth, requireVerifi
 
     res.json({ version: 'v1', success: true, ...result });
   } catch (err) {
-    let statusCode = err.httpStatus || 400;
+    let statusCode = err.httpStatus || err.status || 400;
     const code = err.code || err.message?.split(':')[0] || 'BET_PLACEMENT_FAILED';
+    if (code === 'PRODUCT_DISABLED') {
+      return res.status(403).json({
+        success: false,
+        code: 'PRODUCT_DISABLED',
+        product: 'betting',
+        message: err.message || 'This product is currently unavailable.',
+      });
+    }
     if (code === 'ODDS_CHANGED' || code === 'STALE_ODDS' || code === 'ODDS_EXPIRED') {
       statusCode = 409;
     } else if (err.code === 'RG_UNAVAILABLE' || err.message?.includes('RG_UNAVAILABLE')) {

@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { CASINO_ENABLED } from '../../utils/featureFlags';
 import { useFeatureFlags } from '../../context/FeatureFlagsContext';
+import { useProducts } from '../../context/ProductContext';
 import { hoverScale, pressScale, springUi } from '../../utils/motionPresets';
 import {
   IoClose,
@@ -46,7 +47,8 @@ export default function Sidebar() {
   } = useAuth();
   const { openMyBets } = useBetSlip();
   const { isEnabled } = useFeatureFlags();
-  const promotionsEnabled = isEnabled('promotion_engine_ui', true);
+  const { walletEnabled, bettingEnabled } = useProducts();
+  const promotionsEnabled = isEnabled('promotion_engine_ui', true) && bettingEnabled;
   const notificationsEnabled = isEnabled('notification_center', true);
   const navigate = useNavigate();
   const isAdminPage = location.pathname.startsWith('/admin');
@@ -218,6 +220,7 @@ export default function Sidebar() {
                 </AnimatePresence>
               </section>
 
+              {walletEnabled && (
               <div className="sidebar-money-row">
                 <button
                   type="button"
@@ -225,7 +228,7 @@ export default function Sidebar() {
                   onClick={() => { closeSidebar(); openDepositModal(); }}
                 >
                   <BiWallet />
-                  Deposit
+                  Add Money
                 </button>
                 <button
                   type="button"
@@ -236,29 +239,46 @@ export default function Sidebar() {
                   Withdraw
                 </button>
               </div>
+              )}
 
               <div className="sidebar-section-label">Account</div>
               <div className="sidebar-list">
+                {walletEnabled && (
+                <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/wallet'); }}>
+                  <BiWallet className="sidebar-list-icon" />
+                  <span>Wallet</span>
+                  <FiChevronRight className="sidebar-list-arrow" />
+                </button>
+                )}
+                {bettingEnabled && (
                 <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); openMyBets(); }}>
                   <HiOutlineClipboardList className="sidebar-list-icon" />
                   <span>My Bets</span>
                   <FiChevronRight className="sidebar-list-arrow" />
                 </button>
+                )}
+                {bettingEnabled && (
                 <button type="button" className="sidebar-list-item" onClick={() => handleFinModal('bets-history')}>
                   <BiHistory className="sidebar-list-icon" />
                   <span>Bet history</span>
                   <FiChevronRight className="sidebar-list-arrow" />
                 </button>
+                )}
+                {walletEnabled && (
                 <button type="button" className="sidebar-list-item" onClick={() => handleFinModal('transactions')}>
                   <BiTransfer className="sidebar-list-icon" />
                   <span>Transactions</span>
                   <FiChevronRight className="sidebar-list-arrow" />
                 </button>
+                )}
+                {bettingEnabled && (
                 <button type="button" className="sidebar-list-item" onClick={() => handleFinModal('bonuses')}>
                   <BiGift className="sidebar-list-icon" />
                   <span>Bonuses</span>
                   <FiChevronRight className="sidebar-list-arrow" />
                 </button>
+                )}
+                {bettingEnabled && (
                 <button
                   type="button"
                   className="sidebar-list-item"
@@ -274,11 +294,14 @@ export default function Sidebar() {
                   <span>Daily spin</span>
                   <FiChevronRight className="sidebar-list-arrow" />
                 </button>
+                )}
+                {walletEnabled && (
                 <button type="button" className="sidebar-list-item" onClick={() => handleFinModal('cancel-wd')}>
                   <MdOutlineCancel className="sidebar-list-icon" />
                   <span>Cancel withdrawal</span>
                   <FiChevronRight className="sidebar-list-arrow" />
                 </button>
+                )}
               </div>
 
               <div className="sidebar-section-label">Explore</div>
@@ -307,18 +330,20 @@ export default function Sidebar() {
                   <FiChevronRight className="sidebar-list-arrow" />
                 </button>
                 )}
-                {CASINO_ENABLED && (
+                {CASINO_ENABLED && bettingEnabled && (
                   <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/casino'); }}>
                     <MdOutlineStorefront className="sidebar-list-icon" />
                     <span>Casino</span>
                     <FiChevronRight className="sidebar-list-arrow" />
                   </button>
                 )}
+                {bettingEnabled && (
                 <button type="button" className="sidebar-list-item" onClick={() => handleFinModal('marketplace')}>
                   <MdOutlineStorefront className="sidebar-list-icon" />
                   <span>Marketplace</span>
                   <FiChevronRight className="sidebar-list-arrow" />
                 </button>
+                )}
                 {isAdminUser && (
                   <button type="button" className="sidebar-list-item" onClick={() => { closeSidebar(); navigate('/admin'); }}>
                     <FiShield className="sidebar-list-icon" />

@@ -197,6 +197,7 @@ const DOMAIN_GROUPS = [
         Icon: SettingsIcon,
         role: ADMIN_ROLES.SUPER_ADMIN,
         subModules: [
+          { id: 'product-config', label: 'Product configuration' },
           { id: 'feature-flags', label: 'Viewer flags' },
           { id: 'api-keys', label: 'API keys' },
           { id: 'database-tables', label: 'Database' },

@@ -29,6 +29,8 @@ import PhoneRequiredGate from './components/PhoneRequiredGate/PhoneRequiredGate'
 import { getAdminSessionState } from './utils/adminSession';
 import { CASINO_ENABLED } from './utils/featureFlags';
 import { FeatureFlagsProvider, useFeatureFlags } from './context/FeatureFlagsContext';
+import { ProductProvider, useProducts } from './context/ProductContext';
+import ProductUnavailable from './components/ProductUnavailable/ProductUnavailable';
 
 import Home from './pages/Home/Home';
 import Register from './pages/Register/Register';
@@ -72,7 +74,7 @@ const OddsYraSrl = lazyWithRetry(() => import('./pages/Srl/OddsYraSrl'));
 const DepositPage = lazyWithRetry(() => import('./pages/Wallet/DepositPage'));
 
 function CasinoComingSoon() {
-  return <Navigate to="/sports" replace />;
+  return <Navigate to="/" replace />;
 }
 
 function FlaggedRoute({ flagKey, children, fallback = '/' }) {
@@ -80,6 +82,43 @@ function FlaggedRoute({ flagKey, children, fallback = '/' }) {
   // Fail closed until flags hydrate; after that missing keys stay on (opt-out toggles).
   if (!ready || !isEnabled(flagKey, true)) {
     return <Navigate to={fallback} replace />;
+  }
+  return children;
+}
+
+/** Gate a route by Admin product toggle (wallet | betting). */
+function ProductRoute({ product, children }) {
+  const { ready, walletEnabled, bettingEnabled } = useProducts();
+  if (!ready) return <PageLoader />;
+  const enabled = product === 'wallet' ? walletEnabled : bettingEnabled;
+  if (!enabled) {
+    return <ProductUnavailable product={product} />;
+  }
+  return children;
+}
+
+/** When both products are off, show a controlled unavailable page (admin still reachable). */
+function PlatformGate({ children }) {
+  const location = useLocation();
+  const { ready, walletEnabled, bettingEnabled } = useProducts();
+  const path = location.pathname || '/';
+  const isExempt = path.startsWith('/admin')
+    || path.startsWith('/trader')
+    || path.startsWith('/developer')
+    || path.startsWith('/api-docs')
+    || path.startsWith('/register')
+    || path.startsWith('/complete-profile')
+    || path.startsWith('/verify-email')
+    || path.startsWith('/reset-password')
+    || path.startsWith('/_oauth')
+    || path.startsWith('/terms')
+    || path.startsWith('/privacy')
+    || path.startsWith('/help')
+    || path.startsWith('/support')
+    || path.startsWith('/responsible-gaming');
+  if (!ready) return children;
+  if (!walletEnabled && !bettingEnabled && !isExempt) {
+    return <ProductUnavailable />;
   }
   return children;
 }
@@ -101,6 +140,7 @@ function AppFinancialModals() {
 
 function AppLayout() {
   const location = useLocation();
+  const { bettingEnabled, walletEnabled } = useProducts();
   const isAdminRoute = location.pathname.startsWith('/admin');
   const isDevRoute = location.pathname.startsWith('/developer') || location.pathname.startsWith('/api-docs');
   const isSportsRoute = location.pathname === '/sports' || location.pathname === '/live-betting';
@@ -126,37 +166,38 @@ function AppLayout() {
         </ErrorBoundary>
       )}
       <LoginModal />
-      <DepositModal />
+      {walletEnabled && <DepositModal />}
       <SessionIdleLogout />
       <AppFinancialModals />
       <Toast />
-      {!isDepositRoute && <GamePlayModal />}
-      <BetSettlementRunner />
-      {!isDepositRoute && <MobileBetSlip />}
-      {!isDepositRoute && <GlobalBetBar />}
+      {!isDepositRoute && bettingEnabled && <GamePlayModal />}
+      {bettingEnabled && <BetSettlementRunner />}
+      {!isDepositRoute && bettingEnabled && <MobileBetSlip />}
+      {!isDepositRoute && bettingEnabled && <GlobalBetBar />}
       {!isAdminRoute && !isDevRoute && !isRegisterRoute && !isDepositRoute && <MobileBottomBar />}
       <main className={mainClass}>
         <ErrorBoundary resetKey={location.pathname}>
           <Suspense fallback={<PageLoader />}>
+            <PlatformGate>
             <Routes>
               <Route path="/" element={<Home />} />
-              <Route path="/live-betting" element={<Sports />} />
-              <Route path="/sports" element={<Sports />} />
-              <Route path="/wallet/deposit" element={<DepositPage />} />
+              <Route path="/live-betting" element={<ProductRoute product="betting"><Sports /></ProductRoute>} />
+              <Route path="/sports" element={<ProductRoute product="betting"><Sports /></ProductRoute>} />
+              <Route path="/wallet/deposit" element={<ProductRoute product="wallet"><DepositPage /></ProductRoute>} />
               <Route path="/deposit" element={<Navigate to="/wallet/deposit" replace />} />
-              <Route path="/casino" element={CASINO_ENABLED ? <Casino /> : <CasinoComingSoon />} />
-              <Route path="/live-casino" element={CASINO_ENABLED ? <LiveCasino /> : <CasinoComingSoon />} />
-              <Route path="/fantasy" element={<Fantasy />} />
-              <Route path="/bets" element={<MyBetsPage />} />
+              <Route path="/casino" element={<ProductRoute product="betting">{CASINO_ENABLED ? <Casino /> : <CasinoComingSoon />}</ProductRoute>} />
+              <Route path="/live-casino" element={<ProductRoute product="betting">{CASINO_ENABLED ? <LiveCasino /> : <CasinoComingSoon />}</ProductRoute>} />
+              <Route path="/fantasy" element={<ProductRoute product="betting"><Fantasy /></ProductRoute>} />
+              <Route path="/bets" element={<ProductRoute product="betting"><MyBetsPage /></ProductRoute>} />
               <Route path="/invite" element={<FlaggedRoute flagKey="referral_system_ui"><InvitePage /></FlaggedRoute>} />
-              <Route path="/live-cricket-betting" element={<LiveCricketBetting />} />
-              <Route path="/how-to-bet-live-cricket" element={<HowToBetLiveCricket />} />
-              <Route path="/upi-deposits" element={<UpiDeposits />} />
-              <Route path="/what-is-oddsyra-srl" element={<WhatIsOddsYraSrl />} />
-              <Route path="/cricket-betting-guide" element={<CricketBettingGuide />} />
+              <Route path="/live-cricket-betting" element={<ProductRoute product="betting"><LiveCricketBetting /></ProductRoute>} />
+              <Route path="/how-to-bet-live-cricket" element={<ProductRoute product="betting"><HowToBetLiveCricket /></ProductRoute>} />
+              <Route path="/upi-deposits" element={<ProductRoute product="wallet"><UpiDeposits /></ProductRoute>} />
+              <Route path="/what-is-oddsyra-srl" element={<ProductRoute product="betting"><WhatIsOddsYraSrl /></ProductRoute>} />
+              <Route path="/cricket-betting-guide" element={<ProductRoute product="betting"><CricketBettingGuide /></ProductRoute>} />
               <Route path="/exchange" element={<CasinoComingSoon />} />
               <Route path="/profile" element={<Profile />} />
-              <Route path="/wallet" element={<WalletDashboard />} />
+              <Route path="/wallet" element={<ProductRoute product="wallet"><WalletDashboard /></ProductRoute>} />
               <Route path="/register" element={<Register />} />
               <Route path="/complete-profile" element={<CompleteProfile />} />
               <Route path="/_oauth/google" element={<OAuthGoogleCallback />} />
@@ -177,7 +218,7 @@ function AppLayout() {
               />
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/*" element={<Admin />} />
-              <Route path="/srl" element={<FlaggedRoute flagKey="oddsyra_srl_ui"><OddsYraSrl /></FlaggedRoute>} />
+              <Route path="/srl" element={<ProductRoute product="betting"><FlaggedRoute flagKey="oddsyra_srl_ui"><OddsYraSrl /></FlaggedRoute></ProductRoute>} />
               <Route path="/oddsyra-srl" element={<Navigate to="/srl" replace />} />
               <Route path="/iplsrl" element={<Navigate to="/srl" replace />} />
               <Route path="/iplsrl/match-center" element={<Navigate to="/srl" replace />} />
@@ -218,6 +259,7 @@ function AppLayout() {
               <Route path="/support/tickets/:ticketReference" element={<TicketDetailPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </PlatformGate>
           </Suspense>
         </ErrorBoundary>
       </main>
@@ -238,13 +280,15 @@ export default function App() {
           <BrowserRouter>
             <AuthProvider>
               <FeatureFlagsProvider>
-                <CasinoProvider>
-                  <LiveSportsProvider>
-                    <BetSlipProvider>
-                      <AppLayout />
-                    </BetSlipProvider>
-                  </LiveSportsProvider>
-                </CasinoProvider>
+                <ProductProvider>
+                  <CasinoProvider>
+                    <LiveSportsProvider>
+                      <BetSlipProvider>
+                        <AppLayout />
+                      </BetSlipProvider>
+                    </LiveSportsProvider>
+                  </CasinoProvider>
+                </ProductProvider>
               </FeatureFlagsProvider>
             </AuthProvider>
           </BrowserRouter>

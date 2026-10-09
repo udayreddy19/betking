@@ -39,6 +39,9 @@ function dispatch(msg) {
   if (msg.eventType === 'admin.alert.created' || msg.channel === 'admin:ops') {
     channels.push('admin:ops');
   }
+  if (msg.eventType === 'product.config.updated' || msg.channel === 'config:products') {
+    channels.push('config:products');
+  }
   if (msg.channel) channels.push(msg.channel);
 
   const seen = new Set();

@@ -5,6 +5,7 @@ import { useAdminToast } from '../components/AdminToastContext';
 import { StatusBadge } from '../components/AdminBadge';
 import AdminCard from '../components/AdminCard';
 import DatabaseInspector from '../../../components/DatabaseInspector/DatabaseInspector';
+import ProductConfigurationPanel from '../features/ProductConfigurationPanel';
 
 const SUGGESTED_PRODUCT_FLAGS = [
   { flagKey: 'oddsyra_srl_ui', name: 'OddsYra SRL', description: 'In-house OddsYra SRL league, dedicated /srl page, and header/navigation entries' },
@@ -94,6 +95,10 @@ export default function PlatformDomainView({ subModule = 'feature-flags' }) {
       })
       .catch((err) => showToast(err.message || 'Feature store update failed', 'error'));
   };
+
+  if (subModule === 'product-config') {
+    return <ProductConfigurationPanel />;
+  }
 
   if (subModule === 'database-tables') {
     return <DatabaseInspector />;

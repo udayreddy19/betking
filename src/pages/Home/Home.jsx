@@ -19,6 +19,7 @@ import BoostedOddsWidget from '../../components/BoostedOddsWidget/BoostedOddsWid
 import AnimatedMotionGiftIcon from '../../components/AnimatedMotionGiftIcon/AnimatedMotionGiftIcon';
 import ErrorBoundary from '../../components/ErrorBoundary/ErrorBoundary';
 import { useAuth } from '../../context/AuthContext';
+import { useProducts } from '../../context/ProductContext';
 import './Home.css';
 
 const HOME_MATCH_LIMIT = 12;
@@ -55,9 +56,10 @@ export default function Home() {
   const matches = useLiveMatches();
   const { isScoresLoading, scoresError, refreshScores } = useLiveSportsMeta();
   const { isSportEnabled, isEnabled } = useFeatureFlags();
-  const srlEnabled = isEnabled('oddsyra_srl_ui', true);
+  const { walletEnabled, bettingEnabled } = useProducts();
+  const srlEnabled = isEnabled('oddsyra_srl_ui', true) && bettingEnabled;
   const navigate = useNavigate();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, openDepositModal, openFinModal, user } = useAuth();
 
   const openInviteWhatsApp = async () => {
     try {
@@ -264,15 +266,93 @@ export default function Home() {
     return (matches || []).filter((m) => idSet.has(String(m.id)));
   }, [matches, watchlistIds]);
 
+  if (walletEnabled && !bettingEnabled) {
+    const balance = user?.wallet?.available ?? user?.balance ?? user?.walletBalance;
+    return (
+      <div className="home-page container" id="home-page">
+        <section className="home-wallet-only" style={{ padding: '1.5rem 0', maxWidth: 640 }}>
+          <h1 style={{ margin: '0 0 0.5rem', fontSize: '1.75rem' }}>Wallet</h1>
+          <p style={{ margin: '0 0 1.25rem', color: 'var(--text-secondary, #555)' }}>
+            Add money, withdraw, and manage your balance.
+          </p>
+          <div
+            style={{
+              padding: '1.25rem 1.5rem',
+              borderRadius: 16,
+              background: 'var(--surface-elevated, #0b3d91)',
+              color: '#fff',
+              marginBottom: '1rem',
+            }}
+          >
+            <div style={{ fontSize: '0.85rem', opacity: 0.85 }}>Available balance</div>
+            <div style={{ fontSize: '1.75rem', fontWeight: 700 }}>
+              ₹{Number(balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <button type="button" className="header-deposit-btn" onClick={() => (isLoggedIn ? openDepositModal() : navigate('/register'))}>
+              Add Money
+            </button>
+            {isLoggedIn && (
+              <>
+                <button type="button" className="header-login-btn" onClick={() => openFinModal('withdraw')}>
+                  Withdraw
+                </button>
+                <Link className="header-login-btn" to="/wallet" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                  Transactions
+                </Link>
+              </>
+            )}
+            {!isLoggedIn && (
+              <Link className="header-join-btn" to="/register">Join now</Link>
+            )}
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="home-page container" id="home-page">
+      {walletEnabled && bettingEnabled && isLoggedIn && (
+        <section
+          className="home-wallet-strip"
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '0.75rem',
+            padding: '0.85rem 1rem',
+            marginBottom: '1rem',
+            borderRadius: 12,
+            border: '1px solid var(--border-subtle, rgba(0,0,0,0.08))',
+            background: 'var(--surface-elevated, #fff)',
+          }}
+        >
+          <div>
+            <strong>Wallet</strong>
+            <span style={{ marginLeft: 8, color: '#555' }}>
+              ₹{Number(user?.wallet?.available ?? user?.balance ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button type="button" className="header-deposit-btn" onClick={() => openDepositModal()}>Add Money</button>
+            <button type="button" className="header-login-btn" onClick={() => openFinModal('withdraw')}>Withdraw</button>
+            <Link to="/wallet" className="header-login-btn" style={{ display: 'inline-flex', alignItems: 'center' }}>Wallet</Link>
+          </div>
+        </section>
+      )}
+
+      {bettingEnabled && (
       <LiveScoresFeedBanner
         message={scoresError}
         onRetry={() => refreshScores({ force: true })}
         retrying={isScoresLoading}
       />
+      )}
 
-      {!isLoggedIn && (
+      {!isLoggedIn && bettingEnabled && (
         <div className="home-join-banner">
           <div className="home-join-banner__copy">
             <strong>Live cricket betting on OddsYra</strong>
@@ -281,6 +361,9 @@ export default function Home() {
           <Link className="home-join-banner__cta" to="/register">Join now</Link>
         </div>
       )}
+
+      {!bettingEnabled ? null : (
+      <>
 
       <div
         className="home-promo-carousel"
@@ -469,6 +552,8 @@ export default function Home() {
           )}
         </div>
       </section>
+      </>
+      )}
     </div>
   );
 }

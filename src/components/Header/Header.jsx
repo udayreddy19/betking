@@ -23,17 +23,19 @@ import BrandLogo, { BrandWordmark } from '../BrandLogo/BrandLogo';
 import { withoutStubProductLinks } from '../../utils/featureFlags';
 import { useFeatureFlags } from '../../context/FeatureFlagsContext';
 import { hoverScale, pressScale, springUi } from '../../utils/motionPresets';
+import { useProducts } from '../../context/ProductContext';
 import './Header.css';
 
 const BALANCE_VISIBLE_KEY = 'oddsyra_balance_visible';
 
 const BASE_NAV_LINKS = [
-  { to: '/live-betting', label: 'Live Betting' },
-  { to: '/sports', label: 'Sports' },
-  { to: '/casino', label: 'Casino' },
-  { to: '/live-casino', label: 'Live Casino' },
-  { to: '/fantasy', label: 'Fantasy' },
-  { to: '/bets', label: 'My Bets' },
+  { to: '/live-betting', label: 'Live Betting', product: 'betting' },
+  { to: '/sports', label: 'Sports', product: 'betting' },
+  { to: '/casino', label: 'Casino', product: 'betting' },
+  { to: '/live-casino', label: 'Live Casino', product: 'betting' },
+  { to: '/fantasy', label: 'Fantasy', product: 'betting' },
+  { to: '/bets', label: 'My Bets', product: 'betting' },
+  { to: '/wallet', label: 'Wallet', product: 'wallet' },
   { to: '/promotions', label: 'Win Free', flagKey: 'promotion_engine_ui' },
 ];
 
@@ -53,8 +55,18 @@ function Header() {
   const { user, isLoggedIn, openLoginModal, openDepositModal, toggleSidebar, redeemLoyaltyPoints, openFinModal } = useAuth();
   const { myBetsCount, isMyBetsOpen, toggleMyBets, closeMyBets } = useBetSlip();
   const { isEnabled } = useFeatureFlags();
-  const navLinks = withoutStubProductLinks(BASE_NAV_LINKS).filter((l) => !l.flagKey || isEnabled(l.flagKey, true));
-  const moreLinks = withoutStubProductLinks(BASE_MORE_LINKS).filter((l) => !l.flagKey || isEnabled(l.flagKey, true));
+  const { walletEnabled, bettingEnabled } = useProducts();
+  const productAllows = (l) => {
+    if (l.product === 'wallet') return walletEnabled;
+    if (l.product === 'betting') return bettingEnabled;
+    return true;
+  };
+  const navLinks = withoutStubProductLinks(BASE_NAV_LINKS)
+    .filter(productAllows)
+    .filter((l) => !l.flagKey || isEnabled(l.flagKey, true));
+  const moreLinks = withoutStubProductLinks(BASE_MORE_LINKS)
+    .filter(productAllows)
+    .filter((l) => !l.flagKey || isEnabled(l.flagKey, true));
   const promotionsEnabled = isEnabled('promotion_engine_ui', true);
   const notificationsEnabled = isEnabled('notification_center', true);
   const [isPromosOpen, setIsPromosOpen] = useState(false);
@@ -304,6 +316,7 @@ function Header() {
             </div>
           ) : isLoggedIn ? (
             <>
+              {bettingEnabled && (
               <motion.button
                 type="button"
                 className={`header-action-icon-btn header-my-bets-btn ${isMyBetsOpen ? 'active' : ''}`}
@@ -321,6 +334,7 @@ function Header() {
                 <HiOutlineClipboardList className="header-my-bets-icon" aria-hidden="true" />
                 {myBetsCount > 0 && <span className="header-my-bets-badge">{myBetsCount}</span>}
               </motion.button>
+              )}
               {notificationsEnabled && (
               <div className="header-notif-wrap" ref={notifRef}>
                 <motion.button
@@ -492,6 +506,7 @@ function Header() {
 
           {isLoggedIn && !isAdminPage ? (
             <>
+              {walletEnabled && (
               <div className="header-wallet-group" ref={walletRef}>
                 <div className="header-wallet-dropdown-wrap">
                   <button
@@ -677,6 +692,7 @@ function Header() {
                 </AnimatePresence>
                 </div>
               </div>
+              )}
             </>
           ) : showOperatorChrome ? (
             <button
@@ -701,10 +717,10 @@ function Header() {
           )}
         </div>
       </div>
-      {isLoggedIn && <MyBetsPanel />}
-      {isLoggedIn && promotionsEnabled && <PromotionsPanel isOpen={isPromosOpen} onClose={closePromos} />}
+      {isLoggedIn && bettingEnabled && <MyBetsPanel />}
+      {isLoggedIn && promotionsEnabled && bettingEnabled && <PromotionsPanel isOpen={isPromosOpen} onClose={closePromos} />}
       {/* Mount whenever logged in so sidebar/header open events always have a target */}
-      {isLoggedIn && <DailySpinModal isOpen={isSpinOpen} onClose={() => setIsSpinOpen(false)} />}
+      {isLoggedIn && bettingEnabled && <DailySpinModal isOpen={isSpinOpen} onClose={() => setIsSpinOpen(false)} />}
     </header>
   );
 }

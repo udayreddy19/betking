@@ -79,6 +79,10 @@ adminRouter.use('/scheduled', scheduledRouter);
 import configRouter from './admin/config.js';
 adminRouter.use('/config', configRouter);
 
+// Product configuration (Wallet / Betting toggles) — always reachable for admins
+import productsAdminRouter from './admin/products.js';
+adminRouter.use('/products', productsAdminRouter);
+
 // Phase 13: Data Quality Center
 import dataQualityRouter from './admin/dataQuality.js';
 adminRouter.use('/data-quality', dataQualityRouter);

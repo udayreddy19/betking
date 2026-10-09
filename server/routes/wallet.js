@@ -1,9 +1,12 @@
 import { Router } from 'express';
 import { requireAuth, requireVerified } from '../middleware/userAuth.js';
+import { requireProduct } from '../middleware/requireProduct.js';
 
 const router = Router();
+const walletOn = requireProduct('wallet');
 
 // ── 1. WEBHOOK ENDPOINTS ──────────────────────────────────────────────────────
+// Webhooks stay reachable when Wallet UI is disabled so in-flight deposits settle.
 
 // Razorpay Webhook
 router.post('/api/webhooks/razorpay', async (req, res) => {
@@ -55,7 +58,7 @@ router.all('/api/webhooks/cashfree', async (req, res) => {
 
 // ── 2. PROVIDER CONFIG / AVAILABILITY ─────────────────────────────────────────
 
-router.get('/api/v1/payments/providers', async (req, res) => {
+router.get('/api/v1/payments/providers', walletOn, async (req, res) => {
   try {
     const { paymentProviderService } = await import('../../lib/paymentProviders/paymentProviderService.mjs');
     const payload = await paymentProviderService.getPublicProvidersPayload();
@@ -66,7 +69,7 @@ router.get('/api/v1/payments/providers', async (req, res) => {
 });
 
 /** Public deposit limits (admin-configurable minimum). */
-router.get('/api/v1/payments/deposit-limits', async (req, res) => {
+router.get('/api/v1/payments/deposit-limits', walletOn, async (req, res) => {
   try {
     const { getWalletPromoRules, DEFAULT_WALLET_PROMO_RULES } = await import('../../lib/walletPromoRules.mjs');
     const rules = await getWalletPromoRules();
@@ -103,10 +106,10 @@ const handleCreateOrder = async (req, res) => {
   }
 };
 
-router.post('/api/payments/razorpay/create-order', requireAuth, requireVerified, handleCreateOrder);
-router.post('/api/payments/cashfree/create-order', requireAuth, requireVerified, handleCreateOrder);
-router.post('/api/v1/payments/cashfree/create-order', requireAuth, requireVerified, handleCreateOrder);
-router.post('/api/v1/payments/create-order', requireAuth, requireVerified, handleCreateOrder);
+router.post('/api/payments/razorpay/create-order', requireAuth, requireVerified, walletOn, handleCreateOrder);
+router.post('/api/payments/cashfree/create-order', requireAuth, requireVerified, walletOn, handleCreateOrder);
+router.post('/api/v1/payments/cashfree/create-order', requireAuth, requireVerified, walletOn, handleCreateOrder);
+router.post('/api/v1/payments/create-order', requireAuth, requireVerified, walletOn, handleCreateOrder);
 
 // ── 4. PAYMENT VERIFICATION ENDPOINTS ─────────────────────────────────────────
 
@@ -140,14 +143,14 @@ const handleVerifyPayment = async (req, res) => {
   }
 };
 
-router.post('/api/payments/razorpay/verify', requireAuth, handleVerifyPayment);
-router.post('/api/payments/cashfree/verify', requireAuth, handleVerifyPayment);
-router.post('/api/v1/payments/cashfree/verify', requireAuth, handleVerifyPayment);
-router.post('/api/v1/payments/confirm', requireAuth, handleVerifyPayment);
+router.post('/api/payments/razorpay/verify', requireAuth, walletOn, handleVerifyPayment);
+router.post('/api/payments/cashfree/verify', requireAuth, walletOn, handleVerifyPayment);
+router.post('/api/v1/payments/cashfree/verify', requireAuth, walletOn, handleVerifyPayment);
+router.post('/api/v1/payments/confirm', requireAuth, walletOn, handleVerifyPayment);
 
 // ── 5. WITHDRAWALS & WALLET LEDGER ────────────────────────────────────────────
 
-router.post('/api/v1/withdrawals/request', requireAuth, async (req, res) => {
+router.post('/api/v1/withdrawals/request', requireAuth, walletOn, async (req, res) => {
   try {
     const { withdrawalEngine } = await import('../../lib/withdrawalEngine.mjs');
     const result = await withdrawalEngine.requestWithdrawal(
@@ -160,7 +163,7 @@ router.post('/api/v1/withdrawals/request', requireAuth, async (req, res) => {
   }
 });
 
-router.get('/api/v1/withdrawals/pending', requireAuth, async (req, res) => {
+router.get('/api/v1/withdrawals/pending', requireAuth, walletOn, async (req, res) => {
   try {
     const { withdrawalEngine } = await import('../../lib/withdrawalEngine.mjs');
     const result = await withdrawalEngine.listCancellableWithdrawals(req.user.userId, {
@@ -172,7 +175,7 @@ router.get('/api/v1/withdrawals/pending', requireAuth, async (req, res) => {
   }
 });
 
-router.post('/api/v1/withdrawals/:id/cancel', requireAuth, async (req, res) => {
+router.post('/api/v1/withdrawals/:id/cancel', requireAuth, walletOn, async (req, res) => {
   try {
     const { withdrawalEngine } = await import('../../lib/withdrawalEngine.mjs');
     const result = await withdrawalEngine.cancelWithdrawal({
@@ -185,7 +188,7 @@ router.post('/api/v1/withdrawals/:id/cancel', requireAuth, async (req, res) => {
   }
 });
 
-router.get('/api/v1/user/bonuses', requireAuth, async (req, res) => {
+router.get('/api/v1/user/bonuses', requireAuth, walletOn, async (req, res) => {
   try {
     const { query } = await import('../../db/pg.js');
     const bonusesRes = await query(`
@@ -206,7 +209,7 @@ router.get('/api/v1/user/bonuses', requireAuth, async (req, res) => {
   }
 });
 
-router.get('/api/v1/user/transactions', requireAuth, async (req, res) => {
+router.get('/api/v1/user/transactions', requireAuth, walletOn, async (req, res) => {
   try {
     const { fetchUserTransactions } = await import('../../lib/userTransactions.mjs');
     const limit = Math.min(parseInt(req.query.limit, 10) || 100, 200);
