@@ -45,8 +45,12 @@ else
 fi
 export VITE_RELEASE_SHA="$TARGET_SHA"
 npm run build
+# Write after Vite (which empties dist/) so the release banner can detect new deploys.
+mkdir -p dist
 printf '{"sha":"%s","releaseSha":"%s","builtAt":"%s"}\n' \
   "$TARGET_SHA" "$TARGET_SHA" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > dist/release.json
+sync dist/release.json || true
+test -s dist/release.json
 
 echo "🔄 Rolling backend + worker (postgres/redis/nginx deps untouched)…"
 docker compose "${COMPOSE_FILES[@]}" up -d --no-deps backend worker
@@ -55,6 +59,12 @@ if docker ps --format '{{.Names}}' | grep -q oddsyra_prod_nginx; then
   docker compose "${COMPOSE_FILES[@]}" up -d nginx --force-recreate 2>/dev/null \
     || docker exec oddsyra_prod_nginx nginx -s reload 2>/dev/null \
     || true
+fi
+
+# Ensure release.json still present after nginx recreate (bind-mount should keep it).
+if [ ! -s dist/release.json ]; then
+  printf '{"sha":"%s","releaseSha":"%s","builtAt":"%s"}\n' \
+    "$TARGET_SHA" "$TARGET_SHA" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > dist/release.json
 fi
 
 echo "⏳ Health…"
@@ -71,12 +81,16 @@ if [ "$ok" = 1 ]; then
   echo "✅ Deployed $TARGET_SHA — never docker-cp over this image; re-run this script instead."
   git rev-parse HEAD > .release-sha 2>/dev/null || true
   echo "🔬 Smoke…"
-  curl -sfS "http://127.0.0.1:5001/api/config/products" | head -c 400 || true
+  # Backend is not published on the host; smoke via docker exec.
+  docker exec oddsyra_prod_backend wget -qO- http://127.0.0.1:5001/api/config/products 2>/dev/null | head -c 400 || true
   echo
   # Boosts require betting ON — tolerate PRODUCT_DISABLED when SP mode is active
-  curl -sS "http://127.0.0.1:5001/api/v1/boosts/daily?limit=3" | head -c 400 || true
+  docker exec oddsyra_prod_backend wget -qO- "http://127.0.0.1:5001/api/v1/boosts/daily?limit=3" 2>/dev/null | head -c 400 || true
   echo
-  curl -sfS "http://127.0.0.1/release.json" 2>/dev/null | head -c 200 || true
+  curl -sfS "https://oddsyra.com/release.json" 2>/dev/null | head -c 200 \
+    || curl -sfS "http://127.0.0.1/release.json" 2>/dev/null | head -c 200 \
+    || cat dist/release.json 2>/dev/null \
+    || true
   echo
   exit 0
 fi
