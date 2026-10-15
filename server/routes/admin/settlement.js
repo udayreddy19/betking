@@ -223,6 +223,30 @@ router.post('/api/admin/settlement/retry-failed', requireRole('SUPER_ADMIN', 'FI
   }
 });
 
+router.post('/api/admin/settlement/drain', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN', 'TRADING_ADMIN'), async (req, res) => {
+  try {
+    const { drainSettlementQueue } = await import('../../../lib/settlement/settlementQueue.mjs');
+    const { runSettlementRecoverySweep } = await import('../../../lib/settlement/settlementEventBridge.mjs');
+    const fullSweep = req.body?.fullSweep === true;
+    const result = fullSweep
+      ? await runSettlementRecoverySweep({ limit: Number(req.body?.limit) || 200 })
+      : await drainSettlementQueue({
+        batchSize: Number(req.body?.batchSize) || 50,
+        maxBatches: Number(req.body?.maxBatches) || 10,
+      });
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: 'settlement_jobs',
+      action: 'SETTLEMENT_DRAIN',
+      details: { fullSweep, result },
+    });
+    res.json({ success: true, result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get('/api/admin/settlement/replay/:betId', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN', 'TRADING_ADMIN'), async (req, res) => {
   try {
     const betRes = await query('SELECT * FROM bets WHERE bet_id = $1', [req.params.betId]);

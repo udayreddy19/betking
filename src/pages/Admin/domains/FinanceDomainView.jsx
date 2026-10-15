@@ -1086,6 +1086,7 @@ function FinanceHealthPanel() {
   const [exceptions, setExceptions] = useState([]);
   const [audit, setAudit] = useState(null);
   const [walletBuckets, setWalletBuckets] = useState(null);
+  const [openSummary, setOpenSummary] = useState(null);
   const [error, setError] = useState(null);
   const [running, setRunning] = useState(false);
   const [actingId, setActingId] = useState(null);
@@ -1103,6 +1104,9 @@ function FinanceHealthPanel() {
         setExceptions([]);
         setError(err.message || 'Failed to load finance health');
       });
+    adminApiClient.get('/reconciliation/exceptions/open-summary?limit=50')
+      .then((data) => setOpenSummary(data))
+      .catch(() => setOpenSummary(null));
   };
 
   const loadBuckets = () => {
@@ -1191,6 +1195,20 @@ function FinanceHealthPanel() {
     showToast('Exported reconciliation cases (audit snapshot only)', 'success');
   };
 
+  const dedupeOpen = async () => {
+    if (!window.confirm('Collapse duplicate OPEN cases for the same entity? Keeps the newest; does not change balances.')) return;
+    setRunning(true);
+    try {
+      const res = await adminApiClient.post('/reconciliation/exceptions/dedupe-open', {});
+      showToast(`Deduped ${res.closed || 0} duplicate OPEN case(s)`, 'success');
+      load();
+    } catch (err) {
+      showToast(err.message || 'Dedupe failed', 'error');
+    } finally {
+      setRunning(false);
+    }
+  };
+
   const healthStatus = audit?.healthStatus
     || (exceptions.some((e) => String(e.severity || '').toUpperCase() === 'CRITICAL')
       ? 'CRITICAL'
@@ -1259,6 +1277,9 @@ function FinanceHealthPanel() {
             <button type="button" className="admin-btn admin-btn--secondary" onClick={exportCsv}>
               Export CSV
             </button>
+            <button type="button" className="admin-btn admin-btn--ghost" disabled={running} onClick={dedupeOpen}>
+              Dedupe OPEN
+            </button>
             <button
               type="button"
               className="admin-btn admin-btn--primary"
@@ -1270,6 +1291,18 @@ function FinanceHealthPanel() {
           </div>
         )}
       />
+
+      {openSummary?.openCount > 0 && (
+        <p style={{ margin: '0 0 12px', fontSize: '0.78rem', color: 'var(--admin-text-muted)' }}>
+          Open triage: <strong>{openSummary.openCount}</strong>
+          {(openSummary.byType || []).slice(0, 6).map((t) => (
+            <span key={`${t.reconciliation_type}-${t.severity}`}>
+              {' · '}{t.reconciliation_type}/{t.severity}: {t.c}
+            </span>
+          ))}
+          . Resolve flags only — never auto-repairs balances.
+        </p>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 16 }}>
         {cards.map((c) => (

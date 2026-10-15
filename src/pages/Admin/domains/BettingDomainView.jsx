@@ -120,17 +120,35 @@ export default function BettingDomainView({
   const [batchSettling, setBatchSettling] = useState(false);
   const [batchMarketId, setBatchMarketId] = useState('');
   const [batchWinningSelection, setBatchWinningSelection] = useState('');
+  const [drainingQueue, setDrainingQueue] = useState(false);
   const { showToast } = useAdminToast();
   const { activeRole } = useAdminRole();
   const canSettle = hasPermission(activeRole, PERMISSIONS.SETTLE_BETS);
 
   const loadFeedLatency = useCallback(() => {
-    adminApiClient.get('/betting/feed-latency')
+    adminApiClient.get('/trading/feeds-health')
       .then((data) => {
-        if (data.feeds) setFeedLatencies(data.feeds);
-        if (data.overallHealth) setFeedOverall(data.overallHealth);
+        const snap = data.feeds || {};
+        const providers = Array.isArray(snap.providers) ? snap.providers : [];
+        const rows = providers.map((v) => ({
+          provider: v.id || v.name || 'unknown',
+          latencyMs: v.tickAgeMs ?? v.latencyMs ?? v.pollIntervalMs ?? null,
+          status: ['UNHEALTHY', 'FAILED', 'DISABLED', 'DOWN'].includes(String(v.healthStatus || v.status || '').toUpperCase())
+            ? 'DEGRADED'
+            : (v.healthStatus || v.status || 'OK'),
+          lastTickAt: v.lastSuccessAt || v.lastTickAt || null,
+        }));
+        if (rows.length) setFeedLatencies(rows);
+        setFeedOverall(snap.healthy === false || snap.status === 'DEGRADED' ? 'DEGRADED' : 'OPTIMAL');
       })
-      .catch(() => {});
+      .catch(() => {
+        adminApiClient.get('/betting/feed-latency')
+          .then((data) => {
+            if (data.feeds) setFeedLatencies(data.feeds);
+            if (data.overallHealth) setFeedOverall(data.overallHealth);
+          })
+          .catch(() => {});
+      });
   }, []);
 
   const handleBatchSettle = async (marketId, outcome, winningSelection = null) => {
@@ -161,6 +179,27 @@ export default function BettingDomainView({
       showToast(err.message || 'Batch settlement failed', 'error');
     } finally {
       setBatchSettling(false);
+    }
+  };
+
+  const handleDrainSettlementQueue = async ({ fullSweep = false } = {}) => {
+    if (!canSettle) {
+      showToast('Your role cannot drain settlement jobs.', 'error');
+      return;
+    }
+    setDrainingQueue(true);
+    try {
+      const res = await adminApiClient.post('/settlement/drain', { fullSweep, batchSize: 50, maxBatches: 10 });
+      const r = res.result || {};
+      showToast(
+        `Queue drain: processed ${r.processed ?? 0}, settled ${r.settled ?? 0}, skipped ${r.skipped ?? 0}, failed ${r.failed ?? 0}`,
+        (r.failed || 0) > 0 ? 'warning' : 'success',
+      );
+      load();
+    } catch (err) {
+      showToast(err.message || 'Settlement drain failed', 'error');
+    } finally {
+      setDrainingQueue(false);
     }
   };
 
@@ -453,6 +492,22 @@ export default function BettingDomainView({
               onClick={() => handleBatchSettle(batchMarketId, 'VOID')}
             >
               {batchSettling ? 'Voiding…' : 'Void & Refund All'}
+            </button>
+            <button
+              type="button"
+              disabled={drainingQueue}
+              className="admin-btn admin-btn--ghost admin-btn--sm"
+              onClick={() => handleDrainSettlementQueue({ fullSweep: false })}
+            >
+              {drainingQueue ? 'Draining…' : 'Drain settlement queue'}
+            </button>
+            <button
+              type="button"
+              disabled={drainingQueue}
+              className="admin-btn admin-btn--ghost admin-btn--sm"
+              onClick={() => handleDrainSettlementQueue({ fullSweep: true })}
+            >
+              Recovery sweep
             </button>
           </div>
         </div>

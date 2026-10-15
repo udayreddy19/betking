@@ -239,7 +239,37 @@ function AuditCenterPanel() {
           </label>
         ))}
       </div>
-      <button type="button" className="admin-btn" onClick={load} style={{ marginBottom: 12 }}>Apply filters</button>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+        <button type="button" className="admin-btn" onClick={load}>Apply filters</button>
+        <button
+          type="button"
+          className="admin-btn admin-btn--ghost"
+          onClick={() => {
+            const params = new URLSearchParams();
+            if (filters.from) params.set('from', filters.from);
+            if (filters.to) params.set('to', filters.to);
+            params.set('format', 'csv');
+            params.set('limit', '2000');
+            window.open(`/api/admin/security/audit-center/export?${params.toString()}`, '_blank', 'noopener');
+          }}
+        >
+          Export CSV
+        </button>
+        <button
+          type="button"
+          className="admin-btn admin-btn--ghost"
+          onClick={() => {
+            const params = new URLSearchParams();
+            if (filters.from) params.set('from', filters.from);
+            if (filters.to) params.set('to', filters.to);
+            params.set('format', 'json');
+            params.set('limit', '2000');
+            window.open(`/api/admin/security/audit-center/export?${params.toString()}`, '_blank', 'noopener');
+          }}
+        >
+          Export JSON
+        </button>
+      </div>
 
       <AdminDataTable
         title="Audit Events"

@@ -174,6 +174,11 @@ export default function BetSlipFooter({ variant = 'default', onPlaced }) {
           showToast(result.error || 'Please complete KYC verification before placing bets.', 'error');
           return;
         }
+        if (result.oddsExpired || String(result.code || '').toUpperCase() === 'ODDS_EXPIRED') {
+          setPlacementNotice('Prices expired — refreshed; review and place again.');
+          showToast(result.error || 'These odds have expired. Review the new prices.', 'info');
+          return;
+        }
         showToast(result.error || 'Failed to place bet. Please try again.', 'error');
         return;
       }

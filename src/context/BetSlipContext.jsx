@@ -1092,8 +1092,17 @@ export function BetSlipProvider({ children }) {
         };
 
         const handlePlacementOddsRejection = (result, workingBets) => {
+          const code = String(result.code || '').toUpperCase();
+          if (code === 'ODDS_EXPIRED') {
+            refreshSlipOdds({ silent: false }).catch(() => {});
+            return {
+              success: false,
+              error: result.error || 'These odds have expired. Prices were refreshed — review and place again.',
+              code: 'ODDS_EXPIRED',
+              oddsExpired: true,
+            };
+          }
           if (isNonAcceptableMarketError(result)) {
-            const code = String(result.code || '').toUpperCase();
             const nextBets = workingBets.map((bet) => ({
               ...bet,
               selectionUnavailable: true,
@@ -1275,7 +1284,7 @@ export function BetSlipProvider({ children }) {
   } finally {
     placingInFlightRef.current = false;
   }
-  }, [bets, betType, stake, singlesStakes, multiOdds, refreshWallet, potentialReturn, selectedReward, selectedRewardId, refreshAvailableRewards]);
+  }, [bets, betType, stake, singlesStakes, multiOdds, refreshWallet, potentialReturn, selectedReward, selectedRewardId, refreshAvailableRewards, refreshSlipOdds]);
 
   const cashOutBet = useCallback(async (betId, requestedCashoutValue = null) => {
     if (!DEMO_MODE) {
@@ -1289,7 +1298,15 @@ export function BetSlipProvider({ children }) {
           }),
         });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok || data.success === false) return null;
+        if (!res.ok || data.success === false) {
+          const code = String(data.code || data.error || '').toUpperCase();
+          return {
+            success: false,
+            code,
+            stale: code.includes('STALE'),
+            error: data.error || data.message || 'Cash out failed',
+          };
+        }
         const rows = await fetchMyBetsFromServer({ limit: 50 });
         setPlacedBets(rows.map(mapServerBetToPlaced));
         lastMyBetsFetchAt.current = Date.now();
@@ -1299,9 +1316,10 @@ export function BetSlipProvider({ children }) {
           id: betId,
           status: 'cashed_out',
           cashoutAmount: Number(data.cashoutAmount || 0),
+          success: true,
         };
-      } catch {
-        return null;
+      } catch (err) {
+        return { success: false, error: err?.message || 'Cash out failed' };
       }
     }
 
@@ -1319,6 +1337,7 @@ export function BetSlipProvider({ children }) {
     if (offer <= 0) return null;
     const cashed = {
       ...target,
+      success: true,
       status: 'cashed_out',
       payout: offer,
       cashoutAmount: offer,

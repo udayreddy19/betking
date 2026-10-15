@@ -214,6 +214,21 @@ router.get('/risk/desk-tree', requireRole('SUPER_ADMIN', 'TRADING_ADMIN', 'RISK_
   }
 });
 
+/** GET /api/admin/trading/feeds-health — live provider feed health snapshot */
+router.get('/feeds-health', requireRole('SUPER_ADMIN', 'TRADING_ADMIN', 'RISK_ANALYST', 'OPERATIONS_ADMIN'), async (req, res) => {
+  try {
+    const { getFeedHealthSnapshot } = await import('../../../lib/feedHealthEngine.mjs');
+    const snapshot = getFeedHealthSnapshot();
+    res.json({
+      success: true,
+      updatedAt: new Date().toISOString(),
+      feeds: snapshot,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 /** GET /api/admin/trading/hardening-status — engines, feeds, velocity, calibration, casino scope */
 router.get('/hardening-status', requireRole('SUPER_ADMIN', 'TRADING_ADMIN', 'RISK_ANALYST', 'OPERATIONS_ADMIN'), async (req, res) => {
   try {

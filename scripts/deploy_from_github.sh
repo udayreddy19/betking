@@ -37,8 +37,9 @@ echo "📦 Building backend + worker from checked-out source…"
 docker compose "${COMPOSE_FILES[@]}" build backend worker
 
 echo "🧱 Building frontend dist for nginx bind-mount…"
+# Vite is a devDependency — omit=dev breaks `npm run build` on the VPS.
 if [ -f package-lock.json ]; then
-  npm ci --omit=dev 2>/dev/null || npm ci
+  npm ci
 else
   npm install
 fi

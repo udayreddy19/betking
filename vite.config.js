@@ -55,6 +55,10 @@ export default defineConfig({
           if (id.includes('node_modules/motion')) {
             return 'icons-motion';
           }
+          // Keep Admin console out of the public sportsbook first paint.
+          if (id.includes('/src/pages/Admin/') || id.includes('/src/pages/Admin\\')) {
+            return 'admin-console';
+          }
           // Split each itshover icon into its own chunk
           if (id.includes('/src/icons/itshover/')) {
             const match = id.match(/\/src\/icons\/itshover\/([^/]+)\./);

@@ -153,6 +153,42 @@ router.put('/exceptions/:id/resolve', requirePermission('finance', 'reconciliati
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+/** GET /reconciliation/exceptions/open-summary — triage list for remaining OPEN cases */
+router.get('/exceptions/open-summary', requirePermission('finance', 'reconciliation'), async (req, res) => {
+  try {
+    const q = await getQuery();
+    const lim = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 50));
+    const rows = await q(`
+      SELECT id, reconciliation_type, entity_type, entity_id, severity, difference, currency,
+             notes, detected_at, assigned_to, mismatch_category, suspected_cause
+      FROM reconciliation_cases
+      WHERE UPPER(status) = 'OPEN'
+      ORDER BY
+        CASE UPPER(severity) WHEN 'CRITICAL' THEN 0 WHEN 'HIGH' THEN 1 ELSE 2 END,
+        ABS(COALESCE(difference, 0)) DESC,
+        detected_at DESC NULLS LAST
+      LIMIT $1
+    `, [lim]);
+    const byType = await q(`
+      SELECT reconciliation_type, severity, COUNT(*)::int AS c,
+             SUM(ABS(COALESCE(difference, 0)))::float8 AS abs_diff_sum
+      FROM reconciliation_cases
+      WHERE UPPER(status) = 'OPEN'
+      GROUP BY 1, 2
+      ORDER BY c DESC
+    `);
+    res.json({
+      success: true,
+      openCount: rows.rows.length,
+      byType: byType.rows,
+      cases: rows.rows,
+      note: 'Review in Finance → Reconciliation. Resolving does not auto-repair balances.',
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 /**
  * POST /reconciliation/exceptions/dedupe-open
  * Collapse duplicate OPEN cases for the same (type, entity_type, entity_id).

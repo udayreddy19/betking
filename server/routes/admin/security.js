@@ -576,5 +576,53 @@ router.get('/audit-center', requireRole('SUPER_ADMIN', 'OPERATIONS_ADMIN', 'FINA
   }
 });
 
+/** GET /security/audit-center/export — CSV/JSON dump for compliance packs */
+router.get('/audit-center/export', requireRole('SUPER_ADMIN', 'OPERATIONS_ADMIN', 'FINANCE_ADMIN'), async (req, res) => {
+  try {
+    const q = await getQuery();
+    const format = String(req.query.format || 'json').toLowerCase();
+    const lim = Math.min(5000, Math.max(1, parseInt(req.query.limit, 10) || 1000));
+    const from = req.query.from || null;
+    const to = req.query.to || null;
+    const params = [];
+    const conds = [];
+    let i = 1;
+    if (from) { conds.push(`created_at >= $${i++}::timestamptz`); params.push(from); }
+    if (to) { conds.push(`created_at <= $${i++}::timestamptz`); params.push(to); }
+    const where = conds.length ? `WHERE ${conds.join(' AND ')}` : '';
+    params.push(lim);
+    const result = await q(
+      `SELECT event_id, actor_id, target_id, action, details, created_at, ip_address, risk_level, request_id
+       FROM audit_events
+       ${where}
+       ORDER BY created_at DESC
+       LIMIT $${i}`,
+      params,
+    );
+    const rows = result.rows || [];
+    if (format === 'csv') {
+      const header = ['event_id', 'created_at', 'actor_id', 'action', 'target_id', 'risk_level', 'ip_address', 'request_id', 'details'];
+      const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+      const lines = [header.join(',')].concat(rows.map((r) => header.map((h) => {
+        const val = h === 'details' ? JSON.stringify(r.details || {}) : r[h];
+        return esc(val);
+      }).join(',')));
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="oddsyra-audit-${Date.now()}.csv"`);
+      return res.send(lines.join('\n'));
+    }
+    res.setHeader('Content-Disposition', `attachment; filename="oddsyra-audit-${Date.now()}.json"`);
+    res.json({
+      success: true,
+      exportedAt: new Date().toISOString(),
+      count: rows.length,
+      events: rows,
+      note: 'Append-only audit export. Balances unchanged.',
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;
 

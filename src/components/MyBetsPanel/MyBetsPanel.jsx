@@ -63,6 +63,23 @@ function normalizeBetStatus(status) {
   return s;
 }
 
+const STATUS_LABELS = {
+  pending: 'Open',
+  won: 'Won',
+  lost: 'Lost',
+  void: 'Void',
+  cashed_out: 'Cashed out',
+  refunded: 'Refunded',
+  settled: 'Settled',
+  cancelled: 'Cancelled',
+};
+
+function formatBetStatusLabel(status, { inPlay = false } = {}) {
+  const key = normalizeBetStatus(status);
+  if (key === 'pending' && inPlay) return 'In play';
+  return STATUS_LABELS[key] || String(key).replace(/_/g, ' ');
+}
+
 function buildSettlementTimeline(placed) {
   const status = normalizeBetStatus(placed.status);
   const placedAt = placed.createdAt || placed.placedAt;
@@ -365,8 +382,12 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
       return;
     }
     const cashed = await cashOutBet(bet.id, offer);
-    if (!cashed) {
-      showToast('Could not cash out.', 'error');
+    if (!cashed || cashed.success === false) {
+      if (cashed?.stale) {
+        showToast('Price updated — tap Cash out again.', 'info');
+        return;
+      }
+      showToast(cashed?.error || 'Could not cash out.', 'error');
       return;
     }
     if (DEMO_MODE) {
@@ -642,7 +663,14 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
                           : (placed.fundSource || 'cash').toUpperCase()}
                       </span>
                       <span className={`my-bets-status-badge my-bets-status-badge--${status || 'pending'}`}>
-                        {(status || 'pending').replace('_', ' ').toUpperCase()}
+                        {formatBetStatusLabel(status, {
+                          inPlay: status === 'pending' && Boolean(
+                            placed.legs?.some((leg) => {
+                              const m = resolveLegMatchFast(leg);
+                              return m && (m.isLive || String(m.matchState || '').toLowerCase() === 'in');
+                            }),
+                          ),
+                        })}
                       </span>
                     </div>
                     <span className="my-bets-time">
@@ -734,13 +762,18 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
                     </div>
                   )}
                   {status === 'pending' && cashoutOffer > 0 && (
-                    <button
-                      type="button"
-                      className="my-bets-cashout-btn"
-                      onClick={() => handleCashout(placed)}
-                    >
-                      Cash out {formatInr(cashoutOffer)}
-                    </button>
+                    <div className="my-bets-cashout-wrap">
+                      <button
+                        type="button"
+                        className="my-bets-cashout-btn"
+                        onClick={() => handleCashout(placed)}
+                      >
+                        Cash out {formatInr(cashoutOffer)}
+                      </button>
+                      <div className="my-bets-cashout-hint">
+                        50% cash out ≈ {formatInr(cashoutOffer / 2)} · stake left ≈ {formatInr((Number(placed.stake) || 0) / 2)}
+                      </div>
+                    </div>
                   )}
                   {placed.settledAt && (
                     <div className="my-bets-settled-at">

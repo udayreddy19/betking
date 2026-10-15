@@ -3428,6 +3428,7 @@ function ReferralsAdminPanel() {
   });
   const [settingsDraft, setSettingsDraft] = useState(null);
   const [savingSettings, setSavingSettings] = useState(false);
+  const [activationFunnel, setActivationFunnel] = useState(null);
   const { showToast } = useAdminToast();
 
   const load = useCallback(() => {
@@ -3471,9 +3472,16 @@ function ReferralsAdminPanel() {
       .catch(() => null);
   }, []);
 
+  const loadActivationFunnel = useCallback(() => {
+    return adminApiClient.get('/growth/activation-funnel?days=30')
+      .then((data) => setActivationFunnel(data?.funnel || null))
+      .catch(() => setActivationFunnel(null));
+  }, []);
+
   useEffect(() => { load(); }, [load]);
   useEffect(() => { loadAnalytics(); }, [loadAnalytics]);
   useEffect(() => { loadSettings(); }, [loadSettings]);
+  useEffect(() => { loadActivationFunnel(); }, [loadActivationFunnel]);
 
   const editSettings = settingsDraft || settings;
 
@@ -3613,6 +3621,33 @@ function ReferralsAdminPanel() {
           <> · play <strong>{Math.round((Number(editSettings.playCommissionRate) || 0) * 1000) / 10}%</strong> of stake</>
         )}.
       </p>
+
+      {activationFunnel && (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+          gap: 8,
+          marginBottom: 16,
+          padding: '10px 12px',
+          borderRadius: 'var(--admin-radius-sm)',
+          border: '1px solid var(--admin-border)',
+          background: 'rgba(139, 92, 246, 0.06)',
+        }}>
+          {[
+            ['Signups (30d)', activationFunnel.signups],
+            ['KYC approved', activationFunnel.kycApproved],
+            ['First deposit', activationFunnel.firstDepositUsers],
+            ['First bet', activationFunnel.firstBetUsers],
+            ['Signup→deposit', `${activationFunnel.signupToDepositPct ?? 0}%`],
+            ['Deposit→bet', `${activationFunnel.depositToBetPct ?? 0}%`],
+          ].map(([label, value]) => (
+            <div key={label}>
+              <div style={{ fontSize: '0.68rem', color: 'var(--admin-text-muted)' }}>{label}</div>
+              <div style={{ fontWeight: 800, fontSize: '0.95rem' }}>{value ?? '—'}</div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <AdminCard title="Reward settings" accent="#8b5cf6" style={{ marginBottom: 16 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, alignItems: 'end' }}>

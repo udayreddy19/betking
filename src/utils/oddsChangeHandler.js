@@ -46,8 +46,11 @@ export function isNonAcceptableMarketError(payload = {}) {
     'MATCH_SUSPENDED',
     'ODDS_UNAVAILABLE',
     'ODDS_LOCKED',
-    'ODDS_EXPIRED',
   ].includes(code);
+}
+
+export function isOddsExpiredError(payload = {}) {
+  return String(payload.code || '').toUpperCase() === 'ODDS_EXPIRED';
 }
 
 function betMatchesUpdate(bet, update) {

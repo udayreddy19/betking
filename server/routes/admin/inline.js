@@ -3060,6 +3060,56 @@ router.get('/api/admin/growth/referrals/analytics', async (req, res) => {
   }
 });
 
+/** GET /api/admin/growth/activation-funnel — signup → first deposit → first bet */
+router.get('/api/admin/growth/activation-funnel', requireRole('SUPER_ADMIN', 'MARKETING_ADMIN', 'OPERATIONS_ADMIN', 'FINANCE_ADMIN'), async (req, res) => {
+  try {
+    const { query } = await import('../../../db/pg.js');
+    const days = Math.min(90, Math.max(1, parseInt(req.query.days, 10) || 30));
+    const signups = await query(
+      `SELECT COUNT(*)::int AS c FROM users
+       WHERE created_at >= NOW() - ($1 || ' days')::interval
+         AND UPPER(COALESCE(role, 'USER')) = 'USER'`,
+      [String(days)],
+    );
+    const firstDeposit = await query(
+      `SELECT COUNT(DISTINCT user_id)::int AS c FROM deposits
+       WHERE UPPER(status) IN ('COMPLETED', 'SUCCESS', 'CAPTURED', 'PAID')
+         AND created_at >= NOW() - ($1 || ' days')::interval`,
+      [String(days)],
+    );
+    const firstBet = await query(
+      `SELECT COUNT(DISTINCT user_id)::int AS c FROM bets
+       WHERE created_at >= NOW() - ($1 || ' days')::interval`,
+      [String(days)],
+    );
+    const kycDone = await query(
+      `SELECT COUNT(*)::int AS c FROM user_profiles
+       WHERE UPPER(COALESCE(kyc_status, '')) IN ('APPROVED', 'VERIFIED')
+         AND COALESCE(updated_at, created_at) >= NOW() - ($1 || ' days')::interval`,
+      [String(days)],
+    ).catch(() => ({ rows: [{ c: 0 }] }));
+    const s = Number(signups.rows[0]?.c || 0);
+    const d = Number(firstDeposit.rows[0]?.c || 0);
+    const b = Number(firstBet.rows[0]?.c || 0);
+    const k = Number(kycDone.rows[0]?.c || 0);
+    res.json({
+      success: true,
+      days,
+      funnel: {
+        signups: s,
+        kycApproved: k,
+        firstDepositUsers: d,
+        firstBetUsers: b,
+        signupToDepositPct: s ? Math.round((d / s) * 1000) / 10 : 0,
+        depositToBetPct: d ? Math.round((b / d) * 1000) / 10 : 0,
+      },
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 router.post('/api/admin/growth/referrals/:id/retry-reward', async (req, res) => {
   try {
     const { adminRetryReferralReward } = await import('../../../lib/referralLoyaltyEngine.mjs');
