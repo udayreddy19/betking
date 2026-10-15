@@ -31,16 +31,6 @@ export default function Footer() {
             ))}
           </div>
           )}
-          {walletEnabled && (
-          <div className="footer-section">
-            <h4>Wallet</h4>
-            <Link to="/wallet">Wallet</Link>
-            <Link to="/wallet?tab=add">Add Money</Link>
-            <Link to="/wallet?tab=withdraw">Withdraw</Link>
-            <Link to="/wallet/bank-accounts">Bank Accounts</Link>
-            <Link to="/wallet?tab=history">Transactions</Link>
-          </div>
-          )}
           <div className="footer-section">
             <h4>More</h4>
             {bettingEnabled && <Link to="/live-betting">Live Betting</Link>}

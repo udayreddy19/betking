@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { globalProviderHealth, PROVIDER_STATES } from '../../../lib/odds-v3/providers/providerHealthEngine.mjs';
-import { routeDataAvailability, DATA_ROUTING_DECISIONS } from '../../../lib/odds-v3/pricing/dataAvailabilityRouter.mjs';
-import { generate } from '../../../lib/odds-v3/OddsEngineV3.mjs';
-import { createCanonicalMatchState } from '../../../lib/odds-v3/models/CanonicalMatchState.mjs';
+import { globalProviderHealth, PROVIDER_STATES } from '../../../lib/odds-shared/providers/providerHealthEngine.mjs';
+import { routeDataAvailability, DATA_ROUTING_DECISIONS } from '../../../lib/odds-shared/pricing/dataAvailabilityRouter.mjs';
+import { generate } from '../../../lib/odds-shared/OddsEngineV3.mjs';
+import { createCanonicalMatchState } from '../../../lib/odds-shared/models/CanonicalMatchState.mjs';
 import { assertServerOddsBettable } from '../../../lib/oddsPlacementValidation.mjs';
 
 describe('OddsEngineV3 — Unified Real Data Availability & Fallback Suite', () => {

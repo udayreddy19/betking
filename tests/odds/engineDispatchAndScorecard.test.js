@@ -2,17 +2,17 @@
  * Engine dispatch + scorecard — positive and negative routing cases.
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { generatePublicMatchOddsSnapshot } from '../../lib/odds-v4/engineDispatch.mjs';
+import { generatePublicMatchOddsSnapshot } from '../../lib/odds-v5/engineDispatch.mjs';
 import {
   _resetEngineModeControlForTests,
   setRuntimeEngineMode,
   clearRuntimeEngineMode,
-} from '../../lib/odds-v4/EngineModeControl.mjs';
+} from '../../lib/odds-v5/EngineModeControl.mjs';
 import {
   _resetOtherSportsEngineModeControlForTests,
   setRuntimeOtherSportsEngineMode,
   clearRuntimeOtherSportsEngineMode,
-} from '../../lib/other-sports-v4/EngineModeControl.mjs';
+} from '../../lib/other-sports-v5/EngineModeControl.mjs';
 import { getOddsEngineScorecard, ODDS_ENGINE_SCORECARD } from '../../lib/oddsEngineScorecard.mjs';
 
 function cricketLive() {

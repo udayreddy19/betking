@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * OddsEngineV3 — Real-World Continuous Validation & Model Governance Report CLI
+ * OddsEngineV5 — Real-World Continuous Validation & Model Governance Report CLI
  * 
  * Usage:
  *   node scripts/odds-real-world-report.mjs
@@ -10,10 +10,10 @@
 
 import fs from 'fs';
 import path from 'path';
-import { generateLongitudinalScorecard } from '../lib/odds-v3/validation/longitudinalScorecardEngine.mjs';
-import { evaluateCandidateModel } from '../lib/odds-v3/shadow/modelCandidateEvaluationEngine.mjs';
-import { evaluateAllProviders } from '../lib/odds-v3/validation/providerQualityEngine.mjs';
-import { calculatePredictionPerformance } from '../lib/odds-v3/validation/predictionPerformanceEngine.mjs';
+import { generateLongitudinalScorecard } from '../lib/odds-shared/validation/longitudinalScorecardEngine.mjs';
+import { evaluateCandidateModel } from '../lib/odds-shared/shadow/modelCandidateEvaluationEngine.mjs';
+import { evaluateAllProviders } from '../lib/odds-shared/validation/providerQualityEngine.mjs';
+import { calculatePredictionPerformance } from '../lib/odds-shared/validation/predictionPerformanceEngine.mjs';
 
 const outDir = path.resolve('docs/evidence/odds-validation');
 if (!fs.existsSync(outDir)) {

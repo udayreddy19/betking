@@ -5,7 +5,8 @@ import FilterChips from '../../components/FilterChips/FilterChips';
 import SportIcon from '../../components/SportIcon/SportIcon';
 import MatchCard from '../../components/MatchCard/MatchCard';
 import HomeCategoryGrid from '../../components/HomeCategoryGrid/HomeCategoryGrid';
-import { sportsCategories, featuredLeagues } from '../../data/mockData';
+import { sportsCategories } from '../../data/mockData';
+import { buildHomeLeagueChips } from '../../utils/homeMerchandising';
 import { useFeatureFlags } from '../../context/FeatureFlagsContext';
 import { homePromoSlides } from '../../data/homePageData';
 import { isSrlSeasonLive, SRL_LAUNCH_LABEL, SRL_PAGE_PATH } from '../../data/oddsyraSrlSeason';
@@ -13,7 +14,7 @@ import { useLiveMatches, useLiveSportsMeta } from '../../context/LiveSportsConte
 import LiveScoresFeedBanner from '../../components/LiveScoresFeedBanner/LiveScoresFeedBanner';
 import { filterMatches, compareMatchesForSportsBoard } from '../../utils/matchFilters';
 import { getMatchState } from '../../utils/matchBetting';
-import { getLeagueMeta, isSameLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
+import { isSameLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
 import { useMatchWatchlist } from '../../hooks/useMatchWatchlist';
 import BoostedOddsWidget from '../../components/BoostedOddsWidget/BoostedOddsWidget';
 import AnimatedMotionGiftIcon from '../../components/AnimatedMotionGiftIcon/AnimatedMotionGiftIcon';
@@ -21,6 +22,7 @@ import ErrorBoundary from '../../components/ErrorBoundary/ErrorBoundary';
 import { useAuth } from '../../context/AuthContext';
 import { useProducts } from '../../context/ProductContext';
 import WalletHome from '../Wallet/WalletHome';
+import ProductUnavailable from '../../components/ProductUnavailable/ProductUnavailable';
 import './Home.css';
 
 const HOME_MATCH_LIMIT = 12;
@@ -46,9 +48,9 @@ function getPromoIndexFromScroll(track) {
   );
 }
 
-function filterByLeague(matchList, leagueId) {
+function filterByLeague(matchList, leagueId, leagueChips = []) {
   if (!leagueId) return matchList;
-  const meta = getLeagueMeta(leagueId);
+  const meta = leagueChips.find((l) => isSameLeague(leagueId, l.id));
   if (!meta) return matchList;
   return matchList.filter((m) => matchBelongsToLeague(m, meta));
 }
@@ -57,7 +59,9 @@ export default function Home() {
   const matches = useLiveMatches();
   const { isScoresLoading, scoresError, refreshScores } = useLiveSportsMeta();
   const { isSportEnabled, isEnabled } = useFeatureFlags();
-  const { walletEnabled, bettingEnabled, ready: productsReady } = useProducts();
+  const {
+    walletEnabled, bettingEnabled, ready: productsReady, loadError, retry: retryProducts,
+  } = useProducts();
   const srlEnabled = isEnabled('oddsyra_srl_ui', true) && bettingEnabled;
   const navigate = useNavigate();
   const { isLoggedIn, openDepositModal, openFinModal, user } = useAuth();
@@ -112,22 +116,11 @@ export default function Home() {
     return map;
   }, [matches]);
 
-  const leagueChips = useMemo(() => {
-    const all = featuredLeagues.filter((l) => l.sport === activeSport);
-    // Only leagues that currently have matches — keeps the chip row short
-    const withMatches = all.filter((league) => {
-      const meta = getLeagueMeta(league.id);
-      if (!meta) return false;
-      return (matches || []).some((m) => {
-        const s = String(m.sport || '').toLowerCase();
-        const sportOk = activeSport === 'all'
-          || s === activeSport
-          || (activeSport === 'soccer' && (s === 'soccer' || s === 'football'));
-        return sportOk && matchBelongsToLeague(m, meta);
-      });
-    });
-    return (withMatches.length > 0 ? withMatches : all).slice(0, 4);
-  }, [activeSport, matches]);
+  // Merchandising: live API leagues first, static featuredLeagues only as fallback.
+  const leagueChips = useMemo(
+    () => buildHomeLeagueChips(matches, activeSport, { limit: 4 }),
+    [activeSport, matches],
+  );
 
   const homeSportChips = useMemo(() => {
     const enabledCats = sportsCategories.filter((c) => c.id === 'all' || isSportEnabled(c.id));
@@ -146,18 +139,18 @@ export default function Home() {
     const sport = sportsCategories.find((c) => c.id === activeSport);
     const name = sport?.name || 'Sports';
     if (activeLeague) {
-      const league = featuredLeagues.find((l) => isSameLeague(activeLeague, l.id));
+      const league = leagueChips.find((l) => isSameLeague(activeLeague, l.id));
       return league?.name || name;
     }
     if (activeSport === 'all') return liveCount > 0 ? 'Live now' : 'Sports';
     return liveCount > 0 && (sportCounts[activeSport] || 0) > 0
       ? `${name} · Live`
       : name;
-  }, [activeSport, activeLeague, liveCount, sportCounts]);
+  }, [activeSport, activeLeague, liveCount, sportCounts, leagueChips]);
 
   const sportMatches = useMemo(() => {
     const bySport = filterMatches(matches || [], { sport: activeSport, stateTab: 'bettable' });
-    const filtered = activeLeague ? filterByLeague(bySport, activeLeague) : bySport;
+    const filtered = activeLeague ? filterByLeague(bySport, activeLeague, leagueChips) : bySport;
     return [...filtered].sort((a, b) => {
       const oddsScore = (m) => {
         const o = m?.odds || m?.authoritativeOdds || {};
@@ -168,7 +161,7 @@ export default function Home() {
       if (d !== 0) return d;
       return compareMatchesForSportsBoard(a, b);
     });
-  }, [matches, activeSport, activeLeague]);
+  }, [matches, activeSport, activeLeague, leagueChips]);
 
   const promoSlides = useMemo(
     () => (srlEnabled ? homePromoSlides : homePromoSlides.filter((s) => s.id !== 'srl')),
@@ -271,46 +264,18 @@ export default function Home() {
     return <div className="home-page container" id="home-page"><p style={{ padding: '2rem 0', color: '#64748b' }}>Loading…</p></div>;
   }
 
+  // Wallet-only (betting off, wallet on): wallet landing instead of a blank page.
   if (walletEnabled && !bettingEnabled) {
     return <WalletHome />;
   }
 
   if (!bettingEnabled && !walletEnabled) {
-    return null; // PlatformGate shows unavailable
+    // PlatformGate normally intercepts this; render an explicit state instead of an empty page.
+    return <ProductUnavailable onRetry={loadError ? retryProducts : null} />;
   }
 
   return (
     <div className="home-page container" id="home-page">
-      {walletEnabled && bettingEnabled && isLoggedIn && (
-        <section
-          className="home-wallet-strip"
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '0.75rem',
-            padding: '0.85rem 1rem',
-            marginBottom: '1rem',
-            borderRadius: 12,
-            border: '1px solid var(--border-subtle, rgba(0,0,0,0.08))',
-            background: 'var(--surface-elevated, #fff)',
-          }}
-        >
-          <div>
-            <strong>Wallet</strong>
-            <span style={{ marginLeft: 8, color: '#555' }}>
-              ₹{Number(user?.wallet?.available ?? user?.balance ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-            </span>
-          </div>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button type="button" className="header-deposit-btn" onClick={() => openDepositModal()}>Add Money</button>
-            <button type="button" className="header-login-btn" onClick={() => openFinModal('withdraw')}>Withdraw</button>
-            <Link to="/wallet" className="header-login-btn" style={{ display: 'inline-flex', alignItems: 'center' }}>Wallet</Link>
-          </div>
-        </section>
-      )}
-
       {bettingEnabled && (
       <LiveScoresFeedBanner
         message={scoresError}

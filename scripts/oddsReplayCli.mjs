@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 
 /**
- * OddsEngineV3 — Deterministic Price Replay CLI
+ * OddsEngineV5 — Deterministic Price Replay CLI
  * 
  * Reconstructs published market odds from canonical match snapshots and versioned parameters.
  * Usage:
  *   node scripts/oddsReplayCli.mjs --match=match_123 --sport=cricket
  */
 
-import { generate } from '../lib/odds-v3/OddsEngineV3.mjs';
-import { createCanonicalMatchState } from '../lib/odds-v3/models/CanonicalMatchState.mjs';
-import { getActiveModelVersion } from '../lib/odds-v3/registry/modelRegistry.mjs';
-import { getActiveParameters } from '../lib/odds-v3/registry/parameterRegistry.mjs';
-import { buildPriceExplainabilityRecord } from '../lib/odds-v3/pricing/priceExplainability.mjs';
+import { generate } from '../lib/odds-v5/OddsEngineV5.mjs';
+import { createCanonicalMatchState } from '../lib/odds-shared/models/CanonicalMatchState.mjs';
+import { getActiveModelVersion } from '../lib/odds-shared/registry/modelRegistry.mjs';
+import { getActiveParameters } from '../lib/odds-shared/registry/parameterRegistry.mjs';
+import { buildPriceExplainabilityRecord } from '../lib/odds-shared/pricing/priceExplainability.mjs';
 
 function parseArgs() {
   const args = process.argv.slice(2);

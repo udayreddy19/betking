@@ -99,7 +99,24 @@ router.get('/cases', requirePermission('kyc', 'customers', 'risk'), async (req, 
       phone: row.phone || null,
       name: row.display_name || row.user_id,
       balance: Number(row.balance) || 0,
-      dateOfBirth: row.date_of_birth ? String(row.date_of_birth).slice(0, 10) : null,
+      dateOfBirth: (() => {
+        const v = row.date_of_birth;
+        if (!v) return null;
+        if (v instanceof Date && !Number.isNaN(v.getTime())) {
+          const y = v.getUTCFullYear();
+          const m = String(v.getUTCMonth() + 1).padStart(2, '0');
+          const d = String(v.getUTCDate()).padStart(2, '0');
+          return `${y}-${m}-${d}`;
+        }
+        const raw = String(v).trim();
+        if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
+        const parsed = new Date(raw);
+        if (Number.isNaN(parsed.getTime())) return null;
+        const y = parsed.getUTCFullYear();
+        const m = String(parsed.getUTCMonth() + 1).padStart(2, '0');
+        const d = String(parsed.getUTCDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      })(),
       panNumber: row.pan_number ? maskPan(row.pan_number) : null,
       aadhaarNumber: row.aadhaar_number ? maskAadhaar(row.aadhaar_number) : null,
       hasPan: Boolean(row.pan_number),

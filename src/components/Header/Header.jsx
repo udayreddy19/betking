@@ -35,12 +35,7 @@ const BASE_NAV_LINKS = [
   { to: '/live-casino', label: 'Live Casino', product: 'betting' },
   { to: '/fantasy', label: 'Fantasy', product: 'betting' },
   { to: '/bets', label: 'My Bets', product: 'betting' },
-  { to: '/', label: 'Home', product: 'wallet', walletOnly: true },
   { to: '/wallet', label: 'Wallet', product: 'wallet' },
-  { to: '/wallet?tab=add', label: 'Add Money', product: 'wallet', walletOnly: true },
-  { to: '/wallet?tab=withdraw', label: 'Withdraw', product: 'wallet', walletOnly: true },
-  { to: '/wallet/bank-accounts', label: 'Bank Accounts', product: 'wallet', walletOnly: true },
-  { to: '/wallet?tab=history', label: 'Transactions', product: 'wallet', walletOnly: true },
   { to: '/promotions', label: 'Win Free', flagKey: 'promotion_engine_ui', product: 'betting' },
 ];
 
@@ -63,7 +58,6 @@ function Header() {
   const { walletEnabled, bettingEnabled, ready: productsReady } = useProducts();
   const productAllows = (l) => {
     if (!productsReady) return false;
-    if (l.walletOnly && bettingEnabled) return false;
     if (l.product === 'wallet') return walletEnabled;
     if (l.product === 'betting') return bettingEnabled;
     return true;

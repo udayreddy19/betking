@@ -1,4 +1,5 @@
 import { normalizeRgState } from '../../utils/responsibleGaming';
+import { normalizeDateOfBirth } from '../../utils/profileCompleteness';
 import { storageGet, storageSet, storageRemove } from '../../utils/browserCompat';
 
 const USERS_KEY = 'oddsyra_users';
@@ -86,6 +87,8 @@ export function sessionWithoutInventedWallet(userPayload, previous = null) {
       email: userPayload.email || cached.email,
       displayName: userPayload.displayName || cached.displayName,
       phone: userPayload.phone || cached.phone,
+      dateOfBirth: normalizeDateOfBirth(userPayload?.dateOfBirth) || cached.dateOfBirth || null,
+      kycStatus: userPayload?.kycStatus || cached.kycStatus,
       walletReady: cached.balance != null && cached.walletReady !== false,
     };
   }
@@ -95,6 +98,7 @@ export function sessionWithoutInventedWallet(userPayload, previous = null) {
     username: userPayload?.email,
     displayName: userPayload?.displayName || userPayload?.email?.split('@')[0],
     phone: userPayload?.phone || '',
+    dateOfBirth: normalizeDateOfBirth(userPayload?.dateOfBirth) || null,
     walletReady: false,
   };
 }

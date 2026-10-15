@@ -35,6 +35,28 @@ const EMAIL_VERIFICATION_EXPIRY_HOURS = 24;
 const MIN_PASSWORD_LENGTH = 8;
 
 /**
+ * pg DATE / timestamp values stringify as "Wed Dec 10 1997 …" if you use String(date).slice(0, 10).
+ * Always emit YYYY-MM-DD for the API so the frontend age/profile gate can match.
+ */
+function toIsoDate(value) {
+  if (value == null || value === '') return null;
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const y = value.getUTCFullYear();
+    const m = String(value.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(value.getUTCDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  const raw = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return null;
+  const y = parsed.getUTCFullYear();
+  const m = String(parsed.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(parsed.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/**
  * Sign up a new user.
  * @param {Function} queryFn — db query function
  * @param {Function} withTransaction — transaction wrapper
@@ -722,7 +744,7 @@ export async function getMe(queryFn, userId) {
       country: u.country,
       currency: u.currency,
       kycStatus: u.kyc_status,
-      dateOfBirth: u.date_of_birth ? String(u.date_of_birth).slice(0, 10) : null,
+      dateOfBirth: toIsoDate(u.date_of_birth),
       balance: parseFloat(u.balance || 0),
       cashBalance: parseFloat(u.balance || 0),
       bonusBalance: parseFloat(u.bonus_balance || 0),
@@ -1081,9 +1103,13 @@ export async function completeProfile(queryFn, userId, { phone, promoCode, refer
   }
 
   const currentPhone = existing.rows[0].phone;
-  const currentDob = existing.rows[0].date_of_birth
-    ? String(existing.rows[0].date_of_birth).slice(0, 10)
-    : null;
+  const currentDob = toIsoDate(existing.rows[0].date_of_birth);
+  const { ageFromDob, MIN_LEGAL_AGE } = await import('../../lib/kycAgeGate.mjs');
+  const storedDobAdult = (() => {
+    if (!currentDob || !/^\d{4}-\d{2}-\d{2}$/.test(currentDob)) return false;
+    const age = ageFromDob(currentDob);
+    return age != null && age >= MIN_LEGAL_AGE;
+  })();
   let promoReward = null;
   let referralResult = null;
   const rawReferral = String(referralCode || ref || '').trim();
@@ -1119,7 +1145,7 @@ export async function completeProfile(queryFn, userId, { phone, promoCode, refer
       });
     }
 
-    if (!currentDob) {
+    if (!storedDobAdult) {
       const dobRaw = String(dateOfBirth || '').trim().slice(0, 10);
       if (!dobRaw || !/^\d{4}-\d{2}-\d{2}$/.test(dobRaw)) {
         return {

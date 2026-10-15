@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { generate } from '../../lib/odds-v3/OddsEngineV3.mjs';
-import { adaptV3SnapshotToPublicContract } from '../../lib/odds-v3/adapters/V3ApiAdapter.mjs';
-import { findQuotedSelection } from '../../lib/odds-v3/bookIntegrity.mjs';
+import { generate } from '../../lib/odds-shared/OddsEngineV3.mjs';
+import { adaptV3SnapshotToPublicContract } from '../../lib/odds-shared/adapters/V3ApiAdapter.mjs';
+import { findQuotedSelection } from '../../lib/odds-shared/bookIntegrity.mjs';
 import { resolveSettlementGrader } from '../../lib/settlement/marketSettlementRegistry.mjs';
 import {
   evaluateBetForSettlement,

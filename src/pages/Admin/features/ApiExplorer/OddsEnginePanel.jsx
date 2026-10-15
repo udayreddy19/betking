@@ -10,11 +10,11 @@ export default function OddsEnginePanel({
   result,
   testing,
   onTest,
-  title = 'OddsEngineV3',
+  title = 'OddsEngineV5',
   subtitle = 'Sandbox canonical match state — never touches live odds, wallets, or settlement',
   testLabel,
-  defaultEngine = 'OddsEngineV3',
-  defaultVersion = '3.0.0',
+  defaultEngine = 'OddsEngineV5',
+  defaultVersion = '5.1.0',
   accent = 'var(--admin-accent-violet)',
 }) {
   const summary = result?.summary || {};

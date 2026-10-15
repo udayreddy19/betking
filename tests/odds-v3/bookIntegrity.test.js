@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { generate as generateV3 } from '../../lib/odds-v3/OddsEngineV3.mjs';
-import { createCanonicalMatchState } from '../../lib/odds-v3/models/CanonicalMatchState.mjs';
+import { generate as generateV3 } from '../../lib/odds-shared/OddsEngineV3.mjs';
+import { createCanonicalMatchState } from '../../lib/odds-shared/models/CanonicalMatchState.mjs';
 import {
   alignChaseTotalMarkets,
   alignWinnerMarkets,
   assertBettableQuote,
   oddsQuoteChanged,
   suspendLockMarkets,
-} from '../../lib/odds-v3/bookIntegrity.mjs';
+} from '../../lib/odds-shared/bookIntegrity.mjs';
 import { riskAdjustmentEngine } from '../../lib/engines/riskAdjustmentEngine.mjs';
 
 describe('Book integrity', () => {

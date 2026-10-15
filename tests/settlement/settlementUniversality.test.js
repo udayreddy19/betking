@@ -24,25 +24,25 @@ import {
 } from '../../lib/settlement/marketSettlementRegistry.mjs';
 
 // Cricket Generators
-import { generateMatchWinnerMarketV4 } from '../../lib/odds-v4/markets/MatchWinnerMarketV4.mjs';
-import { generateTossFamilyMarketsV4 } from '../../lib/odds-v4/markets/TossWinnerMarketV4.mjs';
-import { generateTeamTotalMarket } from '../../lib/odds-v3/markets/TeamTotalMarket.mjs';
-import { generateMatchTotalMarket } from '../../lib/odds-v3/markets/MatchTotalMarket.mjs';
-import { generateExtendedMatchMarkets } from '../../lib/odds-v3/markets/matchWinner.mjs';
-import { generateExtendedMatchTotals } from '../../lib/odds-v3/markets/matchTotals.mjs';
-import { generateExtendedInningsTotals } from '../../lib/odds-v3/markets/inningsTotal.mjs';
-import { generateExtendedOverMarkets } from '../../lib/odds-v3/markets/overTotal.mjs';
-import { generateExtendedDeliveryMarkets } from '../../lib/odds-v3/markets/deliveryTotal.mjs';
-import { generateExtendedWicketMarkets } from '../../lib/odds-v3/markets/wicketMarkets.mjs';
-import { generateExtendedPlayerMarkets } from '../../lib/odds-v3/markets/playerRuns.mjs';
-import { generateExtendedH2HMarkets } from '../../lib/odds-v3/markets/headToHead.mjs';
+import { generateMatchWinnerMarketV4 } from '../../lib/odds-v5/markets/MatchWinnerMarketV4.mjs';
+import { generateTossFamilyMarketsV4 } from '../../lib/odds-v5/markets/TossWinnerMarketV4.mjs';
+import { generateTeamTotalMarket } from '../../lib/odds-shared/markets/TeamTotalMarket.mjs';
+import { generateMatchTotalMarket } from '../../lib/odds-shared/markets/MatchTotalMarket.mjs';
+import { generateExtendedMatchMarkets } from '../../lib/odds-shared/markets/matchWinner.mjs';
+import { generateExtendedMatchTotals } from '../../lib/odds-shared/markets/matchTotals.mjs';
+import { generateExtendedInningsTotals } from '../../lib/odds-shared/markets/inningsTotal.mjs';
+import { generateExtendedOverMarkets } from '../../lib/odds-shared/markets/overTotal.mjs';
+import { generateExtendedDeliveryMarkets } from '../../lib/odds-shared/markets/deliveryTotal.mjs';
+import { generateExtendedWicketMarkets } from '../../lib/odds-shared/markets/wicketMarkets.mjs';
+import { generateExtendedPlayerMarkets } from '../../lib/odds-shared/markets/playerRuns.mjs';
+import { generateExtendedH2HMarkets } from '../../lib/odds-shared/markets/headToHead.mjs';
 
 // Multi-Sport Generators
-import { generateSoccerMatchWinner, generateSoccerExtras } from '../../lib/other-sports-v4/markets/soccerMarkets.mjs';
-import { generateBasketballMatchWinner, generateBasketballExtras } from '../../lib/other-sports-v4/markets/basketballMarkets.mjs';
-import { generateTennisMatchWinner, generateTennisExtras } from '../../lib/other-sports-v4/markets/tennisMarkets.mjs';
-import { generateBaseballMatchWinner, generateBaseballExtras } from '../../lib/other-sports-v4/markets/baseballMarkets.mjs';
-import { generateIceHockeyMatchWinner, generateIceHockeyExtras } from '../../lib/other-sports-v4/markets/iceHockeyMarkets.mjs';
+import { generateSoccerMatchWinner, generateSoccerExtras } from '../../lib/other-sports-v5/markets/soccerMarkets.mjs';
+import { generateBasketballMatchWinner, generateBasketballExtras } from '../../lib/other-sports-v5/markets/basketballMarkets.mjs';
+import { generateTennisMatchWinner, generateTennisExtras } from '../../lib/other-sports-v5/markets/tennisMarkets.mjs';
+import { generateBaseballMatchWinner, generateBaseballExtras } from '../../lib/other-sports-v5/markets/baseballMarkets.mjs';
+import { generateIceHockeyMatchWinner, generateIceHockeyExtras } from '../../lib/other-sports-v5/markets/iceHockeyMarkets.mjs';
 
 describe('Phase 4N — Settlement Universality Discovery & Verification', () => {
 

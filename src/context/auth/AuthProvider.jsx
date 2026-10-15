@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { STARTING_BALANCE, WELCOME_BONUS } from '../../data/mockData';
 import { formatInr } from '../../utils/walletBalance';
-import { cleanKycMessage, isKycError, KYC_PROFILE_PATH } from '../../utils/kycUi';
+import { classifyApiError, KYC_TOAST_ACTION } from '../../utils/kycUi';
 import {
   getWithdrawableAmount,
   splitBetWinPayout,
@@ -31,6 +31,7 @@ import {
   getAccessToken,
 } from '../../utils/apiClient';
 import { DEMO_MODE } from '../../utils/featureFlags';
+import { userHasDob, userHasPhone } from '../../utils/profileCompleteness';
 import { subscribeLiveChannel } from '../../services/liveFeedSocket';
 import {
   isFinancialEventForUser,
@@ -513,17 +514,17 @@ export function AuthProvider({ children }) {
       if (!res.ok || !data.success) {
         return { ok: false, error: data.error || 'Could not save your details.', code: data.code };
       }
-      if (data.user) {
+      const me = await fetchMe();
+      if (me) {
+        setUser((prev) => mapServerUserToSession(me, prev));
+      } else if (data.user) {
         setUser((prev) => mapServerUserToSession(data.user, prev));
-      } else {
-        const me = await fetchMe();
-        if (me) setUser(mapServerUserToSession(me));
       }
       return {
         ok: true,
         promoReward: data.promoReward || null,
         referral: data.referral || null,
-        user: data.user,
+        user: me || data.user,
       };
     } catch {
       return { ok: false, error: 'Unable to reach auth service.' };
@@ -1060,19 +1061,12 @@ export function AuthProvider({ children }) {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || data.success === false) {
-          const raw = data.error || data.code || 'Withdrawal failed.';
-          const code = String(data.code || raw).toUpperCase();
-          let message = raw;
-          if (
-            code.includes('BENEFICIARY')
-            || code.includes('KYC_IDENTITY_NAME')
-            || /BENEFICIARY_NAME_MISMATCH|BENEFICIARY_NOT_VERIFIED|KYC_IDENTITY_NAME_NOT_AVAILABLE/i.test(raw)
-          ) {
-            message = 'Your verified bank account holder name does not match your verified identity (or bank beneficiary verification is not yet available). Please update or verify your bank account details before requesting this withdrawal.';
-          }
-          if (isKycError(message) || isKycError(raw)) {
-            showToast(cleanKycMessage(raw) || 'Verify your identity to withdraw.', 'error', {
-              action: { label: 'Proceed to KYC', path: KYC_PROFILE_PATH },
+          // Prefer the structured `code`; kycUi falls back to message regex only for legacy responses.
+          const failure = classifyApiError(data, 'Withdrawal failed.');
+          const message = failure.message;
+          if (failure.kind === 'kyc') {
+            showToast(message || 'Verify your identity to withdraw.', 'error', {
+              action: KYC_TOAST_ACTION,
             });
           } else {
             showToast(message, 'error');
@@ -1324,12 +1318,20 @@ export function AuthProvider({ children }) {
   const openLoginModal = useCallback(() => setIsLoginModalOpen(true), []);
 
   const closeLoginModal = useCallback(() => setIsLoginModalOpen(false), []);
-  const openDepositModal = useCallback(() => {
-    const phoneDigits = String(user?.phone || '').replace(/\D/g, '');
-    const hasDob = Boolean(String(user?.dateOfBirth || '').slice(0, 10).match(/^\d{4}-\d{2}-\d{2}$/));
-    if (user && (phoneDigits.length < 10 || !hasDob)) {
+  const openDepositModal = useCallback(async () => {
+    let profile = user;
+    try {
+      const me = await fetchMe();
+      if (me) {
+        profile = mapServerUserToSession(me, user);
+        setUser(profile);
+      }
+    } catch {
+      /* use cached session */
+    }
+    if (profile && (!userHasPhone(profile) || !userHasDob(profile))) {
       showToast(
-        phoneDigits.length < 10
+        !userHasPhone(profile)
           ? 'Add your mobile number to deposit.'
           : 'Add your date of birth to deposit.',
         'info',
@@ -1338,25 +1340,35 @@ export function AuthProvider({ children }) {
       return;
     }
     setIsDepositModalOpen(true);
-  }, [user, showToast]);
+  }, [user, setUser, showToast]);
   const closeDepositModal = useCallback(() => setIsDepositModalOpen(false), []);
   const toggleSidebar = useCallback(() => setIsSidebarOpen(prev => !prev), []);
   const closeSidebar = useCallback(() => setIsSidebarOpen(false), []);
-  const openFinModal = useCallback((type) => {
-    const phoneDigits = String(user?.phone || '').replace(/\D/g, '');
-    const hasDob = Boolean(String(user?.dateOfBirth || '').slice(0, 10).match(/^\d{4}-\d{2}-\d{2}$/));
-    if (type === 'withdraw' && user && (phoneDigits.length < 10 || !hasDob)) {
-      showToast(
-        phoneDigits.length < 10
-          ? 'Add your mobile number to withdraw.'
-          : 'Add your date of birth to withdraw.',
-        'info',
-      );
-      window.location.assign('/complete-profile?next=withdraw');
-      return;
+  const openFinModal = useCallback(async (type) => {
+    let profile = user;
+    if (type === 'withdraw') {
+      try {
+        const me = await fetchMe();
+        if (me) {
+          profile = mapServerUserToSession(me, user);
+          setUser(profile);
+        }
+      } catch {
+        /* use cached session */
+      }
+      if (profile && (!userHasPhone(profile) || !userHasDob(profile))) {
+        showToast(
+          !userHasPhone(profile)
+            ? 'Add your mobile number to withdraw.'
+            : 'Add your date of birth to withdraw.',
+          'info',
+        );
+        window.location.assign('/complete-profile?next=withdraw');
+        return;
+      }
     }
     setFinModalType(type);
-  }, [user, showToast]);
+  }, [user, setUser, showToast]);
   const closeFinModal = useCallback(() => setFinModalType(null), []);
 
   // Resume deposit/withdraw after complete-profile (?next=deposit|withdraw)
@@ -1370,9 +1382,7 @@ export function AuthProvider({ children }) {
       return undefined;
     }
     if (pending !== 'deposit' && pending !== 'withdraw') return undefined;
-    const phoneDigits = String(user.phone || '').replace(/\D/g, '');
-    const hasDob = Boolean(String(user.dateOfBirth || '').slice(0, 10).match(/^\d{4}-\d{2}-\d{2}$/));
-    if (phoneDigits.length < 10 || !hasDob) return undefined;
+    if (!userHasPhone(user) || !userHasDob(user)) return undefined;
     const t = window.setTimeout(() => {
       if (pending === 'deposit') setIsDepositModalOpen(true);
       else setFinModalType('withdraw');

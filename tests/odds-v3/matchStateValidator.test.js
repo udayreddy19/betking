@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { validateMatchState } from '../../lib/odds-v3/validation/MatchStateValidator.mjs';
-import { createCanonicalMatchState } from '../../lib/odds-v3/models/CanonicalMatchState.mjs';
+import { validateMatchState } from '../../lib/odds-shared/validation/MatchStateValidator.mjs';
+import { createCanonicalMatchState } from '../../lib/odds-shared/models/CanonicalMatchState.mjs';
 
 describe('OddsEngineV3 — MatchStateValidator', () => {
   const baseInput = {

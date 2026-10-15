@@ -14,9 +14,9 @@ import {
   evaluateScoreSpreadBet,
   evaluateScoreTotalBet,
 } from '../../lib/liveMatchSettlement.mjs';
-import { generate as generateOsV4 } from '../../lib/other-sports-v4/OtherSportsEngineV4.mjs';
-import { generate as generateV4 } from '../../lib/odds-v4/OddsEngineV4.mjs';
-import { buildCanonicalFromMatch } from '../../lib/odds-v3/buildCanonicalFromMatch.mjs';
+import { generate as generateOsV4 } from '../../lib/other-sports-v5/OtherSportsEngineV4.mjs';
+import { generate as generateV4 } from '../../lib/odds-v5/OddsEngineV4.mjs';
+import { buildCanonicalFromMatch } from '../../lib/odds-shared/buildCanonicalFromMatch.mjs';
 
 function finishedSoccer(score1, score2, overrides = {}) {
   return {

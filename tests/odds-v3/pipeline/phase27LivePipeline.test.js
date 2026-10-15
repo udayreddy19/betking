@@ -15,23 +15,23 @@ import {
   generateCanonicalEventId,
   resolveCanonicalEvent,
   RESOLUTION_STATUS,
-} from '../../../lib/odds-v3/pipeline/canonicalEventResolver.mjs';
+} from '../../../lib/odds-shared/pipeline/canonicalEventResolver.mjs';
 import {
   transitionMatchLifecycle,
   MATCH_LIFECYCLE_STATES,
-} from '../../../lib/odds-v3/pipeline/matchLifecycleStateMachine.mjs';
+} from '../../../lib/odds-shared/pipeline/matchLifecycleStateMachine.mjs';
 import {
   computeObservationFingerprint,
   shouldSampleObservation,
-} from '../../../lib/odds-v3/pipeline/observationSamplingPolicy.mjs';
+} from '../../../lib/odds-shared/pipeline/observationSamplingPolicy.mjs';
 import {
   verifyMultiProviderSettlement,
   idempotentJoinSettlement,
   SETTLEMENT_STATUS,
-} from '../../../lib/odds-v3/pipeline/settlementVerificationEngine.mjs';
+} from '../../../lib/odds-shared/pipeline/settlementVerificationEngine.mjs';
 import {
   calculateCollectionProgress,
-} from '../../../lib/odds-v3/validation/dataCollectionProgressEngine.mjs';
+} from '../../../lib/odds-shared/validation/dataCollectionProgressEngine.mjs';
 
 describe('Phase 27 — Live Observation Collection & Automated Settlement Pipeline', () => {
   describe('1. Canonical Event Resolver', () => {

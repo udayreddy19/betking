@@ -40,8 +40,8 @@ async function main() {
 
   // Engine defaults
   try {
-    const { resolveOddsEngineMode, getEngineModeStatus } = await import('../lib/odds-v4/EngineModeControl.mjs');
-    const { resolveOtherSportsEngineMode, getOtherSportsEngineModeStatus } = await import('../lib/other-sports-v4/EngineModeControl.mjs');
+    const { resolveOddsEngineMode, getEngineModeStatus } = await import('../lib/odds-v5/EngineModeControl.mjs');
+    const { resolveOtherSportsEngineMode, getOtherSportsEngineModeStatus } = await import('../lib/other-sports-v5/EngineModeControl.mjs');
     const cricket = resolveOddsEngineMode({ ODDS_ENGINE: undefined });
     const other = resolveOtherSportsEngineMode({ OTHER_SPORTS_ENGINE: undefined });
     record('Cricket engine default', cricket === 'v4' ? 'PASS' : 'FAIL', `resolved=${cricket}`);
@@ -83,7 +83,7 @@ async function main() {
 
   // Calibration honesty
   try {
-    const { getCalibrationValidationStatus } = await import('../lib/odds-v4/calibration/calibrationBridge.mjs');
+    const { getCalibrationValidationStatus } = await import('../lib/odds-v5/calibration/calibrationBridge.mjs');
     const cal = getCalibrationValidationStatus();
     record('Calibration auto-promotion', cal.autoPromotionAllowed === false ? 'PASS' : 'FAIL', `status=${cal.status} N=${cal.sampleSize}`);
     const n = Number(cal.sampleSize) || 0;

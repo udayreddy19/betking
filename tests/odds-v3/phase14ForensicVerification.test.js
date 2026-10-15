@@ -1,17 +1,17 @@
 import { describe, it, expect } from 'vitest';
-import { generate } from '../../lib/odds-v3/OddsEngineV3.mjs';
-import { generateOtherSportsSnapshot } from '../../lib/odds-v3/otherSportsOdds.mjs';
+import { generate } from '../../lib/odds-shared/OddsEngineV3.mjs';
+import { generateOtherSportsSnapshot } from '../../lib/odds-shared/otherSportsOdds.mjs';
 import { betRiskEngine } from '../../lib/betRiskEngine.mjs';
-import { calculateMatchWinnerProbability } from '../../lib/odds-v3/pricing/ProbabilityModel.mjs';
-import { applyMargin, priceExclusiveOutcomes } from '../../lib/odds-v3/pricing/MarginCalculator.mjs';
-import { calculateDynamicOverround } from '../../lib/odds-v3/pricing/dynamicMarginEngine.mjs';
-import { blendModelAndProvider } from '../../lib/odds-v3/pricing/modelBlendEngine.mjs';
-import { calculateSgpJointOdds, resolveCorrelationCoefficient } from '../../lib/odds-v3/pricing/correlationEngine.mjs';
-import { recordPrediction, recordSettledOutcome, calculateCalibrationMetrics } from '../../lib/odds-v3/calibration/calibrationEngine.mjs';
-import { auditSnapshotQuality } from '../../lib/odds-v3/monitoring/oddsQualityMonitor.mjs';
-import { calculateScoreMatrix } from '../../lib/odds-v3/models/soccerDixonColesModel.mjs';
-import { calculateTennisMatchProb } from '../../lib/odds-v3/models/tennisMarkovModel.mjs';
-import { calculateBasketballProbabilities } from '../../lib/odds-v3/models/basketballPaceModel.mjs';
+import { calculateMatchWinnerProbability } from '../../lib/odds-shared/pricing/ProbabilityModel.mjs';
+import { applyMargin, priceExclusiveOutcomes } from '../../lib/odds-shared/pricing/MarginCalculator.mjs';
+import { calculateDynamicOverround } from '../../lib/odds-shared/pricing/dynamicMarginEngine.mjs';
+import { blendModelAndProvider } from '../../lib/odds-shared/pricing/modelBlendEngine.mjs';
+import { calculateSgpJointOdds, resolveCorrelationCoefficient } from '../../lib/odds-shared/pricing/correlationEngine.mjs';
+import { recordPrediction, recordSettledOutcome, calculateCalibrationMetrics } from '../../lib/odds-shared/calibration/calibrationEngine.mjs';
+import { auditSnapshotQuality } from '../../lib/odds-shared/monitoring/oddsQualityMonitor.mjs';
+import { calculateScoreMatrix } from '../../lib/odds-shared/models/soccerDixonColesModel.mjs';
+import { calculateTennisMatchProb } from '../../lib/odds-shared/models/tennisMarkovModel.mjs';
+import { calculateBasketballProbabilities } from '../../lib/odds-shared/models/basketballPaceModel.mjs';
 
 describe('PHASE 14 — Independent Forensic Verification & Pricing Quality Audit', () => {
 

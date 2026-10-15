@@ -5,12 +5,12 @@ import {
   queryObservations,
   getObservationStats,
   clearObservations,
-} from '../../lib/odds-v3/telemetry/oddsObservationStore.mjs';
-import { computeLossMetrics, evaluateModelDrift } from '../../lib/odds-v3/telemetry/driftDetector.mjs';
-import { analyzeOddsMovement } from '../../lib/odds-v3/telemetry/oddsMovementAnalyzer.mjs';
-import { analyzeProviderDivergence } from '../../lib/odds-v3/telemetry/providerDivergenceAnalyzer.mjs';
-import { runHistoricalBacktest } from '../../lib/odds-v3/replay/backtestRunner.mjs';
-import { isCanaryCandidate, evaluateShadowPricing } from '../../lib/odds-v3/canary/shadowPricingEngine.mjs';
+} from '../../lib/odds-shared/telemetry/oddsObservationStore.mjs';
+import { computeLossMetrics, evaluateModelDrift } from '../../lib/odds-shared/telemetry/driftDetector.mjs';
+import { analyzeOddsMovement } from '../../lib/odds-shared/telemetry/oddsMovementAnalyzer.mjs';
+import { analyzeProviderDivergence } from '../../lib/odds-shared/telemetry/providerDivergenceAnalyzer.mjs';
+import { runHistoricalBacktest } from '../../lib/odds-shared/replay/backtestRunner.mjs';
+import { isCanaryCandidate, evaluateShadowPricing } from '../../lib/odds-shared/canary/shadowPricingEngine.mjs';
 
 describe('PHASE 15 — Canary, Historical Backtest, Calibration & Pricing Telemetry', () => {
 

@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { MotionConfig } from 'motion/react';
 import { ThemeProvider } from './context/ThemeContext';
@@ -31,7 +31,8 @@ import { CASINO_ENABLED } from './utils/featureFlags';
 import { FeatureFlagsProvider, useFeatureFlags } from './context/FeatureFlagsContext';
 import { ProductProvider, useProducts } from './context/ProductContext';
 import ProductUnavailable from './components/ProductUnavailable/ProductUnavailable';
-
+import PlatformGate from './components/PlatformGate/PlatformGate';
+import CasinoComingSoon from './pages/Casino/CasinoComingSoon';
 import Home from './pages/Home/Home';
 import Register from './pages/Register/Register';
 import Profile from './pages/Profile/Profile';
@@ -74,10 +75,6 @@ const MyRewards = lazyWithRetry(() => import('./pages/Rewards/MyRewards'));
 const OddsYraSrl = lazyWithRetry(() => import('./pages/Srl/OddsYraSrl'));
 const DepositPage = lazyWithRetry(() => import('./pages/Wallet/DepositPage'));
 
-function CasinoComingSoon() {
-  return <Navigate to="/" replace />;
-}
-
 function FlaggedRoute({ flagKey, children, fallback = '/' }) {
   const { isEnabled, ready } = useFeatureFlags();
   // Fail closed until flags hydrate; after that missing keys stay on (opt-out toggles).
@@ -98,30 +95,44 @@ function ProductRoute({ product, children }) {
   return children;
 }
 
-/** When both products are off, show a controlled unavailable page (admin still reachable). */
-function PlatformGate({ children }) {
-  const location = useLocation();
-  const { ready, walletEnabled, bettingEnabled } = useProducts();
-  const path = location.pathname || '/';
-  const isExempt = path.startsWith('/admin')
-    || path.startsWith('/trader')
-    || path.startsWith('/developer')
-    || path.startsWith('/api-docs')
-    || path.startsWith('/register')
-    || path.startsWith('/complete-profile')
-    || path.startsWith('/verify-email')
-    || path.startsWith('/reset-password')
-    || path.startsWith('/_oauth')
-    || path.startsWith('/terms')
-    || path.startsWith('/privacy')
-    || path.startsWith('/help')
-    || path.startsWith('/support')
-    || path.startsWith('/responsible-gaming');
-  if (!ready) return <PageLoader />;
-  if (!walletEnabled && !bettingEnabled && !isExempt) {
-    return <ProductUnavailable />;
-  }
-  return children;
+/** PG ON → leave the Vite SPA for the mounted Refract static site. */
+function PgRefractRedirect() {
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.location.replace('/refract/');
+    }
+  }, []);
+  return <PageLoader />;
+}
+
+/** Brief loader while the sp_public cookie is set and the page reloads into the software SPA. */
+function SoftwarePlatformHandoff() {
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    let cancelled = false;
+    (async () => {
+      let guard = false;
+      try { guard = sessionStorage.getItem('sp_handoff_reload') === '1'; } catch { /* ignore */ }
+      // Ask the server to set sp_public — do not clear/fight Secure cookies from JS alone.
+      try {
+        await fetch(`/api/config/software-mode?_=${Date.now()}`, {
+          credentials: 'include',
+          cache: 'no-store',
+          headers: { Accept: 'application/json' },
+        });
+      } catch { /* ignore */ }
+      if (cancelled) return;
+      const secure = location.protocol === 'https:' ? '; Secure' : '';
+      document.cookie = `sp_public=1; path=/; max-age=604800; SameSite=Lax${secure}`;
+      // One reload only — avoids a loop if nginx is not yet routing software mode.
+      if (!guard) {
+        try { sessionStorage.setItem('sp_handoff_reload', '1'); } catch { /* ignore */ }
+        window.location.replace(`/?_sp=1&_=${Date.now()}`);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  return <div className="page-loader" role="status">Loading…</div>;
 }
 
 function PageLoader() {
@@ -141,7 +152,7 @@ function AppFinancialModals() {
 
 function AppLayout() {
   const location = useLocation();
-  const { bettingEnabled, walletEnabled } = useProducts();
+  const { ready, bettingEnabled, walletEnabled, pgReviewMode, softwarePlatformEnabled } = useProducts();
   const isAdminRoute = location.pathname.startsWith('/admin');
   const isDevRoute = location.pathname.startsWith('/developer') || location.pathname.startsWith('/api-docs');
   const isSportsRoute = location.pathname === '/sports' || location.pathname === '/live-betting';
@@ -155,6 +166,42 @@ function AppLayout() {
     isRegisterRoute ? 'app-main--register' : '',
     isDepositRoute ? 'app-main--deposit' : '',
   ].filter(Boolean).join(' ');
+
+  if (!ready) {
+    return <PageLoader />;
+  }
+
+  // Software Platform mode: the public site is the standalone software SPA (served by nginx
+  // when cookie sp_public=1). Never render betting UI on non-admin routes while the cookie flips.
+  if (softwarePlatformEnabled && !isAdminRoute) {
+    return <SoftwarePlatformHandoff />;
+  }
+
+  // PG compliance mode: full takeover → static Refract (ReconcileX) at /refract/.
+  if (pgReviewMode && !isAdminRoute) {
+    return <PgRefractRedirect />;
+  }
+
+  if (pgReviewMode && isAdminRoute) {
+    return (
+      <>
+        <RouteSeo />
+        <LoginModal />
+        <Toast />
+        <main className="app-main app-main--admin">
+          <ErrorBoundary resetKey={location.pathname}>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route path="/admin" element={<Admin />} />
+                <Route path="/admin/*" element={<Admin />} />
+                <Route path="*" element={<Navigate to="/admin" replace />} />
+              </Routes>
+            </Suspense>
+          </ErrorBoundary>
+        </main>
+      </>
+    );
+  }
 
   return (
     <>
@@ -185,7 +232,7 @@ function AppLayout() {
               <Route path="/live-betting" element={<ProductRoute product="betting"><Sports /></ProductRoute>} />
               <Route path="/sports" element={<ProductRoute product="betting"><Sports /></ProductRoute>} />
               <Route path="/wallet/deposit" element={<ProductRoute product="wallet"><DepositPage /></ProductRoute>} />
-              <Route path="/deposit" element={<Navigate to="/wallet/deposit" replace />} />
+              <Route path="/deposit" element={<ProductRoute product="wallet"><DepositPage /></ProductRoute>} />
               <Route path="/casino" element={<ProductRoute product="betting">{CASINO_ENABLED ? <Casino /> : <CasinoComingSoon />}</ProductRoute>} />
               <Route path="/live-casino" element={<ProductRoute product="betting">{CASINO_ENABLED ? <LiveCasino /> : <CasinoComingSoon />}</ProductRoute>} />
               <Route path="/fantasy" element={<ProductRoute product="betting"><Fantasy /></ProductRoute>} />
@@ -196,11 +243,11 @@ function AppLayout() {
               <Route path="/upi-deposits" element={<ProductRoute product="wallet"><UpiDeposits /></ProductRoute>} />
               <Route path="/what-is-oddsyra-srl" element={<ProductRoute product="betting"><WhatIsOddsYraSrl /></ProductRoute>} />
               <Route path="/cricket-betting-guide" element={<ProductRoute product="betting"><CricketBettingGuide /></ProductRoute>} />
-              <Route path="/exchange" element={<CasinoComingSoon />} />
+              <Route path="/exchange" element={<Navigate to="/" replace />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/wallet" element={<ProductRoute product="wallet"><WalletDashboard /></ProductRoute>} />
               <Route path="/wallet/bank-accounts" element={<ProductRoute product="wallet"><BankAccountsPage /></ProductRoute>} />
-              <Route path="/wallet/transactions" element={<ProductRoute product="wallet"><Navigate to="/wallet?tab=history" replace /></ProductRoute>} />
+              <Route path="/wallet/transactions" element={<ProductRoute product="wallet"><WalletDashboard /></ProductRoute>} />
               <Route path="/register" element={<Register />} />
               <Route path="/complete-profile" element={<CompleteProfile />} />
               <Route path="/_oauth/google" element={<OAuthGoogleCallback />} />

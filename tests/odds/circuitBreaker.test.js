@@ -3,13 +3,13 @@ import {
   evaluateFeedCircuitBreaker,
   applyCircuitBreakerToMarkets,
   resetMatchCircuitBreaker,
-} from '../../lib/odds-v3/circuitBreaker.mjs';
+} from '../../lib/odds-shared/circuitBreaker.mjs';
 import {
   filterSelectionVolatility,
   applyVolatilityProtection,
   clearVolatilityHistory,
-} from '../../lib/odds-v3/volatilityFilter.mjs';
-import { MultiProviderOrchestrator } from '../../lib/odds-v3/adapters/MultiProviderOrchestrator.mjs';
+} from '../../lib/odds-shared/volatilityFilter.mjs';
+import { MultiProviderOrchestrator } from '../../lib/odds-shared/adapters/MultiProviderOrchestrator.mjs';
 
 describe('OddsEngine V3 — Circuit Breaker & Volatility Filter', () => {
   beforeEach(() => {

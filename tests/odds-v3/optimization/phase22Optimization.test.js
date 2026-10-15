@@ -20,37 +20,37 @@ import {
   updateCandidateStatus,
   resetCandidateRegistry,
   CANDIDATE_STATUS,
-} from '../../../lib/odds-v3/optimization/candidateRegistry.mjs';
+} from '../../../lib/odds-shared/optimization/candidateRegistry.mjs';
 import {
   calculateCovarianceAwareWeights,
   blendProviderOddsCovariance,
-} from '../../../lib/odds-v3/optimization/covarianceAwareProviderBlend.mjs';
+} from '../../../lib/odds-shared/optimization/covarianceAwareProviderBlend.mjs';
 import {
   detectPricingRegime,
   blendByRegime,
   PRICING_REGIMES,
-} from '../../../lib/odds-v3/optimization/regimeBlendEngine.mjs';
+} from '../../../lib/odds-shared/optimization/regimeBlendEngine.mjs';
 import {
   applyAdaptiveVolatilityCalibration,
   VOLATILITY_REGIMES,
-} from '../../../lib/odds-v3/optimization/adaptiveVolatilityCalibration.mjs';
+} from '../../../lib/odds-shared/optimization/adaptiveVolatilityCalibration.mjs';
 import {
   calculateAdvancedCricketProbabilities,
-} from '../../../lib/odds-v3/optimization/cricketCandidateModel.mjs';
+} from '../../../lib/odds-shared/optimization/cricketCandidateModel.mjs';
 import {
   fitTemperatureScaling,
   evaluateSegmentedCalibration,
-} from '../../../lib/odds-v3/optimization/marketCalibrationEngine.mjs';
+} from '../../../lib/odds-shared/optimization/marketCalibrationEngine.mjs';
 import {
   runWalkForwardBacktest,
-} from '../../../lib/odds-v3/optimization/backtestEngine.mjs';
+} from '../../../lib/odds-shared/optimization/backtestEngine.mjs';
 import {
   runShadowOptimizationEvaluation,
-} from '../../../lib/odds-v3/optimization/OddsShadowRunner.mjs';
+} from '../../../lib/odds-shared/optimization/OddsShadowRunner.mjs';
 import {
   classifyShadowDivergence,
   DIVERGENCE_CLASSES,
-} from '../../../lib/odds-v3/optimization/shadowComparisonEngine.mjs';
+} from '../../../lib/odds-shared/optimization/shadowComparisonEngine.mjs';
 
 describe('Phase 22 — OddsEngine V3 Intelligent Pricing Optimization & Shadow Framework', () => {
   beforeEach(() => {

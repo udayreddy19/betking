@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { generate } from '../../lib/odds-v3/OddsEngineV3.mjs';
-import { generateOtherSportsSnapshot } from '../../lib/odds-v3/otherSportsOdds.mjs';
+import { generate } from '../../lib/odds-shared/OddsEngineV3.mjs';
+import { generateOtherSportsSnapshot } from '../../lib/odds-shared/otherSportsOdds.mjs';
 import { betRiskEngine } from '../../lib/betRiskEngine.mjs';
-import { calculateMatchWinnerProbability } from '../../lib/odds-v3/pricing/ProbabilityModel.mjs';
-import { applyMargin } from '../../lib/odds-v3/pricing/MarginCalculator.mjs';
-import { recordPrediction, recordSettledOutcome, calculateCalibrationMetrics } from '../../lib/odds-v3/calibration/calibrationEngine.mjs';
+import { calculateMatchWinnerProbability } from '../../lib/odds-shared/pricing/ProbabilityModel.mjs';
+import { applyMargin } from '../../lib/odds-shared/pricing/MarginCalculator.mjs';
+import { recordPrediction, recordSettledOutcome, calculateCalibrationMetrics } from '../../lib/odds-shared/calibration/calibrationEngine.mjs';
 
 describe('OddsEngineV3 — Phase 13: Production Runtime Wiring & Verification', () => {
   it('Soccer: otherSportsOdds generates Dixon-Coles 1X2, BTTS, and Totals without provider odds', () => {

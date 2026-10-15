@@ -5,8 +5,8 @@ import {
   calculateLogLoss,
   generateReliabilityBuckets,
   MIN_PRODUCTION_SAMPLE_SIZE,
-} from '../../lib/odds-v4/calibration/V4CalibrationEngine.mjs';
-import { evaluateOSV4Calibration } from '../../lib/other-sports-v4/calibration/OSV4CalibrationEngine.mjs';
+} from '../../lib/odds-v5/calibration/V4CalibrationEngine.mjs';
+import { evaluateOSV4Calibration } from '../../lib/other-sports-v5/calibration/OSV4CalibrationEngine.mjs';
 import { runBacktest } from '../../odds-model-validation/backtestRunner.mjs';
 
 describe('Priority 3 & 4: Genuine V4 Calibration & Backtesting Framework', () => {

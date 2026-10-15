@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { generate } from '../../lib/odds-v3/OddsEngineV3.mjs';
-import { createCanonicalMatchState } from '../../lib/odds-v3/models/CanonicalMatchState.mjs';
+import { generate } from '../../lib/odds-shared/OddsEngineV3.mjs';
+import { createCanonicalMatchState } from '../../lib/odds-shared/models/CanonicalMatchState.mjs';
 import {
   calculatePlayerMilestoneProbability,
   enforceMilestoneProbabilityOrdering,
-} from '../../lib/odds-v3/models/playerPerformanceModel.mjs';
+} from '../../lib/odds-shared/models/playerPerformanceModel.mjs';
 import { PRICING_CONFIG } from '../../lib/engines/pricingConfig.mjs';
 
 describe('Player milestone pricing', () => {

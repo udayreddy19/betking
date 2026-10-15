@@ -15,18 +15,18 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   ProductionObservationRecorder,
   LEAKAGE_ERROR_CODES,
-} from '../../lib/odds-v4/calibration/ProductionObservationRecorder.mjs';
+} from '../../lib/odds-v5/calibration/ProductionObservationRecorder.mjs';
 import {
   evaluateV4Calibration,
   calculateBrierScore,
   calculateLogLoss,
-} from '../../lib/odds-v4/calibration/V4CalibrationEngine.mjs';
+} from '../../lib/odds-v5/calibration/V4CalibrationEngine.mjs';
 import {
   fitPlattScaling,
   fitIsotonicRegression,
   fitBetaCalibration,
   selectBestCalibrationMethod,
-} from '../../lib/odds-v4/calibration/ModelCalibrationTechniques.mjs';
+} from '../../lib/odds-v5/calibration/ModelCalibrationTechniques.mjs';
 
 describe('Phase 4 — Observation Collection, Outcome Linking & Zero-Leakage', () => {
   let recorder;

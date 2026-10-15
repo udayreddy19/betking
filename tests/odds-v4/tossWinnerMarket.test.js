@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { buildCanonicalFromMatch } from '../../lib/odds-v3/buildCanonicalFromMatch.mjs';
-import { generate as generateV4 } from '../../lib/odds-v4/OddsEngineV4.mjs';
-import { generatePublicMatchOddsSnapshot } from '../../lib/odds-v4/engineDispatch.mjs';
+import { buildCanonicalFromMatch } from '../../lib/odds-shared/buildCanonicalFromMatch.mjs';
+import { generate as generateV4 } from '../../lib/odds-v5/OddsEngineV4.mjs';
+import { generatePublicMatchOddsSnapshot } from '../../lib/odds-v5/engineDispatch.mjs';
 import {
   generateTossFamilyMarketsV4,
-} from '../../lib/odds-v4/markets/TossWinnerMarketV4.mjs';
+} from '../../lib/odds-v5/markets/TossWinnerMarketV4.mjs';
 import {
   evaluateTossWinnerBet,
   evaluateTossElectionBet,
@@ -16,7 +16,7 @@ import {
   setRuntimeEngineMode,
   clearRuntimeEngineMode,
   _resetEngineModeControlForTests,
-} from '../../lib/odds-v4/EngineModeControl.mjs';
+} from '../../lib/odds-v5/EngineModeControl.mjs';
 
 function prematch() {
   return {

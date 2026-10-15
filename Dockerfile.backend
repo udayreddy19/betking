@@ -20,7 +20,7 @@ RUN npm ci --only=production
 COPY . .
 
 # Writable dirs for support attachments + SQL dump backups (non-root USER node)
-RUN mkdir -p /app/data/support_attachments /app/data/backups && chown -R node:node /app/data
+RUN mkdir -p /app/data/support_attachments /app/data/backups /app/data/calibration && chown -R node:node /app/data
 
 # Expose backend API / WebSocket port
 EXPOSE 5001

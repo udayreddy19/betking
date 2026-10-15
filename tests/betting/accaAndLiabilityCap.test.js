@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { assertBettableQuote } from '../../lib/odds-v3/bookIntegrity.mjs';
+import { assertBettableQuote } from '../../lib/odds-shared/bookIntegrity.mjs';
 
 const resolveServerOdds = vi.fn();
 

@@ -3,7 +3,7 @@ import { passesMatchQualityGate, evaluateMatchQuality } from '../../lib/matchQua
 import { hasCricketPlayStarted } from '../../lib/matchState.mjs';
 import { scorePlatformReadiness } from '../../lib/platformReadiness.mjs';
 import { getMatchState } from '../../src/utils/matchBetting.js';
-import { isMarketEligible } from '../../lib/odds-v3/eligibility/marketEligibility.mjs';
+import { isMarketEligible } from '../../lib/odds-shared/eligibility/marketEligibility.mjs';
 
 const helpers = { hasCricketPlayStarted };
 

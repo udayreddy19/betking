@@ -14,12 +14,12 @@ import {
   getEngineModeStatus,
   resolveOddsEngineMode,
   _resetEngineModeControlForTests,
-} from '../../lib/odds-v4/EngineModeControl.mjs';
+} from '../../lib/odds-v5/EngineModeControl.mjs';
 import {
   setRuntimeOtherSportsEngineMode,
   getOtherSportsEngineModeStatus,
   _resetOtherSportsEngineModeControlForTests,
-} from '../../lib/other-sports-v4/EngineModeControl.mjs';
+} from '../../lib/other-sports-v5/EngineModeControl.mjs';
 import {
   assertPaymentTransition,
   canTransitionPayment,

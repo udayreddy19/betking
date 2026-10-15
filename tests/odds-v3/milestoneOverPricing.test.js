@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest';
 import {
   estimateTotalAtOvers,
   generateExtendedOverMarkets,
-} from '../../lib/odds-v3/markets/overTotal.mjs';
-import { MAX_LIVE_TOTAL_OVER_ODDS } from '../../lib/odds-v3/pricing/MarginCalculator.mjs';
-import { getFormatRules } from '../../lib/odds-v3/format/CricketFormatRules.mjs';
+} from '../../lib/odds-shared/markets/overTotal.mjs';
+import { MAX_LIVE_TOTAL_OVER_ODDS } from '../../lib/odds-shared/pricing/MarginCalculator.mjs';
+import { getFormatRules } from '../../lib/odds-shared/format/CricketFormatRules.mjs';
 
 function liveState({
   format = 'T20',

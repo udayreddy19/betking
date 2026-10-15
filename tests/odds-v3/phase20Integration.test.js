@@ -10,30 +10,30 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { telemetryQueue } from '../../lib/odds-v3/telemetry/telemetryDeliveryQueue.mjs';
+import { telemetryQueue } from '../../lib/odds-shared/telemetry/telemetryDeliveryQueue.mjs';
 import {
   emitOddsEvent,
   subscribeToOddsEvents,
   getRecentOddsEvents,
   clearOddsEventBuffer,
   EVENT_TYPES,
-} from '../../lib/odds-v3/telemetry/oddsEventStream.mjs';
+} from '../../lib/odds-shared/telemetry/oddsEventStream.mjs';
 import {
   evaluatePricingAnomaly,
   getRecentAnomalies,
   clearAnomalyRegistry,
   ANOMALY_SEVERITY,
-} from '../../lib/odds-v3/monitoring/pricingAnomalyDetector.mjs';
+} from '../../lib/odds-shared/monitoring/pricingAnomalyDetector.mjs';
 import {
   correlateAlertIncident,
   getActiveIncidents,
   resolveIncident,
-} from '../../lib/odds-v3/monitoring/alertCorrelationEngine.mjs';
+} from '../../lib/odds-shared/monitoring/alertCorrelationEngine.mjs';
 import {
   evaluateMarketHealth,
   evaluateActiveMarketsHealth,
   MARKET_HEALTH_STATUS,
-} from '../../lib/odds-v3/monitoring/liveMarketHealthEngine.mjs';
+} from '../../lib/odds-shared/monitoring/liveMarketHealthEngine.mjs';
 
 describe('Phase 20 — OddsEngine V3 Live Intelligence, Continuous Learning & Production Optimization', () => {
   beforeEach(() => {

@@ -4,19 +4,19 @@ import {
   bookPoints,
   isOtherSportsV4Sport,
   OSV4_ENGINE_VERSION,
-} from '../../lib/other-sports-v4/index.mjs';
+} from '../../lib/other-sports-v5/index.mjs';
 import {
   resolveOtherSportsEngineMode,
   setRuntimeOtherSportsEngineMode,
   clearRuntimeOtherSportsEngineMode,
   _resetOtherSportsEngineModeControlForTests,
-} from '../../lib/other-sports-v4/EngineModeControl.mjs';
-import { generatePublicMatchOddsSnapshot } from '../../lib/odds-v4/engineDispatch.mjs';
-import { _resetEngineModeControlForTests } from '../../lib/odds-v4/EngineModeControl.mjs';
+} from '../../lib/other-sports-v5/EngineModeControl.mjs';
+import { generatePublicMatchOddsSnapshot } from '../../lib/odds-v5/engineDispatch.mjs';
+import { _resetEngineModeControlForTests } from '../../lib/odds-v5/EngineModeControl.mjs';
 import {
   countSetWins,
   isCompletedTennisSet,
-} from '../../lib/odds-v3/sports/readLiveScoreState.mjs';
+} from '../../lib/odds-shared/sports/readLiveScoreState.mjs';
 
 function soccerMatch(extra = {}) {
   return {

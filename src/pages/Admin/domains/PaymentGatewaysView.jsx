@@ -10,6 +10,7 @@ import {
   InfoIcon,
   SettingsIcon,
 } from '../../../icons/animate/index';
+import { syncProductConfigFromAdmin } from '../features/productConfigSync';
 import './PaymentGatewaysView.css';
 import { formatIst, formatIstDateTime } from '../../../utils/istTime';
 
@@ -19,6 +20,8 @@ export default function PaymentGatewaysView() {
   const [testingProvider, setTestingProvider] = useState(null);
   const [updatingProvider, setUpdatingProvider] = useState(null);
   const [testResults, setTestResults] = useState({});
+  const [pgReviewMode, setPgReviewMode] = useState(false);
+  const [pgBusy, setPgBusy] = useState(false);
   const { showToast } = useAdminToast();
 
   const [promoRules, setPromoRules] = useState({
@@ -32,7 +35,7 @@ export default function PaymentGatewaysView() {
 
   const [routingConfig, setRoutingConfig] = useState({
     routingMode: 'WEIGHTED',
-    weights: { RAZORPAY: 50, CASHFREE: 50, MANUAL_UPI: 0 },
+    weights: { RAZORPAY: 50, PAYU: 50, MANUAL_UPI: 0 },
     autoPayoutRules: {
       enabled: true,
       maxInstantAmount: 5000,
@@ -46,10 +49,11 @@ export default function PaymentGatewaysView() {
   const fetchGateways = useCallback(async () => {
     try {
       setLoading(true);
-      const [res, rulesRes, routeRes] = await Promise.allSettled([
+      const [res, rulesRes, routeRes, productsRes] = await Promise.allSettled([
         adminApiClient.get('/payment-gateways'),
         adminApiClient.get('/wallet-promo-rules'),
         adminApiClient.get('/payment-gateways/routing'),
+        adminApiClient.get('/products'),
       ]);
       if (res.status === 'fulfilled') {
         setGateways(res.value?.gateways || []);
@@ -60,12 +64,46 @@ export default function PaymentGatewaysView() {
       if (routeRes.status === 'fulfilled' && routeRes.value?.routing) {
         setRoutingConfig(routeRes.value.routing);
       }
+      if (productsRes.status === 'fulfilled') {
+        setPgReviewMode(productsRes.value?.pgReviewMode === true);
+      }
     } catch (err) {
       showToast(err.message || 'Failed to load payment gateways', 'error');
     } finally {
       setLoading(false);
     }
   }, [showToast]);
+
+  const togglePgCompliance = async () => {
+    const next = !pgReviewMode;
+    if (next) {
+      const ok = window.confirm(
+        'Enable PG compliance mode?\n\n'
+        + 'Wallet / deposits stay ON, betting/sportsbook OFF — for payment gateway review.',
+      );
+      if (!ok) return;
+    }
+    setPgBusy(true);
+    try {
+      const body = next
+        ? { walletEnabled: true, bettingEnabled: false, pgReviewMode: true }
+        : { walletEnabled: true, bettingEnabled: true, pgReviewMode: false };
+      const res = await adminApiClient.put('/products', body);
+      setPgReviewMode(res?.pgReviewMode === true);
+      // Push the real effective config (wallet / betting / PG / software) to open tabs.
+      await syncProductConfigFromAdmin(res);
+      showToast(
+        res?.pgReviewMode
+          ? 'PG compliance mode ON'
+          : 'PG compliance mode OFF — sportsbook restored',
+        'success',
+      );
+    } catch (err) {
+      showToast(err.message || 'Failed to update PG compliance mode', 'error');
+    } finally {
+      setPgBusy(false);
+    }
+  };
 
   const handleSaveRouting = async () => {
     setSavingRouting(true);
@@ -132,7 +170,7 @@ export default function PaymentGatewaysView() {
   const handleToggleUserSelection = async (currentVal) => {
     setUpdatingProvider('GLOBAL');
     try {
-      const res = await adminApiClient.patch('/payment-gateways/cashfree', {
+      const res = await adminApiClient.patch('/payment-gateways/razorpay', {
         allowUserSelection: !currentVal,
       });
       setGateways(res.gateways || []);
@@ -169,20 +207,26 @@ export default function PaymentGatewaysView() {
     }
   };
 
-  const cashfree = gateways.find((g) => g.provider === 'CASHFREE') || {};
   const razorpay = gateways.find((g) => g.provider === 'RAZORPAY') || {};
+  const payu = gateways.find((g) => g.provider === 'PAYU') || {};
+  const pinelabs = gateways.find((g) => g.provider === 'PINELABS') || {};
 
-  const enabledCount = gateways.filter((g) => g.enabled).length;
-  const primaryGateway = gateways.find((g) => g.isPrimary && g.enabled);
-  const allowUserSelection = gateways.some((g) => g.allowUserSelection);
+  const activeGateways = gateways.filter((g) => g.provider !== 'CASHFREE');
+  const enabledCount = activeGateways.filter((g) => g.enabled).length;
+  const primaryGateway = activeGateways.find((g) => g.isPrimary && g.enabled);
+  const allowUserSelection = activeGateways.some((g) => g.allowUserSelection);
 
   let operationalMode = 'FAILSAFE (ALL DISABLED)';
-  if (enabledCount === 2) {
-    operationalMode = allowUserSelection ? 'DUAL GATEWAY (USER SELECTION)' : `PRIMARY ROUTING (${primaryGateway?.provider || 'CASHFREE'})`;
-  } else if (cashfree.enabled) {
-    operationalMode = 'CASHFREE ONLY';
+  if (enabledCount > 1) {
+    operationalMode = allowUserSelection
+      ? 'MULTI GATEWAY (USER SELECTION)'
+      : `PRIMARY ROUTING (${primaryGateway?.provider || 'RAZORPAY'})`;
   } else if (razorpay.enabled) {
     operationalMode = 'RAZORPAY ONLY';
+  } else if (payu.enabled) {
+    operationalMode = 'PAYU ONLY';
+  } else if (pinelabs.enabled) {
+    operationalMode = 'PINELABS ONLY';
   }
 
   return (
@@ -227,6 +271,34 @@ export default function PaymentGatewaysView() {
           </div>
         </div>
 
+        <div
+          className="pg-mgmt-global-banner"
+          style={{
+            marginBottom: 12,
+            borderColor: pgReviewMode ? '#0f766e' : undefined,
+            background: pgReviewMode ? '#f0fdfa' : undefined,
+          }}
+        >
+          <div className="pg-mgmt-global-banner-left">
+            <ShieldCheckIcon size={18} />
+            <span>
+              <strong>PG compliance mode</strong>
+              {' — '}
+              {pgReviewMode
+                ? 'ON: betting/sportsbook suppressed for payment-gateway review (wallet stays off on OddsYra).'
+                : 'OFF: normal sportsbook. Enable to hide betting during PG compliance review.'}
+            </span>
+          </div>
+          <button
+            type="button"
+            className="pg-mgmt-refresh-btn"
+            disabled={pgBusy}
+            onClick={togglePgCompliance}
+          >
+            {pgBusy ? 'Saving…' : pgReviewMode ? 'Disable compliance' : 'Enable compliance'}
+          </button>
+        </div>
+
         {/* Global Configuration Banner */}
         <div className="pg-mgmt-global-banner">
           <div className="pg-mgmt-global-banner-left">
@@ -254,16 +326,22 @@ export default function PaymentGatewaysView() {
       <div className="pg-mgmt-grid">
         {[
           {
-            data: cashfree,
-            name: 'CASHFREE',
-            description: 'Direct UPI, NetBanking, Cards, & QR via Cashfree PG SDK v3',
-            webhookUrl: 'https://oddsyra.com/api/webhooks/cashfree',
-          },
-          {
             data: razorpay,
             name: 'RAZORPAY',
             description: 'Standard Razorpay Checkout modal & instant UPI auto-collection',
             webhookUrl: 'https://oddsyra.com/api/webhooks/razorpay',
+          },
+          {
+            data: payu,
+            name: 'PAYU',
+            description: 'PayU Hosted Checkout deposits and Payouts',
+            webhookUrl: 'https://oddsyra.com/api/webhooks/payu',
+          },
+          {
+            data: pinelabs,
+            name: 'PINELABS',
+            description: 'Pine Labs Plural Hosted Checkout and bank payouts',
+            webhookUrl: 'https://oddsyra.com/api/webhooks/pinelabs',
           },
         ].map(({ data, name, description, webhookUrl }) => {
           const isUpdating = updatingProvider === name;
@@ -491,7 +569,7 @@ export default function PaymentGatewaysView() {
                       const rz = Number(e.target.value);
                       setRoutingConfig((p) => ({
                         ...p,
-                        weights: { ...p.weights, RAZORPAY: rz, CASHFREE: Math.max(0, 100 - rz - (p.weights?.MANUAL_UPI || 0)) },
+                        weights: { ...p.weights, RAZORPAY: rz, PAYU: Math.max(0, 100 - rz - (p.weights?.MANUAL_UPI || 0)) },
                       }));
                     }}
                     style={{ width: '100%', accentColor: '#38bdf8' }}
@@ -499,20 +577,20 @@ export default function PaymentGatewaysView() {
                 </div>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: 4 }}>
-                    <span style={{ fontWeight: 600 }}>Cashfree Weight</span>
-                    <span style={{ fontWeight: 800, color: '#34d399' }}>{routingConfig.weights?.CASHFREE ?? 50}%</span>
+                    <span style={{ fontWeight: 600 }}>PayU Weight</span>
+                    <span style={{ fontWeight: 800, color: '#34d399' }}>{routingConfig.weights?.PAYU ?? 50}%</span>
                   </div>
                   <input
                     type="range"
                     min="0"
                     max="100"
                     step="5"
-                    value={routingConfig.weights?.CASHFREE ?? 50}
+                    value={routingConfig.weights?.PAYU ?? 50}
                     onChange={(e) => {
-                      const cf = Number(e.target.value);
+                      const pu = Number(e.target.value);
                       setRoutingConfig((p) => ({
                         ...p,
-                        weights: { ...p.weights, CASHFREE: cf, RAZORPAY: Math.max(0, 100 - cf - (p.weights?.MANUAL_UPI || 0)) },
+                        weights: { ...p.weights, PAYU: pu, RAZORPAY: Math.max(0, 100 - pu - (p.weights?.MANUAL_UPI || 0)) },
                       }));
                     }}
                     style={{ width: '100%', accentColor: '#34d399' }}
@@ -697,7 +775,7 @@ export default function PaymentGatewaysView() {
         </div>
         <ul className="pg-safety-list">
           <li><strong>Zero Interrupted Settle:</strong> Disabling a gateway only blocks new order creation; pending in-flight payments remain reconcilable via webhooks.</li>
-          <li><strong>Cross-Provider Rejection:</strong> Cashfree webhooks strictly reject Razorpay orders, and Razorpay webhooks strictly reject Cashfree orders.</li>
+          <li><strong>Cross-Provider Rejection:</strong> Each gateway webhook only settles orders created for that provider.</li>
           <li><strong>Failsafe Mode:</strong> If both gateways are disabled, the system refuses new orders cleanly without creating dummy or mock records.</li>
           <li><strong>Server-Authoritative:</strong> All credits execute under row locks in PostgreSQL double-entry ledgers upon cryptographic signature validation.</li>
         </ul>

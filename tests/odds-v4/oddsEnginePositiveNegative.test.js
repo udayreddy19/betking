@@ -2,11 +2,11 @@
  * OddsEngineV4 — positive + negative matrix (v4.7 house book).
  */
 import { describe, it, expect, beforeEach } from 'vitest';
-import { buildCanonicalFromMatch } from '../../lib/odds-v3/buildCanonicalFromMatch.mjs';
-import { generate as generateV4, V4_ENGINE_VERSION } from '../../lib/odds-v4/OddsEngineV4.mjs';
-import { generate as generateV3 } from '../../lib/odds-v3/OddsEngineV3.mjs';
-import { V4_MARGIN_CONFIG, tightenV4Markets, resolveSrlV4Margins } from '../../lib/odds-v4/v4HouseProtect.mjs';
-import { SRL_MARGIN_CONFIG } from '../../lib/odds-v3/pricing/MarginCalculator.mjs';
+import { buildCanonicalFromMatch } from '../../lib/odds-shared/buildCanonicalFromMatch.mjs';
+import { generate as generateV4, V4_ENGINE_VERSION } from '../../lib/odds-v5/OddsEngineV4.mjs';
+import { generate as generateV3 } from '../../lib/odds-shared/OddsEngineV3.mjs';
+import { V4_MARGIN_CONFIG, tightenV4Markets, resolveSrlV4Margins } from '../../lib/odds-v5/v4HouseProtect.mjs';
+import { SRL_MARGIN_CONFIG } from '../../lib/odds-shared/pricing/MarginCalculator.mjs';
 import { enrichIplSrlMatchCard } from '../../lib/iplSrlCardMarkets.mjs';
 import { validateMarketSettlementCompatibility } from '../../lib/settlement/marketSettlementContract.mjs';
 import { getOddsEngineScorecard } from '../../lib/oddsEngineScorecard.mjs';
@@ -46,18 +46,18 @@ describe('OddsEngineV4 positive cases', () => {
     delete process.env.ODDS_ENGINE;
   });
 
-  it('emits v4.9.0 identity and honest scorecard mark (not vanity 10)', () => {
-    expect(V4_ENGINE_VERSION).toBe('4.9.0');
+  it('emits v4.10.0 identity and honest scorecard mark (not vanity 10)', () => {
+    expect(V4_ENGINE_VERSION).toBe('4.10.0');
     const row = getOddsEngineScorecard().find((r) => r.engine === 'OddsEngineV4');
-    expect(row.score).toBe(8.3);
+    expect(row.score).toBe(8.5);
     expect(row.scoreBasis).toBe('AUDIT_ESTIMATE');
-    expect(row.version).toBe('4.9.0');
+    expect(row.version).toBe('4.10.0');
   });
 
   it('opens match_winner with thick house book on live chase', () => {
     const snap = generateV4(buildCanonicalFromMatch(liveChase()), { winnerOnly: true });
     expect(snap.engine).toBe('OddsEngineV4');
-    expect(snap.engineVersion).toBe('4.9.0');
+    expect(snap.engineVersion).toBe('4.10.0');
     const mw = snap.markets.find((m) => m.marketId === 'match_winner');
     expect(mw?.status).toBe('OPEN');
     expect(mw.selections.length).toBe(2);

@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { calculateMatchWinnerProbability, calculateExpectedTotal } from '../../lib/odds-v3/pricing/ProbabilityModel.mjs';
-import { calculateFairOdds } from '../../lib/odds-v3/pricing/FairOddsCalculator.mjs';
-import { applyMargin } from '../../lib/odds-v3/pricing/MarginCalculator.mjs';
-import { priceSelection } from '../../lib/odds-v3/pricing/OddsCalculator.mjs';
-import { validateSelectionPrice, validateProbabilitySum, validateOverround } from '../../lib/odds-v3/validation/PricingValidator.mjs';
+import { calculateMatchWinnerProbability, calculateExpectedTotal } from '../../lib/odds-shared/pricing/ProbabilityModel.mjs';
+import { calculateFairOdds } from '../../lib/odds-shared/pricing/FairOddsCalculator.mjs';
+import { applyMargin } from '../../lib/odds-shared/pricing/MarginCalculator.mjs';
+import { priceSelection } from '../../lib/odds-shared/pricing/OddsCalculator.mjs';
+import { validateSelectionPrice, validateProbabilitySum, validateOverround } from '../../lib/odds-shared/validation/PricingValidator.mjs';
 
 describe('OddsEngineV3 — Probability & Pricing Pipeline', () => {
   it('calculates match winner probabilities summing to 1.0', () => {

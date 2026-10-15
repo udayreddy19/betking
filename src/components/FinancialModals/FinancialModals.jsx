@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { IoCheckmarkCircle, BiWallet, BiMoneyWithdraw, BiHistory, BiTransfer, BiGift } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
@@ -33,6 +34,7 @@ function formatWithdrawalStatus(status) {
 }
 
 export default function FinancialModals({ modalType, onClose }) {
+  const navigate = useNavigate();
   const { user, withdrawFunds, showToast, transactions, refreshWallet } = useAuth();
   const { placedBets } = useBetSlip();
   const wallet = getWalletBreakdown(user);
@@ -87,6 +89,7 @@ export default function FinancialModals({ modalType, onClose }) {
   const vipLimits = getBenefitsForTier(user?.loyaltyTier);
   const minWithdraw = vipLimits.minWithdraw || MIN_WITHDRAW_INR;
   const canWithdraw = wallet.withdrawable >= minWithdraw;
+  const withdrawShortfall = Math.max(0, Math.round((minWithdraw - wallet.withdrawable) * 100) / 100);
   const cancellableWithdrawals = pendingWithdrawals.filter(isCancellableWithdrawal);
 
   const handleRazorpayWithdraw = async (e) => {
@@ -292,9 +295,42 @@ export default function FinancialModals({ modalType, onClose }) {
                       : ''}
                   </p>
                 </div>
-                <button type="button" className="fin-btn-secondary" onClick={onClose}>
-                  Close
-                </button>
+                <div className="fin-withdraw-blocked">
+                  <strong>Withdrawal not available yet</strong>
+                  <p>
+                    You need at least {formatInr(minWithdraw)} withdrawable to request a payout.
+                    {withdrawShortfall > 0
+                      ? ` You're ${formatInr(withdrawShortfall)} short.`
+                      : ''}
+                  </p>
+                  {wallet.lockedDeposit > 0 && (
+                    <p>
+                      {formatInr(wallet.lockedDeposit)} is locked until you place qualifying bets.
+                      Unlocking it can raise your withdrawable balance above the minimum.
+                    </p>
+                  )}
+                </div>
+                <div className="fin-withdraw-blocked-actions">
+                  {wallet.lockedDeposit > 0 && (
+                    <button
+                      type="button"
+                      className="fin-btn-primary"
+                      onClick={() => { onClose(); navigate('/sports'); }}
+                    >
+                      Place bets to unlock
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className={wallet.lockedDeposit > 0 ? 'fin-btn-secondary' : 'fin-btn-primary'}
+                    onClick={() => { onClose(); navigate('/wallet?tab=add'); }}
+                  >
+                    Add money
+                  </button>
+                  <button type="button" className="fin-btn-secondary" onClick={onClose}>
+                    Close
+                  </button>
+                </div>
               </>
             ) : (
               <form onSubmit={handleRazorpayWithdraw}>

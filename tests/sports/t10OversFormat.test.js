@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getMatchMaxOvers, resolveCricketOversFormat } from '../../src/utils/cricketFormat.js';
-import { resolveCricketFormat } from '../../lib/odds-v3/format/CricketFormatRules.mjs';
+import { resolveCricketFormat } from '../../lib/odds-shared/format/CricketFormatRules.mjs';
 
 describe('T10 overs format detection', () => {
   it('treats Frankfurt T10 as 10 overs even when matchType is T20', () => {

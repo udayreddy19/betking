@@ -281,10 +281,10 @@ export default function TradingRiskDomainView({ subModule }) {
     setEngineSaving(true);
     try {
       const body = { mode };
-      if (mode === 'v3' || mode === 'shadow') {
-        body.reason = window.prompt('Reason required for temporary V3/shadow override:') || '';
+      if (mode === 'v4' || mode === 'shadow') {
+        body.reason = window.prompt('Reason required for temporary V4/shadow override:') || '';
         if (!body.reason.trim()) {
-          showToast('Reason required for non-V4 override', 'error');
+          showToast('Reason required for V4/shadow override', 'error');
           return;
         }
         body.ttlHours = 24;
@@ -293,10 +293,10 @@ export default function TradingRiskDomainView({ subModule }) {
       setEngineStatus(data.data || data);
       showToast(
         mode === 'v4'
-          ? 'Cricket V4 live — resource MW + V3 market catalog'
+          ? 'Cricket V4 fallback (temporary — auto-expires)'
           : mode === 'shadow'
-            ? 'Cricket shadow — V3 live, V4 compare only (expires)'
-            : 'Cricket V3 live (temporary — auto-expires)',
+            ? 'Cricket shadow — V5 live, V4 compare only (expires)'
+            : 'Cricket V5 live',
         'success',
       );
     } catch (err) {
@@ -310,10 +310,10 @@ export default function TradingRiskDomainView({ subModule }) {
     setOtherSportsEngineSaving(true);
     try {
       const body = { mode };
-      if (mode === 'v3' || mode === 'shadow') {
+      if (mode === 'v4' || mode === 'shadow') {
         body.reason = window.prompt('Reason required for temporary other-sports override:') || '';
         if (!body.reason.trim()) {
-          showToast('Reason required for non-V4 override', 'error');
+          showToast('Reason required for V4/shadow override', 'error');
           return;
         }
         body.ttlHours = 24;
@@ -322,10 +322,10 @@ export default function TradingRiskDomainView({ subModule }) {
       setOtherSportsEngineStatus(data.data || data);
       showToast(
         mode === 'v4'
-          ? 'Other sports V4 live — house-hardened book'
+          ? 'Other sports V4 fallback (temporary — auto-expires)'
           : mode === 'shadow'
-            ? 'Other sports shadow — V3 live, V4 compare only (expires)'
-            : 'Other sports V3 live (temporary — auto-expires)',
+            ? 'Other sports shadow — V5 live, V4 compare only (expires)'
+            : 'Other sports V5 live',
         'success',
       );
     } catch (err) {
@@ -524,7 +524,7 @@ export default function TradingRiskDomainView({ subModule }) {
         ? 'Risk signals and fraud cases. Flag / review / restrict / escalate — no auto-ban from weak signals.'
         : showOddsHealth
           ? 'Daily ritual: inverted books, lock-price rate, and settlement ingest. Death-over / player-prop markets stay shadow until observations exist.'
-          : 'Live match pricing risk from OddsEngineV3. Stake liability shows once open bets are ledger-backed.';
+          : 'Live match pricing risk from OddsEngineV5. Stake liability shows once open bets are ledger-backed.';
 
   return (
     <div>
@@ -568,7 +568,7 @@ export default function TradingRiskDomainView({ subModule }) {
             <div>
               <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>Cricket odds engine</div>
               <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.78rem' }}>
-                Exclusive — V4 uses resource Match Winner + the same V3 compact market catalog.
+                Exclusive — V5 is live; V4 is temporary fallback. Shadow publishes V5 and compares V4.
                 {' '}Active: <strong>{engineStatus?.resolved || engineStatus?.active || '…'}</strong>
                 {engineStatus?.source ? ` (${engineStatus.source})` : ''}
                 {engineStatus?.overrideExpiresAt
@@ -579,8 +579,8 @@ export default function TradingRiskDomainView({ subModule }) {
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {[
-                { mode: 'v3', label: 'V3 live' },
-                { mode: 'v4', label: 'V4 live' },
+                { mode: 'v5', label: 'V5 live' },
+                { mode: 'v4', label: 'V4 fallback' },
                 { mode: 'shadow', label: 'Shadow' },
               ].map((btn) => {
                 const active = (engineStatus?.resolved || engineStatus?.active) === btn.mode;
@@ -607,7 +607,7 @@ export default function TradingRiskDomainView({ subModule }) {
             <div>
               <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>Other sports odds engine</div>
               <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.78rem' }}>
-                Soccer / basketball / tennis / American football — V4 is house-hardened (thick book + Over/Yes caps).
+                Soccer / basketball / tennis / American football — V5 live; V4 temporary fallback.
                 {' '}Active: <strong>{otherSportsEngineStatus?.resolved || otherSportsEngineStatus?.active || '…'}</strong>
                 {otherSportsEngineStatus?.source ? ` (${otherSportsEngineStatus.source})` : ''}
                 {otherSportsEngineStatus?.envDefault ? ` · env ${otherSportsEngineStatus.envDefault}` : ''}
@@ -618,8 +618,8 @@ export default function TradingRiskDomainView({ subModule }) {
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {[
-                { mode: 'v3', label: 'V3 live' },
-                { mode: 'v4', label: 'V4 live' },
+                { mode: 'v5', label: 'V5 live' },
+                { mode: 'v4', label: 'V4 fallback' },
                 { mode: 'shadow', label: 'Shadow' },
               ].map((btn) => {
                 const active = (otherSportsEngineStatus?.resolved || otherSportsEngineStatus?.active) === btn.mode;
@@ -1233,7 +1233,7 @@ export default function TradingRiskDomainView({ subModule }) {
 
       {showOddsDesk && !showGgrDesk && !showFraud && (
         <AdminCard
-          title="Odds Desk · V3 Pricing Debug"
+          title="Odds Desk · V5 Pricing Debug"
           subtitle="Inspect live canonical state, winner line, market count, and engine status — no invented prices."
           accent="#818cf8"
           style={{ marginTop: '20px' }}

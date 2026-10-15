@@ -12,13 +12,13 @@ import {
   tightenOsV4Markets,
   guardOsV4Book,
   applyOsV4StabilityFallback,
-} from '../../lib/other-sports-v4/index.mjs';
+} from '../../lib/other-sports-v5/index.mjs';
 import { validateMarketSettlementCompatibility } from '../../lib/settlement/marketSettlementContract.mjs';
 import { getOddsEngineScorecard } from '../../lib/oddsEngineScorecard.mjs';
 import {
   _resetOtherSportsEngineModeControlForTests,
   clearRuntimeOtherSportsEngineMode,
-} from '../../lib/other-sports-v4/EngineModeControl.mjs';
+} from '../../lib/other-sports-v5/EngineModeControl.mjs';
 
 function soccer(extra = {}) {
   return {

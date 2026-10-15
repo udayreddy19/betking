@@ -1077,7 +1077,7 @@ router.post('/api/admin/trading/resume-market', adminAuth, requireRole('SUPER_AD
 // --- Dynamic Margin & Trading Control Desk ---
 router.get('/api/admin/trading/margin-config', adminAuth, requireRole('SUPER_ADMIN', 'TRADING_ADMIN', 'RISK_ANALYST', 'OPERATIONS_ADMIN'), async (req, res) => {
   try {
-    const { getActiveMarginConfig } = await import('../../../lib/odds-v3/pricing/dynamicMarginEngine.mjs');
+    const { getActiveMarginConfig } = await import('../../../lib/odds-shared/pricing/dynamicMarginEngine.mjs');
     res.json({ success: true, config: getActiveMarginConfig() });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -1086,7 +1086,7 @@ router.get('/api/admin/trading/margin-config', adminAuth, requireRole('SUPER_ADM
 
 router.post('/api/admin/trading/margin-config', adminAuth, requireRole('SUPER_ADMIN', 'TRADING_ADMIN'), async (req, res) => {
   try {
-    const { updateMarginConfig } = await import('../../../lib/odds-v3/pricing/dynamicMarginEngine.mjs');
+    const { updateMarginConfig } = await import('../../../lib/odds-shared/pricing/dynamicMarginEngine.mjs');
     const { logAdminAction } = await import('../../middleware/auditLogger.js');
     const updated = updateMarginConfig(req.body || {});
 
@@ -1104,7 +1104,7 @@ router.post('/api/admin/trading/margin-config', adminAuth, requireRole('SUPER_AD
 
 router.post('/api/admin/trading/simulate-shading', adminAuth, async (req, res) => {
   try {
-    const { calculateLiabilityShadedOdds } = await import('../../../lib/odds-v3/pricing/dynamicMarginEngine.mjs');
+    const { calculateLiabilityShadedOdds } = await import('../../../lib/odds-shared/pricing/dynamicMarginEngine.mjs');
     const { selections = [], baseOverround = 0.05, sensitivity = 0.08 } = req.body || {};
     const shaded = calculateLiabilityShadedOdds(selections, baseOverround, sensitivity);
     res.json({ success: true, selections: shaded });
@@ -1115,7 +1115,7 @@ router.post('/api/admin/trading/simulate-shading', adminAuth, async (req, res) =
 
 router.get('/api/admin/trading/fast-freeze', adminAuth, async (req, res) => {
   try {
-    const { fastFreezeManager } = await import('../../../lib/odds-v3/pricing/dynamicMarginEngine.mjs');
+    const { fastFreezeManager } = await import('../../../lib/odds-shared/pricing/dynamicMarginEngine.mjs');
     res.json({ success: true, freezes: fastFreezeManager.getActiveFreezes() });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -1127,7 +1127,7 @@ router.post('/api/admin/trading/fast-freeze', adminAuth, requireRole('SUPER_ADMI
     const { targetId, durationSeconds = 30, reason = 'IN_PLAY_FAST_FREEZE' } = req.body || {};
     if (!targetId) return res.status(400).json({ success: false, error: 'targetId is required' });
 
-    const { fastFreezeManager } = await import('../../../lib/odds-v3/pricing/dynamicMarginEngine.mjs');
+    const { fastFreezeManager } = await import('../../../lib/odds-shared/pricing/dynamicMarginEngine.mjs');
     const { marketSuspensionEngine } = await import('../../../lib/marketSuspensionEngine.mjs');
     const { logAdminAction } = await import('../../middleware/auditLogger.js');
 
@@ -1160,7 +1160,7 @@ router.post('/api/admin/trading/fast-freeze', adminAuth, requireRole('SUPER_ADMI
 router.delete('/api/admin/trading/fast-freeze/:targetId', adminAuth, requireRole('SUPER_ADMIN', 'TRADING_ADMIN', 'RISK_ANALYST'), async (req, res) => {
   try {
     const { targetId } = req.params;
-    const { fastFreezeManager } = await import('../../../lib/odds-v3/pricing/dynamicMarginEngine.mjs');
+    const { fastFreezeManager } = await import('../../../lib/odds-shared/pricing/dynamicMarginEngine.mjs');
     const { marketSuspensionEngine } = await import('../../../lib/marketSuspensionEngine.mjs');
     const { logAdminAction } = await import('../../middleware/auditLogger.js');
 

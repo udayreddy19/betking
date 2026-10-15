@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { generate, isOtherSportsV4Sport, OSV4_SPORTS } from '../../lib/other-sports-v4/index.mjs';
-import { scoreOsV4Book, applyScoreDrivenFallback } from '../../lib/other-sports-v4/book/scorecard.mjs';
+import { generate, isOtherSportsV4Sport, OSV4_SPORTS } from '../../lib/other-sports-v5/index.mjs';
+import { scoreOsV4Book, applyScoreDrivenFallback } from '../../lib/other-sports-v5/book/scorecard.mjs';
 
 function soccerMatch(extra = {}) {
   return {
