@@ -48,7 +48,9 @@
     "perf:baseline": "node scripts/perf-baseline.mjs",
     "ballfeed:sync": "node scripts/sync-ball-feed.mjs",
     "odds:measure-freshness": "node scripts/measure_odds_freshness.mjs",
-    "odds:real-world-report": "node scripts/odds-real-world-report.mjs"
+    "odds:real-world-report": "node scripts/odds-real-world-report.mjs",
+    "test:odds-v4": "vitest run tests/odds-v4",
+    "calibration:nightly": "node scripts/v4CalibrationNightly.mjs"
   },
   "browserslist": [
     "chrome >= 80",
@@ -91,5 +93,8 @@
   },
   "overrides": {
     "nanoid": "3.3.18"
+  },
+  "optionalDependencies": {
+    "lightningcss": "^1.33.0"
   }
 }

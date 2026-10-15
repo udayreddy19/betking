@@ -14,33 +14,33 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { auditPredictionPriceOutcomeIntegrity } from '../../lib/odds-v3/dataset/predictionPriceOutcomeIntegrity.mjs';
+import { auditPredictionPriceOutcomeIntegrity } from '../../lib/odds-shared/dataset/predictionPriceOutcomeIntegrity.mjs';
 import {
   evaluateProviderDisagreement,
   DISAGREEMENT_LEVELS,
   DISAGREEMENT_ACTIONS,
-} from '../../lib/odds-v3/pricing/providerDisagreementEngine.mjs';
+} from '../../lib/odds-shared/pricing/providerDisagreementEngine.mjs';
 import {
   analyzeClosingLineEfficiency,
   aggregateClosingLineDataset,
-} from '../../lib/odds-v3/validation/closingLineAnalyzer.mjs';
+} from '../../lib/odds-shared/validation/closingLineAnalyzer.mjs';
 import {
   buildMarketScorecards,
   evaluateCricketStateScorecard,
-} from '../../lib/odds-v3/validation/marketScorecard.mjs';
-import { auditMarginFairness } from '../../lib/odds-v3/pricing/marginFairnessAuditor.mjs';
+} from '../../lib/odds-shared/validation/marketScorecard.mjs';
+import { auditMarginFairness } from '../../lib/odds-shared/pricing/marginFairnessAuditor.mjs';
 import {
   recordModelFailure,
   getFailureTaxonomyReport,
   FAILURE_CATEGORIES,
-} from '../../lib/odds-v3/monitoring/failureTaxonomy.mjs';
-import { buildPriceExplainabilityRecord } from '../../lib/odds-v3/pricing/priceExplainability.mjs';
+} from '../../lib/odds-shared/monitoring/failureTaxonomy.mjs';
+import { buildPriceExplainabilityRecord } from '../../lib/odds-shared/pricing/priceExplainability.mjs';
 import { executeDeterministicReplay } from '../../scripts/oddsReplayCli.mjs';
 import {
   evaluateFeedRedundancy,
   computeUnifiedQualityScore,
   REDUNDANCY_LEVELS,
-} from '../../lib/odds-v3/resilience/feedRedundancyManager.mjs';
+} from '../../lib/odds-shared/resilience/feedRedundancyManager.mjs';
 
 describe('Phase 18 — OddsEngine V3 Production Data Intelligence & Feed Resiliency', () => {
   describe('1. Prediction -> Price -> Outcome Integrity', () => {

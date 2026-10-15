@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { generate } from '../../lib/odds-v3/OddsEngineV3.mjs';
-import { createCanonicalMatchState } from '../../lib/odds-v3/models/CanonicalMatchState.mjs';
+import { generate } from '../../lib/odds-shared/OddsEngineV3.mjs';
+import { createCanonicalMatchState } from '../../lib/odds-shared/models/CanonicalMatchState.mjs';
 
 describe('OddsEngineV3 — Phase 7 Market Lifecycle Shadow Tests', () => {
   const baseInput = {

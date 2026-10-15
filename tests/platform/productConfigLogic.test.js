@@ -106,3 +106,29 @@ describe('PlatformGate matrix', () => {
     expect(isPlatformGateExemptPath('/')).toBe(false);
   });
 });
+
+describe('VPS modes (PG review / Software Platform)', () => {
+  it('PG review mode is never an "all off" snapshot and is always allowed by the gate', () => {
+    const pg = { walletEnabled: true, bettingEnabled: false, pgReviewMode: true };
+    expect(isAllProductsOffSnapshot({ walletEnabled: false, bettingEnabled: false, pgReviewMode: true })).toBe(false);
+    expect(shouldCacheProductSnapshot(pg)).toBe(true);
+    expect(platformGateDecision({
+      ready: true, walletEnabled: false, bettingEnabled: false, pgReviewMode: true,
+    })).toBe('allow');
+  });
+
+  it('Software Platform snapshots are cacheable even when wallet/betting are off', () => {
+    expect(isAllProductsOffSnapshot({ walletEnabled: false, bettingEnabled: false, softwarePlatformEnabled: true })).toBe(false);
+    expect(shouldCacheProductSnapshot({ walletEnabled: true, bettingEnabled: false, softwarePlatformEnabled: true })).toBe(true);
+  });
+
+  it('plain all-off (no PG / software) is still poisoned and never cached', () => {
+    expect(shouldCacheProductSnapshot({ walletEnabled: false, bettingEnabled: false, pgReviewMode: false, softwarePlatformEnabled: false })).toBe(false);
+  });
+
+  it('company / documents / desk routes are gate-exempt like the live VPS gate', () => {
+    expect(isPlatformGateExemptPath('/company/about')).toBe(true);
+    expect(isPlatformGateExemptPath('/documents')).toBe(true);
+    expect(isPlatformGateExemptPath('/desk')).toBe(true);
+  });
+});

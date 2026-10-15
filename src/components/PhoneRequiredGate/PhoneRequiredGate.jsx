@@ -1,6 +1,11 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import {
+  userHasDob,
+  userHasPhone,
+  userNeedsCompleteProfile as profileIncomplete,
+} from '../../utils/profileCompleteness';
 
 /**
  * DOB/phone are required for deposit checkout only.
@@ -16,15 +21,15 @@ function isStrictMoneyPath(pathname) {
 }
 
 export function userNeedsPhone(user) {
-  return Boolean(user) && String(user?.phone || '').replace(/\D/g, '').length < 10;
+  return Boolean(user) && !userHasPhone(user);
 }
 
 export function userNeedsDob(user) {
-  return Boolean(user) && !String(user?.dateOfBirth || '').slice(0, 10).match(/^\d{4}-\d{2}-\d{2}$/);
+  return Boolean(user) && !userHasDob(user);
 }
 
 export function userNeedsCompleteProfile(user) {
-  return userNeedsPhone(user) || userNeedsDob(user);
+  return profileIncomplete(user);
 }
 
 export default function PhoneRequiredGate() {

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { calculateScoreMatrix } from '../../lib/odds-v3/models/soccerDixonColesModel.mjs';
-import { calculateTennisMatchProb, calculateGameWinProb } from '../../lib/odds-v3/models/tennisMarkovModel.mjs';
-import { calculateBasketballProbabilities } from '../../lib/odds-v3/models/basketballPaceModel.mjs';
+import { calculateScoreMatrix } from '../../lib/odds-shared/models/soccerDixonColesModel.mjs';
+import { calculateTennisMatchProb, calculateGameWinProb } from '../../lib/odds-shared/models/tennisMarkovModel.mjs';
+import { calculateBasketballProbabilities } from '../../lib/odds-shared/models/basketballPaceModel.mjs';
 
 describe('OddsEngineV3 — P1: Sport Parametric Models', () => {
   it('Soccer: computes coherent 1X2, Over/Under, and BTTS probabilities', () => {

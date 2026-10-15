@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { generate } from '../../lib/odds-v3/OddsEngineV3.mjs';
-import { createCanonicalMatchState } from '../../lib/odds-v3/models/CanonicalMatchState.mjs';
-import { buildCanonicalFromMatch } from '../../lib/odds-v3/buildCanonicalFromMatch.mjs';
-import { nextBallSlot, resolveCricketFormat } from '../../lib/odds-v3/format/CricketFormatRules.mjs';
+import { generate } from '../../lib/odds-shared/OddsEngineV3.mjs';
+import { createCanonicalMatchState } from '../../lib/odds-shared/models/CanonicalMatchState.mjs';
+import { buildCanonicalFromMatch } from '../../lib/odds-shared/buildCanonicalFromMatch.mjs';
+import { nextBallSlot, resolveCricketFormat } from '../../lib/odds-shared/format/CricketFormatRules.mjs';
 
 describe('T10 live book', () => {
   it('treats SRL as T20', () => {

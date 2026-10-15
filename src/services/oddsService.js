@@ -1,6 +1,6 @@
 /**
  * Frontend Authoritative Odds Service (src/services/oddsService.js)
- * Connects React UI components to backend OddsEngineV3 API endpoints.
+ * Connects React UI components to backend OddsEngineV5 API endpoints.
  * NO fallback to local hardcoded markets / invented prices.
  */
 

@@ -3,6 +3,12 @@ import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useProducts } from '../../context/ProductContext';
 import BrandLogo, { BrandWordmark } from '../../components/BrandLogo/BrandLogo';
+import {
+  maxAdultDateOfBirth,
+  normalizeDateOfBirth,
+  userHasDob,
+  userHasPhone,
+} from '../../utils/profileCompleteness';
 import '../Register/Register.css';
 import './AuthPages.css';
 
@@ -17,14 +23,6 @@ const PENDING_MODAL_KEY = 'bk_open_modal';
 
 function digitsOnly(value) {
   return String(value || '').replace(/\D/g, '').slice(0, 10);
-}
-
-function hasPhone(user) {
-  return Boolean(String(user?.phone || '').replace(/\D/g, '').length >= 10);
-}
-
-function hasDob(user) {
-  return Boolean(String(user?.dateOfBirth || '').slice(0, 10).match(/^\d{4}-\d{2}-\d{2}$/));
 }
 
 function readPendingReferral(searchParams) {
@@ -64,7 +62,7 @@ function resolveAfterComplete(nextRaw, { bettingEnabled = true } = {}) {
 export default function CompleteProfile() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, isLoggedIn, completeAccountProfile, showToast } = useAuth();
+  const { user, isLoggedIn, completeAccountProfile, showToast, refreshWallet } = useAuth();
   const { bettingEnabled, walletEnabled, ready: productsReady } = useProducts();
   const showBettingPromos = bettingEnabled;
   const [phone, setPhone] = useState('');
@@ -75,8 +73,12 @@ export default function CompleteProfile() {
   const [loading, setLoading] = useState(false);
   const isWelcome = searchParams.get('welcome') === '1';
   const referralActive = Boolean(referralCode.trim());
-  const needPhone = !hasPhone(user);
-  const needDob = !hasDob(user);
+  const needPhone = !userHasPhone(user);
+  const needDob = !userHasDob(user);
+
+  useEffect(() => {
+    refreshWallet?.();
+  }, [refreshWallet]);
 
   useEffect(() => {
     if (user?.phone) {
@@ -85,9 +87,8 @@ export default function CompleteProfile() {
   }, [user?.phone]);
 
   useEffect(() => {
-    if (user?.dateOfBirth) {
-      setDateOfBirth(String(user.dateOfBirth).slice(0, 10));
-    }
+    const normalized = normalizeDateOfBirth(user?.dateOfBirth);
+    if (normalized) setDateOfBirth(normalized);
   }, [user?.dateOfBirth]);
 
   useEffect(() => {
@@ -237,7 +238,7 @@ export default function CompleteProfile() {
                   value={dateOfBirth}
                   onChange={(e) => setDateOfBirth(e.target.value)}
                   required
-                  max={new Date().toISOString().slice(0, 10)}
+                  max={maxAdultDateOfBirth()}
                   autoFocus={!needPhone}
                 />
                 <p className="register-lead" style={{ marginTop: 8, fontSize: '0.82rem' }}>

@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { createCanonicalMatchState } from '../../lib/odds-v3/models/CanonicalMatchState.mjs';
-import { generateExtendedMatchTotals } from '../../lib/odds-v3/markets/matchTotals.mjs';
-import { generateExtendedInningsTotals } from '../../lib/odds-v3/markets/inningsTotal.mjs';
-import { calculateOverUnderProbability } from '../../lib/odds-v3/models/distributionModel.mjs';
+import { createCanonicalMatchState } from '../../lib/odds-shared/models/CanonicalMatchState.mjs';
+import { generateExtendedMatchTotals } from '../../lib/odds-shared/markets/matchTotals.mjs';
+import { generateExtendedInningsTotals } from '../../lib/odds-shared/markets/inningsTotal.mjs';
+import { calculateOverUnderProbability } from '../../lib/odds-shared/models/distributionModel.mjs';
 
 function odiChaseState(extra = {}) {
   return createCanonicalMatchState({

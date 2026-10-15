@@ -7,7 +7,7 @@ describe('AUTHORITATIVE ODDS ARCHITECTURE & ANTI-REGRESSION TESTS', () => {
   const modalPath = path.resolve(process.cwd(), 'src/components/MatchDetailModal/MatchDetailModal.jsx');
   const sportsPath = path.resolve(process.cwd(), 'src/pages/Sports/Sports.jsx');
   const servicePath = path.resolve(process.cwd(), 'src/services/oddsService.js');
-  const oddsEnginePath = path.resolve(process.cwd(), 'lib/odds-v3/OddsEngineV3.mjs');
+  const oddsEnginePath = path.resolve(process.cwd(), 'lib/odds-shared/OddsEngineV3.mjs');
 
   it('TEST 1: MatchDetailModal.jsx contains zero hardcoded static winner odds (1.80, 2.01, 1.81)', () => {
     const content = fs.readFileSync(modalPath, 'utf8');
@@ -48,7 +48,7 @@ describe('AUTHORITATIVE ODDS ARCHITECTURE & ANTI-REGRESSION TESTS', () => {
       'lib/aiOddsOptimizer.mjs',
       'lib/aiPredictionEngine.mjs',
       'lib/probabilityEngine.mjs',
-      'lib/odds-v3/shadow/OddsShadowRunner.mjs',
+      'lib/odds-shared/shadow/OddsShadowRunner.mjs',
       'lib/engines/cricketFormatRules.mjs',
       'lib/engines/matchStateValidator.mjs',
     ];

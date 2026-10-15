@@ -1,5 +1,5 @@
 /**
- * OddsEngineV3 — Admin Odds Intelligence Router
+ * OddsEngineV5 — Admin Odds Intelligence Router
  * 
  * Provides centralized live operations endpoints for:
  * - Real-time market health and anomaly streams
@@ -12,17 +12,17 @@
 
 import express from 'express';
 import { adminAuth } from '../../middleware/adminAuth.js';
-import { telemetryQueue } from '../../../lib/odds-v3/telemetry/telemetryDeliveryQueue.mjs';
-import { getRecentOddsEvents } from '../../../lib/odds-v3/telemetry/oddsEventStream.mjs';
-import { getRecentAnomalies } from '../../../lib/odds-v3/monitoring/pricingAnomalyDetector.mjs';
-import { getActiveIncidents } from '../../../lib/odds-v3/monitoring/alertCorrelationEngine.mjs';
-import { evaluateActiveMarketsHealth } from '../../../lib/odds-v3/monitoring/liveMarketHealthEngine.mjs';
-import { getActiveModelVersion, listModelVersions } from '../../../lib/odds-v3/registry/modelRegistry.mjs';
-import { getActiveParameters } from '../../../lib/odds-v3/registry/parameterRegistry.mjs';
-import { getCanaryStatus } from '../../../lib/odds-v3/canary/canaryRollbackEngine.mjs';
-import { queryObservations } from '../../../lib/odds-v3/telemetry/oddsObservationStore.mjs';
-import { analyzeProviderRegimes } from '../../../lib/odds-v3/pricing/providerRegimeAnalyzer.mjs';
-import { explainPriceDifference } from '../../../lib/odds-v3/pricing/priceDifferenceExplainer.mjs';
+import { telemetryQueue } from '../../../lib/odds-shared/telemetry/telemetryDeliveryQueue.mjs';
+import { getRecentOddsEvents } from '../../../lib/odds-shared/telemetry/oddsEventStream.mjs';
+import { getRecentAnomalies } from '../../../lib/odds-shared/monitoring/pricingAnomalyDetector.mjs';
+import { getActiveIncidents } from '../../../lib/odds-shared/monitoring/alertCorrelationEngine.mjs';
+import { evaluateActiveMarketsHealth } from '../../../lib/odds-shared/monitoring/liveMarketHealthEngine.mjs';
+import { getActiveModelVersion, listModelVersions } from '../../../lib/odds-shared/registry/modelRegistry.mjs';
+import { getActiveParameters } from '../../../lib/odds-shared/registry/parameterRegistry.mjs';
+import { getCanaryStatus } from '../../../lib/odds-shared/canary/canaryRollbackEngine.mjs';
+import { queryObservations } from '../../../lib/odds-shared/telemetry/oddsObservationStore.mjs';
+import { analyzeProviderRegimes } from '../../../lib/odds-shared/pricing/providerRegimeAnalyzer.mjs';
+import { explainPriceDifference } from '../../../lib/odds-shared/pricing/priceDifferenceExplainer.mjs';
 import { executeDeterministicReplay } from '../../../scripts/oddsReplayCli.mjs';
 
 const router = express.Router();
@@ -183,7 +183,7 @@ router.get('/canary', (req, res) => {
  */
 router.get('/candidates', async (req, res) => {
   try {
-    const { listCandidates } = await import('../../../lib/odds-v3/optimization/candidateRegistry.mjs');
+    const { listCandidates } = await import('../../../lib/odds-shared/optimization/candidateRegistry.mjs');
     const candidates = listCandidates();
     return res.json({ success: true, data: { candidates, baseline: 'v3.1-prod' } });
   } catch (err) {
@@ -196,7 +196,7 @@ router.get('/candidates', async (req, res) => {
  */
 router.post('/candidates/evaluate', async (req, res) => {
   try {
-    const { runShadowOptimizationEvaluation } = await import('../../../lib/odds-v3/optimization/OddsShadowRunner.mjs');
+    const { runShadowOptimizationEvaluation } = await import('../../../lib/odds-shared/optimization/OddsShadowRunner.mjs');
     const result = runShadowOptimizationEvaluation(req.body || {});
     return res.json({ success: true, data: result });
   } catch (err) {

@@ -8,13 +8,13 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { generateMatchWinnerMarketV4 } from '../../lib/odds-v4/markets/MatchWinnerMarketV4.mjs';
-import { generateTossFamilyMarketsV4 } from '../../lib/odds-v4/markets/TossWinnerMarketV4.mjs';
-import { remainingResourcePct, expectedRemainingRuns } from '../../lib/odds-v4/models/resourceTables.mjs';
+import { generateMatchWinnerMarketV4 } from '../../lib/odds-v5/markets/MatchWinnerMarketV4.mjs';
+import { generateTossFamilyMarketsV4 } from '../../lib/odds-v5/markets/TossWinnerMarketV4.mjs';
+import { remainingResourcePct, expectedRemainingRuns } from '../../lib/odds-v5/models/resourceTables.mjs';
 import { priceMarketPipeline } from '../../lib/pricing/CanonicalPricingPipeline.mjs';
 import { validateMarketSettlementCompatibility } from '../../lib/settlement/marketSettlementContract.mjs';
 import { resolveSettlementGrader } from '../../lib/settlement/marketSettlementRegistry.mjs';
-import { getFormatRules } from '../../lib/odds-v3/format/CricketFormatRules.mjs';
+import { getFormatRules } from '../../lib/odds-shared/format/CricketFormatRules.mjs';
 import { resolveCricketOversFormat } from '../../src/utils/cricketFormat.js';
 
 describe('Phase 4H, 4I, 4J — Cricket V4 Validation', () => {

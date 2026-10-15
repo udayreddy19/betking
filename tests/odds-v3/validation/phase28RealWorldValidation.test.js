@@ -15,33 +15,33 @@
 import { describe, it, expect } from 'vitest';
 import {
   calculatePredictionPerformance,
-} from '../../../lib/odds-v3/validation/predictionPerformanceEngine.mjs';
+} from '../../../lib/odds-shared/validation/predictionPerformanceEngine.mjs';
 import {
   analyzeCalibration,
   CALIBRATION_CLASSIFICATIONS,
-} from '../../../lib/odds-v3/validation/calibrationEngine.mjs';
+} from '../../../lib/odds-shared/validation/calibrationEngine.mjs';
 import {
   evaluateModelDrift,
   DRIFT_STATUS,
-} from '../../../lib/odds-v3/validation/modelDriftEngine.mjs';
+} from '../../../lib/odds-shared/validation/modelDriftEngine.mjs';
 import {
   evaluateProviderQuality,
   evaluateAllProviders,
   PROVIDER_HEALTH_STATUS,
-} from '../../../lib/odds-v3/validation/providerQualityEngine.mjs';
+} from '../../../lib/odds-shared/validation/providerQualityEngine.mjs';
 import {
   analyzeProbabilityStability,
   STABILITY_CLASSIFICATIONS,
-} from '../../../lib/odds-v3/validation/probabilityStabilityEngine.mjs';
+} from '../../../lib/odds-shared/validation/probabilityStabilityEngine.mjs';
 import {
   evaluateCandidateModel,
   CANDIDATE_PERFORMANCE_STATUS,
   STATISTICAL_SIGNIFICANCE,
-} from '../../../lib/odds-v3/shadow/modelCandidateEvaluationEngine.mjs';
+} from '../../../lib/odds-shared/shadow/modelCandidateEvaluationEngine.mjs';
 import {
   calculateModelHealthScore,
   MODEL_HEALTH_STATUS,
-} from '../../../lib/odds-v3/validation/modelHealthEngine.mjs';
+} from '../../../lib/odds-shared/validation/modelHealthEngine.mjs';
 
 describe('Phase 28 — OddsEngineV3 Real-World Validation & Model Intelligence', () => {
   describe('1. Prediction Performance Engine', () => {

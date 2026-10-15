@@ -5,6 +5,39 @@
   color: var(--text-primary, #1e293b);
 }
 
+.wallet-bank-form {
+  display: grid;
+  gap: 14px;
+  max-width: 520px;
+}
+
+.wallet-bank-form__field {
+  display: grid;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary, #0f172a);
+}
+
+.wallet-bank-form__field input,
+.wallet-bank-form__field select {
+  border: 1px solid var(--color-border, #cbd5e1);
+  border-radius: 10px;
+  padding: 11px 12px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #0f172a);
+}
+
+.wallet-bank-form__check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 .wallet-dashboard-container--loading {
   display: flex;
   justify-content: center;

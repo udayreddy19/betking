@@ -20,10 +20,10 @@
 
 import { describe, it, expect } from 'vitest';
 import { priceMarketPipeline, verifyBookIntegrity } from '../../lib/pricing/CanonicalPricingPipeline.mjs';
-import { evaluateV4Calibration } from '../../lib/odds-v4/calibration/V4CalibrationEngine.mjs';
-import { remainingResourcePct, expectedRemainingRuns } from '../../lib/odds-v4/models/resourceTables.mjs';
-import { calculateScoreMatrix } from '../../lib/other-sports-v4/models/soccerDixonColes.mjs';
-import { calculateBasketballProbabilities } from '../../lib/other-sports-v4/models/basketballPace.mjs';
+import { evaluateV4Calibration } from '../../lib/odds-v5/calibration/V4CalibrationEngine.mjs';
+import { remainingResourcePct, expectedRemainingRuns } from '../../lib/odds-v5/models/resourceTables.mjs';
+import { calculateScoreMatrix } from '../../lib/other-sports-v5/models/soccerDixonColes.mjs';
+import { calculateBasketballProbabilities } from '../../lib/other-sports-v5/models/basketballPace.mjs';
 import { MARKET_SETTLEMENT_CONTRACTS, validateMarketSettlementCompatibility } from '../../lib/settlement/marketSettlementContract.mjs';
 import { resolveSettlementGrader } from '../../lib/settlement/marketSettlementRegistry.mjs';
 import { cashfreeProvider } from '../../lib/paymentProviders/CashfreeProvider.mjs';

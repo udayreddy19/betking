@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { recordPrediction, recordSettledOutcome, calculateCalibrationMetrics } from '../../lib/odds-v3/calibration/calibrationEngine.mjs';
-import { replayHistoricalOdds } from '../../lib/odds-v3/replay/historicalReplayEngine.mjs';
+import { recordPrediction, recordSettledOutcome, calculateCalibrationMetrics } from '../../lib/odds-shared/calibration/calibrationEngine.mjs';
+import { replayHistoricalOdds } from '../../lib/odds-shared/replay/historicalReplayEngine.mjs';
 
 describe('OddsEngineV3 — P2: Calibration, Replay & Quality Monitoring', () => {
   it('records predictions and computes Brier score after settlement', () => {

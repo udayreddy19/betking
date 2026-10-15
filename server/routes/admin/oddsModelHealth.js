@@ -1,12 +1,12 @@
 import express from 'express';
-import { calculateCalibrationMetrics } from '../../../lib/odds-v3/calibration/calibrationEngine.mjs';
-import { replayHistoricalOdds } from '../../../lib/odds-v3/replay/historicalReplayEngine.mjs';
-import { evaluateModelDrift } from '../../../lib/odds-v3/telemetry/driftDetector.mjs';
-import { analyzeOddsMovement } from '../../../lib/odds-v3/telemetry/oddsMovementAnalyzer.mjs';
-import { analyzeProviderDivergence } from '../../../lib/odds-v3/telemetry/providerDivergenceAnalyzer.mjs';
-import { queryObservations, getObservationStats } from '../../../lib/odds-v3/telemetry/oddsObservationStore.mjs';
-import { evaluateShadowPricing } from '../../../lib/odds-v3/canary/shadowPricingEngine.mjs';
-import { runHistoricalBacktest } from '../../../lib/odds-v3/replay/backtestRunner.mjs';
+import { calculateCalibrationMetrics } from '../../../lib/odds-shared/calibration/calibrationEngine.mjs';
+import { replayHistoricalOdds } from '../../../lib/odds-shared/replay/historicalReplayEngine.mjs';
+import { evaluateModelDrift } from '../../../lib/odds-shared/telemetry/driftDetector.mjs';
+import { analyzeOddsMovement } from '../../../lib/odds-shared/telemetry/oddsMovementAnalyzer.mjs';
+import { analyzeProviderDivergence } from '../../../lib/odds-shared/telemetry/providerDivergenceAnalyzer.mjs';
+import { queryObservations, getObservationStats } from '../../../lib/odds-shared/telemetry/oddsObservationStore.mjs';
+import { evaluateShadowPricing } from '../../../lib/odds-shared/canary/shadowPricingEngine.mjs';
+import { runHistoricalBacktest } from '../../../lib/odds-shared/replay/backtestRunner.mjs';
 
 const router = express.Router();
 
@@ -26,12 +26,12 @@ router.get('/health', async (req, res) => {
       success: true,
       data: {
         timestamp: new Date().toISOString(),
-        engineVersion: '3.0.0',
+        engineVersion: '5.0.0',
         models: {
-          cricket: 'ODDS_V3_CRICKET_V3.1',
-          soccer: 'ODDS_V3_SOCCER_V3.1',
-          tennis: 'ODDS_V3_TENNIS_V3.1',
-          basketball: 'ODDS_V3_BASKETBALL_V3.1',
+          cricket: 'ODDS_V5_CRICKET_V5.0',
+          soccer: 'ODDS_V5_SOCCER_V5.0',
+          tennis: 'ODDS_V5_TENNIS_V5.0',
+          basketball: 'ODDS_V5_BASKETBALL_V5.0',
         },
         calibration: metrics,
         observationStore: stats,
@@ -159,7 +159,7 @@ router.post('/backtest/run', async (req, res) => {
 router.get('/latency', async (req, res) => {
   try {
     const observations = queryObservations({ limit: 500 });
-    const { analyzeFeedLatency } = await import('../../../lib/odds-v3/telemetry/feedLatencyAnalyzer.mjs');
+    const { analyzeFeedLatency } = await import('../../../lib/odds-shared/telemetry/feedLatencyAnalyzer.mjs');
     const analysis = analyzeFeedLatency(observations);
     return res.json({ success: true, data: analysis });
   } catch (err) {
@@ -174,7 +174,7 @@ router.get('/latency', async (req, res) => {
 router.post('/dataset/audit', async (req, res) => {
   try {
     const { observations } = req.body || {};
-    const { auditDatasetQuality } = await import('../../../lib/odds-v3/dataset/dataQualityEngine.mjs');
+    const { auditDatasetQuality } = await import('../../../lib/odds-shared/dataset/dataQualityEngine.mjs');
     const audit = auditDatasetQuality(observations);
     return res.json({ success: true, data: audit });
   } catch (err) {
@@ -189,7 +189,7 @@ router.post('/dataset/audit', async (req, res) => {
 router.post('/walk-forward', async (req, res) => {
   try {
     const { observations, sport, config } = req.body || {};
-    const { runWalkForwardValidation } = await import('../../../lib/odds-v3/replay/walkForwardValidator.mjs');
+    const { runWalkForwardValidation } = await import('../../../lib/odds-shared/replay/walkForwardValidator.mjs');
     const result = runWalkForwardValidation(observations, { sport, config });
     return res.json({ success: true, data: result });
   } catch (err) {
@@ -204,7 +204,7 @@ router.post('/walk-forward', async (req, res) => {
 router.post('/empirical-calibration', async (req, res) => {
   try {
     const { trainSet, testSet } = req.body || {};
-    const { evaluateEmpiricalCalibration } = await import('../../../lib/odds-v3/calibration/empiricalCalibration.mjs');
+    const { evaluateEmpiricalCalibration } = await import('../../../lib/odds-shared/calibration/empiricalCalibration.mjs');
     const result = evaluateEmpiricalCalibration({ trainSet, testSet });
     return res.json({ success: true, data: result });
   } catch (err) {
@@ -219,7 +219,7 @@ router.post('/empirical-calibration', async (req, res) => {
 router.post('/empirical-rho', async (req, res) => {
   try {
     const { pairedObservations, marketTypeA, marketTypeB, configuredRho } = req.body || {};
-    const { calculateEmpiricalRho } = await import('../../../lib/odds-v3/pricing/sgpEmpiricalRho.mjs');
+    const { calculateEmpiricalRho } = await import('../../../lib/odds-shared/pricing/sgpEmpiricalRho.mjs');
     const result = calculateEmpiricalRho(pairedObservations, { marketTypeA, marketTypeB, configuredRho });
     return res.json({ success: true, data: result });
   } catch (err) {
@@ -256,8 +256,8 @@ router.post('/replay', async (req, res) => {
 router.get('/scorecard', async (req, res) => {
   try {
     const { sport, market, league, timeRange } = req.query;
-    const { buildLiveDataset } = await import('../../../lib/odds-v3/dataset/liveDatasetBuilder.mjs');
-    const { buildModelScorecard } = await import('../../../lib/odds-v3/validation/modelScorecard.mjs');
+    const { buildLiveDataset } = await import('../../../lib/odds-shared/dataset/liveDatasetBuilder.mjs');
+    const { buildModelScorecard } = await import('../../../lib/odds-shared/validation/modelScorecard.mjs');
 
     const { dataset, metadata } = buildLiveDataset({ sport, market, league, timeRange });
     const scorecard = buildModelScorecard(dataset, metadata);
@@ -274,8 +274,8 @@ router.get('/scorecard', async (req, res) => {
 router.get('/baseline-comparison', async (req, res) => {
   try {
     const { sport, market, timeRange } = req.query;
-    const { buildLiveDataset } = await import('../../../lib/odds-v3/dataset/liveDatasetBuilder.mjs');
-    const { compareModelBaselines } = await import('../../../lib/odds-v3/validation/modelBaselineComparator.mjs');
+    const { buildLiveDataset } = await import('../../../lib/odds-shared/dataset/liveDatasetBuilder.mjs');
+    const { compareModelBaselines } = await import('../../../lib/odds-shared/validation/modelBaselineComparator.mjs');
 
     const { dataset } = buildLiveDataset({ sport, market, timeRange });
     const comparison = compareModelBaselines(dataset);
@@ -291,8 +291,8 @@ router.get('/baseline-comparison', async (req, res) => {
  */
 router.get('/providers/shadow-weights', async (req, res) => {
   try {
-    const { buildLiveDataset } = await import('../../../lib/odds-v3/dataset/liveDatasetBuilder.mjs');
-    const { computeShadowProviderWeights } = await import('../../../lib/odds-v3/pricing/providerWeightLearner.mjs');
+    const { buildLiveDataset } = await import('../../../lib/odds-shared/dataset/liveDatasetBuilder.mjs');
+    const { computeShadowProviderWeights } = await import('../../../lib/odds-shared/pricing/providerWeightLearner.mjs');
 
     const { dataset } = buildLiveDataset();
     const shadowWeights = computeShadowProviderWeights(dataset);
@@ -309,8 +309,8 @@ router.get('/providers/shadow-weights', async (req, res) => {
 router.post('/calibration/optimize', async (req, res) => {
   try {
     const { sport, market } = req.body || {};
-    const { buildLiveDataset } = await import('../../../lib/odds-v3/dataset/liveDatasetBuilder.mjs');
-    const { optimizeCalibration } = await import('../../../lib/odds-v3/calibration/calibrationOptimizer.mjs');
+    const { buildLiveDataset } = await import('../../../lib/odds-shared/dataset/liveDatasetBuilder.mjs');
+    const { optimizeCalibration } = await import('../../../lib/odds-shared/calibration/calibrationOptimizer.mjs');
 
     const { dataset } = buildLiveDataset({ sport, market });
     const optimization = optimizeCalibration(dataset);
@@ -325,7 +325,7 @@ router.post('/calibration/optimize', async (req, res) => {
  */
 router.get('/registry/models', async (req, res) => {
   try {
-    const { listModelVersions } = await import('../../../lib/odds-v3/registry/modelRegistry.mjs');
+    const { listModelVersions } = await import('../../../lib/odds-shared/registry/modelRegistry.mjs');
     const models = listModelVersions(req.query);
     return res.json({ success: true, data: models });
   } catch (err) {
@@ -336,7 +336,7 @@ router.get('/registry/models', async (req, res) => {
 router.post('/registry/models/status', async (req, res) => {
   try {
     const { modelVersion, status, reason } = req.body || {};
-    const { updateModelStatus } = await import('../../../lib/odds-v3/registry/modelRegistry.mjs');
+    const { updateModelStatus } = await import('../../../lib/odds-shared/registry/modelRegistry.mjs');
     const updated = updateModelStatus(modelVersion, status, { operator: req.user?.username || 'ADMIN', reason });
     return res.json({ success: true, data: updated });
   } catch (err) {
@@ -346,7 +346,7 @@ router.post('/registry/models/status', async (req, res) => {
 
 router.get('/registry/parameters', async (req, res) => {
   try {
-    const { getActiveParameters, listParameterHistory } = await import('../../../lib/odds-v3/registry/parameterRegistry.mjs');
+    const { getActiveParameters, listParameterHistory } = await import('../../../lib/odds-shared/registry/parameterRegistry.mjs');
     return res.json({
       success: true,
       data: {
@@ -362,7 +362,7 @@ router.get('/registry/parameters', async (req, res) => {
 router.post('/registry/parameters/update', async (req, res) => {
   try {
     const { updates, reason } = req.body || {};
-    const { updateParameters } = await import('../../../lib/odds-v3/registry/parameterRegistry.mjs');
+    const { updateParameters } = await import('../../../lib/odds-shared/registry/parameterRegistry.mjs');
     const updated = updateParameters(updates, { operator: req.user?.username || 'ADMIN', reason });
     return res.json({ success: true, data: updated });
   } catch (err) {
@@ -372,7 +372,7 @@ router.post('/registry/parameters/update', async (req, res) => {
 
 router.get('/canary/status', async (req, res) => {
   try {
-    const { getCanaryStatus } = await import('../../../lib/odds-v3/canary/canaryRollbackEngine.mjs');
+    const { getCanaryStatus } = await import('../../../lib/odds-shared/canary/canaryRollbackEngine.mjs');
     return res.json({ success: true, data: getCanaryStatus() });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
@@ -382,7 +382,7 @@ router.get('/canary/status', async (req, res) => {
 router.post('/canary/configure', async (req, res) => {
   try {
     const { enabled, canaryPercent, candidateVersion, reason } = req.body || {};
-    const { configureCanary } = await import('../../../lib/odds-v3/canary/canaryRollbackEngine.mjs');
+    const { configureCanary } = await import('../../../lib/odds-shared/canary/canaryRollbackEngine.mjs');
     const result = configureCanary({
       enabled,
       canaryPercent,
@@ -406,8 +406,8 @@ router.post('/canary/configure', async (req, res) => {
  */
 router.get('/integrity', async (req, res) => {
   try {
-    const { queryObservations } = await import('../../../lib/odds-v3/telemetry/oddsObservationStore.mjs');
-    const { auditPredictionPriceOutcomeIntegrity } = await import('../../../lib/odds-v3/dataset/predictionPriceOutcomeIntegrity.mjs');
+    const { queryObservations } = await import('../../../lib/odds-shared/telemetry/oddsObservationStore.mjs');
+    const { auditPredictionPriceOutcomeIntegrity } = await import('../../../lib/odds-shared/dataset/predictionPriceOutcomeIntegrity.mjs');
     const observations = queryObservations({ limit: 1000 });
     const audit = auditPredictionPriceOutcomeIntegrity(observations);
     return res.json({ success: true, data: audit });
@@ -423,7 +423,7 @@ router.get('/integrity', async (req, res) => {
 router.post('/disagreement', async (req, res) => {
   try {
     const { quotes } = req.body || {};
-    const { evaluateProviderDisagreement } = await import('../../../lib/odds-v3/pricing/providerDisagreementEngine.mjs');
+    const { evaluateProviderDisagreement } = await import('../../../lib/odds-shared/pricing/providerDisagreementEngine.mjs');
     const result = evaluateProviderDisagreement(quotes);
     return res.json({ success: true, data: result });
   } catch (err) {
@@ -437,8 +437,8 @@ router.post('/disagreement', async (req, res) => {
  */
 router.get('/closing-line', async (req, res) => {
   try {
-    const { queryObservations } = await import('../../../lib/odds-v3/telemetry/oddsObservationStore.mjs');
-    const { aggregateClosingLineDataset } = await import('../../../lib/odds-v3/validation/closingLineAnalyzer.mjs');
+    const { queryObservations } = await import('../../../lib/odds-shared/telemetry/oddsObservationStore.mjs');
+    const { aggregateClosingLineDataset } = await import('../../../lib/odds-shared/validation/closingLineAnalyzer.mjs');
     const observations = queryObservations({ limit: 1000 });
     const result = aggregateClosingLineDataset(observations);
     return res.json({ success: true, data: result });
@@ -453,8 +453,8 @@ router.get('/closing-line', async (req, res) => {
  */
 router.get('/markets/scorecards', async (req, res) => {
   try {
-    const { queryObservations } = await import('../../../lib/odds-v3/telemetry/oddsObservationStore.mjs');
-    const { buildMarketScorecards } = await import('../../../lib/odds-v3/validation/marketScorecard.mjs');
+    const { queryObservations } = await import('../../../lib/odds-shared/telemetry/oddsObservationStore.mjs');
+    const { buildMarketScorecards } = await import('../../../lib/odds-shared/validation/marketScorecard.mjs');
     const observations = queryObservations({ limit: 2000 });
     const result = buildMarketScorecards(observations);
     return res.json({ success: true, data: result });
@@ -469,8 +469,8 @@ router.get('/markets/scorecards', async (req, res) => {
  */
 router.get('/margin-fairness', async (req, res) => {
   try {
-    const { queryObservations } = await import('../../../lib/odds-v3/telemetry/oddsObservationStore.mjs');
-    const { auditMarginFairness } = await import('../../../lib/odds-v3/pricing/marginFairnessAuditor.mjs');
+    const { queryObservations } = await import('../../../lib/odds-shared/telemetry/oddsObservationStore.mjs');
+    const { auditMarginFairness } = await import('../../../lib/odds-shared/pricing/marginFairnessAuditor.mjs');
     const observations = queryObservations({ limit: 1000 });
     const result = auditMarginFairness(observations);
     return res.json({ success: true, data: result });
@@ -485,7 +485,7 @@ router.get('/margin-fairness', async (req, res) => {
  */
 router.get('/failures/taxonomy', async (req, res) => {
   try {
-    const { getFailureTaxonomyReport } = await import('../../../lib/odds-v3/monitoring/failureTaxonomy.mjs');
+    const { getFailureTaxonomyReport } = await import('../../../lib/odds-shared/monitoring/failureTaxonomy.mjs');
     const report = getFailureTaxonomyReport();
     return res.json({ success: true, data: report });
   } catch (err) {
@@ -499,7 +499,7 @@ router.get('/failures/taxonomy', async (req, res) => {
  */
 router.post('/explainability', async (req, res) => {
   try {
-    const { buildPriceExplainabilityRecord } = await import('../../../lib/odds-v3/pricing/priceExplainability.mjs');
+    const { buildPriceExplainabilityRecord } = await import('../../../lib/odds-shared/pricing/priceExplainability.mjs');
     const record = buildPriceExplainabilityRecord(req.body);
     return res.json({ success: true, data: record });
   } catch (err) {
@@ -517,7 +517,7 @@ router.post('/explainability', async (req, res) => {
  */
 router.get('/telemetry/worker-status', async (req, res) => {
   try {
-    const { getTelemetryWorkerStatus } = await import('../../../lib/odds-v3/telemetry/durableTelemetryWorker.mjs');
+    const { getTelemetryWorkerStatus } = await import('../../../lib/odds-shared/telemetry/durableTelemetryWorker.mjs');
     const status = getTelemetryWorkerStatus();
     return res.json({ success: true, data: status });
   } catch (err) {
@@ -532,7 +532,7 @@ router.get('/telemetry/worker-status', async (req, res) => {
 router.post('/telemetry/flush', async (req, res) => {
   try {
     const { batchSize } = req.body || {};
-    const { flushTelemetryBatch } = await import('../../../lib/odds-v3/telemetry/durableTelemetryWorker.mjs');
+    const { flushTelemetryBatch } = await import('../../../lib/odds-shared/telemetry/durableTelemetryWorker.mjs');
     const result = await flushTelemetryBatch(batchSize);
     return res.json({ success: true, data: result });
   } catch (err) {
@@ -547,7 +547,7 @@ router.post('/telemetry/flush', async (req, res) => {
 router.post('/datasets/create', async (req, res) => {
   try {
     const { datasetName, observations, source, sports, markets } = req.body || {};
-    const { createVersionedDataset } = await import('../../../lib/odds-v3/dataset/datasetVersioning.mjs');
+    const { createVersionedDataset } = await import('../../../lib/odds-shared/dataset/datasetVersioning.mjs');
     const dataset = createVersionedDataset({ datasetName, observations, source, sports, markets });
     return res.json({ success: true, data: dataset });
   } catch (err) {
@@ -562,7 +562,7 @@ router.post('/datasets/create', async (req, res) => {
 router.post('/price-difference', async (req, res) => {
   try {
     const { obs1, obs2 } = req.body || {};
-    const { explainPriceDifference } = await import('../../../lib/odds-v3/pricing/priceDifferenceExplainer.mjs');
+    const { explainPriceDifference } = await import('../../../lib/odds-shared/pricing/priceDifferenceExplainer.mjs');
     const result = explainPriceDifference(obs1, obs2);
     return res.json({ success: true, data: result });
   } catch (err) {
@@ -577,7 +577,7 @@ router.post('/price-difference', async (req, res) => {
 router.post('/counterfactual', async (req, res) => {
   try {
     const { canonicalInput, options } = req.body || {};
-    const { simulateCounterfactualPricing } = await import('../../../lib/odds-v3/pricing/counterfactualPricingEngine.mjs');
+    const { simulateCounterfactualPricing } = await import('../../../lib/odds-shared/pricing/counterfactualPricingEngine.mjs');
     const result = simulateCounterfactualPricing(canonicalInput, options);
     return res.json({ success: true, data: result });
   } catch (err) {
@@ -591,7 +591,7 @@ router.post('/counterfactual', async (req, res) => {
  */
 router.post('/sensitivity', async (req, res) => {
   try {
-    const { analyzeParameterSensitivity } = await import('../../../lib/odds-v3/pricing/sensitivityAnalyzer.mjs');
+    const { analyzeParameterSensitivity } = await import('../../../lib/odds-shared/pricing/sensitivityAnalyzer.mjs');
     const result = analyzeParameterSensitivity(req.body);
     return res.json({ success: true, data: result });
   } catch (err) {
@@ -605,8 +605,8 @@ router.post('/sensitivity', async (req, res) => {
  */
 router.get('/provider-regimes', async (req, res) => {
   try {
-    const { queryObservations } = await import('../../../lib/odds-v3/telemetry/oddsObservationStore.mjs');
-    const { analyzeProviderRegimes } = await import('../../../lib/odds-v3/pricing/providerRegimeAnalyzer.mjs');
+    const { queryObservations } = await import('../../../lib/odds-shared/telemetry/oddsObservationStore.mjs');
+    const { analyzeProviderRegimes } = await import('../../../lib/odds-shared/pricing/providerRegimeAnalyzer.mjs');
     const observations = queryObservations({ limit: 1000 });
     const result = analyzeProviderRegimes(observations);
     return res.json({ success: true, data: result });
@@ -620,7 +620,7 @@ router.get('/provider-regimes', async (req, res) => {
  */
 router.get('/v4/engine', async (_req, res) => {
   try {
-    const { getEngineModeStatus, resolveOddsEngineMode, getShadowMetrics } = await import('../../../lib/odds-v4/index.mjs');
+    const { getEngineModeStatus, resolveOddsEngineMode, getShadowMetrics } = await import('../../../lib/odds-v5/index.mjs');
     return res.json({
       success: true,
       data: {
@@ -642,10 +642,10 @@ router.get('/other-sports/engine', async (_req, res) => {
     const {
       getOtherSportsEngineModeStatus,
       resolveOtherSportsEngineMode,
-    } = await import('../../../lib/other-sports-v4/index.mjs');
+    } = await import('../../../lib/other-sports-v5/index.mjs');
     let shadow = null;
     try {
-      const { getOtherSportsShadowMetrics } = await import('../../../lib/other-sports-v4/shadowCompare.mjs');
+      const { getOtherSportsShadowMetrics } = await import('../../../lib/other-sports-v5/shadowCompare.mjs');
       shadow = getOtherSportsShadowMetrics();
     } catch {
       shadow = null;
@@ -677,7 +677,7 @@ router.get('/platform-readiness', async (_req, res) => {
 });
 
 /**
- * POST /api/admin/odds-model/v4/engine  { mode: 'v3'|'v4'|'shadow' } | { clear: true }
+ * POST /api/admin/odds-model/v4/engine  { mode: 'v4'|'v5'|'shadow' } | { clear: true }
  */
 router.post('/v4/engine', async (req, res) => {
   try {
@@ -685,7 +685,7 @@ router.post('/v4/engine', async (req, res) => {
       setRuntimeEngineMode,
       clearRuntimeEngineMode,
       resolveOddsEngineMode,
-    } = await import('../../../lib/odds-v4/index.mjs');
+    } = await import('../../../lib/odds-v5/index.mjs');
     const updatedBy = req.admin?.email || req.admin?.id || req.admin?.role || 'admin';
     let status;
     if (req.body?.clear === true || req.body?.mode === 'env') {
@@ -708,7 +708,7 @@ router.post('/v4/engine', async (req, res) => {
 });
 
 /**
- * POST /api/admin/odds-model/other-sports/engine  { mode: 'v3'|'v4'|'shadow' } | { clear: true }
+ * POST /api/admin/odds-model/other-sports/engine  { mode: 'v4'|'v5'|'shadow' } | { clear: true }
  */
 router.post('/other-sports/engine', async (req, res) => {
   try {
@@ -716,7 +716,7 @@ router.post('/other-sports/engine', async (req, res) => {
       setRuntimeOtherSportsEngineMode,
       clearRuntimeOtherSportsEngineMode,
       resolveOtherSportsEngineMode,
-    } = await import('../../../lib/other-sports-v4/index.mjs');
+    } = await import('../../../lib/other-sports-v5/index.mjs');
     const updatedBy = req.admin?.email || req.admin?.id || req.admin?.role || 'admin';
     let status;
     if (req.body?.clear === true || req.body?.mode === 'env') {

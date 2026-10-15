@@ -2,21 +2,21 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   resolveOtherSportsEngineMode,
   _resetOtherSportsEngineModeControlForTests,
-} from '../../lib/other-sports-v4/EngineModeControl.mjs';
+} from '../../lib/other-sports-v5/EngineModeControl.mjs';
 import {
   generatePublicMatchOddsSnapshot,
   ENGINE_FALLBACK_REASONS,
   getEngineFallbackMetrics,
-} from '../../lib/odds-v4/engineDispatch.mjs';
-import { _resetEngineModeControlForTests } from '../../lib/odds-v4/EngineModeControl.mjs';
+} from '../../lib/odds-v5/engineDispatch.mjs';
+import { _resetEngineModeControlForTests } from '../../lib/odds-v5/EngineModeControl.mjs';
 import { ORPHAN_REASON } from '../../lib/settlement/orphanedOpenBetRecovery.mjs';
 import {
   getCalibrationValidationStatus,
   recordAcceptedBetPrediction,
   recordSettledCalibrationObservation,
-} from '../../lib/odds-v4/calibration/calibrationBridge.mjs';
-import { productionObservationRecorder } from '../../lib/odds-v4/calibration/ProductionObservationRecorder.mjs';
-import { defaultObservationStore } from '../../lib/odds-v4/calibration/ObservationStore.mjs';
+} from '../../lib/odds-v5/calibration/calibrationBridge.mjs';
+import { productionObservationRecorder } from '../../lib/odds-v5/calibration/ProductionObservationRecorder.mjs';
+import { defaultObservationStore } from '../../lib/odds-v5/calibration/ObservationStore.mjs';
 
 describe('V4 production hardening', () => {
   beforeEach(() => {

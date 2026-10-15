@@ -4,8 +4,8 @@ import {
   resolveSideSelection,
   canonicalTeamsFromSnapshot,
   createSelectionUnresolvedError,
-} from '../../lib/odds-v3/selectionResolver.mjs';
-import { findQuotedSelection } from '../../lib/odds-v3/bookIntegrity.mjs';
+} from '../../lib/odds-shared/selectionResolver.mjs';
+import { findQuotedSelection } from '../../lib/odds-shared/bookIntegrity.mjs';
 
 const teamA = { id: 't_a', name: 'Oval Invincibles', shortName: 'OVI' };
 const teamB = { id: 't_b', name: 'Trent Rockets', shortName: 'TRT' };

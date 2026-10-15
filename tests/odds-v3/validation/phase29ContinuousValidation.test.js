@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { createObservationRecord, queryObservations } from '../../../lib/odds-v3/validation/observationArchiveEngine.mjs';
-import { ingestMarketSettlement } from '../../../lib/odds-v3/validation/settlementIngestionPipeline.mjs';
-import { calculatePredictionPerformance } from '../../../lib/odds-v3/validation/predictionPerformanceEngine.mjs';
-import { evaluateCandidateModel } from '../../../lib/odds-v3/shadow/modelCandidateEvaluationEngine.mjs';
-import { validateModelTransition, getAuthoritativeChampionModel, listShadowChallengerModels } from '../../../lib/odds-v3/validation/modelGovernanceRegistry.mjs';
+import { createObservationRecord, queryObservations } from '../../../lib/odds-shared/validation/observationArchiveEngine.mjs';
+import { ingestMarketSettlement } from '../../../lib/odds-shared/validation/settlementIngestionPipeline.mjs';
+import { calculatePredictionPerformance } from '../../../lib/odds-shared/validation/predictionPerformanceEngine.mjs';
+import { evaluateCandidateModel } from '../../../lib/odds-shared/shadow/modelCandidateEvaluationEngine.mjs';
+import { validateModelTransition, getAuthoritativeChampionModel, listShadowChallengerModels } from '../../../lib/odds-shared/validation/modelGovernanceRegistry.mjs';
 
 describe('Phase 29 — Continuous Validation & Real Data Ingestion Test Suite', () => {
   it('1. should create and buffer prediction observations idempotently', () => {

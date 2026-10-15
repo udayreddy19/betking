@@ -19,7 +19,7 @@ import {
   setRuntimeEngineMode,
   resolveOddsEngineMode,
   _resetEngineModeControlForTests,
-} from '../../lib/odds-v4/EngineModeControl.mjs';
+} from '../../lib/odds-v5/EngineModeControl.mjs';
 import { simulateBetRisk } from '../../lib/risk/riskSimulation.mjs';
 import { liabilityLimitForMarket } from '../../lib/houseProtectionEngine.mjs';
 

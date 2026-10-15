@@ -173,7 +173,7 @@ router.get('/api/health', async (req, res) => {
 });
 
 if (!isProduction) {
-  router.get('/api/dev/odds-v3/:matchId', async (req, res) => {
+  router.get('/api/dev/odds-shared/:matchId', async (req, res) => {
     try {
       const { matchId } = req.params;
       const { buildMatchOddsPayload } = await import('../../lib/liveScoresApiHandlers.mjs');

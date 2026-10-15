@@ -15,33 +15,33 @@ import { describe, it, expect } from 'vitest';
 import {
   auditDatasetQuality,
   DATA_QUALITY_STATUS,
-} from '../../../lib/odds-v3/optimization/dataQualityEngine.mjs';
+} from '../../../lib/odds-shared/optimization/dataQualityEngine.mjs';
 import {
   calculateCalibrationSlopeAndIntercept,
   generateReliabilityCurve,
   evaluateCalibrationSuite,
-} from '../../../lib/odds-v3/optimization/calibrationSuite.mjs';
+} from '../../../lib/odds-shared/optimization/calibrationSuite.mjs';
 import {
   detectAdvancedRegime,
   GLOBAL_REGIMES,
   SPORT_SUBPHASES,
-} from '../../../lib/odds-v3/optimization/regimeDetector.mjs';
+} from '../../../lib/odds-shared/optimization/regimeDetector.mjs';
 import {
   validateMarketRelationships,
   VIOLATION_TYPES,
-} from '../../../lib/odds-v3/optimization/marketRelationshipEngine.mjs';
+} from '../../../lib/odds-shared/optimization/marketRelationshipEngine.mjs';
 import {
   calculatePricingConfidence,
   CONFIDENCE_LEVELS,
-} from '../../../lib/odds-v3/optimization/pricingConfidenceEngine.mjs';
+} from '../../../lib/odds-shared/optimization/pricingConfidenceEngine.mjs';
 import {
   analyzeOddsMovement,
   MOVEMENT_CLASSIFICATIONS,
-} from '../../../lib/odds-v3/optimization/oddsMovementAnalyzer.mjs';
+} from '../../../lib/odds-shared/optimization/oddsMovementAnalyzer.mjs';
 import {
   evaluateModelDrift,
   DRIFT_TYPES,
-} from '../../../lib/odds-v3/optimization/modelDriftEngine.mjs';
+} from '../../../lib/odds-shared/optimization/modelDriftEngine.mjs';
 
 describe('Phase 23 — OddsEngine V3 Production Intelligence, Calibration & Continuous Learning', () => {
   describe('1. Data Quality Engine', () => {

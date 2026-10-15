@@ -264,6 +264,7 @@ export default function Home() {
     return <div className="home-page container" id="home-page"><p style={{ padding: '2rem 0', color: '#64748b' }}>Loading…</p></div>;
   }
 
+  // Wallet-only (betting off, wallet on): wallet landing instead of a blank page.
   if (walletEnabled && !bettingEnabled) {
     return <WalletHome />;
   }
@@ -275,36 +276,6 @@ export default function Home() {
 
   return (
     <div className="home-page container" id="home-page">
-      {walletEnabled && bettingEnabled && isLoggedIn && (
-        <section
-          className="home-wallet-strip"
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '0.75rem',
-            padding: '0.85rem 1rem',
-            marginBottom: '1rem',
-            borderRadius: 12,
-            border: '1px solid var(--border-subtle, rgba(0,0,0,0.08))',
-            background: 'var(--surface-elevated, #fff)',
-          }}
-        >
-          <div>
-            <strong>Wallet</strong>
-            <span style={{ marginLeft: 8, color: '#555' }}>
-              ₹{Number(user?.wallet?.available ?? user?.balance ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-            </span>
-          </div>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button type="button" className="header-deposit-btn" onClick={() => openDepositModal()}>Add Money</button>
-            <button type="button" className="header-login-btn" onClick={() => openFinModal('withdraw')}>Withdraw</button>
-            <Link to="/wallet" className="header-login-btn" style={{ display: 'inline-flex', alignItems: 'center' }}>Wallet</Link>
-          </div>
-        </section>
-      )}
-
       {bettingEnabled && (
       <LiveScoresFeedBanner
         message={scoresError}

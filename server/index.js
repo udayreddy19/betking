@@ -223,7 +223,7 @@ httpServer.listen(PORT, async () => {
 
   const startupTasks = [
     ['sport_flags', () => import('../lib/adminConfig.mjs').then((m) => m.hydrateSportFlagsFromStore())],
-    ['odds_engine_mode', () => import('../lib/odds-v4/EngineModeControl.mjs').then(async (m) => { await m.waitForEngineModeHydrated(); logger.info('odds_engine_mode_ready', { mode: m.resolveOddsEngineMode() }); })],
+    ['odds_engine_mode', () => import('../lib/odds-v5/EngineModeControl.mjs').then(async (m) => { await m.waitForEngineModeHydrated(); logger.info('odds_engine_mode_ready', { mode: m.resolveOddsEngineMode() }); })],
     ['webpush_startup', () => import('../lib/webPushEngine.mjs').then((m) => m.logWebPushStartupStatus())],
     ['scheduler', () => process.env.RUN_BACKGROUND_WORKERS !== 'false' && import('../lib/schedulerWorker.mjs').then((m) => m.startBackgroundWorkers())],
     ['srl_operator', () => import('../lib/iplSrlOperatorState.mjs').then((m) => m.hydrateSrlOperatorSessions())],

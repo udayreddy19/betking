@@ -15,12 +15,15 @@ function GateLoader() {
  */
 export default function PlatformGate({ children }) {
   const location = useLocation();
-  const { ready, walletEnabled, bettingEnabled, loadError, retry } = useProducts();
+  const {
+    ready, walletEnabled, bettingEnabled, pgReviewMode, loadError, retry,
+  } = useProducts();
   const decision = platformGateDecision({
     ready,
     walletEnabled,
     bettingEnabled,
     loadError,
+    pgReviewMode,
     isExempt: isPlatformGateExemptPath(location.pathname || '/'),
   });
 

@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { ingestDataset, validateObservationSchema } from '../../lib/odds-v3/dataset/datasetIngestionEngine.mjs';
-import { auditDatasetQuality } from '../../lib/odds-v3/dataset/dataQualityEngine.mjs';
-import { runWalkForwardValidation, computeCalibrationErrors } from '../../lib/odds-v3/replay/walkForwardValidator.mjs';
-import { fitPlattScaling, applyPlattScaling, evaluateEmpiricalCalibration } from '../../lib/odds-v3/calibration/empiricalCalibration.mjs';
-import { calculateEmpiricalRho } from '../../lib/odds-v3/pricing/sgpEmpiricalRho.mjs';
-import { analyzeFeedLatency, LATENCY_TIERS } from '../../lib/odds-v3/telemetry/feedLatencyAnalyzer.mjs';
+import { ingestDataset, validateObservationSchema } from '../../lib/odds-shared/dataset/datasetIngestionEngine.mjs';
+import { auditDatasetQuality } from '../../lib/odds-shared/dataset/dataQualityEngine.mjs';
+import { runWalkForwardValidation, computeCalibrationErrors } from '../../lib/odds-shared/replay/walkForwardValidator.mjs';
+import { fitPlattScaling, applyPlattScaling, evaluateEmpiricalCalibration } from '../../lib/odds-shared/calibration/empiricalCalibration.mjs';
+import { calculateEmpiricalRho } from '../../lib/odds-shared/pricing/sgpEmpiricalRho.mjs';
+import { analyzeFeedLatency, LATENCY_TIERS } from '../../lib/odds-shared/telemetry/feedLatencyAnalyzer.mjs';
 
 describe('PHASE 16 — Real-Data Validation, Empirical Calibration & Pricing Optimization', () => {
 

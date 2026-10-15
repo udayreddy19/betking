@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { buildCanonicalFromMatch } from '../../lib/odds-v3/buildCanonicalFromMatch.mjs';
-import { validateMatchState } from '../../lib/odds-v3/validation/MatchStateValidator.mjs';
-import { generate } from '../../lib/odds-v3/OddsEngineV3.mjs';
-import { createCanonicalMatchState } from '../../lib/odds-v3/models/CanonicalMatchState.mjs';
+import { buildCanonicalFromMatch } from '../../lib/odds-shared/buildCanonicalFromMatch.mjs';
+import { validateMatchState } from '../../lib/odds-shared/validation/MatchStateValidator.mjs';
+import { generate } from '../../lib/odds-shared/OddsEngineV3.mjs';
+import { createCanonicalMatchState } from '../../lib/odds-shared/models/CanonicalMatchState.mjs';
 
 describe('Odds generation regressions', () => {
   it('reads mid-chase overs from liveDetails.overs when chaseOvers/overs2 are missing', () => {
@@ -870,7 +870,7 @@ describe('Odds generation regressions', () => {
   });
 
   it('line-scopes team_total selection ids so bumped lines cannot cash out old bets', async () => {
-    const { findQuotedSelection } = await import('../../lib/odds-v3/bookIntegrity.mjs');
+    const { findQuotedSelection } = await import('../../lib/odds-shared/bookIntegrity.mjs');
     const snap = {
       markets: [{
         marketId: 'team_total',

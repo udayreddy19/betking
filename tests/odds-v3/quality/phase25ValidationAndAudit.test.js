@@ -13,11 +13,11 @@ import { describe, it, expect } from 'vitest';
 import {
   recordChampionChallengerPrediction,
   attachSettlementOutcome,
-} from '../../../lib/odds-v3/validation/championChallengerEngine.mjs';
+} from '../../../lib/odds-shared/validation/championChallengerEngine.mjs';
 import {
   detectChangePoint,
   CHANGE_POINT_TYPES,
-} from '../../../lib/odds-v3/quality/changePointDetector.mjs';
+} from '../../../lib/odds-shared/quality/changePointDetector.mjs';
 
 describe('Phase 25 — OddsEngine V3 Real-World Validation & Pricing Improvement Audit', () => {
   describe('1. Champion / Challenger Shadow Validation Framework', () => {

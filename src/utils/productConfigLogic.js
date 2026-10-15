@@ -33,6 +33,8 @@ export function normalizeProductConfig(data) {
 /** True when the snapshot says every product is OFF (wallet and betting). */
 export function isAllProductsOffSnapshot(data) {
   if (!data || typeof data !== 'object') return false;
+  // PG review / Software Platform own the public surface — wallet+betting "off" is intentional there.
+  if (truthy(data.pgReviewMode) || truthy(data.softwarePlatformEnabled)) return false;
   const cfg = normalizeProductConfig(data);
   return !cfg.walletEnabled && !cfg.bettingEnabled;
 }
@@ -62,7 +64,7 @@ export function shouldCacheProductSnapshot(data) {
  *   'loading'     — config not yet resolved
  *   'retry'       — product API failed and we have no trustworthy config (show retry UI)
  *   'unavailable' — Admin turned both products off
- *   'allow'       — render the app (betting OR wallet is enabled, or route is exempt)
+ *   'allow'       — render the app (betting OR wallet is enabled, PG review mode, or route is exempt)
  */
 export function platformGateDecision({
   ready,
@@ -70,9 +72,12 @@ export function platformGateDecision({
   bettingEnabled,
   loadError = false,
   isExempt = false,
+  pgReviewMode = false,
 }) {
   if (isExempt) return ready ? 'allow' : 'loading';
   if (!ready) return 'loading';
+  // PG compliance mode: the compliance surface owns the page — never show "unavailable".
+  if (pgReviewMode === true) return 'allow';
   if (loadError && !walletEnabled && !bettingEnabled) return 'retry';
   if (!walletEnabled && !bettingEnabled) return 'unavailable';
   return 'allow';
@@ -93,6 +98,9 @@ const EXEMPT_PREFIXES = [
   '/help',
   '/support',
   '/responsible-gaming',
+  '/company',
+  '/documents',
+  '/desk',
 ];
 
 export function isPlatformGateExemptPath(path = '/') {

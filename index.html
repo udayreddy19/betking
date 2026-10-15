@@ -96,6 +96,52 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      /* Sync sp_public with server so nginx serves the right SPA. Hard-nav on mismatch. */
+      (function () {
+        if (/^\/(admin|console)(\/|$)/.test(location.pathname)) return;
+        function hasCookie() {
+          return document.cookie.split(';').some(function (c) {
+            return c.trim().indexOf('sp_public=1') === 0;
+          });
+        }
+        function setCookie(on) {
+          if (on) {
+            var secure = location.protocol === 'https:' ? '; Secure' : '';
+            document.cookie = 'sp_public=1; path=/; max-age=604800; SameSite=Lax' + secure;
+          } else {
+            document.cookie = 'sp_public=; path=/; max-age=0; SameSite=Lax';
+            document.cookie = 'sp_public=; path=/; max-age=0; SameSite=Lax; Secure';
+          }
+        }
+        function go(on) {
+          setCookie(on);
+          location.replace(on ? '/?_sp=1&_=' + Date.now() : '/?_sp=0&_=' + Date.now());
+        }
+        fetch('/api/config/software-mode?_=' + Date.now(), { credentials: 'same-origin', cache: 'no-store' })
+          .then(function (r) {
+            if (!r.ok) return null; // never hard-nav on 5xx / blips
+            return r.json();
+          })
+          .then(function (d) {
+            if (!d || d.unavailable) return;
+            if (typeof d.enabled !== 'boolean' && typeof d.softwarePlatformEnabled !== 'boolean') return;
+            var on = !!(d.enabled || d.softwarePlatformEnabled);
+            var has = hasCookie();
+            if (on !== has) go(on);
+          })
+          .catch(function () {});
+        window.addEventListener('storage', function (ev) {
+          if (ev.key !== 'oy_sp_mode_sync' || !ev.newValue) return;
+          try {
+            var msg = JSON.parse(ev.newValue);
+            if (msg && typeof msg.softwarePlatformEnabled === 'boolean') {
+              if (msg.softwarePlatformEnabled !== hasCookie()) go(msg.softwarePlatformEnabled);
+            }
+          } catch (e) {}
+        });
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
     <noscript>OddsYra needs JavaScript enabled in your browser.</noscript>
   </body>

@@ -200,6 +200,40 @@
   line-height: 1.4;
 }
 
+.fin-withdraw-blocked {
+  margin: 14px 0 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(202, 138, 4, 0.1);
+  border: 1px solid rgba(202, 138, 4, 0.45);
+  color: var(--color-text);
+}
+
+.fin-withdraw-blocked strong {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 800;
+  margin-bottom: 6px;
+  color: #a16207;
+}
+
+.fin-withdraw-blocked p {
+  margin: 0 0 8px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+}
+
+.fin-withdraw-blocked p:last-child {
+  margin-bottom: 0;
+}
+
+.fin-withdraw-blocked-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .fin-bonus-forfeit-warn {
   margin-top: 10px;
   padding: 12px 14px;

@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * OddsEngineV3 — CLI Debug Test Runner
+ * OddsEngineV5 — CLI Debug Test Runner
  * 
  * Usage: node scripts/testOddsV3.mjs
  */
 
-import { generate } from '../lib/odds-v3/OddsEngineV3.mjs';
-import { createCanonicalMatchState } from '../lib/odds-v3/models/CanonicalMatchState.mjs';
+import { generate } from '../lib/odds-v5/OddsEngineV5.mjs';
+import { createCanonicalMatchState } from '../lib/odds-shared/models/CanonicalMatchState.mjs';
 
 // ═══════════════════════════════════════════════════════════════
 // TEST STATES
@@ -70,7 +70,7 @@ function printSnapshot(label, snapshot) {
 // TEST 1: PRIMARY — Oval Invincibles vs Trent Rockets
 // ═══════════════════════════════════════════════════════════════
 
-console.log('\n🏏 OddsEngineV3 — CLI Debug Test Runner\n');
+console.log('\n🏏 OddsEngineV5 — CLI Debug Test Runner\n');
 
 const stateA = makeState({
   team2: { id: 'TRT', name: 'Trent Rockets', runs: 98, wickets: 3, balls: 58 },

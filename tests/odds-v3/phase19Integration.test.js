@@ -13,25 +13,25 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { persistObservationBatch, queryPersistedObservations } from '../../lib/odds-v3/telemetry/oddsPersister.mjs';
+import { persistObservationBatch, queryPersistedObservations } from '../../lib/odds-shared/telemetry/oddsPersister.mjs';
 import {
   flushTelemetryBatch,
   getTelemetryWorkerStatus,
-} from '../../lib/odds-v3/telemetry/durableTelemetryWorker.mjs';
+} from '../../lib/odds-shared/telemetry/durableTelemetryWorker.mjs';
 import {
   labelObservationWithSettlement,
   batchLabelObservations,
   SETTLEMENT_LABELS,
-} from '../../lib/odds-v3/dataset/settlementLabeler.mjs';
+} from '../../lib/odds-shared/dataset/settlementLabeler.mjs';
 import {
   createVersionedDataset,
   evaluateSampleSizeTier,
   SAMPLE_SIZE_TIERS,
-} from '../../lib/odds-v3/dataset/datasetVersioning.mjs';
-import { analyzeProviderRegimes } from '../../lib/odds-v3/pricing/providerRegimeAnalyzer.mjs';
-import { explainPriceDifference } from '../../lib/odds-v3/pricing/priceDifferenceExplainer.mjs';
-import { simulateCounterfactualPricing } from '../../lib/odds-v3/pricing/counterfactualPricingEngine.mjs';
-import { analyzeParameterSensitivity } from '../../lib/odds-v3/pricing/sensitivityAnalyzer.mjs';
+} from '../../lib/odds-shared/dataset/datasetVersioning.mjs';
+import { analyzeProviderRegimes } from '../../lib/odds-shared/pricing/providerRegimeAnalyzer.mjs';
+import { explainPriceDifference } from '../../lib/odds-shared/pricing/priceDifferenceExplainer.mjs';
+import { simulateCounterfactualPricing } from '../../lib/odds-shared/pricing/counterfactualPricingEngine.mjs';
+import { analyzeParameterSensitivity } from '../../lib/odds-shared/pricing/sensitivityAnalyzer.mjs';
 
 describe('Phase 19 — OddsEngine V3 Real-World Learning, Accuracy Optimization & Intelligence', () => {
   describe('1. Durable Telemetry Cold Storage & Worker', () => {

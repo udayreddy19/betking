@@ -15,29 +15,29 @@ import { describe, it, expect } from 'vitest';
 import {
   evaluateSingleProviderQuality,
   calculateDynamicProviderWeights,
-} from '../../../lib/odds-v3/quality/providerQualityEngine.mjs';
+} from '../../../lib/odds-shared/quality/providerQualityEngine.mjs';
 import {
   processEventOddsTransition,
   VERIFIED_EVENT_TYPES,
-} from '../../../lib/odds-v3/quality/eventOddsReactionEngine.mjs';
+} from '../../../lib/odds-shared/quality/eventOddsReactionEngine.mjs';
 import {
   evaluateStateCompleteness,
-} from '../../../lib/odds-v3/quality/stateCompletenessEngine.mjs';
+} from '../../../lib/odds-shared/quality/stateCompletenessEngine.mjs';
 import {
   deriveOverUnderLinesFromDistribution,
   deriveDoubleChanceFromMatchWinner,
-} from '../../../lib/odds-v3/quality/scoreDistributionEngine.mjs';
+} from '../../../lib/odds-shared/quality/scoreDistributionEngine.mjs';
 import {
   calculateOddsQualityScore,
   ODDS_QUALITY_TIERS,
-} from '../../../lib/odds-v3/quality/oddsQualityEngine.mjs';
+} from '../../../lib/odds-shared/quality/oddsQualityEngine.mjs';
 import {
   explainOddsMovement,
   EXPLANATION_CAUSES,
-} from '../../../lib/odds-v3/quality/oddsExplainabilityEngine.mjs';
+} from '../../../lib/odds-shared/quality/oddsExplainabilityEngine.mjs';
 import {
   executeCandidatePricingPipeline,
-} from '../../../lib/odds-v3/quality/candidatePricingPipeline.mjs';
+} from '../../../lib/odds-shared/quality/candidatePricingPipeline.mjs';
 
 describe('Phase 24 — Advanced Pricing Intelligence & Real-Time Odds Quality', () => {
   describe('1. Provider Quality & Dynamic Weighting', () => {

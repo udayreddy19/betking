@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { blendModelAndProvider } from '../../lib/odds-v3/pricing/modelBlendEngine.mjs';
-import { calculateSgpJointOdds } from '../../lib/odds-v3/pricing/correlationEngine.mjs';
-import { calculateDynamicOverround } from '../../lib/odds-v3/pricing/dynamicMarginEngine.mjs';
+import { blendModelAndProvider } from '../../lib/odds-shared/pricing/modelBlendEngine.mjs';
+import { calculateSgpJointOdds } from '../../lib/odds-shared/pricing/correlationEngine.mjs';
+import { calculateDynamicOverround } from '../../lib/odds-shared/pricing/dynamicMarginEngine.mjs';
 
 describe('OddsEngineV3 — P1: Blending, Correlation & Dynamic Margin', () => {
   it('blends model and provider probabilities correctly', () => {

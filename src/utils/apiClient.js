@@ -1,5 +1,6 @@
 import { storageGet, storageSet, storageRemove } from './browserCompat.js';
 import { getPointsToNextTier } from './loyaltyPoints.js';
+import { normalizeDateOfBirth } from './profileCompleteness.js';
 
 const ACCESS_TOKEN_KEY = 'bk_access_token';
 
@@ -147,7 +148,7 @@ export function mapServerUserToSession(serverUser, previous = null) {
     role: serverUser.role || previous?.role || 'USER',
     isAdmin: serverUser.isAdmin === true || previous?.isAdmin === true,
     kycStatus: serverUser.kycStatus,
-    dateOfBirth: serverUser.dateOfBirth || previous?.dateOfBirth || null,
+    dateOfBirth: normalizeDateOfBirth(serverUser.dateOfBirth) || normalizeDateOfBirth(previous?.dateOfBirth) || null,
     referralCode: serverUser.referralCode || previous?.referralCode || null,
     referralLink: serverUser.referralLink || previous?.referralLink || null,
     status: serverUser.status,

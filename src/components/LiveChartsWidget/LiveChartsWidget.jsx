@@ -181,7 +181,7 @@ export default function LiveChartsWidget({ match, chartType = 'odds_trend' }) {
         <div className="live-charts-header">
           <div className="live-charts-title-wrap">
             <h4 className="live-charts-title font-bold">Live Odds</h4>
-            <span className="live-charts-subtitle text-xs">NOT AVAILABLE — waiting for authoritative OddsEngineV3 snapshot</span>
+            <span className="live-charts-subtitle text-xs">NOT AVAILABLE — waiting for authoritative OddsEngineV5 snapshot</span>
           </div>
         </div>
       </div>
@@ -434,7 +434,7 @@ export default function LiveChartsWidget({ match, chartType = 'odds_trend' }) {
 
             <div className="prob-footer-note">
               <InfoIcon className="info-icon" />
-              <span>Implied win probabilities are continuously re-weighted by OddsEngineV3 live match state streams.</span>
+              <span>Implied win probabilities are continuously re-weighted by OddsEngineV5 live match state streams.</span>
             </div>
           </div>
         )}

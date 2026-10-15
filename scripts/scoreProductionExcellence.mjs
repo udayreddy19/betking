@@ -13,17 +13,18 @@ import {
   MARKET_SETTLEMENT_CONTRACTS,
   validateMarketSettlementCompatibility,
 } from '../lib/settlement/marketSettlementContract.mjs';
-import { V4_ENGINE_VERSION } from '../lib/odds-v4/OddsEngineV4.mjs';
-import { OSV4_ENGINE_VERSION } from '../lib/other-sports-v4/pricing/MarginPolicy.mjs';
+import { V4_ENGINE_VERSION } from '../lib/odds-v5/OddsEngineV4.mjs';
+import { OSV4_ENGINE_VERSION } from '../lib/other-sports-v5/pricing/MarginPolicy.mjs';
 import { getOddsEngineScorecard } from '../lib/oddsEngineScorecard.mjs';
-import { evaluateV4Calibration } from '../lib/odds-v4/calibration/V4CalibrationEngine.mjs';
+import { evaluateV4Calibration } from '../lib/odds-v5/calibration/V4CalibrationEngine.mjs';
+import { loadSettledObservationsForScoring } from '../lib/odds-v5/calibration/calibrationBridge.mjs';
 import { getPrivateAccessConfig } from '../lib/privateAccessConfig.mjs';
 import { CSP_ENFORCED } from '../lib/contentSecurityPolicy.mjs';
 import { encryptKycField, decryptKycField, generateBlindIndex } from '../lib/kycEncryption.mjs';
 import { validateReadOnlySql } from '../lib/adminSqlConsole.mjs';
-import { calculateScoreMatrix } from '../lib/other-sports-v4/models/soccerDixonColes.mjs';
-import { calculateBasketballProbabilities } from '../lib/other-sports-v4/models/basketballPace.mjs';
-import { remainingResourcePct } from '../lib/odds-v4/models/resourceTables.mjs';
+import { calculateScoreMatrix } from '../lib/other-sports-v5/models/soccerDixonColes.mjs';
+import { calculateBasketballProbabilities } from '../lib/other-sports-v5/models/basketballPace.mjs';
+import { remainingResourcePct } from '../lib/odds-v5/models/resourceTables.mjs';
 
 function clamp(n, lo, hi) {
   return Math.max(lo, Math.min(hi, n));
@@ -40,9 +41,13 @@ function scoreOddsEngineV4() {
     resourceEvidence = false;
   }
 
-  // Evidence Check 2: Calibration Status (Genuine N >= 1000 check)
-  const calEval = evaluateV4Calibration([]);
-  const calPoints = calEval.status === 'VALIDATED' ? 10 : 3; // Honest 3/10 while INSUFFICIENT_DATA (no fake observations)
+  // Evidence Check 2: Calibration Status — load genuine settled observations (never fabricate)
+  const settledObs = loadSettledObservationsForScoring({ sport: 'cricket' });
+  const calEval = evaluateV4Calibration(settledObs);
+  let calPoints = 3;
+  if (calEval.status === 'VALIDATED') calPoints = 10;
+  else if ((calEval.sampleSize || settledObs.length) >= 100) calPoints = 5;
+  else if ((calEval.sampleSize || settledObs.length) > 0) calPoints = 4;
 
   const dims = {
     architecture: 10,
@@ -68,7 +73,7 @@ function scoreOddsEngineV4() {
     evidence: {
       formatAwareResources: resourceEvidence,
       calibrationStatus: calEval.status,
-      genuineObservationCount: calEval.sampleSize,
+      genuineObservationCount: settledObs.length,
       calibrationGatePassed: calEval.status === 'VALIDATED',
     },
     notes: [

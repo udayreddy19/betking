@@ -21,25 +21,25 @@ import {
   queryObservations,
   getObservationStats,
   clearObservations,
-} from '../../lib/odds-v3/telemetry/oddsObservationStore.mjs';
-import { buildLiveDataset } from '../../lib/odds-v3/dataset/liveDatasetBuilder.mjs';
+} from '../../lib/odds-shared/telemetry/oddsObservationStore.mjs';
+import { buildLiveDataset } from '../../lib/odds-shared/dataset/liveDatasetBuilder.mjs';
 import {
   calculateBrierScore,
   calculateLogLoss,
   calculateCalibrationMetrics,
   buildModelScorecard,
-} from '../../lib/odds-v3/validation/modelScorecard.mjs';
-import { compareModelBaselines } from '../../lib/odds-v3/validation/modelBaselineComparator.mjs';
+} from '../../lib/odds-shared/validation/modelScorecard.mjs';
+import { compareModelBaselines } from '../../lib/odds-shared/validation/modelBaselineComparator.mjs';
 import {
   fitPlattScaling,
   fitIsotonicRegression,
   optimizeCalibration,
-} from '../../lib/odds-v3/calibration/calibrationOptimizer.mjs';
+} from '../../lib/odds-shared/calibration/calibrationOptimizer.mjs';
 import {
   evaluateProviderMetrics,
   computeShadowProviderWeights,
   CURRENT_PROVIDER_WEIGHTS,
-} from '../../lib/odds-v3/pricing/providerWeightLearner.mjs';
+} from '../../lib/odds-shared/pricing/providerWeightLearner.mjs';
 import {
   registerModelVersion,
   updateModelStatus,
@@ -47,19 +47,19 @@ import {
   getActiveModelVersion,
   resetModelRegistry,
   MODEL_STATUSES,
-} from '../../lib/odds-v3/registry/modelRegistry.mjs';
+} from '../../lib/odds-shared/registry/modelRegistry.mjs';
 import {
   getActiveParameters,
   updateParameters,
   rollbackParameters,
   listParameterHistory,
-} from '../../lib/odds-v3/registry/parameterRegistry.mjs';
+} from '../../lib/odds-shared/registry/parameterRegistry.mjs';
 import {
   configureCanary,
   evaluateCanarySafety,
   getCanaryStatus,
   resetCanaryState,
-} from '../../lib/odds-v3/canary/canaryRollbackEngine.mjs';
+} from '../../lib/odds-shared/canary/canaryRollbackEngine.mjs';
 
 describe('Phase 17 — OddsEngine V3 Live Canary & Safe Model Optimization', () => {
   beforeEach(() => {

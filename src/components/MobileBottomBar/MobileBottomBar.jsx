@@ -39,7 +39,9 @@ export default function MobileBottomBar() {
         ? { label: 'Casino', path: '/casino', icon: NavCasinoIcon }
         : bettingEnabled
           ? { label: 'Promos', path: '/promotions', icon: NavPromotionsIcon }
-          : { label: 'Wallet', path: '/wallet', icon: BiWallet },
+          : walletEnabled
+            ? { label: 'Wallet', path: '/wallet', icon: BiWallet }
+            : { label: 'Help', path: '/help', icon: NavPromotionsIcon },
       isLoggedIn
         ? { label: 'Profile', path: '/profile', icon: HiOutlineUser, isProfile: true }
         : { label: 'VIP', path: '/vip', icon: NavVipIcon, isVip: true },

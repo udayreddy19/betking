@@ -217,12 +217,12 @@ router.get('/risk/desk-tree', requireRole('SUPER_ADMIN', 'TRADING_ADMIN', 'RISK_
 /** GET /api/admin/trading/hardening-status — engines, feeds, velocity, calibration, casino scope */
 router.get('/hardening-status', requireRole('SUPER_ADMIN', 'TRADING_ADMIN', 'RISK_ANALYST', 'OPERATIONS_ADMIN'), async (req, res) => {
   try {
-    const { getEngineModeStatus } = await import('../../../lib/odds-v4/EngineModeControl.mjs');
-    const { getOtherSportsEngineModeStatus } = await import('../../../lib/other-sports-v4/EngineModeControl.mjs');
-    const { getEngineFallbackMetrics } = await import('../../../lib/odds-v4/engineDispatch.mjs');
+    const { getEngineModeStatus } = await import('../../../lib/odds-v5/EngineModeControl.mjs');
+    const { getOtherSportsEngineModeStatus } = await import('../../../lib/other-sports-v5/EngineModeControl.mjs');
+    const { getEngineFallbackMetrics } = await import('../../../lib/odds-v5/engineDispatch.mjs');
     const { getFeedHealthSnapshot } = await import('../../../lib/feedHealthEngine.mjs');
     const { getBetVelocitySnapshot } = await import('../../../lib/risk/betVelocityBreaker.mjs');
-    const { getCalibrationValidationStatus } = await import('../../../lib/odds-v4/calibration/calibrationBridge.mjs');
+    const { getCalibrationValidationStatus } = await import('../../../lib/odds-v5/calibration/calibrationBridge.mjs');
     const { getCasinoAggregatorStatus } = await import('../../../lib/casinoAggregator.mjs');
 
     let orphanOpen = 0;

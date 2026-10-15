@@ -1,15 +1,15 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { buildCanonicalFromMatch } from '../../lib/odds-v3/buildCanonicalFromMatch.mjs';
-import { generate as generateV3 } from '../../lib/odds-v3/OddsEngineV3.mjs';
-import { generate as generateV4 } from '../../lib/odds-v4/OddsEngineV4.mjs';
-import { chaseWinProbability } from '../../lib/odds-v4/models/WinExpectancyEngine.mjs';
-import { pOverChaseTeamTotal } from '../../lib/odds-v4/chaseTotalCaps.mjs';
+import { buildCanonicalFromMatch } from '../../lib/odds-shared/buildCanonicalFromMatch.mjs';
+import { generate as generateV3 } from '../../lib/odds-shared/OddsEngineV3.mjs';
+import { generate as generateV4 } from '../../lib/odds-v5/OddsEngineV4.mjs';
+import { chaseWinProbability } from '../../lib/odds-v5/models/WinExpectancyEngine.mjs';
+import { pOverChaseTeamTotal } from '../../lib/odds-v5/chaseTotalCaps.mjs';
 import {
   resolveOddsEngineMode,
   setRuntimeEngineMode,
   clearRuntimeEngineMode,
   _resetEngineModeControlForTests,
-} from '../../lib/odds-v4/EngineModeControl.mjs';
+} from '../../lib/odds-v5/EngineModeControl.mjs';
 
 function chaseMatch() {
   return {
@@ -85,7 +85,7 @@ describe('OddsEngineV4 — resource MW + V3 catalog', () => {
       format: 'T20',
     });
     expect(hard.pChase).toBeLessThan(0.25);
-    expect(hard.method).toBe('resource_table');
+    expect(hard.method).toMatch(/resource_(table|mc_blend)/);
   });
 
   it('full book keeps compact V3 market families', () => {
@@ -181,7 +181,7 @@ describe('OddsEngineV4 — resource MW + V3 catalog', () => {
     expect(p190).toBeLessThan(0.12);
 
     const v4 = generateV4(state, { winnerOnly: false });
-    expect(v4.engineVersion).toBe('4.9.0');
+    expect(v4.engineVersion).toBe('4.10.0');
     expect(v4.v4Meta?.features?.length).toBeGreaterThan(0);
     // Near-target books are intentionally thinner; full 100 score is asserted on mid-chase.
     const teamTotal = v4.markets.find((m) => m.marketId === 'team_total');
@@ -230,7 +230,7 @@ describe('OddsEngineV4 — resource MW + V3 catalog', () => {
   it('scores a full live book at 100/100 on the readiness rubric', () => {
     const state = buildCanonicalFromMatch(chaseMatch());
     const v4 = generateV4(state, { winnerOnly: false });
-    expect(v4.engineVersion).toBe('4.9.0');
+    expect(v4.engineVersion).toBe('4.10.0');
     // New rubric has configHealth dimension that may not max without live provider timestamp
     expect(v4.v4Meta.qualityScore).toBeGreaterThanOrEqual(85);
     expect(v4.v4Meta.qualityBreakdown.matchWinner).toBe(20);

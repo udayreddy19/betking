@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { generate as generateV4 } from '../../lib/odds-v4/OddsEngineV4.mjs';
-import { buildCanonicalFromMatch } from '../../lib/odds-v3/buildCanonicalFromMatch.mjs';
-import { scoreV4Book, applyStabilityFallback } from '../../lib/odds-v4/v4BookGuardian.mjs';
-import { _resetEventFreezeForTests } from '../../lib/odds-v4/eventFreeze.mjs';
+import { generate as generateV4 } from '../../lib/odds-v5/OddsEngineV4.mjs';
+import { buildCanonicalFromMatch } from '../../lib/odds-shared/buildCanonicalFromMatch.mjs';
+import { scoreV4Book, applyStabilityFallback } from '../../lib/odds-v5/v4BookGuardian.mjs';
+import { _resetEventFreezeForTests } from '../../lib/odds-v5/eventFreeze.mjs';
 
 function chaseMatch(overrides = {}) {
   return {

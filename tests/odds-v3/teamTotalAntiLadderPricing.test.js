@@ -7,14 +7,14 @@ import {
   calculateLineProbability,
   resolveTotalLineSpread,
   minLiveTotalLineLead,
-} from '../../lib/odds-v3/lines/TotalLineGenerator.mjs';
-import { calculateExpectedTotal } from '../../lib/odds-v3/pricing/ProbabilityModel.mjs';
+} from '../../lib/odds-shared/lines/TotalLineGenerator.mjs';
+import { calculateExpectedTotal } from '../../lib/odds-shared/pricing/ProbabilityModel.mjs';
 import {
   generateTeamTotalMarket,
   applyLiveTotalOverOddsCap,
-} from '../../lib/odds-v3/markets/TeamTotalMarket.mjs';
-import { MAX_LIVE_TOTAL_OVER_ODDS } from '../../lib/odds-v3/pricing/MarginCalculator.mjs';
-import { priceSelection } from '../../lib/odds-v3/pricing/OddsCalculator.mjs';
+} from '../../lib/odds-shared/markets/TeamTotalMarket.mjs';
+import { MAX_LIVE_TOTAL_OVER_ODDS } from '../../lib/odds-shared/pricing/MarginCalculator.mjs';
+import { priceSelection } from '../../lib/odds-shared/pricing/OddsCalculator.mjs';
 
 function liveT20State({
   runs,

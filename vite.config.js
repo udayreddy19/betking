@@ -77,7 +77,7 @@ export default defineConfig({
         'lib/betPlacementEngine.mjs',
         'lib/withdrawalEngine.mjs',
         'lib/depositEngine.mjs',
-        'lib/odds-v3/OddsEngineV3.mjs',
+        'lib/odds-v5/OddsEngineV5.mjs',
       ],
       thresholds: {
         lines: 60,

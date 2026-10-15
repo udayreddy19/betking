@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { generate } from '../../lib/odds-v3/OddsEngineV3.mjs';
-import { createCanonicalMatchState } from '../../lib/odds-v3/models/CanonicalMatchState.mjs';
-import { clearVolatilityHistory } from '../../lib/odds-v3/volatilityFilter.mjs';
+import { generate } from '../../lib/odds-shared/OddsEngineV3.mjs';
+import { createCanonicalMatchState } from '../../lib/odds-shared/models/CanonicalMatchState.mjs';
+import { clearVolatilityHistory } from '../../lib/odds-shared/volatilityFilter.mjs';
 
 describe('OddsEngineV3 — Integration & Snapshot Generation', () => {
   beforeEach(() => {

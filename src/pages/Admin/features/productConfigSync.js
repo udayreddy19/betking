@@ -11,6 +11,7 @@ export async function syncProductConfigFromAdmin(known = null) {
   try {
     const config = known || await adminApiClient.get('/products');
     if (config && typeof config.walletEnabled === 'boolean' && typeof config.bettingEnabled === 'boolean') {
+      // Real walletEnabled / bettingEnabled / pgReviewMode / softwarePlatformEnabled from the server.
       publishLocalProductConfig(config);
       return config;
     }

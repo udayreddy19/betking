@@ -1,4 +1,4 @@
-/** Deterministic odds helper — DEPRECATED for display. Prefer OddsEngineV3 / provider odds. */
+/** Deterministic odds helper — DEPRECATED for display. Prefer OddsEngineV5 / provider odds. */
 export function getStableMatchOdds() {
   return { team1: null, team2: null, draw: null };
 }

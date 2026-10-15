@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createCanonicalMatchState } from '../../lib/odds-v3/models/CanonicalMatchState.mjs';
+import { createCanonicalMatchState } from '../../lib/odds-shared/models/CanonicalMatchState.mjs';
 
 describe('OddsEngineV3 — CanonicalMatchState Model', () => {
   const validPayload = {

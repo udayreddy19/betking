@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateRiskShadedPrice, applyRiskAdjustment } from '../../lib/odds-v3/pricing/RiskCalculator.mjs';
+import { calculateRiskShadedPrice, applyRiskAdjustment } from '../../lib/odds-shared/pricing/RiskCalculator.mjs';
 import { getSelectionLiability, getMarketLiabilityAggregate, recordSelectionLiability } from '../../lib/marketLiabilityStore.mjs';
 
 describe('OddsEngineV3 — P0: Liability Risk Shading & Distributed State', () => {

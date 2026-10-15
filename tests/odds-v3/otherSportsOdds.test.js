@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { generate } from '../../lib/odds-v3/OddsEngineV3.mjs';
-import { generateOtherSportsSnapshot } from '../../lib/odds-v3/otherSportsOdds.mjs';
-import { extractMatchWinnerOdds } from '../../lib/odds-v3/extractMatchWinnerOdds.mjs';
-import { adaptV3SnapshotToPublicContract } from '../../lib/odds-v3/adapters/V3ApiAdapter.mjs';
+import { generate } from '../../lib/odds-shared/OddsEngineV3.mjs';
+import { generateOtherSportsSnapshot } from '../../lib/odds-shared/otherSportsOdds.mjs';
+import { extractMatchWinnerOdds } from '../../lib/odds-shared/extractMatchWinnerOdds.mjs';
+import { adaptV3SnapshotToPublicContract } from '../../lib/odds-shared/adapters/V3ApiAdapter.mjs';
 
 function soccerMatch(overrides = {}) {
   return {

@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { createCanonicalMatchState } from '../../lib/odds-v3/models/CanonicalMatchState.mjs';
+import { createCanonicalMatchState } from '../../lib/odds-shared/models/CanonicalMatchState.mjs';
 import {
   generateExtendedMatchTotals,
   currentMatchWickets,
   estimateExpectedMatchWickets,
-} from '../../lib/odds-v3/markets/matchTotals.mjs';
-import { getFormatRules } from '../../lib/odds-v3/format/CricketFormatRules.mjs';
+} from '../../lib/odds-shared/markets/matchTotals.mjs';
+import { getFormatRules } from '../../lib/odds-shared/format/CricketFormatRules.mjs';
 
 describe('Total Match Wickets — live pricing', () => {
   it('counts 10 + 2 = 12 live wickets', () => {

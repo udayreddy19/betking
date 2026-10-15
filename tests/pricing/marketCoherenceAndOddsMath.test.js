@@ -9,12 +9,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { calculateScoreMatrix } from '../../lib/other-sports-v4/models/soccerDixonColes.mjs';
-import { calculateBasketballProbabilities } from '../../lib/other-sports-v4/models/basketballPace.mjs';
-import { calculateTennisMatchProb } from '../../lib/other-sports-v4/models/tennisMarkov.mjs';
-import { calculateBaseballProbabilities } from '../../lib/other-sports-v4/models/baseballModel.mjs';
-import { calculateIceHockeyProbabilities } from '../../lib/other-sports-v4/models/iceHockeyModel.mjs';
-import { calculateAmericanFootballProbabilities } from '../../lib/other-sports-v4/models/americanFootballDrive.mjs';
+import { calculateScoreMatrix } from '../../lib/other-sports-v5/models/soccerDixonColes.mjs';
+import { calculateBasketballProbabilities } from '../../lib/other-sports-v5/models/basketballPace.mjs';
+import { calculateTennisMatchProb } from '../../lib/other-sports-v5/models/tennisMarkov.mjs';
+import { calculateBaseballProbabilities } from '../../lib/other-sports-v5/models/baseballModel.mjs';
+import { calculateIceHockeyProbabilities } from '../../lib/other-sports-v5/models/iceHockeyModel.mjs';
+import { calculateAmericanFootballProbabilities } from '../../lib/other-sports-v5/models/americanFootballDrive.mjs';
 import { priceMarketPipeline } from '../../lib/pricing/CanonicalPricingPipeline.mjs';
 
 describe('Phase 4K, 4L, 4M — Market Coherence & Odds Math', () => {

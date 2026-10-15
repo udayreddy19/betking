@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * OddsEngineV3 — Automated Model Performance & Evaluation CLI
+ * OddsEngineV5 — Automated Model Performance & Evaluation CLI
  * 
  * Generates structured Markdown and JSON reports comparing Champion vs Challenger models.
  * 
@@ -11,8 +11,8 @@
 
 import fs from 'fs';
 import path from 'path';
-import { generateLongitudinalScorecard } from '../lib/odds-v3/validation/longitudinalScorecardEngine.mjs';
-import { compareChampionAndChallenger } from '../lib/odds-v3/validation/modelComparisonEngine.mjs';
+import { generateLongitudinalScorecard } from '../lib/odds-shared/validation/longitudinalScorecardEngine.mjs';
+import { compareChampionAndChallenger } from '../lib/odds-shared/validation/modelComparisonEngine.mjs';
 
 const outDir = path.resolve('docs/evidence/odds-model-performance');
 if (!fs.existsSync(outDir)) {

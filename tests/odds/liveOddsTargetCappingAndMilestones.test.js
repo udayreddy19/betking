@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { generate } from '../../lib/odds-v3/OddsEngineV3.mjs';
-import { createCanonicalMatchState } from '../../lib/odds-v3/models/CanonicalMatchState.mjs';
+import { generate } from '../../lib/odds-shared/OddsEngineV3.mjs';
+import { createCanonicalMatchState } from '../../lib/odds-shared/models/CanonicalMatchState.mjs';
 
 describe('OddsEngineV3 — Target Capping & Market Pricing Integrity', () => {
   it('strictly caps Total Match Runs line by target score in 2nd Innings', () => {

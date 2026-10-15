@@ -1,6 +1,6 @@
 /**
  * UI filter labels for market tabs. Does not compute odds.
- * Authoritative prices come from OddsEngineV3 via /api/public/sports/matches/:id/odds.
+ * Authoritative prices come from OddsEngineV5 via /api/public/sports/matches/:id/odds.
  */
 export function getMarketCategoriesForSport(sport = 'cricket') {
   switch (sport) {

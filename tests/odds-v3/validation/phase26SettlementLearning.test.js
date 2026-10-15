@@ -16,21 +16,21 @@ import {
   getAuthoritativeChampionModel,
   validateModelTransition,
   MODEL_STATUSES,
-} from '../../../lib/odds-v3/validation/modelGovernanceRegistry.mjs';
+} from '../../../lib/odds-shared/validation/modelGovernanceRegistry.mjs';
 import {
   createObservationRecord,
   queryObservations,
   clearObservationBuffer,
-} from '../../../lib/odds-v3/validation/observationArchiveEngine.mjs';
+} from '../../../lib/odds-shared/validation/observationArchiveEngine.mjs';
 import {
   ingestMarketSettlement,
-} from '../../../lib/odds-v3/validation/settlementIngestionPipeline.mjs';
+} from '../../../lib/odds-shared/validation/settlementIngestionPipeline.mjs';
 import {
   generateLongitudinalScorecard,
-} from '../../../lib/odds-v3/validation/longitudinalScorecardEngine.mjs';
+} from '../../../lib/odds-shared/validation/longitudinalScorecardEngine.mjs';
 import {
   compareChampionAndChallenger,
-} from '../../../lib/odds-v3/validation/modelComparisonEngine.mjs';
+} from '../../../lib/odds-shared/validation/modelComparisonEngine.mjs';
 
 describe('Phase 26 — Real-World Odds Intelligence & Settlement Learning System', () => {
   describe('1. Model Governance Registry', () => {
