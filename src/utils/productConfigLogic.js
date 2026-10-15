@@ -3,8 +3,8 @@
  * Kept free of React/DOM so they can be unit-tested under node (vitest).
  */
 
-/** sessionStorage key. Bumped (v6) to purge older snapshots that cached a bad "all off" state. */
-export const PRODUCT_CACHE_KEY = 'oddsyra_product_config_v6';
+/** sessionStorage key. Bumped (v7) after Software Platform toggle so stale sportsbook/software snapshots cannot stick. */
+export const PRODUCT_CACHE_KEY = 'oddsyra_product_config_v7';
 
 /** Older cache keys that must be removed so a poisoned "all off" snapshot never survives a deploy. */
 export const LEGACY_PRODUCT_CACHE_KEYS = [
@@ -13,19 +13,25 @@ export const LEGACY_PRODUCT_CACHE_KEYS = [
   'oddsyra_product_config_v3',
   'oddsyra_product_config_v4',
   'oddsyra_product_config_v5',
+  'oddsyra_product_config_v6',
 ];
 
 function truthy(value) {
   return value === true || value === 'true' || value === 1 || value === '1';
 }
 
-/** Normalize an API / WS / cache payload into `{ walletEnabled, bettingEnabled, updatedAt }`. */
+/** Normalize an API / WS / cache payload into product flags. */
 export function normalizeProductConfig(data) {
   const wallet = data?.walletEnabled ?? data?.wallet;
   const betting = data?.bettingEnabled ?? data?.betting;
+  const pg = data?.pgReviewMode ?? data?.pg_review_mode;
+  const software = data?.softwarePlatformEnabled;
   return {
     walletEnabled: truthy(wallet),
     bettingEnabled: truthy(betting),
+    pgReviewMode: truthy(pg),
+    softwarePlatformEnabled: truthy(software),
+    softwarePlatformName: String(data?.softwarePlatformName || '').trim(),
     updatedAt: data?.updatedAt || null,
   };
 }
@@ -73,11 +79,12 @@ export function platformGateDecision({
   loadError = false,
   isExempt = false,
   pgReviewMode = false,
+  softwarePlatformEnabled = false,
 }) {
   if (isExempt) return ready ? 'allow' : 'loading';
   if (!ready) return 'loading';
-  // PG compliance mode: the compliance surface owns the page — never show "unavailable".
-  if (pgReviewMode === true) return 'allow';
+  // PG compliance / Software Platform own the public surface — never show "unavailable".
+  if (pgReviewMode === true || softwarePlatformEnabled === true) return 'allow';
   if (loadError && !walletEnabled && !bettingEnabled) return 'retry';
   if (!walletEnabled && !bettingEnabled) return 'unavailable';
   return 'allow';

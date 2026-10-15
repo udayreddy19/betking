@@ -48,6 +48,7 @@ import { ensureAdminSession, adminApiClient } from '../api/adminApiClient';
 import { AdminToastProvider } from '../components/AdminToastContext';
 import { AdminNavAttentionProvider } from '../context/AdminNavAttentionContext';
 import { AdminUiModeProvider, useAdminUiMode } from '../context/AdminUiModeContext';
+import { useProducts } from '../../../context/ProductContext';
 import { AdminThemeProvider, useAdminTheme } from '../context/AdminThemeContext';
 import AdminTabs from '../components/AdminTabs';
 
@@ -502,6 +503,12 @@ function AdminShellInner() {
   const { activeRole, setActiveRole, syncRoleFromJwt, rolePreviewEnabled } = useAdminRole();
   const { revamp: uiRevamp } = useAdminUiMode();
   const { themeId: adminThemeId, theme: adminTheme, isDark: shellIsDark } = useAdminTheme();
+  const {
+    softwarePlatformEnabled,
+    softwarePlatformName,
+    bettingEnabled,
+    ready: productsReady,
+  } = useProducts();
   const [isAlertsOpen, setIsAlertsOpen] = useState(false);
   const [sessionReady, setSessionReady] = useState(!!localStorage.getItem('adminToken'));
   const [sessionChecking, setSessionChecking] = useState(true);
@@ -1196,6 +1203,59 @@ function AdminShellInner() {
           uiRevamp={uiRevamp}
           onOpenProfile={(sub) => handleSubModuleSelect('admin-profile', sub || 'account')}
         />
+
+        {productsReady && softwarePlatformEnabled && (
+          <div
+            role="status"
+            style={{
+              margin: '0 16px 0',
+              padding: '10px 14px',
+              borderRadius: 10,
+              background: shellIsDark ? 'rgba(37, 99, 235, 0.18)' : '#eff6ff',
+              border: '1px solid rgba(37, 99, 235, 0.45)',
+              color: shellIsDark ? '#bfdbfe' : '#1e3a8a',
+              fontSize: '0.88rem',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              flexWrap: 'wrap',
+            }}
+          >
+            <span>
+              Public site is Software Platform
+              {softwarePlatformName ? ` (“${softwarePlatformName}”)` : ''}
+              {' — '}
+              sportsbook betting is OFF. /admin stays here; software console is /console.
+            </span>
+            <button
+              type="button"
+              className="admin-btn admin-btn--sm"
+              onClick={() => handleSubModuleSelect('platform', 'product-config')}
+              style={{ whiteSpace: 'nowrap' }}
+            >
+              Open product toggles
+            </button>
+          </div>
+        )}
+        {productsReady && !softwarePlatformEnabled && bettingEnabled === false && (
+          <div
+            role="status"
+            style={{
+              margin: '0 16px 0',
+              padding: '10px 14px',
+              borderRadius: 10,
+              background: shellIsDark ? 'rgba(185, 28, 28, 0.18)' : '#fef2f2',
+              border: '1px solid rgba(185, 28, 28, 0.4)',
+              color: shellIsDark ? '#fecaca' : '#7f1d1d',
+              fontSize: '0.88rem',
+              fontWeight: 600,
+            }}
+          >
+            Betting is OFF and Software Platform is OFF — public site may show unavailable until you enable one mode.
+          </div>
+        )}
 
         {/* Alerts Popover (portal) */}
         {typeof document !== 'undefined' && createPortal(

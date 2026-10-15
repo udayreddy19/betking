@@ -23,6 +23,7 @@ const ProductContext = createContext({
   bettingEnabled: false,
   pgReviewMode: false,
   softwarePlatformEnabled: false,
+  softwarePlatformName: '',
   ready: false,
   loadError: false,
   isWalletEnabled: () => false,
@@ -60,6 +61,11 @@ function normalize(data, previous = null) {
     softwarePlatformEnabled: hasSoftware
       ? (software === true || software === 'true' || software === 1)
       : (previous?.softwarePlatformEnabled === true),
+    softwarePlatformName: String(
+      data?.softwarePlatformName != null
+        ? data.softwarePlatformName
+        : (previous?.softwarePlatformName || ''),
+    ).trim(),
     updatedAt: data?.updatedAt || previous?.updatedAt || null,
   };
 }
@@ -200,6 +206,7 @@ export function ProductProvider({ children }) {
       bettingEnabled: false,
       pgReviewMode: false,
       softwarePlatformEnabled: false,
+      softwarePlatformName: '',
       updatedAt: null,
     },
   );
@@ -348,6 +355,7 @@ export function ProductProvider({ children }) {
     bettingEnabled: config.bettingEnabled === true,
     pgReviewMode: config.pgReviewMode === true,
     softwarePlatformEnabled: config.softwarePlatformEnabled === true,
+    softwarePlatformName: String(config.softwarePlatformName || '').trim(),
     updatedAt: config.updatedAt,
     ready,
     loadError,

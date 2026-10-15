@@ -107,12 +107,22 @@ function PgRefractRedirect() {
 
 /** Brief loader while the sp_public cookie is set and the page reloads into the software SPA. */
 function SoftwarePlatformHandoff() {
+  const { softwarePlatformName } = useProducts();
+  const brand = String(softwarePlatformName || '').trim() || 'Software Platform';
   useEffect(() => {
     if (typeof document === 'undefined') return;
     let cancelled = false;
     (async () => {
       let guard = false;
       try { guard = sessionStorage.getItem('sp_handoff_reload') === '1'; } catch { /* ignore */ }
+      // Drop sportsbook product cache so a later toggle-off cannot revive a stale snapshot.
+      try {
+        for (const k of [
+          'oddsyra_product_config_v1', 'oddsyra_product_config_v2', 'oddsyra_product_config_v3',
+          'oddsyra_product_config_v4', 'oddsyra_product_config_v5', 'oddsyra_product_config_v6',
+          'oddsyra_product_config_v7',
+        ]) sessionStorage.removeItem(k);
+      } catch { /* ignore */ }
       // Ask the server to set sp_public — do not clear/fight Secure cookies from JS alone.
       try {
         await fetch(`/api/config/software-mode?_=${Date.now()}`, {
@@ -132,7 +142,24 @@ function SoftwarePlatformHandoff() {
     })();
     return () => { cancelled = true; };
   }, []);
-  return <div className="page-loader" role="status">Loading…</div>;
+  return (
+    <div
+      className="page-loader"
+      role="status"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+        minHeight: '40vh',
+        fontFamily: 'system-ui, sans-serif',
+      }}
+    >
+      <div style={{ fontSize: '1.35rem', fontWeight: 750, letterSpacing: '-0.02em' }}>{brand}</div>
+      <div style={{ fontSize: '0.9rem', opacity: 0.7 }}>Opening software platform…</div>
+    </div>
+  );
 }
 
 function PageLoader() {

@@ -15,15 +15,38 @@ describe('normalizeProductConfig', () => {
     expect(normalizeProductConfig({ walletEnabled: true, bettingEnabled: false })).toEqual({
       walletEnabled: true,
       bettingEnabled: false,
+      pgReviewMode: false,
+      softwarePlatformEnabled: false,
+      softwarePlatformName: '',
       updatedAt: null,
     });
   });
 
   it('accepts legacy wallet/betting keys and truthy encodings', () => {
     const cfg = normalizeProductConfig({ wallet: 'true', betting: 1, updatedAt: 'x' });
-    expect(cfg).toEqual({ walletEnabled: true, bettingEnabled: true, updatedAt: 'x' });
+    expect(cfg).toEqual({
+      walletEnabled: true,
+      bettingEnabled: true,
+      pgReviewMode: false,
+      softwarePlatformEnabled: false,
+      softwarePlatformName: '',
+      updatedAt: 'x',
+    });
     expect(normalizeProductConfig({ wallet: '1', betting: '0' })).toMatchObject({
       walletEnabled: true,
+      bettingEnabled: false,
+    });
+  });
+
+  it('accepts software platform fields', () => {
+    expect(normalizeProductConfig({
+      walletEnabled: true,
+      bettingEnabled: false,
+      softwarePlatformEnabled: true,
+      softwarePlatformName: 'Acme',
+    })).toMatchObject({
+      softwarePlatformEnabled: true,
+      softwarePlatformName: 'Acme',
       bettingEnabled: false,
     });
   });
@@ -51,10 +74,11 @@ describe('isAllProductsOffSnapshot', () => {
 });
 
 describe('cache policy', () => {
-  it('uses the v6 key and purges every older key', () => {
-    expect(PRODUCT_CACHE_KEY).toBe('oddsyra_product_config_v6');
+  it('uses the v7 key and purges every older key', () => {
+    expect(PRODUCT_CACHE_KEY).toBe('oddsyra_product_config_v7');
     expect(LEGACY_PRODUCT_CACHE_KEYS).toContain('oddsyra_product_config_v1');
     expect(LEGACY_PRODUCT_CACHE_KEYS).toContain('oddsyra_product_config_v5');
+    expect(LEGACY_PRODUCT_CACHE_KEYS).toContain('oddsyra_product_config_v6');
     expect(LEGACY_PRODUCT_CACHE_KEYS).not.toContain(PRODUCT_CACHE_KEY);
   });
 
@@ -63,6 +87,11 @@ describe('cache policy', () => {
     expect(shouldCacheProductSnapshot({ walletEnabled: false, bettingEnabled: false, note: 'unavailable' })).toBe(false);
     expect(shouldCacheProductSnapshot({ walletEnabled: true, bettingEnabled: false })).toBe(true);
     expect(shouldCacheProductSnapshot({ walletEnabled: false, bettingEnabled: true })).toBe(true);
+    expect(shouldCacheProductSnapshot({
+      walletEnabled: false,
+      bettingEnabled: false,
+      softwarePlatformEnabled: true,
+    })).toBe(true);
   });
 
   it('flags non-2xx and note:unavailable responses as API failures', () => {
@@ -96,6 +125,15 @@ describe('PlatformGate matrix', () => {
 
   it('does not show retry when a trusted product is on', () => {
     expect(platformGateDecision({ ...base, walletEnabled: true, bettingEnabled: false, loadError: true })).toBe('allow');
+  });
+
+  it('allows Software Platform mode even when wallet+betting are off', () => {
+    expect(platformGateDecision({
+      ...base,
+      walletEnabled: false,
+      bettingEnabled: false,
+      softwarePlatformEnabled: true,
+    })).toBe('allow');
   });
 
   it('exempt routes (admin etc.) are always allowed once ready', () => {

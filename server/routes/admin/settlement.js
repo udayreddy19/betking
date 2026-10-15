@@ -202,6 +202,27 @@ router.post('/api/admin/settlement/retry/:jobId', requireRole('SUPER_ADMIN', 'FI
   }
 });
 
+router.post('/api/admin/settlement/retry-failed', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN', 'TRADING_ADMIN'), async (req, res) => {
+  try {
+    const { bulkRetryFailedSettlementJobs } = await import('../../../lib/settlement/settlementQueue.mjs');
+    const limit = Number(req.body?.limit) || 500;
+    const errorContains = req.body?.errorContains != null
+      ? String(req.body.errorContains)
+      : 'stuck_processing_timeout';
+    const result = await bulkRetryFailedSettlementJobs({ limit, errorContains: errorContains || null });
+    const { logAdminAction } = await import('../../middleware/auditLogger.js');
+    await logAdminAction({
+      actorId: req.admin?.id || 'admin',
+      targetId: 'settlement_jobs',
+      action: 'SETTLEMENT_BULK_RETRY',
+      details: { retried: result.retried, errorContains, limit },
+    });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get('/api/admin/settlement/replay/:betId', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN', 'OPERATIONS_ADMIN', 'TRADING_ADMIN'), async (req, res) => {
   try {
     const betRes = await query('SELECT * FROM bets WHERE bet_id = $1', [req.params.betId]);

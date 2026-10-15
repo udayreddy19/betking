@@ -50,17 +50,25 @@ if [ -f .release-sha ]; then
   cat .release-sha
 fi
 
-# 2. Build Production Containers
+COMPOSE_FILES=(-f docker-compose.prod.yml)
+if [ -f docker-compose.v5-override.yml ]; then
+  COMPOSE_FILES+=(-f docker-compose.v5-override.yml)
+fi
+echo "🧩 Compose files: ${COMPOSE_FILES[*]}"
+
+# 2. Build Production Containers (from this checkout — never docker cp afterwards)
 echo "📦 Building Production Docker Images..."
-docker compose -f docker-compose.prod.yml build --no-cache
+docker compose "${COMPOSE_FILES[@]}" build backend worker
 
 # 2b. Record image digests
 echo "🧬 Recording image digests..."
 {
   echo "recordedAt=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   echo "gitSha=$(git rev-parse HEAD 2>/dev/null || echo unknown)"
-  docker image inspect betking-backend:latest --format 'backend={{.Id}}' 2>/dev/null || true
-  docker image inspect betking-worker:latest --format 'worker={{.Id}}' 2>/dev/null || true
+  docker image inspect oddsyra-backend:latest --format 'backend={{.Id}}' 2>/dev/null \
+    || docker image inspect betking-backend:latest --format 'backend={{.Id}}' 2>/dev/null || true
+  docker image inspect oddsyra-worker:latest --format 'worker={{.Id}}' 2>/dev/null \
+    || docker image inspect betking-worker:latest --format 'worker={{.Id}}' 2>/dev/null || true
 } | tee .release-image-digests
 
 # 2c. Build frontend assets for nginx bind-mount (./dist)
@@ -74,21 +82,28 @@ if [ -f dist/index.html ]; then
   } | tee -a .release-image-digests
 fi
 
+# 2d. Optional: rebuild Software Platform SPA if sibling checkout exists
+if [ -d /opt/software-platform ] && [ -f /opt/software-platform/package.json ]; then
+  echo "🧱 Building Software Platform dist (/opt/software-platform)…"
+  (cd /opt/software-platform && npm ci && npm run build) || echo "⚠️ Software Platform build skipped/failed"
+fi
+
 # 3. Apply Database Migrations
 echo "🐘 Executing PostgreSQL Migrations..."
 # Prefer compose network hostname; fall back to docker run if host cannot resolve `postgres`
 if ! node scripts/migrate.mjs; then
   echo "⚠️ Host migrate failed (often DNS for service name postgres). Retrying via compose..."
-  docker compose -f docker-compose.prod.yml run --rm --no-deps backend node scripts/migrate.mjs
+  docker compose "${COMPOSE_FILES[@]}" run --rm --no-deps backend node scripts/migrate.mjs
 fi
 
 # 4. Deploy Up-To-Date Containers
 echo "🔄 Rolling out production services..."
-docker compose -f docker-compose.prod.yml up -d
+docker compose "${COMPOSE_FILES[@]}" up -d --no-deps backend worker
+docker compose "${COMPOSE_FILES[@]}" up -d
 
 # 4b. Refresh nginx after backend recreate (new conf + Docker DNS)
 if docker ps --format '{{.Names}}' | grep -q oddsyra_prod_nginx; then
-  docker compose -f docker-compose.prod.yml up -d nginx --force-recreate || \
+  docker compose "${COMPOSE_FILES[@]}" up -d nginx --force-recreate || \
     docker exec oddsyra_prod_nginx nginx -s reload 2>/dev/null || true
 fi
 

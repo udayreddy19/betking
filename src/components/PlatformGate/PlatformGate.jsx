@@ -16,7 +16,7 @@ function GateLoader() {
 export default function PlatformGate({ children }) {
   const location = useLocation();
   const {
-    ready, walletEnabled, bettingEnabled, pgReviewMode, loadError, retry,
+    ready, walletEnabled, bettingEnabled, pgReviewMode, softwarePlatformEnabled, loadError, retry,
   } = useProducts();
   const decision = platformGateDecision({
     ready,
@@ -24,6 +24,7 @@ export default function PlatformGate({ children }) {
     bettingEnabled,
     loadError,
     pgReviewMode,
+    softwarePlatformEnabled,
     isExempt: isPlatformGateExemptPath(location.pathname || '/'),
   });
 

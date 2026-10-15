@@ -153,6 +153,89 @@ router.put('/exceptions/:id/resolve', requirePermission('finance', 'reconciliati
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+/**
+ * POST /reconciliation/exceptions/dedupe-open
+ * Collapse duplicate OPEN cases for the same (type, entity_type, entity_id).
+ * Keeps the newest OPEN row; resolves older duplicates as DUPLICATE_OR_MISSING_ENTRY.
+ * Does NOT change wallet balances.
+ */
+router.post('/exceptions/dedupe-open', requirePermission('finance', 'reconciliation'), async (req, res) => {
+  try {
+    const q = await getQuery();
+    const confirm = req.body?.confirm === true;
+    if (!confirm) {
+      const preview = await q(`
+        SELECT reconciliation_type, entity_type, entity_id, COUNT(*)::int AS open_count
+        FROM reconciliation_cases
+        WHERE UPPER(status) = 'OPEN'
+        GROUP BY 1, 2, 3
+        HAVING COUNT(*) > 1
+        ORDER BY open_count DESC
+        LIMIT 50
+      `);
+      const totalDupGroups = await q(`
+        SELECT COUNT(*)::int AS c FROM (
+          SELECT 1 FROM reconciliation_cases
+          WHERE UPPER(status) = 'OPEN'
+          GROUP BY reconciliation_type, entity_type, entity_id
+          HAVING COUNT(*) > 1
+        ) t
+      `);
+      return res.json({
+        confirmRequired: true,
+        duplicateGroups: Number(totalDupGroups.rows[0]?.c || 0),
+        sample: preview.rows,
+        note: 'POST again with { confirm: true } to resolve older duplicates. Balances unchanged.',
+      });
+    }
+
+    const result = await q(`
+      WITH ranked AS (
+        SELECT id,
+               ROW_NUMBER() OVER (
+                 PARTITION BY reconciliation_type, entity_type, entity_id
+                 ORDER BY detected_at DESC NULLS LAST, id DESC
+               ) AS rn
+        FROM reconciliation_cases
+        WHERE UPPER(status) = 'OPEN'
+      ),
+      to_close AS (
+        SELECT id FROM ranked WHERE rn > 1
+      )
+      UPDATE reconciliation_cases c
+      SET status = 'RESOLVED',
+          resolution = 'Duplicate OPEN case collapsed; newest kept for operator review. NO AUTO-REPAIR.',
+          resolution_classification = 'DUPLICATE_OR_MISSING_ENTRY',
+          resolved_at = NOW(),
+          reviewer = $1,
+          last_checked_at = NOW(),
+          investigation_status = 'DUPLICATE_OR_MISSING_ENTRY'
+      FROM to_close
+      WHERE c.id = to_close.id
+      RETURNING c.id
+    `, [req.admin?.id || 'admin']);
+
+    await logAdminAction({
+      actorId: req.admin.id,
+      targetId: 'reconciliation_cases',
+      action: 'RECON_DEDUPE_OPEN',
+      details: { resolvedDuplicates: result.rows.length },
+      riskLevel: 'MEDIUM',
+    });
+
+    const remaining = await q(`SELECT COUNT(*)::int AS c FROM reconciliation_cases WHERE UPPER(status) = 'OPEN'`);
+    res.json({
+      success: true,
+      resolvedDuplicates: result.rows.length,
+      openRemaining: Number(remaining.rows[0]?.c || 0),
+      autoRepair: false,
+      note: 'NO AUTO-REPAIR — balances unchanged',
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /reconciliation/legacy-wallets — wallets with ledger gaps
 router.get('/legacy-wallets', requirePermission('finance', 'reconciliation'), async (req, res) => {
   try {
