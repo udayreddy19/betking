@@ -132,6 +132,9 @@ export default function ProfileMarketingPrefsCard() {
                 <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>🔔 Browser Notifications</div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted, #64748b)', marginTop: 2 }}>
                   Receive instant alerts about your bets, settled outcomes, free bets, and withdrawals.
+                  {pushPermission === 'default' && !pushSubscribed && (
+                    <span> Tap Enable to get settlement &amp; deposit alerts on this device.</span>
+                  )}
                 </div>
               </div>
               <div>

@@ -299,6 +299,12 @@
   transition: color var(--transition-fast);
 }
 
+a.carousel-view-all {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
 .carousel-view-all:hover {
   color: var(--color-primary);
 }

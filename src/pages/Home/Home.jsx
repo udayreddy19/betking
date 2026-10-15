@@ -83,6 +83,7 @@ export default function Home() {
   const [activeLeague, setActiveLeague] = useState(null);
   const [promoIndex, setPromoIndex] = useState(0);
   const matchScrollRef = useRef(null);
+  const cricketLiveScrollRef = useRef(null);
   const watchlistScrollRef = useRef(null);
   const promoScrollRef = useRef(null);
   const promoIndexRef = useRef(0);
@@ -282,6 +283,13 @@ export default function Home() {
     return (matches || []).filter((m) => idSet.has(String(m.id)));
   }, [matches, watchlistIds]);
 
+  const cricketLiveMatches = useMemo(() => (
+    (matches || [])
+      .filter((m) => String(m.sport || '').toLowerCase() === 'cricket' && getMatchState(m) === 'in')
+      .sort(compareMatchesForSportsBoard)
+      .slice(0, 8)
+  ), [matches]);
+
   if (!productsReady) {
     return <div className="home-page container" id="home-page"><p style={{ padding: '2rem 0', color: '#64748b' }}>Loading…</p></div>;
   }
@@ -318,6 +326,152 @@ export default function Home() {
 
       {!bettingEnabled ? null : (
       <>
+
+      {cricketLiveMatches.length > 0 && (
+        <section className="home-section home-cricket-live" id="cricket-live-section">
+          <div className="section-header">
+            <h2>Cricket · Live</h2>
+            <div className="section-header-actions">
+              <Link to="/sports?sport=cricket" className="carousel-view-all">
+                View all
+              </Link>
+              <button type="button" className="carousel-nav-btn" onClick={() => scroll(cricketLiveScrollRef, 'left')} aria-label="Scroll cricket live left">
+                <FiChevronLeft />
+              </button>
+              <button type="button" className="carousel-nav-btn" onClick={() => scroll(cricketLiveScrollRef, 'right')} aria-label="Scroll cricket live right">
+                <FiChevronRight />
+              </button>
+            </div>
+          </div>
+          <div className="match-cards-scroll scroll-row-bleed" ref={cricketLiveScrollRef}>
+            {cricketLiveMatches.map((match) => (
+              <ErrorBoundary key={`cl-${match.id}`} resetKey={match.id} fallback={null}>
+                <MatchCard match={match} variant="home" />
+              </ErrorBoundary>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section className="home-section home-sports-action" id="sports-action-section">
+        <div className="section-header">
+          <h2>{sectionTitle}</h2>
+          <div className="section-header-actions">
+            <button type="button" className="carousel-view-all" onClick={() => navigate('/sports')}>
+              View All
+            </button>
+            <button type="button" className="carousel-nav-btn" onClick={() => scroll(matchScrollRef, 'left')} aria-label="Scroll left">
+              <FiChevronLeft />
+            </button>
+            <button type="button" className="carousel-nav-btn" onClick={() => scroll(matchScrollRef, 'right')} aria-label="Scroll right">
+              <FiChevronRight />
+            </button>
+          </div>
+        </div>
+
+        <FilterChips
+          items={homeSportChips}
+          activeId={activeSport}
+          onSelect={handleSportChange}
+          counts={sportCounts}
+          className="filter-chips-row scroll-row-bleed home-sport-chips"
+        />
+
+        {leagueChips.length > 0 && (
+          <div className="home-league-chips scroll-row-bleed">
+            {leagueChips.map((league) => (
+              <button
+                key={league.id}
+                type="button"
+                className={`home-league-chip ${isSameLeague(activeLeague, league.id) ? 'active' : ''}`}
+                onClick={() => setActiveLeague(
+                  isSameLeague(activeLeague, league.id) ? null : league.id
+                )}
+              >
+                <SportIcon sport={league.sport} icon={league.icon} className="home-league-chip-icon" />
+                {league.name}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="match-cards-scroll scroll-row-bleed" ref={matchScrollRef} key={`${activeSport}-${activeLeague}`}>
+          {sportMatches.length > 0 ? (
+            sportMatches.slice(0, HOME_MATCH_LIMIT).map((match) => (
+              <ErrorBoundary key={match.id} resetKey={match.id} fallback={null}>
+                <MatchCard match={match} variant="home" />
+              </ErrorBoundary>
+            ))
+          ) : isScoresLoading ? (
+            <div className="no-matches-empty">
+              <span className="no-matches-icon">⏳</span>
+              <p>Loading matches…</p>
+            </div>
+          ) : (
+            <div className="no-matches-empty">
+              <SportIcon sport={activeSport} className="no-matches-icon" />
+              <p>No {sportsCategories.find((s) => s.id === activeSport)?.name || 'sport'} matches right now</p>
+              <button type="button" className="no-matches-cta" onClick={() => navigate('/sports')}>
+                Browse all sports
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {watchlistCount > 0 && (
+        <section className="home-section home-watchlist" id="watchlist-section">
+          <div className="section-header">
+            <h2>Your watchlist</h2>
+            <div className="section-header-actions">
+              <button type="button" className="carousel-view-all" onClick={() => navigate('/sports?watchlist=1')}>
+                View all
+              </button>
+              <button type="button" className="carousel-nav-btn" onClick={() => scroll(watchlistScrollRef, 'left')} aria-label="Scroll watchlist left">
+                <FiChevronLeft />
+              </button>
+              <button type="button" className="carousel-nav-btn" onClick={() => scroll(watchlistScrollRef, 'right')} aria-label="Scroll watchlist right">
+                <FiChevronRight />
+              </button>
+            </div>
+          </div>
+          <div className="match-cards-scroll scroll-row-bleed" ref={watchlistScrollRef}>
+            {watchlistMatches.length > 0 ? (
+              watchlistMatches.slice(0, HOME_MATCH_LIMIT).map((match) => (
+                <ErrorBoundary key={match.id} resetKey={match.id} fallback={null}>
+                  <MatchCard match={match} variant="home" />
+                </ErrorBoundary>
+              ))
+            ) : (
+              <div className="no-matches-empty">
+                <p>Saved matches are not on the board right now. They’ll show here again when they return.</p>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {forYouMatches.length > 0 && (
+        <section className="home-section" id="for-you-section">
+          <div className="section-header">
+            <h2>Markets for you</h2>
+            <button type="button" className="carousel-view-all" onClick={() => navigate('/profile')}>
+              Edit favourites
+            </button>
+          </div>
+          <div className="match-cards-scroll scroll-row-bleed">
+            {forYouMatches.map((match) => (
+              <ErrorBoundary key={`fy-${match.id}`} resetKey={match.id} fallback={null}>
+                <MatchCard match={match} variant="home" />
+              </ErrorBoundary>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section className="home-section home-boosted">
+        <BoostedOddsWidget />
+      </section>
 
       <div
         className="home-promo-carousel"
@@ -404,126 +558,6 @@ export default function Home() {
           </button>
         </div>
       )}
-
-      {watchlistCount > 0 && (
-        <section className="home-section home-watchlist" id="watchlist-section">
-          <div className="section-header">
-            <h2>Your watchlist</h2>
-            <div className="section-header-actions">
-              <button type="button" className="carousel-view-all" onClick={() => navigate('/sports?watchlist=1')}>
-                View all
-              </button>
-              <button type="button" className="carousel-nav-btn" onClick={() => scroll(watchlistScrollRef, 'left')} aria-label="Scroll watchlist left">
-                <FiChevronLeft />
-              </button>
-              <button type="button" className="carousel-nav-btn" onClick={() => scroll(watchlistScrollRef, 'right')} aria-label="Scroll watchlist right">
-                <FiChevronRight />
-              </button>
-            </div>
-          </div>
-          <div className="match-cards-scroll scroll-row-bleed" ref={watchlistScrollRef}>
-            {watchlistMatches.length > 0 ? (
-              watchlistMatches.slice(0, HOME_MATCH_LIMIT).map((match) => (
-                <ErrorBoundary key={match.id} resetKey={match.id} fallback={null}>
-                  <MatchCard match={match} variant="home" />
-                </ErrorBoundary>
-              ))
-            ) : (
-              <div className="no-matches-empty">
-                <p>Saved matches are not on the board right now. They’ll show here again when they return.</p>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      <section className="home-section home-boosted">
-        <BoostedOddsWidget />
-      </section>
-
-      {forYouMatches.length > 0 && (
-        <section className="home-section" id="for-you-section">
-          <div className="section-header">
-            <h2>Markets for you</h2>
-            <button type="button" className="carousel-view-all" onClick={() => navigate('/profile')}>
-              Edit favourites
-            </button>
-          </div>
-          <div className="match-cards-scroll scroll-row-bleed">
-            {forYouMatches.map((match) => (
-              <ErrorBoundary key={`fy-${match.id}`} resetKey={match.id} fallback={null}>
-                <MatchCard match={match} variant="home" />
-              </ErrorBoundary>
-            ))}
-          </div>
-        </section>
-      )}
-
-      <section className="home-section home-sports-action" id="sports-action-section">
-        <div className="section-header">
-          <h2>{sectionTitle}</h2>
-          <div className="section-header-actions">
-            <button type="button" className="carousel-view-all" onClick={() => navigate('/sports')}>
-              View All
-            </button>
-            <button type="button" className="carousel-nav-btn" onClick={() => scroll(matchScrollRef, 'left')} aria-label="Scroll left">
-              <FiChevronLeft />
-            </button>
-            <button type="button" className="carousel-nav-btn" onClick={() => scroll(matchScrollRef, 'right')} aria-label="Scroll right">
-              <FiChevronRight />
-            </button>
-          </div>
-        </div>
-
-        <FilterChips
-          items={homeSportChips}
-          activeId={activeSport}
-          onSelect={handleSportChange}
-          counts={sportCounts}
-          className="filter-chips-row scroll-row-bleed home-sport-chips"
-        />
-
-        {leagueChips.length > 0 && (
-          <div className="home-league-chips scroll-row-bleed">
-            {leagueChips.map((league) => (
-              <button
-                key={league.id}
-                type="button"
-                className={`home-league-chip ${isSameLeague(activeLeague, league.id) ? 'active' : ''}`}
-                onClick={() => setActiveLeague(
-                  isSameLeague(activeLeague, league.id) ? null : league.id
-                )}
-              >
-                <SportIcon sport={league.sport} icon={league.icon} className="home-league-chip-icon" />
-                {league.name}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div className="match-cards-scroll scroll-row-bleed" ref={matchScrollRef} key={`${activeSport}-${activeLeague}`}>
-          {sportMatches.length > 0 ? (
-            sportMatches.slice(0, HOME_MATCH_LIMIT).map((match) => (
-              <ErrorBoundary key={match.id} resetKey={match.id} fallback={null}>
-                <MatchCard match={match} variant="home" />
-              </ErrorBoundary>
-            ))
-          ) : isScoresLoading ? (
-            <div className="no-matches-empty">
-              <span className="no-matches-icon">⏳</span>
-              <p>Loading matches…</p>
-            </div>
-          ) : (
-            <div className="no-matches-empty">
-              <SportIcon sport={activeSport} className="no-matches-icon" />
-              <p>No {sportsCategories.find((s) => s.id === activeSport)?.name || 'sport'} matches right now</p>
-              <button type="button" className="no-matches-cta" onClick={() => navigate('/sports')}>
-                Browse all sports
-              </button>
-            </div>
-          )}
-        </div>
-      </section>
       </>
       )}
     </div>

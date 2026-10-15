@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { homeCategoryTiles } from '../../data/homePageData';
-import { CASINO_ENABLED } from '../../utils/featureFlags';
+import { CASINO_ENABLED, FANTASY_JOIN_ENABLED } from '../../utils/featureFlags';
 import { useFeatureFlags } from '../../context/FeatureFlagsContext';
 import { useProducts } from '../../context/ProductContext';
 import {
@@ -21,10 +21,12 @@ export default function HomeCategoryGrid({ liveCount = 0 }) {
   const srlEnabled = isEnabled('oddsyra_srl_ui', true);
   if (!bettingEnabled) return null;
 
-  const tiles = (CASINO_ENABLED
-    ? homeCategoryTiles
-    : homeCategoryTiles.filter((tile) => tile.id !== 'casino')
-  ).filter((tile) => !BETTING_TILE_IDS.has(tile.id) || bettingEnabled);
+  const tiles = homeCategoryTiles
+    .filter((tile) => {
+      if (tile.id === 'casino' && !CASINO_ENABLED) return false;
+      if (tile.id === 'fantasy' && !FANTASY_JOIN_ENABLED) return false;
+      return !BETTING_TILE_IDS.has(tile.id) || bettingEnabled;
+    });
 
   const shortcuts = [
     { id: 'in-play', label: 'In-play', link: '/live-betting', Icon: NavLiveIcon, count: liveCount },

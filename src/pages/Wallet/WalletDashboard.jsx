@@ -33,7 +33,8 @@ export default function WalletDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
   const [params, setParams] = useSearchParams();
-  const { user, openDepositModal, openFinModal, transactions, refreshWallet } = useAuth();
+  const { user, openDepositModal, openFinModal, transactions, refreshWallet, showToast } = useAuth();
+  const [depositResyncLoading, setDepositResyncLoading] = useState(false);
   const deepLinkHandled = useRef(null);
 
   const [expandedBreakdown, setExpandedBreakdown] = useState(false);
@@ -119,6 +120,12 @@ export default function WalletDashboard() {
       return true;
     });
   }, [transactions, txFilter, txStatusFilter, txSearch]);
+
+  const isPendingWithdraw = (tx) => {
+    if (String(tx?.type || '').toLowerCase() !== 'withdraw') return false;
+    const s = String(tx?.status || '').toUpperCase();
+    return ['PENDING', 'PROCESSING', 'UNDER_REVIEW', 'PENDING_REVIEW'].includes(s);
+  };
 
   const getStatusBadge = (status) => {
     const s = String(status || 'COMPLETED').toUpperCase();
@@ -258,6 +265,20 @@ export default function WalletDashboard() {
                   <span className="wallet-breakdown-cell__title">Reserved Withdrawal Amount</span>
                   <span className="wallet-breakdown-cell__value wallet-breakdown-cell__value--pending">{formatInr(wallet.pendingWithdrawal)}</span>
                   <span className="wallet-breakdown-cell__desc">Funds held for active pending withdrawal requests.</span>
+                  {wallet.pendingWithdrawal > 0 && (
+                    <div className="wallet-withdraw-pending-actions">
+                      <span className="wallet-withdraw-pending-actions__eta">
+                        Typical payout 15 min–24 hrs after approval
+                      </span>
+                      <button
+                        type="button"
+                        className="wallet-link-btn"
+                        onClick={() => openFinModal?.('cancel-wd')}
+                      >
+                        Manage / cancel
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="wallet-breakdown-cell">
@@ -289,6 +310,43 @@ export default function WalletDashboard() {
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
+
+      <div className="wallet-deposit-recovery-card">
+        <div>
+          <strong>Payment done but balance not updated?</strong>
+          <p>We can re-check your UPI payment with the gateway and credit your wallet if it was successful.</p>
+        </div>
+        <button
+          type="button"
+          className="wallet-btn wallet-btn--secondary"
+          disabled={depositResyncLoading}
+          onClick={async () => {
+            setDepositResyncLoading(true);
+            try {
+              const res = await apiFetch('/api/v1/payments/resync-pending', { method: 'POST' });
+              const data = await res.json().catch(() => ({}));
+              if (!res.ok) {
+                showToast?.(data.error || 'Could not refresh pending deposits.', 'error');
+                return;
+              }
+              const synced = data.synced ?? data.credited ?? data.updated;
+              showToast?.(
+                synced != null
+                  ? `Checked pending deposits${Number(synced) ? ` · ${synced} updated` : ''}.`
+                  : (data.message || 'Pending deposits re-checked.'),
+                'success',
+              );
+              await refreshWallet?.();
+            } catch {
+              showToast?.('Network error — try again in a moment.', 'error');
+            } finally {
+              setDepositResyncLoading(false);
+            }
+          }}
+        >
+          {depositResyncLoading ? 'Checking…' : 'Refresh my deposit'}
+        </button>
       </div>
 
       {/* NAVIGATION TABS */}
@@ -334,6 +392,7 @@ export default function WalletDashboard() {
             <div className="wallet-tx-list">
               {(transactions || []).slice(0, 5).map((tx) => {
                 const isPositive = ['deposit', 'bet_win', 'bonus', 'loyalty_redeem', 'cashout'].includes(tx.type);
+                const pendingWd = isPendingWithdraw(tx);
                 return (
                   <div key={tx.id} className="wallet-tx-row" onClick={() => setSelectedTx(tx)}>
                     <div className="wallet-tx-row__left">
@@ -348,6 +407,9 @@ export default function WalletDashboard() {
                         <span className="wallet-tx-info__time">
                           {tx.createdAt ? formatIst(tx.createdAt, { dateStyle: 'medium', timeStyle: 'short' }) : '—'}
                         </span>
+                        {pendingWd && (
+                          <span className="wallet-tx-info__eta">ETA 15 min–24 hrs after approval</span>
+                        )}
                       </div>
                     </div>
 
@@ -356,6 +418,18 @@ export default function WalletDashboard() {
                         {isPositive ? '+' : ''}{formatInr(tx.amount)}
                       </span>
                       {getStatusBadge(tx.status)}
+                      {pendingWd && (
+                        <button
+                          type="button"
+                          className="wallet-link-btn wallet-tx-cancel-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openFinModal?.('cancel-wd');
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -432,11 +506,15 @@ export default function WalletDashboard() {
                 <tbody>
                   {filteredTransactions.map((tx) => {
                     const isPositive = ['deposit', 'bet_win', 'bonus', 'loyalty_redeem', 'cashout'].includes(tx.type);
+                    const pendingWd = isPendingWithdraw(tx);
                     return (
                       <tr key={tx.id} onClick={() => setSelectedTx(tx)} className="wallet-table__row-clickable">
                         <td>
                           <strong>{tx.label}</strong>
                           {tx.method ? <span className="wallet-table__subtext"> · {tx.method}</span> : null}
+                          {pendingWd ? (
+                            <span className="wallet-table__subtext wallet-table__eta"> · ETA 15 min–24 hrs</span>
+                          ) : null}
                         </td>
                         <td>
                           <span className="wallet-table__mono">{tx.id}</span>
@@ -445,7 +523,21 @@ export default function WalletDashboard() {
                         <td>
                           {tx.createdAt ? formatIst(tx.createdAt, { dateStyle: 'medium', timeStyle: 'short' }) : '—'}
                         </td>
-                        <td>{getStatusBadge(tx.status)}</td>
+                        <td>
+                          {getStatusBadge(tx.status)}
+                          {pendingWd && (
+                            <button
+                              type="button"
+                              className="wallet-link-btn wallet-tx-cancel-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openFinModal?.('cancel-wd');
+                              }}
+                            >
+                              Cancel
+                            </button>
+                          )}
+                        </td>
                         <td style={{ textAlign: 'right' }}>
                           <span className={`wallet-tx-amount ${isPositive ? 'wallet-tx-amount--positive' : 'wallet-tx-amount--negative'}`}>
                             {isPositive ? '+' : ''}{formatInr(tx.amount)}

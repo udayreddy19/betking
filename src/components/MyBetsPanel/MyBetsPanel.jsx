@@ -450,13 +450,14 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
     return visibleBets.slice(0, settledVisibleCount);
   }, [visibleBets, isSettledFilter, settledVisibleCount]);
 
-  const handleCashout = async (bet) => {
+  const handleCashout = async (bet, { fraction = null } = {}) => {
     const offer = cashoutOfferForBet(bet, liveMatches, user?.loyaltyTier, cashoutQuotes);
     if (offer <= 0) {
       showToast('Cash out not available for this bet.', 'info');
       return;
     }
-    const cashed = await cashOutBet(bet.id, offer);
+    const requested = fraction != null ? Number((offer * fraction).toFixed(2)) : offer;
+    const cashed = await cashOutBet(bet.id, requested, fraction != null ? { fraction } : {});
     if (!cashed || cashed.success === false) {
       if (cashed?.stale) {
         showToast('Price updated — tap Cash out again.', 'info');
@@ -466,9 +467,13 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
       return;
     }
     if (DEMO_MODE) {
-      creditCashout(cashed.cashoutAmount || offer, cashed.id);
+      creditCashout(cashed.cashoutAmount || requested, cashed.id);
     }
-    showToast(`Cashed out for ${formatInr(cashed.cashoutAmount || offer)}`, 'success');
+    if (cashed.partial) {
+      showToast(`Cashed out ${formatInr(cashed.cashoutAmount || requested)} · stake left ${formatInr(cashed.remainingStake)}`, 'success');
+    } else {
+      showToast(`Cashed out for ${formatInr(cashed.cashoutAmount || requested)}`, 'success');
+    }
   };
 
   const liveMatchById = useMemo(() => {
@@ -932,13 +937,23 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
                   )}
                   {status === 'pending' && cashoutOffer > 0 && (
                     <div className="my-bets-cashout-wrap">
-                      <button
-                        type="button"
-                        className="my-bets-cashout-btn"
-                        onClick={() => handleCashout(placed)}
-                      >
-                        Cash out {formatInr(cashoutOffer)}
-                      </button>
+                      <div className="my-bets-cashout-btns" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          className="my-bets-cashout-btn"
+                          onClick={() => handleCashout(placed)}
+                        >
+                          Cash out {formatInr(cashoutOffer)}
+                        </button>
+                        <button
+                          type="button"
+                          className="my-bets-cashout-btn"
+                          style={{ opacity: 0.92 }}
+                          onClick={() => handleCashout(placed, { fraction: 0.5 })}
+                        >
+                          50% · {formatInr(cashoutOffer / 2)}
+                        </button>
+                      </div>
                       <div className="my-bets-cashout-hint">
                         {(() => {
                           const meta = cashoutMeta[placed.id];
@@ -950,9 +965,9 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
                             return 'Price moved — refreshing…';
                           }
                           if (exp) {
-                            return `Offer locks ~${Math.ceil(leftMs / 1000)}s · 50% ≈ ${formatInr(cashoutOffer / 2)}`;
+                            return `Offer locks ~${Math.ceil(leftMs / 1000)}s · 50% leaves stake ${formatInr((Number(placed.stake) || 0) / 2)}`;
                           }
-                          return `50% cash out ≈ ${formatInr(cashoutOffer / 2)} · stake left ≈ ${formatInr((Number(placed.stake) || 0) / 2)}`;
+                          return `50% leaves stake ≈ ${formatInr((Number(placed.stake) || 0) / 2)} on the open bet`;
                         })()}
                       </div>
                     </div>

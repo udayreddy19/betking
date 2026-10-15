@@ -1,0 +1,56 @@
+.push-opt-in-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin: 0 auto 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--color-surface-elevated, rgba(15, 23, 42, 0.04));
+  border: 1px solid var(--color-border, rgba(148, 163, 184, 0.35));
+}
+
+.push-opt-in-banner__copy {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text, #0f172a);
+}
+
+.push-opt-in-banner__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.push-opt-in-banner__enable {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: var(--color-primary, #10b981);
+  color: var(--color-on-primary, #fff);
+}
+
+.push-opt-in-banner__enable:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.push-opt-in-banner__dismiss {
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: transparent;
+  color: var(--text-muted, #64748b);
+}
+
+.push-opt-in-banner__dismiss:hover {
+  color: var(--color-text, #0f172a);
+}

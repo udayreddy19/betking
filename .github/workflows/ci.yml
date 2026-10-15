@@ -19,7 +19,9 @@ jobs:
       - run: npm ci
       - name: Unit tests (platform + persistence + settlement SQL)
         run: npx vitest run tests/platform/productConfigLogic.test.js tests/eventPersistenceStartTime.test.js tests/settlement/markJobSqlTyping.test.js tests/platform/productionScorecardShape.test.js tests/platform/priceBoostEngineShape.test.js
-      - name: Remind deploy path
+      - name: Remind deploy path + smoke checklist
         run: |
           echo "Production deploys must use scripts/deploy_from_github.sh or scripts/deploy_vps.sh on the VPS."
           echo "Do not docker cp over running images — rebuild from git checkout."
+          echo "Post-deploy smoke (on VPS): curl /api/config/products + /api/v1/boosts/daily + /release.json"
+          echo "Daily scorecard: docker exec oddsyra_prod_backend node scripts/scorecard_daily_check.mjs"

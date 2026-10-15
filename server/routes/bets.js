@@ -45,7 +45,7 @@ router.post('/api/bet/cashout/quotes', requireAuth, bettingOn, async (req, res) 
 });
 
 router.post('/api/bet/cashout', requireAuth, bettingOn, async (req, res) => {
-  const { betId, requestedCashoutValue } = req.body;
+  const { betId, requestedCashoutValue, fraction, percentage } = req.body;
   const idempotencyKey = req.headers['x-idempotency-key'] || req.body.idempotencyKey;
   try {
     const { executeBetCashout } = await import('../../lib/cashoutEngine.mjs');
@@ -53,6 +53,8 @@ router.post('/api/bet/cashout', requireAuth, bettingOn, async (req, res) => {
       betId,
       userId: req.user.userId,
       requestedCashoutValue,
+      fraction,
+      percentage,
       idempotencyKey,
     });
     res.json(result);

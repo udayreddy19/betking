@@ -1313,15 +1313,19 @@ export function BetSlipProvider({ children }) {
   }
   }, [bets, betType, stake, singlesStakes, multiOdds, refreshWallet, potentialReturn, selectedReward, selectedRewardId, refreshAvailableRewards, refreshSlipOdds]);
 
-  const cashOutBet = useCallback(async (betId, requestedCashoutValue = null) => {
+  const cashOutBet = useCallback(async (betId, requestedCashoutValue = null, opts = {}) => {
     if (!DEMO_MODE) {
       try {
+        const fraction = opts?.fraction != null ? Number(opts.fraction) : null;
         const res = await apiFetch('/api/bet/cashout', {
           method: 'POST',
-          headers: { 'X-Idempotency-Key': `cashout-${betId}-${Number(requestedCashoutValue) || 'req'}` },
+          headers: {
+            'X-Idempotency-Key': `cashout-${betId}-${Number(requestedCashoutValue) || 'req'}-${fraction != null ? Math.round(fraction * 100) : 'full'}`,
+          },
           body: JSON.stringify({
             betId,
             ...(requestedCashoutValue != null ? { requestedCashoutValue } : {}),
+            ...(fraction != null ? { fraction } : {}),
           }),
         });
         const data = await res.json().catch(() => ({}));
@@ -1341,8 +1345,10 @@ export function BetSlipProvider({ children }) {
         await refreshWallet?.();
         return {
           id: betId,
-          status: 'cashed_out',
+          status: data.partial ? 'pending' : 'cashed_out',
           cashoutAmount: Number(data.cashoutAmount || 0),
+          partial: Boolean(data.partial),
+          remainingStake: Number(data.remainingStake || 0),
           success: true,
         };
       } catch (err) {

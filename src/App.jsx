@@ -10,6 +10,8 @@ import { springUi } from './utils/motionPresets';
 import { lazyWithRetry } from './utils/lazyWithRetry';
 
 import Header from './components/Header/Header';
+import PushOptInBanner from './components/PushOptInBanner/PushOptInBanner';
+import ReleaseBanner from './components/ReleaseBanner/ReleaseBanner';
 import Footer from './components/Footer/Footer';
 import Sidebar from './components/Sidebar/Sidebar';
 import LoginModal from './components/LoginModal/LoginModal';
@@ -235,6 +237,8 @@ function AppLayout() {
       <RouteSeo />
       <PhoneRequiredGate />
       {!isDepositRoute && <Header />}
+      {!isAdminRoute && !isDepositRoute && <ReleaseBanner />}
+      {!isAdminRoute && !isDepositRoute && <PushOptInBanner />}
       {!isDepositRoute && (
         <ErrorBoundary fallback={null}>
           <Sidebar />

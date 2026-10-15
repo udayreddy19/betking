@@ -163,6 +163,86 @@ router.post('/api/v1/withdrawals/request', requireAuth, walletOn, async (req, re
   }
 });
 
+/** POST /api/v1/payments/resync-pending — user self-serve: payment done but wallet not updated */
+router.post('/api/v1/payments/resync-pending', requireAuth, walletOn, async (req, res) => {
+  try {
+    const { query } = await import('../../db/pg.js');
+    const pending = await query(
+      `SELECT deposit_id, order_id, payment_id, provider, status, amount, created_at
+       FROM deposits
+       WHERE user_id = $1
+         AND UPPER(status::text) IN ('CREATED','PENDING','PROCESSING','AUTHORIZED','ATTEMPTED')
+       ORDER BY created_at DESC
+       LIMIT 8`,
+      [req.user.userId],
+    );
+    if (!pending.rows.length) {
+      return res.json({
+        success: true,
+        checked: 0,
+        credited: 0,
+        message: 'No pending deposits found. If you were charged, open Support with the UPI/UTR reference.',
+      });
+    }
+
+    const { paymentProviderService } = await import('../../lib/paymentProviders/paymentProviderService.mjs');
+    const { depositEngine } = await import('../../lib/depositEngine.mjs');
+    const results = [];
+    let credited = 0;
+
+    for (const dep of pending.rows) {
+      const orderId = dep.order_id;
+      const providerName = String(dep.provider || 'RAZORPAY').toUpperCase();
+      try {
+        const provider = paymentProviderService.getProvider(providerName);
+        if (!provider?.fetchPaymentStatus || !orderId) {
+          results.push({ depositId: dep.deposit_id, paid: false, message: 'Provider lookup unavailable' });
+          continue;
+        }
+        const paymentStatus = await provider.fetchPaymentStatus(orderId);
+        const st = String(paymentStatus?.status || '').toUpperCase();
+        const paid = ['CAPTURED', 'SUCCESS', 'PAID', 'COMPLETED'].includes(st);
+        if (!paid) {
+          results.push({ depositId: dep.deposit_id, paid: false, status: st || dep.status, message: `Still ${st || dep.status}` });
+          continue;
+        }
+        const paymentId = paymentStatus.paymentId || paymentStatus.id || dep.payment_id;
+        if (!paymentId) {
+          results.push({ depositId: dep.deposit_id, paid: false, message: 'Paid but missing payment id' });
+          continue;
+        }
+        const settle = await depositEngine.processVerifiedPayment({
+          provider: providerName,
+          depositId: dep.deposit_id,
+          providerOrderId: orderId,
+          providerPaymentId: paymentId,
+          amountInINR: dep.amount,
+          userId: req.user.userId,
+          method: paymentStatus.method || 'upi',
+          utr: paymentStatus.utr || paymentId,
+          source: 'USER_RESYNC',
+        });
+        credited += 1;
+        results.push({ depositId: dep.deposit_id, paid: true, settle });
+      } catch (err) {
+        results.push({ depositId: dep.deposit_id, paid: false, error: err.message });
+      }
+    }
+
+    res.json({
+      success: true,
+      checked: pending.rows.length,
+      credited,
+      results,
+      message: credited > 0
+        ? `Credited ${credited} deposit(s). Balance should update shortly.`
+        : 'No captured payments found yet. Wait a minute and try again, or contact Support with your UTR.',
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 router.get('/api/v1/withdrawals/pending', requireAuth, walletOn, async (req, res) => {
   try {
     const { withdrawalEngine } = await import('../../lib/withdrawalEngine.mjs');

@@ -10,6 +10,9 @@ const assetBase = cdnOrigin ? `${cdnOrigin}/` : '/';
 // https://vite.dev/config/
 export default defineConfig({
   base: assetBase,
+  define: {
+    'import.meta.env.VITE_RELEASE_SHA': JSON.stringify(process.env.VITE_RELEASE_SHA || process.env.RELEASE_SHA || ''),
+  },
   resolve: {
     dedupe: ['react', 'react-dom', 'motion'],
   },

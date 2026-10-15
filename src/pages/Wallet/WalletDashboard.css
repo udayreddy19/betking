@@ -268,6 +268,47 @@
   gap: 8px;
 }
 
+.wallet-withdraw-pending-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.wallet-withdraw-pending-actions__eta {
+  font-size: 0.78rem;
+  color: var(--text-muted, #64748b);
+  line-height: 1.35;
+}
+
+.wallet-deposit-recovery-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px 20px;
+  margin-bottom: 28px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  background: var(--color-surface, #f8fafc);
+}
+
+.wallet-deposit-recovery-card strong {
+  display: block;
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+
+.wallet-deposit-recovery-card p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-muted, #64748b);
+  line-height: 1.4;
+  max-width: 520px;
+}
+
 /* TABS */
 .wallet-tabs {
   display: flex;
@@ -402,6 +443,24 @@
   font-size: 0.92rem;
   font-weight: 600;
   color: var(--text-primary, #0f172a);
+}
+
+.wallet-tx-info__eta {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #b45309;
+  margin-top: 2px;
+}
+
+.wallet-tx-cancel-btn {
+  margin-top: 4px;
+  font-size: 0.75rem;
+}
+
+.wallet-table__eta {
+  color: #b45309;
+  font-weight: 600;
 }
 
 .wallet-tx-info__time {
