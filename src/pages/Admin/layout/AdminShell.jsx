@@ -508,7 +508,6 @@ function AdminShellInner() {
   const { themeId: adminThemeId, theme: adminTheme, isDark: shellIsDark } = useAdminTheme();
   const {
     softwarePlatformEnabled,
-    softwarePlatformName,
     bettingEnabled,
     ready: productsReady,
   } = useProducts();
@@ -1207,42 +1206,6 @@ function AdminShellInner() {
           onOpenProfile={(sub) => handleSubModuleSelect('admin-profile', sub || 'account')}
         />
 
-        {productsReady && softwarePlatformEnabled && (
-          <div
-            role="status"
-            style={{
-              margin: '0 16px 0',
-              padding: '10px 14px',
-              borderRadius: 10,
-              background: shellIsDark ? 'rgba(37, 99, 235, 0.18)' : '#eff6ff',
-              border: '1px solid rgba(37, 99, 235, 0.45)',
-              color: shellIsDark ? '#bfdbfe' : '#1e3a8a',
-              fontSize: '0.88rem',
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 12,
-              flexWrap: 'wrap',
-            }}
-          >
-            <span>
-              Mode: Software Platform
-              {softwarePlatformName ? ` (“${softwarePlatformName}”)` : ''}
-              {' — '}
-              this is <strong>not</strong> the Oddsyra sportsbook. Public traffic serves SP; betting is OFF.
-              {' '}Admin stays on /admin; SP console is /console. Checkout is mock until a live PG is connected.
-            </span>
-            <button
-              type="button"
-              className="admin-btn admin-btn--sm"
-              onClick={() => handleSubModuleSelect('platform', 'product-config')}
-              style={{ whiteSpace: 'nowrap' }}
-            >
-              Open product toggles
-            </button>
-          </div>
-        )}
         {productsReady && !softwarePlatformEnabled && bettingEnabled === false && (
           <div
             role="status"
