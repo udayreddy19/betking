@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, lazy, Suspense } from 'react';
 import { createPortal, flushSync } from 'react-dom';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -30,20 +30,21 @@ import AdminTopbar from './AdminTopbar';
 import AdminLogin from './AdminLogin';
 import AdminStatusBar from '../components/AdminStatusBar';
 import ControlTowerView from '../domains/ControlTowerView';
-import CustomersDomainView from '../domains/CustomersDomainView';
-import SportsDomainView from '../domains/SportsDomainView';
-import TradingRiskDomainView from '../domains/TradingRiskDomainView';
-import BettingDomainView from '../domains/BettingDomainView';
-import FinanceDomainView from '../domains/FinanceDomainView';
-import SupportDomainView from '../domains/SupportDomainView';
-import GrowthDomainView from '../domains/GrowthDomainView';
-import CommunicationsDomainView from '../domains/CommunicationsDomainView';
-import AnalyticsDomainView from '../domains/AnalyticsDomainView';
-import PlatformDomainView from '../domains/PlatformDomainView';
-import OperationsDomainView from '../domains/OperationsDomainView';
-import SecurityGovernanceDomainView from '../domains/SecurityGovernanceDomainView';
-import ApiExplorerDomainView from '../domains/ApiExplorerDomainView';
-import AdminProfileDomainView from '../domains/AdminProfileDomainView';
+// Heavy domains lazy-loaded so public sportsbook first paint stays light when Admin is code-split.
+const CustomersDomainView = lazy(() => import('../domains/CustomersDomainView'));
+const SportsDomainView = lazy(() => import('../domains/SportsDomainView'));
+const TradingRiskDomainView = lazy(() => import('../domains/TradingRiskDomainView'));
+const BettingDomainView = lazy(() => import('../domains/BettingDomainView'));
+const FinanceDomainView = lazy(() => import('../domains/FinanceDomainView'));
+const SupportDomainView = lazy(() => import('../domains/SupportDomainView'));
+const GrowthDomainView = lazy(() => import('../domains/GrowthDomainView'));
+const CommunicationsDomainView = lazy(() => import('../domains/CommunicationsDomainView'));
+const AnalyticsDomainView = lazy(() => import('../domains/AnalyticsDomainView'));
+const PlatformDomainView = lazy(() => import('../domains/PlatformDomainView'));
+const OperationsDomainView = lazy(() => import('../domains/OperationsDomainView'));
+const SecurityGovernanceDomainView = lazy(() => import('../domains/SecurityGovernanceDomainView'));
+const ApiExplorerDomainView = lazy(() => import('../domains/ApiExplorerDomainView'));
+const AdminProfileDomainView = lazy(() => import('../domains/AdminProfileDomainView'));
 import { ensureAdminSession, adminApiClient } from '../api/adminApiClient';
 import { AdminToastProvider } from '../components/AdminToastContext';
 import { AdminNavAttentionProvider } from '../context/AdminNavAttentionContext';
@@ -1224,10 +1225,11 @@ function AdminShellInner() {
             }}
           >
             <span>
-              Public site is Software Platform
+              Mode: Software Platform
               {softwarePlatformName ? ` (“${softwarePlatformName}”)` : ''}
               {' — '}
-              sportsbook betting is OFF. /admin stays here; software console is /console.
+              this is <strong>not</strong> the Oddsyra sportsbook. Public traffic serves SP; betting is OFF.
+              {' '}Admin stays on /admin; SP console is /console. Checkout is mock until a live PG is connected.
             </span>
             <button
               type="button"
@@ -1478,7 +1480,9 @@ function AdminShellInner() {
               onAnimationComplete={scrollContentToTop}
             >
               <AdminRBACGate requiredRole={currentDomainObj?.role} domainId={activeDomain}>
-                {renderActiveDomainView()}
+                <Suspense fallback={<p style={{ padding: 24, color: 'var(--admin-text-muted)' }}>Loading module…</p>}>
+                  {renderActiveDomainView()}
+                </Suspense>
               </AdminRBACGate>
             </motion.div>
           </AnimatePresence>

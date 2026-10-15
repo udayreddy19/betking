@@ -142,6 +142,9 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
   const [sportFilter, setSportFilter] = useState('all');
   const [filter, setFilter] = useState('pending');
   const [cashoutQuotes, setCashoutQuotes] = useState({});
+  const [cashoutMeta, setCashoutMeta] = useState({});
+  const [quoteTick, setQuoteTick] = useState(0);
+  const [settlementFlash, setSettlementFlash] = useState(null);
   const [highlightBetId, setHighlightBetId] = useState(null);
   const [expandedEvidence, setExpandedEvidence] = useState({});
   const [loadedEvidence, setLoadedEvidence] = useState({});
@@ -254,11 +257,20 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
         if (cancelled) return;
         const quotes = data?.quotes && typeof data.quotes === 'object' ? data.quotes : {};
         const next = {};
+        const meta = {};
         for (const id of betIds) {
           const q = quotes[id];
           next[id] = q && q.available !== false ? (Number(q.cashoutValue) || 0) : 0;
+          if (q && q.available !== false) {
+            meta[id] = {
+              pricedAt: q.pricedAt || null,
+              expiresAt: q.expiresAt || null,
+              ttlMs: Number(q.ttlMs) || 12_000,
+            };
+          }
         }
         setCashoutQuotes(next);
+        setCashoutMeta(meta);
       } catch {
         if (!cancelled) {
           // Keep prior quotes on transient failure
@@ -268,11 +280,33 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
 
     void refreshQuotes();
     const timer = setInterval(refreshQuotes, 12_000);
+    const tick = setInterval(() => setQuoteTick((n) => n + 1), 1000);
     return () => {
       cancelled = true;
       clearInterval(timer);
+      clearInterval(tick);
     };
   }, [needsCashoutQuotes, pendingCashBetIds]);
+
+  useEffect(() => {
+    const onSettled = (ev) => {
+      const d = ev?.detail || {};
+      setSettlementFlash({
+        betId: d.betId,
+        status: d.status || 'SETTLED',
+        payout: d.payout,
+        at: d.at || new Date().toISOString(),
+      });
+      showToast(
+        d.status === 'CASHED_OUT'
+          ? `Cashed out${d.payout != null ? ` · ${formatInr(d.payout)}` : ''}`
+          : `Bet settled${d.status ? ` · ${d.status}` : ''}${d.payout != null ? ` · ${formatInr(d.payout)}` : ''}`,
+        d.status === 'WON' || d.status === 'WON_PARTIAL' ? 'success' : 'info',
+      );
+    };
+    window.addEventListener('oddsyra:bet-settled', onSettled);
+    return () => window.removeEventListener('oddsyra:bet-settled', onSettled);
+  }, [showToast]);
 
   // Auto-settle pending bets when matches complete
   useEffect(() => {
@@ -771,8 +805,27 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
                         Cash out {formatInr(cashoutOffer)}
                       </button>
                       <div className="my-bets-cashout-hint">
-                        50% cash out ≈ {formatInr(cashoutOffer / 2)} · stake left ≈ {formatInr((Number(placed.stake) || 0) / 2)}
+                        {(() => {
+                          const meta = cashoutMeta[placed.id];
+                          const exp = meta?.expiresAt ? new Date(meta.expiresAt).getTime() : 0;
+                          const leftMs = exp ? Math.max(0, exp - Date.now()) : 0;
+                          // quoteTick forces re-render each second
+                          void quoteTick;
+                          if (exp && leftMs <= 0) {
+                            return 'Price moved — refreshing…';
+                          }
+                          if (exp) {
+                            return `Offer locks ~${Math.ceil(leftMs / 1000)}s · 50% ≈ ${formatInr(cashoutOffer / 2)}`;
+                          }
+                          return `50% cash out ≈ ${formatInr(cashoutOffer / 2)} · stake left ≈ ${formatInr((Number(placed.stake) || 0) / 2)}`;
+                        })()}
                       </div>
+                    </div>
+                  )}
+                  {settlementFlash?.betId === placed.id && (
+                    <div className="my-bets-settlement-flash">
+                      Updated live · {settlementFlash.status}
+                      {settlementFlash.payout != null ? ` · ${formatInr(settlementFlash.payout)}` : ''}
                     </div>
                   )}
                   {placed.settledAt && (

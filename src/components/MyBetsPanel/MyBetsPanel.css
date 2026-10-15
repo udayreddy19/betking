@@ -388,6 +388,13 @@
   background: #15803d;
 }
 
+.my-bets-settlement-flash {
+  margin-top: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #059669;
+}
+
 .my-bets-cashout-hint {
   margin-top: 4px;
   font-size: 0.72rem;

@@ -153,6 +153,48 @@ router.put('/exceptions/:id/resolve', requirePermission('finance', 'reconciliati
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+/** GET /reconciliation/exceptions/playbook — investigate OPEN cases (no mutations) */
+router.get('/exceptions/playbook', requirePermission('finance', 'reconciliation'), async (req, res) => {
+  try {
+    const { investigateOpenReconCases } = await import('../../../lib/reconTriagePlaybook.mjs');
+    const result = await investigateOpenReconCases({
+      caseId: req.query.caseId || null,
+      limit: parseInt(req.query.limit, 10) || 50,
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /reconciliation/exceptions/resolve-stale
+ * Resolve OPEN flags that recheck healthy. Body: { dryRun?: true, caseIds?: [], confirm?: true }
+ * Never mutates wallet balances.
+ */
+router.post('/exceptions/resolve-stale', requirePermission('finance', 'reconciliation'), async (req, res) => {
+  try {
+    const { resolveStaleClearedReconCases } = await import('../../../lib/reconTriagePlaybook.mjs');
+    const dryRun = req.body?.dryRun !== false && req.body?.confirm !== true;
+    const result = await resolveStaleClearedReconCases({
+      caseIds: Array.isArray(req.body?.caseIds) ? req.body.caseIds : null,
+      adminId: req.admin?.id || req.admin?.userId || 'admin',
+      dryRun,
+    });
+    if (!dryRun) {
+      await logAdminAction({
+        actorId: req.admin?.id || 'admin',
+        targetId: 'reconciliation_cases',
+        action: 'RECON_RESOLVE_STALE',
+        details: { count: result.count, resolved: result.resolved },
+      });
+    }
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 /** GET /reconciliation/exceptions/open-summary — triage list for remaining OPEN cases */
 router.get('/exceptions/open-summary', requirePermission('finance', 'reconciliation'), async (req, res) => {
   try {

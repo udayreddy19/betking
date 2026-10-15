@@ -17,8 +17,8 @@ jobs:
           node-version: '20'
           cache: npm
       - run: npm ci
-      - name: Unit tests (platform + persistence)
-        run: npx vitest run tests/platform/productConfigLogic.test.js tests/eventPersistenceStartTime.test.js
+      - name: Unit tests (platform + persistence + settlement SQL)
+        run: npx vitest run tests/platform/productConfigLogic.test.js tests/eventPersistenceStartTime.test.js tests/settlement/markJobSqlTyping.test.js
       - name: Remind deploy path
         run: |
           echo "Production deploys must use scripts/deploy_from_github.sh or scripts/deploy_vps.sh on the VPS."

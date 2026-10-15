@@ -1199,11 +1199,45 @@ function FinanceHealthPanel() {
     if (!window.confirm('Collapse duplicate OPEN cases for the same entity? Keeps the newest; does not change balances.')) return;
     setRunning(true);
     try {
-      const res = await adminApiClient.post('/reconciliation/exceptions/dedupe-open', {});
+      const res = await adminApiClient.post('/reconciliation/exceptions/dedupe-open', { confirm: true });
       showToast(`Deduped ${res.closed || 0} duplicate OPEN case(s)`, 'success');
       load();
     } catch (err) {
       showToast(err.message || 'Dedupe failed', 'error');
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  const runPlaybook = async () => {
+    setRunning(true);
+    try {
+      const res = await adminApiClient.get('/reconciliation/exceptions/playbook?limit=50');
+      setOpenSummary((prev) => ({
+        ...(prev || {}),
+        playbookSummary: res.summary,
+        playbook: res.playbook,
+      }));
+      showToast(
+        `Playbook: ${res.summary?.staleCleared || 0} stale-cleared, ${res.summary?.needsManual || 0} need manual review`,
+        'info',
+      );
+    } catch (err) {
+      showToast(err.message || 'Playbook failed', 'error');
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  const resolveStale = async () => {
+    if (!window.confirm('Resolve OPEN flags that recheck healthy? Balances will NOT change.')) return;
+    setRunning(true);
+    try {
+      const res = await adminApiClient.post('/reconciliation/exceptions/resolve-stale', { confirm: true, dryRun: false });
+      showToast(`Resolved ${res.count || 0} stale flag(s)`, 'success');
+      load();
+    } catch (err) {
+      showToast(err.message || 'Resolve-stale failed', 'error');
     } finally {
       setRunning(false);
     }
@@ -1279,6 +1313,12 @@ function FinanceHealthPanel() {
             </button>
             <button type="button" className="admin-btn admin-btn--ghost" disabled={running} onClick={dedupeOpen}>
               Dedupe OPEN
+            </button>
+            <button type="button" className="admin-btn admin-btn--ghost" disabled={running} onClick={runPlaybook}>
+              Investigate playbook
+            </button>
+            <button type="button" className="admin-btn admin-btn--secondary" disabled={running} onClick={resolveStale}>
+              Resolve stale flags
             </button>
             <button
               type="button"

@@ -632,7 +632,32 @@ export function BetSlipProvider({ children }) {
       if (!decision.apply) return;
       void refreshMyBets({ force: true });
       void refreshWallet?.();
-      if (eventType === 'BET_SETTLED' && msg?.payload?.status === 'WON') playWinSound();
+      if (eventType === 'BET_SETTLED') {
+        const status = String(msg?.payload?.status || msg?.payload?.outcome || '').toUpperCase();
+        if (status === 'WON' || status === 'WON_PARTIAL') playWinSound();
+        try {
+          window.dispatchEvent(new CustomEvent('oddsyra:bet-settled', {
+            detail: {
+              betId: msg?.payload?.betId || msg?.payload?.bet_id || null,
+              status: status || 'SETTLED',
+              payout: msg?.payload?.payout ?? msg?.payload?.winAmount ?? null,
+              at: new Date().toISOString(),
+            },
+          }));
+        } catch { /* ignore */ }
+      }
+      if (eventType === 'BET_CASHED_OUT') {
+        try {
+          window.dispatchEvent(new CustomEvent('oddsyra:bet-settled', {
+            detail: {
+              betId: msg?.payload?.betId || null,
+              status: 'CASHED_OUT',
+              payout: msg?.payload?.cashoutAmount ?? null,
+              at: new Date().toISOString(),
+            },
+          }));
+        } catch { /* ignore */ }
+      }
     });
     return unsub;
   }, [user?.userId, refreshMyBets, refreshWallet]);

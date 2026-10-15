@@ -3092,6 +3092,46 @@ router.get('/api/admin/growth/activation-funnel', requireRole('SUPER_ADMIN', 'MA
     const d = Number(firstDeposit.rows[0]?.c || 0);
     const b = Number(firstBet.rows[0]?.c || 0);
     const k = Number(kycDone.rows[0]?.c || 0);
+    const cohort = await query(
+      `WITH signups AS (
+         SELECT user_id, created_at AS signed_at
+         FROM users
+         WHERE created_at >= NOW() - ($1 || ' days')::interval
+           AND UPPER(COALESCE(role, 'USER')) = 'USER'
+       ),
+       first_dep AS (
+         SELECT DISTINCT ON (user_id) user_id, created_at AS dep_at
+         FROM deposits
+         WHERE UPPER(status) IN ('COMPLETED', 'SUCCESS', 'CAPTURED', 'PAID')
+         ORDER BY user_id, created_at ASC
+       ),
+       first_bet AS (
+         SELECT DISTINCT ON (user_id) user_id, created_at AS bet_at
+         FROM bets
+         ORDER BY user_id, created_at ASC
+       )
+       SELECT
+         COUNT(*)::int AS cohort_size,
+         COUNT(*) FILTER (
+           WHERE fd.dep_at IS NOT NULL AND fd.dep_at <= s.signed_at + INTERVAL '1 day'
+         )::int AS d1_deposit,
+         COUNT(*) FILTER (
+           WHERE fd.dep_at IS NOT NULL AND fd.dep_at <= s.signed_at + INTERVAL '7 days'
+         )::int AS d7_deposit,
+         COUNT(*) FILTER (
+           WHERE fb.bet_at IS NOT NULL AND fb.bet_at <= s.signed_at + INTERVAL '1 day'
+         )::int AS d1_bet,
+         COUNT(*) FILTER (
+           WHERE fb.bet_at IS NOT NULL AND fb.bet_at <= s.signed_at + INTERVAL '7 days'
+         )::int AS d7_bet
+       FROM signups s
+       LEFT JOIN first_dep fd ON fd.user_id = s.user_id
+       LEFT JOIN first_bet fb ON fb.user_id = s.user_id`,
+      [String(days)],
+    ).catch(() => ({ rows: [{}] }));
+    const c = cohort.rows[0] || {};
+    const cs = Number(c.cohort_size || 0);
+    const pct = (n) => (cs ? Math.round((Number(n || 0) / cs) * 1000) / 10 : 0);
     res.json({
       success: true,
       days,
@@ -3102,6 +3142,18 @@ router.get('/api/admin/growth/activation-funnel', requireRole('SUPER_ADMIN', 'MA
         firstBetUsers: b,
         signupToDepositPct: s ? Math.round((d / s) * 1000) / 10 : 0,
         depositToBetPct: d ? Math.round((b / d) * 1000) / 10 : 0,
+      },
+      cohorts: {
+        windowDays: days,
+        size: cs,
+        d1Deposit: Number(c.d1_deposit || 0),
+        d7Deposit: Number(c.d7_deposit || 0),
+        d1Bet: Number(c.d1_bet || 0),
+        d7Bet: Number(c.d7_bet || 0),
+        d1DepositPct: pct(c.d1_deposit),
+        d7DepositPct: pct(c.d7_deposit),
+        d1BetPct: pct(c.d1_bet),
+        d7BetPct: pct(c.d7_bet),
       },
       updatedAt: new Date().toISOString(),
     });

@@ -3429,6 +3429,7 @@ function ReferralsAdminPanel() {
   const [settingsDraft, setSettingsDraft] = useState(null);
   const [savingSettings, setSavingSettings] = useState(false);
   const [activationFunnel, setActivationFunnel] = useState(null);
+  const [activationCohorts, setActivationCohorts] = useState(null);
   const { showToast } = useAdminToast();
 
   const load = useCallback(() => {
@@ -3474,8 +3475,14 @@ function ReferralsAdminPanel() {
 
   const loadActivationFunnel = useCallback(() => {
     return adminApiClient.get('/growth/activation-funnel?days=30')
-      .then((data) => setActivationFunnel(data?.funnel || null))
-      .catch(() => setActivationFunnel(null));
+      .then((data) => {
+        setActivationFunnel(data?.funnel || null);
+        setActivationCohorts(data?.cohorts || null);
+      })
+      .catch(() => {
+        setActivationFunnel(null);
+        setActivationCohorts(null);
+      });
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -3640,6 +3647,12 @@ function ReferralsAdminPanel() {
             ['First bet', activationFunnel.firstBetUsers],
             ['Signup→deposit', `${activationFunnel.signupToDepositPct ?? 0}%`],
             ['Deposit→bet', `${activationFunnel.depositToBetPct ?? 0}%`],
+            ...(activationCohorts ? [
+              ['D1 deposit', `${activationCohorts.d1DepositPct ?? 0}%`],
+              ['D7 deposit', `${activationCohorts.d7DepositPct ?? 0}%`],
+              ['D1 bet', `${activationCohorts.d1BetPct ?? 0}%`],
+              ['D7 bet', `${activationCohorts.d7BetPct ?? 0}%`],
+            ] : []),
           ].map(([label, value]) => (
             <div key={label}>
               <div style={{ fontSize: '0.68rem', color: 'var(--admin-text-muted)' }}>{label}</div>
