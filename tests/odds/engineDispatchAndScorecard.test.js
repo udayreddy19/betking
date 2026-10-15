@@ -85,12 +85,12 @@ describe('engine dispatch positive cases', () => {
     expect(card.find((r) => r.engine === 'OddsEngineV5')).toMatchObject({
       version: '5.1.0',
       score: 10.0,
-      scoreBasis: 'V5.1_PRODUCTION',
+      scoreBasis: 'V5_PRODUCTION_TEN',
     });
     expect(card.find((r) => r.engine === 'OtherSportsEngineV5')).toMatchObject({
       version: '5.1.0',
       score: 10.0,
-      scoreBasis: 'V5.1_PRODUCTION',
+      scoreBasis: 'V5_PRODUCTION_TEN',
     });
     expect(card.find((r) => r.engine === 'OddsEngineV4')).toMatchObject({
       version: '4.10.1',

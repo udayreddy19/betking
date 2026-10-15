@@ -281,7 +281,9 @@ router.get('/hardening-status', requireRole('SUPER_ADMIN', 'TRADING_ADMIN', 'RIS
     const { getFeedHealthSnapshot } = await import('../../../lib/feedHealthEngine.mjs');
     const { getBetVelocitySnapshot } = await import('../../../lib/risk/betVelocityBreaker.mjs');
     const { getCalibrationValidationStatus } = await import('../../../lib/odds-v5/calibration/calibrationBridge.mjs');
+    const { getEngineProductionTenStatus } = await import('../../../lib/odds-v5/engineProductionTen.mjs');
     const { getCasinoAggregatorStatus } = await import('../../../lib/casinoAggregator.mjs');
+    const { getOddsEngineScorecard } = await import('../../../lib/oddsEngineScorecard.mjs');
 
     let orphanOpen = 0;
     try {
@@ -293,6 +295,8 @@ router.get('/hardening-status', requireRole('SUPER_ADMIN', 'TRADING_ADMIN', 'RIS
       orphanOpen = r.rows[0]?.c || 0;
     } catch { /* ignore */ }
 
+    const productionTen = getEngineProductionTenStatus();
+
     res.json({
       success: true,
       cricketEngine: getEngineModeStatus(),
@@ -301,6 +305,8 @@ router.get('/hardening-status', requireRole('SUPER_ADMIN', 'TRADING_ADMIN', 'RIS
       feeds: getFeedHealthSnapshot(),
       velocity: getBetVelocitySnapshot(),
       calibration: getCalibrationValidationStatus(),
+      productionTen,
+      scorecard: getOddsEngineScorecard(),
       casino: getCasinoAggregatorStatus(),
       orphanFlaggedBets: orphanOpen,
       checkedAt: new Date().toISOString(),

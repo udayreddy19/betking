@@ -77,7 +77,7 @@ describe('OtherSportsEngineV4 positive cases', () => {
     const row = getOddsEngineScorecard().find((r) => r.engine === 'OtherSportsEngineV5');
     expect(row.version).toBe('5.1.0');
     expect(row.score).toBe(10.0);
-    expect(row.scoreBasis).toBe('V5.1_PRODUCTION');
+    expect(row.scoreBasis).toBe('V5_PRODUCTION_TEN');
   });
 
   it('AF uses dedicated drive model', () => {
@@ -235,6 +235,34 @@ describe('OtherSportsEngineV4 negative cases', () => {
       expect(snap.status).toBe('NOT_AVAILABLE');
     } finally {
       process.env.NODE_ENV = prev;
+    }
+  });
+
+  it('prices from live scores in production when provider odds are missing', () => {
+    const prev = process.env.NODE_ENV;
+    const prevModel = process.env.OTHER_SPORTS_MODEL_ODDS;
+    process.env.NODE_ENV = 'production';
+    delete process.env.OTHER_SPORTS_MODEL_ODDS;
+    try {
+      const snap = generate({
+        matchId: 'prod-live-score-model',
+        sport: 'soccer',
+        team1: { name: 'A' },
+        team2: { name: 'B' },
+        isLive: true,
+        matchState: 'IN',
+        liveDetails: { score1: 1, score2: 0, minute: 62 },
+      });
+      expect(snap.status).not.toBe('NOT_AVAILABLE');
+      expect(snap.osv4Meta?.modelOnlyLive || snap.osv4Meta?.features?.includes('live_score_model_fallback')).toBeTruthy();
+      const mw = (snap.markets || []).find((m) => m.marketId === 'match_winner');
+      expect(mw?.status).toBe('OPEN');
+      expect(mw?.selections?.length).toBeGreaterThanOrEqual(2);
+      expect(Number(mw.selections[0].fairProbability ?? mw.selections[0].probability)).toBeGreaterThan(0);
+    } finally {
+      process.env.NODE_ENV = prev;
+      if (prevModel == null) delete process.env.OTHER_SPORTS_MODEL_ODDS;
+      else process.env.OTHER_SPORTS_MODEL_ODDS = prevModel;
     }
   });
 
