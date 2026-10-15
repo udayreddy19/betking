@@ -94,8 +94,8 @@ describe('engine dispatch positive cases', () => {
     });
     expect(card.find((r) => r.engine === 'OddsEngineV4')).toMatchObject({
       version: '4.10.1',
-      score: 9.0,
-      scoreBasis: 'V4_FALLBACK',
+      score: 10.0,
+      scoreBasis: 'V4_FALLBACK_FAIL_CLOSED',
     });
   });
 });

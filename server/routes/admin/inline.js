@@ -701,13 +701,23 @@ router.delete('/api/admin/db/tables/:tableName', adminAuth, requireRole('SUPER_A
 
 router.post('/api/admin/db/query', adminAuth, requireRole('SUPER_ADMIN'), async (req, res) => {
   try {
-    const { validateReadOnlySql, fieldsFromResult, rowsFromResult, sqlWithRowCap, MAX_SQL_ROWS } = await import('../../../lib/adminSqlConsole.mjs');
-    const { queryWithTimeout } = await import('../../../db/pg.js');
+    const {
+      validateReadOnlySql,
+      fieldsFromResult,
+      rowsFromResult,
+      sqlWithRowCap,
+      assertSqlConsoleRateLimit,
+      MAX_SQL_ROWS,
+    } = await import('../../../lib/adminSqlConsole.mjs');
+    const { queryWithTimeout, query } = await import('../../../db/pg.js');
     const { logAdminAction } = await import('../../middleware/auditLogger.js');
 
+    assertSqlConsoleRateLimit(req.admin?.id || req.admin?.email || 'admin');
     const validated = validateReadOnlySql(req.body?.sql);
     const sql = sqlWithRowCap(validated);
     const started = Date.now();
+    // Best-effort session RO — ignore if transaction GUCs unavailable outside txn.
+    await query('SET default_transaction_read_only = on').catch(() => null);
     const result = await queryWithTimeout(sql, undefined, 15000);
     const { rows, truncated } = rowsFromResult(result, MAX_SQL_ROWS);
 

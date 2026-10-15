@@ -282,8 +282,11 @@ router.get('/hardening-status', requireRole('SUPER_ADMIN', 'TRADING_ADMIN', 'RIS
     const { getBetVelocitySnapshot } = await import('../../../lib/risk/betVelocityBreaker.mjs');
     const { getCalibrationValidationStatus } = await import('../../../lib/odds-v5/calibration/calibrationBridge.mjs');
     const { getEngineProductionTenStatus } = await import('../../../lib/odds-v5/engineProductionTen.mjs');
+    const { getArchitectureProductionTenStatus } = await import('../../../lib/architectureProductionTen.mjs');
     const { getCasinoAggregatorStatus } = await import('../../../lib/casinoAggregator.mjs');
     const { getOddsEngineScorecard } = await import('../../../lib/oddsEngineScorecard.mjs');
+    const { getProductionScorecard } = await import('../../../lib/productionScorecard.mjs');
+    const { getCalibrationWiringStatus } = await import('../../../lib/odds-v5/calibration/calibrationBridge.mjs');
 
     let orphanOpen = 0;
     try {
@@ -295,7 +298,11 @@ router.get('/hardening-status', requireRole('SUPER_ADMIN', 'TRADING_ADMIN', 'RIS
       orphanOpen = r.rows[0]?.c || 0;
     } catch { /* ignore */ }
 
-    const productionTen = getEngineProductionTenStatus();
+    const [productionTen, architectureTen, opsScorecard] = await Promise.all([
+      Promise.resolve(getEngineProductionTenStatus()),
+      getArchitectureProductionTenStatus(),
+      getProductionScorecard(),
+    ]);
 
     res.json({
       success: true,
@@ -305,7 +312,10 @@ router.get('/hardening-status', requireRole('SUPER_ADMIN', 'TRADING_ADMIN', 'RIS
       feeds: getFeedHealthSnapshot(),
       velocity: getBetVelocitySnapshot(),
       calibration: getCalibrationValidationStatus(),
+      calibrationWiring: getCalibrationWiringStatus(),
       productionTen,
+      architectureTen,
+      opsScorecard,
       scorecard: getOddsEngineScorecard(),
       casino: getCasinoAggregatorStatus(),
       orphanFlaggedBets: orphanOpen,

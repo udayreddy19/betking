@@ -216,7 +216,10 @@ router.get('/api/bets/mine', requireAuth, bettingOn, async (req, res) => {
         settled_at: row.settled_at || null,
         actual_payout: row.actual_payout != null ? Number(row.actual_payout) : null,
         settlement_reason: row.settlement_reason || null,
-        settlement_evidence: null,
+        // Lightweight availability flag; full payload via GET /api/bets/:betId/evidence
+        settlement_evidence: ['WON', 'LOST', 'VOID', 'CASHED_OUT', 'REFUNDED'].includes(String(row.status || '').toUpperCase())
+          ? { available: true, reason: row.settlement_reason || null, settledAt: row.settled_at || null }
+          : null,
       };
     });
 

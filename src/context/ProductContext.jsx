@@ -356,6 +356,14 @@ export function ProductProvider({ children }) {
     pgReviewMode: config.pgReviewMode === true,
     softwarePlatformEnabled: config.softwarePlatformEnabled === true,
     softwarePlatformName: String(config.softwarePlatformName || '').trim(),
+    /** Intentional SP public product (SP ON + betting OFF) — sportsbook UI is dormant by design. */
+    isPublicSoftwarePlatform:
+      config.softwarePlatformEnabled === true && config.bettingEnabled !== true,
+    productPosture: config.softwarePlatformEnabled === true && config.bettingEnabled !== true
+      ? 'SP_MODE'
+      : (config.bettingEnabled === true && config.softwarePlatformEnabled !== true
+        ? 'SPORTSBOOK'
+        : 'OTHER'),
     updatedAt: config.updatedAt,
     ready,
     loadError,
