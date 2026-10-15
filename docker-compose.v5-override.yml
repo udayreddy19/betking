@@ -1,0 +1,9 @@
+services:
+  backend:
+    environment:
+      ODDS_ENGINE: v5
+      OTHER_SPORTS_ENGINE: v5
+  worker:
+    environment:
+      ODDS_ENGINE: v5
+      OTHER_SPORTS_ENGINE: v5
