@@ -344,12 +344,13 @@ function Header() {
           {isLoggedIn && referralCta && bettingEnabled && (
             <button
               type="button"
-              className="header-deposit-btn"
-              style={{ background: 'linear-gradient(135deg,#16a34a,#15803d)', maxWidth: 180, fontSize: '0.72rem' }}
+              className="header-referral-cta"
               onClick={() => navigate('/invite')}
               title={referralCta.label}
+              aria-label={referralCta.label}
             >
-              {referralCta.label}
+              <span className="header-referral-cta__full">{referralCta.label}</span>
+              <span className="header-referral-cta__short" aria-hidden="true">Invite</span>
             </button>
           )}
 

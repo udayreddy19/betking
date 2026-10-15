@@ -2,12 +2,12 @@
 
 export const homePromoSlides = [
   {
-    id: 'invite',
-    title: 'INVITE & EARN',
-    subtitle: 'FRIENDS GET A FREE BET — YOU EARN 5% WHEN THEY PLAY',
-    gradient: 'linear-gradient(135deg, #1a1024 0%, #5b21b6 55%, #c084fc 140%)',
-    accent: '#e9d5ff',
-    emoji: '🤝',
+    id: 'sports',
+    title: 'LIVE CRICKET',
+    subtitle: 'IN-PLAY MARKETS OPEN NOW',
+    gradient: 'linear-gradient(135deg, #163028 0%, #1f8a4c 55%, #7dff6b 140%)',
+    accent: '#7dff6b',
+    emoji: '🏏',
   },
   {
     id: 'srl',
@@ -26,20 +26,20 @@ export const homePromoSlides = [
     emoji: '🌧️',
   },
   {
-    id: 'sports',
-    title: 'LIVE CRICKET',
-    subtitle: 'IN-PLAY MARKETS OPEN NOW',
-    gradient: 'linear-gradient(135deg, #163028 0%, #1f8a4c 55%, #7dff6b 140%)',
-    accent: '#7dff6b',
-    emoji: '🏏',
-  },
-  {
     id: 'promo',
     title: 'BOOSTED ODDS',
     subtitle: 'CLAIM OFFERS IN PROMOS',
     gradient: 'linear-gradient(135deg, #1c2a24 0%, #2a4a38 50%, #e07a2f 160%)',
     accent: '#e07a2f',
     emoji: '🎁',
+  },
+  {
+    id: 'invite',
+    title: 'INVITE & EARN',
+    subtitle: 'FRIENDS GET A FREE BET — YOU EARN 5% WHEN THEY PLAY',
+    gradient: 'linear-gradient(135deg, #1a1024 0%, #5b21b6 55%, #c084fc 140%)',
+    accent: '#e9d5ff',
+    emoji: '🤝',
   },
 ];
 

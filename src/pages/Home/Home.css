@@ -372,12 +372,21 @@
   }
 
   .home-promo-carousel {
-    margin-bottom: var(--space-4);
+    margin-bottom: var(--space-3);
   }
 
   .home-promo-banner {
-    min-height: 112px;
-    padding: var(--space-5) var(--space-5) var(--space-8);
+    min-height: 88px;
+    padding: var(--space-4) var(--space-4) var(--space-6);
+    grid-template-columns: 52px minmax(0, 1fr) 52px;
+  }
+
+  .home-promo-banner__title {
+    font-size: 0.95rem;
+  }
+
+  .home-promo-banner__subtitle {
+    font-size: 0.72rem;
   }
 }
 
@@ -564,7 +573,7 @@
 }
 
 .home-invite-strip {
-  display: flex;
+  display: none; /* mobile: promo carousel already has Invite & Earn */
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
@@ -574,6 +583,12 @@
   border-radius: 12px;
   background: color-mix(in srgb, var(--color-primary, #1f8a4c) 10%, var(--color-surface, #fff));
   border: 1px solid color-mix(in srgb, var(--color-primary, #1f8a4c) 28%, transparent);
+}
+
+@media (min-width: 900px) {
+  .home-invite-strip {
+    display: flex;
+  }
 }
 
 .home-invite-strip p {
