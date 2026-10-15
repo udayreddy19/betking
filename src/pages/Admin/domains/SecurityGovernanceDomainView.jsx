@@ -246,8 +246,9 @@ function AuditCenterPanel() {
           className="admin-btn admin-btn--ghost"
           onClick={() => {
             const params = new URLSearchParams();
-            if (filters.from) params.set('from', filters.from);
-            if (filters.to) params.set('to', filters.to);
+            Object.entries(filters).forEach(([k, v]) => {
+              if (v) params.set(k, v);
+            });
             params.set('format', 'csv');
             params.set('limit', '2000');
             window.open(`/api/admin/security/audit-center/export?${params.toString()}`, '_blank', 'noopener');
@@ -260,8 +261,9 @@ function AuditCenterPanel() {
           className="admin-btn admin-btn--ghost"
           onClick={() => {
             const params = new URLSearchParams();
-            if (filters.from) params.set('from', filters.from);
-            if (filters.to) params.set('to', filters.to);
+            Object.entries(filters).forEach(([k, v]) => {
+              if (v) params.set(k, v);
+            });
             params.set('format', 'json');
             params.set('limit', '2000');
             window.open(`/api/admin/security/audit-center/export?${params.toString()}`, '_blank', 'noopener');

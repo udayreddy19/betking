@@ -6,6 +6,7 @@ import AdminPageHeader from '../components/AdminPageHeader';
 import { useAdminUiMode } from '../context/AdminUiModeContext';
 import { AdminKpiDrillDrawer, useAdminKpiDrilldown } from '../hooks/useAdminKpiDrilldown';
 import { startVisibleInterval } from '../utils/visibleInterval';
+import OperatorQuickDesk from '../components/OperatorQuickDesk';
 
 /** Display helper — never invent metrics */
 export function formatMetric(value, prefix = '') {
@@ -294,12 +295,12 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
         <div className="admin-queue-grid">
           <QueueCard title="Withdrawals" count={queues.withdrawals?.count} hint={`Oldest: ${queues.withdrawals?.oldestAge || 'None'}`} hot={(queues.withdrawals?.count || 0) > 0} onClick={() => handleDomainNav('finance', 'maker-checker')} />
           <QueueCard title="Pending KYC" count={queues.kyc?.count} hint={`Oldest: ${queues.kyc?.oldestAge || 'None'}`} hot={(queues.kyc?.count || 0) > 0} onClick={() => handleDomainNav('customers', 'kyc-queue')} />
-          <QueueCard title="Stuck bets" count={queues.stuckBets?.count} hint="Concluded matches" hot={(queues.stuckBets?.count || 0) > 0} tone="danger" onClick={() => handleDomainNav('betting', 'stuck-bets')} />
-          <QueueCard title="Settlement errors" count={queues.settlementFailures?.count} hint={queues.settlementFailures?.count === 0 ? 'All settled' : 'Needs retry'} hot={(queues.settlementFailures?.count || 0) > 0} tone="danger" onClick={() => handleDomainNav('betting', 'settlement-queue')} />
-          <QueueCard title="Failed deposits" count={queues.paymentFailures?.count} hint="Webhook failures today" onClick={() => handleDomainNav('finance', 'deposits-review')} />
-          <QueueCard title="Failed outbox jobs" count={queues.failedJobs?.count} hint="Async worker DLQ" hot={(queues.failedJobs?.count || 0) > 0} onClick={() => handleDomainNav('operations', 'outbox-queue')} />
+          <QueueCard title="Stuck bets" count={queues.stuckBets?.count} hint="Concluded matches" hot={(queues.stuckBets?.count || 0) > 0} tone="danger" onClick={() => handleDomainNav('betting', 'settlement-engine')} />
+          <QueueCard title="Settlement errors" count={queues.settlementFailures?.count} hint={queues.settlementFailures?.count === 0 ? 'All settled' : 'Needs retry'} hot={(queues.settlementFailures?.count || 0) > 0} tone="danger" onClick={() => handleDomainNav('operations', 'settlement-queue')} />
+          <QueueCard title="Failed deposits" count={queues.paymentFailures?.count} hint="Webhook failures today" onClick={() => handleDomainNav('finance', 'cash-money')} />
+          <QueueCard title="Failed outbox jobs" count={queues.failedJobs?.count} hint="Async worker DLQ" hot={(queues.failedJobs?.count || 0) > 0} onClick={() => handleDomainNav('operations', 'ops-queues')} />
           <QueueCard title="Open tickets" count={queues.supportTickets?.count} hint="Customer inquiries" hot={(queues.supportTickets?.count || 0) > 0} onClick={() => handleDomainNav('support', 'ticket-queue')} />
-          <QueueCard title="Security alerts" count={queues.securityAlerts?.count} hint="Open incidents" onClick={() => handleDomainNav('security', 'audit-explorer')} />
+          <QueueCard title="Security alerts" count={queues.securityAlerts?.count} hint="Open incidents" onClick={() => handleDomainNav('security-governance', 'audit-trail')} />
         </div>
       </section>
 
@@ -312,6 +313,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
       {/* ── TAB 1: OPERATIONAL OVERVIEW & DOMAIN CARDS ── */}
       {activeTab === 'overview' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginTop: 20 }}>
+          <OperatorQuickDesk onNavigate={(nav) => handleDomainNav(nav.domainId, nav.subModuleId)} />
           {/* Row 1: Finance & Betting Operational Panels */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 16 }}>
             {/* PART 5: FINANCE OVERVIEW */}
@@ -343,7 +345,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
                 <button
                   type="button"
                   className="admin-link-btn"
-                  onClick={() => handleDomainNav('betting', 'betting-desk')}
+                  onClick={() => handleDomainNav('betting', 'settlement-engine')}
                 >
                   Open desk
                 </button>
@@ -422,7 +424,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
 
                 <button
                   type="button"
-                  onClick={() => handleDomainNav('betting', 'stuck-bets')}
+                  onClick={() => handleDomainNav('betting', 'settlement-engine')}
                   className="admin-shortcut"
                 >
                   <div className="admin-shortcut__title">Stuck bet sweep</div>
@@ -431,7 +433,7 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
 
                 <button
                   type="button"
-                  onClick={() => handleDomainNav('finance', 'reconciliation')}
+                  onClick={() => handleDomainNav('finance', 'finance-health')}
                   className="admin-shortcut"
                 >
                   <div className="admin-shortcut__title">Reconciliation</div>
@@ -440,11 +442,20 @@ export default function ControlTowerView({ subModule = 'overview', onSubModuleCh
 
                 <button
                   type="button"
-                  onClick={() => handleDomainNav('security', 'audit-explorer')}
+                  onClick={() => handleDomainNav('security-governance', 'audit-trail')}
                   className="admin-shortcut"
                 >
                   <div className="admin-shortcut__title">Audit log</div>
                   <div className="admin-shortcut__hint">Inspect sensitive actions</div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleDomainNav('operations', 'ops-switches')}
+                  className="admin-shortcut"
+                >
+                  <div className="admin-shortcut__title">Kill switches</div>
+                  <div className="admin-shortcut__hint">Pause betting / cash / cashout</div>
                 </button>
               </div>
             </div>

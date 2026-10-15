@@ -1243,6 +1243,34 @@ function FinanceHealthPanel() {
     }
   };
 
+  const seedResetOffset = async () => {
+    if (!window.confirm('Insert ledger CREDIT offsets for orphan seed-reset DEBITs on zero-cash wallets? Wallet balances stay unchanged.')) return;
+    setRunning(true);
+    try {
+      const res = await adminApiClient.post('/reconciliation/seed-reset-offset', { confirm: true, dryRun: false });
+      showToast(`Seed-reset offsets: ${res.count || 0} wallet(s)`, 'success');
+      load();
+    } catch (err) {
+      showToast(err.message || 'Seed-reset offset failed', 'error');
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  const acceptKnownTest = async () => {
+    if (!window.confirm('Accept OPEN FINANCIAL_LEDGER cases for known test-funding accounts with evidence? Balances unchanged.')) return;
+    setRunning(true);
+    try {
+      const res = await adminApiClient.post('/reconciliation/accept-known-test', { confirm: true, dryRun: false });
+      showToast(`Accepted ${res.count || 0} known-test case(s)`, 'success');
+      load();
+    } catch (err) {
+      showToast(err.message || 'Accept known-test failed', 'error');
+    } finally {
+      setRunning(false);
+    }
+  };
+
   const healthStatus = audit?.healthStatus
     || (exceptions.some((e) => String(e.severity || '').toUpperCase() === 'CRITICAL')
       ? 'CRITICAL'
@@ -1320,6 +1348,12 @@ function FinanceHealthPanel() {
             <button type="button" className="admin-btn admin-btn--secondary" disabled={running} onClick={resolveStale}>
               Resolve stale flags
             </button>
+            <button type="button" className="admin-btn admin-btn--ghost" disabled={running} onClick={seedResetOffset}>
+              Offset seed-reset DEBITs
+            </button>
+            <button type="button" className="admin-btn admin-btn--ghost" disabled={running} onClick={acceptKnownTest}>
+              Accept known-test cases
+            </button>
             <button
               type="button"
               className="admin-btn admin-btn--primary"
@@ -1342,6 +1376,39 @@ function FinanceHealthPanel() {
           ))}
           . Resolve flags only — never auto-repairs balances.
         </p>
+      )}
+
+      {Array.isArray(openSummary?.playbook) && openSummary.playbook.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <AdminDataTable
+            title={`Investigation playbook (${openSummary.playbook.length})`}
+            emptyMessage="No playbook rows"
+            data={openSummary.playbook}
+            columns={[
+              { header: 'Case', key: 'caseId', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.72rem' }}>{r.caseId}</span> },
+              { header: 'Type', key: 'type' },
+              { header: 'Verdict', key: 'verdict', render: (r) => <strong>{r.verdict}</strong> },
+              { header: 'Action', key: 'recommendedAction' },
+              { header: 'Risk', key: 'financialRisk' },
+              {
+                header: 'Cash / Ledger',
+                key: 'snapshot',
+                render: (r) => (r.snapshot
+                  ? `₹${Number(r.snapshot.cash || 0).toFixed(2)} / ₹${Number(r.snapshot.ledgerSum || 0).toFixed(2)}`
+                  : '—'),
+              },
+              {
+                header: 'Next step',
+                key: 'steps',
+                render: (r) => (
+                  <span style={{ fontSize: '0.74rem', color: 'var(--admin-text-muted)' }}>
+                    {(r.steps && r.steps[0]) || '—'}
+                  </span>
+                ),
+              },
+            ]}
+          />
+        </div>
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 16 }}>

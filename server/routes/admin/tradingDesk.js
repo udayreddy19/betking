@@ -214,6 +214,49 @@ router.get('/risk/desk-tree', requireRole('SUPER_ADMIN', 'TRADING_ADMIN', 'RISK_
   }
 });
 
+/** GET /api/admin/trading/house-caps — daily house protection thresholds + top net-win users today */
+router.get('/house-caps', requireRole('SUPER_ADMIN', 'TRADING_ADMIN', 'RISK_ANALYST', 'OPERATIONS_ADMIN', 'FINANCE_ADMIN'), async (req, res) => {
+  try {
+    const { DAILY_HOUSE_CAPS } = await import('../../../lib/dailyHouseCaps.mjs');
+    const { query } = await import('../../../db/pg.js');
+    const top = await query(
+      `SELECT user_id,
+         COALESCE(SUM(
+           CASE
+             WHEN UPPER(status) = 'WON' THEN COALESCE(actual_payout, 0) - stake
+             WHEN UPPER(status) = 'LOST' THEN -stake
+             WHEN UPPER(status) = 'CASHED_OUT' THEN COALESCE(actual_payout, 0) - stake
+             ELSE 0
+           END
+         ), 0)::float8 AS net_win,
+         COUNT(*) FILTER (WHERE UPPER(status) IN ('WON','LOST','CASHED_OUT'))::int AS settled
+       FROM bets
+       WHERE COALESCE(fund_source, 'cash') = 'cash'
+         AND COALESCE(settled_at, created_at) >= (date_trunc('day', NOW() AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata')
+       GROUP BY user_id
+       HAVING COALESCE(SUM(
+           CASE
+             WHEN UPPER(status) = 'WON' THEN COALESCE(actual_payout, 0) - stake
+             WHEN UPPER(status) = 'LOST' THEN -stake
+             WHEN UPPER(status) = 'CASHED_OUT' THEN COALESCE(actual_payout, 0) - stake
+             ELSE 0
+           END
+         ), 0) > 0
+       ORDER BY net_win DESC
+       LIMIT 25`,
+    ).catch(() => ({ rows: [] }));
+    res.json({
+      success: true,
+      caps: DAILY_HOUSE_CAPS,
+      note: 'Read-only. Caps enforce at placement; changing them requires a code/config deploy.',
+      topNetWinToday: top.rows,
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 /** GET /api/admin/trading/feeds-health — live provider feed health snapshot */
 router.get('/feeds-health', requireRole('SUPER_ADMIN', 'TRADING_ADMIN', 'RISK_ANALYST', 'OPERATIONS_ADMIN'), async (req, res) => {
   try {

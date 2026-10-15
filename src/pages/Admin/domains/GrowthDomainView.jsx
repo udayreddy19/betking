@@ -2981,6 +2981,7 @@ function GrowthOverviewPanel({ initialTab = 'dashboard' }) {
   const [kpis, setKpis] = useState(null);
   const [error, setError] = useState(null);
   const [notes, setNotes] = useState([]);
+  const [activation, setActivation] = useState(null);
   const drill = useAdminKpiDrilldown();
 
   useEffect(() => {
@@ -2994,9 +2995,19 @@ function GrowthOverviewPanel({ initialTab = 'dashboard' }) {
         setKpis(null);
         setError(err.message || 'Dashboard unavailable');
       });
+    adminApiClient.get('/growth/activation-funnel?days=30')
+      .then((data) => setActivation(data))
+      .catch(() => setActivation(null));
   }, []);
 
+  const funnel = activation?.funnel || {};
+  const cohorts = activation?.cohorts || {};
   const cards = [
+    { label: 'Signups (30d)', metric: 'signups', value: funnel.signups },
+    { label: 'First deposit', metric: 'firstDeposit', value: funnel.firstDepositUsers },
+    { label: 'First bet', metric: 'firstBet', value: funnel.firstBetUsers },
+    { label: 'D1 deposit %', metric: 'd1Deposit', value: cohorts.d1DepositPct != null ? `${cohorts.d1DepositPct}%` : null },
+    { label: 'D7 bet %', metric: 'd7Bet', value: cohorts.d7BetPct != null ? `${cohorts.d7BetPct}%` : null },
     { label: 'Active campaigns', metric: 'activeCampaigns', value: kpis?.activeCampaigns },
     { label: 'Users targeted', metric: 'usersTargeted', value: kpis?.usersTargeted },
     { label: 'Emails sent', metric: 'emailsSent', value: kpis?.emailsSent },

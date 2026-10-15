@@ -57,6 +57,7 @@ function SettlementQueuePanel() {
   const [obs, setObs] = useState(null);
   const [error, setError] = useState(null);
   const [retryingId, setRetryingId] = useState(null);
+  const [bulkBusy, setBulkBusy] = useState(null);
   const [selectedBlocked, setSelectedBlocked] = useState(null);
   const { showToast } = useAdminToast();
   const drill = useAdminKpiDrilldown();
@@ -102,6 +103,40 @@ function SettlementQueuePanel() {
     }
   };
 
+  const drainQueue = async ({ fullSweep = false } = {}) => {
+    setBulkBusy(fullSweep ? 'sweep' : 'drain');
+    try {
+      const res = await adminApiClient.post('/settlement/drain', {
+        fullSweep,
+        batchSize: 50,
+        maxBatches: 10,
+      });
+      const r = res.result || {};
+      showToast(
+        `${fullSweep ? 'Sweep' : 'Drain'}: processed ${r.processed ?? 0}, settled ${r.settled ?? 0}, failed ${r.failed ?? 0}`,
+        (r.failed || 0) > 0 ? 'warning' : 'success',
+      );
+      load();
+    } catch (err) {
+      showToast(err.message || 'Drain failed', 'error');
+    } finally {
+      setBulkBusy(null);
+    }
+  };
+
+  const retryAllFailed = async () => {
+    setBulkBusy('retry');
+    try {
+      const res = await adminApiClient.post('/settlement/retry-failed', { limit: 500, errorContains: null });
+      showToast(`Bulk retry queued: ${res.retried ?? 0} job(s)`, 'success');
+      load();
+    } catch (err) {
+      showToast(err.message || 'Bulk retry failed', 'error');
+    } finally {
+      setBulkBusy(null);
+    }
+  };
+
   const jobRows = [
     ...pendingJobs.map((j) => ({
       id: j.job_id || j.jobId || j.id,
@@ -124,11 +159,22 @@ function SettlementQueuePanel() {
   return (
     <div>
       <div style={{ marginBottom: '16px' }}>
-        <div className="admin-flex-between" style={{ flexWrap: 'wrap' }}>
+        <div className="admin-flex-between" style={{ flexWrap: 'wrap', gap: 8 }}>
           <h2 className="admin-page-header__title">Settlement</h2>
-          <button type="button" className="admin-btn admin-btn--secondary admin-btn--sm" onClick={load}>
-            ↻ Refresh
-          </button>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <button type="button" className="admin-btn admin-btn--ghost admin-btn--sm" disabled={!!bulkBusy} onClick={() => drainQueue({ fullSweep: false })}>
+              {bulkBusy === 'drain' ? 'Draining…' : 'Drain queue'}
+            </button>
+            <button type="button" className="admin-btn admin-btn--ghost admin-btn--sm" disabled={!!bulkBusy} onClick={() => drainQueue({ fullSweep: true })}>
+              {bulkBusy === 'sweep' ? 'Sweeping…' : 'Recovery sweep'}
+            </button>
+            <button type="button" className="admin-btn admin-btn--secondary admin-btn--sm" disabled={!!bulkBusy} onClick={retryAllFailed}>
+              {bulkBusy === 'retry' ? 'Retrying…' : 'Retry all failed'}
+            </button>
+            <button type="button" className="admin-btn admin-btn--secondary admin-btn--sm" onClick={load}>
+              ↻ Refresh
+            </button>
+          </div>
         </div>
         <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>
           Real-time settlement confidence states, multi-provider consensus, and blocked queue inspection. Refreshes every 30s.

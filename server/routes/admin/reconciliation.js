@@ -153,6 +153,56 @@ router.put('/exceptions/:id/resolve', requirePermission('finance', 'reconciliati
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+/** POST /reconciliation/seed-reset-offset — offset orphan seed-reset DEBITs (ledger only) */
+router.post('/seed-reset-offset', requirePermission('finance', 'reconciliation'), async (req, res) => {
+  try {
+    const { offsetSeedResetLedgerDebits } = await import('../../../lib/seedResetLedgerOffset.mjs');
+    const dryRun = req.body?.dryRun !== false && req.body?.confirm !== true;
+    const result = await offsetSeedResetLedgerDebits({
+      dryRun,
+      adminId: req.admin?.id || 'admin',
+      walletIds: Array.isArray(req.body?.walletIds) ? req.body.walletIds : null,
+    });
+    if (!dryRun) {
+      await logAdminAction({
+        actorId: req.admin?.id || 'admin',
+        targetId: 'ledger_entries',
+        action: 'RECON_SEED_RESET_OFFSET',
+        details: { count: result.count, applied: result.applied?.map((a) => a.walletId) },
+        riskLevel: 'HIGH',
+      });
+    }
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/** POST /reconciliation/accept-known-test — ACCEPTED_WITH_EVIDENCE for known test-funding OPEN cases */
+router.post('/accept-known-test', requirePermission('finance', 'reconciliation'), async (req, res) => {
+  try {
+    const { acceptKnownTestFundingReconCases } = await import('../../../lib/seedResetLedgerOffset.mjs');
+    const dryRun = req.body?.dryRun !== false && req.body?.confirm !== true;
+    const result = await acceptKnownTestFundingReconCases({
+      dryRun,
+      adminId: req.admin?.id || 'admin',
+      caseIds: Array.isArray(req.body?.caseIds) ? req.body.caseIds : null,
+    });
+    if (!dryRun) {
+      await logAdminAction({
+        actorId: req.admin?.id || 'admin',
+        targetId: 'reconciliation_cases',
+        action: 'RECON_ACCEPT_KNOWN_TEST',
+        details: { count: result.count, accepted: result.accepted },
+        riskLevel: 'HIGH',
+      });
+    }
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 /** GET /reconciliation/exceptions/playbook — investigate OPEN cases (no mutations) */
 router.get('/exceptions/playbook', requirePermission('finance', 'reconciliation'), async (req, res) => {
   try {

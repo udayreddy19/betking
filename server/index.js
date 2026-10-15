@@ -229,6 +229,7 @@ httpServer.listen(PORT, async () => {
     ['srl_operator', () => import('../lib/iplSrlOperatorState.mjs').then((m) => m.hydrateSrlOperatorSessions())],
     ['srl_desk_ops', () => import('../lib/iplSrlDeskOps.mjs').then((m) => m.hydrateSrlDeskOps())],
     ['market_liability', () => import('../lib/marketLiabilityStore.mjs').then((m) => m.hydrateMarketLiabilityStore())],
+    ['ops_alert_webhook', () => import('../lib/alertWebhookEngine.mjs').then((m) => m.ensureDefaultLogWebhook())],
   ];
   for (const [name, fn] of startupTasks) {
     try { await fn(); } catch (err) { logger.warn(`${name}_startup_failed`, { error: err.message }); }

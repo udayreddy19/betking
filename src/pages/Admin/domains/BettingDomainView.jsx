@@ -509,6 +509,25 @@ export default function BettingDomainView({
             >
               Recovery sweep
             </button>
+            <button
+              type="button"
+              disabled={drainingQueue}
+              className="admin-btn admin-btn--ghost admin-btn--sm"
+              onClick={async () => {
+                setDrainingQueue(true);
+                try {
+                  const res = await adminApiClient.post('/settlement/retry-failed', { limit: 500, errorContains: null });
+                  showToast(`Bulk retry queued: ${res.retried ?? 0} job(s)`, 'success');
+                  load();
+                } catch (err) {
+                  showToast(err.message || 'Bulk retry failed', 'error');
+                } finally {
+                  setDrainingQueue(false);
+                }
+              }}
+            >
+              Retry all failed
+            </button>
           </div>
         </div>
       )}

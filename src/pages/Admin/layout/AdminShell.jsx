@@ -106,6 +106,7 @@ const DOMAIN_GROUPS = [
           { id: 'ggr-liability', label: 'Liability' },
           { id: 'suspension', label: 'Markets' },
           { id: 'odds-health', label: 'Odds' },
+          { id: 'house-caps', label: 'House caps' },
         ],
       },
       {
@@ -127,6 +128,7 @@ const DOMAIN_GROUPS = [
           { id: 'investigation', label: 'Wallets' },
           { id: 'cash-money', label: 'Pay in / out' },
           { id: 'cash-books', label: 'Books' },
+          { id: 'finance-health', label: 'Health' },
           { id: 'payment-gateways', label: 'Payments' },
         ],
       },

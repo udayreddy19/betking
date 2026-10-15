@@ -54,6 +54,8 @@ export default function TradingRiskDomainView({ subModule }) {
   const showSuspensionQueue = subModule === 'suspension';
   const showFraud = subModule === 'fraud-signals';
   const showOddsHealth = subModule === 'odds-health';
+  const showHouseCaps = subModule === 'house-caps';
+  const [houseCaps, setHouseCaps] = useState(null);
   const [oddsHealth, setOddsHealth] = useState(null);
   const [engineStatus, setEngineStatus] = useState(null);
   const [engineSaving, setEngineSaving] = useState(false);
@@ -358,6 +360,17 @@ export default function TradingRiskDomainView({ subModule }) {
   }, [showOddsHealth]);
 
   useEffect(() => {
+    if (!showHouseCaps) return undefined;
+    let cancelled = false;
+    adminApiClient.get('/trading/house-caps')
+      .then((data) => { if (!cancelled) setHouseCaps(data); })
+      .catch((err) => {
+        if (!cancelled) showToast(err.message || 'Failed to load house caps', 'error');
+      });
+    return () => { cancelled = true; };
+  }, [showHouseCaps, showToast]);
+
+  useEffect(() => {
     if (!showGgrDesk) return undefined;
     let cancelled = false;
     adminApiClient.get('/trading/desk-metrics')
@@ -507,24 +520,71 @@ export default function TradingRiskDomainView({ subModule }) {
 
   const winnerMarket = (oddsDebug?.markets || []).find((m) => m.marketId === 'match_winner');
 
-  const heading = showGgrDesk
-    ? 'GGR / Hold % / Liability Desk'
-    : showSuspensionQueue
-      ? 'Suspended Markets Queue'
-      : showFraud
-        ? 'Risk / Fraud Console'
-        : showOddsHealth
-          ? 'Odds model health'
-          : 'Trading Desk & Live Risk Exposure Console';
-  const hint = showGgrDesk
-    ? 'Ledger GGR, hold percentage, and open/persisted market liability for traders.'
-    : showSuspensionQueue
-      ? 'Active suspension causes. Resume clears one cause; market reopens only when none remain. Requires confirmation and audit.'
-      : showFraud
-        ? 'Risk signals and fraud cases. Flag / review / restrict / escalate — no auto-ban from weak signals.'
-        : showOddsHealth
-          ? 'Daily ritual: inverted books, lock-price rate, and settlement ingest. Death-over / player-prop markets stay shadow until observations exist.'
-          : 'Live match pricing risk from OddsEngineV5. Stake liability shows once open bets are ledger-backed.';
+  const heading = showHouseCaps
+    ? 'House protection caps'
+    : showGgrDesk
+      ? 'GGR / Hold % / Liability Desk'
+      : showSuspensionQueue
+        ? 'Suspended Markets Queue'
+        : showFraud
+          ? 'Risk / Fraud Console'
+          : showOddsHealth
+            ? 'Odds model health'
+            : 'Trading Desk & Live Risk Exposure Console';
+  const hint = showHouseCaps
+    ? 'Daily net-win and sharp stake limits enforced at bet placement. Read-only thresholds + today’s top net-win users.'
+    : showGgrDesk
+      ? 'Ledger GGR, hold percentage, and open/persisted market liability for traders.'
+      : showSuspensionQueue
+        ? 'Active suspension causes. Resume clears one cause; market reopens only when none remain. Requires confirmation and audit.'
+        : showFraud
+          ? 'Risk signals and fraud cases. Flag / review / restrict / escalate — no auto-ban from weak signals.'
+          : showOddsHealth
+            ? 'Daily ritual: inverted books, lock-price rate, and settlement ingest. Death-over / player-prop markets stay shadow until observations exist.'
+            : 'Live match pricing risk from OddsEngineV5. Stake liability shows once open bets are ledger-backed.';
+
+  if (showHouseCaps) {
+    const caps = houseCaps?.caps || {};
+    const top = houseCaps?.topNetWinToday || [];
+    return (
+      <div>
+        <div style={{ marginBottom: 16 }}>
+          <h2 className="admin-page-header__title">{heading}</h2>
+          <p style={{ margin: '4px 0 0', color: 'var(--admin-text-muted)', fontSize: '0.82rem' }}>{hint}</p>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10, marginBottom: 16 }}>
+          {[
+            ['Max daily net win', caps.maxDailyNetWin],
+            ['Sharp net-win threshold', caps.sharpNetWinThreshold],
+            ['Sharp max stake', caps.sharpMaxStake],
+            ['Sharp totals max stake', caps.sharpTotalsMaxStake],
+          ].map(([label, value]) => (
+            <AdminKPI key={label} label={label} value={value != null ? moneyOrDash(value) : '—'} accent="#64748b" />
+          ))}
+        </div>
+        <AdminDataTable
+          title="Top net-win users today (IST)"
+          emptyMessage="No settled cash P&L yet today"
+          data={top}
+          columns={[
+            { header: 'User', key: 'user_id', render: (r) => <span className="admin-text-mono" style={{ fontSize: '0.76rem' }}>{r.user_id}</span> },
+            { header: 'Net win', key: 'net_win', render: (r) => moneyOrDash(r.net_win) },
+            { header: 'Settled bets', key: 'settled' },
+            {
+              header: 'Cap status',
+              key: 'status',
+              render: (r) => {
+                const n = Number(r.net_win || 0);
+                if (n >= Number(caps.maxDailyNetWin || 25000)) return <StatusBadge status="BLOCKED" />;
+                if (n >= Number(caps.sharpNetWinThreshold || 10000)) return <StatusBadge status="SHARP" />;
+                return <StatusBadge status="OK" />;
+              },
+            },
+          ]}
+        />
+      </div>
+    );
+  }
 
   return (
     <div>

@@ -20,6 +20,16 @@ function handle(err, res) {
   res.status(status).json({ success: false, error: err.message, code: err.code });
 }
 
+/** GET /ops/production-score — read-only 0–100 ops excellence scorecard */
+router.get('/production-score', requireRole(...READ_OPS), async (req, res) => {
+  try {
+    const { getProductionScorecard } = await import('../../../lib/productionScorecard.mjs');
+    res.json(await getProductionScorecard());
+  } catch (err) {
+    handle(err, res);
+  }
+});
+
 // ── Control Tower ──
 router.get(
   '/control-tower',
