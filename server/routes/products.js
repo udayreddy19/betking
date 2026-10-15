@@ -21,8 +21,10 @@ router.get('/products', async (_req, res) => {
     });
   } catch {
     // Fail closed on transient errors — never flash Betting UI when Betting is OFF.
+    // Respond 503 (not 200) so clients show a retry state and never cache this as an
+    // Admin "all products off" decision.
     res.set('Cache-Control', 'no-store');
-    res.json({
+    res.status(503).json({
       wallet: false,
       betting: false,
       walletEnabled: false,

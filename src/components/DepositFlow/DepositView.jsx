@@ -12,6 +12,7 @@ import {
   FiZap,
 } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
+import { useProducts } from '../../context/ProductContext';
 import { MIN_DEPOSIT_INR } from '../../utils/vipBenefits';
 import { apiFetch, fetchMe } from '../../utils/apiClient';
 import { formatInr } from '../../utils/walletBalance';
@@ -45,8 +46,9 @@ const PAYMENT_METHODS = [
   },
 ];
 
-async function waitForWalletCredit(refreshWallet, startBalance, attempts = 8) {
+async function waitForWalletCredit(refreshWallet, startBalance, attempts = 8, onAttempt = null) {
   for (let count = 0; count < attempts; count += 1) {
+    onAttempt?.({ attempt: count + 1, attempts });
     await new Promise((resolve) => setTimeout(resolve, 1500));
     await refreshWallet?.();
     const me = await fetchMe().catch(() => null);
@@ -76,6 +78,7 @@ function loadCashfreeSdk() {
 
 export default function DepositView({ onClose, isModal = false, returnTo = null }) {
   const { user, refreshWallet, addFunds } = useAuth();
+  const { bettingEnabled } = useProducts();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -99,6 +102,11 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
   const [selectedProvider, setSelectedProvider] = useState('CASHFREE');
   const [availableProviders, setAvailableProviders] = useState([]);
   const [paymentsAvailable, setPaymentsAvailable] = useState(true);
+  // Provider list could not be fetched (network / server error) — distinct from "maintenance".
+  const [providersFetchFailed, setProvidersFetchFailed] = useState(false);
+  // Order currently being verified + poll progress, shown in the processing card.
+  const [processingOrderId, setProcessingOrderId] = useState('');
+  const [processingProgress, setProcessingProgress] = useState(null);
   const [allowUserSelection, setAllowUserSelection] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
@@ -132,9 +140,13 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
   useEffect(() => {
     let cancelled = false;
     apiFetch('/api/v1/payments/providers')
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`providers_http_${res.status}`);
+        return res.json();
+      })
       .then((data) => {
         if (!cancelled) {
+          setProvidersFetchFailed(false);
           setPaymentsAvailable(data.paymentsAvailable !== false);
           setAvailableProviders(data.providers || []);
           setAllowUserSelection(Boolean(data.allowUserSelection));
@@ -142,7 +154,13 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
           setSelectedProvider(primary);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        // Do not fail silently: block the pay button and tell the user payments are unavailable.
+        if (!cancelled) {
+          setProvidersFetchFailed(true);
+          setPaymentsAvailable(false);
+        }
+      });
 
     apiFetch('/api/v1/payments/deposit-limits')
       .then((res) => res.json())
@@ -201,14 +219,17 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
         if (path && path !== '/wallet/deposit' && path !== '/deposit') return path;
       } catch {}
     }
-    return '/sports';
-  }, [returnTo, location.state]);
+    // Wallet-only mode: there is no sportsbook to return to.
+    return bettingEnabled ? '/sports' : '/wallet';
+  }, [returnTo, location.state, bettingEnabled]);
+
+  const fallbackReturnPath = bettingEnabled ? '/sports' : '/wallet';
 
   const handleBack = () => {
     if (onClose) {
       onClose();
     } else {
-      navigate(effectiveReturnTo || '/sports');
+      navigate(effectiveReturnTo || fallbackReturnPath);
     }
   };
 
@@ -216,7 +237,7 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
     if (onClose) {
       onClose();
     }
-    navigate(effectiveReturnTo || '/sports');
+    navigate(effectiveReturnTo || fallbackReturnPath);
   };
 
   const handleViewHistory = () => {
@@ -268,6 +289,8 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
       }
 
       setIsProcessing(true);
+      setProcessingOrderId(String(orderData.orderId || orderData.depositId || ''));
+      setProcessingProgress(null);
       const startBalance = Number(user?.balance || 0);
 
       try {
@@ -290,7 +313,7 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
           });
           setIsSuccess(true);
         } else {
-          const credited = await waitForWalletCredit(refreshWallet, startBalance);
+          const credited = await waitForWalletCredit(refreshWallet, startBalance, 8, setProcessingProgress);
           if (credited) {
             setLastTransaction({
               amount: depositAmt,
@@ -300,11 +323,14 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
             });
             setIsSuccess(true);
           } else {
-            setErrorMsg(verifyData.error || 'Payment confirmation pending. Wallet will update shortly.');
+            setErrorMsg(
+              `${verifyData.error || 'Payment confirmation pending. Wallet will update shortly.'}`
+              + ` Order ID: ${orderData.orderId || orderData.depositId || 'n/a'} — quote it to support if your wallet is not credited.`,
+            );
           }
         }
       } catch (err) {
-        const credited = await waitForWalletCredit(refreshWallet, startBalance);
+        const credited = await waitForWalletCredit(refreshWallet, startBalance, 8, setProcessingProgress);
         if (credited) {
           setLastTransaction({
             amount: depositAmt,
@@ -314,7 +340,10 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
           });
           setIsSuccess(true);
         } else {
-          setErrorMsg('Payment verification in progress. Please check your transaction history.');
+          setErrorMsg(
+            `Payment verification in progress. Order ID: ${orderData.orderId || orderData.depositId || 'n/a'}.`
+            + ' Please check your transaction history.',
+          );
         }
       } finally {
         setIsProcessing(false);
@@ -365,6 +394,8 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
         order_id: orderData.orderId,
         handler: async function (response) {
           setIsProcessing(true);
+          setProcessingOrderId(String(response?.razorpay_payment_id || orderData.orderId || ''));
+          setProcessingProgress(null);
           setErrorMsg('');
           const startBalance = Number(user?.balance || 0);
           try {
@@ -389,7 +420,7 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
             });
             setIsSuccess(true);
           } catch (confirmErr) {
-            const credited = await waitForWalletCredit(refreshWallet, startBalance);
+            const credited = await waitForWalletCredit(refreshWallet, startBalance, 8, setProcessingProgress);
             if (credited) {
               setLastTransaction({
                 amount: depositAmt,
@@ -617,7 +648,18 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
               <h2 className="deposit-proc-title">Verifying Payment</h2>
               <p className="deposit-proc-subtitle">
                 Please wait while we confirm your transaction and credit your wallet.
+                Do not close this page or pay again — this can take up to a minute.
               </p>
+              {processingOrderId && (
+                <p className="deposit-proc-subtitle" data-testid="deposit-processing-order">
+                  Order ID: <strong>{processingOrderId}</strong>
+                </p>
+              )}
+              {processingProgress && (
+                <p className="deposit-proc-subtitle" aria-live="polite">
+                  Checking wallet credit ({processingProgress.attempt}/{processingProgress.attempts})…
+                </p>
+              )}
               <div className="deposit-proc-badge">
                 <FiShield size={14} />
                 <span>Securing Ledger Entry</span>
@@ -646,7 +688,9 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
                 <div className="deposit-alert-banner deposit-alert-banner--danger" role="alert">
                   <FiAlertCircle size={16} className="deposit-alert-icon" />
                   <span className="deposit-alert-text">
-                    Deposit services are temporarily undergoing scheduled maintenance.
+                    {providersFetchFailed
+                      ? 'Payments are unavailable right now — we could not load payment options. Please check your connection and try again shortly.'
+                      : 'Deposit services are temporarily undergoing scheduled maintenance.'}
                   </span>
                 </div>
               )}

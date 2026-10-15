@@ -8,7 +8,15 @@ import { DEMO_MODE } from '../../utils/featureFlags';
 import { apiFetch } from '../../utils/apiClient';
 import { isCricketMatchCompleted } from '../../utils/cricketMatchComplete';
 
-/** Settles pending bets when live score data marks matches complete. */
+/**
+ * UI refresh only (production). Settlement is authoritative on the server: the settlement
+ * worker / `POST /api/bets/sync-settlement` decides outcomes and credits wallets. In production
+ * this component just nudges the server and then refreshes My Bets + wallet so the UI catches up;
+ * it never computes results or credits balances itself.
+ *
+ * The DEMO_MODE branch below (client-side settlement + local credits) is demo-only and is
+ * rejected for production builds (see featureFlags.js and vite-plugins/rejectDemoModeProduction.js).
+ */
 export default function BetSettlementRunner() {
   const matches = useLiveMatches();
   const { placedBets, applySettledBets, refreshMyBets } = useBetSlip();

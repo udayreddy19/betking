@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { adminApiClient } from '../api/adminApiClient';
 import { useAdminToast } from '../components/AdminToastContext';
 import AdminCard from '../components/AdminCard';
+import { syncProductConfigFromAdmin } from './productConfigSync';
 
 function formatWhen(value) {
   if (!value) return '—';
@@ -90,6 +91,9 @@ export default function ProductConfigurationPanel() {
         setBettingEnabled(b);
         setSaved({ walletEnabled: w, bettingEnabled: b });
         setMeta({ updatedAt: data.updatedAt, updatedBy: data.updatedBy });
+        // Push the values that were actually saved to every mounted client immediately.
+        // Only walletEnabled / bettingEnabled are sent — no other platform flags are touched.
+        syncProductConfigFromAdmin(data);
         showToast('Product configuration saved', 'success');
         load();
       })
@@ -109,6 +113,11 @@ export default function ProductConfigurationPanel() {
           Independently enable or disable Wallet and Betting. Disabling turns off user access only —
           it does not delete bets, wallet records, or historical data. Background settlement and
           payment webhooks continue for in-flight operations.
+        </p>
+        <p style={{ marginBottom: '1.25rem', color: 'var(--text-secondary, #666)', fontSize: '0.85rem' }}>
+          <strong>Note:</strong> these switches only gate OddsYra user access. Disabling a product
+          does not stop any remote/third-party software service, payment gateway, or feed globally —
+          those keep running until stopped at their own provider.
         </p>
 
         <div style={{ display: 'grid', gap: '1rem', maxWidth: 520 }}>

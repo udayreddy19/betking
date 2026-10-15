@@ -10,6 +10,7 @@ import {
   InfoIcon,
   SettingsIcon,
 } from '../../../icons/animate/index';
+import { syncProductConfigFromAdmin } from '../features/productConfigSync';
 import './PaymentGatewaysView.css';
 import { formatIst, formatIstDateTime } from '../../../utils/istTime';
 
@@ -105,6 +106,9 @@ export default function PaymentGatewaysView() {
         enabled: !currentEnabled,
       });
       setGateways(res.gateways || []);
+      // Same product-config publish path as ProductConfigurationPanel so every open
+      // client re-reads wallet/betting state after a gateway change.
+      await syncProductConfigFromAdmin();
       showToast(`${provider} ${!currentEnabled ? 'enabled' : 'disabled'} successfully`, 'success');
     } catch (err) {
       showToast(err.message || `Failed to update ${provider}`, 'error');
