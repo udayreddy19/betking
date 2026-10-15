@@ -695,6 +695,10 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
                 </div>
               )}
 
+              <p className="deposit-trust-eta" style={{ margin: '0 0 12px', fontSize: '0.82rem', opacity: 0.85, lineHeight: 1.45 }}>
+                Typical ETA: under 2 minutes after you approve UPI. You&apos;ll get an in-app / push alert when money arrives — no need to refresh.
+              </p>
+
               {/* Amount Input Card */}
               <section className="deposit-section-card">
                 <label htmlFor="deposit-amount-input" className="deposit-section-label">

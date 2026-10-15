@@ -24,11 +24,11 @@ export default function Fantasy() {
       return;
     }
     if (!FANTASY_JOIN_ENABLED) {
-      showToast('Fantasy contests are not live yet. Place sports bets from the Sports page.', 'info');
+      showToast('Real-money contests coming soon. Place sports bets from the Sports page.', 'info');
       return;
     }
     if (!DEMO_MODE || contest.entryFee > 0) {
-      showToast('Fantasy contests are not live yet. Place sports bets from the Sports page.', 'info');
+      showToast('Real-money contests coming soon. Place sports bets from the Sports page.', 'info');
       return;
     }
     if (joinedIds.has(contest.id)) {
@@ -64,8 +64,8 @@ export default function Fantasy() {
         <span className="fantasy-icon">🏆</span>
         <h1>Fantasy Cricket</h1>
         <p data-testid="fantasy-gated-copy">
-          Fantasy contests are not live yet. Join opens when licensed contests go live.
-          Live sports betting stays on the Sports page.
+          Real-money contests coming soon. Join stays off until licensed fantasy contests launch.
+          Browse live matches and bet on Sports in the meantime.
         </p>
         <div className="fantasy-actions">
           <Link to="/sports" className="fantasy-btn primary">Browse live matches</Link>
@@ -114,7 +114,7 @@ export default function Fantasy() {
                     {joined ? 'Joined' : full ? 'Contest full' : joiningId === contest.id ? 'Joining…' : DEMO_MODE && contest.entryFee === 0 ? 'Join contest' : 'Coming soon'}
                   </button>
                 ) : (
-                  <p className="fantasy-join-note">Join opens when licensed contests go live. Bet on Sports in the meantime.</p>
+                  <p className="fantasy-join-note">Real-money contests coming soon. Bet on Sports in the meantime.</p>
                 )}
               </article>
             );

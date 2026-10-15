@@ -385,7 +385,9 @@ export function BetSlipProvider({ children }) {
   const [availableRewards, setAvailableRewards] = useState([]);
   const [selectedRewardId, setSelectedRewardId] = useState(null);
   const [fundingSource, setFundingSource] = useState('cash'); // 'cash' | 'bonus' | 'freebet'
-  const [lastCashStake, setLastCashStake] = useState('100');
+  const [lastCashStake, setLastCashStake] = useState(
+    () => String(loadBetslipPrefs()?.defaultStake || 100),
+  );
 
   const wallet = useMemo(() => getWalletBreakdown(user), [user]);
 

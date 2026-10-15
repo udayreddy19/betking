@@ -127,6 +127,34 @@ export default function ProfileReferralCard({ onLoaded } = {}) {
         </button>
       </div>
 
+      {/* Milestone progress */}
+      {(() => {
+        const ms = data.milestones || {};
+        const next = ms.next;
+        const successful = Number(ms.successful ?? data.stats?.qualified ?? 0);
+        if (!next?.count) return null;
+        const need = Math.max(0, Number(next.count) - successful);
+        const pct = Math.min(100, Math.round((successful / Number(next.count)) * 100));
+        return (
+          <div className="profile-referral-milestone" style={{ margin: '0 0 12px', padding: '10px 12px', borderRadius: 10, background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: '0.82rem', fontWeight: 700 }}>
+              <span>
+                {need > 0
+                  ? `Invite ${need} more → ₹${Number(next.amount || 0).toLocaleString('en-IN')} freebet`
+                  : `Milestone unlocked — ₹${Number(next.amount || 0).toLocaleString('en-IN')}`}
+              </span>
+              <span style={{ opacity: 0.75 }}>{successful}/{next.count}</span>
+            </div>
+            <div style={{ marginTop: 8, height: 8, borderRadius: 999, background: 'rgba(15,23,42,0.08)', overflow: 'hidden' }}>
+              <div style={{ width: `${pct}%`, height: '100%', background: '#16a34a', borderRadius: 999 }} />
+            </div>
+            <button type="button" className="profile-link-btn" onClick={share} style={{ marginTop: 10, width: '100%' }}>
+              Claim progress — share invite link
+            </button>
+          </div>
+        );
+      })()}
+
       {/* 3-Column Summary Stats Grid */}
       <div className="profile-referral-stats-grid">
         <div className="profile-referral-stat-card">

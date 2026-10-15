@@ -57,6 +57,50 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+.match-detail-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.match-detail-builder-toggle {
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-alt);
+  color: var(--color-text-secondary);
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 6px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.match-detail-builder-toggle.active {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.45);
+  color: #38bdf8;
+}
+
+.match-detail-live-stream {
+  flex-shrink: 0;
+  padding: 0 var(--space-4) var(--space-3);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.match-detail-builder-note {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  flex-shrink: 0;
+  padding: 8px var(--space-4);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+  border-bottom: 1px solid rgba(56, 189, 248, 0.25);
+}
+
 .match-detail-league {
   display: flex;
   align-items: center;

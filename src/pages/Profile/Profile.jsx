@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import PlayerBettingPrefsCard from './PlayerBettingPrefsCard';
+import PlayerBetInsightsCard from './PlayerBetInsightsCard';
 import { useBetSlip } from '../../context/BetSlipContext';
 import { getWalletBreakdown, formatInr } from '../../utils/walletBalance';
 import { buildSpinGrantNotice } from '../../utils/spinGrantUi';
@@ -267,6 +269,27 @@ export default function Profile() {
                 <button type="button" className="profile-link-btn outline" onClick={() => openFinModal('withdraw')}>Withdraw</button>
               </div>
             </div>
+
+            <div className="rg-card-box" style={{ marginBottom: 16 }}>
+              <h3 style={{ marginTop: 0 }}>Responsible gaming shortcuts</h3>
+              <p style={{ marginBottom: 10, fontSize: '0.85rem' }}>
+                Set deposit/loss limits or take a break anytime. Tools are enforced on deposits and bets.
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                <button type="button" className="profile-link-btn" onClick={() => selectTab('rg')}>
+                  Deposit &amp; loss limits
+                </button>
+                <button type="button" className="profile-link-btn outline" onClick={() => { selectTab('rg'); setCoolingOffHours('24'); }}>
+                  Time-out (cooling-off)
+                </button>
+                <button type="button" className="profile-link-btn outline" onClick={() => selectTab('rg')}>
+                  Self-exclusion
+                </button>
+              </div>
+            </div>
+
+            <PlayerBettingPrefsCard />
+            <PlayerBetInsightsCard />
 
             <div className="profile-wallet-grid">
               <div className="profile-stat profile-stat--hide-mobile">

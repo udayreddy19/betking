@@ -21,6 +21,7 @@ import AnimatedMotionGiftIcon from '../../components/AnimatedMotionGiftIcon/Anim
 import ErrorBoundary from '../../components/ErrorBoundary/ErrorBoundary';
 import { useAuth } from '../../context/AuthContext';
 import { useProducts } from '../../context/ProductContext';
+import { loadPlayerPrefs } from '../../utils/betslipPrefs';
 import WalletHome from '../Wallet/WalletHome';
 import ProductUnavailable from '../../components/ProductUnavailable/ProductUnavailable';
 import './Home.css';
@@ -90,6 +91,27 @@ export default function Home() {
   const promoPointerStartX = useRef(0);
   const promoDidSwipe = useRef(false);
   const { ids: watchlistIds, count: watchlistCount } = useMatchWatchlist();
+  const [playerPrefs, setPlayerPrefs] = useState(() => loadPlayerPrefs());
+
+  useEffect(() => {
+    const onPrefs = () => setPlayerPrefs(loadPlayerPrefs());
+    window.addEventListener('oddsyra:player-prefs-changed', onPrefs);
+    return () => window.removeEventListener('oddsyra:player-prefs-changed', onPrefs);
+  }, []);
+
+  const forYouMatches = useMemo(() => {
+    const teams = (playerPrefs.favoriteTeams || []).map((t) => t.toLowerCase());
+    const leagues = (playerPrefs.favoriteLeagues || []).map((t) => t.toLowerCase());
+    if (!teams.length && !leagues.length) return [];
+    return (matches || []).filter((m) => {
+      const t1 = String(m.team1?.name || '').toLowerCase();
+      const t2 = String(m.team2?.name || '').toLowerCase();
+      const league = String(m.league || '').toLowerCase();
+      const teamHit = teams.some((t) => t1.includes(t) || t2.includes(t));
+      const leagueHit = leagues.some((l) => league.includes(l));
+      return teamHit || leagueHit;
+    }).slice(0, HOME_MATCH_LIMIT);
+  }, [matches, playerPrefs]);
 
   const liveCount = useMemo(
     () => (matches || []).filter((m) => getMatchState(m) === 'in').length,
@@ -418,6 +440,24 @@ export default function Home() {
       <section className="home-section home-boosted">
         <BoostedOddsWidget />
       </section>
+
+      {forYouMatches.length > 0 && (
+        <section className="home-section" id="for-you-section">
+          <div className="section-header">
+            <h2>Markets for you</h2>
+            <button type="button" className="carousel-view-all" onClick={() => navigate('/profile')}>
+              Edit favourites
+            </button>
+          </div>
+          <div className="match-cards-scroll scroll-row-bleed">
+            {forYouMatches.map((match) => (
+              <ErrorBoundary key={`fy-${match.id}`} resetKey={match.id} fallback={null}>
+                <MatchCard match={match} variant="home" />
+              </ErrorBoundary>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="home-section home-sports-action" id="sports-action-section">
         <div className="section-header">

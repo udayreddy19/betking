@@ -1,72 +1,55 @@
+import { useCallback, useEffect, useState } from 'react';
 import { FiZap, FiFlame, FiClock, FiPlusCircle, FiCheck } from '../../icons';
 import { useBetSlip } from '../../context/BetSlipContext';
-import { DEMO_MODE } from '../../utils/featureFlags';
 import './BoostedOddsWidget.css';
-
-const BOOSTED_PROMOS = [
-  {
-    id: 'boost-ipl-srl-1',
-    matchId: 'srl_ipl_csk_mi',
-    sport: 'cricket',
-    league: 'IPL SRL Premier Super League',
-    matchName: 'CSK SRL vs MI SRL',
-    title: 'CSK SRL to Win & Top Batter Score > 45.5 Runs',
-    originalOdds: 2.30,
-    boostedOdds: 3.10,
-    selection: 'CSK SRL Win + Top Batter >45.5',
-    tag: 'IPL SRL SPECIAL',
-    expiry: 'Ends in 45 mins',
-  },
-  {
-    id: 'boost-football-1',
-    matchId: 'foot_mci_ars',
-    sport: 'soccer',
-    league: 'English Premier League',
-    matchName: 'Man City vs Arsenal',
-    title: 'Both Teams to Score & Over 2.5 Goals',
-    originalOdds: 1.85,
-    boostedOdds: 2.55,
-    selection: 'BTTS + Over 2.5 Goals',
-    tag: 'SUPER BOOST',
-    expiry: 'Ends in 2 hours',
-  },
-  {
-    id: 'boost-cricket-2',
-    matchId: 'cric_ind_aus',
-    sport: 'cricket',
-    league: 'International T20 Series',
-    matchName: 'India vs Australia',
-    title: 'India to Win & Total Sixes > 12.5 in Match',
-    originalOdds: 2.60,
-    boostedOdds: 3.50,
-    selection: 'India Win + Sixes > 12.5',
-    tag: 'MEGA BOOST',
-    expiry: 'Starts Today 19:00',
-  },
-];
 
 export default function BoostedOddsWidget() {
   const { addBet, isBetSelected } = useBetSlip();
+  const [boosts, setBoosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [note, setNote] = useState('');
 
-  if (!DEMO_MODE) {
-    return null;
-  }
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/v1/boosts/daily?limit=5&_=${Date.now()}`, { credentials: 'same-origin' });
+      const data = await res.json().catch(() => ({}));
+      setBoosts(Array.isArray(data.boosts) ? data.boosts : []);
+      setNote(data.note || '');
+    } catch {
+      setBoosts([]);
+      setNote('Boosts unavailable right now.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+    const t = setInterval(load, 5 * 60_000);
+    return () => clearInterval(t);
+  }, [load]);
 
   const handleAddBoost = (boost) => {
+    const parts = String(boost.matchName || '').split(/\s+vs\s+/i);
     const fakeMatch = {
       id: boost.matchId,
-      team1: { name: boost.matchName.split(' vs ')[0] || 'Team 1' },
-      team2: { name: boost.matchName.split(' vs ')[1] || 'Team 2' },
+      team1: { name: parts[0] || 'Team 1' },
+      team2: { name: parts[1] || 'Team 2' },
       league: boost.league,
       sport: boost.sport,
     };
-
     addBet(
       fakeMatch,
-      `Boost:${boost.id}`,
+      boost.selectionId || `Boost:${boost.id}`,
       boost.boostedOdds,
-      boost.title,
-      { marketName: `⚡ ${boost.tag}` },
+      boost.selection || boost.title,
+      {
+        marketName: `⚡ ${boost.tag || 'Boost'}`,
+        marketId: boost.marketId || 'boosted',
+        keepExisting: true,
+        asMulti: false,
+      },
     );
   };
 
@@ -75,62 +58,67 @@ export default function BoostedOddsWidget() {
       <div className="boosted-header">
         <div className="boosted-title">
           <FiZap className="boosted-icon-zap" />
-          <h2>OddsYra Daily Odds Boosts</h2>
-          <span className="boosted-badge">{DEMO_MODE ? 'DEMO' : 'SOON'}</span>
+          <h2>Daily Odds Boosts</h2>
+          <span className="boosted-badge">TODAY</span>
         </div>
         <p className="boosted-subtitle">
-          {DEMO_MODE
-            ? 'Enhanced odds on sample matches for local demo play.'
-            : 'Boosted markets are not live yet. Bet from the Sports page.'}
+          {loading ? 'Loading today\'s boosts…' : (note || '3–5 enhanced prices refreshed daily. Tap to add to your slip.')}
         </p>
       </div>
 
-      <div className="boosted-grid">
-        {BOOSTED_PROMOS.map((boost) => {
-          const isAdded = isBetSelected(boost.matchId, `Boost:${boost.id}`);
-          return (
-            <div key={boost.id} className="boosted-card">
-              <div className="boosted-card-top">
-                <span className="boosted-tag">
-                  <FiFlame /> {boost.tag}
-                </span>
-                <span className="boosted-expiry">
-                  <FiClock /> {boost.expiry}
-                </span>
-              </div>
-
-              <div className="boosted-card-match">{boost.league}</div>
-              <h3 className="boosted-card-fixture">{boost.matchName}</h3>
-              <p className="boosted-card-desc">{boost.title}</p>
-
-              <div className="boosted-card-bottom">
-                <div className="boosted-odds-box">
-                  <span className="boosted-old-odds">{boost.originalOdds.toFixed(2)}</span>
-                  <span className="boosted-new-odds">
-                    {boost.boostedOdds.toFixed(2)}
+      {!loading && boosts.length === 0 ? (
+        <p className="boosted-subtitle" style={{ padding: '0 4px 12px' }}>
+          No boostable markets right now — browse <a href="/sports">Sports</a> for live odds.
+        </p>
+      ) : (
+        <div className="boosted-grid">
+          {boosts.map((boost) => {
+            const selId = boost.selectionId || `Boost:${boost.id}`;
+            const isAdded = isBetSelected(boost.matchId, selId);
+            return (
+              <div key={boost.id} className="boosted-card">
+                <div className="boosted-card-top">
+                  <span className="boosted-tag">
+                    <FiFlame /> {boost.tag || 'BOOST'}
+                  </span>
+                  <span className="boosted-expiry">
+                    <FiClock /> {boost.expiry || 'Today'}
                   </span>
                 </div>
 
-                <button
-                  type="button"
-                  className={`boosted-add-btn ${isAdded ? 'added' : ''}`}
-                  onClick={() => handleAddBoost(boost)}
-                >
-                  {DEMO_MODE && isAdded ? (
-                    <>
-                      <FiCheck /> In Betslip
-                    </>
-                  ) : (
-                    <>
-                      <FiPlusCircle /> {DEMO_MODE ? 'Add Bet' : 'Coming soon'}
-                    </>
-                  )}
-                </button>
+                <div className="boosted-card-match">{boost.league}</div>
+                <h3 className="boosted-card-fixture">{boost.matchName}</h3>
+                <p className="boosted-card-desc">{boost.title}</p>
+
+                <div className="boosted-card-bottom">
+                  <div className="boosted-odds-box">
+                    <span className="boosted-old-odds">{Number(boost.originalOdds).toFixed(2)}</span>
+                    <span className="boosted-new-odds">
+                      {Number(boost.boostedOdds).toFixed(2)}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={`boosted-add-btn ${isAdded ? 'added' : ''}`}
+                    onClick={() => handleAddBoost(boost)}
+                  >
+                    {isAdded ? (
+                      <>
+                        <FiCheck /> In Betslip
+                      </>
+                    ) : (
+                      <>
+                        <FiPlusCircle /> Add Bet
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -13,6 +13,7 @@ import { apiFetch } from '../../utils/apiClient';
 import { matchIdsEqual } from '../../../lib/matchIdPublic.mjs';
 import { findLiveMatch } from '../../utils/findLiveMatch';
 import { springSheet } from '../../utils/motionPresets';
+import BetSlipShareCard from '../BetSlip/BetSlipShareCard';
 import './MyBetsPanel.css';
 import { formatIst, formatIstDateTime } from '../../utils/istTime';
 
@@ -133,6 +134,7 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
     cashOutBet,
     adminSettleBet,
     myBetsLoading,
+    addBet,
   } = useBetSlip();
   const { creditCashout, showToast, user } = useAuth();
   const navigate = useNavigate();
@@ -150,7 +152,10 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
   const [loadedEvidence, setLoadedEvidence] = useState({});
   const [expandedTimeline, setExpandedTimeline] = useState({});
   const [settledVisibleCount, setSettledVisibleCount] = useState(20);
+  const [shareBet, setShareBet] = useState(null);
+  const [betInsights, setBetInsights] = useState(null);
   const panelRef = useRef(null);
+  const prevCashoutQuotesRef = useRef({});
 
   const toggleEvidence = async (betId, existingEvidence) => {
     const isOpening = !expandedEvidence[betId];
@@ -287,6 +292,42 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
       clearInterval(tick);
     };
   }, [needsCashoutQuotes, pendingCashBetIds]);
+
+  useEffect(() => {
+    const prev = prevCashoutQuotesRef.current;
+    for (const [betId, newVal] of Object.entries(cashoutQuotes)) {
+      const oldVal = Number(prev[betId]) || 0;
+      const nextVal = Number(newVal) || 0;
+      if (oldVal <= 0 || nextVal <= 0 || nextVal <= oldVal) continue;
+      const rise = nextVal - oldVal;
+      const pctRise = (rise / oldVal) * 100;
+      if (pctRise >= 8 && rise >= 20) {
+        showToast(`Cashout up · ${formatInr(nextVal)} on open bet`, 'info');
+      }
+    }
+    prevCashoutQuotesRef.current = { ...cashoutQuotes };
+  }, [cashoutQuotes, showToast]);
+
+  useEffect(() => {
+    if (!panelOpen || !user) {
+      return undefined;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiFetch('/api/bets/insights?days=7');
+        const data = await res.json().catch(() => ({}));
+        if (!cancelled && data?.success) {
+          setBetInsights(data);
+        }
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [panelOpen, user]);
 
   useEffect(() => {
     const onSettled = (ev) => {
@@ -553,6 +594,94 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
     return stored || id || 'Selection';
   };
 
+  const buildMatchFromLeg = (leg) => {
+    const live = resolveLegMatchFast(leg);
+    if (live) return live;
+
+    const matchId = String(leg?.matchId || '').trim();
+    let team1Name = leg?.team1Name;
+    let team2Name = leg?.team2Name;
+    if (!team1Name || !team2Name) {
+      const raw = String(leg?.matchName || '').trim();
+      const parts = raw.split(/\s+vs\.?\s+/i);
+      if (parts.length >= 2) {
+        team1Name = parts[0].trim();
+        team2Name = parts.slice(1).join(' vs ').trim();
+      }
+    }
+    const sport = String(leg?.sport || 'cricket').toLowerCase();
+    return {
+      id: matchId || `leg-${leg?.selectionId || leg?.selection || 'x'}`,
+      matchId: matchId || undefined,
+      sport: sport === 'football' ? 'soccer' : sport,
+      team1: { name: team1Name || 'Team 1' },
+      team2: { name: team2Name || 'Team 2' },
+      matchName: leg?.matchName || (team1Name && team2Name ? `${team1Name} vs ${team2Name}` : 'Match'),
+      isLive: false,
+      matchState: 'pre',
+    };
+  };
+
+  const handleBetAgain = (placed) => {
+    const legs = Array.isArray(placed.legs) && placed.legs.length > 0
+      ? placed.legs
+      : [{
+        matchId: placed.matchId,
+        matchName: placed.matchName,
+        marketId: placed.marketId,
+        marketName: placed.marketName,
+        selectionId: placed.selectionId || placed.selection,
+        selection: placed.selection,
+        selectionName: placed.selectionName,
+        odds: placed.odds || placed.totalOdds,
+        sport: placed.sport || placed.legs?.[0]?.sport,
+        team1Name: placed.team1Name,
+        team2Name: placed.team2Name,
+      }];
+
+    let added = 0;
+    for (const leg of legs) {
+      const match = buildMatchFromLeg(leg);
+      const selection = leg.selectionId || leg.selection;
+      const odds = Number(leg.odds);
+      if (!(Number(odds) > 1) || !selection) continue;
+      const ok = addBet(match, selection, odds, leg.selectionName || leg.selection, {
+        keepExisting: true,
+        asMulti: legs.length > 1,
+        skipMobileOpen: false,
+        marketId: leg.marketId,
+        marketName: leg.marketName,
+      });
+      if (ok) added += 1;
+    }
+    if (added > 0) {
+      showToast(
+        legs.length > 1 ? 'Selections added to your bet slip' : 'Selection added to your bet slip',
+        'success',
+      );
+    }
+  };
+
+  const betForShareCard = (placed) => {
+    const legs = Array.isArray(placed.legs) ? placed.legs : [];
+    const status = normalizeBetStatus(placed.status);
+    const firstLeg = legs[0];
+    return {
+      ...placed,
+      matchName: firstLeg ? getLegDisplayName(firstLeg, { settled: true }) : (placed.matchName || 'Match'),
+      marketName: placed.type === 'multi'
+        ? `${legs.length}-leg multi`
+        : (firstLeg?.marketName || placed.marketName || 'Market'),
+      selectionName: placed.type === 'multi'
+        ? 'Multi bet'
+        : (firstLeg ? getLegSelectionLabel(firstLeg, { settled: true }) : (placed.selectionName || 'Selection')),
+      odds: placed.totalOdds || placed.odds || firstLeg?.odds,
+      stake: placed.stake,
+      payout: placed.payout || placed.potentialReturn,
+      status: status === 'won' ? 'WON' : placed.status,
+    };
+  };
+
   const getLegScoreText = (leg, { settled = false } = {}) => {
     // Settled tabs don't need live scoreboard work — it was the main Won/Lost lag.
     if (settled) return null;
@@ -619,6 +748,12 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
           </button>
           )}
         </div>
+
+        {user && betInsights && (
+          <div className="my-bets-insights" aria-live="polite">
+            This week · P&L {formatInr(betInsights.pnl)} · Hit {betInsights.hitRate}% · Best +{formatInr(betInsights.biggestWin)}
+          </div>
+        )}
 
         <div className="my-bets-filters">
           {FILTERS.map((f) => (
@@ -835,6 +970,25 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
                   )}
 
                   {settled && (
+                    <div className="my-bets-actions">
+                      <button
+                        type="button"
+                        className="my-bets-action-btn my-bets-action-btn--primary"
+                        onClick={() => handleBetAgain(placed)}
+                      >
+                        Bet again
+                      </button>
+                      <button
+                        type="button"
+                        className="my-bets-action-btn"
+                        onClick={() => setShareBet(placed)}
+                      >
+                        Share
+                      </button>
+                    </div>
+                  )}
+
+                  {settled && (
                     <div className="my-bets-evidence-container">
                       <button
                         type="button"
@@ -1014,6 +1168,9 @@ export default function MyBetsPanel({ layout = 'sheet' } = {}) {
           )}
         </div>
           </motion.div>
+          {shareBet ? (
+            <BetSlipShareCard bet={betForShareCard(shareBet)} onClose={() => setShareBet(null)} />
+          ) : null}
         </>
       ) : null}
     </AnimatePresence>

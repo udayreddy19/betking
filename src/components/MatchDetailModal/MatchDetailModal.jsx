@@ -19,11 +19,13 @@ import BetSlipFooter from '../BetSlip/BetSlipFooter';
 import TeamJersey from '../TeamJersey/TeamJersey';
 import MatchCountdownTimer from '../MatchCountdownTimer/MatchCountdownTimer';
 import LiveChartsWidget from '../LiveChartsWidget/LiveChartsWidget';
+import LiveStreamPlayer from '../LiveStreamPlayer/LiveStreamPlayer';
 import './MatchDetailModal.css';
 
 export default function MatchDetailModal({ match, isOpen, onClose }) {
   const { addBet, isBetSelected, betCount } = useBetSlip();
   const [activeMarketCategory, setActiveMarketCategory] = useState('all');
+  const [builderMode, setBuilderMode] = useState(false);
 
   const [matchMarkets, setMatchMarkets] = useState([]);
   const oddsStateKey = matchOddsStateKey(match);
@@ -113,6 +115,26 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
   const team2Score = cricketScores.team2;
   const chaseText = getChaseText(match, { inningsNum: isSecondInnings ? 2 : 1, battingTeam: team2Name }, team1Name, team2Name);
 
+  const addBetFromModal = (selection, odds, selectionName, marketOpts = {}) => {
+    const base = {
+      skipMobileOpen: true,
+      ...marketOpts,
+    };
+    if (builderMode) {
+      addBet(match, selection, odds, selectionName, {
+        ...base,
+        singlePerMatch: false,
+        keepExisting: true,
+        asMulti: true,
+      });
+    } else {
+      addBet(match, selection, odds, selectionName, {
+        ...base,
+        singlePerMatch: true,
+      });
+    }
+  };
+
   const handleOddsClick = (arg1, arg2, arg3, arg4) => {
     let e;
     let selection;
@@ -134,9 +156,7 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
     e?.stopPropagation?.();
     if (!canBet) return;
     const marketName = typeof arg1 === 'string' && !arg1?.stopPropagation ? arg1 : 'Match Winner';
-    addBet(match, selection, odds, selectionName, {
-      singlePerMatch: true,
-      skipMobileOpen: true,
+    addBetFromModal(selection, odds, selectionName, {
       marketName,
       marketId: marketName === 'Match Winner' ? 'match_winner' : undefined,
     });
@@ -177,9 +197,19 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
                     </span>
                   )}
                 </div>
-                <button className="match-detail-close" onClick={onClose}>
-                  <IoClose />
-                </button>
+                <div className="match-detail-header-actions">
+                  <button
+                    type="button"
+                    className={`match-detail-builder-toggle${builderMode ? ' active' : ''}`}
+                    onClick={() => setBuilderMode((v) => !v)}
+                    aria-pressed={builderMode}
+                  >
+                    Bet Builder
+                  </button>
+                  <button type="button" className="match-detail-close" onClick={onClose}>
+                    <IoClose />
+                  </button>
+                </div>
               </div>
 
               {/* 10CRIC Style Live Scoreboard Header */}
@@ -244,8 +274,19 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
           );
         })()}
 
+        {isLiveNow && (
+          <div className="match-detail-live-stream">
+            <LiveStreamPlayer match={match} />
+          </div>
+        )}
+
         {/* Scrollable body: live stats, market tabs, and markets */}
         <div className="match-detail-scroll">
+        {builderMode && (
+          <div className="match-detail-builder-note" role="status">
+            Building SGM on this match
+          </div>
+        )}
         {/* 10CRIC Live Cricket Scorecard & Match Center Bar */}
         {sport === 'cricket' && isLiveNow && (
           <div className="cricket-live-center">
@@ -484,9 +525,7 @@ export default function MatchDetailModal({ match, isOpen, onClose }) {
                             onClick={(e) => {
                               e.stopPropagation();
                               if (!isOptBettable) return;
-                              addBet(match, opt.selectionId || opt.selection, opt.odds, opt.name, {
-                                singlePerMatch: true,
-                                skipMobileOpen: true,
+                              addBetFromModal(opt.selectionId || opt.selection, opt.odds, opt.name, {
                                 marketName: m.title || m.name || 'Match Winner',
                                 marketId: m.marketId || m.id || m.key || 'match_winner',
                               });

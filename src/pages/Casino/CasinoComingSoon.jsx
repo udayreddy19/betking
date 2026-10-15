@@ -8,7 +8,8 @@ export default function CasinoComingSoon() {
       <div className="product-unavailable__card">
         <h1 className="product-unavailable__title">Casino is coming soon</h1>
         <p className="product-unavailable__message">
-          Casino games are not available yet. In the meantime, enjoy live cricket and sports betting on OddsYra.
+          Casino is gated until we integrate a licensed game aggregator for India. Slots and live dealer
+          tables are not offered on OddsYra yet — sports and cricket betting stay fully available.
         </p>
         <Link to="/sports" className="product-unavailable__home">
           Browse sports

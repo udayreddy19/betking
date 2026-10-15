@@ -224,6 +224,81 @@ router.get('/api/bets/mine', requireAuth, bettingOn, async (req, res) => {
   }
 });
 
+/** GET /api/bets/insights — player P&L / hit rate for last 7 days */
+router.get(['/api/bets/insights', '/api/v1/bets/insights'], requireAuth, bettingOn, async (req, res) => {
+  try {
+    const { queryRead } = await import('../../db/pg.js');
+    const days = Math.min(90, Math.max(1, parseInt(req.query.days, 10) || 7));
+    const result = await queryRead(
+      `SELECT b.bet_id, b.stake, b.status, b.potential_payout,
+              CASE
+                WHEN UPPER(b.status::text) IN ('WON','WIN','CASHED_OUT','CASHOUT') THEN COALESCE(b.potential_payout, 0)
+                ELSE 0
+              END::float8 AS payout,
+              b.created_at
+       FROM bets b
+       WHERE b.user_id = $1
+         AND b.created_at >= NOW() - ($2::int * INTERVAL '1 day')
+       ORDER BY b.created_at DESC
+       LIMIT 500`,
+      [req.user.userId, days],
+    );
+    const rows = result.rows || [];
+    let stakeTotal = 0;
+    let returnsTotal = 0;
+    let won = 0;
+    let lost = 0;
+    let voided = 0;
+    let pending = 0;
+    let biggestWin = 0;
+    let biggestWinBetId = null;
+    for (const r of rows) {
+      const status = String(r.status || '').toUpperCase();
+      const stake = Number(r.stake) || 0;
+      const payout = Number(r.payout) || 0;
+      if (['PENDING', 'ACCEPTED', 'OPEN'].includes(status)) {
+        pending += 1;
+        continue;
+      }
+      stakeTotal += stake;
+      if (['WON', 'WIN', 'CASHED_OUT', 'CASHOUT'].includes(status)) {
+        won += 1;
+        returnsTotal += payout;
+        const profit = payout - stake;
+        if (profit > biggestWin) {
+          biggestWin = profit;
+          biggestWinBetId = r.bet_id;
+        }
+      } else if (['VOID', 'PUSH', 'REFUNDED'].includes(status)) {
+        voided += 1;
+        returnsTotal += stake;
+      } else if (['LOST', 'LOSS'].includes(status)) {
+        lost += 1;
+      }
+    }
+    const settled = won + lost + voided;
+    const hitRate = settled > 0 ? Number(((won / settled) * 100).toFixed(1)) : 0;
+    const pnl = Number((returnsTotal - stakeTotal).toFixed(2));
+    res.json({
+      success: true,
+      days,
+      betsCounted: rows.length,
+      pending,
+      won,
+      lost,
+      voided,
+      stakeTotal: Number(stakeTotal.toFixed(2)),
+      returnsTotal: Number(returnsTotal.toFixed(2)),
+      pnl,
+      hitRate,
+      biggestWin: Number(biggestWin.toFixed(2)),
+      biggestWinBetId,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get('/api/bets/:betId/evidence', requireAuth, bettingOn, async (req, res) => {
   try {
     const { betId } = req.params;

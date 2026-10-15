@@ -106,6 +106,7 @@ import adminRouter from './routes/index.js';
 
 import authInlineRouter from './routes/auth.js';
 import betsRouter from './routes/bets.js';
+import boostsRouter from './routes/boosts.js';
 import walletRouter from './routes/wallet.js';
 import liveRouter from './routes/live.js';
 import supportRouter from './routes/support.js';
@@ -180,6 +181,7 @@ app.use('/api/config', productsPublicRouter);
 app.use(walletRouter);
 app.use(bankAccountsRouter);
 app.use(betsRouter);
+app.use(boostsRouter);
 app.use(supportRouter);
 app.use(growthRouter);
 

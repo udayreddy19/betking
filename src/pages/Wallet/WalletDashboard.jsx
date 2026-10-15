@@ -570,6 +570,50 @@ export default function WalletDashboard() {
                     <span className="wallet-detail-row__key">Explanation</span>
                     <span className="wallet-detail-row__val">{getFriendlyExplanation(selectedTx)}</span>
                   </div>
+
+                  {(['deposit', 'withdraw', 'withdraw_cancel'].includes(selectedTx.type)) && (
+                    <div className="wallet-detail-row" style={{ display: 'block' }}>
+                      <span className="wallet-detail-row__key">Status timeline</span>
+                      <ol style={{ margin: '8px 0 0', paddingLeft: 18, fontSize: '0.82rem', lineHeight: 1.55 }}>
+                        {selectedTx.type === 'deposit' ? (
+                          <>
+                            <li>Order created{selectedTx.createdAt ? ` · ${formatIst(selectedTx.createdAt, { timeStyle: 'short' })}` : ''}</li>
+                            <li>
+                              {['PENDING', 'PROCESSING'].includes(String(selectedTx.status || '').toUpperCase())
+                                ? 'Awaiting UPI confirmation (usually under 2 minutes)'
+                                : 'Payment confirmed by gateway'}
+                            </li>
+                            <li>
+                              {['COMPLETED', 'SUCCESS', 'CREDITED'].includes(String(selectedTx.status || '').toUpperCase())
+                                ? 'Money arrived in wallet — ready to bet'
+                                : 'Wallet credit pending webhook / resync'}
+                            </li>
+                          </>
+                        ) : (
+                          <>
+                            <li>Withdrawal requested{selectedTx.createdAt ? ` · ${formatIst(selectedTx.createdAt, { timeStyle: 'short' })}` : ''}</li>
+                            <li>
+                              {['UNDER_REVIEW', 'PENDING', 'PROCESSING'].includes(String(selectedTx.status || '').toUpperCase())
+                                ? 'Under review · typical payout 15 min–24 hrs after approval'
+                                : 'Review complete'}
+                            </li>
+                            <li>
+                              {['COMPLETED', 'PAID', 'SUCCESS'].includes(String(selectedTx.status || '').toUpperCase())
+                                ? 'Paid to your bank / UPI'
+                                : String(selectedTx.status || '').toUpperCase() === 'CANCELLED'
+                                  ? 'Cancelled — funds released to available balance'
+                                  : 'Awaiting bank credit'}
+                            </li>
+                          </>
+                        )}
+                      </ol>
+                      {selectedTx.type === 'deposit' && ['PENDING', 'PROCESSING'].includes(String(selectedTx.status || '').toUpperCase()) && (
+                        <p style={{ margin: '8px 0 0', fontSize: '0.78rem', opacity: 0.8 }}>
+                          ETA: usually &lt; 2 minutes after you approve the UPI collect. You&apos;ll get an in-app / push alert when money arrives.
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="wallet-modal-card__footer">
