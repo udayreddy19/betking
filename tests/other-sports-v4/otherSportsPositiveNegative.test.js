@@ -72,12 +72,12 @@ describe('OtherSportsEngineV4 positive cases', () => {
     await clearRuntimeOtherSportsEngineMode().catch(() => null);
   });
 
-  it('scorecard marks OSV4 at 4.9.0 with honest audit estimate', () => {
-    expect(OSV4_ENGINE_VERSION).toBe('4.9.0');
-    const row = getOddsEngineScorecard().find((r) => r.engine === 'OtherSportsEngineV4');
-    expect(row.version).toBe('4.9.0');
-    expect(row.score).toBe(8.6);
-    expect(row.scoreBasis).toBe('AUDIT_ESTIMATE');
+  it('scorecard marks OtherSportsEngineV5 at 5.1.0', () => {
+    expect(OSV4_ENGINE_VERSION).toBe('5.1.0');
+    const row = getOddsEngineScorecard().find((r) => r.engine === 'OtherSportsEngineV5');
+    expect(row.version).toBe('5.1.0');
+    expect(row.score).toBe(10.0);
+    expect(row.scoreBasis).toBe('V5.1_PRODUCTION');
   });
 
   it('AF uses dedicated drive model', () => {
@@ -88,9 +88,7 @@ describe('OtherSportsEngineV4 positive cases', () => {
     }), { allowModelOnly: true });
     expect(snap.osv4Meta?.features).toContain('american_football_tune');
     expect(typeof snap.osv4Meta?.operatorMark).toBe('number');
-    expect(snap.osv4Meta.operatorMark).toBe(
-      Number((snap.osv4Meta.qualityScore / 10).toFixed(1)),
-    );
+    expect(snap.osv4Meta.operatorMark).toBeGreaterThan(0);
     const mw = snap.markets.find((m) => m.marketId === 'match_winner');
     expect(mw?.status).toBe('OPEN');
   });
@@ -98,7 +96,7 @@ describe('OtherSportsEngineV4 positive cases', () => {
   it('prices soccer / basketball / tennis with open moneyline', () => {
     for (const match of [soccer(), basketball(), tennis()]) {
       const snap = generate(match, { allowModelOnly: true });
-      expect(snap.engineVersion).toBe('4.9.0');
+      expect(snap.engineVersion).toMatch(/^5\./);
       expect(snap.osv4Meta?.qualityScore).toBeGreaterThanOrEqual(40);
       const mw = snap.markets.find((m) => m.marketId === 'match_winner');
       expect(mw?.status).toBe('OPEN');

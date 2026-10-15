@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { buildCanonicalFromMatch } from '../../lib/odds-shared/buildCanonicalFromMatch.mjs';
-import { generate as generateV3 } from '../../lib/odds-shared/OddsEngineV3.mjs';
-import { generate as generateV4 } from '../../lib/odds-v5/OddsEngineV4.mjs';
+import { generate as generateV3 } from '../../lib/odds-v3/OddsEngineV3.mjs';
+import { generate as generateV4 } from '../../lib/odds-v4/OddsEngineV4.mjs';
 import { chaseWinProbability } from '../../lib/odds-v5/models/WinExpectancyEngine.mjs';
 import { pOverChaseTeamTotal } from '../../lib/odds-v5/chaseTotalCaps.mjs';
 import {
@@ -137,11 +137,11 @@ describe('OddsEngineV4 — resource MW + V3 catalog', () => {
   });
 
   it('admin toggle overrides env to v4', async () => {
-    process.env.ODDS_ENGINE = 'v3';
-    await setRuntimeEngineMode('v4', { updatedBy: 'test' });
+    process.env.ODDS_ENGINE = 'v5';
+    await setRuntimeEngineMode('v4', { updatedBy: 'test', reason: 'test rollback' });
     expect(resolveOddsEngineMode()).toBe('v4');
     await clearRuntimeEngineMode({ updatedBy: 'test' });
-    expect(resolveOddsEngineMode()).toBe('v3');
+    expect(resolveOddsEngineMode()).toBe('v5');
   });
 
   it('chase near target: team/match Overs above target are long (Under short)', () => {

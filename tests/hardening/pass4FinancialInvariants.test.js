@@ -72,13 +72,13 @@ describe('Pass-4 financial invariants', () => {
     await expect(eng.checkOrLock('inv_k', 'BET_PLACE', 'h2')).rejects.toThrow(/IDEMPOTENCY_KEY_REUSE/);
   });
 
-  it('V3 override expires back to V4', async () => {
+  it('V4 override expires back to V5', async () => {
     _resetEngineModeControlForTests();
-    await setRuntimeEngineMode('v3', {
+    await setRuntimeEngineMode('v4', {
       reason: 'pass4 invariant',
       expiresAt: new Date(Date.now() - 2000).toISOString(),
     });
-    expect(resolveOddsEngineMode({ ODDS_ENGINE: undefined })).toBe('v4');
+    expect(resolveOddsEngineMode({ ODDS_ENGINE: undefined })).toBe('v5');
     _resetEngineModeControlForTests();
   });
 

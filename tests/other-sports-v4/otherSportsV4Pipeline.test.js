@@ -79,7 +79,7 @@ function iceHockeyMatch(extra = {}) {
 describe('OtherSportsEngineV4 — multi-pass pipeline integration', () => {
   it('soccer generates match_winner + extras (btts, goals, DC, HT, correct score)', () => {
     const snap = generate(soccerMatch());
-    expect(snap.engine).toBe('OtherSportsEngineV4');
+    expect(snap.engine).toBe('OtherSportsEngineV5');
     expect(snap.sport).toBe('soccer');
     expect(snap.osv4Meta).toBeDefined();
     expect(snap.osv4Meta.qualityScore).toBeGreaterThanOrEqual(0);
@@ -137,7 +137,7 @@ describe('OtherSportsEngineV4 — multi-pass pipeline integration', () => {
 
   it('baseball generates moneyline + run line + total runs', () => {
     const snap = generate(baseballMatch());
-    expect(snap.engine).toBe('OtherSportsEngineV4');
+    expect(snap.engine).toBe('OtherSportsEngineV5');
     const ids = snap.markets.filter((m) => m.status === 'OPEN').map((m) => m.marketId);
     expect(ids).toContain('match_winner');
     expect(ids).toContain('run_line');
@@ -151,7 +151,7 @@ describe('OtherSportsEngineV4 — multi-pass pipeline integration', () => {
 
   it('ice-hockey generates moneyline + puck line + total goals', () => {
     const snap = generate(iceHockeyMatch());
-    expect(snap.engine).toBe('OtherSportsEngineV4');
+    expect(snap.engine).toBe('OtherSportsEngineV5');
     const ids = snap.markets.filter((m) => m.status === 'OPEN').map((m) => m.marketId);
     expect(ids).toContain('match_winner');
     expect(ids).toContain('puck_line');

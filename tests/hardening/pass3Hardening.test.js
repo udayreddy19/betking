@@ -111,37 +111,37 @@ describe('Pass-3 financial + risk unification', () => {
     expect(sim.hierarchy).toBeTruthy();
   });
 
-  it('V3 engine override requires reason and sets expiry', async () => {
-    await expect(setRuntimeEngineMode('v3', { updatedBy: 'test' })).rejects.toThrow(/Reason required/);
-    const status = await setRuntimeEngineMode('v3', {
+  it('V4 engine override requires reason and sets expiry', async () => {
+    await expect(setRuntimeEngineMode('v4', { updatedBy: 'test' })).rejects.toThrow(/Reason required/);
+    const status = await setRuntimeEngineMode('v4', {
       updatedBy: 'test',
       reason: 'incident rollback drill',
       ttlHours: 2,
     });
-    expect(status.runtimeOverride).toBe('v3');
+    expect(status.runtimeOverride).toBe('v4');
     expect(status.overrideExpiresAt).toBeTruthy();
     expect(status.overrideReason).toBe('incident rollback drill');
-    expect(resolveOddsEngineMode()).toBe('v3');
+    expect(resolveOddsEngineMode()).toBe('v4');
   });
 
-  it('expired V3 override falls back to V4 default', async () => {
-    await setRuntimeEngineMode('v3', {
+  it('expired V4 override falls back to V5 default', async () => {
+    await setRuntimeEngineMode('v4', {
       updatedBy: 'test',
       reason: 'expired test',
       expiresAt: new Date(Date.now() - 1000).toISOString(),
     });
-    expect(resolveOddsEngineMode({ ODDS_ENGINE: undefined })).toBe('v4');
+    expect(resolveOddsEngineMode({ ODDS_ENGINE: undefined })).toBe('v5');
     expect(getEngineModeStatus().runtimeOverride).toBeNull();
   });
 
-  it('other-sports V3 override also requires reason + expiry', async () => {
-    await expect(setRuntimeOtherSportsEngineMode('v3', {})).rejects.toThrow(/Reason required/);
-    const st = await setRuntimeOtherSportsEngineMode('v3', {
+  it('other-sports V4 override also requires reason + expiry', async () => {
+    await expect(setRuntimeOtherSportsEngineMode('v4', {})).rejects.toThrow(/Reason required/);
+    const st = await setRuntimeOtherSportsEngineMode('v4', {
       reason: 'os failover drill',
       ttlHours: 1,
     });
     expect(st.overrideExpiresAt).toBeTruthy();
-    expect(getOtherSportsEngineModeStatus().runtimeOverride).toBe('v3');
+    expect(getOtherSportsEngineModeStatus().runtimeOverride).toBe('v4');
   });
 
   it('payment state machine rejects illegal transitions', () => {

@@ -3,8 +3,8 @@
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { buildCanonicalFromMatch } from '../../lib/odds-shared/buildCanonicalFromMatch.mjs';
-import { generate as generateV4, V4_ENGINE_VERSION } from '../../lib/odds-v5/OddsEngineV4.mjs';
-import { generate as generateV3 } from '../../lib/odds-shared/OddsEngineV3.mjs';
+import { generate as generateV4, V4_ENGINE_VERSION } from '../../lib/odds-v4/OddsEngineV4.mjs';
+import { generate as generateV3 } from '../../lib/odds-v3/OddsEngineV3.mjs';
 import { V4_MARGIN_CONFIG, tightenV4Markets, resolveSrlV4Margins } from '../../lib/odds-v5/v4HouseProtect.mjs';
 import { SRL_MARGIN_CONFIG } from '../../lib/odds-shared/pricing/MarginCalculator.mjs';
 import { enrichIplSrlMatchCard } from '../../lib/iplSrlCardMarkets.mjs';

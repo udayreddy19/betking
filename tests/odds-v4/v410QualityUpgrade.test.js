@@ -17,7 +17,7 @@ import { ProductionObservationRecorder } from '../../lib/odds-v5/calibration/Pro
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { V4_ENGINE_VERSION } from '../../lib/odds-v5/OddsEngineV4.mjs';
+import { V4_ENGINE_VERSION } from '../../lib/odds-v4/OddsEngineV4.mjs';
 
 describe('V4.10 version', () => {
   it('stamps 4.10.0', () => {

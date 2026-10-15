@@ -9,7 +9,7 @@ import {
   inningsOneWinProbability,
 } from '../../lib/odds-v5/models/WinExpectancyEngine.mjs';
 import { buildCanonicalFromMatch } from '../../lib/odds-shared/buildCanonicalFromMatch.mjs';
-import { generate as generateOddsV4 } from '../../lib/odds-v5/OddsEngineV4.mjs';
+import { generate as generateOddsV4 } from '../../lib/odds-v4/OddsEngineV4.mjs';
 
 describe('Priority 6: Cricket Format-Aware Resource Model', () => {
   it('correctly handles Test cricket with null ballsRemaining without inventing values', () => {

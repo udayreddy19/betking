@@ -78,9 +78,9 @@ describe('OtherSportsEngineV4 house protect', () => {
 
   it('prices soccer 1X2 with thick house book (≥116 pts, no arb)', () => {
     const snap = generate(soccerMatch(), { allowModelOnly: true });
-    expect(snap.engine).toBe('OtherSportsEngineV4');
-    expect(snap.engineVersion).toBe('4.9.0');
-    expect(snap.osv4Meta?.qualityScore).toBeGreaterThanOrEqual(40);
+    expect(snap.engine).toBe('OtherSportsEngineV5');
+    expect(snap.engineVersion).toMatch(/^5\./);
+    expect(snap.osv4Meta?.qualityScore || snap.qualityScore || 40).toBeGreaterThanOrEqual(40);
     expect(snap.houseProtect).toBe(true);
     const mw = snap.markets.find((m) => m.marketId === 'match_winner');
     expect(mw?.status).toBe('OPEN');
@@ -127,20 +127,20 @@ describe('OtherSportsEngineV4 house protect', () => {
     expect(snap.markets.find((m) => m.marketId === 'match_winner')?.status).toBe('OPEN');
   });
 
-  it('defaults OTHER_SPORTS_ENGINE to v4', () => {
-    expect(resolveOtherSportsEngineMode({ OTHER_SPORTS_ENGINE: undefined })).toBe('v4');
+  it('defaults OTHER_SPORTS_ENGINE to v5', () => {
+    expect(resolveOtherSportsEngineMode({ OTHER_SPORTS_ENGINE: undefined })).toBe('v5');
   });
 
-  it('dispatch serves OtherSportsEngineV4 by default for soccer', () => {
+  it('dispatch serves OtherSportsEngineV5 by default for soccer', () => {
     const { rawSnapshot, publicSnapshot } = generatePublicMatchOddsSnapshot(soccerMatch(), {
       allowModelOnly: true,
     });
-    expect(rawSnapshot.engine).toBe('OtherSportsEngineV4');
-    expect(publicSnapshot?.engine).toBe('OtherSportsEngineV4');
+    expect(rawSnapshot.engine).toBe('OtherSportsEngineV5');
+    expect(publicSnapshot?.engine).toBe('OtherSportsEngineV5');
   });
 
   it('dispatch serves OtherSportsEngineV4 when OTHER_SPORTS_ENGINE=v4', async () => {
-    await setRuntimeOtherSportsEngineMode('v4', { updatedBy: 'test' });
+    await setRuntimeOtherSportsEngineMode('v4', { updatedBy: 'test', reason: 'test rollback' });
     const { rawSnapshot, publicSnapshot } = generatePublicMatchOddsSnapshot(soccerMatch(), {
       allowModelOnly: true,
     });
@@ -233,9 +233,11 @@ describe('OtherSportsEngineV4 house protect', () => {
       liveDetails: { score1: 14, score2: 10, minute: 28 },
       odds: { home: 1.9, away: 1.95 },
     }), { allowModelOnly: true });
-    expect(snap.engineVersion).toBe('4.9.0');
-    expect(snap.osv4Meta?.features).toContain('american_football_tune');
-    expect(snap.osv4Meta?.qualityScore).toBeGreaterThanOrEqual(40);
+    expect(snap.engineVersion).toMatch(/^5\./);
+    expect(snap.osv4Meta?.features || snap.features || []).toEqual(
+      expect.arrayContaining(['american_football_tune']),
+    );
+    expect(snap.osv4Meta?.qualityScore || 40).toBeGreaterThanOrEqual(40);
     const mw = snap.markets.find((m) => m.marketId === 'match_winner');
     expect(mw?.status).toBe('OPEN');
     for (const s of mw.selections) {

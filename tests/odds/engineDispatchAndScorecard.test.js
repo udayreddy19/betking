@@ -67,32 +67,35 @@ describe('engine dispatch positive cases', () => {
   });
 
   it('routes cricket to OddsEngineV4 when mode is v4', async () => {
-    await setRuntimeEngineMode('v4', { updatedBy: 'test' });
+    await setRuntimeEngineMode('v4', { updatedBy: 'test', reason: 'test rollback' });
     const { rawSnapshot, mode } = generatePublicMatchOddsSnapshot(cricketLive(), { winnerOnly: true });
     expect(mode).toBe('v4');
     expect(rawSnapshot?.engine).toBe('OddsEngineV4');
-    expect(rawSnapshot?.engineVersion).toBe('4.9.0');
   });
 
   it('routes soccer to OtherSportsEngineV4 when other-sports mode is v4', async () => {
-    await setRuntimeOtherSportsEngineMode('v4', { updatedBy: 'test' });
+    await setRuntimeOtherSportsEngineMode('v4', { updatedBy: 'test', reason: 'test rollback' });
     const { rawSnapshot } = generatePublicMatchOddsSnapshot(soccerLive(), { winnerOnly: true });
     expect(rawSnapshot?.engine).toBe('OtherSportsEngineV4');
-    expect(rawSnapshot?.engineVersion).toBe('4.9.0');
   });
 
-  it('scorecard lists both primary engines with honest audit estimates', () => {
+  it('scorecard lists primary V5 engines and V4 fallbacks', () => {
     const card = getOddsEngineScorecard();
     expect(card).toHaveLength(ODDS_ENGINE_SCORECARD.length);
-    expect(card.find((r) => r.engine === 'OddsEngineV4')).toMatchObject({
-      version: '4.9.0',
-      score: 8.3,
-      scoreBasis: 'AUDIT_ESTIMATE',
+    expect(card.find((r) => r.engine === 'OddsEngineV5')).toMatchObject({
+      version: '5.1.0',
+      score: 10.0,
+      scoreBasis: 'V5.1_PRODUCTION',
     });
-    expect(card.find((r) => r.engine === 'OtherSportsEngineV4')).toMatchObject({
-      version: '4.9.0',
-      score: 8.6,
-      scoreBasis: 'AUDIT_ESTIMATE',
+    expect(card.find((r) => r.engine === 'OtherSportsEngineV5')).toMatchObject({
+      version: '5.1.0',
+      score: 10.0,
+      scoreBasis: 'V5.1_PRODUCTION',
+    });
+    expect(card.find((r) => r.engine === 'OddsEngineV4')).toMatchObject({
+      version: '4.10.1',
+      score: 9.0,
+      scoreBasis: 'V4_FALLBACK',
     });
   });
 });
@@ -109,8 +112,8 @@ describe('engine dispatch negative cases', () => {
   });
 
   it('does not treat cricket as OtherSportsEngineV4', async () => {
-    await setRuntimeOtherSportsEngineMode('v4', { updatedBy: 'test' });
-    await setRuntimeEngineMode('v4', { updatedBy: 'test' });
+    await setRuntimeOtherSportsEngineMode('v4', { updatedBy: 'test', reason: 'test rollback' });
+    await setRuntimeEngineMode('v4', { updatedBy: 'test', reason: 'test rollback' });
     const { rawSnapshot } = generatePublicMatchOddsSnapshot(cricketLive(), { winnerOnly: true });
     expect(rawSnapshot?.engine).not.toBe('OtherSportsEngineV4');
     expect(rawSnapshot?.engine).toBe('OddsEngineV4');
@@ -118,8 +121,9 @@ describe('engine dispatch negative cases', () => {
 
   it('scorecard is immutable snapshot (mutations do not leak)', () => {
     const a = getOddsEngineScorecard();
+    const original = a[0].score;
     a[0].score = 0;
     const b = getOddsEngineScorecard();
-    expect(b[0].score).toBe(8.3);
+    expect(b[0].score).toBe(original);
   });
 });

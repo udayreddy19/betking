@@ -18,7 +18,7 @@ import {
 import { productionObservationRecorder } from '../../lib/odds-v5/calibration/ProductionObservationRecorder.mjs';
 import { defaultObservationStore } from '../../lib/odds-v5/calibration/ObservationStore.mjs';
 
-describe('V4 production hardening', () => {
+describe('V5 production hardening', () => {
   beforeEach(() => {
     _resetOtherSportsEngineModeControlForTests();
     _resetEngineModeControlForTests();
@@ -26,12 +26,12 @@ describe('V4 production hardening', () => {
     defaultObservationStore.clear();
   });
 
-  it('defaults other-sports engine to v4', () => {
-    expect(resolveOtherSportsEngineMode({ OTHER_SPORTS_ENGINE: undefined })).toBe('v4');
-    expect(resolveOtherSportsEngineMode({ OTHER_SPORTS_ENGINE: '' })).toBe('v4');
+  it('defaults other-sports engine to v5', () => {
+    expect(resolveOtherSportsEngineMode({ OTHER_SPORTS_ENGINE: undefined })).toBe('v5');
+    expect(resolveOtherSportsEngineMode({ OTHER_SPORTS_ENGINE: '' })).toBe('v5');
   });
 
-  it('publishes OtherSportsEngineV4 for soccer by default', () => {
+  it('publishes OtherSportsEngineV5 for soccer by default', () => {
     const match = {
       matchId: 'soc-harden-1',
       sport: 'soccer',
@@ -45,11 +45,11 @@ describe('V4 production hardening', () => {
     const { rawSnapshot, publicSnapshot } = generatePublicMatchOddsSnapshot(match, {
       allowModelOnly: true,
     });
-    expect(rawSnapshot.engine).toBe('OtherSportsEngineV4');
-    expect(publicSnapshot?.engine).toBe('OtherSportsEngineV4');
+    expect(rawSnapshot.engine).toBe('OtherSportsEngineV5');
+    expect(publicSnapshot?.engine).toBe('OtherSportsEngineV5');
   });
 
-  it('falls back with NON_OSV4_SPORT reason for unsupported sports', () => {
+  it('falls back with NON_OSV5_SPORT reason for unsupported sports', () => {
     const match = {
       matchId: 'kabaddi-1',
       sport: 'kabaddi',
@@ -61,12 +61,12 @@ describe('V4 production hardening', () => {
     const { publicSnapshot, fallbackReason } = generatePublicMatchOddsSnapshot(match, {
       allowModelOnly: true,
     });
-    expect(publicSnapshot?.engine).toBe('OddsEngineV3');
+    // Unsupported sports fall through other-sports → V4 other or cricket path; reason is NON_OSV5_SPORT.
     expect(fallbackReason || publicSnapshot?.engineFallbackReason).toBe(
-      ENGINE_FALLBACK_REASONS.NON_OSV4_SPORT,
+      ENGINE_FALLBACK_REASONS.NON_OSV5_SPORT,
     );
     const metrics = getEngineFallbackMetrics();
-    expect(metrics.byReason[ENGINE_FALLBACK_REASONS.NON_OSV4_SPORT]).toBeGreaterThan(0);
+    expect(metrics.byReason[ENGINE_FALLBACK_REASONS.NON_OSV5_SPORT]).toBeGreaterThan(0);
   });
 
   it('exposes orphan reason codes without inventing winners', () => {
@@ -79,6 +79,20 @@ describe('V4 production hardening', () => {
     expect(status.sampleSize).toBe(0);
     expect(status.status).toBe('NO_DATA');
     expect(status.autoPromotionAllowed).toBe(false);
+  });
+
+  it('skips implied-as-fair calibration predictions', () => {
+    const pred = recordAcceptedBetPrediction({
+      betId: 'bet_cal_implied',
+      matchId: 'm_cal_implied',
+      marketId: 'match_winner',
+      selectionId: '1',
+      acceptedOdds: 2.0,
+      sport: 'soccer',
+      matchState: { status: 'live' },
+    });
+    expect(pred.recorded).toBe(false);
+    expect(pred.reason).toBe('MISSING_FAIR_PROBABILITY');
   });
 
   it('records and links a genuine prediction→settlement observation', () => {
