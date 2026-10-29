@@ -108,6 +108,9 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
   const [processingOrderId, setProcessingOrderId] = useState('');
   const [processingProgress, setProcessingProgress] = useState(null);
   const [allowUserSelection, setAllowUserSelection] = useState(false);
+  const [upiCollect, setUpiCollect] = useState(null);
+  const [upiUtr, setUpiUtr] = useState('');
+  const [upiSubmitted, setUpiSubmitted] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -148,10 +151,15 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
         if (!cancelled) {
           setProvidersFetchFailed(false);
           setPaymentsAvailable(data.paymentsAvailable !== false);
-          setAvailableProviders(data.providers || []);
           setAllowUserSelection(Boolean(data.allowUserSelection));
-          const primary = data.primaryProvider || data.defaultProvider || 'CASHFREE';
-          setSelectedProvider(primary);
+          const providers = (data.providers || []).filter((p) => {
+            const name = String(p.provider || p.name || '').toUpperCase();
+            return ['RAZORPAY', 'HDFC', 'UPI'].includes(name);
+          });
+          setAvailableProviders(providers);
+          const primary = String(data.primaryProvider || data.defaultProvider || 'RAZORPAY').toUpperCase();
+          const names = providers.map((p) => String(p.provider || p.name || '').toUpperCase());
+          setSelectedProvider(names.includes(primary) ? primary : (names[0] || 'RAZORPAY'));
         }
       })
       .catch(() => {
@@ -226,6 +234,12 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
   const fallbackReturnPath = bettingEnabled ? '/sports' : '/wallet';
 
   const handleBack = () => {
+    if (upiCollect && !upiSubmitted) {
+      setUpiCollect(null);
+      setUpiUtr('');
+      setErrorMsg('');
+      return;
+    }
     if (onClose) {
       onClose();
     } else {
@@ -243,6 +257,72 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
   const handleViewHistory = () => {
     if (onClose) onClose();
     navigate('/wallet');
+  };
+
+  const openUpiCollect = async (depositAmt) => {
+    setErrorMsg('');
+    setIsLoading(true);
+    try {
+      const orderRes = await apiFetch('/api/v1/payments/create-order', {
+        method: 'POST',
+        body: JSON.stringify({ amount: depositAmt, currency: 'INR', provider: 'UPI' }),
+      });
+      const orderData = await orderRes.json();
+      if (!orderRes.ok) {
+        throw new Error(orderData.error || orderData.code || 'Unable to start UPI payment');
+      }
+      if (!orderData.vpa || !orderData.upiUri) {
+        throw new Error('UPI collect is not configured. Ask support to set the UPI ID.');
+      }
+      setUpiCollect({
+        amount: depositAmt,
+        depositId: orderData.depositId || orderData.orderId,
+        orderId: orderData.orderId || orderData.depositId,
+        vpa: orderData.vpa,
+        payeeName: orderData.payeeName || 'OddsYra',
+        upiUri: orderData.upiUri,
+        qrDataUrl: orderData.qrDataUrl || '',
+      });
+      setUpiUtr('');
+      setUpiSubmitted(false);
+    } catch (err) {
+      setErrorMsg(err.message || 'Unable to start UPI payment');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const submitUpiUtr = async (e) => {
+    if (e) e.preventDefault();
+    if (!upiCollect?.depositId) return;
+    const utr = String(upiUtr || '').trim().toUpperCase();
+    if (utr.length < 6) {
+      setErrorMsg('Enter the UTR / UPI reference from your payment app.');
+      return;
+    }
+    setIsLoading(true);
+    setErrorMsg('');
+    try {
+      const res = await apiFetch('/api/v1/payments/upi/submit-utr', {
+        method: 'POST',
+        body: JSON.stringify({ depositId: upiCollect.depositId, utr }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || data.code || 'Could not submit UTR');
+      }
+      setUpiSubmitted(true);
+      setLastTransaction({
+        amount: upiCollect.amount,
+        orderId: utr,
+        method: 'UPI Collect',
+        date: formatIstDateTime(new Date()),
+      });
+    } catch (err) {
+      setErrorMsg(err.message || 'Could not submit UTR');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const openHdfcPayment = async (depositAmt) => {
@@ -513,6 +593,8 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
         await openHdfcPayment(parsedAmount);
       } else if (selectedProvider === 'RAZORPAY') {
         await openRazorpayPayment(parsedAmount);
+      } else if (selectedProvider === 'UPI') {
+        await openUpiCollect(parsedAmount);
       } else {
         await openCashfreePayment(parsedAmount);
       }
@@ -563,8 +645,122 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
       {/* Main Content Area */}
       <div className="deposit-flow-content">
         <AnimatePresence mode="wait">
-          {/* 1. SUCCESS VIEW */}
-          {isSuccess ? (
+          {upiSubmitted ? (
+            <motion.div
+              key="upi-pending"
+              className="deposit-success-card"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <div className="deposit-success-badge-wrap">
+                <div className="deposit-success-ring" />
+                <div className="deposit-success-check">
+                  <FiCheck size={28} />
+                </div>
+              </div>
+              <h2 className="deposit-success-title">UTR submitted</h2>
+              <p className="deposit-success-amount">
+                {formatInr(lastTransaction?.amount || upiCollect?.amount || parsedAmount)}
+              </p>
+              <p className="deposit-success-desc">
+                Payment sent to {upiCollect?.vpa}. Wallet credits after OddsYra verifies the UTR.
+              </p>
+              <div className="deposit-tx-body" style={{ marginTop: 12 }}>
+                <div className="deposit-tx-row">
+                  <span className="tx-row-label">UTR</span>
+                  <span className="tx-row-val tx-row-mono">{lastTransaction?.orderId}</span>
+                </div>
+              </div>
+              <div className="deposit-success-actions">
+                <button type="button" className="deposit-primary-cta" onClick={handleViewHistory}>
+                  View wallet
+                </button>
+              </div>
+            </motion.div>
+          ) : upiCollect ? (
+            <motion.form
+              key="upi-collect"
+              className="deposit-form-flow"
+              onSubmit={submitUpiUtr}
+              noValidate
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              {errorMsg && (
+                <div className="deposit-alert-banner" role="alert">
+                  <FiAlertCircle size={16} className="deposit-alert-icon" />
+                  <span className="deposit-alert-text">{errorMsg}</span>
+                </div>
+              )}
+              <section className="deposit-section-card deposit-upi-collect-card">
+                <span className="deposit-section-label">PAY TO THIS UPI ID</span>
+                <p className="deposit-upi-amount">{formatInr(upiCollect.amount)}</p>
+                {upiCollect.qrDataUrl ? (
+                  <img
+                    className="deposit-upi-qr"
+                    src={upiCollect.qrDataUrl}
+                    alt={`UPI QR for ${upiCollect.vpa}`}
+                  />
+                ) : null}
+                <button
+                  type="button"
+                  className="deposit-upi-vpa"
+                  onClick={() => navigator.clipboard?.writeText(upiCollect.vpa).catch(() => {})}
+                >
+                  {upiCollect.vpa}
+                  <span>Copy</span>
+                </button>
+                <p className="deposit-upi-payee">Payee: {upiCollect.payeeName}</p>
+                <div className="deposit-upi-apps">
+                  {[
+                    { id: 'gpay', label: 'GPay' },
+                    { id: 'phonepe', label: 'PhonePe' },
+                    { id: 'paytm', label: 'Paytm' },
+                    { id: 'other', label: 'Other UPI' },
+                  ].map((app) => (
+                    <a
+                      key={app.id}
+                      className="deposit-upi-app-btn"
+                      href={
+                        app.id === 'other'
+                          ? upiCollect.upiUri
+                          : upiCollect.upiUri.replace(
+                            'upi://pay?',
+                            app.id === 'gpay'
+                              ? 'gpay://upi/pay?'
+                              : app.id === 'phonepe'
+                                ? 'phonepe://pay?'
+                                : 'paytmmp://pay?',
+                          )
+                      }
+                    >
+                      {app.label}
+                    </a>
+                  ))}
+                </div>
+              </section>
+              <section className="deposit-section-card">
+                <label htmlFor="upi-utr-input" className="deposit-section-label">
+                  ENTER UTR AFTER PAYING
+                </label>
+                <input
+                  id="upi-utr-input"
+                  className="deposit-amount-input deposit-upi-utr-input"
+                  value={upiUtr}
+                  onChange={(e) => { setUpiUtr(e.target.value.toUpperCase()); setErrorMsg(''); }}
+                  placeholder="Bank UTR / UPI reference"
+                  autoComplete="off"
+                />
+              </section>
+              <div className="deposit-sticky-bar">
+                <button type="submit" className="deposit-submit-button" disabled={isLoading || upiUtr.trim().length < 6}>
+                  {isLoading ? 'Submitting…' : 'I have paid'}
+                </button>
+              </div>
+            </motion.form>
+          ) : isSuccess ? (
             <motion.div
               key="success"
               className="deposit-success-card"
@@ -795,7 +991,7 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
                           className={`deposit-provider-tab ${isActive ? 'deposit-provider-tab--active' : ''}`}
                           onClick={() => setSelectedProvider(pUpper)}
                         >
-                          <span>{pUpper === 'HDFC' ? '🏦 HDFC SmartGateway' : pUpper === 'CASHFREE' ? '⚡ Cashfree' : '🛡️ Razorpay'}</span>
+                          <span>{pUpper === 'HDFC' ? '🏦 HDFC SmartGateway' : pUpper === 'UPI' ? '⚡ UPI Collect' : '🛡️ Razorpay'}</span>
                         </button>
                       );
                     })}

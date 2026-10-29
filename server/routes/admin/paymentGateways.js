@@ -17,7 +17,8 @@ const ALLOWED_ROLES = [
  */
 router.get('/', adminAuth, requireRole(ALLOWED_ROLES), async (req, res) => {
   try {
-    const gateways = await paymentProviderService.getGatewayConfigs();
+    const gateways = (await paymentProviderService.getGatewayConfigs())
+      .filter((g) => paymentProviderService.isAdminVisibleProvider(g.provider));
     res.json({
       success: true,
       gateways,
@@ -32,8 +33,9 @@ router.get('/', adminAuth, requireRole(ALLOWED_ROLES), async (req, res) => {
  * PATCH /api/admin/payment-gateways/:provider
  * Toggle gateway state, set primary, or toggle allow_user_selection.
  */
-router.patch('/:provider', adminAuth, requireRole(ALLOWED_ROLES), async (req, res) => {
+router.patch('/:provider', adminAuth, requireRole(ALLOWED_ROLES), async (req, res, next) => {
   const provider = String(req.params.provider).toUpperCase();
+  if (provider === 'ROUTING') return next();
   const adminId = req.admin?.adminId || req.admin?.id || 'admin';
 
   try {
@@ -44,6 +46,7 @@ router.patch('/:provider', adminAuth, requireRole(ALLOWED_ROLES), async (req, re
         isPrimary: req.body.isPrimary,
         allowUserSelection: req.body.allowUserSelection,
         environment: req.body.environment,
+        settings: req.body.settings,
       },
       adminId
     );
@@ -58,10 +61,12 @@ router.patch('/:provider', adminAuth, requireRole(ALLOWED_ROLES), async (req, re
         enabled: req.body.enabled,
         isPrimary: req.body.isPrimary,
         allowUserSelection: req.body.allowUserSelection,
+        settings: req.body.settings,
       },
     });
 
-    const gateways = await paymentProviderService.getGatewayConfigs();
+    const gateways = (await paymentProviderService.getGatewayConfigs())
+      .filter((g) => paymentProviderService.isAdminVisibleProvider(g.provider));
 
     res.json({
       success: true,

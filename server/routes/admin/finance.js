@@ -108,8 +108,8 @@ router.get('/deposits', requirePermission('finance'), async (req, res) => {
     }
     params.push(limit);
     const result = await queryRead(
-      `SELECT deposit_id, user_id, amount, currency, status,
-              payment_id, order_id, created_at, updated_at
+      `SELECT deposit_id, user_id, amount, currency, status, provider,
+              payment_id, order_id, raw_payload, created_at, updated_at
        FROM deposits
        ${where}
        ORDER BY created_at DESC
@@ -117,23 +117,44 @@ router.get('/deposits', requirePermission('finance'), async (req, res) => {
       params,
     );
     res.json({
-      deposits: (result.rows || []).map((r) => ({
-        id: r.deposit_id,
-        depositId: r.deposit_id,
-        userId: r.user_id,
-        amount: Number(r.amount || 0),
-        currency: r.currency || 'INR',
-        status: String(r.status || '').toUpperCase(),
-        method: null,
-        razorpayPaymentId: r.payment_id || null,
-        razorpayOrderId: r.order_id || null,
-        createdAt: r.created_at,
-        updatedAt: r.updated_at,
-      })),
+      deposits: (result.rows || []).map((r) => {
+        const payload = r.raw_payload && typeof r.raw_payload === 'object' ? r.raw_payload : {};
+        return {
+          id: r.deposit_id,
+          depositId: r.deposit_id,
+          userId: r.user_id,
+          amount: Number(r.amount || 0),
+          currency: r.currency || 'INR',
+          status: String(r.status || '').toUpperCase(),
+          provider: String(r.provider || '').toUpperCase() || null,
+          method: String(r.provider || '').toUpperCase() === 'UPI' ? 'UPI' : null,
+          utr: payload.utr || (String(r.provider || '').toUpperCase() === 'UPI' ? r.payment_id : null) || null,
+          vpa: payload.vpa || null,
+          razorpayPaymentId: r.payment_id || null,
+          razorpayOrderId: r.order_id || null,
+          createdAt: r.created_at,
+          updatedAt: r.updated_at,
+        };
+      }),
       count: (result.rows || []).length,
     });
   } catch (err) {
     res.status(500).json({ deposits: [], error: err.message });
+  }
+});
+
+/** POST /api/admin/finance/deposits/:depositId/confirm-upi — credit a pending UPI collect deposit */
+router.post('/deposits/:depositId/confirm-upi', requirePermission('finance'), async (req, res) => {
+  try {
+    const { depositEngine } = await import('../../../lib/depositEngine.mjs');
+    const result = await depositEngine.confirmUpiCollect({
+      depositId: req.params.depositId,
+      utr: req.body?.utr,
+      adminId: req.admin?.adminId || req.admin?.id || 'admin',
+    });
+    res.json({ success: true, message: 'UPI deposit credited', result });
+  } catch (err) {
+    res.status(err.status || 400).json({ success: false, error: err.message, code: err.code });
   }
 });
 
