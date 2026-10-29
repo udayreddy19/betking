@@ -765,27 +765,6 @@
   display: block;
 }
 
-.deposit-upi-vpa {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px dashed rgba(16, 185, 129, 0.45);
-  background: rgba(16, 185, 129, 0.08);
-  color: #d1fae5;
-  border-radius: 10px;
-  padding: 8px 12px;
-  font-weight: 800;
-  font-size: 0.95rem;
-  cursor: pointer;
-}
-
-.deposit-upi-vpa span {
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: #6ee7b7;
-  text-transform: uppercase;
-}
-
 .deposit-upi-payee {
   margin: 8px 0 0;
   font-size: 0.78rem;
