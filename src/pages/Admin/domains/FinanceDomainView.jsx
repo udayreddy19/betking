@@ -1650,10 +1650,16 @@ function DepositsReviewPanel() {
           { header: 'Amount', key: 'amount', render: (r) => money(r.amount) },
           { header: 'Status', key: 'status', render: (r) => <StatusBadge status={r.status} /> },
           {
-            header: 'Payment',
+            header: 'Gateway',
+            key: 'provider',
+            hideOnMobile: true,
+            render: (r) => r.provider || '—',
+          },
+          {
+            header: 'Payment / UTR',
             key: 'razorpayPaymentId',
             hideOnMobile: true,
-            render: (r) => r.razorpayPaymentId || '—',
+            render: (r) => r.utr || r.razorpayPaymentId || '—',
           },
           {
             header: 'Created',
@@ -1665,7 +1671,30 @@ function DepositsReviewPanel() {
             key: 'action',
             sortable: false,
             render: (r) => {
-              const ok = REFUNDABLE_DEPOSIT.has(String(r.status || '').toUpperCase());
+              const status = String(r.status || '').toUpperCase();
+              const isUpiPending = r.provider === 'UPI' && (status === 'PENDING' || status === 'CREATED') && r.utr;
+              if (isUpiPending) {
+                return (
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn--primary admin-btn--sm"
+                    onClick={async () => {
+                      try {
+                        await adminApiClient.post(`/finance/deposits/${encodeURIComponent(r.depositId || r.id)}/confirm-upi`, {
+                          utr: r.utr,
+                        });
+                        showToast('UPI deposit credited', 'success');
+                        load();
+                      } catch (err) {
+                        showToast(err.message || 'Failed to confirm UPI', 'error');
+                      }
+                    }}
+                  >
+                    Confirm UPI
+                  </button>
+                );
+              }
+              const ok = REFUNDABLE_DEPOSIT.has(status);
               if (!ok) return <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-muted)' }}>—</span>;
               return (
                 <button

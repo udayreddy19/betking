@@ -57,9 +57,8 @@ async function waitForWalletCredit(refreshWallet, startBalance, attempts = 8) {
 
 const PROVIDER_LABELS = {
   RAZORPAY: '🛡️ Razorpay',
-  PAYU: '💳 PayU',
-  PINELABS: '🌲 Pine Labs',
   HDFC: '🏦 HDFC SmartGateway',
+  UPI: '⚡ UPI Collect',
 };
 
 function providerLabel(pUpper) {

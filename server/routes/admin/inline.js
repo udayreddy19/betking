@@ -1193,9 +1193,9 @@ router.delete('/api/admin/trading/fast-freeze/:targetId', adminAuth, requireRole
 let runtimeGatewayRouting = {
   routingMode: 'WEIGHTED', // 'WEIGHTED' | 'PRIMARY' | 'HEALTH_PRIORITY'
   weights: {
-    RAZORPAY: 50,
-    CASHFREE: 50,
-    MANUAL_UPI: 0,
+    RAZORPAY: 40,
+    HDFC: 40,
+    UPI: 20,
   },
   autoPayoutRules: {
     enabled: true,

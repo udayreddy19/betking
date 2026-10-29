@@ -34,7 +34,7 @@ export default function PaymentGatewaysView() {
 
   const [routingConfig, setRoutingConfig] = useState({
     routingMode: 'WEIGHTED',
-    weights: { RAZORPAY: 50, PAYU: 50, MANUAL_UPI: 0 },
+    weights: { RAZORPAY: 40, HDFC: 40, UPI: 20 },
     autoPayoutRules: {
       enabled: true,
       maxInstantAmount: 5000,
@@ -44,6 +44,8 @@ export default function PaymentGatewaysView() {
     },
   });
   const [savingRouting, setSavingRouting] = useState(false);
+  const [upiForm, setUpiForm] = useState({ vpa: '', payeeName: 'OddsYra' });
+  const [savingUpi, setSavingUpi] = useState(false);
 
   const fetchGateways = useCallback(async () => {
     try {
@@ -55,7 +57,15 @@ export default function PaymentGatewaysView() {
         adminApiClient.get('/products'),
       ]);
       if (res.status === 'fulfilled') {
-        setGateways(res.value?.gateways || []);
+        const list = res.value?.gateways || [];
+        setGateways(list);
+        const upiRow = list.find((g) => g.provider === 'UPI');
+        if (upiRow?.settings) {
+          setUpiForm({
+            vpa: upiRow.settings.vpa || '',
+            payeeName: upiRow.settings.payeeName || 'OddsYra',
+          });
+        }
       }
       if (rulesRes.status === 'fulfilled' && rulesRes.value?.rules) {
         setPromoRules(rulesRes.value.rules);
@@ -164,6 +174,26 @@ export default function PaymentGatewaysView() {
     }
   };
 
+  const handleSaveUpiDestination = async () => {
+    const vpa = String(upiForm.vpa || '').trim().toLowerCase();
+    if (!vpa || !/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z][a-zA-Z0-9.-]{1,64}$/.test(vpa)) {
+      showToast('Enter a valid UPI ID (example: merchant@okhdfcbank)', 'error');
+      return;
+    }
+    setSavingUpi(true);
+    try {
+      const res = await adminApiClient.patch('/payment-gateways/upi', {
+        settings: { vpa, payeeName: upiForm.payeeName || 'OddsYra' },
+      });
+      setGateways(res.gateways || []);
+      showToast('UPI collect destination saved', 'success');
+    } catch (err) {
+      showToast(err.message || 'Failed to save UPI ID', 'error');
+    } finally {
+      setSavingUpi(false);
+    }
+  };
+
   const handleToggleUserSelection = async (currentVal) => {
     setUpdatingProvider('GLOBAL');
     try {
@@ -205,10 +235,10 @@ export default function PaymentGatewaysView() {
   };
 
   const razorpay = gateways.find((g) => g.provider === 'RAZORPAY') || {};
-  const payu = gateways.find((g) => g.provider === 'PAYU') || {};
-  const pinelabs = gateways.find((g) => g.provider === 'PINELABS') || {};
+  const hdfc = gateways.find((g) => g.provider === 'HDFC') || {};
+  const upi = gateways.find((g) => g.provider === 'UPI') || {};
 
-  const activeGateways = gateways.filter((g) => g.provider !== 'CASHFREE');
+  const activeGateways = gateways.filter((g) => ['RAZORPAY', 'HDFC', 'UPI'].includes(g.provider));
   const enabledCount = activeGateways.filter((g) => g.enabled).length;
   const primaryGateway = activeGateways.find((g) => g.isPrimary && g.enabled);
   const allowUserSelection = activeGateways.some((g) => g.allowUserSelection);
@@ -220,10 +250,10 @@ export default function PaymentGatewaysView() {
       : `PRIMARY ROUTING (${primaryGateway?.provider || 'RAZORPAY'})`;
   } else if (razorpay.enabled) {
     operationalMode = 'RAZORPAY ONLY';
-  } else if (payu.enabled) {
-    operationalMode = 'PAYU ONLY';
-  } else if (pinelabs.enabled) {
-    operationalMode = 'PINELABS ONLY';
+  } else if (hdfc.enabled) {
+    operationalMode = 'HDFC ONLY';
+  } else if (upi.enabled) {
+    operationalMode = 'UPI COLLECT ONLY';
   }
 
   return (
@@ -325,20 +355,20 @@ export default function PaymentGatewaysView() {
           {
             data: razorpay,
             name: 'RAZORPAY',
-            description: 'Standard Razorpay Checkout modal & instant UPI auto-collection',
+            description: 'Razorpay Checkout modal and UPI auto-collection',
             webhookUrl: 'https://oddsyra.com/api/webhooks/razorpay',
           },
           {
-            data: payu,
-            name: 'PAYU',
-            description: 'PayU Hosted Checkout deposits and Payouts',
-            webhookUrl: 'https://oddsyra.com/api/webhooks/payu',
+            data: hdfc,
+            name: 'HDFC',
+            description: 'HDFC SmartGateway hosted checkout (cards, UPI, netbanking)',
+            webhookUrl: 'https://oddsyra.com/api/payments/hdfc/return',
           },
           {
-            data: pinelabs,
-            name: 'PINELABS',
-            description: 'Pine Labs Plural Hosted Checkout and bank payouts',
-            webhookUrl: 'https://oddsyra.com/api/webhooks/pinelabs',
+            data: upi,
+            name: 'UPI',
+            description: 'Direct UPI collect — customer pays to the UPI ID you set below',
+            webhookUrl: null,
           },
         ].map(({ data, name, description, webhookUrl }) => {
           const isUpdating = updatingProvider === name;
@@ -462,9 +492,17 @@ export default function PaymentGatewaysView() {
                   <button
                     type="button"
                     onClick={() => handleToggle(name, isEnabled)}
-                    disabled={isUpdating || (isPrimary && isEnabled && enabledCount === 1)}
+                    disabled={
+                      isUpdating
+                      || (isPrimary && isEnabled && enabledCount === 1)
+                      || (name === 'UPI' && !isEnabled && !String(upiForm.vpa || '').includes('@'))
+                    }
                     className={`pg-btn pg-btn-toggle ${isEnabled ? 'pg-btn-toggle--disable' : 'pg-btn-toggle--enable'}`}
-                    title={isPrimary && isEnabled && enabledCount === 1 ? 'Cannot disable sole primary gateway' : ''}
+                    title={
+                      name === 'UPI' && !isEnabled && !String(upiForm.vpa || '').includes('@')
+                        ? 'Save a collect UPI ID first'
+                        : (isPrimary && isEnabled && enabledCount === 1 ? 'Cannot disable sole primary gateway' : '')
+                    }
                   >
                     {isEnabled ? 'Disable Gateway' : 'Enable Gateway'}
                   </button>
@@ -489,10 +527,49 @@ export default function PaymentGatewaysView() {
                   </button>
                 </div>
 
-                {/* Webhook Endpoint Info */}
-                <div className="pg-webhook-info">
-                  Webhook: <code className="pg-webhook-code">{webhookUrl}</code>
-                </div>
+                {name === 'UPI' && (
+                  <div className="pg-upi-collect">
+                    <div className="pg-upi-collect-title">Collect UPI destination</div>
+                    <p className="pg-upi-collect-hint">
+                      When UPI is enabled, deposit money is sent to this UPI ID.
+                    </p>
+                    <label className="pg-upi-field">
+                      <span>UPI ID / VPA</span>
+                      <input
+                        type="text"
+                        autoComplete="off"
+                        spellCheck={false}
+                        placeholder="merchant@okhdfcbank"
+                        value={upiForm.vpa}
+                        onChange={(e) => setUpiForm((p) => ({ ...p, vpa: e.target.value }))}
+                      />
+                    </label>
+                    <label className="pg-upi-field">
+                      <span>Payee name on UPI screen</span>
+                      <input
+                        type="text"
+                        autoComplete="off"
+                        placeholder="OddsYra"
+                        value={upiForm.payeeName}
+                        onChange={(e) => setUpiForm((p) => ({ ...p, payeeName: e.target.value }))}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      className="pg-btn pg-btn-primary-switch--active"
+                      disabled={savingUpi}
+                      onClick={handleSaveUpiDestination}
+                    >
+                      {savingUpi ? 'Saving…' : 'Save UPI ID'}
+                    </button>
+                  </div>
+                )}
+
+                {webhookUrl && (
+                  <div className="pg-webhook-info">
+                    Webhook: <code className="pg-webhook-code">{webhookUrl}</code>
+                  </div>
+                )}
               </div>
             </div>
           );
@@ -554,19 +631,20 @@ export default function PaymentGatewaysView() {
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: 4 }}>
                     <span style={{ fontWeight: 600 }}>Razorpay Weight</span>
-                    <span style={{ fontWeight: 800, color: '#38bdf8' }}>{routingConfig.weights?.RAZORPAY ?? 50}%</span>
+                    <span style={{ fontWeight: 800, color: '#38bdf8' }}>{routingConfig.weights?.RAZORPAY ?? 40}%</span>
                   </div>
                   <input
                     type="range"
                     min="0"
                     max="100"
                     step="5"
-                    value={routingConfig.weights?.RAZORPAY ?? 50}
+                    value={routingConfig.weights?.RAZORPAY ?? 40}
                     onChange={(e) => {
                       const rz = Number(e.target.value);
+                      const hdfcW = routingConfig.weights?.HDFC ?? 40;
                       setRoutingConfig((p) => ({
                         ...p,
-                        weights: { ...p.weights, RAZORPAY: rz, PAYU: Math.max(0, 100 - rz - (p.weights?.MANUAL_UPI || 0)) },
+                        weights: { ...p.weights, RAZORPAY: rz, HDFC: hdfcW, UPI: Math.max(0, 100 - rz - hdfcW) },
                       }));
                     }}
                     style={{ width: '100%', accentColor: '#38bdf8' }}
@@ -574,24 +652,29 @@ export default function PaymentGatewaysView() {
                 </div>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: 4 }}>
-                    <span style={{ fontWeight: 600 }}>PayU Weight</span>
-                    <span style={{ fontWeight: 800, color: '#34d399' }}>{routingConfig.weights?.PAYU ?? 50}%</span>
+                    <span style={{ fontWeight: 600 }}>HDFC Weight</span>
+                    <span style={{ fontWeight: 800, color: '#34d399' }}>{routingConfig.weights?.HDFC ?? 40}%</span>
                   </div>
                   <input
                     type="range"
                     min="0"
                     max="100"
                     step="5"
-                    value={routingConfig.weights?.PAYU ?? 50}
+                    value={routingConfig.weights?.HDFC ?? 40}
                     onChange={(e) => {
-                      const pu = Number(e.target.value);
+                      const hdfcW = Number(e.target.value);
+                      const rz = routingConfig.weights?.RAZORPAY ?? 40;
                       setRoutingConfig((p) => ({
                         ...p,
-                        weights: { ...p.weights, PAYU: pu, RAZORPAY: Math.max(0, 100 - pu - (p.weights?.MANUAL_UPI || 0)) },
+                        weights: { ...p.weights, HDFC: hdfcW, RAZORPAY: rz, UPI: Math.max(0, 100 - rz - hdfcW) },
                       }));
                     }}
                     style={{ width: '100%', accentColor: '#34d399' }}
                   />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem' }}>
+                  <span style={{ fontWeight: 600 }}>UPI Collect Weight</span>
+                  <span style={{ fontWeight: 800, color: '#fbbf24' }}>{routingConfig.weights?.UPI ?? 20}%</span>
                 </div>
               </div>
             )}

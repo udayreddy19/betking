@@ -92,6 +92,7 @@ const handleCreateOrder = async (req, res) => {
     const { depositEngine } = await import('../../lib/depositEngine.mjs');
     const provider = req.body?.provider
       || (req.path.includes('hdfc') ? 'HDFC' : undefined)
+      || (req.path.includes('upi') ? 'UPI' : undefined)
       || (req.path.includes('cashfree') ? 'CASHFREE' : (req.path.includes('razorpay') ? 'RAZORPAY' : undefined));
     const result = await depositEngine.createOrder(
       { ...req.body, userId: req.user.userId, provider },
@@ -112,7 +113,26 @@ router.post('/api/payments/razorpay/create-order', requireAuth, requireVerified,
 router.post('/api/payments/cashfree/create-order', requireAuth, requireVerified, walletOn, handleCreateOrder);
 router.post('/api/v1/payments/cashfree/create-order', requireAuth, requireVerified, walletOn, handleCreateOrder);
 router.post('/api/payments/hdfc/create-order', requireAuth, requireVerified, walletOn, handleCreateOrder);
+router.post('/api/payments/upi/create-order', requireAuth, requireVerified, walletOn, handleCreateOrder);
 router.post('/api/v1/payments/create-order', requireAuth, requireVerified, walletOn, handleCreateOrder);
+
+router.post('/api/v1/payments/upi/submit-utr', requireAuth, walletOn, async (req, res) => {
+  try {
+    const { depositEngine } = await import('../../lib/depositEngine.mjs');
+    const result = await depositEngine.submitUpiUtr({
+      userId: req.user.userId,
+      depositId: req.body?.depositId || req.body?.deposit_id || req.body?.orderId,
+      utr: req.body?.utr,
+    }, req.correlationId);
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(err.status || err.statusCode || 400).json({
+      success: false,
+      error: err.message || 'Unable to submit UTR',
+      code: err.code,
+    });
+  }
+});
 
 // ── 4. PAYMENT VERIFICATION ENDPOINTS ─────────────────────────────────────────
 
