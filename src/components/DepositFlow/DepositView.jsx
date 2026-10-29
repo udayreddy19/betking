@@ -245,6 +245,30 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
     navigate('/wallet');
   };
 
+  const openHdfcPayment = async (depositAmt) => {
+    setErrorMsg('');
+    setIsLoading(true);
+    try {
+      const orderRes = await apiFetch('/api/v1/payments/create-order', {
+        method: 'POST',
+        body: JSON.stringify({ amount: depositAmt, currency: 'INR', provider: 'HDFC' }),
+      });
+      const orderData = await orderRes.json();
+      if (!orderRes.ok) {
+        throw new Error(orderData.error || orderData.code || 'Unable to create deposit order');
+      }
+      const payUrl = orderData.payUrl || orderData.redirectUrl;
+      if (!payUrl) {
+        throw new Error('HDFC did not return a payment page');
+      }
+      window.location.href = payUrl;
+    } catch (err) {
+      setIsLoading(false);
+      setIsProcessing(false);
+      setErrorMsg(err.message || 'Unable to start HDFC payment');
+    }
+  };
+
   // Cashfree checkout
   const openCashfreePayment = async (depositAmt) => {
     setErrorMsg('');
@@ -485,7 +509,9 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
 
     submitLockRef.current = true;
     try {
-      if (selectedProvider === 'RAZORPAY') {
+      if (selectedProvider === 'HDFC') {
+        await openHdfcPayment(parsedAmount);
+      } else if (selectedProvider === 'RAZORPAY') {
         await openRazorpayPayment(parsedAmount);
       } else {
         await openCashfreePayment(parsedAmount);
@@ -695,6 +721,10 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
                 </div>
               )}
 
+              <p className="deposit-trust-eta" style={{ margin: '0 0 12px', fontSize: '0.82rem', opacity: 0.85, lineHeight: 1.45 }}>
+                Typical ETA: under 2 minutes after you approve UPI. You&apos;ll get an in-app / push alert when money arrives — no need to refresh.
+              </p>
+
               {/* Amount Input Card */}
               <section className="deposit-section-card">
                 <label htmlFor="deposit-amount-input" className="deposit-section-label">
@@ -765,7 +795,7 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
                           className={`deposit-provider-tab ${isActive ? 'deposit-provider-tab--active' : ''}`}
                           onClick={() => setSelectedProvider(pUpper)}
                         >
-                          <span>{pUpper === 'CASHFREE' ? '⚡ Cashfree' : '🛡️ Razorpay'}</span>
+                          <span>{pUpper === 'HDFC' ? '🏦 HDFC SmartGateway' : pUpper === 'CASHFREE' ? '⚡ Cashfree' : '🛡️ Razorpay'}</span>
                         </button>
                       );
                     })}

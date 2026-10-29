@@ -90,7 +90,9 @@ router.get('/api/v1/payments/deposit-limits', walletOn, async (req, res) => {
 const handleCreateOrder = async (req, res) => {
   try {
     const { depositEngine } = await import('../../lib/depositEngine.mjs');
-    const provider = req.body?.provider || (req.path.includes('cashfree') ? 'CASHFREE' : (req.path.includes('razorpay') ? 'RAZORPAY' : undefined));
+    const provider = req.body?.provider
+      || (req.path.includes('hdfc') ? 'HDFC' : undefined)
+      || (req.path.includes('cashfree') ? 'CASHFREE' : (req.path.includes('razorpay') ? 'RAZORPAY' : undefined));
     const result = await depositEngine.createOrder(
       { ...req.body, userId: req.user.userId, provider },
       req.correlationId,
@@ -109,6 +111,7 @@ const handleCreateOrder = async (req, res) => {
 router.post('/api/payments/razorpay/create-order', requireAuth, requireVerified, walletOn, handleCreateOrder);
 router.post('/api/payments/cashfree/create-order', requireAuth, requireVerified, walletOn, handleCreateOrder);
 router.post('/api/v1/payments/cashfree/create-order', requireAuth, requireVerified, walletOn, handleCreateOrder);
+router.post('/api/payments/hdfc/create-order', requireAuth, requireVerified, walletOn, handleCreateOrder);
 router.post('/api/v1/payments/create-order', requireAuth, requireVerified, walletOn, handleCreateOrder);
 
 // ── 4. PAYMENT VERIFICATION ENDPOINTS ─────────────────────────────────────────
@@ -116,7 +119,9 @@ router.post('/api/v1/payments/create-order', requireAuth, requireVerified, walle
 const handleVerifyPayment = async (req, res) => {
   try {
     const { depositEngine } = await import('../../lib/depositEngine.mjs');
-    const inferredProvider = req.body?.provider || (req.path.includes('cashfree') ? 'CASHFREE' : (req.path.includes('razorpay') ? 'RAZORPAY' : undefined));
+    const inferredProvider = req.body?.provider
+      || (req.path.includes('hdfc') ? 'HDFC' : undefined)
+      || (req.path.includes('cashfree') ? 'CASHFREE' : (req.path.includes('razorpay') ? 'RAZORPAY' : undefined));
     const result = await depositEngine.confirmCheckoutPayment(
       {
         userId: req.user.userId,
@@ -146,7 +151,67 @@ const handleVerifyPayment = async (req, res) => {
 router.post('/api/payments/razorpay/verify', requireAuth, walletOn, handleVerifyPayment);
 router.post('/api/payments/cashfree/verify', requireAuth, walletOn, handleVerifyPayment);
 router.post('/api/v1/payments/cashfree/verify', requireAuth, walletOn, handleVerifyPayment);
+router.post('/api/payments/hdfc/verify', requireAuth, walletOn, handleVerifyPayment);
 router.post('/api/v1/payments/confirm', requireAuth, walletOn, handleVerifyPayment);
+
+async function handleHdfcBrowserReturn(req, res) {
+  const orderId = String(
+    req.params.orderId || req.body?.order_id || req.body?.orderId || req.query?.order_id || '',
+  ).trim();
+  const { renderHdfcResponsePage } = await import('../../lib/paymentProviders/hdfcResponsePage.mjs');
+  const page = (view) => res.status(200).type('html').send(renderHdfcResponsePage({
+    brandName: 'OddsYra',
+    viewOrderHref: '/wallet/deposit',
+    ...view,
+  }));
+  if (!orderId) {
+    return page({ ok: false, gatewayOrderId: '', amountInr: null });
+  }
+  try {
+    const { query } = await import('../../db/pg.js');
+    const { depositEngine } = await import('../../lib/depositEngine.mjs');
+    const found = await query(
+      `SELECT deposit_id, user_id, amount, status, provider
+         FROM deposits
+        WHERE order_id = $1 AND UPPER(provider) = 'HDFC'
+        ORDER BY created_at DESC
+        LIMIT 1`,
+      [orderId],
+    );
+    const dep = found.rows[0];
+    if (!dep) {
+      return page({ ok: false, gatewayOrderId: orderId, amountInr: null });
+    }
+    let paid = String(dep.status || '').toUpperCase() === 'PAID'
+      || String(dep.status || '').toUpperCase() === 'SUCCESS'
+      || String(dep.status || '').toUpperCase() === 'CAPTURED';
+    if (!paid) {
+      try {
+        const settle = await depositEngine.confirmCheckoutPayment({
+          userId: dep.user_id,
+          provider: 'HDFC',
+          depositId: dep.deposit_id,
+          orderId,
+        });
+        paid = Boolean(settle?.success !== false);
+      } catch {
+        paid = false;
+      }
+    }
+    return page({
+      ok: paid,
+      gatewayOrderId: orderId,
+      amountInr: dep.amount != null ? Number(dep.amount) : null,
+    });
+  } catch {
+    return page({ ok: false, gatewayOrderId: orderId, amountInr: null });
+  }
+}
+
+router.get('/api/payments/hdfc-return/:orderId', handleHdfcBrowserReturn);
+router.post('/api/payments/hdfc-return/:orderId', handleHdfcBrowserReturn);
+router.get('/api/payments/hdfc-return', handleHdfcBrowserReturn);
+router.post('/api/payments/hdfc-return', handleHdfcBrowserReturn);
 
 // ── 5. WITHDRAWALS & WALLET LEDGER ────────────────────────────────────────────
 
@@ -160,6 +225,86 @@ router.post('/api/v1/withdrawals/request', requireAuth, walletOn, async (req, re
     res.json(result);
   } catch (err) {
     res.status(err.status || 400).json({ success: false, error: err.message, code: err.code });
+  }
+});
+
+/** POST /api/v1/payments/resync-pending — user self-serve: payment done but wallet not updated */
+router.post('/api/v1/payments/resync-pending', requireAuth, walletOn, async (req, res) => {
+  try {
+    const { query } = await import('../../db/pg.js');
+    const pending = await query(
+      `SELECT deposit_id, order_id, payment_id, provider, status, amount, created_at
+       FROM deposits
+       WHERE user_id = $1
+         AND UPPER(status::text) IN ('CREATED','PENDING','PROCESSING','AUTHORIZED','ATTEMPTED')
+       ORDER BY created_at DESC
+       LIMIT 8`,
+      [req.user.userId],
+    );
+    if (!pending.rows.length) {
+      return res.json({
+        success: true,
+        checked: 0,
+        credited: 0,
+        message: 'No pending deposits found. If you were charged, open Support with the UPI/UTR reference.',
+      });
+    }
+
+    const { paymentProviderService } = await import('../../lib/paymentProviders/paymentProviderService.mjs');
+    const { depositEngine } = await import('../../lib/depositEngine.mjs');
+    const results = [];
+    let credited = 0;
+
+    for (const dep of pending.rows) {
+      const orderId = dep.order_id;
+      const providerName = String(dep.provider || 'RAZORPAY').toUpperCase();
+      try {
+        const provider = paymentProviderService.getProvider(providerName);
+        if (!provider?.fetchPaymentStatus || !orderId) {
+          results.push({ depositId: dep.deposit_id, paid: false, message: 'Provider lookup unavailable' });
+          continue;
+        }
+        const paymentStatus = await provider.fetchPaymentStatus(orderId);
+        const st = String(paymentStatus?.status || '').toUpperCase();
+        const paid = ['CAPTURED', 'SUCCESS', 'PAID', 'COMPLETED'].includes(st);
+        if (!paid) {
+          results.push({ depositId: dep.deposit_id, paid: false, status: st || dep.status, message: `Still ${st || dep.status}` });
+          continue;
+        }
+        const paymentId = paymentStatus.paymentId || paymentStatus.id || dep.payment_id;
+        if (!paymentId) {
+          results.push({ depositId: dep.deposit_id, paid: false, message: 'Paid but missing payment id' });
+          continue;
+        }
+        const settle = await depositEngine.processVerifiedPayment({
+          provider: providerName,
+          depositId: dep.deposit_id,
+          providerOrderId: orderId,
+          providerPaymentId: paymentId,
+          amountInINR: dep.amount,
+          userId: req.user.userId,
+          method: paymentStatus.method || 'upi',
+          utr: paymentStatus.utr || paymentId,
+          source: 'USER_RESYNC',
+        });
+        credited += 1;
+        results.push({ depositId: dep.deposit_id, paid: true, settle });
+      } catch (err) {
+        results.push({ depositId: dep.deposit_id, paid: false, error: err.message });
+      }
+    }
+
+    res.json({
+      success: true,
+      checked: pending.rows.length,
+      credited,
+      results,
+      message: credited > 0
+        ? `Credited ${credited} deposit(s). Balance should update shortly.`
+        : 'No captured payments found yet. Wait a minute and try again, or contact Support with your UTR.',
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

@@ -5,8 +5,7 @@ import FilterChips from '../../components/FilterChips/FilterChips';
 import SportIcon from '../../components/SportIcon/SportIcon';
 import MatchCard from '../../components/MatchCard/MatchCard';
 import HomeCategoryGrid from '../../components/HomeCategoryGrid/HomeCategoryGrid';
-import { sportsCategories } from '../../data/mockData';
-import { buildHomeLeagueChips } from '../../utils/homeMerchandising';
+import { sportsCategories, featuredLeagues } from '../../data/mockData';
 import { useFeatureFlags } from '../../context/FeatureFlagsContext';
 import { homePromoSlides } from '../../data/homePageData';
 import { isSrlSeasonLive, SRL_LAUNCH_LABEL, SRL_PAGE_PATH } from '../../data/oddsyraSrlSeason';
@@ -14,7 +13,7 @@ import { useLiveMatches, useLiveSportsMeta } from '../../context/LiveSportsConte
 import LiveScoresFeedBanner from '../../components/LiveScoresFeedBanner/LiveScoresFeedBanner';
 import { filterMatches, compareMatchesForSportsBoard } from '../../utils/matchFilters';
 import { getMatchState } from '../../utils/matchBetting';
-import { isSameLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
+import { getLeagueMeta, isSameLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
 import { useMatchWatchlist } from '../../hooks/useMatchWatchlist';
 import BoostedOddsWidget from '../../components/BoostedOddsWidget/BoostedOddsWidget';
 import AnimatedMotionGiftIcon from '../../components/AnimatedMotionGiftIcon/AnimatedMotionGiftIcon';
@@ -22,7 +21,6 @@ import ErrorBoundary from '../../components/ErrorBoundary/ErrorBoundary';
 import { useAuth } from '../../context/AuthContext';
 import { useProducts } from '../../context/ProductContext';
 import WalletHome from '../Wallet/WalletHome';
-import ProductUnavailable from '../../components/ProductUnavailable/ProductUnavailable';
 import './Home.css';
 
 const HOME_MATCH_LIMIT = 12;
@@ -48,9 +46,9 @@ function getPromoIndexFromScroll(track) {
   );
 }
 
-function filterByLeague(matchList, leagueId, leagueChips = []) {
+function filterByLeague(matchList, leagueId) {
   if (!leagueId) return matchList;
-  const meta = leagueChips.find((l) => isSameLeague(leagueId, l.id));
+  const meta = getLeagueMeta(leagueId);
   if (!meta) return matchList;
   return matchList.filter((m) => matchBelongsToLeague(m, meta));
 }
@@ -59,9 +57,7 @@ export default function Home() {
   const matches = useLiveMatches();
   const { isScoresLoading, scoresError, refreshScores } = useLiveSportsMeta();
   const { isSportEnabled, isEnabled } = useFeatureFlags();
-  const {
-    walletEnabled, bettingEnabled, ready: productsReady, loadError, retry: retryProducts,
-  } = useProducts();
+  const { walletEnabled, bettingEnabled, ready: productsReady } = useProducts();
   const srlEnabled = isEnabled('oddsyra_srl_ui', true) && bettingEnabled;
   const navigate = useNavigate();
   const { isLoggedIn, openDepositModal, openFinModal, user } = useAuth();
@@ -116,11 +112,22 @@ export default function Home() {
     return map;
   }, [matches]);
 
-  // Merchandising: live API leagues first, static featuredLeagues only as fallback.
-  const leagueChips = useMemo(
-    () => buildHomeLeagueChips(matches, activeSport, { limit: 4 }),
-    [activeSport, matches],
-  );
+  const leagueChips = useMemo(() => {
+    const all = featuredLeagues.filter((l) => l.sport === activeSport);
+    // Only leagues that currently have matches — keeps the chip row short
+    const withMatches = all.filter((league) => {
+      const meta = getLeagueMeta(league.id);
+      if (!meta) return false;
+      return (matches || []).some((m) => {
+        const s = String(m.sport || '').toLowerCase();
+        const sportOk = activeSport === 'all'
+          || s === activeSport
+          || (activeSport === 'soccer' && (s === 'soccer' || s === 'football'));
+        return sportOk && matchBelongsToLeague(m, meta);
+      });
+    });
+    return (withMatches.length > 0 ? withMatches : all).slice(0, 4);
+  }, [activeSport, matches]);
 
   const homeSportChips = useMemo(() => {
     const enabledCats = sportsCategories.filter((c) => c.id === 'all' || isSportEnabled(c.id));
@@ -139,18 +146,18 @@ export default function Home() {
     const sport = sportsCategories.find((c) => c.id === activeSport);
     const name = sport?.name || 'Sports';
     if (activeLeague) {
-      const league = leagueChips.find((l) => isSameLeague(activeLeague, l.id));
+      const league = featuredLeagues.find((l) => isSameLeague(activeLeague, l.id));
       return league?.name || name;
     }
     if (activeSport === 'all') return liveCount > 0 ? 'Live now' : 'Sports';
     return liveCount > 0 && (sportCounts[activeSport] || 0) > 0
       ? `${name} · Live`
       : name;
-  }, [activeSport, activeLeague, liveCount, sportCounts, leagueChips]);
+  }, [activeSport, activeLeague, liveCount, sportCounts]);
 
   const sportMatches = useMemo(() => {
     const bySport = filterMatches(matches || [], { sport: activeSport, stateTab: 'bettable' });
-    const filtered = activeLeague ? filterByLeague(bySport, activeLeague, leagueChips) : bySport;
+    const filtered = activeLeague ? filterByLeague(bySport, activeLeague) : bySport;
     return [...filtered].sort((a, b) => {
       const oddsScore = (m) => {
         const o = m?.odds || m?.authoritativeOdds || {};
@@ -161,7 +168,7 @@ export default function Home() {
       if (d !== 0) return d;
       return compareMatchesForSportsBoard(a, b);
     });
-  }, [matches, activeSport, activeLeague, leagueChips]);
+  }, [matches, activeSport, activeLeague]);
 
   const promoSlides = useMemo(
     () => (srlEnabled ? homePromoSlides : homePromoSlides.filter((s) => s.id !== 'srl')),
@@ -264,14 +271,8 @@ export default function Home() {
     return <div className="home-page container" id="home-page"><p style={{ padding: '2rem 0', color: '#64748b' }}>Loading…</p></div>;
   }
 
-  // Wallet-only (betting off, wallet on): wallet landing instead of a blank page.
-  if (walletEnabled && !bettingEnabled) {
-    return <WalletHome />;
-  }
-
-  if (!bettingEnabled && !walletEnabled) {
-    // PlatformGate normally intercepts this; render an explicit state instead of an empty page.
-    return <ProductUnavailable onRetry={loadError ? retryProducts : null} />;
+  if (!bettingEnabled) {
+    return null; // PlatformGate shows unavailable / PG review message
   }
 
   return (

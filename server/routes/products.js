@@ -23,16 +23,18 @@ router.get('/products', async (_req, res) => {
       softwarePlatformName: String(config.softwarePlatformName || '').trim(),
       updatedAt: config.updatedAt,
     });
-  } catch (err) {
-    // The DB could not be read. This is NOT an admin decision: answer 503 so clients keep their
-    // last trusted config / show a retry state instead of caching a fake all-off 200.
+  } catch {
+    // Fail closed for betting/wallet only. Do NOT assert softwarePlatformEnabled=false —
+    // that caused public SPA / cookie thrashing when the DB blipped.
     res.set('Cache-Control', 'no-store');
-    res.set('Retry-After', '5');
-    res.status(503).json({
-      error: true,
+    res.json({
+      wallet: false,
+      betting: false,
+      walletEnabled: false,
+      bettingEnabled: false,
+      pgReviewMode: false,
+      updatedAt: null,
       note: 'unavailable',
-      code: 'PRODUCT_CONFIG_UNAVAILABLE',
-      message: err?.message ? 'Product configuration temporarily unavailable' : undefined,
     });
   }
 });

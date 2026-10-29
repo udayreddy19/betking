@@ -31,8 +31,6 @@ import { CASINO_ENABLED } from './utils/featureFlags';
 import { FeatureFlagsProvider, useFeatureFlags } from './context/FeatureFlagsContext';
 import { ProductProvider, useProducts } from './context/ProductContext';
 import ProductUnavailable from './components/ProductUnavailable/ProductUnavailable';
-import PlatformGate from './components/PlatformGate/PlatformGate';
-import CasinoComingSoon from './pages/Casino/CasinoComingSoon';
 import Home from './pages/Home/Home';
 import Register from './pages/Register/Register';
 import Profile from './pages/Profile/Profile';
@@ -75,6 +73,10 @@ const MyRewards = lazyWithRetry(() => import('./pages/Rewards/MyRewards'));
 const OddsYraSrl = lazyWithRetry(() => import('./pages/Srl/OddsYraSrl'));
 const DepositPage = lazyWithRetry(() => import('./pages/Wallet/DepositPage'));
 
+function CasinoComingSoon() {
+  return <Navigate to="/" replace />;
+}
+
 function FlaggedRoute({ flagKey, children, fallback = '/' }) {
   const { isEnabled, ready } = useFeatureFlags();
   // Fail closed until flags hydrate; after that missing keys stay on (opt-out toggles).
@@ -91,6 +93,42 @@ function ProductRoute({ product, children }) {
   const enabled = product === 'wallet' ? walletEnabled : bettingEnabled;
   if (!enabled) {
     return <ProductUnavailable product={product} />;
+  }
+  return children;
+}
+
+/** When betting is off (and wallet is removed), show a controlled unavailable page (admin still reachable). */
+function PlatformGate({ children }) {
+  const location = useLocation();
+  const { ready, bettingEnabled, pgReviewMode } = useProducts();
+  const path = location.pathname || '/';
+  // PG compliance mode: Fee Desk owns the public surface — never show ProductUnavailable.
+  if (pgReviewMode) return children;
+  const isExempt = path.startsWith('/admin')
+    || path.startsWith('/trader')
+    || path.startsWith('/developer')
+    || path.startsWith('/api-docs')
+    || path.startsWith('/register')
+    || path.startsWith('/complete-profile')
+    || path.startsWith('/verify-email')
+    || path.startsWith('/reset-password')
+    || path.startsWith('/_oauth')
+    || path.startsWith('/terms')
+    || path.startsWith('/privacy')
+    || path.startsWith('/help')
+    || path.startsWith('/support')
+    || path.startsWith('/company')
+    || path.startsWith('/documents')
+    || path.startsWith('/desk')
+    || path.startsWith('/responsible-gaming');
+  if (!ready) return <PageLoader />;
+  if (!bettingEnabled && !isExempt) {
+    return (
+      <ProductUnavailable
+        title="Currently Unavailable"
+        message="No products are currently enabled. Please try again later."
+      />
+    );
   }
   return children;
 }
@@ -243,7 +281,7 @@ function AppLayout() {
               <Route path="/upi-deposits" element={<ProductRoute product="wallet"><UpiDeposits /></ProductRoute>} />
               <Route path="/what-is-oddsyra-srl" element={<ProductRoute product="betting"><WhatIsOddsYraSrl /></ProductRoute>} />
               <Route path="/cricket-betting-guide" element={<ProductRoute product="betting"><CricketBettingGuide /></ProductRoute>} />
-              <Route path="/exchange" element={<Navigate to="/" replace />} />
+              <Route path="/exchange" element={<CasinoComingSoon />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/wallet" element={<ProductRoute product="wallet"><WalletDashboard /></ProductRoute>} />
               <Route path="/wallet/bank-accounts" element={<ProductRoute product="wallet"><BankAccountsPage /></ProductRoute>} />

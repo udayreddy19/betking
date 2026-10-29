@@ -10,7 +10,6 @@ import {
   InfoIcon,
   SettingsIcon,
 } from '../../../icons/animate/index';
-import { syncProductConfigFromAdmin } from '../features/productConfigSync';
 import './PaymentGatewaysView.css';
 import { formatIst, formatIstDateTime } from '../../../utils/istTime';
 
@@ -90,8 +89,6 @@ export default function PaymentGatewaysView() {
         : { walletEnabled: true, bettingEnabled: true, pgReviewMode: false };
       const res = await adminApiClient.put('/products', body);
       setPgReviewMode(res?.pgReviewMode === true);
-      // Push the real effective config (wallet / betting / PG / software) to open tabs.
-      await syncProductConfigFromAdmin(res);
       showToast(
         res?.pgReviewMode
           ? 'PG compliance mode ON'

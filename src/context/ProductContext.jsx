@@ -8,33 +8,33 @@ import {
   useState,
 } from 'react';
 
-import {
-  LEGACY_PRODUCT_CACHE_KEYS,
-  PRODUCT_CACHE_KEY,
-  isAllProductsOffSnapshot,
-  isProductApiFailure,
-  shouldCacheProductSnapshot,
-} from '../utils/productConfigLogic';
-
-export { isAllProductsOffSnapshot };
-
 const ProductContext = createContext({
   walletEnabled: false,
   bettingEnabled: false,
   pgReviewMode: false,
   softwarePlatformEnabled: false,
   ready: false,
-  loadError: false,
   isWalletEnabled: () => false,
   isBettingEnabled: () => false,
   refresh: async () => {},
-  retry: async () => {},
 });
 
-/** v6+: purges older snapshots that cached a bad "all off" state. */
-export const PRODUCT_CONFIG_CACHE_KEY = PRODUCT_CACHE_KEY;
+/** Bump when public product flags shape changes so stale sessionStorage cannot pin wrong mode. */
+export const PRODUCT_CONFIG_CACHE_KEY = 'oddsyra_product_config_v6';
 const CACHE_KEY = PRODUCT_CONFIG_CACHE_KEY;
-const LEGACY_CACHE_KEYS = LEGACY_PRODUCT_CACHE_KEYS;
+const LEGACY_CACHE_KEYS = [
+  'oddsyra_product_config_v1',
+  'oddsyra_product_config_v2',
+  'oddsyra_product_config_v3',
+  'oddsyra_product_config_v4',
+  'oddsyra_product_config_v5',
+];
+
+/** Stale sessionStorage from an outage often pins betting off while the API is healthy. */
+function isAllProductsOffSnapshot(cfg) {
+  if (!cfg || cfg.pgReviewMode === true) return false;
+  return cfg.bettingEnabled !== true && cfg.walletEnabled !== true;
+}
 
 function normalize(data, previous = null) {
   const wallet = data?.walletEnabled ?? data?.wallet;
@@ -68,13 +68,7 @@ function readCachedConfig() {
   try {
     const raw = sessionStorage.getItem(CACHE_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    // Purge poisoned "everything off" snapshots (outage / bad deploy) instead of trusting them.
-    if (!shouldCacheProductSnapshot(parsed)) {
-      sessionStorage.removeItem(CACHE_KEY);
-      return null;
-    }
-    return normalize(parsed);
+    return normalize(JSON.parse(raw));
   } catch {
     return null;
   }
@@ -82,10 +76,6 @@ function readCachedConfig() {
 
 function writeCachedConfig(config) {
   try {
-    if (!shouldCacheProductSnapshot(config)) {
-      sessionStorage.removeItem(CACHE_KEY);
-      return;
-    }
     sessionStorage.setItem(CACHE_KEY, JSON.stringify(config));
     for (const legacyKey of LEGACY_CACHE_KEYS) {
       sessionStorage.removeItem(legacyKey);
@@ -115,15 +105,6 @@ function isAdminShellPath() {
 
 /** Admin (and others) can push a fresh config into open tabs immediately after PUT. */
 export function publishLocalProductConfig(data) {
-  // No payload (or a failure payload): never publish a fake all-off config — just ask providers to re-fetch.
-  if (!data || typeof data !== 'object' || isProductApiFailure(data)) {
-    try {
-      window.dispatchEvent(new CustomEvent('oddsyra:product-config', { detail: null }));
-    } catch {
-      /* ignore */
-    }
-    return null;
-  }
   const normalized = normalize(data);
   writeCachedConfig(normalized);
   try {
@@ -138,7 +119,7 @@ export function publishLocalProductConfig(data) {
       JSON.stringify({
         softwarePlatformEnabled: normalized.softwarePlatformEnabled === true,
         bettingEnabled: normalized.bettingEnabled === true,
-        walletEnabled: normalized.walletEnabled === true,
+        walletEnabled: true,
         t: Date.now(),
       }),
     );
@@ -204,18 +185,13 @@ export function ProductProvider({ children }) {
     },
   );
   // Never treat a cached "everything off" snapshot as authoritative — wait for the API.
-  const [ready, setReady] = useState(Boolean(cached));
-  const [loadError, setLoadError] = useState(false);
-  // True once the server (or WS / admin publish) gave a trustworthy answer in this session.
-  const hasTrustedConfig = useRef(Boolean(cached));
+  const [ready, setReady] = useState(Boolean(cached) && !isAllProductsOffSnapshot(cached));
   const shellSoftwareRef = useRef(
     cached ? cached.softwarePlatformEnabled === true : null,
   );
   const swappingRef = useRef(false);
 
   const applyConfig = useCallback((next) => {
-    hasTrustedConfig.current = true;
-    setLoadError(false);
     setConfig((prev) => {
       const normalized = normalize(next, prev);
       writeCachedConfig(normalized);
@@ -247,9 +223,8 @@ export function ProductProvider({ children }) {
         cache: 'no-store',
         headers: { Accept: 'application/json', Pragma: 'no-cache' },
       });
-      const data = await res.json().catch(() => null);
-      // 503 / { note: 'unavailable' } is NOT an admin decision — never apply or cache it.
-      if (!isProductApiFailure(data, res.ok)) {
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.note !== 'unavailable') {
         const normalized = normalize(data);
         applyConfig(data);
         setReady(true);
@@ -259,16 +234,12 @@ export function ProductProvider({ children }) {
     } catch {
       // Keep last known — never apply fail-closed software=false from a blip.
     }
-    // Transient failure: keep last trusted config. Only surface an error (retry UI) when we have
-    // nothing trustworthy — never become "ready" from an all-off guess.
-    if (!hasTrustedConfig.current) setLoadError(true);
-    setReady(true);
-  }, [applyConfig, maybeSwapPublicShell]);
-
-  const retry = useCallback(async () => {
-    setReady(false);
-    await refresh();
-  }, [refresh]);
+    setReady((wasReady) => {
+      if (wasReady) return true;
+      if (cached && !isAllProductsOffSnapshot(cached)) return true;
+      return false;
+    });
+  }, [applyConfig, cached, maybeSwapPublicShell]);
 
   useEffect(() => {
     purgeLegacyProductConfigCaches();
@@ -350,12 +321,10 @@ export function ProductProvider({ children }) {
     softwarePlatformEnabled: config.softwarePlatformEnabled === true,
     updatedAt: config.updatedAt,
     ready,
-    loadError,
     isWalletEnabled,
     isBettingEnabled,
     refresh,
-    retry,
-  }), [config, ready, loadError, isWalletEnabled, isBettingEnabled, refresh, retry]);
+  }), [config, ready, isWalletEnabled, isBettingEnabled, refresh]);
 
   return (
     <ProductContext.Provider value={value}>
