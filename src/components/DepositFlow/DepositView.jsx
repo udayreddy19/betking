@@ -271,14 +271,13 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
       if (!orderRes.ok) {
         throw new Error(orderData.error || orderData.code || 'Unable to start UPI payment');
       }
-      if (!orderData.vpa || !orderData.upiUri) {
+      if (!orderData.upiUri && !orderData.qrDataUrl) {
         throw new Error('UPI collect is not configured. Ask support to set the UPI ID.');
       }
       setUpiCollect({
         amount: depositAmt,
         depositId: orderData.depositId || orderData.orderId,
         orderId: orderData.orderId || orderData.depositId,
-        vpa: orderData.vpa,
         payeeName: orderData.payeeName || 'OddsYra',
         upiUri: orderData.upiUri,
         qrDataUrl: orderData.qrDataUrl || '',
@@ -664,7 +663,7 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
                 {formatInr(lastTransaction?.amount || upiCollect?.amount || parsedAmount)}
               </p>
               <p className="deposit-success-desc">
-                Payment sent to {upiCollect?.vpa}. Wallet credits after OddsYra verifies the UTR.
+                Wallet credits after OddsYra verifies the UTR.
               </p>
               <div className="deposit-tx-body" style={{ marginTop: 12 }}>
                 <div className="deposit-tx-row">
@@ -695,23 +694,15 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
                 </div>
               )}
               <section className="deposit-section-card deposit-upi-collect-card">
-                <span className="deposit-section-label">PAY TO THIS UPI ID</span>
+                <span className="deposit-section-label">SCAN QR TO PAY</span>
                 <p className="deposit-upi-amount">{formatInr(upiCollect.amount)}</p>
                 {upiCollect.qrDataUrl ? (
                   <img
                     className="deposit-upi-qr"
                     src={upiCollect.qrDataUrl}
-                    alt={`UPI QR for ${upiCollect.vpa}`}
+                    alt="UPI payment QR"
                   />
                 ) : null}
-                <button
-                  type="button"
-                  className="deposit-upi-vpa"
-                  onClick={() => navigator.clipboard?.writeText(upiCollect.vpa).catch(() => {})}
-                >
-                  {upiCollect.vpa}
-                  <span>Copy</span>
-                </button>
                 <p className="deposit-upi-payee">Payee: {upiCollect.payeeName}</p>
                 <div className="deposit-upi-apps">
                   {[
