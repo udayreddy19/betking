@@ -1,0 +1,110 @@
+import { useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { motion } from 'motion/react';
+import { useAuth } from '../../context/AuthContext';
+import { useBetSlip } from '../../context/BetSlipContext';
+import { useProducts } from '../../context/ProductContext';
+import { CASINO_ENABLED } from '../../utils/featureFlags';
+import { pressScale, springTab } from '../../utils/motionPresets';
+import { useUserNotifications } from '../../hooks/useUserNotifications';
+import {
+  NavHomeIcon,
+  NavCasinoIcon,
+  NavPromotionsIcon,
+  NavVipIcon,
+  NavMenuIcon,
+} from './MobileNavIcons';
+import { HiOutlineUser, BiWallet } from '../../icons';
+import './MobileBottomBar.css';
+
+export default function MobileBottomBar() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { isLoggedIn, user, toggleSidebar, closeSidebar } = useAuth();
+  const { closeMyBets, closeQuickBet, setIsMobileOpen } = useBetSlip();
+  const { walletEnabled, bettingEnabled } = useProducts();
+  const { unreadCount } = useUserNotifications(isLoggedIn, user?.userId);
+
+  const navItems = useMemo(() => {
+    if (walletEnabled && !bettingEnabled) {
+      return [
+        { label: 'Home', path: '/', icon: NavHomeIcon },
+        { label: 'Wallet', path: '/wallet', icon: BiWallet },
+        { label: 'Profile', path: '/profile', icon: HiOutlineUser, isProfile: true },
+      ];
+    }
+    return [
+      { label: 'Home', path: '/', icon: NavHomeIcon },
+      bettingEnabled && CASINO_ENABLED
+        ? { label: 'Casino', path: '/casino', icon: NavCasinoIcon }
+        : bettingEnabled
+          ? { label: 'Promos', path: '/promotions', icon: NavPromotionsIcon }
+          : { label: 'Wallet', path: '/wallet', icon: BiWallet },
+      isLoggedIn
+        ? { label: 'Profile', path: '/profile', icon: HiOutlineUser, isProfile: true }
+        : { label: 'VIP', path: '/vip', icon: NavVipIcon, isVip: true },
+    ].filter(Boolean);
+  }, [isLoggedIn, walletEnabled, bettingEnabled]);
+
+  const go = (path) => {
+    closeSidebar();
+    closeMyBets?.();
+    closeQuickBet?.();
+    setIsMobileOpen?.(false);
+    window.dispatchEvent(new CustomEvent('oddsyra:close-support-chat'));
+    if (location.pathname === path) return;
+    navigate(path);
+  };
+
+  return (
+    <nav className="mobile-bottom-bar" aria-label="Mobile Navigation">
+      <div className="mobile-bottom-bar-inner">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = location.pathname === item.path;
+
+          return (
+            <motion.button
+              key={item.path}
+              type="button"
+              className={`mobile-bar-item ${isActive ? 'active' : ''} ${item.isVip ? 'vip-item' : ''} ${item.isProfile ? 'profile-item' : ''}`}
+              aria-current={isActive ? 'page' : undefined}
+              onClick={() => go(item.path)}
+              whileTap={{ scale: pressScale }}
+              transition={springTab}
+            >
+              <div className="mobile-bar-icon-wrap">
+                <Icon className="mobile-bar-icon" />
+              </div>
+              <span className="mobile-bar-label">{item.label}</span>
+              {isActive && (
+                <motion.div
+                  className="mobile-bar-active-pill"
+                  layoutId="mobileActiveTab"
+                  transition={springTab}
+                />
+              )}
+            </motion.button>
+          );
+        })}
+
+        <motion.button
+          type="button"
+          className="mobile-bar-item menu-item"
+          onClick={toggleSidebar}
+          aria-label={unreadCount > 0 ? `Menu, ${unreadCount} unread notifications` : 'Menu'}
+          whileTap={{ scale: pressScale }}
+          transition={springTab}
+        >
+          <div className="mobile-bar-icon-wrap">
+            <NavMenuIcon className="mobile-bar-icon" />
+            {unreadCount > 0 && (
+              <span className="mobile-bar-notif-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+            )}
+          </div>
+          <span className="mobile-bar-label">Menu</span>
+        </motion.button>
+      </div>
+    </nav>
+  );
+}

@@ -10,8 +10,6 @@ import { springUi } from './utils/motionPresets';
 import { lazyWithRetry } from './utils/lazyWithRetry';
 
 import Header from './components/Header/Header';
-import PushOptInBanner from './components/PushOptInBanner/PushOptInBanner';
-import ReleaseBanner from './components/ReleaseBanner/ReleaseBanner';
 import Footer from './components/Footer/Footer';
 import Sidebar from './components/Sidebar/Sidebar';
 import LoginModal from './components/LoginModal/LoginModal';
@@ -33,8 +31,6 @@ import { CASINO_ENABLED } from './utils/featureFlags';
 import { FeatureFlagsProvider, useFeatureFlags } from './context/FeatureFlagsContext';
 import { ProductProvider, useProducts } from './context/ProductContext';
 import ProductUnavailable from './components/ProductUnavailable/ProductUnavailable';
-import PlatformGate from './components/PlatformGate/PlatformGate';
-import CasinoComingSoon from './pages/Casino/CasinoComingSoon';
 import Home from './pages/Home/Home';
 import Register from './pages/Register/Register';
 import Profile from './pages/Profile/Profile';
@@ -77,6 +73,10 @@ const MyRewards = lazyWithRetry(() => import('./pages/Rewards/MyRewards'));
 const OddsYraSrl = lazyWithRetry(() => import('./pages/Srl/OddsYraSrl'));
 const DepositPage = lazyWithRetry(() => import('./pages/Wallet/DepositPage'));
 
+function CasinoComingSoon() {
+  return <Navigate to="/" replace />;
+}
+
 function FlaggedRoute({ flagKey, children, fallback = '/' }) {
   const { isEnabled, ready } = useFeatureFlags();
   // Fail closed until flags hydrate; after that missing keys stay on (opt-out toggles).
@@ -97,6 +97,42 @@ function ProductRoute({ product, children }) {
   return children;
 }
 
+/** When betting is off (and wallet is removed), show a controlled unavailable page (admin still reachable). */
+function PlatformGate({ children }) {
+  const location = useLocation();
+  const { ready, bettingEnabled, pgReviewMode } = useProducts();
+  const path = location.pathname || '/';
+  // PG compliance mode: Fee Desk owns the public surface — never show ProductUnavailable.
+  if (pgReviewMode) return children;
+  const isExempt = path.startsWith('/admin')
+    || path.startsWith('/trader')
+    || path.startsWith('/developer')
+    || path.startsWith('/api-docs')
+    || path.startsWith('/register')
+    || path.startsWith('/complete-profile')
+    || path.startsWith('/verify-email')
+    || path.startsWith('/reset-password')
+    || path.startsWith('/_oauth')
+    || path.startsWith('/terms')
+    || path.startsWith('/privacy')
+    || path.startsWith('/help')
+    || path.startsWith('/support')
+    || path.startsWith('/company')
+    || path.startsWith('/documents')
+    || path.startsWith('/desk')
+    || path.startsWith('/responsible-gaming');
+  if (!ready) return <PageLoader />;
+  if (!bettingEnabled && !isExempt) {
+    return (
+      <ProductUnavailable
+        title="Currently Unavailable"
+        message="No products are currently enabled. Please try again later."
+      />
+    );
+  }
+  return children;
+}
+
 /** PG ON → leave the Vite SPA for the mounted Refract static site. */
 function PgRefractRedirect() {
   useEffect(() => {
@@ -109,22 +145,12 @@ function PgRefractRedirect() {
 
 /** Brief loader while the sp_public cookie is set and the page reloads into the software SPA. */
 function SoftwarePlatformHandoff() {
-  const { softwarePlatformName } = useProducts();
-  const brand = String(softwarePlatformName || '').trim() || 'Software Platform';
   useEffect(() => {
     if (typeof document === 'undefined') return;
     let cancelled = false;
     (async () => {
       let guard = false;
       try { guard = sessionStorage.getItem('sp_handoff_reload') === '1'; } catch { /* ignore */ }
-      // Drop sportsbook product cache so a later toggle-off cannot revive a stale snapshot.
-      try {
-        for (const k of [
-          'oddsyra_product_config_v1', 'oddsyra_product_config_v2', 'oddsyra_product_config_v3',
-          'oddsyra_product_config_v4', 'oddsyra_product_config_v5', 'oddsyra_product_config_v6',
-          'oddsyra_product_config_v7',
-        ]) sessionStorage.removeItem(k);
-      } catch { /* ignore */ }
       // Ask the server to set sp_public — do not clear/fight Secure cookies from JS alone.
       try {
         await fetch(`/api/config/software-mode?_=${Date.now()}`, {
@@ -144,24 +170,7 @@ function SoftwarePlatformHandoff() {
     })();
     return () => { cancelled = true; };
   }, []);
-  return (
-    <div
-      className="page-loader"
-      role="status"
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 10,
-        minHeight: '40vh',
-        fontFamily: 'system-ui, sans-serif',
-      }}
-    >
-      <div style={{ fontSize: '1.35rem', fontWeight: 750, letterSpacing: '-0.02em' }}>{brand}</div>
-      <div style={{ fontSize: '0.9rem', opacity: 0.7 }}>Opening software platform…</div>
-    </div>
-  );
+  return <div className="page-loader" role="status">Loading…</div>;
 }
 
 function PageLoader() {
@@ -237,8 +246,6 @@ function AppLayout() {
       <RouteSeo />
       <PhoneRequiredGate />
       {!isDepositRoute && <Header />}
-      {!isAdminRoute && !isDepositRoute && <ReleaseBanner />}
-      {!isAdminRoute && !isDepositRoute && <PushOptInBanner />}
       {!isDepositRoute && (
         <ErrorBoundary fallback={null}>
           <Sidebar />
@@ -274,7 +281,7 @@ function AppLayout() {
               <Route path="/upi-deposits" element={<ProductRoute product="wallet"><UpiDeposits /></ProductRoute>} />
               <Route path="/what-is-oddsyra-srl" element={<ProductRoute product="betting"><WhatIsOddsYraSrl /></ProductRoute>} />
               <Route path="/cricket-betting-guide" element={<ProductRoute product="betting"><CricketBettingGuide /></ProductRoute>} />
-              <Route path="/exchange" element={<Navigate to="/" replace />} />
+              <Route path="/exchange" element={<CasinoComingSoon />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/wallet" element={<ProductRoute product="wallet"><WalletDashboard /></ProductRoute>} />
               <Route path="/wallet/bank-accounts" element={<ProductRoute product="wallet"><BankAccountsPage /></ProductRoute>} />

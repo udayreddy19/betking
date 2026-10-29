@@ -245,6 +245,30 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
     navigate('/wallet');
   };
 
+  const openHdfcPayment = async (depositAmt) => {
+    setErrorMsg('');
+    setIsLoading(true);
+    try {
+      const orderRes = await apiFetch('/api/v1/payments/create-order', {
+        method: 'POST',
+        body: JSON.stringify({ amount: depositAmt, currency: 'INR', provider: 'HDFC' }),
+      });
+      const orderData = await orderRes.json();
+      if (!orderRes.ok) {
+        throw new Error(orderData.error || orderData.code || 'Unable to create deposit order');
+      }
+      const payUrl = orderData.payUrl || orderData.redirectUrl;
+      if (!payUrl) {
+        throw new Error('HDFC did not return a payment page');
+      }
+      window.location.href = payUrl;
+    } catch (err) {
+      setIsLoading(false);
+      setIsProcessing(false);
+      setErrorMsg(err.message || 'Unable to start HDFC payment');
+    }
+  };
+
   // Cashfree checkout
   const openCashfreePayment = async (depositAmt) => {
     setErrorMsg('');
@@ -485,7 +509,9 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
 
     submitLockRef.current = true;
     try {
-      if (selectedProvider === 'RAZORPAY') {
+      if (selectedProvider === 'HDFC') {
+        await openHdfcPayment(parsedAmount);
+      } else if (selectedProvider === 'RAZORPAY') {
         await openRazorpayPayment(parsedAmount);
       } else {
         await openCashfreePayment(parsedAmount);
@@ -769,7 +795,7 @@ export default function DepositView({ onClose, isModal = false, returnTo = null 
                           className={`deposit-provider-tab ${isActive ? 'deposit-provider-tab--active' : ''}`}
                           onClick={() => setSelectedProvider(pUpper)}
                         >
-                          <span>{pUpper === 'CASHFREE' ? '⚡ Cashfree' : '🛡️ Razorpay'}</span>
+                          <span>{pUpper === 'HDFC' ? '🏦 HDFC SmartGateway' : pUpper === 'CASHFREE' ? '⚡ Cashfree' : '🛡️ Razorpay'}</span>
                         </button>
                       );
                     })}

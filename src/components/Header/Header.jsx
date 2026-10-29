@@ -100,7 +100,6 @@ function Header() {
     if (stored === '0' || stored === 'false') return false;
     return true;
   });
-  const [referralCta, setReferralCta] = useState(null);
 
   const toggleBalanceVisible = useCallback((e) => {
     e?.stopPropagation?.();
@@ -175,39 +174,6 @@ function Header() {
     window.addEventListener('oddsyra:open-daily-spin', openSpin);
     return () => window.removeEventListener('oddsyra:open-daily-spin', openSpin);
   }, []);
-
-  useEffect(() => {
-    if (!isLoggedIn || !bettingEnabled || !isEnabled('referral_system_ui', true)) {
-      setReferralCta(null);
-      return undefined;
-    }
-    let cancelled = false;
-    (async () => {
-      try {
-        const { getAccessToken } = await import('../../utils/apiClient');
-        const token = getAccessToken();
-        const res = await fetch('/api/v1/rewards/referrals/me', {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-          credentials: 'include',
-        });
-        const json = await res.json().catch(() => ({}));
-        if (cancelled || !json?.enabled) return;
-        const next = json.milestones?.next;
-        const successful = Number(json.milestones?.successful ?? json.stats?.qualified ?? 0);
-        if (!next?.count) return;
-        const need = Math.max(0, Number(next.count) - successful);
-        if (need <= 0) return;
-        setReferralCta({
-          need,
-          amount: Number(next.amount || 0),
-          label: `Invite ${need} → ₹${Number(next.amount || 0).toLocaleString('en-IN')}`,
-        });
-      } catch {
-        if (!cancelled) setReferralCta(null);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [isLoggedIn, bettingEnabled, isEnabled]);
 
   const togglePromos = useCallback(() => {
     setIsPromosOpen((open) => {
@@ -340,19 +306,6 @@ function Header() {
 
         <div className="header-right">
           <ThemeToggle className="header-theme-toggle" />
-
-          {isLoggedIn && referralCta && bettingEnabled && (
-            <button
-              type="button"
-              className="header-referral-cta"
-              onClick={() => navigate('/invite')}
-              title={referralCta.label}
-              aria-label={referralCta.label}
-            >
-              <span className="header-referral-cta__full">{referralCta.label}</span>
-              <span className="header-referral-cta__short" aria-hidden="true">Invite</span>
-            </button>
-          )}
 
           {showAdminCleanHeader ? (
             <div className="header-admin-clean-bar">

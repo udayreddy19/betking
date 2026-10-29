@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { STARTING_BALANCE, WELCOME_BONUS } from '../../data/mockData';
 import { formatInr } from '../../utils/walletBalance';
-import { classifyApiError, KYC_TOAST_ACTION } from '../../utils/kycUi';
+import { cleanKycMessage, isKycError, KYC_PROFILE_PATH } from '../../utils/kycUi';
 import {
   getWithdrawableAmount,
   splitBetWinPayout,
@@ -1061,12 +1061,19 @@ export function AuthProvider({ children }) {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || data.success === false) {
-          // Prefer the structured `code`; kycUi falls back to message regex only for legacy responses.
-          const failure = classifyApiError(data, 'Withdrawal failed.');
-          const message = failure.message;
-          if (failure.kind === 'kyc') {
-            showToast(message || 'Verify your identity to withdraw.', 'error', {
-              action: KYC_TOAST_ACTION,
+          const raw = data.error || data.code || 'Withdrawal failed.';
+          const code = String(data.code || raw).toUpperCase();
+          let message = raw;
+          if (
+            code.includes('BENEFICIARY')
+            || code.includes('KYC_IDENTITY_NAME')
+            || /BENEFICIARY_NAME_MISMATCH|BENEFICIARY_NOT_VERIFIED|KYC_IDENTITY_NAME_NOT_AVAILABLE/i.test(raw)
+          ) {
+            message = 'Your verified bank account holder name does not match your verified identity (or bank beneficiary verification is not yet available). Please update or verify your bank account details before requesting this withdrawal.';
+          }
+          if (isKycError(message) || isKycError(raw)) {
+            showToast(cleanKycMessage(raw) || 'Verify your identity to withdraw.', 'error', {
+              action: { label: 'Proceed to KYC', path: KYC_PROFILE_PATH },
             });
           } else {
             showToast(message, 'error');

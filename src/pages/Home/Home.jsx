@@ -5,8 +5,7 @@ import FilterChips from '../../components/FilterChips/FilterChips';
 import SportIcon from '../../components/SportIcon/SportIcon';
 import MatchCard from '../../components/MatchCard/MatchCard';
 import HomeCategoryGrid from '../../components/HomeCategoryGrid/HomeCategoryGrid';
-import { sportsCategories } from '../../data/mockData';
-import { buildHomeLeagueChips } from '../../utils/homeMerchandising';
+import { sportsCategories, featuredLeagues } from '../../data/mockData';
 import { useFeatureFlags } from '../../context/FeatureFlagsContext';
 import { homePromoSlides } from '../../data/homePageData';
 import { isSrlSeasonLive, SRL_LAUNCH_LABEL, SRL_PAGE_PATH } from '../../data/oddsyraSrlSeason';
@@ -14,16 +13,14 @@ import { useLiveMatches, useLiveSportsMeta } from '../../context/LiveSportsConte
 import LiveScoresFeedBanner from '../../components/LiveScoresFeedBanner/LiveScoresFeedBanner';
 import { filterMatches, compareMatchesForSportsBoard } from '../../utils/matchFilters';
 import { getMatchState } from '../../utils/matchBetting';
-import { isSameLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
+import { getLeagueMeta, isSameLeague, matchBelongsToLeague } from '../../utils/leagueNavigation';
 import { useMatchWatchlist } from '../../hooks/useMatchWatchlist';
 import BoostedOddsWidget from '../../components/BoostedOddsWidget/BoostedOddsWidget';
 import AnimatedMotionGiftIcon from '../../components/AnimatedMotionGiftIcon/AnimatedMotionGiftIcon';
 import ErrorBoundary from '../../components/ErrorBoundary/ErrorBoundary';
 import { useAuth } from '../../context/AuthContext';
 import { useProducts } from '../../context/ProductContext';
-import { loadPlayerPrefs } from '../../utils/betslipPrefs';
 import WalletHome from '../Wallet/WalletHome';
-import ProductUnavailable from '../../components/ProductUnavailable/ProductUnavailable';
 import './Home.css';
 
 const HOME_MATCH_LIMIT = 12;
@@ -49,9 +46,9 @@ function getPromoIndexFromScroll(track) {
   );
 }
 
-function filterByLeague(matchList, leagueId, leagueChips = []) {
+function filterByLeague(matchList, leagueId) {
   if (!leagueId) return matchList;
-  const meta = leagueChips.find((l) => isSameLeague(leagueId, l.id));
+  const meta = getLeagueMeta(leagueId);
   if (!meta) return matchList;
   return matchList.filter((m) => matchBelongsToLeague(m, meta));
 }
@@ -60,9 +57,7 @@ export default function Home() {
   const matches = useLiveMatches();
   const { isScoresLoading, scoresError, refreshScores } = useLiveSportsMeta();
   const { isSportEnabled, isEnabled } = useFeatureFlags();
-  const {
-    walletEnabled, bettingEnabled, ready: productsReady, loadError, retry: retryProducts,
-  } = useProducts();
+  const { walletEnabled, bettingEnabled, ready: productsReady } = useProducts();
   const srlEnabled = isEnabled('oddsyra_srl_ui', true) && bettingEnabled;
   const navigate = useNavigate();
   const { isLoggedIn, openDepositModal, openFinModal, user } = useAuth();
@@ -83,7 +78,6 @@ export default function Home() {
   const [activeLeague, setActiveLeague] = useState(null);
   const [promoIndex, setPromoIndex] = useState(0);
   const matchScrollRef = useRef(null);
-  const cricketLiveScrollRef = useRef(null);
   const watchlistScrollRef = useRef(null);
   const promoScrollRef = useRef(null);
   const promoIndexRef = useRef(0);
@@ -92,27 +86,6 @@ export default function Home() {
   const promoPointerStartX = useRef(0);
   const promoDidSwipe = useRef(false);
   const { ids: watchlistIds, count: watchlistCount } = useMatchWatchlist();
-  const [playerPrefs, setPlayerPrefs] = useState(() => loadPlayerPrefs());
-
-  useEffect(() => {
-    const onPrefs = () => setPlayerPrefs(loadPlayerPrefs());
-    window.addEventListener('oddsyra:player-prefs-changed', onPrefs);
-    return () => window.removeEventListener('oddsyra:player-prefs-changed', onPrefs);
-  }, []);
-
-  const forYouMatches = useMemo(() => {
-    const teams = (playerPrefs.favoriteTeams || []).map((t) => t.toLowerCase());
-    const leagues = (playerPrefs.favoriteLeagues || []).map((t) => t.toLowerCase());
-    if (!teams.length && !leagues.length) return [];
-    return (matches || []).filter((m) => {
-      const t1 = String(m.team1?.name || '').toLowerCase();
-      const t2 = String(m.team2?.name || '').toLowerCase();
-      const league = String(m.league || '').toLowerCase();
-      const teamHit = teams.some((t) => t1.includes(t) || t2.includes(t));
-      const leagueHit = leagues.some((l) => league.includes(l));
-      return teamHit || leagueHit;
-    }).slice(0, HOME_MATCH_LIMIT);
-  }, [matches, playerPrefs]);
 
   const liveCount = useMemo(
     () => (matches || []).filter((m) => getMatchState(m) === 'in').length,
@@ -139,11 +112,22 @@ export default function Home() {
     return map;
   }, [matches]);
 
-  // Merchandising: live API leagues first, static featuredLeagues only as fallback.
-  const leagueChips = useMemo(
-    () => buildHomeLeagueChips(matches, activeSport, { limit: 4 }),
-    [activeSport, matches],
-  );
+  const leagueChips = useMemo(() => {
+    const all = featuredLeagues.filter((l) => l.sport === activeSport);
+    // Only leagues that currently have matches — keeps the chip row short
+    const withMatches = all.filter((league) => {
+      const meta = getLeagueMeta(league.id);
+      if (!meta) return false;
+      return (matches || []).some((m) => {
+        const s = String(m.sport || '').toLowerCase();
+        const sportOk = activeSport === 'all'
+          || s === activeSport
+          || (activeSport === 'soccer' && (s === 'soccer' || s === 'football'));
+        return sportOk && matchBelongsToLeague(m, meta);
+      });
+    });
+    return (withMatches.length > 0 ? withMatches : all).slice(0, 4);
+  }, [activeSport, matches]);
 
   const homeSportChips = useMemo(() => {
     const enabledCats = sportsCategories.filter((c) => c.id === 'all' || isSportEnabled(c.id));
@@ -162,18 +146,18 @@ export default function Home() {
     const sport = sportsCategories.find((c) => c.id === activeSport);
     const name = sport?.name || 'Sports';
     if (activeLeague) {
-      const league = leagueChips.find((l) => isSameLeague(activeLeague, l.id));
+      const league = featuredLeagues.find((l) => isSameLeague(activeLeague, l.id));
       return league?.name || name;
     }
     if (activeSport === 'all') return liveCount > 0 ? 'Live now' : 'Sports';
     return liveCount > 0 && (sportCounts[activeSport] || 0) > 0
       ? `${name} · Live`
       : name;
-  }, [activeSport, activeLeague, liveCount, sportCounts, leagueChips]);
+  }, [activeSport, activeLeague, liveCount, sportCounts]);
 
   const sportMatches = useMemo(() => {
     const bySport = filterMatches(matches || [], { sport: activeSport, stateTab: 'bettable' });
-    const filtered = activeLeague ? filterByLeague(bySport, activeLeague, leagueChips) : bySport;
+    const filtered = activeLeague ? filterByLeague(bySport, activeLeague) : bySport;
     return [...filtered].sort((a, b) => {
       const oddsScore = (m) => {
         const o = m?.odds || m?.authoritativeOdds || {};
@@ -184,7 +168,7 @@ export default function Home() {
       if (d !== 0) return d;
       return compareMatchesForSportsBoard(a, b);
     });
-  }, [matches, activeSport, activeLeague, leagueChips]);
+  }, [matches, activeSport, activeLeague]);
 
   const promoSlides = useMemo(
     () => (srlEnabled ? homePromoSlides : homePromoSlides.filter((s) => s.id !== 'srl')),
@@ -283,25 +267,12 @@ export default function Home() {
     return (matches || []).filter((m) => idSet.has(String(m.id)));
   }, [matches, watchlistIds]);
 
-  const cricketLiveMatches = useMemo(() => (
-    (matches || [])
-      .filter((m) => String(m.sport || '').toLowerCase() === 'cricket' && getMatchState(m) === 'in')
-      .sort(compareMatchesForSportsBoard)
-      .slice(0, 8)
-  ), [matches]);
-
   if (!productsReady) {
     return <div className="home-page container" id="home-page"><p style={{ padding: '2rem 0', color: '#64748b' }}>Loading…</p></div>;
   }
 
-  // Wallet-only (betting off, wallet on): wallet landing instead of a blank page.
-  if (walletEnabled && !bettingEnabled) {
-    return <WalletHome />;
-  }
-
-  if (!bettingEnabled && !walletEnabled) {
-    // PlatformGate normally intercepts this; render an explicit state instead of an empty page.
-    return <ProductUnavailable onRetry={loadError ? retryProducts : null} />;
+  if (!bettingEnabled) {
+    return null; // PlatformGate shows unavailable / PG review message
   }
 
   return (
@@ -326,152 +297,6 @@ export default function Home() {
 
       {!bettingEnabled ? null : (
       <>
-
-      {cricketLiveMatches.length > 0 && (
-        <section className="home-section home-cricket-live" id="cricket-live-section">
-          <div className="section-header">
-            <h2>Cricket · Live</h2>
-            <div className="section-header-actions">
-              <Link to="/sports?sport=cricket" className="carousel-view-all">
-                View all
-              </Link>
-              <button type="button" className="carousel-nav-btn" onClick={() => scroll(cricketLiveScrollRef, 'left')} aria-label="Scroll cricket live left">
-                <FiChevronLeft />
-              </button>
-              <button type="button" className="carousel-nav-btn" onClick={() => scroll(cricketLiveScrollRef, 'right')} aria-label="Scroll cricket live right">
-                <FiChevronRight />
-              </button>
-            </div>
-          </div>
-          <div className="match-cards-scroll scroll-row-bleed" ref={cricketLiveScrollRef}>
-            {cricketLiveMatches.map((match) => (
-              <ErrorBoundary key={`cl-${match.id}`} resetKey={match.id} fallback={null}>
-                <MatchCard match={match} variant="home" />
-              </ErrorBoundary>
-            ))}
-          </div>
-        </section>
-      )}
-
-      <section className="home-section home-sports-action" id="sports-action-section">
-        <div className="section-header">
-          <h2>{sectionTitle}</h2>
-          <div className="section-header-actions">
-            <button type="button" className="carousel-view-all" onClick={() => navigate('/sports')}>
-              View All
-            </button>
-            <button type="button" className="carousel-nav-btn" onClick={() => scroll(matchScrollRef, 'left')} aria-label="Scroll left">
-              <FiChevronLeft />
-            </button>
-            <button type="button" className="carousel-nav-btn" onClick={() => scroll(matchScrollRef, 'right')} aria-label="Scroll right">
-              <FiChevronRight />
-            </button>
-          </div>
-        </div>
-
-        <FilterChips
-          items={homeSportChips}
-          activeId={activeSport}
-          onSelect={handleSportChange}
-          counts={sportCounts}
-          className="filter-chips-row scroll-row-bleed home-sport-chips"
-        />
-
-        {leagueChips.length > 0 && (
-          <div className="home-league-chips scroll-row-bleed">
-            {leagueChips.map((league) => (
-              <button
-                key={league.id}
-                type="button"
-                className={`home-league-chip ${isSameLeague(activeLeague, league.id) ? 'active' : ''}`}
-                onClick={() => setActiveLeague(
-                  isSameLeague(activeLeague, league.id) ? null : league.id
-                )}
-              >
-                <SportIcon sport={league.sport} icon={league.icon} className="home-league-chip-icon" />
-                {league.name}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div className="match-cards-scroll scroll-row-bleed" ref={matchScrollRef} key={`${activeSport}-${activeLeague}`}>
-          {sportMatches.length > 0 ? (
-            sportMatches.slice(0, HOME_MATCH_LIMIT).map((match) => (
-              <ErrorBoundary key={match.id} resetKey={match.id} fallback={null}>
-                <MatchCard match={match} variant="home" />
-              </ErrorBoundary>
-            ))
-          ) : isScoresLoading ? (
-            <div className="no-matches-empty">
-              <span className="no-matches-icon">⏳</span>
-              <p>Loading matches…</p>
-            </div>
-          ) : (
-            <div className="no-matches-empty">
-              <SportIcon sport={activeSport} className="no-matches-icon" />
-              <p>No {sportsCategories.find((s) => s.id === activeSport)?.name || 'sport'} matches right now</p>
-              <button type="button" className="no-matches-cta" onClick={() => navigate('/sports')}>
-                Browse all sports
-              </button>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {watchlistCount > 0 && (
-        <section className="home-section home-watchlist" id="watchlist-section">
-          <div className="section-header">
-            <h2>Your watchlist</h2>
-            <div className="section-header-actions">
-              <button type="button" className="carousel-view-all" onClick={() => navigate('/sports?watchlist=1')}>
-                View all
-              </button>
-              <button type="button" className="carousel-nav-btn" onClick={() => scroll(watchlistScrollRef, 'left')} aria-label="Scroll watchlist left">
-                <FiChevronLeft />
-              </button>
-              <button type="button" className="carousel-nav-btn" onClick={() => scroll(watchlistScrollRef, 'right')} aria-label="Scroll watchlist right">
-                <FiChevronRight />
-              </button>
-            </div>
-          </div>
-          <div className="match-cards-scroll scroll-row-bleed" ref={watchlistScrollRef}>
-            {watchlistMatches.length > 0 ? (
-              watchlistMatches.slice(0, HOME_MATCH_LIMIT).map((match) => (
-                <ErrorBoundary key={match.id} resetKey={match.id} fallback={null}>
-                  <MatchCard match={match} variant="home" />
-                </ErrorBoundary>
-              ))
-            ) : (
-              <div className="no-matches-empty">
-                <p>Saved matches are not on the board right now. They’ll show here again when they return.</p>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {forYouMatches.length > 0 && (
-        <section className="home-section" id="for-you-section">
-          <div className="section-header">
-            <h2>Markets for you</h2>
-            <button type="button" className="carousel-view-all" onClick={() => navigate('/profile')}>
-              Edit favourites
-            </button>
-          </div>
-          <div className="match-cards-scroll scroll-row-bleed">
-            {forYouMatches.map((match) => (
-              <ErrorBoundary key={`fy-${match.id}`} resetKey={match.id} fallback={null}>
-                <MatchCard match={match} variant="home" />
-              </ErrorBoundary>
-            ))}
-          </div>
-        </section>
-      )}
-
-      <section className="home-section home-boosted">
-        <BoostedOddsWidget />
-      </section>
 
       <div
         className="home-promo-carousel"
@@ -558,6 +383,108 @@ export default function Home() {
           </button>
         </div>
       )}
+
+      {watchlistCount > 0 && (
+        <section className="home-section home-watchlist" id="watchlist-section">
+          <div className="section-header">
+            <h2>Your watchlist</h2>
+            <div className="section-header-actions">
+              <button type="button" className="carousel-view-all" onClick={() => navigate('/sports?watchlist=1')}>
+                View all
+              </button>
+              <button type="button" className="carousel-nav-btn" onClick={() => scroll(watchlistScrollRef, 'left')} aria-label="Scroll watchlist left">
+                <FiChevronLeft />
+              </button>
+              <button type="button" className="carousel-nav-btn" onClick={() => scroll(watchlistScrollRef, 'right')} aria-label="Scroll watchlist right">
+                <FiChevronRight />
+              </button>
+            </div>
+          </div>
+          <div className="match-cards-scroll scroll-row-bleed" ref={watchlistScrollRef}>
+            {watchlistMatches.length > 0 ? (
+              watchlistMatches.slice(0, HOME_MATCH_LIMIT).map((match) => (
+                <ErrorBoundary key={match.id} resetKey={match.id} fallback={null}>
+                  <MatchCard match={match} variant="home" />
+                </ErrorBoundary>
+              ))
+            ) : (
+              <div className="no-matches-empty">
+                <p>Saved matches are not on the board right now. They’ll show here again when they return.</p>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      <section className="home-section home-boosted">
+        <BoostedOddsWidget />
+      </section>
+
+      <section className="home-section home-sports-action" id="sports-action-section">
+        <div className="section-header">
+          <h2>{sectionTitle}</h2>
+          <div className="section-header-actions">
+            <button type="button" className="carousel-view-all" onClick={() => navigate('/sports')}>
+              View All
+            </button>
+            <button type="button" className="carousel-nav-btn" onClick={() => scroll(matchScrollRef, 'left')} aria-label="Scroll left">
+              <FiChevronLeft />
+            </button>
+            <button type="button" className="carousel-nav-btn" onClick={() => scroll(matchScrollRef, 'right')} aria-label="Scroll right">
+              <FiChevronRight />
+            </button>
+          </div>
+        </div>
+
+        <FilterChips
+          items={homeSportChips}
+          activeId={activeSport}
+          onSelect={handleSportChange}
+          counts={sportCounts}
+          className="filter-chips-row scroll-row-bleed home-sport-chips"
+        />
+
+        {leagueChips.length > 0 && (
+          <div className="home-league-chips scroll-row-bleed">
+            {leagueChips.map((league) => (
+              <button
+                key={league.id}
+                type="button"
+                className={`home-league-chip ${isSameLeague(activeLeague, league.id) ? 'active' : ''}`}
+                onClick={() => setActiveLeague(
+                  isSameLeague(activeLeague, league.id) ? null : league.id
+                )}
+              >
+                <SportIcon sport={league.sport} icon={league.icon} className="home-league-chip-icon" />
+                {league.name}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="match-cards-scroll scroll-row-bleed" ref={matchScrollRef} key={`${activeSport}-${activeLeague}`}>
+          {sportMatches.length > 0 ? (
+            sportMatches.slice(0, HOME_MATCH_LIMIT).map((match) => (
+              <ErrorBoundary key={match.id} resetKey={match.id} fallback={null}>
+                <MatchCard match={match} variant="home" />
+              </ErrorBoundary>
+            ))
+          ) : isScoresLoading ? (
+            <div className="no-matches-empty">
+              <span className="no-matches-icon">⏳</span>
+              <p>Loading matches…</p>
+            </div>
+          ) : (
+            <div className="no-matches-empty">
+              <SportIcon sport={activeSport} className="no-matches-icon" />
+              <p>No {sportsCategories.find((s) => s.id === activeSport)?.name || 'sport'} matches right now</p>
+              <button type="button" className="no-matches-cta" onClick={() => navigate('/sports')}>
+                Browse all sports
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
       </>
       )}
     </div>

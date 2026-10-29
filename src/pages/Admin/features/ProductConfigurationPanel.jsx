@@ -54,9 +54,9 @@ export default function ProductConfigurationPanel() {
             sw = fixed.softwarePlatformEnabled === true;
             setMeta({ updatedAt: fixed.updatedAt, updatedBy: fixed.updatedBy });
             const published = publishLocalProductConfig({
-              walletEnabled: fixed.walletEnabled !== false,
+              walletEnabled: true,
               bettingEnabled: b,
-              pgReviewMode: fixed.pgReviewMode === true,
+              pgReviewMode: false,
               softwarePlatformEnabled: sw,
               softwarePlatformName: String(fixed.softwarePlatformName || config.softwarePlatformName || '').trim(),
               updatedAt: fixed.updatedAt,
@@ -102,11 +102,10 @@ export default function ProductConfigurationPanel() {
       setSoftwareName(name);
       setSoftwareNameDraft(name);
       setMeta({ updatedAt: data.updatedAt, updatedBy: data.updatedBy });
-      // Publish the EFFECTIVE flags the server actually returned (wallet / betting / PG / software).
       const published = publishLocalProductConfig({
-        walletEnabled: data.walletEnabled !== false,
-        bettingEnabled: data.bettingEnabled === true,
-        pgReviewMode: data.pgReviewMode === true,
+        walletEnabled: true,
+        bettingEnabled: b,
+        pgReviewMode: false,
         softwarePlatformEnabled: sw,
         softwarePlatformName: name,
         updatedAt: data.updatedAt,
